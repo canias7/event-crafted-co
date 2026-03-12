@@ -1,0 +1,198 @@
+import { useState } from "react";
+import { Link } from "react-router-dom";
+import { motion } from "framer-motion";
+import {
+  LayoutDashboard, Store, CalendarDays, FileText, Mail, CheckSquare, ListTodo,
+  CreditCard, Heart, Clock, ArrowRight, Plus, Calendar, TrendingUp,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
+import { Badge } from "@/components/ui/badge";
+import { DashboardSidebar } from "@/components/shared/DashboardSidebar";
+import { MobileNav } from "@/components/shared/MobileNav";
+import { StatCard } from "@/components/shared/StatCard";
+import { customerTasks, checklistItems } from "@/data/sampleData";
+
+const navItems = [
+  { label: "Dashboard", path: "/customer/dashboard", icon: LayoutDashboard },
+  { label: "Vendors", path: "/vendors", icon: Store },
+  { label: "Appointments", path: "/customer/appointments", icon: CalendarDays },
+  { label: "Event Details", path: "/customer/event", icon: FileText },
+  { label: "Invitations", path: "/customer/invitations", icon: Mail },
+  { label: "Checklist", path: "/customer/checklist", icon: CheckSquare },
+  { label: "Tasks", path: "/customer/tasks", icon: ListTodo },
+  { label: "Payments", path: "/customer/payments", icon: CreditCard },
+  { label: "Favorites", path: "/customer/favorites", icon: Heart },
+];
+
+const completedCount = checklistItems.filter((c) => c.completed).length;
+const progressPct = Math.round((completedCount / checklistItems.length) * 100);
+
+export default function CustomerDashboard() {
+  const eventDate = new Date("2026-08-15");
+  const today = new Date();
+  const daysUntil = Math.ceil((eventDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+
+  return (
+    <div className="flex min-h-screen bg-background">
+      <DashboardSidebar items={navItems} title="Customer" backPath="/" />
+
+      <main className="flex-1 pb-20 lg:pb-0">
+        {/* Header */}
+        <div className="border-b border-border bg-card px-4 md:px-8 py-4 flex items-center justify-between sticky top-0 z-40">
+          <div>
+            <h1 className="font-display text-xl">Good morning, Sarah</h1>
+            <p className="text-sm text-muted-foreground">Your wedding is in <span className="font-medium text-foreground tnum">{daysUntil}</span> days</p>
+          </div>
+          <div className="flex items-center gap-3">
+            <Badge variant="outline" className="hidden sm:flex items-center gap-1.5 py-1.5 px-3">
+              <Calendar className="w-3.5 h-3.5" />
+              <span className="tnum">Aug 15, 2026</span>
+            </Badge>
+          </div>
+        </div>
+
+        <div className="p-4 md:p-8 space-y-8">
+          {/* Stats */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <StatCard label="Days Until Event" value={daysUntil} icon={Clock} accent />
+            <StatCard label="Vendors Booked" value={4} icon={Store} trend="+2 this month" />
+            <StatCard label="Tasks Pending" value={5} icon={ListTodo} />
+            <StatCard label="Total Spent" value="$12,450" icon={CreditCard} trend="3 payments due" />
+          </div>
+
+          {/* Quick actions */}
+          <div className="bg-card rounded-2xl p-5 card-shadow">
+            <p className="font-label text-muted-foreground mb-3">Quick Actions</p>
+            <div className="flex flex-wrap gap-2">
+              {[
+                { label: "Browse Vendors", path: "/vendors", icon: Store },
+                { label: "Book Appointment", path: "/customer/appointments", icon: CalendarDays },
+                { label: "Create Invitation", path: "/customer/invitations", icon: Mail },
+                { label: "Add Task", path: "/customer/tasks", icon: Plus },
+                { label: "Add Checklist Item", path: "/customer/checklist", icon: CheckSquare },
+              ].map((action) => (
+                <Link key={action.path + action.label} to={action.path}>
+                  <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.98 }}>
+                    <Button variant="outline" size="sm" className="h-9 rounded-lg">
+                      <action.icon className="w-3.5 h-3.5 mr-1.5" />
+                      {action.label}
+                    </Button>
+                  </motion.div>
+                </Link>
+              ))}
+            </div>
+          </div>
+
+          <div className="grid lg:grid-cols-2 gap-6">
+            {/* Checklist progress */}
+            <div className="bg-card rounded-2xl p-5 card-shadow">
+              <div className="flex items-center justify-between mb-4">
+                <p className="font-label text-muted-foreground">Checklist Progress</p>
+                <Link to="/customer/checklist" className="text-xs text-accent font-medium">View all</Link>
+              </div>
+              <div className="mb-3">
+                <div className="flex items-baseline gap-2 mb-2">
+                  <span className="text-2xl font-display tnum">{completedCount}</span>
+                  <span className="text-sm text-muted-foreground">of {checklistItems.length} completed</span>
+                </div>
+                <Progress value={progressPct} className="h-2" />
+              </div>
+              <div className="space-y-2 mt-4">
+                {checklistItems.slice(0, 5).map((item) => (
+                  <div key={item.id} className="flex items-center gap-3 text-sm">
+                    <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${
+                      item.completed ? "border-accent bg-accent" : "border-muted"
+                    }`}>
+                      {item.completed && <span className="text-accent-foreground text-[10px]">✓</span>}
+                    </div>
+                    <span className={item.completed ? "text-muted-foreground line-through" : ""}>{item.name}</span>
+                    <span className="ml-auto font-label text-muted-foreground">{item.category}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Tasks due soon */}
+            <div className="bg-card rounded-2xl p-5 card-shadow">
+              <div className="flex items-center justify-between mb-4">
+                <p className="font-label text-muted-foreground">Tasks Due Soon</p>
+                <Link to="/customer/tasks" className="text-xs text-accent font-medium">View all</Link>
+              </div>
+              <div className="space-y-3">
+                {customerTasks.map((task) => (
+                  <div key={task.id} className="flex items-center gap-3 p-3 rounded-lg bg-secondary/50">
+                    <div className={`w-2 h-2 rounded-full flex-shrink-0 ${
+                      task.status === "overdue" ? "bg-destructive" :
+                      task.status === "completed" ? "bg-accent" :
+                      task.status === "in-progress" ? "bg-accent/60" : "bg-muted-foreground/30"
+                    }`} />
+                    <div className="flex-1 min-w-0">
+                      <p className={`text-sm font-medium ${task.status === "completed" ? "line-through text-muted-foreground" : ""}`}>
+                        {task.title}
+                      </p>
+                      <p className="text-xs text-muted-foreground">{task.category}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className={`text-xs tnum font-medium ${task.status === "overdue" ? "text-destructive" : "text-muted-foreground"}`}>
+                        {task.dueDate}
+                      </p>
+                      <Badge variant={
+                        task.priority === "high" ? "destructive" : "secondary"
+                      } className="text-[10px] mt-1">
+                        {task.priority}
+                      </Badge>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Payment summary */}
+          <div className="bg-card rounded-2xl p-5 card-shadow">
+            <div className="flex items-center justify-between mb-4">
+              <p className="font-label text-muted-foreground">Recent Payments</p>
+              <Link to="/customer/payments" className="text-xs text-accent font-medium">View all</Link>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-border">
+                    <th className="text-left py-2 font-label text-muted-foreground">Vendor</th>
+                    <th className="text-left py-2 font-label text-muted-foreground">Service</th>
+                    <th className="text-left py-2 font-label text-muted-foreground">Amount</th>
+                    <th className="text-left py-2 font-label text-muted-foreground">Status</th>
+                    <th className="text-right py-2 font-label text-muted-foreground">Due</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {[
+                    { vendor: "Luminara Photography", service: "Wedding Package", amount: "$3,250", status: "paid", due: "Jun 1" },
+                    { vendor: "The Grand Atelier", service: "Venue Deposit", amount: "$4,500", status: "paid", due: "May 15" },
+                    { vendor: "Bloom & Petal", service: "Floral Arrangement", amount: "$1,800", status: "pending", due: "Jul 10" },
+                    { vendor: "Savor & Co.", service: "Catering Deposit", amount: "$2,900", status: "overdue", due: "Jun 22" },
+                  ].map((p, i) => (
+                    <tr key={i} className="border-b border-border/50">
+                      <td className="py-3 font-medium">{p.vendor}</td>
+                      <td className="py-3 text-muted-foreground">{p.service}</td>
+                      <td className="py-3 tnum font-medium">{p.amount}</td>
+                      <td className="py-3">
+                        <Badge variant={p.status === "paid" ? "secondary" : p.status === "overdue" ? "destructive" : "outline"}>
+                          {p.status}
+                        </Badge>
+                      </td>
+                      <td className="py-3 text-right tnum text-muted-foreground">{p.due}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </main>
+
+      <MobileNav items={navItems} />
+    </div>
+  );
+}
