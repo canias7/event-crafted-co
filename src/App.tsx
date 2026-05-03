@@ -56,6 +56,8 @@ const AppointmentsPage = lazy(() => import("./pages/customer/AppointmentsPage"))
 const SavedSearchesPage = lazy(() => import("./pages/customer/SavedSearchesPage"));
 const SeatingChartPage = lazy(() => import("./pages/customer/SeatingChartPage"));
 const EventTimelinePage = lazy(() => import("./pages/customer/EventTimelinePage"));
+const PlanningTeamPage = lazy(() => import("./pages/customer/PlanningTeamPage"));
+const AcceptPlanningInvitePage = lazy(() => import("./pages/AcceptPlanningInvitePage"));
 
 const VendorDashboard = lazy(() => import("./pages/vendor/VendorDashboard"));
 const VendorProfilePage = lazy(() => import("./pages/vendor/VendorProfilePage"));
@@ -109,6 +111,7 @@ const App = () => (
               <Route path="/rsvp/:token" element={<RsvpPage />} />
               <Route path="/board/:token" element={<MoodBoardSharePage />} />
               <Route path="/accept-team-invite/:token" element={<AcceptTeamInvitePage />} />
+              <Route path="/accept-planning-invite/:token" element={<AcceptPlanningInvitePage />} />
               <Route path="/privacy" element={<PrivacyPage />} />
               <Route path="/terms" element={<TermsPage />} />
               <Route path="/vendor-apply" element={<VendorApplyPage />} />
@@ -128,6 +131,7 @@ const App = () => (
               <Route path="/customer/guests" element={<RequireRole role="host"><GuestsPage /></RequireRole>} />
               <Route path="/customer/seating" element={<RequireRole role="host"><SeatingChartPage /></RequireRole>} />
               <Route path="/customer/timeline" element={<RequireRole role="host"><EventTimelinePage /></RequireRole>} />
+              <Route path="/customer/planning-team" element={<RequireRole role="host"><PlanningTeamPage /></RequireRole>} />
               <Route path="/customer/appointments" element={<RequireRole role="host"><AppointmentsPage /></RequireRole>} />
               <Route path="/customer/favorites" element={<RequireRole role="host"><FavoritesPage /></RequireRole>} />
               <Route path="/customer/saved-searches" element={<RequireRole role="host"><SavedSearchesPage /></RequireRole>} />

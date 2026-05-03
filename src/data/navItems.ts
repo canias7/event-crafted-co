@@ -41,6 +41,7 @@ export const customerNavItems: NavItem[] = [
   { label: "Favorites", path: "/customer/favorites", icon: Heart },
   { label: "Saved searches", path: "/customer/saved-searches", icon: Store },
   { label: "Mood Boards", path: "/customer/moodboards", icon: Image },
+  { label: "Planning Team", path: "/customer/planning-team", icon: Users },
   { label: "Settings", path: "/settings", icon: Settings },
 ];
 

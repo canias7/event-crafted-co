@@ -38,12 +38,18 @@ export interface VendorMembership {
   role: "owner" | "admin" | "member";
 }
 
+export interface PlanningMembership {
+  host_id: string;
+  role: "owner" | "editor" | "viewer";
+}
+
 interface AuthCtx {
   session: Session | null;
   user: User | null;
   profile: Profile | null;
   activeEvent: ActiveEvent | null;
   vendorMemberships: VendorMembership[];
+  planningMemberships: PlanningMembership[];
   loading: boolean;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
@@ -55,6 +61,7 @@ const Ctx = createContext<AuthCtx>({
   profile: null,
   activeEvent: null,
   vendorMemberships: [],
+  planningMemberships: [],
   loading: true,
   signOut: async () => {},
   refreshProfile: async () => {},
@@ -67,6 +74,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [vendorMemberships, setVendorMemberships] = useState<VendorMembership[]>(
     [],
   );
+  const [planningMemberships, setPlanningMemberships] = useState<
+    PlanningMembership[]
+  >([]);
   const [loading, setLoading] = useState(true);
 
   const loadProfile = useCallback(async (userId: string) => {
@@ -111,6 +121,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setVendorMemberships(
       (memberRows as VendorMembership[] | null) ?? [],
     );
+
+    // Planning collaborator memberships — when this user is a partner /
+    // MOH / planner on someone else's event workspace. The user is also
+    // implicitly an "owner" of their own host_id, but we don't insert a
+    // row for that — the helper functions (is_planning_collaborator,
+    // is_planning_editor) treat _host_id = auth.uid() as automatic owner.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: planningRows } = await (supabase as any)
+      .from("planning_collaborators")
+      .select("host_id, role")
+      .eq("user_id", userId);
+    setPlanningMemberships(
+      (planningRows as PlanningMembership[] | null) ?? [],
+    );
   }, []);
 
   useEffect(() => {
@@ -122,6 +146,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setProfile(null);
         setActiveEvent(null);
         setVendorMemberships([]);
+        setPlanningMemberships([]);
       }
     });
     supabase.auth.getSession().then(({ data }) => {
@@ -144,6 +169,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setProfile(null);
     setActiveEvent(null);
     setVendorMemberships([]);
+    setPlanningMemberships([]);
     setSession(null);
   }
 
@@ -155,6 +181,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         profile,
         activeEvent,
         vendorMemberships,
+        planningMemberships,
         loading,
         signOut,
         refreshProfile,
