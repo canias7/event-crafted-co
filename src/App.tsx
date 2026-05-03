@@ -16,6 +16,12 @@ import InvitationBuilder from "./pages/customer/InvitationBuilder";
 import VendorDashboard from "./pages/vendor/VendorDashboard";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import NotFound from "./pages/NotFound";
+import LoginPage from "./pages/auth/LoginPage";
+import SignupPage from "./pages/auth/SignupPage";
+import VendorInboxPage from "./pages/vendor/VendorInboxPage";
+import InquiryDetailPage from "./pages/vendor/InquiryDetailPage";
+import { AuthProvider } from "./hooks/useAuth";
+import { RequireRole } from "./components/auth/RequireRole";
 
 const queryClient = new QueryClient();
 
@@ -25,28 +31,34 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
+        <AuthProvider>
         <Routes>
           {/* Public */}
           <Route path="/" element={<LandingPage />} />
           <Route path="/how-it-works" element={<HowItWorksPage />} />
           <Route path="/vendors" element={<VendorBrowsePage />} />
           <Route path="/vendor-apply" element={<VendorApplyPage />} />
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/signup" element={<SignupPage />} />
 
           {/* Customer */}
-          <Route path="/customer/dashboard" element={<CustomerDashboard />} />
-          <Route path="/customer/checklist" element={<ChecklistPage />} />
-          <Route path="/customer/tasks" element={<TasksPage />} />
-          <Route path="/customer/payments" element={<PaymentsPage />} />
-          <Route path="/customer/invitations" element={<InvitationBuilder />} />
+          <Route path="/customer/dashboard" element={<RequireRole role="host"><CustomerDashboard /></RequireRole>} />
+          <Route path="/customer/checklist" element={<RequireRole role="host"><ChecklistPage /></RequireRole>} />
+          <Route path="/customer/tasks" element={<RequireRole role="host"><TasksPage /></RequireRole>} />
+          <Route path="/customer/payments" element={<RequireRole role="host"><PaymentsPage /></RequireRole>} />
+          <Route path="/customer/invitations" element={<RequireRole role="host"><InvitationBuilder /></RequireRole>} />
 
           {/* Vendor */}
-          <Route path="/vendor/dashboard" element={<VendorDashboard />} />
+          <Route path="/vendor/dashboard" element={<RequireRole role="vendor"><VendorDashboard /></RequireRole>} />
+          <Route path="/vendor/inbox" element={<RequireRole role="vendor"><VendorInboxPage /></RequireRole>} />
+          <Route path="/vendor/inbox/:inquiryId" element={<RequireRole role="vendor"><InquiryDetailPage /></RequireRole>} />
 
           {/* Admin */}
-          <Route path="/admin/dashboard" element={<AdminDashboard />} />
+          <Route path="/admin/dashboard" element={<RequireRole role="admin"><AdminDashboard /></RequireRole>} />
 
           <Route path="*" element={<NotFound />} />
         </Routes>
+        </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
