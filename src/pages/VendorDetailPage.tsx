@@ -12,6 +12,7 @@ import {
   Calendar,
   Share2,
   Mail,
+  Zap,
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -457,6 +458,12 @@ export default function VendorDetailPage() {
                 className="flex items-center gap-4 mb-5"
               >
                 <p className="font-label text-accent tracking-[0.4em]">— {vendor.category.toUpperCase()}</p>
+                {vendor.responderTier === "fast" && (
+                  <Badge className="bg-accent text-accent-foreground backdrop-blur-sm border-none gap-1">
+                    <Zap className="w-3 h-3 fill-accent-foreground" />
+                    Fast responder
+                  </Badge>
+                )}
                 {vendor.availability === "available" ? (
                   <Badge className="bg-accent/15 text-accent border border-accent/30 backdrop-blur-sm">
                     Available

@@ -14,6 +14,8 @@ export interface Vendor {
   availability: string;
   image: string;
   location?: string;
+  /** Computed daily by scan-responder-tiers; null = no signal yet. */
+  responderTier?: "fast" | "standard" | null;
   /** True when this vendor came from the live DB; false for sampleData fallback. */
   isReal: boolean;
 }
@@ -41,6 +43,7 @@ interface VendorProfileRow {
   service_radius_miles: number | null;
   portfolio_summary: string | null;
   verified_at: string | null;
+  responder_tier: "fast" | "standard" | null;
 }
 
 function normalizeDb(row: VendorProfileRow): Vendor {
@@ -61,6 +64,7 @@ function normalizeDb(row: VendorProfileRow): Vendor {
     availability: row.verified_at ? "available" : "limited",
     image: categoryImageFallback[row.category] ?? "vendor-venue",
     location: row.location ?? undefined,
+    responderTier: row.responder_tier ?? null,
     isReal: true,
   };
 }
@@ -82,10 +86,13 @@ async function fetchVendors(): Promise<Vendor[]> {
   if (inFlight) return inFlight;
   inFlight = (async () => {
     try {
-      const { data, error } = await supabase
+      // Cast through any: responder_tier is added by a forward migration
+      // not yet reflected in Lovable's auto-generated types.ts.
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data, error } = await (supabase as any)
         .from("vendor_profiles")
         .select(
-          "id, business_name, category, bio, base_price_cents, location, service_radius_miles, portfolio_summary, verified_at",
+          "id, business_name, category, bio, base_price_cents, location, service_radius_miles, portfolio_summary, verified_at, responder_tier",
         )
         .order("verified_at", { ascending: false, nullsFirst: false });
       if (!error && data && data.length > 0) {

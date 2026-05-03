@@ -28,3 +28,7 @@ verify_jwt = false
 # directly in Search Console.
 [functions.sitemap-xml]
 verify_jwt = false
+
+# Recomputes vendor responder_tier daily. Cron-only; no user input.
+[functions.scan-responder-tiers]
+verify_jwt = false

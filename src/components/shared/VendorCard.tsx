@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Star, MapPin, Heart } from "lucide-react";
+import { Star, MapPin, Heart, Zap } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useSavedVendors } from "@/hooks/useSavedVendors";
 import vendorPhotographer from "@/assets/vendor-photographer.jpg";
@@ -32,6 +32,7 @@ interface VendorCardProps {
     availability: string;
     image: string;
     location?: string;
+    responderTier?: "fast" | "standard" | null;
     isReal?: boolean;
   };
 }
@@ -70,11 +71,16 @@ export function VendorCard({ vendor }: VendorCardProps) {
             />
           </button>
 
-          {vendor.availability !== "available" && (
+          {vendor.responderTier === "fast" ? (
+            <Badge className="absolute top-3 left-3 bg-accent text-accent-foreground backdrop-blur-sm border-none gap-1">
+              <Zap className="w-3 h-3 fill-accent-foreground" />
+              Fast responder
+            </Badge>
+          ) : vendor.availability !== "available" ? (
             <Badge className="absolute top-3 left-3 bg-background/85 text-foreground backdrop-blur-sm border-none">
               Limited availability
             </Badge>
-          )}
+          ) : null}
 
           <div className="absolute bottom-3 left-4 right-4 flex items-end justify-between text-background">
             <p className="font-label tracking-[0.25em]">{vendor.category}</p>
