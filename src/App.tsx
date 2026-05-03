@@ -60,6 +60,10 @@ const EventTimelinePage = lazy(() => import("./pages/customer/EventTimelinePage"
 const PlanningTeamPage = lazy(() => import("./pages/customer/PlanningTeamPage"));
 const RegistryPage = lazy(() => import("./pages/customer/RegistryPage"));
 const MessagesPage = lazy(() => import("./pages/customer/MessagesPage"));
+const InquiryBlastPage = lazy(() => import("./pages/customer/InquiryBlastPage"));
+const LiveDayPage = lazy(() => import("./pages/customer/LiveDayPage"));
+const GiftWishesPage = lazy(() => import("./pages/customer/GiftWishesPage"));
+const GiftSharePage = lazy(() => import("./pages/GiftSharePage"));
 const AcceptPlanningInvitePage = lazy(() => import("./pages/AcceptPlanningInvitePage"));
 
 const VendorDashboard = lazy(() => import("./pages/vendor/VendorDashboard"));
@@ -141,6 +145,10 @@ const App = () => (
               <Route path="/customer/planning-team" element={<RequireRole role="host"><PlanningTeamPage /></RequireRole>} />
               <Route path="/customer/registry" element={<RequireRole role="host"><RegistryPage /></RequireRole>} />
               <Route path="/customer/messages" element={<RequireRole role="host"><MessagesPage /></RequireRole>} />
+              <Route path="/customer/inquiry-blast" element={<RequireRole role="host"><InquiryBlastPage /></RequireRole>} />
+              <Route path="/customer/live" element={<RequireRole role="host"><LiveDayPage /></RequireRole>} />
+              <Route path="/customer/gifts" element={<RequireRole role="host"><GiftWishesPage /></RequireRole>} />
+              <Route path="/gift/:token" element={<GiftSharePage />} />
               <Route path="/customer/appointments" element={<RequireRole role="host"><AppointmentsPage /></RequireRole>} />
               <Route path="/customer/favorites" element={<RequireRole role="host"><FavoritesPage /></RequireRole>} />
               <Route path="/customer/saved-searches" element={<RequireRole role="host"><SavedSearchesPage /></RequireRole>} />

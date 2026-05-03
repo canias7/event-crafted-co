@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import {
   Plus,
   Trash2,
@@ -165,6 +166,16 @@ export default function EventTimelinePage() {
               </p>
             </div>
             <div className="flex items-center gap-2">
+              <Link to="/customer/live">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={items.length === 0}
+                  className="rounded-full print-hide"
+                >
+                  Live mode
+                </Button>
+              </Link>
               <Button
                 variant="outline"
                 size="sm"

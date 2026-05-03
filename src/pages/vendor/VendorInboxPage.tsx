@@ -8,6 +8,14 @@ import { DashboardSidebar } from "@/components/shared/DashboardSidebar";
 import { MobileNav } from "@/components/shared/MobileNav";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { vendorNavItems as navItems } from "@/data/navItems";
 
 interface InquiryRow {
@@ -20,6 +28,14 @@ interface InquiryRow {
   quality_score: number | null;
   created_at: string;
   host: { display_name: string | null } | null;
+  labels?: Array<{ id: string; name: string; color: string }>;
+}
+
+interface VendorLabel {
+  id: string;
+  name: string;
+  color: string;
+  display_order: number;
 }
 
 function fmtMoney(cents: number | null) {
@@ -82,6 +98,9 @@ export default function VendorInboxPage() {
   const [rows, setRows] = useState<InquiryRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<string>("all");
+  const [labels, setLabels] = useState<VendorLabel[]>([]);
+  const [labelFilter, setLabelFilter] = useState<string | null>(null);
+  const [labelsOpen, setLabelsOpen] = useState(false);
 
   async function load(forVendorId?: string | null) {
     const vid = forVendorId ?? vendorId;
@@ -97,8 +116,46 @@ export default function VendorInboxPage() {
       )
       .eq("vendor_id", vid)
       .order("created_at", { ascending: false });
-    setRows((data as unknown as InquiryRow[]) ?? []);
+    const inquiries = (data as unknown as InquiryRow[]) ?? [];
+
+    // Hydrate label assignments per inquiry
+    if (inquiries.length > 0) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: assigns } = await (supabase as any)
+        .from("inquiry_label_assignments")
+        .select(
+          "inquiry_id, label:vendor_inquiry_labels!inquiry_label_assignments_label_id_fkey(id, name, color)",
+        )
+        .in(
+          "inquiry_id",
+          inquiries.map((i) => i.id),
+        );
+      const byInq = new Map<string, InquiryRow["labels"]>();
+      for (const a of (assigns ?? []) as Array<{
+        inquiry_id: string;
+        label: { id: string; name: string; color: string } | null;
+      }>) {
+        if (!a.label) continue;
+        if (!byInq.has(a.inquiry_id)) byInq.set(a.inquiry_id, []);
+        byInq.get(a.inquiry_id)!.push(a.label);
+      }
+      for (const i of inquiries) i.labels = byInq.get(i.id) ?? [];
+    }
+    setRows(inquiries);
     setLoading(false);
+  }
+
+  async function loadLabels(forVendorId?: string | null) {
+    const vid = forVendorId ?? vendorId;
+    if (!vid) return;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data } = await (supabase as any)
+      .from("vendor_inquiry_labels")
+      .select("id, name, color, display_order")
+      .eq("vendor_id", vid)
+      .order("display_order", { ascending: true })
+      .order("name", { ascending: true });
+    setLabels((data as VendorLabel[]) ?? []);
   }
 
   useEffect(() => {
@@ -109,14 +166,23 @@ export default function VendorInboxPage() {
       return;
     }
     load(vendorId);
+    loadLabels(vendorId);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, vendorId]);
 
   const filteredRows = useMemo(() => {
-    if (filter === "all") return rows;
-    const matcher = filterOptions.find((o) => o.value === filter)?.matches;
-    return matcher ? rows.filter((r) => matcher(r.status)) : rows;
-  }, [rows, filter]);
+    let result = rows;
+    if (filter !== "all") {
+      const matcher = filterOptions.find((o) => o.value === filter)?.matches;
+      if (matcher) result = result.filter((r) => matcher(r.status));
+    }
+    if (labelFilter) {
+      result = result.filter((r) =>
+        (r.labels ?? []).some((l) => l.id === labelFilter),
+      );
+    }
+    return result;
+  }, [rows, filter, labelFilter]);
 
   // Realtime: refetch when any inquiry for this vendor changes.
   useEffect(() => {
@@ -187,6 +253,49 @@ export default function VendorInboxPage() {
             })}
           </div>
 
+          <div className="flex flex-wrap gap-2 mb-4 items-center">
+            {labels.length > 0 && (
+              <>
+                <span className="text-xs text-muted-foreground">Labels:</span>
+                {labels.map((l) => {
+                  const active = labelFilter === l.id;
+                  const count = rows.filter((r) =>
+                    (r.labels ?? []).some((x) => x.id === l.id),
+                  ).length;
+                  return (
+                    <button
+                      key={l.id}
+                      type="button"
+                      onClick={() =>
+                        setLabelFilter(active ? null : l.id)
+                      }
+                      className={`inline-flex items-center gap-1.5 px-2.5 h-7 rounded-full text-xs font-medium border transition-colors ${
+                        active
+                          ? "border-foreground"
+                          : "border-transparent hover:border-border"
+                      }`}
+                      style={{
+                        backgroundColor: active ? l.color : `${l.color}22`,
+                        color: active ? "#fff" : l.color,
+                      }}
+                    >
+                      {l.name}
+                      <span className="tnum opacity-70">{count}</span>
+                    </button>
+                  );
+                })}
+              </>
+            )}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setLabelsOpen(true)}
+              className="rounded-full text-xs h-7 ml-auto"
+            >
+              {labels.length === 0 ? "+ Create labels" : "Manage labels"}
+            </Button>
+          </div>
+
           <div className="bg-card rounded-2xl card-shadow overflow-hidden">
             {loading ? (
               <div className="p-12 text-center text-muted-foreground">Loading inquiries…</div>
@@ -225,6 +334,22 @@ export default function VendorInboxPage() {
                           <Link to={`/vendor/inbox/${r.id}`} className="font-medium block">
                             {r.host?.display_name ?? "Unknown host"}
                           </Link>
+                          {(r.labels ?? []).length > 0 && (
+                            <div className="flex flex-wrap gap-1 mt-1">
+                              {(r.labels ?? []).map((l) => (
+                                <span
+                                  key={l.id}
+                                  className="inline-block text-[10px] px-1.5 py-0.5 rounded-full font-medium"
+                                  style={{
+                                    backgroundColor: `${l.color}22`,
+                                    color: l.color,
+                                  }}
+                                >
+                                  {l.name}
+                                </span>
+                              ))}
+                            </div>
+                          )}
                         </td>
                         <td className="p-4 capitalize text-muted-foreground">{r.event_type.replace("_", " ")}</td>
                         <td className="p-4 tnum text-muted-foreground">{r.event_date ?? "—"}</td>
@@ -248,6 +373,173 @@ export default function VendorInboxPage() {
         </div>
       </main>
       <MobileNav items={navItems} />
+
+      {vendorId && (
+        <ManageLabelsDialog
+          open={labelsOpen}
+          onOpenChange={setLabelsOpen}
+          vendorId={vendorId}
+          labels={labels}
+          onChanged={() => {
+            loadLabels(vendorId);
+            load(vendorId);
+          }}
+        />
+      )}
     </div>
+  );
+}
+
+function ManageLabelsDialog({
+  open,
+  onOpenChange,
+  vendorId,
+  labels,
+  onChanged,
+}: {
+  open: boolean;
+  onOpenChange: (o: boolean) => void;
+  vendorId: string;
+  labels: VendorLabel[];
+  onChanged: () => void;
+}) {
+  const [name, setName] = useState("");
+  const [color, setColor] = useState("#a08259");
+  const [submitting, setSubmitting] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  const PALETTE = [
+    "#a08259",
+    "#10b981",
+    "#3b82f6",
+    "#f59e0b",
+    "#ef4444",
+    "#8b5cf6",
+    "#ec4899",
+    "#1a1a1a",
+  ];
+
+  async function add(e: React.FormEvent) {
+    e.preventDefault();
+    if (!name.trim()) return;
+    setSubmitting(true);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error } = await (supabase as any)
+      .from("vendor_inquiry_labels")
+      .insert({
+        vendor_id: vendorId,
+        name: name.trim(),
+        color,
+        display_order: labels.length,
+      });
+    setSubmitting(false);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    setName("");
+    onChanged();
+  }
+
+  async function remove(id: string) {
+    setDeletingId(id);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error } = await (supabase as any)
+      .from("vendor_inquiry_labels")
+      .delete()
+      .eq("id", id);
+    setDeletingId(null);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    onChanged();
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md rounded-sm">
+        <DialogHeader>
+          <DialogTitle className="font-display text-2xl">
+            Inbox labels
+          </DialogTitle>
+          <DialogDescription>
+            Custom tags layered on top of inquiry status. Use them for hot
+            leads, follow-up, season tags, anything.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-3 pt-2">
+          {labels.length === 0 ? (
+            <p className="text-xs text-muted-foreground text-center py-4">
+              No labels yet.
+            </p>
+          ) : (
+            <ul className="space-y-1.5">
+              {labels.map((l) => (
+                <li
+                  key={l.id}
+                  className="flex items-center justify-between gap-2 px-3 py-2 rounded-sm border border-border"
+                >
+                  <span
+                    className="inline-block text-xs px-2 py-0.5 rounded-full font-medium"
+                    style={{
+                      backgroundColor: `${l.color}22`,
+                      color: l.color,
+                    }}
+                  >
+                    {l.name}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => remove(l.id)}
+                    disabled={deletingId === l.id}
+                    aria-label="Delete label"
+                    className="text-muted-foreground hover:text-destructive"
+                  >
+                    {deletingId === l.id ? "…" : "×"}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+        <form onSubmit={add} className="space-y-3 pt-2 border-t border-border">
+          <div className="space-y-1.5">
+            <Label htmlFor="label-name" className="text-xs">
+              New label
+            </Label>
+            <input
+              id="label-name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Hot lead, Follow up, Out of scope…"
+              className="w-full h-9 px-3 rounded-md border border-input bg-background text-sm"
+            />
+          </div>
+          <div className="flex items-center gap-2 flex-wrap">
+            {PALETTE.map((c) => (
+              <button
+                key={c}
+                type="button"
+                onClick={() => setColor(c)}
+                className={`w-6 h-6 rounded-full border-2 ${
+                  color === c ? "border-foreground" : "border-transparent"
+                }`}
+                style={{ backgroundColor: c }}
+                aria-label={`Color ${c}`}
+              />
+            ))}
+            <Button
+              type="submit"
+              size="sm"
+              disabled={submitting || !name.trim()}
+              className="rounded-full ml-auto"
+            >
+              Add
+            </Button>
+          </div>
+        </form>
+      </DialogContent>
+    </Dialog>
   );
 }
