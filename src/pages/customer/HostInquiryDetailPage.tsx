@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { ArrowLeft, Send, Loader2 } from "lucide-react";
+import { ArrowLeft, Send, Loader2, Star, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -10,10 +10,12 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ReviewFormModal } from "@/components/reviews/ReviewFormModal";
 import { customerNavItems as navItems } from "@/data/navItems";
 
 interface Inquiry {
   id: string;
+  vendor_id: string;
   event_type: string;
   event_date: string | null;
   guest_count: number | null;
@@ -27,6 +29,12 @@ interface Inquiry {
     business_name: string;
     category: string;
   } | null;
+}
+
+interface ExistingReview {
+  id: string;
+  rating: number;
+  body: string | null;
 }
 
 interface Message {
@@ -70,6 +78,8 @@ export default function HostInquiryDetailPage() {
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [notFound, setNotFound] = useState(false);
+  const [review, setReview] = useState<ExistingReview | null>(null);
+  const [reviewModalOpen, setReviewModalOpen] = useState(false);
 
   async function load() {
     if (!inquiryId || !user) return;
@@ -78,7 +88,7 @@ export default function HostInquiryDetailPage() {
     const { data: i, error: iErr } = await supabase
       .from("inquiries")
       .select(
-        "id, event_type, event_date, guest_count, location, budget_min_cents, budget_max_cents, special_requests, status, created_at, vendor:vendor_profiles!inquiries_vendor_id_fkey(business_name, category)",
+        "id, vendor_id, event_type, event_date, guest_count, location, budget_min_cents, budget_max_cents, special_requests, status, created_at, vendor:vendor_profiles!inquiries_vendor_id_fkey(business_name, category)",
       )
       .eq("id", inquiryId)
       .maybeSingle();
@@ -100,6 +110,16 @@ export default function HostInquiryDetailPage() {
       .order("created_at", { ascending: true });
 
     setMessages((msgs as Message[]) ?? []);
+
+    // Existing review (if any)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: r } = await (supabase as any)
+      .from("reviews")
+      .select("id, rating, body")
+      .eq("inquiry_id", inquiryId)
+      .maybeSingle();
+    setReview((r as ExistingReview | null) ?? null);
+
     setLoading(false);
   }
 
@@ -279,6 +299,68 @@ export default function HostInquiryDetailPage() {
                   )}
                 </div>
 
+                {/* Review CTA (only on booked inquiries) */}
+                {inquiry.status === "won" && (
+                  <div className="bg-card border border-accent/30 bg-accent/5 rounded-sm p-6">
+                    <div className="flex items-start gap-4 flex-wrap">
+                      <div className="w-9 h-9 rounded-full bg-accent text-accent-foreground flex items-center justify-center flex-shrink-0">
+                        <Sparkles className="w-4 h-4" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        {review ? (
+                          <>
+                            <p className="font-display text-base mb-1">
+                              You rated{" "}
+                              {inquiry.vendor?.business_name ?? "this vendor"}{" "}
+                              {review.rating} {review.rating === 1 ? "star" : "stars"}
+                            </p>
+                            <div className="flex items-center gap-1 mb-2">
+                              {Array.from({ length: 5 }).map((_, i) => (
+                                <Star
+                                  key={i}
+                                  className={`w-4 h-4 ${
+                                    i < review.rating
+                                      ? "fill-accent text-accent"
+                                      : "text-muted-foreground/30"
+                                  }`}
+                                />
+                              ))}
+                            </div>
+                            {review.body && (
+                              <p className="text-sm text-foreground/80 leading-relaxed">
+                                "{review.body}"
+                              </p>
+                            )}
+                          </>
+                        ) : (
+                          <>
+                            <p className="font-display text-base mb-1">
+                              Loved working with{" "}
+                              {inquiry.vendor?.business_name ?? "this vendor"}?
+                            </p>
+                            <p className="text-sm text-muted-foreground leading-relaxed">
+                              Leave a review to help future hosts choose with
+                              confidence.
+                            </p>
+                          </>
+                        )}
+                      </div>
+                      <Button
+                        onClick={() => setReviewModalOpen(true)}
+                        size="sm"
+                        variant={review ? "outline" : "default"}
+                        className={`rounded-full whitespace-nowrap ${
+                          !review
+                            ? "bg-foreground text-background hover:bg-foreground/90"
+                            : ""
+                        }`}
+                      >
+                        {review ? "Edit review" : "Leave a review"}
+                      </Button>
+                    </div>
+                  </div>
+                )}
+
                 {/* Thread */}
                 <div className="bg-card border border-border rounded-sm p-6 space-y-4">
                   <p className="font-label text-muted-foreground">
@@ -359,6 +441,19 @@ export default function HostInquiryDetailPage() {
       </main>
 
       <MobileNav items={navItems} />
+
+      {inquiry && user && (
+        <ReviewFormModal
+          open={reviewModalOpen}
+          onOpenChange={setReviewModalOpen}
+          inquiryId={inquiry.id}
+          vendorId={inquiry.vendor_id}
+          hostId={user.id}
+          vendorName={inquiry.vendor?.business_name ?? "this vendor"}
+          existingReview={review}
+          onSuccess={load}
+        />
+      )}
     </div>
   );
 }

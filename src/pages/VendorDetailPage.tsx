@@ -183,6 +183,58 @@ export default function VendorDetailPage() {
 
   const portfolioImages = realPortfolio.length > 0 ? realPortfolio : portfolioPool;
 
+  // Real reviews (only for DB-backed vendors)
+  interface RealReview {
+    id: string;
+    rating: number;
+    body: string | null;
+    created_at: string;
+    host: { display_name: string | null } | null;
+    response: { body: string } | null;
+    inquiry: { event_type: string; event_date: string | null } | null;
+  }
+  const [realReviews, setRealReviews] = useState<RealReview[]>([]);
+  useEffect(() => {
+    if (!vendor || !vendor.isReal) {
+      setRealReviews([]);
+      return;
+    }
+    let cancelled = false;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (supabase as any)
+      .from("reviews")
+      .select(
+        "id, rating, body, created_at, host:profiles!reviews_host_id_fkey(display_name), response:review_responses(body), inquiry:inquiries!reviews_inquiry_id_fkey(event_type, event_date)",
+      )
+      .eq("vendor_id", vendor.id)
+      .order("created_at", { ascending: false })
+      .then(({ data }: { data: unknown }) => {
+        if (cancelled) return;
+        const rows = (data as RealReview[] | null) ?? [];
+        // Supabase returns response as array for has-many; flatten.
+        const normalized = rows.map((r) => ({
+          ...r,
+          response: Array.isArray(r.response)
+            ? (r.response[0] ?? null)
+            : r.response,
+          inquiry: Array.isArray(r.inquiry)
+            ? (r.inquiry[0] ?? null)
+            : r.inquiry,
+        }));
+        setRealReviews(normalized);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [vendor]);
+
+  const reviewsAvg =
+    realReviews.length > 0
+      ? realReviews.reduce((sum, r) => sum + r.rating, 0) / realReviews.length
+      : vendor?.rating ?? 0;
+  const reviewsCount =
+    realReviews.length > 0 ? realReviews.length : vendor?.reviews ?? 0;
+
   function handleInquiryClick() {
     if (authLoading) return;
     if (!session || !profile) {
@@ -433,36 +485,101 @@ export default function VendorDetailPage() {
                   <div>
                     <p className="font-label text-accent mb-4">Reviews</p>
                     <h2 className="font-display text-3xl">
-                      <span className="tnum">{vendor.rating}</span>{" "}
+                      <span className="tnum">{reviewsAvg.toFixed(1)}</span>{" "}
                       <span className="text-muted-foreground font-light">·</span>{" "}
                       <span className="text-muted-foreground font-light tnum">
-                        {vendor.reviews} reviews
+                        {reviewsCount}{" "}
+                        {reviewsCount === 1 ? "review" : "reviews"}
                       </span>
                     </h2>
                   </div>
                   <div className="flex items-center gap-1">
                     {Array.from({ length: 5 }).map((_, i) => (
-                      <Star key={i} className="w-4 h-4 fill-accent text-accent" />
+                      <Star
+                        key={i}
+                        className={`w-4 h-4 ${
+                          i < Math.round(reviewsAvg)
+                            ? "fill-accent text-accent"
+                            : "text-muted-foreground/30"
+                        }`}
+                      />
                     ))}
                   </div>
                 </div>
                 <div className="space-y-8">
-                  {sampleReviews.map((r, i) => (
-                    <div key={i} className="border-t border-border pt-8 first:border-t-0 first:pt-0">
-                      <div className="flex items-center gap-1 mb-3">
-                        {Array.from({ length: r.rating }).map((_, j) => (
-                          <Star key={j} className="w-3.5 h-3.5 fill-accent text-accent" />
-                        ))}
-                      </div>
-                      <p className="text-foreground/85 leading-relaxed mb-4">
-                        "{r.text}"
-                      </p>
-                      <div>
-                        <p className="text-sm font-medium">{r.name}</p>
-                        <p className="text-xs text-muted-foreground">{r.event}</p>
-                      </div>
-                    </div>
-                  ))}
+                  {realReviews.length > 0
+                    ? realReviews.map((r) => (
+                        <div
+                          key={r.id}
+                          className="border-t border-border pt-8 first:border-t-0 first:pt-0"
+                        >
+                          <div className="flex items-center gap-1 mb-3">
+                            {Array.from({ length: r.rating }).map((_, j) => (
+                              <Star
+                                key={j}
+                                className="w-3.5 h-3.5 fill-accent text-accent"
+                              />
+                            ))}
+                          </div>
+                          {r.body && (
+                            <p className="text-foreground/85 leading-relaxed mb-4">
+                              "{r.body}"
+                            </p>
+                          )}
+                          <div>
+                            <p className="text-sm font-medium">
+                              {r.host?.display_name ?? "Anonymous host"}
+                            </p>
+                            {r.inquiry && (
+                              <p className="text-xs text-muted-foreground capitalize">
+                                {r.inquiry.event_type.replace("_", " ")}
+                                {r.inquiry.event_date && (
+                                  <>
+                                    {" · "}
+                                    <span className="tnum">
+                                      {r.inquiry.event_date}
+                                    </span>
+                                  </>
+                                )}
+                              </p>
+                            )}
+                          </div>
+                          {r.response && (
+                            <div className="mt-4 ml-6 pl-4 border-l-2 border-accent/40">
+                              <p className="font-label text-accent mb-1.5">
+                                Response from {vendor.name}
+                              </p>
+                              <p className="text-sm text-foreground/80 leading-relaxed">
+                                {r.response.body}
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      ))
+                    : sampleReviews.map((r, i) => (
+                        <div
+                          key={i}
+                          className="border-t border-border pt-8 first:border-t-0 first:pt-0"
+                        >
+                          <div className="flex items-center gap-1 mb-3">
+                            {Array.from({ length: r.rating }).map((_, j) => (
+                              <Star
+                                key={j}
+                                className="w-3.5 h-3.5 fill-accent text-accent"
+                              />
+                            ))}
+                          </div>
+                          <p className="text-foreground/85 leading-relaxed mb-4">
+                            "{r.text}"
+                          </p>
+                          <div>
+                            <p className="text-sm font-medium">{r.name}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {r.event}
+                            </p>
+                          </div>
+                        </div>
+                      ))}
                 </div>
               </div>
 
