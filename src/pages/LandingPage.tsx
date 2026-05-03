@@ -362,15 +362,7 @@ export default function LandingPage() {
               </div>
             </div>
             <div className="md:order-1 relative">
-              <div
-                className="aspect-[4/5] rounded-sm overflow-hidden"
-                style={{
-                  WebkitMaskImage:
-                    "radial-gradient(ellipse at center, hsl(0 0% 0%) 35%, hsl(0 0% 0% / 0.5) 70%, transparent 100%)",
-                  maskImage:
-                    "radial-gradient(ellipse at center, hsl(0 0% 0%) 35%, hsl(0 0% 0% / 0.5) 70%, transparent 100%)",
-                }}
-              >
+              <div className="aspect-[4/5] rounded-sm overflow-hidden">
                 <img
                   src={featureVenue}
                   alt="Luxury venue"
