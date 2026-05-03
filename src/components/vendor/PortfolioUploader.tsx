@@ -3,6 +3,7 @@ import { Upload, X, Loader2, Image as ImageIcon } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
+import { vendorImageUrl } from "@/lib/storage";
 
 const BUCKET = "vendor-portfolios";
 const MAX_BYTES = 5 * 1024 * 1024; // 5 MB
@@ -52,8 +53,9 @@ export function PortfolioUploader({ vendorId }: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [vendorId]);
 
-  function publicUrl(path: string) {
-    return supabase.storage.from(BUCKET).getPublicUrl(path).data.publicUrl;
+  function thumbnailUrl(path: string) {
+    // Square thumbnails for the management grid.
+    return vendorImageUrl(path, { width: 400, height: 400 });
   }
 
   async function uploadFiles(fileList: FileList) {
@@ -212,7 +214,7 @@ export function PortfolioUploader({ vendorId }: Props) {
               className="relative group aspect-square overflow-hidden rounded-sm bg-muted"
             >
               <img
-                src={publicUrl(img.storage_path)}
+                src={thumbnailUrl(img.storage_path)}
                 alt={img.caption ?? "Portfolio image"}
                 className="w-full h-full object-cover"
                 loading="lazy"

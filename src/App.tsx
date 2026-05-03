@@ -29,6 +29,7 @@ const OnboardingPage = lazy(() => import("./pages/customer/OnboardingPage"));
 const InquiriesPage = lazy(() => import("./pages/customer/InquiriesPage"));
 const HostInquiryDetailPage = lazy(() => import("./pages/customer/HostInquiryDetailPage"));
 const FavoritesPage = lazy(() => import("./pages/customer/FavoritesPage"));
+const EventDetailsPage = lazy(() => import("./pages/customer/EventDetailsPage"));
 const ChecklistPage = lazy(() => import("./pages/customer/ChecklistPage"));
 const TasksPage = lazy(() => import("./pages/customer/TasksPage"));
 const PaymentsPage = lazy(() => import("./pages/customer/PaymentsPage"));
@@ -78,7 +79,7 @@ const App = () => (
               <Route path="/customer/onboarding" element={<RequireRole role="host"><OnboardingPage /></RequireRole>} />
               <Route path="/customer/inquiries" element={<RequireRole role="host"><InquiriesPage /></RequireRole>} />
               <Route path="/customer/inquiries/:inquiryId" element={<RequireRole role="host"><HostInquiryDetailPage /></RequireRole>} />
-              <Route path="/customer/event" element={<RequireRole role="host"><ComingSoonPage side="customer" description="An overview of your event details, vendor lineup, and timeline. We're building this on top of your onboarding answers." /></RequireRole>} />
+              <Route path="/customer/event" element={<RequireRole role="host"><EventDetailsPage /></RequireRole>} />
               <Route path="/customer/appointments" element={<RequireRole role="host"><ComingSoonPage side="customer" description="Schedule and manage vendor consultations, tastings, and walkthroughs in one place." /></RequireRole>} />
               <Route path="/customer/favorites" element={<RequireRole role="host"><FavoritesPage /></RequireRole>} />
               <Route path="/customer/checklist" element={<RequireRole role="host"><ChecklistPage /></RequireRole>} />

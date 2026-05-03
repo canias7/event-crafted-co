@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { vendorImageUrl } from "@/lib/storage";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -167,11 +168,10 @@ export default function VendorDetailPage() {
           data: Array<{ storage_path: string }> | null;
         }) => {
           if (cancelled) return;
-          const urls = (data ?? []).map(
-            (r) =>
-              supabase.storage
-                .from("vendor-portfolios")
-                .getPublicUrl(r.storage_path).data.publicUrl,
+          // Detail-page portfolio renders at most ~800px wide; request
+          // transformed images at that size to save bandwidth.
+          const urls = (data ?? []).map((r) =>
+            vendorImageUrl(r.storage_path, { width: 1000 }),
           );
           setRealPortfolio(urls);
         },

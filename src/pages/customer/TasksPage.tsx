@@ -1,32 +1,131 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
-  LayoutDashboard, Store, CalendarDays, FileText, Mail, CheckSquare,
-  ListTodo, CreditCard, Heart, Plus, Calendar, List, AlertTriangle, Check,
+  Plus,
+  Check,
+  Trash2,
+  Loader2,
+  AlertTriangle,
+  Calendar,
 } from "lucide-react";
+import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { DashboardSidebar } from "@/components/shared/DashboardSidebar";
 import { MobileNav } from "@/components/shared/MobileNav";
 import { customerNavItems as navItems } from "@/data/navItems";
-import { customerTasks as initialTasks } from "@/data/sampleData";
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const tasksTable = () => (supabase as any).from("event_tasks");
+
+interface TaskRow {
+  id: string;
+  title: string;
+  category: string | null;
+  priority: "low" | "medium" | "high" | null;
+  status: "pending" | "in-progress" | "completed" | "overdue";
+  due_date: string | null;
+  notes: string | null;
+}
+
+const priorityStyles: Record<string, string> = {
+  low: "bg-secondary text-muted-foreground border-border",
+  medium: "bg-accent/15 text-accent border-accent/30",
+  high: "bg-destructive/15 text-destructive border-destructive/30",
+};
+
+const statusFilters: Array<{ value: string; label: string }> = [
+  { value: "all", label: "All" },
+  { value: "pending", label: "Pending" },
+  { value: "in-progress", label: "In progress" },
+  { value: "completed", label: "Completed" },
+  { value: "overdue", label: "Overdue" },
+];
+
+function statusFromRow(t: TaskRow): TaskRow["status"] {
+  if (t.status === "completed") return "completed";
+  if (
+    t.due_date &&
+    new Date(t.due_date) < new Date(new Date().toDateString())
+  )
+    return "overdue";
+  return t.status;
+}
 
 export default function TasksPage() {
-  const [tasks, setTasks] = useState(initialTasks);
-  const [view, setView] = useState<"list" | "calendar">("list");
+  const { user } = useAuth();
+  const [tasks, setTasks] = useState<TaskRow[]>([]);
+  const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("all");
+  const [addOpen, setAddOpen] = useState(false);
 
-  const filtered = tasks.filter((t) => filter === "all" || t.status === filter);
+  async function load() {
+    if (!user) return;
+    setLoading(true);
+    const { data } = await tasksTable()
+      .select("id, title, category, priority, status, due_date, notes")
+      .eq("host_id", user.id)
+      .order("due_date", { ascending: true, nullsFirst: false })
+      .order("created_at", { ascending: false });
+    setTasks((data as TaskRow[]) ?? []);
+    setLoading(false);
+  }
 
-  const statusColor = (status: string) => {
-    switch (status) {
-      case "completed": return "bg-accent";
-      case "in-progress": return "bg-accent/60";
-      case "overdue": return "bg-destructive";
-      default: return "bg-muted-foreground/30";
+  useEffect(() => {
+    load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
+
+  async function toggleComplete(t: TaskRow) {
+    const next: TaskRow["status"] =
+      t.status === "completed" ? "pending" : "completed";
+    setTasks((prev) =>
+      prev.map((x) => (x.id === t.id ? { ...x, status: next } : x)),
+    );
+    const { error } = await tasksTable()
+      .update({ status: next })
+      .eq("id", t.id);
+    if (error) {
+      toast.error(error.message);
+      load();
     }
-  };
+  }
+
+  async function deleteTask(id: string) {
+    setTasks((prev) => prev.filter((t) => t.id !== id));
+    const { error } = await tasksTable().delete().eq("id", id);
+    if (error) {
+      toast.error(error.message);
+      load();
+    }
+  }
+
+  const visibleTasks = tasks
+    .map((t) => ({ ...t, status: statusFromRow(t) }))
+    .filter((t) => filter === "all" || t.status === filter);
+
+  const overdueCount = tasks.filter((t) => statusFromRow(t) === "overdue").length;
+  const pendingCount = tasks.filter(
+    (t) => statusFromRow(t) !== "completed",
+  ).length;
 
   return (
     <div className="flex min-h-screen bg-background">
@@ -36,77 +135,309 @@ export default function TasksPage() {
         <div className="border-b border-border bg-card px-4 md:px-8 py-4 flex items-center justify-between sticky top-0 z-40">
           <div>
             <h1 className="font-display text-xl">Tasks</h1>
-            <p className="text-sm text-muted-foreground">{tasks.filter(t => t.status !== "completed").length} pending tasks</p>
+            <p className="text-sm text-muted-foreground">
+              {pendingCount} pending {pendingCount === 1 ? "task" : "tasks"}
+            </p>
           </div>
-          <div className="flex items-center gap-2">
-            <Button variant={view === "list" ? "secondary" : "ghost"} size="sm" onClick={() => setView("list")}><List className="w-4 h-4" /></Button>
-            <Button variant={view === "calendar" ? "secondary" : "ghost"} size="sm" onClick={() => setView("calendar")}><Calendar className="w-4 h-4" /></Button>
-          </div>
+          <Button
+            onClick={() => setAddOpen(true)}
+            className="rounded-full bg-foreground text-background hover:bg-foreground/90"
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            New task
+          </Button>
         </div>
 
         <div className="p-4 md:p-8 space-y-6 max-w-3xl">
-          {/* Overdue banner */}
-          {tasks.some(t => t.status === "overdue") && (
-            <div className="bg-destructive/10 rounded-xl p-4 flex items-center gap-3">
+          {overdueCount > 0 && (
+            <div className="bg-destructive/10 border border-destructive/20 rounded-sm p-4 flex items-center gap-3">
               <AlertTriangle className="w-5 h-5 text-destructive flex-shrink-0" />
-              <div>
-                <p className="text-sm font-medium">You have overdue tasks</p>
-                <p className="text-xs text-muted-foreground">{tasks.filter(t => t.status === "overdue").length} task(s) past due date</p>
-              </div>
+              <p className="text-sm">
+                <span className="font-medium">
+                  {overdueCount} overdue
+                </span>{" "}
+                <span className="text-muted-foreground">— catch up before they pile up.</span>
+              </p>
             </div>
           )}
 
-          {/* Filters */}
-          <div className="flex gap-2 flex-wrap">
-            {["all", "pending", "in-progress", "overdue", "completed"].map((f) => (
-              <Button
-                key={f}
-                variant={filter === f ? "default" : "secondary"}
-                size="sm"
-                className="rounded-full capitalize h-8"
-                onClick={() => setFilter(f)}
-              >
-                {f.replace("-", " ")}
-              </Button>
-            ))}
+          {/* Filter chips */}
+          <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-hide">
+            {statusFilters.map((opt) => {
+              const count =
+                opt.value === "all"
+                  ? tasks.length
+                  : tasks.filter((t) => statusFromRow(t) === opt.value).length;
+              return (
+                <Button
+                  key={opt.value}
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => setFilter(opt.value)}
+                  className={`rounded-full whitespace-nowrap h-8 text-xs ${
+                    filter === opt.value
+                      ? "bg-foreground text-background hover:bg-foreground/90"
+                      : "bg-secondary/60 text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {opt.label}
+                  <span className="ml-2 tnum opacity-70">{count}</span>
+                </Button>
+              );
+            })}
           </div>
 
-          {/* Smart tasks suggestion */}
-          <div className="bg-card rounded-2xl p-5 card-shadow">
-            <p className="font-label text-accent mb-3">Suggested Tasks</p>
-            <div className="flex flex-wrap gap-2">
-              {["Send save-the-dates", "Book rehearsal dinner venue", "Schedule dress fitting", "Order wedding favors"].map((s, i) => (
-                <Button key={i} variant="outline" size="sm" className="rounded-full h-8 text-xs">
-                  <Plus className="w-3 h-3 mr-1" /> {s}
-                </Button>
+          {/* List */}
+          {loading ? (
+            <div className="space-y-2">
+              {[0, 1, 2].map((i) => (
+                <Skeleton key={i} className="h-16 w-full rounded-sm" />
               ))}
             </div>
-          </div>
+          ) : visibleTasks.length === 0 ? (
+            <div className="text-center py-16 px-6 bg-card border border-border rounded-sm">
+              <Calendar className="w-10 h-10 mx-auto text-muted-foreground/40 mb-4" />
+              <p className="font-display text-xl mb-2">
+                {tasks.length === 0
+                  ? "No tasks yet"
+                  : "Nothing matches that filter"}
+              </p>
+              <p className="text-sm text-muted-foreground max-w-sm mx-auto mb-6 leading-relaxed">
+                {tasks.length === 0
+                  ? "Track everything you owe yourself and your vendors before the event."
+                  : "Try a different status filter above."}
+              </p>
+              {tasks.length === 0 && (
+                <Button
+                  onClick={() => setAddOpen(true)}
+                  className="rounded-full bg-foreground text-background hover:bg-foreground/90"
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add your first task
+                </Button>
+              )}
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {visibleTasks.map((t) => (
+                <div
+                  key={t.id}
+                  className="flex items-center gap-3 p-4 rounded-sm border border-border bg-card group"
+                >
+                  <button
+                    onClick={() => toggleComplete(t)}
+                    className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all ${
+                      t.status === "completed"
+                        ? "border-accent bg-accent"
+                        : "border-muted hover:border-accent/50"
+                    }`}
+                    aria-label={
+                      t.status === "completed"
+                        ? "Mark incomplete"
+                        : "Mark complete"
+                    }
+                  >
+                    {t.status === "completed" && (
+                      <Check className="w-3 h-3 text-accent-foreground" />
+                    )}
+                  </button>
 
-          {/* Task list */}
-          <div className="space-y-2">
-            {filtered.map((task) => (
-              <div key={task.id} className="flex items-center gap-3 p-4 rounded-xl bg-card card-shadow">
-                <div className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${statusColor(task.status)}`} />
-                <div className="flex-1 min-w-0">
-                  <p className={`text-sm font-medium ${task.status === "completed" ? "line-through text-muted-foreground" : ""}`}>
-                    {task.title}
-                  </p>
-                  <p className="text-xs text-muted-foreground">{task.category}</p>
+                  <div className="flex-1 min-w-0">
+                    <p
+                      className={`text-sm font-medium ${
+                        t.status === "completed"
+                          ? "line-through text-muted-foreground"
+                          : ""
+                      }`}
+                    >
+                      {t.title}
+                    </p>
+                    <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground flex-wrap">
+                      {t.due_date && (
+                        <span className="tnum">
+                          Due {t.due_date}
+                        </span>
+                      )}
+                      {t.category && (
+                        <>
+                          <span>·</span>
+                          <span>{t.category}</span>
+                        </>
+                      )}
+                      {t.status === "overdue" && (
+                        <Badge
+                          variant="outline"
+                          className="bg-destructive/15 text-destructive border-destructive/30 text-[10px]"
+                        >
+                          Overdue
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+
+                  {t.priority && (
+                    <Badge
+                      variant="outline"
+                      className={`${priorityStyles[t.priority]} text-[10px] uppercase tracking-wider`}
+                    >
+                      {t.priority}
+                    </Badge>
+                  )}
+
+                  <button
+                    onClick={() => deleteTask(t.id)}
+                    className="opacity-0 group-hover:opacity-100 transition-opacity"
+                    aria-label="Delete task"
+                  >
+                    <Trash2 className="w-3.5 h-3.5 text-muted-foreground hover:text-destructive" />
+                  </button>
                 </div>
-                <Badge variant={task.priority === "high" ? "destructive" : task.priority === "medium" ? "outline" : "secondary"} className="text-[10px]">
-                  {task.priority}
-                </Badge>
-                <span className={`text-xs tnum font-medium ${task.status === "overdue" ? "text-destructive" : "text-muted-foreground"}`}>
-                  {task.dueDate}
-                </span>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
       </main>
 
       <MobileNav items={navItems} />
+
+      {user && (
+        <AddTaskDialog
+          open={addOpen}
+          onOpenChange={setAddOpen}
+          hostId={user.id}
+          onSuccess={load}
+        />
+      )}
     </div>
+  );
+}
+
+function AddTaskDialog({
+  open,
+  onOpenChange,
+  hostId,
+  onSuccess,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  hostId: string;
+  onSuccess: () => void;
+}) {
+  const [title, setTitle] = useState("");
+  const [category, setCategory] = useState("");
+  const [priority, setPriority] = useState<"low" | "medium" | "high">("medium");
+  const [dueDate, setDueDate] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!title.trim()) {
+      toast.error("Task title is required");
+      return;
+    }
+    setSubmitting(true);
+    const { error } = await tasksTable().insert({
+      host_id: hostId,
+      title: title.trim(),
+      category: category.trim() || null,
+      priority,
+      due_date: dueDate || null,
+    });
+    setSubmitting(false);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    setTitle("");
+    setCategory("");
+    setPriority("medium");
+    setDueDate("");
+    toast.success("Task added");
+    onOpenChange(false);
+    onSuccess();
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md rounded-sm">
+        <DialogHeader>
+          <DialogTitle className="font-display text-2xl">New task</DialogTitle>
+        </DialogHeader>
+        <form onSubmit={submit} className="space-y-4 pt-2">
+          <div className="space-y-2">
+            <Label htmlFor="task-title">
+              Title <span className="text-destructive">*</span>
+            </Label>
+            <Input
+              id="task-title"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Confirm catering menu, send invitations…"
+              className="h-10"
+              required
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="task-category">Category</Label>
+            <Input
+              id="task-category"
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              placeholder="Catering, Florals, Guest list…"
+              className="h-10"
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-2">
+              <Label htmlFor="task-priority">Priority</Label>
+              <Select
+                value={priority}
+                onValueChange={(v) => setPriority(v as "low" | "medium" | "high")}
+              >
+                <SelectTrigger id="task-priority" className="h-10">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="low">Low</SelectItem>
+                  <SelectItem value="medium">Medium</SelectItem>
+                  <SelectItem value="high">High</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="task-due">Due date</Label>
+              <Input
+                id="task-due"
+                type="date"
+                value={dueDate}
+                onChange={(e) => setDueDate(e.target.value)}
+                className="h-10"
+              />
+            </div>
+          </div>
+          <DialogFooter className="pt-2 gap-2 sm:gap-0">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+              disabled={submitting}
+              className="rounded-full"
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              disabled={submitting}
+              className="rounded-full bg-foreground text-background hover:bg-foreground/90"
+            >
+              {submitting && (
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              )}
+              Add task
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
   );
 }
