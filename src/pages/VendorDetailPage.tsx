@@ -424,6 +424,28 @@ export default function VendorDetailPage() {
     );
   }
 
+  async function handleMessageClick() {
+    if (authLoading || !vendor) return;
+    if (!session || !profile) {
+      setSigninPromptOpen(true);
+      return;
+    }
+    if (profile.role !== "host") {
+      toast.info("Messages can only be sent from host accounts.");
+      return;
+    }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data, error } = await (supabase as any).rpc(
+      "find_or_create_direct_thread",
+      { p_vendor_id: vendor.id },
+    );
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    window.location.href = `/customer/messages?thread=${data}`;
+  }
+
   const related = useMemo(() => {
     if (!vendor) return [];
     const sameCat = vendors.filter(
@@ -948,6 +970,15 @@ export default function VendorDetailPage() {
                   >
                     <Mail className="w-4 h-4 mr-2" />
                     Send Inquiry
+                  </Button>
+
+                  <Button
+                    onClick={handleMessageClick}
+                    disabled={authLoading}
+                    variant="outline"
+                    className="w-full h-10 rounded-full mt-2"
+                  >
+                    Message vendor
                   </Button>
 
                   <div className="grid grid-cols-2 gap-2 mt-3">

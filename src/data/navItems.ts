@@ -30,6 +30,7 @@ export const customerNavItems: NavItem[] = [
   { label: "Dashboard", path: "/customer/dashboard", icon: LayoutDashboard },
   { label: "Vendors", path: "/vendors", icon: Store },
   { label: "Inquiries", path: "/customer/inquiries", icon: MessageSquare },
+  { label: "Messages", path: "/customer/messages", icon: MessageSquare },
   { label: "Guests", path: "/customer/guests", icon: User },
   { label: "Seating", path: "/customer/seating", icon: Users },
   { label: "Appointments", path: "/customer/appointments", icon: CalendarDays },
@@ -50,6 +51,7 @@ export const customerNavItems: NavItem[] = [
 export const vendorNavItems: NavItem[] = [
   { label: "Dashboard", path: "/vendor/dashboard", icon: LayoutDashboard },
   { label: "Inbox", path: "/vendor/inbox", icon: Inbox },
+  { label: "Messages", path: "/vendor/messages", icon: MessageSquare },
   { label: "Analytics", path: "/vendor/analytics", icon: TrendingUp },
   { label: "Templates", path: "/vendor/templates", icon: FileText },
   { label: "Profile", path: "/vendor/profile", icon: User },

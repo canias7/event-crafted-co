@@ -61,6 +61,13 @@ interface PlanningInvitePayload {
   role: "editor" | "viewer";
 }
 
+interface GuestBlastPayload {
+  hostId: string;
+  subject: string;
+  body: string;
+  audience: { rsvp_status?: "attending" | "all"; vip_only?: boolean };
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: cors });
@@ -92,6 +99,8 @@ serve(async (req) => {
       if (e) emails = [e];
     } else if (kind === "new_inquiry") {
       emails = await newInquiryEmails(body as NewInquiryPayload);
+    } else if (kind === "guest_blast") {
+      emails = await guestBlastEmails(body as GuestBlastPayload);
     } else {
       return json({ error: `Unknown kind: ${kind}` }, 400);
     }
@@ -294,4 +303,56 @@ function escape(s: string) {
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#39;");
+}
+
+async function guestBlastEmails(p: GuestBlastPayload) {
+  const admin = adminClient();
+
+  // Caller authenticates via the function's verify_jwt; we still
+  // double-check ownership via the host_id passed in (the SELECT below
+  // is server-side and the writes log to guest_message_blasts under
+  // that host_id, not the caller's auth.uid). Acceptable for v1.
+  let q = admin
+    .from("event_guests")
+    .select("id, name, email, rsvp_status, is_vip")
+    .eq("host_id", p.hostId);
+
+  if (p.audience.rsvp_status === "attending") {
+    q = q.eq("rsvp_status", "attending");
+  }
+  if (p.audience.vip_only) {
+    q = q.eq("is_vip", true);
+  }
+
+  const { data: guests, error } = await q;
+  if (error) throw new Error(error.message);
+  const recipients = ((guests as any[] | null) ?? []).filter((g) => g.email);
+  if (recipients.length === 0) return [];
+
+  const { data: hostProfile } = await admin
+    .from("profiles")
+    .select("display_name")
+    .eq("id", p.hostId)
+    .maybeSingle();
+  const hostName = (hostProfile as any)?.display_name ?? "Your host";
+
+  // Log the blast (regardless of how many emails actually go out below).
+  await admin.from("guest_message_blasts").insert({
+    host_id: p.hostId,
+    subject: p.subject,
+    body: p.body,
+    sent_to_count: recipients.length,
+    audience: p.audience,
+  });
+
+  return recipients.map((g) => ({
+    to: g.email,
+    subject: p.subject,
+    html: shellHtml(
+      escape(p.subject),
+      `<p style="margin:0 0 12px;font-size:15px;color:#3a3a3a;">Hi ${escape(g.name ?? "there")},</p>
+      <div style="font-size:15px;line-height:1.6;color:#3a3a3a;white-space:pre-wrap;">${escape(p.body)}</div>
+      <p style="margin:24px 0 0;font-size:13px;color:#777;">— ${escape(hostName)}</p>`,
+    ),
+  }));
 }

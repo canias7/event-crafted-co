@@ -9,6 +9,7 @@ import {
   Search,
   Upload,
   Printer,
+  Mail,
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -47,6 +48,8 @@ interface GuestRow {
   rsvp_status: "attending" | "declined" | "maybe" | null;
   rsvp_plus_one: boolean | null;
   rsvp_responded_at: string | null;
+  is_vip: boolean;
+  vip_role: string | null;
 }
 
 const rsvpStyles: Record<string, string> = {
@@ -71,6 +74,7 @@ export default function GuestsPage() {
   >("all");
   const [addOpen, setAddOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
+  const [blastOpen, setBlastOpen] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
   async function load() {
@@ -78,7 +82,7 @@ export default function GuestsPage() {
     setLoading(true);
     const { data } = await guestsTable()
       .select(
-        "id, name, email, phone, plus_one_allowed, group_label, invitation_token, rsvp_status, rsvp_plus_one, rsvp_responded_at",
+        "id, name, email, phone, plus_one_allowed, group_label, invitation_token, rsvp_status, rsvp_plus_one, rsvp_responded_at, is_vip, vip_role",
       )
       .eq("host_id", user.id)
       .order("created_at", { ascending: false });
@@ -170,10 +174,19 @@ export default function GuestsPage() {
           </div>
           <div className="flex items-center gap-2">
             <Button
+              onClick={() => setBlastOpen(true)}
+              variant="outline"
+              className="rounded-full print-hide"
+              disabled={rows.filter((g) => g.email).length === 0}
+            >
+              <Mail className="w-4 h-4 mr-2" />
+              Message all
+            </Button>
+            <Button
               onClick={() => window.print()}
               variant="outline"
               className="rounded-full print-hide"
-              disabled={guests.length === 0}
+              disabled={rows.length === 0}
             >
               <Printer className="w-4 h-4 mr-2" />
               Print
@@ -287,7 +300,20 @@ export default function GuestsPage() {
                   >
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
+                        {g.is_vip && (
+                          <span
+                            title={g.vip_role ?? "VIP"}
+                            className="inline-flex items-center text-accent text-xs"
+                          >
+                            ★
+                          </span>
+                        )}
                         <p className="text-sm font-medium">{g.name}</p>
+                        {g.is_vip && g.vip_role && (
+                          <Badge className="text-[10px] uppercase tracking-wider bg-accent/15 text-accent border border-accent/30">
+                            {g.vip_role}
+                          </Badge>
+                        )}
                         {g.plus_one_allowed && (
                           <Badge
                             variant="outline"
@@ -372,6 +398,14 @@ export default function GuestsPage() {
             onOpenChange={setImportOpen}
             hostId={user.id}
             onSuccess={load}
+          />
+          <BulkMessageDialog
+            open={blastOpen}
+            onOpenChange={setBlastOpen}
+            hostId={user.id}
+            attendingCount={rows.filter((g) => g.rsvp_status === "attending" && g.email).length}
+            allCount={rows.filter((g) => g.email).length}
+            vipCount={rows.filter((g) => g.is_vip && g.email).length}
           />
         </>
       )}
@@ -507,6 +541,8 @@ function AddGuestDialog({
   const [phone, setPhone] = useState("");
   const [groupLabel, setGroupLabel] = useState("");
   const [plusOne, setPlusOne] = useState(false);
+  const [isVip, setIsVip] = useState(false);
+  const [vipRole, setVipRole] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
   async function submit(e: React.FormEvent) {
@@ -523,6 +559,8 @@ function AddGuestDialog({
       phone: phone.trim() || null,
       group_label: groupLabel.trim() || null,
       plus_one_allowed: plusOne,
+      is_vip: isVip,
+      vip_role: isVip && vipRole.trim() ? vipRole.trim() : null,
     });
     setSubmitting(false);
     if (error) {
@@ -535,6 +573,8 @@ function AddGuestDialog({
     setPhone("");
     setGroupLabel("");
     setPlusOne(false);
+    setIsVip(false);
+    setVipRole("");
     onOpenChange(false);
     onSuccess();
   }
@@ -597,6 +637,27 @@ function AddGuestDialog({
             />
             <span className="text-sm">Allow a plus-one</span>
           </label>
+          <label className="flex items-center gap-2.5 cursor-pointer">
+            <Checkbox
+              checked={isVip}
+              onCheckedChange={(v) => setIsVip(v === true)}
+            />
+            <span className="text-sm">VIP / wedding party</span>
+          </label>
+          {isVip && (
+            <div className="space-y-1.5 ml-7">
+              <Label htmlFor="vip-role" className="text-xs">
+                Role (optional)
+              </Label>
+              <Input
+                id="vip-role"
+                value={vipRole}
+                onChange={(e) => setVipRole(e.target.value)}
+                placeholder="Maid of honor, best man, mother of bride…"
+                className="h-9"
+              />
+            </div>
+          )}
           <DialogFooter className="pt-2 gap-2 sm:gap-0">
             <Button
               type="button"
@@ -617,6 +678,166 @@ function AddGuestDialog({
             </Button>
           </DialogFooter>
         </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function BulkMessageDialog({
+  open,
+  onOpenChange,
+  hostId,
+  attendingCount,
+  allCount,
+  vipCount,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  hostId: string;
+  attendingCount: number;
+  allCount: number;
+  vipCount: number;
+}) {
+  const [subject, setSubject] = useState("");
+  const [body, setBody] = useState("");
+  const [audience, setAudience] = useState<"attending" | "all" | "vip">(
+    "attending",
+  );
+  const [submitting, setSubmitting] = useState(false);
+
+  const recipientCount =
+    audience === "attending"
+      ? attendingCount
+      : audience === "vip"
+        ? vipCount
+        : allCount;
+
+  async function send() {
+    if (!subject.trim() || !body.trim()) {
+      toast.error("Subject and body are required");
+      return;
+    }
+    if (recipientCount === 0) {
+      toast.error("No guests in that audience have an email");
+      return;
+    }
+    setSubmitting(true);
+    const result = await supabase.functions.invoke(
+      "send-transactional-email",
+      {
+        body: {
+          kind: "guest_blast",
+          hostId,
+          subject: subject.trim(),
+          body: body.trim(),
+          audience: {
+            rsvp_status: audience === "all" ? "all" : "attending",
+            vip_only: audience === "vip",
+          },
+        },
+      },
+    );
+    setSubmitting(false);
+    if (result.error) {
+      toast.error(result.error.message);
+      return;
+    }
+    const sent = (result.data as { sent?: number } | null)?.sent ?? 0;
+    toast.success(
+      `Email sent to ${sent} ${sent === 1 ? "guest" : "guests"}`,
+    );
+    setSubject("");
+    setBody("");
+    onOpenChange(false);
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-lg rounded-sm">
+        <DialogHeader>
+          <DialogTitle className="font-display text-2xl">
+            Message your guests
+          </DialogTitle>
+          <DialogDescription>
+            Send a single email to a filtered audience. Only guests with
+            an email address on file will receive it.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-4 pt-2">
+          <div className="space-y-2">
+            <Label>Audience</Label>
+            <div className="flex flex-wrap gap-2">
+              {(
+                [
+                  { value: "attending", label: "Attending", count: attendingCount },
+                  { value: "all", label: "Everyone", count: allCount },
+                  { value: "vip", label: "VIPs only", count: vipCount },
+                ] as const
+              ).map((opt) => {
+                const active = audience === opt.value;
+                return (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => setAudience(opt.value)}
+                    disabled={opt.count === 0}
+                    className={`px-3 h-8 rounded-full text-xs font-medium border transition-colors ${
+                      active
+                        ? "bg-foreground text-background border-foreground"
+                        : "bg-background border-border hover:border-foreground/30 disabled:opacity-50"
+                    }`}
+                  >
+                    {opt.label}
+                    <span className="ml-1.5 tnum opacity-70">{opt.count}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="blast-subject">Subject</Label>
+            <Input
+              id="blast-subject"
+              value={subject}
+              onChange={(e) => setSubject(e.target.value)}
+              placeholder="An update on the wedding"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="blast-body">Message</Label>
+            <Textarea
+              id="blast-body"
+              value={body}
+              onChange={(e) => setBody(e.target.value)}
+              rows={8}
+              placeholder="Hi everyone, a quick update…"
+            />
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Sending to <strong>{recipientCount}</strong>{" "}
+            {recipientCount === 1 ? "guest" : "guests"}.
+          </p>
+        </div>
+        <DialogFooter className="pt-2 gap-2 sm:gap-0">
+          <Button
+            type="button"
+            variant="ghost"
+            onClick={() => onOpenChange(false)}
+            disabled={submitting}
+            className="rounded-full"
+          >
+            Cancel
+          </Button>
+          <Button
+            type="button"
+            onClick={send}
+            disabled={submitting || recipientCount === 0}
+            className="rounded-full bg-foreground text-background hover:bg-foreground/90"
+          >
+            {submitting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+            Send to {recipientCount}
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );
