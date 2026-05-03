@@ -1,9 +1,9 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
-  LayoutDashboard, Store, CalendarDays, FileText, Mail, CheckSquare, ListTodo,
-  CreditCard, Heart, Clock, ArrowRight, Plus, Calendar, TrendingUp,
+  Store, MessageSquare, ListTodo, CreditCard, Clock, ArrowRight, Plus,
+  Calendar, CalendarDays, Mail, CheckSquare, Sparkles,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -12,19 +12,77 @@ import { DashboardSidebar } from "@/components/shared/DashboardSidebar";
 import { MobileNav } from "@/components/shared/MobileNav";
 import { StatCard } from "@/components/shared/StatCard";
 import { customerNavItems as navItems } from "@/data/navItems";
-import { customerTasks, checklistItems } from "@/data/sampleData";
+import { checklistItems, customerTasks } from "@/data/sampleData";
 import { useAuth } from "@/hooks/useAuth";
-import { Sparkles } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 const completedCount = checklistItems.filter((c) => c.completed).length;
 const progressPct = Math.round((completedCount / checklistItems.length) * 100);
 
+const eventTypeLabel: Record<string, string> = {
+  wedding: "wedding",
+  birthday: "birthday",
+  holiday_dinner: "holiday dinner",
+  other: "event",
+};
+
+interface InquiryStats {
+  total: number;
+  awaiting: number;
+  replied: number;
+  booked: number;
+}
+
+function fmtMoney(c: number | null) {
+  return c == null ? "—" : `$${(c / 100).toLocaleString()}`;
+}
+
 export default function CustomerDashboard() {
-  const { profile } = useAuth();
-  const eventDate = new Date("2026-08-15");
-  const today = new Date();
-  const daysUntil = Math.ceil((eventDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+  const { profile, user } = useAuth();
+  const [stats, setStats] = useState<InquiryStats>({
+    total: 0,
+    awaiting: 0,
+    replied: 0,
+    booked: 0,
+  });
+
   const showOnboardingBanner = profile?.role === "host" && !profile.onboarded_at;
+  const eventLabel = profile?.event_type
+    ? eventTypeLabel[profile.event_type]
+    : "event";
+
+  const eventDate = profile?.event_date ? new Date(profile.event_date) : null;
+  const daysUntil = eventDate
+    ? Math.ceil(
+        (eventDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24),
+      )
+    : null;
+
+  useEffect(() => {
+    if (!user) return;
+    let cancelled = false;
+    supabase
+      .from("inquiries")
+      .select("status")
+      .eq("host_id", user.id)
+      .then(({ data }) => {
+        if (cancelled) return;
+        const rows = data ?? [];
+        setStats({
+          total: rows.length,
+          awaiting: rows.filter(
+            (r) => r.status === "new" || r.status === "drafted",
+          ).length,
+          replied: rows.filter((r) => r.status === "replied").length,
+          booked: rows.filter((r) => r.status === "won").length,
+        });
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [user]);
+
+  const greeting = profile?.display_name?.split(" ")[0] ?? "there";
 
   return (
     <div className="flex min-h-screen bg-background">
@@ -34,15 +92,40 @@ export default function CustomerDashboard() {
         {/* Header */}
         <div className="border-b border-border bg-card px-4 md:px-8 py-4 flex items-center justify-between sticky top-0 z-40">
           <div>
-            <h1 className="font-display text-xl">Good morning, Sarah</h1>
-            <p className="text-sm text-muted-foreground">Your wedding is in <span className="font-medium text-foreground tnum">{daysUntil}</span> days</p>
+            <h1 className="font-display text-xl">Welcome back, {greeting}</h1>
+            <p className="text-sm text-muted-foreground">
+              {daysUntil != null && daysUntil >= 0 ? (
+                <>
+                  Your {eventLabel} is in{" "}
+                  <span className="font-medium text-foreground tnum">
+                    {daysUntil}
+                  </span>{" "}
+                  days
+                </>
+              ) : profile?.event_type ? (
+                `Your ${eventLabel} is being planned`
+              ) : (
+                "Let's plan something memorable"
+              )}
+            </p>
           </div>
-          <div className="flex items-center gap-3">
-            <Badge variant="outline" className="hidden sm:flex items-center gap-1.5 py-1.5 px-3">
-              <Calendar className="w-3.5 h-3.5" />
-              <span className="tnum">Aug 15, 2026</span>
-            </Badge>
-          </div>
+          {profile?.event_date && (
+            <div className="flex items-center gap-3">
+              <Badge
+                variant="outline"
+                className="hidden sm:flex items-center gap-1.5 py-1.5 px-3"
+              >
+                <Calendar className="w-3.5 h-3.5" />
+                <span className="tnum">
+                  {new Date(profile.event_date).toLocaleDateString(undefined, {
+                    month: "short",
+                    day: "numeric",
+                    year: "numeric",
+                  })}
+                </span>
+              </Badge>
+            </div>
+          )}
         </div>
 
         <div className="p-4 md:p-8 space-y-8">
@@ -72,10 +155,19 @@ export default function CustomerDashboard() {
 
           {/* Stats */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            <StatCard label="Days Until Event" value={daysUntil} icon={Clock} accent />
-            <StatCard label="Vendors Booked" value={4} icon={Store} trend="+2 this month" />
-            <StatCard label="Tasks Pending" value={5} icon={ListTodo} />
-            <StatCard label="Total Spent" value="$12,450" icon={CreditCard} trend="3 payments due" />
+            <StatCard
+              label="Days until event"
+              value={daysUntil != null && daysUntil >= 0 ? daysUntil : "—"}
+              icon={Clock}
+              accent
+            />
+            <StatCard
+              label="Total inquiries"
+              value={stats.total}
+              icon={MessageSquare}
+            />
+            <StatCard label="Awaiting reply" value={stats.awaiting} icon={Clock} />
+            <StatCard label="Booked" value={stats.booked} icon={Store} />
           </div>
 
           {/* Quick actions */}

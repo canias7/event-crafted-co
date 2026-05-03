@@ -9,6 +9,12 @@ interface Profile {
   role: AppRole;
   display_name: string | null;
   onboarded_at: string | null;
+  event_type: "wedding" | "birthday" | "holiday_dinner" | "other" | null;
+  event_date: string | null;
+  event_location: string | null;
+  budget_min_cents: number | null;
+  budget_max_cents: number | null;
+  event_notes: string | null;
 }
 
 interface AuthCtx {
@@ -55,7 +61,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   async function loadProfile(userId: string) {
     const { data } = await supabase
       .from("profiles")
-      .select("id, role, display_name, onboarded_at")
+      .select(
+        "id, role, display_name, onboarded_at, event_type, event_date, event_location, budget_min_cents, budget_max_cents, event_notes",
+      )
       .eq("id", userId)
       .maybeSingle();
     if (data) setProfile(data as unknown as Profile);

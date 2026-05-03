@@ -171,9 +171,10 @@ export default function InquiriesPage() {
             ) : (
               <div className="divide-y divide-border">
                 {rows.map((r) => (
-                  <div
+                  <Link
                     key={r.id}
-                    className="p-5 md:p-6 flex flex-col md:flex-row md:items-center gap-4 md:gap-6"
+                    to={`/customer/inquiries/${r.id}`}
+                    className="p-5 md:p-6 flex flex-col md:flex-row md:items-center gap-4 md:gap-6 hover:bg-secondary/40 transition-colors"
                   >
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-3 mb-1.5 flex-wrap">
@@ -227,7 +228,7 @@ export default function InquiriesPage() {
                         {new Date(r.created_at).toLocaleDateString()}
                       </span>
                     </div>
-                  </div>
+                  </Link>
                 ))}
               </div>
             )}
