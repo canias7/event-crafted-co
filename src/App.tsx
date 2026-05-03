@@ -40,6 +40,7 @@ const NotFound = lazy(() => import("./pages/NotFound"));
 const ComingSoonPage = lazy(() => import("./pages/ComingSoonPage"));
 
 const CustomerDashboard = lazy(() => import("./pages/customer/CustomerDashboard"));
+const CustomerVendorsBrowsePage = lazy(() => import("./pages/customer/VendorsBrowsePage"));
 const OnboardingPage = lazy(() => import("./pages/customer/OnboardingPage"));
 const InquiriesPage = lazy(() => import("./pages/customer/InquiriesPage"));
 const HostInquiryDetailPage = lazy(() => import("./pages/customer/HostInquiryDetailPage"));
