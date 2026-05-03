@@ -29,6 +29,11 @@ verify_jwt = false
 [functions.sitemap-xml]
 verify_jwt = false
 
+# Geocode a vendor's location string to lat/lng via Nominatim. Called
+# from VendorProfilePage on save and from a one-shot batch backfill.
+[functions.geocode-vendor]
+verify_jwt = true
+
 # Recomputes vendor responder_tier daily. Cron-only; no user input.
 [functions.scan-responder-tiers]
 verify_jwt = false

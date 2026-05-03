@@ -25,6 +25,7 @@ import { MobilePortalBell } from "./components/notifications/MobilePortalBell";
 const HowItWorksPage = lazy(() => import("./pages/HowItWorksPage"));
 const VendorBrowsePage = lazy(() => import("./pages/VendorBrowsePage"));
 const VendorLocationsPage = lazy(() => import("./pages/VendorLocationsPage"));
+const VendorMapPage = lazy(() => import("./pages/VendorMapPage"));
 const VendorQuizPage = lazy(() => import("./pages/VendorQuizPage"));
 const VendorDetailPage = lazy(() => import("./pages/VendorDetailPage"));
 const VendorCategoryPage = lazy(() => import("./pages/VendorCategoryPage"));
@@ -104,6 +105,7 @@ const App = () => (
               <Route path="/how-it-works" element={<HowItWorksPage />} />
               <Route path="/vendors" element={<VendorBrowsePage />} />
               <Route path="/vendors/locations" element={<VendorLocationsPage />} />
+              <Route path="/vendors/map" element={<VendorMapPage />} />
               <Route path="/vendors/quiz" element={<VendorQuizPage />} />
               <Route path="/vendors/category/:slug" element={<VendorCategoryPage />} />
               <Route path="/vendors/:id" element={<VendorDetailPage />} />

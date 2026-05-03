@@ -153,6 +153,13 @@ export default function VendorProfilePage() {
       }
       toast.success("Profile saved");
       setProfile({ ...profile, ...payload });
+      // Re-geocode if location changed. Fire-and-forget — failure to
+      // geocode shouldn't block the save toast.
+      if (payload.location) {
+        supabase.functions
+          .invoke("geocode-vendor", { body: { vendorId: profile.id } })
+          .catch(() => {});
+      }
     } else {
       setCreating(true);
       const { data, error } = await supabase
@@ -169,6 +176,13 @@ export default function VendorProfilePage() {
       }
       toast.success("Profile created");
       setProfile(data as VendorProfile);
+      if (payload.location && data) {
+        supabase.functions
+          .invoke("geocode-vendor", {
+            body: { vendorId: (data as VendorProfile).id },
+          })
+          .catch(() => {});
+      }
     }
   }
 
