@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { ArrowLeft, Send, Loader2, Star, Sparkles } from "lucide-react";
+import { ArrowLeft, Send, Loader2, Star, Sparkles, Paperclip, X } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -15,6 +15,14 @@ import {
   ProposalCard,
   type Proposal,
 } from "@/components/proposals/ProposalCard";
+import { MessageAttachments } from "@/components/messages/MessageAttachments";
+import {
+  uploadAttachments,
+  validateAttachment,
+  ACCEPTED_MIME,
+  MAX_FILES,
+  type MessageAttachment,
+} from "@/lib/messageAttachments";
 import { customerNavItems as navItems } from "@/data/navItems";
 
 interface Inquiry {
@@ -49,6 +57,7 @@ interface Message {
   draft_status: string | null;
   sent_at: string | null;
   created_at: string;
+  attachments?: MessageAttachment[];
 }
 
 const statusStyles: Record<string, string> = {
@@ -79,6 +88,8 @@ export default function HostInquiryDetailPage() {
   const [inquiry, setInquiry] = useState<Inquiry | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [composer, setComposer] = useState("");
+  const [pendingFiles, setPendingFiles] = useState<File[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [notFound, setNotFound] = useState(false);
@@ -109,13 +120,13 @@ export default function HostInquiryDetailPage() {
     const { data: msgs } = await supabase
       .from("messages")
       .select(
-        "id, body, sender_role, is_draft, draft_status, sent_at, created_at",
+        "id, body, sender_role, is_draft, draft_status, sent_at, created_at, attachments",
       )
       .eq("inquiry_id", inquiryId)
       .eq("is_draft", false)
       .order("created_at", { ascending: true });
 
-    setMessages((msgs as Message[]) ?? []);
+    setMessages((msgs as unknown as Message[]) ?? []);
 
     // Existing review (if any)
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -194,22 +205,49 @@ export default function HostInquiryDetailPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [inquiryId]);
 
+  function pickFiles(list: FileList) {
+    const accepted: File[] = [];
+    for (const f of Array.from(list)) {
+      const err = validateAttachment(f);
+      if (err) {
+        toast.error(err);
+        continue;
+      }
+      if (pendingFiles.length + accepted.length >= MAX_FILES) {
+        toast.error(`Up to ${MAX_FILES} attachments per message`);
+        break;
+      }
+      accepted.push(f);
+    }
+    setPendingFiles((prev) => [...prev, ...accepted]);
+  }
+
   async function sendMessage() {
-    if (!composer.trim() || !inquiryId || !user) return;
+    if ((!composer.trim() && pendingFiles.length === 0) || !inquiryId || !user)
+      return;
     setSending(true);
+    const uploaded =
+      pendingFiles.length > 0
+        ? await uploadAttachments(pendingFiles, inquiryId, (n, m) =>
+            toast.error(`${n}: ${m}`),
+          )
+        : [];
     const { error } = await supabase.from("messages").insert({
       inquiry_id: inquiryId,
       sender_id: user.id,
       sender_role: "host",
-      body: composer.trim(),
+      body: composer.trim() || "(attachment)",
       sent_at: new Date().toISOString(),
-    });
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      attachments: uploaded,
+    } as any);
     setSending(false);
     if (error) {
       toast.error(error.message);
       return;
     }
     setComposer("");
+    setPendingFiles([]);
     load();
   }
 
@@ -449,6 +487,9 @@ export default function HostInquiryDetailPage() {
                           <p className="text-sm leading-relaxed whitespace-pre-wrap">
                             {m.body}
                           </p>
+                          {m.attachments && m.attachments.length > 0 && (
+                            <MessageAttachments attachments={m.attachments} />
+                          )}
                         </div>
                       );
                     })
@@ -464,10 +505,59 @@ export default function HostInquiryDetailPage() {
                     rows={4}
                     placeholder="Write your message…"
                   />
-                  <div className="flex justify-end mt-3">
+                  {pendingFiles.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mt-3">
+                      {pendingFiles.map((f, i) => (
+                        <span
+                          key={i}
+                          className="inline-flex items-center gap-2 px-3 py-1.5 bg-secondary rounded-full text-xs"
+                        >
+                          {f.name}
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setPendingFiles((prev) =>
+                                prev.filter((_, j) => j !== i),
+                              )
+                            }
+                            aria-label="Remove attachment"
+                            className="text-muted-foreground hover:text-foreground"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                  <div className="flex items-center justify-between gap-2 mt-3">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={sending || pendingFiles.length >= MAX_FILES}
+                      className="rounded-full text-muted-foreground"
+                    >
+                      <Paperclip className="w-3.5 h-3.5 mr-1.5" />
+                      Attach
+                    </Button>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept={ACCEPTED_MIME.join(",")}
+                      multiple
+                      className="hidden"
+                      onChange={(e) => {
+                        if (e.target.files) pickFiles(e.target.files);
+                        e.target.value = "";
+                      }}
+                    />
                     <Button
                       onClick={sendMessage}
-                      disabled={sending || !composer.trim()}
+                      disabled={
+                        sending ||
+                        (!composer.trim() && pendingFiles.length === 0)
+                      }
                       className="rounded-full bg-foreground text-background hover:bg-foreground/90"
                     >
                       {sending ? (
