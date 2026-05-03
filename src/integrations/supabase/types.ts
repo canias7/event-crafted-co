@@ -73,6 +73,72 @@ export type Database = {
           },
         ]
       }
+      appointments: {
+        Row: {
+          created_at: string
+          duration_minutes: number
+          host_id: string
+          id: string
+          inquiry_id: string | null
+          kind: string
+          location: string | null
+          notes: string | null
+          proposed_by: string
+          scheduled_at: string
+          status: string
+          title: string | null
+          updated_at: string
+          vendor_id: string
+        }
+        Insert: {
+          created_at?: string
+          duration_minutes?: number
+          host_id: string
+          id?: string
+          inquiry_id?: string | null
+          kind?: string
+          location?: string | null
+          notes?: string | null
+          proposed_by: string
+          scheduled_at: string
+          status?: string
+          title?: string | null
+          updated_at?: string
+          vendor_id: string
+        }
+        Update: {
+          created_at?: string
+          duration_minutes?: number
+          host_id?: string
+          id?: string
+          inquiry_id?: string | null
+          kind?: string
+          location?: string | null
+          notes?: string | null
+          proposed_by?: string
+          scheduled_at?: string
+          status?: string
+          title?: string | null
+          updated_at?: string
+          vendor_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "appointments_inquiry_id_fkey"
+            columns: ["inquiry_id"]
+            isOneToOne: false
+            referencedRelation: "inquiries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "appointments_vendor_id_fkey"
+            columns: ["vendor_id"]
+            isOneToOne: false
+            referencedRelation: "vendor_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       budget_items: {
         Row: {
           amount_cents: number
@@ -190,6 +256,8 @@ export type Database = {
           rsvp_plus_one: boolean | null
           rsvp_responded_at: string | null
           rsvp_status: string | null
+          seat_index: number | null
+          table_id: string | null
           updated_at: string
         }
         Insert: {
@@ -207,6 +275,8 @@ export type Database = {
           rsvp_plus_one?: boolean | null
           rsvp_responded_at?: string | null
           rsvp_status?: string | null
+          seat_index?: number | null
+          table_id?: string | null
           updated_at?: string
         }
         Update: {
@@ -224,11 +294,64 @@ export type Database = {
           rsvp_plus_one?: boolean | null
           rsvp_responded_at?: string | null
           rsvp_status?: string | null
+          seat_index?: number | null
+          table_id?: string | null
           updated_at?: string
         }
         Relationships: [
           {
             foreignKeyName: "event_guests_host_id_fkey"
+            columns: ["host_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_guests_table_id_fkey"
+            columns: ["table_id"]
+            isOneToOne: false
+            referencedRelation: "event_tables"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      event_tables: {
+        Row: {
+          capacity: number
+          created_at: string
+          display_order: number
+          host_id: string
+          id: string
+          name: string
+          notes: string | null
+          shape: string
+          updated_at: string
+        }
+        Insert: {
+          capacity?: number
+          created_at?: string
+          display_order?: number
+          host_id: string
+          id?: string
+          name: string
+          notes?: string | null
+          shape?: string
+          updated_at?: string
+        }
+        Update: {
+          capacity?: number
+          created_at?: string
+          display_order?: number
+          host_id?: string
+          id?: string
+          name?: string
+          notes?: string | null
+          shape?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_tables_host_id_fkey"
             columns: ["host_id"]
             isOneToOne: false
             referencedRelation: "profiles"
@@ -279,6 +402,76 @@ export type Database = {
             columns: ["host_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      event_timeline_items: {
+        Row: {
+          created_at: string
+          display_order: number
+          duration_minutes: number | null
+          event_id: string | null
+          host_id: string
+          id: string
+          location: string | null
+          notes: string | null
+          owner_label: string | null
+          start_time: string
+          title: string
+          updated_at: string
+          vendor_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          display_order?: number
+          duration_minutes?: number | null
+          event_id?: string | null
+          host_id: string
+          id?: string
+          location?: string | null
+          notes?: string | null
+          owner_label?: string | null
+          start_time: string
+          title: string
+          updated_at?: string
+          vendor_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          display_order?: number
+          duration_minutes?: number | null
+          event_id?: string | null
+          host_id?: string
+          id?: string
+          location?: string | null
+          notes?: string | null
+          owner_label?: string | null
+          start_time?: string
+          title?: string
+          updated_at?: string
+          vendor_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_timeline_items_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "host_events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_timeline_items_host_id_fkey"
+            columns: ["host_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_timeline_items_vendor_id_fkey"
+            columns: ["vendor_id"]
+            isOneToOne: false
+            referencedRelation: "vendor_profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -407,6 +600,7 @@ export type Database = {
           location: string | null
           quality_score: number | null
           recommended_verification: string | null
+          review_prompt_sent_at: string | null
           special_requests: string | null
           status: string
           updated_at: string
@@ -425,6 +619,7 @@ export type Database = {
           location?: string | null
           quality_score?: number | null
           recommended_verification?: string | null
+          review_prompt_sent_at?: string | null
           special_requests?: string | null
           status?: string
           updated_at?: string
@@ -443,6 +638,7 @@ export type Database = {
           location?: string | null
           quality_score?: number | null
           recommended_verification?: string | null
+          review_prompt_sent_at?: string | null
           special_requests?: string | null
           status?: string
           updated_at?: string
@@ -594,6 +790,7 @@ export type Database = {
         Row: {
           body: string | null
           created_at: string
+          digested_at: string | null
           id: string
           link: string | null
           read_at: string | null
@@ -604,6 +801,7 @@ export type Database = {
         Insert: {
           body?: string | null
           created_at?: string
+          digested_at?: string | null
           id?: string
           link?: string | null
           read_at?: string | null
@@ -614,6 +812,7 @@ export type Database = {
         Update: {
           body?: string | null
           created_at?: string
+          digested_at?: string | null
           id?: string
           link?: string | null
           read_at?: string | null
@@ -631,6 +830,66 @@ export type Database = {
           },
         ]
       }
+      planning_collaborators: {
+        Row: {
+          created_at: string
+          host_id: string
+          id: string
+          role: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          host_id: string
+          id?: string
+          role?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          host_id?: string
+          id?: string
+          role?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      planning_invites: {
+        Row: {
+          accepted_at: string | null
+          created_at: string
+          email: string
+          expires_at: string
+          host_id: string
+          id: string
+          invited_by: string
+          role: string
+          token: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          created_at?: string
+          email: string
+          expires_at?: string
+          host_id: string
+          id?: string
+          invited_by: string
+          role?: string
+          token?: string
+        }
+        Update: {
+          accepted_at?: string | null
+          created_at?: string
+          email?: string
+          expires_at?: string
+          host_id?: string
+          id?: string
+          invited_by?: string
+          role?: string
+          token?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           active_event_id: string | null
@@ -638,6 +897,7 @@ export type Database = {
           budget_max_cents: number | null
           budget_min_cents: number | null
           created_at: string
+          daily_digest_enabled: boolean
           display_name: string | null
           event_date: string | null
           event_location: string | null
@@ -657,6 +917,7 @@ export type Database = {
           budget_max_cents?: number | null
           budget_min_cents?: number | null
           created_at?: string
+          daily_digest_enabled?: boolean
           display_name?: string | null
           event_date?: string | null
           event_location?: string | null
@@ -676,6 +937,7 @@ export type Database = {
           budget_max_cents?: number | null
           budget_min_cents?: number | null
           created_at?: string
+          daily_digest_enabled?: boolean
           display_name?: string | null
           event_date?: string | null
           event_location?: string | null
@@ -872,6 +1134,39 @@ export type Database = {
           },
         ]
       }
+      saved_searches: {
+        Row: {
+          created_at: string
+          filters: Json
+          host_id: string
+          id: string
+          last_notified_at: string
+          name: string
+          notify_new_matches: boolean
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          filters?: Json
+          host_id: string
+          id?: string
+          last_notified_at?: string
+          name: string
+          notify_new_matches?: boolean
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          filters?: Json
+          host_id?: string
+          id?: string
+          last_notified_at?: string
+          name?: string
+          notify_new_matches?: boolean
+          updated_at?: string
+        }
+        Relationships: []
+      }
       saved_vendors: {
         Row: {
           created_at: string
@@ -933,6 +1228,53 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "vendor_message_templates_vendor_id_fkey"
+            columns: ["vendor_id"]
+            isOneToOne: false
+            referencedRelation: "vendor_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vendor_packages: {
+        Row: {
+          created_at: string
+          description: string | null
+          display_order: number
+          id: string
+          includes: Json
+          is_active: boolean
+          name: string
+          price_cents: number
+          updated_at: string
+          vendor_id: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          id?: string
+          includes?: Json
+          is_active?: boolean
+          name: string
+          price_cents: number
+          updated_at?: string
+          vendor_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          id?: string
+          includes?: Json
+          is_active?: boolean
+          name?: string
+          price_cents?: number
+          updated_at?: string
+          vendor_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vendor_packages_vendor_id_fkey"
             columns: ["vendor_id"]
             isOneToOne: false
             referencedRelation: "vendor_profiles"
@@ -1021,6 +1363,7 @@ export type Database = {
           id: string
           location: string | null
           portfolio_summary: string | null
+          responder_tier: string | null
           service_radius_miles: number | null
           updated_at: string
           user_id: string
@@ -1035,6 +1378,7 @@ export type Database = {
           id?: string
           location?: string | null
           portfolio_summary?: string | null
+          responder_tier?: string | null
           service_radius_miles?: number | null
           updated_at?: string
           user_id: string
@@ -1049,6 +1393,7 @@ export type Database = {
           id?: string
           location?: string | null
           portfolio_summary?: string | null
+          responder_tier?: string | null
           service_radius_miles?: number | null
           updated_at?: string
           user_id?: string
@@ -1174,6 +1519,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      accept_planning_invite: { Args: { p_token: string }; Returns: Json }
       accept_team_invite: { Args: { p_token: string }; Returns: Json }
       can_access_inquiry: { Args: { _inquiry_id: string }; Returns: boolean }
       get_guest_by_token: {
@@ -1193,8 +1539,11 @@ export type Database = {
         }[]
       }
       get_mood_board_by_token: { Args: { p_token: string }; Returns: Json }
+      get_planning_invite_by_token: { Args: { p_token: string }; Returns: Json }
       get_team_invite_by_token: { Args: { p_token: string }; Returns: Json }
       is_admin: { Args: never; Returns: boolean }
+      is_planning_collaborator: { Args: { _host_id: string }; Returns: boolean }
+      is_planning_editor: { Args: { _host_id: string }; Returns: boolean }
       is_vendor_member: { Args: { _vendor_id: string }; Returns: boolean }
       is_vendor_owner: { Args: { _vendor_id: string }; Returns: boolean }
       is_vendor_team_admin: { Args: { _vendor_id: string }; Returns: boolean }
