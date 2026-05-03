@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
-import { MapPin, ArrowRight, Star } from "lucide-react";
+import { Link, useSearchParams } from "react-router-dom";
+import { MapPin, ArrowRight, Star, X } from "lucide-react";
 import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
@@ -63,6 +63,15 @@ function FitBoundsToVendors({ vendors }: { vendors: MapVendor[] }) {
 
 export default function VendorMapPage() {
   const [vendors, setVendors] = useState<MapVendor[]>([]);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const categoryParam = searchParams.get("category") ?? "";
+  const locationParam = searchParams.get("location") ?? "";
+  const activeCategories = new Set(
+    categoryParam
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean),
+  );
   const [loading, setLoading] = useState(true);
 
   useDocumentMeta({
@@ -90,14 +99,40 @@ export default function VendorMapPage() {
     };
   }, []);
 
+  const filteredVendors = useMemo(() => {
+    const loc = locationParam.trim().toLowerCase();
+    return vendors.filter((v) => {
+      if (activeCategories.size > 0 && !activeCategories.has(v.category)) {
+        return false;
+      }
+      if (loc && !(v.location ?? "").toLowerCase().includes(loc)) {
+        return false;
+      }
+      return true;
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [vendors, categoryParam, locationParam]);
+
   const pinned = useMemo(
-    () => vendors.filter((v) => v.latitude != null && v.longitude != null),
-    [vendors],
+    () =>
+      filteredVendors.filter(
+        (v) => v.latitude != null && v.longitude != null,
+      ),
+    [filteredVendors],
   );
   const unpinned = useMemo(
-    () => vendors.filter((v) => v.latitude == null || v.longitude == null),
-    [vendors],
+    () =>
+      filteredVendors.filter(
+        (v) => v.latitude == null || v.longitude == null,
+      ),
+    [filteredVendors],
   );
+
+  function clearFilter(key: "category" | "location") {
+    const next = new URLSearchParams(searchParams);
+    next.delete(key);
+    setSearchParams(next, { replace: true });
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -117,6 +152,49 @@ export default function VendorMapPage() {
             {unpinned.length} {unpinned.length === 1 ? "vendor still" : "vendors still"}{" "}
             being geocoded.
           </p>
+
+          {(activeCategories.size > 0 || locationParam) && (
+            <div className="flex flex-wrap items-center gap-2 mt-4">
+              <span className="text-xs text-muted-foreground">Filters:</span>
+              {Array.from(activeCategories).map((c) => (
+                <span
+                  key={c}
+                  className="inline-flex items-center gap-1.5 px-3 h-7 rounded-full bg-foreground text-background text-xs font-medium"
+                >
+                  {c}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const next = new URLSearchParams(searchParams);
+                      const remaining = Array.from(activeCategories).filter(
+                        (x) => x !== c,
+                      );
+                      if (remaining.length === 0) next.delete("category");
+                      else next.set("category", remaining.join(","));
+                      setSearchParams(next, { replace: true });
+                    }}
+                    aria-label={`Clear ${c} filter`}
+                    className="hover:opacity-70"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </span>
+              ))}
+              {locationParam && (
+                <span className="inline-flex items-center gap-1.5 px-3 h-7 rounded-full bg-foreground text-background text-xs font-medium">
+                  {locationParam}
+                  <button
+                    type="button"
+                    onClick={() => clearFilter("location")}
+                    aria-label="Clear location filter"
+                    className="hover:opacity-70"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </span>
+              )}
+            </div>
+          )}
         </div>
       </section>
 

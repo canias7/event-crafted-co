@@ -173,7 +173,7 @@ export default function InquiryDetailPage() {
     const { data: props } = await (supabase as any)
       .from("proposals")
       .select(
-        "id, title, line_items, subtotal_cents, deposit_cents, terms, status, sent_at",
+        "id, title, line_items, subtotal_cents, deposit_cents, terms, contract_body, status, sent_at",
       )
       .eq("inquiry_id", inquiryId)
       .order("created_at", { ascending: false });

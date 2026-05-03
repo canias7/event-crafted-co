@@ -46,6 +46,7 @@ interface VendorProfile {
   service_radius_miles: number | null;
   portfolio_summary: string | null;
   verified_at: string | null;
+  intro_video_url: string | null;
 }
 
 export default function VendorProfilePage() {
@@ -65,6 +66,7 @@ export default function VendorProfilePage() {
   const [location, setLocation] = useState("");
   const [serviceRadius, setServiceRadius] = useState("");
   const [portfolioSummary, setPortfolioSummary] = useState("");
+  const [introVideoUrl, setIntroVideoUrl] = useState("");
 
   function applyToForm(p: VendorProfile | null) {
     setBusinessName(p?.business_name ?? "");
@@ -78,6 +80,7 @@ export default function VendorProfilePage() {
       p?.service_radius_miles != null ? p.service_radius_miles.toString() : "",
     );
     setPortfolioSummary(p?.portfolio_summary ?? "");
+    setIntroVideoUrl(p?.intro_video_url ?? "");
   }
 
   useEffect(() => {
@@ -92,14 +95,14 @@ export default function VendorProfilePage() {
       ? supabase
           .from("vendor_profiles")
           .select(
-            "id, business_name, category, bio, base_price_cents, location, service_radius_miles, portfolio_summary, verified_at",
+            "id, business_name, category, bio, base_price_cents, location, service_radius_miles, portfolio_summary, verified_at, intro_video_url",
           )
           .eq("id", membership.vendor_id)
           .maybeSingle()
       : supabase
           .from("vendor_profiles")
           .select(
-            "id, business_name, category, bio, base_price_cents, location, service_radius_miles, portfolio_summary, verified_at",
+            "id, business_name, category, bio, base_price_cents, location, service_radius_miles, portfolio_summary, verified_at, intro_video_url",
           )
           .eq("user_id", user.id)
           .maybeSingle();
@@ -138,6 +141,7 @@ export default function VendorProfilePage() {
         ? Number.parseInt(serviceRadius, 10)
         : null,
       portfolio_summary: portfolioSummary.trim() || null,
+      intro_video_url: introVideoUrl.trim() || null,
     };
 
     if (profile) {
@@ -166,7 +170,7 @@ export default function VendorProfilePage() {
         .from("vendor_profiles")
         .insert({ user_id: user.id, ...payload })
         .select(
-          "id, business_name, category, bio, base_price_cents, location, service_radius_miles, portfolio_summary, verified_at",
+          "id, business_name, category, bio, base_price_cents, location, service_radius_miles, portfolio_summary, verified_at, intro_video_url",
         )
         .single();
       setCreating(false);
@@ -327,6 +331,22 @@ export default function VendorProfilePage() {
                   <Sparkles className="w-3 h-3 text-accent" />
                   Used by the AI to draft replies in your voice — fuller is
                   better.
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="intro-video">Intro video URL (optional)</Label>
+                <Input
+                  id="intro-video"
+                  type="url"
+                  value={introVideoUrl}
+                  onChange={(e) => setIntroVideoUrl(e.target.value)}
+                  placeholder="https://youtube.com/watch?v=… or https://vimeo.com/…"
+                  className="h-11"
+                />
+                <p className="text-xs text-muted-foreground pt-1">
+                  YouTube, Vimeo, or a direct .mp4 link. Embeds at the top
+                  of your public profile.
                 </p>
               </div>
 

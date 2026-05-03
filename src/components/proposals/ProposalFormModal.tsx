@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Plus, Trash2, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -52,6 +52,55 @@ export function ProposalFormModal({
     "50% deposit due on signing. Balance due 14 days before event. Cancellations within 60 days forfeit deposit.",
   );
   const [submitting, setSubmitting] = useState(false);
+  const [contractTemplateId, setContractTemplateId] = useState<string | null>(
+    null,
+  );
+  const [contractBody, setContractBody] = useState<string | null>(null);
+  const [contractName, setContractName] = useState<string | null>(null);
+  const [templates, setTemplates] = useState<
+    Array<{ id: string; name: string; body: string; is_default: boolean }>
+  >([]);
+
+  // Pull this vendor's contract templates so we can attach the default
+  // automatically and let the vendor swap in another via a select.
+  useEffect(() => {
+    if (!open || !vendorId) return;
+    let cancelled = false;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (supabase as any)
+      .from("vendor_contract_templates")
+      .select("id, name, body, is_default")
+      .eq("vendor_id", vendorId)
+      .order("is_default", { ascending: false })
+      .order("name", { ascending: true })
+      .then(
+        ({
+          data,
+        }: {
+          data:
+            | Array<{
+                id: string;
+                name: string;
+                body: string;
+                is_default: boolean;
+              }>
+            | null;
+        }) => {
+          if (cancelled) return;
+          const list = data ?? [];
+          setTemplates(list);
+          const def = list.find((t) => t.is_default);
+          if (def) {
+            setContractTemplateId(def.id);
+            setContractBody(def.body);
+            setContractName(def.name);
+          }
+        },
+      );
+    return () => {
+      cancelled = true;
+    };
+  }, [open, vendorId]);
 
   function updateItem(index: number, patch: Partial<LineItem>) {
     setItems((prev) => prev.map((it, i) => (i === index ? { ...it, ...patch } : it)));
@@ -107,6 +156,8 @@ export function ProposalFormModal({
         ? Math.round(Number.parseFloat(deposit) * 100)
         : null,
       terms: terms.trim() || null,
+      contract_template_id: contractTemplateId,
+      contract_body: contractBody,
     });
 
     if (!error) {
@@ -264,6 +315,43 @@ export function ProposalFormModal({
               placeholder="Deposit timing, cancellation policy, anything legal."
             />
           </div>
+
+          {templates.length > 0 && (
+            <div className="space-y-2">
+              <Label htmlFor="prop-contract">Attach contract (optional)</Label>
+              <select
+                id="prop-contract"
+                value={contractTemplateId ?? ""}
+                onChange={(e) => {
+                  const id = e.target.value || null;
+                  setContractTemplateId(id);
+                  if (!id) {
+                    setContractBody(null);
+                    setContractName(null);
+                  } else {
+                    const t = templates.find((x) => x.id === id);
+                    setContractBody(t?.body ?? null);
+                    setContractName(t?.name ?? null);
+                  }
+                }}
+                className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm"
+              >
+                <option value="">— No contract attached —</option>
+                {templates.map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {t.name}
+                    {t.is_default ? " (default)" : ""}
+                  </option>
+                ))}
+              </select>
+              {contractName && (
+                <p className="text-xs text-muted-foreground">
+                  The host will see "{contractName}" alongside this proposal.
+                  Edits to the template later won't change what's already sent.
+                </p>
+              )}
+            </div>
+          )}
 
           <DialogFooter className="pt-2 gap-2 sm:gap-0">
             <Button

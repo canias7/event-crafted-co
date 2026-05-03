@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Search, ShieldCheck, Loader2, ExternalLink } from "lucide-react";
+import { Search, ShieldCheck, Loader2, ExternalLink, MapPin } from "lucide-react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -18,6 +18,8 @@ interface VendorRow {
   location: string | null;
   verified_at: string | null;
   created_at: string;
+  latitude: number | null;
+  longitude: number | null;
 }
 
 export default function AdminVendorsPage() {
@@ -28,9 +30,12 @@ export default function AdminVendorsPage() {
 
   async function load() {
     setLoading(true);
-    const { data } = await supabase
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data } = await (supabase as any)
       .from("vendor_profiles")
-      .select("id, business_name, category, location, verified_at, created_at")
+      .select(
+        "id, business_name, category, location, verified_at, created_at, latitude, longitude",
+      )
       .order("created_at", { ascending: false });
     setRows((data as VendorRow[]) ?? []);
     setLoading(false);
@@ -58,6 +63,60 @@ export default function AdminVendorsPage() {
     toast.success(next ? "Vendor verified" : "Verification removed");
   }
 
+  const [geocoding, setGeocoding] = useState(false);
+  const [geocodeProgress, setGeocodeProgress] = useState<{
+    done: number;
+    total: number;
+    skipped: number;
+    failed: number;
+  } | null>(null);
+
+  const ungeocodedCount = rows.filter(
+    (r) => r.location && (r.latitude == null || r.longitude == null),
+  ).length;
+
+  async function backfillGeocode() {
+    const targets = rows.filter(
+      (r) => r.location && (r.latitude == null || r.longitude == null),
+    );
+    if (targets.length === 0) {
+      toast.success("Every vendor with a location is already on the map");
+      return;
+    }
+    setGeocoding(true);
+    setGeocodeProgress({ done: 0, total: targets.length, skipped: 0, failed: 0 });
+    let failed = 0;
+    let skipped = 0;
+    for (let i = 0; i < targets.length; i++) {
+      const t = targets[i];
+      const result = await supabase.functions.invoke("geocode-vendor", {
+        body: { vendorId: t.id },
+      });
+      const err = result.error;
+      const data = result.data as { ok?: boolean; cached?: boolean } | null;
+      if (err || !data?.ok) {
+        failed++;
+      } else if (data.cached) {
+        skipped++;
+      }
+      setGeocodeProgress({
+        done: i + 1,
+        total: targets.length,
+        skipped,
+        failed,
+      });
+      // Nominatim asks for ~1 req/sec — pace the loop.
+      if (i < targets.length - 1) {
+        await new Promise((r) => setTimeout(r, 1100));
+      }
+    }
+    setGeocoding(false);
+    toast.success(
+      `Backfill done · ${targets.length - failed}/${targets.length} pinned${failed ? ` · ${failed} failed` : ""}`,
+    );
+    load();
+  }
+
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     if (!q) return rows;
@@ -82,14 +141,36 @@ export default function AdminVendorsPage() {
         </div>
 
         <div className="p-4 md:p-8 space-y-4">
-          <div className="relative max-w-md">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <Input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search by name, category, or location"
-              className="h-11 pl-10 rounded-full bg-secondary/80 border-none"
-            />
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <div className="relative max-w-md flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search by name, category, or location"
+                className="h-11 pl-10 rounded-full bg-secondary/80 border-none"
+              />
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={backfillGeocode}
+              disabled={geocoding || ungeocodedCount === 0}
+              className="rounded-full"
+              title="Calls geocode-vendor for every vendor with a location text but no lat/lng"
+            >
+              {geocoding ? (
+                <>
+                  <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
+                  Geocoding {geocodeProgress?.done}/{geocodeProgress?.total}…
+                </>
+              ) : (
+                <>
+                  <MapPin className="w-3.5 h-3.5 mr-1.5" />
+                  Backfill {ungeocodedCount > 0 ? `(${ungeocodedCount})` : ""}
+                </>
+              )}
+            </Button>
           </div>
 
           <div className="bg-card border border-border rounded-sm overflow-hidden">

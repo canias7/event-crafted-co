@@ -16,6 +16,8 @@ export interface Vendor {
   location?: string;
   /** Computed daily by scan-responder-tiers; null = no signal yet. */
   responderTier?: "fast" | "standard" | null;
+  /** Optional vendor intro video — YouTube, Vimeo, or direct file URL. */
+  introVideoUrl?: string | null;
   /** True when this vendor came from the live DB; false for sampleData fallback. */
   isReal: boolean;
 }
@@ -44,6 +46,7 @@ interface VendorProfileRow {
   portfolio_summary: string | null;
   verified_at: string | null;
   responder_tier: "fast" | "standard" | null;
+  intro_video_url: string | null;
 }
 
 function normalizeDb(row: VendorProfileRow): Vendor {
@@ -65,6 +68,7 @@ function normalizeDb(row: VendorProfileRow): Vendor {
     image: categoryImageFallback[row.category] ?? "vendor-venue",
     location: row.location ?? undefined,
     responderTier: row.responder_tier ?? null,
+    introVideoUrl: row.intro_video_url ?? null,
     isReal: true,
   };
 }
@@ -92,7 +96,7 @@ async function fetchVendors(): Promise<Vendor[]> {
       const { data, error } = await (supabase as any)
         .from("vendor_profiles")
         .select(
-          "id, business_name, category, bio, base_price_cents, location, service_radius_miles, portfolio_summary, verified_at, responder_tier",
+          "id, business_name, category, bio, base_price_cents, location, service_radius_miles, portfolio_summary, verified_at, responder_tier, intro_video_url",
         )
         .order("verified_at", { ascending: false, nullsFirst: false });
       if (!error && data && data.length > 0) {

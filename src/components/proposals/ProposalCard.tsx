@@ -16,6 +16,7 @@ export interface Proposal {
   subtotal_cents: number;
   deposit_cents: number | null;
   terms: string | null;
+  contract_body: string | null;
   status: "pending" | "accepted" | "rejected" | "withdrawn";
   sent_at: string | null;
 }
@@ -115,6 +116,20 @@ export function ProposalCard({
             {proposal.terms}
           </p>
         </div>
+      )}
+
+      {proposal.contract_body && (
+        <details className="mt-5 pt-5 border-t border-border group">
+          <summary className="font-label text-muted-foreground cursor-pointer hover:text-foreground select-none flex items-center gap-2">
+            <span>Contract</span>
+            <span className="text-xs opacity-60 group-open:hidden">
+              · click to view
+            </span>
+          </summary>
+          <div className="text-sm leading-relaxed text-foreground/85 whitespace-pre-wrap mt-3 max-h-72 overflow-y-auto pr-2">
+            {proposal.contract_body}
+          </div>
+        </details>
       )}
 
       {canRespond && proposal.status === "pending" && (

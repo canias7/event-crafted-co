@@ -105,6 +105,7 @@ const VENDOR_NAV: NavTarget[] = [
   { label: "Team", path: "/vendor/team", icon: Users },
   { label: "Appointments", path: "/vendor/appointments", icon: CalendarDays },
   { label: "Availability", path: "/vendor/availability", icon: CalendarDays },
+  { label: "Contracts", path: "/vendor/contracts", icon: FileText },
 ];
 
 const ADMIN_NAV: NavTarget[] = [

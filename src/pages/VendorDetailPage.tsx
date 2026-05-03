@@ -30,6 +30,7 @@ import { PublicNav } from "@/components/public/PublicNav";
 import { Footer } from "@/components/public/Footer";
 import { VendorCard } from "@/components/shared/VendorCard";
 import { Lightbox } from "@/components/shared/Lightbox";
+import { VideoEmbed } from "@/components/vendor/VideoEmbed";
 import { useDocumentMeta } from "@/hooks/useDocumentMeta";
 import { InquiryFormModal } from "@/components/inquiries/InquiryFormModal";
 import { useAuth } from "@/hooks/useAuth";
@@ -628,6 +629,20 @@ export default function VendorDetailPage() {
                   </div>
                 )}
               </div>
+
+              {/* Intro video — optional, only when vendor sets one */}
+              {vendor.introVideoUrl && (
+                <div>
+                  <p className="font-label text-accent mb-4">Meet the team</p>
+                  <h2 className="font-display text-3xl mb-8">In their own words</h2>
+                  <div className="aspect-video w-full overflow-hidden rounded-sm bg-muted">
+                    <VideoEmbed
+                      url={vendor.introVideoUrl}
+                      title={`${vendor.name} intro`}
+                    />
+                  </div>
+                </div>
+              )}
 
               {/* Portfolio */}
               <div>

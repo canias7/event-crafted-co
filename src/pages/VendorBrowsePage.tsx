@@ -38,15 +38,67 @@ export default function VendorBrowsePage() {
   const { profile, activeEvent } = useAuth();
   const [searchParams] = useSearchParams();
   const [search, setSearch] = useState(searchParams.get("q") ?? "");
-  const [category, setCategory] = useState(
-    searchParams.get("category") ?? "All",
-  );
+
+  // Multi-category filter. URL ?category=A,B,C parses into a Set.
+  // Empty Set === "All". Hydrates from sessionStorage if the quiz set
+  // categories there and the URL didn't carry them.
+  const initialCategories = (() => {
+    const fromUrl = searchParams.get("category");
+    if (fromUrl) {
+      return new Set(
+        fromUrl
+          .split(",")
+          .map((s) => s.trim())
+          .filter(Boolean),
+      );
+    }
+    if (typeof sessionStorage !== "undefined") {
+      try {
+        const raw = sessionStorage.getItem("vendora-quiz-answers");
+        if (raw) {
+          const ans = JSON.parse(raw) as { categories?: string[] };
+          if (Array.isArray(ans.categories) && ans.categories.length > 0) {
+            return new Set(ans.categories);
+          }
+        }
+      } catch {
+        /* ignore */
+      }
+    }
+    return new Set<string>();
+  })();
+  const [activeCategories, setActiveCategories] =
+    useState<Set<string>>(initialCategories);
+  // Single-category state kept for the dropdown's controlled value;
+  // mirrors the first active category, "All" when none.
+  const category = activeCategories.size === 1
+    ? Array.from(activeCategories)[0]
+    : "All";
+
   const [locationFilter, setLocationFilter] = useState<string>(
     searchParams.get("location") ?? "",
   );
   const [sort, setSort] = useState<keyof typeof sortOptions>("popular");
   const [dateFilter, setDateFilter] = useState<string>("");
   const [unavailableIds, setUnavailableIds] = useState<Set<string>>(new Set());
+
+  function toggleCategory(cat: string) {
+    if (cat === "All") {
+      setActiveCategories(new Set());
+      return;
+    }
+    setActiveCategories((prev) => {
+      const next = new Set(prev);
+      if (next.has(cat)) next.delete(cat);
+      else next.add(cat);
+      return next;
+    });
+  }
+
+  function setCategory(cat: string) {
+    if (cat === "All") setActiveCategories(new Set());
+    else setActiveCategories(new Set([cat]));
+  }
 
   // Pre-fill the date filter from the host's onboarding event_date once.
   const [datePrefilled, setDatePrefilled] = useState(false);
@@ -83,7 +135,9 @@ export default function VendorBrowsePage() {
     const term = search.trim().toLowerCase();
     const loc = locationFilter.trim().toLowerCase();
     return vendors
-      .filter((v) => category === "All" || v.category === category)
+      .filter(
+        (v) => activeCategories.size === 0 || activeCategories.has(v.category),
+      )
       .filter(
         (v) =>
           loc === "" ||
@@ -98,7 +152,7 @@ export default function VendorBrowsePage() {
       )
       .filter((v) => !unavailableIds.has(v.id))
       .sort(sortOptions[sort]);
-  }, [vendors, search, category, sort, unavailableIds, locationFilter]);
+  }, [vendors, search, activeCategories, sort, unavailableIds, locationFilter]);
 
   const hiddenByDate =
     dateFilter && unavailableIds.size > 0
@@ -238,21 +292,27 @@ export default function VendorBrowsePage() {
           )}
 
           <div className="flex items-center gap-2 mt-4 overflow-x-auto pb-1 -mx-2 px-2 scrollbar-hide">
-            {categories.map((cat) => (
-              <Button
-                key={cat}
-                variant="ghost"
-                size="sm"
-                onClick={() => setCategory(cat)}
-                className={`rounded-full whitespace-nowrap h-8 text-xs tracking-wide transition-all ${
-                  category === cat
-                    ? "bg-foreground text-background hover:bg-foreground/90"
-                    : "bg-transparent text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                {cat}
-              </Button>
-            ))}
+            {categories.map((cat) => {
+              const active =
+                cat === "All"
+                  ? activeCategories.size === 0
+                  : activeCategories.has(cat);
+              return (
+                <Button
+                  key={cat}
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => toggleCategory(cat)}
+                  className={`rounded-full whitespace-nowrap h-8 text-xs tracking-wide transition-all ${
+                    active
+                      ? "bg-foreground text-background hover:bg-foreground/90"
+                      : "bg-transparent text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {cat}
+                </Button>
+              );
+            })}
             <span className="ml-auto shrink-0 flex items-center gap-2">
               <Link to="/vendors/quiz">
                 <Button

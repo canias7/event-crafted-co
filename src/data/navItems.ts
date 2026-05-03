@@ -57,7 +57,7 @@ export const vendorNavItems: NavItem[] = [
   { label: "Appointments", path: "/vendor/appointments", icon: CalendarDays },
   { label: "Availability", path: "/vendor/availability", icon: Clock },
   { label: "Payments", path: "/vendor/payments", icon: CreditCard },
-  { label: "Contract", path: "/vendor/contract", icon: FileText },
+  { label: "Contracts", path: "/vendor/contracts", icon: FileText },
   { label: "Settings", path: "/settings", icon: Settings },
 ];
 
