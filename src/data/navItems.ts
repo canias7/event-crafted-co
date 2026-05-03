@@ -33,6 +33,7 @@ export const customerNavItems: NavItem[] = [
   { label: "Seating", path: "/customer/seating", icon: Users },
   { label: "Appointments", path: "/customer/appointments", icon: CalendarDays },
   { label: "Event Details", path: "/customer/event", icon: FileText },
+  { label: "Day-of Timeline", path: "/customer/timeline", icon: Clock },
   { label: "Invitations", path: "/customer/invitations", icon: Mail },
   { label: "Checklist", path: "/customer/checklist", icon: CheckSquare },
   { label: "Tasks", path: "/customer/tasks", icon: ListTodo },
