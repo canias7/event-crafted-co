@@ -16,11 +16,18 @@ import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import { ProposalFormModal } from "@/components/proposals/ProposalFormModal";
+import {
+  ProposalCard,
+  type Proposal,
+} from "@/components/proposals/ProposalCard";
+import { FileText } from "lucide-react";
 import { toast } from "sonner";
 
 interface Inquiry {
   id: string;
   host_id: string;
+  vendor_id: string;
   event_type: string;
   event_date: string | null;
   guest_count: number | null;
@@ -91,6 +98,8 @@ export default function InquiryDetailPage() {
   const [responseDraft, setResponseDraft] = useState("");
   const [responseEditing, setResponseEditing] = useState(false);
   const [savingResponse, setSavingResponse] = useState(false);
+  const [proposals, setProposals] = useState<Proposal[]>([]);
+  const [proposalModalOpen, setProposalModalOpen] = useState(false);
 
   async function load() {
     if (!inquiryId) return;
@@ -144,6 +153,17 @@ export default function InquiryDetailPage() {
       setReview(null);
       setResponseDraft("");
     }
+
+    // Proposals on this inquiry
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: props } = await (supabase as any)
+      .from("proposals")
+      .select(
+        "id, title, line_items, subtotal_cents, deposit_cents, terms, status, sent_at",
+      )
+      .eq("inquiry_id", inquiryId)
+      .order("created_at", { ascending: false });
+    setProposals((props as Proposal[]) ?? []);
 
     setLoading(false);
   }
@@ -394,6 +414,14 @@ export default function InquiryDetailPage() {
               <>
                 <Button
                   size="sm"
+                  onClick={() => setProposalModalOpen(true)}
+                  className="rounded-full bg-foreground text-background hover:bg-foreground/90"
+                >
+                  <FileText className="w-3.5 h-3.5 mr-1.5" />
+                  Send proposal
+                </Button>
+                <Button
+                  size="sm"
                   variant="outline"
                   disabled={statusUpdating}
                   onClick={() => setStatus("won")}
@@ -427,6 +455,15 @@ export default function InquiryDetailPage() {
             )}
           </div>
         </div>
+
+        {/* Proposals */}
+        {proposals.length > 0 && (
+          <div className="space-y-4">
+            {proposals.map((p) => (
+              <ProposalCard key={p.id} proposal={p} />
+            ))}
+          </div>
+        )}
 
         {/* Review (only when host has posted one) */}
         {review && (
@@ -640,6 +677,18 @@ export default function InquiryDetailPage() {
           </div>
         </div>
       </div>
+
+      {inquiry && (
+        <ProposalFormModal
+          open={proposalModalOpen}
+          onOpenChange={setProposalModalOpen}
+          inquiryId={inquiry.id}
+          vendorId={inquiry.vendor_id}
+          hostId={inquiry.host_id}
+          defaultTitle={`${inquiry.event_type.replace("_", " ")} proposal`}
+          onSuccess={load}
+        />
+      )}
     </div>
   );
 }

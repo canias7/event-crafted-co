@@ -11,6 +11,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ReviewFormModal } from "@/components/reviews/ReviewFormModal";
+import {
+  ProposalCard,
+  type Proposal,
+} from "@/components/proposals/ProposalCard";
 import { customerNavItems as navItems } from "@/data/navItems";
 
 interface Inquiry {
@@ -80,6 +84,8 @@ export default function HostInquiryDetailPage() {
   const [notFound, setNotFound] = useState(false);
   const [review, setReview] = useState<ExistingReview | null>(null);
   const [reviewModalOpen, setReviewModalOpen] = useState(false);
+  const [proposals, setProposals] = useState<Proposal[]>([]);
+  const [acting, setActing] = useState<"accept" | "reject" | null>(null);
 
   async function load() {
     if (!inquiryId || !user) return;
@@ -120,7 +126,35 @@ export default function HostInquiryDetailPage() {
       .maybeSingle();
     setReview((r as ExistingReview | null) ?? null);
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: props } = await (supabase as any)
+      .from("proposals")
+      .select(
+        "id, title, line_items, subtotal_cents, deposit_cents, terms, status, sent_at",
+      )
+      .eq("inquiry_id", inquiryId)
+      .order("created_at", { ascending: false });
+    setProposals((props as Proposal[]) ?? []);
+
     setLoading(false);
+  }
+
+  async function respondProposal(p: Proposal, action: "accepted" | "rejected") {
+    setActing(action === "accepted" ? "accept" : "reject");
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error } = await (supabase as any)
+      .from("proposals")
+      .update({ status: action, responded_at: new Date().toISOString() })
+      .eq("id", p.id);
+    setActing(null);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    toast.success(
+      action === "accepted" ? "Proposal accepted — you're booked." : "Proposal declined",
+    );
+    load();
   }
 
   useEffect(() => {
@@ -358,6 +392,22 @@ export default function HostInquiryDetailPage() {
                         {review ? "Edit review" : "Leave a review"}
                       </Button>
                     </div>
+                  </div>
+                )}
+
+                {/* Proposals */}
+                {proposals.length > 0 && (
+                  <div className="space-y-4">
+                    {proposals.map((p) => (
+                      <ProposalCard
+                        key={p.id}
+                        proposal={p}
+                        canRespond={p.status === "pending"}
+                        acting={acting}
+                        onAccept={() => respondProposal(p, "accepted")}
+                        onReject={() => respondProposal(p, "rejected")}
+                      />
+                    ))}
                   </div>
                 )}
 
