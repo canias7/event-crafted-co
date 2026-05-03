@@ -5,10 +5,10 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 
 const navItems = [
-  { label: "Home", path: "/" },
-  { label: "How It Works", path: "/how-it-works" },
-  { label: "Browse Vendors", path: "/vendors" },
+  { label: "FAQ", path: "/how-it-works" },
+  { label: "Vendors", path: "/vendors" },
   { label: "Vendor Apply", path: "/vendor-apply" },
+  { label: "Customer Dashboard", path: "/customer/dashboard" },
 ];
 
 export function PublicNav() {
@@ -40,11 +40,6 @@ export function PublicNav() {
         </div>
 
         <div className="hidden md:flex items-center gap-3">
-          <Link to="/login">
-            <Button variant="ghost" size="sm" className="h-9">
-              Log in
-            </Button>
-          </Link>
           <Link to="/customer/dashboard">
             <Button size="sm" className="h-9">
               Start Planning
@@ -79,9 +74,6 @@ export function PublicNav() {
             </Link>
           ))}
           <div className="flex gap-3 pt-3">
-            <Link to="/login" className="flex-1">
-              <Button variant="outline" className="w-full" size="sm">Log in</Button>
-            </Link>
             <Link to="/customer/dashboard" className="flex-1">
               <Button className="w-full" size="sm">Start Planning</Button>
             </Link>
