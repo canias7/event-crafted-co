@@ -28,7 +28,7 @@ export interface NavItem {
 
 export const customerNavItems: NavItem[] = [
   { label: "Dashboard", path: "/customer/dashboard", icon: LayoutDashboard },
-  { label: "Vendors", path: "/vendors", icon: Store },
+  { label: "Vendors", path: "/customer/vendors", icon: Store },
   { label: "Inquiries", path: "/customer/inquiries", icon: MessageSquare },
   { label: "Messages", path: "/customer/messages", icon: MessageSquare },
   { label: "Guests", path: "/customer/guests", icon: User },
