@@ -53,6 +53,7 @@ export default function InquiriesPage() {
   const { user } = useAuth();
   const [params, setParams] = useSearchParams();
   const [rows, setRows] = useState<InquiryRow[]>([]);
+  const [statusFilter, setStatusFilter] = useState("all");
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(params.get("new") === "1");
 
@@ -113,12 +114,36 @@ export default function InquiriesPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const counts = {
-    total: rows.length,
-    awaiting: rows.filter((r) => r.status === "new" || r.status === "drafted").length,
-    replied: rows.filter((r) => r.status === "replied").length,
-    booked: rows.filter((r) => r.status === "won").length,
-  };
+  const filterOptions = [
+    { value: "all", label: "All", matches: () => true },
+    {
+      value: "awaiting",
+      label: "Awaiting",
+      matches: (s: string) => s === "new" || s === "drafted",
+    },
+    {
+      value: "replied",
+      label: "Replied",
+      matches: (s: string) => s === "replied",
+    },
+    {
+      value: "booked",
+      label: "Booked",
+      matches: (s: string) => s === "won",
+    },
+    {
+      value: "closed",
+      label: "Closed",
+      matches: (s: string) => s === "lost" || s === "expired",
+    },
+  ];
+
+  const filteredRows =
+    statusFilter === "all"
+      ? rows
+      : rows.filter((r) =>
+          filterOptions.find((o) => o.value === statusFilter)?.matches(r.status),
+        );
 
   return (
     <div className="flex min-h-screen bg-background">
@@ -141,23 +166,31 @@ export default function InquiriesPage() {
           </Button>
         </div>
 
-        <div className="p-4 md:p-8 space-y-8">
-          {/* Counts */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            {[
-              { label: "Total", value: counts.total },
-              { label: "Awaiting", value: counts.awaiting },
-              { label: "Replied", value: counts.replied },
-              { label: "Booked", value: counts.booked },
-            ].map((s) => (
-              <div
-                key={s.label}
-                className="bg-card border border-border rounded-sm px-5 py-4"
-              >
-                <p className="font-label text-muted-foreground">{s.label}</p>
-                <p className="font-display text-2xl tnum mt-1">{s.value}</p>
-              </div>
-            ))}
+        <div className="p-4 md:p-8 space-y-6">
+          {/* Status filter chips */}
+          <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-hide">
+            {filterOptions.map((opt) => {
+              const count =
+                opt.value === "all"
+                  ? rows.length
+                  : rows.filter((r) => opt.matches(r.status)).length;
+              return (
+                <Button
+                  key={opt.value}
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => setStatusFilter(opt.value)}
+                  className={`rounded-full whitespace-nowrap h-9 text-xs ${
+                    statusFilter === opt.value
+                      ? "bg-foreground text-background hover:bg-foreground/90"
+                      : "bg-secondary/60 text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {opt.label}
+                  <span className="ml-2 tnum opacity-70">{count}</span>
+                </Button>
+              );
+            })}
           </div>
 
           {/* List */}
@@ -168,32 +201,50 @@ export default function InquiriesPage() {
                   <Skeleton key={i} className="h-20 w-full" />
                 ))}
               </div>
-            ) : rows.length === 0 ? (
+            ) : filteredRows.length === 0 ? (
               <div className="text-center py-20 px-6">
                 <Inbox className="w-10 h-10 mx-auto text-muted-foreground/40 mb-4" />
-                <h3 className="font-display text-xl mb-2">No inquiries yet</h3>
+                <h3 className="font-display text-xl mb-2">
+                  {rows.length === 0
+                    ? "No inquiries yet"
+                    : "Nothing matches that filter"}
+                </h3>
                 <p className="text-sm text-muted-foreground max-w-sm mx-auto mb-6 leading-relaxed">
-                  Browse the directory and send your first inquiry — vendors
-                  reply with AI-assisted drafts, usually within a few hours.
+                  {rows.length === 0
+                    ? "Browse the directory and send your first inquiry — vendors reply with AI-assisted drafts, usually within a few hours."
+                    : "Try a different status filter above."}
                 </p>
                 <div className="flex gap-2 justify-center">
-                  <Link to="/vendors">
-                    <Button variant="outline" className="rounded-full">
-                      Browse vendors
+                  {rows.length === 0 && (
+                    <>
+                      <Link to="/vendors">
+                        <Button variant="outline" className="rounded-full">
+                          Browse vendors
+                        </Button>
+                      </Link>
+                      <Button
+                        onClick={() => setModalOpen(true)}
+                        className="rounded-full bg-foreground text-background hover:bg-foreground/90"
+                      >
+                        <Plus className="w-4 h-4 mr-2" />
+                        New inquiry
+                      </Button>
+                    </>
+                  )}
+                  {rows.length > 0 && (
+                    <Button
+                      variant="outline"
+                      className="rounded-full"
+                      onClick={() => setStatusFilter("all")}
+                    >
+                      Clear filter
                     </Button>
-                  </Link>
-                  <Button
-                    onClick={() => setModalOpen(true)}
-                    className="rounded-full bg-foreground text-background hover:bg-foreground/90"
-                  >
-                    <Plus className="w-4 h-4 mr-2" />
-                    New inquiry
-                  </Button>
+                  )}
                 </div>
               </div>
             ) : (
               <div className="divide-y divide-border">
-                {rows.map((r) => (
+                {filteredRows.map((r) => (
                   <Link
                     key={r.id}
                     to={`/customer/inquiries/${r.id}`}

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { Inbox } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -6,6 +6,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { DashboardSidebar } from "@/components/shared/DashboardSidebar";
 import { MobileNav } from "@/components/shared/MobileNav";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { vendorNavItems as navItems } from "@/data/navItems";
 
 interface InquiryRow {
@@ -34,11 +35,20 @@ const statusVariant: Record<string, string> = {
   expired: "bg-muted text-muted-foreground",
 };
 
+const filterOptions: Array<{ value: string; label: string; matches: (status: string) => boolean }> = [
+  { value: "all", label: "All", matches: () => true },
+  { value: "new", label: "New", matches: (s) => s === "new" || s === "drafted" },
+  { value: "replied", label: "Replied", matches: (s) => s === "replied" },
+  { value: "won", label: "Booked", matches: (s) => s === "won" },
+  { value: "lost", label: "Closed", matches: (s) => s === "lost" || s === "expired" },
+];
+
 export default function VendorInboxPage() {
   const { user } = useAuth();
   const [rows, setRows] = useState<InquiryRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [vendorId, setVendorId] = useState<string | null>(null);
+  const [filter, setFilter] = useState<string>("all");
 
   async function load(forVendorId?: string | null) {
     const vid = forVendorId ?? vendorId;
@@ -77,6 +87,12 @@ export default function VendorInboxPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
+  const filteredRows = useMemo(() => {
+    if (filter === "all") return rows;
+    const matcher = filterOptions.find((o) => o.value === filter)?.matches;
+    return matcher ? rows.filter((r) => matcher(r.status)) : rows;
+  }, [rows, filter]);
+
   // Realtime: refetch when any inquiry for this vendor changes.
   useEffect(() => {
     if (!vendorId) return;
@@ -109,14 +125,47 @@ export default function VendorInboxPage() {
         </div>
 
         <div className="p-4 md:p-8">
+          <div className="flex gap-2 mb-4 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-hide">
+            {filterOptions.map((opt) => {
+              const count =
+                opt.value === "all"
+                  ? rows.length
+                  : rows.filter((r) => opt.matches(r.status)).length;
+              return (
+                <Button
+                  key={opt.value}
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => setFilter(opt.value)}
+                  className={`rounded-full whitespace-nowrap h-8 text-xs ${
+                    filter === opt.value
+                      ? "bg-foreground text-background hover:bg-foreground/90"
+                      : "bg-secondary/60 text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {opt.label}
+                  <span className="ml-2 tnum opacity-70">{count}</span>
+                </Button>
+              );
+            })}
+          </div>
+
           <div className="bg-card rounded-2xl card-shadow overflow-hidden">
             {loading ? (
               <div className="p-12 text-center text-muted-foreground">Loading inquiries…</div>
-            ) : rows.length === 0 ? (
+            ) : filteredRows.length === 0 ? (
               <div className="p-16 text-center">
                 <Inbox className="w-10 h-10 mx-auto text-muted-foreground mb-3" />
-                <p className="font-display text-xl mb-1">No inquiries yet</p>
-                <p className="text-sm text-muted-foreground">When hosts reach out, you'll see them here.</p>
+                <p className="font-display text-xl mb-1">
+                  {rows.length === 0
+                    ? "No inquiries yet"
+                    : "Nothing matches that filter"}
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  {rows.length === 0
+                    ? "When hosts reach out, you'll see them here."
+                    : "Try a different status filter above."}
+                </p>
               </div>
             ) : (
               <div className="overflow-x-auto">
@@ -133,7 +182,7 @@ export default function VendorInboxPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {rows.map((r) => (
+                    {filteredRows.map((r) => (
                       <tr key={r.id} className="border-b border-border/50 hover:bg-secondary/40 cursor-pointer">
                         <td className="p-4">
                           <Link to={`/vendor/inbox/${r.id}`} className="font-medium block">

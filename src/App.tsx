@@ -1,3 +1,4 @@
+import { lazy, Suspense } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -5,32 +6,47 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
 import LandingPage from "./pages/LandingPage";
-import HowItWorksPage from "./pages/HowItWorksPage";
-import VendorBrowsePage from "./pages/VendorBrowsePage";
-import VendorDetailPage from "./pages/VendorDetailPage";
-import VendorApplyPage from "./pages/VendorApplyPage";
-import CustomerDashboard from "./pages/customer/CustomerDashboard";
-import OnboardingPage from "./pages/customer/OnboardingPage";
-import InquiriesPage from "./pages/customer/InquiriesPage";
-import HostInquiryDetailPage from "./pages/customer/HostInquiryDetailPage";
-import FavoritesPage from "./pages/customer/FavoritesPage";
-import ChecklistPage from "./pages/customer/ChecklistPage";
-import TasksPage from "./pages/customer/TasksPage";
-import PaymentsPage from "./pages/customer/PaymentsPage";
-import InvitationBuilder from "./pages/customer/InvitationBuilder";
-import VendorDashboard from "./pages/vendor/VendorDashboard";
-import VendorProfilePage from "./pages/vendor/VendorProfilePage";
-import ComingSoonPage from "./pages/ComingSoonPage";
-import AdminDashboard from "./pages/admin/AdminDashboard";
-import NotFound from "./pages/NotFound";
 import LoginPage from "./pages/auth/LoginPage";
 import SignupPage from "./pages/auth/SignupPage";
-import VendorInboxPage from "./pages/vendor/VendorInboxPage";
-import InquiryDetailPage from "./pages/vendor/InquiryDetailPage";
 import { AuthProvider } from "./hooks/useAuth";
 import { RequireRole } from "./components/auth/RequireRole";
 
+// Lazy-load everything else so the initial bundle ships only the landing,
+// nav, and auth surfaces. Portal routes (customer / vendor / admin) split
+// out into separate chunks loaded on demand behind RequireRole.
+const HowItWorksPage = lazy(() => import("./pages/HowItWorksPage"));
+const VendorBrowsePage = lazy(() => import("./pages/VendorBrowsePage"));
+const VendorDetailPage = lazy(() => import("./pages/VendorDetailPage"));
+const VendorApplyPage = lazy(() => import("./pages/VendorApplyPage"));
+const NotFound = lazy(() => import("./pages/NotFound"));
+const ComingSoonPage = lazy(() => import("./pages/ComingSoonPage"));
+
+const CustomerDashboard = lazy(() => import("./pages/customer/CustomerDashboard"));
+const OnboardingPage = lazy(() => import("./pages/customer/OnboardingPage"));
+const InquiriesPage = lazy(() => import("./pages/customer/InquiriesPage"));
+const HostInquiryDetailPage = lazy(() => import("./pages/customer/HostInquiryDetailPage"));
+const FavoritesPage = lazy(() => import("./pages/customer/FavoritesPage"));
+const ChecklistPage = lazy(() => import("./pages/customer/ChecklistPage"));
+const TasksPage = lazy(() => import("./pages/customer/TasksPage"));
+const PaymentsPage = lazy(() => import("./pages/customer/PaymentsPage"));
+const InvitationBuilder = lazy(() => import("./pages/customer/InvitationBuilder"));
+
+const VendorDashboard = lazy(() => import("./pages/vendor/VendorDashboard"));
+const VendorProfilePage = lazy(() => import("./pages/vendor/VendorProfilePage"));
+const VendorInboxPage = lazy(() => import("./pages/vendor/VendorInboxPage"));
+const InquiryDetailPage = lazy(() => import("./pages/vendor/InquiryDetailPage"));
+
+const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard"));
+
 const queryClient = new QueryClient();
+
+function RouteFallback() {
+  return (
+    <div className="min-h-screen flex items-center justify-center">
+      <div className="font-label text-muted-foreground">Loading…</div>
+    </div>
+  );
+}
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -39,44 +55,46 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <AuthProvider>
-        <Routes>
-          {/* Public */}
-          <Route path="/" element={<LandingPage />} />
-          <Route path="/how-it-works" element={<HowItWorksPage />} />
-          <Route path="/vendors" element={<VendorBrowsePage />} />
-          <Route path="/vendors/:id" element={<VendorDetailPage />} />
-          <Route path="/vendor-apply" element={<VendorApplyPage />} />
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/signup" element={<SignupPage />} />
+          <Suspense fallback={<RouteFallback />}>
+            <Routes>
+              {/* Public */}
+              <Route path="/" element={<LandingPage />} />
+              <Route path="/how-it-works" element={<HowItWorksPage />} />
+              <Route path="/vendors" element={<VendorBrowsePage />} />
+              <Route path="/vendors/:id" element={<VendorDetailPage />} />
+              <Route path="/vendor-apply" element={<VendorApplyPage />} />
+              <Route path="/login" element={<LoginPage />} />
+              <Route path="/signup" element={<SignupPage />} />
 
-          {/* Customer */}
-          <Route path="/customer/dashboard" element={<RequireRole role="host"><CustomerDashboard /></RequireRole>} />
-          <Route path="/customer/onboarding" element={<RequireRole role="host"><OnboardingPage /></RequireRole>} />
-          <Route path="/customer/inquiries" element={<RequireRole role="host"><InquiriesPage /></RequireRole>} />
-          <Route path="/customer/inquiries/:inquiryId" element={<RequireRole role="host"><HostInquiryDetailPage /></RequireRole>} />
-          <Route path="/customer/event" element={<RequireRole role="host"><ComingSoonPage side="customer" description="An overview of your event details, vendor lineup, and timeline. We're building this on top of your onboarding answers." /></RequireRole>} />
-          <Route path="/customer/appointments" element={<RequireRole role="host"><ComingSoonPage side="customer" description="Schedule and manage vendor consultations, tastings, and walkthroughs in one place." /></RequireRole>} />
-          <Route path="/customer/favorites" element={<RequireRole role="host"><FavoritesPage /></RequireRole>} />
-          <Route path="/customer/checklist" element={<RequireRole role="host"><ChecklistPage /></RequireRole>} />
-          <Route path="/customer/tasks" element={<RequireRole role="host"><TasksPage /></RequireRole>} />
-          <Route path="/customer/payments" element={<RequireRole role="host"><PaymentsPage /></RequireRole>} />
-          <Route path="/customer/invitations" element={<RequireRole role="host"><InvitationBuilder /></RequireRole>} />
+              {/* Customer */}
+              <Route path="/customer/dashboard" element={<RequireRole role="host"><CustomerDashboard /></RequireRole>} />
+              <Route path="/customer/onboarding" element={<RequireRole role="host"><OnboardingPage /></RequireRole>} />
+              <Route path="/customer/inquiries" element={<RequireRole role="host"><InquiriesPage /></RequireRole>} />
+              <Route path="/customer/inquiries/:inquiryId" element={<RequireRole role="host"><HostInquiryDetailPage /></RequireRole>} />
+              <Route path="/customer/event" element={<RequireRole role="host"><ComingSoonPage side="customer" description="An overview of your event details, vendor lineup, and timeline. We're building this on top of your onboarding answers." /></RequireRole>} />
+              <Route path="/customer/appointments" element={<RequireRole role="host"><ComingSoonPage side="customer" description="Schedule and manage vendor consultations, tastings, and walkthroughs in one place." /></RequireRole>} />
+              <Route path="/customer/favorites" element={<RequireRole role="host"><FavoritesPage /></RequireRole>} />
+              <Route path="/customer/checklist" element={<RequireRole role="host"><ChecklistPage /></RequireRole>} />
+              <Route path="/customer/tasks" element={<RequireRole role="host"><TasksPage /></RequireRole>} />
+              <Route path="/customer/payments" element={<RequireRole role="host"><PaymentsPage /></RequireRole>} />
+              <Route path="/customer/invitations" element={<RequireRole role="host"><InvitationBuilder /></RequireRole>} />
 
-          {/* Vendor */}
-          <Route path="/vendor/dashboard" element={<RequireRole role="vendor"><VendorDashboard /></RequireRole>} />
-          <Route path="/vendor/profile" element={<RequireRole role="vendor"><VendorProfilePage /></RequireRole>} />
-          <Route path="/vendor/inbox" element={<RequireRole role="vendor"><VendorInboxPage /></RequireRole>} />
-          <Route path="/vendor/appointments" element={<RequireRole role="vendor"><ComingSoonPage side="vendor" description="Calendar bookings, tasting / walkthrough requests, and confirmed event dates in one place." /></RequireRole>} />
-          <Route path="/vendor/availability" element={<RequireRole role="vendor"><ComingSoonPage side="vendor" description="Block off dates and define booking lead times so the AI knows when you're free to take new events." /></RequireRole>} />
-          <Route path="/vendor/payments" element={<RequireRole role="vendor"><ComingSoonPage side="vendor" description="Connect a Stripe account, see payouts, and track the 3% commission on confirmed bookings." /></RequireRole>} />
-          <Route path="/vendor/contract" element={<RequireRole role="vendor"><ComingSoonPage side="vendor" description="Month-to-month vendor agreement, no minimum terms. We'll surface it here when ready to sign." /></RequireRole>} />
-          <Route path="/vendor/inbox/:inquiryId" element={<RequireRole role="vendor"><InquiryDetailPage /></RequireRole>} />
+              {/* Vendor */}
+              <Route path="/vendor/dashboard" element={<RequireRole role="vendor"><VendorDashboard /></RequireRole>} />
+              <Route path="/vendor/profile" element={<RequireRole role="vendor"><VendorProfilePage /></RequireRole>} />
+              <Route path="/vendor/inbox" element={<RequireRole role="vendor"><VendorInboxPage /></RequireRole>} />
+              <Route path="/vendor/appointments" element={<RequireRole role="vendor"><ComingSoonPage side="vendor" description="Calendar bookings, tasting / walkthrough requests, and confirmed event dates in one place." /></RequireRole>} />
+              <Route path="/vendor/availability" element={<RequireRole role="vendor"><ComingSoonPage side="vendor" description="Block off dates and define booking lead times so the AI knows when you're free to take new events." /></RequireRole>} />
+              <Route path="/vendor/payments" element={<RequireRole role="vendor"><ComingSoonPage side="vendor" description="Connect a Stripe account, see payouts, and track the 3% commission on confirmed bookings." /></RequireRole>} />
+              <Route path="/vendor/contract" element={<RequireRole role="vendor"><ComingSoonPage side="vendor" description="Month-to-month vendor agreement, no minimum terms. We'll surface it here when ready to sign." /></RequireRole>} />
+              <Route path="/vendor/inbox/:inquiryId" element={<RequireRole role="vendor"><InquiryDetailPage /></RequireRole>} />
 
-          {/* Admin */}
-          <Route path="/admin/dashboard" element={<RequireRole role="admin"><AdminDashboard /></RequireRole>} />
+              {/* Admin */}
+              <Route path="/admin/dashboard" element={<RequireRole role="admin"><AdminDashboard /></RequireRole>} />
 
-          <Route path="*" element={<NotFound />} />
-        </Routes>
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </Suspense>
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>

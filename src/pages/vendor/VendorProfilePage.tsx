@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { Loader2, ShieldCheck, Sparkles } from "lucide-react";
+import { Link } from "react-router-dom";
+import { Loader2, ShieldCheck, Sparkles, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -168,14 +169,24 @@ export default function VendorProfilePage() {
                 Edit how hosts see you on Vendora
               </p>
             </div>
-            {profile?.verified_at ? (
-              <Badge className="bg-accent/15 text-accent border border-accent/30">
-                <ShieldCheck className="w-3.5 h-3.5 mr-1.5" />
-                Verified
-              </Badge>
-            ) : (
-              <Badge variant="outline">Pending review</Badge>
-            )}
+            <div className="flex items-center gap-2">
+              {profile?.verified_at ? (
+                <Badge className="bg-accent/15 text-accent border border-accent/30">
+                  <ShieldCheck className="w-3.5 h-3.5 mr-1.5" />
+                  Verified
+                </Badge>
+              ) : profile ? (
+                <Badge variant="outline">Pending review</Badge>
+              ) : null}
+              {profile && (
+                <Link to={`/vendors/${profile.id}`} target="_blank">
+                  <Button variant="outline" size="sm" className="rounded-full h-8">
+                    <ExternalLink className="w-3.5 h-3.5 mr-1.5" />
+                    Preview
+                  </Button>
+                </Link>
+              )}
+            </div>
           </div>
         </div>
 

@@ -157,27 +157,6 @@ export const vendors = [
   },
 ];
 
-export const testimonials = [
-  {
-    name: "Sarah & James Mitchell",
-    event: "Wedding, June 2025",
-    text: "The platform made planning our wedding feel effortless. We found our photographer and florist in one afternoon, and the checklist kept us on track for months.",
-    rating: 5,
-  },
-  {
-    name: "Elena Vasquez",
-    event: "Corporate Gala, March 2025",
-    text: "As an event coordinator, I've used many platforms. This one stands apart — the vendor quality, the booking flow, and the invitation builder are exceptional.",
-    rating: 5,
-  },
-  {
-    name: "Michael Chen",
-    event: "Birthday Celebration, February 2025",
-    text: "Booked a venue, DJ, and caterer in under an hour. The payment system gave me confidence, and the event checklist was a lifesaver.",
-    rating: 5,
-  },
-];
-
 export const customerTasks = [
   { id: "1", title: "Book venue", dueDate: "Jun 12", priority: "high", status: "completed", category: "Venue" },
   { id: "2", title: "Finalize guest list", dueDate: "Jun 18", priority: "high", status: "in-progress", category: "Guest Management" },
