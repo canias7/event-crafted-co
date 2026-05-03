@@ -31,6 +31,7 @@ import { Footer } from "@/components/public/Footer";
 import { VendorCard } from "@/components/shared/VendorCard";
 import { Lightbox } from "@/components/shared/Lightbox";
 import { VideoEmbed } from "@/components/vendor/VideoEmbed";
+import { ShowcaseStrip } from "@/components/vendor/ShowcaseStrip";
 import { useDocumentMeta } from "@/hooks/useDocumentMeta";
 import { InquiryFormModal } from "@/components/inquiries/InquiryFormModal";
 import { useAuth } from "@/hooks/useAuth";
@@ -784,6 +785,9 @@ export default function VendorDetailPage() {
                   })}
                 </div>
               </div>
+
+              {/* Showcase reels — vertical clips, autoplay-on-view */}
+              {vendor.isReal && <ShowcaseStrip vendorId={vendor.id} />}
 
               {/* Reviews */}
               <div>

@@ -12,6 +12,7 @@ import { VendorRecommendationManager } from "@/components/vendor/VendorRecommend
 import { IntakeFormEditor } from "@/components/vendor/IntakeFormEditor";
 import { ReferralManager } from "@/components/vendor/ReferralManager";
 import { ImportedReviewsManager } from "@/components/vendor/ImportedReviewsManager";
+import { ShowcaseClipsManager } from "@/components/vendor/ShowcaseClipsManager";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -487,6 +488,12 @@ export default function VendorProfilePage() {
               </div>
               <div className="mt-12 pt-10 border-t border-border">
                 <ImportedReviewsManager
+                  vendorId={profile.id}
+                  canEdit={canEdit}
+                />
+              </div>
+              <div className="mt-12 pt-10 border-t border-border">
+                <ShowcaseClipsManager
                   vendorId={profile.id}
                   canEdit={canEdit}
                 />
