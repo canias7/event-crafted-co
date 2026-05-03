@@ -7,6 +7,7 @@ import {
   Edit2,
   X,
   Download,
+  Printer,
   AlertCircle,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -204,9 +205,19 @@ export default function SeatingChartPage() {
               <Button
                 variant="outline"
                 size="sm"
+                onClick={() => window.print()}
+                disabled={tables.length === 0}
+                className="rounded-full print-hide"
+              >
+                <Printer className="w-3.5 h-3.5 mr-1.5" />
+                Print
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
                 onClick={exportCsv}
                 disabled={tables.length === 0 && guests.length === 0}
-                className="rounded-full"
+                className="rounded-full print-hide"
               >
                 <Download className="w-3.5 h-3.5 mr-1.5" />
                 Export CSV

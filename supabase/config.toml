@@ -47,3 +47,13 @@ verify_jwt = false
 # after their grace period. Cron-only; runs daily.
 [functions.scan-vendor-onboarding-nudges]
 verify_jwt = false
+
+# Vendor weekly digest: opt-in summary of past 7 days. Schedule once
+# weekly (Monday morning). Cron-only.
+[functions.scan-vendor-weekly-digests]
+verify_jwt = false
+
+# Personal calendar feed (.ics). Auth via per-user calendar_feed_token
+# query string. Public so calendar clients can subscribe via webcal://.
+[functions.calendar-feed]
+verify_jwt = false

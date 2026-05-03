@@ -48,6 +48,7 @@ interface VendorProfile {
   portfolio_summary: string | null;
   verified_at: string | null;
   intro_video_url: string | null;
+  weekly_digest_enabled: boolean | null;
 }
 
 export default function VendorProfilePage() {
@@ -96,14 +97,14 @@ export default function VendorProfilePage() {
       ? supabase
           .from("vendor_profiles")
           .select(
-            "id, business_name, category, bio, base_price_cents, location, service_radius_miles, portfolio_summary, verified_at, intro_video_url",
+            "id, business_name, category, bio, base_price_cents, location, service_radius_miles, portfolio_summary, verified_at, intro_video_url, weekly_digest_enabled",
           )
           .eq("id", membership.vendor_id)
           .maybeSingle()
       : supabase
           .from("vendor_profiles")
           .select(
-            "id, business_name, category, bio, base_price_cents, location, service_radius_miles, portfolio_summary, verified_at, intro_video_url",
+            "id, business_name, category, bio, base_price_cents, location, service_radius_miles, portfolio_summary, verified_at, intro_video_url, weekly_digest_enabled",
           )
           .eq("user_id", user.id)
           .maybeSingle();
@@ -171,7 +172,7 @@ export default function VendorProfilePage() {
         .from("vendor_profiles")
         .insert({ user_id: user.id, ...payload })
         .select(
-          "id, business_name, category, bio, base_price_cents, location, service_radius_miles, portfolio_summary, verified_at, intro_video_url",
+          "id, business_name, category, bio, base_price_cents, location, service_radius_miles, portfolio_summary, verified_at, intro_video_url, weekly_digest_enabled",
         )
         .single();
       setCreating(false);
@@ -350,6 +351,49 @@ export default function VendorProfilePage() {
                   of your public profile.
                 </p>
               </div>
+
+              {profile && canEdit && (
+                <div className="flex items-center justify-between gap-4 pt-4 border-t border-border">
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium mb-0.5">
+                      Weekly recap email
+                    </p>
+                    <p className="text-xs text-muted-foreground leading-relaxed">
+                      One Monday-morning email with last week's inquiries,
+                      bookings, reviews, and response time.
+                    </p>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={profile.weekly_digest_enabled !== false}
+                    onChange={async (e) => {
+                      const next = e.target.checked;
+                      const prev = profile.weekly_digest_enabled;
+                      setProfile({
+                        ...profile,
+                        weekly_digest_enabled: next,
+                      });
+                      const { error } = await supabase
+                        .from("vendor_profiles")
+                        .update({ weekly_digest_enabled: next })
+                        .eq("id", profile.id);
+                      if (error) {
+                        setProfile({
+                          ...profile,
+                          weekly_digest_enabled: prev,
+                        });
+                        toast.error(error.message);
+                        return;
+                      }
+                      toast.success(
+                        next ? "Weekly recap on" : "Weekly recap off",
+                      );
+                    }}
+                    className="w-10 h-5 rounded-full appearance-none bg-secondary checked:bg-foreground transition-colors relative cursor-pointer before:content-[''] before:absolute before:left-0.5 before:top-0.5 before:w-4 before:h-4 before:rounded-full before:bg-background before:transition-transform checked:before:translate-x-5"
+                    aria-label="Weekly recap email"
+                  />
+                </div>
+              )}
 
               <div className="flex items-center justify-end gap-3 pt-2">
                 {!canEdit && profile && (

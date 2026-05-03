@@ -8,6 +8,7 @@ import {
   Check,
   Search,
   Upload,
+  Printer,
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -169,16 +170,25 @@ export default function GuestsPage() {
           </div>
           <div className="flex items-center gap-2">
             <Button
+              onClick={() => window.print()}
+              variant="outline"
+              className="rounded-full print-hide"
+              disabled={guests.length === 0}
+            >
+              <Printer className="w-4 h-4 mr-2" />
+              Print
+            </Button>
+            <Button
               onClick={() => setImportOpen(true)}
               variant="outline"
-              className="rounded-full"
+              className="rounded-full print-hide"
             >
               <Upload className="w-4 h-4 mr-2" />
               Import CSV
             </Button>
             <Button
               onClick={() => setAddOpen(true)}
-              className="rounded-full bg-foreground text-background hover:bg-foreground/90"
+              className="rounded-full bg-foreground text-background hover:bg-foreground/90 print-hide"
             >
               <Plus className="w-4 h-4 mr-2" />
               Add guest

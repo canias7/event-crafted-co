@@ -36,6 +36,97 @@ import { customerNavItems as navItems } from "@/data/navItems";
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const tasksTable = () => (supabase as any).from("event_tasks");
 
+// Per-event-type task starter packs. Mirrors the per-category checklist
+// templates already shipped on /customer/checklist. Each task has a
+// rough due-date offset (in days before the event) that we apply when
+// the host has an event_date set; otherwise the date is left null and
+// they pick later.
+interface TaskTemplate {
+  title: string;
+  category: string;
+  priority: "low" | "medium" | "high";
+  daysBeforeEvent: number;
+}
+
+const taskTemplates: Record<string, TaskTemplate[]> = {
+  wedding: [
+    { title: "Book ceremony venue", category: "Venue", priority: "high", daysBeforeEvent: 365 },
+    { title: "Hire photographer", category: "Photography", priority: "high", daysBeforeEvent: 300 },
+    { title: "Send save-the-dates", category: "Invitations", priority: "high", daysBeforeEvent: 240 },
+    { title: "Book catering", category: "Catering", priority: "high", daysBeforeEvent: 180 },
+    { title: "Book florist", category: "Florals", priority: "medium", daysBeforeEvent: 150 },
+    { title: "Order wedding attire", category: "Attire", priority: "high", daysBeforeEvent: 150 },
+    { title: "Send formal invitations", category: "Invitations", priority: "high", daysBeforeEvent: 90 },
+    { title: "Confirm vendor timelines", category: "Coordination", priority: "high", daysBeforeEvent: 30 },
+    { title: "Final dress / suit fitting", category: "Attire", priority: "high", daysBeforeEvent: 14 },
+    { title: "Confirm final headcount with caterer", category: "Catering", priority: "high", daysBeforeEvent: 7 },
+  ],
+  birthday: [
+    { title: "Pick a date and venue", category: "Venue", priority: "high", daysBeforeEvent: 60 },
+    { title: "Send invitations", category: "Invitations", priority: "high", daysBeforeEvent: 30 },
+    { title: "Order cake", category: "Food", priority: "high", daysBeforeEvent: 21 },
+    { title: "Confirm catering / menu", category: "Catering", priority: "high", daysBeforeEvent: 14 },
+    { title: "Book entertainment / DJ", category: "Entertainment", priority: "medium", daysBeforeEvent: 30 },
+    { title: "Buy decorations", category: "Decor", priority: "low", daysBeforeEvent: 14 },
+    { title: "Final RSVP follow-ups", category: "Coordination", priority: "medium", daysBeforeEvent: 5 },
+  ],
+  holiday_dinner: [
+    { title: "Plan the menu", category: "Menu", priority: "high", daysBeforeEvent: 21 },
+    { title: "Order ingredients / catering", category: "Catering", priority: "high", daysBeforeEvent: 14 },
+    { title: "Send invitations", category: "Invitations", priority: "medium", daysBeforeEvent: 21 },
+    { title: "Order florals / centerpieces", category: "Florals", priority: "low", daysBeforeEvent: 7 },
+    { title: "Set the table / linens", category: "Decor", priority: "low", daysBeforeEvent: 1 },
+    { title: "Music / playlist", category: "Atmosphere", priority: "low", daysBeforeEvent: 3 },
+  ],
+  baby_shower: [
+    { title: "Pick venue / host", category: "Venue", priority: "high", daysBeforeEvent: 60 },
+    { title: "Send invitations", category: "Invitations", priority: "high", daysBeforeEvent: 30 },
+    { title: "Plan menu / catering", category: "Catering", priority: "high", daysBeforeEvent: 21 },
+    { title: "Order cake / desserts", category: "Food", priority: "medium", daysBeforeEvent: 14 },
+    { title: "Plan games / activities", category: "Activities", priority: "low", daysBeforeEvent: 14 },
+    { title: "Order decorations", category: "Decor", priority: "low", daysBeforeEvent: 7 },
+    { title: "Finalize favors", category: "Favors", priority: "low", daysBeforeEvent: 7 },
+  ],
+  engagement: [
+    { title: "Pick venue + date", category: "Venue", priority: "high", daysBeforeEvent: 45 },
+    { title: "Hire photographer", category: "Photography", priority: "high", daysBeforeEvent: 30 },
+    { title: "Send invitations", category: "Invitations", priority: "high", daysBeforeEvent: 21 },
+    { title: "Order catering", category: "Catering", priority: "high", daysBeforeEvent: 14 },
+    { title: "Florals + decor", category: "Decor", priority: "medium", daysBeforeEvent: 14 },
+  ],
+  anniversary: [
+    { title: "Reserve restaurant / venue", category: "Venue", priority: "high", daysBeforeEvent: 30 },
+    { title: "Order florals", category: "Florals", priority: "medium", daysBeforeEvent: 7 },
+    { title: "Order cake", category: "Food", priority: "medium", daysBeforeEvent: 5 },
+    { title: "Plan music", category: "Atmosphere", priority: "low", daysBeforeEvent: 7 },
+  ],
+  graduation: [
+    { title: "Pick venue", category: "Venue", priority: "high", daysBeforeEvent: 45 },
+    { title: "Send invitations", category: "Invitations", priority: "high", daysBeforeEvent: 30 },
+    { title: "Plan catering", category: "Catering", priority: "high", daysBeforeEvent: 21 },
+    { title: "Order cake + decor", category: "Decor", priority: "low", daysBeforeEvent: 10 },
+  ],
+  corporate: [
+    { title: "Reserve venue + AV", category: "Venue", priority: "high", daysBeforeEvent: 60 },
+    { title: "Send agenda + invitations", category: "Comms", priority: "high", daysBeforeEvent: 30 },
+    { title: "Lock catering", category: "Catering", priority: "high", daysBeforeEvent: 21 },
+    { title: "Print name tags / materials", category: "Logistics", priority: "medium", daysBeforeEvent: 7 },
+    { title: "Confirm speakers / programming", category: "Programming", priority: "high", daysBeforeEvent: 14 },
+    { title: "Photographer", category: "Coverage", priority: "low", daysBeforeEvent: 30 },
+  ],
+};
+
+const taskTemplateLabel: Record<string, string> = {
+  wedding: "Wedding",
+  birthday: "Birthday",
+  holiday_dinner: "Holiday dinner",
+  baby_shower: "Baby shower",
+  engagement: "Engagement",
+  anniversary: "Anniversary",
+  graduation: "Graduation",
+  corporate: "Corporate",
+};
+
 interface TaskRow {
   id: string;
   title: string;
@@ -71,11 +162,47 @@ function statusFromRow(t: TaskRow): TaskRow["status"] {
 }
 
 export default function TasksPage() {
-  const { user } = useAuth();
+  const { user, activeEvent, profile } = useAuth();
   const [tasks, setTasks] = useState<TaskRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("all");
   const [addOpen, setAddOpen] = useState(false);
+  const [seeding, setSeeding] = useState<string | null>(null);
+
+  const eventType =
+    activeEvent?.event_type ?? profile?.event_type ?? null;
+  const eventDateStr =
+    activeEvent?.event_date ?? profile?.event_date ?? null;
+
+  async function applyTemplate(key: string) {
+    if (!user) return;
+    const template = taskTemplates[key];
+    if (!template) return;
+    setSeeding(key);
+    const baseDate = eventDateStr ? new Date(eventDateStr) : null;
+    const rows = template.map((t) => {
+      const due = baseDate ? new Date(baseDate) : null;
+      if (due) due.setDate(due.getDate() - t.daysBeforeEvent);
+      return {
+        host_id: user.id,
+        title: t.title,
+        category: t.category,
+        priority: t.priority,
+        status: "pending" as const,
+        due_date: due ? due.toISOString().slice(0, 10) : null,
+      };
+    });
+    const { error } = await tasksTable().insert(rows);
+    setSeeding(null);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    toast.success(
+      `Added ${rows.length} ${taskTemplateLabel[key]} tasks`,
+    );
+    load();
+  }
 
   async function load() {
     if (!user) return;
@@ -208,13 +335,49 @@ export default function TasksPage() {
                   : "Try a different status filter above."}
               </p>
               {tasks.length === 0 && (
-                <Button
-                  onClick={() => setAddOpen(true)}
-                  className="rounded-full bg-foreground text-background hover:bg-foreground/90"
-                >
-                  <Plus className="w-4 h-4 mr-2" />
-                  Add your first task
-                </Button>
+                <>
+                  {eventType && taskTemplates[eventType] && (
+                    <Button
+                      onClick={() => applyTemplate(eventType)}
+                      disabled={seeding !== null}
+                      className="rounded-full bg-foreground text-background hover:bg-foreground/90 mb-3"
+                    >
+                      {seeding === eventType ? (
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      ) : null}
+                      Use {taskTemplateLabel[eventType]} template
+                    </Button>
+                  )}
+                  <div className="flex flex-wrap gap-2 justify-center max-w-md mx-auto mt-3">
+                    {Object.keys(taskTemplates)
+                      .filter((k) => k !== eventType)
+                      .map((k) => (
+                        <Button
+                          key={k}
+                          variant="outline"
+                          size="sm"
+                          onClick={() => applyTemplate(k)}
+                          disabled={seeding !== null}
+                          className="rounded-full text-xs h-8"
+                        >
+                          {seeding === k && (
+                            <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                          )}
+                          {taskTemplateLabel[k]}
+                        </Button>
+                      ))}
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-4">
+                    or{" "}
+                    <button
+                      type="button"
+                      onClick={() => setAddOpen(true)}
+                      className="text-accent hover:underline"
+                    >
+                      add your own
+                    </button>
+                  </p>
+                </>
               )}
             </div>
           ) : (

@@ -124,6 +124,67 @@
   }
 }
 
+/* Print stylesheet — opt-in via the .printable class on the page <main>.
+   Hides chrome (sidebar, mobile nav, sticky headers, action buttons),
+   forces black-on-white for cost reasons, opens columns/grids into a
+   single column so paginated print breaks land cleanly. */
+@media print {
+  body {
+    background: white !important;
+    color: black !important;
+  }
+  /* Always-hide chrome */
+  aside,
+  nav,
+  [role="navigation"],
+  .print-hide,
+  .scrollbar-hide {
+    display: none !important;
+  }
+  /* Sticky elements break print pagination — undo */
+  .sticky {
+    position: static !important;
+  }
+  /* Cards collapse to flat blocks */
+  .card-shadow,
+  .shadow,
+  .shadow-md,
+  .shadow-lg {
+    box-shadow: none !important;
+  }
+  .bg-card,
+  .bg-secondary,
+  .bg-muted,
+  .bg-accent\/5,
+  .bg-accent\/10,
+  .bg-accent\/15 {
+    background: white !important;
+  }
+  .border,
+  .border-border {
+    border-color: #ccc !important;
+  }
+  /* Encourage page breaks between sections, avoid breaks inside cards */
+  section {
+    break-after: auto;
+    page-break-after: auto;
+  }
+  .break-inside-avoid,
+  .rounded-sm.border {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+  /* Single-column for any flex / grid layouts */
+  .flex,
+  .grid {
+    display: block !important;
+  }
+  /* Drop hover-visible UI */
+  .group:hover .group-hover\:opacity-100 {
+    opacity: 0 !important;
+  }
+}
+
 @layer utilities {
   .font-display {
     font-family: 'Satoshi', system-ui, sans-serif;

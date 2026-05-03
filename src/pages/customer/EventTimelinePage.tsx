@@ -8,6 +8,7 @@ import {
   Download,
   CalendarPlus,
   MapPin,
+  Printer,
   User,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -167,9 +168,19 @@ export default function EventTimelinePage() {
               <Button
                 variant="outline"
                 size="sm"
+                onClick={() => window.print()}
+                disabled={items.length === 0}
+                className="rounded-full print-hide"
+              >
+                <Printer className="w-3.5 h-3.5 mr-1.5" />
+                Print
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
                 onClick={exportTimelineIcs}
                 disabled={items.length === 0}
-                className="rounded-full"
+                className="rounded-full print-hide"
                 title={
                   !activeEvent?.event_date
                     ? "Set an event date in Event Details first"
