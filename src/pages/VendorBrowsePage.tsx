@@ -1,14 +1,17 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
-import { Search, Store } from "lucide-react";
+import { Search, Store, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { PublicNav } from "@/components/public/PublicNav";
 import { Footer } from "@/components/public/Footer";
 import { VendorCard } from "@/components/shared/VendorCard";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useVendors, type Vendor } from "@/hooks/useVendors";
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
 import heroBrowse from "@/assets/vendora-hero-cinematic.jpg";
 
 const categories = ["All", "Photographer", "Florist", "Catering", "DJ", "Venue", "Makeup Artist"];
@@ -24,9 +27,42 @@ const spring = { type: "spring" as const, duration: 0.6, bounce: 0 };
 
 export default function VendorBrowsePage() {
   const { vendors, loading } = useVendors();
+  const { profile } = useAuth();
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("All");
   const [sort, setSort] = useState<keyof typeof sortOptions>("popular");
+  const [dateFilter, setDateFilter] = useState<string>("");
+  const [unavailableIds, setUnavailableIds] = useState<Set<string>>(new Set());
+
+  // Pre-fill the date filter from the host's onboarding event_date once.
+  const [datePrefilled, setDatePrefilled] = useState(false);
+  useEffect(() => {
+    if (!datePrefilled && profile?.event_date) {
+      setDateFilter(profile.event_date);
+      setDatePrefilled(true);
+    }
+  }, [profile, datePrefilled]);
+
+  // Fetch the set of vendor_ids unavailable on the chosen date.
+  useEffect(() => {
+    if (!dateFilter) {
+      setUnavailableIds(new Set());
+      return;
+    }
+    let cancelled = false;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (supabase as any)
+      .from("vendor_unavailable_dates")
+      .select("vendor_id")
+      .eq("date", dateFilter)
+      .then(({ data }: { data: Array<{ vendor_id: string }> | null }) => {
+        if (cancelled) return;
+        setUnavailableIds(new Set((data ?? []).map((r) => r.vendor_id)));
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [dateFilter]);
 
   const filtered = useMemo(() => {
     const term = search.trim().toLowerCase();
@@ -39,8 +75,14 @@ export default function VendorBrowsePage() {
           v.category.toLowerCase().includes(term) ||
           v.description.toLowerCase().includes(term),
       )
+      .filter((v) => !unavailableIds.has(v.id))
       .sort(sortOptions[sort]);
-  }, [vendors, search, category, sort]);
+  }, [vendors, search, category, sort, unavailableIds]);
+
+  const hiddenByDate =
+    dateFilter && unavailableIds.size > 0
+      ? vendors.filter((v) => unavailableIds.has(v.id)).length
+      : 0;
 
   return (
     <div className="min-h-screen bg-background">
@@ -121,6 +163,29 @@ export default function VendorBrowsePage() {
                 ))}
               </SelectContent>
             </Select>
+            <div className="relative w-full md:w-44">
+              <Label htmlFor="date-filter" className="sr-only">
+                Event date
+              </Label>
+              <Input
+                id="date-filter"
+                type="date"
+                value={dateFilter}
+                onChange={(e) => setDateFilter(e.target.value)}
+                placeholder="Event date"
+                className="h-11 rounded-full bg-secondary/80 border-none focus-visible:ring-1 focus-visible:ring-accent pr-9"
+              />
+              {dateFilter && (
+                <button
+                  type="button"
+                  onClick={() => setDateFilter("")}
+                  aria-label="Clear date filter"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
             <Select value={sort} onValueChange={(v) => setSort(v as keyof typeof sortOptions)}>
               <SelectTrigger className="w-full md:w-44 h-11 rounded-full bg-secondary/80 border-none">
                 <SelectValue placeholder="Sort by" />
@@ -157,7 +222,7 @@ export default function VendorBrowsePage() {
       {/* Results */}
       <section className="py-12 md:py-16">
         <div className="container mx-auto px-6 md:px-8">
-          <div className="flex items-end justify-between mb-10">
+          <div className="flex items-end justify-between mb-10 flex-wrap gap-3">
             <div>
               <p className="font-label text-muted-foreground">
                 {filtered.length}{" "}
@@ -165,7 +230,19 @@ export default function VendorBrowsePage() {
                 {category !== "All" && (
                   <span className="ml-2 text-foreground/80">· {category}</span>
                 )}
+                {dateFilter && (
+                  <span className="ml-2 text-foreground/80">
+                    · available {dateFilter}
+                  </span>
+                )}
               </p>
+              {hiddenByDate > 0 && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  {hiddenByDate}{" "}
+                  {hiddenByDate === 1 ? "vendor" : "vendors"} hidden because
+                  they're booked that day.
+                </p>
+              )}
             </div>
           </div>
 

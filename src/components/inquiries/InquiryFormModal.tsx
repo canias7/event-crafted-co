@@ -61,6 +61,7 @@ export function InquiryFormModal({
   const [vendors, setVendors] = useState<VendorOption[]>([]);
   const [vendorsLoading, setVendorsLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [unavailableIds, setUnavailableIds] = useState<Set<string>>(new Set());
 
   const [vendorId, setVendorId] = useState<string>("");
   const [eventType, setEventType] = useState<EventType>("wedding");
@@ -115,6 +116,28 @@ export function InquiryFormModal({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, preferredVendorName]);
 
+  // Refresh the unavailable-vendor set whenever the chosen event date changes
+  // so we can disable booked vendors in the dropdown.
+  useEffect(() => {
+    if (!open || !eventDate) {
+      setUnavailableIds(new Set());
+      return;
+    }
+    let cancelled = false;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (supabase as any)
+      .from("vendor_unavailable_dates")
+      .select("vendor_id")
+      .eq("date", eventDate)
+      .then(({ data }: { data: Array<{ vendor_id: string }> | null }) => {
+        if (cancelled) return;
+        setUnavailableIds(new Set((data ?? []).map((r) => r.vendor_id)));
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [open, eventDate]);
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!user) {
@@ -132,6 +155,11 @@ export function InquiryFormModal({
 
     if (minCents != null && maxCents != null && minCents > maxCents) {
       toast.error("Budget min must be less than budget max");
+      return;
+    }
+
+    if (eventDate && unavailableIds.has(vendorId)) {
+      toast.error("That vendor isn't available on the date you picked.");
       return;
     }
 
@@ -196,12 +224,26 @@ export function InquiryFormModal({
                   <SelectValue placeholder="Choose a vendor" />
                 </SelectTrigger>
                 <SelectContent>
-                  {vendors.map((v) => (
-                    <SelectItem key={v.id} value={v.id}>
-                      {v.business_name}{" "}
-                      <span className="text-muted-foreground">· {v.category}</span>
-                    </SelectItem>
-                  ))}
+                  {vendors.map((v) => {
+                    const blocked = unavailableIds.has(v.id);
+                    return (
+                      <SelectItem
+                        key={v.id}
+                        value={v.id}
+                        disabled={blocked}
+                      >
+                        {v.business_name}{" "}
+                        <span className="text-muted-foreground">
+                          · {v.category}
+                        </span>
+                        {blocked && (
+                          <span className="ml-2 text-xs text-destructive">
+                            (booked that day)
+                          </span>
+                        )}
+                      </SelectItem>
+                    );
+                  })}
                 </SelectContent>
               </Select>
             )}
