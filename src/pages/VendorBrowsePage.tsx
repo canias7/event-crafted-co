@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Search, Store, X } from "lucide-react";
+import { Search, Store, X, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -12,7 +13,13 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useVendors, type Vendor } from "@/hooks/useVendors";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
+import { categoryConfig } from "@/pages/VendorCategoryPage";
 import heroBrowse from "@/assets/vendora-hero-cinematic.jpg";
+
+const slugByCategory: Record<string, string> = Object.entries(categoryConfig).reduce(
+  (acc, [slug, c]) => ({ ...acc, [c.name]: slug }),
+  {} as Record<string, string>,
+);
 
 const categories = ["All", "Photographer", "Florist", "Catering", "DJ", "Venue", "Makeup Artist"];
 
@@ -244,6 +251,15 @@ export default function VendorBrowsePage() {
                 </p>
               )}
             </div>
+            {category !== "All" && slugByCategory[category] && (
+              <Link
+                to={`/vendors/category/${slugByCategory[category]}`}
+                className="text-xs text-accent font-medium flex items-center gap-1 hover:underline"
+              >
+                View {category} page
+                <ArrowRight className="w-3 h-3" />
+              </Link>
+            )}
           </div>
 
           {vendors.length === 0 && loading ? (

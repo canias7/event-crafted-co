@@ -17,6 +17,7 @@ import { RequireRole } from "./components/auth/RequireRole";
 const HowItWorksPage = lazy(() => import("./pages/HowItWorksPage"));
 const VendorBrowsePage = lazy(() => import("./pages/VendorBrowsePage"));
 const VendorDetailPage = lazy(() => import("./pages/VendorDetailPage"));
+const VendorCategoryPage = lazy(() => import("./pages/VendorCategoryPage"));
 const VendorApplyPage = lazy(() => import("./pages/VendorApplyPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const ComingSoonPage = lazy(() => import("./pages/ComingSoonPage"));
@@ -62,6 +63,7 @@ const App = () => (
               <Route path="/" element={<LandingPage />} />
               <Route path="/how-it-works" element={<HowItWorksPage />} />
               <Route path="/vendors" element={<VendorBrowsePage />} />
+              <Route path="/vendors/category/:slug" element={<VendorCategoryPage />} />
               <Route path="/vendors/:id" element={<VendorDetailPage />} />
               <Route path="/vendor-apply" element={<VendorApplyPage />} />
               <Route path="/login" element={<LoginPage />} />
