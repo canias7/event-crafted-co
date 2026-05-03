@@ -54,6 +54,13 @@ interface NewInquiryPayload {
   inquiryId: string;
 }
 
+interface PlanningInvitePayload {
+  email: string;
+  token: string;
+  hostName?: string | null;
+  role: "editor" | "viewer";
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: cors });
@@ -79,6 +86,9 @@ serve(async (req) => {
   try {
     if (kind === "team_invite") {
       const e = teamInviteEmail(body as TeamInvitePayload);
+      if (e) emails = [e];
+    } else if (kind === "planning_invite") {
+      const e = planningInviteEmail(body as PlanningInvitePayload);
       if (e) emails = [e];
     } else if (kind === "new_inquiry") {
       emails = await newInquiryEmails(body as NewInquiryPayload);
@@ -187,6 +197,27 @@ function teamInviteEmail(p: TeamInvitePayload) {
     to: p.email,
     subject: `${businessName} invited you to their Vendora team`,
     html: shellHtml(`You've been invited to join ${escape(businessName)}`, body),
+  };
+}
+
+function planningInviteEmail(p: PlanningInvitePayload) {
+  const hostName = p.hostName ?? "A Vendora host";
+  const link = `${APP_URL}/accept-planning-invite/${p.token}`;
+  const roleCopy =
+    p.role === "editor"
+      ? "edit the guest list, checklist, budget, mood boards, and timeline"
+      : "see the guest list, checklist, budget, mood boards, and timeline";
+  const body = `
+    <p style="margin:0 0 16px;">${escape(hostName)} invited you to help plan their event as a <strong>${p.role}</strong>.</p>
+    <p style="margin:0 0 24px;">As a ${p.role}, you'll be able to ${roleCopy}.</p>
+    <p style="margin:0 0 24px;">${button(link, "Accept and join the team")}</p>
+    <p style="margin:0;font-size:13px;color:#777;">Or paste this link into your browser:<br/>
+      <span style="word-break:break-all;">${link}</span></p>
+    <p style="margin:24px 0 0;font-size:13px;color:#777;">This invite expires in 14 days.</p>`;
+  return {
+    to: p.email,
+    subject: `${hostName} invited you to help plan their event`,
+    html: shellHtml(`Help ${escape(hostName)} plan their event`, body),
   };
 }
 

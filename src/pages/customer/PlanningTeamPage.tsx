@@ -189,9 +189,27 @@ export default function PlanningTeamPage() {
     const token = (data as { token: string }).token;
     const link = `${window.location.origin}/accept-planning-invite/${token}`;
 
+    // Fire-and-fail-soft email send; clipboard fallback always runs.
+    const emailResult = await supabase.functions.invoke(
+      "send-transactional-email",
+      {
+        body: {
+          kind: "planning_invite",
+          email,
+          token,
+          hostName: profile?.display_name ?? null,
+          role: inviteRole,
+        },
+      },
+    );
+
     await navigator.clipboard.writeText(link).catch(() => {});
     setSending(false);
-    toast.success(`Invite link copied — send it to ${email}`);
+    if (emailResult.error) {
+      toast.warning("Invite created — email failed, link copied as fallback");
+    } else {
+      toast.success(`Invite emailed to ${email} (link also copied)`);
+    }
     setInviteOpen(false);
     setInviteEmail("");
     setInviteRole("editor");
@@ -463,8 +481,8 @@ export default function PlanningTeamPage() {
                     ))}
                   </div>
                   <p className="text-xs text-muted-foreground mt-3">
-                    Email delivery for planning invites isn't wired yet — copy
-                    the link and send it manually for now.
+                    Invites are emailed automatically. If your collaborator
+                    didn't get one, copy the link above and send it directly.
                   </p>
                 </section>
               )}
