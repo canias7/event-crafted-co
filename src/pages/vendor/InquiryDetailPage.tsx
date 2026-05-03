@@ -131,7 +131,7 @@ export default function InquiryDetailPage() {
       .select("*")
       .eq("inquiry_id", inquiryId)
       .order("created_at", { ascending: true });
-    const all = (msgs as Message[]) ?? [];
+    const all = ((msgs as unknown) as Message[]) ?? [];
     setMessages(all.filter((m) => !m.is_draft));
     const draft = all
       .filter(
