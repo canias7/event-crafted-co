@@ -21,7 +21,7 @@ export function DashboardSidebar({ items, title, backPath = "/" }: DashboardSide
     <aside className="hidden lg:flex flex-col w-64 border-r border-border bg-card min-h-screen sticky top-0">
       <div className="p-6 border-b border-border">
         <Link to={backPath} className="font-display text-lg">
-          Élevé
+          Vendora
         </Link>
         <p className="font-label text-muted-foreground mt-1">{title}</p>
       </div>
