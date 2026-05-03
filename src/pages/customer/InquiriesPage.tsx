@@ -80,6 +80,29 @@ export default function InquiriesPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
+  // Realtime: refetch when this host's inquiries change (e.g. status moves
+  // from new → replied when the vendor responds).
+  useEffect(() => {
+    if (!user) return;
+    const channel = supabase
+      .channel(`host-inquiries-${user.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "inquiries",
+          filter: `host_id=eq.${user.id}`,
+        },
+        () => load(),
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
+
   // Strip ?new=1 once consumed so refreshes don't re-open the modal
   useEffect(() => {
     if (params.get("new")) {

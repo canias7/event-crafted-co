@@ -29,6 +29,7 @@ import { VendorCard } from "@/components/shared/VendorCard";
 import { InquiryFormModal } from "@/components/inquiries/InquiryFormModal";
 import { useAuth } from "@/hooks/useAuth";
 import { useVendors } from "@/hooks/useVendors";
+import { useSavedVendors } from "@/hooks/useSavedVendors";
 
 import vendorPhotographer from "@/assets/vendor-photographer.jpg";
 import vendorFlorist from "@/assets/vendor-florist.jpg";
@@ -136,11 +137,12 @@ export default function VendorDetailPage() {
   const { id } = useParams();
   const { session, profile, loading: authLoading } = useAuth();
   const { vendors, loading: vendorsLoading } = useVendors();
-  const [saved, setSaved] = useState(false);
+  const { isSaved, toggle: toggleSave } = useSavedVendors();
   const [signinPromptOpen, setSigninPromptOpen] = useState(false);
   const [inquiryFormOpen, setInquiryFormOpen] = useState(false);
 
   const vendor = vendors.find((v) => v.id === id);
+  const saved = vendor ? isSaved(vendor.id) : false;
 
   function handleInquiryClick() {
     if (authLoading) return;
@@ -490,7 +492,7 @@ export default function VendorDetailPage() {
                     <Button
                       variant="outline"
                       className="rounded-full h-10"
-                      onClick={() => setSaved((s) => !s)}
+                      onClick={() => toggleSave(vendor.id, { isReal: vendor.isReal })}
                     >
                       <Heart
                         className={`w-3.5 h-3.5 mr-2 ${

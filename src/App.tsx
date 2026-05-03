@@ -13,6 +13,7 @@ import CustomerDashboard from "./pages/customer/CustomerDashboard";
 import OnboardingPage from "./pages/customer/OnboardingPage";
 import InquiriesPage from "./pages/customer/InquiriesPage";
 import HostInquiryDetailPage from "./pages/customer/HostInquiryDetailPage";
+import FavoritesPage from "./pages/customer/FavoritesPage";
 import ChecklistPage from "./pages/customer/ChecklistPage";
 import TasksPage from "./pages/customer/TasksPage";
 import PaymentsPage from "./pages/customer/PaymentsPage";
@@ -55,7 +56,7 @@ const App = () => (
           <Route path="/customer/inquiries/:inquiryId" element={<RequireRole role="host"><HostInquiryDetailPage /></RequireRole>} />
           <Route path="/customer/event" element={<RequireRole role="host"><ComingSoonPage side="customer" description="An overview of your event details, vendor lineup, and timeline. We're building this on top of your onboarding answers." /></RequireRole>} />
           <Route path="/customer/appointments" element={<RequireRole role="host"><ComingSoonPage side="customer" description="Schedule and manage vendor consultations, tastings, and walkthroughs in one place." /></RequireRole>} />
-          <Route path="/customer/favorites" element={<RequireRole role="host"><ComingSoonPage side="customer" description="Save vendors you love while you browse. Backed by a real list once you're signed in." primaryCtaLabel="Browse vendors" primaryCtaPath="/vendors" /></RequireRole>} />
+          <Route path="/customer/favorites" element={<RequireRole role="host"><FavoritesPage /></RequireRole>} />
           <Route path="/customer/checklist" element={<RequireRole role="host"><ChecklistPage /></RequireRole>} />
           <Route path="/customer/tasks" element={<RequireRole role="host"><TasksPage /></RequireRole>} />
           <Route path="/customer/payments" element={<RequireRole role="host"><PaymentsPage /></RequireRole>} />

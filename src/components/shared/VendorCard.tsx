@@ -1,8 +1,8 @@
-import { useState } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Star, MapPin, Heart } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { useSavedVendors } from "@/hooks/useSavedVendors";
 import vendorPhotographer from "@/assets/vendor-photographer.jpg";
 import vendorFlorist from "@/assets/vendor-florist.jpg";
 import vendorCatering from "@/assets/vendor-catering.jpg";
@@ -32,11 +32,13 @@ interface VendorCardProps {
     availability: string;
     image: string;
     location?: string;
+    isReal?: boolean;
   };
 }
 
 export function VendorCard({ vendor }: VendorCardProps) {
-  const [saved, setSaved] = useState(false);
+  const { isSaved, toggle } = useSavedVendors();
+  const saved = isSaved(vendor.id);
 
   return (
     <Link to={`/vendors/${vendor.id}`} className="group block">
@@ -57,7 +59,7 @@ export function VendorCard({ vendor }: VendorCardProps) {
             aria-label={saved ? "Remove from saved" : "Save vendor"}
             onClick={(e) => {
               e.preventDefault();
-              setSaved((s) => !s);
+              toggle(vendor.id, { isReal: vendor.isReal });
             }}
             className="absolute top-3 right-3 w-9 h-9 rounded-full bg-background/85 backdrop-blur-sm flex items-center justify-center hover:bg-background transition-colors"
           >

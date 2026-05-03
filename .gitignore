@@ -12,6 +12,12 @@ dist
 dist-ssr
 *.local
 
+# Environment files — contents are publishable (anon key + URL),
+# but secrets (Anthropic, service role) belong only in Supabase secrets.
+.env
+.env.local
+.env.*.local
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

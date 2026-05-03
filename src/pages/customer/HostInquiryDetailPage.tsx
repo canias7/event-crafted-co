@@ -108,6 +108,38 @@ export default function HostInquiryDetailPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [inquiryId, user]);
 
+  // Live updates: re-fetch when this inquiry's messages or status change.
+  useEffect(() => {
+    if (!inquiryId) return;
+    const channel = supabase
+      .channel(`host-inquiry-${inquiryId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "messages",
+          filter: `inquiry_id=eq.${inquiryId}`,
+        },
+        () => load(),
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "inquiries",
+          filter: `id=eq.${inquiryId}`,
+        },
+        () => load(),
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [inquiryId]);
+
   async function sendMessage() {
     if (!composer.trim() || !inquiryId || !user) return;
     setSending(true);

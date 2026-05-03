@@ -38,6 +38,25 @@ export default function VendorInboxPage() {
   const { user } = useAuth();
   const [rows, setRows] = useState<InquiryRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [vendorId, setVendorId] = useState<string | null>(null);
+
+  async function load(forVendorId?: string | null) {
+    const vid = forVendorId ?? vendorId;
+    if (!vid) {
+      setRows([]);
+      setLoading(false);
+      return;
+    }
+    const { data } = await supabase
+      .from("inquiries")
+      .select(
+        "id,event_type,event_date,budget_min_cents,budget_max_cents,status,quality_score,created_at,host:profiles!inquiries_host_id_fkey(display_name)",
+      )
+      .eq("vendor_id", vid)
+      .order("created_at", { ascending: false });
+    setRows((data as unknown as InquiryRow[]) ?? []);
+    setLoading(false);
+  }
 
   useEffect(() => {
     if (!user) return;
@@ -52,15 +71,33 @@ export default function VendorInboxPage() {
         setLoading(false);
         return;
       }
-      const { data } = await supabase
-        .from("inquiries")
-        .select("id,event_type,event_date,budget_min_cents,budget_max_cents,status,quality_score,created_at,host:profiles!inquiries_host_id_fkey(display_name)")
-        .eq("vendor_id", vp.id)
-        .order("created_at", { ascending: false });
-      setRows((data as any) ?? []);
-      setLoading(false);
+      setVendorId(vp.id);
+      await load(vp.id);
     })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
+
+  // Realtime: refetch when any inquiry for this vendor changes.
+  useEffect(() => {
+    if (!vendorId) return;
+    const channel = supabase
+      .channel(`vendor-inbox-${vendorId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "inquiries",
+          filter: `vendor_id=eq.${vendorId}`,
+        },
+        () => load(vendorId),
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [vendorId]);
 
   return (
     <div className="flex min-h-screen bg-background">
