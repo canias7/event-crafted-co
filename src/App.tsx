@@ -18,6 +18,8 @@ const HowItWorksPage = lazy(() => import("./pages/HowItWorksPage"));
 const VendorBrowsePage = lazy(() => import("./pages/VendorBrowsePage"));
 const VendorDetailPage = lazy(() => import("./pages/VendorDetailPage"));
 const VendorCategoryPage = lazy(() => import("./pages/VendorCategoryPage"));
+const InspirationPage = lazy(() => import("./pages/InspirationPage"));
+const InspirationDetailPage = lazy(() => import("./pages/InspirationDetailPage"));
 const VendorApplyPage = lazy(() => import("./pages/VendorApplyPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const ComingSoonPage = lazy(() => import("./pages/ComingSoonPage"));
@@ -65,6 +67,8 @@ const App = () => (
               <Route path="/vendors" element={<VendorBrowsePage />} />
               <Route path="/vendors/category/:slug" element={<VendorCategoryPage />} />
               <Route path="/vendors/:id" element={<VendorDetailPage />} />
+              <Route path="/inspiration" element={<InspirationPage />} />
+              <Route path="/inspiration/:slug" element={<InspirationDetailPage />} />
               <Route path="/vendor-apply" element={<VendorApplyPage />} />
               <Route path="/login" element={<LoginPage />} />
               <Route path="/signup" element={<SignupPage />} />
