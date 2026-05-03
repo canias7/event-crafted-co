@@ -89,7 +89,7 @@ export default function LandingPage() {
       className="min-h-screen relative"
       style={{
         background:
-          "linear-gradient(to bottom, hsl(var(--foreground)) 0%, hsl(var(--foreground)) 35%, hsl(36 22% 80%) 60%, hsl(var(--background)) 85%, hsl(var(--background)) 100%)",
+          "linear-gradient(to bottom, hsl(var(--foreground)) 0%, hsl(var(--foreground)) 30%, hsl(30 15% 35%) 45%, hsl(36 22% 75%) 65%, hsl(var(--background)) 82%, hsl(var(--background)) 100%)",
       }}
     >
       <PublicNav />
@@ -125,7 +125,7 @@ export default function LandingPage() {
         </div>
 
         {/* Cinematic gradient overlays — bleed into page background */}
-        <div className="absolute inset-0 bg-gradient-to-b from-foreground/75 via-foreground/45 to-foreground" />
+        <div className="absolute inset-0 bg-gradient-to-b from-foreground/75 via-foreground/40 to-foreground" />
         <div className="absolute inset-0 bg-gradient-to-r from-foreground/55 via-transparent to-foreground/30" />
         <div
           className="absolute inset-0 opacity-60"
@@ -133,7 +133,7 @@ export default function LandingPage() {
         />
         {/* Letterbox bars + seamless bleed into next section */}
         <div className="absolute top-0 inset-x-0 h-16 md:h-20 bg-gradient-to-b from-foreground/80 to-transparent pointer-events-none" />
-        <div className="absolute bottom-0 inset-x-0 h-48 bg-gradient-to-t from-foreground via-foreground/90 to-transparent pointer-events-none" />
+        <div className="absolute bottom-0 inset-x-0 h-72 bg-gradient-to-t from-foreground via-foreground/70 to-transparent pointer-events-none" />
         {/* Subtle film grain */}
         <div
           className="absolute inset-0 opacity-[0.08] mix-blend-overlay pointer-events-none"
@@ -290,10 +290,6 @@ export default function LandingPage() {
 
       {/* Feature: Vendor discovery — still on dark gradient */}
       <section className="py-24 md:py-36 text-primary-foreground relative overflow-hidden">
-        <div
-          className="absolute -top-40 -right-40 w-[500px] h-[500px] opacity-40 -z-0"
-          style={{ background: "var(--gradient-glow)" }}
-        />
         <div className="container mx-auto px-6 md:px-8 relative">
           <div className="grid md:grid-cols-2 gap-16 md:gap-24 items-center">
             <div>
