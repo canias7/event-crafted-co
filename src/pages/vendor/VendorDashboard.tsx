@@ -94,6 +94,8 @@ export default function VendorDashboard() {
   });
   const [recent, setRecent] = useState<RecentInquiry[]>([]);
   const [loading, setLoading] = useState(true);
+  const [packageCount, setPackageCount] = useState(0);
+  const [portfolioCount, setPortfolioCount] = useState(0);
 
   useEffect(() => {
     if (!user) return;
@@ -167,6 +169,24 @@ export default function VendorDashboard() {
               : ratingRows.reduce((s, r) => s + r.rating, 0) /
                 ratingRows.length,
         });
+
+        // Counts that feed the onboarding completeness signal.
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const [{ count: pkgCount }, { count: imgCount }] = await Promise.all([
+          (supabase as any)
+            .from("vendor_packages")
+            .select("id", { count: "exact", head: true })
+            .eq("vendor_id", vpRow.id)
+            .eq("is_active", true),
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          (supabase as any)
+            .from("vendor_portfolio_images")
+            .select("id", { count: "exact", head: true })
+            .eq("vendor_id", vpRow.id),
+        ]);
+        if (cancelled) return;
+        setPackageCount(pkgCount ?? 0);
+        setPortfolioCount(imgCount ?? 0);
       }
 
       setLoading(false);
@@ -179,10 +199,12 @@ export default function VendorDashboard() {
 
   const completeness = vendorProfile
     ? Math.round(
-        (profileFieldsForCompleteness.filter(
+        ((profileFieldsForCompleteness.filter(
           (f) => vendorProfile[f] != null && vendorProfile[f] !== "",
-        ).length /
-          profileFieldsForCompleteness.length) *
+        ).length +
+          (packageCount > 0 ? 1 : 0) +
+          (portfolioCount >= 3 ? 1 : 0)) /
+          (profileFieldsForCompleteness.length + 2)) *
           100,
       )
     : 0;
@@ -330,24 +352,36 @@ export default function VendorDashboard() {
 
           {/* Profile completeness */}
           {vendorProfile && completeness < 100 && (
-            <div className="bg-card rounded-sm border border-border p-5">
+            <div className="bg-card rounded-sm border border-accent/30 bg-accent/5 p-5">
               <div className="flex items-center justify-between mb-3">
-                <p className="font-label text-muted-foreground">
-                  Profile completeness
+                <p className="font-label text-accent">
+                  Finish your profile
                 </p>
-                <span className="text-sm font-medium tnum">{completeness}%</span>
+                <span className="text-sm font-medium tnum">
+                  {completeness}%
+                </span>
               </div>
               <Progress value={completeness} className="h-2 mb-3" />
               <div className="flex items-center justify-between gap-4 flex-wrap">
-                <p className="text-xs text-muted-foreground">
-                  Add a richer bio, pricing, and portfolio summary to help
-                  hosts and the AI agent.
+                <p className="text-xs text-muted-foreground leading-relaxed max-w-md">
+                  Profiles with packages and 3+ portfolio photos get up to 4×
+                  more inquiries. Walk through the setup wizard to wrap it up.
                 </p>
-                <Link to="/vendor/profile">
-                  <Button variant="outline" size="sm" className="rounded-full">
-                    Edit profile
-                  </Button>
-                </Link>
+                <div className="flex gap-2">
+                  <Link to="/vendor/profile">
+                    <Button variant="ghost" size="sm" className="rounded-full">
+                      Edit manually
+                    </Button>
+                  </Link>
+                  <Link to="/vendor/onboarding">
+                    <Button
+                      size="sm"
+                      className="rounded-full bg-foreground text-background hover:bg-foreground/90"
+                    >
+                      Open setup wizard
+                    </Button>
+                  </Link>
+                </div>
               </div>
             </div>
           )}

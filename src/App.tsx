@@ -55,6 +55,7 @@ const VendorTemplatesPage = lazy(() => import("./pages/vendor/VendorTemplatesPag
 const VendorInboxPage = lazy(() => import("./pages/vendor/VendorInboxPage"));
 const VendorTeamPage = lazy(() => import("./pages/vendor/VendorTeamPage"));
 const VendorAppointmentsPage = lazy(() => import("./pages/vendor/VendorAppointmentsPage"));
+const VendorOnboardingPage = lazy(() => import("./pages/vendor/VendorOnboardingPage"));
 const InquiryDetailPage = lazy(() => import("./pages/vendor/InquiryDetailPage"));
 const AvailabilityPage = lazy(() => import("./pages/vendor/AvailabilityPage"));
 const AcceptTeamInvitePage = lazy(() => import("./pages/AcceptTeamInvitePage"));
@@ -127,6 +128,7 @@ const App = () => (
               <Route path="/vendor/templates" element={<RequireRole role="vendor"><VendorTemplatesPage /></RequireRole>} />
               <Route path="/vendor/inbox" element={<RequireRole role="vendor"><VendorInboxPage /></RequireRole>} />
               <Route path="/vendor/team" element={<RequireRole role="vendor"><VendorTeamPage /></RequireRole>} />
+              <Route path="/vendor/onboarding" element={<RequireRole role="vendor"><VendorOnboardingPage /></RequireRole>} />
               <Route path="/vendor/appointments" element={<RequireRole role="vendor"><VendorAppointmentsPage /></RequireRole>} />
               <Route path="/vendor/availability" element={<RequireRole role="vendor"><AvailabilityPage /></RequireRole>} />
               <Route path="/vendor/payments" element={<RequireRole role="vendor"><ComingSoonPage side="vendor" description="Connect a Stripe account, see payouts, and track the 3% commission on confirmed bookings." /></RequireRole>} />

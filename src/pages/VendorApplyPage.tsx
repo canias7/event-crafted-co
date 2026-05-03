@@ -120,8 +120,8 @@ export default function VendorApplyPage() {
       return;
     }
 
-    toast.success("Welcome to Vendora — your application is in review.");
-    navigate("/vendor/dashboard");
+    toast.success("Welcome to Vendora — let's finish setting up your profile.");
+    navigate("/vendor/onboarding");
   }
 
   return (
