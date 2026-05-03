@@ -23,5 +23,12 @@ Disallow: /vendor/contract
 Disallow: /admin/
 Disallow: /login
 Disallow: /signup
+Disallow: /accept-team-invite/
+Disallow: /board/
+Disallow: /rsvp/
 
 Sitemap: https://vendora.events/sitemap.xml
+# Dynamic sitemap covering live DB vendor profiles + admin-published
+# inspiration. Front this behind /sitemap-live.xml at the hosting layer
+# (or replace the URL with your Supabase project's function endpoint).
+Sitemap: https://vendora.events/sitemap-live.xml

@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { PublicNav } from "@/components/public/PublicNav";
 import { Footer } from "@/components/public/Footer";
 import { SaveToBoardModal } from "@/components/moodboards/SaveToBoardModal";
+import { useDocumentMeta } from "@/hooks/useDocumentMeta";
 import {
   fetchInspirationEntries,
   findInspirationBySlug,
@@ -36,14 +37,16 @@ export default function InspirationDetailPage() {
 
   const entry = findInspirationBySlug(slug, entries);
 
-  useEffect(() => {
-    if (entry) {
-      document.title = `${entry.title} — Vendora`;
-    }
-    return () => {
-      document.title = "Vendora — Premium Event Planning & Vendor Marketplace";
-    };
-  }, [entry]);
+  useDocumentMeta(
+    entry
+      ? {
+          title: `${entry.title} — Vendora`,
+          description: entry.excerpt,
+          image: typeof entry.hero === "string" ? entry.hero : undefined,
+          type: "article",
+        }
+      : { title: "Inspiration — Vendora" },
+  );
 
   // Article JSON-LD for SEO (rich snippets in Google).
   useEffect(() => {

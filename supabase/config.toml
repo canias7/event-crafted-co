@@ -22,3 +22,9 @@ verify_jwt = false
 # Saved-search matcher: in-app notifications only, called daily.
 [functions.scan-saved-search-matches]
 verify_jwt = false
+
+# Public sitemap.xml — Google + Bing crawl this. Front it behind a
+# /sitemap.xml redirect at the hosting layer or submit the function URL
+# directly in Search Console.
+[functions.sitemap-xml]
+verify_jwt = false

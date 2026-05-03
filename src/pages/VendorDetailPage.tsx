@@ -29,6 +29,7 @@ import { PublicNav } from "@/components/public/PublicNav";
 import { Footer } from "@/components/public/Footer";
 import { VendorCard } from "@/components/shared/VendorCard";
 import { Lightbox } from "@/components/shared/Lightbox";
+import { useDocumentMeta } from "@/hooks/useDocumentMeta";
 import { InquiryFormModal } from "@/components/inquiries/InquiryFormModal";
 import { useAuth } from "@/hooks/useAuth";
 import { useVendors } from "@/hooks/useVendors";
@@ -283,14 +284,20 @@ export default function VendorDetailPage() {
     };
   }, [vendor]);
 
-  // Set document.title per vendor for SEO + browser tabs.
-  useEffect(() => {
-    if (!vendor) return;
-    document.title = `${vendor.name} — ${vendor.category} on Vendora`;
-    return () => {
-      document.title = "Vendora — Premium Event Planning & Vendor Marketplace";
-    };
-  }, [vendor]);
+  // Per-vendor title + OG/Twitter card so social shares of vendor URLs
+  // unfurl with the hero image + name + category.
+  useDocumentMeta(
+    vendor
+      ? {
+          title: `${vendor.name} — ${vendor.category} on Vendora`,
+          description:
+            vendor.description ||
+            `${vendor.category} on Vendora${vendor.location ? ` · ${vendor.location}` : ""}`,
+          image: imageMap[vendor.image] ?? featureFlorals,
+          type: "product",
+        }
+      : { title: "Vendor — Vendora" },
+  );
 
   // JSON-LD structured data for SEO. LocalBusiness covers vendors broadly
   // (event services, venues). Includes aggregateRating + priceRange so rich
