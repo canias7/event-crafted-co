@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { LucideIcon } from "lucide-react";
+import { LucideIcon, Search } from "lucide-react";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 
 interface NavItem {
@@ -27,6 +27,27 @@ export function DashboardSidebar({ items, title, backPath = "/" }: DashboardSide
           <p className="font-label text-muted-foreground mt-1">{title}</p>
         </div>
         <NotificationBell variant="light" />
+      </div>
+      <div className="px-3 pt-3">
+        <button
+          type="button"
+          onClick={() => {
+            document.dispatchEvent(
+              new KeyboardEvent("keydown", {
+                key: "k",
+                metaKey: true,
+                ctrlKey: true,
+              }),
+            );
+          }}
+          className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs text-muted-foreground bg-secondary/40 hover:bg-secondary hover:text-foreground transition-colors"
+        >
+          <Search className="w-3.5 h-3.5" />
+          <span className="flex-1 text-left">Search</span>
+          <kbd className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-background border border-border">
+            ⌘K
+          </kbd>
+        </button>
       </div>
       <nav className="flex-1 p-3">
         {items.map((item) => {

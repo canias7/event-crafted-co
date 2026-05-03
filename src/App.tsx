@@ -14,6 +14,7 @@ import ResetPasswordPage from "./pages/auth/ResetPasswordPage";
 import { AuthProvider } from "./hooks/useAuth";
 import { RequireRole } from "./components/auth/RequireRole";
 import { CookieBanner } from "./components/CookieBanner";
+import { CommandPalette } from "./components/CommandPalette";
 import { MobilePortalBell } from "./components/notifications/MobilePortalBell";
 
 // Lazy-load everything else so the initial bundle ships only the landing,
@@ -146,6 +147,7 @@ const App = () => (
             </Routes>
           </Suspense>
           <MobilePortalBell />
+          <CommandPalette />
           <CookieBanner />
         </AuthProvider>
       </BrowserRouter>

@@ -1,6 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Menu, X, LogOut, LayoutDashboard, ChevronDown, Settings } from "lucide-react";
+import { Menu, X, LogOut, LayoutDashboard, ChevronDown, Settings, Search } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -65,6 +65,26 @@ export function PublicNav() {
         </div>
 
         <div className="hidden md:flex items-center gap-1">
+          <button
+            type="button"
+            onClick={() => {
+              document.dispatchEvent(
+                new KeyboardEvent("keydown", {
+                  key: "k",
+                  metaKey: true,
+                  ctrlKey: true,
+                }),
+              );
+            }}
+            className="hidden lg:inline-flex items-center gap-2 px-3 h-8 rounded-full bg-background/10 hover:bg-background/20 text-background/85 hover:text-background text-xs transition-colors mr-2"
+            aria-label="Open search"
+          >
+            <Search className="w-3.5 h-3.5" />
+            Search
+            <kbd className="hidden xl:inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-background/15 text-[10px] font-mono">
+              ⌘K
+            </kbd>
+          </button>
           {session && profile ? (
             <>
               <NotificationBell variant="dark" />
