@@ -5,28 +5,32 @@ import { ArrowRight, Check, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PublicNav } from "@/components/public/PublicNav";
 import { Footer } from "@/components/public/Footer";
-import heroWedding from "@/assets/hero/wedding.jpg";
-import heroJuly4 from "@/assets/hero/july4th.jpg";
-import heroChristmas from "@/assets/hero/christmas.jpg";
-import heroBabyShower from "@/assets/hero/babyshower.jpg";
-import heroBirthdayMilestone from "@/assets/hero/birthday-milestone.jpg";
-import heroHalloween from "@/assets/hero/halloween.jpg";
-import heroThanksgiving from "@/assets/hero/thanksgiving.jpg";
-import heroHanukkah from "@/assets/hero/hanukkah.jpg";
-import heroNYE from "@/assets/hero/nye.jpg";
-import heroEaster from "@/assets/hero/easter.jpg";
-import heroBridal from "@/assets/hero/bridal.jpg";
-import heroEngagement from "@/assets/hero/engagement.jpg";
-import heroGraduation from "@/assets/hero/graduation.jpg";
-import heroCorporate from "@/assets/hero/corporate.jpg";
-import heroAnniversary from "@/assets/hero/anniversary.jpg";
-import heroFirstBirthday from "@/assets/hero/firstbirthday.jpg";
-import heroFiesta from "@/assets/hero/fiesta.jpg";
-import heroBeach from "@/assets/hero/beach.jpg";
-import heroMothersDay from "@/assets/hero/mothersday.jpg";
-import heroValentines from "@/assets/hero/valentines.jpg";
-import featureFlorals from "@/assets/vendora-feature-1.jpg";
-import featureVenue from "@/assets/vendora-feature-2.jpg";
+import { Picture } from "@/components/shared/Picture";
+// vite-imagetools generates AVIF + WebP + JPG variants at 640/1024/1600
+// widths via the default directives in vite.config.ts. Each import below
+// resolves to a { sources, img } picture object instead of a raw URL.
+import heroWedding from "@/assets/hero/wedding.jpg?as=picture";
+import heroJuly4 from "@/assets/hero/july4th.jpg?as=picture";
+import heroChristmas from "@/assets/hero/christmas.jpg?as=picture";
+import heroBabyShower from "@/assets/hero/babyshower.jpg?as=picture";
+import heroBirthdayMilestone from "@/assets/hero/birthday-milestone.jpg?as=picture";
+import heroHalloween from "@/assets/hero/halloween.jpg?as=picture";
+import heroThanksgiving from "@/assets/hero/thanksgiving.jpg?as=picture";
+import heroHanukkah from "@/assets/hero/hanukkah.jpg?as=picture";
+import heroNYE from "@/assets/hero/nye.jpg?as=picture";
+import heroEaster from "@/assets/hero/easter.jpg?as=picture";
+import heroBridal from "@/assets/hero/bridal.jpg?as=picture";
+import heroEngagement from "@/assets/hero/engagement.jpg?as=picture";
+import heroGraduation from "@/assets/hero/graduation.jpg?as=picture";
+import heroCorporate from "@/assets/hero/corporate.jpg?as=picture";
+import heroAnniversary from "@/assets/hero/anniversary.jpg?as=picture";
+import heroFirstBirthday from "@/assets/hero/firstbirthday.jpg?as=picture";
+import heroFiesta from "@/assets/hero/fiesta.jpg?as=picture";
+import heroBeach from "@/assets/hero/beach.jpg?as=picture";
+import heroMothersDay from "@/assets/hero/mothersday.jpg?as=picture";
+import heroValentines from "@/assets/hero/valentines.jpg?as=picture";
+import featureFlorals from "@/assets/vendora-feature-1.jpg?as=picture";
+import featureVenue from "@/assets/vendora-feature-2.jpg?as=picture";
 
 const spring = { type: "spring" as const, duration: 0.6, bounce: 0 };
 
@@ -82,6 +86,16 @@ export default function LandingPage() {
     return () => clearInterval(id);
   }, []);
 
+  // Preload only the next slide on idle. Beats fetching all 20 up front.
+  useEffect(() => {
+    const next = heroSlides[(slideIndex + 1) % heroSlides.length];
+    const fallbackSrc = next.src.img.src;
+    const webpSet = next.src.sources.webp;
+    const img = new Image();
+    if (webpSet) img.srcset = webpSet;
+    img.src = fallbackSrc;
+  }, [slideIndex]);
+
   const currentSlide = heroSlides[slideIndex];
 
   return (
@@ -109,20 +123,17 @@ export default function LandingPage() {
             }}
             className="absolute inset-0"
           >
-            <img
-              src={currentSlide.src}
+            <Picture
+              source={currentSlide.src}
               alt={currentSlide.alt}
               className="w-full h-full object-cover"
+              loading={slideIndex === 0 ? "eager" : "lazy"}
+              fetchPriority={slideIndex === 0 ? "high" : "auto"}
+              sizes="100vw"
             />
           </motion.div>
         </AnimatePresence>
 
-        {/* Preload other slides to avoid flash on first cycle */}
-        <div className="hidden">
-          {heroSlides.map((s) => (
-            <img key={s.src} src={s.src} alt="" />
-          ))}
-        </div>
 
         {/* Cinematic gradient overlays — bleed into page background */}
         <div className="absolute inset-0 bg-gradient-to-b from-foreground/75 via-foreground/40 to-foreground" />
@@ -323,10 +334,11 @@ export default function LandingPage() {
                     "radial-gradient(ellipse at center, hsl(0 0% 0%) 35%, hsl(0 0% 0% / 0.5) 70%, transparent 100%)",
                 }}
               >
-                <img
-                  src={featureFlorals}
+                <Picture
+                  source={featureFlorals}
                   alt="Floral arrangement"
                   loading="lazy"
+                  sizes="(min-width: 768px) 50vw, 100vw"
                   className="w-full h-full object-cover"
                 />
               </div>
@@ -361,10 +373,11 @@ export default function LandingPage() {
             </div>
             <div className="md:order-1 relative">
               <div className="aspect-[4/5] rounded-sm overflow-hidden">
-                <img
-                  src={featureVenue}
+                <Picture
+                  source={featureVenue}
                   alt="Luxury venue"
                   loading="lazy"
+                  sizes="(min-width: 768px) 50vw, 100vw"
                   className="w-full h-full object-cover"
                 />
               </div>

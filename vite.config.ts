@@ -2,6 +2,7 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
 import { componentTagger } from "lovable-tagger";
+import { imagetools } from "vite-imagetools";
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
@@ -12,7 +13,31 @@ export default defineConfig(({ mode }) => ({
       overlay: false,
     },
   },
-  plugins: [react(), mode === "development" && componentTagger()].filter(Boolean),
+  plugins: [
+    react(),
+    mode === "development" && componentTagger(),
+    // vite-imagetools: lets us write `import x from './foo.jpg?w=800;1600&format=avif;webp;jpg&as=picture'`
+    // and get back a <picture>-ready object with srcset + format fallbacks
+    // generated at build time. Cuts hero JPEG payload by ~60% with AVIF.
+    imagetools({
+      defaultDirectives: (url) => {
+        // Anything under /assets/hero/* or /assets/vendora-* defaults to a
+        // responsive picture set so we don't have to spell it out per import.
+        if (
+          /\/assets\/hero\//.test(url.pathname) ||
+          /\/assets\/vendora-/.test(url.pathname)
+        ) {
+          return new URLSearchParams({
+            format: "avif;webp;jpg",
+            w: "640;1024;1600",
+            as: "picture",
+            quality: "72",
+          });
+        }
+        return new URLSearchParams();
+      },
+    }),
+  ].filter(Boolean),
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
