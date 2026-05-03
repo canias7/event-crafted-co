@@ -72,6 +72,68 @@ export function InquiryFormModal({
   const [budgetMax, setBudgetMax] = useState("");
   const [specialRequests, setSpecialRequests] = useState("");
 
+  // Vendor intake form (RFP-style structured questionnaire). Loaded
+  // when the host picks a vendor; replaces the free-text "anything
+  // else" field if present.
+  interface IntakeQuestion {
+    id: string;
+    label: string;
+    type: "text" | "number" | "select" | "multiselect" | "yesno";
+    options?: string[];
+    required?: boolean;
+    helper?: string;
+  }
+  const [intakeIntro, setIntakeIntro] = useState<string | null>(null);
+  const [intakeQuestions, setIntakeQuestions] = useState<IntakeQuestion[]>([]);
+  const [intakeAnswers, setIntakeAnswers] = useState<
+    Record<string, string | string[] | boolean>
+  >({});
+
+  // Pull the vendor's intake form when vendorId changes.
+  useEffect(() => {
+    if (!vendorId) {
+      setIntakeIntro(null);
+      setIntakeQuestions([]);
+      setIntakeAnswers({});
+      return;
+    }
+    let cancelled = false;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (supabase as any)
+      .from("vendor_intake_forms")
+      .select("intro, questions, is_published")
+      .eq("vendor_id", vendorId)
+      .maybeSingle()
+      .then(
+        ({
+          data,
+        }: {
+          data: {
+            intro: string | null;
+            questions: IntakeQuestion[];
+            is_published: boolean;
+          } | null;
+        }) => {
+          if (cancelled) return;
+          if (data && data.is_published) {
+            setIntakeIntro(data.intro);
+            setIntakeQuestions(
+              Array.isArray(data.questions) ? data.questions : [],
+            );
+            setIntakeAnswers({});
+          } else {
+            setIntakeIntro(null);
+            setIntakeQuestions([]);
+            setIntakeAnswers({});
+          }
+        },
+      );
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [vendorId]);
+
   function reset() {
     setVendorId("");
     setEventType("wedding");
@@ -202,6 +264,8 @@ export function InquiryFormModal({
         budget_min_cents: minCents,
         budget_max_cents: maxCents,
         special_requests: specialRequests.trim() || null,
+        intake_answers:
+          Object.keys(intakeAnswers).length > 0 ? intakeAnswers : null,
         status: "new",
       })
       .select("id")
@@ -381,16 +445,149 @@ export function InquiryFormModal({
             </div>
           </div>
 
-          {/* Special requests */}
+          {/* Vendor intake form (RFP) — replaces special requests when published */}
+          {intakeQuestions.length > 0 && (
+            <div className="space-y-3 rounded-sm border border-accent/30 bg-accent/5 p-4">
+              <div>
+                <p className="font-label text-accent mb-1">
+                  A few questions from this vendor
+                </p>
+                {intakeIntro && (
+                  <p className="text-xs text-muted-foreground leading-relaxed">
+                    {intakeIntro}
+                  </p>
+                )}
+              </div>
+              {intakeQuestions.map((q) => (
+                <div key={q.id} className="space-y-1.5">
+                  <Label htmlFor={`intake-${q.id}`}>
+                    {q.label}
+                    {q.required && (
+                      <span className="text-destructive ml-1">*</span>
+                    )}
+                  </Label>
+                  {q.type === "text" && (
+                    <Input
+                      id={`intake-${q.id}`}
+                      value={(intakeAnswers[q.id] as string) ?? ""}
+                      onChange={(e) =>
+                        setIntakeAnswers((prev) => ({
+                          ...prev,
+                          [q.id]: e.target.value,
+                        }))
+                      }
+                      required={q.required}
+                      className="h-10"
+                    />
+                  )}
+                  {q.type === "number" && (
+                    <Input
+                      id={`intake-${q.id}`}
+                      type="number"
+                      value={(intakeAnswers[q.id] as string) ?? ""}
+                      onChange={(e) =>
+                        setIntakeAnswers((prev) => ({
+                          ...prev,
+                          [q.id]: e.target.value,
+                        }))
+                      }
+                      required={q.required}
+                      className="h-10"
+                    />
+                  )}
+                  {q.type === "yesno" && (
+                    <div className="flex gap-2">
+                      {["Yes", "No"].map((opt) => {
+                        const active = intakeAnswers[q.id] === opt;
+                        return (
+                          <button
+                            key={opt}
+                            type="button"
+                            onClick={() =>
+                              setIntakeAnswers((prev) => ({
+                                ...prev,
+                                [q.id]: opt,
+                              }))
+                            }
+                            className={`px-4 h-9 rounded-full text-xs font-medium ${
+                              active
+                                ? "bg-foreground text-background"
+                                : "bg-secondary text-foreground"
+                            }`}
+                          >
+                            {opt}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                  {q.type === "select" && (
+                    <select
+                      id={`intake-${q.id}`}
+                      value={(intakeAnswers[q.id] as string) ?? ""}
+                      onChange={(e) =>
+                        setIntakeAnswers((prev) => ({
+                          ...prev,
+                          [q.id]: e.target.value,
+                        }))
+                      }
+                      required={q.required}
+                      className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm"
+                    >
+                      <option value="">Choose…</option>
+                      {(q.options ?? []).map((o) => (
+                        <option key={o} value={o}>
+                          {o}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                  {q.type === "multiselect" && (
+                    <div className="flex flex-wrap gap-2">
+                      {(q.options ?? []).map((o) => {
+                        const arr = (intakeAnswers[q.id] as string[]) ?? [];
+                        const active = arr.includes(o);
+                        return (
+                          <button
+                            key={o}
+                            type="button"
+                            onClick={() =>
+                              setIntakeAnswers((prev) => ({
+                                ...prev,
+                                [q.id]: active
+                                  ? arr.filter((x) => x !== o)
+                                  : [...arr, o],
+                              }))
+                            }
+                            className={`px-3 h-8 rounded-full text-xs font-medium border ${
+                              active
+                                ? "bg-foreground text-background border-foreground"
+                                : "bg-background border-border"
+                            }`}
+                          >
+                            {o}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Special requests — always shown alongside intake (or alone) */}
           <div className="space-y-2">
             <Label htmlFor="special-requests">
-              Tell us about your event
+              {intakeQuestions.length > 0
+                ? "Anything else?"
+                : "Tell us about your event"}
             </Label>
             <Textarea
               id="special-requests"
               value={specialRequests}
               onChange={(e) => setSpecialRequests(e.target.value)}
-              rows={4}
+              rows={intakeQuestions.length > 0 ? 2 : 4}
               placeholder="Color palette, vibe, must-haves, anything else the vendor should know."
             />
           </div>

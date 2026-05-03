@@ -9,6 +9,7 @@ import { MobileNav } from "@/components/shared/MobileNav";
 import { PortfolioUploader } from "@/components/vendor/PortfolioUploader";
 import { PackageManager } from "@/components/vendor/PackageManager";
 import { VendorRecommendationManager } from "@/components/vendor/VendorRecommendationManager";
+import { IntakeFormEditor } from "@/components/vendor/IntakeFormEditor";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -49,6 +50,7 @@ interface VendorProfile {
   verified_at: string | null;
   intro_video_url: string | null;
   weekly_digest_enabled: boolean | null;
+  slug: string | null;
 }
 
 export default function VendorProfilePage() {
@@ -69,6 +71,7 @@ export default function VendorProfilePage() {
   const [serviceRadius, setServiceRadius] = useState("");
   const [portfolioSummary, setPortfolioSummary] = useState("");
   const [introVideoUrl, setIntroVideoUrl] = useState("");
+  const [slug, setSlug] = useState("");
 
   function applyToForm(p: VendorProfile | null) {
     setBusinessName(p?.business_name ?? "");
@@ -83,6 +86,7 @@ export default function VendorProfilePage() {
     );
     setPortfolioSummary(p?.portfolio_summary ?? "");
     setIntroVideoUrl(p?.intro_video_url ?? "");
+    setSlug(p?.slug ?? "");
   }
 
   useEffect(() => {
@@ -97,14 +101,14 @@ export default function VendorProfilePage() {
       ? supabase
           .from("vendor_profiles")
           .select(
-            "id, business_name, category, bio, base_price_cents, location, service_radius_miles, portfolio_summary, verified_at, intro_video_url, weekly_digest_enabled",
+            "id, business_name, category, bio, base_price_cents, location, service_radius_miles, portfolio_summary, verified_at, intro_video_url, weekly_digest_enabled, slug",
           )
           .eq("id", membership.vendor_id)
           .maybeSingle()
       : supabase
           .from("vendor_profiles")
           .select(
-            "id, business_name, category, bio, base_price_cents, location, service_radius_miles, portfolio_summary, verified_at, intro_video_url, weekly_digest_enabled",
+            "id, business_name, category, bio, base_price_cents, location, service_radius_miles, portfolio_summary, verified_at, intro_video_url, weekly_digest_enabled, slug",
           )
           .eq("user_id", user.id)
           .maybeSingle();
@@ -144,6 +148,17 @@ export default function VendorProfilePage() {
         : null,
       portfolio_summary: portfolioSummary.trim() || null,
       intro_video_url: introVideoUrl.trim() || null,
+      // Slug normalization happens server-side via the trigger when
+      // omitted; if the vendor sets one, we sanitize lightly here so
+      // they get instant feedback in the form.
+      slug:
+        slug.trim()
+          ? slug
+              .trim()
+              .toLowerCase()
+              .replace(/[^a-z0-9]+/g, "-")
+              .replace(/^-+|-+$/g, "") || null
+          : null,
     };
 
     if (profile) {
@@ -172,7 +187,7 @@ export default function VendorProfilePage() {
         .from("vendor_profiles")
         .insert({ user_id: user.id, ...payload })
         .select(
-          "id, business_name, category, bio, base_price_cents, location, service_radius_miles, portfolio_summary, verified_at, intro_video_url, weekly_digest_enabled",
+          "id, business_name, category, bio, base_price_cents, location, service_radius_miles, portfolio_summary, verified_at, intro_video_url, weekly_digest_enabled, slug",
         )
         .single();
       setCreating(false);
@@ -352,6 +367,39 @@ export default function VendorProfilePage() {
                 </p>
               </div>
 
+              <div className="space-y-2">
+                <Label htmlFor="slug">Public URL slug</Label>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-muted-foreground tnum whitespace-nowrap">
+                    vendora.events/v/
+                  </span>
+                  <Input
+                    id="slug"
+                    value={slug}
+                    onChange={(e) => setSlug(e.target.value)}
+                    placeholder="luminara-photography"
+                    className="h-11 flex-1"
+                  />
+                </div>
+                <p className="text-xs text-muted-foreground pt-1">
+                  Lowercase letters, numbers, and hyphens. Auto-generated
+                  from your business name if you leave it blank.
+                  {profile?.slug && (
+                    <>
+                      {" "}
+                      <a
+                        href={`/v/${profile.slug}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-accent hover:underline"
+                      >
+                        Open current URL
+                      </a>
+                    </>
+                  )}
+                </p>
+              </div>
+
               {profile && canEdit && (
                 <div className="flex items-center justify-between gap-4 pt-4 border-t border-border">
                   <div className="min-w-0">
@@ -428,6 +476,9 @@ export default function VendorProfilePage() {
                   vendorId={profile.id}
                   canEdit={canEdit}
                 />
+              </div>
+              <div className="mt-12 pt-10 border-t border-border">
+                <IntakeFormEditor vendorId={profile.id} canEdit={canEdit} />
               </div>
             </>
           )}

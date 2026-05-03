@@ -48,6 +48,7 @@ interface ExistingReview {
   id: string;
   rating: number;
   body: string | null;
+  photo_urls?: string[];
 }
 
 interface Message {
@@ -134,7 +135,7 @@ export default function HostInquiryDetailPage() {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: r } = await (supabase as any)
       .from("reviews")
-      .select("id, rating, body")
+      .select("id, rating, body, photo_urls")
       .eq("inquiry_id", inquiryId)
       .maybeSingle();
     setReview((r as ExistingReview | null) ?? null);

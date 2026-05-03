@@ -140,7 +140,8 @@ const sampleFaqs = [
 const spring = { type: "spring" as const, duration: 0.6, bounce: 0 };
 
 export default function VendorDetailPage() {
-  const { id } = useParams();
+  // Route is either /vendors/:id or /v/:slug — accept both.
+  const { id, slug } = useParams();
   const { session, profile, loading: authLoading } = useAuth();
   const { vendors, loading: vendorsLoading } = useVendors();
   const { isSaved, toggle: toggleSave } = useSavedVendors();
@@ -148,7 +149,11 @@ export default function VendorDetailPage() {
   const [inquiryFormOpen, setInquiryFormOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
 
-  const vendor = vendors.find((v) => v.id === id);
+  const vendor = id
+    ? vendors.find((v) => v.id === id)
+    : slug
+      ? vendors.find((v) => v.slug === slug)
+      : undefined;
   const saved = vendor ? isSaved(vendor.id) : false;
 
   // Real portfolio images (only if this is a DB-backed vendor).
@@ -217,6 +222,7 @@ export default function VendorDetailPage() {
     id: string;
     rating: number;
     body: string | null;
+    photo_urls: string[] | null;
     created_at: string;
     host: { display_name: string | null } | null;
     response: { body: string } | null;
@@ -233,7 +239,7 @@ export default function VendorDetailPage() {
     (supabase as any)
       .from("reviews")
       .select(
-        "id, rating, body, created_at, host:profiles!reviews_host_id_fkey(display_name), response:review_responses(body), inquiry:inquiries!reviews_inquiry_id_fkey(event_type, event_date)",
+        "id, rating, body, photo_urls, created_at, host:profiles!reviews_host_id_fkey(display_name), response:review_responses(body), inquiry:inquiries!reviews_inquiry_id_fkey(event_type, event_date)",
       )
       .eq("vendor_id", vendor.id)
       .order("created_at", { ascending: false })
@@ -771,6 +777,26 @@ export default function VendorDetailPage() {
                             <p className="text-foreground/85 leading-relaxed mb-4">
                               "{r.body}"
                             </p>
+                          )}
+                          {r.photo_urls && r.photo_urls.length > 0 && (
+                            <div className="grid grid-cols-4 gap-2 mb-4">
+                              {r.photo_urls.map((url, i) => (
+                                <a
+                                  key={url}
+                                  href={url}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="aspect-square rounded-sm overflow-hidden bg-muted block hover:opacity-80 transition-opacity"
+                                >
+                                  <img
+                                    src={url}
+                                    alt={`Photo ${i + 1} from ${r.host?.display_name ?? "host"}'s review`}
+                                    loading="lazy"
+                                    className="w-full h-full object-cover"
+                                  />
+                                </a>
+                              ))}
+                            </div>
                           )}
                           <div>
                             <p className="text-sm font-medium">

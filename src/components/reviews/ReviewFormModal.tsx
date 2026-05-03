@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { Star, Loader2 } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Star, Loader2, Upload, X } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -21,7 +21,13 @@ interface ExistingReview {
   id: string;
   rating: number;
   body: string | null;
+  photo_urls?: string[];
 }
+
+const PHOTO_BUCKET = "review-photos";
+const PHOTO_MAX = 4;
+const PHOTO_BYTES = 5 * 1024 * 1024;
+const PHOTO_TYPES = ["image/jpeg", "image/png", "image/webp"];
 
 interface Props {
   open: boolean;
@@ -48,13 +54,69 @@ export function ReviewFormModal({
   const [hoverRating, setHoverRating] = useState(0);
   const [body, setBody] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [photos, setPhotos] = useState<string[]>([]);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (open) {
       setRating(existingReview?.rating ?? 0);
       setBody(existingReview?.body ?? "");
+      setPhotos(existingReview?.photo_urls ?? []);
     }
   }, [open, existingReview]);
+
+  async function uploadPhotos(files: FileList) {
+    const remaining = PHOTO_MAX - photos.length;
+    if (remaining <= 0) {
+      toast.error(`Up to ${PHOTO_MAX} photos`);
+      return;
+    }
+    const accepted = Array.from(files).slice(0, remaining).filter((f) => {
+      if (!PHOTO_TYPES.includes(f.type)) {
+        toast.error(`${f.name}: only JPG, PNG, WEBP`);
+        return false;
+      }
+      if (f.size > PHOTO_BYTES) {
+        toast.error(`${f.name}: max 5 MB`);
+        return false;
+      }
+      return true;
+    });
+    if (accepted.length === 0) return;
+
+    setUploading(true);
+    const newUrls: string[] = [];
+    for (const file of accepted) {
+      const ext = file.name.split(".").pop() ?? "jpg";
+      const filename = `${crypto.randomUUID()}.${ext.toLowerCase()}`;
+      const path = `${hostId}/${filename}`;
+      const upload = await supabase.storage
+        .from(PHOTO_BUCKET)
+        .upload(path, file, { contentType: file.type, cacheControl: "3600" });
+      if (upload.error) {
+        toast.error(`${file.name}: ${upload.error.message}`);
+        continue;
+      }
+      const { data: pub } = supabase.storage
+        .from(PHOTO_BUCKET)
+        .getPublicUrl(path);
+      newUrls.push(pub.publicUrl);
+    }
+    setPhotos((prev) => [...prev, ...newUrls]);
+    setUploading(false);
+  }
+
+  function removePhoto(url: string) {
+    setPhotos((prev) => prev.filter((p) => p !== url));
+    // Best-effort storage cleanup. Skip if the URL isn't from our bucket.
+    const marker = `/${PHOTO_BUCKET}/`;
+    const idx = url.indexOf(marker);
+    if (idx >= 0) {
+      const path = url.slice(idx + marker.length).split("?")[0];
+      supabase.storage.from(PHOTO_BUCKET).remove([path]).then(() => {});
+    }
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -70,11 +132,16 @@ export function ReviewFormModal({
       host_id: hostId,
       rating,
       body: body.trim() || null,
+      photo_urls: photos,
     };
 
     const { error } = existingReview
       ? await reviewsTable()
-          .update({ rating, body: body.trim() || null })
+          .update({
+            rating,
+            body: body.trim() || null,
+            photo_urls: photos,
+          })
           .eq("id", existingReview.id)
       : await reviewsTable().insert(payload);
 
@@ -141,6 +208,71 @@ export function ReviewFormModal({
               rows={5}
               placeholder="What did you love? What could've been better?"
             />
+          </div>
+
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <Label>Photos (optional)</Label>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                disabled={uploading || photos.length >= PHOTO_MAX}
+                onClick={() => fileInputRef.current?.click()}
+                className="rounded-full h-7 text-xs"
+              >
+                {uploading ? (
+                  <>
+                    <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                    Uploading…
+                  </>
+                ) : (
+                  <>
+                    <Upload className="w-3 h-3 mr-1" />
+                    Add photos
+                  </>
+                )}
+              </Button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept={PHOTO_TYPES.join(",")}
+                multiple
+                className="hidden"
+                onChange={(e) => {
+                  if (e.target.files) uploadPhotos(e.target.files);
+                  e.target.value = "";
+                }}
+              />
+            </div>
+            {photos.length === 0 ? (
+              <p className="text-xs text-muted-foreground">
+                Up to {PHOTO_MAX} photos · 5 MB each. JPG / PNG / WEBP.
+              </p>
+            ) : (
+              <div className="grid grid-cols-4 gap-2">
+                {photos.map((url) => (
+                  <div
+                    key={url}
+                    className="relative group aspect-square rounded-sm overflow-hidden bg-muted"
+                  >
+                    <img
+                      src={url}
+                      alt="Review photo"
+                      className="w-full h-full object-cover"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => removePhoto(url)}
+                      className="absolute top-1 right-1 w-6 h-6 rounded-full bg-foreground/85 text-background flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity backdrop-blur-sm"
+                      aria-label="Remove photo"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           <DialogFooter className="pt-2 gap-2 sm:gap-0">

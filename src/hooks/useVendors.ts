@@ -18,6 +18,8 @@ export interface Vendor {
   responderTier?: "fast" | "standard" | null;
   /** Optional vendor intro video — YouTube, Vimeo, or direct file URL. */
   introVideoUrl?: string | null;
+  /** Slug for the SEO microsite mirror at /v/<slug>. */
+  slug?: string | null;
   /** True when this vendor came from the live DB; false for sampleData fallback. */
   isReal: boolean;
 }
@@ -47,6 +49,7 @@ interface VendorProfileRow {
   verified_at: string | null;
   responder_tier: "fast" | "standard" | null;
   intro_video_url: string | null;
+  slug: string | null;
 }
 
 function normalizeDb(row: VendorProfileRow): Vendor {
@@ -69,6 +72,7 @@ function normalizeDb(row: VendorProfileRow): Vendor {
     location: row.location ?? undefined,
     responderTier: row.responder_tier ?? null,
     introVideoUrl: row.intro_video_url ?? null,
+    slug: row.slug ?? null,
     isReal: true,
   };
 }
@@ -96,7 +100,7 @@ async function fetchVendors(): Promise<Vendor[]> {
       const { data, error } = await (supabase as any)
         .from("vendor_profiles")
         .select(
-          "id, business_name, category, bio, base_price_cents, location, service_radius_miles, portfolio_summary, verified_at, responder_tier, intro_video_url",
+          "id, business_name, category, bio, base_price_cents, location, service_radius_miles, portfolio_summary, verified_at, responder_tier, intro_video_url, slug",
         )
         .order("verified_at", { ascending: false, nullsFirst: false });
       if (!error && data && data.length > 0) {

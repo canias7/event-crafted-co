@@ -45,6 +45,7 @@ interface Inquiry {
   budget_min_cents: number | null;
   budget_max_cents: number | null;
   special_requests: string | null;
+  intake_answers: Record<string, string | string[] | boolean> | null;
   status: string;
   quality_score: number | null;
   intent_score: number | null;
@@ -430,6 +431,29 @@ export default function InquiryDetailPage() {
               </p>
             </div>
           </div>
+
+          {inquiry.intake_answers &&
+            Object.keys(inquiry.intake_answers).length > 0 && (
+              <div className="mt-6">
+                <p className="font-label text-muted-foreground mb-2">
+                  Intake form answers
+                </p>
+                <ul className="space-y-1.5 bg-secondary/40 rounded-sm p-3 text-sm">
+                  {Object.entries(inquiry.intake_answers).map(([qid, val]) => (
+                    <li key={qid} className="leading-relaxed">
+                      <span className="text-muted-foreground text-xs uppercase tracking-wide">
+                        {qid.slice(0, 8)}…{" "}
+                      </span>
+                      {Array.isArray(val) ? val.join(", ") : String(val)}
+                    </li>
+                  ))}
+                </ul>
+                <p className="text-xs text-muted-foreground mt-2 italic">
+                  Question labels: see your published intake form on
+                  /vendor/profile.
+                </p>
+              </div>
+            )}
 
           {inquiry.special_requests && (
             <div className="mt-6">
