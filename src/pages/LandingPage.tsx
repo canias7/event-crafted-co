@@ -89,7 +89,7 @@ export default function LandingPage() {
       className="min-h-screen relative"
       style={{
         background:
-          "linear-gradient(to bottom, hsl(var(--foreground)) 0%, hsl(var(--foreground)) 35%, hsl(36 22% 80%) 60%, hsl(var(--background)) 85%, hsl(var(--background)) 100%)",
+          "linear-gradient(to bottom, hsl(var(--foreground)) 0%, hsl(220 12% 18%) 25%, hsl(220 10% 32%) 42%, hsl(30 14% 58%) 58%, hsl(33 20% 80%) 72%, hsl(36 26% 92%) 86%, hsl(var(--background)) 100%)",
       }}
     >
       <PublicNav />
@@ -372,7 +372,7 @@ export default function LandingPage() {
       </section>
 
       {/* Stats / quiet trust band */}
-      <section className="py-20 border-y border-border/40 backdrop-blur-sm bg-background/30">
+      <section className="py-20 relative">
         <div className="container mx-auto px-6 md:px-8">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-10 text-center">
             {[
