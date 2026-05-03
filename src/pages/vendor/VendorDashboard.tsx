@@ -8,6 +8,7 @@ import {
   ShieldCheck,
   Clock,
   CheckCircle2,
+  ExternalLink,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -210,6 +211,14 @@ export default function VendorDashboard() {
                 Pending review
               </Badge>
             ) : null}
+            {vendorProfile && (
+              <Link to={`/vendors/${vendorProfile.id}`} target="_blank">
+                <Button variant="outline" size="sm" className="rounded-full hidden sm:inline-flex">
+                  <ExternalLink className="w-3.5 h-3.5 mr-1.5" />
+                  Preview
+                </Button>
+              </Link>
+            )}
             <Button variant="outline" size="sm" className="h-9">
               <Bell className="w-4 h-4" />
             </Button>

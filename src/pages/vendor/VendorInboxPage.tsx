@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { Inbox } from "lucide-react";
+import { Inbox, Download } from "lucide-react";
+import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { DashboardSidebar } from "@/components/shared/DashboardSidebar";
@@ -34,6 +35,38 @@ const statusVariant: Record<string, string> = {
   lost: "bg-muted text-muted-foreground",
   expired: "bg-muted text-muted-foreground",
 };
+
+function exportInquiriesCsv(rows: InquiryRow[]) {
+  if (rows.length === 0) {
+    toast.error("Nothing to export yet");
+    return;
+  }
+  const headers = ["host", "event_type", "event_date", "budget_min", "budget_max", "status", "quality", "received"];
+  const escape = (v: string) => `"${String(v).replace(/"/g, '""')}"`;
+  const lines = rows.map((r) =>
+    [
+      escape(r.host?.display_name ?? ""),
+      escape(r.event_type),
+      r.event_date ?? "",
+      r.budget_min_cents != null ? (r.budget_min_cents / 100).toFixed(0) : "",
+      r.budget_max_cents != null ? (r.budget_max_cents / 100).toFixed(0) : "",
+      r.status,
+      r.quality_score?.toString() ?? "",
+      new Date(r.created_at).toISOString().slice(0, 10),
+    ].join(","),
+  );
+  const csv = [headers.join(","), ...lines].join("\n");
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `vendora-inquiries-${new Date().toISOString().slice(0, 10)}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+  toast.success("Inquiries exported");
+}
 
 const filterOptions: Array<{ value: string; label: string; matches: (status: string) => boolean }> = [
   { value: "all", label: "All", matches: () => true },
@@ -119,9 +152,21 @@ export default function VendorInboxPage() {
     <div className="flex min-h-screen bg-background">
       <DashboardSidebar items={navItems} title="Vendor Portal" backPath="/" />
       <main className="flex-1 pb-20 lg:pb-0">
-        <div className="border-b border-border bg-card px-4 md:px-8 py-4 sticky top-0 z-40">
-          <h1 className="font-display text-xl">Inbox</h1>
-          <p className="text-sm text-muted-foreground">All inquiries from hosts</p>
+        <div className="border-b border-border bg-card px-4 md:px-8 py-4 sticky top-0 z-40 flex items-center justify-between">
+          <div>
+            <h1 className="font-display text-xl">Inbox</h1>
+            <p className="text-sm text-muted-foreground">All inquiries from hosts</p>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={rows.length === 0}
+            onClick={() => exportInquiriesCsv(rows)}
+            className="rounded-full"
+          >
+            <Download className="w-3.5 h-3.5 mr-1.5" />
+            Export CSV
+          </Button>
         </div>
 
         <div className="p-4 md:p-8">

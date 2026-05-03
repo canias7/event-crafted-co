@@ -1,14 +1,34 @@
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ArrowRight } from "lucide-react";
 import { PublicNav } from "@/components/public/PublicNav";
 import { Footer } from "@/components/public/Footer";
-import { inspirationEntries } from "@/data/inspiration";
+import {
+  fetchInspirationEntries,
+  inspirationEntries,
+  type InspirationEntry,
+} from "@/data/inspiration";
 import heroBg from "@/assets/vendora-hero-gala.jpg";
 
 const spring = { type: "spring" as const, duration: 0.6, bounce: 0 };
 
 export default function InspirationPage() {
+  // Start with bundled fallbacks so the grid renders immediately, then
+  // hydrate from the DB on mount.
+  const [entries, setEntries] = useState<InspirationEntry[]>(inspirationEntries);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetchInspirationEntries().then((fetched) => {
+      if (cancelled) return;
+      if (fetched.length > 0) setEntries(fetched);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   return (
     <div className="min-h-screen bg-background">
       <PublicNav />
@@ -63,7 +83,7 @@ export default function InspirationPage() {
       <section className="py-16 md:py-24">
         <div className="container mx-auto px-6 md:px-8">
           <div className="grid md:grid-cols-2 gap-x-8 gap-y-16">
-            {inspirationEntries.map((entry, i) => (
+            {entries.map((entry, i) => (
               <Link
                 key={entry.slug}
                 to={`/inspiration/${entry.slug}`}

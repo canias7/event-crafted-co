@@ -55,6 +55,8 @@ const AvailabilityPage = lazy(() => import("./pages/vendor/AvailabilityPage"));
 const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard"));
 const AdminVendorsPage = lazy(() => import("./pages/admin/AdminVendorsPage"));
 const AdminReviewsPage = lazy(() => import("./pages/admin/AdminReviewsPage"));
+const AdminInquiriesPage = lazy(() => import("./pages/admin/AdminInquiriesPage"));
+const AdminInspirationPage = lazy(() => import("./pages/admin/AdminInspirationPage"));
 
 const queryClient = new QueryClient();
 
@@ -122,8 +124,9 @@ const App = () => (
               {/* Admin */}
               <Route path="/admin/dashboard" element={<RequireRole role="admin"><AdminDashboard /></RequireRole>} />
               <Route path="/admin/vendors" element={<RequireRole role="admin"><AdminVendorsPage /></RequireRole>} />
-              <Route path="/admin/inquiries" element={<RequireRole role="admin"><ComingSoonPage side="admin" title="Admin · Inquiries" description="Cross-platform inquiry browser with health checks. Coming next." /></RequireRole>} />
+              <Route path="/admin/inquiries" element={<RequireRole role="admin"><AdminInquiriesPage /></RequireRole>} />
               <Route path="/admin/reviews" element={<RequireRole role="admin"><AdminReviewsPage /></RequireRole>} />
+              <Route path="/admin/inspiration" element={<RequireRole role="admin"><AdminInspirationPage /></RequireRole>} />
 
               <Route path="*" element={<NotFound />} />
             </Routes>

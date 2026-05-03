@@ -1,3 +1,4 @@
+import { supabase } from "@/integrations/supabase/client";
 import heroBridal from "@/assets/hero/bridal.jpg";
 import heroBirthday from "@/assets/hero/birthday-milestone.jpg";
 import heroAnniversary from "@/assets/hero/anniversary.jpg";
@@ -8,7 +9,7 @@ import heroEngagement from "@/assets/hero/engagement.jpg";
 export interface InspirationEntry {
   slug: string;
   title: string;
-  eventType: "wedding" | "birthday" | "holiday_dinner" | "baby_shower" | "anniversary" | "engagement" | "other";
+  eventType: string;
   eventTypeLabel: string;
   location: string;
   hosts: string;
@@ -18,11 +19,13 @@ export interface InspirationEntry {
   hero: string;
   body: string;
   vendorCredits: string[];
+  isFromDb?: boolean;
 }
 
-// Curated multi-event editorial content. For v1 this lives as TS data;
-// once we ship an admin/CMS interface, it'll move to a featured_events
-// table with the same shape.
+// Bundled fallback entries — used when the DB has no published rows for a
+// slug. Lets the /inspiration page render real-feeling content out of the
+// box, and keeps the existing entries live until admin replaces them via
+// the CMS.
 export const inspirationEntries: InspirationEntry[] = [
   {
     slug: "hudson-valley-garden-wedding",
@@ -150,6 +153,73 @@ export const inspirationEntries: InspirationEntry[] = [
   },
 ];
 
-export function findInspirationBySlug(slug: string | undefined) {
-  return inspirationEntries.find((e) => e.slug === slug);
+interface DbRow {
+  slug: string;
+  title: string;
+  event_type: string;
+  event_type_label: string | null;
+  location: string | null;
+  hosts: string | null;
+  guests: number | null;
+  date_label: string | null;
+  excerpt: string | null;
+  body: string | null;
+  hero_url: string | null;
+  vendor_credits: string[];
+}
+
+const DEFAULT_HEROES: Record<string, string> = {
+  wedding: heroBridal,
+  birthday: heroBirthday,
+  anniversary: heroAnniversary,
+  holiday_dinner: heroChristmas,
+  baby_shower: heroBabyShower,
+  engagement: heroEngagement,
+};
+
+function normalizeDb(r: DbRow): InspirationEntry {
+  return {
+    slug: r.slug,
+    title: r.title,
+    eventType: r.event_type,
+    eventTypeLabel: r.event_type_label ?? r.event_type,
+    location: r.location ?? "",
+    hosts: r.hosts ?? "",
+    guests: r.guests ?? 0,
+    date: r.date_label ?? "",
+    excerpt: r.excerpt ?? "",
+    hero: r.hero_url ?? DEFAULT_HEROES[r.event_type] ?? heroBridal,
+    body: r.body ?? "",
+    vendorCredits: r.vendor_credits ?? [],
+    isFromDb: true,
+  };
+}
+
+/**
+ * Returns DB-published entries first, with bundled TS entries filling in for
+ * slugs not yet in the DB. Editorial team can replace any bundled entry by
+ * publishing one with the same slug via /admin/inspiration.
+ */
+export async function fetchInspirationEntries(): Promise<InspirationEntry[]> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data } = await (supabase as any)
+    .from("featured_events")
+    .select(
+      "slug, title, event_type, event_type_label, location, hosts, guests, date_label, excerpt, body, hero_url, vendor_credits, published_at",
+    )
+    .not("published_at", "is", null)
+    .order("published_at", { ascending: false });
+
+  const dbEntries = ((data as DbRow[] | null) ?? []).map(normalizeDb);
+  const dbSlugs = new Set(dbEntries.map((e) => e.slug));
+  const fillIns = inspirationEntries.filter((e) => !dbSlugs.has(e.slug));
+  return [...dbEntries, ...fillIns];
+}
+
+export function findInspirationBySlug(
+  slug: string | undefined,
+  entries: InspirationEntry[] = inspirationEntries,
+) {
+  if (!slug) return undefined;
+  return entries.find((e) => e.slug === slug);
 }

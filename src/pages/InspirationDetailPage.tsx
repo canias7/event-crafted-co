@@ -1,17 +1,38 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Link, useParams, Navigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ArrowLeft, Calendar, MapPin, Users, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PublicNav } from "@/components/public/PublicNav";
 import { Footer } from "@/components/public/Footer";
-import { findInspirationBySlug, inspirationEntries } from "@/data/inspiration";
+import {
+  fetchInspirationEntries,
+  findInspirationBySlug,
+  inspirationEntries,
+  type InspirationEntry,
+} from "@/data/inspiration";
 
 const spring = { type: "spring" as const, duration: 0.6, bounce: 0 };
 
 export default function InspirationDetailPage() {
   const { slug } = useParams();
-  const entry = findInspirationBySlug(slug);
+  // Bundled lookup first so first paint has content; merged DB lookup hydrates.
+  const [entries, setEntries] = useState<InspirationEntry[]>(inspirationEntries);
+  const [hydrated, setHydrated] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetchInspirationEntries().then((fetched) => {
+      if (cancelled) return;
+      setEntries(fetched.length > 0 ? fetched : inspirationEntries);
+      setHydrated(true);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const entry = findInspirationBySlug(slug, entries);
 
   useEffect(() => {
     if (entry) {
@@ -22,14 +43,48 @@ export default function InspirationDetailPage() {
     };
   }, [entry]);
 
-  if (!entry) {
+  // Article JSON-LD for SEO (rich snippets in Google).
+  useEffect(() => {
+    if (!entry) return;
+    const id = "inspiration-jsonld";
+    const data = {
+      "@context": "https://schema.org",
+      "@type": "Article",
+      headline: entry.title,
+      description: entry.excerpt,
+      image: entry.hero,
+      author: { "@type": "Organization", name: "Vendora" },
+      publisher: {
+        "@type": "Organization",
+        name: "Vendora",
+      },
+      articleSection: entry.eventTypeLabel,
+      keywords: [entry.eventType, entry.location, "event"].filter(Boolean),
+      url: typeof window !== "undefined" ? window.location.href : undefined,
+    };
+    let script = document.getElementById(id) as HTMLScriptElement | null;
+    if (!script) {
+      script = document.createElement("script");
+      script.id = id;
+      script.type = "application/ld+json";
+      document.head.appendChild(script);
+    }
+    script.textContent = JSON.stringify(data);
+    return () => {
+      const existing = document.getElementById(id);
+      if (existing) existing.remove();
+    };
+  }, [entry]);
+
+  if (!entry && hydrated) {
     return <Navigate to="/inspiration" replace />;
+  }
+  if (!entry) {
+    return null;
   }
 
   // Pick three other entries to suggest at the bottom
-  const related = inspirationEntries
-    .filter((e) => e.slug !== entry.slug)
-    .slice(0, 3);
+  const related = entries.filter((e) => e.slug !== entry.slug).slice(0, 3);
 
   return (
     <div className="min-h-screen bg-background">
