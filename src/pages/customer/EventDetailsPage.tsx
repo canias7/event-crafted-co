@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import {
   Calendar,
+  CalendarPlus,
   Clock,
   MapPin,
   Loader2,
@@ -10,6 +11,7 @@ import {
   Star,
   Trash2,
 } from "lucide-react";
+import { downloadIcs, slugForFile } from "@/lib/ics";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -402,6 +404,42 @@ export default function EventDetailsPage() {
                       </p>
                     </div>
                   </div>
+
+                  {eventDate && (
+                    <div className="flex justify-end">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          const summary =
+                            (name?.trim() ||
+                              `${eventTypeLabel[eventType]}`) +
+                            (eventLocation
+                              ? ` — ${eventLocation}`
+                              : "");
+                          downloadIcs(
+                            slugForFile(`vendora-${summary || "event"}`),
+                            [
+                              {
+                                uid: `event-${activeEvent?.id ?? "draft"}@vendora`,
+                                start: new Date(`${eventDate}T00:00:00Z`),
+                                allDay: true,
+                                summary,
+                                description:
+                                  activeEvent?.event_notes ?? null,
+                                location: eventLocation || null,
+                              },
+                            ],
+                          );
+                        }}
+                        className="rounded-full h-8 text-xs"
+                      >
+                        <CalendarPlus className="w-3 h-3 mr-1.5" />
+                        Add to calendar
+                      </Button>
+                    </div>
+                  )}
 
                   <form onSubmit={handleSave} className="space-y-5">
                     <div className="space-y-2">

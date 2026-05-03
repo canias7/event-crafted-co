@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import {
   CalendarDays,
+  CalendarPlus,
   Check,
   X,
   XCircle,
@@ -9,6 +10,7 @@ import {
   MapPin,
   ChevronRight,
 } from "lucide-react";
+import { downloadIcs, slugForFile } from "@/lib/ics";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -218,6 +220,9 @@ export function AppointmentsList({ appointments, side, onMutate }: Props) {
             const inPast = when.getTime() < Date.now();
             const canMarkComplete =
               appt.status === "accepted" && inPast && side === "vendor";
+            const canExport =
+              (appt.status === "accepted" || appt.status === "proposed") &&
+              !inPast;
 
             return (
               <div
@@ -283,7 +288,7 @@ export function AppointmentsList({ appointments, side, onMutate }: Props) {
                   </p>
                 )}
 
-                {(needsMyResponse || canCancel || canMarkComplete) && (
+                {(needsMyResponse || canCancel || canMarkComplete || canExport) && (
                   <div className="flex flex-wrap gap-2 pt-2">
                     {needsMyResponse && (
                       <>
@@ -355,6 +360,49 @@ export function AppointmentsList({ appointments, side, onMutate }: Props) {
                           </AlertDialogFooter>
                         </AlertDialogContent>
                       </AlertDialog>
+                    )}
+                    {canExport && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => {
+                          const kindLabelText =
+                            kindLabel[appt.kind] ?? "Meeting";
+                          const counterparty = otherName
+                            ? ` with ${otherName}`
+                            : "";
+                          const summary = `${kindLabelText}${counterparty}`;
+                          const desc = [
+                            appt.notes,
+                            appt.inquiry_id
+                              ? `Linked inquiry: ${window.location.origin}${
+                                  side === "host"
+                                    ? `/customer/inquiries/${appt.inquiry_id}`
+                                    : `/vendor/inbox/${appt.inquiry_id}`
+                                }`
+                              : null,
+                          ]
+                            .filter(Boolean)
+                            .join("\n\n");
+                          downloadIcs(
+                            slugForFile(`vendora-${kindLabelText}-${otherName ?? "meeting"}`),
+                            [
+                              {
+                                uid: `appt-${appt.id}@vendora`,
+                                start: when,
+                                durationMinutes: appt.duration_minutes,
+                                summary,
+                                description: desc || null,
+                                location: appt.location,
+                              },
+                            ],
+                          );
+                        }}
+                        className="rounded-full h-8 text-xs"
+                      >
+                        <CalendarPlus className="w-3 h-3 mr-1" />
+                        Add to calendar
+                      </Button>
                     )}
                     {appt.inquiry_id && (
                       <Button
