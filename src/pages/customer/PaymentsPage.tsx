@@ -6,6 +6,7 @@ import {
   Loader2,
   Trash2,
   X,
+  Download,
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -124,6 +125,48 @@ export default function PaymentsPage() {
     }
   }
 
+  function exportCsv() {
+    if (items.length === 0) {
+      toast.error("Nothing to export yet");
+      return;
+    }
+    const headers = [
+      "description",
+      "category",
+      "amount",
+      "paid",
+      "outstanding",
+      "due_date",
+      "status",
+    ];
+    const escape = (v: string) =>
+      `"${String(v).replace(/"/g, '""')}"`;
+    const rows = items.map((i) => {
+      const outstanding = (i.amount_cents - i.paid_cents) / 100;
+      const s = status(i);
+      return [
+        escape(i.description),
+        escape(i.category ?? ""),
+        (i.amount_cents / 100).toFixed(2),
+        (i.paid_cents / 100).toFixed(2),
+        outstanding.toFixed(2),
+        i.due_date ?? "",
+        s,
+      ].join(",");
+    });
+    const csv = [headers.join(","), ...rows].join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `vendora-budget-${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+    toast.success("Budget exported");
+  }
+
   async function markPaid(item: BudgetRow) {
     const { error } = await budgetTable()
       .update({
@@ -156,13 +199,24 @@ export default function PaymentsPage() {
               Track every line item across your event
             </p>
           </div>
-          <Button
-            onClick={() => setAddOpen(true)}
-            className="rounded-full bg-foreground text-background hover:bg-foreground/90"
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            New line item
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              onClick={exportCsv}
+              disabled={items.length === 0}
+              className="rounded-full"
+            >
+              <Download className="w-4 h-4 mr-2" />
+              Export CSV
+            </Button>
+            <Button
+              onClick={() => setAddOpen(true)}
+              className="rounded-full bg-foreground text-background hover:bg-foreground/90"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              New line item
+            </Button>
+          </div>
         </div>
 
         <div className="p-4 md:p-8 space-y-6">
