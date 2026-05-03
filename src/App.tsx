@@ -15,6 +15,7 @@ import { AuthProvider } from "./hooks/useAuth";
 import { RequireRole } from "./components/auth/RequireRole";
 import { CookieBanner } from "./components/CookieBanner";
 import { CommandPalette } from "./components/CommandPalette";
+import { SkipLink } from "./components/SkipLink";
 import { MobilePortalBell } from "./components/notifications/MobilePortalBell";
 
 // Lazy-load everything else so the initial bundle ships only the landing,
@@ -87,6 +88,7 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <AuthProvider>
+          <SkipLink />
           <Suspense fallback={<RouteFallback />}>
             <Routes>
               {/* Public */}

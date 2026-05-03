@@ -94,7 +94,7 @@ export default function FavoritesPage() {
     <div className="flex min-h-screen bg-background">
       <DashboardSidebar items={navItems} title="Customer" backPath="/" />
 
-      <main className="flex-1 pb-20 lg:pb-0">
+      <main id="main-content" className="flex-1 pb-20 lg:pb-0">
         <div className="border-b border-border bg-card px-4 md:px-8 py-4 sticky top-0 z-40">
           <h1 className="font-display text-xl">Saved vendors</h1>
           <p className="text-sm text-muted-foreground">
