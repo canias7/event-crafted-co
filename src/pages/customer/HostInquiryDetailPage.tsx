@@ -15,6 +15,7 @@ import { ProposeAppointmentModal } from "@/components/appointments/ProposeAppoin
 import {
   ProposalCard,
   type Proposal,
+  type SignaturePayload,
 } from "@/components/proposals/ProposalCard";
 import { MessageAttachments } from "@/components/messages/MessageAttachments";
 import {
@@ -144,7 +145,7 @@ export default function HostInquiryDetailPage() {
     const { data: props } = await (supabase as any)
       .from("proposals")
       .select(
-        "id, title, line_items, subtotal_cents, deposit_cents, terms, contract_body, status, sent_at",
+        "id, title, line_items, subtotal_cents, deposit_cents, terms, contract_body, status, sent_at, signed_at, signed_name",
       )
       .eq("inquiry_id", inquiryId)
       .order("created_at", { ascending: false });
@@ -153,12 +154,25 @@ export default function HostInquiryDetailPage() {
     setLoading(false);
   }
 
-  async function respondProposal(p: Proposal, action: "accepted" | "rejected") {
+  async function respondProposal(
+    p: Proposal,
+    action: "accepted" | "rejected",
+    signature?: SignaturePayload,
+  ) {
     setActing(action === "accepted" ? "accept" : "reject");
+    const update: Record<string, unknown> = {
+      status: action,
+      responded_at: new Date().toISOString(),
+    };
+    if (signature) {
+      update.signed_at = signature.signed_at;
+      update.signed_name = signature.signed_name;
+      update.signed_user_agent = signature.signed_user_agent;
+    }
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { error } = await (supabase as any)
       .from("proposals")
-      .update({ status: action, responded_at: new Date().toISOString() })
+      .update(update)
       .eq("id", p.id);
     setActing(null);
     if (error) {
@@ -166,7 +180,11 @@ export default function HostInquiryDetailPage() {
       return;
     }
     toast.success(
-      action === "accepted" ? "Proposal accepted — you're booked." : "Proposal declined",
+      action === "accepted"
+        ? signature
+          ? "Signed and accepted — you're booked."
+          : "Proposal accepted — you're booked."
+        : "Proposal declined",
     );
     load();
   }
@@ -445,7 +463,7 @@ export default function HostInquiryDetailPage() {
                         proposal={p}
                         canRespond={p.status === "pending"}
                         acting={acting}
-                        onAccept={() => respondProposal(p, "accepted")}
+                        onAccept={(sig) => respondProposal(p, "accepted", sig)}
                         onReject={() => respondProposal(p, "rejected")}
                       />
                     ))}

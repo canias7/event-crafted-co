@@ -1,12 +1,29 @@
-import { Check, X, FileText, Loader2 } from "lucide-react";
+import { useState } from "react";
+import { Check, X, FileText, Loader2, PenLine } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 export interface ProposalLineItem {
   description: string;
   quantity: number;
   unit_price_cents: number;
   amount_cents: number;
+}
+
+export interface SignaturePayload {
+  signed_name: string;
+  signed_at: string;
+  signed_user_agent: string;
 }
 
 export interface Proposal {
@@ -19,6 +36,8 @@ export interface Proposal {
   contract_body: string | null;
   status: "pending" | "accepted" | "rejected" | "withdrawn";
   sent_at: string | null;
+  signed_at?: string | null;
+  signed_name?: string | null;
 }
 
 interface Props {
@@ -26,7 +45,8 @@ interface Props {
   /** When provided (host view), Accept / Decline actions render. */
   canRespond?: boolean;
   acting?: "accept" | "reject" | null;
-  onAccept?: () => void;
+  /** When the proposal needs a signature, this is called with sig payload. */
+  onAccept?: (signature?: SignaturePayload) => void;
   onReject?: () => void;
 }
 
@@ -55,6 +75,29 @@ export function ProposalCard({
   onAccept,
   onReject,
 }: Props) {
+  const [signOpen, setSignOpen] = useState(false);
+  const requiresSignature =
+    Boolean(proposal.contract_body) || Boolean(proposal.terms);
+
+  function handleAcceptClick() {
+    if (!onAccept) return;
+    if (requiresSignature) {
+      setSignOpen(true);
+    } else {
+      onAccept();
+    }
+  }
+
+  function handleSignSubmit(name: string) {
+    setSignOpen(false);
+    onAccept?.({
+      signed_name: name,
+      signed_at: new Date().toISOString(),
+      signed_user_agent:
+        typeof navigator !== "undefined" ? navigator.userAgent : "",
+    });
+  }
+
   return (
     <div className="bg-card border border-accent/30 rounded-sm p-6">
       <div className="flex items-start justify-between gap-4 flex-wrap mb-4">
@@ -132,19 +175,42 @@ export function ProposalCard({
         </details>
       )}
 
+      {/* Signature record — visible to both parties once signed */}
+      {proposal.status === "accepted" && proposal.signed_name && (
+        <div className="mt-5 pt-5 border-t border-accent/30 bg-accent/[0.04] -mx-6 px-6 -mb-6 pb-5 rounded-b-sm">
+          <div className="flex items-center gap-2">
+            <PenLine className="w-3.5 h-3.5 text-accent" />
+            <p className="font-label text-accent">Signed</p>
+          </div>
+          <p className="font-display text-xl mt-1 mb-0.5 italic">
+            {proposal.signed_name}
+          </p>
+          <p className="text-xs text-muted-foreground">
+            on{" "}
+            {proposal.signed_at &&
+              new Date(proposal.signed_at).toLocaleString(undefined, {
+                dateStyle: "long",
+                timeStyle: "short",
+              })}
+          </p>
+        </div>
+      )}
+
       {canRespond && proposal.status === "pending" && (
         <div className="flex gap-2 mt-6 pt-5 border-t border-border">
           <Button
-            onClick={onAccept}
+            onClick={handleAcceptClick}
             disabled={acting !== null}
             className="rounded-full bg-foreground text-background hover:bg-foreground/90 flex-1"
           >
             {acting === "accept" ? (
               <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+            ) : requiresSignature ? (
+              <PenLine className="w-4 h-4 mr-2" />
             ) : (
               <Check className="w-4 h-4 mr-2" />
             )}
-            Accept proposal
+            {requiresSignature ? "Sign and accept" : "Accept proposal"}
           </Button>
           <Button
             onClick={onReject}
@@ -161,6 +227,100 @@ export function ProposalCard({
           </Button>
         </div>
       )}
+
+      <SignatureDialog
+        open={signOpen}
+        onOpenChange={setSignOpen}
+        proposalTitle={proposal.title}
+        onSubmit={handleSignSubmit}
+      />
     </div>
+  );
+}
+
+function SignatureDialog({
+  open,
+  onOpenChange,
+  proposalTitle,
+  onSubmit,
+}: {
+  open: boolean;
+  onOpenChange: (o: boolean) => void;
+  proposalTitle: string;
+  onSubmit: (name: string) => void;
+}) {
+  const [name, setName] = useState("");
+  const [agreed, setAgreed] = useState(false);
+
+  function submit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!name.trim() || !agreed) return;
+    onSubmit(name.trim());
+    setName("");
+    setAgreed(false);
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md rounded-sm">
+        <DialogHeader>
+          <DialogTitle className="font-display text-2xl">
+            Sign and accept
+          </DialogTitle>
+          <DialogDescription>
+            Type your full legal name to sign "{proposalTitle}". This is a
+            binding electronic signature.
+          </DialogDescription>
+        </DialogHeader>
+        <form onSubmit={submit} className="space-y-4 pt-2">
+          <div className="space-y-1.5">
+            <Label htmlFor="sig-name">Full legal name</Label>
+            <Input
+              id="sig-name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Sarah Mitchell"
+              autoFocus
+              required
+              className="font-display text-lg italic"
+            />
+            <p className="text-xs text-muted-foreground">
+              Your typed name + timestamp + device info will be saved as
+              the signature record. Both parties keep a copy.
+            </p>
+          </div>
+          <label className="flex items-start gap-2.5 cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={agreed}
+              onChange={(e) => setAgreed(e.target.checked)}
+              className="mt-1 w-4 h-4 rounded-sm accent-foreground"
+            />
+            <span className="text-sm leading-snug">
+              I agree to the terms and contract above and consent to sign
+              electronically (UETA / E-SIGN Act).
+            </span>
+          </label>
+          <DialogFooter className="pt-2 gap-2 sm:gap-0">
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => onOpenChange(false)}
+              className="rounded-full"
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              disabled={!name.trim() || !agreed}
+              className="rounded-full bg-foreground text-background hover:bg-foreground/90"
+            >
+              <PenLine className="w-4 h-4 mr-2" />
+              Sign
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
   );
 }
