@@ -14,7 +14,7 @@ dist-ssr
 
 # Environment files — contents are publishable (anon key + URL),
 # but secrets (Anthropic, service role) belong only in Supabase secrets.
-.env
+# .env committed so published build has Supabase URL+anon key
 .env.local
 .env.*.local
 
