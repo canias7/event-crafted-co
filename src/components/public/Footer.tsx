@@ -2,8 +2,14 @@ import { Link } from "react-router-dom";
 
 export function Footer() {
   return (
-    <footer className="bg-primary text-primary-foreground py-16 md:py-24">
-      <div className="container mx-auto px-4 md:px-8">
+    <footer
+      className="text-primary-foreground py-16 md:py-24 relative"
+      style={{
+        background:
+          "linear-gradient(to bottom, hsl(var(--foreground)) 0%, hsl(220 12% 22%) 50%, hsl(var(--foreground)) 100%)",
+      }}
+    >
+      <div className="container mx-auto px-4 md:px-8 relative">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-12">
           <div className="col-span-2 md:col-span-1">
             <h3 className="font-display text-xl mb-4">Vendora</h3>
