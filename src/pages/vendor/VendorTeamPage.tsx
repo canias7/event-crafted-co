@@ -176,15 +176,44 @@ export default function VendorTeamPage() {
       })
       .select("token")
       .single();
-    setSending(false);
     if (error) {
+      setSending(false);
       toast.error(error.message);
       return;
     }
     const token = (data as { token: string }).token;
     const link = `${window.location.origin}/accept-team-invite/${token}`;
+
+    // Look up business name for the email subject + body. Best effort —
+    // missing profile shouldn't fail the invite.
+    const { data: vp } = await supabase
+      .from("vendor_profiles")
+      .select("business_name")
+      .eq("id", vendorId)
+      .maybeSingle();
+
+    // Fire-and-fail-soft email send. We always copy the link to clipboard
+    // so the inviter has a fallback if Resend is misconfigured.
+    const emailResult = await supabase.functions.invoke(
+      "send-transactional-email",
+      {
+        body: {
+          kind: "team_invite",
+          email,
+          token,
+          businessName: vp?.business_name ?? null,
+          role: inviteRole,
+        },
+      },
+    );
+
     await navigator.clipboard.writeText(link).catch(() => {});
-    toast.success("Invite created — link copied to clipboard");
+    setSending(false);
+    if (emailResult.error) {
+      toast.warning("Invite created — email failed, link copied as fallback");
+    } else {
+      toast.success(`Invite emailed to ${email} (link also copied)`);
+    }
     setInviteOpen(false);
     setInviteEmail("");
     setInviteRole("member");
@@ -471,8 +500,8 @@ export default function VendorTeamPage() {
                     ))}
                   </div>
                   <p className="text-xs text-muted-foreground mt-3">
-                    Email delivery isn't wired yet — copy the link and send it
-                    to your teammate manually for now.
+                    Invites are emailed automatically. If your teammate didn't
+                    get one, copy the link above and send it directly.
                   </p>
                 </section>
               )}

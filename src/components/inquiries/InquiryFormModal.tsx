@@ -213,6 +213,14 @@ export function InquiryFormModal({
       return;
     }
 
+    // Fire-and-forget email to the vendor team. Don't block the user on it
+    // — the in-app notification trigger already covers the inbox bell.
+    supabase.functions
+      .invoke("send-transactional-email", {
+        body: { kind: "new_inquiry", inquiryId: data.id },
+      })
+      .catch(() => {});
+
     toast.success("Inquiry sent — vendor will reply soon");
     onSuccess?.(data.id);
     reset();

@@ -1,1 +1,7 @@
 project_id = "wdgcskeepluqxnovvsny"
+
+# Transactional email sender (team invites, new inquiry notifications).
+# Public so anonymous-side callers (none today, but reserved) work; the
+# function still validates inputs and uses service role for lookups.
+[functions.send-transactional-email]
+verify_jwt = true
