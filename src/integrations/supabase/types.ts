@@ -519,6 +519,77 @@ export type Database = {
           },
         ]
       }
+      mood_board_items: {
+        Row: {
+          board_id: string
+          caption: string | null
+          created_at: string
+          display_order: number
+          id: string
+          image_url: string
+          source_url: string | null
+        }
+        Insert: {
+          board_id: string
+          caption?: string | null
+          created_at?: string
+          display_order?: number
+          id?: string
+          image_url: string
+          source_url?: string | null
+        }
+        Update: {
+          board_id?: string
+          caption?: string | null
+          created_at?: string
+          display_order?: number
+          id?: string
+          image_url?: string
+          source_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mood_board_items_board_id_fkey"
+            columns: ["board_id"]
+            isOneToOne: false
+            referencedRelation: "mood_boards"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      mood_boards: {
+        Row: {
+          cover_image_url: string | null
+          created_at: string
+          description: string | null
+          host_id: string
+          id: string
+          name: string
+          share_token: string
+          updated_at: string
+        }
+        Insert: {
+          cover_image_url?: string | null
+          created_at?: string
+          description?: string | null
+          host_id: string
+          id?: string
+          name: string
+          share_token?: string
+          updated_at?: string
+        }
+        Update: {
+          cover_image_url?: string | null
+          created_at?: string
+          description?: string | null
+          host_id?: string
+          id?: string
+          name?: string
+          share_token?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       notifications: {
         Row: {
           body: string | null
@@ -1044,6 +1115,7 @@ export type Database = {
           rsvp_status: string
         }[]
       }
+      get_mood_board_by_token: { Args: { p_token: string }; Returns: Json }
       is_admin: { Args: never; Returns: boolean }
       is_vendor_owner: { Args: { _vendor_id: string }; Returns: boolean }
       request_account_deletion: { Args: never; Returns: undefined }
