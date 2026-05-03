@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Search, Store, X, ArrowRight } from "lucide-react";
+import { Search, Store, X, ArrowRight, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -253,7 +253,17 @@ export default function VendorBrowsePage() {
                 {cat}
               </Button>
             ))}
-            <span className="ml-auto shrink-0">
+            <span className="ml-auto shrink-0 flex items-center gap-2">
+              <Link to="/vendors/quiz">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="rounded-full text-xs h-8 text-accent hover:text-accent hover:bg-accent/10"
+                >
+                  <Sparkles className="w-3 h-3 mr-1" />
+                  Take the 60-sec match quiz
+                </Button>
+              </Link>
               <SaveSearchButton filters={{ q: search, category }} />
             </span>
           </div>
