@@ -314,7 +314,7 @@ export default function VendorDetailPage() {
   const heroImg = imageMap[vendor.image] ?? featureFlorals;
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background pb-24 lg:pb-0">
       <PublicNav />
 
       {/* Cinematic vendor hero */}
@@ -716,6 +716,26 @@ export default function VendorDetailPage() {
       )}
 
       <Footer />
+
+      {/* Mobile sticky inquiry bar — keeps Send Inquiry one tap away */}
+      <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-background/95 backdrop-blur-sm border-t border-border px-4 py-3 flex items-center gap-3 shadow-[0_-4px_12px_-4px_rgba(0,0,0,0.08)]">
+        <div className="flex-1 min-w-0">
+          <p className="font-label text-muted-foreground text-[10px] tracking-[0.2em]">
+            From
+          </p>
+          <p className="font-display text-lg tnum leading-tight">
+            ${vendor.startingPrice.toLocaleString()}
+          </p>
+        </div>
+        <Button
+          onClick={handleInquiryClick}
+          disabled={authLoading}
+          className="rounded-full bg-foreground text-background hover:bg-foreground/90"
+        >
+          <Mail className="w-4 h-4 mr-2" />
+          Send Inquiry
+        </Button>
+      </div>
 
       {/* Logged-out: prompt to sign in/up before inquiring */}
       <Dialog open={signinPromptOpen} onOpenChange={setSigninPromptOpen}>

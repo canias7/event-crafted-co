@@ -160,24 +160,16 @@ export default function VendorBrowsePage() {
           <div className="flex items-end justify-between mb-10">
             <div>
               <p className="font-label text-muted-foreground">
-                {loading ? (
-                  "Loading…"
-                ) : (
-                  <>
-                    {filtered.length}{" "}
-                    {filtered.length === 1 ? "vendor" : "vendors"}
-                    {category !== "All" && (
-                      <span className="ml-2 text-foreground/80">
-                        · {category}
-                      </span>
-                    )}
-                  </>
+                {filtered.length}{" "}
+                {filtered.length === 1 ? "vendor" : "vendors"}
+                {category !== "All" && (
+                  <span className="ml-2 text-foreground/80">· {category}</span>
                 )}
               </p>
             </div>
           </div>
 
-          {loading ? (
+          {vendors.length === 0 && loading ? (
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-14">
               {Array.from({ length: 6 }).map((_, i) => (
                 <div key={i}>
