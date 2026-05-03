@@ -5,3 +5,11 @@ project_id = "wdgcskeepluqxnovvsny"
 # function still validates inputs and uses service role for lookups.
 [functions.send-transactional-email]
 verify_jwt = true
+
+# Daily scan: looks for won inquiries whose event_date passed N days ago
+# and the host hasn't reviewed yet, drops in-app notifications + emails
+# asking for a review. verify_jwt = false so cron systems (or pg_cron via
+# pg_net) can hit it without managing a JWT — protect via the service
+# role key in env, and ideally a shared secret header in production.
+[functions.scan-review-prompts]
+verify_jwt = false
