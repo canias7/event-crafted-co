@@ -5,22 +5,52 @@ import { ArrowRight, Check, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PublicNav } from "@/components/public/PublicNav";
 import { Footer } from "@/components/public/Footer";
-import heroWedding from "@/assets/vendora-hero-cinematic.jpg";
-import heroBirthday from "@/assets/vendora-hero-birthday.jpg";
-import heroGala from "@/assets/vendora-hero-gala.jpg";
-import heroDinner from "@/assets/vendora-hero-dinner.jpg";
-import heroKids from "@/assets/vendora-hero-kids.jpg";
+import heroWedding from "@/assets/hero/wedding.jpg";
+import heroJuly4 from "@/assets/hero/july4th.jpg";
+import heroChristmas from "@/assets/hero/christmas.jpg";
+import heroBabyShower from "@/assets/hero/babyshower.jpg";
+import heroBirthdayMilestone from "@/assets/hero/birthday-milestone.jpg";
+import heroHalloween from "@/assets/hero/halloween.jpg";
+import heroThanksgiving from "@/assets/hero/thanksgiving.jpg";
+import heroHanukkah from "@/assets/hero/hanukkah.jpg";
+import heroNYE from "@/assets/hero/nye.jpg";
+import heroEaster from "@/assets/hero/easter.jpg";
+import heroBridal from "@/assets/hero/bridal.jpg";
+import heroEngagement from "@/assets/hero/engagement.jpg";
+import heroGraduation from "@/assets/hero/graduation.jpg";
+import heroCorporate from "@/assets/hero/corporate.jpg";
+import heroAnniversary from "@/assets/hero/anniversary.jpg";
+import heroFirstBirthday from "@/assets/hero/firstbirthday.jpg";
+import heroFiesta from "@/assets/hero/fiesta.jpg";
+import heroBeach from "@/assets/hero/beach.jpg";
+import heroMothersDay from "@/assets/hero/mothersday.jpg";
+import heroValentines from "@/assets/hero/valentines.jpg";
 import featureFlorals from "@/assets/vendora-feature-1.jpg";
 import featureVenue from "@/assets/vendora-feature-2.jpg";
 
 const spring = { type: "spring" as const, duration: 0.6, bounce: 0 };
 
 const heroSlides = [
-  { src: heroWedding, label: "Weddings", alt: "Luxury wedding tablescape at golden hour" },
-  { src: heroBirthday, label: "Birthdays", alt: "Rooftop birthday celebration with confetti" },
-  { src: heroGala, label: "Galas", alt: "Grand ballroom gala with crystal chandeliers" },
-  { src: heroDinner, label: "Private Dinners", alt: "Intimate courtyard dinner under string lights" },
-  { src: heroKids, label: "Milestones", alt: "Elegant first birthday party styling" },
+  { src: heroWedding, label: "Weddings", alt: "Luxury wedding reception" },
+  { src: heroBirthdayMilestone, label: "Milestone Birthdays", alt: "Rooftop birthday celebration" },
+  { src: heroChristmas, label: "Christmas Dinners", alt: "Elegant Christmas dinner table" },
+  { src: heroNYE, label: "New Year's Eve", alt: "New Year's Eve gala with confetti" },
+  { src: heroBabyShower, label: "Baby Showers", alt: "Pastel baby shower setup" },
+  { src: heroJuly4, label: "4th of July", alt: "Rooftop Independence Day party" },
+  { src: heroHalloween, label: "Halloween", alt: "Halloween masquerade ball" },
+  { src: heroThanksgiving, label: "Thanksgiving", alt: "Thanksgiving family dinner" },
+  { src: heroHanukkah, label: "Hanukkah", alt: "Hanukkah dinner with menorah" },
+  { src: heroEaster, label: "Easter", alt: "Easter garden brunch" },
+  { src: heroBridal, label: "Bridal Showers", alt: "Bridal shower garden tea" },
+  { src: heroEngagement, label: "Engagements", alt: "Engagement party at sunset" },
+  { src: heroGraduation, label: "Graduations", alt: "Graduation celebration dinner" },
+  { src: heroCorporate, label: "Corporate Galas", alt: "Corporate gala in ballroom" },
+  { src: heroAnniversary, label: "Anniversaries", alt: "Anniversary dinner by the sea" },
+  { src: heroFirstBirthday, label: "First Birthdays", alt: "First birthday styling" },
+  { src: heroFiesta, label: "Fiestas", alt: "Backyard fiesta celebration" },
+  { src: heroBeach, label: "Beach Dinners", alt: "Beach bonfire candlelit dinner" },
+  { src: heroMothersDay, label: "Mother's Day", alt: "Mother's Day brunch" },
+  { src: heroValentines, label: "Valentine's", alt: "Valentine's romantic dinner" },
 ];
 
 const steps = [
