@@ -85,6 +85,11 @@ export default function VendorDashboard() {
     booked: 0,
     total: 0,
   });
+  const [insights, setInsights] = useState({
+    views30d: 0,
+    avgRating: 0,
+    reviewCount: 0,
+  });
   const [recent, setRecent] = useState<RecentInquiry[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -126,6 +131,35 @@ export default function VendorDashboard() {
           booked: rows.filter((r) => r.status === "won").length,
         });
         setRecent(rows.slice(0, 5));
+
+        // Insights: views (last 30 days) + reviews aggregate
+        const since = new Date();
+        since.setDate(since.getDate() - 30);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const [{ count: viewCount }, { data: reviews }] = await Promise.all([
+          (supabase as any)
+            .from("vendor_profile_views")
+            .select("id", { count: "exact", head: true })
+            .eq("vendor_id", vpRow.id)
+            .gte("viewed_at", since.toISOString()),
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          (supabase as any)
+            .from("reviews")
+            .select("rating")
+            .eq("vendor_id", vpRow.id),
+        ]);
+        if (cancelled) return;
+        const ratingRows =
+          (reviews as Array<{ rating: number }> | null) ?? [];
+        setInsights({
+          views30d: viewCount ?? 0,
+          reviewCount: ratingRows.length,
+          avgRating:
+            ratingRows.length === 0
+              ? 0
+              : ratingRows.reduce((s, r) => s + r.rating, 0) /
+                ratingRows.length,
+        });
       }
 
       setLoading(false);
@@ -231,6 +265,52 @@ export default function VendorDashboard() {
               icon={Inbox}
             />
           </div>
+
+          {/* Insights */}
+          {vendorProfile && (
+            <div>
+              <p className="font-label text-muted-foreground mb-3">Insights</p>
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                <div className="rounded-sm border border-border bg-card px-5 py-4">
+                  <p className="font-label text-muted-foreground">
+                    Views · 30d
+                  </p>
+                  <p className="font-display text-2xl tnum mt-1">
+                    {insights.views30d}
+                  </p>
+                </div>
+                <div className="rounded-sm border border-border bg-card px-5 py-4">
+                  <p className="font-label text-muted-foreground">
+                    Conversion
+                  </p>
+                  <p className="font-display text-2xl tnum mt-1">
+                    {stats.total > 0
+                      ? `${Math.round((stats.booked / stats.total) * 100)}%`
+                      : "—"}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Booked / inquired
+                  </p>
+                </div>
+                <div className="rounded-sm border border-border bg-card px-5 py-4">
+                  <p className="font-label text-muted-foreground">
+                    Avg rating
+                  </p>
+                  <p className="font-display text-2xl tnum mt-1">
+                    {insights.reviewCount > 0
+                      ? insights.avgRating.toFixed(1)
+                      : "—"}
+                  </p>
+                </div>
+                <div className="rounded-sm border border-border bg-card px-5 py-4">
+                  <p className="font-label text-muted-foreground">Reviews</p>
+                  <p className="font-display text-2xl tnum mt-1">
+                    {insights.reviewCount}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Profile completeness */}
           {vendorProfile && completeness < 100 && (

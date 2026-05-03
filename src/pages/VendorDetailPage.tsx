@@ -183,6 +183,20 @@ export default function VendorDetailPage() {
 
   const portfolioImages = realPortfolio.length > 0 ? realPortfolio : portfolioPool;
 
+  // Track a profile view (real DB-backed vendors only). Fire-and-forget.
+  useEffect(() => {
+    if (!vendor || !vendor.isReal) return;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (supabase as any)
+      .from("vendor_profile_views")
+      .insert({
+        vendor_id: vendor.id,
+        viewer_id: session?.user?.id ?? null,
+      })
+      .then(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [vendor?.id, vendor?.isReal]);
+
   // Real reviews (only for DB-backed vendors)
   interface RealReview {
     id: string;
