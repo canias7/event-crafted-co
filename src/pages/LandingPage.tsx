@@ -1,10 +1,10 @@
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
-import { ArrowRight, Search, Calendar, Sparkles, Check, ChevronDown } from "lucide-react";
+import { ArrowRight, Check, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PublicNav } from "@/components/public/PublicNav";
 import { Footer } from "@/components/public/Footer";
-import heroImage from "@/assets/vendora-hero.jpg";
+import heroImage from "@/assets/vendora-hero-cinematic.jpg";
 import featureFlorals from "@/assets/vendora-feature-1.jpg";
 import featureVenue from "@/assets/vendora-feature-2.jpg";
 
@@ -34,65 +34,132 @@ export default function LandingPage() {
     <div className="min-h-screen bg-background">
       <PublicNav />
 
-      {/* Hero */}
-      <section className="relative pt-28 pb-24 md:pt-40 md:pb-40 overflow-hidden">
-        <div className="absolute inset-0 -z-10">
+      {/* Cinematic Hero */}
+      <section className="relative h-[100svh] min-h-[640px] w-full overflow-hidden -mt-px">
+        {/* Background image with slow Ken Burns zoom */}
+        <motion.div
+          initial={{ scale: 1.15 }}
+          animate={{ scale: 1 }}
+          transition={{ duration: 12, ease: "easeOut" }}
+          className="absolute inset-0"
+        >
           <img
             src={heroImage}
-            alt=""
-            className="w-full h-full object-cover opacity-25"
+            alt="Luxury event tablescape at golden hour"
+            className="w-full h-full object-cover"
           />
-          <div className="absolute inset-0 bg-gradient-to-b from-background/40 via-background/85 to-background" />
-          <div
-            className="absolute inset-0"
-            style={{ background: "var(--gradient-hero)" }}
-          />
-        </div>
+        </motion.div>
 
-        <div className="container mx-auto px-6 md:px-8 text-center relative">
-          <motion.div
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={spring}
-          >
-            <p className="font-label text-accent mb-8 tracking-[0.25em]">VENDORA</p>
-            <h1 className="text-hero font-display max-w-4xl mx-auto mb-8 leading-[1.02]">
-              Plan your perfect event —{" "}
-              <span className="italic font-light text-accent">effortlessly.</span>
-            </h1>
-            <p className="text-base md:text-lg text-muted-foreground max-w-xl mx-auto mb-12 leading-relaxed">
-              Vendora connects you with trusted vendors and the tools to plan,
-              book, and manage every detail of your event — beautifully, in one place.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-3 justify-center items-center">
-              <Link to="/customer/dashboard">
-                <Button size="lg" className="h-12 px-8 rounded-full text-sm tracking-wide">
-                  Start Planning
-                  <ArrowRight className="w-4 h-4 ml-2" />
-                </Button>
-              </Link>
-              <Link to="/vendors">
-                <Button size="lg" variant="ghost" className="h-12 px-6 rounded-full text-sm">
-                  Browse vendors
-                </Button>
-              </Link>
+        {/* Cinematic gradient overlays */}
+        <div className="absolute inset-0 bg-gradient-to-b from-foreground/70 via-foreground/40 to-foreground/85" />
+        <div className="absolute inset-0 bg-gradient-to-r from-foreground/50 via-transparent to-foreground/30" />
+        <div
+          className="absolute inset-0 opacity-60"
+          style={{ background: "var(--gradient-hero)" }}
+        />
+        {/* Letterbox bars for cinema feel */}
+        <div className="absolute top-0 inset-x-0 h-16 md:h-20 bg-gradient-to-b from-foreground/80 to-transparent pointer-events-none" />
+        <div className="absolute bottom-0 inset-x-0 h-32 bg-gradient-to-t from-foreground to-transparent pointer-events-none" />
+        {/* Subtle film grain */}
+        <div
+          className="absolute inset-0 opacity-[0.08] mix-blend-overlay pointer-events-none"
+          style={{
+            backgroundImage:
+              "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)' opacity='0.6'/></svg>\")",
+          }}
+        />
+
+        {/* Content */}
+        <div className="relative z-10 h-full flex flex-col">
+          <div className="flex-1 flex items-center">
+            <div className="container mx-auto px-6 md:px-8">
+              <div className="max-w-4xl">
+                <motion.p
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ ...spring, delay: 0.2 }}
+                  className="font-label text-accent mb-6 tracking-[0.4em]"
+                >
+                  — VENDORA
+                </motion.p>
+                <motion.h1
+                  initial={{ opacity: 0, y: 24 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ ...spring, delay: 0.4, duration: 1 }}
+                  className="text-hero font-display text-background mb-8 leading-[1.0]"
+                >
+                  Every detail,{" "}
+                  <span className="italic font-light text-accent">
+                    perfectly composed.
+                  </span>
+                </motion.h1>
+                <motion.p
+                  initial={{ opacity: 0, y: 16 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ ...spring, delay: 0.7 }}
+                  className="text-base md:text-xl text-background/80 max-w-xl mb-12 leading-relaxed font-light"
+                >
+                  A curated marketplace of world-class vendors and the
+                  tools to orchestrate unforgettable events — beautifully,
+                  in one place.
+                </motion.p>
+                <motion.div
+                  initial={{ opacity: 0, y: 16 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ ...spring, delay: 0.95 }}
+                  className="flex flex-col sm:flex-row gap-3 sm:items-center"
+                >
+                  <Link to="/customer/dashboard">
+                    <Button
+                      size="lg"
+                      className="h-12 px-8 rounded-full text-sm tracking-wide bg-accent text-accent-foreground hover:bg-accent/90"
+                    >
+                      Start Planning
+                      <ArrowRight className="w-4 h-4 ml-2" />
+                    </Button>
+                  </Link>
+                  <Link to="/vendors">
+                    <Button
+                      size="lg"
+                      variant="ghost"
+                      className="h-12 px-6 rounded-full text-sm text-background hover:bg-background/10 hover:text-background"
+                    >
+                      Browse vendors
+                    </Button>
+                  </Link>
+                </motion.div>
+              </div>
             </div>
-          </motion.div>
+          </div>
 
-          {/* Trust strip */}
+          {/* Trust strip + scroll cue at bottom */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ delay: 0.4, duration: 0.8 }}
-            className="mt-24 md:mt-32 flex flex-wrap items-center justify-center gap-x-10 gap-y-4 text-xs uppercase tracking-[0.2em] text-muted-foreground/70"
+            transition={{ delay: 1.4, duration: 1 }}
+            className="pb-10 md:pb-14"
           >
-            <span>Featured in Vogue</span>
-            <span className="hidden md:inline">·</span>
-            <span>Condé Nast Traveler</span>
-            <span className="hidden md:inline">·</span>
-            <span>Architectural Digest</span>
-            <span className="hidden md:inline">·</span>
-            <span>Brides Magazine</span>
+            <div className="container mx-auto px-6 md:px-8">
+              <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+                <div className="flex flex-wrap items-center justify-center gap-x-8 gap-y-2 text-[10px] md:text-xs uppercase tracking-[0.3em] text-background/60">
+                  <span>Featured in Vogue</span>
+                  <span className="hidden md:inline">·</span>
+                  <span>Condé Nast Traveler</span>
+                  <span className="hidden md:inline">·</span>
+                  <span>Architectural Digest</span>
+                  <span className="hidden lg:inline">·</span>
+                  <span className="hidden lg:inline">Brides Magazine</span>
+                </div>
+                <motion.div
+                  animate={{ y: [0, 8, 0] }}
+                  transition={{ duration: 2.4, repeat: Infinity, ease: "easeInOut" }}
+                  className="hidden md:flex items-center gap-3 text-background/60"
+                >
+                  <span className="text-[10px] uppercase tracking-[0.3em]">Scroll</span>
+                  <span className="block w-px h-10 bg-background/40" />
+                </motion.div>
+              </div>
+            </div>
           </motion.div>
         </div>
       </section>
