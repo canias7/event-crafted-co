@@ -37,6 +37,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { Lightbox } from "@/components/shared/Lightbox";
 import { customerNavItems as navItems } from "@/data/navItems";
 
 const BUCKET = "mood-board-images";
@@ -76,6 +77,7 @@ export default function MoodBoardDetailPage() {
   const [urlSource, setUrlSource] = useState("");
   const [urlCaption, setUrlCaption] = useState("");
   const [addingUrl, setAddingUrl] = useState(false);
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   async function load() {
@@ -441,17 +443,24 @@ export default function MoodBoardDetailPage() {
             </div>
           ) : (
             <div className="columns-2 md:columns-3 lg:columns-4 gap-4 [column-fill:_balance]">
-              {pins.map((pin) => (
+              {pins.map((pin, idx) => (
                 <div
                   key={pin.id}
                   className="relative group mb-4 break-inside-avoid rounded-sm overflow-hidden bg-muted"
                 >
-                  <img
-                    src={pin.image_url}
-                    alt={pin.caption ?? "Pin"}
-                    loading="lazy"
-                    className="w-full h-auto block"
-                  />
+                  <button
+                    type="button"
+                    onClick={() => setLightboxIndex(idx)}
+                    className="block w-full"
+                    aria-label="Open pin"
+                  >
+                    <img
+                      src={pin.image_url}
+                      alt={pin.caption ?? "Pin"}
+                      loading="lazy"
+                      className="w-full h-auto block"
+                    />
+                  </button>
                   {pin.caption && (
                     <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-foreground/85 to-transparent p-3 opacity-0 group-hover:opacity-100 transition-opacity">
                       <p className="text-background text-xs leading-snug">
@@ -491,6 +500,18 @@ export default function MoodBoardDetailPage() {
       </main>
 
       <MobileNav items={navItems} />
+
+      <Lightbox
+        images={pins.map((pin) => ({
+          src: pin.image_url,
+          alt: pin.caption ?? "Pin",
+          caption: pin.caption,
+          href: pin.source_url,
+        }))}
+        index={lightboxIndex}
+        onClose={() => setLightboxIndex(null)}
+        onIndexChange={setLightboxIndex}
+      />
     </div>
   );
 }

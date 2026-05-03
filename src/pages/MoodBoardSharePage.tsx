@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { PublicNav } from "@/components/public/PublicNav";
 import { Footer } from "@/components/public/Footer";
+import { Lightbox } from "@/components/shared/Lightbox";
 
 interface SharedPin {
   id: string;
@@ -28,6 +29,7 @@ export default function MoodBoardSharePage() {
   const [board, setBoard] = useState<SharedBoard | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
 
   useEffect(() => {
     if (!token) return;
@@ -127,17 +129,24 @@ export default function MoodBoardSharePage() {
             </div>
           ) : (
             <div className="columns-2 md:columns-3 lg:columns-4 gap-4 [column-fill:_balance]">
-              {board.items.map((pin) => (
+              {board.items.map((pin, idx) => (
                 <div
                   key={pin.id}
                   className="relative group mb-4 break-inside-avoid rounded-sm overflow-hidden bg-muted"
                 >
-                  <img
-                    src={pin.image_url}
-                    alt={pin.caption ?? "Pin"}
-                    loading="lazy"
-                    className="w-full h-auto block"
-                  />
+                  <button
+                    type="button"
+                    onClick={() => setLightboxIndex(idx)}
+                    className="block w-full"
+                    aria-label="Open pin"
+                  >
+                    <img
+                      src={pin.image_url}
+                      alt={pin.caption ?? "Pin"}
+                      loading="lazy"
+                      className="w-full h-auto block"
+                    />
+                  </button>
                   {pin.caption && (
                     <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-foreground/85 to-transparent p-3">
                       <p className="text-background text-xs leading-snug">
@@ -183,6 +192,18 @@ export default function MoodBoardSharePage() {
       </section>
 
       <Footer />
+
+      <Lightbox
+        images={board.items.map((pin) => ({
+          src: pin.image_url,
+          alt: pin.caption ?? "Pin",
+          caption: pin.caption,
+          href: pin.source_url,
+        }))}
+        index={lightboxIndex}
+        onClose={() => setLightboxIndex(null)}
+        onIndexChange={setLightboxIndex}
+      />
     </div>
   );
 }

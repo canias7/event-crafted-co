@@ -28,6 +28,7 @@ import {
 import { PublicNav } from "@/components/public/PublicNav";
 import { Footer } from "@/components/public/Footer";
 import { VendorCard } from "@/components/shared/VendorCard";
+import { Lightbox } from "@/components/shared/Lightbox";
 import { InquiryFormModal } from "@/components/inquiries/InquiryFormModal";
 import { useAuth } from "@/hooks/useAuth";
 import { useVendors } from "@/hooks/useVendors";
@@ -142,6 +143,7 @@ export default function VendorDetailPage() {
   const { isSaved, toggle: toggleSave } = useSavedVendors();
   const [signinPromptOpen, setSigninPromptOpen] = useState(false);
   const [inquiryFormOpen, setInquiryFormOpen] = useState(false);
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
 
   const vendor = vendors.find((v) => v.id === id);
   const saved = vendor ? isSaved(vendor.id) : false;
@@ -619,23 +621,26 @@ export default function VendorDetailPage() {
                 <h2 className="font-display text-3xl mb-8">Recent work</h2>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                   {portfolioImages.map((src, i) => (
-                    <motion.div
+                    <motion.button
+                      type="button"
                       key={`${src}-${i}`}
                       initial={{ opacity: 0, y: 16 }}
                       whileInView={{ opacity: 1, y: 0 }}
                       viewport={{ once: true }}
                       transition={{ ...spring, delay: i * 0.05 }}
-                      className={`overflow-hidden rounded-sm bg-muted ${
+                      onClick={() => setLightboxIndex(i)}
+                      className={`group overflow-hidden rounded-sm bg-muted block ${
                         i === 0 ? "col-span-2 row-span-2 aspect-square md:aspect-[4/3]" : "aspect-square"
                       }`}
+                      aria-label={`Open portfolio image ${i + 1}`}
                     >
                       <img
                         src={src}
                         alt={`${vendor.name} portfolio ${i + 1}`}
                         loading="lazy"
-                        className="w-full h-full object-cover hover:scale-[1.03] transition-transform duration-700"
+                        className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-700"
                       />
-                    </motion.div>
+                    </motion.button>
                   ))}
                 </div>
               </div>
@@ -916,6 +921,16 @@ export default function VendorDetailPage() {
         open={inquiryFormOpen}
         onOpenChange={setInquiryFormOpen}
         preferredVendorName={vendor.name}
+      />
+
+      <Lightbox
+        images={portfolioImages.map((src, i) => ({
+          src,
+          alt: `${vendor.name} portfolio ${i + 1}`,
+        }))}
+        index={lightboxIndex}
+        onClose={() => setLightboxIndex(null)}
+        onIndexChange={setLightboxIndex}
       />
     </div>
   );
