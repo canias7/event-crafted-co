@@ -1,14 +1,27 @@
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { Link } from "react-router-dom";
+import { useEffect, useState } from "react";
 import { ArrowRight, Check, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PublicNav } from "@/components/public/PublicNav";
 import { Footer } from "@/components/public/Footer";
-import heroImage from "@/assets/vendora-hero-cinematic.jpg";
+import heroWedding from "@/assets/vendora-hero-cinematic.jpg";
+import heroBirthday from "@/assets/vendora-hero-birthday.jpg";
+import heroGala from "@/assets/vendora-hero-gala.jpg";
+import heroDinner from "@/assets/vendora-hero-dinner.jpg";
+import heroKids from "@/assets/vendora-hero-kids.jpg";
 import featureFlorals from "@/assets/vendora-feature-1.jpg";
 import featureVenue from "@/assets/vendora-feature-2.jpg";
 
 const spring = { type: "spring" as const, duration: 0.6, bounce: 0 };
+
+const heroSlides = [
+  { src: heroWedding, label: "Weddings", alt: "Luxury wedding tablescape at golden hour" },
+  { src: heroBirthday, label: "Birthdays", alt: "Rooftop birthday celebration with confetti" },
+  { src: heroGala, label: "Galas", alt: "Grand ballroom gala with crystal chandeliers" },
+  { src: heroDinner, label: "Private Dinners", alt: "Intimate courtyard dinner under string lights" },
+  { src: heroKids, label: "Milestones", alt: "Elegant first birthday party styling" },
+];
 
 const steps = [
   { n: "01", title: "Discover", desc: "Browse a curated network of trusted vendors — venues, florals, photography, catering and more." },
@@ -30,25 +43,50 @@ const faqs = [
 ];
 
 export default function LandingPage() {
+  const [slideIndex, setSlideIndex] = useState(0);
+
+  useEffect(() => {
+    const id = setInterval(() => {
+      setSlideIndex((i) => (i + 1) % heroSlides.length);
+    }, 10000);
+    return () => clearInterval(id);
+  }, []);
+
+  const currentSlide = heroSlides[slideIndex];
+
   return (
     <div className="min-h-screen bg-background">
       <PublicNav />
 
       {/* Cinematic Hero */}
       <section className="relative h-[100svh] min-h-[640px] w-full overflow-hidden -mt-px">
-        {/* Background image with slow Ken Burns zoom */}
-        <motion.div
-          initial={{ scale: 1.15 }}
-          animate={{ scale: 1 }}
-          transition={{ duration: 12, ease: "easeOut" }}
-          className="absolute inset-0"
-        >
-          <img
-            src={heroImage}
-            alt="Luxury event tablescape at golden hour"
-            className="w-full h-full object-cover"
-          />
-        </motion.div>
+        {/* Rotating background images with crossfade + slow Ken Burns zoom */}
+        <AnimatePresence mode="sync">
+          <motion.div
+            key={slideIndex}
+            initial={{ opacity: 0, scale: 1.15 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{
+              opacity: { duration: 1.6, ease: "easeInOut" },
+              scale: { duration: 11, ease: "easeOut" },
+            }}
+            className="absolute inset-0"
+          >
+            <img
+              src={currentSlide.src}
+              alt={currentSlide.alt}
+              className="w-full h-full object-cover"
+            />
+          </motion.div>
+        </AnimatePresence>
+
+        {/* Preload other slides to avoid flash on first cycle */}
+        <div className="hidden">
+          {heroSlides.map((s) => (
+            <img key={s.src} src={s.src} alt="" />
+          ))}
+        </div>
 
         {/* Cinematic gradient overlays */}
         <div className="absolute inset-0 bg-gradient-to-b from-foreground/70 via-foreground/40 to-foreground/85" />
@@ -74,14 +112,29 @@ export default function LandingPage() {
           <div className="flex-1 flex items-center">
             <div className="container mx-auto px-6 md:px-8">
               <div className="max-w-4xl">
-                <motion.p
-                  initial={{ opacity: 0, y: 12 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ ...spring, delay: 0.2 }}
-                  className="font-label text-accent mb-6 tracking-[0.4em]"
-                >
-                  — VENDORA
-                </motion.p>
+                <div className="flex items-center gap-4 mb-6 h-5">
+                  <motion.p
+                    initial={{ opacity: 0, y: 12 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ ...spring, delay: 0.2 }}
+                    className="font-label text-accent tracking-[0.4em]"
+                  >
+                    — VENDORA
+                  </motion.p>
+                  <span className="h-px w-8 bg-accent/40" />
+                  <AnimatePresence mode="wait">
+                    <motion.span
+                      key={currentSlide.label}
+                      initial={{ opacity: 0, y: 6 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -6 }}
+                      transition={{ duration: 0.5 }}
+                      className="font-label text-background/70 tracking-[0.3em]"
+                    >
+                      {currentSlide.label}
+                    </motion.span>
+                  </AnimatePresence>
+                </div>
                 <motion.h1
                   initial={{ opacity: 0, y: 24 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -150,14 +203,20 @@ export default function LandingPage() {
                   <span className="hidden lg:inline">·</span>
                   <span className="hidden lg:inline">Brides Magazine</span>
                 </div>
-                <motion.div
-                  animate={{ y: [0, 8, 0] }}
-                  transition={{ duration: 2.4, repeat: Infinity, ease: "easeInOut" }}
-                  className="hidden md:flex items-center gap-3 text-background/60"
-                >
-                  <span className="text-[10px] uppercase tracking-[0.3em]">Scroll</span>
-                  <span className="block w-px h-10 bg-background/40" />
-                </motion.div>
+                <div className="flex items-center gap-2">
+                  {heroSlides.map((s, i) => (
+                    <button
+                      key={s.src}
+                      onClick={() => setSlideIndex(i)}
+                      aria-label={`Show ${s.label}`}
+                      className={`h-px transition-all duration-500 ${
+                        i === slideIndex
+                          ? "w-10 bg-accent"
+                          : "w-5 bg-background/30 hover:bg-background/60"
+                      }`}
+                    />
+                  ))}
+                </div>
               </div>
             </div>
           </motion.div>
