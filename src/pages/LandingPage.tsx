@@ -67,7 +67,7 @@ const features = [
 
 const faqs = [
   { q: "Is Vendora free to use?", a: "Yes — browsing vendors and managing your event is free. You only pay your vendors directly through the platform." },
-  { q: "Are vendors verified?", a: "Every vendor goes through a manual review process. We verify credentials, portfolios, and references." },
+  { q: "Are vendors vetted?", a: "Every vendor on Vendora is hand-selected by our editorial team. We review portfolios and references before approval." },
   { q: "What types of events does Vendora support?", a: "Weddings, corporate events, milestone celebrations, private parties — anything that deserves to be done well." },
   { q: "Can I manage payments through Vendora?", a: "Yes. Send deposits, schedule installments, and keep every receipt in one place." },
 ];
@@ -231,13 +231,11 @@ export default function LandingPage() {
             <div className="container mx-auto px-6 md:px-8">
               <div className="flex flex-col md:flex-row items-center justify-between gap-6">
                 <div className="flex flex-wrap items-center justify-center gap-x-8 gap-y-2 text-[10px] md:text-xs uppercase tracking-[0.3em] text-background/60">
-                  <span>Featured in Vogue</span>
+                  <span>Now in private beta</span>
                   <span className="hidden md:inline">·</span>
-                  <span>Condé Nast Traveler</span>
+                  <span>By invitation</span>
                   <span className="hidden md:inline">·</span>
-                  <span>Architectural Digest</span>
-                  <span className="hidden lg:inline">·</span>
-                  <span className="hidden lg:inline">Brides Magazine</span>
+                  <span>Hand-selected vendors</span>
                 </div>
                 <div className="flex items-center gap-2">
                   {heroSlides.map((s, i) => (
@@ -304,9 +302,9 @@ export default function LandingPage() {
               </p>
               <div className="space-y-4">
                 {[
-                  "Vetted, verified, insured professionals",
-                  "Transparent pricing and packages",
-                  "Real reviews from real events",
+                  "Hand-selected by our editorial team",
+                  "Transparent pricing — no hidden fees",
+                  "Reviews from verified hosts only",
                 ].map((f) => (
                   <div key={f} className="flex items-start gap-3 text-sm">
                     <Check className="w-4 h-4 text-accent mt-0.5 flex-shrink-0" />
@@ -380,10 +378,10 @@ export default function LandingPage() {
         <div className="container mx-auto px-6 md:px-8">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-10 text-center">
             {[
-              { n: "12k+", l: "Events planned" },
-              { n: "2,400", l: "Verified vendors" },
-              { n: "4.9", l: "Average rating" },
-              { n: "48", l: "Cities" },
+              { n: "3%", l: "on confirmed bookings" },
+              { n: "<3min", l: "AI-assisted reply time" },
+              { n: "0", l: "pay-to-rank, ever" },
+              { n: "100%", l: "vendor-owned data" },
             ].map((s) => (
               <div key={s.l}>
                 <p className="font-display text-3xl md:text-4xl mb-2 tnum">{s.n}</p>

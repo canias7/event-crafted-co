@@ -1,6 +1,6 @@
-import { useState } from "react";
-import { Link } from "react-router-dom";
-import { Search, SlidersHorizontal, Store, LayoutDashboard, CalendarDays, FileText, Mail, CheckSquare, ListTodo, CreditCard, Heart } from "lucide-react";
+import { useMemo, useState } from "react";
+import { motion } from "framer-motion";
+import { Search, Store } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -8,97 +8,198 @@ import { PublicNav } from "@/components/public/PublicNav";
 import { Footer } from "@/components/public/Footer";
 import { VendorCard } from "@/components/shared/VendorCard";
 import { vendors } from "@/data/sampleData";
+import heroBrowse from "@/assets/vendora-hero-cinematic.jpg";
 
-const categories = ["All", "Photographer", "Florist", "Catering", "DJ", "Venue", "Makeup Artist", "Videographer", "Baker", "Event Planner", "Decorator"];
+const categories = ["All", "Photographer", "Florist", "Catering", "DJ", "Venue", "Makeup Artist"];
+
+const sortOptions: Record<string, (a: typeof vendors[number], b: typeof vendors[number]) => number> = {
+  popular: (a, b) => b.reviews - a.reviews,
+  rating: (a, b) => b.rating - a.rating,
+  "price-low": (a, b) => a.startingPrice - b.startingPrice,
+  "price-high": (a, b) => b.startingPrice - a.startingPrice,
+};
+
+const spring = { type: "spring" as const, duration: 0.6, bounce: 0 };
 
 export default function VendorBrowsePage() {
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("All");
-  const [sort, setSort] = useState("popular");
+  const [sort, setSort] = useState<keyof typeof sortOptions>("popular");
 
-  const filtered = vendors
-    .filter((v) => category === "All" || v.category === category)
-    .filter((v) => v.name.toLowerCase().includes(search.toLowerCase()) || v.category.toLowerCase().includes(search.toLowerCase()));
+  const filtered = useMemo(() => {
+    const term = search.trim().toLowerCase();
+    return vendors
+      .filter((v) => category === "All" || v.category === category)
+      .filter(
+        (v) =>
+          term === "" ||
+          v.name.toLowerCase().includes(term) ||
+          v.category.toLowerCase().includes(term) ||
+          v.description.toLowerCase().includes(term),
+      )
+      .sort(sortOptions[sort]);
+  }, [search, category, sort]);
 
   return (
     <div className="min-h-screen bg-background">
       <PublicNav />
 
-      <div className="pt-24 pb-16">
-        <div className="container mx-auto px-4 md:px-8">
-          {/* Header */}
-          <div className="mb-8">
-            <h1 className="text-h2 font-display mb-2">Browse Vendors</h1>
-            <p className="text-muted-foreground">Discover trusted professionals for your event</p>
-          </div>
+      {/* Cinematic hero strip */}
+      <section className="relative h-[60svh] min-h-[440px] w-full overflow-hidden">
+        <img
+          src={heroBrowse}
+          alt=""
+          className="absolute inset-0 w-full h-full object-cover"
+        />
+        <div className="absolute inset-0 bg-gradient-to-b from-foreground/75 via-foreground/45 to-background" />
+        <div className="absolute inset-0 bg-gradient-to-r from-foreground/55 via-transparent to-foreground/20" />
+        <div
+          className="absolute inset-0 opacity-[0.07] mix-blend-overlay pointer-events-none"
+          style={{
+            backgroundImage:
+              "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)' opacity='0.6'/></svg>\")",
+          }}
+        />
 
-          {/* Filters */}
-          <div className="flex flex-col sm:flex-row gap-3 mb-8">
+        <div className="relative z-10 h-full flex items-end pb-16 md:pb-24">
+          <div className="container mx-auto px-6 md:px-8">
+            <motion.div
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ ...spring, delay: 0.15 }}
+              className="flex items-center gap-4 mb-6"
+            >
+              <p className="font-label text-accent tracking-[0.4em]">— THE DIRECTORY</p>
+              <span className="h-px w-8 bg-accent/40" />
+            </motion.div>
+            <motion.h1
+              initial={{ opacity: 0, y: 24 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ ...spring, delay: 0.3, duration: 0.9 }}
+              className="text-hero font-display text-background leading-[1.0] max-w-3xl"
+            >
+              Find your{" "}
+              <span className="italic font-light text-accent">people.</span>
+            </motion.h1>
+            <motion.p
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ ...spring, delay: 0.55 }}
+              className="text-base md:text-lg text-background/80 mt-6 max-w-md leading-relaxed font-light"
+            >
+              A curated network of photographers, florists, venues, caterers, and
+              planners — hand-selected by our editorial team.
+            </motion.p>
+          </div>
+        </div>
+      </section>
+
+      {/* Filters */}
+      <section className="border-b border-border bg-background sticky top-16 z-30 backdrop-blur-sm bg-background/90">
+        <div className="container mx-auto px-6 md:px-8 py-4">
+          <div className="flex flex-col md:flex-row gap-3 items-stretch md:items-center">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input
-                placeholder="Search vendors..."
+                placeholder="Search vendors, categories, or keywords…"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="pl-10 h-11 rounded-lg bg-secondary border-none"
+                className="pl-10 h-11 rounded-full bg-secondary/80 border-none focus-visible:ring-1 focus-visible:ring-accent"
               />
             </div>
             <Select value={category} onValueChange={setCategory}>
-              <SelectTrigger className="w-full sm:w-48 h-11 rounded-lg bg-secondary border-none">
+              <SelectTrigger className="w-full md:w-44 h-11 rounded-full bg-secondary/80 border-none">
                 <SelectValue placeholder="Category" />
               </SelectTrigger>
               <SelectContent>
                 {categories.map((cat) => (
-                  <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                  <SelectItem key={cat} value={cat}>
+                    {cat}
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
-            <Select value={sort} onValueChange={setSort}>
-              <SelectTrigger className="w-full sm:w-40 h-11 rounded-lg bg-secondary border-none">
+            <Select value={sort} onValueChange={(v) => setSort(v as keyof typeof sortOptions)}>
+              <SelectTrigger className="w-full md:w-44 h-11 rounded-full bg-secondary/80 border-none">
                 <SelectValue placeholder="Sort by" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="popular">Most Popular</SelectItem>
-                <SelectItem value="rating">Highest Rated</SelectItem>
-                <SelectItem value="price-low">Price: Low to High</SelectItem>
-                <SelectItem value="price-high">Price: High to Low</SelectItem>
-                <SelectItem value="newest">Newest</SelectItem>
+                <SelectItem value="popular">Most reviewed</SelectItem>
+                <SelectItem value="rating">Highest rated</SelectItem>
+                <SelectItem value="price-low">Price: low to high</SelectItem>
+                <SelectItem value="price-high">Price: high to low</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
-          {/* Category pills */}
-          <div className="flex gap-2 mb-8 overflow-x-auto pb-2 -mx-4 px-4 scrollbar-hide">
+          <div className="flex gap-2 mt-4 overflow-x-auto pb-1 -mx-2 px-2 scrollbar-hide">
             {categories.map((cat) => (
               <Button
                 key={cat}
-                variant={category === cat ? "default" : "secondary"}
+                variant="ghost"
                 size="sm"
-                className="rounded-full whitespace-nowrap h-8"
                 onClick={() => setCategory(cat)}
+                className={`rounded-full whitespace-nowrap h-8 text-xs tracking-wide transition-all ${
+                  category === cat
+                    ? "bg-foreground text-background hover:bg-foreground/90"
+                    : "bg-transparent text-muted-foreground hover:text-foreground"
+                }`}
               >
                 {cat}
               </Button>
             ))}
           </div>
+        </div>
+      </section>
 
-          {/* Results */}
-          <p className="text-sm text-muted-foreground mb-4">{filtered.length} vendors found</p>
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filtered.map((vendor) => (
-              <VendorCard key={vendor.id} vendor={vendor} />
-            ))}
+      {/* Results */}
+      <section className="py-12 md:py-16">
+        <div className="container mx-auto px-6 md:px-8">
+          <div className="flex items-end justify-between mb-10">
+            <div>
+              <p className="font-label text-muted-foreground">
+                {filtered.length} {filtered.length === 1 ? "vendor" : "vendors"}
+                {category !== "All" && (
+                  <span className="ml-2 text-foreground/80">· {category}</span>
+                )}
+              </p>
+            </div>
           </div>
 
-          {filtered.length === 0 && (
+          {filtered.length > 0 ? (
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-14">
+              {filtered.map((vendor, i) => (
+                <motion.div
+                  key={vendor.id}
+                  initial={{ opacity: 0, y: 16 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ ...spring, delay: Math.min(i * 0.05, 0.4) }}
+                >
+                  <VendorCard vendor={vendor} />
+                </motion.div>
+              ))}
+            </div>
+          ) : (
             <div className="text-center py-24">
-              <Store className="w-12 h-12 text-muted-foreground/30 mx-auto mb-4" />
-              <h3 className="font-display text-lg mb-2">No vendors found</h3>
-              <p className="text-sm text-muted-foreground">Try adjusting your filters or search term</p>
+              <Store className="w-10 h-10 text-muted-foreground/40 mx-auto mb-4" />
+              <h3 className="font-display text-xl mb-2">No vendors found</h3>
+              <p className="text-sm text-muted-foreground max-w-sm mx-auto">
+                Try a different search term or category. We're adding new vendors weekly.
+              </p>
+              <Button
+                variant="outline"
+                className="mt-6 rounded-full"
+                onClick={() => {
+                  setSearch("");
+                  setCategory("All");
+                }}
+              >
+                Clear filters
+              </Button>
             </div>
           )}
         </div>
-      </div>
+      </section>
 
       <Footer />
     </div>

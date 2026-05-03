@@ -1,6 +1,7 @@
+import { useState } from "react";
+import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Star, MapPin } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Star, MapPin, Heart } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import vendorPhotographer from "@/assets/vendor-photographer.jpg";
 import vendorFlorist from "@/assets/vendor-florist.jpg";
@@ -30,62 +31,77 @@ interface VendorCardProps {
     distance: string;
     availability: string;
     image: string;
+    location?: string;
   };
-  onClick?: () => void;
 }
 
-export function VendorCard({ vendor, onClick }: VendorCardProps) {
+export function VendorCard({ vendor }: VendorCardProps) {
+  const [saved, setSaved] = useState(false);
+
   return (
-    <motion.div
-      whileHover={{ y: -4 }}
-      transition={{ type: "spring", duration: 0.4, bounce: 0 }}
-      className="bg-card rounded-2xl p-1 card-shadow cursor-pointer group"
-      onClick={onClick}
-    >
-      <div className="relative overflow-hidden rounded-xl">
-        <img
-          src={imageMap[vendor.image]}
-          alt={vendor.name}
-          className="w-full h-56 object-cover transition-transform duration-500 group-hover:scale-105"
-          loading="lazy"
-        />
-        <Badge
-          className={`absolute top-3 right-3 ${
-            vendor.availability === "available"
-              ? "bg-accent text-accent-foreground"
-              : "bg-secondary text-secondary-foreground"
-          }`}
-        >
-          {vendor.availability === "available" ? "Available" : "Limited"}
-        </Badge>
-      </div>
-      <div className="p-4">
-        <div className="flex items-center justify-between mb-1">
-          <p className="font-label text-muted-foreground">{vendor.category}</p>
-          <div className="flex items-center gap-1 text-sm">
-            <Star className="w-3.5 h-3.5 fill-accent text-accent" />
-            <span className="font-medium tnum">{vendor.rating}</span>
-            <span className="text-muted-foreground tnum">({vendor.reviews})</span>
+    <Link to={`/vendors/${vendor.id}`} className="group block">
+      <motion.div
+        whileHover={{ y: -3 }}
+        transition={{ type: "spring", duration: 0.4, bounce: 0 }}
+      >
+        <div className="relative aspect-[4/5] overflow-hidden rounded-sm mb-4 bg-muted">
+          <img
+            src={imageMap[vendor.image]}
+            alt={vendor.name}
+            loading="lazy"
+            className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.04]"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-foreground/55 via-transparent to-transparent" />
+
+          <button
+            aria-label={saved ? "Remove from saved" : "Save vendor"}
+            onClick={(e) => {
+              e.preventDefault();
+              setSaved((s) => !s);
+            }}
+            className="absolute top-3 right-3 w-9 h-9 rounded-full bg-background/85 backdrop-blur-sm flex items-center justify-center hover:bg-background transition-colors"
+          >
+            <Heart
+              className={`w-4 h-4 transition-colors ${
+                saved ? "fill-accent text-accent" : "text-foreground"
+              }`}
+            />
+          </button>
+
+          {vendor.availability !== "available" && (
+            <Badge className="absolute top-3 left-3 bg-background/85 text-foreground backdrop-blur-sm border-none">
+              Limited availability
+            </Badge>
+          )}
+
+          <div className="absolute bottom-3 left-4 right-4 flex items-end justify-between text-background">
+            <p className="font-label tracking-[0.25em]">{vendor.category}</p>
+            <div className="flex items-center gap-1 text-xs">
+              <Star className="w-3 h-3 fill-accent text-accent" />
+              <span className="tnum font-medium">{vendor.rating}</span>
+              <span className="text-background/70 tnum">({vendor.reviews})</span>
+            </div>
           </div>
         </div>
-        <h3 className="font-display text-lg mb-1">{vendor.name}</h3>
-        <p className="text-sm text-muted-foreground leading-relaxed mb-3 line-clamp-2">
-          {vendor.description}
-        </p>
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3 text-sm text-muted-foreground">
-            <span className="tnum font-medium text-foreground">
+
+        <div className="space-y-1.5">
+          <h3 className="font-display text-lg leading-tight transition-colors group-hover:text-accent">
+            {vendor.name}
+          </h3>
+          <p className="text-sm text-muted-foreground line-clamp-1 leading-relaxed">
+            {vendor.description}
+          </p>
+          <div className="flex items-center justify-between pt-1">
+            <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+              <MapPin className="w-3 h-3" />
+              {vendor.location ?? vendor.distance}
+            </p>
+            <p className="text-sm tnum font-medium">
               From ${vendor.startingPrice.toLocaleString()}
-            </span>
-            <span className="flex items-center gap-1">
-              <MapPin className="w-3 h-3" /> {vendor.distance}
-            </span>
+            </p>
           </div>
-          <Button size="sm" variant="ghost" className="text-sm">
-            View Profile
-          </Button>
         </div>
-      </div>
-    </motion.div>
+      </motion.div>
+    </Link>
   );
 }
