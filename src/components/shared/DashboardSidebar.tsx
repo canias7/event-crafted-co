@@ -1,6 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
-import { motion } from "framer-motion";
 import { LucideIcon } from "lucide-react";
+import { NotificationBell } from "@/components/notifications/NotificationBell";
 
 interface NavItem {
   label: string;
@@ -19,11 +19,14 @@ export function DashboardSidebar({ items, title, backPath = "/" }: DashboardSide
 
   return (
     <aside className="hidden lg:flex flex-col w-64 border-r border-border bg-card min-h-screen sticky top-0">
-      <div className="p-6 border-b border-border">
-        <Link to={backPath} className="font-display text-lg">
-          Vendora
-        </Link>
-        <p className="font-label text-muted-foreground mt-1">{title}</p>
+      <div className="p-6 border-b border-border flex items-start justify-between gap-3">
+        <div>
+          <Link to={backPath} className="font-display text-lg">
+            Vendora
+          </Link>
+          <p className="font-label text-muted-foreground mt-1">{title}</p>
+        </div>
+        <NotificationBell variant="light" />
       </div>
       <nav className="flex-1 p-3">
         {items.map((item) => {

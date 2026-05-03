@@ -10,6 +10,7 @@ import LoginPage from "./pages/auth/LoginPage";
 import SignupPage from "./pages/auth/SignupPage";
 import { AuthProvider } from "./hooks/useAuth";
 import { RequireRole } from "./components/auth/RequireRole";
+import { CookieBanner } from "./components/CookieBanner";
 
 // Lazy-load everything else so the initial bundle ships only the landing,
 // nav, and auth surfaces. Portal routes (customer / vendor / admin) split
@@ -20,6 +21,8 @@ const VendorDetailPage = lazy(() => import("./pages/VendorDetailPage"));
 const VendorCategoryPage = lazy(() => import("./pages/VendorCategoryPage"));
 const InspirationPage = lazy(() => import("./pages/InspirationPage"));
 const InspirationDetailPage = lazy(() => import("./pages/InspirationDetailPage"));
+const PrivacyPage = lazy(() => import("./pages/PrivacyPage"));
+const TermsPage = lazy(() => import("./pages/TermsPage"));
 const VendorApplyPage = lazy(() => import("./pages/VendorApplyPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const ComingSoonPage = lazy(() => import("./pages/ComingSoonPage"));
@@ -70,6 +73,8 @@ const App = () => (
               <Route path="/vendors/:id" element={<VendorDetailPage />} />
               <Route path="/inspiration" element={<InspirationPage />} />
               <Route path="/inspiration/:slug" element={<InspirationDetailPage />} />
+              <Route path="/privacy" element={<PrivacyPage />} />
+              <Route path="/terms" element={<TermsPage />} />
               <Route path="/vendor-apply" element={<VendorApplyPage />} />
               <Route path="/login" element={<LoginPage />} />
               <Route path="/signup" element={<SignupPage />} />
@@ -103,6 +108,7 @@ const App = () => (
               <Route path="*" element={<NotFound />} />
             </Routes>
           </Suspense>
+          <CookieBanner />
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>

@@ -12,3 +12,16 @@ Allow: /
 
 User-agent: *
 Allow: /
+Disallow: /customer/
+Disallow: /vendor/dashboard
+Disallow: /vendor/profile
+Disallow: /vendor/inbox
+Disallow: /vendor/availability
+Disallow: /vendor/appointments
+Disallow: /vendor/payments
+Disallow: /vendor/contract
+Disallow: /admin/
+Disallow: /login
+Disallow: /signup
+
+Sitemap: https://vendora.events/sitemap.xml

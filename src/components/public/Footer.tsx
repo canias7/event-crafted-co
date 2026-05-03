@@ -28,11 +28,20 @@ export function Footer() {
             </div>
           </div>
           <div>
-            <p className="font-label mb-4 opacity-50">Support</p>
+            <p className="font-label mb-4 opacity-50">Legal</p>
             <div className="space-y-3">
-              <span className="block text-sm opacity-70">Help Center</span>
-              <span className="block text-sm opacity-70">Contact</span>
-              <span className="block text-sm opacity-70">Privacy Policy</span>
+              <Link to="/privacy" className="block text-sm opacity-70 hover:opacity-100 transition-opacity">
+                Privacy Policy
+              </Link>
+              <Link to="/terms" className="block text-sm opacity-70 hover:opacity-100 transition-opacity">
+                Terms of Service
+              </Link>
+              <a
+                href="mailto:hello@vendora.events"
+                className="block text-sm opacity-70 hover:opacity-100 transition-opacity"
+              >
+                Contact
+              </a>
             </div>
           </div>
         </div>
