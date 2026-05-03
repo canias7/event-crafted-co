@@ -18,7 +18,7 @@ export default function VendorApplyPage() {
           <div className="text-center mb-12">
             <p className="font-label text-accent mb-3">Become a Vendor</p>
             <h1 className="text-h2 font-display mb-3">Join our marketplace</h1>
-            <p className="text-muted-foreground">Apply to become a verified vendor on Élevé. Our team reviews every application to ensure quality.</p>
+            <p className="text-muted-foreground">Apply to become a verified vendor on Vendora. Our team reviews every application to ensure quality.</p>
           </div>
 
           <div className="bg-card rounded-2xl card-shadow p-6 md:p-8 space-y-6">

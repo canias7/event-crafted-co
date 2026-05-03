@@ -1,21 +1,32 @@
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
-import { ArrowRight, Search, Calendar, CheckCircle, Star, ChevronDown, Sparkles, Send } from "lucide-react";
+import { ArrowRight, Search, Calendar, Sparkles, Check, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PublicNav } from "@/components/public/PublicNav";
 import { Footer } from "@/components/public/Footer";
-import { VendorCard } from "@/components/shared/VendorCard";
-import { vendors, testimonials } from "@/data/sampleData";
-import heroImage from "@/assets/hero-event.jpg";
+import heroImage from "@/assets/vendora-hero.jpg";
+import featureFlorals from "@/assets/vendora-feature-1.jpg";
+import featureVenue from "@/assets/vendora-feature-2.jpg";
 
-const spring = { type: "spring" as const, duration: 0.4, bounce: 0 };
+const spring = { type: "spring" as const, duration: 0.6, bounce: 0 };
+
+const steps = [
+  { n: "01", title: "Discover", desc: "Browse a curated network of trusted vendors — venues, florals, photography, catering and more." },
+  { n: "02", title: "Book", desc: "Check live availability, request appointments, and confirm your bookings in a few taps." },
+  { n: "03", title: "Plan", desc: "Manage timelines, payments, invitations, and guest lists from one elegant dashboard." },
+];
+
+const features = [
+  { title: "Vendor discovery", desc: "Search a hand-vetted marketplace of professionals, filtered to your taste, budget, and date." },
+  { title: "Seamless booking", desc: "Live calendars, instant requests, and contracts — no calls, no chasing, no friction." },
+  { title: "Planning tools", desc: "Checklists, payment tracking, invitation builder, and guest management — all in sync." },
+];
 
 const faqs = [
-  { q: "How does the booking process work?", a: "Browse vendors, view their profiles and availability, then book directly through the platform. You'll receive a confirmation and can manage everything from your dashboard." },
-  { q: "Are vendors verified?", a: "Every vendor goes through a rigorous application and review process. We verify credentials, review portfolios, and check references before approval." },
-  { q: "How are payments handled?", a: "Payments are processed securely through the platform. You can pay deposits, installments, or full amounts. Receipts and invoices are generated automatically." },
-  { q: "Can I create digital invitations?", a: "Yes! Our built-in invitation builder lets you design beautiful digital or printable invitations with customizable templates, RSVP tracking, and sharing options." },
-  { q: "What if I need to cancel a booking?", a: "Cancellation policies vary by vendor. You can view each vendor's policy on their profile before booking. Refund requests are handled through the platform." },
+  { q: "Is Vendora free to use?", a: "Yes — browsing vendors and managing your event is free. You only pay your vendors directly through the platform." },
+  { q: "Are vendors verified?", a: "Every vendor goes through a manual review process. We verify credentials, portfolios, and references." },
+  { q: "What types of events does Vendora support?", a: "Weddings, corporate events, milestone celebrations, private parties — anything that deserves to be done well." },
+  { q: "Can I manage payments through Vendora?", a: "Yes. Send deposits, schedule installments, and keep every receipt in one place." },
 ];
 
 export default function LandingPage() {
@@ -24,216 +35,240 @@ export default function LandingPage() {
       <PublicNav />
 
       {/* Hero */}
-      <section className="relative pt-32 pb-24 md:pt-40 md:pb-32 overflow-hidden">
+      <section className="relative pt-28 pb-24 md:pt-40 md:pb-40 overflow-hidden">
         <div className="absolute inset-0 -z-10">
-          <img src={heroImage} alt="" className="w-full h-full object-cover opacity-15" />
-          <div className="absolute inset-0 bg-gradient-to-b from-background via-background/95 to-background" />
+          <img
+            src={heroImage}
+            alt=""
+            className="w-full h-full object-cover opacity-25"
+          />
+          <div className="absolute inset-0 bg-gradient-to-b from-background/40 via-background/85 to-background" />
+          <div
+            className="absolute inset-0"
+            style={{ background: "var(--gradient-hero)" }}
+          />
         </div>
-        <div className="container mx-auto px-4 md:px-8 text-center">
+
+        <div className="container mx-auto px-6 md:px-8 text-center relative">
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ ...spring, delay: 0.1 }}
+            transition={spring}
           >
-            <p className="font-label text-accent mb-6">Event Planning, Elevated</p>
-            <h1 className="text-hero font-display max-w-3xl mx-auto mb-6">
-              Your event, perfectly composed.
+            <p className="font-label text-accent mb-8 tracking-[0.25em]">VENDORA</p>
+            <h1 className="text-hero font-display max-w-4xl mx-auto mb-8 leading-[1.02]">
+              Plan your perfect event —{" "}
+              <span className="italic font-light text-accent">effortlessly.</span>
             </h1>
-            <p className="text-lg text-muted-foreground max-w-xl mx-auto mb-10 leading-relaxed">
-              From finding the right vendors to designing the invitations, we bring everything together in one calm, beautiful platform.
+            <p className="text-base md:text-lg text-muted-foreground max-w-xl mx-auto mb-12 leading-relaxed">
+              Vendora connects you with trusted vendors and the tools to plan,
+              book, and manage every detail of your event — beautifully, in one place.
             </p>
-            <div className="flex flex-col sm:flex-row gap-3 justify-center">
-              <Link to="/vendors">
-                <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.98 }} transition={spring}>
-                  <Button size="lg" className="h-12 px-8 rounded-lg text-base">
-                    <Search className="w-4 h-4 mr-2" />
-                    Find Vendors
-                  </Button>
-                </motion.div>
-              </Link>
+            <div className="flex flex-col sm:flex-row gap-3 justify-center items-center">
               <Link to="/customer/dashboard">
-                <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.98 }} transition={spring}>
-                  <Button size="lg" variant="outline" className="h-12 px-8 rounded-lg text-base">
-                    Start Planning
-                    <ArrowRight className="w-4 h-4 ml-2" />
-                  </Button>
-                </motion.div>
+                <Button size="lg" className="h-12 px-8 rounded-full text-sm tracking-wide">
+                  Start Planning
+                  <ArrowRight className="w-4 h-4 ml-2" />
+                </Button>
+              </Link>
+              <Link to="/vendors">
+                <Button size="lg" variant="ghost" className="h-12 px-6 rounded-full text-sm">
+                  Browse vendors
+                </Button>
               </Link>
             </div>
+          </motion.div>
+
+          {/* Trust strip */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.4, duration: 0.8 }}
+            className="mt-24 md:mt-32 flex flex-wrap items-center justify-center gap-x-10 gap-y-4 text-xs uppercase tracking-[0.2em] text-muted-foreground/70"
+          >
+            <span>Featured in Vogue</span>
+            <span className="hidden md:inline">·</span>
+            <span>Condé Nast Traveler</span>
+            <span className="hidden md:inline">·</span>
+            <span>Architectural Digest</span>
+            <span className="hidden md:inline">·</span>
+            <span>Brides Magazine</span>
           </motion.div>
         </div>
       </section>
 
       {/* How it works */}
-      <section className="py-24 md:py-32">
-        <div className="container mx-auto px-4 md:px-8">
-          <div className="text-center mb-16">
-            <p className="font-label text-accent mb-3">How It Works</p>
-            <h2 className="text-h2 font-display">Three steps to your perfect event</h2>
+      <section className="py-24 md:py-36 border-t border-border">
+        <div className="container mx-auto px-6 md:px-8">
+          <div className="max-w-2xl mb-20">
+            <p className="font-label text-accent mb-4">How it works</p>
+            <h2 className="text-h2 font-display">
+              Three simple steps to a flawless event.
+            </h2>
           </div>
-          <div className="grid md:grid-cols-3 gap-8">
-            {[
-              { icon: Search, title: "Discover vendors", desc: "Browse curated profiles with real reviews, pricing, and availability. Filter by category, location, and budget." },
-              { icon: Calendar, title: "Book & plan", desc: "Schedule appointments, set your event date, build your checklist, and manage tasks — all in one dashboard." },
-              { icon: Sparkles, title: "Create & celebrate", desc: "Design stunning invitations, track RSVPs, process payments, and bring your vision to life." },
-            ].map((step, i) => (
+
+          <div className="grid md:grid-cols-3 gap-12 md:gap-8">
+            {steps.map((s, i) => (
               <motion.div
-                key={i}
+                key={s.n}
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ ...spring, delay: i * 0.1 }}
-                className="text-center md:text-left"
+                className="border-t border-border pt-8"
               >
-                <div className="w-12 h-12 rounded-xl bg-accent/10 flex items-center justify-center mb-4 mx-auto md:mx-0">
-                  <step.icon className="w-5 h-5 text-accent" />
-                </div>
-                <h3 className="font-display text-lg mb-2">{step.title}</h3>
-                <p className="text-sm text-muted-foreground leading-relaxed">{step.desc}</p>
+                <p className="font-label text-accent mb-6 tnum">{s.n}</p>
+                <h3 className="font-display text-2xl mb-3">{s.title}</h3>
+                <p className="text-sm text-muted-foreground leading-relaxed">{s.desc}</p>
               </motion.div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Featured vendors */}
-      <section className="py-24 md:py-32 bg-secondary/30">
-        <div className="container mx-auto px-4 md:px-8">
-          <div className="flex items-end justify-between mb-12">
+      {/* Feature: Vendor discovery */}
+      <section className="py-24 md:py-36 bg-primary text-primary-foreground relative overflow-hidden">
+        <div
+          className="absolute -top-40 -right-40 w-[500px] h-[500px] opacity-40 -z-0"
+          style={{ background: "var(--gradient-glow)" }}
+        />
+        <div className="container mx-auto px-6 md:px-8 relative">
+          <div className="grid md:grid-cols-2 gap-16 md:gap-24 items-center">
             <div>
-              <p className="font-label text-accent mb-3">Featured Vendors</p>
-              <h2 className="text-h2 font-display">Trusted by the best</h2>
-            </div>
-            <Link to="/vendors" className="hidden md:block">
-              <Button variant="ghost" className="text-sm">
-                View all vendors <ArrowRight className="w-4 h-4 ml-1" />
-              </Button>
-            </Link>
-          </div>
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {vendors.slice(0, 6).map((vendor) => (
-              <VendorCard key={vendor.id} vendor={vendor} />
-            ))}
-          </div>
-          <div className="mt-8 text-center md:hidden">
-            <Link to="/vendors">
-              <Button variant="outline">View all vendors</Button>
-            </Link>
-          </div>
-        </div>
-      </section>
-
-      {/* Invitation preview */}
-      <section className="py-24 md:py-32">
-        <div className="container mx-auto px-4 md:px-8">
-          <div className="grid md:grid-cols-2 gap-12 items-center">
-            <div>
-              <p className="font-label text-accent mb-3">Invitation Builder</p>
-              <h2 className="text-h2 font-display mb-4">Design invitations that inspire</h2>
-              <p className="text-muted-foreground leading-relaxed mb-6">
-                Choose from elegant templates, customize every detail, and share digitally or print. Track RSVPs and manage your guest list effortlessly.
+              <p className="font-label text-accent mb-5">A curated marketplace</p>
+              <h2 className="text-h2 font-display mb-6">
+                Find vendors you'll trust on sight.
+              </h2>
+              <p className="text-primary-foreground/70 leading-relaxed mb-10 max-w-md">
+                Every photographer, florist, venue, and planner on Vendora is
+                personally reviewed. No noise — only people whose work you'd be
+                proud to put your name next to.
               </p>
-              <div className="space-y-3">
-                {["Customizable templates for every event", "Live preview as you design", "Digital sharing with QR codes", "Print-ready export"].map((feature, i) => (
-                  <div key={i} className="flex items-center gap-3 text-sm">
-                    <CheckCircle className="w-4 h-4 text-accent flex-shrink-0" />
-                    <span>{feature}</span>
+              <div className="space-y-4">
+                {[
+                  "Vetted, verified, insured professionals",
+                  "Transparent pricing and packages",
+                  "Real reviews from real events",
+                ].map((f) => (
+                  <div key={f} className="flex items-start gap-3 text-sm">
+                    <Check className="w-4 h-4 text-accent mt-0.5 flex-shrink-0" />
+                    <span className="text-primary-foreground/85">{f}</span>
                   </div>
                 ))}
               </div>
-              <Link to="/customer/invitations" className="inline-block mt-8">
-                <Button>
-                  <Send className="w-4 h-4 mr-2" />
-                  Try the Builder
-                </Button>
-              </Link>
             </div>
-            <div className="bg-card rounded-2xl card-shadow p-8 md:p-12">
-              <div className="border border-border rounded-xl p-8 text-center space-y-4">
-                <p className="font-label text-accent">You're Invited</p>
-                <h3 className="font-display text-2xl">Sarah & James</h3>
-                <p className="text-muted-foreground text-sm">Request the pleasure of your company</p>
-                <div className="w-12 h-[1px] bg-border mx-auto" />
-                <div className="text-sm space-y-1">
-                  <p className="font-medium">Saturday, August 15, 2026</p>
-                  <p className="text-muted-foreground">Six o'clock in the evening</p>
-                  <p className="text-muted-foreground">The Grand Atelier</p>
-                </div>
-                <p className="text-xs text-muted-foreground pt-4">Black Tie Optional · RSVP by July 15</p>
+            <div className="relative">
+              <div className="aspect-[4/5] rounded-sm overflow-hidden">
+                <img
+                  src={featureFlorals}
+                  alt="Floral arrangement"
+                  loading="lazy"
+                  className="w-full h-full object-cover"
+                />
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Testimonials */}
-      <section className="py-24 md:py-32 bg-secondary/30">
-        <div className="container mx-auto px-4 md:px-8">
-          <div className="text-center mb-16">
-            <p className="font-label text-accent mb-3">Testimonials</p>
-            <h2 className="text-h2 font-display">Loved by planners everywhere</h2>
+      {/* Feature: Booking + tools */}
+      <section className="py-24 md:py-36">
+        <div className="container mx-auto px-6 md:px-8">
+          <div className="grid md:grid-cols-2 gap-16 md:gap-24 items-center">
+            <div className="md:order-2">
+              <p className="font-label text-accent mb-5">Booking & tools</p>
+              <h2 className="text-h2 font-display mb-6">
+                Everything you need, nothing you don't.
+              </h2>
+              <p className="text-muted-foreground leading-relaxed mb-10 max-w-md">
+                A single, calm dashboard for your timeline, payments,
+                invitations, and guest list. Designed to feel less like
+                software, and more like a planner who quietly keeps everything
+                on track.
+              </p>
+              <div className="grid grid-cols-1 gap-6">
+                {features.map((f) => (
+                  <div key={f.title} className="border-l border-accent/40 pl-5 py-1">
+                    <h3 className="font-display text-base mb-1">{f.title}</h3>
+                    <p className="text-sm text-muted-foreground leading-relaxed">{f.desc}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="md:order-1 relative">
+              <div className="aspect-[4/5] rounded-sm overflow-hidden">
+                <img
+                  src={featureVenue}
+                  alt="Luxury venue"
+                  loading="lazy"
+                  className="w-full h-full object-cover"
+                />
+              </div>
+            </div>
           </div>
-          <div className="grid md:grid-cols-3 gap-6">
-            {testimonials.map((t, i) => (
-              <motion.div
-                key={i}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ ...spring, delay: i * 0.1 }}
-                className="bg-card rounded-2xl p-6 card-shadow"
-              >
-                <div className="flex gap-0.5 mb-4">
-                  {Array.from({ length: t.rating }).map((_, j) => (
-                    <Star key={j} className="w-4 h-4 fill-accent text-accent" />
-                  ))}
-                </div>
-                <p className="text-sm leading-relaxed mb-4">"{t.text}"</p>
-                <div>
-                  <p className="text-sm font-medium">{t.name}</p>
-                  <p className="text-xs text-muted-foreground">{t.event}</p>
-                </div>
-              </motion.div>
+        </div>
+      </section>
+
+      {/* Stats / quiet trust band */}
+      <section className="py-20 border-y border-border bg-secondary/40">
+        <div className="container mx-auto px-6 md:px-8">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-10 text-center">
+            {[
+              { n: "12k+", l: "Events planned" },
+              { n: "2,400", l: "Verified vendors" },
+              { n: "4.9", l: "Average rating" },
+              { n: "48", l: "Cities" },
+            ].map((s) => (
+              <div key={s.l}>
+                <p className="font-display text-3xl md:text-4xl mb-2 tnum">{s.n}</p>
+                <p className="font-label text-muted-foreground">{s.l}</p>
+              </div>
             ))}
           </div>
         </div>
       </section>
 
       {/* FAQ */}
-      <section className="py-24 md:py-32">
-        <div className="container mx-auto px-4 md:px-8 max-w-2xl">
-          <div className="text-center mb-16">
-            <p className="font-label text-accent mb-3">FAQ</p>
-            <h2 className="text-h2 font-display">Common questions</h2>
+      <section className="py-24 md:py-36">
+        <div className="container mx-auto px-6 md:px-8 max-w-2xl">
+          <div className="mb-16">
+            <p className="font-label text-accent mb-4">Questions</p>
+            <h2 className="text-h2 font-display">Quietly thorough answers.</h2>
           </div>
-          <div className="space-y-0">
-            {faqs.map((faq, i) => (
-              <details key={i} className="group border-b border-border">
-                <summary className="flex items-center justify-between py-5 cursor-pointer text-sm font-medium list-none">
-                  {faq.q}
+          <div>
+            {faqs.map((f) => (
+              <details key={f.q} className="group border-b border-border">
+                <summary className="flex items-center justify-between py-6 cursor-pointer text-base font-medium list-none">
+                  {f.q}
                   <ChevronDown className="w-4 h-4 text-muted-foreground transition-transform group-open:rotate-180" />
                 </summary>
-                <p className="pb-5 text-sm text-muted-foreground leading-relaxed">{faq.a}</p>
+                <p className="pb-6 text-sm text-muted-foreground leading-relaxed max-w-lg">
+                  {f.a}
+                </p>
               </details>
             ))}
           </div>
         </div>
       </section>
 
-      {/* CTA */}
-      <section className="py-24 md:py-32 bg-primary text-primary-foreground">
-        <div className="container mx-auto px-4 md:px-8 text-center">
-          <h2 className="text-h2 font-display mb-4">Ready to start planning?</h2>
-          <p className="text-sm opacity-70 max-w-md mx-auto mb-8">
-            Join thousands of planners who've found their perfect vendors and created unforgettable events.
+      {/* Final CTA */}
+      <section className="relative py-32 md:py-44 bg-primary text-primary-foreground overflow-hidden">
+        <div
+          className="absolute inset-0 opacity-60"
+          style={{ background: "var(--gradient-hero)" }}
+        />
+        <div className="container mx-auto px-6 md:px-8 text-center relative">
+          <h2 className="font-display text-4xl md:text-6xl max-w-3xl mx-auto mb-6 leading-[1.05]">
+            Your event, <span className="italic font-light text-accent">elevated.</span>
+          </h2>
+          <p className="text-primary-foreground/70 max-w-md mx-auto mb-10 text-sm md:text-base">
+            Join thousands of hosts planning effortlessly with Vendora.
           </p>
           <Link to="/customer/dashboard">
-            <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.98 }} transition={spring} className="inline-block">
-              <Button size="lg" variant="secondary" className="h-12 px-8 rounded-lg">
-                Get Started Free
-                <ArrowRight className="w-4 h-4 ml-2" />
-              </Button>
-            </motion.div>
+            <Button size="lg" variant="secondary" className="h-12 px-8 rounded-full text-sm tracking-wide">
+              Start Planning
+              <ArrowRight className="w-4 h-4 ml-2" />
+            </Button>
           </Link>
         </div>
       </section>

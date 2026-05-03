@@ -38,7 +38,7 @@ export default function SignupPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-background px-4 py-12">
       <div className="w-full max-w-md bg-card border border-border rounded-2xl p-8 card-shadow">
-        <Link to="/" className="font-display text-2xl">Élevé</Link>
+        <Link to="/" className="font-display text-2xl">Vendora</Link>
         <h1 className="font-display text-3xl mt-6 mb-2">Create your account</h1>
         <p className="text-sm text-muted-foreground mb-6">Choose how you'll use the platform</p>
         <form onSubmit={onSubmit} className="space-y-4">

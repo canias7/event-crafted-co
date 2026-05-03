@@ -6,52 +6,56 @@
 
 @layer base {
   :root {
-    --background: 40 20% 98%;
-    --foreground: 40 10% 20%;
+    /* Vendora — charcoal, champagne gold, off-white */
+    --background: 36 30% 97%;
+    --foreground: 220 14% 11%;
 
     --card: 0 0% 100%;
-    --card-foreground: 40 10% 20%;
+    --card-foreground: 220 14% 11%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 40 10% 20%;
+    --popover-foreground: 220 14% 11%;
 
-    --primary: 40 10% 20%;
-    --primary-foreground: 0 0% 100%;
+    --primary: 220 14% 11%;
+    --primary-foreground: 36 30% 97%;
 
-    --secondary: 40 15% 94%;
-    --secondary-foreground: 40 10% 20%;
+    --secondary: 36 22% 93%;
+    --secondary-foreground: 220 14% 11%;
 
-    --muted: 40 15% 90%;
-    --muted-foreground: 40 8% 45%;
+    --muted: 36 18% 90%;
+    --muted-foreground: 220 8% 38%;
 
-    --accent: 160 50% 45%;
-    --accent-foreground: 0 0% 100%;
+    --accent: 38 45% 62%;
+    --accent-foreground: 220 14% 11%;
 
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 40 10% 20% / 0.1;
-    --input: 40 15% 90%;
-    --ring: 160 50% 45% / 0.8;
+    --border: 220 14% 11% / 0.08;
+    --input: 36 18% 90%;
+    --ring: 38 45% 62% / 0.6;
 
     --radius: 0.5rem;
 
-    --shadow-sm: 40 10% 20% / 0.02;
-    --shadow-md: 40 10% 20% / 0.04;
+    --shadow-sm: 220 14% 11% / 0.03;
+    --shadow-md: 220 14% 11% / 0.06;
 
-    --sidebar-background: 40 20% 97%;
-    --sidebar-foreground: 40 10% 20%;
-    --sidebar-primary: 40 10% 20%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 40 15% 94%;
-    --sidebar-accent-foreground: 40 10% 20%;
-    --sidebar-border: 40 10% 20% / 0.1;
-    --sidebar-ring: 160 50% 45% / 0.8;
+    --sidebar-background: 36 30% 97%;
+    --sidebar-foreground: 220 14% 11%;
+    --sidebar-primary: 220 14% 11%;
+    --sidebar-primary-foreground: 36 30% 97%;
+    --sidebar-accent: 36 22% 93%;
+    --sidebar-accent-foreground: 220 14% 11%;
+    --sidebar-border: 220 14% 11% / 0.08;
+    --sidebar-ring: 38 45% 62% / 0.6;
 
     /* Custom tokens */
-    --font-size-hero: clamp(2.5rem, 8vw, 4.5rem);
-    --font-size-h2: clamp(1.75rem, 5vw, 2.5rem);
+    --font-size-hero: clamp(2.75rem, 9vw, 6rem);
+    --font-size-h2: clamp(1.875rem, 5vw, 3rem);
     --font-size-body: 1rem;
+
+    --gradient-hero: radial-gradient(ellipse 80% 60% at 50% 20%, hsl(38 45% 62% / 0.18), transparent 70%);
+    --gradient-glow: radial-gradient(circle at 50% 50%, hsl(38 45% 70% / 0.25), transparent 60%);
   }
 }
 

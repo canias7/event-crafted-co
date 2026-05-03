@@ -6,7 +6,7 @@ export function Footer() {
       <div className="container mx-auto px-4 md:px-8">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-12">
           <div className="col-span-2 md:col-span-1">
-            <h3 className="font-display text-xl mb-4">Élevé</h3>
+            <h3 className="font-display text-xl mb-4">Vendora</h3>
             <p className="text-sm opacity-70 leading-relaxed max-w-xs">
               Your event, perfectly composed. From vendors to invitations, everything in one calm platform.
             </p>
@@ -37,7 +37,7 @@ export function Footer() {
           </div>
         </div>
         <div className="mt-16 pt-8 border-t border-primary-foreground/10 text-sm opacity-50">
-          © 2026 Élevé. All rights reserved.
+          © 2026 Vendora. All rights reserved.
         </div>
       </div>
     </footer>
