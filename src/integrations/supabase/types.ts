@@ -174,6 +174,68 @@ export type Database = {
           },
         ]
       }
+      event_guests: {
+        Row: {
+          created_at: string
+          email: string | null
+          group_label: string | null
+          host_id: string
+          id: string
+          invitation_token: string
+          name: string
+          phone: string | null
+          plus_one_allowed: boolean
+          rsvp_dietary: string | null
+          rsvp_message: string | null
+          rsvp_plus_one: boolean | null
+          rsvp_responded_at: string | null
+          rsvp_status: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          group_label?: string | null
+          host_id: string
+          id?: string
+          invitation_token?: string
+          name: string
+          phone?: string | null
+          plus_one_allowed?: boolean
+          rsvp_dietary?: string | null
+          rsvp_message?: string | null
+          rsvp_plus_one?: boolean | null
+          rsvp_responded_at?: string | null
+          rsvp_status?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          group_label?: string | null
+          host_id?: string
+          id?: string
+          invitation_token?: string
+          name?: string
+          phone?: string | null
+          plus_one_allowed?: boolean
+          rsvp_dietary?: string | null
+          rsvp_message?: string | null
+          rsvp_plus_one?: boolean | null
+          rsvp_responded_at?: string | null
+          rsvp_status?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_guests_host_id_fkey"
+            columns: ["host_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       event_tasks: {
         Row: {
           category: string | null
@@ -214,6 +276,116 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "event_tasks_host_id_fkey"
+            columns: ["host_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      featured_events: {
+        Row: {
+          body: string | null
+          created_at: string
+          date_label: string | null
+          event_type: string
+          event_type_label: string | null
+          excerpt: string | null
+          guests: number | null
+          hero_url: string | null
+          hosts: string | null
+          id: string
+          location: string | null
+          published_at: string | null
+          slug: string
+          title: string
+          updated_at: string
+          vendor_credits: Json
+        }
+        Insert: {
+          body?: string | null
+          created_at?: string
+          date_label?: string | null
+          event_type: string
+          event_type_label?: string | null
+          excerpt?: string | null
+          guests?: number | null
+          hero_url?: string | null
+          hosts?: string | null
+          id?: string
+          location?: string | null
+          published_at?: string | null
+          slug: string
+          title: string
+          updated_at?: string
+          vendor_credits?: Json
+        }
+        Update: {
+          body?: string | null
+          created_at?: string
+          date_label?: string | null
+          event_type?: string
+          event_type_label?: string | null
+          excerpt?: string | null
+          guests?: number | null
+          hero_url?: string | null
+          hosts?: string | null
+          id?: string
+          location?: string | null
+          published_at?: string | null
+          slug?: string
+          title?: string
+          updated_at?: string
+          vendor_credits?: Json
+        }
+        Relationships: []
+      }
+      host_events: {
+        Row: {
+          archived_at: string | null
+          budget_max_cents: number | null
+          budget_min_cents: number | null
+          created_at: string
+          event_date: string | null
+          event_location: string | null
+          event_notes: string | null
+          event_type: string
+          host_id: string
+          id: string
+          name: string | null
+          updated_at: string
+        }
+        Insert: {
+          archived_at?: string | null
+          budget_max_cents?: number | null
+          budget_min_cents?: number | null
+          created_at?: string
+          event_date?: string | null
+          event_location?: string | null
+          event_notes?: string | null
+          event_type: string
+          host_id: string
+          id?: string
+          name?: string | null
+          updated_at?: string
+        }
+        Update: {
+          archived_at?: string | null
+          budget_max_cents?: number | null
+          budget_min_cents?: number | null
+          created_at?: string
+          event_date?: string | null
+          event_location?: string | null
+          event_notes?: string | null
+          event_type?: string
+          host_id?: string
+          id?: string
+          name?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "host_events_host_id_fkey"
             columns: ["host_id"]
             isOneToOne: false
             referencedRelation: "profiles"
@@ -390,6 +562,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          active_event_id: string | null
           avatar_url: string | null
           budget_max_cents: number | null
           budget_min_cents: number | null
@@ -408,6 +581,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          active_event_id?: string | null
           avatar_url?: string | null
           budget_max_cents?: number | null
           budget_min_cents?: number | null
@@ -426,6 +600,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          active_event_id?: string | null
           avatar_url?: string | null
           budget_max_cents?: number | null
           budget_min_cents?: number | null
@@ -443,7 +618,15 @@ export type Database = {
           role?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_active_event_id_fkey"
+            columns: ["active_event_id"]
+            isOneToOne: false
+            referencedRelation: "host_events"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       proposals: {
         Row: {
@@ -651,6 +834,41 @@ export type Database = {
           },
         ]
       }
+      vendor_message_templates: {
+        Row: {
+          body: string
+          created_at: string
+          id: string
+          name: string
+          updated_at: string
+          vendor_id: string
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          id?: string
+          name: string
+          updated_at?: string
+          vendor_id: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          id?: string
+          name?: string
+          updated_at?: string
+          vendor_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vendor_message_templates_vendor_id_fkey"
+            columns: ["vendor_id"]
+            isOneToOne: false
+            referencedRelation: "vendor_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       vendor_portfolio_images: {
         Row: {
           caption: string | null
@@ -810,9 +1028,35 @@ export type Database = {
     }
     Functions: {
       can_access_inquiry: { Args: { _inquiry_id: string }; Returns: boolean }
+      get_guest_by_token: {
+        Args: { p_token: string }
+        Returns: {
+          event_date: string
+          event_location: string
+          event_type: string
+          host_name: string
+          id: string
+          name: string
+          plus_one_allowed: boolean
+          rsvp_dietary: string
+          rsvp_message: string
+          rsvp_plus_one: boolean
+          rsvp_status: string
+        }[]
+      }
       is_admin: { Args: never; Returns: boolean }
       is_vendor_owner: { Args: { _vendor_id: string }; Returns: boolean }
       request_account_deletion: { Args: never; Returns: undefined }
+      submit_rsvp: {
+        Args: {
+          p_dietary: string
+          p_message: string
+          p_plus_one: boolean
+          p_status: string
+          p_token: string
+        }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never
