@@ -2,6 +2,7 @@
 // as a real <picture> with AVIF + WebP sources and a JPG fallback. The
 // browser picks the best format it supports; non-modern browsers fall
 // through to the <img> tag's regular src.
+import { forwardRef } from "react";
 
 interface PictureSource {
   sources: Record<string, string>;
@@ -21,14 +22,10 @@ interface Props {
   fetchPriority?: "high" | "low" | "auto";
 }
 
-export function Picture({
-  source,
-  alt,
-  className,
-  loading = "lazy",
-  sizes,
-  fetchPriority,
-}: Props) {
+export const Picture = forwardRef<HTMLImageElement, Props>(function Picture(
+  { source, alt, className, loading = "lazy", sizes, fetchPriority },
+  ref,
+) {
   const { sources, img } = source;
   return (
     <picture>
@@ -39,6 +36,7 @@ export function Picture({
         <source srcSet={sources.webp} type="image/webp" sizes={sizes} />
       )}
       <img
+        ref={ref}
         src={img.src}
         srcSet={sources.jpg}
         sizes={sizes}
@@ -53,6 +51,6 @@ export function Picture({
       />
     </picture>
   );
-}
+});
 
 export type { PictureSource };
