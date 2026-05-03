@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Loader2, AlertTriangle, KeyRound, User, Cookie, Download } from "lucide-react";
+import { Loader2, AlertTriangle, KeyRound, User, Cookie, Download, Bell } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Switch } from "@/components/ui/switch";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -39,9 +40,50 @@ export default function SettingsPage() {
   const [deleting, setDeleting] = useState(false);
   const [exporting, setExporting] = useState(false);
 
+  const [digestEnabled, setDigestEnabled] = useState<boolean | null>(null);
+  const [savingDigest, setSavingDigest] = useState(false);
+
   useEffect(() => {
     if (profile) setDisplayName(profile.display_name ?? "");
   }, [profile]);
+
+  // Load the digest preference. profile from useAuth doesn't include this
+  // column, so query directly.
+  useEffect(() => {
+    if (!user) return;
+    let cancelled = false;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (supabase as any)
+      .from("profiles")
+      .select("daily_digest_enabled")
+      .eq("id", user.id)
+      .maybeSingle()
+      .then(({ data }: { data: { daily_digest_enabled: boolean } | null }) => {
+        if (cancelled) return;
+        setDigestEnabled(data?.daily_digest_enabled ?? true);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [user]);
+
+  async function toggleDigest(next: boolean) {
+    if (!user) return;
+    setSavingDigest(true);
+    setDigestEnabled(next);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error } = await (supabase as any)
+      .from("profiles")
+      .update({ daily_digest_enabled: next })
+      .eq("id", user.id);
+    setSavingDigest(false);
+    if (error) {
+      setDigestEnabled(!next);
+      toast.error(error.message);
+      return;
+    }
+    toast.success(next ? "Daily digest enabled" : "Daily digest disabled");
+  }
 
   const navItems =
     profile?.role === "vendor" ? vendorNavItems : customerNavItems;
@@ -299,6 +341,31 @@ export default function SettingsPage() {
                     </>
                   )}
                 </Button>
+              </Section>
+
+              {/* Email preferences */}
+              <Section
+                icon={Bell}
+                title="Email preferences"
+                subtitle="Control which emails Vendora sends you"
+              >
+                <div className="flex items-center justify-between gap-4">
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium mb-1">
+                      Daily digest
+                    </p>
+                    <p className="text-xs text-muted-foreground leading-relaxed">
+                      One morning email with everything new since yesterday.
+                      Turn off to only receive per-event emails (new
+                      inquiries, team invites, review prompts).
+                    </p>
+                  </div>
+                  <Switch
+                    checked={digestEnabled ?? true}
+                    onCheckedChange={toggleDigest}
+                    disabled={savingDigest || digestEnabled === null}
+                  />
+                </div>
               </Section>
 
               {/* Cookies */}

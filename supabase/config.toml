@@ -13,3 +13,8 @@ verify_jwt = true
 # role key in env, and ideally a shared secret header in production.
 [functions.scan-review-prompts]
 verify_jwt = false
+
+# Daily digest: bundles each user's unread notifications from the last
+# 24 hours into a single email. Schedule once a day, ideally morning.
+[functions.scan-daily-digests]
+verify_jwt = false
