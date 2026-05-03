@@ -34,7 +34,7 @@ const spring = { type: "spring" as const, duration: 0.6, bounce: 0 };
 
 export default function VendorBrowsePage() {
   const { vendors, loading } = useVendors();
-  const { profile } = useAuth();
+  const { profile, activeEvent } = useAuth();
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("All");
   const [sort, setSort] = useState<keyof typeof sortOptions>("popular");
@@ -44,11 +44,12 @@ export default function VendorBrowsePage() {
   // Pre-fill the date filter from the host's onboarding event_date once.
   const [datePrefilled, setDatePrefilled] = useState(false);
   useEffect(() => {
-    if (!datePrefilled && profile?.event_date) {
-      setDateFilter(profile.event_date);
+    const seed = activeEvent?.event_date ?? profile?.event_date ?? null;
+    if (!datePrefilled && seed) {
+      setDateFilter(seed);
       setDatePrefilled(true);
     }
-  }, [profile, datePrefilled]);
+  }, [profile, activeEvent, datePrefilled]);
 
   // Fetch the set of vendor_ids unavailable on the chosen date.
   useEffect(() => {

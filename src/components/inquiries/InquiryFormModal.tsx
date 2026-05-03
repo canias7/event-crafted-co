@@ -55,7 +55,7 @@ export function InquiryFormModal({
   preferredVendorName,
   onSuccess,
 }: InquiryFormModalProps) {
-  const { user } = useAuth();
+  const { user, activeEvent, profile } = useAuth();
   const navigate = useNavigate();
 
   const [vendors, setVendors] = useState<VendorOption[]>([]);
@@ -82,6 +82,32 @@ export function InquiryFormModal({
     setBudgetMax("");
     setSpecialRequests("");
   }
+
+  // When the modal opens, pre-fill from the host's active event so they
+  // don't retype event details on every inquiry.
+  useEffect(() => {
+    if (!open) return;
+    const ev = activeEvent;
+    if (ev) {
+      setEventType(ev.event_type);
+      if (ev.event_date) setEventDate(ev.event_date);
+      if (ev.event_location) setLocation(ev.event_location);
+      if (ev.budget_min_cents != null)
+        setBudgetMin((ev.budget_min_cents / 100).toString());
+      if (ev.budget_max_cents != null)
+        setBudgetMax((ev.budget_max_cents / 100).toString());
+    } else if (profile) {
+      // Legacy fallback to profile fields (pre-multi-event hosts)
+      if (profile.event_type) setEventType(profile.event_type as EventType);
+      if (profile.event_date) setEventDate(profile.event_date);
+      if (profile.event_location) setLocation(profile.event_location);
+      if (profile.budget_min_cents != null)
+        setBudgetMin((profile.budget_min_cents / 100).toString());
+      if (profile.budget_max_cents != null)
+        setBudgetMax((profile.budget_max_cents / 100).toString());
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
 
   useEffect(() => {
     if (!open) return;

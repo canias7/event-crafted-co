@@ -38,7 +38,7 @@ function fmtMoney(c: number | null) {
 }
 
 export default function CustomerDashboard() {
-  const { profile, user } = useAuth();
+  const { profile, activeEvent, user } = useAuth();
   const [stats, setStats] = useState<InquiryStats>({
     total: 0,
     awaiting: 0,
@@ -47,11 +47,13 @@ export default function CustomerDashboard() {
   });
 
   const showOnboardingBanner = profile?.role === "host" && !profile.onboarded_at;
-  const eventLabel = profile?.event_type
-    ? eventTypeLabel[profile.event_type]
-    : "event";
+  // Prefer the active host_events row; fall back to legacy profile event_*
+  // for hosts whose data hasn't been migrated yet.
+  const eventType = activeEvent?.event_type ?? profile?.event_type ?? null;
+  const eventDateStr = activeEvent?.event_date ?? profile?.event_date ?? null;
+  const eventLabel = eventType ? eventTypeLabel[eventType] : "event";
 
-  const eventDate = profile?.event_date ? new Date(profile.event_date) : null;
+  const eventDate = eventDateStr ? new Date(eventDateStr) : null;
   const daysUntil = eventDate
     ? Math.ceil(
         (eventDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24),
@@ -102,14 +104,14 @@ export default function CustomerDashboard() {
                   </span>{" "}
                   days
                 </>
-              ) : profile?.event_type ? (
+              ) : eventType ? (
                 `Your ${eventLabel} is being planned`
               ) : (
                 "Let's plan something memorable"
               )}
             </p>
           </div>
-          {profile?.event_date && (
+          {eventDateStr && (
             <div className="flex items-center gap-3">
               <Badge
                 variant="outline"
@@ -117,7 +119,7 @@ export default function CustomerDashboard() {
               >
                 <Calendar className="w-3.5 h-3.5" />
                 <span className="tnum">
-                  {new Date(profile.event_date).toLocaleDateString(undefined, {
+                  {new Date(eventDateStr).toLocaleDateString(undefined, {
                     month: "short",
                     day: "numeric",
                     year: "numeric",

@@ -82,18 +82,9 @@ export default function OnboardingPage() {
     }
   }, [authLoading, user, profile, navigate]);
 
-  async function persist(payload: Record<string, unknown>) {
-    if (!user) return { error: new Error("not signed in") };
-    // Generated Supabase types don't yet include the host event columns added
-    // by the latest migration; cast so the typed client doesn't reject them.
-    return supabase
-      .from("profiles")
-      .update(payload as never)
-      .eq("id", user.id);
-  }
-
   async function handleFinish(e: React.FormEvent) {
     e.preventDefault();
+    if (!user) return;
     if (!eventType) {
       toast.error("Please pick an event type");
       setStep(1);
@@ -112,7 +103,33 @@ export default function OnboardingPage() {
     }
 
     setSubmitting(true);
-    const { error } = await persist({
+
+    // Create the host_events row
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: ev, error: evErr } = await (supabase as any)
+      .from("host_events")
+      .insert({
+        host_id: user.id,
+        event_type: eventType,
+        event_date: eventDate || null,
+        event_location: eventLocation.trim() || null,
+        budget_min_cents: minCents,
+        budget_max_cents: maxCents,
+        event_notes: eventNotes.trim() || null,
+      })
+      .select("id")
+      .single();
+    if (evErr || !ev) {
+      setSubmitting(false);
+      toast.error(`Couldn't save: ${evErr?.message ?? "unknown"}`);
+      return;
+    }
+
+    // Point active_event_id at the new row, mark onboarded, and mirror the
+    // event_* fields for backward-compat code paths still reading from
+    // profiles directly.
+    const profilePayload = {
+      active_event_id: ev.id,
       event_type: eventType,
       event_date: eventDate || null,
       event_location: eventLocation.trim() || null,
@@ -120,7 +137,12 @@ export default function OnboardingPage() {
       budget_max_cents: maxCents,
       event_notes: eventNotes.trim() || null,
       onboarded_at: new Date().toISOString(),
-    });
+    };
+    const { error } = await supabase
+      .from("profiles")
+      .update(profilePayload as never)
+      .eq("id", user.id);
+
     setSubmitting(false);
 
     if (error) {
@@ -133,8 +155,12 @@ export default function OnboardingPage() {
   }
 
   async function handleSkip() {
+    if (!user) return;
     setSkipping(true);
-    await persist({ onboarded_at: new Date().toISOString() });
+    await supabase
+      .from("profiles")
+      .update({ onboarded_at: new Date().toISOString() } as never)
+      .eq("id", user.id);
     setSkipping(false);
     navigate("/customer/dashboard");
   }
