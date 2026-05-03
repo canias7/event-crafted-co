@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import heroImg from "@/assets/vendora-hero-dinner.jpg";
 
@@ -15,10 +16,15 @@ export default function SignupPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [role, setRole] = useState<"host" | "vendor">("host");
+  const [adult, setAdult] = useState(false);
   const [loading, setLoading] = useState(false);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (!adult) {
+      toast.error("You must confirm you're 18 or older to sign up.");
+      return;
+    }
     setLoading(true);
     const { data, error } = await supabase.auth.signUp({
       email,
@@ -177,9 +183,27 @@ export default function SignupPage() {
                 className="h-11"
               />
             </div>
+            <label className="flex items-start gap-2.5 cursor-pointer pt-1">
+              <Checkbox
+                checked={adult}
+                onCheckedChange={(v) => setAdult(v === true)}
+                className="mt-0.5"
+              />
+              <span className="text-xs text-muted-foreground leading-relaxed">
+                I'm 18 or older and agree to Vendora's{" "}
+                <Link to="/terms" className="text-accent" target="_blank">
+                  Terms
+                </Link>{" "}
+                and{" "}
+                <Link to="/privacy" className="text-accent" target="_blank">
+                  Privacy Policy
+                </Link>
+                .
+              </span>
+            </label>
             <Button
               type="submit"
-              disabled={loading}
+              disabled={loading || !adult}
               className="w-full h-11 rounded-full bg-foreground text-background hover:bg-foreground/90 mt-2"
             >
               {loading ? (

@@ -9,9 +9,12 @@ import LandingPage from "./pages/LandingPage";
 import LoginPage from "./pages/auth/LoginPage";
 import SignupPage from "./pages/auth/SignupPage";
 import CheckEmailPage from "./pages/auth/CheckEmailPage";
+import ForgotPasswordPage from "./pages/auth/ForgotPasswordPage";
+import ResetPasswordPage from "./pages/auth/ResetPasswordPage";
 import { AuthProvider } from "./hooks/useAuth";
 import { RequireRole } from "./components/auth/RequireRole";
 import { CookieBanner } from "./components/CookieBanner";
+import { MobilePortalBell } from "./components/notifications/MobilePortalBell";
 
 // Lazy-load everything else so the initial bundle ships only the landing,
 // nav, and auth surfaces. Portal routes (customer / vendor / admin) split
@@ -48,6 +51,7 @@ const AvailabilityPage = lazy(() => import("./pages/vendor/AvailabilityPage"));
 
 const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard"));
 const AdminVendorsPage = lazy(() => import("./pages/admin/AdminVendorsPage"));
+const AdminReviewsPage = lazy(() => import("./pages/admin/AdminReviewsPage"));
 
 const queryClient = new QueryClient();
 
@@ -82,6 +86,8 @@ const App = () => (
               <Route path="/login" element={<LoginPage />} />
               <Route path="/signup" element={<SignupPage />} />
               <Route path="/check-email" element={<CheckEmailPage />} />
+              <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+              <Route path="/reset-password" element={<ResetPasswordPage />} />
               <Route path="/settings" element={<RequireRole role={["host", "vendor", "admin"]}><SettingsPage /></RequireRole>} />
 
               {/* Customer */}
@@ -111,11 +117,12 @@ const App = () => (
               <Route path="/admin/dashboard" element={<RequireRole role="admin"><AdminDashboard /></RequireRole>} />
               <Route path="/admin/vendors" element={<RequireRole role="admin"><AdminVendorsPage /></RequireRole>} />
               <Route path="/admin/inquiries" element={<RequireRole role="admin"><ComingSoonPage side="admin" title="Admin · Inquiries" description="Cross-platform inquiry browser with health checks. Coming next." /></RequireRole>} />
-              <Route path="/admin/reviews" element={<RequireRole role="admin"><ComingSoonPage side="admin" title="Admin · Reviews" description="Review moderation queue with hide / restore actions." /></RequireRole>} />
+              <Route path="/admin/reviews" element={<RequireRole role="admin"><AdminReviewsPage /></RequireRole>} />
 
               <Route path="*" element={<NotFound />} />
             </Routes>
           </Suspense>
+          <MobilePortalBell />
           <CookieBanner />
         </AuthProvider>
       </BrowserRouter>

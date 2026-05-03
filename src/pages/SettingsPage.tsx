@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Loader2, AlertTriangle, KeyRound, User, Cookie } from "lucide-react";
+import { Loader2, AlertTriangle, KeyRound, User, Cookie, Download } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -37,6 +37,7 @@ export default function SettingsPage() {
   const [savingPassword, setSavingPassword] = useState(false);
 
   const [deleting, setDeleting] = useState(false);
+  const [exporting, setExporting] = useState(false);
 
   useEffect(() => {
     if (profile) setDisplayName(profile.display_name ?? "");
@@ -98,6 +99,54 @@ export default function SettingsPage() {
     setDeleting(false);
     toast.success("Account closed. Goodbye for now.");
     navigate("/", { replace: true });
+  }
+
+  async function exportData() {
+    if (!user || !profile) return;
+    setExporting(true);
+    // Pull every user-owned table via RLS-protected reads; assemble into one
+    // JSON document and trigger a download.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const sb = supabase as any;
+    const tables: Array<{ key: string; query: () => Promise<{ data: unknown }> }> = [
+      { key: "profile", query: () => sb.from("profiles").select("*").eq("id", user.id).maybeSingle() },
+      { key: "vendor_profile", query: () => sb.from("vendor_profiles").select("*").eq("user_id", user.id).maybeSingle() },
+      { key: "inquiries_as_host", query: () => sb.from("inquiries").select("*").eq("host_id", user.id) },
+      { key: "messages_authored", query: () => sb.from("messages").select("*").eq("sender_id", user.id) },
+      { key: "reviews_authored", query: () => sb.from("reviews").select("*").eq("host_id", user.id) },
+      { key: "saved_vendors", query: () => sb.from("saved_vendors").select("*").eq("host_id", user.id) },
+      { key: "checklist_items", query: () => sb.from("checklist_items").select("*").eq("host_id", user.id) },
+      { key: "budget_items", query: () => sb.from("budget_items").select("*").eq("host_id", user.id) },
+      { key: "event_tasks", query: () => sb.from("event_tasks").select("*").eq("host_id", user.id) },
+      { key: "notifications", query: () => sb.from("notifications").select("*").eq("user_id", user.id) },
+    ];
+
+    const result: Record<string, unknown> = {
+      exported_at: new Date().toISOString(),
+      user: { id: user.id, email: user.email },
+    };
+    for (const t of tables) {
+      try {
+        const { data } = await t.query();
+        result[t.key] = data ?? null;
+      } catch {
+        result[t.key] = null;
+      }
+    }
+
+    const blob = new Blob([JSON.stringify(result, null, 2)], {
+      type: "application/json",
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `vendora-data-${new Date().toISOString().slice(0, 10)}.json`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+    setExporting(false);
+    toast.success("Data exported");
   }
 
   function resetCookies() {
@@ -218,6 +267,38 @@ export default function SettingsPage() {
                     </Button>
                   </div>
                 </form>
+              </Section>
+
+              {/* Data export */}
+              <Section
+                icon={Download}
+                title="Your data"
+                subtitle="Download everything Vendora has on your account"
+              >
+                <p className="text-sm text-muted-foreground leading-relaxed mb-4">
+                  Exports your profile, inquiries, messages, reviews, saved
+                  vendors, checklist, budget, tasks, and notifications as a
+                  single JSON file. Honors your GDPR / CCPA right to data
+                  portability.
+                </p>
+                <Button
+                  onClick={exportData}
+                  disabled={exporting}
+                  variant="outline"
+                  className="rounded-full"
+                >
+                  {exporting ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Building…
+                    </>
+                  ) : (
+                    <>
+                      <Download className="w-4 h-4 mr-2" />
+                      Export my data
+                    </>
+                  )}
+                </Button>
               </Section>
 
               {/* Cookies */}
