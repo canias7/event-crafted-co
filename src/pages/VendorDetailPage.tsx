@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
@@ -14,6 +14,7 @@ import {
   Mail,
 } from "lucide-react";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -143,6 +144,44 @@ export default function VendorDetailPage() {
 
   const vendor = vendors.find((v) => v.id === id);
   const saved = vendor ? isSaved(vendor.id) : false;
+
+  // Real portfolio images (only if this is a DB-backed vendor).
+  const [realPortfolio, setRealPortfolio] = useState<string[]>([]);
+  useEffect(() => {
+    if (!vendor || !vendor.isReal) {
+      setRealPortfolio([]);
+      return;
+    }
+    let cancelled = false;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (supabase as any)
+      .from("vendor_portfolio_images")
+      .select("storage_path, display_order, created_at")
+      .eq("vendor_id", vendor.id)
+      .order("display_order", { ascending: true })
+      .order("created_at", { ascending: true })
+      .then(
+        ({
+          data,
+        }: {
+          data: Array<{ storage_path: string }> | null;
+        }) => {
+          if (cancelled) return;
+          const urls = (data ?? []).map(
+            (r) =>
+              supabase.storage
+                .from("vendor-portfolios")
+                .getPublicUrl(r.storage_path).data.publicUrl,
+          );
+          setRealPortfolio(urls);
+        },
+      );
+    return () => {
+      cancelled = true;
+    };
+  }, [vendor]);
+
+  const portfolioImages = realPortfolio.length > 0 ? realPortfolio : portfolioPool;
 
   function handleInquiryClick() {
     if (authLoading) return;
@@ -366,9 +405,9 @@ export default function VendorDetailPage() {
                 <p className="font-label text-accent mb-4">Portfolio</p>
                 <h2 className="font-display text-3xl mb-8">Recent work</h2>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                  {portfolioPool.map((src, i) => (
+                  {portfolioImages.map((src, i) => (
                     <motion.div
-                      key={i}
+                      key={`${src}-${i}`}
                       initial={{ opacity: 0, y: 16 }}
                       whileInView={{ opacity: 1, y: 0 }}
                       viewport={{ once: true }}

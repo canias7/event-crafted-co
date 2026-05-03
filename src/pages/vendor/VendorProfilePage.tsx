@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { DashboardSidebar } from "@/components/shared/DashboardSidebar";
 import { MobileNav } from "@/components/shared/MobileNav";
+import { PortfolioUploader } from "@/components/vendor/PortfolioUploader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -313,6 +314,12 @@ export default function VendorProfilePage() {
                 </Button>
               </div>
             </form>
+          )}
+
+          {profile && (
+            <div className="mt-12 pt-10 border-t border-border">
+              <PortfolioUploader vendorId={profile.id} />
+            </div>
           )}
         </div>
       </main>
