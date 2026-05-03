@@ -1,22 +1,36 @@
 import { test, expect } from "@playwright/test";
 
 // Smoke tests — sanity-check that key public routes render without runtime
-// errors and that protected routes correctly redirect to /login.
+// errors and that protected routes correctly redirect to /login. Covers
+// every public surface shipped through the engine session, so future
+// regressions blow up here instead of in production.
 
 const publicRoutes = [
+  // Marketing / discovery
   { path: "/", contains: "Vendora" },
+  { path: "/how-it-works", contains: "How it works" },
   { path: "/vendors", contains: "Find your" },
+  { path: "/vendors/locations", contains: "VENDORS BY LOCATION" },
+  { path: "/vendors/quiz", contains: "VENDOR MATCH" },
+  { path: "/vendors/map", contains: "VENDOR MAP" },
   { path: "/vendors/1", contains: "Luminara Photography" },
   { path: "/vendors/category/photographers", contains: "Photographers" },
   { path: "/inspiration", contains: "Real events" },
   { path: "/inspiration/hudson-valley-garden-wedding", contains: "Hudson Valley" },
+  // Auth
   { path: "/vendor-apply", contains: "Become a" },
   { path: "/login", contains: "Sign in" },
   { path: "/signup", contains: "Create your account" },
   { path: "/forgot-password", contains: "Forgot password" },
+  // Legal
   { path: "/privacy", contains: "Privacy" },
   { path: "/terms", contains: "Terms of service" },
+  // Token-gated routes — invalid tokens render an explicit error state,
+  // which is its own form of correct rendering
   { path: "/rsvp/invalid-token-test", contains: "Invitation not found" },
+  { path: "/board/invalid-token-test", contains: "Board not found" },
+  { path: "/accept-team-invite/invalid-token", contains: "Invite not found" },
+  { path: "/accept-planning-invite/invalid-token", contains: "Invite not found" },
 ];
 
 for (const r of publicRoutes) {
@@ -32,29 +46,103 @@ for (const r of publicRoutes) {
   });
 }
 
+// Every gated portal route — host, vendor, admin — should redirect to
+// /login when accessed without auth. Catches accidental drops of the
+// RequireRole wrapper.
 const gatedRoutes = [
+  // Customer
   "/customer/dashboard",
+  "/customer/onboarding",
   "/customer/inquiries",
   "/customer/event",
   "/customer/guests",
+  "/customer/seating",
+  "/customer/timeline",
+  "/customer/appointments",
+  "/customer/invitations",
   "/customer/checklist",
   "/customer/tasks",
   "/customer/payments",
   "/customer/favorites",
+  "/customer/saved-searches",
+  "/customer/moodboards",
+  "/customer/registry",
+  "/customer/planning-team",
+  // Vendor
   "/vendor/dashboard",
+  "/vendor/onboarding",
   "/vendor/profile",
   "/vendor/inbox",
   "/vendor/availability",
   "/vendor/templates",
+  "/vendor/appointments",
+  "/vendor/team",
+  "/vendor/analytics",
+  "/vendor/contracts",
+  // Admin
   "/admin/dashboard",
   "/admin/vendors",
   "/admin/reviews",
+  "/admin/inquiries",
+  "/admin/inspiration",
+  // Account
   "/settings",
 ];
 
 for (const path of gatedRoutes) {
   test(`gated ${path} redirects to /login`, async ({ page }) => {
     await page.goto(path, { waitUntil: "networkidle" });
-    await expect(page).toHaveURL(/\/login$/);
+    await expect(page).toHaveURL(/\/login/);
   });
 }
+
+// Cmd-K command palette is mounted globally — it should open on any
+// page when the user hits the keyboard shortcut. Exercises the cross-
+// cutting wiring (provider mounted, document.addEventListener).
+test("Cmd-K opens the command palette from the landing page", async ({
+  page,
+}) => {
+  await page.goto("/", { waitUntil: "networkidle" });
+  await page.keyboard.press("Meta+K");
+  await expect(
+    page.getByPlaceholder("Search vendors, inspiration, pages…"),
+  ).toBeVisible({ timeout: 2_000 });
+});
+
+// 404 fallback renders for unknown routes.
+test("/some-bogus-route renders the 404 page", async ({ page }) => {
+  await page.goto("/some-bogus-route-that-doesnt-exist", {
+    waitUntil: "networkidle",
+  });
+  // The NotFound component should produce some text — content can vary,
+  // but an empty body would be a regression.
+  const body = await page.locator("body").innerText();
+  expect(body.length).toBeGreaterThan(10);
+});
+
+// Vendor browse filter — typing in the search box should narrow results.
+// Doesn't require auth; uses sample vendors that always render.
+test("vendor search filter narrows the directory", async ({ page }) => {
+  await page.goto("/vendors", { waitUntil: "networkidle" });
+  const searchBox = page.getByPlaceholder(
+    /Search vendors, categories, or keywords/i,
+  );
+  await searchBox.fill("photographer");
+  // Give the filter useMemo a tick to recompute. networkidle isn't
+  // useful here since filtering is purely client-side.
+  await page.waitForTimeout(200);
+  // At least one result should be visible after filtering
+  await expect(page.locator("body")).toContainText(/photo/i);
+});
+
+// Vendor matching quiz — landing on step 1 should let the user pick
+// an event type and reveal step 2.
+test("vendor quiz step 1 advances on selection + Continue", async ({
+  page,
+}) => {
+  await page.goto("/vendors/quiz", { waitUntil: "networkidle" });
+  await expect(page.locator("body")).toContainText("What are you planning?");
+  await page.getByRole("button", { name: "Wedding", exact: false }).first().click();
+  await page.getByRole("button", { name: /Continue/i }).click();
+  await expect(page.locator("body")).toContainText(/When's the event/);
+});

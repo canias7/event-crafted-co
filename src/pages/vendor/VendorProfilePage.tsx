@@ -10,6 +10,7 @@ import { PortfolioUploader } from "@/components/vendor/PortfolioUploader";
 import { PackageManager } from "@/components/vendor/PackageManager";
 import { VendorRecommendationManager } from "@/components/vendor/VendorRecommendationManager";
 import { IntakeFormEditor } from "@/components/vendor/IntakeFormEditor";
+import { ReferralManager } from "@/components/vendor/ReferralManager";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -479,6 +480,9 @@ export default function VendorProfilePage() {
               </div>
               <div className="mt-12 pt-10 border-t border-border">
                 <IntakeFormEditor vendorId={profile.id} canEdit={canEdit} />
+              </div>
+              <div className="mt-12 pt-10 border-t border-border">
+                <ReferralManager vendorId={profile.id} canEdit={canEdit} />
               </div>
             </>
           )}

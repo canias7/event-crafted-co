@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ArrowRight, ArrowLeft, Loader2, Sparkles } from "lucide-react";
 import { toast } from "sonner";
@@ -36,6 +36,7 @@ const spring = { type: "spring" as const, duration: 0.6, bounce: 0 };
 
 export default function VendorApplyPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [step, setStep] = useState<1 | 2>(1);
   const [submitting, setSubmitting] = useState(false);
 
@@ -97,7 +98,9 @@ export default function VendorApplyPage() {
     }
 
     // Profile row is auto-created by handle_new_user() trigger. Insert vendor_profile.
-    const { error: vpError } = await supabase.from("vendor_profiles").insert({
+    const { data: vpData, error: vpError } = await supabase
+      .from("vendor_profiles")
+      .insert({
       user_id: signUpData.user.id,
       business_name: businessName.trim(),
       category,
@@ -110,7 +113,9 @@ export default function VendorApplyPage() {
         ? Number.parseInt(serviceRadius, 10)
         : null,
       portfolio_summary: portfolioSummary.trim() || null,
-    });
+    })
+      .select("id")
+      .single();
 
     setSubmitting(false);
 
@@ -118,6 +123,20 @@ export default function VendorApplyPage() {
       toast.error(`Account created, but couldn't save business profile: ${vpError.message}. You can complete it later from your dashboard.`);
       navigate("/vendor/dashboard");
       return;
+    }
+
+    // If they came from a referral link, claim it. Fire-and-forget —
+    // failure shouldn't block the welcome flow.
+    const refCode = searchParams.get("ref");
+    const newVendorId = (vpData as { id: string } | null)?.id;
+    if (refCode && newVendorId) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (supabase as any)
+        .rpc("claim_vendor_referral", {
+          p_code: refCode,
+          p_new_vendor_id: newVendorId,
+        })
+        .then(() => {});
     }
 
     toast.success("Welcome to Vendora — let's finish setting up your profile.");

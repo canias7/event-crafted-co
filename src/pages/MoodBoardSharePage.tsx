@@ -1,8 +1,11 @@
 import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
-import { ArrowRight, Link as LinkIcon, ImageIcon } from "lucide-react";
+import { ArrowRight, Link as LinkIcon, ImageIcon, Loader2, MessageSquare } from "lucide-react";
+import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 import { PublicNav } from "@/components/public/PublicNav";
 import { Footer } from "@/components/public/Footer";
 import { Lightbox } from "@/components/shared/Lightbox";
@@ -24,12 +27,21 @@ interface SharedBoard {
   items: SharedPin[];
 }
 
+interface BoardComment {
+  id: string;
+  item_id: string | null;
+  author_name: string;
+  body: string;
+  created_at: string;
+}
+
 export default function MoodBoardSharePage() {
   const { token } = useParams();
   const [board, setBoard] = useState<SharedBoard | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+  const [comments, setComments] = useState<BoardComment[]>([]);
 
   useEffect(() => {
     if (!token) return;
@@ -50,6 +62,21 @@ export default function MoodBoardSharePage() {
     return () => {
       cancelled = true;
     };
+  }, [token]);
+
+  async function loadComments() {
+    if (!token) return;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data } = await (supabase as any).rpc(
+      "get_mood_board_comments_by_token",
+      { p_token: token },
+    );
+    setComments((data as BoardComment[] | null) ?? []);
+  }
+
+  useEffect(() => {
+    if (token) loadComments();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
 
   useEffect(() => {
@@ -172,6 +199,47 @@ export default function MoodBoardSharePage() {
         </div>
       </section>
 
+      <section className="py-12 md:py-16 border-t border-border bg-secondary/20">
+        <div className="container mx-auto px-6 md:px-8 max-w-2xl">
+          <div className="flex items-center gap-2 mb-6">
+            <MessageSquare className="w-4 h-4 text-accent" />
+            <p className="font-label text-accent">Notes</p>
+            <span className="text-xs text-muted-foreground tnum ml-auto">
+              {comments.length}
+            </span>
+          </div>
+          <CommentComposer
+            boardToken={token!}
+            onPosted={loadComments}
+          />
+          {comments.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-6">
+              No notes yet. Vendors viewing the board can leave thoughts on
+              direction here.
+            </p>
+          ) : (
+            <ul className="mt-6 space-y-4">
+              {comments.map((c) => (
+                <li
+                  key={c.id}
+                  className="rounded-sm bg-background border border-border p-4"
+                >
+                  <div className="flex items-baseline justify-between gap-2 mb-1.5">
+                    <p className="text-sm font-medium">{c.author_name}</p>
+                    <p className="text-xs text-muted-foreground tnum">
+                      {new Date(c.created_at).toLocaleDateString()}
+                    </p>
+                  </div>
+                  <p className="text-sm text-foreground/80 leading-relaxed whitespace-pre-wrap">
+                    {c.body}
+                  </p>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      </section>
+
       <section className="py-16 border-t border-border">
         <div className="container mx-auto px-6 md:px-8 text-center max-w-xl">
           <p className="font-label text-accent mb-4">Vendora</p>
@@ -205,5 +273,115 @@ export default function MoodBoardSharePage() {
         onIndexChange={setLightboxIndex}
       />
     </div>
+  );
+}
+
+function CommentComposer({
+  boardToken,
+  onPosted,
+}: {
+  boardToken: string;
+  onPosted: () => void;
+}) {
+  const { user, profile } = useAuth();
+  const [body, setBody] = useState("");
+  const [authorName, setAuthorName] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (profile?.display_name) setAuthorName(profile.display_name);
+  }, [profile]);
+
+  if (!user) {
+    return (
+      <div className="rounded-sm border border-border bg-background p-4 text-center">
+        <p className="text-sm text-muted-foreground mb-3 leading-relaxed">
+          Sign in to leave a note for the host on this board.
+        </p>
+        <Link
+          to={`/login?next=${encodeURIComponent(`/board/${boardToken}`)}`}
+        >
+          <Button
+            size="sm"
+            className="rounded-full bg-foreground text-background hover:bg-foreground/90"
+          >
+            Sign in to comment
+          </Button>
+        </Link>
+      </div>
+    );
+  }
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!user || !body.trim()) return;
+    if (!authorName.trim()) {
+      toast.error("Add your name");
+      return;
+    }
+    // Resolve the board id via the public RPC. We don't expose the
+    // board id on this page (only the share token), so look it up.
+    setSubmitting(true);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: boardData } = await (supabase as any).rpc(
+      "get_mood_board_by_token",
+      { p_token: boardToken },
+    );
+    const boardId = (boardData as { id: string } | null)?.id;
+    if (!boardId) {
+      setSubmitting(false);
+      toast.error("Board not found");
+      return;
+    }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error } = await (supabase as any)
+      .from("mood_board_comments")
+      .insert({
+        board_id: boardId,
+        author_id: user.id,
+        author_name: authorName.trim(),
+        body: body.trim(),
+      });
+    setSubmitting(false);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    setBody("");
+    toast.success("Note posted");
+    onPosted();
+  }
+
+  return (
+    <form
+      onSubmit={submit}
+      className="rounded-sm border border-border bg-background p-4 space-y-3"
+    >
+      <Textarea
+        value={body}
+        onChange={(e) => setBody(e.target.value)}
+        placeholder="Loved this palette — here's how I'd execute…"
+        rows={3}
+        className="resize-none"
+      />
+      <div className="flex items-center justify-between gap-2 flex-wrap">
+        <input
+          type="text"
+          value={authorName}
+          onChange={(e) => setAuthorName(e.target.value)}
+          placeholder="Your name"
+          className="text-sm px-3 py-1.5 rounded-sm bg-secondary/40 border border-transparent focus:border-foreground/30 focus:outline-none"
+        />
+        <Button
+          type="submit"
+          size="sm"
+          disabled={submitting || !body.trim()}
+          className="rounded-full bg-foreground text-background hover:bg-foreground/90"
+        >
+          {submitting && <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />}
+          Post note
+        </Button>
+      </div>
+    </form>
   );
 }
