@@ -40,6 +40,7 @@ export const customerNavItems: NavItem[] = [
 export const vendorNavItems: NavItem[] = [
   { label: "Dashboard", path: "/vendor/dashboard", icon: LayoutDashboard },
   { label: "Inbox", path: "/vendor/inbox", icon: Inbox },
+  { label: "Templates", path: "/vendor/templates", icon: FileText },
   { label: "Profile", path: "/vendor/profile", icon: User },
   { label: "Appointments", path: "/vendor/appointments", icon: CalendarDays },
   { label: "Availability", path: "/vendor/availability", icon: Clock },

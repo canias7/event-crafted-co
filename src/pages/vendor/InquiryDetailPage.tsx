@@ -22,6 +22,7 @@ import {
   type Proposal,
 } from "@/components/proposals/ProposalCard";
 import { MessageAttachments } from "@/components/messages/MessageAttachments";
+import { TemplatePicker } from "@/components/messages/TemplatePicker";
 import {
   uploadAttachments,
   validateAttachment,
@@ -721,18 +722,28 @@ export default function InquiryDetailPage() {
               ))}
             </div>
           )}
-          <div className="flex items-center justify-between gap-2 mt-3">
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={() => fileInputRef.current?.click()}
-              disabled={sending || pendingFiles.length >= MAX_FILES}
-              className="rounded-full text-muted-foreground"
-            >
-              <Paperclip className="w-3.5 h-3.5 mr-1.5" />
-              Attach
-            </Button>
+          <div className="flex items-center justify-between gap-2 mt-3 flex-wrap">
+            <div className="flex items-center gap-1">
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={sending || pendingFiles.length >= MAX_FILES}
+                className="rounded-full text-muted-foreground"
+              >
+                <Paperclip className="w-3.5 h-3.5 mr-1.5" />
+                Attach
+              </Button>
+              <TemplatePicker
+                vendorId={inquiry?.vendor_id ?? null}
+                onPick={(body) =>
+                  setComposer((prev) =>
+                    prev.trim() ? `${prev}\n\n${body}` : body,
+                  )
+                }
+              />
+            </div>
             <input
               ref={fileInputRef}
               type="file"

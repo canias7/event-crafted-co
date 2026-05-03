@@ -47,6 +47,7 @@ const InvitationBuilder = lazy(() => import("./pages/customer/InvitationBuilder"
 
 const VendorDashboard = lazy(() => import("./pages/vendor/VendorDashboard"));
 const VendorProfilePage = lazy(() => import("./pages/vendor/VendorProfilePage"));
+const VendorTemplatesPage = lazy(() => import("./pages/vendor/VendorTemplatesPage"));
 const VendorInboxPage = lazy(() => import("./pages/vendor/VendorInboxPage"));
 const InquiryDetailPage = lazy(() => import("./pages/vendor/InquiryDetailPage"));
 const AvailabilityPage = lazy(() => import("./pages/vendor/AvailabilityPage"));
@@ -110,6 +111,7 @@ const App = () => (
               {/* Vendor */}
               <Route path="/vendor/dashboard" element={<RequireRole role="vendor"><VendorDashboard /></RequireRole>} />
               <Route path="/vendor/profile" element={<RequireRole role="vendor"><VendorProfilePage /></RequireRole>} />
+              <Route path="/vendor/templates" element={<RequireRole role="vendor"><VendorTemplatesPage /></RequireRole>} />
               <Route path="/vendor/inbox" element={<RequireRole role="vendor"><VendorInboxPage /></RequireRole>} />
               <Route path="/vendor/appointments" element={<RequireRole role="vendor"><ComingSoonPage side="vendor" description="Calendar bookings, tasting / walkthrough requests, and confirmed event dates in one place." /></RequireRole>} />
               <Route path="/vendor/availability" element={<RequireRole role="vendor"><AvailabilityPage /></RequireRole>} />
