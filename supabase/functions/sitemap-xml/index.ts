@@ -24,6 +24,8 @@ const cors = {
 interface VendorRow {
   id: string;
   updated_at: string | null;
+  category?: string | null;
+  location?: string | null;
 }
 interface InspirationRow {
   slug: string;
@@ -31,9 +33,33 @@ interface InspirationRow {
   published_at?: string | null;
 }
 
+const CATEGORY_SLUGS = [
+  "photographers",
+  "florists",
+  "catering",
+  "djs",
+  "venues",
+  "makeup-artists",
+  "videographers",
+  "bakers",
+  "event-planners",
+  "decorators",
+];
+
+function citySlugify(label: string): string {
+  return label
+    .toLowerCase()
+    .replace(/,/g, "")
+    .replace(/\s+/g, "-")
+    .replace(/[^a-z0-9-]/g, "")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "");
+}
+
 const STATIC_PATHS: Array<{ path: string; priority: number; freq: string }> = [
   { path: "/", priority: 1.0, freq: "daily" },
   { path: "/vendors", priority: 0.9, freq: "daily" },
+  { path: "/vendors/locations", priority: 0.7, freq: "weekly" },
   { path: "/inspiration", priority: 0.8, freq: "weekly" },
   { path: "/how-it-works", priority: 0.6, freq: "monthly" },
   { path: "/vendor-apply", priority: 0.6, freq: "monthly" },
@@ -55,7 +81,7 @@ serve(async (req) => {
   const [{ data: vendors }, { data: inspiration }] = await Promise.all([
     sb
       .from("vendor_profiles")
-      .select("id, updated_at")
+      .select("id, updated_at, category, location")
       .order("updated_at", { ascending: false }),
     sb
       .from("featured_events")
@@ -71,6 +97,26 @@ serve(async (req) => {
 
   for (const s of STATIC_PATHS) {
     lines.push(urlEntry(`${APP_URL}${s.path}`, undefined, s.priority, s.freq));
+  }
+
+  // All category landing pages (high SEO value).
+  for (const c of CATEGORY_SLUGS) {
+    lines.push(
+      urlEntry(`${APP_URL}/vendors/category/${c}`, undefined, 0.85, "weekly"),
+    );
+  }
+
+  // Per-city landing pages — derived from current vendor locations so we
+  // don't list ghost cities with zero inventory.
+  const cities = new Set<string>();
+  for (const v of (vendors as VendorRow[] | null) ?? []) {
+    const slug = citySlugify(v.location ?? "");
+    if (slug) cities.add(slug);
+  }
+  for (const cs of cities) {
+    lines.push(
+      urlEntry(`${APP_URL}/vendors/in/${cs}`, undefined, 0.75, "weekly"),
+    );
   }
 
   for (const v of (vendors as VendorRow[] | null) ?? []) {

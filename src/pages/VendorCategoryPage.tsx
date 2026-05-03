@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from "react";
+import { useMemo } from "react";
 import { Link, useParams, Navigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ArrowLeft } from "lucide-react";
@@ -7,7 +7,12 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { PublicNav } from "@/components/public/PublicNav";
 import { Footer } from "@/components/public/Footer";
 import { VendorCard } from "@/components/shared/VendorCard";
+import { JsonLd } from "@/components/seo/JsonLd";
+import { FaqSection } from "@/components/seo/FaqSection";
 import { useVendors } from "@/hooks/useVendors";
+import { useDocumentMeta } from "@/hooks/useDocumentMeta";
+import { CATEGORY_FAQS } from "@/data/categoryFaqs";
+import { citySlugify, citySlugDisplay } from "@/lib/citySlug";
 
 import vendorPhotographer from "@/assets/vendor-photographer.jpg";
 import vendorFlorist from "@/assets/vendor-florist.jpg";
@@ -126,19 +131,42 @@ export default function VendorCategoryPage() {
   const config = slug ? categoryConfig[slug] : null;
   const { vendors, loading } = useVendors();
 
-  useEffect(() => {
-    if (config) {
-      document.title = `${config.display} on Vendora — ${config.description}`;
-    }
-    return () => {
-      document.title = "Vendora — Premium Event Planning & Vendor Marketplace";
-    };
-  }, [config]);
+  useDocumentMeta({
+    title: config
+      ? `${config.display} on Vendora — ${config.description}`
+      : "Vendor category — Vendora",
+    description: config?.description,
+    image: config?.hero,
+  });
 
   const filtered = useMemo(
     () => (config ? vendors.filter((v) => v.category === config.name) : []),
     [vendors, config],
   );
+
+  // Cities served — top 6 by vendor count for cross-linking.
+  const citiesServed = useMemo(() => {
+    if (!config) return [];
+    const counts = new Map<string, number>();
+    for (const v of filtered) {
+      const slug = citySlugify(v.location ?? v.distance ?? "");
+      if (!slug) continue;
+      counts.set(slug, (counts.get(slug) ?? 0) + 1);
+    }
+    return Array.from(counts.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 6)
+      .map(([s, c]) => ({ slug: s, label: citySlugDisplay(s), count: c }));
+  }, [filtered, config]);
+
+  // Other categories for internal linking.
+  const otherCategories = useMemo(() => {
+    return Object.entries(categoryConfig)
+      .filter(([s]) => s !== slug)
+      .slice(0, 6);
+  }, [slug]);
+
+  const faqs = config ? (CATEGORY_FAQS[slug ?? ""] ?? []) : [];
 
   if (!config) {
     return <Navigate to="/vendors" replace />;
@@ -264,6 +292,108 @@ export default function VendorCategoryPage() {
           )}
         </div>
       </section>
+
+      {/* Cities the category is available in — strong internal linking */}
+      {citiesServed.length > 0 && (
+        <section className="py-16 border-t border-border">
+          <div className="container mx-auto px-6 md:px-8 max-w-5xl">
+            <p className="font-label text-accent mb-3 tracking-[0.4em]">
+              — BY CITY
+            </p>
+            <h2 className="font-display text-3xl mb-8">
+              {config.display} by city
+            </h2>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              {citiesServed.map((c) => (
+                <Link
+                  key={c.slug}
+                  to={`/vendors/in/${c.slug}`}
+                  className="group rounded-sm border border-border bg-card p-4 hover:border-foreground/30 transition-colors"
+                >
+                  <p className="font-display text-base group-hover:text-accent transition-colors">
+                    {config.display} in {c.label}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1 tnum">
+                    {c.count} vendor{c.count === 1 ? "" : "s"}
+                  </p>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* FAQ — also serialized as FAQPage JSON-LD below */}
+      <FaqSection
+        items={faqs}
+        title={`Booking ${config.display.toLowerCase()} on Vendora`}
+      />
+
+      {/* Cross-link to other categories */}
+      {otherCategories.length > 0 && (
+        <section className="py-16 border-t border-border">
+          <div className="container mx-auto px-6 md:px-8 max-w-5xl">
+            <p className="font-label text-accent mb-3 tracking-[0.4em]">
+              — KEEP BROWSING
+            </p>
+            <h2 className="font-display text-3xl mb-8">Other categories</h2>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              {otherCategories.map(([s, c]) => (
+                <Link
+                  key={s}
+                  to={`/vendors/category/${s}`}
+                  className="group rounded-sm border border-border bg-card p-4 hover:border-foreground/30 transition-colors"
+                >
+                  <p className="font-display text-base group-hover:text-accent transition-colors">
+                    {c.display}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                    {c.description}
+                  </p>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* JSON-LD: ItemList of vendors + FAQPage */}
+      <JsonLd
+        data={{
+          "@context": "https://schema.org",
+          "@type": "ItemList",
+          name: `${config.display} on Vendora`,
+          description: config.description,
+          numberOfItems: filtered.length,
+          itemListElement: filtered.slice(0, 25).map((v, i) => ({
+            "@type": "ListItem",
+            position: i + 1,
+            item: {
+              "@type": "LocalBusiness",
+              name: v.name,
+              description: v.description,
+              image: v.image,
+              url:
+                typeof window !== "undefined"
+                  ? `${window.location.origin}/vendors/${v.id}`
+                  : `/vendors/${v.id}`,
+            },
+          })),
+        }}
+      />
+      {faqs.length > 0 && (
+        <JsonLd
+          data={{
+            "@context": "https://schema.org",
+            "@type": "FAQPage",
+            mainEntity: faqs.map((f) => ({
+              "@type": "Question",
+              name: f.q,
+              acceptedAnswer: { "@type": "Answer", text: f.a },
+            })),
+          }}
+        />
+      )}
 
       <Footer />
     </div>

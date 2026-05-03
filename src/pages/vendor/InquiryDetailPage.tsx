@@ -22,6 +22,7 @@ import {
   type Proposal,
 } from "@/components/proposals/ProposalCard";
 import { ProposeAppointmentModal } from "@/components/appointments/ProposeAppointmentModal";
+import { HostReputationCard } from "@/components/vendor/HostReputationCard";
 import { MessageAttachments } from "@/components/messages/MessageAttachments";
 import { TemplatePicker } from "@/components/messages/TemplatePicker";
 import {
@@ -529,6 +530,13 @@ export default function InquiryDetailPage() {
             )}
           </div>
         </div>
+
+        {/* Host signals — cross-vendor reputation snapshot */}
+        <HostReputationCard
+          hostId={inquiry.host_id}
+          vendorId={inquiry.vendor_id}
+          inquiryId={inquiry.id}
+        />
 
         {/* Proposals */}
         {proposals.length > 0 && (

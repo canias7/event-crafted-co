@@ -7,6 +7,7 @@ import { Footer } from "@/components/public/Footer";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useVendors, type Vendor } from "@/hooks/useVendors";
 import { useDocumentMeta } from "@/hooks/useDocumentMeta";
+import { citySlugify } from "@/lib/citySlug";
 
 const spring = { type: "spring" as const, duration: 0.6, bounce: 0 };
 
@@ -118,7 +119,7 @@ export default function VendorLocationsPage() {
                     transition={{ ...spring, delay: Math.min(i * 0.04, 0.3) }}
                   >
                     <Link
-                      to={`/vendors?location=${encodeURIComponent(g.label)}`}
+                      to={`/vendors/in/${citySlugify(g.label)}`}
                       className="group block rounded-sm border border-border bg-card p-5 hover:border-foreground/30 transition-colors h-full"
                     >
                       <div className="flex items-start justify-between gap-3 mb-1">
