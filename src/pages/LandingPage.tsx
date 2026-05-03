@@ -320,13 +320,16 @@ export default function LandingPage() {
               </div>
             </div>
             <div className="relative">
-              <div className="aspect-[4/5] rounded-sm overflow-hidden">
+              <div className="aspect-[4/5] rounded-sm overflow-hidden relative">
                 <img
                   src={featureFlorals}
                   alt="Floral arrangement"
                   loading="lazy"
                   className="w-full h-full object-cover"
                 />
+                {/* Shade to blend with page gradient (dark band) */}
+                <div className="absolute inset-0 bg-gradient-to-b from-foreground/40 via-foreground/15 to-background/30 mix-blend-multiply pointer-events-none" />
+                <div className="absolute inset-0 bg-gradient-to-t from-background/25 to-transparent pointer-events-none" />
               </div>
             </div>
           </div>
@@ -358,13 +361,15 @@ export default function LandingPage() {
               </div>
             </div>
             <div className="md:order-1 relative">
-              <div className="aspect-[4/5] rounded-sm overflow-hidden">
+              <div className="aspect-[4/5] rounded-sm overflow-hidden relative">
                 <img
                   src={featureVenue}
                   alt="Luxury venue"
                   loading="lazy"
                   className="w-full h-full object-cover"
                 />
+                {/* Shade to blend with page gradient (light band) */}
+                <div className="absolute inset-0 bg-gradient-to-b from-background/30 via-transparent to-foreground/30 mix-blend-multiply pointer-events-none" />
               </div>
             </div>
           </div>
