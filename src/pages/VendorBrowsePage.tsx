@@ -41,6 +41,9 @@ export default function VendorBrowsePage() {
   const [category, setCategory] = useState(
     searchParams.get("category") ?? "All",
   );
+  const [locationFilter, setLocationFilter] = useState<string>(
+    searchParams.get("location") ?? "",
+  );
   const [sort, setSort] = useState<keyof typeof sortOptions>("popular");
   const [dateFilter, setDateFilter] = useState<string>("");
   const [unavailableIds, setUnavailableIds] = useState<Set<string>>(new Set());
@@ -78,8 +81,14 @@ export default function VendorBrowsePage() {
 
   const filtered = useMemo(() => {
     const term = search.trim().toLowerCase();
+    const loc = locationFilter.trim().toLowerCase();
     return vendors
       .filter((v) => category === "All" || v.category === category)
+      .filter(
+        (v) =>
+          loc === "" ||
+          (v.location ?? v.distance ?? "").toLowerCase().includes(loc),
+      )
       .filter(
         (v) =>
           term === "" ||
@@ -89,7 +98,7 @@ export default function VendorBrowsePage() {
       )
       .filter((v) => !unavailableIds.has(v.id))
       .sort(sortOptions[sort]);
-  }, [vendors, search, category, sort, unavailableIds]);
+  }, [vendors, search, category, sort, unavailableIds, locationFilter]);
 
   const hiddenByDate =
     dateFilter && unavailableIds.size > 0
@@ -210,6 +219,23 @@ export default function VendorBrowsePage() {
               </SelectContent>
             </Select>
           </div>
+
+          {locationFilter && (
+            <div className="flex items-center gap-2 mt-3">
+              <span className="text-xs text-muted-foreground">Location:</span>
+              <span className="inline-flex items-center gap-1.5 px-3 h-7 rounded-full bg-foreground text-background text-xs font-medium">
+                {locationFilter}
+                <button
+                  type="button"
+                  onClick={() => setLocationFilter("")}
+                  aria-label="Clear location filter"
+                  className="hover:opacity-70"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </span>
+            </div>
+          )}
 
           <div className="flex items-center gap-2 mt-4 overflow-x-auto pb-1 -mx-2 px-2 scrollbar-hide">
             {categories.map((cat) => (

@@ -46,6 +46,7 @@ interface NavTarget {
 
 const PUBLIC_NAV: NavTarget[] = [
   { label: "Browse vendors", hint: "Directory", path: "/vendors", icon: Store },
+  { label: "Browse by location", hint: "Cities", path: "/vendors/locations", icon: Store },
   {
     label: "Inspiration",
     hint: "Real events",

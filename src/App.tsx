@@ -24,6 +24,7 @@ import { MobilePortalBell } from "./components/notifications/MobilePortalBell";
 // out into separate chunks loaded on demand behind RequireRole.
 const HowItWorksPage = lazy(() => import("./pages/HowItWorksPage"));
 const VendorBrowsePage = lazy(() => import("./pages/VendorBrowsePage"));
+const VendorLocationsPage = lazy(() => import("./pages/VendorLocationsPage"));
 const VendorDetailPage = lazy(() => import("./pages/VendorDetailPage"));
 const VendorCategoryPage = lazy(() => import("./pages/VendorCategoryPage"));
 const InspirationPage = lazy(() => import("./pages/InspirationPage"));
@@ -98,6 +99,7 @@ const App = () => (
               <Route path="/" element={<LandingPage />} />
               <Route path="/how-it-works" element={<HowItWorksPage />} />
               <Route path="/vendors" element={<VendorBrowsePage />} />
+              <Route path="/vendors/locations" element={<VendorLocationsPage />} />
               <Route path="/vendors/category/:slug" element={<VendorCategoryPage />} />
               <Route path="/vendors/:id" element={<VendorDetailPage />} />
               <Route path="/inspiration" element={<InspirationPage />} />
