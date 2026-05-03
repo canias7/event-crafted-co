@@ -16,6 +16,7 @@ import TasksPage from "./pages/customer/TasksPage";
 import PaymentsPage from "./pages/customer/PaymentsPage";
 import InvitationBuilder from "./pages/customer/InvitationBuilder";
 import VendorDashboard from "./pages/vendor/VendorDashboard";
+import VendorProfilePage from "./pages/vendor/VendorProfilePage";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import NotFound from "./pages/NotFound";
 import LoginPage from "./pages/auth/LoginPage";
@@ -54,6 +55,7 @@ const App = () => (
 
           {/* Vendor */}
           <Route path="/vendor/dashboard" element={<RequireRole role="vendor"><VendorDashboard /></RequireRole>} />
+          <Route path="/vendor/profile" element={<RequireRole role="vendor"><VendorProfilePage /></RequireRole>} />
           <Route path="/vendor/inbox" element={<RequireRole role="vendor"><VendorInboxPage /></RequireRole>} />
           <Route path="/vendor/inbox/:inquiryId" element={<RequireRole role="vendor"><InquiryDetailPage /></RequireRole>} />
 
