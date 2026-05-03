@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
   LayoutDashboard, User, CalendarDays, Clock, CreditCard, FileText,
-  Star, Bell, TrendingUp, Users, DollarSign, Percent,
+  Star, Bell, TrendingUp, Users, DollarSign, Percent, Inbox,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -14,6 +14,7 @@ import { StatCard } from "@/components/shared/StatCard";
 
 const navItems = [
   { label: "Dashboard", path: "/vendor/dashboard", icon: LayoutDashboard },
+  { label: "Inbox", path: "/vendor/inbox", icon: Inbox },
   { label: "Profile", path: "/vendor/profile", icon: User },
   { label: "Appointments", path: "/vendor/appointments", icon: CalendarDays },
   { label: "Availability", path: "/vendor/availability", icon: Clock },
@@ -58,37 +59,22 @@ export default function VendorDashboard() {
           </div>
 
           <div className="grid lg:grid-cols-2 gap-6">
-            {/* Appointment requests */}
-            <div className="bg-card rounded-2xl p-5 card-shadow">
+            {/* Inbox shortcut */}
+            <Link to="/vendor/inbox" className="bg-card rounded-2xl p-5 card-shadow hover:border-accent/40 border border-transparent transition-colors block">
               <div className="flex items-center justify-between mb-4">
-                <p className="font-label text-muted-foreground">New Appointment Requests</p>
-                <Link to="/vendor/appointments" className="text-xs text-accent font-medium">View all</Link>
+                <p className="font-label text-muted-foreground">Inquiry Inbox</p>
+                <span className="text-xs text-accent font-medium">Open inbox →</span>
               </div>
-              <div className="space-y-3">
-                {[
-                  { name: "Emily Watson", event: "Wedding", date: "Jul 20, 2026", type: "Video Call" },
-                  { name: "Michael Rivera", event: "Corporate", date: "Jul 22, 2026", type: "In Person" },
-                  { name: "Lisa Chen", event: "Birthday", date: "Jul 25, 2026", type: "Phone Call" },
-                ].map((req, i) => (
-                  <div key={i} className="flex items-center gap-3 p-3 rounded-lg bg-secondary/50">
-                    <div className="w-9 h-9 rounded-full bg-secondary flex items-center justify-center flex-shrink-0">
-                      <Users className="w-4 h-4 text-muted-foreground" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium">{req.name}</p>
-                      <p className="text-xs text-muted-foreground">{req.event} · {req.type}</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-xs tnum text-muted-foreground">{req.date}</p>
-                      <div className="flex gap-1 mt-1">
-                        <Button size="sm" className="h-6 text-[10px] px-2 rounded">Accept</Button>
-                        <Button size="sm" variant="ghost" className="h-6 text-[10px] px-2 rounded">Decline</Button>
-                      </div>
-                    </div>
-                  </div>
-                ))}
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-full bg-accent/10 flex items-center justify-center">
+                  <Inbox className="w-5 h-5 text-accent" />
+                </div>
+                <div>
+                  <p className="font-display text-2xl">Real-time inquiries</p>
+                  <p className="text-sm text-muted-foreground">Review new host inquiries and approve AI-drafted replies.</p>
+                </div>
               </div>
-            </div>
+            </Link>
 
             {/* Contract status */}
             <div className="bg-card rounded-2xl p-5 card-shadow">
