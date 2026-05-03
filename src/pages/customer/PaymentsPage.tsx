@@ -7,18 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { DashboardSidebar } from "@/components/shared/DashboardSidebar";
 import { MobileNav } from "@/components/shared/MobileNav";
 import { StatCard } from "@/components/shared/StatCard";
-
-const navItems = [
-  { label: "Dashboard", path: "/customer/dashboard", icon: LayoutDashboard },
-  { label: "Vendors", path: "/vendors", icon: Store },
-  { label: "Appointments", path: "/customer/appointments", icon: CalendarDays },
-  { label: "Event Details", path: "/customer/event", icon: FileText },
-  { label: "Invitations", path: "/customer/invitations", icon: Mail },
-  { label: "Checklist", path: "/customer/checklist", icon: CheckSquare },
-  { label: "Tasks", path: "/customer/tasks", icon: ListTodo },
-  { label: "Payments", path: "/customer/payments", icon: CreditCard },
-  { label: "Favorites", path: "/customer/favorites", icon: Heart },
-];
+import { customerNavItems as navItems } from "@/data/navItems";
 
 const payments = [
   { id: "1", vendor: "Luminara Photography", service: "Wedding Package", amount: 3250, status: "paid", type: "Full", due: "Jun 1, 2026", paid: "May 28, 2026" },

@@ -10,6 +10,7 @@ import VendorBrowsePage from "./pages/VendorBrowsePage";
 import VendorDetailPage from "./pages/VendorDetailPage";
 import VendorApplyPage from "./pages/VendorApplyPage";
 import CustomerDashboard from "./pages/customer/CustomerDashboard";
+import InquiriesPage from "./pages/customer/InquiriesPage";
 import ChecklistPage from "./pages/customer/ChecklistPage";
 import TasksPage from "./pages/customer/TasksPage";
 import PaymentsPage from "./pages/customer/PaymentsPage";
@@ -45,6 +46,7 @@ const App = () => (
 
           {/* Customer */}
           <Route path="/customer/dashboard" element={<RequireRole role="host"><CustomerDashboard /></RequireRole>} />
+          <Route path="/customer/inquiries" element={<RequireRole role="host"><InquiriesPage /></RequireRole>} />
           <Route path="/customer/checklist" element={<RequireRole role="host"><ChecklistPage /></RequireRole>} />
           <Route path="/customer/tasks" element={<RequireRole role="host"><TasksPage /></RequireRole>} />
           <Route path="/customer/payments" element={<RequireRole role="host"><PaymentsPage /></RequireRole>} />

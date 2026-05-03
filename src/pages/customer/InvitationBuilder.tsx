@@ -8,18 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { DashboardSidebar } from "@/components/shared/DashboardSidebar";
 import { MobileNav } from "@/components/shared/MobileNav";
-
-const navItems = [
-  { label: "Dashboard", path: "/customer/dashboard", icon: LayoutDashboard },
-  { label: "Vendors", path: "/vendors", icon: Store },
-  { label: "Appointments", path: "/customer/appointments", icon: CalendarDays },
-  { label: "Event Details", path: "/customer/event", icon: FileText },
-  { label: "Invitations", path: "/customer/invitations", icon: Mail },
-  { label: "Checklist", path: "/customer/checklist", icon: CheckSquare },
-  { label: "Tasks", path: "/customer/tasks", icon: ListTodo },
-  { label: "Payments", path: "/customer/payments", icon: CreditCard },
-  { label: "Favorites", path: "/customer/favorites", icon: Heart },
-];
+import { customerNavItems as navItems } from "@/data/navItems";
 
 const templates = [
   { id: "elegant", name: "Elegant Wedding", style: "serif" },

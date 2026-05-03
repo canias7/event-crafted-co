@@ -1,0 +1,249 @@
+import { useEffect, useState } from "react";
+import { Link, useSearchParams } from "react-router-dom";
+import { Plus, Sparkles, Inbox } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
+import { DashboardSidebar } from "@/components/shared/DashboardSidebar";
+import { MobileNav } from "@/components/shared/MobileNav";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
+import { InquiryFormModal } from "@/components/inquiries/InquiryFormModal";
+import { customerNavItems as navItems } from "@/data/navItems";
+
+interface InquiryRow {
+  id: string;
+  event_type: string;
+  event_date: string | null;
+  guest_count: number | null;
+  location: string | null;
+  budget_min_cents: number | null;
+  budget_max_cents: number | null;
+  status: string;
+  created_at: string;
+  vendor: {
+    business_name: string;
+    category: string;
+  } | null;
+}
+
+const statusStyles: Record<string, string> = {
+  new: "bg-accent/15 text-accent border-accent/30",
+  drafted: "bg-secondary text-secondary-foreground border-border",
+  replied: "bg-foreground text-background border-foreground",
+  won: "bg-accent text-accent-foreground border-accent",
+  lost: "bg-muted text-muted-foreground border-border",
+  expired: "bg-muted text-muted-foreground border-border",
+};
+
+const statusLabel: Record<string, string> = {
+  new: "Awaiting reply",
+  drafted: "AI drafting",
+  replied: "Replied",
+  won: "Booked",
+  lost: "Closed",
+  expired: "Expired",
+};
+
+function fmtMoney(c: number | null) {
+  return c == null ? "—" : `$${(c / 100).toLocaleString()}`;
+}
+
+export default function InquiriesPage() {
+  const { user } = useAuth();
+  const [params, setParams] = useSearchParams();
+  const [rows, setRows] = useState<InquiryRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [modalOpen, setModalOpen] = useState(params.get("new") === "1");
+
+  async function load() {
+    if (!user) return;
+    setLoading(true);
+    const { data, error } = await supabase
+      .from("inquiries")
+      .select(
+        "id, event_type, event_date, guest_count, location, budget_min_cents, budget_max_cents, status, created_at, vendor:vendor_profiles!inquiries_vendor_id_fkey(business_name, category)",
+      )
+      .eq("host_id", user.id)
+      .order("created_at", { ascending: false });
+    if (error) {
+      console.error(error);
+      setRows([]);
+    } else {
+      setRows((data as unknown as InquiryRow[]) ?? []);
+    }
+    setLoading(false);
+  }
+
+  useEffect(() => {
+    load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
+
+  // Strip ?new=1 once consumed so refreshes don't re-open the modal
+  useEffect(() => {
+    if (params.get("new")) {
+      const next = new URLSearchParams(params);
+      next.delete("new");
+      setParams(next, { replace: true });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const counts = {
+    total: rows.length,
+    awaiting: rows.filter((r) => r.status === "new" || r.status === "drafted").length,
+    replied: rows.filter((r) => r.status === "replied").length,
+    booked: rows.filter((r) => r.status === "won").length,
+  };
+
+  return (
+    <div className="flex min-h-screen bg-background">
+      <DashboardSidebar items={navItems} title="Customer" backPath="/" />
+
+      <main className="flex-1 pb-20 lg:pb-0">
+        <div className="border-b border-border bg-card px-4 md:px-8 py-4 flex items-center justify-between sticky top-0 z-40">
+          <div>
+            <h1 className="font-display text-xl">Inquiries</h1>
+            <p className="text-sm text-muted-foreground">
+              Conversations with vendors you've contacted
+            </p>
+          </div>
+          <Button
+            onClick={() => setModalOpen(true)}
+            className="rounded-full bg-foreground text-background hover:bg-foreground/90"
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            New inquiry
+          </Button>
+        </div>
+
+        <div className="p-4 md:p-8 space-y-8">
+          {/* Counts */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            {[
+              { label: "Total", value: counts.total },
+              { label: "Awaiting", value: counts.awaiting },
+              { label: "Replied", value: counts.replied },
+              { label: "Booked", value: counts.booked },
+            ].map((s) => (
+              <div
+                key={s.label}
+                className="bg-card border border-border rounded-sm px-5 py-4"
+              >
+                <p className="font-label text-muted-foreground">{s.label}</p>
+                <p className="font-display text-2xl tnum mt-1">{s.value}</p>
+              </div>
+            ))}
+          </div>
+
+          {/* List */}
+          <div className="bg-card rounded-sm border border-border overflow-hidden">
+            {loading ? (
+              <div className="p-6 space-y-4">
+                {[0, 1, 2].map((i) => (
+                  <Skeleton key={i} className="h-20 w-full" />
+                ))}
+              </div>
+            ) : rows.length === 0 ? (
+              <div className="text-center py-20 px-6">
+                <Inbox className="w-10 h-10 mx-auto text-muted-foreground/40 mb-4" />
+                <h3 className="font-display text-xl mb-2">No inquiries yet</h3>
+                <p className="text-sm text-muted-foreground max-w-sm mx-auto mb-6 leading-relaxed">
+                  Browse the directory and send your first inquiry — vendors
+                  reply with AI-assisted drafts, usually within a few hours.
+                </p>
+                <div className="flex gap-2 justify-center">
+                  <Link to="/vendors">
+                    <Button variant="outline" className="rounded-full">
+                      Browse vendors
+                    </Button>
+                  </Link>
+                  <Button
+                    onClick={() => setModalOpen(true)}
+                    className="rounded-full bg-foreground text-background hover:bg-foreground/90"
+                  >
+                    <Plus className="w-4 h-4 mr-2" />
+                    New inquiry
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div className="divide-y divide-border">
+                {rows.map((r) => (
+                  <div
+                    key={r.id}
+                    className="p-5 md:p-6 flex flex-col md:flex-row md:items-center gap-4 md:gap-6"
+                  >
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-3 mb-1.5 flex-wrap">
+                        <h3 className="font-display text-base">
+                          {r.vendor?.business_name ?? "Vendor"}
+                        </h3>
+                        {r.vendor?.category && (
+                          <span className="font-label text-muted-foreground">
+                            {r.vendor.category}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-sm text-muted-foreground capitalize">
+                        {r.event_type.replace("_", " ")}
+                        {r.event_date && (
+                          <>
+                            {" "}
+                            · <span className="tnum">{r.event_date}</span>
+                          </>
+                        )}
+                        {r.guest_count != null && (
+                          <>
+                            {" "}
+                            · <span className="tnum">{r.guest_count}</span> guests
+                          </>
+                        )}
+                        {r.location && <> · {r.location}</>}
+                      </p>
+                      {(r.budget_min_cents != null || r.budget_max_cents != null) && (
+                        <p className="text-xs text-muted-foreground tnum mt-1">
+                          Budget: {fmtMoney(r.budget_min_cents)} –{" "}
+                          {fmtMoney(r.budget_max_cents)}
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="flex items-center justify-between md:justify-end gap-4 md:gap-6 md:flex-shrink-0">
+                      {r.status === "drafted" && (
+                        <span className="hidden sm:flex items-center gap-1.5 text-xs text-accent">
+                          <Sparkles className="w-3 h-3" />
+                          AI drafting reply…
+                        </span>
+                      )}
+                      <Badge
+                        variant="outline"
+                        className={`${statusStyles[r.status] ?? ""} font-medium`}
+                      >
+                        {statusLabel[r.status] ?? r.status}
+                      </Badge>
+                      <span className="text-xs text-muted-foreground tnum hidden sm:block">
+                        {new Date(r.created_at).toLocaleDateString()}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </main>
+
+      <MobileNav items={navItems} />
+
+      <InquiryFormModal
+        open={modalOpen}
+        onOpenChange={(o) => {
+          setModalOpen(o);
+          if (!o) load();
+        }}
+      />
+    </div>
+  );
+}

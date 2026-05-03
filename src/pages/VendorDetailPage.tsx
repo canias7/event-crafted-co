@@ -13,6 +13,7 @@ import {
   Share2,
   Mail,
 } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -25,6 +26,8 @@ import {
 import { PublicNav } from "@/components/public/PublicNav";
 import { Footer } from "@/components/public/Footer";
 import { VendorCard } from "@/components/shared/VendorCard";
+import { InquiryFormModal } from "@/components/inquiries/InquiryFormModal";
+import { useAuth } from "@/hooks/useAuth";
 import { vendors } from "@/data/sampleData";
 
 import vendorPhotographer from "@/assets/vendor-photographer.jpg";
@@ -131,10 +134,29 @@ const spring = { type: "spring" as const, duration: 0.6, bounce: 0 };
 
 export default function VendorDetailPage() {
   const { id } = useParams();
+  const { session, profile, loading: authLoading } = useAuth();
   const [saved, setSaved] = useState(false);
-  const [inquiryOpen, setInquiryOpen] = useState(false);
+  const [signinPromptOpen, setSigninPromptOpen] = useState(false);
+  const [inquiryFormOpen, setInquiryFormOpen] = useState(false);
 
   const vendor = vendors.find((v) => v.id === id);
+
+  function handleInquiryClick() {
+    if (authLoading) return;
+    if (!session || !profile) {
+      setSigninPromptOpen(true);
+      return;
+    }
+    if (profile.role === "host") {
+      setInquiryFormOpen(true);
+      return;
+    }
+    toast.info(
+      profile.role === "vendor"
+        ? "Switch to a host account to send inquiries."
+        : "Inquiries can only be sent from host accounts.",
+    );
+  }
 
   const related = useMemo(() => {
     if (!vendor) return [];
@@ -442,7 +464,8 @@ export default function VendorDetailPage() {
                   </div>
 
                   <Button
-                    onClick={() => setInquiryOpen(true)}
+                    onClick={handleInquiryClick}
+                    disabled={authLoading}
                     className="w-full h-12 rounded-full bg-foreground text-background hover:bg-foreground/90"
                   >
                     <Mail className="w-4 h-4 mr-2" />
@@ -508,8 +531,8 @@ export default function VendorDetailPage() {
 
       <Footer />
 
-      {/* Inquiry modal — placeholder until host inquiry flow exists */}
-      <Dialog open={inquiryOpen} onOpenChange={setInquiryOpen}>
+      {/* Logged-out: prompt to sign in/up before inquiring */}
+      <Dialog open={signinPromptOpen} onOpenChange={setSigninPromptOpen}>
         <DialogContent className="sm:max-w-md rounded-sm">
           <DialogHeader>
             <DialogTitle className="font-display text-2xl">
@@ -534,6 +557,13 @@ export default function VendorDetailPage() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Logged-in host: real inquiry form */}
+      <InquiryFormModal
+        open={inquiryFormOpen}
+        onOpenChange={setInquiryFormOpen}
+        preferredVendorName={vendor.name}
+      />
     </div>
   );
 }

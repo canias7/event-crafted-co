@@ -11,19 +11,8 @@ import { Badge } from "@/components/ui/badge";
 import { DashboardSidebar } from "@/components/shared/DashboardSidebar";
 import { MobileNav } from "@/components/shared/MobileNav";
 import { StatCard } from "@/components/shared/StatCard";
+import { customerNavItems as navItems } from "@/data/navItems";
 import { customerTasks, checklistItems } from "@/data/sampleData";
-
-const navItems = [
-  { label: "Dashboard", path: "/customer/dashboard", icon: LayoutDashboard },
-  { label: "Vendors", path: "/vendors", icon: Store },
-  { label: "Appointments", path: "/customer/appointments", icon: CalendarDays },
-  { label: "Event Details", path: "/customer/event", icon: FileText },
-  { label: "Invitations", path: "/customer/invitations", icon: Mail },
-  { label: "Checklist", path: "/customer/checklist", icon: CheckSquare },
-  { label: "Tasks", path: "/customer/tasks", icon: ListTodo },
-  { label: "Payments", path: "/customer/payments", icon: CreditCard },
-  { label: "Favorites", path: "/customer/favorites", icon: Heart },
-];
 
 const completedCount = checklistItems.filter((c) => c.completed).length;
 const progressPct = Math.round((completedCount / checklistItems.length) * 100);

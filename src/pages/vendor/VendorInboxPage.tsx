@@ -1,21 +1,12 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { LayoutDashboard, User, CalendarDays, Clock, CreditCard, FileText, Inbox } from "lucide-react";
+import { Inbox } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { DashboardSidebar } from "@/components/shared/DashboardSidebar";
 import { MobileNav } from "@/components/shared/MobileNav";
 import { Badge } from "@/components/ui/badge";
-
-const navItems = [
-  { label: "Dashboard", path: "/vendor/dashboard", icon: LayoutDashboard },
-  { label: "Inbox", path: "/vendor/inbox", icon: Inbox },
-  { label: "Profile", path: "/vendor/profile", icon: User },
-  { label: "Appointments", path: "/vendor/appointments", icon: CalendarDays },
-  { label: "Availability", path: "/vendor/availability", icon: Clock },
-  { label: "Payments", path: "/vendor/payments", icon: CreditCard },
-  { label: "Contract", path: "/vendor/contract", icon: FileText },
-];
+import { vendorNavItems as navItems } from "@/data/navItems";
 
 interface InquiryRow {
   id: string;

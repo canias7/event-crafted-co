@@ -1,19 +1,42 @@
 import { Link, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Menu, X } from "lucide-react";
+import { Menu, X, LogOut, LayoutDashboard, ChevronDown } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { useAuth } from "@/hooks/useAuth";
 
-const navItems = [
-  { label: "FAQ", path: "/how-it-works" },
+const baseLinks = [
   { label: "Vendors", path: "/vendors" },
-  { label: "Vendor Apply", path: "/vendor-apply" },
-  { label: "Customer Dashboard", path: "/customer/dashboard" },
+  { label: "How it works", path: "/how-it-works" },
+  { label: "For vendors", path: "/vendor-apply" },
 ];
+
+function dashboardPath(role?: string) {
+  if (role === "vendor") return "/vendor/dashboard";
+  if (role === "admin") return "/admin/dashboard";
+  return "/customer/dashboard";
+}
+
+function dashboardLabel(role?: string) {
+  if (role === "vendor") return "Vendor portal";
+  if (role === "admin") return "Admin";
+  return "My dashboard";
+}
 
 export function PublicNav() {
   const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const { session, profile, signOut } = useAuth();
+
+  const dashLabel = dashboardLabel(profile?.role);
+  const dashPath = dashboardPath(profile?.role);
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-gradient-to-b from-foreground/80 via-foreground/40 to-transparent backdrop-blur-sm">
@@ -24,7 +47,7 @@ export function PublicNav() {
 
         {/* Desktop nav */}
         <div className="hidden md:flex items-center gap-8">
-          {navItems.map((item) => (
+          {baseLinks.map((item) => (
             <Link
               key={item.path}
               to={item.path}
@@ -40,17 +63,58 @@ export function PublicNav() {
         </div>
 
         <div className="hidden md:flex items-center gap-3">
-          <Link to="/customer/dashboard">
-            <Button size="sm" variant="secondary" className="h-9">
-              Start Planning
-            </Button>
-          </Link>
+          {session && profile ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className="flex items-center gap-2 text-sm font-medium text-background/85 hover:text-background transition-colors">
+                  <span className="w-7 h-7 rounded-full bg-accent text-accent-foreground flex items-center justify-center text-xs font-medium">
+                    {(profile.display_name ?? "U").charAt(0).toUpperCase()}
+                  </span>
+                  <span className="hidden lg:inline">
+                    {profile.display_name ?? "Account"}
+                  </span>
+                  <ChevronDown className="w-3.5 h-3.5" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuItem asChild>
+                  <Link to={dashPath} className="cursor-pointer">
+                    <LayoutDashboard className="w-4 h-4 mr-2" />
+                    {dashLabel}
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => signOut()} className="cursor-pointer">
+                  <LogOut className="w-4 h-4 mr-2" />
+                  Sign out
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : (
+            <>
+              <Link to="/login">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-9 text-background hover:bg-background/10 hover:text-background"
+                >
+                  Sign in
+                </Button>
+              </Link>
+              <Link to="/signup">
+                <Button size="sm" variant="secondary" className="h-9">
+                  Get started
+                </Button>
+              </Link>
+            </>
+          )}
         </div>
 
         {/* Mobile toggle */}
         <button
           className="md:hidden p-2 text-background"
           onClick={() => setMobileOpen(!mobileOpen)}
+          aria-label={mobileOpen ? "Close menu" : "Open menu"}
         >
           {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
         </button>
@@ -63,7 +127,7 @@ export function PublicNav() {
           animate={{ opacity: 1, y: 0 }}
           className="md:hidden bg-background border-b border-border px-4 pb-4"
         >
-          {navItems.map((item) => (
+          {baseLinks.map((item) => (
             <Link
               key={item.path}
               to={item.path}
@@ -73,11 +137,39 @@ export function PublicNav() {
               {item.label}
             </Link>
           ))}
-          <div className="flex gap-3 pt-3">
-            <Link to="/customer/dashboard" className="flex-1">
-              <Button className="w-full" size="sm">Start Planning</Button>
-            </Link>
-          </div>
+          {session && profile ? (
+            <>
+              <Link
+                to={dashPath}
+                onClick={() => setMobileOpen(false)}
+                className="block py-3 text-sm font-medium text-foreground border-t border-border mt-2 pt-3"
+              >
+                {dashLabel}
+              </Link>
+              <button
+                onClick={() => {
+                  setMobileOpen(false);
+                  signOut();
+                }}
+                className="block w-full text-left py-3 text-sm font-medium text-muted-foreground"
+              >
+                Sign out
+              </button>
+            </>
+          ) : (
+            <div className="flex gap-3 pt-3 border-t border-border mt-2">
+              <Link to="/login" className="flex-1" onClick={() => setMobileOpen(false)}>
+                <Button variant="outline" className="w-full" size="sm">
+                  Sign in
+                </Button>
+              </Link>
+              <Link to="/signup" className="flex-1" onClick={() => setMobileOpen(false)}>
+                <Button className="w-full" size="sm">
+                  Get started
+                </Button>
+              </Link>
+            </div>
+          )}
         </motion.div>
       )}
     </nav>
