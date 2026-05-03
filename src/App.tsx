@@ -57,6 +57,7 @@ const SavedSearchesPage = lazy(() => import("./pages/customer/SavedSearchesPage"
 const SeatingChartPage = lazy(() => import("./pages/customer/SeatingChartPage"));
 const EventTimelinePage = lazy(() => import("./pages/customer/EventTimelinePage"));
 const PlanningTeamPage = lazy(() => import("./pages/customer/PlanningTeamPage"));
+const RegistryPage = lazy(() => import("./pages/customer/RegistryPage"));
 const AcceptPlanningInvitePage = lazy(() => import("./pages/AcceptPlanningInvitePage"));
 
 const VendorDashboard = lazy(() => import("./pages/vendor/VendorDashboard"));
@@ -132,6 +133,7 @@ const App = () => (
               <Route path="/customer/seating" element={<RequireRole role="host"><SeatingChartPage /></RequireRole>} />
               <Route path="/customer/timeline" element={<RequireRole role="host"><EventTimelinePage /></RequireRole>} />
               <Route path="/customer/planning-team" element={<RequireRole role="host"><PlanningTeamPage /></RequireRole>} />
+              <Route path="/customer/registry" element={<RequireRole role="host"><RegistryPage /></RequireRole>} />
               <Route path="/customer/appointments" element={<RequireRole role="host"><AppointmentsPage /></RequireRole>} />
               <Route path="/customer/favorites" element={<RequireRole role="host"><FavoritesPage /></RequireRole>} />
               <Route path="/customer/saved-searches" element={<RequireRole role="host"><SavedSearchesPage /></RequireRole>} />

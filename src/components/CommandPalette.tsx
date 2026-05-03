@@ -8,6 +8,7 @@ import {
   Heart,
   Image,
   Inbox,
+  Gift,
   LayoutDashboard,
   ListTodo,
   Mail,
@@ -87,6 +88,7 @@ const HOST_NAV: NavTarget[] = [
   { label: "Saved vendors", path: "/customer/favorites", icon: Heart },
   { label: "Saved searches", path: "/customer/saved-searches", icon: Store },
   { label: "Mood boards", path: "/customer/moodboards", icon: Image },
+  { label: "Registry", path: "/customer/registry", icon: Gift },
   { label: "Planning team", path: "/customer/planning-team", icon: Users },
 ];
 
