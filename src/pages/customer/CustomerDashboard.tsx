@@ -13,14 +13,18 @@ import { MobileNav } from "@/components/shared/MobileNav";
 import { StatCard } from "@/components/shared/StatCard";
 import { customerNavItems as navItems } from "@/data/navItems";
 import { customerTasks, checklistItems } from "@/data/sampleData";
+import { useAuth } from "@/hooks/useAuth";
+import { Sparkles } from "lucide-react";
 
 const completedCount = checklistItems.filter((c) => c.completed).length;
 const progressPct = Math.round((completedCount / checklistItems.length) * 100);
 
 export default function CustomerDashboard() {
+  const { profile } = useAuth();
   const eventDate = new Date("2026-08-15");
   const today = new Date();
   const daysUntil = Math.ceil((eventDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+  const showOnboardingBanner = profile?.role === "host" && !profile.onboarded_at;
 
   return (
     <div className="flex min-h-screen bg-background">
@@ -42,6 +46,30 @@ export default function CustomerDashboard() {
         </div>
 
         <div className="p-4 md:p-8 space-y-8">
+          {showOnboardingBanner && (
+            <div className="rounded-sm border border-accent/30 bg-accent/5 p-5 flex items-start gap-4">
+              <div className="w-9 h-9 rounded-full bg-accent text-accent-foreground flex items-center justify-center flex-shrink-0">
+                <Sparkles className="w-4 h-4" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-display text-base mb-1">
+                  Tell us about your event
+                </p>
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  A two-minute setup so we can tailor your dashboard,
+                  recommendations, and pre-fill inquiries with your event
+                  details.
+                </p>
+              </div>
+              <Link to="/customer/onboarding">
+                <Button size="sm" className="rounded-full whitespace-nowrap">
+                  Complete setup
+                  <ArrowRight className="w-3.5 h-3.5 ml-1.5" />
+                </Button>
+              </Link>
+            </div>
+          )}
+
           {/* Stats */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             <StatCard label="Days Until Event" value={daysUntil} icon={Clock} accent />

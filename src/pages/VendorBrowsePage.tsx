@@ -7,12 +7,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { PublicNav } from "@/components/public/PublicNav";
 import { Footer } from "@/components/public/Footer";
 import { VendorCard } from "@/components/shared/VendorCard";
-import { vendors } from "@/data/sampleData";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useVendors, type Vendor } from "@/hooks/useVendors";
 import heroBrowse from "@/assets/vendora-hero-cinematic.jpg";
 
 const categories = ["All", "Photographer", "Florist", "Catering", "DJ", "Venue", "Makeup Artist"];
 
-const sortOptions: Record<string, (a: typeof vendors[number], b: typeof vendors[number]) => number> = {
+const sortOptions: Record<string, (a: Vendor, b: Vendor) => number> = {
   popular: (a, b) => b.reviews - a.reviews,
   rating: (a, b) => b.rating - a.rating,
   "price-low": (a, b) => a.startingPrice - b.startingPrice,
@@ -22,6 +23,7 @@ const sortOptions: Record<string, (a: typeof vendors[number], b: typeof vendors[
 const spring = { type: "spring" as const, duration: 0.6, bounce: 0 };
 
 export default function VendorBrowsePage() {
+  const { vendors, loading } = useVendors();
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("All");
   const [sort, setSort] = useState<keyof typeof sortOptions>("popular");
@@ -38,7 +40,7 @@ export default function VendorBrowsePage() {
           v.description.toLowerCase().includes(term),
       )
       .sort(sortOptions[sort]);
-  }, [search, category, sort]);
+  }, [vendors, search, category, sort]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -158,15 +160,34 @@ export default function VendorBrowsePage() {
           <div className="flex items-end justify-between mb-10">
             <div>
               <p className="font-label text-muted-foreground">
-                {filtered.length} {filtered.length === 1 ? "vendor" : "vendors"}
-                {category !== "All" && (
-                  <span className="ml-2 text-foreground/80">· {category}</span>
+                {loading ? (
+                  "Loading…"
+                ) : (
+                  <>
+                    {filtered.length}{" "}
+                    {filtered.length === 1 ? "vendor" : "vendors"}
+                    {category !== "All" && (
+                      <span className="ml-2 text-foreground/80">
+                        · {category}
+                      </span>
+                    )}
+                  </>
                 )}
               </p>
             </div>
           </div>
 
-          {filtered.length > 0 ? (
+          {loading ? (
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-14">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div key={i}>
+                  <Skeleton className="aspect-[4/5] w-full rounded-sm mb-4" />
+                  <Skeleton className="h-5 w-2/3 mb-2" />
+                  <Skeleton className="h-4 w-full" />
+                </div>
+              ))}
+            </div>
+          ) : filtered.length > 0 ? (
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-14">
               {filtered.map((vendor, i) => (
                 <motion.div

@@ -28,7 +28,7 @@ import { Footer } from "@/components/public/Footer";
 import { VendorCard } from "@/components/shared/VendorCard";
 import { InquiryFormModal } from "@/components/inquiries/InquiryFormModal";
 import { useAuth } from "@/hooks/useAuth";
-import { vendors } from "@/data/sampleData";
+import { useVendors } from "@/hooks/useVendors";
 
 import vendorPhotographer from "@/assets/vendor-photographer.jpg";
 import vendorFlorist from "@/assets/vendor-florist.jpg";
@@ -135,6 +135,7 @@ const spring = { type: "spring" as const, duration: 0.6, bounce: 0 };
 export default function VendorDetailPage() {
   const { id } = useParams();
   const { session, profile, loading: authLoading } = useAuth();
+  const { vendors, loading: vendorsLoading } = useVendors();
   const [saved, setSaved] = useState(false);
   const [signinPromptOpen, setSigninPromptOpen] = useState(false);
   const [inquiryFormOpen, setInquiryFormOpen] = useState(false);
@@ -167,6 +168,19 @@ export default function VendorDetailPage() {
     const others = vendors.filter((v) => v.id !== vendor.id && v.category !== vendor.category);
     return [...sameCat, ...others].slice(0, 3);
   }, [vendor]);
+
+  if (!vendor && vendorsLoading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <PublicNav />
+        <div className="pt-32 pb-24 container mx-auto px-6">
+          <div className="max-w-3xl mx-auto text-center">
+            <p className="font-label text-muted-foreground">Loading vendor…</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (!vendor) {
     return (

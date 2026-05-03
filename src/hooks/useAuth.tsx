@@ -8,6 +8,7 @@ interface Profile {
   id: string;
   role: AppRole;
   display_name: string | null;
+  onboarded_at: string | null;
 }
 
 interface AuthCtx {
@@ -54,10 +55,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   async function loadProfile(userId: string) {
     const { data } = await supabase
       .from("profiles")
-      .select("id, role, display_name")
+      .select("id, role, display_name, onboarded_at")
       .eq("id", userId)
       .maybeSingle();
-    if (data) setProfile(data as Profile);
+    if (data) setProfile(data as unknown as Profile);
   }
 
   async function signOut() {

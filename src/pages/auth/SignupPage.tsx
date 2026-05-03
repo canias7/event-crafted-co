@@ -32,7 +32,7 @@ export default function SignupPage() {
       return;
     }
     toast.success("Account created");
-    navigate(role === "vendor" ? "/vendor/dashboard" : "/customer/dashboard");
+    navigate(role === "vendor" ? "/vendor/dashboard" : "/customer/onboarding");
   }
 
   return (
