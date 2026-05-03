@@ -74,6 +74,7 @@ const HOST_NAV: NavTarget[] = [
   },
   { label: "My inquiries", path: "/customer/inquiries", icon: MessageSquare },
   { label: "Guests", path: "/customer/guests", icon: User },
+  { label: "Seating chart", path: "/customer/seating", icon: Users },
   { label: "Appointments", path: "/customer/appointments", icon: CalendarDays },
   { label: "Event details", path: "/customer/event", icon: FileText },
   { label: "Invitations", path: "/customer/invitations", icon: Mail },
