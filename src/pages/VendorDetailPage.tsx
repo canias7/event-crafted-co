@@ -263,6 +263,38 @@ export default function VendorDetailPage() {
     };
   }, [vendor]);
 
+  // Imported reviews from external platforms (vendor-pasted).
+  interface ImportedReview {
+    id: string;
+    source: string;
+    reviewer_name: string;
+    rating: number;
+    body: string | null;
+    reviewed_at: string | null;
+  }
+  const [importedReviews, setImportedReviews] = useState<ImportedReview[]>([]);
+  useEffect(() => {
+    if (!vendor || !vendor.isReal) {
+      setImportedReviews([]);
+      return;
+    }
+    let cancelled = false;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (supabase as any)
+      .from("imported_reviews")
+      .select("id, source, reviewer_name, rating, body, reviewed_at")
+      .eq("vendor_id", vendor.id)
+      .order("reviewed_at", { ascending: false, nullsFirst: false })
+      .order("created_at", { ascending: false })
+      .then(({ data }: { data: ImportedReview[] | null }) => {
+        if (cancelled) return;
+        setImportedReviews(data ?? []);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [vendor]);
+
   // Recommendations this vendor has curated.
   interface RecRow {
     id: string;
@@ -876,6 +908,57 @@ export default function VendorDetailPage() {
                       ))}
                 </div>
               </div>
+
+              {/* Imported reviews from other platforms */}
+              {importedReviews.length > 0 && (
+                <div>
+                  <p className="font-label text-accent mb-4">From around the web</p>
+                  <h2 className="font-display text-3xl mb-2">
+                    Reviews from elsewhere
+                  </h2>
+                  <p className="text-sm text-muted-foreground mb-6 leading-relaxed max-w-xl">
+                    Imported by {vendor.name} from other platforms. Not
+                    booked through Vendora — but still part of their track
+                    record.
+                  </p>
+                  <div className="grid sm:grid-cols-2 gap-4">
+                    {importedReviews.map((r) => (
+                      <div
+                        key={r.id}
+                        className="rounded-sm border border-border bg-card p-4"
+                      >
+                        <div className="flex items-center gap-2 mb-2 flex-wrap">
+                          <div className="flex items-center gap-0.5">
+                            {[1, 2, 3, 4, 5].map((n) => (
+                              <Star
+                                key={n}
+                                className={`w-3.5 h-3.5 ${
+                                  n <= Math.round(r.rating)
+                                    ? "fill-accent text-accent"
+                                    : "text-muted-foreground/30"
+                                }`}
+                              />
+                            ))}
+                          </div>
+                          <span className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                            via {r.source.replace("_", " ")}
+                          </span>
+                        </div>
+                        {r.body && (
+                          <p className="text-sm text-foreground/80 leading-relaxed mb-2 italic line-clamp-4">
+                            "{r.body}"
+                          </p>
+                        )}
+                        <p className="text-xs text-muted-foreground">
+                          — {r.reviewer_name}
+                          {r.reviewed_at &&
+                            ` · ${new Date(r.reviewed_at).toLocaleDateString()}`}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {/* Vendors we love (from this vendor) */}
               {recommendations.length > 0 && (
