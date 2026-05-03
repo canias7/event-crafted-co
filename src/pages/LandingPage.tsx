@@ -85,7 +85,13 @@ export default function LandingPage() {
   const currentSlide = heroSlides[slideIndex];
 
   return (
-    <div className="min-h-screen bg-background">
+    <div
+      className="min-h-screen relative"
+      style={{
+        background:
+          "linear-gradient(to bottom, hsl(var(--foreground)) 0%, hsl(var(--foreground)) 35%, hsl(36 22% 80%) 60%, hsl(var(--background)) 85%, hsl(var(--background)) 100%)",
+      }}
+    >
       <PublicNav />
 
       {/* Cinematic Hero */}
@@ -118,16 +124,16 @@ export default function LandingPage() {
           ))}
         </div>
 
-        {/* Cinematic gradient overlays */}
-        <div className="absolute inset-0 bg-gradient-to-b from-foreground/70 via-foreground/40 to-foreground/85" />
-        <div className="absolute inset-0 bg-gradient-to-r from-foreground/50 via-transparent to-foreground/30" />
+        {/* Cinematic gradient overlays — bleed into page background */}
+        <div className="absolute inset-0 bg-gradient-to-b from-foreground/75 via-foreground/45 to-foreground" />
+        <div className="absolute inset-0 bg-gradient-to-r from-foreground/55 via-transparent to-foreground/30" />
         <div
           className="absolute inset-0 opacity-60"
           style={{ background: "var(--gradient-hero)" }}
         />
-        {/* Letterbox bars for cinema feel */}
+        {/* Letterbox bars + seamless bleed into next section */}
         <div className="absolute top-0 inset-x-0 h-16 md:h-20 bg-gradient-to-b from-foreground/80 to-transparent pointer-events-none" />
-        <div className="absolute bottom-0 inset-x-0 h-32 bg-gradient-to-t from-foreground to-transparent pointer-events-none" />
+        <div className="absolute bottom-0 inset-x-0 h-48 bg-gradient-to-t from-foreground via-foreground/90 to-transparent pointer-events-none" />
         {/* Subtle film grain */}
         <div
           className="absolute inset-0 opacity-[0.08] mix-blend-overlay pointer-events-none"
@@ -253,12 +259,12 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* How it works */}
-      <section className="py-24 md:py-36 border-t border-border">
+      {/* How it works — on dark gradient */}
+      <section className="py-24 md:py-36 relative">
         <div className="container mx-auto px-6 md:px-8">
           <div className="max-w-2xl mb-20">
             <p className="font-label text-accent mb-4">How it works</p>
-            <h2 className="text-h2 font-display">
+            <h2 className="text-h2 font-display text-background">
               Three simple steps to a flawless event.
             </h2>
           </div>
@@ -271,19 +277,19 @@ export default function LandingPage() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ ...spring, delay: i * 0.1 }}
-                className="border-t border-border pt-8"
+                className="border-t border-background/15 pt-8"
               >
                 <p className="font-label text-accent mb-6 tnum">{s.n}</p>
-                <h3 className="font-display text-2xl mb-3">{s.title}</h3>
-                <p className="text-sm text-muted-foreground leading-relaxed">{s.desc}</p>
+                <h3 className="font-display text-2xl mb-3 text-background">{s.title}</h3>
+                <p className="text-sm text-background/65 leading-relaxed">{s.desc}</p>
               </motion.div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Feature: Vendor discovery */}
-      <section className="py-24 md:py-36 bg-primary text-primary-foreground relative overflow-hidden">
+      {/* Feature: Vendor discovery — still on dark gradient */}
+      <section className="py-24 md:py-36 text-primary-foreground relative overflow-hidden">
         <div
           className="absolute -top-40 -right-40 w-[500px] h-[500px] opacity-40 -z-0"
           style={{ background: "var(--gradient-glow)" }}
@@ -327,16 +333,16 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Feature: Booking + tools */}
-      <section className="py-24 md:py-36">
+      {/* Feature: Booking + tools — mid transition zone */}
+      <section className="py-24 md:py-36 relative">
         <div className="container mx-auto px-6 md:px-8">
           <div className="grid md:grid-cols-2 gap-16 md:gap-24 items-center">
             <div className="md:order-2">
               <p className="font-label text-accent mb-5">Booking & tools</p>
-              <h2 className="text-h2 font-display mb-6">
+              <h2 className="text-h2 font-display mb-6 text-foreground">
                 Everything you need, nothing you don't.
               </h2>
-              <p className="text-muted-foreground leading-relaxed mb-10 max-w-md">
+              <p className="text-foreground/70 leading-relaxed mb-10 max-w-md">
                 A single, calm dashboard for your timeline, payments,
                 invitations, and guest list. Designed to feel less like
                 software, and more like a planner who quietly keeps everything
@@ -345,8 +351,8 @@ export default function LandingPage() {
               <div className="grid grid-cols-1 gap-6">
                 {features.map((f) => (
                   <div key={f.title} className="border-l border-accent/40 pl-5 py-1">
-                    <h3 className="font-display text-base mb-1">{f.title}</h3>
-                    <p className="text-sm text-muted-foreground leading-relaxed">{f.desc}</p>
+                    <h3 className="font-display text-base mb-1 text-foreground">{f.title}</h3>
+                    <p className="text-sm text-foreground/70 leading-relaxed">{f.desc}</p>
                   </div>
                 ))}
               </div>
@@ -366,7 +372,7 @@ export default function LandingPage() {
       </section>
 
       {/* Stats / quiet trust band */}
-      <section className="py-20 border-y border-border bg-secondary/40">
+      <section className="py-20 border-y border-border/40 backdrop-blur-sm bg-background/30">
         <div className="container mx-auto px-6 md:px-8">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-10 text-center">
             {[
@@ -385,7 +391,7 @@ export default function LandingPage() {
       </section>
 
       {/* FAQ */}
-      <section className="py-24 md:py-36">
+      <section className="py-24 md:py-36 relative">
         <div className="container mx-auto px-6 md:px-8 max-w-2xl">
           <div className="mb-16">
             <p className="font-label text-accent mb-4">Questions</p>
@@ -407,21 +413,21 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Final CTA */}
-      <section className="relative py-32 md:py-44 bg-primary text-primary-foreground overflow-hidden">
+      {/* Final CTA — light, on white end of gradient */}
+      <section className="relative py-32 md:py-44 overflow-hidden">
         <div
-          className="absolute inset-0 opacity-60"
+          className="absolute inset-0 opacity-40"
           style={{ background: "var(--gradient-hero)" }}
         />
         <div className="container mx-auto px-6 md:px-8 text-center relative">
-          <h2 className="font-display text-4xl md:text-6xl max-w-3xl mx-auto mb-6 leading-[1.05]">
+          <h2 className="font-display text-4xl md:text-6xl max-w-3xl mx-auto mb-6 leading-[1.05] text-foreground">
             Your event, <span className="italic font-light text-accent">elevated.</span>
           </h2>
-          <p className="text-primary-foreground/70 max-w-md mx-auto mb-10 text-sm md:text-base">
+          <p className="text-foreground/70 max-w-md mx-auto mb-10 text-sm md:text-base">
             Join thousands of hosts planning effortlessly with Vendora.
           </p>
           <Link to="/customer/dashboard">
-            <Button size="lg" variant="secondary" className="h-12 px-8 rounded-full text-sm tracking-wide">
+            <Button size="lg" className="h-12 px-8 rounded-full text-sm tracking-wide bg-foreground text-background hover:bg-foreground/90">
               Start Planning
               <ArrowRight className="w-4 h-4 ml-2" />
             </Button>
