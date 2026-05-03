@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
 import { Link, useParams, Navigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowLeft, Calendar, MapPin, Users, ArrowRight } from "lucide-react";
+import { ArrowLeft, Calendar, MapPin, Users, ArrowRight, Bookmark } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PublicNav } from "@/components/public/PublicNav";
 import { Footer } from "@/components/public/Footer";
+import { SaveToBoardModal } from "@/components/moodboards/SaveToBoardModal";
 import {
   fetchInspirationEntries,
   findInspirationBySlug,
@@ -19,6 +20,7 @@ export default function InspirationDetailPage() {
   // Bundled lookup first so first paint has content; merged DB lookup hydrates.
   const [entries, setEntries] = useState<InspirationEntry[]>(inspirationEntries);
   const [hydrated, setHydrated] = useState(false);
+  const [saveOpen, setSaveOpen] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -101,7 +103,7 @@ export default function InspirationDetailPage() {
         <div className="absolute inset-0 bg-gradient-to-r from-foreground/55 via-transparent to-transparent" />
 
         <div className="relative z-10 h-full flex flex-col">
-          <div className="container mx-auto px-6 md:px-8 pt-24">
+          <div className="container mx-auto px-6 md:px-8 pt-24 flex items-center justify-between gap-4">
             <Link
               to="/inspiration"
               className="inline-flex items-center gap-2 text-xs uppercase tracking-[0.3em] text-background/70 hover:text-background transition-colors"
@@ -109,6 +111,15 @@ export default function InspirationDetailPage() {
               <ArrowLeft className="w-3.5 h-3.5" />
               All inspiration
             </Link>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setSaveOpen(true)}
+              className="rounded-full bg-background/10 backdrop-blur-sm border-background/30 text-background hover:bg-background/20 hover:text-background"
+            >
+              <Bookmark className="w-3.5 h-3.5 mr-1.5" />
+              Save to board
+            </Button>
           </div>
 
           <div className="flex-1 flex items-end pb-12 md:pb-16">
@@ -234,6 +245,16 @@ export default function InspirationDetailPage() {
       </section>
 
       <Footer />
+
+      <SaveToBoardModal
+        open={saveOpen}
+        onOpenChange={setSaveOpen}
+        imageUrl={typeof entry.hero === "string" ? entry.hero : ""}
+        sourceUrl={
+          typeof window !== "undefined" ? window.location.href : undefined
+        }
+        caption={entry.title}
+      />
     </div>
   );
 }
