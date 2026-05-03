@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Loader2, AlertTriangle, KeyRound, User, Cookie, Download, Bell } from "lucide-react";
+import { Loader2, AlertTriangle, KeyRound, User, Cookie, Download, Bell, Sun, Moon, Monitor } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useTheme, type ThemePreference } from "@/hooks/useTheme";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -42,6 +43,8 @@ export default function SettingsPage() {
 
   const [digestEnabled, setDigestEnabled] = useState<boolean | null>(null);
   const [savingDigest, setSavingDigest] = useState(false);
+
+  const { preference: themePref, setPreference: setThemePref } = useTheme();
 
   useEffect(() => {
     if (profile) setDisplayName(profile.display_name ?? "");
@@ -341,6 +344,50 @@ export default function SettingsPage() {
                     </>
                   )}
                 </Button>
+              </Section>
+
+              {/* Appearance */}
+              <Section
+                icon={Sun}
+                title="Appearance"
+                subtitle="Light, dark, or follow your system"
+              >
+                <div
+                  role="radiogroup"
+                  aria-label="Theme preference"
+                  className="grid grid-cols-3 gap-2 max-w-md"
+                >
+                  {(
+                    [
+                      { value: "light", label: "Light", Icon: Sun },
+                      { value: "dark", label: "Dark", Icon: Moon },
+                      { value: "system", label: "System", Icon: Monitor },
+                    ] as Array<{
+                      value: ThemePreference;
+                      label: string;
+                      Icon: typeof Sun;
+                    }>
+                  ).map((opt) => {
+                    const active = themePref === opt.value;
+                    return (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        role="radio"
+                        aria-checked={active}
+                        onClick={() => setThemePref(opt.value)}
+                        className={`flex flex-col items-center gap-2 p-4 rounded-sm border transition-colors ${
+                          active
+                            ? "border-foreground bg-secondary text-foreground"
+                            : "border-border bg-card text-muted-foreground hover:text-foreground hover:border-foreground/30"
+                        }`}
+                      >
+                        <opt.Icon className="w-4 h-4" />
+                        <span className="text-xs font-medium">{opt.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
               </Section>
 
               {/* Email preferences */}

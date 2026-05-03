@@ -57,6 +57,51 @@
     --gradient-hero: radial-gradient(ellipse 80% 60% at 50% 20%, hsl(38 45% 62% / 0.18), transparent 70%);
     --gradient-glow: radial-gradient(circle at 50% 50%, hsl(38 45% 70% / 0.25), transparent 60%);
   }
+
+  /* Dark mode palette — inverts the cream/charcoal pair while keeping
+     champagne gold as the accent. Triggered by a "dark" class on <html>
+     (managed by ThemeProvider). */
+  .dark {
+    --background: 220 14% 8%;
+    --foreground: 36 30% 95%;
+
+    --card: 220 14% 11%;
+    --card-foreground: 36 30% 95%;
+
+    --popover: 220 14% 11%;
+    --popover-foreground: 36 30% 95%;
+
+    --primary: 36 30% 95%;
+    --primary-foreground: 220 14% 11%;
+
+    --secondary: 220 12% 16%;
+    --secondary-foreground: 36 30% 95%;
+
+    --muted: 220 12% 16%;
+    --muted-foreground: 36 12% 65%;
+
+    --accent: 38 45% 62%;
+    --accent-foreground: 220 14% 11%;
+
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 36 30% 95% / 0.10;
+    --input: 220 12% 16%;
+    --ring: 38 45% 62% / 0.6;
+
+    --shadow-sm: 0 0% 0% / 0.30;
+    --shadow-md: 0 0% 0% / 0.45;
+
+    --sidebar-background: 220 14% 11%;
+    --sidebar-foreground: 36 30% 95%;
+    --sidebar-primary: 36 30% 95%;
+    --sidebar-primary-foreground: 220 14% 11%;
+    --sidebar-accent: 220 12% 16%;
+    --sidebar-accent-foreground: 36 30% 95%;
+    --sidebar-border: 36 30% 95% / 0.10;
+    --sidebar-ring: 38 45% 62% / 0.6;
+  }
 }
 
 @layer base {

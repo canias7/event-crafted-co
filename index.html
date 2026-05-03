@@ -16,6 +16,26 @@
   <meta property="og:image" content="https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/9a1f0213-356b-4903-8798-463a0680770b/id-preview-ec3e531d--1aa523f8-4c37-4cda-8d70-d83a40ec34c5.lovable.app-1773275101036.png">
   <meta name="twitter:image" content="https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/9a1f0213-356b-4903-8798-463a0680770b/id-preview-ec3e531d--1aa523f8-4c37-4cda-8d70-d83a40ec34c5.lovable.app-1773275101036.png">
   <meta name="twitter:card" content="summary_large_image">
+
+  <script>
+    // Apply theme before first paint to avoid the flash-of-light when
+    // the user's preference is dark. Mirrors the logic in useTheme().
+    (function () {
+      try {
+        var stored = localStorage.getItem("vendora-theme-preference");
+        var sysDark = window.matchMedia &&
+          window.matchMedia("(prefers-color-scheme: dark)").matches;
+        var resolved =
+          stored === "light" ? "light"
+          : stored === "dark" ? "dark"
+          : sysDark ? "dark" : "light";
+        if (resolved === "dark") {
+          document.documentElement.classList.add("dark");
+        }
+        document.documentElement.style.colorScheme = resolved;
+      } catch (e) { /* localStorage blocked — default to light */ }
+    })();
+  </script>
 </head>
   <body>
     <div id="root"></div>

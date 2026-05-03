@@ -12,6 +12,7 @@ import CheckEmailPage from "./pages/auth/CheckEmailPage";
 import ForgotPasswordPage from "./pages/auth/ForgotPasswordPage";
 import ResetPasswordPage from "./pages/auth/ResetPasswordPage";
 import { AuthProvider } from "./hooks/useAuth";
+import { ThemeProvider } from "./hooks/useTheme";
 import { RequireRole } from "./components/auth/RequireRole";
 import { CookieBanner } from "./components/CookieBanner";
 import { CommandPalette } from "./components/CommandPalette";
@@ -83,6 +84,7 @@ function RouteFallback() {
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
+    <ThemeProvider>
     <TooltipProvider>
       <Toaster />
       <Sonner />
@@ -160,6 +162,7 @@ const App = () => (
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
+    </ThemeProvider>
   </QueryClientProvider>
 );
 
