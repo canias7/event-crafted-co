@@ -11,6 +11,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/hooks/useAuth";
+import { NotificationBell } from "@/components/notifications/NotificationBell";
 
 const baseLinks = [
   { label: "Vendors", path: "/vendors" },
@@ -62,20 +63,22 @@ export function PublicNav() {
           ))}
         </div>
 
-        <div className="hidden md:flex items-center gap-3">
+        <div className="hidden md:flex items-center gap-1">
           {session && profile ? (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button className="flex items-center gap-2 text-sm font-medium text-background/85 hover:text-background transition-colors">
-                  <span className="w-7 h-7 rounded-full bg-accent text-accent-foreground flex items-center justify-center text-xs font-medium">
-                    {(profile.display_name ?? "U").charAt(0).toUpperCase()}
-                  </span>
-                  <span className="hidden lg:inline">
-                    {profile.display_name ?? "Account"}
-                  </span>
-                  <ChevronDown className="w-3.5 h-3.5" />
-                </button>
-              </DropdownMenuTrigger>
+            <>
+              <NotificationBell variant="dark" />
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button className="ml-2 flex items-center gap-2 text-sm font-medium text-background/85 hover:text-background transition-colors">
+                    <span className="w-7 h-7 rounded-full bg-accent text-accent-foreground flex items-center justify-center text-xs font-medium">
+                      {(profile.display_name ?? "U").charAt(0).toUpperCase()}
+                    </span>
+                    <span className="hidden lg:inline">
+                      {profile.display_name ?? "Account"}
+                    </span>
+                    <ChevronDown className="w-3.5 h-3.5" />
+                  </button>
+                </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
                 <DropdownMenuItem asChild>
                   <Link to={dashPath} className="cursor-pointer">
@@ -90,6 +93,7 @@ export function PublicNav() {
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
+            </>
           ) : (
             <>
               <Link to="/login">
