@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { vendors as sampleVendors } from "@/data/sampleData";
 
 export interface Vendor {
   id: string;
@@ -77,15 +76,8 @@ function normalizeDb(row: VendorProfileRow): Vendor {
   };
 }
 
-const sampleVendorsTagged: Vendor[] = sampleVendors.map((v) => ({
-  ...v,
-  isReal: false,
-}));
-
-// Live cache, hydrated from the DB. Starts as the sampleData fallback so the
-// directory has something to render immediately while the network request is
-// in flight (and gracefully covers offline/cert/cold-DB cases).
-let cache: Vendor[] = sampleVendorsTagged;
+// Live cache, hydrated from the DB. Starts empty — we only show real vendors.
+let cache: Vendor[] = [];
 let hydrated = false;
 let inFlight: Promise<Vendor[]> | null = null;
 
@@ -103,7 +95,7 @@ async function fetchVendors(): Promise<Vendor[]> {
           "id, business_name, category, bio, base_price_cents, location, service_radius_miles, portfolio_summary, verified_at, responder_tier, intro_video_url, slug",
         )
         .order("verified_at", { ascending: false, nullsFirst: false });
-      if (!error && data && data.length > 0) {
+      if (!error && data) {
         const vendors = (data as VendorProfileRow[]).map(normalizeDb);
 
         // Override startingPrice with the lowest active package price for
@@ -135,7 +127,7 @@ async function fetchVendors(): Promise<Vendor[]> {
         cache = vendors;
       }
     } catch {
-      // Keep sampleVendorsTagged fallback already in cache.
+      // Leave cache empty on failure; UI shows empty state.
     }
     hydrated = true;
     inFlight = null;
