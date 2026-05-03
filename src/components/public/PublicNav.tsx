@@ -1,6 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Menu, X, LogOut, LayoutDashboard, ChevronDown } from "lucide-react";
+import { Menu, X, LogOut, LayoutDashboard, ChevronDown, Settings } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -85,6 +85,12 @@ export function PublicNav() {
                   <Link to={dashPath} className="cursor-pointer">
                     <LayoutDashboard className="w-4 h-4 mr-2" />
                     {dashLabel}
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link to="/settings" className="cursor-pointer">
+                    <Settings className="w-4 h-4 mr-2" />
+                    Settings
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />

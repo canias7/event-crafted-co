@@ -20,7 +20,7 @@ export default function SignupPage() {
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
@@ -31,6 +31,12 @@ export default function SignupPage() {
     setLoading(false);
     if (error) {
       toast.error(error.message);
+      return;
+    }
+    // If Supabase has email confirmation enabled, signUp returns no session.
+    // Route to the check-email page instead of bouncing into a protected route.
+    if (!data.session) {
+      navigate(`/check-email?email=${encodeURIComponent(email)}`);
       return;
     }
     toast.success("Account created");

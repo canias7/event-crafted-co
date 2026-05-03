@@ -8,6 +8,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import LandingPage from "./pages/LandingPage";
 import LoginPage from "./pages/auth/LoginPage";
 import SignupPage from "./pages/auth/SignupPage";
+import CheckEmailPage from "./pages/auth/CheckEmailPage";
 import { AuthProvider } from "./hooks/useAuth";
 import { RequireRole } from "./components/auth/RequireRole";
 import { CookieBanner } from "./components/CookieBanner";
@@ -23,6 +24,7 @@ const InspirationPage = lazy(() => import("./pages/InspirationPage"));
 const InspirationDetailPage = lazy(() => import("./pages/InspirationDetailPage"));
 const PrivacyPage = lazy(() => import("./pages/PrivacyPage"));
 const TermsPage = lazy(() => import("./pages/TermsPage"));
+const SettingsPage = lazy(() => import("./pages/SettingsPage"));
 const VendorApplyPage = lazy(() => import("./pages/VendorApplyPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const ComingSoonPage = lazy(() => import("./pages/ComingSoonPage"));
@@ -78,6 +80,8 @@ const App = () => (
               <Route path="/vendor-apply" element={<VendorApplyPage />} />
               <Route path="/login" element={<LoginPage />} />
               <Route path="/signup" element={<SignupPage />} />
+              <Route path="/check-email" element={<CheckEmailPage />} />
+              <Route path="/settings" element={<RequireRole role={["host", "vendor", "admin"]}><SettingsPage /></RequireRole>} />
 
               {/* Customer */}
               <Route path="/customer/dashboard" element={<RequireRole role="host"><CustomerDashboard /></RequireRole>} />

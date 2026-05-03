@@ -12,6 +12,7 @@ import {
   Inbox,
   User,
   Clock,
+  Settings,
   type LucideIcon,
 } from "lucide-react";
 
@@ -32,6 +33,7 @@ export const customerNavItems: NavItem[] = [
   { label: "Tasks", path: "/customer/tasks", icon: ListTodo },
   { label: "Payments", path: "/customer/payments", icon: CreditCard },
   { label: "Favorites", path: "/customer/favorites", icon: Heart },
+  { label: "Settings", path: "/settings", icon: Settings },
 ];
 
 export const vendorNavItems: NavItem[] = [
@@ -42,4 +44,5 @@ export const vendorNavItems: NavItem[] = [
   { label: "Availability", path: "/vendor/availability", icon: Clock },
   { label: "Payments", path: "/vendor/payments", icon: CreditCard },
   { label: "Contract", path: "/vendor/contract", icon: FileText },
+  { label: "Settings", path: "/settings", icon: Settings },
 ];
