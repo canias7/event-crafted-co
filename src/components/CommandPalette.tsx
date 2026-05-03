@@ -81,6 +81,7 @@ const HOST_NAV: NavTarget[] = [
   { label: "Tasks", path: "/customer/tasks", icon: ListTodo },
   { label: "Payments", path: "/customer/payments", icon: CreditCard },
   { label: "Saved vendors", path: "/customer/favorites", icon: Heart },
+  { label: "Saved searches", path: "/customer/saved-searches", icon: Store },
   { label: "Mood boards", path: "/customer/moodboards", icon: Image },
 ];
 

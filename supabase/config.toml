@@ -18,3 +18,7 @@ verify_jwt = false
 # 24 hours into a single email. Schedule once a day, ideally morning.
 [functions.scan-daily-digests]
 verify_jwt = false
+
+# Saved-search matcher: in-app notifications only, called daily.
+[functions.scan-saved-search-matches]
+verify_jwt = false

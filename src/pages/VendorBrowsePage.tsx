@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Search, Store, X, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,7 @@ import { Footer } from "@/components/public/Footer";
 import { VendorCard } from "@/components/shared/VendorCard";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useVendors, type Vendor } from "@/hooks/useVendors";
+import { SaveSearchButton } from "@/components/savedSearches/SaveSearchButton";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { categoryConfig } from "@/pages/VendorCategoryPage";
@@ -35,8 +36,11 @@ const spring = { type: "spring" as const, duration: 0.6, bounce: 0 };
 export default function VendorBrowsePage() {
   const { vendors, loading } = useVendors();
   const { profile, activeEvent } = useAuth();
-  const [search, setSearch] = useState("");
-  const [category, setCategory] = useState("All");
+  const [searchParams] = useSearchParams();
+  const [search, setSearch] = useState(searchParams.get("q") ?? "");
+  const [category, setCategory] = useState(
+    searchParams.get("category") ?? "All",
+  );
   const [sort, setSort] = useState<keyof typeof sortOptions>("popular");
   const [dateFilter, setDateFilter] = useState<string>("");
   const [unavailableIds, setUnavailableIds] = useState<Set<string>>(new Set());
@@ -207,7 +211,7 @@ export default function VendorBrowsePage() {
             </Select>
           </div>
 
-          <div className="flex gap-2 mt-4 overflow-x-auto pb-1 -mx-2 px-2 scrollbar-hide">
+          <div className="flex items-center gap-2 mt-4 overflow-x-auto pb-1 -mx-2 px-2 scrollbar-hide">
             {categories.map((cat) => (
               <Button
                 key={cat}
@@ -223,6 +227,9 @@ export default function VendorBrowsePage() {
                 {cat}
               </Button>
             ))}
+            <span className="ml-auto shrink-0">
+              <SaveSearchButton filters={{ q: search, category }} />
+            </span>
           </div>
         </div>
       </section>

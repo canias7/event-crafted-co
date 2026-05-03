@@ -37,6 +37,7 @@ export const customerNavItems: NavItem[] = [
   { label: "Tasks", path: "/customer/tasks", icon: ListTodo },
   { label: "Payments", path: "/customer/payments", icon: CreditCard },
   { label: "Favorites", path: "/customer/favorites", icon: Heart },
+  { label: "Saved searches", path: "/customer/saved-searches", icon: Store },
   { label: "Mood Boards", path: "/customer/moodboards", icon: Image },
   { label: "Settings", path: "/settings", icon: Settings },
 ];
