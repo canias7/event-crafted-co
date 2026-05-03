@@ -44,6 +44,9 @@ const ChecklistPage = lazy(() => import("./pages/customer/ChecklistPage"));
 const TasksPage = lazy(() => import("./pages/customer/TasksPage"));
 const PaymentsPage = lazy(() => import("./pages/customer/PaymentsPage"));
 const InvitationBuilder = lazy(() => import("./pages/customer/InvitationBuilder"));
+const MoodBoardsPage = lazy(() => import("./pages/customer/MoodBoardsPage"));
+const MoodBoardDetailPage = lazy(() => import("./pages/customer/MoodBoardDetailPage"));
+const MoodBoardSharePage = lazy(() => import("./pages/MoodBoardSharePage"));
 
 const VendorDashboard = lazy(() => import("./pages/vendor/VendorDashboard"));
 const VendorProfilePage = lazy(() => import("./pages/vendor/VendorProfilePage"));
@@ -86,6 +89,7 @@ const App = () => (
               <Route path="/inspiration" element={<InspirationPage />} />
               <Route path="/inspiration/:slug" element={<InspirationDetailPage />} />
               <Route path="/rsvp/:token" element={<RsvpPage />} />
+              <Route path="/board/:token" element={<MoodBoardSharePage />} />
               <Route path="/privacy" element={<PrivacyPage />} />
               <Route path="/terms" element={<TermsPage />} />
               <Route path="/vendor-apply" element={<VendorApplyPage />} />
@@ -109,6 +113,8 @@ const App = () => (
               <Route path="/customer/tasks" element={<RequireRole role="host"><TasksPage /></RequireRole>} />
               <Route path="/customer/payments" element={<RequireRole role="host"><PaymentsPage /></RequireRole>} />
               <Route path="/customer/invitations" element={<RequireRole role="host"><InvitationBuilder /></RequireRole>} />
+              <Route path="/customer/moodboards" element={<RequireRole role="host"><MoodBoardsPage /></RequireRole>} />
+              <Route path="/customer/moodboards/:id" element={<RequireRole role="host"><MoodBoardDetailPage /></RequireRole>} />
 
               {/* Vendor */}
               <Route path="/vendor/dashboard" element={<RequireRole role="vendor"><VendorDashboard /></RequireRole>} />
