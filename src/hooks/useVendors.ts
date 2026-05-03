@@ -89,7 +89,35 @@ async function fetchVendors(): Promise<Vendor[]> {
         )
         .order("verified_at", { ascending: false, nullsFirst: false });
       if (!error && data && data.length > 0) {
-        cache = (data as VendorProfileRow[]).map(normalizeDb);
+        const vendors = (data as VendorProfileRow[]).map(normalizeDb);
+
+        // Override startingPrice with the lowest active package price for
+        // each vendor. Falls back to base_price_cents (already set above)
+        // when a vendor hasn't built out packages yet.
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { data: pkgs } = await (supabase as any)
+          .from("vendor_packages")
+          .select("vendor_id, price_cents")
+          .eq("is_active", true);
+        if (pkgs && pkgs.length > 0) {
+          const lowest: Record<string, number> = {};
+          for (const row of pkgs as Array<{
+            vendor_id: string;
+            price_cents: number;
+          }>) {
+            const existing = lowest[row.vendor_id];
+            if (existing == null || row.price_cents < existing) {
+              lowest[row.vendor_id] = row.price_cents;
+            }
+          }
+          for (const v of vendors) {
+            if (lowest[v.id] != null) {
+              v.startingPrice = Math.round(lowest[v.id] / 100);
+            }
+          }
+        }
+
+        cache = vendors;
       }
     } catch {
       // Keep sampleVendorsTagged fallback already in cache.

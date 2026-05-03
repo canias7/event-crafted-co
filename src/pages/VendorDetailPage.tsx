@@ -249,6 +249,38 @@ export default function VendorDetailPage() {
   const reviewsCount =
     realReviews.length > 0 ? realReviews.length : vendor?.reviews ?? 0;
 
+  // Pricing packages (active only, sorted by display_order then price).
+  interface VendorPackage {
+    id: string;
+    name: string;
+    description: string | null;
+    price_cents: number;
+    includes: string[];
+  }
+  const [packages, setPackages] = useState<VendorPackage[]>([]);
+  useEffect(() => {
+    if (!vendor || !vendor.isReal) {
+      setPackages([]);
+      return;
+    }
+    let cancelled = false;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (supabase as any)
+      .from("vendor_packages")
+      .select("id, name, description, price_cents, includes, display_order")
+      .eq("vendor_id", vendor.id)
+      .eq("is_active", true)
+      .order("display_order", { ascending: true })
+      .order("price_cents", { ascending: true })
+      .then(({ data }: { data: VendorPackage[] | null }) => {
+        if (cancelled) return;
+        setPackages(data ?? []);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [vendor]);
+
   // Set document.title per vendor for SEO + browser tabs.
   useEffect(() => {
     if (!vendor) return;
@@ -491,41 +523,94 @@ export default function VendorDetailPage() {
                 </div>
               </div>
 
-              {/* Packages */}
+              {/* Packages — real DB packages take priority; fall back to
+                  the sample tiers so demo vendors still show meaningful
+                  pricing UI. */}
               <div>
                 <p className="font-label text-accent mb-4">Packages</p>
-                <h2 className="font-display text-3xl mb-8">Three ways to work together</h2>
-                <div className="grid md:grid-cols-3 gap-4">
-                  {samplePackages.map((pkg) => (
-                    <div
-                      key={pkg.name}
-                      className={`relative rounded-sm p-6 border transition-colors ${
-                        pkg.featured
-                          ? "border-accent bg-accent/5"
-                          : "border-border bg-card"
-                      }`}
-                    >
-                      {pkg.featured && (
-                        <Badge className="absolute -top-2.5 left-6 bg-accent text-accent-foreground">
-                          Most popular
-                        </Badge>
-                      )}
-                      <p className="font-label text-muted-foreground mb-2">{pkg.name}</p>
-                      <p className="font-display text-2xl mb-3 tnum">{pkg.price}</p>
-                      <p className="text-sm text-muted-foreground mb-5 leading-relaxed">
-                        {pkg.description}
-                      </p>
-                      <ul className="space-y-2.5">
-                        {pkg.features.map((f) => (
-                          <li key={f} className="flex items-start gap-2 text-sm">
-                            <Check className="w-3.5 h-3.5 text-accent mt-0.5 flex-shrink-0" />
-                            <span className="text-foreground/85">{f}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  ))}
-                </div>
+                <h2 className="font-display text-3xl mb-8">
+                  {packages.length > 0
+                    ? packages.length === 1
+                      ? "Available package"
+                      : `${packages.length} ways to work together`
+                    : "Three ways to work together"}
+                </h2>
+                {packages.length > 0 ? (
+                  <div className={`grid gap-4 ${packages.length >= 3 ? "md:grid-cols-3" : packages.length === 2 ? "md:grid-cols-2" : "md:grid-cols-1 max-w-md"}`}>
+                    {packages.map((pkg, i) => {
+                      const featured = packages.length >= 2 && i === Math.floor(packages.length / 2);
+                      return (
+                        <div
+                          key={pkg.id}
+                          className={`relative rounded-sm p-6 border transition-colors ${
+                            featured
+                              ? "border-accent bg-accent/5"
+                              : "border-border bg-card"
+                          }`}
+                        >
+                          {featured && (
+                            <Badge className="absolute -top-2.5 left-6 bg-accent text-accent-foreground">
+                              Most popular
+                            </Badge>
+                          )}
+                          <p className="font-label text-muted-foreground mb-2">
+                            {pkg.name}
+                          </p>
+                          <p className="font-display text-2xl mb-3 tnum">
+                            ${(pkg.price_cents / 100).toLocaleString()}
+                          </p>
+                          {pkg.description && (
+                            <p className="text-sm text-muted-foreground mb-5 leading-relaxed">
+                              {pkg.description}
+                            </p>
+                          )}
+                          {pkg.includes.length > 0 && (
+                            <ul className="space-y-2.5">
+                              {pkg.includes.map((f, idx) => (
+                                <li key={idx} className="flex items-start gap-2 text-sm">
+                                  <Check className="w-3.5 h-3.5 text-accent mt-0.5 flex-shrink-0" />
+                                  <span className="text-foreground/85">{f}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="grid md:grid-cols-3 gap-4">
+                    {samplePackages.map((pkg) => (
+                      <div
+                        key={pkg.name}
+                        className={`relative rounded-sm p-6 border transition-colors ${
+                          pkg.featured
+                            ? "border-accent bg-accent/5"
+                            : "border-border bg-card"
+                        }`}
+                      >
+                        {pkg.featured && (
+                          <Badge className="absolute -top-2.5 left-6 bg-accent text-accent-foreground">
+                            Most popular
+                          </Badge>
+                        )}
+                        <p className="font-label text-muted-foreground mb-2">{pkg.name}</p>
+                        <p className="font-display text-2xl mb-3 tnum">{pkg.price}</p>
+                        <p className="text-sm text-muted-foreground mb-5 leading-relaxed">
+                          {pkg.description}
+                        </p>
+                        <ul className="space-y-2.5">
+                          {pkg.features.map((f) => (
+                            <li key={f} className="flex items-start gap-2 text-sm">
+                              <Check className="w-3.5 h-3.5 text-accent mt-0.5 flex-shrink-0" />
+                              <span className="text-foreground/85">{f}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {/* Portfolio */}

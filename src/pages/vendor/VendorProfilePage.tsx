@@ -7,6 +7,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { DashboardSidebar } from "@/components/shared/DashboardSidebar";
 import { MobileNav } from "@/components/shared/MobileNav";
 import { PortfolioUploader } from "@/components/vendor/PortfolioUploader";
+import { PackageManager } from "@/components/vendor/PackageManager";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -336,9 +337,14 @@ export default function VendorProfilePage() {
           )}
 
           {profile && (
-            <div className="mt-12 pt-10 border-t border-border">
-              <PortfolioUploader vendorId={profile.id} />
-            </div>
+            <>
+              <div className="mt-12 pt-10 border-t border-border">
+                <PackageManager vendorId={profile.id} canEdit={canEdit} />
+              </div>
+              <div className="mt-12 pt-10 border-t border-border">
+                <PortfolioUploader vendorId={profile.id} />
+              </div>
+            </>
           )}
         </div>
       </main>
