@@ -37,3 +37,13 @@ verify_jwt = true
 # Recomputes vendor responder_tier daily. Cron-only; no user input.
 [functions.scan-responder-tiers]
 verify_jwt = false
+
+# Inquiry decay: flips stale 'new'/'drafted' inquiries to 'expired'.
+# Cron-only; runs daily.
+[functions.scan-expired-inquiries]
+verify_jwt = false
+
+# Vendor onboarding nudge: emails vendors who haven't completed setup
+# after their grace period. Cron-only; runs daily.
+[functions.scan-vendor-onboarding-nudges]
+verify_jwt = false

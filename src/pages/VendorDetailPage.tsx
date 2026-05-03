@@ -152,7 +152,11 @@ export default function VendorDetailPage() {
   const saved = vendor ? isSaved(vendor.id) : false;
 
   // Real portfolio images (only if this is a DB-backed vendor).
-  const [realPortfolio, setRealPortfolio] = useState<string[]>([]);
+  interface RealPortfolioItem {
+    src: string;
+    caption: string | null;
+  }
+  const [realPortfolio, setRealPortfolio] = useState<RealPortfolioItem[]>([]);
   useEffect(() => {
     if (!vendor || !vendor.isReal) {
       setRealPortfolio([]);
@@ -162,7 +166,7 @@ export default function VendorDetailPage() {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (supabase as any)
       .from("vendor_portfolio_images")
-      .select("storage_path, display_order, created_at")
+      .select("storage_path, caption, display_order, created_at")
       .eq("vendor_id", vendor.id)
       .order("display_order", { ascending: true })
       .order("created_at", { ascending: true })
@@ -170,15 +174,16 @@ export default function VendorDetailPage() {
         ({
           data,
         }: {
-          data: Array<{ storage_path: string }> | null;
+          data: Array<{ storage_path: string; caption: string | null }> | null;
         }) => {
           if (cancelled) return;
           // Detail-page portfolio renders at most ~800px wide; request
           // transformed images at that size to save bandwidth.
-          const urls = (data ?? []).map((r) =>
-            vendorImageUrl(r.storage_path, { width: 1000 }),
-          );
-          setRealPortfolio(urls);
+          const items = (data ?? []).map((r) => ({
+            src: vendorImageUrl(r.storage_path, { width: 1000 }),
+            caption: r.caption,
+          }));
+          setRealPortfolio(items);
         },
       );
     return () => {
@@ -186,7 +191,12 @@ export default function VendorDetailPage() {
     };
   }, [vendor]);
 
-  const portfolioImages = realPortfolio.length > 0 ? realPortfolio : portfolioPool;
+  const portfolioItems: RealPortfolioItem[] =
+    realPortfolio.length > 0
+      ? realPortfolio
+      : portfolioPool.map((src) => ({ src, caption: null }));
+  // Backwards-compat: many call sites still expect a string[] of URLs.
+  const portfolioImages = portfolioItems.map((p) => p.src);
 
   // Track a profile view (real DB-backed vendors only). Fire-and-forget.
   useEffect(() => {
@@ -241,6 +251,43 @@ export default function VendorDetailPage() {
             : r.inquiry,
         }));
         setRealReviews(normalized);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [vendor]);
+
+  // Recommendations this vendor has curated.
+  interface RecRow {
+    id: string;
+    recommended_id: string;
+    note: string | null;
+    recommended: {
+      id: string;
+      business_name: string;
+      category: string;
+      location: string | null;
+    } | null;
+  }
+  const [recommendations, setRecommendations] = useState<RecRow[]>([]);
+  useEffect(() => {
+    if (!vendor || !vendor.isReal) {
+      setRecommendations([]);
+      return;
+    }
+    let cancelled = false;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (supabase as any)
+      .from("vendor_recommendations")
+      .select(
+        "id, recommended_id, note, recommended:vendor_profiles!vendor_recommendations_recommended_id_fkey(id, business_name, category, location)",
+      )
+      .eq("recommender_id", vendor.id)
+      .order("display_order", { ascending: true })
+      .order("created_at", { ascending: true })
+      .then(({ data }: { data: RecRow[] | null }) => {
+        if (cancelled) return;
+        setRecommendations(data ?? []);
       });
     return () => {
       cancelled = true;
@@ -649,10 +696,13 @@ export default function VendorDetailPage() {
                 <p className="font-label text-accent mb-4">Portfolio</p>
                 <h2 className="font-display text-3xl mb-8">Recent work</h2>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                  {portfolioImages.map((src, i) => (
+                  {portfolioItems.map((item, i) => {
+                    const altText =
+                      item.caption ?? `${vendor.name} portfolio ${i + 1}`;
+                    return (
                     <motion.button
                       type="button"
-                      key={`${src}-${i}`}
+                      key={`${item.src}-${i}`}
                       initial={{ opacity: 0, y: 16 }}
                       whileInView={{ opacity: 1, y: 0 }}
                       viewport={{ once: true }}
@@ -661,16 +711,17 @@ export default function VendorDetailPage() {
                       className={`group overflow-hidden rounded-sm bg-muted block ${
                         i === 0 ? "col-span-2 row-span-2 aspect-square md:aspect-[4/3]" : "aspect-square"
                       }`}
-                      aria-label={`Open portfolio image ${i + 1}`}
+                      aria-label={`Open ${altText}`}
                     >
                       <img
-                        src={src}
-                        alt={`${vendor.name} portfolio ${i + 1}`}
+                        src={item.src}
+                        alt={altText}
                         loading="lazy"
                         className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-700"
                       />
                     </motion.button>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
 
@@ -777,6 +828,40 @@ export default function VendorDetailPage() {
                       ))}
                 </div>
               </div>
+
+              {/* Vendors we love (from this vendor) */}
+              {recommendations.length > 0 && (
+                <div>
+                  <p className="font-label text-accent mb-4">Recommendations</p>
+                  <h2 className="font-display text-3xl mb-6">
+                    Vendors {vendor.name} loves
+                  </h2>
+                  <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {recommendations.map((r) => (
+                      <Link
+                        key={r.id}
+                        to={`/vendors/${r.recommended_id}`}
+                        className="group block rounded-sm border border-border bg-card p-4 hover:border-foreground/30 transition-colors"
+                      >
+                        <p className="font-display text-base group-hover:text-accent transition-colors">
+                          {r.recommended?.business_name ?? "Vendor"}
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          {r.recommended?.category}
+                          {r.recommended?.location
+                            ? ` · ${r.recommended.location}`
+                            : ""}
+                        </p>
+                        {r.note && (
+                          <p className="text-xs text-foreground/75 leading-relaxed mt-3 italic line-clamp-3">
+                            "{r.note}"
+                          </p>
+                        )}
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {/* FAQ */}
               <div>
@@ -953,9 +1038,10 @@ export default function VendorDetailPage() {
       />
 
       <Lightbox
-        images={portfolioImages.map((src, i) => ({
-          src,
-          alt: `${vendor.name} portfolio ${i + 1}`,
+        images={portfolioItems.map((item, i) => ({
+          src: item.src,
+          alt: item.caption ?? `${vendor.name} portfolio ${i + 1}`,
+          caption: item.caption,
         }))}
         index={lightboxIndex}
         onClose={() => setLightboxIndex(null)}

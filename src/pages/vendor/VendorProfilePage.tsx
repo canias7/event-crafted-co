@@ -8,6 +8,7 @@ import { DashboardSidebar } from "@/components/shared/DashboardSidebar";
 import { MobileNav } from "@/components/shared/MobileNav";
 import { PortfolioUploader } from "@/components/vendor/PortfolioUploader";
 import { PackageManager } from "@/components/vendor/PackageManager";
+import { VendorRecommendationManager } from "@/components/vendor/VendorRecommendationManager";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -377,6 +378,12 @@ export default function VendorProfilePage() {
               </div>
               <div className="mt-12 pt-10 border-t border-border">
                 <PortfolioUploader vendorId={profile.id} />
+              </div>
+              <div className="mt-12 pt-10 border-t border-border">
+                <VendorRecommendationManager
+                  vendorId={profile.id}
+                  canEdit={canEdit}
+                />
               </div>
             </>
           )}

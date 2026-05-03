@@ -33,6 +33,18 @@ interface InquiryStats {
   booked: number;
 }
 
+interface DashboardWidgets {
+  guestsTotal: number;
+  guestsAttending: number;
+  guestsResponded: number;
+  budgetSpent: number;
+  budgetTotal: number;
+  checklistDone: number;
+  checklistTotal: number;
+  tasksOpen: number;
+  tasksOverdue: number;
+}
+
 function fmtMoney(c: number | null) {
   return c == null ? "—" : `$${(c / 100).toLocaleString()}`;
 }
@@ -44,6 +56,17 @@ export default function CustomerDashboard() {
     awaiting: 0,
     replied: 0,
     booked: 0,
+  });
+  const [widgets, setWidgets] = useState<DashboardWidgets>({
+    guestsTotal: 0,
+    guestsAttending: 0,
+    guestsResponded: 0,
+    budgetSpent: 0,
+    budgetTotal: 0,
+    checklistDone: 0,
+    checklistTotal: 0,
+    tasksOpen: 0,
+    tasksOverdue: 0,
   });
 
   const showOnboardingBanner = profile?.role === "host" && !profile.onboarded_at;
@@ -63,22 +86,88 @@ export default function CustomerDashboard() {
   useEffect(() => {
     if (!user) return;
     let cancelled = false;
-    supabase
-      .from("inquiries")
-      .select("status")
-      .eq("host_id", user.id)
-      .then(({ data }) => {
-        if (cancelled) return;
-        const rows = data ?? [];
-        setStats({
-          total: rows.length,
-          awaiting: rows.filter(
-            (r) => r.status === "new" || r.status === "drafted",
-          ).length,
-          replied: rows.filter((r) => r.status === "replied").length,
-          booked: rows.filter((r) => r.status === "won").length,
-        });
+    (async () => {
+      // Inquiries
+      const { data: inqData } = await supabase
+        .from("inquiries")
+        .select("status")
+        .eq("host_id", user.id);
+      if (cancelled) return;
+      const rows = inqData ?? [];
+      setStats({
+        total: rows.length,
+        awaiting: rows.filter(
+          (r) => r.status === "new" || r.status === "drafted",
+        ).length,
+        replied: rows.filter((r) => r.status === "replied").length,
+        booked: rows.filter((r) => r.status === "won").length,
       });
+
+      // Widgets — single batch of host-scoped queries.
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const sb = supabase as any;
+      const today = new Date().toISOString().slice(0, 10);
+      const [guests, budget, checklist, tasks] = await Promise.all([
+        sb
+          .from("event_guests")
+          .select("rsvp_status")
+          .eq("host_id", user.id),
+        sb
+          .from("budget_items")
+          .select("estimated_cents, actual_cents, paid")
+          .eq("host_id", user.id),
+        sb
+          .from("checklist_items")
+          .select("completed")
+          .eq("host_id", user.id),
+        sb
+          .from("event_tasks")
+          .select("status, due_date")
+          .eq("host_id", user.id),
+      ]);
+      if (cancelled) return;
+
+      const guestRows = (guests.data ?? []) as Array<{
+        rsvp_status: string | null;
+      }>;
+      const budgetRows = (budget.data ?? []) as Array<{
+        estimated_cents: number | null;
+        actual_cents: number | null;
+        paid: boolean | null;
+      }>;
+      const checklistRows = (checklist.data ?? []) as Array<{
+        completed: boolean;
+      }>;
+      const taskRows = (tasks.data ?? []) as Array<{
+        status: string | null;
+        due_date: string | null;
+      }>;
+
+      setWidgets({
+        guestsTotal: guestRows.length,
+        guestsAttending: guestRows.filter((g) => g.rsvp_status === "attending")
+          .length,
+        guestsResponded: guestRows.filter((g) => g.rsvp_status != null).length,
+        budgetSpent: budgetRows.reduce(
+          (s, r) =>
+            s + (r.paid ? (r.actual_cents ?? r.estimated_cents ?? 0) : 0),
+          0,
+        ),
+        budgetTotal: budgetRows.reduce(
+          (s, r) => s + (r.actual_cents ?? r.estimated_cents ?? 0),
+          0,
+        ),
+        checklistDone: checklistRows.filter((c) => c.completed).length,
+        checklistTotal: checklistRows.length,
+        tasksOpen: taskRows.filter((t) => t.status !== "completed").length,
+        tasksOverdue: taskRows.filter(
+          (t) =>
+            t.status !== "completed" &&
+            t.due_date != null &&
+            t.due_date < today,
+        ).length,
+      });
+    })();
     return () => {
       cancelled = true;
     };
@@ -155,7 +244,7 @@ export default function CustomerDashboard() {
             </div>
           )}
 
-          {/* Stats */}
+          {/* Stats — top row tracks the planning at-a-glance */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             <StatCard
               label="Days until event"
@@ -164,13 +253,107 @@ export default function CustomerDashboard() {
               accent
             />
             <StatCard
-              label="Total inquiries"
+              label="Inquiries"
               value={stats.total}
               icon={MessageSquare}
             />
             <StatCard label="Awaiting reply" value={stats.awaiting} icon={Clock} />
             <StatCard label="Booked" value={stats.booked} icon={Store} />
           </div>
+
+          {/* Live planning widgets — guest RSVP, budget, checklist, tasks */}
+          {(widgets.guestsTotal > 0 ||
+            widgets.checklistTotal > 0 ||
+            widgets.budgetTotal > 0 ||
+            widgets.tasksOpen > 0) && (
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              {widgets.guestsTotal > 0 && (
+                <Link
+                  to="/customer/guests"
+                  className="block bg-card rounded-2xl p-5 card-shadow hover:bg-secondary/30 transition-colors"
+                >
+                  <div className="flex items-center gap-2 text-muted-foreground mb-3">
+                    <Mail className="w-3.5 h-3.5" />
+                    <p className="font-label text-xs">Guests</p>
+                  </div>
+                  <p className="font-display text-2xl tnum mb-1">
+                    {widgets.guestsResponded}
+                    <span className="text-base text-muted-foreground font-light">
+                      {" "}
+                      / {widgets.guestsTotal}
+                    </span>
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {widgets.guestsAttending} attending
+                  </p>
+                </Link>
+              )}
+              {widgets.budgetTotal > 0 && (
+                <Link
+                  to="/customer/payments"
+                  className="block bg-card rounded-2xl p-5 card-shadow hover:bg-secondary/30 transition-colors"
+                >
+                  <div className="flex items-center gap-2 text-muted-foreground mb-3">
+                    <CreditCard className="w-3.5 h-3.5" />
+                    <p className="font-label text-xs">Spent</p>
+                  </div>
+                  <p className="font-display text-2xl tnum mb-1">
+                    ${Math.round(widgets.budgetSpent / 100).toLocaleString()}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    of $
+                    {Math.round(widgets.budgetTotal / 100).toLocaleString()}{" "}
+                    planned
+                  </p>
+                </Link>
+              )}
+              {widgets.checklistTotal > 0 && (
+                <Link
+                  to="/customer/checklist"
+                  className="block bg-card rounded-2xl p-5 card-shadow hover:bg-secondary/30 transition-colors"
+                >
+                  <div className="flex items-center gap-2 text-muted-foreground mb-3">
+                    <CheckSquare className="w-3.5 h-3.5" />
+                    <p className="font-label text-xs">Checklist</p>
+                  </div>
+                  <p className="font-display text-2xl tnum mb-1">
+                    {Math.round(
+                      (widgets.checklistDone / widgets.checklistTotal) * 100,
+                    )}
+                    %
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {widgets.checklistDone}/{widgets.checklistTotal} done
+                  </p>
+                </Link>
+              )}
+              {widgets.tasksOpen > 0 && (
+                <Link
+                  to="/customer/tasks"
+                  className="block bg-card rounded-2xl p-5 card-shadow hover:bg-secondary/30 transition-colors"
+                >
+                  <div className="flex items-center gap-2 text-muted-foreground mb-3">
+                    <ListTodo className="w-3.5 h-3.5" />
+                    <p className="font-label text-xs">Open tasks</p>
+                  </div>
+                  <p className="font-display text-2xl tnum mb-1">
+                    {widgets.tasksOpen}
+                  </p>
+                  <p
+                    className={`text-xs ${
+                      widgets.tasksOverdue > 0
+                        ? "text-destructive"
+                        : "text-muted-foreground"
+                    }`}
+                  >
+                    {widgets.tasksOverdue > 0
+                      ? `${widgets.tasksOverdue} overdue`
+                      : "On track"}
+                  </p>
+                </Link>
+              )}
+            </div>
+          )}
 
           {/* Quick actions */}
           <div className="bg-card rounded-2xl p-5 card-shadow">

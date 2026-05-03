@@ -211,31 +211,93 @@ export function PortfolioUploader({ vendorId }: Props) {
           {images.map((img) => (
             <div
               key={img.id}
-              className="relative group aspect-square overflow-hidden rounded-sm bg-muted"
+              className="space-y-2"
             >
-              <img
-                src={thumbnailUrl(img.storage_path)}
-                alt={img.caption ?? "Portfolio image"}
-                className="w-full h-full object-cover"
-                loading="lazy"
-              />
-              <button
-                type="button"
-                onClick={() => deleteImage(img)}
-                disabled={deletingId === img.id}
-                className="absolute top-2 right-2 w-7 h-7 rounded-full bg-foreground/85 text-background flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity backdrop-blur-sm disabled:opacity-100"
-                aria-label="Delete image"
-              >
-                {deletingId === img.id ? (
-                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                ) : (
-                  <X className="w-3.5 h-3.5" />
-                )}
-              </button>
+              <div className="relative group aspect-square overflow-hidden rounded-sm bg-muted">
+                <img
+                  src={thumbnailUrl(img.storage_path)}
+                  alt={img.caption ?? "Portfolio image"}
+                  className="w-full h-full object-cover"
+                  loading="lazy"
+                />
+                <button
+                  type="button"
+                  onClick={() => deleteImage(img)}
+                  disabled={deletingId === img.id}
+                  className="absolute top-2 right-2 w-7 h-7 rounded-full bg-foreground/85 text-background flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity backdrop-blur-sm disabled:opacity-100"
+                  aria-label="Delete image"
+                >
+                  {deletingId === img.id ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <X className="w-3.5 h-3.5" />
+                  )}
+                </button>
+              </div>
+              <CaptionField img={img} onSaved={load} />
             </div>
           ))}
         </div>
       )}
     </div>
+  );
+}
+
+function CaptionField({
+  img,
+  onSaved,
+}: {
+  img: PortfolioImage;
+  onSaved: () => void;
+}) {
+  const [value, setValue] = useState(img.caption ?? "");
+  const [saving, setSaving] = useState(false);
+  const [dirty, setDirty] = useState(false);
+
+  useEffect(() => {
+    setValue(img.caption ?? "");
+    setDirty(false);
+  }, [img.caption]);
+
+  async function save() {
+    const next = value.trim() || null;
+    if ((img.caption ?? null) === next) {
+      setDirty(false);
+      return;
+    }
+    setSaving(true);
+    const { error } = await portfolioTable()
+      .update({ caption: next })
+      .eq("id", img.id);
+    setSaving(false);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    setDirty(false);
+    onSaved();
+  }
+
+  return (
+    <input
+      type="text"
+      value={value}
+      onChange={(e) => {
+        setValue(e.target.value);
+        setDirty(true);
+      }}
+      onBlur={save}
+      onKeyDown={(e) => {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          (e.target as HTMLInputElement).blur();
+        }
+      }}
+      placeholder="Alt text / caption (a11y + SEO)"
+      disabled={saving}
+      className={`w-full text-xs px-2.5 py-1.5 rounded-sm bg-secondary/50 border ${
+        dirty ? "border-accent/40" : "border-transparent"
+      } focus:border-foreground/40 focus:outline-none transition-colors`}
+    />
   );
 }
