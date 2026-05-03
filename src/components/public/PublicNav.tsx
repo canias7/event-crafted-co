@@ -74,9 +74,6 @@ export function PublicNav() {
             </Link>
           ))}
           <div className="flex gap-3 pt-3">
-            <Link to="/login" className="flex-1">
-              <Button variant="outline" className="w-full" size="sm">Log in</Button>
-            </Link>
             <Link to="/customer/dashboard" className="flex-1">
               <Button className="w-full" size="sm">Start Planning</Button>
             </Link>
