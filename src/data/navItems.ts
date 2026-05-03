@@ -46,3 +46,11 @@ export const vendorNavItems: NavItem[] = [
   { label: "Contract", path: "/vendor/contract", icon: FileText },
   { label: "Settings", path: "/settings", icon: Settings },
 ];
+
+export const adminNavItems: NavItem[] = [
+  { label: "Overview", path: "/admin/dashboard", icon: LayoutDashboard },
+  { label: "Vendors", path: "/admin/vendors", icon: Store },
+  { label: "Inquiries", path: "/admin/inquiries", icon: MessageSquare },
+  { label: "Reviews", path: "/admin/reviews", icon: CheckSquare },
+  { label: "Settings", path: "/settings", icon: Settings },
+];
