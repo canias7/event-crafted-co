@@ -89,7 +89,7 @@ export default function LandingPage() {
       className="min-h-screen relative"
       style={{
         background:
-          "linear-gradient(to bottom, hsl(var(--foreground)) 0%, hsl(220 12% 18%) 25%, hsl(220 10% 32%) 42%, hsl(30 14% 58%) 58%, hsl(33 20% 80%) 72%, hsl(36 26% 92%) 86%, hsl(var(--background)) 100%)",
+          "linear-gradient(to bottom, hsl(var(--foreground)) 0%, hsl(220 12% 18%) 18%, hsl(220 10% 35%) 30%, hsl(33 20% 78%) 45%, hsl(var(--background)) 55%, hsl(36 26% 90%) 70%, hsl(220 10% 30%) 85%, hsl(var(--foreground)) 100%)",
       }}
     >
       <PublicNav />
