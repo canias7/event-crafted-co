@@ -199,9 +199,16 @@ export type Database = {
       profiles: {
         Row: {
           avatar_url: string | null
+          budget_max_cents: number | null
+          budget_min_cents: number | null
           created_at: string
           display_name: string | null
+          event_date: string | null
+          event_location: string | null
+          event_notes: string | null
+          event_type: string | null
           id: string
+          onboarded_at: string | null
           phone: string | null
           phone_verified_at: string | null
           preferred_language: string
@@ -210,9 +217,16 @@ export type Database = {
         }
         Insert: {
           avatar_url?: string | null
+          budget_max_cents?: number | null
+          budget_min_cents?: number | null
           created_at?: string
           display_name?: string | null
+          event_date?: string | null
+          event_location?: string | null
+          event_notes?: string | null
+          event_type?: string | null
           id: string
+          onboarded_at?: string | null
           phone?: string | null
           phone_verified_at?: string | null
           preferred_language?: string
@@ -221,9 +235,16 @@ export type Database = {
         }
         Update: {
           avatar_url?: string | null
+          budget_max_cents?: number | null
+          budget_min_cents?: number | null
           created_at?: string
           display_name?: string | null
+          event_date?: string | null
+          event_location?: string | null
+          event_notes?: string | null
+          event_type?: string | null
           id?: string
+          onboarded_at?: string | null
           phone?: string | null
           phone_verified_at?: string | null
           preferred_language?: string
@@ -231,6 +252,39 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      saved_vendors: {
+        Row: {
+          created_at: string
+          host_id: string
+          vendor_id: string
+        }
+        Insert: {
+          created_at?: string
+          host_id: string
+          vendor_id: string
+        }
+        Update: {
+          created_at?: string
+          host_id?: string
+          vendor_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "saved_vendors_host_id_fkey"
+            columns: ["host_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "saved_vendors_vendor_id_fkey"
+            columns: ["vendor_id"]
+            isOneToOne: false
+            referencedRelation: "vendor_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       vendor_profiles: {
         Row: {
