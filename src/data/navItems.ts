@@ -15,6 +15,7 @@ import {
   Users,
   Clock,
   Settings,
+  TrendingUp,
   type LucideIcon,
 } from "lucide-react";
 
@@ -43,6 +44,7 @@ export const customerNavItems: NavItem[] = [
 export const vendorNavItems: NavItem[] = [
   { label: "Dashboard", path: "/vendor/dashboard", icon: LayoutDashboard },
   { label: "Inbox", path: "/vendor/inbox", icon: Inbox },
+  { label: "Analytics", path: "/vendor/analytics", icon: TrendingUp },
   { label: "Templates", path: "/vendor/templates", icon: FileText },
   { label: "Profile", path: "/vendor/profile", icon: User },
   { label: "Team", path: "/vendor/team", icon: Users },
