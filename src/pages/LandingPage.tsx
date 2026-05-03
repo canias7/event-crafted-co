@@ -251,7 +251,7 @@ export default function LandingPage() {
                 <div className="flex items-center gap-2">
                   {heroSlides.map((s, i) => (
                     <button
-                      key={s.src}
+                      key={s.label}
                       onClick={() => setSlideIndex(i)}
                       aria-label={`Show ${s.label}`}
                       className={`h-px transition-all duration-500 ${
