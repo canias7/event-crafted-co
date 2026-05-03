@@ -38,6 +38,8 @@ const InquiriesPage = lazy(() => import("./pages/customer/InquiriesPage"));
 const HostInquiryDetailPage = lazy(() => import("./pages/customer/HostInquiryDetailPage"));
 const FavoritesPage = lazy(() => import("./pages/customer/FavoritesPage"));
 const EventDetailsPage = lazy(() => import("./pages/customer/EventDetailsPage"));
+const GuestsPage = lazy(() => import("./pages/customer/GuestsPage"));
+const RsvpPage = lazy(() => import("./pages/RsvpPage"));
 const ChecklistPage = lazy(() => import("./pages/customer/ChecklistPage"));
 const TasksPage = lazy(() => import("./pages/customer/TasksPage"));
 const PaymentsPage = lazy(() => import("./pages/customer/PaymentsPage"));
@@ -80,6 +82,7 @@ const App = () => (
               <Route path="/vendors/:id" element={<VendorDetailPage />} />
               <Route path="/inspiration" element={<InspirationPage />} />
               <Route path="/inspiration/:slug" element={<InspirationDetailPage />} />
+              <Route path="/rsvp/:token" element={<RsvpPage />} />
               <Route path="/privacy" element={<PrivacyPage />} />
               <Route path="/terms" element={<TermsPage />} />
               <Route path="/vendor-apply" element={<VendorApplyPage />} />
@@ -96,6 +99,7 @@ const App = () => (
               <Route path="/customer/inquiries" element={<RequireRole role="host"><InquiriesPage /></RequireRole>} />
               <Route path="/customer/inquiries/:inquiryId" element={<RequireRole role="host"><HostInquiryDetailPage /></RequireRole>} />
               <Route path="/customer/event" element={<RequireRole role="host"><EventDetailsPage /></RequireRole>} />
+              <Route path="/customer/guests" element={<RequireRole role="host"><GuestsPage /></RequireRole>} />
               <Route path="/customer/appointments" element={<RequireRole role="host"><ComingSoonPage side="customer" description="Schedule and manage vendor consultations, tastings, and walkthroughs in one place." /></RequireRole>} />
               <Route path="/customer/favorites" element={<RequireRole role="host"><FavoritesPage /></RequireRole>} />
               <Route path="/customer/checklist" element={<RequireRole role="host"><ChecklistPage /></RequireRole>} />

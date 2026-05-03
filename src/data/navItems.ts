@@ -26,6 +26,7 @@ export const customerNavItems: NavItem[] = [
   { label: "Dashboard", path: "/customer/dashboard", icon: LayoutDashboard },
   { label: "Vendors", path: "/vendors", icon: Store },
   { label: "Inquiries", path: "/customer/inquiries", icon: MessageSquare },
+  { label: "Guests", path: "/customer/guests", icon: User },
   { label: "Appointments", path: "/customer/appointments", icon: CalendarDays },
   { label: "Event Details", path: "/customer/event", icon: FileText },
   { label: "Invitations", path: "/customer/invitations", icon: Mail },
