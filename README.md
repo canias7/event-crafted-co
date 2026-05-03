@@ -4,6 +4,31 @@
 
 **URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
 
+## Local backend dev (Supabase)
+
+Migrations live in `supabase/migrations/` and seed data in `supabase/seed.sql`.
+
+```sh
+# Start the local Supabase stack
+supabase start
+
+# Apply migrations + run seed.sql against a fresh local DB
+supabase db reset
+```
+
+`seed.sql` expects a small set of test auth users (see comments at the top of
+the file). Create them via Supabase Studio (http://localhost:54323) under
+Authentication → Users, or with `supabase auth admin create-user`, then re-run
+`supabase db reset` to apply the seed against real user IDs. Suggested users:
+
+| Email                 | Role   |
+|-----------------------|--------|
+| admin@vendora.test    | admin  |
+| sofia@vendora.test    | vendor |
+| marcus@vendora.test   | vendor |
+| alice@vendora.test    | host   |
+| ben@vendora.test      | host   |
+
 ## How can I edit this code?
 
 There are several ways of editing your application.
