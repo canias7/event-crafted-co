@@ -89,7 +89,7 @@ export default function LandingPage() {
       className="min-h-screen relative"
       style={{
         background:
-          "linear-gradient(to bottom, hsl(var(--foreground)) 0%, hsl(220 12% 18%) 18%, hsl(220 10% 35%) 30%, hsl(33 20% 78%) 45%, hsl(var(--background)) 55%, hsl(36 26% 90%) 70%, hsl(220 10% 30%) 85%, hsl(var(--foreground)) 100%)",
+          "linear-gradient(to bottom, hsl(var(--foreground)) 0%, hsl(var(--foreground)) 35%, hsl(36 22% 80%) 60%, hsl(var(--background)) 85%, hsl(var(--background)) 100%)",
       }}
     >
       <PublicNav />
@@ -320,16 +320,13 @@ export default function LandingPage() {
               </div>
             </div>
             <div className="relative">
-              <div className="aspect-[4/5] rounded-sm overflow-hidden relative">
+              <div className="aspect-[4/5] rounded-sm overflow-hidden">
                 <img
                   src={featureFlorals}
                   alt="Floral arrangement"
                   loading="lazy"
                   className="w-full h-full object-cover"
                 />
-                {/* Shade to blend with page gradient (dark band) */}
-                <div className="absolute inset-0 bg-gradient-to-b from-foreground/40 via-foreground/15 to-background/30 mix-blend-multiply pointer-events-none" />
-                <div className="absolute inset-0 bg-gradient-to-t from-background/25 to-transparent pointer-events-none" />
               </div>
             </div>
           </div>
@@ -361,15 +358,13 @@ export default function LandingPage() {
               </div>
             </div>
             <div className="md:order-1 relative">
-              <div className="aspect-[4/5] rounded-sm overflow-hidden relative">
+              <div className="aspect-[4/5] rounded-sm overflow-hidden">
                 <img
                   src={featureVenue}
                   alt="Luxury venue"
                   loading="lazy"
                   className="w-full h-full object-cover"
                 />
-                {/* Shade to blend with page gradient (light band) */}
-                <div className="absolute inset-0 bg-gradient-to-b from-background/30 via-transparent to-foreground/30 mix-blend-multiply pointer-events-none" />
               </div>
             </div>
           </div>
@@ -377,7 +372,7 @@ export default function LandingPage() {
       </section>
 
       {/* Stats / quiet trust band */}
-      <section className="py-20 relative">
+      <section className="py-20 border-y border-border/40 backdrop-blur-sm bg-background/30">
         <div className="container mx-auto px-6 md:px-8">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-10 text-center">
             {[
