@@ -78,7 +78,8 @@ function fmtMoney(c: number | null) {
 }
 
 export default function VendorDashboard() {
-  const { user, profile } = useAuth();
+  const { user, profile, vendorMemberships } = useAuth();
+  const membershipVendorId = vendorMemberships[0]?.vendor_id ?? null;
   const [vendorProfile, setVendorProfile] = useState<VendorProfile | null>(null);
   const [stats, setStats] = useState({
     newRequests: 0,
@@ -96,6 +97,11 @@ export default function VendorDashboard() {
 
   useEffect(() => {
     if (!user) return;
+    if (!membershipVendorId) {
+      setVendorProfile(null);
+      setLoading(false);
+      return;
+    }
     let cancelled = false;
     (async () => {
       setLoading(true);
@@ -105,7 +111,7 @@ export default function VendorDashboard() {
         .select(
           "id, business_name, category, bio, base_price_cents, location, service_radius_miles, portfolio_summary, verified_at",
         )
-        .eq("user_id", user.id)
+        .eq("id", membershipVendorId)
         .maybeSingle();
 
       if (cancelled) return;
@@ -168,7 +174,8 @@ export default function VendorDashboard() {
     return () => {
       cancelled = true;
     };
-  }, [user]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, membershipVendorId]);
 
   const completeness = vendorProfile
     ? Math.round(

@@ -52,8 +52,10 @@ const VendorDashboard = lazy(() => import("./pages/vendor/VendorDashboard"));
 const VendorProfilePage = lazy(() => import("./pages/vendor/VendorProfilePage"));
 const VendorTemplatesPage = lazy(() => import("./pages/vendor/VendorTemplatesPage"));
 const VendorInboxPage = lazy(() => import("./pages/vendor/VendorInboxPage"));
+const VendorTeamPage = lazy(() => import("./pages/vendor/VendorTeamPage"));
 const InquiryDetailPage = lazy(() => import("./pages/vendor/InquiryDetailPage"));
 const AvailabilityPage = lazy(() => import("./pages/vendor/AvailabilityPage"));
+const AcceptTeamInvitePage = lazy(() => import("./pages/AcceptTeamInvitePage"));
 
 const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard"));
 const AdminVendorsPage = lazy(() => import("./pages/admin/AdminVendorsPage"));
@@ -90,6 +92,7 @@ const App = () => (
               <Route path="/inspiration/:slug" element={<InspirationDetailPage />} />
               <Route path="/rsvp/:token" element={<RsvpPage />} />
               <Route path="/board/:token" element={<MoodBoardSharePage />} />
+              <Route path="/accept-team-invite/:token" element={<AcceptTeamInvitePage />} />
               <Route path="/privacy" element={<PrivacyPage />} />
               <Route path="/terms" element={<TermsPage />} />
               <Route path="/vendor-apply" element={<VendorApplyPage />} />
@@ -121,6 +124,7 @@ const App = () => (
               <Route path="/vendor/profile" element={<RequireRole role="vendor"><VendorProfilePage /></RequireRole>} />
               <Route path="/vendor/templates" element={<RequireRole role="vendor"><VendorTemplatesPage /></RequireRole>} />
               <Route path="/vendor/inbox" element={<RequireRole role="vendor"><VendorInboxPage /></RequireRole>} />
+              <Route path="/vendor/team" element={<RequireRole role="vendor"><VendorTeamPage /></RequireRole>} />
               <Route path="/vendor/appointments" element={<RequireRole role="vendor"><ComingSoonPage side="vendor" description="Calendar bookings, tasting / walkthrough requests, and confirmed event dates in one place." /></RequireRole>} />
               <Route path="/vendor/availability" element={<RequireRole role="vendor"><AvailabilityPage /></RequireRole>} />
               <Route path="/vendor/payments" element={<RequireRole role="vendor"><ComingSoonPage side="vendor" description="Connect a Stripe account, see payouts, and track the 3% commission on confirmed bookings." /></RequireRole>} />

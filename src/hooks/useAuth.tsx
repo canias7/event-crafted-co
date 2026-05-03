@@ -33,11 +33,17 @@ interface Profile {
   event_notes: string | null;
 }
 
+export interface VendorMembership {
+  vendor_id: string;
+  role: "owner" | "admin" | "member";
+}
+
 interface AuthCtx {
   session: Session | null;
   user: User | null;
   profile: Profile | null;
   activeEvent: ActiveEvent | null;
+  vendorMemberships: VendorMembership[];
   loading: boolean;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
@@ -48,6 +54,7 @@ const Ctx = createContext<AuthCtx>({
   user: null,
   profile: null,
   activeEvent: null,
+  vendorMemberships: [],
   loading: true,
   signOut: async () => {},
   refreshProfile: async () => {},
@@ -57,6 +64,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [activeEvent, setActiveEvent] = useState<ActiveEvent | null>(null);
+  const [vendorMemberships, setVendorMemberships] = useState<VendorMembership[]>(
+    [],
+  );
   const [loading, setLoading] = useState(true);
 
   const loadProfile = useCallback(async (userId: string) => {
@@ -70,6 +80,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!data) {
       setProfile(null);
       setActiveEvent(null);
+      setVendorMemberships([]);
       return;
     }
     const p = data as unknown as Profile;
@@ -88,6 +99,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } else {
       setActiveEvent(null);
     }
+
+    // Vendor team memberships — drives vendor portal access for non-owner
+    // staff. Empty for hosts, populated for vendor owners (auto-backfilled
+    // by trigger) and invited team members.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: memberRows } = await (supabase as any)
+      .from("vendor_team_members")
+      .select("vendor_id, role")
+      .eq("user_id", userId);
+    setVendorMemberships(
+      (memberRows as VendorMembership[] | null) ?? [],
+    );
   }, []);
 
   useEffect(() => {
@@ -98,6 +121,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } else {
         setProfile(null);
         setActiveEvent(null);
+        setVendorMemberships([]);
       }
     });
     supabase.auth.getSession().then(({ data }) => {
@@ -119,6 +143,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await supabase.auth.signOut();
     setProfile(null);
     setActiveEvent(null);
+    setVendorMemberships([]);
     setSession(null);
   }
 
@@ -129,6 +154,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         user: session?.user ?? null,
         profile,
         activeEvent,
+        vendorMemberships,
         loading,
         signOut,
         refreshProfile,

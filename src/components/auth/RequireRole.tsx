@@ -3,7 +3,7 @@ import { Navigate, useLocation } from "react-router-dom";
 import { AppRole, useAuth } from "@/hooks/useAuth";
 
 export function RequireRole({ role, children }: { role: AppRole | AppRole[]; children: ReactNode }) {
-  const { session, profile, loading } = useAuth();
+  const { session, profile, vendorMemberships, loading } = useAuth();
   const location = useLocation();
 
   if (loading) {
@@ -19,7 +19,13 @@ export function RequireRole({ role, children }: { role: AppRole | AppRole[]; chi
   }
 
   const allowed = Array.isArray(role) ? role : [role];
-  if (!profile || !allowed.includes(profile.role)) {
+  // Vendor team members access vendor portal even if profile.role isn't
+  // 'vendor' (they could be a host with a vendor team membership).
+  const matches =
+    profile != null &&
+    (allowed.includes(profile.role) ||
+      (allowed.includes("vendor") && vendorMemberships.length > 0));
+  if (!matches) {
     return <Navigate to="/" replace />;
   }
 

@@ -31,8 +31,8 @@ interface TemplateRow {
 }
 
 export default function VendorTemplatesPage() {
-  const { user } = useAuth();
-  const [vendorId, setVendorId] = useState<string | null>(null);
+  const { user, vendorMemberships } = useAuth();
+  const vendorId = vendorMemberships[0]?.vendor_id ?? null;
   const [rows, setRows] = useState<TemplateRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [editorOpen, setEditorOpen] = useState(false);
@@ -41,16 +41,10 @@ export default function VendorTemplatesPage() {
   async function load() {
     if (!user) return;
     setLoading(true);
-    const { data: vp } = await supabase
-      .from("vendor_profiles")
-      .select("id")
-      .eq("user_id", user.id)
-      .maybeSingle();
-    setVendorId(vp?.id ?? null);
-    if (vp?.id) {
+    if (vendorId) {
       const { data } = await templatesTable()
         .select("id, name, body, updated_at")
-        .eq("vendor_id", vp.id)
+        .eq("vendor_id", vendorId)
         .order("name", { ascending: true });
       setRows((data as TemplateRow[]) ?? []);
     }
@@ -60,7 +54,7 @@ export default function VendorTemplatesPage() {
   useEffect(() => {
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user]);
+  }, [user, vendorId]);
 
   async function deleteTemplate(id: string) {
     setRows((prev) => prev.filter((r) => r.id !== id));

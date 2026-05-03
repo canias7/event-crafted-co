@@ -77,10 +77,10 @@ const filterOptions: Array<{ value: string; label: string; matches: (status: str
 ];
 
 export default function VendorInboxPage() {
-  const { user } = useAuth();
+  const { user, vendorMemberships } = useAuth();
+  const vendorId = vendorMemberships[0]?.vendor_id ?? null;
   const [rows, setRows] = useState<InquiryRow[]>([]);
   const [loading, setLoading] = useState(true);
-  const [vendorId, setVendorId] = useState<string | null>(null);
   const [filter, setFilter] = useState<string>("all");
 
   async function load(forVendorId?: string | null) {
@@ -103,22 +103,14 @@ export default function VendorInboxPage() {
 
   useEffect(() => {
     if (!user) return;
-    (async () => {
-      const { data: vp } = await supabase
-        .from("vendor_profiles")
-        .select("id")
-        .eq("user_id", user.id)
-        .maybeSingle();
-      if (!vp) {
-        setRows([]);
-        setLoading(false);
-        return;
-      }
-      setVendorId(vp.id);
-      await load(vp.id);
-    })();
+    if (!vendorId) {
+      setRows([]);
+      setLoading(false);
+      return;
+    }
+    load(vendorId);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user]);
+  }, [user, vendorId]);
 
   const filteredRows = useMemo(() => {
     if (filter === "all") return rows;

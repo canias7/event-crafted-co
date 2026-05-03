@@ -25,35 +25,30 @@ function parseDate(s: string) {
 }
 
 export default function AvailabilityPage() {
-  const { user } = useAuth();
-  const [vendorId, setVendorId] = useState<string | null>(null);
+  const { user, vendorMemberships } = useAuth();
+  const vendorId = vendorMemberships[0]?.vendor_id ?? null;
   const [unavailable, setUnavailable] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [pendingKey, setPendingKey] = useState<string | null>(null);
 
-  async function loadVendor() {
-    if (!user) return;
-    const { data } = await supabase
-      .from("vendor_profiles")
-      .select("id")
-      .eq("user_id", user.id)
-      .maybeSingle();
-    setVendorId(data?.id ?? null);
-    if (data?.id) {
-      const { data: rows } = await unavailableTable()
-        .select("date")
-        .eq("vendor_id", data.id);
-      setUnavailable(
-        new Set(((rows as Array<{ date: string }> | null) ?? []).map((r) => r.date)),
-      );
+  async function loadDates() {
+    if (!user || !vendorId) {
+      setLoading(false);
+      return;
     }
+    const { data: rows } = await unavailableTable()
+      .select("date")
+      .eq("vendor_id", vendorId);
+    setUnavailable(
+      new Set(((rows as Array<{ date: string }> | null) ?? []).map((r) => r.date)),
+    );
     setLoading(false);
   }
 
   useEffect(() => {
-    loadVendor();
+    loadDates();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user]);
+  }, [user, vendorId]);
 
   async function toggleDate(date: Date) {
     if (!vendorId) return;

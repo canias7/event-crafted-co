@@ -48,7 +48,9 @@ interface VendorProfile {
 }
 
 export default function VendorProfilePage() {
-  const { user } = useAuth();
+  const { user, vendorMemberships } = useAuth();
+  const membership = vendorMemberships[0] ?? null;
+  const canEdit = membership?.role === "owner" || membership?.role === "admin";
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [creating, setCreating] = useState(false);
@@ -81,27 +83,39 @@ export default function VendorProfilePage() {
     if (!user) return;
     let cancelled = false;
     setLoading(true);
-    supabase
-      .from("vendor_profiles")
-      .select(
-        "id, business_name, category, bio, base_price_cents, location, service_radius_miles, portfolio_summary, verified_at",
-      )
-      .eq("user_id", user.id)
-      .maybeSingle()
-      .then(({ data, error }) => {
-        if (cancelled) return;
-        if (error) {
-          toast.error(`Couldn't load your profile: ${error.message}`);
-        }
-        const p = (data as VendorProfile | null) ?? null;
-        setProfile(p);
-        applyToForm(p);
-        setLoading(false);
-      });
+    // If the user has a team membership, look up the profile by vendor_id
+    // (works for both owners and team members). Otherwise fall back to the
+    // user_id lookup so a fresh user with no profile still hits the create
+    // flow.
+    const query = membership?.vendor_id
+      ? supabase
+          .from("vendor_profiles")
+          .select(
+            "id, business_name, category, bio, base_price_cents, location, service_radius_miles, portfolio_summary, verified_at",
+          )
+          .eq("id", membership.vendor_id)
+          .maybeSingle()
+      : supabase
+          .from("vendor_profiles")
+          .select(
+            "id, business_name, category, bio, base_price_cents, location, service_radius_miles, portfolio_summary, verified_at",
+          )
+          .eq("user_id", user.id)
+          .maybeSingle();
+    query.then(({ data, error }) => {
+      if (cancelled) return;
+      if (error) {
+        toast.error(`Couldn't load your profile: ${error.message}`);
+      }
+      const p = (data as VendorProfile | null) ?? null;
+      setProfile(p);
+      applyToForm(p);
+      setLoading(false);
+    });
     return () => {
       cancelled = true;
     };
-  }, [user]);
+  }, [user, membership?.vendor_id]);
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
@@ -301,10 +315,15 @@ export default function VendorProfilePage() {
                 </p>
               </div>
 
-              <div className="flex justify-end pt-2">
+              <div className="flex items-center justify-end gap-3 pt-2">
+                {!canEdit && profile && (
+                  <p className="text-xs text-muted-foreground">
+                    View only — ask the team owner to make changes.
+                  </p>
+                )}
                 <Button
                   type="submit"
-                  disabled={saving || creating}
+                  disabled={saving || creating || (!canEdit && !!profile)}
                   className="rounded-full bg-foreground text-background hover:bg-foreground/90"
                 >
                   {(saving || creating) && (
