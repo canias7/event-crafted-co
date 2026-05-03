@@ -249,6 +249,68 @@ export default function VendorDetailPage() {
   const reviewsCount =
     realReviews.length > 0 ? realReviews.length : vendor?.reviews ?? 0;
 
+  // Set document.title per vendor for SEO + browser tabs.
+  useEffect(() => {
+    if (!vendor) return;
+    document.title = `${vendor.name} — ${vendor.category} on Vendora`;
+    return () => {
+      document.title = "Vendora — Premium Event Planning & Vendor Marketplace";
+    };
+  }, [vendor]);
+
+  // JSON-LD structured data for SEO. LocalBusiness covers vendors broadly
+  // (event services, venues). Includes aggregateRating + priceRange so rich
+  // snippets show stars and "$$$" tier in Google.
+  useEffect(() => {
+    if (!vendor) return;
+    const heroForSchema = imageMap[vendor.image] ?? featureFlorals;
+    const id = "vendor-jsonld";
+    const data = {
+      "@context": "https://schema.org",
+      "@type": "LocalBusiness",
+      name: vendor.name,
+      description: vendor.description,
+      image: heroForSchema,
+      url: typeof window !== "undefined" ? window.location.href : undefined,
+      address: vendor.location
+        ? {
+            "@type": "PostalAddress",
+            addressLocality: vendor.location,
+          }
+        : undefined,
+      priceRange:
+        vendor.startingPrice >= 8000
+          ? "$$$$"
+          : vendor.startingPrice >= 3000
+            ? "$$$"
+            : vendor.startingPrice >= 1000
+              ? "$$"
+              : "$",
+      aggregateRating:
+        reviewsCount > 0
+          ? {
+              "@type": "AggregateRating",
+              ratingValue: reviewsAvg.toFixed(1),
+              reviewCount: reviewsCount,
+              bestRating: 5,
+              worstRating: 1,
+            }
+          : undefined,
+    };
+    let script = document.getElementById(id) as HTMLScriptElement | null;
+    if (!script) {
+      script = document.createElement("script");
+      script.id = id;
+      script.type = "application/ld+json";
+      document.head.appendChild(script);
+    }
+    script.textContent = JSON.stringify(data);
+    return () => {
+      const existing = document.getElementById(id);
+      if (existing) existing.remove();
+    };
+  }, [vendor, reviewsAvg, reviewsCount]);
+
   function handleInquiryClick() {
     if (authLoading) return;
     if (!session || !profile) {
