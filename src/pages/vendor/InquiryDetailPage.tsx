@@ -21,6 +21,7 @@ import {
   ProposalCard,
   type Proposal,
 } from "@/components/proposals/ProposalCard";
+import { ProposeAppointmentModal } from "@/components/appointments/ProposeAppointmentModal";
 import { MessageAttachments } from "@/components/messages/MessageAttachments";
 import { TemplatePicker } from "@/components/messages/TemplatePicker";
 import {
@@ -30,7 +31,7 @@ import {
   MAX_FILES,
   type MessageAttachment,
 } from "@/lib/messageAttachments";
-import { FileText, Paperclip } from "lucide-react";
+import { FileText, Paperclip, CalendarDays } from "lucide-react";
 import { toast } from "sonner";
 
 interface Inquiry {
@@ -110,6 +111,7 @@ export default function InquiryDetailPage() {
   const [savingResponse, setSavingResponse] = useState(false);
   const [proposals, setProposals] = useState<Proposal[]>([]);
   const [proposalModalOpen, setProposalModalOpen] = useState(false);
+  const [appointmentModalOpen, setAppointmentModalOpen] = useState(false);
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -462,6 +464,15 @@ export default function InquiryDetailPage() {
                 <Button
                   size="sm"
                   variant="outline"
+                  onClick={() => setAppointmentModalOpen(true)}
+                  className="rounded-full"
+                >
+                  <CalendarDays className="w-3.5 h-3.5 mr-1.5" />
+                  Propose meeting
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
                   disabled={statusUpdating}
                   onClick={() => setStatus("won")}
                   className="rounded-full"
@@ -779,15 +790,25 @@ export default function InquiryDetailPage() {
       </div>
 
       {inquiry && (
-        <ProposalFormModal
-          open={proposalModalOpen}
-          onOpenChange={setProposalModalOpen}
-          inquiryId={inquiry.id}
-          vendorId={inquiry.vendor_id}
-          hostId={inquiry.host_id}
-          defaultTitle={`${inquiry.event_type.replace("_", " ")} proposal`}
-          onSuccess={load}
-        />
+        <>
+          <ProposalFormModal
+            open={proposalModalOpen}
+            onOpenChange={setProposalModalOpen}
+            inquiryId={inquiry.id}
+            vendorId={inquiry.vendor_id}
+            hostId={inquiry.host_id}
+            defaultTitle={`${inquiry.event_type.replace("_", " ")} proposal`}
+            onSuccess={load}
+          />
+          <ProposeAppointmentModal
+            open={appointmentModalOpen}
+            onOpenChange={setAppointmentModalOpen}
+            inquiryId={inquiry.id}
+            vendorId={inquiry.vendor_id}
+            hostId={inquiry.host_id}
+            proposedBy="vendor"
+          />
+        </>
       )}
     </div>
   );

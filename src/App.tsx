@@ -47,12 +47,14 @@ const InvitationBuilder = lazy(() => import("./pages/customer/InvitationBuilder"
 const MoodBoardsPage = lazy(() => import("./pages/customer/MoodBoardsPage"));
 const MoodBoardDetailPage = lazy(() => import("./pages/customer/MoodBoardDetailPage"));
 const MoodBoardSharePage = lazy(() => import("./pages/MoodBoardSharePage"));
+const AppointmentsPage = lazy(() => import("./pages/customer/AppointmentsPage"));
 
 const VendorDashboard = lazy(() => import("./pages/vendor/VendorDashboard"));
 const VendorProfilePage = lazy(() => import("./pages/vendor/VendorProfilePage"));
 const VendorTemplatesPage = lazy(() => import("./pages/vendor/VendorTemplatesPage"));
 const VendorInboxPage = lazy(() => import("./pages/vendor/VendorInboxPage"));
 const VendorTeamPage = lazy(() => import("./pages/vendor/VendorTeamPage"));
+const VendorAppointmentsPage = lazy(() => import("./pages/vendor/VendorAppointmentsPage"));
 const InquiryDetailPage = lazy(() => import("./pages/vendor/InquiryDetailPage"));
 const AvailabilityPage = lazy(() => import("./pages/vendor/AvailabilityPage"));
 const AcceptTeamInvitePage = lazy(() => import("./pages/AcceptTeamInvitePage"));
@@ -110,7 +112,7 @@ const App = () => (
               <Route path="/customer/inquiries/:inquiryId" element={<RequireRole role="host"><HostInquiryDetailPage /></RequireRole>} />
               <Route path="/customer/event" element={<RequireRole role="host"><EventDetailsPage /></RequireRole>} />
               <Route path="/customer/guests" element={<RequireRole role="host"><GuestsPage /></RequireRole>} />
-              <Route path="/customer/appointments" element={<RequireRole role="host"><ComingSoonPage side="customer" description="Schedule and manage vendor consultations, tastings, and walkthroughs in one place." /></RequireRole>} />
+              <Route path="/customer/appointments" element={<RequireRole role="host"><AppointmentsPage /></RequireRole>} />
               <Route path="/customer/favorites" element={<RequireRole role="host"><FavoritesPage /></RequireRole>} />
               <Route path="/customer/checklist" element={<RequireRole role="host"><ChecklistPage /></RequireRole>} />
               <Route path="/customer/tasks" element={<RequireRole role="host"><TasksPage /></RequireRole>} />
@@ -125,7 +127,7 @@ const App = () => (
               <Route path="/vendor/templates" element={<RequireRole role="vendor"><VendorTemplatesPage /></RequireRole>} />
               <Route path="/vendor/inbox" element={<RequireRole role="vendor"><VendorInboxPage /></RequireRole>} />
               <Route path="/vendor/team" element={<RequireRole role="vendor"><VendorTeamPage /></RequireRole>} />
-              <Route path="/vendor/appointments" element={<RequireRole role="vendor"><ComingSoonPage side="vendor" description="Calendar bookings, tasting / walkthrough requests, and confirmed event dates in one place." /></RequireRole>} />
+              <Route path="/vendor/appointments" element={<RequireRole role="vendor"><VendorAppointmentsPage /></RequireRole>} />
               <Route path="/vendor/availability" element={<RequireRole role="vendor"><AvailabilityPage /></RequireRole>} />
               <Route path="/vendor/payments" element={<RequireRole role="vendor"><ComingSoonPage side="vendor" description="Connect a Stripe account, see payouts, and track the 3% commission on confirmed bookings." /></RequireRole>} />
               <Route path="/vendor/contract" element={<RequireRole role="vendor"><ComingSoonPage side="vendor" description="Month-to-month vendor agreement, no minimum terms. We'll surface it here when ready to sign." /></RequireRole>} />

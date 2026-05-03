@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { ArrowLeft, Send, Loader2, Star, Sparkles, Paperclip, X } from "lucide-react";
+import { ArrowLeft, Send, Loader2, Star, Sparkles, Paperclip, X, CalendarDays } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -11,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ReviewFormModal } from "@/components/reviews/ReviewFormModal";
+import { ProposeAppointmentModal } from "@/components/appointments/ProposeAppointmentModal";
 import {
   ProposalCard,
   type Proposal,
@@ -95,6 +96,7 @@ export default function HostInquiryDetailPage() {
   const [notFound, setNotFound] = useState(false);
   const [review, setReview] = useState<ExistingReview | null>(null);
   const [reviewModalOpen, setReviewModalOpen] = useState(false);
+  const [appointmentModalOpen, setAppointmentModalOpen] = useState(false);
   const [proposals, setProposals] = useState<Proposal[]>([]);
   const [acting, setActing] = useState<"accept" | "reject" | null>(null);
 
@@ -451,9 +453,20 @@ export default function HostInquiryDetailPage() {
 
                 {/* Thread */}
                 <div className="bg-card border border-border rounded-sm p-6 space-y-4">
-                  <p className="font-label text-muted-foreground">
-                    Conversation
-                  </p>
+                  <div className="flex items-center justify-between gap-2 flex-wrap">
+                    <p className="font-label text-muted-foreground">
+                      Conversation
+                    </p>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setAppointmentModalOpen(true)}
+                      className="rounded-full h-8 text-xs"
+                    >
+                      <CalendarDays className="w-3 h-3 mr-1" />
+                      Propose meeting
+                    </Button>
+                  </div>
                   {messages.length === 0 ? (
                     <p className="text-sm text-muted-foreground py-8 text-center">
                       No messages yet — your inquiry has been sent and the
@@ -583,16 +596,26 @@ export default function HostInquiryDetailPage() {
       <MobileNav items={navItems} />
 
       {inquiry && user && (
-        <ReviewFormModal
-          open={reviewModalOpen}
-          onOpenChange={setReviewModalOpen}
-          inquiryId={inquiry.id}
-          vendorId={inquiry.vendor_id}
-          hostId={user.id}
-          vendorName={inquiry.vendor?.business_name ?? "this vendor"}
-          existingReview={review}
-          onSuccess={load}
-        />
+        <>
+          <ReviewFormModal
+            open={reviewModalOpen}
+            onOpenChange={setReviewModalOpen}
+            inquiryId={inquiry.id}
+            vendorId={inquiry.vendor_id}
+            hostId={user.id}
+            vendorName={inquiry.vendor?.business_name ?? "this vendor"}
+            existingReview={review}
+            onSuccess={load}
+          />
+          <ProposeAppointmentModal
+            open={appointmentModalOpen}
+            onOpenChange={setAppointmentModalOpen}
+            inquiryId={inquiry.id}
+            vendorId={inquiry.vendor_id}
+            hostId={user.id}
+            proposedBy="host"
+          />
+        </>
       )}
     </div>
   );
