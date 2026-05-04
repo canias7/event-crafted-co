@@ -3,15 +3,20 @@ import { Star, MapPin, Heart, Zap } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useSavedVendors } from "@/hooks/useSavedVendors";
 import { PrefetchLink as Link } from "@/components/shared/PrefetchLink";
+import { Picture, type PictureSource } from "@/components/shared/Picture";
 import { VerificationBadges } from "@/components/vendor/VerificationBadges";
-import vendorPhotographer from "@/assets/vendor-photographer.jpg";
-import vendorFlorist from "@/assets/vendor-florist.jpg";
-import vendorCatering from "@/assets/vendor-catering.jpg";
-import vendorDj from "@/assets/vendor-dj.jpg";
-import vendorVenue from "@/assets/vendor-venue.jpg";
-import vendorMakeup from "@/assets/vendor-makeup.jpg";
+// vite-imagetools auto-pictureifies anything in /assets/vendor-* (see
+// vite.config.ts) into AVIF + WebP + JPG variants at 640/1024/1600
+// widths. Each import below resolves to a { sources, img } picture
+// object. ~50% bandwidth cut on the directory.
+import vendorPhotographer from "@/assets/vendor-photographer.jpg?as=picture";
+import vendorFlorist from "@/assets/vendor-florist.jpg?as=picture";
+import vendorCatering from "@/assets/vendor-catering.jpg?as=picture";
+import vendorDj from "@/assets/vendor-dj.jpg?as=picture";
+import vendorVenue from "@/assets/vendor-venue.jpg?as=picture";
+import vendorMakeup from "@/assets/vendor-makeup.jpg?as=picture";
 
-const imageMap: Record<string, string> = {
+const imageMap: Record<string, PictureSource> = {
   "vendor-photographer": vendorPhotographer,
   "vendor-florist": vendorFlorist,
   "vendor-catering": vendorCatering,
@@ -52,13 +57,12 @@ export function VendorCard({ vendor, eager = false }: VendorCardProps) {
         transition={{ type: "spring", duration: 0.4, bounce: 0 }}
       >
         <div className="relative aspect-[4/5] overflow-hidden rounded-sm mb-4 bg-muted">
-          <img
-            src={imageMap[vendor.image]}
+          <Picture
+            source={imageMap[vendor.image]}
             alt={vendor.name}
             loading={eager ? "eager" : "lazy"}
-            decoding={eager ? "sync" : "async"}
-            // @ts-expect-error fetchPriority is valid HTML but TS hasn't caught up
-            fetchpriority={eager ? "high" : undefined}
+            sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
+            fetchPriority={eager ? "high" : "auto"}
             className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.04]"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-foreground/55 via-transparent to-transparent" />

@@ -19,6 +19,7 @@ import { CommandPalette } from "./components/CommandPalette";
 import { SkipLink } from "./components/SkipLink";
 import { MobilePortalBell } from "./components/notifications/MobilePortalBell";
 import { OnboardingTour } from "@/components/shared/OnboardingTour";
+import { ErrorBoundary } from "@/components/shared/ErrorBoundary";
 import { RouteFallback } from "@/components/shared/RouteFallback";
 // All lazy-loaded pages live in @/router/lazyRoutes — keeps the lazy
 // factories paired with a path → importer registry that PrefetchLink
@@ -117,6 +118,7 @@ const App = () => (
       <BrowserRouter>
         <AuthProvider>
           <SkipLink />
+          <ErrorBoundary>
           <Suspense fallback={<RouteFallback />}>
             <Routes>
               {/* Public */}
@@ -217,6 +219,7 @@ const App = () => (
               <Route path="*" element={<NotFound />} />
             </Routes>
           </Suspense>
+          </ErrorBoundary>
           <MobilePortalBell />
           <OnboardingTour />
           <CommandPalette />

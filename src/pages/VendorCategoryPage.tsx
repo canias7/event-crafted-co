@@ -13,20 +13,21 @@ import { useVendors } from "@/hooks/useVendors";
 import { useDocumentMeta } from "@/hooks/useDocumentMeta";
 import { CATEGORY_FAQS } from "@/data/categoryFaqs";
 import { citySlugify, citySlugDisplay } from "@/lib/citySlug";
+import { Picture, type PictureSource } from "@/components/shared/Picture";
 
-import vendorPhotographer from "@/assets/vendor-photographer.jpg";
-import vendorFlorist from "@/assets/vendor-florist.jpg";
-import vendorCatering from "@/assets/vendor-catering.jpg";
-import vendorDj from "@/assets/vendor-dj.jpg";
-import vendorVenue from "@/assets/vendor-venue.jpg";
-import vendorMakeup from "@/assets/vendor-makeup.jpg";
+import vendorPhotographer from "@/assets/vendor-photographer.jpg?as=picture";
+import vendorFlorist from "@/assets/vendor-florist.jpg?as=picture";
+import vendorCatering from "@/assets/vendor-catering.jpg?as=picture";
+import vendorDj from "@/assets/vendor-dj.jpg?as=picture";
+import vendorVenue from "@/assets/vendor-venue.jpg?as=picture";
+import vendorMakeup from "@/assets/vendor-makeup.jpg?as=picture";
 
 interface CategoryConfig {
   name: string;
   display: string;
   description: string;
   longCopy: string;
-  hero: string;
+  hero: PictureSource;
 }
 
 export const categoryConfig: Record<string, CategoryConfig> = {
@@ -194,7 +195,9 @@ export default function VendorCategoryPage() {
       ? `${config.display} on Vendora — ${config.description}`
       : "Vendor category — Vendora",
     description: config?.description,
-    image: config?.hero,
+    // Picture object → use the JPG fallback as the social-share image
+    // (modern crawlers pick AVIF/WebP from <source> in the page itself).
+    image: config?.hero?.img.src,
   });
 
   const filtered = useMemo(
@@ -236,9 +239,12 @@ export default function VendorCategoryPage() {
 
       {/* Cinematic category hero */}
       <section className="relative h-[55svh] min-h-[400px] w-full overflow-hidden">
-        <img
-          src={config.hero}
+        <Picture
+          source={config.hero}
           alt={config.display}
+          loading="eager"
+          fetchPriority="high"
+          sizes="100vw"
           className="absolute inset-0 w-full h-full object-cover"
         />
         <div className="absolute inset-0 bg-gradient-to-b from-foreground/75 via-foreground/45 to-background" />

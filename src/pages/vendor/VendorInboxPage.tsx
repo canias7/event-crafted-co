@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { DashboardSidebar } from "@/components/shared/DashboardSidebar";
 import { MobileNav } from "@/components/shared/MobileNav";
+import { EmptyState } from "@/components/shared/EmptyState";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -350,18 +351,22 @@ export default function VendorInboxPage() {
               Loading inquiries…
             </div>
           ) : filteredRows.length === 0 ? (
-            <div className="bg-card rounded-2xl card-shadow p-16 text-center">
-              <Inbox className="w-10 h-10 mx-auto text-muted-foreground mb-3" />
-              <p className="font-display text-xl mb-1">
-                {rows.length === 0
-                  ? "No inquiries yet"
-                  : "Nothing matches that filter"}
-              </p>
-              <p className="text-sm text-muted-foreground">
-                {rows.length === 0
-                  ? "When hosts reach out, you'll see them here."
-                  : "Try a different status filter above."}
-              </p>
+            <div className="bg-card rounded-2xl card-shadow">
+              {rows.length === 0 ? (
+                <EmptyState
+                  icon={Inbox}
+                  title="No inquiries yet"
+                  description="Polish your profile and packages — vendors with priced tiers + 5+ portfolio shots get the most inquiries on Vendora. Hosts can also DM you directly from your public page."
+                  primaryCta={{ label: "Edit profile", to: "/vendor/profile" }}
+                  secondaryCta={{ label: "View analytics", to: "/vendor/analytics" }}
+                />
+              ) : (
+                <EmptyState
+                  icon={Inbox}
+                  title="Nothing matches that filter"
+                  description="Try a different status filter above, or clear the label filter to see everything."
+                />
+              )}
             </div>
           ) : view === "board" ? (
             <InquiryKanban rows={filteredRows} onChange={() => load(vendorId!)} />

@@ -21,11 +21,15 @@ export default defineConfig(({ mode }) => ({
     // generated at build time. Cuts hero JPEG payload by ~60% with AVIF.
     imagetools({
       defaultDirectives: (url) => {
-        // Anything under /assets/hero/* or /assets/vendora-* defaults to a
-        // responsive picture set so we don't have to spell it out per import.
+        // Auto-pictureify images in three asset families:
+        //   /assets/hero/*       — landing slideshow + featured imagery
+        //   /assets/vendora-*    — feature shots used on landing + press kit
+        //   /assets/vendor-*     — category fallback images on cards
+        // Each gets AVIF + WebP + JPG variants at 640/1024/1600 widths.
         if (
           /\/assets\/hero\//.test(url.pathname) ||
-          /\/assets\/vendora-/.test(url.pathname)
+          /\/assets\/vendora-/.test(url.pathname) ||
+          /\/assets\/vendor-/.test(url.pathname)
         ) {
           return new URLSearchParams({
             format: "avif;webp;jpg",
@@ -53,6 +57,7 @@ export default defineConfig(({ mode }) => ({
         // than over-bundling, but each chunk has its own request cost.
         manualChunks: (id) => {
           if (!id.includes("node_modules")) return undefined;
+          // Order matters — most-specific first.
           if (id.includes("leaflet") || id.includes("react-leaflet")) {
             return "leaflet";
           }
@@ -61,6 +66,22 @@ export default defineConfig(({ mode }) => ({
           if (id.includes("@supabase")) return "supabase";
           if (id.includes("recharts") || id.includes("d3-")) return "charts";
           if (id.includes("date-fns")) return "date-fns";
+          // Pull react-core out of the catch-all vendor chunk so it can
+          // cache independently across deploys (most app changes don't
+          // bump react). React-router rides along since it changes at
+          // a similar cadence.
+          if (
+            id.includes("/node_modules/react/") ||
+            id.includes("/node_modules/react-dom/") ||
+            id.includes("/node_modules/scheduler/") ||
+            id.includes("react-router")
+          ) {
+            return "react-core";
+          }
+          // i18next + locales don't change often; separate cache lane.
+          if (id.includes("i18next") || id.includes("i18n")) return "i18n";
+          // @tanstack/react-query lives in its own lane too.
+          if (id.includes("@tanstack")) return "tanstack";
           // Everything else stays in the main vendor chunk.
           return "vendor";
         },
