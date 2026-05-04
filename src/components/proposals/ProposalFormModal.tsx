@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { FieldError } from "@/components/ui/field-error";
+import { formatCents } from "@/lib/format";
 import {
   Dialog,
   DialogContent,
@@ -120,19 +122,15 @@ export function ProposalFormModal({
     return sum + Math.round(unit) * (it.quantity || 1);
   }, 0);
 
+  const validItems = items.filter(
+    (it) => it.description.trim() && it.unit_price,
+  );
+  const titleValid = title.trim().length > 0;
+  const formValid = titleValid && validItems.length > 0;
+
   async function submit(e: React.FormEvent) {
     e.preventDefault();
-    if (!title.trim()) {
-      toast.error("Proposal title is required");
-      return;
-    }
-    const validItems = items.filter(
-      (it) => it.description.trim() && it.unit_price,
-    );
-    if (validItems.length === 0) {
-      toast.error("Add at least one line item");
-      return;
-    }
+    if (!formValid) return;
 
     const lineItems = validItems.map((it) => ({
       description: it.description.trim(),
@@ -200,7 +198,11 @@ export function ProposalFormModal({
               onChange={(e) => setTitle(e.target.value)}
               className="h-10"
               required
+              aria-invalid={!titleValid && title.length > 0 || undefined}
             />
+            {!titleValid && title.length > 0 && (
+              <FieldError>Proposal title is required.</FieldError>
+            )}
           </div>
 
           <div className="space-y-2">
@@ -217,6 +219,12 @@ export function ProposalFormModal({
                 Add line
               </Button>
             </div>
+
+            {validItems.length === 0 && (
+              <FieldError>
+                Add at least one line item with a description and price.
+              </FieldError>
+            )}
 
             <div className="space-y-2">
               {items.map((item, i) => (
@@ -281,7 +289,7 @@ export function ProposalFormModal({
           <div className="rounded-sm border border-border bg-secondary/40 p-4 flex items-center justify-between">
             <p className="font-label text-muted-foreground">Subtotal</p>
             <p className="font-display text-2xl tnum">
-              ${(subtotalCents / 100).toLocaleString()}
+              {formatCents(subtotalCents)}
             </p>
           </div>
 
@@ -365,7 +373,7 @@ export function ProposalFormModal({
             </Button>
             <Button
               type="submit"
-              disabled={submitting}
+              disabled={submitting || !formValid}
               className="rounded-full bg-foreground text-background hover:bg-foreground/90"
             >
               {submitting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}

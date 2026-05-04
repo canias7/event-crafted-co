@@ -249,12 +249,13 @@ function NewTicketDialog({
   const [priority, setPriority] = useState<"low" | "normal" | "high" | "urgent">("normal");
   const [submitting, setSubmitting] = useState(false);
 
+  const subjectValid = subject.trim().length > 0;
+  const bodyValid = body.trim().length > 0;
+  const formValid = subjectValid && bodyValid;
+
   async function submit(e: React.FormEvent) {
     e.preventDefault();
-    if (!subject.trim() || !body.trim()) {
-      toast.error("Subject and body are required");
-      return;
-    }
+    if (!formValid) return;
     setSubmitting(true);
     const { data: ticket, error: tErr } = await ticketsTable()
       .insert({
@@ -366,7 +367,7 @@ function NewTicketDialog({
             </Button>
             <Button
               type="submit"
-              disabled={submitting}
+              disabled={submitting || !formValid}
               className="rounded-full bg-foreground text-background hover:bg-foreground/90"
             >
               {submitting ? (
