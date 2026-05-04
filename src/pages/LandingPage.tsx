@@ -10,25 +10,10 @@ import { Picture } from "@/components/shared/Picture";
 // widths via the default directives in vite.config.ts. Each import below
 // resolves to a { sources, img } picture object instead of a raw URL.
 import heroWedding from "@/assets/hero/wedding.jpg?as=picture";
-import heroJuly4 from "@/assets/hero/july4th.jpg?as=picture";
 import heroChristmas from "@/assets/hero/christmas.jpg?as=picture";
 import heroBabyShower from "@/assets/hero/babyshower.jpg?as=picture";
 import heroBirthdayMilestone from "@/assets/hero/birthday-milestone.jpg?as=picture";
-import heroHalloween from "@/assets/hero/halloween.jpg?as=picture";
-import heroThanksgiving from "@/assets/hero/thanksgiving.jpg?as=picture";
-import heroHanukkah from "@/assets/hero/hanukkah.jpg?as=picture";
 import heroNYE from "@/assets/hero/nye.jpg?as=picture";
-import heroEaster from "@/assets/hero/easter.jpg?as=picture";
-import heroBridal from "@/assets/hero/bridal.jpg?as=picture";
-import heroEngagement from "@/assets/hero/engagement.jpg?as=picture";
-import heroGraduation from "@/assets/hero/graduation.jpg?as=picture";
-import heroCorporate from "@/assets/hero/corporate.jpg?as=picture";
-import heroAnniversary from "@/assets/hero/anniversary.jpg?as=picture";
-import heroFirstBirthday from "@/assets/hero/firstbirthday.jpg?as=picture";
-import heroFiesta from "@/assets/hero/fiesta.jpg?as=picture";
-import heroBeach from "@/assets/hero/beach.jpg?as=picture";
-import heroMothersDay from "@/assets/hero/mothersday.jpg?as=picture";
-import heroValentines from "@/assets/hero/valentines.jpg?as=picture";
 import featureFlorals from "@/assets/vendora-feature-1.jpg?as=picture";
 import featureVenue from "@/assets/vendora-feature-2.jpg?as=picture";
 
@@ -40,21 +25,6 @@ const heroSlides = [
   { src: heroChristmas, label: "Christmas Dinners", alt: "Elegant Christmas dinner table" },
   { src: heroNYE, label: "New Year's Eve", alt: "New Year's Eve gala with confetti" },
   { src: heroBabyShower, label: "Baby Showers", alt: "Pastel baby shower setup" },
-  { src: heroJuly4, label: "4th of July", alt: "Rooftop Independence Day party" },
-  { src: heroHalloween, label: "Halloween", alt: "Halloween masquerade ball" },
-  { src: heroThanksgiving, label: "Thanksgiving", alt: "Thanksgiving family dinner" },
-  { src: heroHanukkah, label: "Hanukkah", alt: "Hanukkah dinner with menorah" },
-  { src: heroEaster, label: "Easter", alt: "Easter garden brunch" },
-  { src: heroBridal, label: "Bridal Showers", alt: "Bridal shower garden tea" },
-  { src: heroEngagement, label: "Engagements", alt: "Engagement party at sunset" },
-  { src: heroGraduation, label: "Graduations", alt: "Graduation celebration dinner" },
-  { src: heroCorporate, label: "Corporate Galas", alt: "Corporate gala in ballroom" },
-  { src: heroAnniversary, label: "Anniversaries", alt: "Anniversary dinner by the sea" },
-  { src: heroFirstBirthday, label: "First Birthdays", alt: "First birthday styling" },
-  { src: heroFiesta, label: "Fiestas", alt: "Backyard fiesta celebration" },
-  { src: heroBeach, label: "Beach Dinners", alt: "Beach bonfire candlelit dinner" },
-  { src: heroMothersDay, label: "Mother's Day", alt: "Mother's Day brunch" },
-  { src: heroValentines, label: "Valentine's", alt: "Valentine's romantic dinner" },
 ];
 
 const steps = [
