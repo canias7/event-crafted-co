@@ -1,4 +1,4 @@
-import { Suspense } from "react";
+import { lazy, Suspense } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -15,11 +15,22 @@ import { AuthProvider } from "./hooks/useAuth";
 import { RealtimeProvider } from "./lib/realtime";
 import { ThemeProvider } from "./hooks/useTheme";
 import { RequireRole } from "./components/auth/RequireRole";
-import { CookieBanner } from "./components/CookieBanner";
-import { CommandPalette } from "./components/CommandPalette";
+import { CommandPaletteLauncher } from "./components/CommandPaletteLauncher";
 import { SkipLink } from "./components/SkipLink";
 import { MobilePortalBell } from "./components/notifications/MobilePortalBell";
-import { OnboardingTour } from "@/components/shared/OnboardingTour";
+
+// Both ship-on-mount components are lazy: CookieBanner only renders
+// once for users who haven't accepted, OnboardingTour only renders for
+// fresh users — most page loads see neither, so deferring the chunks
+// shaves the initial JS budget.
+const CookieBanner = lazy(() =>
+  import("./components/CookieBanner").then((m) => ({ default: m.CookieBanner })),
+);
+const OnboardingTour = lazy(() =>
+  import("@/components/shared/OnboardingTour").then((m) => ({
+    default: m.OnboardingTour,
+  })),
+);
 import { ErrorBoundary } from "@/components/shared/ErrorBoundary";
 import { RouteFallback } from "@/components/shared/RouteFallback";
 // All lazy-loaded pages live in @/router/lazyRoutes — keeps the lazy
@@ -223,9 +234,13 @@ const App = () => (
           </Suspense>
           </ErrorBoundary>
           <MobilePortalBell />
-          <OnboardingTour />
-          <CommandPalette />
-          <CookieBanner />
+          <Suspense fallback={null}>
+            <OnboardingTour />
+          </Suspense>
+          <CommandPaletteLauncher />
+          <Suspense fallback={null}>
+            <CookieBanner />
+          </Suspense>
           </RealtimeProvider>
         </AuthProvider>
       </BrowserRouter>
