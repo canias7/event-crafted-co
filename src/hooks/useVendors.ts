@@ -26,6 +26,11 @@ export interface Vendor {
   /** Public socials — without leading @. */
   instagramHandle?: string | null;
   tiktokHandle?: string | null;
+  /** Booking terms — surfaced as policy badges on the public profile. */
+  depositPct?: number | null;
+  cancellationPolicy?: string | null;
+  rescheduleWindowDays?: number | null;
+  policyNotes?: string | null;
 }
 
 const categoryImageFallback: Record<string, string> = {
@@ -56,6 +61,10 @@ interface VendorProfileRow {
   slug: string | null;
   instagram_handle: string | null;
   tiktok_handle: string | null;
+  deposit_pct: number | null;
+  cancellation_policy: string | null;
+  reschedule_window_days: number | null;
+  policy_notes: string | null;
 }
 
 function normalizeDb(row: VendorProfileRow): Vendor {
@@ -81,6 +90,10 @@ function normalizeDb(row: VendorProfileRow): Vendor {
     slug: row.slug ?? null,
     instagramHandle: row.instagram_handle ?? null,
     tiktokHandle: row.tiktok_handle ?? null,
+    depositPct: row.deposit_pct ?? null,
+    cancellationPolicy: row.cancellation_policy ?? null,
+    rescheduleWindowDays: row.reschedule_window_days ?? null,
+    policyNotes: row.policy_notes ?? null,
     isReal: true,
   };
 }
@@ -99,7 +112,7 @@ async function fetchVendors(): Promise<Vendor[]> {
       const { data, error } = await (supabase as any)
         .from("vendor_profiles")
         .select(
-          "id, business_name, category, bio, base_price_cents, location, service_radius_miles, portfolio_summary, verified_at, responder_tier, intro_video_url, slug, instagram_handle, tiktok_handle",
+          "id, business_name, category, bio, base_price_cents, location, service_radius_miles, portfolio_summary, verified_at, responder_tier, intro_video_url, slug, instagram_handle, tiktok_handle, deposit_pct, cancellation_policy, reschedule_window_days, policy_notes",
         )
         .order("verified_at", { ascending: false, nullsFirst: false });
       if (!error && data) {

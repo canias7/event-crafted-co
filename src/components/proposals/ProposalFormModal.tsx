@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { FieldError } from "@/components/ui/field-error";
 import { formatCents } from "@/lib/format";
+import { ProposalTemplatePicker } from "./ProposalTemplatePicker";
 import {
   Dialog,
   DialogContent,
@@ -174,6 +175,34 @@ export function ProposalFormModal({
             The host will see Accept / Decline buttons.
           </DialogDescription>
         </DialogHeader>
+        <div className="pt-2">
+          <ProposalTemplatePicker
+            vendorId={vendorId}
+            current={{
+              title,
+              lineItems: items,
+              depositPct: deposit
+                ? subtotalCents > 0
+                  ? Math.round(
+                      (Number.parseFloat(deposit) * 100 * 100) / subtotalCents,
+                    )
+                  : null
+                : null,
+              terms,
+            }}
+            onApply={(t) => {
+              setTitle(t.title);
+              setItems(t.lineItems.length > 0 ? t.lineItems : [{ ...blank }]);
+              setTerms(t.terms);
+              // Convert percent → dollar amount based on current subtotal
+              if (t.depositPct != null && subtotalCents > 0) {
+                setDeposit(
+                  ((subtotalCents * t.depositPct) / 100 / 100).toFixed(2),
+                );
+              }
+            }}
+          />
+        </div>
         <form onSubmit={submit} className="space-y-5 pt-2">
           <div className="space-y-2">
             <Label htmlFor="prop-title">Proposal title</Label>

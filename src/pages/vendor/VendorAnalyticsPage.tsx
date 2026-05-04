@@ -18,6 +18,7 @@ import { MobileNav } from "@/components/shared/MobileNav";
 import { Skeleton } from "@/components/ui/skeleton";
 import { vendorNavItems as navItems } from "@/data/navItems";
 import { ReviewRequestsCard } from "@/components/vendor/ReviewRequestsCard";
+import { ProposalFunnelCard } from "@/components/vendor/ProposalFunnelCard";
 
 interface InquiryRow {
   id: string;
@@ -459,6 +460,12 @@ export default function VendorAnalyticsPage() {
                   </p>
                 </div>
               </section>
+
+              {vendorId && (
+                <section>
+                  <ProposalFunnelCard vendorId={vendorId} />
+                </section>
+              )}
 
               {vendorId && (
                 <section className="bg-card border border-border rounded-sm p-5">

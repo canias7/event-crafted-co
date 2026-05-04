@@ -223,6 +223,10 @@ export default function SignupPage() {
                 t("auth.signup.submit")
               )}
             </Button>
+            <p className="text-[11px] text-muted-foreground text-center leading-relaxed">
+              We use your email to send account + booking notifications
+              and to verify it's you. We don't sell your data, ever.
+            </p>
           </form>
 
           <div className="mt-6 mb-6 flex items-center gap-3 text-[10px] uppercase tracking-[0.2em] text-muted-foreground">

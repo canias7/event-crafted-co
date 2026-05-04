@@ -11,6 +11,7 @@ import {
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useRequireVerifiedEmail } from "@/hooks/useRequireVerifiedEmail";
 import { DashboardSidebar } from "@/components/shared/DashboardSidebar";
 import { MobileNav } from "@/components/shared/MobileNav";
 import { SubNavTabs } from "@/components/shared/SubNavTabs";
@@ -30,6 +31,15 @@ import {
 import { customerNavItems as navItems } from "@/data/navItems";
 import type { EventType } from "@/hooks/useAuth";
 import { HostInquiryTemplatePicker } from "@/components/customer/HostInquiryTemplatePicker";
+import {
+  loadDraft,
+  clearDraft,
+  useAutoSaveDraft,
+} from "@/hooks/useInquiryDraft";
+import {
+  buildBlastStarter,
+  type EventTypeKey,
+} from "@/data/inquiryStarters";
 
 interface VendorOption {
   id: string;
@@ -47,6 +57,7 @@ const eventTypes: Array<{ value: EventType; label: string }> = [
 
 export default function InquiryBlastPage() {
   const { user, profile, activeEvent } = useAuth();
+  const requireVerified = useRequireVerifiedEmail();
   const navigate = useNavigate();
 
   const [vendors, setVendors] = useState<VendorOption[]>([]);
@@ -55,14 +66,31 @@ export default function InquiryBlastPage() {
   const [category, setCategory] = useState("All");
   const [picked, setPicked] = useState<Set<string>>(new Set());
 
-  const [eventType, setEventType] = useState<EventType>("wedding");
-  const [eventDate, setEventDate] = useState("");
-  const [guestCount, setGuestCount] = useState("");
-  const [location, setLocation] = useState("");
-  const [budgetMin, setBudgetMin] = useState("");
-  const [budgetMax, setBudgetMax] = useState("");
-  const [specialRequests, setSpecialRequests] = useState("");
+  // Hydrate from any localStorage draft so abandoning the page
+  // doesn't lose progress. clearDraft fires after a successful send.
+  const draft = loadDraft("blast");
+  const [eventType, setEventType] = useState<EventType>(
+    (draft?.eventType as EventType) ?? "wedding",
+  );
+  const [eventDate, setEventDate] = useState(draft?.eventDate ?? "");
+  const [guestCount, setGuestCount] = useState(draft?.guestCount ?? "");
+  const [location, setLocation] = useState(draft?.location ?? "");
+  const [budgetMin, setBudgetMin] = useState(draft?.budgetMin ?? "");
+  const [budgetMax, setBudgetMax] = useState(draft?.budgetMax ?? "");
+  const [specialRequests, setSpecialRequests] = useState(
+    draft?.specialRequests ?? "",
+  );
   const [submitting, setSubmitting] = useState(false);
+
+  useAutoSaveDraft("blast", {
+    eventType,
+    eventDate,
+    guestCount,
+    location,
+    budgetMin,
+    budgetMax,
+    specialRequests,
+  });
 
   // Pre-fill from the host's active event
   useEffect(() => {
@@ -135,6 +163,7 @@ export default function InquiryBlastPage() {
       toast.error("Pick at least one vendor");
       return;
     }
+    if (!requireVerified("sending an inquiry")) return;
     setSubmitting(true);
     const minCents = budgetMin
       ? Math.round(Number.parseFloat(budgetMin) * 100)
@@ -175,6 +204,7 @@ export default function InquiryBlastPage() {
         .catch(() => {});
     }
     toast.success(`Inquiry sent to ${rows.length} vendors`);
+    clearDraft("blast");
     navigate("/customer/inquiries");
   }
 
@@ -372,10 +402,35 @@ export default function InquiryBlastPage() {
               <div className="space-y-2">
                 <div className="flex items-center justify-between gap-3 flex-wrap">
                   <Label htmlFor="b-notes">Tell vendors about your event</Label>
-                  <HostInquiryTemplatePicker
-                    currentBody={specialRequests}
-                    onApply={setSpecialRequests}
-                  />
+                  <div className="flex gap-2 flex-wrap">
+                    {picked.size > 0 && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="rounded-full h-8 text-xs"
+                        onClick={() => {
+                          const cats = Array.from(picked).map(
+                            (id) =>
+                              vendors.find((v) => v.id === id)?.category ?? "",
+                          );
+                          setSpecialRequests(
+                            buildBlastStarter(
+                              eventType as EventTypeKey,
+                              cats.filter(Boolean),
+                            ),
+                          );
+                        }}
+                      >
+                        <Sparkles className="w-3 h-3 mr-1.5" />
+                        Starter for this event
+                      </Button>
+                    )}
+                    <HostInquiryTemplatePicker
+                      currentBody={specialRequests}
+                      onApply={setSpecialRequests}
+                    />
+                  </div>
                 </div>
                 <Textarea
                   id="b-notes"
@@ -397,6 +452,11 @@ export default function InquiryBlastPage() {
                 {picked.size === 1 ? "vendor" : "vendors"}
                 <ArrowRight className="w-4 h-4 ml-2" />
               </Button>
+              <p className="text-[11px] text-muted-foreground text-center leading-relaxed">
+                Only the vendors you pick see your event details and your
+                first name. Your email and phone stay private until you
+                accept a proposal.
+              </p>
             </div>
           </aside>
         </div>

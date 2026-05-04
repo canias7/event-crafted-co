@@ -1,4 +1,5 @@
 import { Star } from "lucide-react";
+import { ReportButton } from "@/components/trust/ReportButton";
 
 // Review block on the vendor detail page. Falls back to a curated
 // `samples` list when there are no real reviews yet — gives newer
@@ -135,6 +136,14 @@ export function VendorReviewsList({
                     </p>
                   </div>
                 )}
+                <div className="mt-3">
+                  <ReportButton
+                    contentType="review"
+                    contentId={r.id}
+                    variant="link"
+                    size="sm"
+                  />
+                </div>
               </div>
             ))
           : samples.map((r, i) => (

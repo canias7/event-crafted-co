@@ -5,6 +5,7 @@ import { ArrowLeft, Send, Loader2, Star, Sparkles, Paperclip, X, CalendarDays } 
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useRequireVerifiedEmail } from "@/hooks/useRequireVerifiedEmail";
 import { DashboardSidebar } from "@/components/shared/DashboardSidebar";
 import { MobileNav } from "@/components/shared/MobileNav";
 import { Button } from "@/components/ui/button";
@@ -94,6 +95,7 @@ function fmtMoney(c: number | null) {
 export default function HostInquiryDetailPage() {
   const { inquiryId } = useParams();
   const { user } = useAuth();
+  const requireVerified = useRequireVerifiedEmail();
   const [inquiry, setInquiry] = useState<Inquiry | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [composer, setComposer] = useState("");
@@ -434,7 +436,10 @@ export default function HostInquiryDetailPage() {
                         )}
                       </div>
                       <Button
-                        onClick={() => setReviewModalOpen(true)}
+                        onClick={() => {
+                          if (!requireVerified("posting a review")) return;
+                          setReviewModalOpen(true);
+                        }}
                         size="sm"
                         variant={review ? "outline" : "default"}
                         className={`rounded-full whitespace-nowrap ${

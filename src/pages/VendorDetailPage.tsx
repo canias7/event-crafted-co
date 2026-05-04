@@ -72,6 +72,7 @@ import heroGala from "@/assets/vendora-hero-gala.jpg";
 import heroBirthday from "@/assets/vendora-hero-birthday.jpg";
 import heroKids from "@/assets/vendora-hero-kids.jpg";
 import { ReportButton } from "@/components/trust/ReportButton";
+import { VendorPolicyBadges } from "@/components/vendor/VendorPolicyBadges";
 
 const imageMap: Record<string, string> = {
   "vendor-photographer": vendorPhotographer,
@@ -981,6 +982,15 @@ export default function VendorDetailPage() {
                   Vendora doesn't accept money to influence search ranking. Vendors
                   appear based on fit and review quality, not ad spend.
                 </div>
+
+                {vendor.isReal && (
+                  <VendorPolicyBadges
+                    depositPct={vendor.depositPct}
+                    cancellationPolicy={vendor.cancellationPolicy}
+                    rescheduleWindowDays={vendor.rescheduleWindowDays}
+                    policyNotes={vendor.policyNotes}
+                  />
+                )}
 
                 {vendor.isReal && (
                   <div className="text-center pt-1">

@@ -14,6 +14,7 @@ import { transformedImageUrl } from "@/lib/storage";
 import { Footer } from "@/components/public/Footer";
 import { useDocumentMeta } from "@/hooks/useDocumentMeta";
 import { MicrositeRsvpForm } from "@/components/microsite/MicrositeRsvpForm";
+import { ReportButton } from "@/components/trust/ReportButton";
 import { Skeleton } from "@/components/ui/skeleton";
 
 interface MicrositeData {
@@ -705,6 +706,14 @@ export default function EventMicrositePage() {
             Vendora
           </a>
         </p>
+        <div className="mt-3">
+          <ReportButton
+            contentType="microsite"
+            contentId={ev.id}
+            variant="link"
+            size="sm"
+          />
+        </div>
       </footer>
 
       {/* Reset to default theme for the Footer (if we ever decide to render it). */}

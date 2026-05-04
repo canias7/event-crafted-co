@@ -13,6 +13,7 @@ import { IntakeFormEditor } from "@/components/vendor/IntakeFormEditor";
 import { ReferralManager } from "@/components/vendor/ReferralManager";
 import { ImportedReviewsManager } from "@/components/vendor/ImportedReviewsManager";
 import { VendorFaqsManager } from "@/components/vendor/VendorFaqsManager";
+import { VendorPolicyEditor } from "@/components/vendor/VendorPolicyEditor";
 import { LeadRulesCard } from "@/components/vendor/LeadRulesCard";
 import { ShowcaseClipsManager } from "@/components/vendor/ShowcaseClipsManager";
 import { VerificationManager } from "@/components/vendor/VerificationManager";
@@ -598,6 +599,9 @@ export default function VendorProfilePage() {
               </div>
               <div className="mt-12 pt-10 border-t border-border">
                 <VendorFaqsManager vendorId={profile.id} canEdit={canEdit} />
+              </div>
+              <div className="mt-12 pt-10 border-t border-border">
+                <VendorPolicyEditor vendorId={profile.id} canEdit={canEdit} />
               </div>
               {canEdit && (
                 <div className="mt-12 pt-10 border-t border-border">

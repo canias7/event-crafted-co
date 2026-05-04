@@ -186,6 +186,11 @@ export default function SettingsPage() {
       { key: "budget_items", query: () => sb.from("budget_items").select("*").eq("host_id", user.id) },
       { key: "event_tasks", query: () => sb.from("event_tasks").select("*").eq("host_id", user.id) },
       { key: "notifications", query: () => sb.from("notifications").select("*").eq("user_id", user.id) },
+      { key: "host_inquiry_templates", query: () => sb.from("host_inquiry_templates").select("*").eq("host_id", user.id) },
+      { key: "content_reports_filed", query: () => sb.from("content_reports").select("*").eq("reporter_id", user.id) },
+      { key: "direct_threads", query: () => sb.from("direct_threads").select("*").eq("host_id", user.id) },
+      { key: "saved_searches", query: () => sb.from("saved_searches").select("*").eq("host_id", user.id) },
+      { key: "host_events", query: () => sb.from("host_events").select("*").eq("host_id", user.id) },
     ];
 
     const result: Record<string, unknown> = {
