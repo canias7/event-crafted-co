@@ -123,6 +123,7 @@ import {
   EditorialArticlePage,
   ClaimVendorPage,
   AdminClaimsPage,
+  PlanInFivePage,
 } from "@/router/lazyRoutes";
 
 const queryClient = new QueryClient();
@@ -168,6 +169,8 @@ const App = () => (
               <Route path="/guides/:slug" element={<EditorialArticlePage />} />
               {/* Vendor claim-listing flow — public, auth-gated to claim. */}
               <Route path="/claim/:token" element={<ClaimVendorPage />} />
+              {/* Plan-in-5 wizard — 6-question conversion lever. */}
+              <Route path="/plan-in-5" element={<PlanInFivePage />} />
               <Route path="/real-events" element={<RealEventsPage />} />
               <Route path="/real-events/:slug" element={<RealEventDetailPage />} />
               <Route path="/rsvp/:token" element={<RsvpPage />} />

@@ -48,6 +48,9 @@ export const ClaimVendorPage = lazy(importClaimVendor);
 const importAdminClaims = () => import("@/pages/admin/AdminClaimsPage");
 export const AdminClaimsPage = lazy(importAdminClaims);
 
+const importPlanInFive = () => import("@/pages/PlanInFivePage");
+export const PlanInFivePage = lazy(importPlanInFive);
+
 const importVendorMap = () => import("@/pages/VendorMapPage");
 export const VendorMapPage = lazy(importVendorMap);
 
