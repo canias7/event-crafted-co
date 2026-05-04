@@ -328,14 +328,17 @@ async function pushAppointments(
     if (isLive && !a.external_event_id) {
       const ev = await createGoogleEvent(accessToken, calendarId, a);
       if (ev?.id) {
-        await sb
-          .from("appointments")
-          .update({
-            external_event_id: ev.id,
-            external_event_provider: "google",
-            external_synced_at: new Date().toISOString(),
-          })
-          .eq("id", a.id);
+        const update: Record<string, unknown> = {
+          external_event_id: ev.id,
+          external_event_provider: "google",
+          external_synced_at: new Date().toISOString(),
+        };
+        // Upgrade Jitsi → Google Meet if Google handed us a real Meet link.
+        if (ev.hangoutLink) {
+          update.meeting_url = ev.hangoutLink;
+          update.meeting_provider = "google_meet";
+        }
+        await sb.from("appointments").update(update).eq("id", a.id);
         created++;
       }
     } else if (isDead && a.external_event_id && a.external_event_provider === "google") {
@@ -364,12 +367,13 @@ async function createGoogleEvent(
   accessToken: string,
   calendarId: string,
   a: AppointmentRow,
-): Promise<{ id: string } | null> {
+): Promise<{ id: string; hangoutLink?: string } | null> {
   const start = new Date(a.scheduled_at);
   const end = new Date(start.getTime() + a.duration_minutes * 60 * 1000);
   const summary =
     a.title?.trim() || `Vendora ${a.kind.replace("_", " ")}`;
-  const body = {
+  const remoteFriendly = ["consultation", "phone_call", "other"].includes(a.kind);
+  const body: Record<string, unknown> = {
     summary: `[Vendora] ${summary}`,
     description:
       (a.notes ?? "") +
@@ -379,23 +383,31 @@ async function createGoogleEvent(
     end: { dateTime: end.toISOString() },
     source: { title: "Vendora", url: "https://vendora.app" },
   };
-  const res = await fetch(
-    `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events`,
-    {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        "Content-Type": "application/json",
+  // Remote-friendly kinds get a Google Meet attached automatically.
+  if (remoteFriendly) {
+    body.conferenceData = {
+      createRequest: {
+        requestId: a.id,
+        conferenceSolutionKey: { type: "hangoutsMeet" },
       },
-      body: JSON.stringify(body),
+    };
+  }
+  const url =
+    `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events?conferenceDataVersion=1`;
+  const res = await fetch(url, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      "Content-Type": "application/json",
     },
-  );
+    body: JSON.stringify(body),
+  });
   if (!res.ok) {
     const t = await res.text();
     console.warn(`event create failed: ${res.status} ${t}`);
     return null;
   }
-  return (await res.json()) as { id: string };
+  return (await res.json()) as { id: string; hangoutLink?: string };
 }
 
 async function deleteGoogleEvent(

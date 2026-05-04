@@ -22,6 +22,7 @@ interface SavedSearch {
   name: string;
   filters: { _version?: number; q?: string; category?: string };
   notify_new_matches: boolean;
+  email_alerts_enabled: boolean;
   created_at: string;
 }
 
@@ -53,7 +54,7 @@ export default function SavedSearchesPage() {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data } = await (supabase as any)
       .from("saved_searches")
-      .select("id, name, filters, notify_new_matches, created_at")
+      .select("id, name, filters, notify_new_matches, email_alerts_enabled, created_at")
       .eq("host_id", user.id)
       .order("created_at", { ascending: false });
     setSearches((data as SavedSearch[] | null) ?? []);
@@ -75,6 +76,23 @@ export default function SavedSearchesPage() {
     const { error } = await (supabase as any)
       .from("saved_searches")
       .update({ notify_new_matches: next })
+      .eq("id", s.id);
+    if (error) {
+      toast.error(error.message);
+      load();
+    }
+  }
+
+  async function toggleEmail(s: SavedSearch, next: boolean) {
+    setSearches((prev) =>
+      prev.map((p) =>
+        p.id === s.id ? { ...p, email_alerts_enabled: next } : p,
+      ),
+    );
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error } = await (supabase as any)
+      .from("saved_searches")
+      .update({ email_alerts_enabled: next })
       .eq("id", s.id);
     if (error) {
       toast.error(error.message);
@@ -181,15 +199,31 @@ export default function SavedSearchesPage() {
                       ) : (
                         <BellOff className="w-3.5 h-3.5 text-muted-foreground" />
                       )}
-                      <span className="text-muted-foreground">
-                        {s.notify_new_matches
-                          ? "Notify on new matches"
-                          : "Notifications off"}
-                      </span>
+                      <span className="text-muted-foreground">In-app alerts</span>
                     </div>
                     <Switch
                       checked={s.notify_new_matches}
                       onCheckedChange={(v) => toggleNotify(s, v)}
+                    />
+                  </div>
+                  <div className="flex items-center justify-between gap-3 pt-3 border-t border-border/50">
+                    <div className="flex items-center gap-2 text-xs">
+                      <Bell className={`w-3.5 h-3.5 ${
+                        s.email_alerts_enabled
+                          ? "text-accent"
+                          : "text-muted-foreground"
+                      }`} />
+                      <span className="text-muted-foreground">
+                        Email alerts
+                        <span className="ml-1.5 text-[10px] uppercase tracking-wide text-muted-foreground/60">
+                          opt-in
+                        </span>
+                      </span>
+                    </div>
+                    <Switch
+                      checked={s.email_alerts_enabled}
+                      disabled={!s.notify_new_matches}
+                      onCheckedChange={(v) => toggleEmail(s, v)}
                     />
                   </div>
                 </div>

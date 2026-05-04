@@ -24,7 +24,7 @@ export default function AppointmentsPage() {
     const { data } = await (supabase as any)
       .from("appointments")
       .select(
-        "id, inquiry_id, vendor_id, host_id, kind, title, location, scheduled_at, duration_minutes, status, proposed_by, notes, vendor:vendor_profiles!appointments_vendor_id_fkey(business_name)",
+        "id, inquiry_id, vendor_id, host_id, kind, title, location, scheduled_at, duration_minutes, status, proposed_by, notes, meeting_url, meeting_provider, vendor:vendor_profiles!appointments_vendor_id_fkey(business_name)",
       )
       .eq("host_id", user.id)
       .order("scheduled_at", { ascending: true });

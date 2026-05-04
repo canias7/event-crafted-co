@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { Search, ShieldCheck, Loader2, ExternalLink, MapPin } from "lucide-react";
+import { Search, ShieldCheck, Loader2, ExternalLink, MapPin, Upload } from "lucide-react";
+import { BulkVendorImportDialog } from "@/components/admin/BulkVendorImportDialog";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -26,6 +27,7 @@ export default function AdminVendorsPage() {
   const [rows, setRows] = useState<VendorRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [importOpen, setImportOpen] = useState(false);
   const [pendingId, setPendingId] = useState<string | null>(null);
 
   async function load() {
@@ -151,6 +153,16 @@ export default function AdminVendorsPage() {
                 className="h-11 pl-10 rounded-full bg-secondary/80 border-none"
               />
             </div>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setImportOpen(true)}
+              className="rounded-full"
+            >
+              <Upload className="w-3.5 h-3.5 mr-1.5" />
+              Bulk import
+            </Button>
             <Button
               variant="outline"
               size="sm"
@@ -280,6 +292,15 @@ export default function AdminVendorsPage() {
       </main>
 
       <MobileNav items={navItems} />
+
+      <BulkVendorImportDialog
+        open={importOpen}
+        onOpenChange={setImportOpen}
+        onImported={() => {
+          setImportOpen(false);
+          load();
+        }}
+      />
     </div>
   );
 }

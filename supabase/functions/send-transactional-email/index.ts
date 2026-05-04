@@ -78,6 +78,13 @@ interface ReengagementPayload {
   inquiryId: string;
 }
 
+interface SavedSearchMatchPayload {
+  to: string;
+  searchName: string;
+  matchCount: number;
+  searchId: string;
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: cors });
@@ -113,6 +120,9 @@ serve(async (req) => {
       emails = await guestBlastEmails(body as GuestBlastPayload);
     } else if (kind === "reengagement_opportunity") {
       const e = reengagementEmail(body as ReengagementPayload);
+      if (e) emails = [e];
+    } else if (kind === "saved_search_match") {
+      const e = savedSearchMatchEmail(body as SavedSearchMatchPayload);
       if (e) emails = [e];
     } else {
       return json({ error: `Unknown kind: ${kind}` }, 400);
@@ -219,6 +229,22 @@ function teamInviteEmail(p: TeamInvitePayload) {
     to: p.email,
     subject: `${businessName} invited you to their Vendora team`,
     html: shellHtml(`You've been invited to join ${escape(businessName)}`, body),
+  };
+}
+
+function savedSearchMatchEmail(p: SavedSearchMatchPayload) {
+  const link = `${APP_URL}/customer/saved-searches`;
+  const browseLink = `${APP_URL}/vendors`;
+  const noun = p.matchCount === 1 ? "vendor matches" : "vendors match";
+  const body = `
+    <p style="margin:0 0 16px;">${p.matchCount} new ${noun} <strong>"${escape(p.searchName)}"</strong> on Vendora.</p>
+    <p style="margin:0 0 24px;">Tap through to see who joined the directory since your last check.</p>
+    <p style="margin:0 0 24px;">${button(browseLink, "View matches")}</p>
+    <p style="margin:0;font-size:13px;color:#777;">Manage which saved searches send email at <a href="${link}" style="color:#a08259;">your saved searches page</a>.</p>`;
+  return {
+    to: p.to,
+    subject: `New on Vendora: ${p.matchCount} ${noun} "${p.searchName}"`,
+    html: shellHtml(`New matches for "${escape(p.searchName)}"`, body),
   };
 }
 

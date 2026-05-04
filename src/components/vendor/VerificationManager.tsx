@@ -15,7 +15,7 @@ const BUCKET = "vendor-verifications";
 const MAX_BYTES = 10 * 1024 * 1024; // 10 MB
 const ACCEPTED = ["image/jpeg", "image/png", "image/webp", "application/pdf"];
 
-type Kind = "identity" | "insurance" | "business_license";
+type Kind = "identity" | "insurance" | "business_license" | "background_check";
 
 interface Verification {
   id: string;
@@ -51,6 +51,12 @@ const KINDS: KindMeta[] = [
     label: "Business license",
     blurb:
       "Your business registration, tax ID, or local trade license. Confirms you operate as a legitimate business.",
+  },
+  {
+    kind: "background_check",
+    label: "Background check",
+    blurb:
+      "Upload a recent background check report (Checkr, Sterling, GoodHire — anything dated within the last 12 months). Critical for vendors who work in private homes (photographers, planners, makeup artists, in-home chefs).",
   },
 ];
 

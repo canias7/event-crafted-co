@@ -3,8 +3,9 @@
 // that match the saved filters, drops in-app notifications, and updates
 // last_notified_at atomically.
 //
-// In-app only — no email — so users don't get spam from low-signal new-vendor
-// notices. They'll see them in the bell + the daily digest if enabled.
+// In-app for everyone, plus email for searches where the host opted in
+// via email_alerts_enabled (the SavedSearchesPage UI exposes a toggle
+// per search). Default is in-app only — opt-in keeps the volume calm.
 //
 // Schedule daily (or hourly if your sign-up volume warrants it).
 
@@ -22,6 +23,15 @@ const cors = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
+interface MatchRow {
+  saved_search_id: string;
+  host_id: string;
+  host_email: string | null;
+  search_name: string;
+  match_count: number;
+  email_alerts_enabled: boolean;
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
 
@@ -36,8 +46,29 @@ serve(async (req) => {
   const { data, error } = await admin.rpc("enqueue_saved_search_matches");
   if (error) return json({ error: error.message }, 500);
 
-  const rows = (data as unknown[] | null) ?? [];
-  return json({ ok: true, notified: rows.length, rows }, 200);
+  const rows = (data as MatchRow[] | null) ?? [];
+
+  // Email fan-out for opted-in searches. In-app notifications already
+  // happened inside the RPC; here we add the email as a second channel.
+  let emailed = 0;
+  for (const r of rows) {
+    if (!r.email_alerts_enabled || !r.host_email) continue;
+    const res = await admin.functions.invoke("send-transactional-email", {
+      body: {
+        kind: "saved_search_match",
+        to: r.host_email,
+        searchName: r.search_name,
+        matchCount: r.match_count,
+        searchId: r.saved_search_id,
+      },
+    });
+    if (!res.error) emailed++;
+  }
+
+  return json(
+    { ok: true, notified: rows.length, emailed },
+    200,
+  );
 });
 
 function json(payload: unknown, status: number) {

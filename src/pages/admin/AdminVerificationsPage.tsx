@@ -22,7 +22,7 @@ const BUCKET = "vendor-verifications";
 interface VerificationRow {
   id: string;
   vendor_id: string;
-  kind: "identity" | "insurance" | "business_license";
+  kind: "identity" | "insurance" | "business_license" | "background_check";
   status: "pending" | "approved" | "rejected";
   document_path: string;
   notes: string | null;
@@ -35,6 +35,7 @@ const kindLabel: Record<VerificationRow["kind"], string> = {
   identity: "Identity",
   insurance: "Insurance",
   business_license: "Business license",
+  background_check: "Background check",
 };
 
 const statusMeta: Record<

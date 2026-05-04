@@ -1,4 +1,4 @@
-import { ShieldCheck, FileBadge2, Briefcase } from "lucide-react";
+import { ShieldCheck, FileBadge2, Briefcase, UserCheck } from "lucide-react";
 
 // Compact verification badge cluster for the vendor public profile.
 // Reads the public-safe `vendor_public_badges` view (kinds only —
@@ -22,6 +22,11 @@ const KIND_META: Record<
     label: "Licensed",
     full: "Business license verified",
     Icon: Briefcase,
+  },
+  background_check: {
+    label: "Bg-checked",
+    full: "Background check verified",
+    Icon: UserCheck,
   },
 };
 
