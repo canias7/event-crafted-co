@@ -20,6 +20,7 @@ import {
   History,
   MailCheck,
   BookOpen,
+  UserPlus,
   type LucideIcon,
 } from "lucide-react";
 
@@ -103,6 +104,7 @@ export const adminNavItems: NavItem[] = [
   { labelKey: "sidebar.admin.reviews", path: "/admin/reviews", icon: CheckSquare },
   { labelKey: "sidebar.admin.inspiration", path: "/admin/inspiration", icon: FileText },
   { labelKey: "sidebar.admin.editorial", path: "/admin/editorial", icon: BookOpen },
+  { labelKey: "sidebar.admin.claims", path: "/admin/claims", icon: UserPlus },
   { labelKey: "sidebar.admin.support", path: "/admin/support", icon: LifeBuoy },
   { labelKey: "sidebar.admin.audit", path: "/admin/audit", icon: History },
   { labelKey: "sidebar.admin.email_health", path: "/admin/email-deliverability", icon: MailCheck },

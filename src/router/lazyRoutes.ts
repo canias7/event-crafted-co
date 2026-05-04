@@ -42,6 +42,12 @@ export const EditorialArticlePage = lazy(importEditorialArticle);
 const importAdminEditorial = () => import("@/pages/admin/AdminEditorialPage");
 export const AdminEditorialPage = lazy(importAdminEditorial);
 
+const importClaimVendor = () => import("@/pages/ClaimVendorPage");
+export const ClaimVendorPage = lazy(importClaimVendor);
+
+const importAdminClaims = () => import("@/pages/admin/AdminClaimsPage");
+export const AdminClaimsPage = lazy(importAdminClaims);
+
 const importVendorMap = () => import("@/pages/VendorMapPage");
 export const VendorMapPage = lazy(importVendorMap);
 
