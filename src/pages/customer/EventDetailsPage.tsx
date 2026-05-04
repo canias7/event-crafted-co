@@ -42,8 +42,7 @@ import { SubNavTabs } from "@/components/shared/SubNavTabs";
 import { EVENT_HUB_TABS } from "@/data/hubTabs";
 import { customerNavItems as navItems } from "@/data/navItems";
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const eventsTable = () => (supabase as any).from("host_events");
+const eventsTable = () => supabase.from("host_events");
 
 type EventType = "wedding" | "birthday" | "holiday_dinner" | "other";
 

@@ -83,8 +83,7 @@ export default function MoodBoardDetailPage() {
   async function load() {
     if (!id || !user) return;
     setLoading(true);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: b } = await (supabase as any)
+    const { data: b } = await supabase
       .from("mood_boards")
       .select("id, host_id, name, description, share_token, created_at")
       .eq("id", id)
@@ -95,8 +94,7 @@ export default function MoodBoardDetailPage() {
       return;
     }
     setBoard(b as BoardRow);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: items } = await (supabase as any)
+    const { data: items } = await supabase
       .from("mood_board_items")
       .select("id, image_url, source_url, caption, display_order, created_at")
       .eq("board_id", id)
@@ -148,8 +146,7 @@ export default function MoodBoardDetailPage() {
       }
       const { data: pub } = supabase.storage.from(BUCKET).getPublicUrl(path);
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const insert = await (supabase as any).from("mood_board_items").insert({
+      const insert = await supabase.from("mood_board_items").insert({
         board_id: board.id,
         image_url: pub.publicUrl,
         display_order: start + i,
@@ -173,8 +170,7 @@ export default function MoodBoardDetailPage() {
   async function addByUrl() {
     if (!board || !urlValue.trim()) return;
     setAddingUrl(true);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error } = await (supabase as any).from("mood_board_items").insert({
+    const { error } = await supabase.from("mood_board_items").insert({
       board_id: board.id,
       image_url: urlValue.trim(),
       source_url: urlSource.trim() || null,
@@ -196,8 +192,7 @@ export default function MoodBoardDetailPage() {
 
   async function deletePin(pin: PinRow) {
     setDeletingId(pin.id);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error } = await (supabase as any)
+    const { error } = await supabase
       .from("mood_board_items")
       .delete()
       .eq("id", pin.id);
@@ -221,8 +216,7 @@ export default function MoodBoardDetailPage() {
 
   async function deleteBoard() {
     if (!board) return;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error } = await (supabase as any)
+    const { error } = await supabase
       .from("mood_boards")
       .delete()
       .eq("id", board.id);

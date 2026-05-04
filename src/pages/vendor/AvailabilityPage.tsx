@@ -21,8 +21,7 @@ interface BusyEvent {
   is_all_day: boolean;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const unavailableTable = () => (supabase as any).from("vendor_unavailable_dates");
+const unavailableTable = () => supabase.from("vendor_unavailable_dates");
 
 function dateKey(d: Date) {
   // Format as YYYY-MM-DD in local time
@@ -50,6 +49,7 @@ export default function AvailabilityPage() {
     }
     const [{ data: rows }, { data: busy }] = await Promise.all([
       unavailableTable().select("date").eq("vendor_id", vendorId),
+      // calendar_synced_busy isn't yet in the generated types.
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (supabase as any)
         .from("calendar_synced_busy")
@@ -58,9 +58,7 @@ export default function AvailabilityPage() {
         .gte("starts_at", new Date().toISOString())
         .order("starts_at", { ascending: true }),
     ]);
-    setUnavailable(
-      new Set(((rows as Array<{ date: string }> | null) ?? []).map((r) => r.date)),
-    );
+    setUnavailable(new Set((rows ?? []).map((r) => r.date)));
     setBusyEvents((busy as BusyEvent[]) ?? []);
     setLoading(false);
   }

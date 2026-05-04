@@ -46,8 +46,7 @@ interface TimelineItem {
   display_order: number;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const itemsTable = () => (supabase as any).from("event_timeline_items");
+const itemsTable = () => supabase.from("event_timeline_items");
 
 function formatTime(t: string) {
   // t is "HH:MM:SS" or "HH:MM"

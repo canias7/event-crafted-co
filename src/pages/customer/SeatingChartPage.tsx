@@ -52,10 +52,8 @@ interface TableRow {
   notes: string | null;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const tablesTable = () => (supabase as any).from("event_tables");
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const guestsTable = () => (supabase as any).from("event_guests");
+const tablesTable = () => supabase.from("event_tables");
+const guestsTable = () => supabase.from("event_guests");
 
 export default function SeatingChartPage() {
   const { user } = useAuth();

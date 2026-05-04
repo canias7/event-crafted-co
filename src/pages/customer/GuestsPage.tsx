@@ -37,8 +37,7 @@ import { SubNavTabs } from "@/components/shared/SubNavTabs";
 import { GUESTS_HUB_TABS } from "@/data/hubTabs";
 import { customerNavItems as navItems } from "@/data/navItems";
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const guestsTable = () => (supabase as any).from("event_guests");
+const guestsTable = () => supabase.from("event_guests");
 
 interface GuestRow {
   id: string;

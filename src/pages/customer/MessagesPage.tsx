@@ -29,10 +29,8 @@ interface DirectMessage {
   created_at: string;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const threadsTable = () => (supabase as any).from("direct_threads");
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const dmsTable = () => (supabase as any).from("direct_messages");
+const threadsTable = () => supabase.from("direct_threads");
+const dmsTable = () => supabase.from("direct_messages");
 
 export default function MessagesPage() {
   const { user } = useAuth();

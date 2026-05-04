@@ -48,15 +48,14 @@ export function SaveToBoardModal({
     if (!open || !user) return;
     let cancelled = false;
     setLoading(true);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (supabase as any)
+    supabase
       .from("mood_boards")
       .select("id, name")
       .eq("host_id", user.id)
       .order("created_at", { ascending: false })
-      .then(({ data }: { data: BoardOption[] | null }) => {
+      .then(({ data }) => {
         if (cancelled) return;
-        setBoards(data ?? []);
+        setBoards((data as BoardOption[]) ?? []);
         setLoading(false);
         // If they have no boards, jump straight to the create form so the
         // first interaction isn't an empty list.
@@ -70,19 +69,15 @@ export function SaveToBoardModal({
   async function pinTo(boardId: string) {
     setSavingId(boardId);
     // Resolve next display order for the board.
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: existing } = await (supabase as any)
+    const { data: existing } = await supabase
       .from("mood_board_items")
       .select("display_order")
       .eq("board_id", boardId)
       .order("display_order", { ascending: false })
       .limit(1);
-    const nextOrder =
-      ((existing as Array<{ display_order: number }> | null)?.[0]
-        ?.display_order ?? -1) + 1;
+    const nextOrder = (existing?.[0]?.display_order ?? -1) + 1;
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error } = await (supabase as any).from("mood_board_items").insert({
+    const { error } = await supabase.from("mood_board_items").insert({
       board_id: boardId,
       image_url: imageUrl,
       source_url: sourceUrl ?? null,
@@ -102,8 +97,7 @@ export function SaveToBoardModal({
     e.preventDefault();
     if (!user || !newName.trim()) return;
     setCreating(true);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data, error } = await (supabase as any)
+    const { data, error } = await supabase
       .from("mood_boards")
       .insert({ host_id: user.id, name: newName.trim() })
       .select("id")
@@ -113,7 +107,7 @@ export function SaveToBoardModal({
       toast.error(error?.message ?? "Couldn't create the board");
       return;
     }
-    await pinTo((data as { id: string }).id);
+    await pinTo(data.id);
     setCreating(false);
     setNewName("");
     setShowCreate(false);

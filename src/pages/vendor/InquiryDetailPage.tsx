@@ -144,8 +144,7 @@ export default function InquiryDetailPage() {
     setAiDraft(draft ?? null);
 
     // Review (if host left one) + vendor response
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: reviewRow } = await (supabase as any)
+    const { data: reviewRow } = await supabase
       .from("reviews")
       .select(
         "id, vendor_id, rating, body, created_at, response:review_responses(body, updated_at)",
@@ -171,8 +170,7 @@ export default function InquiryDetailPage() {
     }
 
     // Proposals on this inquiry
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: props } = await (supabase as any)
+    const { data: props } = await supabase
       .from("proposals")
       .select(
         "id, title, line_items, subtotal_cents, deposit_cents, terms, contract_body, status, sent_at, signed_at, signed_name",
@@ -187,8 +185,7 @@ export default function InquiryDetailPage() {
   async function saveResponse() {
     if (!review || !responseDraft.trim()) return;
     setSavingResponse(true);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const tbl = (supabase as any).from("review_responses");
+    const tbl = supabase.from("review_responses");
     const { error } = review.response
       ? await tbl.update({ body: responseDraft.trim() }).eq("review_id", review.id)
       : await tbl.insert({
