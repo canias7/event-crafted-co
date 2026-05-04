@@ -45,6 +45,8 @@ export default function SettingsPage() {
 
   const [digestEnabled, setDigestEnabled] = useState<boolean | null>(null);
   const [savingDigest, setSavingDigest] = useState(false);
+  const [reengagementEnabled, setReengagementEnabled] = useState<boolean | null>(null);
+  const [savingReengagement, setSavingReengagement] = useState(false);
 
   const { preference: themePref, setPreference: setThemePref } = useTheme();
 
@@ -52,25 +54,42 @@ export default function SettingsPage() {
     if (profile) setDisplayName(profile.display_name ?? "");
   }, [profile]);
 
-  // Load the digest preference. profile from useAuth doesn't include this
-  // column, so query directly.
+  // Load the digest + re-engagement preferences. profile from useAuth
+  // doesn't include these columns, so query directly.
   useEffect(() => {
     if (!user) return;
     let cancelled = false;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (supabase as any)
       .from("profiles")
-      .select("daily_digest_enabled")
+      .select("daily_digest_enabled, reengagement_emails_enabled")
       .eq("id", user.id)
       .maybeSingle()
-      .then(({ data }: { data: { daily_digest_enabled: boolean } | null }) => {
+      .then(({ data }: { data: { daily_digest_enabled: boolean; reengagement_emails_enabled: boolean } | null }) => {
         if (cancelled) return;
         setDigestEnabled(data?.daily_digest_enabled ?? true);
+        setReengagementEnabled(data?.reengagement_emails_enabled ?? true);
       });
     return () => {
       cancelled = true;
     };
   }, [user]);
+
+  async function toggleReengagement(next: boolean) {
+    if (!user) return;
+    setSavingReengagement(true);
+    setReengagementEnabled(next);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error } = await (supabase as any)
+      .from("profiles")
+      .update({ reengagement_emails_enabled: next })
+      .eq("id", user.id);
+    setSavingReengagement(false);
+    if (error) {
+      setReengagementEnabled(!next);
+      toast.error(error.message);
+    }
+  }
 
   async function toggleDigest(next: boolean) {
     if (!user) return;
@@ -415,6 +434,24 @@ export default function SettingsPage() {
                       checked={digestEnabled ?? true}
                       onCheckedChange={toggleDigest}
                       disabled={savingDigest || digestEnabled === null}
+                    />
+                  </div>
+                  <div className="flex items-center justify-between gap-4 pt-4 border-t border-border">
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium mb-1">
+                        Re-engagement nudges
+                      </p>
+                      <p className="text-xs text-muted-foreground leading-relaxed">
+                        For vendors: get an email + in-app ping when a
+                        past client's anniversary or milestone date is
+                        approaching, so you can reach out about a
+                        follow-on event.
+                      </p>
+                    </div>
+                    <Switch
+                      checked={reengagementEnabled ?? true}
+                      onCheckedChange={toggleReengagement}
+                      disabled={savingReengagement || reengagementEnabled === null}
                     />
                   </div>
                 </div>

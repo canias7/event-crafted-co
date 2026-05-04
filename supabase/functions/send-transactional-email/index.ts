@@ -68,6 +68,16 @@ interface GuestBlastPayload {
   audience: { rsvp_status?: "attending" | "all"; vip_only?: boolean };
 }
 
+interface ReengagementPayload {
+  to: string;
+  vendorBusinessName: string;
+  hostDisplayName: string;
+  occasion: string;
+  eventType: string;
+  upcomingDate: string;
+  inquiryId: string;
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: cors });
@@ -101,6 +111,9 @@ serve(async (req) => {
       emails = await newInquiryEmails(body as NewInquiryPayload);
     } else if (kind === "guest_blast") {
       emails = await guestBlastEmails(body as GuestBlastPayload);
+    } else if (kind === "reengagement_opportunity") {
+      const e = reengagementEmail(body as ReengagementPayload);
+      if (e) emails = [e];
     } else {
       return json({ error: `Unknown kind: ${kind}` }, 400);
     }
@@ -206,6 +219,31 @@ function teamInviteEmail(p: TeamInvitePayload) {
     to: p.email,
     subject: `${businessName} invited you to their Vendora team`,
     html: shellHtml(`You've been invited to join ${escape(businessName)}`, body),
+  };
+}
+
+function reengagementEmail(p: ReengagementPayload) {
+  const eventTypeLabel = p.eventType.replace(/_/g, " ");
+  const upcoming = new Date(p.upcomingDate).toLocaleDateString(undefined, {
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+  });
+  const inboxLink = `${APP_URL}/vendor/inbox/${p.inquiryId}`;
+  const body = `
+    <p style="margin:0 0 16px;">${escape(p.hostDisplayName)}'s <strong>${escape(p.occasion)}</strong> is coming up on <strong>${escape(upcoming)}</strong>.</p>
+    <p style="margin:0 0 16px;">You worked together on a ${escape(eventTypeLabel)} — a quick "thinking of you" message right now is the kind of touch that turns a one-time client into a long-term one. Possible follow-ups:</p>
+    <ul style="margin:0 0 24px;padding-left:18px;color:#3a3a3a;font-size:14px;line-height:1.7;">
+      <li>An anniversary photo session or vow renewal</li>
+      <li>A milestone party (birthday, anniversary celebration, family gathering)</li>
+      <li>Holiday-season rebooking or referral to a friend</li>
+    </ul>
+    <p style="margin:0 0 24px;">${button(inboxLink, "Open the original conversation")}</p>
+    <p style="margin:0;font-size:13px;color:#777;">You're getting this because Vendora detects re-engagement opportunities for past clients automatically. Manage notification preferences in <a href="${APP_URL}/settings" style="color:#a08259;">Settings</a>.</p>`;
+  return {
+    to: p.to,
+    subject: `${p.hostDisplayName}'s ${p.occasion} is in 30 days`,
+    html: shellHtml(`Reach out to ${escape(p.hostDisplayName)}`, body),
   };
 }
 
