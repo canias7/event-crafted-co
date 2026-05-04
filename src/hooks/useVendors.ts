@@ -95,7 +95,8 @@ async function fetchVendors(): Promise<Vendor[]> {
   if (inFlight) return inFlight;
   inFlight = (async () => {
     try {
-      const { data, error } = await supabase
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data, error } = await (supabase as any)
         .from("vendor_profiles")
         .select(
           "id, business_name, category, bio, base_price_cents, location, service_radius_miles, portfolio_summary, verified_at, responder_tier, intro_video_url, slug, instagram_handle, tiktok_handle",

@@ -104,7 +104,7 @@ export default function VendorCityCategoryPage() {
 
   const faqs = useMemo(
     () =>
-      CATEGORY_FAQS(config.display.toLowerCase()).map((f) => ({
+      (CATEGORY_FAQS[categorySlug] ?? []).map((f) => ({
         ...f,
         // Append city qualifier so each FAQ is unique per page (helps
         // with FAQPage rich result eligibility).
@@ -113,7 +113,7 @@ export default function VendorCityCategoryPage() {
           "?",
         ),
       })),
-    [config, cityLabel],
+    [categorySlug, cityLabel],
   );
 
   const title = `${config.display} in ${cityLabel} — Vendora`;
@@ -135,9 +135,9 @@ export default function VendorCityCategoryPage() {
           source={config.hero}
           alt=""
           loading="eager"
-          fetchpriority="high"
+          fetchPriority="high"
           sizes="100vw"
-          imgClassName="absolute inset-0 w-full h-full object-cover opacity-15"
+          className="absolute inset-0 w-full h-full object-cover opacity-15"
         />
         <div className="container mx-auto px-6 md:px-8 max-w-4xl relative">
           <Link
@@ -275,7 +275,7 @@ export default function VendorCityCategoryPage() {
         </section>
       )}
 
-      {faqs.length > 0 && <FaqSection faqs={faqs} eyebrow="Common questions" />}
+      {faqs.length > 0 && <FaqSection items={faqs} eyebrow="Common questions" />}
 
       <JsonLd
         data={{

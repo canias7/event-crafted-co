@@ -367,6 +367,7 @@ export default function PaymentsPage() {
           open={addOpen}
           onOpenChange={setAddOpen}
           hostId={user.id}
+          eventLocation={activeEvent?.event_location ?? null}
           onSuccess={load}
         />
       )}
@@ -378,11 +379,13 @@ function AddBudgetItemDialog({
   open,
   onOpenChange,
   hostId,
+  eventLocation,
   onSuccess,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   hostId: string;
+  eventLocation: string | null;
   onSuccess: () => void;
 }) {
   const [description, setDescription] = useState("");
@@ -468,7 +471,7 @@ function AddBudgetItemDialog({
             {category && (
               <BudgetBenchmarkBadge
                 category={category}
-                location={activeEvent?.event_location ?? null}
+                location={eventLocation}
               />
             )}
           </div>
