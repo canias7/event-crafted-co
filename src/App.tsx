@@ -68,6 +68,7 @@ import {
   GiftSharePage,
   MicrositeEditorPage,
   EventMicrositePage,
+  PlannerWorkspacePage,
   EventAlbumPage,
   SupportPage,
   AdminSupportPage,
@@ -154,6 +155,7 @@ const App = () => (
               <Route path="/customer/live" element={<RequireRole role="host"><LiveDayPage /></RequireRole>} />
               <Route path="/customer/gifts" element={<RequireRole role="host"><GiftWishesPage /></RequireRole>} />
               <Route path="/customer/microsite" element={<RequireRole role="host"><MicrositeEditorPage /></RequireRole>} />
+              <Route path="/planner" element={<RequireRole role={["host", "vendor"]}><PlannerWorkspacePage /></RequireRole>} />
               <Route path="/gift/:token" element={<GiftSharePage />} />
               <Route path="/e/:token" element={<EventMicrositePage />} />
               <Route path="/album/:token" element={<EventAlbumPage />} />

@@ -22,6 +22,7 @@ import {
   Sparkles,
   Globe,
   LifeBuoy,
+  Briefcase,
   type LucideIcon,
 } from "lucide-react";
 
@@ -53,6 +54,7 @@ export const customerNavItems: NavItem[] = [
   { label: "Group gifts", path: "/customer/gifts", icon: Sparkles },
   { label: "Multi-vendor blast", path: "/customer/inquiry-blast", icon: Send },
   { label: "Planning Team", path: "/customer/planning-team", icon: Users },
+  { label: "Planner workspace", path: "/planner", icon: Briefcase },
   { label: "Support", path: "/support", icon: LifeBuoy },
   { label: "Settings", path: "/settings", icon: Settings },
 ];
