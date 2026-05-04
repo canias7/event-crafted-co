@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Loader2 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,6 +11,7 @@ import heroImg from "@/assets/vendora-hero-cinematic.jpg";
 import { SocialAuthButtons } from "@/components/auth/SocialAuthButtons";
 
 export default function LoginPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -68,20 +70,20 @@ export default function LoginPage() {
           <div>
             <div className="flex items-center gap-3 mb-5">
               <p className="font-label text-accent tracking-[0.4em]">
-                — WELCOME BACK
+                {t("auth.login.eyebrow")}
               </p>
               <span className="h-px w-8 bg-accent/40" />
             </div>
             <p className="text-3xl lg:text-4xl font-display leading-[1.1] max-w-sm">
-              Every detail,{" "}
+              {t("auth.login.tagline_lead")}{" "}
               <span className="italic font-light text-accent">
-                perfectly composed.
+                {t("auth.login.tagline_accent")}
               </span>
             </p>
           </div>
 
           <p className="text-xs text-background/50 tracking-wide">
-            © 2026 Vendora — Vendor-first event marketplace
+            {t("auth.login.footer_brand")}
           </p>
         </div>
       </div>
@@ -94,15 +96,15 @@ export default function LoginPage() {
           </Link>
 
           <h1 className="font-display text-3xl md:text-4xl mb-2 leading-tight">
-            Sign in
+            {t("auth.login.title")}
           </h1>
           <p className="text-sm text-muted-foreground mb-10">
-            Welcome back. Pick up where you left off.
+            {t("auth.login.subtitle")}
           </p>
 
           <form onSubmit={onSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email">{t("auth.common.email")}</Label>
               <Input
                 id="email"
                 type="email"
@@ -114,12 +116,12 @@ export default function LoginPage() {
             </div>
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <Label htmlFor="password">Password</Label>
+                <Label htmlFor="password">{t("auth.common.password")}</Label>
                 <Link
                   to="/forgot-password"
                   className="text-xs text-accent font-medium"
                 >
-                  Forgot?
+                  {t("auth.login.forgot")}
                 </Link>
               </div>
               <Input
@@ -139,26 +141,26 @@ export default function LoginPage() {
               {loading ? (
                 <>
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Signing in…
+                  {t("auth.common.signing_in")}
                 </>
               ) : (
-                "Sign in"
+                t("auth.login.submit")
               )}
             </Button>
           </form>
 
           <div className="mt-6 mb-6 flex items-center gap-3 text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
             <span className="flex-1 h-px bg-border" />
-            or
+            {t("auth.common.or")}
             <span className="flex-1 h-px bg-border" />
           </div>
 
           <SocialAuthButtons />
 
           <p className="text-sm text-muted-foreground mt-8 text-center">
-            New to Vendora?{" "}
+            {t("auth.login.new_here")}{" "}
             <Link to="/signup" className="text-accent font-medium">
-              Create an account
+              {t("auth.login.create_account")}
             </Link>
           </p>
         </div>

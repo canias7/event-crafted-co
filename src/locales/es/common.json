@@ -123,6 +123,63 @@
     "label": "Idioma",
     "current": "Idioma actual"
   },
+  "auth": {
+    "common": {
+      "or": "o",
+      "email": "Correo electrónico",
+      "password": "Contraseña",
+      "signing_in": "Iniciando sesión…",
+      "creating": "Creando…"
+    },
+    "login": {
+      "eyebrow": "— BIENVENIDO DE NUEVO",
+      "tagline_lead": "Cada detalle,",
+      "tagline_accent": "perfectamente compuesto.",
+      "footer_brand": "© 2026 Vendora — Mercado de eventos centrado en proveedores",
+      "title": "Iniciar sesión",
+      "subtitle": "Bienvenido de nuevo. Continúa donde lo dejaste.",
+      "forgot": "¿Olvidaste?",
+      "submit": "Iniciar sesión",
+      "new_here": "¿Eres nuevo en Vendora?",
+      "create_account": "Crear una cuenta"
+    },
+    "forgot": {
+      "eyebrow": "— RESTABLECER ACCESO",
+      "tagline_lead": "Te enviaremos un",
+      "tagline_accent": "enlace nuevo.",
+      "title": "¿Olvidaste tu contraseña?",
+      "subtitle": "Ingresa el correo de tu cuenta y te enviaremos un enlace para restablecerla.",
+      "sent_lead": "Revisa tu bandeja en",
+      "sent_trail": "para encontrar el enlace. Expirará en una hora.",
+      "back_to_sign_in": "Volver a iniciar sesión",
+      "submit": "Enviar enlace",
+      "remembered": "¿Ya la recordaste?",
+      "sign_in": "Iniciar sesión"
+    },
+    "signup": {
+      "eyebrow": "— ÚNETE A VENDORA",
+      "tagline_lead": "Planea algo",
+      "tagline_accent": "inolvidable.",
+      "tagline_subtitle": "Proveedores seleccionados a mano y las herramientas para gestionar tu evento de principio a fin.",
+      "footer_brand": "© 2026 Vendora — Ahora en beta privada",
+      "title": "Crea tu cuenta",
+      "subtitle": "Elige cómo usarás la plataforma.",
+      "role_label": "Soy un…",
+      "role_host": "Anfitrión",
+      "role_host_desc": "Planear un evento",
+      "role_vendor": "Proveedor",
+      "role_vendor_desc": "Ofrecer servicios",
+      "name_label": "Nombre para mostrar",
+      "password_hint": "Al menos 8 caracteres",
+      "adult_lead": "Tengo 18 años o más y acepto los",
+      "adult_terms": "Términos",
+      "adult_and": "y la",
+      "adult_privacy": "Política de privacidad",
+      "submit": "Crear cuenta",
+      "already_have_account": "¿Ya tienes cuenta?",
+      "sign_in": "Iniciar sesión"
+    }
+  },
   "dashboard": {
     "common": {
       "view_all": "Ver todo",

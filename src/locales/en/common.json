@@ -123,6 +123,63 @@
     "label": "Language",
     "current": "Current language"
   },
+  "auth": {
+    "common": {
+      "or": "or",
+      "email": "Email",
+      "password": "Password",
+      "signing_in": "Signing in…",
+      "creating": "Creating…"
+    },
+    "login": {
+      "eyebrow": "— WELCOME BACK",
+      "tagline_lead": "Every detail,",
+      "tagline_accent": "perfectly composed.",
+      "footer_brand": "© 2026 Vendora — Vendor-first event marketplace",
+      "title": "Sign in",
+      "subtitle": "Welcome back. Pick up where you left off.",
+      "forgot": "Forgot?",
+      "submit": "Sign in",
+      "new_here": "New to Vendora?",
+      "create_account": "Create an account"
+    },
+    "forgot": {
+      "eyebrow": "— RESET ACCESS",
+      "tagline_lead": "We'll email you a",
+      "tagline_accent": "fresh link.",
+      "title": "Forgot password?",
+      "subtitle": "Enter the email on your account and we'll send a reset link.",
+      "sent_lead": "Check your inbox at",
+      "sent_trail": "for a reset link. It'll expire in an hour.",
+      "back_to_sign_in": "Back to sign in",
+      "submit": "Send reset link",
+      "remembered": "Remembered it?",
+      "sign_in": "Sign in"
+    },
+    "signup": {
+      "eyebrow": "— JOIN VENDORA",
+      "tagline_lead": "Plan something",
+      "tagline_accent": "unforgettable.",
+      "tagline_subtitle": "Hand-selected vendors and the calm tools to run your event end-to-end.",
+      "footer_brand": "© 2026 Vendora — Now in private beta",
+      "title": "Create your account",
+      "subtitle": "Choose how you'll use the platform.",
+      "role_label": "I am a…",
+      "role_host": "Host",
+      "role_host_desc": "Plan an event",
+      "role_vendor": "Vendor",
+      "role_vendor_desc": "Offer services",
+      "name_label": "Display name",
+      "password_hint": "At least 8 characters",
+      "adult_lead": "I'm 18 or older and agree to Vendora's",
+      "adult_terms": "Terms",
+      "adult_and": "and",
+      "adult_privacy": "Privacy Policy",
+      "submit": "Create account",
+      "already_have_account": "Already have an account?",
+      "sign_in": "Sign in"
+    }
+  },
   "dashboard": {
     "common": {
       "view_all": "View all",
