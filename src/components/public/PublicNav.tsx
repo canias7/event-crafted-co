@@ -52,7 +52,10 @@ export function PublicNav() {
   const dashPath = dashboardPath(profile?.role);
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 bg-gradient-to-b from-foreground/80 via-foreground/40 to-transparent backdrop-blur-sm">
+    <nav
+      className="fixed top-0 left-0 right-0 z-50 bg-gradient-to-b from-foreground/80 via-foreground/40 to-transparent backdrop-blur-sm"
+      aria-label="Public"
+    >
       <div className="container mx-auto flex items-center justify-between h-16 px-4 md:px-8">
         <Link to="/" className="font-display text-xl tracking-tight text-background">
           Vendora
@@ -69,6 +72,7 @@ export function PublicNav() {
                   ? "text-background"
                   : "text-background/70 hover:text-background"
               }`}
+              aria-current={location.pathname === item.path ? "page" : undefined}
             >
               {item.label}
             </Link>
@@ -158,14 +162,21 @@ export function PublicNav() {
           className="md:hidden p-2 text-background"
           onClick={() => setMobileOpen(!mobileOpen)}
           aria-label={mobileOpen ? t("nav.close_menu") : t("nav.open_menu")}
+          aria-expanded={mobileOpen}
+          aria-controls="public-mobile-menu"
         >
-          {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+          {mobileOpen ? (
+            <X className="w-5 h-5" aria-hidden="true" />
+          ) : (
+            <Menu className="w-5 h-5" aria-hidden="true" />
+          )}
         </button>
       </div>
 
       {/* Mobile menu */}
       {mobileOpen && (
         <motion.div
+          id="public-mobile-menu"
           initial={{ opacity: 0, y: -8 }}
           animate={{ opacity: 1, y: 0 }}
           className="md:hidden bg-background border-b border-border px-4 pb-4"
