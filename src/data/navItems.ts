@@ -18,6 +18,8 @@ import {
   Settings,
   TrendingUp,
   ShieldCheck,
+  Send,
+  Sparkles,
   type LucideIcon,
 } from "lucide-react";
 
@@ -45,6 +47,8 @@ export const customerNavItems: NavItem[] = [
   { label: "Saved searches", path: "/customer/saved-searches", icon: Store },
   { label: "Mood Boards", path: "/customer/moodboards", icon: Image },
   { label: "Registry", path: "/customer/registry", icon: Gift },
+  { label: "Group gifts", path: "/customer/gifts", icon: Sparkles },
+  { label: "Multi-vendor blast", path: "/customer/inquiry-blast", icon: Send },
   { label: "Planning Team", path: "/customer/planning-team", icon: Users },
   { label: "Settings", path: "/settings", icon: Settings },
 ];
