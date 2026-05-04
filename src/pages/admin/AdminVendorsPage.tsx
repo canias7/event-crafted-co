@@ -1,6 +1,11 @@
-import { useEffect, useMemo, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import { Search, ShieldCheck, Loader2, ExternalLink, MapPin, Upload } from "lucide-react";
-import { BulkVendorImportDialog } from "@/components/admin/BulkVendorImportDialog";
+// Lazy: only loads when the admin clicks "Bulk import."
+const BulkVendorImportDialog = lazy(() =>
+  import("@/components/admin/BulkVendorImportDialog").then((m) => ({
+    default: m.BulkVendorImportDialog,
+  })),
+);
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -292,14 +297,18 @@ export default function AdminVendorsPage() {
 
       <MobileNav items={navItems} />
 
-      <BulkVendorImportDialog
-        open={importOpen}
-        onOpenChange={setImportOpen}
-        onImported={() => {
-          setImportOpen(false);
-          load();
-        }}
-      />
+      {importOpen && (
+        <Suspense fallback={null}>
+          <BulkVendorImportDialog
+            open={importOpen}
+            onOpenChange={setImportOpen}
+            onImported={() => {
+              setImportOpen(false);
+              load();
+            }}
+          />
+        </Suspense>
+      )}
     </div>
   );
 }

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
@@ -44,7 +44,12 @@ import {
   type RealReview,
 } from "@/components/vendor/VendorReviewsList";
 import { useDocumentMeta } from "@/hooks/useDocumentMeta";
-import { InquiryFormModal } from "@/components/inquiries/InquiryFormModal";
+// Lazy: 618-line modal only loads when the user clicks "Send inquiry."
+const InquiryFormModal = lazy(() =>
+  import("@/components/inquiries/InquiryFormModal").then((m) => ({
+    default: m.InquiryFormModal,
+  })),
+);
 import { useAuth } from "@/hooks/useAuth";
 import { useVendors } from "@/hooks/useVendors";
 import { useSavedVendors } from "@/hooks/useSavedVendors";
@@ -1037,12 +1042,17 @@ export default function VendorDetailPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Logged-in host: real inquiry form */}
-      <InquiryFormModal
-        open={inquiryFormOpen}
-        onOpenChange={setInquiryFormOpen}
-        preferredVendorName={vendor.name}
-      />
+      {/* Logged-in host: real inquiry form. Lazy chunk only loads on
+          first open — most visitors browsing vendor pages never click. */}
+      {inquiryFormOpen && (
+        <Suspense fallback={null}>
+          <InquiryFormModal
+            open={inquiryFormOpen}
+            onOpenChange={setInquiryFormOpen}
+            preferredVendorName={vendor.name}
+          />
+        </Suspense>
+      )}
 
       <Lightbox
         images={portfolioItems.map((item, i) => ({

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useRealtime } from "@/lib/realtime";
 import { Link, useParams } from "react-router-dom";
 import { ArrowLeft, Send, Loader2, Star, Sparkles, Paperclip, X, CalendarDays } from "lucide-react";
@@ -11,7 +11,12 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ReviewFormModal } from "@/components/reviews/ReviewFormModal";
+// Lazy: only loads when the host clicks "Leave a review."
+const ReviewFormModal = lazy(() =>
+  import("@/components/reviews/ReviewFormModal").then((m) => ({
+    default: m.ReviewFormModal,
+  })),
+);
 import { ProposeAppointmentModal } from "@/components/appointments/ProposeAppointmentModal";
 import {
   ProposalCard,
@@ -602,16 +607,20 @@ export default function HostInquiryDetailPage() {
 
       {inquiry && user && (
         <>
-          <ReviewFormModal
-            open={reviewModalOpen}
-            onOpenChange={setReviewModalOpen}
-            inquiryId={inquiry.id}
-            vendorId={inquiry.vendor_id}
-            hostId={user.id}
-            vendorName={inquiry.vendor?.business_name ?? "this vendor"}
-            existingReview={review}
-            onSuccess={load}
-          />
+          {reviewModalOpen && (
+            <Suspense fallback={null}>
+              <ReviewFormModal
+                open={reviewModalOpen}
+                onOpenChange={setReviewModalOpen}
+                inquiryId={inquiry.id}
+                vendorId={inquiry.vendor_id}
+                hostId={user.id}
+                vendorName={inquiry.vendor?.business_name ?? "this vendor"}
+                existingReview={review}
+                onSuccess={load}
+              />
+            </Suspense>
+          )}
           <ProposeAppointmentModal
             open={appointmentModalOpen}
             onOpenChange={setAppointmentModalOpen}

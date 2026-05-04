@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useRealtime } from "@/lib/realtime";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import {
@@ -15,7 +15,12 @@ import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { ProposalFormModal } from "@/components/proposals/ProposalFormModal";
+// Lazy: only loads when the vendor opens "Send proposal."
+const ProposalFormModal = lazy(() =>
+  import("@/components/proposals/ProposalFormModal").then((m) => ({
+    default: m.ProposalFormModal,
+  })),
+);
 import {
   InquiryReviewCard,
   type ReviewWithResponse,
@@ -683,15 +688,19 @@ export default function InquiryDetailPage() {
 
       {inquiry && (
         <>
-          <ProposalFormModal
-            open={proposalModalOpen}
-            onOpenChange={setProposalModalOpen}
-            inquiryId={inquiry.id}
-            vendorId={inquiry.vendor_id}
-            hostId={inquiry.host_id}
-            defaultTitle={`${inquiry.event_type.replace("_", " ")} proposal`}
-            onSuccess={load}
-          />
+          {proposalModalOpen && (
+            <Suspense fallback={null}>
+              <ProposalFormModal
+                open={proposalModalOpen}
+                onOpenChange={setProposalModalOpen}
+                inquiryId={inquiry.id}
+                vendorId={inquiry.vendor_id}
+                hostId={inquiry.host_id}
+                defaultTitle={`${inquiry.event_type.replace("_", " ")} proposal`}
+                onSuccess={load}
+              />
+            </Suspense>
+          )}
           <ProposeAppointmentModal
             open={appointmentModalOpen}
             onOpenChange={setAppointmentModalOpen}

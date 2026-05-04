@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { Plus, Sparkles, Inbox } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -11,7 +11,12 @@ import { INQUIRIES_HUB_TABS } from "@/data/hubTabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { InquiryFormModal } from "@/components/inquiries/InquiryFormModal";
+// Lazy: heavy modal only loads when the host opens the inquiry form.
+const InquiryFormModal = lazy(() =>
+  import("@/components/inquiries/InquiryFormModal").then((m) => ({
+    default: m.InquiryFormModal,
+  })),
+);
 import { customerNavItems as navItems } from "@/data/navItems";
 
 interface InquiryRow {
@@ -305,13 +310,17 @@ export default function InquiriesPage() {
 
       <MobileNav items={navItems} />
 
-      <InquiryFormModal
-        open={modalOpen}
-        onOpenChange={(o) => {
-          setModalOpen(o);
-          if (!o) load();
-        }}
-      />
+      {modalOpen && (
+        <Suspense fallback={null}>
+          <InquiryFormModal
+            open={modalOpen}
+            onOpenChange={(o) => {
+              setModalOpen(o);
+              if (!o) load();
+            }}
+          />
+        </Suspense>
+      )}
     </div>
   );
 }
