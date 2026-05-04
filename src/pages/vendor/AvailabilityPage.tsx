@@ -1,5 +1,6 @@
-import { useEffect, useState } from "react";
-import { Calendar as CalendarIcon, Loader2, X } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
+import { Calendar as CalendarIcon, Loader2, X, CalendarSync } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -9,6 +10,14 @@ import { Calendar } from "@/components/ui/calendar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { vendorNavItems as navItems } from "@/data/navItems";
+
+interface BusyEvent {
+  external_event_id: string;
+  summary: string | null;
+  starts_at: string;
+  ends_at: string;
+  is_all_day: boolean;
+}
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const unavailableTable = () => (supabase as any).from("vendor_unavailable_dates");
@@ -28,6 +37,7 @@ export default function AvailabilityPage() {
   const { user, vendorMemberships } = useAuth();
   const vendorId = vendorMemberships[0]?.vendor_id ?? null;
   const [unavailable, setUnavailable] = useState<Set<string>>(new Set());
+  const [busyEvents, setBusyEvents] = useState<BusyEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [pendingKey, setPendingKey] = useState<string | null>(null);
 
@@ -36,12 +46,20 @@ export default function AvailabilityPage() {
       setLoading(false);
       return;
     }
-    const { data: rows } = await unavailableTable()
-      .select("date")
-      .eq("vendor_id", vendorId);
+    const [{ data: rows }, { data: busy }] = await Promise.all([
+      unavailableTable().select("date").eq("vendor_id", vendorId),
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (supabase as any)
+        .from("calendar_synced_busy")
+        .select("external_event_id, summary, starts_at, ends_at, is_all_day")
+        .eq("user_id", user.id)
+        .gte("starts_at", new Date().toISOString())
+        .order("starts_at", { ascending: true }),
+    ]);
     setUnavailable(
       new Set(((rows as Array<{ date: string }> | null) ?? []).map((r) => r.date)),
     );
+    setBusyEvents((busy as BusyEvent[]) ?? []);
     setLoading(false);
   }
 
@@ -49,6 +67,23 @@ export default function AvailabilityPage() {
     loadDates();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, vendorId]);
+
+  // Days that have at least one synced busy event — render them on the
+  // calendar with a subtle dot so vendors see what's blocking what.
+  const busyDays = useMemo(() => {
+    const set = new Set<string>();
+    for (const e of busyEvents) {
+      const start = new Date(e.starts_at);
+      const end = new Date(e.ends_at);
+      // Walk each day in the range.
+      const cursor = new Date(start.getFullYear(), start.getMonth(), start.getDate());
+      while (cursor <= end) {
+        set.add(dateKey(cursor));
+        cursor.setDate(cursor.getDate() + 1);
+      }
+    }
+    return set;
+  }, [busyEvents]);
 
   async function toggleDate(date: Date) {
     if (!vendorId) return;
@@ -127,6 +162,13 @@ export default function AvailabilityPage() {
                   disabled={{ before: today }}
                   numberOfMonths={1}
                   className="mx-auto"
+                  modifiers={{
+                    busy: Array.from(busyDays).map(parseDate),
+                  }}
+                  modifiersClassNames={{
+                    busy:
+                      "after:content-[''] after:absolute after:bottom-1 after:left-1/2 after:-translate-x-1/2 after:w-1 after:h-1 after:rounded-full after:bg-accent relative",
+                  }}
                   classNames={{
                     day_selected:
                       "bg-foreground text-background hover:bg-foreground/90 focus:bg-foreground",
@@ -136,9 +178,71 @@ export default function AvailabilityPage() {
                   Click a date to toggle. Selected dates are{" "}
                   <span className="font-medium text-foreground">
                     blocked
-                  </span>{" "}
-                  — hosts won't be able to book those days.
+                  </span>
+                  {busyDays.size > 0 && (
+                    <>
+                      ; dots are{" "}
+                      <span className="text-accent">synced from your connected calendar</span>
+                    </>
+                  )}
+                  .
                 </p>
+              </div>
+
+              {/* Synced busy from connected calendar */}
+              <div className="rounded-sm border border-border bg-card p-5">
+                <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
+                  <p className="font-label text-muted-foreground inline-flex items-center gap-2">
+                    <CalendarSync className="w-3.5 h-3.5" />
+                    Synced from your calendar ({busyEvents.length})
+                  </p>
+                  <Link
+                    to="/settings"
+                    className="text-xs text-accent hover:underline"
+                  >
+                    Manage connections
+                  </Link>
+                </div>
+                {busyEvents.length === 0 ? (
+                  <p className="text-sm text-muted-foreground text-center py-4 leading-relaxed">
+                    No synced busy times. Connect Google Calendar in
+                    Settings to auto-block dates from your personal
+                    schedule.
+                  </p>
+                ) : (
+                  <ul className="space-y-2 max-h-72 overflow-y-auto pr-1">
+                    {busyEvents.slice(0, 50).map((e) => {
+                      const start = new Date(e.starts_at);
+                      const end = new Date(e.ends_at);
+                      return (
+                        <li
+                          key={e.external_event_id}
+                          className="flex items-start justify-between gap-3 py-2 border-b border-border/50 last:border-b-0"
+                        >
+                          <div className="min-w-0">
+                            <p className="text-sm leading-tight truncate">
+                              {e.summary ?? "(untitled event)"}
+                            </p>
+                            <p className="text-[11px] text-muted-foreground tnum mt-0.5">
+                              {start.toLocaleDateString()}
+                              {!e.is_all_day &&
+                                ` · ${start.toLocaleTimeString([], {
+                                  hour: "numeric",
+                                  minute: "2-digit",
+                                })} – ${end.toLocaleTimeString([], {
+                                  hour: "numeric",
+                                  minute: "2-digit",
+                                })}`}
+                            </p>
+                          </div>
+                          <span className="text-[10px] uppercase tracking-wide text-accent shrink-0 mt-1">
+                            Busy
+                          </span>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
               </div>
 
               <div className="rounded-sm border border-border bg-card p-5">

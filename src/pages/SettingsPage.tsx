@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Loader2, AlertTriangle, KeyRound, User, Cookie, Download, Bell, Sun, Moon, Monitor } from "lucide-react";
+import { Loader2, AlertTriangle, KeyRound, User, Cookie, Download, Bell, Sun, Moon, Monitor, CalendarDays } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -24,6 +24,7 @@ import {
 import { DashboardSidebar } from "@/components/shared/DashboardSidebar";
 import { MobileNav } from "@/components/shared/MobileNav";
 import { PushNotificationsCard } from "@/components/settings/PushNotificationsCard";
+import { CalendarConnectionsCard } from "@/components/settings/CalendarConnectionsCard";
 import { customerNavItems, vendorNavItems } from "@/data/navItems";
 
 const COOKIE_KEY = "vendora.cookie-consent";
@@ -417,6 +418,15 @@ export default function SettingsPage() {
                     />
                   </div>
                 </div>
+              </Section>
+
+              {/* Calendar connections */}
+              <Section
+                icon={CalendarDays}
+                title="Calendar"
+                subtitle="Connect your personal calendar so it blocks Vendora availability"
+              >
+                <CalendarConnectionsCard />
               </Section>
 
               {/* Cookies */}
