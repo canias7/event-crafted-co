@@ -28,6 +28,9 @@ export function Footer() {
               <Link to="/how-it-works" className="block text-sm opacity-70 hover:opacity-100 transition-opacity">{t("footer.how_it_works")}</Link>
               <Link to="/inspiration" className="block text-sm opacity-70 hover:opacity-100 transition-opacity">{t("footer.inspiration")}</Link>
               <Link to="/real-events" className="block text-sm opacity-70 hover:opacity-100 transition-opacity">{t("footer.real_events")}</Link>
+              <Link to="/changelog" className="block text-sm opacity-70 hover:opacity-100 transition-opacity">Changelog</Link>
+              <Link to="/press" className="block text-sm opacity-70 hover:opacity-100 transition-opacity">Press</Link>
+              <Link to="/status" className="block text-sm opacity-70 hover:opacity-100 transition-opacity">Status</Link>
             </div>
           </div>
           <div>

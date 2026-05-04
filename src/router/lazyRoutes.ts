@@ -53,6 +53,15 @@ export const PrivacyPage = lazy(importPrivacy);
 const importTerms = () => import("@/pages/TermsPage");
 export const TermsPage = lazy(importTerms);
 
+const importChangelog = () => import("@/pages/ChangelogPage");
+export const ChangelogPage = lazy(importChangelog);
+
+const importStatus = () => import("@/pages/StatusPage");
+export const StatusPage = lazy(importStatus);
+
+const importPress = () => import("@/pages/PressPage");
+export const PressPage = lazy(importPress);
+
 const importSettings = () => import("@/pages/SettingsPage");
 export const SettingsPage = lazy(importSettings);
 
@@ -186,6 +195,9 @@ export const AdminSupportPage = lazy(importAdminSupport);
 const importAdminAudit = () => import("@/pages/admin/AdminAuditPage");
 export const AdminAuditPage = lazy(importAdminAudit);
 
+const importAdminEmail = () => import("@/pages/admin/AdminEmailDeliverabilityPage");
+export const AdminEmailDeliverabilityPage = lazy(importAdminEmail);
+
 // ---------------- Vendor ----------------
 const importVendorDashboard = () => import("@/pages/vendor/VendorDashboard");
 export const VendorDashboard = lazy(importVendorDashboard);
@@ -259,6 +271,9 @@ const ROUTE_IMPORTERS: Array<{ pattern: string; importer: () => Promise<unknown>
   { pattern: "/inspiration", importer: importInspiration },
   { pattern: "/privacy", importer: importPrivacy },
   { pattern: "/terms", importer: importTerms },
+  { pattern: "/changelog", importer: importChangelog },
+  { pattern: "/status", importer: importStatus },
+  { pattern: "/press", importer: importPress },
   { pattern: "/settings", importer: importSettings },
   { pattern: "/vendor-apply", importer: importVendorApply },
   // Dynamic public
@@ -300,6 +315,7 @@ const ROUTE_IMPORTERS: Array<{ pattern: string; importer: () => Promise<unknown>
   { pattern: "/support", importer: importSupport },
   { pattern: "/admin/support", importer: importAdminSupport },
   { pattern: "/admin/audit", importer: importAdminAudit },
+  { pattern: "/admin/email-deliverability", importer: importAdminEmail },
   { pattern: "/customer/appointments", importer: importAppointments },
   { pattern: "/customer/favorites", importer: importFavorites },
   { pattern: "/customer/saved-searches", importer: importSavedSearches },

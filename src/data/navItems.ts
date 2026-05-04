@@ -18,6 +18,7 @@ import {
   ShieldCheck,
   LifeBuoy,
   History,
+  MailCheck,
   type LucideIcon,
 } from "lucide-react";
 
@@ -101,6 +102,7 @@ export const adminNavItems: NavItem[] = [
   { label: "Inspiration", path: "/admin/inspiration", icon: FileText },
   { label: "Support", path: "/admin/support", icon: LifeBuoy },
   { label: "Audit log", path: "/admin/audit", icon: History },
+  { label: "Email health", path: "/admin/email-deliverability", icon: MailCheck },
   { label: "Settings", path: "/settings", icon: Settings },
 ];
 

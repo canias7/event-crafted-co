@@ -37,6 +37,9 @@ import {
   InspirationDetailPage,
   PrivacyPage,
   TermsPage,
+  ChangelogPage,
+  StatusPage,
+  PressPage,
   SettingsPage,
   VendorApplyPage,
   NotFound,
@@ -77,6 +80,7 @@ import {
   SupportPage,
   AdminSupportPage,
   AdminAuditPage,
+  AdminEmailDeliverabilityPage,
   RealEventsPage,
   RealEventDetailPage,
   AcceptPlanningInvitePage,
@@ -137,6 +141,9 @@ const App = () => (
               <Route path="/accept-planning-invite/:token" element={<AcceptPlanningInvitePage />} />
               <Route path="/privacy" element={<PrivacyPage />} />
               <Route path="/terms" element={<TermsPage />} />
+              <Route path="/changelog" element={<ChangelogPage />} />
+              <Route path="/status" element={<StatusPage />} />
+              <Route path="/press" element={<PressPage />} />
               <Route path="/vendor-apply" element={<VendorApplyPage />} />
               <Route path="/login" element={<LoginPage />} />
               <Route path="/signup" element={<SignupPage />} />
@@ -172,6 +179,7 @@ const App = () => (
               <Route path="/support" element={<RequireRole role={["host", "vendor", "admin"]}><SupportPage /></RequireRole>} />
               <Route path="/admin/support" element={<RequireRole role="admin"><AdminSupportPage /></RequireRole>} />
               <Route path="/admin/audit" element={<RequireRole role="admin"><AdminAuditPage /></RequireRole>} />
+              <Route path="/admin/email-deliverability" element={<RequireRole role="admin"><AdminEmailDeliverabilityPage /></RequireRole>} />
               <Route path="/customer/appointments" element={<RequireRole role="host"><AppointmentsPage /></RequireRole>} />
               <Route path="/customer/favorites" element={<RequireRole role="host"><FavoritesPage /></RequireRole>} />
               <Route path="/customer/saved-searches" element={<RequireRole role="host"><SavedSearchesPage /></RequireRole>} />
