@@ -36,8 +36,7 @@ import { MobileNav } from "@/components/shared/MobileNav";
 import { StatCard } from "@/components/shared/StatCard";
 import { customerNavItems as navItems } from "@/data/navItems";
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const budgetTable = () => (supabase as any).from("budget_items");
+const budgetTable = () => supabase.from("budget_items");
 
 // Categories cover all event types Vendora supports — weddings, birthdays,
 // holiday dinners, baby showers, corporate, etc.

@@ -262,8 +262,7 @@ function FlagDialog({
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     setSaving(true);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error } = await (supabase as any)
+    const { error } = await supabase
       .from("host_reliability_flags")
       .insert({
         vendor_id: vendorId,

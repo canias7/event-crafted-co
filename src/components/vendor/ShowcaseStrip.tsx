@@ -25,16 +25,15 @@ export function ShowcaseStrip({ vendorId }: { vendorId: string }) {
   useEffect(() => {
     if (!vendorId) return;
     let cancelled = false;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (supabase as any)
+    supabase
       .from("vendor_showcase_clips")
       .select("id, video_path, caption")
       .eq("vendor_id", vendorId)
       .order("display_order", { ascending: true })
       .order("created_at", { ascending: true })
-      .then(({ data }: { data: ShowcaseClip[] | null }) => {
+      .then(({ data }) => {
         if (cancelled) return;
-        setClips(data ?? []);
+        setClips((data as ShowcaseClip[] | null) ?? []);
       });
     return () => {
       cancelled = true;

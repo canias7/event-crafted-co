@@ -17,6 +17,7 @@ import { AlbumEditor } from "@/components/vendor/AlbumEditor";
 import {
   BUCKET,
   albumsTable,
+  photosTable,
   type Album,
 } from "@/components/vendor/album-shared";
 
@@ -45,9 +46,7 @@ export function AlbumManager({
     // Best-effort photo counts so the manager grid shows useful sub-text.
     if (list.length > 0) {
       const ids = list.map((a) => a.id);
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data: counts } = await (supabase as any)
-        .from("event_album_photos")
+      const { data: counts } = await photosTable()
         .select("album_id")
         .in("album_id", ids);
       const tally: Record<string, number> = {};

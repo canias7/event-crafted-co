@@ -88,10 +88,7 @@ async function fetchVendors(): Promise<Vendor[]> {
   if (inFlight) return inFlight;
   inFlight = (async () => {
     try {
-      // Cast through any: responder_tier is added by a forward migration
-      // not yet reflected in Lovable's auto-generated types.ts.
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data, error } = await (supabase as any)
+      const { data, error } = await supabase
         .from("vendor_profiles")
         .select(
           "id, business_name, category, bio, base_price_cents, location, service_radius_miles, portfolio_summary, verified_at, responder_tier, intro_video_url, slug",
@@ -103,8 +100,7 @@ async function fetchVendors(): Promise<Vendor[]> {
         // Override startingPrice with the lowest active package price for
         // each vendor. Falls back to base_price_cents (already set above)
         // when a vendor hasn't built out packages yet.
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const { data: pkgs } = await (supabase as any)
+        const { data: pkgs } = await supabase
           .from("vendor_packages")
           .select("vendor_id, price_cents")
           .eq("is_active", true);
@@ -128,6 +124,8 @@ async function fetchVendors(): Promise<Vendor[]> {
 
         // Batch-fetch verification badges so cards can render the
         // shield iconography without an N+1 fetch.
+        // vendor_public_badges is a Postgres view; views aren't in the
+        // generated types, so the cast is required.
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const { data: badges } = await (supabase as any)
           .from("vendor_public_badges")

@@ -97,8 +97,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setProfile(p);
 
     if (p.active_event_id) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data: ev } = await (supabase as any)
+      const { data: ev } = await supabase
         .from("host_events")
         .select(
           "id, name, event_type, event_date, event_location, budget_min_cents, budget_max_cents, event_notes, archived_at",
@@ -113,8 +112,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Vendor team memberships — drives vendor portal access for non-owner
     // staff. Empty for hosts, populated for vendor owners (auto-backfilled
     // by trigger) and invited team members.
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: memberRows } = await (supabase as any)
+    const { data: memberRows } = await supabase
       .from("vendor_team_members")
       .select("vendor_id, role")
       .eq("user_id", userId);
@@ -127,8 +125,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // implicitly an "owner" of their own host_id, but we don't insert a
     // row for that — the helper functions (is_planning_collaborator,
     // is_planning_editor) treat _host_id = auth.uid() as automatic owner.
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: planningRows } = await (supabase as any)
+    const { data: planningRows } = await supabase
       .from("planning_collaborators")
       .select("host_id, role")
       .eq("user_id", userId);

@@ -98,27 +98,22 @@ export function InquiryFormModal({
       return;
     }
     let cancelled = false;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (supabase as any)
+    supabase
       .from("vendor_intake_forms")
       .select("intro, questions, is_published")
       .eq("vendor_id", vendorId)
       .maybeSingle()
-      .then(
-        ({
-          data,
-        }: {
-          data: {
+      .then(({ data }) => {
+          if (cancelled) return;
+          const row = data as {
             intro: string | null;
             questions: IntakeQuestion[];
             is_published: boolean;
           } | null;
-        }) => {
-          if (cancelled) return;
-          if (data && data.is_published) {
-            setIntakeIntro(data.intro);
+          if (row && row.is_published) {
+            setIntakeIntro(row.intro);
             setIntakeQuestions(
-              Array.isArray(data.questions) ? data.questions : [],
+              Array.isArray(row.questions) ? row.questions : [],
             );
             setIntakeAnswers({});
           } else {
@@ -212,12 +207,11 @@ export function InquiryFormModal({
       return;
     }
     let cancelled = false;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (supabase as any)
+    supabase
       .from("vendor_unavailable_dates")
       .select("vendor_id")
       .eq("date", eventDate)
-      .then(({ data }: { data: Array<{ vendor_id: string }> | null }) => {
+      .then(({ data }) => {
         if (cancelled) return;
         setUnavailableIds(new Set((data ?? []).map((r) => r.vendor_id)));
       });

@@ -70,8 +70,7 @@ const providerStyles: Record<string, string> = {
   other: "bg-muted text-muted-foreground border-border",
 };
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const linksTable = () => (supabase as any).from("event_registry_links");
+const linksTable = () => supabase.from("event_registry_links");
 
 export default function RegistryPage() {
   const { user } = useAuth();
