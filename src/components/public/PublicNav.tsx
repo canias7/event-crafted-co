@@ -16,6 +16,7 @@ import { NotificationBell } from "@/components/notifications/NotificationBell";
 
 const baseLinks = [
   { label: "Vendors", path: "/vendors" },
+  { label: "Real events", path: "/real-events" },
   { label: "Inspiration", path: "/inspiration" },
   { label: "How it works", path: "/how-it-works" },
   { label: "For vendors", path: "/vendor-apply" },

@@ -71,6 +71,12 @@ export const MoodBoardSharePage = lazy(importMoodBoardShare);
 const importGiftShare = () => import("@/pages/GiftSharePage");
 export const GiftSharePage = lazy(importGiftShare);
 
+const importRealEvents = () => import("@/pages/RealEventsPage");
+export const RealEventsPage = lazy(importRealEvents);
+
+const importRealEventDetail = () => import("@/pages/RealEventDetailPage");
+export const RealEventDetailPage = lazy(importRealEventDetail);
+
 const importAcceptPlanningInvite = () => import("@/pages/AcceptPlanningInvitePage");
 export const AcceptPlanningInvitePage = lazy(importAcceptPlanningInvite);
 
@@ -230,6 +236,8 @@ const ROUTE_IMPORTERS: Array<{ pattern: string; importer: () => Promise<unknown>
   { pattern: "/rsvp/:token", importer: importRsvp },
   { pattern: "/board/:token", importer: importMoodBoardShare },
   { pattern: "/gift/:token", importer: importGiftShare },
+  { pattern: "/real-events", importer: importRealEvents },
+  { pattern: "/real-events/:slug", importer: importRealEventDetail },
   { pattern: "/accept-team-invite/:token", importer: importAcceptTeamInvite },
   { pattern: "/accept-planning-invite/:token", importer: importAcceptPlanningInvite },
   // Customer

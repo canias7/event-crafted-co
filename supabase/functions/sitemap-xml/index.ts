@@ -60,6 +60,7 @@ const STATIC_PATHS: Array<{ path: string; priority: number; freq: string }> = [
   { path: "/", priority: 1.0, freq: "daily" },
   { path: "/vendors", priority: 0.9, freq: "daily" },
   { path: "/vendors/locations", priority: 0.7, freq: "weekly" },
+  { path: "/real-events", priority: 0.8, freq: "weekly" },
   { path: "/inspiration", priority: 0.8, freq: "weekly" },
   { path: "/how-it-works", priority: 0.6, freq: "monthly" },
   { path: "/vendor-apply", priority: 0.6, freq: "monthly" },
@@ -78,17 +79,25 @@ serve(async (req) => {
     auth: { persistSession: false },
   });
 
-  const [{ data: vendors }, { data: inspiration }] = await Promise.all([
-    sb
-      .from("vendor_profiles")
-      .select("id, updated_at, category, location")
-      .order("updated_at", { ascending: false }),
-    sb
-      .from("featured_events")
-      .select("slug, updated_at, published_at")
-      .not("published_at", "is", null)
-      .order("published_at", { ascending: false }),
-  ]);
+  const [{ data: vendors }, { data: inspiration }, { data: realEvents }] =
+    await Promise.all([
+      sb
+        .from("vendor_profiles")
+        .select("id, updated_at, category, location")
+        .order("updated_at", { ascending: false }),
+      sb
+        .from("featured_events")
+        .select("slug, updated_at, published_at")
+        .not("published_at", "is", null)
+        .order("published_at", { ascending: false }),
+      sb
+        .from("real_events")
+        .select("slug, updated_at, published_at, host_consent_given_at")
+        .not("published_at", "is", null)
+        .not("host_consent_given_at", "is", null)
+        .not("slug", "is", null)
+        .order("published_at", { ascending: false }),
+    ]);
 
   const lines: string[] = [
     '<?xml version="1.0" encoding="UTF-8"?>',
@@ -131,6 +140,17 @@ serve(async (req) => {
         `${APP_URL}/inspiration/${i.slug}`,
         i.updated_at ?? i.published_at ?? undefined,
         0.6,
+        "monthly",
+      ),
+    );
+  }
+
+  for (const r of (realEvents as InspirationRow[] | null) ?? []) {
+    lines.push(
+      urlEntry(
+        `${APP_URL}/real-events/${r.slug}`,
+        r.updated_at ?? r.published_at ?? undefined,
+        0.7,
         "monthly",
       ),
     );

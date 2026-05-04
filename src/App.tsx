@@ -66,6 +66,8 @@ import {
   LiveDayPage,
   GiftWishesPage,
   GiftSharePage,
+  RealEventsPage,
+  RealEventDetailPage,
   AcceptPlanningInvitePage,
   VendorDashboard,
   VendorProfilePage,
@@ -114,6 +116,8 @@ const App = () => (
               <Route path="/v/:slug" element={<VendorDetailPage />} />
               <Route path="/inspiration" element={<InspirationPage />} />
               <Route path="/inspiration/:slug" element={<InspirationDetailPage />} />
+              <Route path="/real-events" element={<RealEventsPage />} />
+              <Route path="/real-events/:slug" element={<RealEventDetailPage />} />
               <Route path="/rsvp/:token" element={<RsvpPage />} />
               <Route path="/board/:token" element={<MoodBoardSharePage />} />
               <Route path="/accept-team-invite/:token" element={<AcceptTeamInvitePage />} />
