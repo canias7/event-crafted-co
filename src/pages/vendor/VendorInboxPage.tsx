@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { Inbox, Download } from "lucide-react";
+import { Inbox, Download, LayoutGrid, List } from "lucide-react";
+import { InquiryKanban } from "@/components/vendor/InquiryKanban";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -101,6 +102,18 @@ export default function VendorInboxPage() {
   const [labels, setLabels] = useState<VendorLabel[]>([]);
   const [labelFilter, setLabelFilter] = useState<string | null>(null);
   const [labelsOpen, setLabelsOpen] = useState(false);
+  const [view, setView] = useState<"table" | "board">(() => {
+    if (typeof window === "undefined") return "table";
+    return (window.localStorage.getItem("vendora.inbox.view") as
+      | "table"
+      | "board") || "table";
+  });
+  function changeView(v: "table" | "board") {
+    setView(v);
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem("vendora.inbox.view", v);
+    }
+  }
 
   async function load(forVendorId?: string | null) {
     const vid = forVendorId ?? vendorId;
@@ -210,21 +223,57 @@ export default function VendorInboxPage() {
     <div className="flex min-h-screen bg-background">
       <DashboardSidebar items={navItems} title="Vendor Portal" backPath="/" />
       <main id="main-content" className="flex-1 pb-20 lg:pb-0">
-        <div className="border-b border-border bg-card px-4 md:px-8 py-4 sticky top-0 z-40 flex items-center justify-between">
+        <div className="border-b border-border bg-card px-4 md:px-8 py-4 sticky top-0 z-40 flex items-center justify-between gap-3 flex-wrap">
           <div>
             <h1 className="font-display text-xl">Inbox</h1>
             <p className="text-sm text-muted-foreground">All inquiries from hosts</p>
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={rows.length === 0}
-            onClick={() => exportInquiriesCsv(rows)}
-            className="rounded-full"
-          >
-            <Download className="w-3.5 h-3.5 mr-1.5" />
-            Export CSV
-          </Button>
+          <div className="flex items-center gap-2">
+            <div
+              className="inline-flex rounded-full border border-border bg-background overflow-hidden text-xs"
+              role="radiogroup"
+              aria-label="View"
+            >
+              <button
+                type="button"
+                onClick={() => changeView("table")}
+                aria-checked={view === "table"}
+                role="radio"
+                className={`px-3 py-1.5 inline-flex items-center gap-1.5 transition-colors ${
+                  view === "table"
+                    ? "bg-foreground text-background"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <List className="w-3.5 h-3.5" />
+                Table
+              </button>
+              <button
+                type="button"
+                onClick={() => changeView("board")}
+                aria-checked={view === "board"}
+                role="radio"
+                className={`px-3 py-1.5 inline-flex items-center gap-1.5 transition-colors ${
+                  view === "board"
+                    ? "bg-foreground text-background"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <LayoutGrid className="w-3.5 h-3.5" />
+                Board
+              </button>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={rows.length === 0}
+              onClick={() => exportInquiriesCsv(rows)}
+              className="rounded-full"
+            >
+              <Download className="w-3.5 h-3.5 mr-1.5" />
+              Export CSV
+            </Button>
+          </div>
         </div>
 
         <div className="p-4 md:p-8">
@@ -296,24 +345,28 @@ export default function VendorInboxPage() {
             </Button>
           </div>
 
-          <div className="bg-card rounded-2xl card-shadow overflow-hidden">
-            {loading ? (
-              <div className="p-12 text-center text-muted-foreground">Loading inquiries…</div>
-            ) : filteredRows.length === 0 ? (
-              <div className="p-16 text-center">
-                <Inbox className="w-10 h-10 mx-auto text-muted-foreground mb-3" />
-                <p className="font-display text-xl mb-1">
-                  {rows.length === 0
-                    ? "No inquiries yet"
-                    : "Nothing matches that filter"}
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  {rows.length === 0
-                    ? "When hosts reach out, you'll see them here."
-                    : "Try a different status filter above."}
-                </p>
-              </div>
-            ) : (
+          {loading ? (
+            <div className="bg-card rounded-2xl card-shadow p-12 text-center text-muted-foreground">
+              Loading inquiries…
+            </div>
+          ) : filteredRows.length === 0 ? (
+            <div className="bg-card rounded-2xl card-shadow p-16 text-center">
+              <Inbox className="w-10 h-10 mx-auto text-muted-foreground mb-3" />
+              <p className="font-display text-xl mb-1">
+                {rows.length === 0
+                  ? "No inquiries yet"
+                  : "Nothing matches that filter"}
+              </p>
+              <p className="text-sm text-muted-foreground">
+                {rows.length === 0
+                  ? "When hosts reach out, you'll see them here."
+                  : "Try a different status filter above."}
+              </p>
+            </div>
+          ) : view === "board" ? (
+            <InquiryKanban rows={filteredRows} onChange={() => load(vendorId!)} />
+          ) : (
+            <div className="bg-card rounded-2xl card-shadow overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
@@ -368,8 +421,8 @@ export default function VendorInboxPage() {
                   </tbody>
                 </table>
               </div>
-            )}
-          </div>
+            </div>
+          )}
         </div>
       </main>
       <MobileNav items={navItems} />
