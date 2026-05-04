@@ -156,6 +156,12 @@ export const LiveDayPage = lazy(importLiveDay);
 const importGiftWishes = () => import("@/pages/customer/GiftWishesPage");
 export const GiftWishesPage = lazy(importGiftWishes);
 
+const importMicrositeEditor = () => import("@/pages/customer/MicrositeEditorPage");
+export const MicrositeEditorPage = lazy(importMicrositeEditor);
+
+const importEventMicrosite = () => import("@/pages/EventMicrositePage");
+export const EventMicrositePage = lazy(importEventMicrosite);
+
 // ---------------- Vendor ----------------
 const importVendorDashboard = () => import("@/pages/vendor/VendorDashboard");
 export const VendorDashboard = lazy(importVendorDashboard);
@@ -256,6 +262,8 @@ const ROUTE_IMPORTERS: Array<{ pattern: string; importer: () => Promise<unknown>
   { pattern: "/customer/inquiry-blast", importer: importInquiryBlast },
   { pattern: "/customer/live", importer: importLiveDay },
   { pattern: "/customer/gifts", importer: importGiftWishes },
+  { pattern: "/customer/microsite", importer: importMicrositeEditor },
+  { pattern: "/e/:token", importer: importEventMicrosite },
   { pattern: "/customer/appointments", importer: importAppointments },
   { pattern: "/customer/favorites", importer: importFavorites },
   { pattern: "/customer/saved-searches", importer: importSavedSearches },

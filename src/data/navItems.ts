@@ -20,6 +20,7 @@ import {
   ShieldCheck,
   Send,
   Sparkles,
+  Globe,
   type LucideIcon,
 } from "lucide-react";
 
@@ -40,6 +41,7 @@ export const customerNavItems: NavItem[] = [
   { label: "Event Details", path: "/customer/event", icon: FileText },
   { label: "Day-of Timeline", path: "/customer/timeline", icon: Clock },
   { label: "Invitations", path: "/customer/invitations", icon: Mail },
+  { label: "Microsite", path: "/customer/microsite", icon: Globe },
   { label: "Checklist", path: "/customer/checklist", icon: CheckSquare },
   { label: "Tasks", path: "/customer/tasks", icon: ListTodo },
   { label: "Payments", path: "/customer/payments", icon: CreditCard },

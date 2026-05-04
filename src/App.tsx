@@ -66,6 +66,8 @@ import {
   LiveDayPage,
   GiftWishesPage,
   GiftSharePage,
+  MicrositeEditorPage,
+  EventMicrositePage,
   RealEventsPage,
   RealEventDetailPage,
   AcceptPlanningInvitePage,
@@ -148,7 +150,9 @@ const App = () => (
               <Route path="/customer/inquiry-blast" element={<RequireRole role="host"><InquiryBlastPage /></RequireRole>} />
               <Route path="/customer/live" element={<RequireRole role="host"><LiveDayPage /></RequireRole>} />
               <Route path="/customer/gifts" element={<RequireRole role="host"><GiftWishesPage /></RequireRole>} />
+              <Route path="/customer/microsite" element={<RequireRole role="host"><MicrositeEditorPage /></RequireRole>} />
               <Route path="/gift/:token" element={<GiftSharePage />} />
+              <Route path="/e/:token" element={<EventMicrositePage />} />
               <Route path="/customer/appointments" element={<RequireRole role="host"><AppointmentsPage /></RequireRole>} />
               <Route path="/customer/favorites" element={<RequireRole role="host"><FavoritesPage /></RequireRole>} />
               <Route path="/customer/saved-searches" element={<RequireRole role="host"><SavedSearchesPage /></RequireRole>} />

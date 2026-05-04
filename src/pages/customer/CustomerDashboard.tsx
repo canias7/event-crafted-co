@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
   Store, MessageSquare, ListTodo, CreditCard, Clock, ArrowRight, Plus,
-  Calendar, CalendarDays, Mail, CheckSquare, Sparkles,
+  Calendar, CalendarDays, Mail, CheckSquare, Sparkles, Globe,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -361,6 +361,7 @@ export default function CustomerDashboard() {
             <div className="flex flex-wrap gap-2">
               {[
                 { label: "Browse Vendors", path: "/vendors", icon: Store },
+                { label: "Event microsite", path: "/customer/microsite", icon: Globe },
                 { label: "Book Appointment", path: "/customer/appointments", icon: CalendarDays },
                 { label: "Create Invitation", path: "/customer/invitations", icon: Mail },
                 { label: "Add Task", path: "/customer/tasks", icon: Plus },
