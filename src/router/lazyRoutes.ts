@@ -20,6 +20,9 @@ export const HowItWorksPage = lazy(importHowItWorks);
 const importVendorBrowse = () => import("@/pages/VendorBrowsePage");
 export const VendorBrowsePage = lazy(importVendorBrowse);
 
+const importCompareVendors = () => import("@/pages/CompareVendorsPage");
+export const CompareVendorsPage = lazy(importCompareVendors);
+
 const importStaffing = () => import("@/pages/StaffingPage");
 export const StaffingPage = lazy(importStaffing);
 

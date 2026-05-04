@@ -13,6 +13,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { transformedImageUrl } from "@/lib/storage";
 import { Footer } from "@/components/public/Footer";
 import { useDocumentMeta } from "@/hooks/useDocumentMeta";
+import { MicrositeRsvpForm } from "@/components/microsite/MicrositeRsvpForm";
 import { Skeleton } from "@/components/ui/skeleton";
 
 interface MicrositeData {
@@ -464,22 +465,18 @@ export default function EventMicrositePage() {
         </Section>
       )}
 
-      {/* RSVP CTA */}
-      {ev.microsite_show_rsvp && (
+      {/* RSVP form */}
+      {ev.microsite_show_rsvp && token && (
         <Section
           eyebrow="RSVP"
           title="We'd love to know"
           theme={theme}
         >
-          <div className="text-center max-w-md mx-auto">
-            <p
-              className="text-base mb-6 leading-relaxed"
-              style={{ color: `hsl(${theme.ink} / 0.75)` }}
-            >
-              Check your invitation for the personal RSVP link, or contact{" "}
-              {ev.host_name.split(" ")[0]} if you can't find it.
-            </p>
-          </div>
+          <MicrositeRsvpForm
+            token={token}
+            hostName={ev.host_name}
+            theme={theme}
+          />
         </Section>
       )}
 

@@ -16,6 +16,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { categoryConfig } from "@/pages/VendorCategoryPage";
 import heroBrowse from "@/assets/vendora-hero-cinematic.jpg";
+import { CompareBar } from "@/components/shared/CompareBar";
 
 const slugByCategory: Record<string, string> = Object.entries(categoryConfig).reduce(
   (acc, [slug, c]) => ({ ...acc, [c.name]: slug }),
@@ -429,6 +430,7 @@ export default function VendorBrowsePage() {
       </section>
 
       <Footer />
+      <CompareBar />
     </div>
   );
 }

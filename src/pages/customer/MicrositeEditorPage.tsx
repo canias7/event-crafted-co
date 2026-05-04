@@ -28,6 +28,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Skeleton } from "@/components/ui/skeleton";
 import { customerNavItems as navItems } from "@/data/navItems";
+import { MicrositeRsvpResponsesCard } from "@/components/microsite/MicrositeRsvpResponsesCard";
 
 const BUCKET = "event-microsites";
 const MAX_BYTES = 5 * 1024 * 1024;
@@ -543,7 +544,7 @@ export default function MicrositeEditorPage() {
             <div className="space-y-3 rounded-sm border border-border bg-card p-4">
               {[
                 { key: "microsite_show_schedule", label: "Schedule / run-of-show" },
-                { key: "microsite_show_rsvp", label: "RSVP CTA" },
+                { key: "microsite_show_rsvp", label: "RSVP form" },
                 { key: "microsite_show_registry", label: "Registry links" },
                 { key: "microsite_show_gifts", label: "Group gifts" },
                 { key: "microsite_show_gallery", label: "Photo gallery" },
@@ -566,6 +567,13 @@ export default function MicrositeEditorPage() {
               })}
             </div>
           </section>
+
+          {/* RSVP responses */}
+          {event.microsite_show_rsvp && (
+            <section>
+              <MicrositeRsvpResponsesCard eventId={event.id} />
+            </section>
+          )}
 
           {/* Gallery */}
           <section>

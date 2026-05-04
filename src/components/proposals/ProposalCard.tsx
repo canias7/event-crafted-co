@@ -1,5 +1,6 @@
-import { useState } from "react";
-import { Check, X, FileText, Loader2, PenLine } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Check, X, FileText, Loader2, PenLine, Eye } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -38,6 +39,9 @@ export interface Proposal {
   sent_at: string | null;
   signed_at?: string | null;
   signed_name?: string | null;
+  first_viewed_at?: string | null;
+  last_viewed_at?: string | null;
+  view_count?: number;
 }
 
 interface Props {
@@ -68,6 +72,18 @@ function fmt(cents: number) {
   return `$${(cents / 100).toLocaleString()}`;
 }
 
+function formatRelative(iso: string): string {
+  const ms = Date.now() - new Date(iso).getTime();
+  const mins = Math.round(ms / 60_000);
+  if (mins < 1) return "just now";
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.round(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  const days = Math.round(hrs / 24);
+  if (days < 7) return `${days}d ago`;
+  return new Date(iso).toLocaleDateString();
+}
+
 export function ProposalCard({
   proposal,
   canRespond,
@@ -78,6 +94,17 @@ export function ProposalCard({
   const [signOpen, setSignOpen] = useState(false);
   const requiresSignature =
     Boolean(proposal.contract_body) || Boolean(proposal.terms);
+
+  // When a host views their own pending proposal, mark it viewed so
+  // the vendor can see the open signal. RPC is debounced server-side
+  // (60s) so strict-mode double-mount is harmless.
+  useEffect(() => {
+    if (!canRespond || proposal.status !== "pending") return;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (supabase as any)
+      .rpc("mark_proposal_viewed", { p_proposal_id: proposal.id })
+      .then(() => {});
+  }, [canRespond, proposal.id, proposal.status]);
 
   function handleAcceptClick() {
     if (!onAccept) return;
@@ -116,6 +143,19 @@ export function ProposalCard({
           {statusLabel[proposal.status]}
         </Badge>
       </div>
+
+      {!canRespond && proposal.status === "pending" && (
+        <p className="text-xs text-muted-foreground mb-3 inline-flex items-center gap-1.5">
+          <Eye className="w-3 h-3" />
+          {proposal.first_viewed_at
+            ? `Host opened ${formatRelative(proposal.last_viewed_at ?? proposal.first_viewed_at)}${
+                (proposal.view_count ?? 0) > 1
+                  ? ` · ${proposal.view_count} views`
+                  : ""
+              }`
+            : "Host hasn't opened this yet"}
+        </p>
+      )}
 
       <div className="space-y-2 mb-5">
         {proposal.line_items.map((item, i) => (

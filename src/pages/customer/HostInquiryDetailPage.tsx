@@ -146,10 +146,11 @@ export default function HostInquiryDetailPage() {
       .maybeSingle();
     setReview((r as ExistingReview | null) ?? null);
 
-    const { data: props } = await supabase
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: props } = await (supabase as any)
       .from("proposals")
       .select(
-        "id, title, line_items, subtotal_cents, deposit_cents, terms, contract_body, status, sent_at, signed_at, signed_name",
+        "id, title, line_items, subtotal_cents, deposit_cents, terms, contract_body, status, sent_at, signed_at, signed_name, first_viewed_at, last_viewed_at, view_count",
       )
       .eq("inquiry_id", inquiryId)
       .order("created_at", { ascending: false });

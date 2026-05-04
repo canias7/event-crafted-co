@@ -44,6 +44,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { vendorNavItems as navItems } from "@/data/navItems";
+import { VendorShareKit } from "@/components/vendor/VendorShareKit";
 
 const categories = [
   "Photographer",
@@ -505,6 +506,14 @@ export default function VendorProfilePage() {
                     </>
                   )}
                 </p>
+                {profile?.slug && (
+                  <div className="pt-1">
+                    <VendorShareKit
+                      slug={profile.slug}
+                      businessName={profile.business_name ?? "us"}
+                    />
+                  </div>
+                )}
               </div>
 
               {profile && canEdit && (
