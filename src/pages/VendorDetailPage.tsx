@@ -181,19 +181,13 @@ export default function VendorDetailPage() {
       return;
     }
     let cancelled = false;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (supabase as any)
+    supabase
       .from("vendor_portfolio_images")
       .select("storage_path, caption, display_order, created_at")
       .eq("vendor_id", vendor.id)
       .order("display_order", { ascending: true })
       .order("created_at", { ascending: true })
-      .then(
-        ({
-          data,
-        }: {
-          data: Array<{ storage_path: string; caption: string | null }> | null;
-        }) => {
+      .then(({ data }) => {
           if (cancelled) return;
           // Detail-page portfolio renders at most ~800px wide; request
           // transformed images at that size to save bandwidth.
@@ -202,8 +196,7 @@ export default function VendorDetailPage() {
             caption: r.caption,
           }));
           setRealPortfolio(items);
-        },
-      );
+        });
     return () => {
       cancelled = true;
     };
@@ -219,8 +212,7 @@ export default function VendorDetailPage() {
   // Track a profile view (real DB-backed vendors only). Fire-and-forget.
   useEffect(() => {
     if (!vendor || !vendor.isReal) return;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (supabase as any)
+    supabase
       .from("vendor_profile_views")
       .insert({
         vendor_id: vendor.id,
@@ -238,15 +230,14 @@ export default function VendorDetailPage() {
       return;
     }
     let cancelled = false;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (supabase as any)
+    supabase
       .from("reviews")
       .select(
         "id, rating, body, photo_urls, created_at, host:profiles!reviews_host_id_fkey(display_name), response:review_responses(body), inquiry:inquiries!reviews_inquiry_id_fkey(event_type, event_date)",
       )
       .eq("vendor_id", vendor.id)
       .order("created_at", { ascending: false })
-      .then(({ data }: { data: unknown }) => {
+      .then(({ data }) => {
         if (cancelled) return;
         const rows = (data as RealReview[] | null) ?? [];
         // Supabase returns response as array for has-many; flatten.
@@ -274,16 +265,15 @@ export default function VendorDetailPage() {
       return;
     }
     let cancelled = false;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (supabase as any)
+    supabase
       .from("imported_reviews")
       .select("id, source, reviewer_name, rating, body, reviewed_at")
       .eq("vendor_id", vendor.id)
       .order("reviewed_at", { ascending: false, nullsFirst: false })
       .order("created_at", { ascending: false })
-      .then(({ data }: { data: ImportedReview[] | null }) => {
+      .then(({ data }) => {
         if (cancelled) return;
-        setImportedReviews(data ?? []);
+        setImportedReviews((data as ImportedReview[] | null) ?? []);
       });
     return () => {
       cancelled = true;
@@ -332,8 +322,7 @@ export default function VendorDetailPage() {
       return;
     }
     let cancelled = false;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (supabase as any)
+    supabase
       .from("vendor_recommendations")
       .select(
         "id, recommended_id, note, recommended:vendor_profiles!vendor_recommendations_recommended_id_fkey(id, business_name, category, location)",
@@ -341,9 +330,9 @@ export default function VendorDetailPage() {
       .eq("recommender_id", vendor.id)
       .order("display_order", { ascending: true })
       .order("created_at", { ascending: true })
-      .then(({ data }: { data: RecRow[] | null }) => {
+      .then(({ data }) => {
         if (cancelled) return;
-        setRecommendations(data ?? []);
+        setRecommendations((data as RecRow[] | null) ?? []);
       });
     return () => {
       cancelled = true;
@@ -372,17 +361,16 @@ export default function VendorDetailPage() {
       return;
     }
     let cancelled = false;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (supabase as any)
+    supabase
       .from("vendor_packages")
       .select("id, name, description, price_cents, includes, display_order")
       .eq("vendor_id", vendor.id)
       .eq("is_active", true)
       .order("display_order", { ascending: true })
       .order("price_cents", { ascending: true })
-      .then(({ data }: { data: VendorPackage[] | null }) => {
+      .then(({ data }) => {
         if (cancelled) return;
-        setPackages(data ?? []);
+        setPackages((data as VendorPackage[] | null) ?? []);
       });
     return () => {
       cancelled = true;

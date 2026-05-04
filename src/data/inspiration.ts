@@ -201,8 +201,7 @@ function normalizeDb(r: DbRow): InspirationEntry {
  * publishing one with the same slug via /admin/inspiration.
  */
 export async function fetchInspirationEntries(): Promise<InspirationEntry[]> {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data } = await (supabase as any)
+  const { data } = await supabase
     .from("featured_events")
     .select(
       "slug, title, event_type, event_type_label, location, hosts, guests, date_label, excerpt, body, hero_url, vendor_credits, published_at",

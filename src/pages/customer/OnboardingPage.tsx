@@ -105,8 +105,7 @@ export default function OnboardingPage() {
     setSubmitting(true);
 
     // Create the host_events row
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: ev, error: evErr } = await (supabase as any)
+    const { data: ev, error: evErr } = await supabase
       .from("host_events")
       .insert({
         host_id: user.id,
