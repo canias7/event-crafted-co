@@ -20,6 +20,7 @@ import { DashboardSidebar } from "@/components/shared/DashboardSidebar";
 import { MobileNav } from "@/components/shared/MobileNav";
 import { StatCard } from "@/components/shared/StatCard";
 import { vendorNavItems as navItems } from "@/data/navItems";
+import { formatCents } from "@/lib/format";
 
 interface VendorProfile {
   id: string;
@@ -74,7 +75,7 @@ const statusLabel: Record<string, string> = {
 };
 
 function fmtMoney(c: number | null) {
-  return c == null ? "—" : `$${(c / 100).toLocaleString()}`;
+  return formatCents(c);
 }
 
 export default function VendorDashboard() {

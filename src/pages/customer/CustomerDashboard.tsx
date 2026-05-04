@@ -12,6 +12,7 @@ import { DashboardSidebar } from "@/components/shared/DashboardSidebar";
 import { MobileNav } from "@/components/shared/MobileNav";
 import { StatCard } from "@/components/shared/StatCard";
 import { customerNavItems as navItems } from "@/data/navItems";
+import { formatDate, formatCents } from "@/lib/format";
 import { checklistItems, customerTasks } from "@/data/sampleData";
 import { useAuth } from "@/hooks/useAuth";
 import { CoBookedRail } from "@/components/vendor/CoBookedRail";
@@ -47,7 +48,7 @@ interface DashboardWidgets {
 }
 
 function fmtMoney(c: number | null) {
-  return c == null ? "—" : `$${(c / 100).toLocaleString()}`;
+  return formatCents(c);
 }
 
 export default function CustomerDashboard() {
@@ -209,11 +210,7 @@ export default function CustomerDashboard() {
               >
                 <Calendar className="w-3.5 h-3.5" />
                 <span className="tnum">
-                  {new Date(eventDateStr).toLocaleDateString(undefined, {
-                    month: "short",
-                    day: "numeric",
-                    year: "numeric",
-                  })}
+                  {formatDate(eventDateStr, "short")}
                 </span>
               </Badge>
             </div>

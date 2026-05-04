@@ -12,6 +12,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ContactInfoWarning } from "@/components/messages/ContactInfoWarning";
 import { detectContactInfo } from "@/lib/contactInfoSignals";
 import { customerNavItems as navItems } from "@/data/navItems";
+import { formatDate } from "@/lib/format";
 
 interface ThreadRow {
   id: string;
@@ -192,7 +193,7 @@ export default function MessagesPage() {
                         <p className="text-xs text-muted-foreground truncate mt-0.5">
                           {t.vendor?.category}
                           {" · "}
-                          {new Date(t.last_message_at).toLocaleDateString()}
+                          {formatDate(t.last_message_at, "short")}
                         </p>
                         {t.inquiry_id && (
                           <p className="text-[10px] text-accent mt-1 uppercase tracking-wide">

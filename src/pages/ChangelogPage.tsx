@@ -6,6 +6,7 @@ import { Footer } from "@/components/public/Footer";
 import { useDocumentMeta } from "@/hooks/useDocumentMeta";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { CHANGELOG, type ChangelogCategory } from "@/data/changelog";
+import { formatDate } from "@/lib/format";
 
 const spring = { type: "spring" as const, duration: 0.6, bounce: 0 };
 
@@ -42,6 +43,8 @@ function monthLabel(iso: string) {
     year: "numeric",
   });
 }
+
+const dayLabel = (date: string) => formatDate(date, "short");
 
 export default function ChangelogPage() {
   useDocumentMeta({
@@ -111,10 +114,7 @@ export default function ChangelogPage() {
                             {meta.label}
                           </span>
                           <p className="text-[11px] text-muted-foreground tnum">
-                            {new Date(`${entry.date}T00:00:00`).toLocaleDateString(
-                              undefined,
-                              { month: "short", day: "numeric", year: "numeric" },
-                            )}
+                            {dayLabel(entry.date)}
                           </p>
                         </div>
                         <h3 className="font-display text-lg leading-tight mb-1.5">

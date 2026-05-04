@@ -16,6 +16,7 @@ import { StatCard } from "@/components/shared/StatCard";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { adminNavItems as navItems } from "@/data/navItems";
+import { formatDate } from "@/lib/format";
 
 interface Counts {
   vendors: number;
@@ -252,7 +253,7 @@ export default function AdminDashboard() {
                           {r.vendor?.business_name ?? "—"}
                         </p>
                         <p className="text-xs text-muted-foreground tnum">
-                          {new Date(r.created_at).toLocaleDateString()}
+                          {formatDate(r.created_at, "short")}
                         </p>
                       </div>
                       <Badge variant="outline" className="text-[10px]">

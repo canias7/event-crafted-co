@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
+import { formatDate } from "@/lib/format";
 
 interface InviteData {
   email: string;
@@ -129,10 +130,7 @@ export default function AcceptPartyInvitePage() {
             <>
               {" · "}
               <span className="tnum">
-                {new Date(`${data.event.event_date}T00:00:00`).toLocaleDateString(
-                  undefined,
-                  { weekday: "long", month: "long", day: "numeric" },
-                )}
+                {formatDate(data.event.event_date, "weekday")}
               </span>
             </>
           )}

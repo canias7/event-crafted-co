@@ -12,6 +12,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { downloadIcs, slugForFile } from "@/lib/ics";
+import { formatDate } from "@/lib/format";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -390,13 +391,7 @@ export default function EventDetailsPage() {
                         <p className="font-label">Date</p>
                       </div>
                       <p className="font-display text-lg tnum">
-                        {eventDate
-                          ? new Date(eventDate).toLocaleDateString(undefined, {
-                              month: "short",
-                              day: "numeric",
-                              year: "numeric",
-                            })
-                          : "—"}
+                        {formatDate(eventDate, "short")}
                       </p>
                     </div>
                     <div className="bg-card border border-border rounded-sm p-4">
