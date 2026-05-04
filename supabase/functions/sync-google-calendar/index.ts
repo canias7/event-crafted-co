@@ -39,6 +39,22 @@ interface Connection {
   token_expires_at: string;
   primary_calendar_id: string;
   pull_busy_times: boolean;
+  push_appointments: boolean;
+}
+
+interface AppointmentRow {
+  id: string;
+  vendor_id: string;
+  host_id: string;
+  title: string | null;
+  kind: string;
+  scheduled_at: string;
+  duration_minutes: number;
+  location: string | null;
+  notes: string | null;
+  status: string;
+  external_event_id: string | null;
+  external_event_provider: string | null;
 }
 
 interface GoogleEvent {
@@ -60,37 +76,53 @@ serve(async (req) => {
     auth: { persistSession: false },
   });
 
-  let body: { user_id?: string } = {};
+  let body: { user_id?: string; user_ids?: string[]; mode?: "pull_only" | "push_only" | "both" } = {};
   try {
     body = await req.json();
   } catch {
     body = {};
   }
 
-  const query = sb
+  const mode = body.mode ?? "both";
+  // Build the connection set for this run.
+  let query = sb
     .from("calendar_connections")
     .select(
-      "id, user_id, provider, access_token, refresh_token, token_expires_at, primary_calendar_id, pull_busy_times",
+      "id, user_id, provider, access_token, refresh_token, token_expires_at, primary_calendar_id, pull_busy_times, push_appointments",
     )
-    .eq("provider", "google")
-    .eq("pull_busy_times", true);
-  const { data: connections, error } = body.user_id
-    ? await query.eq("user_id", body.user_id)
-    : await query;
+    .eq("provider", "google");
+  if (body.user_id) query = query.eq("user_id", body.user_id);
+  if (body.user_ids && body.user_ids.length > 0)
+    query = query.in("user_id", body.user_ids);
+  const { data: connections, error } = await query;
   if (error) return json({ error: error.message }, 500);
 
   const results: Array<{
     user_id: string;
-    upserted: number;
-    deleted: number;
+    pulled?: { upserted: number; deleted: number };
+    pushed?: { created: number; deleted: number };
     error?: string;
   }> = [];
 
   for (const c of (connections as Connection[] | null) ?? []) {
     try {
       const tokens = await refreshIfNeeded(sb, c);
-      const events = await fetchEvents(tokens.access_token, c.primary_calendar_id);
-      const { upserted, deleted } = await persistEvents(sb, c.user_id, events);
+      const result: (typeof results)[number] = { user_id: c.user_id };
+
+      if (mode !== "push_only" && c.pull_busy_times) {
+        const events = await fetchEvents(tokens.access_token, c.primary_calendar_id);
+        result.pulled = await persistEvents(sb, c.user_id, events);
+      }
+
+      if (mode !== "pull_only" && c.push_appointments) {
+        result.pushed = await pushAppointments(
+          sb,
+          tokens.access_token,
+          c.user_id,
+          c.primary_calendar_id,
+        );
+      }
+
       await sb
         .from("calendar_connections")
         .update({
@@ -98,7 +130,7 @@ serve(async (req) => {
           last_sync_error: null,
         })
         .eq("id", c.id);
-      results.push({ user_id: c.user_id, upserted, deleted });
+      results.push(result);
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       await sb
@@ -107,7 +139,7 @@ serve(async (req) => {
           last_sync_error: message.slice(0, 400),
         })
         .eq("id", c.id);
-      results.push({ user_id: c.user_id, upserted: 0, deleted: 0, error: message });
+      results.push({ user_id: c.user_id, error: message });
     }
   }
 
@@ -234,6 +266,152 @@ async function persistEvents(sb: any, userId: string, events: GoogleEvent[]) {
   if (delErr) throw new Error(`delete failed: ${delErr.message}`);
 
   return { upserted, deleted: deleted ?? 0 };
+}
+
+// Push side: for each appointment this user is on (as host or vendor
+// team member), reconcile against Google. Three states drive action:
+//   accepted + no external_event_id  → POST /events (create)
+//   accepted + external_event_id     → PATCH /events/{id} (update if mtime drifted)
+//   declined|cancelled + external_event_id → DELETE /events/{id} + null out
+//
+// Idempotency: external_event_id keyed; we skip if scheduled_at is in
+// the past (no point creating retro events).
+async function pushAppointments(
+  sb: any,
+  accessToken: string,
+  userId: string,
+  calendarId: string,
+): Promise<{ created: number; deleted: number }> {
+  const nowIso = new Date().toISOString();
+
+  // Find vendor_ids this user owns or is a team member of, so we know
+  // which appointments they're on as vendor (not just as host).
+  const { data: vendorRows } = await sb
+    .from("vendor_profiles")
+    .select("id")
+    .eq("user_id", userId);
+  const ownedVendorIds: string[] = ((vendorRows as Array<{ id: string }> | null) ?? []).map(
+    (v) => v.id,
+  );
+  const { data: memberRows } = await sb
+    .from("vendor_team_members")
+    .select("vendor_id")
+    .eq("user_id", userId);
+  const memberVendorIds: string[] = ((memberRows as Array<{ vendor_id: string }> | null) ?? []).map(
+    (m) => m.vendor_id,
+  );
+  const vendorIds = Array.from(new Set([...ownedVendorIds, ...memberVendorIds]));
+
+  // Build OR filter for "appointments where this user is host OR vendor team."
+  let filter = `host_id.eq.${userId}`;
+  if (vendorIds.length > 0) {
+    filter += `,vendor_id.in.(${vendorIds.map((id) => `"${id}"`).join(",")})`;
+  }
+
+  const { data: appts, error } = await sb
+    .from("appointments")
+    .select(
+      "id, vendor_id, host_id, title, kind, scheduled_at, duration_minutes, location, notes, status, external_event_id, external_event_provider",
+    )
+    .or(filter)
+    .gte("scheduled_at", nowIso)
+    .limit(200);
+  if (error) throw new Error(`appointments fetch failed: ${error.message}`);
+
+  let created = 0;
+  let deleted = 0;
+
+  for (const a of (appts as AppointmentRow[] | null) ?? []) {
+    const isLive = a.status === "accepted" || a.status === "proposed";
+    const isDead = a.status === "declined" || a.status === "cancelled";
+
+    if (isLive && !a.external_event_id) {
+      const ev = await createGoogleEvent(accessToken, calendarId, a);
+      if (ev?.id) {
+        await sb
+          .from("appointments")
+          .update({
+            external_event_id: ev.id,
+            external_event_provider: "google",
+            external_synced_at: new Date().toISOString(),
+          })
+          .eq("id", a.id);
+        created++;
+      }
+    } else if (isDead && a.external_event_id && a.external_event_provider === "google") {
+      const ok = await deleteGoogleEvent(accessToken, calendarId, a.external_event_id);
+      if (ok) {
+        await sb
+          .from("appointments")
+          .update({
+            external_event_id: null,
+            external_event_provider: null,
+            external_synced_at: new Date().toISOString(),
+          })
+          .eq("id", a.id);
+        deleted++;
+      }
+    }
+    // Update path skipped for v1 — we'd need a hash of the rendered event
+    // to detect drift cheaply. Most Vendora appointments don't change
+    // after acceptance. v2 polish.
+  }
+
+  return { created, deleted };
+}
+
+async function createGoogleEvent(
+  accessToken: string,
+  calendarId: string,
+  a: AppointmentRow,
+): Promise<{ id: string } | null> {
+  const start = new Date(a.scheduled_at);
+  const end = new Date(start.getTime() + a.duration_minutes * 60 * 1000);
+  const summary =
+    a.title?.trim() || `Vendora ${a.kind.replace("_", " ")}`;
+  const body = {
+    summary: `[Vendora] ${summary}`,
+    description:
+      (a.notes ?? "") +
+      `\n\nManaged by Vendora — appointment id ${a.id}.`,
+    location: a.location ?? undefined,
+    start: { dateTime: start.toISOString() },
+    end: { dateTime: end.toISOString() },
+    source: { title: "Vendora", url: "https://vendora.app" },
+  };
+  const res = await fetch(
+    `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(body),
+    },
+  );
+  if (!res.ok) {
+    const t = await res.text();
+    console.warn(`event create failed: ${res.status} ${t}`);
+    return null;
+  }
+  return (await res.json()) as { id: string };
+}
+
+async function deleteGoogleEvent(
+  accessToken: string,
+  calendarId: string,
+  eventId: string,
+): Promise<boolean> {
+  const res = await fetch(
+    `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events/${encodeURIComponent(eventId)}`,
+    {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${accessToken}` },
+    },
+  );
+  // 204 = deleted, 410 = already gone (treat as success).
+  return res.status === 204 || res.status === 410;
 }
 
 function json(obj: unknown, status: number) {

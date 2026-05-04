@@ -214,21 +214,16 @@ export function CalendarConnectionsCard() {
             </div>
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
-                <p className="text-sm flex items-center gap-1.5">
-                  Push Vendora appointments to Google
-                  <span className="text-[10px] uppercase tracking-wide text-muted-foreground bg-secondary rounded-full px-1.5 py-0.5">
-                    Soon
-                  </span>
-                </p>
+                <p className="text-sm">Push Vendora appointments to Google</p>
                 <p className="text-[11px] text-muted-foreground leading-relaxed">
                   Auto-create a Google event for every accepted Vendora
-                  appointment. (Outbound sync is in development.)
+                  appointment. Cancellations + declines are removed
+                  automatically.
                 </p>
               </div>
               <Switch
                 checked={google.push_appointments}
                 onCheckedChange={(v) => togglePref(google.id, "push_appointments", v)}
-                disabled
               />
             </div>
           </div>
