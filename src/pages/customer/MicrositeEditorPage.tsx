@@ -61,13 +61,31 @@ interface Photo {
   display_order: number;
 }
 
+// 14 microsite themes covering the spectrum of event types — wedding,
+// birthday, holiday, corporate, baby shower, anniversary. Adding a new
+// theme here also requires adding the matching palette to the THEMES
+// record in EventMicrositePage.tsx.
 const THEMES: Array<{ id: string; label: string; preview: string }> = [
+  // — Romantic / wedding-leaning —
   { id: "classic", label: "Classic", preview: "from-stone-900 to-stone-700" },
   { id: "rose", label: "Rose", preview: "from-rose-900 to-rose-700" },
+  { id: "ivory", label: "Ivory & Blush", preview: "from-rose-300 to-amber-200" },
+  { id: "garden", label: "Garden", preview: "from-emerald-700 to-lime-500" },
   { id: "sage", label: "Sage", preview: "from-emerald-900 to-emerald-700" },
+  { id: "champagne", label: "Champagne", preview: "from-amber-900 to-yellow-700" },
+  // — Evening / formal —
   { id: "dusk", label: "Dusk", preview: "from-indigo-900 to-purple-700" },
   { id: "midnight", label: "Midnight", preview: "from-slate-900 to-blue-900" },
-  { id: "champagne", label: "Champagne", preview: "from-amber-900 to-yellow-700" },
+  { id: "starlit", label: "Starlit", preview: "from-slate-950 to-amber-700" },
+  // — Festive / birthday / casual —
+  { id: "confetti", label: "Confetti", preview: "from-pink-500 to-violet-500" },
+  { id: "sunset", label: "Sunset", preview: "from-orange-600 to-rose-500" },
+  // — Holiday / winter —
+  { id: "evergreen", label: "Evergreen", preview: "from-green-900 to-red-800" },
+  // — Baby shower / soft pastels —
+  { id: "powder", label: "Powder", preview: "from-sky-200 to-pink-200" },
+  // — Corporate / minimal —
+  { id: "monochrome", label: "Monochrome", preview: "from-zinc-900 to-zinc-600" },
 ];
 
 const EVENT_DEFAULTS: Record<string, { title: string; subtitle: string }> = {

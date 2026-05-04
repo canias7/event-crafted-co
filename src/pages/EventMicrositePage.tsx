@@ -70,11 +70,18 @@ const EVENT_DEFAULTS: Record<string, { title: string; subtitle: string }> = {
   other: { title: "Our event", subtitle: "is almost here" },
 };
 
-// Theme palettes — applied as CSS variables on the page root.
+// Theme palettes — applied as CSS variables on the page root. Each is
+// HSL components (hue saturation% lightness%) so we compose with hsl()
+// at consume time. Adding a new theme here also needs a row in the
+// THEMES picker in MicrositeEditorPage.tsx.
+//
+// Dark themes (midnight, starlit, evergreen at twilight) flip the
+// `isDarkTheme` branch below so the OS color-scheme follows.
 const THEMES: Record<
   string,
   { bg: string; surface: string; accent: string; muted: string; ink: string }
 > = {
+  // — Romantic / wedding-leaning —
   classic: {
     bg: "0 0% 99%",
     surface: "30 10% 97%",
@@ -89,6 +96,20 @@ const THEMES: Record<
     muted: "350 15% 88%",
     ink: "350 30% 18%",
   },
+  ivory: {
+    bg: "35 60% 98%",
+    surface: "350 30% 96%",
+    accent: "20 60% 55%",
+    muted: "30 25% 90%",
+    ink: "20 25% 22%",
+  },
+  garden: {
+    bg: "100 30% 98%",
+    surface: "120 20% 96%",
+    accent: "140 40% 35%",
+    muted: "120 15% 88%",
+    ink: "140 30% 18%",
+  },
   sage: {
     bg: "140 18% 97%",
     surface: "140 15% 95%",
@@ -96,6 +117,14 @@ const THEMES: Record<
     muted: "140 10% 88%",
     ink: "150 25% 15%",
   },
+  champagne: {
+    bg: "40 35% 97%",
+    surface: "40 25% 94%",
+    accent: "35 55% 50%",
+    muted: "40 15% 88%",
+    ink: "30 30% 18%",
+  },
+  // — Evening / formal —
   dusk: {
     bg: "260 20% 98%",
     surface: "260 18% 96%",
@@ -110,12 +139,51 @@ const THEMES: Record<
     muted: "220 12% 22%",
     ink: "220 15% 92%",
   },
-  champagne: {
-    bg: "40 35% 97%",
-    surface: "40 25% 94%",
-    accent: "35 55% 50%",
-    muted: "40 15% 88%",
-    ink: "30 30% 18%",
+  starlit: {
+    bg: "230 30% 6%",
+    surface: "230 25% 12%",
+    accent: "40 75% 60%",
+    muted: "230 20% 22%",
+    ink: "40 25% 92%",
+  },
+  // — Festive / birthday / casual —
+  confetti: {
+    bg: "330 50% 98%",
+    surface: "320 40% 96%",
+    accent: "320 70% 55%",
+    muted: "300 25% 90%",
+    ink: "310 40% 22%",
+  },
+  sunset: {
+    bg: "30 50% 98%",
+    surface: "20 40% 95%",
+    accent: "15 75% 55%",
+    muted: "20 25% 90%",
+    ink: "15 40% 22%",
+  },
+  // — Holiday / winter —
+  evergreen: {
+    bg: "150 25% 96%",
+    surface: "150 20% 92%",
+    accent: "0 60% 35%",
+    muted: "150 15% 86%",
+    ink: "150 35% 14%",
+  },
+  // — Baby shower / soft pastels —
+  powder: {
+    bg: "210 50% 98%",
+    surface: "210 35% 96%",
+    accent: "200 50% 55%",
+    muted: "210 25% 90%",
+    ink: "210 35% 25%",
+  },
+  // — Corporate / minimal —
+  monochrome: {
+    bg: "0 0% 100%",
+    surface: "0 0% 96%",
+    accent: "0 0% 12%",
+    muted: "0 0% 88%",
+    ink: "0 0% 8%",
   },
 };
 
@@ -222,7 +290,8 @@ export default function EventMicrositePage() {
   const title = ev.microsite_title ?? defaults.title;
   const subtitle = ev.microsite_subtitle ?? defaults.subtitle;
   const theme = THEMES[ev.microsite_theme] ?? THEMES.classic;
-  const isDarkTheme = ev.microsite_theme === "midnight";
+  const isDarkTheme =
+    ev.microsite_theme === "midnight" || ev.microsite_theme === "starlit";
 
   return (
     <div
