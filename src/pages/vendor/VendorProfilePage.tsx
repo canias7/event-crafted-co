@@ -143,15 +143,21 @@ export default function VendorProfilePage() {
     // (works for both owners and team members). Otherwise fall back to the
     // user_id lookup so a fresh user with no profile still hits the create
     // flow.
+    //
+    // Cast to any: hourly_rate_cents / min_hours / is_staffing landed in a
+    // forward migration that Lovable's auto-generated types.ts hasn't
+    // synced yet. Once it does, the cast can drop.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const sb = supabase as any;
     const query = membership?.vendor_id
-      ? supabase
+      ? sb
           .from("vendor_profiles")
           .select(
             "id, business_name, category, bio, base_price_cents, hourly_rate_cents, min_hours, is_staffing, location, service_radius_miles, portfolio_summary, verified_at, intro_video_url, weekly_digest_enabled, slug",
           )
           .eq("id", membership.vendor_id)
           .maybeSingle()
-      : supabase
+      : sb
           .from("vendor_profiles")
           .select(
             "id, business_name, category, bio, base_price_cents, hourly_rate_cents, min_hours, is_staffing, location, service_radius_miles, portfolio_summary, verified_at, intro_video_url, weekly_digest_enabled, slug",
@@ -214,9 +220,13 @@ export default function VendorProfilePage() {
           : null,
     };
 
+    // Cast to any: same reason as the read path above — staffing
+    // columns aren't in types.ts yet.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const sb = supabase as any;
     if (profile) {
       setSaving(true);
-      const { error } = await supabase
+      const { error } = await sb
         .from("vendor_profiles")
         .update(payload)
         .eq("id", profile.id);
@@ -236,7 +246,7 @@ export default function VendorProfilePage() {
       }
     } else {
       setCreating(true);
-      const { data, error } = await supabase
+      const { data, error } = await sb
         .from("vendor_profiles")
         .insert({ user_id: user.id, ...payload })
         .select(

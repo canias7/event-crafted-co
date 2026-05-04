@@ -45,7 +45,10 @@ export default function GiftSharePage() {
   async function load() {
     if (!token) return;
     setLoading(true);
-    const { data } = await supabase.rpc("get_gift_wish_by_token", {
+    // Cast to any: get_gift_wish_by_token + pledge_to_gift RPCs aren't
+    // in types.ts's Functions section yet.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data } = await (supabase as any).rpc("get_gift_wish_by_token", {
       p_token: token,
     });
     if (!data) {
@@ -73,7 +76,8 @@ export default function GiftSharePage() {
       return;
     }
     setSubmitting(true);
-    const { error } = await supabase.rpc("pledge_to_gift", {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error } = await (supabase as any).rpc("pledge_to_gift", {
       p_token: token,
       p_name: name.trim(),
       p_amount_cents: cents,

@@ -171,7 +171,7 @@ export default function InquiryDetailPage() {
       )
       .eq("inquiry_id", inquiryId)
       .order("created_at", { ascending: false });
-    setProposals((props as Proposal[]) ?? []);
+    setProposals((props as unknown as Proposal[]) ?? []);
 
     setLoading(false);
   }

@@ -31,7 +31,11 @@ interface DirectMessage {
   created_at: string;
 }
 
-const threadsTable = () => supabase.from("direct_threads");
+// Cast to any: threadsTable joins profiles via the host_id_fkey
+// relationship that types.ts doesn't include. dmsTable matches but
+// we keep them paired for symmetry.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const threadsTable = () => (supabase as any).from("direct_threads");
 const dmsTable = () => supabase.from("direct_messages");
 
 export default function VendorMessagesPage() {

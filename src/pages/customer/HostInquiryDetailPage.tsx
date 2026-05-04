@@ -153,7 +153,7 @@ export default function HostInquiryDetailPage() {
       )
       .eq("inquiry_id", inquiryId)
       .order("created_at", { ascending: false });
-    setProposals((props as Proposal[]) ?? []);
+    setProposals((props as unknown as Proposal[]) ?? []);
 
     setLoading(false);
   }
@@ -173,7 +173,10 @@ export default function HostInquiryDetailPage() {
       update.signed_name = signature.signed_name;
       update.signed_user_agent = signature.signed_user_agent;
     }
-    const { error } = await supabase
+    // Update payload is dynamic (status + optional signature fields),
+    // which the typed update() can't validate. Cast through any.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error } = await (supabase as any)
       .from("proposals")
       .update(update)
       .eq("id", p.id);

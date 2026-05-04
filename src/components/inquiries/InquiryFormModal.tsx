@@ -105,7 +105,9 @@ export function InquiryFormModal({
       .maybeSingle()
       .then(({ data }) => {
           if (cancelled) return;
-          const row = data as {
+          // questions is stored as Json; cast through unknown so the
+          // narrowed IntakeQuestion[] shape lands correctly.
+          const row = data as unknown as {
             intro: string | null;
             questions: IntakeQuestion[];
             is_published: boolean;

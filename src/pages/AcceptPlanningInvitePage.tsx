@@ -39,7 +39,7 @@ export default function AcceptPlanningInvitePage() {
           if (error || !data) {
             setNotFound(true);
           } else {
-            setInvite(data as InviteSummary);
+            setInvite(data as unknown as InviteSummary);
           }
           setLoading(false);
         },

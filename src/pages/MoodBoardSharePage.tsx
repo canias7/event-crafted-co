@@ -54,7 +54,7 @@ export default function MoodBoardSharePage() {
         if (error || !data) {
           setNotFound(true);
         } else {
-          setBoard(data as SharedBoard);
+          setBoard(data as unknown as SharedBoard);
         }
         setLoading(false);
       });
