@@ -48,6 +48,11 @@ export const GIFTS_HUB_TABS: SubNavTab[] = [
 
 // ─── Vendor hubs ───
 
+export const VENDOR_MESSAGES_HUB_TABS: SubNavTab[] = [
+  { label: "Hosts", to: "/vendor/messages", exact: true },
+  { label: "Partners", to: "/vendor/partners" },
+];
+
 export const VENDOR_CALENDAR_HUB_TABS: SubNavTab[] = [
   { label: "Appointments", to: "/vendor/appointments" },
   { label: "Availability", to: "/vendor/availability" },

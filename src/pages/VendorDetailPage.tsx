@@ -488,8 +488,22 @@ export default function VendorDetailPage() {
       setSigninPromptOpen(true);
       return;
     }
+    // Vendors → vendor-vendor partner thread; Hosts → host-vendor DM.
+    if (profile.role === "vendor") {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data, error } = await (supabase as any).rpc(
+        "find_or_create_partner_thread",
+        { p_other_vendor_id: vendor.id },
+      );
+      if (error) {
+        toast.error(error.message);
+        return;
+      }
+      window.location.href = `/vendor/partners?thread=${data}`;
+      return;
+    }
     if (profile.role !== "host") {
-      toast.info("Messages can only be sent from host accounts.");
+      toast.info("Messages can only be sent from host or vendor accounts.");
       return;
     }
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

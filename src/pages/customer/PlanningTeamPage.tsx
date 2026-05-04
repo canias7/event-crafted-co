@@ -16,6 +16,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { DashboardSidebar } from "@/components/shared/DashboardSidebar";
 import { MobileNav } from "@/components/shared/MobileNav";
 import { SubNavTabs } from "@/components/shared/SubNavTabs";
+import { PartyInviteManager } from "@/components/customer/PartyInviteManager";
 import { PLANNING_HUB_TABS } from "@/data/hubTabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -86,7 +87,7 @@ const roleBadge: Record<string, { label: string; className: string; Icon: typeof
 };
 
 export default function PlanningTeamPage() {
-  const { user, profile } = useAuth();
+  const { user, profile, activeEvent } = useAuth();
 
   const [collaborators, setCollaborators] = useState<CollaboratorRow[]>([]);
   const [invites, setInvites] = useState<InviteRow[]>([]);
@@ -351,6 +352,16 @@ export default function PlanningTeamPage() {
             <div className="text-center text-muted-foreground py-12">Loading…</div>
           ) : (
             <>
+              {/* Wedding-party VIPs — separate from full editor collaborators */}
+              {user && (
+                <section className="pb-8 border-b border-border">
+                  <PartyInviteManager
+                    hostId={user.id}
+                    eventId={activeEvent?.id ?? null}
+                  />
+                </section>
+              )}
+
               <section>
                 <p className="font-label text-muted-foreground mb-3">
                   Your team

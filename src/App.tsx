@@ -71,6 +71,8 @@ import {
   MicrositeEditorPage,
   EventMicrositePage,
   PlannerWorkspacePage,
+  PartyHubPage,
+  AcceptPartyInvitePage,
   EventAlbumPage,
   SupportPage,
   AdminSupportPage,
@@ -88,6 +90,7 @@ import {
   VendorAnalyticsPage,
   VendorContractsPage,
   VendorMessagesPage,
+  VendorPartnersPage,
   InquiryDetailPage,
   AvailabilityPage,
   AcceptTeamInvitePage,
@@ -160,6 +163,9 @@ const App = () => (
               <Route path="/customer/gifts" element={<RequireRole role="host"><GiftWishesPage /></RequireRole>} />
               <Route path="/customer/microsite" element={<RequireRole role="host"><MicrositeEditorPage /></RequireRole>} />
               <Route path="/planner" element={<RequireRole role={["host", "vendor"]}><PlannerWorkspacePage /></RequireRole>} />
+              <Route path="/party" element={<RequireRole role={["host", "vendor", "admin"]}><PartyHubPage /></RequireRole>} />
+              <Route path="/party/:eventId" element={<RequireRole role={["host", "vendor", "admin"]}><PartyHubPage /></RequireRole>} />
+              <Route path="/accept-party-invite/:token" element={<AcceptPartyInvitePage />} />
               <Route path="/gift/:token" element={<GiftSharePage />} />
               <Route path="/e/:token" element={<EventMicrositePage />} />
               <Route path="/album/:token" element={<EventAlbumPage />} />
@@ -189,6 +195,7 @@ const App = () => (
               <Route path="/vendor/payments" element={<RequireRole role="vendor"><ComingSoonPage side="vendor" description="Connect a Stripe account, see payouts, and track the 3% commission on confirmed bookings." /></RequireRole>} />
               <Route path="/vendor/contracts" element={<RequireRole role="vendor"><VendorContractsPage /></RequireRole>} />
               <Route path="/vendor/messages" element={<RequireRole role="vendor"><VendorMessagesPage /></RequireRole>} />
+              <Route path="/vendor/partners" element={<RequireRole role="vendor"><VendorPartnersPage /></RequireRole>} />
               <Route path="/vendor/inbox/:inquiryId" element={<RequireRole role="vendor"><InquiryDetailPage /></RequireRole>} />
 
               {/* Admin */}

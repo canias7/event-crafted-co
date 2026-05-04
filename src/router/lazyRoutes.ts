@@ -168,6 +168,12 @@ export const EventMicrositePage = lazy(importEventMicrosite);
 const importPlannerWorkspace = () => import("@/pages/customer/PlannerWorkspacePage");
 export const PlannerWorkspacePage = lazy(importPlannerWorkspace);
 
+const importPartyHub = () => import("@/pages/PartyHubPage");
+export const PartyHubPage = lazy(importPartyHub);
+
+const importAcceptPartyInvite = () => import("@/pages/AcceptPartyInvitePage");
+export const AcceptPartyInvitePage = lazy(importAcceptPartyInvite);
+
 const importEventAlbum = () => import("@/pages/EventAlbumPage");
 export const EventAlbumPage = lazy(importEventAlbum);
 
@@ -210,6 +216,9 @@ export const VendorContractsPage = lazy(importVendorContracts);
 
 const importVendorMessages = () => import("@/pages/vendor/VendorMessagesPage");
 export const VendorMessagesPage = lazy(importVendorMessages);
+
+const importVendorPartners = () => import("@/pages/vendor/VendorPartnersPage");
+export const VendorPartnersPage = lazy(importVendorPartners);
 
 const importInquiryDetail = () => import("@/pages/vendor/InquiryDetailPage");
 export const InquiryDetailPage = lazy(importInquiryDetail);
@@ -283,6 +292,9 @@ const ROUTE_IMPORTERS: Array<{ pattern: string; importer: () => Promise<unknown>
   { pattern: "/customer/gifts", importer: importGiftWishes },
   { pattern: "/customer/microsite", importer: importMicrositeEditor },
   { pattern: "/planner", importer: importPlannerWorkspace },
+  { pattern: "/party", importer: importPartyHub },
+  { pattern: "/party/:eventId", importer: importPartyHub },
+  { pattern: "/accept-party-invite/:token", importer: importAcceptPartyInvite },
   { pattern: "/e/:token", importer: importEventMicrosite },
   { pattern: "/album/:token", importer: importEventAlbum },
   { pattern: "/support", importer: importSupport },
@@ -310,6 +322,7 @@ const ROUTE_IMPORTERS: Array<{ pattern: string; importer: () => Promise<unknown>
   { pattern: "/vendor/payments", importer: importComingSoon },
   { pattern: "/vendor/contracts", importer: importVendorContracts },
   { pattern: "/vendor/messages", importer: importVendorMessages },
+  { pattern: "/vendor/partners", importer: importVendorPartners },
   { pattern: "/vendor/inbox/:inquiryId", importer: importInquiryDetail },
   // Admin
   { pattern: "/admin/dashboard", importer: importAdminDashboard },

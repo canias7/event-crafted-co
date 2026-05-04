@@ -85,6 +85,11 @@ interface SavedSearchMatchPayload {
   searchId: string;
 }
 
+interface PartyInvitePayload {
+  email: string;
+  roleLabel: string;
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: cors });
@@ -123,6 +128,9 @@ serve(async (req) => {
       if (e) emails = [e];
     } else if (kind === "saved_search_match") {
       const e = savedSearchMatchEmail(body as SavedSearchMatchPayload);
+      if (e) emails = [e];
+    } else if (kind === "party_invite") {
+      const e = await partyInviteEmail(body as PartyInvitePayload);
       if (e) emails = [e];
     } else {
       return json({ error: `Unknown kind: ${kind}` }, 400);
@@ -229,6 +237,63 @@ function teamInviteEmail(p: TeamInvitePayload) {
     to: p.email,
     subject: `${businessName} invited you to their Vendora team`,
     html: shellHtml(`You've been invited to join ${escape(businessName)}`, body),
+  };
+}
+
+async function partyInviteEmail(p: PartyInvitePayload) {
+  // Look up the most recent party invite for this email (the row was
+  // just inserted by the host's UI). Use service-role client so RLS
+  // doesn't hide it.
+  const sb = adminClient();
+  const { data } = await sb
+    .from("event_party_invites")
+    .select(
+      "token, role_label, host_id, event:host_events!event_party_invites_event_id_fkey(name, event_type, event_date)",
+    )
+    .eq("email", p.email.toLowerCase())
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  const row = data as
+    | {
+        token: string;
+        role_label: string;
+        host_id: string;
+        event: { name: string | null; event_type: string; event_date: string | null } | null;
+      }
+    | null;
+  if (!row) return null;
+
+  const { data: hostProf } = await sb
+    .from("profiles")
+    .select("display_name")
+    .eq("id", row.host_id)
+    .maybeSingle();
+  const hostName =
+    (hostProf as { display_name: string | null } | null)?.display_name ??
+    "Your friend";
+
+  const link = `${APP_URL}/accept-party-invite/${row.token}`;
+  const dateStr = row.event?.event_date
+    ? new Date(`${row.event.event_date}T00:00:00`).toLocaleDateString(undefined, {
+        weekday: "long",
+        month: "long",
+        day: "numeric",
+        year: "numeric",
+      })
+    : null;
+
+  const body = `
+    <p style="margin:0 0 16px;">${escape(hostName)} added you to their wedding party as <strong>${escape(p.roleLabel)}</strong>.</p>
+    ${dateStr ? `<p style="margin:0 0 16px;font-size:14px;color:#3a3a3a;">${escape(dateStr)}</p>` : ""}
+    <p style="margin:0 0 24px;">You'll get a private VIP portal with the schedule, vendor names, group gifts, registry, and any tasks they assign — no inquiries, no finances.</p>
+    <p style="margin:0 0 24px;">${button(link, "Accept invitation")}</p>
+    <p style="margin:0;font-size:13px;color:#777;">If the button doesn't work, paste this URL into your browser: <a href="${link}" style="color:#a08259;">${escape(link)}</a></p>`;
+
+  return {
+    to: p.email,
+    subject: `${hostName} invited you to their wedding party`,
+    html: shellHtml("You're invited", body),
   };
 }
 

@@ -10,8 +10,10 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ContactInfoWarning } from "@/components/messages/ContactInfoWarning";
+import { SubNavTabs } from "@/components/shared/SubNavTabs";
 import { detectContactInfo } from "@/lib/contactInfoSignals";
 import { vendorNavItems as navItems } from "@/data/navItems";
+import { VENDOR_MESSAGES_HUB_TABS } from "@/data/hubTabs";
 
 interface ThreadRow {
   id: string;
@@ -141,11 +143,14 @@ export default function VendorMessagesPage() {
       <DashboardSidebar items={navItems} title="Vendor Portal" backPath="/" />
 
       <main id="main-content" className="flex-1 pb-20 lg:pb-0">
-        <div className="border-b border-border bg-card px-4 md:px-8 py-4 sticky top-0 z-40">
-          <h1 className="font-display text-xl">Messages</h1>
-          <p className="text-sm text-muted-foreground">
-            Casual conversations · low-friction starting point before a formal inquiry
-          </p>
+        <div className="border-b border-border bg-card px-4 md:px-8 py-4 sticky top-0 z-40 space-y-3">
+          <div>
+            <h1 className="font-display text-xl">Messages</h1>
+            <p className="text-sm text-muted-foreground">
+              Casual conversations · low-friction starting point before a formal inquiry
+            </p>
+          </div>
+          <SubNavTabs tabs={VENDOR_MESSAGES_HUB_TABS} />
         </div>
 
         <div className="grid lg:grid-cols-[280px_1fr] h-[calc(100vh-65px)]">
