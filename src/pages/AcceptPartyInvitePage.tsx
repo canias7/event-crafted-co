@@ -118,7 +118,7 @@ export default function AcceptPartyInvitePage() {
           You're invited
         </p>
         <h1 className="font-display text-3xl md:text-4xl leading-tight mb-3">
-          {data.event.host_name} added you to their wedding party
+          {data.event.host_name} added you to their inner circle
         </h1>
         <p className="text-sm text-muted-foreground mb-1">
           As <span className="text-foreground/85">{data.role_label}</span>
@@ -147,7 +147,7 @@ export default function AcceptPartyInvitePage() {
             </div>
             <Link to={`/party/${data.event.id}`} className="block">
               <Button className="rounded-full bg-foreground text-background hover:bg-foreground/90">
-                Open the wedding-party portal
+                Open the VIP portal
               </Button>
             </Link>
           </>

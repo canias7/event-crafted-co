@@ -110,7 +110,7 @@ function PartyIndex() {
   const [loading, setLoading] = useState(true);
 
   useDocumentMeta({
-    title: "Wedding-party portal — Vendora",
+    title: "Inner-circle portal — Vendora",
     description: "Events you're a VIP for, all in one place.",
   });
 
@@ -149,7 +149,7 @@ function PartyIndex() {
       <section className="py-12 md:py-16">
         <div className="container mx-auto px-6 max-w-3xl">
           <p className="font-label text-accent tracking-[0.4em] mb-3">
-            — WEDDING PARTY
+            — INNER CIRCLE
           </p>
           <h1 className="font-display text-3xl md:text-4xl leading-tight mb-3">
             Events you're a VIP for
@@ -171,8 +171,9 @@ function PartyIndex() {
               <Sparkles className="w-10 h-10 text-muted-foreground/40 mx-auto mb-4" />
               <p className="font-display text-xl mb-2">No invitations yet</p>
               <p className="text-sm text-muted-foreground leading-relaxed">
-                When a host adds you to their wedding party, you'll see the
-                event here. They'll send a magic-link invitation by email.
+                When a host adds you to their inner circle for an event,
+                you'll see it here. They'll send a magic-link invitation by
+                email.
               </p>
             </div>
           ) : (
@@ -286,7 +287,7 @@ function PartyEventView({ eventId }: { eventId: string }) {
     title: data
       ? `${data.event.host_name}'s ${EVENT_LABEL[data.event.event_type] ?? "event"} — VIP portal`
       : "VIP portal — Vendora",
-    description: "VIP details for the wedding party.",
+    description: "VIP details for this event.",
   });
 
   async function toggleTask(t: PartyPortal["my_tasks"][number]) {

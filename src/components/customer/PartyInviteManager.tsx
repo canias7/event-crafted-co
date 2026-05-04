@@ -24,7 +24,10 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
-// Lets the host build the wedding-party VIP list and email invitations.
+// Lets the host build the inner-circle VIP list and email invitations.
+// Works for any event type — weddings, milestone birthdays, holiday
+// gatherings, baby showers — the VIPs are whoever the host wants in
+// the privileged tier (co-hosts, family, wedding party, best friends).
 // Each member gets a magic-link → AcceptPartyInvitePage flow.
 
 interface PartyInvite {
@@ -37,7 +40,19 @@ interface PartyInvite {
   created_at: string;
 }
 
+// Universal options first, then event-specific. Free-text is supported
+// at the DB layer (role_label is text) so a custom label could be added
+// later via the schema; for v1 we ship a curated list that covers most
+// event types.
 const ROLE_OPTIONS = [
+  // Universal
+  "VIP",
+  "Co-host",
+  "Family",
+  "Best Friend",
+  "Parent",
+  "Sibling",
+  // Wedding-specific
   "Maid of Honor",
   "Best Man",
   "Bridesmaid",
@@ -46,8 +61,11 @@ const ROLE_OPTIONS = [
   "Mother of the Groom",
   "Father of the Bride",
   "Father of the Groom",
-  "Family",
-  "VIP",
+  // Birthday / milestone
+  "Guest of Honor",
+  // Baby shower
+  "Mother-to-be",
+  "Co-parent",
 ];
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -127,11 +145,12 @@ export function PartyInviteManager({
     <div className="space-y-4">
       <div className="flex items-center justify-between flex-wrap gap-2">
         <div>
-          <p className="font-label text-muted-foreground">Wedding party</p>
+          <p className="font-label text-muted-foreground">Inner circle</p>
           <p className="text-xs text-muted-foreground mt-1 leading-relaxed max-w-xl">
-            Add the bridal party, parents, and other VIPs. They get a private
-            portal with the schedule, vendor names, group gifts, registry,
-            and any tasks you assign — no inquiries or finances.
+            Add co-hosts, family, the wedding party, or anyone else who needs
+            day-of details. They get a private portal with the schedule,
+            vendor names, group gifts, registry, and any tasks you assign —
+            no inquiries or finances.
           </p>
         </div>
         <Button
@@ -240,7 +259,7 @@ function AddDialog({
   onAdded: () => void;
 }) {
   const [email, setEmail] = useState("");
-  const [role, setRole] = useState("Bridesmaid");
+  const [role, setRole] = useState("VIP");
   const [submitting, setSubmitting] = useState(false);
 
   async function submit(e: React.FormEvent) {
@@ -277,7 +296,7 @@ function AddDialog({
     setSubmitting(false);
     toast.success("Invite added — copy the link to send manually if needed");
     setEmail("");
-    setRole("Bridesmaid");
+    setRole("VIP");
     onOpenChange(false);
     onAdded();
   }
@@ -287,11 +306,12 @@ function AddDialog({
       <DialogContent className="sm:max-w-md rounded-sm">
         <DialogHeader>
           <DialogTitle className="font-display text-2xl">
-            Add a wedding-party member
+            Add an inner-circle VIP
           </DialogTitle>
           <DialogDescription>
-            They'll get a magic-link email + a private VIP portal with
-            schedule, vendor contacts, group gifts, and any tasks you assign.
+            They'll get a magic-link email + a private portal with the
+            schedule, vendor contacts, group gifts, and any tasks you
+            assign. Works for any event type.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={submit} className="space-y-3 pt-2">

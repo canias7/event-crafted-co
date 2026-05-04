@@ -284,7 +284,7 @@ async function partyInviteEmail(p: PartyInvitePayload) {
     : null;
 
   const body = `
-    <p style="margin:0 0 16px;">${escape(hostName)} added you to their wedding party as <strong>${escape(p.roleLabel)}</strong>.</p>
+    <p style="margin:0 0 16px;">${escape(hostName)} added you to their inner circle as <strong>${escape(p.roleLabel)}</strong>.</p>
     ${dateStr ? `<p style="margin:0 0 16px;font-size:14px;color:#3a3a3a;">${escape(dateStr)}</p>` : ""}
     <p style="margin:0 0 24px;">You'll get a private VIP portal with the schedule, vendor names, group gifts, registry, and any tasks they assign — no inquiries, no finances.</p>
     <p style="margin:0 0 24px;">${button(link, "Accept invitation")}</p>
@@ -292,7 +292,7 @@ async function partyInviteEmail(p: PartyInvitePayload) {
 
   return {
     to: p.email,
-    subject: `${hostName} invited you to their wedding party`,
+    subject: `${hostName} invited you to their event's inner circle`,
     html: shellHtml("You're invited", body),
   };
 }
