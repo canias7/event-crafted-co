@@ -159,10 +159,12 @@ export default function VendorCityPage() {
               {byCategory.map(([cat, list]) => {
                 const slug = slugByCategory[cat];
                 if (!slug) return null;
+                // Link to the city + category combined SEO page so the
+                // anchor text doubles as both UI nav and SEO juice.
                 return (
                   <Link
                     key={cat}
-                    to={`/vendors/category/${slug}`}
+                    to={`/vendors/${slug}/in/${citySlug}`}
                     className="text-xs uppercase tracking-wide bg-secondary/60 hover:bg-secondary text-foreground/80 px-3 py-1.5 rounded-full transition-colors"
                   >
                     {cat}

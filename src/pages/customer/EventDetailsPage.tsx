@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { downloadIcs, slugForFile } from "@/lib/ics";
 import { formatDate } from "@/lib/format";
+import { PublishRealEventCard } from "@/components/customer/PublishRealEventCard";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -563,6 +564,19 @@ export default function EventDetailsPage() {
                       </Button>
                     </div>
                   </form>
+
+                  {/* Publish your event as a real-event SEO page. */}
+                  <div className="mt-8">
+                    <PublishRealEventCard
+                      event={{
+                        id: activeEvent.id,
+                        name: activeEvent.name,
+                        event_type: activeEvent.event_type,
+                        event_date: activeEvent.event_date,
+                        event_location: activeEvent.event_location,
+                      }}
+                    />
+                  </div>
                 </>
               ) : (
                 <div className="rounded-sm border border-border bg-card p-8 text-center">

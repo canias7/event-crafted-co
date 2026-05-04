@@ -371,7 +371,10 @@ export default function VendorCategoryPage() {
               {citiesServed.map((c) => (
                 <Link
                   key={c.slug}
-                  to={`/vendors/in/${c.slug}`}
+                  // Use the combined city+category route so the anchor
+                  // text matches the destination — better SEO signal
+                  // than linking to the generic city page.
+                  to={`/vendors/${slug}/in/${c.slug}`}
                   className="group rounded-sm border border-border bg-card p-4 hover:border-foreground/30 transition-colors"
                 >
                   <p className="font-display text-base group-hover:text-accent transition-colors">
