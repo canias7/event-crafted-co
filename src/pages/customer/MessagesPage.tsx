@@ -44,6 +44,17 @@ export default function MessagesPage() {
   const [sending, setSending] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  // Tracks whether the component is still mounted. Realtime callbacks
+  // and the initial fetches both close over this so we don't setState
+  // after unmount (no leak warning, no wasted render).
+  const mountedRef = useRef(true);
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
+
   async function loadThreads() {
     if (!user) return;
     setLoading(true);
@@ -53,6 +64,7 @@ export default function MessagesPage() {
       )
       .eq("host_id", user.id)
       .order("last_message_at", { ascending: false });
+    if (!mountedRef.current) return;
     setThreads((data as ThreadRow[]) ?? []);
     setLoading(false);
   }
@@ -62,6 +74,7 @@ export default function MessagesPage() {
       .select("id, sender_role, body, created_at")
       .eq("thread_id", threadId)
       .order("created_at", { ascending: true });
+    if (!mountedRef.current) return;
     setMessages((data as DirectMessage[]) ?? []);
     setTimeout(() => {
       messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
