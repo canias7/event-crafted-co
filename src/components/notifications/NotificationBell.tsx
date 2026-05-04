@@ -11,8 +11,7 @@ import {
 } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const notifTable = () => (supabase as any).from("notifications");
+const notifTable = () => supabase.from("notifications");
 
 interface Notification {
   id: string;

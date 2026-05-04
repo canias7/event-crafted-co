@@ -35,8 +35,7 @@ interface VendorOption {
   location: string | null;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const recsTable = () => (supabase as any).from("vendor_recommendations");
+const recsTable = () => supabase.from("vendor_recommendations");
 
 export function VendorRecommendationManager({
   vendorId,

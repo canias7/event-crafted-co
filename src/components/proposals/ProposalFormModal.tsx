@@ -17,8 +17,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const proposalsTable = () => (supabase as any).from("proposals");
+const proposalsTable = () => supabase.from("proposals");
 
 interface LineItem {
   description: string;
@@ -68,37 +67,23 @@ export function ProposalFormModal({
   useEffect(() => {
     if (!open || !vendorId) return;
     let cancelled = false;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (supabase as any)
+    supabase
       .from("vendor_contract_templates")
       .select("id, name, body, is_default")
       .eq("vendor_id", vendorId)
       .order("is_default", { ascending: false })
       .order("name", { ascending: true })
-      .then(
-        ({
-          data,
-        }: {
-          data:
-            | Array<{
-                id: string;
-                name: string;
-                body: string;
-                is_default: boolean;
-              }>
-            | null;
-        }) => {
-          if (cancelled) return;
-          const list = data ?? [];
-          setTemplates(list);
-          const def = list.find((t) => t.is_default);
-          if (def) {
-            setContractTemplateId(def.id);
-            setContractBody(def.body);
-            setContractName(def.name);
-          }
-        },
-      );
+      .then(({ data }) => {
+        if (cancelled) return;
+        const list = data ?? [];
+        setTemplates(list);
+        const def = list.find((t) => t.is_default);
+        if (def) {
+          setContractTemplateId(def.id);
+          setContractBody(def.body);
+          setContractName(def.name);
+        }
+      });
     return () => {
       cancelled = true;
     };

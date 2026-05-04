@@ -50,8 +50,7 @@ const statusBadge: Record<string, { label: string; className: string }> = {
   },
 };
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const refsTable = () => (supabase as any).from("vendor_referrals");
+const refsTable = () => supabase.from("vendor_referrals");
 
 export function ReferralManager({
   vendorId,

@@ -38,7 +38,7 @@ interface FormRow {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-const formsTable = () => (supabase as any).from("vendor_intake_forms");
+const formsTable = () => supabase.from("vendor_intake_forms");
 
 const TYPE_LABELS: Record<IntakeFieldType, string> = {
   text: "Short answer",

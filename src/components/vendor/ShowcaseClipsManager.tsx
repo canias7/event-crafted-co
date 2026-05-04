@@ -24,8 +24,7 @@ interface ShowcaseClip {
   created_at: string;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const clipsTable = () => (supabase as any).from("vendor_showcase_clips");
+const clipsTable = () => supabase.from("vendor_showcase_clips");
 
 function clipUrl(path: string) {
   const { data } = supabase.storage.from(BUCKET).getPublicUrl(path);
