@@ -72,26 +72,17 @@ const SERVICES: ServiceCheck[] = [
     description: "Sitemap, calendar feeds, transactional email",
     ping: async () => {
       // Sitemap is a public, anonymous edge function — perfect health
-      // check. We only fetch the headers (HEAD) to avoid bandwidth.
-      const url = supabase.functions.url
-        ? `${supabase.functions.url}/sitemap-xml`
-        : null;
-      if (!url) {
-        // Older supabase-js doesn't expose .url; derive from env.
-        const base = import.meta.env.VITE_SUPABASE_URL;
-        if (!base) {
-          return { ok: false, latencyMs: 0, note: "function URL unknown" };
-        }
-        const start = performance.now();
-        const res = await fetch(`${base}/functions/v1/sitemap-xml`, {
-          method: "GET",
-          headers: { apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ?? "" },
-        });
-        const latencyMs = Math.round(performance.now() - start);
-        return { ok: res.ok, latencyMs };
+      // check. The functions URL isn't exposed by supabase-js (the
+      // .url property is protected), so derive from env.
+      const base = import.meta.env.VITE_SUPABASE_URL;
+      if (!base) {
+        return { ok: false, latencyMs: 0, note: "function URL unknown" };
       }
       const start = performance.now();
-      const res = await fetch(url);
+      const res = await fetch(`${base}/functions/v1/sitemap-xml`, {
+        method: "GET",
+        headers: { apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ?? "" },
+      });
       const latencyMs = Math.round(performance.now() - start);
       return { ok: res.ok, latencyMs };
     },

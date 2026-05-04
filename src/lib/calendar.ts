@@ -19,7 +19,8 @@ export interface CalendarConnection {
 // Fetch the current user's connections (just one for now — we only
 // support Google).
 export async function loadCalendarConnections(): Promise<CalendarConnection[]> {
-  const { data, error } = await supabase
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data, error } = await (supabase as any)
     .from("calendar_connections")
     .select(
       "id, provider, account_email, pull_busy_times, push_appointments, last_synced_at, last_sync_error, token_expires_at, created_at",
@@ -78,7 +79,8 @@ export async function updateCalendarPreference(
   id: string,
   patch: Partial<Pick<CalendarConnection, "pull_busy_times" | "push_appointments">>,
 ): Promise<void> {
-  const { error } = await supabase
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error } = await (supabase as any)
     .from("calendar_connections")
     .update(patch)
     .eq("id", id);
