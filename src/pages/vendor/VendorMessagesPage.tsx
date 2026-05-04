@@ -11,6 +11,12 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ContactInfoWarning } from "@/components/messages/ContactInfoWarning";
+import { MessageAttachments } from "@/components/messages/MessageAttachments";
+import { AttachmentPickerButton } from "@/components/messages/AttachmentPickerButton";
+import {
+  uploadAttachments,
+  type MessageAttachment,
+} from "@/lib/messageAttachments";
 import { SubNavTabs } from "@/components/shared/SubNavTabs";
 import { detectContactInfo } from "@/lib/contactInfoSignals";
 import { vendorNavItems as navItems } from "@/data/navItems";
@@ -28,6 +34,7 @@ interface DirectMessage {
   id: string;
   sender_role: "host" | "vendor";
   body: string;
+  attachments?: MessageAttachment[];
   created_at: string;
 }
 
@@ -48,6 +55,7 @@ export default function VendorMessagesPage() {
   const [loading, setLoading] = useState(true);
   const [messages, setMessages] = useState<DirectMessage[]>([]);
   const [composer, setComposer] = useState("");
+  const [pendingFiles, setPendingFiles] = useState<File[]>([]);
   const [sending, setSending] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -68,8 +76,9 @@ export default function VendorMessagesPage() {
   }
 
   async function loadMessages(threadId: string) {
-    const { data } = await dmsTable()
-      .select("id, sender_role, body, created_at")
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data } = await (dmsTable() as any)
+      .select("id, sender_role, body, attachments, created_at")
       .eq("thread_id", threadId)
       .order("created_at", { ascending: true });
     setMessages((data as DirectMessage[]) ?? []);
@@ -111,14 +120,25 @@ export default function VendorMessagesPage() {
   );
 
   async function send() {
-    if (!composer.trim() || !activeThreadId || !user) return;
+    if ((!composer.trim() && pendingFiles.length === 0) || !activeThreadId || !user)
+      return;
     setSending(true);
+    let attachments: MessageAttachment[] = [];
+    if (pendingFiles.length > 0) {
+      attachments = await uploadAttachments(
+        pendingFiles,
+        activeThreadId,
+        (n, m) => toast.error(`${n}: ${m}`),
+      );
+    }
     const flags = detectContactInfo(composer);
-    const { error } = await dmsTable().insert({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error } = await (dmsTable() as any).insert({
       thread_id: activeThreadId,
       sender_id: user.id,
       sender_role: "vendor",
       body: composer.trim(),
+      attachments,
       contact_info_flagged: flags.any,
     });
     setSending(false);
@@ -127,6 +147,7 @@ export default function VendorMessagesPage() {
       return;
     }
     setComposer("");
+    setPendingFiles([]);
     loadMessages(activeThreadId);
     loadThreads();
   }
@@ -255,6 +276,9 @@ export default function VendorMessagesPage() {
                           }`}
                         >
                           {m.body}
+                          {m.attachments && m.attachments.length > 0 && (
+                            <MessageAttachments attachments={m.attachments} />
+                          )}
                         </div>
                       );
                     })
@@ -264,7 +288,12 @@ export default function VendorMessagesPage() {
 
                 <div className="border-t border-border p-4 space-y-2 bg-card">
                   <ContactInfoWarning body={composer} />
-                  <div className="flex items-end gap-2">
+                  <div className="flex items-end gap-2 flex-wrap">
+                    <AttachmentPickerButton
+                      pending={pendingFiles}
+                      onChange={setPendingFiles}
+                      disabled={sending}
+                    />
                     <Textarea
                       value={composer}
                       onChange={(e) => setComposer(e.target.value)}
@@ -276,11 +305,13 @@ export default function VendorMessagesPage() {
                       }}
                       rows={2}
                       placeholder="Type a reply…  (Cmd+Enter to send)"
-                      className="resize-none"
+                      className="resize-none flex-1 min-w-[180px]"
                     />
                     <Button
                       onClick={send}
-                      disabled={sending || !composer.trim()}
+                      disabled={
+                        sending || (!composer.trim() && pendingFiles.length === 0)
+                      }
                       className="rounded-full bg-foreground text-background hover:bg-foreground/90 shrink-0"
                     >
                       {sending ? (

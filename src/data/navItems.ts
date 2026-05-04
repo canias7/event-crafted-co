@@ -21,6 +21,7 @@ import {
   MailCheck,
   BookOpen,
   UserPlus,
+  Flag,
   type LucideIcon,
 } from "lucide-react";
 
@@ -106,6 +107,7 @@ export const adminNavItems: NavItem[] = [
   { labelKey: "sidebar.admin.editorial", path: "/admin/editorial", icon: BookOpen },
   { labelKey: "sidebar.admin.claims", path: "/admin/claims", icon: UserPlus },
   { labelKey: "sidebar.admin.support", path: "/admin/support", icon: LifeBuoy },
+  { labelKey: "sidebar.admin.reports", path: "/admin/reports", icon: Flag },
   { labelKey: "sidebar.admin.audit", path: "/admin/audit", icon: History },
   { labelKey: "sidebar.admin.email_health", path: "/admin/email-deliverability", icon: MailCheck },
   { labelKey: "sidebar.admin.settings", path: "/settings", icon: Settings },

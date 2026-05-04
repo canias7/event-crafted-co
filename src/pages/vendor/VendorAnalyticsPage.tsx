@@ -17,6 +17,7 @@ import { DashboardSidebar } from "@/components/shared/DashboardSidebar";
 import { MobileNav } from "@/components/shared/MobileNav";
 import { Skeleton } from "@/components/ui/skeleton";
 import { vendorNavItems as navItems } from "@/data/navItems";
+import { ReviewRequestsCard } from "@/components/vendor/ReviewRequestsCard";
 
 interface InquiryRow {
   id: string;
@@ -458,6 +459,12 @@ export default function VendorAnalyticsPage() {
                   </p>
                 </div>
               </section>
+
+              {vendorId && (
+                <section className="bg-card border border-border rounded-sm p-5">
+                  <ReviewRequestsCard vendorId={vendorId} />
+                </section>
+              )}
 
               {/* Weekly inquiries */}
               <section className="bg-card border border-border rounded-sm p-5">

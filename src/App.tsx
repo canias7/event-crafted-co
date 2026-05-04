@@ -17,6 +17,7 @@ import { ThemeProvider } from "./hooks/useTheme";
 import { RequireRole } from "./components/auth/RequireRole";
 import { CommandPaletteLauncher } from "./components/CommandPaletteLauncher";
 import { SkipLink } from "./components/SkipLink";
+import { EmailVerificationBanner } from "./components/auth/EmailVerificationBanner";
 import { MobilePortalBell } from "./components/notifications/MobilePortalBell";
 
 // Both ship-on-mount components are lazy: CookieBanner only renders
@@ -124,6 +125,8 @@ import {
   EditorialArticlePage,
   ClaimVendorPage,
   AdminClaimsPage,
+  AdminReportsPage,
+  PublicReviewPage,
   PlanInFivePage,
   VendorBlogPage,
 } from "@/router/lazyRoutes";
@@ -140,6 +143,7 @@ const App = () => (
         <AuthProvider>
           <RealtimeProvider>
           <SkipLink />
+          <EmailVerificationBanner />
           <ErrorBoundary>
           <Suspense fallback={<RouteFallback />}>
             <Routes>
@@ -177,6 +181,7 @@ const App = () => (
               <Route path="/real-events" element={<RealEventsPage />} />
               <Route path="/real-events/:slug" element={<RealEventDetailPage />} />
               <Route path="/rsvp/:token" element={<RsvpPage />} />
+              <Route path="/review/:token" element={<PublicReviewPage />} />
               <Route path="/board/:token" element={<MoodBoardSharePage />} />
               <Route path="/accept-team-invite/:token" element={<AcceptTeamInvitePage />} />
               <Route path="/accept-planning-invite/:token" element={<AcceptPlanningInvitePage />} />
@@ -257,6 +262,7 @@ const App = () => (
               <Route path="/admin/verifications" element={<RequireRole role="admin"><AdminVerificationsPage /></RequireRole>} />
               <Route path="/admin/editorial" element={<RequireRole role="admin"><AdminEditorialPage /></RequireRole>} />
               <Route path="/admin/claims" element={<RequireRole role="admin"><AdminClaimsPage /></RequireRole>} />
+              <Route path="/admin/reports" element={<RequireRole role="admin"><AdminReportsPage /></RequireRole>} />
 
               <Route path="*" element={<NotFound />} />
             </Routes>

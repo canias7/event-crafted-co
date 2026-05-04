@@ -71,6 +71,7 @@ import heroDinner from "@/assets/vendora-hero-dinner.jpg";
 import heroGala from "@/assets/vendora-hero-gala.jpg";
 import heroBirthday from "@/assets/vendora-hero-birthday.jpg";
 import heroKids from "@/assets/vendora-hero-kids.jpg";
+import { ReportButton } from "@/components/trust/ReportButton";
 
 const imageMap: Record<string, string> = {
   "vendor-photographer": vendorPhotographer,
@@ -980,6 +981,18 @@ export default function VendorDetailPage() {
                   Vendora doesn't accept money to influence search ranking. Vendors
                   appear based on fit and review quality, not ad spend.
                 </div>
+
+                {vendor.isReal && (
+                  <div className="text-center pt-1">
+                    <ReportButton
+                      contentType="vendor_profile"
+                      contentId={vendor.id}
+                      variant="link"
+                      size="sm"
+                      label="Report this profile"
+                    />
+                  </div>
+                )}
 
                 {vendor.isReal && (
                   <SocialEmbedCard

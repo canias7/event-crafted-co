@@ -22,21 +22,24 @@ export function attachmentUrl(path: string): string {
 }
 
 /**
- * Upload a list of files to message-attachments under <inquiry_id>/<uuid>.ext.
- * Returns the metadata to write into messages.attachments.
+ * Upload a list of files to message-attachments under
+ * <pathPrefix>/<uuid>.ext. The prefix scopes uploads to a parent
+ * (inquiry id, thread id, etc.) so cleanup-on-delete is one path.
  *
- * Files that fail upload are skipped (logged via the error callback) so
- * partial successes still produce a message.
+ * Returns the metadata to write into the attachments jsonb column.
+ *
+ * Files that fail upload are skipped (logged via the error callback)
+ * so partial successes still produce a message.
  */
 export async function uploadAttachments(
   files: File[],
-  inquiryId: string,
+  pathPrefix: string,
   onError?: (filename: string, msg: string) => void,
 ): Promise<MessageAttachment[]> {
   const results: MessageAttachment[] = [];
   for (const file of files) {
     const ext = file.name.split(".").pop()?.toLowerCase() ?? "bin";
-    const path = `${inquiryId}/${crypto.randomUUID()}.${ext}`;
+    const path = `${pathPrefix}/${crypto.randomUUID()}.${ext}`;
     const { error } = await supabase.storage
       .from(BUCKET)
       .upload(path, file, { contentType: file.type, cacheControl: "3600" });

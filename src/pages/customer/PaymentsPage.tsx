@@ -36,6 +36,7 @@ import { DashboardSidebar } from "@/components/shared/DashboardSidebar";
 import { MobileNav } from "@/components/shared/MobileNav";
 import { StatCard } from "@/components/shared/StatCard";
 import { customerNavItems as navItems } from "@/data/navItems";
+import { BudgetBreakdownChart } from "@/components/budget/BudgetBreakdownChart";
 
 const budgetTable = () => supabase.from("budget_items");
 
@@ -243,6 +244,12 @@ export default function PaymentsPage() {
               icon={CreditCard}
             />
           </div>
+
+          {!loading && items.length > 0 && (
+            <div className="mb-6">
+              <BudgetBreakdownChart rows={items} />
+            </div>
+          )}
 
           <div className="bg-card rounded-sm border border-border overflow-hidden">
             {loading ? (

@@ -29,6 +29,7 @@ import {
 } from "@/components/ui/select";
 import { customerNavItems as navItems } from "@/data/navItems";
 import type { EventType } from "@/hooks/useAuth";
+import { HostInquiryTemplatePicker } from "@/components/customer/HostInquiryTemplatePicker";
 
 interface VendorOption {
   id: string;
@@ -369,7 +370,13 @@ export default function InquiryBlastPage() {
                 </div>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="b-notes">Tell vendors about your event</Label>
+                <div className="flex items-center justify-between gap-3 flex-wrap">
+                  <Label htmlFor="b-notes">Tell vendors about your event</Label>
+                  <HostInquiryTemplatePicker
+                    currentBody={specialRequests}
+                    onApply={setSpecialRequests}
+                  />
+                </div>
                 <Textarea
                   id="b-notes"
                   rows={4}
