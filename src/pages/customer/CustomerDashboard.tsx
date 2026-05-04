@@ -14,6 +14,7 @@ import { StatCard } from "@/components/shared/StatCard";
 import { customerNavItems as navItems } from "@/data/navItems";
 import { checklistItems, customerTasks } from "@/data/sampleData";
 import { useAuth } from "@/hooks/useAuth";
+import { CoBookedRail } from "@/components/vendor/CoBookedRail";
 import { supabase } from "@/integrations/supabase/client";
 
 const completedCount = checklistItems.filter((c) => c.completed).length;
@@ -352,6 +353,18 @@ export default function CustomerDashboard() {
                   </p>
                 </Link>
               )}
+            </div>
+          )}
+
+          {/* Recommended for you (collaborative-filtering signal) */}
+          {user && (
+            <div className="bg-card rounded-2xl p-5 card-shadow">
+              <CoBookedRail
+                recommendedFor={user.id}
+                eyebrow="Vendora suggests"
+                title="You might also love"
+                limit={6}
+              />
             </div>
           )}
 

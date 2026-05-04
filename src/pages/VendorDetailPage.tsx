@@ -33,6 +33,7 @@ import { Lightbox } from "@/components/shared/Lightbox";
 import { VideoEmbed } from "@/components/vendor/VideoEmbed";
 import { ShowcaseStrip } from "@/components/vendor/ShowcaseStrip";
 import { VerificationBadges } from "@/components/vendor/VerificationBadges";
+import { CoBookedRail } from "@/components/vendor/CoBookedRail";
 import { useDocumentMeta } from "@/hooks/useDocumentMeta";
 import { InquiryFormModal } from "@/components/inquiries/InquiryFormModal";
 import { useAuth } from "@/hooks/useAuth";
@@ -996,6 +997,15 @@ export default function VendorDetailPage() {
                     ))}
                   </div>
                 </div>
+              )}
+
+              {/* Often booked with (cross-sell from booking signal + curated) */}
+              {vendor.isReal && (
+                <CoBookedRail
+                  cobookedFor={vendor.id}
+                  eyebrow="Often booked with"
+                  title={`Hosts who booked ${vendor.name} also booked`}
+                />
               )}
 
               {/* Vendors we love (from this vendor) */}
