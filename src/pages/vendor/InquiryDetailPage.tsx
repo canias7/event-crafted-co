@@ -8,8 +8,6 @@ import {
   RotateCcw,
   Send,
   Loader2,
-  Star,
-  MessageCircle,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -17,6 +15,10 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { ProposalFormModal } from "@/components/proposals/ProposalFormModal";
+import {
+  InquiryReviewCard,
+  type ReviewWithResponse,
+} from "@/components/inquiries/InquiryReviewCard";
 import {
   ProposalCard,
   type Proposal,
@@ -65,15 +67,6 @@ interface Message {
   attachments?: MessageAttachment[];
 }
 
-interface ReviewWithResponse {
-  id: string;
-  vendor_id: string;
-  rating: number;
-  body: string | null;
-  created_at: string;
-  response: { body: string; updated_at: string } | null;
-}
-
 const statusStyles: Record<string, string> = {
   new: "bg-accent/15 text-accent border-accent/30",
   drafted: "bg-secondary text-secondary-foreground border-border",
@@ -108,9 +101,6 @@ export default function InquiryDetailPage() {
   const [sending, setSending] = useState(false);
   const [statusUpdating, setStatusUpdating] = useState(false);
   const [review, setReview] = useState<ReviewWithResponse | null>(null);
-  const [responseDraft, setResponseDraft] = useState("");
-  const [responseEditing, setResponseEditing] = useState(false);
-  const [savingResponse, setSavingResponse] = useState(false);
   const [proposals, setProposals] = useState<Proposal[]>([]);
   const [proposalModalOpen, setProposalModalOpen] = useState(false);
   const [appointmentModalOpen, setAppointmentModalOpen] = useState(false);
@@ -163,10 +153,8 @@ export default function InquiryDetailPage() {
           : (reviewRow.response ?? null),
       };
       setReview(normalized);
-      setResponseDraft(normalized.response?.body ?? "");
     } else {
       setReview(null);
-      setResponseDraft("");
     }
 
     // Proposals on this inquiry
@@ -180,27 +168,6 @@ export default function InquiryDetailPage() {
     setProposals((props as Proposal[]) ?? []);
 
     setLoading(false);
-  }
-
-  async function saveResponse() {
-    if (!review || !responseDraft.trim()) return;
-    setSavingResponse(true);
-    const tbl = supabase.from("review_responses");
-    const { error } = review.response
-      ? await tbl.update({ body: responseDraft.trim() }).eq("review_id", review.id)
-      : await tbl.insert({
-          review_id: review.id,
-          vendor_id: review.vendor_id,
-          body: responseDraft.trim(),
-        });
-    setSavingResponse(false);
-    if (error) {
-      toast.error(error.message);
-      return;
-    }
-    toast.success("Response saved");
-    setResponseEditing(false);
-    load();
   }
 
   useEffect(() => {
@@ -555,110 +522,7 @@ export default function InquiryDetailPage() {
 
         {/* Review (only when host has posted one) */}
         {review && (
-          <div className="bg-card border border-border rounded-sm p-6">
-            <div className="flex items-center justify-between gap-4 mb-3 flex-wrap">
-              <div className="flex items-center gap-2">
-                <p className="font-label text-muted-foreground">
-                  Host review
-                </p>
-                <span className="text-xs text-muted-foreground tnum">
-                  {new Date(review.created_at).toLocaleDateString()}
-                </span>
-              </div>
-              <div className="flex items-center gap-1">
-                {Array.from({ length: 5 }).map((_, i) => (
-                  <Star
-                    key={i}
-                    className={`w-4 h-4 ${
-                      i < review.rating
-                        ? "fill-accent text-accent"
-                        : "text-muted-foreground/30"
-                    }`}
-                  />
-                ))}
-                <span className="ml-1.5 text-sm font-medium tnum">
-                  {review.rating}
-                </span>
-              </div>
-            </div>
-            {review.body ? (
-              <p className="text-sm leading-relaxed text-foreground/85">
-                "{review.body}"
-              </p>
-            ) : (
-              <p className="text-sm text-muted-foreground italic">
-                No written feedback.
-              </p>
-            )}
-
-            <div className="mt-5 pt-5 border-t border-border">
-              {review.response && !responseEditing ? (
-                <>
-                  <div className="flex items-center justify-between gap-4 mb-2 flex-wrap">
-                    <p className="font-label text-accent flex items-center gap-1.5">
-                      <MessageCircle className="w-3 h-3" />
-                      Your response
-                    </p>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="rounded-full text-xs"
-                      onClick={() => setResponseEditing(true)}
-                    >
-                      Edit
-                    </Button>
-                  </div>
-                  <p className="text-sm leading-relaxed text-foreground/85">
-                    {review.response.body}
-                  </p>
-                </>
-              ) : (
-                <>
-                  <p className="font-label text-muted-foreground mb-2">
-                    {review.response ? "Edit your response" : "Respond"}
-                  </p>
-                  <Textarea
-                    value={responseDraft}
-                    onChange={(e) => setResponseDraft(e.target.value)}
-                    rows={3}
-                    placeholder="Thanks for the kind words…"
-                  />
-                  <div className="flex justify-end gap-2 mt-2">
-                    {review.response && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="rounded-full"
-                        onClick={() => {
-                          setResponseEditing(false);
-                          setResponseDraft(review.response?.body ?? "");
-                        }}
-                      >
-                        Cancel
-                      </Button>
-                    )}
-                    <Button
-                      size="sm"
-                      onClick={saveResponse}
-                      disabled={savingResponse || !responseDraft.trim()}
-                      className="rounded-full bg-foreground text-background hover:bg-foreground/90"
-                    >
-                      {savingResponse ? (
-                        <>
-                          <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
-                          Saving…
-                        </>
-                      ) : review.response ? (
-                        "Save"
-                      ) : (
-                        "Post response"
-                      )}
-                    </Button>
-                  </div>
-                </>
-              )}
-            </div>
-          </div>
+          <InquiryReviewCard review={review} onResponseSaved={load} />
         )}
 
         {/* Thread */}
