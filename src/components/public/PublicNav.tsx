@@ -3,6 +3,7 @@ import { PrefetchLink as Link } from "@/components/shared/PrefetchLink";
 import { motion } from "framer-motion";
 import { Menu, X, LogOut, LayoutDashboard, ChevronDown, Settings, Search } from "lucide-react";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -13,14 +14,17 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/hooks/useAuth";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
+import { LanguageSwitcher } from "@/components/shared/LanguageSwitcher";
 
-const baseLinks = [
-  { label: "Vendors", path: "/vendors" },
-  { label: "Real events", path: "/real-events" },
-  { label: "Inspiration", path: "/inspiration" },
-  { label: "How it works", path: "/how-it-works" },
-  { label: "For vendors", path: "/vendor-apply" },
-];
+function buildLinks(t: (key: string) => string) {
+  return [
+    { label: t("nav.vendors"), path: "/vendors" },
+    { label: t("nav.real_events"), path: "/real-events" },
+    { label: t("nav.inspiration"), path: "/inspiration" },
+    { label: t("nav.how_it_works"), path: "/how-it-works" },
+    { label: t("nav.for_vendors"), path: "/vendor-apply" },
+  ];
+}
 
 function dashboardPath(role?: string) {
   if (role === "vendor") return "/vendor/dashboard";
@@ -28,18 +32,22 @@ function dashboardPath(role?: string) {
   return "/customer/dashboard";
 }
 
-function dashboardLabel(role?: string) {
-  if (role === "vendor") return "Vendor portal";
-  if (role === "admin") return "Admin";
-  return "My dashboard";
+function dashboardLabel(role?: string, t?: (key: string) => string) {
+  // Translation is best-effort — if no t passed (legacy), fall back.
+  const label = t ? t("nav.dashboard") : "My dashboard";
+  if (role === "vendor") return label;
+  if (role === "admin") return label;
+  return label;
 }
 
 export function PublicNav() {
   const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
   const { session, profile, signOut } = useAuth();
+  const { t } = useTranslation();
+  const baseLinks = buildLinks(t);
 
-  const dashLabel = dashboardLabel(profile?.role);
+  const dashLabel = dashboardLabel(profile?.role, t);
   const dashPath = dashboardPath(profile?.role);
 
   return (
@@ -112,13 +120,13 @@ export function PublicNav() {
                 <DropdownMenuItem asChild>
                   <Link to="/settings" className="cursor-pointer">
                     <Settings className="w-4 h-4 mr-2" />
-                    Settings
+                    {t("nav.settings")}
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={() => signOut()} className="cursor-pointer">
                   <LogOut className="w-4 h-4 mr-2" />
-                  Sign out
+                  {t("nav.logout")}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -131,23 +139,24 @@ export function PublicNav() {
                   size="sm"
                   className="h-9 text-background hover:bg-background/10 hover:text-background"
                 >
-                  Sign in
+                  {t("nav.login")}
                 </Button>
               </Link>
               <Link to="/signup">
                 <Button size="sm" variant="secondary" className="h-9">
-                  Get started
+                  {t("nav.signup")}
                 </Button>
               </Link>
             </>
           )}
+          <LanguageSwitcher tone="dark" />
         </div>
 
         {/* Mobile toggle */}
         <button
           className="md:hidden p-2 text-background"
           onClick={() => setMobileOpen(!mobileOpen)}
-          aria-label={mobileOpen ? "Close menu" : "Open menu"}
+          aria-label={mobileOpen ? t("nav.close_menu") : t("nav.open_menu")}
         >
           {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
         </button>

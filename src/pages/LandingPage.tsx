@@ -2,6 +2,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Link } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { ArrowRight, Check, ChevronDown } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { PublicNav } from "@/components/public/PublicNav";
 import { Footer } from "@/components/public/Footer";
@@ -19,35 +20,25 @@ import featureVenue from "@/assets/vendora-feature-2.jpg?as=picture";
 
 const spring = { type: "spring" as const, duration: 0.6, bounce: 0 };
 
+// Slide images + i18n keys for the rotating label/alt copy. The
+// label/alt come from translations so Spanish-speaking guests see
+// "Bodas / Cumpleaños" etc.
 const heroSlides = [
-  { src: heroWedding, label: "Weddings", alt: "Luxury wedding reception" },
-  { src: heroBirthdayMilestone, label: "Milestone Birthdays", alt: "Rooftop birthday celebration" },
-  { src: heroChristmas, label: "Christmas Dinners", alt: "Elegant Christmas dinner table" },
-  { src: heroNYE, label: "New Year's Eve", alt: "New Year's Eve gala with confetti" },
-  { src: heroBabyShower, label: "Baby Showers", alt: "Pastel baby shower setup" },
-];
+  { src: heroWedding,            labelKey: "weddings" },
+  { src: heroBirthdayMilestone,  labelKey: "milestone_birthdays" },
+  { src: heroChristmas,          labelKey: "christmas" },
+  { src: heroNYE,                labelKey: "nye" },
+  { src: heroBabyShower,         labelKey: "baby_shower" },
+] as const;
 
-const steps = [
-  { n: "01", title: "Discover", desc: "Browse a curated network of trusted vendors — venues, florals, photography, catering and more." },
-  { n: "02", title: "Book", desc: "Check live availability, request appointments, and confirm your bookings in a few taps." },
-  { n: "03", title: "Plan", desc: "Manage timelines, payments, invitations, and guest lists from one elegant dashboard." },
-];
-
-const features = [
-  { title: "Vendor discovery", desc: "Search a hand-vetted marketplace of professionals, filtered to your taste, budget, and date." },
-  { title: "Seamless booking", desc: "Live calendars, instant requests, and contracts — no calls, no chasing, no friction." },
-  { title: "Planning tools", desc: "Checklists, payment tracking, invitation builder, and guest management — all in sync." },
-];
-
-const faqs = [
-  { q: "Is Vendora free to use?", a: "Yes — browsing vendors and managing your event is free. You only pay your vendors directly through the platform." },
-  { q: "Are vendors vetted?", a: "Every vendor on Vendora is hand-selected by our editorial team. We review portfolios and references before approval." },
-  { q: "What types of events does Vendora support?", a: "Weddings, corporate events, milestone celebrations, private parties — anything that deserves to be done well." },
-  { q: "Can I manage payments through Vendora?", a: "Yes. Send deposits, schedule installments, and keep every receipt in one place." },
-];
+const stepKeys = ["discover", "book", "plan"] as const;
+const featureKeys = ["discovery", "booking", "tools"] as const;
+const faqKeys = ["is_free", "vetted", "events", "payments"] as const;
 
 export default function LandingPage() {
   const [slideIndex, setSlideIndex] = useState(0);
+  const { t } = useTranslation();
+  const currentSlideLabel = t(`landing.categories.${heroSlides[slideIndex].labelKey}`);
 
   useEffect(() => {
     const id = setInterval(() => {
@@ -95,7 +86,7 @@ export default function LandingPage() {
           >
             <Picture
               source={currentSlide.src}
-              alt={currentSlide.alt}
+              alt={currentSlideLabel}
               className="w-full h-full object-cover"
               loading={slideIndex === 0 ? "eager" : "lazy"}
               fetchPriority={slideIndex === 0 ? "high" : "auto"}
@@ -136,19 +127,19 @@ export default function LandingPage() {
                     transition={{ ...spring, delay: 0.2 }}
                     className="font-label text-accent tracking-[0.4em]"
                   >
-                    — VENDORA
+                    — {t("landing.hero.tagline")}
                   </motion.p>
                   <span className="h-px w-8 bg-accent/40" />
                   <AnimatePresence mode="wait">
                     <motion.span
-                      key={currentSlide.label}
+                      key={currentSlideLabel}
                       initial={{ opacity: 0, y: 6 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -6 }}
                       transition={{ duration: 0.5 }}
                       className="font-label text-background/70 tracking-[0.3em]"
                     >
-                      {currentSlide.label}
+                      {currentSlideLabel}
                     </motion.span>
                   </AnimatePresence>
                 </div>
@@ -158,9 +149,9 @@ export default function LandingPage() {
                   transition={{ ...spring, delay: 0.4, duration: 1 }}
                   className="text-hero font-display text-background mb-8 leading-[1.0]"
                 >
-                  Every detail,{" "}
+                  {t("landing.hero.title_lead")}{" "}
                   <span className="italic font-light text-accent">
-                    perfectly composed.
+                    {t("landing.hero.title_accent")}
                   </span>
                 </motion.h1>
                 <motion.p
@@ -169,9 +160,7 @@ export default function LandingPage() {
                   transition={{ ...spring, delay: 0.7 }}
                   className="text-base md:text-xl text-background/80 max-w-xl mb-12 leading-relaxed font-light"
                 >
-                  A curated marketplace of world-class vendors and the
-                  tools to orchestrate unforgettable events — beautifully,
-                  in one place.
+                  {t("landing.hero.subtitle")}
                 </motion.p>
                 <motion.div
                   initial={{ opacity: 0, y: 16 }}
@@ -184,7 +173,7 @@ export default function LandingPage() {
                       size="lg"
                       className="h-12 px-8 rounded-full text-sm tracking-wide bg-accent text-accent-foreground hover:bg-accent/90"
                     >
-                      Start Planning
+                      {t("landing.hero.cta_primary")}
                       <ArrowRight className="w-4 h-4 ml-2" />
                     </Button>
                   </Link>
@@ -194,7 +183,7 @@ export default function LandingPage() {
                       variant="ghost"
                       className="h-12 px-6 rounded-full text-sm text-background hover:bg-background/10 hover:text-background"
                     >
-                      Browse vendors
+                      {t("landing.hero.cta_secondary")}
                     </Button>
                   </Link>
                 </motion.div>
@@ -212,18 +201,18 @@ export default function LandingPage() {
             <div className="container mx-auto px-6 md:px-8">
               <div className="flex flex-col md:flex-row items-center justify-between gap-6">
                 <div className="flex flex-wrap items-center justify-center gap-x-8 gap-y-2 text-[10px] md:text-xs uppercase tracking-[0.3em] text-background/60">
-                  <span>Now in private beta</span>
+                  <span>{t("landing.hero.trust_strip.beta")}</span>
                   <span className="hidden md:inline">·</span>
-                  <span>By invitation</span>
+                  <span>{t("landing.hero.trust_strip.by_invitation")}</span>
                   <span className="hidden md:inline">·</span>
-                  <span>Hand-selected vendors</span>
+                  <span>{t("landing.hero.trust_strip.vetted")}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   {heroSlides.map((s, i) => (
                     <button
-                      key={s.label}
+                      key={s.labelKey}
                       onClick={() => setSlideIndex(i)}
-                      aria-label={`Show ${s.label}`}
+                      aria-label={`Show ${t(`landing.categories.${s.labelKey}`)}`}
                       className={`h-px transition-all duration-500 ${
                         i === slideIndex
                           ? "w-10 bg-accent"
@@ -249,18 +238,24 @@ export default function LandingPage() {
           </div>
 
           <div className="grid md:grid-cols-3 gap-12 md:gap-8">
-            {steps.map((s, i) => (
+            {stepKeys.map((k, i) => (
               <motion.div
-                key={s.n}
+                key={k}
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ ...spring, delay: i * 0.1 }}
                 className="border-t border-background/15 pt-8"
               >
-                <p className="font-label text-accent mb-6 tnum">{s.n}</p>
-                <h3 className="font-display text-2xl mb-3 text-background">{s.title}</h3>
-                <p className="text-sm text-background/65 leading-relaxed">{s.desc}</p>
+                <p className="font-label text-accent mb-6 tnum">
+                  {t(`landing.steps.${k}.n`)}
+                </p>
+                <h3 className="font-display text-2xl mb-3 text-background">
+                  {t(`landing.steps.${k}.title`)}
+                </h3>
+                <p className="text-sm text-background/65 leading-relaxed">
+                  {t(`landing.steps.${k}.desc`)}
+                </p>
               </motion.div>
             ))}
           </div>
@@ -333,10 +328,14 @@ export default function LandingPage() {
                 on track.
               </p>
               <div className="grid grid-cols-1 gap-6">
-                {features.map((f) => (
-                  <div key={f.title} className="border-l border-accent/40 pl-5 py-1">
-                    <h3 className="font-display text-base mb-1 text-foreground">{f.title}</h3>
-                    <p className="text-sm text-foreground/70 leading-relaxed">{f.desc}</p>
+                {featureKeys.map((k) => (
+                  <div key={k} className="border-l border-accent/40 pl-5 py-1">
+                    <h3 className="font-display text-base mb-1 text-foreground">
+                      {t(`landing.features.${k}.title`)}
+                    </h3>
+                    <p className="text-sm text-foreground/70 leading-relaxed">
+                      {t(`landing.features.${k}.desc`)}
+                    </p>
                   </div>
                 ))}
               </div>
@@ -383,14 +382,14 @@ export default function LandingPage() {
             <h2 className="text-h2 font-display">Quietly thorough answers.</h2>
           </div>
           <div>
-            {faqs.map((f) => (
-              <details key={f.q} className="group border-b border-border">
+            {faqKeys.map((k) => (
+              <details key={k} className="group border-b border-border">
                 <summary className="flex items-center justify-between py-6 cursor-pointer text-base font-medium list-none">
-                  {f.q}
+                  {t(`landing.faq.${k}.q`)}
                   <ChevronDown className="w-4 h-4 text-muted-foreground transition-transform group-open:rotate-180" />
                 </summary>
                 <p className="pb-6 text-sm text-muted-foreground leading-relaxed max-w-lg">
-                  {f.a}
+                  {t(`landing.faq.${k}.a`)}
                 </p>
               </details>
             ))}

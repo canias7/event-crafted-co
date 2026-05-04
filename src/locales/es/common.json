@@ -1,0 +1,125 @@
+{
+  "nav": {
+    "vendors": "Proveedores",
+    "real_events": "Eventos reales",
+    "inspiration": "Inspiración",
+    "how_it_works": "Cómo funciona",
+    "for_vendors": "Para proveedores",
+    "login": "Iniciar sesión",
+    "signup": "Registrarse",
+    "dashboard": "Panel",
+    "settings": "Configuración",
+    "logout": "Cerrar sesión",
+    "open_menu": "Abrir menú",
+    "close_menu": "Cerrar menú"
+  },
+  "landing": {
+    "hero": {
+      "tagline": "VENDORA",
+      "title_lead": "Cada detalle,",
+      "title_accent": "perfectamente compuesto.",
+      "subtitle": "Un mercado curado de proveedores de clase mundial y las herramientas para orquestar eventos inolvidables — con elegancia, en un solo lugar.",
+      "cta_primary": "Empezar a planear",
+      "cta_secondary": "Explorar proveedores",
+      "trust_strip": {
+        "beta": "Ahora en beta privada",
+        "by_invitation": "Por invitación",
+        "vetted": "Proveedores seleccionados a mano"
+      }
+    },
+    "categories": {
+      "weddings": "Bodas",
+      "milestone_birthdays": "Cumpleaños importantes",
+      "christmas": "Cenas de Navidad",
+      "nye": "Año Nuevo",
+      "baby_shower": "Baby Showers",
+      "july4": "4 de Julio",
+      "halloween": "Halloween",
+      "thanksgiving": "Día de Acción de Gracias",
+      "hanukkah": "Hanukkah",
+      "easter": "Pascua",
+      "bridal": "Despedidas de soltera",
+      "engagement": "Compromisos",
+      "graduation": "Graduaciones",
+      "corporate": "Galas corporativas",
+      "anniversary": "Aniversarios",
+      "first_birthday": "Primeros cumpleaños",
+      "fiesta": "Fiestas",
+      "beach": "Cenas en la playa",
+      "mothers_day": "Día de las Madres",
+      "valentines": "San Valentín"
+    },
+    "steps": {
+      "title": "Cómo funciona Vendora",
+      "discover": {
+        "n": "01",
+        "title": "Descubre",
+        "desc": "Explora una red curada de proveedores de confianza — venues, florales, fotografía, catering y más."
+      },
+      "book": {
+        "n": "02",
+        "title": "Reserva",
+        "desc": "Consulta disponibilidad en vivo, solicita citas y confirma tus reservas en pocos pasos."
+      },
+      "plan": {
+        "n": "03",
+        "title": "Planifica",
+        "desc": "Administra cronogramas, pagos, invitaciones y listas de invitados desde un panel elegante."
+      }
+    },
+    "features": {
+      "discovery": {
+        "title": "Descubrimiento de proveedores",
+        "desc": "Busca un mercado seleccionado a mano, filtrado por tu estilo, presupuesto y fecha."
+      },
+      "booking": {
+        "title": "Reservas sin fricción",
+        "desc": "Calendarios en vivo, solicitudes instantáneas y contratos — sin llamadas, sin perseguir respuestas."
+      },
+      "tools": {
+        "title": "Herramientas de planificación",
+        "desc": "Listas, seguimiento de pagos, creador de invitaciones y gestión de invitados — todo sincronizado."
+      }
+    },
+    "faq": {
+      "title": "Preguntas frecuentes",
+      "is_free": {
+        "q": "¿Es gratis usar Vendora?",
+        "a": "Sí — explorar proveedores y administrar tu evento es gratis. Solo pagas a tus proveedores directamente a través de la plataforma."
+      },
+      "vetted": {
+        "q": "¿Los proveedores están verificados?",
+        "a": "Cada proveedor en Vendora es seleccionado a mano por nuestro equipo editorial. Revisamos portafolios y referencias antes de aprobar."
+      },
+      "events": {
+        "q": "¿Qué tipos de eventos soporta Vendora?",
+        "a": "Bodas, eventos corporativos, celebraciones importantes, fiestas privadas — cualquier evento que merezca hacerse bien."
+      },
+      "payments": {
+        "q": "¿Puedo gestionar pagos a través de Vendora?",
+        "a": "Sí. Envía depósitos, programa cuotas y conserva cada recibo en un solo lugar."
+      }
+    }
+  },
+  "footer": {
+    "tagline": "Cada detalle, perfectamente compuesto.",
+    "vendors": "Proveedores",
+    "browse": "Ver todos",
+    "by_location": "Por ubicación",
+    "by_category": "Por categoría",
+    "for_vendors": "Para proveedores",
+    "company": "Compañía",
+    "how_it_works": "Cómo funciona",
+    "inspiration": "Inspiración",
+    "real_events": "Eventos reales",
+    "legal": "Legal",
+    "privacy": "Privacidad",
+    "terms": "Términos",
+    "rights": "Todos los derechos reservados.",
+    "language": "Idioma"
+  },
+  "language_switcher": {
+    "label": "Idioma",
+    "current": "Idioma actual"
+  }
+}

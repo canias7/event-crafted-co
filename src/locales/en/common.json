@@ -1,0 +1,125 @@
+{
+  "nav": {
+    "vendors": "Vendors",
+    "real_events": "Real events",
+    "inspiration": "Inspiration",
+    "how_it_works": "How it works",
+    "for_vendors": "For vendors",
+    "login": "Log in",
+    "signup": "Sign up",
+    "dashboard": "Dashboard",
+    "settings": "Settings",
+    "logout": "Log out",
+    "open_menu": "Open menu",
+    "close_menu": "Close menu"
+  },
+  "landing": {
+    "hero": {
+      "tagline": "VENDORA",
+      "title_lead": "Every detail,",
+      "title_accent": "perfectly composed.",
+      "subtitle": "A curated marketplace of world-class vendors and the tools to orchestrate unforgettable events — beautifully, in one place.",
+      "cta_primary": "Start Planning",
+      "cta_secondary": "Browse vendors",
+      "trust_strip": {
+        "beta": "Now in private beta",
+        "by_invitation": "By invitation",
+        "vetted": "Hand-selected vendors"
+      }
+    },
+    "categories": {
+      "weddings": "Weddings",
+      "milestone_birthdays": "Milestone Birthdays",
+      "christmas": "Christmas Dinners",
+      "nye": "New Year's Eve",
+      "baby_shower": "Baby Showers",
+      "july4": "4th of July",
+      "halloween": "Halloween",
+      "thanksgiving": "Thanksgiving",
+      "hanukkah": "Hanukkah",
+      "easter": "Easter",
+      "bridal": "Bridal Showers",
+      "engagement": "Engagements",
+      "graduation": "Graduations",
+      "corporate": "Corporate Galas",
+      "anniversary": "Anniversaries",
+      "first_birthday": "First Birthdays",
+      "fiesta": "Fiestas",
+      "beach": "Beach Dinners",
+      "mothers_day": "Mother's Day",
+      "valentines": "Valentine's"
+    },
+    "steps": {
+      "title": "How Vendora works",
+      "discover": {
+        "n": "01",
+        "title": "Discover",
+        "desc": "Browse a curated network of trusted vendors — venues, florals, photography, catering and more."
+      },
+      "book": {
+        "n": "02",
+        "title": "Book",
+        "desc": "Check live availability, request appointments, and confirm your bookings in a few taps."
+      },
+      "plan": {
+        "n": "03",
+        "title": "Plan",
+        "desc": "Manage timelines, payments, invitations, and guest lists from one elegant dashboard."
+      }
+    },
+    "features": {
+      "discovery": {
+        "title": "Vendor discovery",
+        "desc": "Search a hand-vetted marketplace of professionals, filtered to your taste, budget, and date."
+      },
+      "booking": {
+        "title": "Seamless booking",
+        "desc": "Live calendars, instant requests, and contracts — no calls, no chasing, no friction."
+      },
+      "tools": {
+        "title": "Planning tools",
+        "desc": "Checklists, payment tracking, invitation builder, and guest management — all in sync."
+      }
+    },
+    "faq": {
+      "title": "Frequently asked",
+      "is_free": {
+        "q": "Is Vendora free to use?",
+        "a": "Yes — browsing vendors and managing your event is free. You only pay your vendors directly through the platform."
+      },
+      "vetted": {
+        "q": "Are vendors vetted?",
+        "a": "Every vendor on Vendora is hand-selected by our editorial team. We review portfolios and references before approval."
+      },
+      "events": {
+        "q": "What types of events does Vendora support?",
+        "a": "Weddings, corporate events, milestone celebrations, private parties — anything that deserves to be done well."
+      },
+      "payments": {
+        "q": "Can I manage payments through Vendora?",
+        "a": "Yes. Send deposits, schedule installments, and keep every receipt in one place."
+      }
+    }
+  },
+  "footer": {
+    "tagline": "Every detail, perfectly composed.",
+    "vendors": "Vendors",
+    "browse": "Browse all",
+    "by_location": "By location",
+    "by_category": "By category",
+    "for_vendors": "For vendors",
+    "company": "Company",
+    "how_it_works": "How it works",
+    "inspiration": "Inspiration",
+    "real_events": "Real events",
+    "legal": "Legal",
+    "privacy": "Privacy",
+    "terms": "Terms",
+    "rights": "All rights reserved.",
+    "language": "Language"
+  },
+  "language_switcher": {
+    "label": "Language",
+    "current": "Current language"
+  }
+}
