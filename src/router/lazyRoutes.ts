@@ -36,6 +36,12 @@ const importVendorEventTypeCity = () =>
   import("@/pages/VendorEventTypeCityPage");
 export const VendorEventTypeCityPage = lazy(importVendorEventTypeCity);
 
+const importEditorialArticle = () => import("@/pages/EditorialArticlePage");
+export const EditorialArticlePage = lazy(importEditorialArticle);
+
+const importAdminEditorial = () => import("@/pages/admin/AdminEditorialPage");
+export const AdminEditorialPage = lazy(importAdminEditorial);
+
 const importVendorMap = () => import("@/pages/VendorMapPage");
 export const VendorMapPage = lazy(importVendorMap);
 

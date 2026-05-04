@@ -119,6 +119,8 @@ import {
   AdminInquiriesPage,
   AdminInspirationPage,
   AdminVerificationsPage,
+  AdminEditorialPage,
+  EditorialArticlePage,
 } from "@/router/lazyRoutes";
 
 const queryClient = new QueryClient();
@@ -160,6 +162,8 @@ const App = () => (
               <Route path="/v/:slug" element={<VendorDetailPage />} />
               <Route path="/inspiration" element={<InspirationPage />} />
               <Route path="/inspiration/:slug" element={<InspirationDetailPage />} />
+              {/* Editorial article reader (long-form CMS guides). */}
+              <Route path="/guides/:slug" element={<EditorialArticlePage />} />
               <Route path="/real-events" element={<RealEventsPage />} />
               <Route path="/real-events/:slug" element={<RealEventDetailPage />} />
               <Route path="/rsvp/:token" element={<RsvpPage />} />
@@ -240,6 +244,7 @@ const App = () => (
               <Route path="/admin/reviews" element={<RequireRole role="admin"><AdminReviewsPage /></RequireRole>} />
               <Route path="/admin/inspiration" element={<RequireRole role="admin"><AdminInspirationPage /></RequireRole>} />
               <Route path="/admin/verifications" element={<RequireRole role="admin"><AdminVerificationsPage /></RequireRole>} />
+              <Route path="/admin/editorial" element={<RequireRole role="admin"><AdminEditorialPage /></RequireRole>} />
 
               <Route path="*" element={<NotFound />} />
             </Routes>
