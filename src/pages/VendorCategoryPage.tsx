@@ -285,8 +285,8 @@ export default function VendorCategoryPage() {
             </div>
           ) : (
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-12">
-              {filtered.map((v) => (
-                <VendorCard key={v.id} vendor={v} />
+              {filtered.map((v, i) => (
+                <VendorCard key={v.id} vendor={v} eager={i < 6} />
               ))}
             </div>
           )}

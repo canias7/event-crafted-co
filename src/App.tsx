@@ -1,4 +1,4 @@
-import { lazy, Suspense } from "react";
+import { Suspense } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -18,85 +18,76 @@ import { CookieBanner } from "./components/CookieBanner";
 import { CommandPalette } from "./components/CommandPalette";
 import { SkipLink } from "./components/SkipLink";
 import { MobilePortalBell } from "./components/notifications/MobilePortalBell";
-
-// Lazy-load everything else so the initial bundle ships only the landing,
-// nav, and auth surfaces. Portal routes (customer / vendor / admin) split
-// out into separate chunks loaded on demand behind RequireRole.
-const HowItWorksPage = lazy(() => import("./pages/HowItWorksPage"));
-const VendorBrowsePage = lazy(() => import("./pages/VendorBrowsePage"));
-const VendorLocationsPage = lazy(() => import("./pages/VendorLocationsPage"));
-const VendorCityPage = lazy(() => import("./pages/VendorCityPage"));
-const VendorMapPage = lazy(() => import("./pages/VendorMapPage"));
-const VendorQuizPage = lazy(() => import("./pages/VendorQuizPage"));
-const VendorDetailPage = lazy(() => import("./pages/VendorDetailPage"));
-const VendorCategoryPage = lazy(() => import("./pages/VendorCategoryPage"));
-const InspirationPage = lazy(() => import("./pages/InspirationPage"));
-const InspirationDetailPage = lazy(() => import("./pages/InspirationDetailPage"));
-const PrivacyPage = lazy(() => import("./pages/PrivacyPage"));
-const TermsPage = lazy(() => import("./pages/TermsPage"));
-const SettingsPage = lazy(() => import("./pages/SettingsPage"));
-const VendorApplyPage = lazy(() => import("./pages/VendorApplyPage"));
-const NotFound = lazy(() => import("./pages/NotFound"));
-const ComingSoonPage = lazy(() => import("./pages/ComingSoonPage"));
-
-const CustomerDashboard = lazy(() => import("./pages/customer/CustomerDashboard"));
-const CustomerVendorsBrowsePage = lazy(() => import("./pages/customer/VendorsBrowsePage"));
-const OnboardingPage = lazy(() => import("./pages/customer/OnboardingPage"));
-const InquiriesPage = lazy(() => import("./pages/customer/InquiriesPage"));
-const HostInquiryDetailPage = lazy(() => import("./pages/customer/HostInquiryDetailPage"));
-const FavoritesPage = lazy(() => import("./pages/customer/FavoritesPage"));
-const EventDetailsPage = lazy(() => import("./pages/customer/EventDetailsPage"));
-const GuestsPage = lazy(() => import("./pages/customer/GuestsPage"));
-const RsvpPage = lazy(() => import("./pages/RsvpPage"));
-const ChecklistPage = lazy(() => import("./pages/customer/ChecklistPage"));
-const TasksPage = lazy(() => import("./pages/customer/TasksPage"));
-const PaymentsPage = lazy(() => import("./pages/customer/PaymentsPage"));
-const InvitationBuilder = lazy(() => import("./pages/customer/InvitationBuilder"));
-const MoodBoardsPage = lazy(() => import("./pages/customer/MoodBoardsPage"));
-const MoodBoardDetailPage = lazy(() => import("./pages/customer/MoodBoardDetailPage"));
-const MoodBoardSharePage = lazy(() => import("./pages/MoodBoardSharePage"));
-const AppointmentsPage = lazy(() => import("./pages/customer/AppointmentsPage"));
-const SavedSearchesPage = lazy(() => import("./pages/customer/SavedSearchesPage"));
-const SeatingChartPage = lazy(() => import("./pages/customer/SeatingChartPage"));
-const EventTimelinePage = lazy(() => import("./pages/customer/EventTimelinePage"));
-const PlanningTeamPage = lazy(() => import("./pages/customer/PlanningTeamPage"));
-const RegistryPage = lazy(() => import("./pages/customer/RegistryPage"));
-const MessagesPage = lazy(() => import("./pages/customer/MessagesPage"));
-const InquiryBlastPage = lazy(() => import("./pages/customer/InquiryBlastPage"));
-const LiveDayPage = lazy(() => import("./pages/customer/LiveDayPage"));
-const GiftWishesPage = lazy(() => import("./pages/customer/GiftWishesPage"));
-const GiftSharePage = lazy(() => import("./pages/GiftSharePage"));
-const AcceptPlanningInvitePage = lazy(() => import("./pages/AcceptPlanningInvitePage"));
-
-const VendorDashboard = lazy(() => import("./pages/vendor/VendorDashboard"));
-const VendorProfilePage = lazy(() => import("./pages/vendor/VendorProfilePage"));
-const VendorTemplatesPage = lazy(() => import("./pages/vendor/VendorTemplatesPage"));
-const VendorInboxPage = lazy(() => import("./pages/vendor/VendorInboxPage"));
-const VendorTeamPage = lazy(() => import("./pages/vendor/VendorTeamPage"));
-const VendorAppointmentsPage = lazy(() => import("./pages/vendor/VendorAppointmentsPage"));
-const VendorOnboardingPage = lazy(() => import("./pages/vendor/VendorOnboardingPage"));
-const VendorAnalyticsPage = lazy(() => import("./pages/vendor/VendorAnalyticsPage"));
-const VendorContractsPage = lazy(() => import("./pages/vendor/VendorContractsPage"));
-const VendorMessagesPage = lazy(() => import("./pages/vendor/VendorMessagesPage"));
-const InquiryDetailPage = lazy(() => import("./pages/vendor/InquiryDetailPage"));
-const AvailabilityPage = lazy(() => import("./pages/vendor/AvailabilityPage"));
-const AcceptTeamInvitePage = lazy(() => import("./pages/AcceptTeamInvitePage"));
-
-const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard"));
-const AdminVendorsPage = lazy(() => import("./pages/admin/AdminVendorsPage"));
-const AdminReviewsPage = lazy(() => import("./pages/admin/AdminReviewsPage"));
-const AdminInquiriesPage = lazy(() => import("./pages/admin/AdminInquiriesPage"));
-const AdminInspirationPage = lazy(() => import("./pages/admin/AdminInspirationPage"));
+import { RouteFallback } from "@/components/shared/RouteFallback";
+// All lazy-loaded pages live in @/router/lazyRoutes — keeps the lazy
+// factories paired with a path → importer registry that PrefetchLink
+// uses to warm chunks on hover/visibility.
+import {
+  HowItWorksPage,
+  VendorBrowsePage,
+  VendorLocationsPage,
+  VendorCityPage,
+  VendorMapPage,
+  VendorQuizPage,
+  VendorDetailPage,
+  VendorCategoryPage,
+  InspirationPage,
+  InspirationDetailPage,
+  PrivacyPage,
+  TermsPage,
+  SettingsPage,
+  VendorApplyPage,
+  NotFound,
+  ComingSoonPage,
+  CustomerDashboard,
+  CustomerVendorsBrowsePage,
+  OnboardingPage,
+  InquiriesPage,
+  HostInquiryDetailPage,
+  FavoritesPage,
+  EventDetailsPage,
+  GuestsPage,
+  RsvpPage,
+  ChecklistPage,
+  TasksPage,
+  PaymentsPage,
+  InvitationBuilder,
+  MoodBoardsPage,
+  MoodBoardDetailPage,
+  MoodBoardSharePage,
+  AppointmentsPage,
+  SavedSearchesPage,
+  SeatingChartPage,
+  EventTimelinePage,
+  PlanningTeamPage,
+  RegistryPage,
+  MessagesPage,
+  InquiryBlastPage,
+  LiveDayPage,
+  GiftWishesPage,
+  GiftSharePage,
+  AcceptPlanningInvitePage,
+  VendorDashboard,
+  VendorProfilePage,
+  VendorTemplatesPage,
+  VendorInboxPage,
+  VendorTeamPage,
+  VendorAppointmentsPage,
+  VendorOnboardingPage,
+  VendorAnalyticsPage,
+  VendorContractsPage,
+  VendorMessagesPage,
+  InquiryDetailPage,
+  AvailabilityPage,
+  AcceptTeamInvitePage,
+  AdminDashboard,
+  AdminVendorsPage,
+  AdminReviewsPage,
+  AdminInquiriesPage,
+  AdminInspirationPage,
+} from "@/router/lazyRoutes";
 
 const queryClient = new QueryClient();
-
-function RouteFallback() {
-  return (
-    <div className="min-h-screen flex items-center justify-center">
-      <div className="font-label text-muted-foreground">Loading…</div>
-    </div>
-  );
-}
 
 const App = () => (
   <QueryClientProvider client={queryClient}>

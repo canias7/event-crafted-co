@@ -1,8 +1,8 @@
-import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Star, MapPin, Heart, Zap } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useSavedVendors } from "@/hooks/useSavedVendors";
+import { PrefetchLink as Link } from "@/components/shared/PrefetchLink";
 import vendorPhotographer from "@/assets/vendor-photographer.jpg";
 import vendorFlorist from "@/assets/vendor-florist.jpg";
 import vendorCatering from "@/assets/vendor-catering.jpg";
@@ -35,9 +35,11 @@ interface VendorCardProps {
     responderTier?: "fast" | "standard" | null;
     isReal?: boolean;
   };
+  /** Above-the-fold cards should pass eager so the first paint isn't a flash of empty squares. */
+  eager?: boolean;
 }
 
-export function VendorCard({ vendor }: VendorCardProps) {
+export function VendorCard({ vendor, eager = false }: VendorCardProps) {
   const { isSaved, toggle } = useSavedVendors();
   const saved = isSaved(vendor.id);
 
@@ -51,7 +53,10 @@ export function VendorCard({ vendor }: VendorCardProps) {
           <img
             src={imageMap[vendor.image]}
             alt={vendor.name}
-            loading="lazy"
+            loading={eager ? "eager" : "lazy"}
+            decoding={eager ? "sync" : "async"}
+            // @ts-expect-error fetchPriority is valid HTML but TS hasn't caught up
+            fetchpriority={eager ? "high" : undefined}
             className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.04]"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-foreground/55 via-transparent to-transparent" />

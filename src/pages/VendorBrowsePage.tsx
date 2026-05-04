@@ -385,7 +385,7 @@ export default function VendorBrowsePage() {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ ...spring, delay: Math.min(i * 0.05, 0.4) }}
                 >
-                  <VendorCard vendor={vendor} />
+                  <VendorCard vendor={vendor} eager={i < 6} />
                 </motion.div>
               ))}
             </div>

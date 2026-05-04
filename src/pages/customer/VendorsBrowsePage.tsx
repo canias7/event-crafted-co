@@ -96,8 +96,8 @@ export default function CustomerVendorsBrowsePage() {
             </p>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
-              {filtered.map((v) => (
-                <VendorCard key={v.id} vendor={v} />
+              {filtered.map((v, i) => (
+                <VendorCard key={v.id} vendor={v} eager={i < 6} />
               ))}
             </div>
           )}

@@ -1,4 +1,5 @@
-import { Link, useLocation } from "react-router-dom";
+import { useLocation } from "react-router-dom";
+import { PrefetchLink as Link } from "@/components/shared/PrefetchLink";
 import { LucideIcon } from "lucide-react";
 
 interface NavItem {

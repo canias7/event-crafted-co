@@ -1,4 +1,5 @@
-import { Link, useLocation } from "react-router-dom";
+import { useLocation } from "react-router-dom";
+import { PrefetchLink as Link } from "@/components/shared/PrefetchLink";
 import { motion } from "framer-motion";
 import { Menu, X, LogOut, LayoutDashboard, ChevronDown, Settings, Search } from "lucide-react";
 import { useState } from "react";

@@ -198,8 +198,8 @@ export default function VendorCityPage() {
             </div>
           ) : (
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-12">
-              {inCity.map((v) => (
-                <VendorCard key={v.id} vendor={v} />
+              {inCity.map((v, i) => (
+                <VendorCard key={v.id} vendor={v} eager={i < 6} />
               ))}
             </div>
           )}
