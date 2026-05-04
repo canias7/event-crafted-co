@@ -40,6 +40,10 @@ import {
 } from "@/components/vendor/ImportedReviewsList";
 import { VendorFaqList } from "@/components/vendor/VendorFaqList";
 import {
+  VendorFaqsPublic,
+} from "@/components/vendor/VendorFaqsManager";
+import { SocialEmbedCard } from "@/components/vendor/SocialEmbedCard";
+import {
   VendorReviewsList,
   type RealReview,
 } from "@/components/vendor/VendorReviewsList";
@@ -882,7 +886,15 @@ export default function VendorDetailPage() {
               )}
 
               {/* FAQ */}
-              <VendorFaqList items={sampleFaqs} />
+              {/* Vendor's own FAQ entries take precedence; static
+                  sampleFaqs only shows when the vendor hasn't set up any. */}
+              {vendor.isReal ? (
+                <>
+                  <VendorFaqsPublic vendorId={vendor.id} />
+                </>
+              ) : (
+                <VendorFaqList items={sampleFaqs} />
+              )}
             </div>
 
             {/* Sticky inquiry sidebar */}
@@ -961,6 +973,13 @@ export default function VendorDetailPage() {
                   Vendora doesn't accept money to influence search ranking. Vendors
                   appear based on fit and review quality, not ad spend.
                 </div>
+
+                {vendor.isReal && (
+                  <SocialEmbedCard
+                    instagramHandle={vendor.instagramHandle ?? null}
+                    tiktokHandle={vendor.tiktokHandle ?? null}
+                  />
+                )}
               </div>
             </aside>
           </div>

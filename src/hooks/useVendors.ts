@@ -23,6 +23,9 @@ export interface Vendor {
   isReal: boolean;
   /** Approved verification kinds (identity / insurance / business_license) — public-safe. */
   verifiedKinds?: string[];
+  /** Public socials — without leading @. */
+  instagramHandle?: string | null;
+  tiktokHandle?: string | null;
 }
 
 const categoryImageFallback: Record<string, string> = {
@@ -51,6 +54,8 @@ interface VendorProfileRow {
   responder_tier: "fast" | "standard" | null;
   intro_video_url: string | null;
   slug: string | null;
+  instagram_handle: string | null;
+  tiktok_handle: string | null;
 }
 
 function normalizeDb(row: VendorProfileRow): Vendor {
@@ -74,6 +79,8 @@ function normalizeDb(row: VendorProfileRow): Vendor {
     responderTier: row.responder_tier ?? null,
     introVideoUrl: row.intro_video_url ?? null,
     slug: row.slug ?? null,
+    instagramHandle: row.instagram_handle ?? null,
+    tiktokHandle: row.tiktok_handle ?? null,
     isReal: true,
   };
 }
@@ -91,7 +98,7 @@ async function fetchVendors(): Promise<Vendor[]> {
       const { data, error } = await supabase
         .from("vendor_profiles")
         .select(
-          "id, business_name, category, bio, base_price_cents, location, service_radius_miles, portfolio_summary, verified_at, responder_tier, intro_video_url, slug",
+          "id, business_name, category, bio, base_price_cents, location, service_radius_miles, portfolio_summary, verified_at, responder_tier, intro_video_url, slug, instagram_handle, tiktok_handle",
         )
         .order("verified_at", { ascending: false, nullsFirst: false });
       if (!error && data) {

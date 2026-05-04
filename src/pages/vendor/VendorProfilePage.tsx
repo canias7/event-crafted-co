@@ -12,6 +12,7 @@ import { VendorRecommendationManager } from "@/components/vendor/VendorRecommend
 import { IntakeFormEditor } from "@/components/vendor/IntakeFormEditor";
 import { ReferralManager } from "@/components/vendor/ReferralManager";
 import { ImportedReviewsManager } from "@/components/vendor/ImportedReviewsManager";
+import { VendorFaqsManager } from "@/components/vendor/VendorFaqsManager";
 import { ShowcaseClipsManager } from "@/components/vendor/ShowcaseClipsManager";
 import { VerificationManager } from "@/components/vendor/VerificationManager";
 // Lazy: both managers are below the fold and load their own data on
@@ -584,6 +585,9 @@ export default function VendorProfilePage() {
               </div>
               <div className="mt-12 pt-10 border-t border-border">
                 <IntakeFormEditor vendorId={profile.id} canEdit={canEdit} />
+              </div>
+              <div className="mt-12 pt-10 border-t border-border">
+                <VendorFaqsManager vendorId={profile.id} canEdit={canEdit} />
               </div>
               <div className="mt-12 pt-10 border-t border-border">
                 <ReferralManager vendorId={profile.id} canEdit={canEdit} />
