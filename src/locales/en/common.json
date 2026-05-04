@@ -183,6 +183,48 @@
       "sign_in": "Sign in"
     }
   },
+  "sidebar": {
+    "customer": {
+      "dashboard": "Dashboard",
+      "vendors": "Vendors",
+      "inquiries": "Inquiries",
+      "messages": "Messages",
+      "appointments": "Appointments",
+      "event": "Event",
+      "guests": "Guests",
+      "planning": "Planning",
+      "inspiration": "Inspiration",
+      "gifts": "Gifts"
+    },
+    "vendor": {
+      "dashboard": "Dashboard",
+      "inbox": "Inbox",
+      "messages": "Messages",
+      "analytics": "Analytics",
+      "calendar": "Calendar",
+      "profile": "Profile",
+      "library": "Library",
+      "team": "Team",
+      "payments": "Payments"
+    },
+    "admin": {
+      "overview": "Overview",
+      "vendors": "Vendors",
+      "verifications": "Verifications",
+      "inquiries": "Inquiries",
+      "reviews": "Reviews",
+      "inspiration": "Inspiration",
+      "support": "Support",
+      "audit": "Audit log",
+      "email_health": "Email health",
+      "settings": "Settings"
+    },
+    "bottom": {
+      "payments": "Payments",
+      "support": "Support",
+      "settings": "Settings"
+    }
+  },
   "dashboard": {
     "common": {
       "view_all": "View all",

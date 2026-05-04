@@ -1,9 +1,10 @@
 import { useLocation } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { PrefetchLink as Link } from "@/components/shared/PrefetchLink";
 import { LucideIcon } from "lucide-react";
 
 interface NavItem {
-  label: string;
+  labelKey: string;
   path: string;
   icon: LucideIcon;
 }
@@ -14,6 +15,7 @@ interface MobileNavProps {
 
 export function MobileNav({ items }: MobileNavProps) {
   const location = useLocation();
+  const { t } = useTranslation();
   const visibleItems = items.slice(0, 5);
 
   return (
@@ -34,7 +36,7 @@ export function MobileNav({ items }: MobileNavProps) {
               aria-current={isActive ? "page" : undefined}
             >
               <item.icon className="w-5 h-5" aria-hidden="true" />
-              <span className="font-medium">{item.label}</span>
+              <span className="font-medium">{t(item.labelKey)}</span>
             </Link>
           );
         })}

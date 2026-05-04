@@ -1,11 +1,12 @@
 import { useLocation } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { PrefetchLink as Link } from "@/components/shared/PrefetchLink";
 import { LucideIcon, Search } from "lucide-react";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { getBottomNav } from "@/data/navItems";
 
 interface NavItem {
-  label: string;
+  labelKey: string;
   path: string;
   icon: LucideIcon;
 }
@@ -27,6 +28,7 @@ export function DashboardSidebar({
 }: DashboardSidebarProps) {
   const resolvedBottom = bottomItems ?? getBottomNav(items);
   const location = useLocation();
+  const { t } = useTranslation();
 
   function renderItem(item: NavItem) {
     // Highlight the parent hub when sub-pages are open. The "starts with"
@@ -49,7 +51,7 @@ export function DashboardSidebar({
           }`}
         >
           <item.icon className="w-4 h-4" aria-hidden="true" />
-          {item.label}
+          {t(item.labelKey)}
         </div>
       </Link>
     );

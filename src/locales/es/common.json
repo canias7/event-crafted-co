@@ -183,6 +183,48 @@
       "sign_in": "Iniciar sesión"
     }
   },
+  "sidebar": {
+    "customer": {
+      "dashboard": "Panel",
+      "vendors": "Proveedores",
+      "inquiries": "Consultas",
+      "messages": "Mensajes",
+      "appointments": "Citas",
+      "event": "Evento",
+      "guests": "Invitados",
+      "planning": "Planificación",
+      "inspiration": "Inspiración",
+      "gifts": "Regalos"
+    },
+    "vendor": {
+      "dashboard": "Panel",
+      "inbox": "Bandeja",
+      "messages": "Mensajes",
+      "analytics": "Analíticas",
+      "calendar": "Calendario",
+      "profile": "Perfil",
+      "library": "Biblioteca",
+      "team": "Equipo",
+      "payments": "Pagos"
+    },
+    "admin": {
+      "overview": "Resumen",
+      "vendors": "Proveedores",
+      "verifications": "Verificaciones",
+      "inquiries": "Consultas",
+      "reviews": "Reseñas",
+      "inspiration": "Inspiración",
+      "support": "Soporte",
+      "audit": "Auditoría",
+      "email_health": "Salud de correo",
+      "settings": "Configuración"
+    },
+    "bottom": {
+      "payments": "Pagos",
+      "support": "Soporte",
+      "settings": "Configuración"
+    }
+  },
   "dashboard": {
     "common": {
       "view_all": "Ver todo",
