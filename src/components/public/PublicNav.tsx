@@ -19,6 +19,7 @@ import { LanguageSwitcher } from "@/components/shared/LanguageSwitcher";
 function buildLinks(t: (key: string) => string) {
   return [
     { label: t("nav.vendors"), path: "/vendors" },
+    { label: t("nav.staffing"), path: "/staffing" },
     { label: t("nav.real_events"), path: "/real-events" },
     { label: t("nav.inspiration"), path: "/inspiration" },
     { label: t("nav.how_it_works"), path: "/how-it-works" },

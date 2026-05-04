@@ -20,6 +20,9 @@ export const HowItWorksPage = lazy(importHowItWorks);
 const importVendorBrowse = () => import("@/pages/VendorBrowsePage");
 export const VendorBrowsePage = lazy(importVendorBrowse);
 
+const importStaffing = () => import("@/pages/StaffingPage");
+export const StaffingPage = lazy(importStaffing);
+
 const importVendorLocations = () => import("@/pages/VendorLocationsPage");
 export const VendorLocationsPage = lazy(importVendorLocations);
 
@@ -240,6 +243,7 @@ const ROUTE_IMPORTERS: Array<{ pattern: string; importer: () => Promise<unknown>
   // Static public
   { pattern: "/how-it-works", importer: importHowItWorks },
   { pattern: "/vendors", importer: importVendorBrowse },
+  { pattern: "/staffing", importer: importStaffing },
   { pattern: "/vendors/locations", importer: importVendorLocations },
   { pattern: "/vendors/map", importer: importVendorMap },
   { pattern: "/vendors/quiz", importer: importVendorQuiz },

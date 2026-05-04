@@ -120,7 +120,65 @@ export const categoryConfig: Record<string, CategoryConfig> = {
       "Beyond florals — linens, lighting, signage, and the small details that make a room feel like an editorial set.",
     hero: vendorFlorist,
   },
+  // ─── Staffing categories ─── price by the hour, surfaced together
+  // on /staffing. Same inquiry/proposal flow as everyone else.
+  bartenders: {
+    name: "Bartender",
+    display: "Bartenders",
+    description:
+      "Hourly-billed mixologists and bar staff for private events of any size.",
+    longCopy:
+      "Cocktail menus tailored to the evening, plus the staff to actually pour them. Often booked alongside catering for a coordinated bar program.",
+    hero: vendorVenue,
+  },
+  waitstaff: {
+    name: "Waitstaff",
+    display: "Waitstaff",
+    description:
+      "Servers and butlers for plated dinners, passed-canape receptions, and high-touch service.",
+    longCopy:
+      "Trained service staff who know how to time a course, clear plates without interrupting, and keep the room moving.",
+    hero: vendorCatering,
+  },
+  security: {
+    name: "Security",
+    display: "Security",
+    description:
+      "Licensed event security — access control, crowd management, VIP protection.",
+    longCopy:
+      "Licensed and insured security personnel for events that need controlled entry, large-crowd management, or high-profile guest protection.",
+    hero: vendorVenue,
+  },
+  valets: {
+    name: "Valet",
+    display: "Valet",
+    description:
+      "Insured valet teams for venues without on-site parking.",
+    longCopy:
+      "Coordinated valet for events at restaurants, private homes, or any venue where guest parking is the difference between effortless arrival and a stressful start.",
+    hero: vendorVenue,
+  },
+  "day-of-coordinators": {
+    name: "Day-of Coordinator",
+    display: "Day-of Coordinators",
+    description:
+      "Run-of-show specialists for the day itself — lower commitment than full-service planning.",
+    longCopy:
+      "Take over 4-8 weeks before the event to confirm vendors, build the timeline, and run the day. The right call when you've planned everything yourself but want a pro behind the wheel on the day.",
+    hero: vendorVenue,
+  },
 };
+
+// Categories priced by the hour rather than per-package — surfaced
+// together on /staffing so hosts who need warm bodies on the day
+// don't have to wade through florists.
+export const STAFFING_CATEGORY_NAMES = [
+  "Bartender",
+  "Waitstaff",
+  "Security",
+  "Valet",
+  "Day-of Coordinator",
+];
 
 export const allCategorySlugs = Object.keys(categoryConfig);
 

@@ -26,6 +26,7 @@ import { RouteFallback } from "@/components/shared/RouteFallback";
 import {
   HowItWorksPage,
   VendorBrowsePage,
+  StaffingPage,
   VendorLocationsPage,
   VendorCityPage,
   VendorMapPage,
@@ -116,6 +117,7 @@ const App = () => (
               <Route path="/how-it-works" element={<HowItWorksPage />} />
               <Route path="/vendors" element={<VendorBrowsePage />} />
               <Route path="/vendors/locations" element={<VendorLocationsPage />} />
+              <Route path="/staffing" element={<StaffingPage />} />
               <Route path="/vendors/in/:citySlug" element={<VendorCityPage />} />
               <Route path="/vendors/map" element={<VendorMapPage />} />
               <Route path="/vendors/quiz" element={<VendorQuizPage />} />

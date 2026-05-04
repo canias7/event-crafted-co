@@ -42,7 +42,22 @@ const categories = [
   "Makeup Artist",
   "Baker",
   "Venue",
+  // Staffing — hourly-billed categories. Surfaces extra fields below
+  // (hourly_rate_cents, min_hours) when one of these is selected.
+  "Bartender",
+  "Waitstaff",
+  "Security",
+  "Valet",
+  "Day-of Coordinator",
 ];
+
+const STAFFING_CATEGORIES = new Set([
+  "Bartender",
+  "Waitstaff",
+  "Security",
+  "Valet",
+  "Day-of Coordinator",
+]);
 
 interface VendorProfile {
   id: string;
@@ -73,6 +88,8 @@ export default function VendorProfilePage() {
   const [category, setCategory] = useState("");
   const [bio, setBio] = useState("");
   const [basePrice, setBasePrice] = useState("");
+  const [hourlyRate, setHourlyRate] = useState("");
+  const [minHours, setMinHours] = useState("");
   const [location, setLocation] = useState("");
   const [serviceRadius, setServiceRadius] = useState("");
   const [portfolioSummary, setPortfolioSummary] = useState("");
@@ -85,6 +102,17 @@ export default function VendorProfilePage() {
     setBio(p?.bio ?? "");
     setBasePrice(
       p?.base_price_cents != null ? (p.base_price_cents / 100).toString() : "",
+    );
+    setHourlyRate(
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (p as any)?.hourly_rate_cents != null
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        ? ((p as any).hourly_rate_cents / 100).toString()
+        : "",
+    );
+    setMinHours(
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (p as any)?.min_hours != null ? String((p as any).min_hours) : "",
     );
     setLocation(p?.location ?? "");
     setServiceRadius(
@@ -107,14 +135,14 @@ export default function VendorProfilePage() {
       ? supabase
           .from("vendor_profiles")
           .select(
-            "id, business_name, category, bio, base_price_cents, location, service_radius_miles, portfolio_summary, verified_at, intro_video_url, weekly_digest_enabled, slug",
+            "id, business_name, category, bio, base_price_cents, hourly_rate_cents, min_hours, is_staffing, location, service_radius_miles, portfolio_summary, verified_at, intro_video_url, weekly_digest_enabled, slug",
           )
           .eq("id", membership.vendor_id)
           .maybeSingle()
       : supabase
           .from("vendor_profiles")
           .select(
-            "id, business_name, category, bio, base_price_cents, location, service_radius_miles, portfolio_summary, verified_at, intro_video_url, weekly_digest_enabled, slug",
+            "id, business_name, category, bio, base_price_cents, hourly_rate_cents, min_hours, is_staffing, location, service_radius_miles, portfolio_summary, verified_at, intro_video_url, weekly_digest_enabled, slug",
           )
           .eq("user_id", user.id)
           .maybeSingle();
@@ -141,6 +169,7 @@ export default function VendorProfilePage() {
       return;
     }
 
+    const isStaffing = STAFFING_CATEGORIES.has(category);
     const payload = {
       business_name: businessName.trim(),
       category,
@@ -148,6 +177,12 @@ export default function VendorProfilePage() {
       base_price_cents: basePrice
         ? Math.round(Number.parseFloat(basePrice) * 100)
         : null,
+      is_staffing: isStaffing,
+      hourly_rate_cents:
+        isStaffing && hourlyRate
+          ? Math.round(Number.parseFloat(hourlyRate) * 100)
+          : null,
+      min_hours: isStaffing && minHours ? Number.parseInt(minHours, 10) : null,
       location: location.trim() || null,
       service_radius_miles: serviceRadius
         ? Number.parseInt(serviceRadius, 10)
@@ -193,7 +228,7 @@ export default function VendorProfilePage() {
         .from("vendor_profiles")
         .insert({ user_id: user.id, ...payload })
         .select(
-          "id, business_name, category, bio, base_price_cents, location, service_radius_miles, portfolio_summary, verified_at, intro_video_url, weekly_digest_enabled, slug",
+          "id, business_name, category, bio, base_price_cents, hourly_rate_cents, min_hours, is_staffing, location, service_radius_miles, portfolio_summary, verified_at, intro_video_url, weekly_digest_enabled, slug",
         )
         .single();
       setCreating(false);
@@ -299,6 +334,48 @@ export default function VendorProfilePage() {
                   placeholder="One or two sentences about your style and approach."
                 />
               </div>
+
+              {STAFFING_CATEGORIES.has(category) && (
+                <div className="rounded-sm border border-accent/30 bg-accent/5 p-4 space-y-4">
+                  <div>
+                    <p className="font-label text-accent mb-1">Hourly pricing</p>
+                    <p className="text-xs text-muted-foreground leading-relaxed">
+                      Day-of staffing categories are billed by the hour with
+                      a per-staffer minimum. These render on the /staffing
+                      directory so hosts can compare rates side by side.
+                    </p>
+                  </div>
+                  <div className="grid sm:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="hourly-rate">Hourly rate ($/hr)</Label>
+                      <Input
+                        id="hourly-rate"
+                        type="number"
+                        inputMode="decimal"
+                        min="0"
+                        step="5"
+                        value={hourlyRate}
+                        onChange={(e) => setHourlyRate(e.target.value)}
+                        placeholder="e.g. 65"
+                        className="h-11"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="min-hours">Minimum hours</Label>
+                      <Input
+                        id="min-hours"
+                        type="number"
+                        inputMode="numeric"
+                        min="1"
+                        value={minHours}
+                        onChange={(e) => setMinHours(e.target.value)}
+                        placeholder="e.g. 4"
+                        className="h-11"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
 
               <div className="grid sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
