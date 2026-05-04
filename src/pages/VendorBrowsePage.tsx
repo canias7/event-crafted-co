@@ -111,20 +111,38 @@ export default function VendorBrowsePage() {
   }, [profile, activeEvent, datePrefilled]);
 
   // Fetch the set of vendor_ids unavailable on the chosen date.
+  // Two sources: one-off blocks (vendor_unavailable_dates) AND
+  // recurring weekly rules where the picked day-of-week is marked
+  // unavailable. Client-side union; RLS public-reads both tables.
   useEffect(() => {
     if (!dateFilter) {
       setUnavailableIds(new Set());
       return;
     }
     let cancelled = false;
-    supabase
-      .from("vendor_unavailable_dates")
-      .select("vendor_id")
-      .eq("date", dateFilter)
-      .then(({ data }) => {
-        if (cancelled) return;
-        setUnavailableIds(new Set((data ?? []).map((r) => r.vendor_id)));
-      });
+    const dow = new Date(`${dateFilter}T00:00:00`).getDay();
+    Promise.all([
+      supabase
+        .from("vendor_unavailable_dates")
+        .select("vendor_id")
+        .eq("date", dateFilter),
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (supabase as any)
+        .from("vendor_availability_rules")
+        .select("vendor_id")
+        .eq("day_of_week", dow)
+        .eq("is_unavailable", true),
+    ]).then(([oneOff, recurring]) => {
+      if (cancelled) return;
+      const ids = new Set<string>();
+      for (const r of (oneOff.data ?? []) as Array<{ vendor_id: string }>) {
+        ids.add(r.vendor_id);
+      }
+      for (const r of (recurring.data ?? []) as Array<{ vendor_id: string }>) {
+        ids.add(r.vendor_id);
+      }
+      setUnavailableIds(ids);
+    });
     return () => {
       cancelled = true;
     };
