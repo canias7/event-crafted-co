@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import heroImg from "@/assets/vendora-hero-cinematic.jpg";
+import { SocialAuthButtons } from "@/components/auth/SocialAuthButtons";
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -145,6 +146,14 @@ export default function LoginPage() {
               )}
             </Button>
           </form>
+
+          <div className="mt-6 mb-6 flex items-center gap-3 text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+            <span className="flex-1 h-px bg-border" />
+            or
+            <span className="flex-1 h-px bg-border" />
+          </div>
+
+          <SocialAuthButtons />
 
           <p className="text-sm text-muted-foreground mt-8 text-center">
             New to Vendora?{" "}

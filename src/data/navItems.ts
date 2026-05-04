@@ -23,6 +23,7 @@ import {
   Globe,
   LifeBuoy,
   Briefcase,
+  History,
   type LucideIcon,
 } from "lucide-react";
 
@@ -83,5 +84,6 @@ export const adminNavItems: NavItem[] = [
   { label: "Reviews", path: "/admin/reviews", icon: CheckSquare },
   { label: "Inspiration", path: "/admin/inspiration", icon: FileText },
   { label: "Support", path: "/admin/support", icon: LifeBuoy },
+  { label: "Audit log", path: "/admin/audit", icon: History },
   { label: "Settings", path: "/settings", icon: Settings },
 ];

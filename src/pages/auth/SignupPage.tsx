@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
+import { SocialAuthButtons } from "@/components/auth/SocialAuthButtons";
 import heroImg from "@/assets/vendora-hero-dinner.jpg";
 
 export default function SignupPage() {
@@ -216,6 +217,14 @@ export default function SignupPage() {
               )}
             </Button>
           </form>
+
+          <div className="mt-6 mb-6 flex items-center gap-3 text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+            <span className="flex-1 h-px bg-border" />
+            or
+            <span className="flex-1 h-px bg-border" />
+          </div>
+
+          <SocialAuthButtons />
 
           <p className="text-sm text-muted-foreground mt-8 text-center">
             Already have an account?{" "}

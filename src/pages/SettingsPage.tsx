@@ -25,6 +25,7 @@ import { DashboardSidebar } from "@/components/shared/DashboardSidebar";
 import { MobileNav } from "@/components/shared/MobileNav";
 import { PushNotificationsCard } from "@/components/settings/PushNotificationsCard";
 import { CalendarConnectionsCard } from "@/components/settings/CalendarConnectionsCard";
+import { TwoFactorCard } from "@/components/settings/TwoFactorCard";
 import { customerNavItems, vendorNavItems } from "@/data/navItems";
 
 const COOKIE_KEY = "vendora.cookie-consent";
@@ -333,6 +334,15 @@ export default function SettingsPage() {
                     </Button>
                   </div>
                 </form>
+              </Section>
+
+              {/* 2FA */}
+              <Section
+                icon={KeyRound}
+                title="Two-factor"
+                subtitle="A second sign-in factor via your authenticator app"
+              >
+                <TwoFactorCard />
               </Section>
 
               {/* Data export */}

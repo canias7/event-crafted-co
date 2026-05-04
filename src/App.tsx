@@ -18,6 +18,7 @@ import { CookieBanner } from "./components/CookieBanner";
 import { CommandPalette } from "./components/CommandPalette";
 import { SkipLink } from "./components/SkipLink";
 import { MobilePortalBell } from "./components/notifications/MobilePortalBell";
+import { OnboardingTour } from "@/components/shared/OnboardingTour";
 import { RouteFallback } from "@/components/shared/RouteFallback";
 // All lazy-loaded pages live in @/router/lazyRoutes — keeps the lazy
 // factories paired with a path → importer registry that PrefetchLink
@@ -72,6 +73,7 @@ import {
   EventAlbumPage,
   SupportPage,
   AdminSupportPage,
+  AdminAuditPage,
   RealEventsPage,
   RealEventDetailPage,
   AcceptPlanningInvitePage,
@@ -161,6 +163,7 @@ const App = () => (
               <Route path="/album/:token" element={<EventAlbumPage />} />
               <Route path="/support" element={<RequireRole role={["host", "vendor", "admin"]}><SupportPage /></RequireRole>} />
               <Route path="/admin/support" element={<RequireRole role="admin"><AdminSupportPage /></RequireRole>} />
+              <Route path="/admin/audit" element={<RequireRole role="admin"><AdminAuditPage /></RequireRole>} />
               <Route path="/customer/appointments" element={<RequireRole role="host"><AppointmentsPage /></RequireRole>} />
               <Route path="/customer/favorites" element={<RequireRole role="host"><FavoritesPage /></RequireRole>} />
               <Route path="/customer/saved-searches" element={<RequireRole role="host"><SavedSearchesPage /></RequireRole>} />
@@ -198,6 +201,7 @@ const App = () => (
             </Routes>
           </Suspense>
           <MobilePortalBell />
+          <OnboardingTour />
           <CommandPalette />
           <CookieBanner />
         </AuthProvider>

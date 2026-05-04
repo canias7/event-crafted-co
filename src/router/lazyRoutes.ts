@@ -174,6 +174,9 @@ export const SupportPage = lazy(importSupport);
 const importAdminSupport = () => import("@/pages/admin/AdminSupportPage");
 export const AdminSupportPage = lazy(importAdminSupport);
 
+const importAdminAudit = () => import("@/pages/admin/AdminAuditPage");
+export const AdminAuditPage = lazy(importAdminAudit);
+
 // ---------------- Vendor ----------------
 const importVendorDashboard = () => import("@/pages/vendor/VendorDashboard");
 export const VendorDashboard = lazy(importVendorDashboard);
@@ -280,6 +283,7 @@ const ROUTE_IMPORTERS: Array<{ pattern: string; importer: () => Promise<unknown>
   { pattern: "/album/:token", importer: importEventAlbum },
   { pattern: "/support", importer: importSupport },
   { pattern: "/admin/support", importer: importAdminSupport },
+  { pattern: "/admin/audit", importer: importAdminAudit },
   { pattern: "/customer/appointments", importer: importAppointments },
   { pattern: "/customer/favorites", importer: importFavorites },
   { pattern: "/customer/saved-searches", importer: importSavedSearches },
