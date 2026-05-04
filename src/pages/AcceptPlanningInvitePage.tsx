@@ -32,16 +32,14 @@ export default function AcceptPlanningInvitePage() {
     if (!token) return;
     let cancelled = false;
     setLoading(true);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (supabase as any)
+    supabase
       .rpc("get_planning_invite_by_token", { p_token: token })
-      .then(
-        ({ data, error }: { data: InviteSummary | null; error: unknown }) => {
+      .then(({ data, error }) => {
           if (cancelled) return;
           if (error || !data) {
             setNotFound(true);
           } else {
-            setInvite(data);
+            setInvite(data as InviteSummary);
           }
           setLoading(false);
         },
@@ -55,11 +53,9 @@ export default function AcceptPlanningInvitePage() {
     if (!token) return;
     setAccepting(true);
     setErrorMsg(null);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data, error } = await (supabase as any).rpc(
-      "accept_planning_invite",
-      { p_token: token },
-    );
+    const { data, error } = await supabase.rpc("accept_planning_invite", {
+      p_token: token,
+    });
     setAccepting(false);
     if (error) {
       setErrorMsg(error.message);

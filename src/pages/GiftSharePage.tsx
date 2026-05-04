@@ -45,8 +45,7 @@ export default function GiftSharePage() {
   async function load() {
     if (!token) return;
     setLoading(true);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data } = await (supabase as any).rpc("get_gift_wish_by_token", {
+    const { data } = await supabase.rpc("get_gift_wish_by_token", {
       p_token: token,
     });
     if (!data) {
@@ -74,8 +73,7 @@ export default function GiftSharePage() {
       return;
     }
     setSubmitting(true);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error } = await (supabase as any).rpc("pledge_to_gift", {
+    const { error } = await supabase.rpc("pledge_to_gift", {
       p_token: token,
       p_name: name.trim(),
       p_amount_cents: cents,

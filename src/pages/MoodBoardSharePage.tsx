@@ -47,15 +47,14 @@ export default function MoodBoardSharePage() {
     if (!token) return;
     let cancelled = false;
     setLoading(true);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (supabase as any)
+    supabase
       .rpc("get_mood_board_by_token", { p_token: token })
-      .then(({ data, error }: { data: SharedBoard | null; error: unknown }) => {
+      .then(({ data, error }) => {
         if (cancelled) return;
         if (error || !data) {
           setNotFound(true);
         } else {
-          setBoard(data);
+          setBoard(data as SharedBoard);
         }
         setLoading(false);
       });
@@ -322,19 +321,16 @@ function CommentComposer({
     // Resolve the board id via the public RPC. We don't expose the
     // board id on this page (only the share token), so look it up.
     setSubmitting(true);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: boardData } = await (supabase as any).rpc(
-      "get_mood_board_by_token",
-      { p_token: boardToken },
-    );
+    const { data: boardData } = await supabase.rpc("get_mood_board_by_token", {
+      p_token: boardToken,
+    });
     const boardId = (boardData as { id: string } | null)?.id;
     if (!boardId) {
       setSubmitting(false);
       toast.error("Board not found");
       return;
     }
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error } = await (supabase as any)
+    const { error } = await supabase
       .from("mood_board_comments")
       .insert({
         board_id: boardId,
