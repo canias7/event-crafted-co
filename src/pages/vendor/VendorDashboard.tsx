@@ -14,7 +14,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
+import { ProfileScoreCard } from "@/components/vendor/ProfileScoreCard";
 import { Skeleton } from "@/components/ui/skeleton";
 import { DashboardSidebar } from "@/components/shared/DashboardSidebar";
 import { MobileNav } from "@/components/shared/MobileNav";
@@ -350,29 +350,20 @@ export default function VendorDashboard() {
             </div>
           )}
 
-          {/* Profile completeness */}
-          {vendorProfile && completeness < 100 && (
+          {/* Profile completeness — server-computed score with breakdown */}
+          {membershipVendorId && (
+            <ProfileScoreCard vendorId={membershipVendorId} />
+          )}
+
+          {/* Onboarding wizard CTA — only when truly fresh */}
+          {vendorProfile && completeness < 40 && (
             <div className="bg-card rounded-sm border border-accent/30 bg-accent/5 p-5">
-              <div className="flex items-center justify-between mb-3">
-                <p className="font-label text-accent">
-                  Finish your profile
-                </p>
-                <span className="text-sm font-medium tnum">
-                  {completeness}%
-                </span>
-              </div>
-              <Progress value={completeness} className="h-2 mb-3" />
               <div className="flex items-center justify-between gap-4 flex-wrap">
-                <p className="text-xs text-muted-foreground leading-relaxed max-w-md">
-                  Profiles with packages and 3+ portfolio photos get up to 4×
-                  more inquiries. Walk through the setup wizard to wrap it up.
+                <p className="text-sm text-muted-foreground leading-relaxed max-w-md">
+                  New to Vendora? Walk through the guided onboarding to get
+                  the basics done in 5 minutes.
                 </p>
                 <div className="flex gap-2">
-                  <Link to="/vendor/profile">
-                    <Button variant="ghost" size="sm" className="rounded-full">
-                      Edit manually
-                    </Button>
-                  </Link>
                   <Link to="/vendor/onboarding">
                     <Button
                       size="sm"
