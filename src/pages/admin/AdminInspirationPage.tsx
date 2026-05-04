@@ -36,8 +36,7 @@ import { DashboardSidebar } from "@/components/shared/DashboardSidebar";
 import { MobileNav } from "@/components/shared/MobileNav";
 import { adminNavItems as navItems } from "@/data/navItems";
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const featuredTable = () => (supabase as any).from("featured_events");
+const featuredTable = () => supabase.from("featured_events");
 
 interface Entry {
   id: string;

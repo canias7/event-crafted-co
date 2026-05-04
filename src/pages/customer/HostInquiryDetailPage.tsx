@@ -133,16 +133,14 @@ export default function HostInquiryDetailPage() {
     setMessages((msgs as unknown as Message[]) ?? []);
 
     // Existing review (if any)
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: r } = await (supabase as any)
+    const { data: r } = await supabase
       .from("reviews")
       .select("id, rating, body, photo_urls")
       .eq("inquiry_id", inquiryId)
       .maybeSingle();
     setReview((r as ExistingReview | null) ?? null);
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: props } = await (supabase as any)
+    const { data: props } = await supabase
       .from("proposals")
       .select(
         "id, title, line_items, subtotal_cents, deposit_cents, terms, contract_body, status, sent_at, signed_at, signed_name",
@@ -169,8 +167,7 @@ export default function HostInquiryDetailPage() {
       update.signed_name = signature.signed_name;
       update.signed_user_agent = signature.signed_user_agent;
     }
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error } = await (supabase as any)
+    const { error } = await supabase
       .from("proposals")
       .update(update)
       .eq("id", p.id);

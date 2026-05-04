@@ -134,8 +134,7 @@ export default function VendorInboxPage() {
 
     // Hydrate label assignments per inquiry
     if (inquiries.length > 0) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data: assigns } = await (supabase as any)
+      const { data: assigns } = await supabase
         .from("inquiry_label_assignments")
         .select(
           "inquiry_id, label:vendor_inquiry_labels!inquiry_label_assignments_label_id_fkey(id, name, color)",
@@ -162,8 +161,7 @@ export default function VendorInboxPage() {
   async function loadLabels(forVendorId?: string | null) {
     const vid = forVendorId ?? vendorId;
     if (!vid) return;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data } = await (supabase as any)
+    const { data } = await supabase
       .from("vendor_inquiry_labels")
       .select("id, name, color, display_order")
       .eq("vendor_id", vid)
@@ -481,8 +479,7 @@ function ManageLabelsDialog({
     e.preventDefault();
     if (!name.trim()) return;
     setSubmitting(true);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error } = await (supabase as any)
+    const { error } = await supabase
       .from("vendor_inquiry_labels")
       .insert({
         vendor_id: vendorId,
@@ -501,8 +498,7 @@ function ManageLabelsDialog({
 
   async function remove(id: string) {
     setDeletingId(id);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error } = await (supabase as any)
+    const { error } = await supabase
       .from("vendor_inquiry_labels")
       .delete()
       .eq("id", id);

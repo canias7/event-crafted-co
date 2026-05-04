@@ -155,8 +155,7 @@ export function AppointmentsList({ appointments, side, onMutate }: Props) {
     status: Appointment["status"],
   ) {
     setPendingId(appt.id);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error } = await (supabase as any)
+    const { error } = await supabase
       .from("appointments")
       .update({ status })
       .eq("id", appt.id);
