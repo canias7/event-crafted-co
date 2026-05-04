@@ -3,6 +3,7 @@ import { Star, MapPin, Heart, Zap } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useSavedVendors } from "@/hooks/useSavedVendors";
 import { PrefetchLink as Link } from "@/components/shared/PrefetchLink";
+import { VerificationBadges } from "@/components/vendor/VerificationBadges";
 import vendorPhotographer from "@/assets/vendor-photographer.jpg";
 import vendorFlorist from "@/assets/vendor-florist.jpg";
 import vendorCatering from "@/assets/vendor-catering.jpg";
@@ -34,6 +35,7 @@ interface VendorCardProps {
     location?: string;
     responderTier?: "fast" | "standard" | null;
     isReal?: boolean;
+    verifiedKinds?: string[];
   };
   /** Above-the-fold cards should pass eager so the first paint isn't a flash of empty squares. */
   eager?: boolean;
@@ -98,9 +100,17 @@ export function VendorCard({ vendor, eager = false }: VendorCardProps) {
         </div>
 
         <div className="space-y-1.5">
-          <h3 className="font-display text-lg leading-tight transition-colors group-hover:text-accent">
-            {vendor.name}
-          </h3>
+          <div className="flex items-center gap-2 flex-wrap">
+            <h3 className="font-display text-lg leading-tight transition-colors group-hover:text-accent">
+              {vendor.name}
+            </h3>
+            {vendor.verifiedKinds && vendor.verifiedKinds.length > 0 && (
+              <VerificationBadges
+                kinds={vendor.verifiedKinds}
+                size="compact"
+              />
+            )}
+          </div>
           <p className="text-sm text-muted-foreground line-clamp-1 leading-relaxed">
             {vendor.description}
           </p>

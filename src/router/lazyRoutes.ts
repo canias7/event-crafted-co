@@ -203,6 +203,9 @@ export const AdminInquiriesPage = lazy(importAdminInquiries);
 const importAdminInspiration = () => import("@/pages/admin/AdminInspirationPage");
 export const AdminInspirationPage = lazy(importAdminInspiration);
 
+const importAdminVerifications = () => import("@/pages/admin/AdminVerificationsPage");
+export const AdminVerificationsPage = lazy(importAdminVerifications);
+
 // ---------------- path → importer registry ----------------
 // Order matters for matchPath — more specific patterns first. Static
 // strings are tried before dynamic ones via Map insertion order.
@@ -274,6 +277,7 @@ const ROUTE_IMPORTERS: Array<{ pattern: string; importer: () => Promise<unknown>
   { pattern: "/admin/inquiries", importer: importAdminInquiries },
   { pattern: "/admin/reviews", importer: importAdminReviews },
   { pattern: "/admin/inspiration", importer: importAdminInspiration },
+  { pattern: "/admin/verifications", importer: importAdminVerifications },
 ];
 
 // Resolve a path string ("/vendors/abc-123") to an importer factory if

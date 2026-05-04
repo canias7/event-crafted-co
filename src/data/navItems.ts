@@ -17,6 +17,7 @@ import {
   Gift,
   Settings,
   TrendingUp,
+  ShieldCheck,
   type LucideIcon,
 } from "lucide-react";
 
@@ -66,6 +67,7 @@ export const vendorNavItems: NavItem[] = [
 export const adminNavItems: NavItem[] = [
   { label: "Overview", path: "/admin/dashboard", icon: LayoutDashboard },
   { label: "Vendors", path: "/admin/vendors", icon: Store },
+  { label: "Verifications", path: "/admin/verifications", icon: ShieldCheck },
   { label: "Inquiries", path: "/admin/inquiries", icon: MessageSquare },
   { label: "Reviews", path: "/admin/reviews", icon: CheckSquare },
   { label: "Inspiration", path: "/admin/inspiration", icon: FileText },

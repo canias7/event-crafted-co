@@ -85,6 +85,7 @@ import {
   AdminReviewsPage,
   AdminInquiriesPage,
   AdminInspirationPage,
+  AdminVerificationsPage,
 } from "@/router/lazyRoutes";
 
 const queryClient = new QueryClient();
@@ -176,6 +177,7 @@ const App = () => (
               <Route path="/admin/inquiries" element={<RequireRole role="admin"><AdminInquiriesPage /></RequireRole>} />
               <Route path="/admin/reviews" element={<RequireRole role="admin"><AdminReviewsPage /></RequireRole>} />
               <Route path="/admin/inspiration" element={<RequireRole role="admin"><AdminInspirationPage /></RequireRole>} />
+              <Route path="/admin/verifications" element={<RequireRole role="admin"><AdminVerificationsPage /></RequireRole>} />
 
               <Route path="*" element={<NotFound />} />
             </Routes>

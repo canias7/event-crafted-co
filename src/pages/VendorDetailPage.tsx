@@ -32,6 +32,7 @@ import { VendorCard } from "@/components/shared/VendorCard";
 import { Lightbox } from "@/components/shared/Lightbox";
 import { VideoEmbed } from "@/components/vendor/VideoEmbed";
 import { ShowcaseStrip } from "@/components/vendor/ShowcaseStrip";
+import { VerificationBadges } from "@/components/vendor/VerificationBadges";
 import { useDocumentMeta } from "@/hooks/useDocumentMeta";
 import { InquiryFormModal } from "@/components/inquiries/InquiryFormModal";
 import { useAuth } from "@/hooks/useAuth";
@@ -290,6 +291,29 @@ export default function VendorDetailPage() {
       .then(({ data }: { data: ImportedReview[] | null }) => {
         if (cancelled) return;
         setImportedReviews(data ?? []);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [vendor]);
+
+  // Verification badges (kinds only — never document paths).
+  const [verifiedKinds, setVerifiedKinds] = useState<string[]>([]);
+  useEffect(() => {
+    if (!vendor || !vendor.isReal) {
+      setVerifiedKinds([]);
+      return;
+    }
+    let cancelled = false;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (supabase as any)
+      .from("vendor_public_badges")
+      .select("kinds")
+      .eq("vendor_id", vendor.id)
+      .maybeSingle()
+      .then(({ data }: { data: { kinds: string[] } | null }) => {
+        if (cancelled) return;
+        setVerifiedKinds(data?.kinds ?? []);
       });
     return () => {
       cancelled = true;
@@ -588,10 +612,20 @@ export default function VendorDetailPage() {
                 initial={{ opacity: 0, y: 24 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ ...spring, delay: 0.3, duration: 0.9 }}
-                className="text-hero font-display text-background leading-[1.0] mb-6 max-w-3xl"
+                className="text-hero font-display text-background leading-[1.0] mb-4 max-w-3xl"
               >
                 {vendor.name}
               </motion.h1>
+              {verifiedKinds.length > 0 && (
+                <motion.div
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ ...spring, delay: 0.4 }}
+                  className="mb-5"
+                >
+                  <VerificationBadges kinds={verifiedKinds} />
+                </motion.div>
+              )}
 
               <motion.div
                 initial={{ opacity: 0, y: 16 }}

@@ -21,6 +21,8 @@ export interface Vendor {
   slug?: string | null;
   /** True when this vendor came from the live DB; false for sampleData fallback. */
   isReal: boolean;
+  /** Approved verification kinds (identity / insurance / business_license) — public-safe. */
+  verifiedKinds?: string[];
 }
 
 const categoryImageFallback: Record<string, string> = {
@@ -121,6 +123,25 @@ async function fetchVendors(): Promise<Vendor[]> {
             if (lowest[v.id] != null) {
               v.startingPrice = Math.round(lowest[v.id] / 100);
             }
+          }
+        }
+
+        // Batch-fetch verification badges so cards can render the
+        // shield iconography without an N+1 fetch.
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { data: badges } = await (supabase as any)
+          .from("vendor_public_badges")
+          .select("vendor_id, kinds");
+        if (badges && badges.length > 0) {
+          const byVendor: Record<string, string[]> = {};
+          for (const row of badges as Array<{
+            vendor_id: string;
+            kinds: string[];
+          }>) {
+            byVendor[row.vendor_id] = row.kinds;
+          }
+          for (const v of vendors) {
+            if (byVendor[v.id]) v.verifiedKinds = byVendor[v.id];
           }
         }
 
