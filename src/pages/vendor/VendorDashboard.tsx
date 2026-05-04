@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import {
   Bell,
   Inbox,
@@ -79,6 +80,7 @@ function fmtMoney(c: number | null) {
 }
 
 export default function VendorDashboard() {
+  const { t } = useTranslation();
   const { user, profile, vendorMemberships } = useAuth();
   const membershipVendorId = vendorMemberships[0]?.vendor_id ?? null;
   const [vendorProfile, setVendorProfile] = useState<VendorProfile | null>(null);
@@ -214,7 +216,7 @@ export default function VendorDashboard() {
 
   return (
     <div className="flex min-h-screen bg-background">
-      <DashboardSidebar items={navItems} title="Vendor Portal" backPath="/" />
+      <DashboardSidebar items={navItems} title={t("dashboard.vendor.title")} backPath="/" />
 
       <main id="main-content" className="flex-1 pb-20 lg:pb-0">
         <div className="border-b border-border bg-card px-4 md:px-8 py-4 flex items-center justify-between sticky top-0 z-40">
@@ -283,23 +285,23 @@ export default function VendorDashboard() {
           {/* Stats */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             <StatCard
-              label="New requests"
+              label={t("dashboard.vendor.stat_new_requests")}
               value={stats.newRequests}
               icon={Bell}
               accent
             />
             <StatCard
-              label="Awaiting reply"
+              label={t("dashboard.customer.stat_awaiting")}
               value={stats.awaiting}
               icon={Clock}
             />
             <StatCard
-              label="Booked"
+              label={t("dashboard.vendor.stat_won")}
               value={stats.booked}
               icon={CheckCircle2}
             />
             <StatCard
-              label="Total inquiries"
+              label={t("dashboard.customer.stat_inquiries")}
               value={stats.total}
               icon={Inbox}
             />

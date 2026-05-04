@@ -122,5 +122,55 @@
   "language_switcher": {
     "label": "Idioma",
     "current": "Idioma actual"
+  },
+  "dashboard": {
+    "common": {
+      "view_all": "Ver todo",
+      "quick_actions": "Acciones rápidas",
+      "welcome_back": "Bienvenido de nuevo",
+      "let_us_plan": "Planifiquemos algo memorable",
+      "of": "de",
+      "completed": "completados",
+      "on_track": "Al día",
+      "overdue_one": "{{count}} atrasada",
+      "overdue_other": "{{count}} atrasadas"
+    },
+    "customer": {
+      "title": "Anfitrión",
+      "event_in_days": "Tu {{event}} es en {{count}} días",
+      "event_planning": "Tu {{event}} se está planeando",
+      "stat_days_until": "Días para el evento",
+      "stat_inquiries": "Consultas",
+      "stat_awaiting": "Sin respuesta",
+      "stat_booked": "Reservados",
+      "widget_guests": "Invitados",
+      "widget_attending": "{{count}} asistirán",
+      "widget_spent": "Gastado",
+      "widget_planned": "de {{amount}} planeado",
+      "widget_checklist": "Lista de tareas",
+      "widget_done_ratio": "{{done}}/{{total}} hechas",
+      "widget_open_tasks": "Tareas abiertas",
+      "section_checklist": "Progreso de la lista",
+      "section_tasks": "Tareas próximas",
+      "complete_setup": "Completar configuración",
+      "tell_us_about_event": "Cuéntanos sobre tu evento",
+      "tell_us_setup_desc": "Una configuración de dos minutos para personalizar tu panel, recomendaciones y pre-llenar consultas con los detalles de tu evento.",
+      "qa_browse_vendors": "Explorar proveedores",
+      "qa_microsite": "Sitio del evento",
+      "qa_book_appt": "Reservar cita",
+      "qa_invite": "Crear invitación",
+      "qa_add_task": "Añadir tarea",
+      "qa_add_check": "Añadir a la lista"
+    },
+    "vendor": {
+      "title": "Proveedor",
+      "stat_new_requests": "Solicitudes nuevas",
+      "stat_drafted": "Borrador IA",
+      "stat_replied": "Respondidas",
+      "stat_won": "Reservadas"
+    },
+    "admin": {
+      "title": "Administrador"
+    }
   }
 }

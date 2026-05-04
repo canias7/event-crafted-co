@@ -17,6 +17,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { adminNavItems as navItems } from "@/data/navItems";
 import { formatDate } from "@/lib/format";
+import { useTranslation } from "react-i18next";
 
 interface Counts {
   vendors: number;
@@ -46,6 +47,7 @@ interface RecentInquiry {
 }
 
 export default function AdminDashboard() {
+  const { t } = useTranslation();
   const [counts, setCounts] = useState<Counts | null>(null);
   const [recentVendors, setRecentVendors] = useState<RecentVendor[]>([]);
   const [recentInquiries, setRecentInquiries] = useState<RecentInquiry[]>([]);
@@ -122,7 +124,7 @@ export default function AdminDashboard() {
 
   return (
     <div className="flex min-h-screen bg-background">
-      <DashboardSidebar items={navItems} title="Admin" backPath="/" />
+      <DashboardSidebar items={navItems} title={t("dashboard.admin.title")} backPath="/" />
 
       <main id="main-content" className="flex-1 pb-20 lg:pb-0">
         <div className="border-b border-border bg-card px-4 md:px-8 py-4 sticky top-0 z-40">

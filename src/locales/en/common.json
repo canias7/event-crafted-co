@@ -122,5 +122,55 @@
   "language_switcher": {
     "label": "Language",
     "current": "Current language"
+  },
+  "dashboard": {
+    "common": {
+      "view_all": "View all",
+      "quick_actions": "Quick actions",
+      "welcome_back": "Welcome back",
+      "let_us_plan": "Let's plan something memorable",
+      "of": "of",
+      "completed": "completed",
+      "on_track": "On track",
+      "overdue_one": "{{count}} overdue",
+      "overdue_other": "{{count}} overdue"
+    },
+    "customer": {
+      "title": "Customer",
+      "event_in_days": "Your {{event}} is in {{count}} days",
+      "event_planning": "Your {{event}} is being planned",
+      "stat_days_until": "Days until event",
+      "stat_inquiries": "Inquiries",
+      "stat_awaiting": "Awaiting reply",
+      "stat_booked": "Booked",
+      "widget_guests": "Guests",
+      "widget_attending": "{{count}} attending",
+      "widget_spent": "Spent",
+      "widget_planned": "of {{amount}} planned",
+      "widget_checklist": "Checklist",
+      "widget_done_ratio": "{{done}}/{{total}} done",
+      "widget_open_tasks": "Open tasks",
+      "section_checklist": "Checklist progress",
+      "section_tasks": "Tasks due soon",
+      "complete_setup": "Complete setup",
+      "tell_us_about_event": "Tell us about your event",
+      "tell_us_setup_desc": "A two-minute setup so we can tailor your dashboard, recommendations, and pre-fill inquiries with your event details.",
+      "qa_browse_vendors": "Browse vendors",
+      "qa_microsite": "Event microsite",
+      "qa_book_appt": "Book appointment",
+      "qa_invite": "Create invitation",
+      "qa_add_task": "Add task",
+      "qa_add_check": "Add checklist item"
+    },
+    "vendor": {
+      "title": "Vendor",
+      "stat_new_requests": "New requests",
+      "stat_drafted": "AI-drafted",
+      "stat_replied": "Replied",
+      "stat_won": "Booked"
+    },
+    "admin": {
+      "title": "Admin"
+    }
   }
 }

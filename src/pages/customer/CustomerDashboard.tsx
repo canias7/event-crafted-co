@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
+import { useTranslation } from "react-i18next";
 import {
   Store, MessageSquare, ListTodo, CreditCard, Clock, ArrowRight, Plus,
   Calendar, CalendarDays, Mail, CheckSquare, Sparkles, Globe,
@@ -52,6 +53,7 @@ function fmtMoney(c: number | null) {
 }
 
 export default function CustomerDashboard() {
+  const { t } = useTranslation();
   const { profile, activeEvent, user } = useAuth();
   const [stats, setStats] = useState<InquiryStats>({
     total: 0,
@@ -179,26 +181,27 @@ export default function CustomerDashboard() {
 
   return (
     <div className="flex min-h-screen bg-background">
-      <DashboardSidebar items={navItems} title="Customer" backPath="/" />
+      <DashboardSidebar items={navItems} title={t("dashboard.customer.title")} backPath="/" />
 
       <main id="main-content" className="flex-1 pb-20 lg:pb-0">
         {/* Header */}
         <div className="border-b border-border bg-card px-4 md:px-8 py-4 flex items-center justify-between sticky top-0 z-40">
           <div>
-            <h1 className="font-display text-xl">Welcome back, {greeting}</h1>
+            <h1 className="font-display text-xl">
+              {t("dashboard.common.welcome_back")}, {greeting}
+            </h1>
             <p className="text-sm text-muted-foreground">
               {daysUntil != null && daysUntil >= 0 ? (
                 <>
-                  Your {eventLabel} is in{" "}
-                  <span className="font-medium text-foreground tnum">
-                    {daysUntil}
-                  </span>{" "}
-                  days
+                  {t("dashboard.customer.event_in_days", {
+                    event: eventLabel,
+                    count: daysUntil,
+                  })}
                 </>
               ) : eventType ? (
-                `Your ${eventLabel} is being planned`
+                t("dashboard.customer.event_planning", { event: eventLabel })
               ) : (
-                "Let's plan something memorable"
+                t("dashboard.common.let_us_plan")
               )}
             </p>
           </div>
@@ -225,17 +228,15 @@ export default function CustomerDashboard() {
               </div>
               <div className="flex-1 min-w-0">
                 <p className="font-display text-base mb-1">
-                  Tell us about your event
+                  {t("dashboard.customer.tell_us_about_event")}
                 </p>
                 <p className="text-sm text-muted-foreground leading-relaxed">
-                  A two-minute setup so we can tailor your dashboard,
-                  recommendations, and pre-fill inquiries with your event
-                  details.
+                  {t("dashboard.customer.tell_us_setup_desc")}
                 </p>
               </div>
               <Link to="/customer/onboarding">
                 <Button size="sm" className="rounded-full whitespace-nowrap">
-                  Complete setup
+                  {t("dashboard.customer.complete_setup")}
                   <ArrowRight className="w-3.5 h-3.5 ml-1.5" />
                 </Button>
               </Link>
@@ -245,18 +246,26 @@ export default function CustomerDashboard() {
           {/* Stats — top row tracks the planning at-a-glance */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             <StatCard
-              label="Days until event"
+              label={t("dashboard.customer.stat_days_until")}
               value={daysUntil != null && daysUntil >= 0 ? daysUntil : "—"}
               icon={Clock}
               accent
             />
             <StatCard
-              label="Inquiries"
+              label={t("dashboard.customer.stat_inquiries")}
               value={stats.total}
               icon={MessageSquare}
             />
-            <StatCard label="Awaiting reply" value={stats.awaiting} icon={Clock} />
-            <StatCard label="Booked" value={stats.booked} icon={Store} />
+            <StatCard
+              label={t("dashboard.customer.stat_awaiting")}
+              value={stats.awaiting}
+              icon={Clock}
+            />
+            <StatCard
+              label={t("dashboard.customer.stat_booked")}
+              value={stats.booked}
+              icon={Store}
+            />
           </div>
 
           {/* Live planning widgets — guest RSVP, budget, checklist, tasks */}
@@ -272,7 +281,9 @@ export default function CustomerDashboard() {
                 >
                   <div className="flex items-center gap-2 text-muted-foreground mb-3">
                     <Mail className="w-3.5 h-3.5" />
-                    <p className="font-label text-xs">Guests</p>
+                    <p className="font-label text-xs">
+                      {t("dashboard.customer.widget_guests")}
+                    </p>
                   </div>
                   <p className="font-display text-2xl tnum mb-1">
                     {widgets.guestsResponded}
@@ -282,7 +293,9 @@ export default function CustomerDashboard() {
                     </span>
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    {widgets.guestsAttending} attending
+                    {t("dashboard.customer.widget_attending", {
+                      count: widgets.guestsAttending,
+                    })}
                   </p>
                 </Link>
               )}
@@ -293,15 +306,17 @@ export default function CustomerDashboard() {
                 >
                   <div className="flex items-center gap-2 text-muted-foreground mb-3">
                     <CreditCard className="w-3.5 h-3.5" />
-                    <p className="font-label text-xs">Spent</p>
+                    <p className="font-label text-xs">
+                      {t("dashboard.customer.widget_spent")}
+                    </p>
                   </div>
                   <p className="font-display text-2xl tnum mb-1">
-                    ${Math.round(widgets.budgetSpent / 100).toLocaleString()}
+                    {formatCents(widgets.budgetSpent)}
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    of $
-                    {Math.round(widgets.budgetTotal / 100).toLocaleString()}{" "}
-                    planned
+                    {t("dashboard.customer.widget_planned", {
+                      amount: formatCents(widgets.budgetTotal),
+                    })}
                   </p>
                 </Link>
               )}
@@ -312,7 +327,9 @@ export default function CustomerDashboard() {
                 >
                   <div className="flex items-center gap-2 text-muted-foreground mb-3">
                     <CheckSquare className="w-3.5 h-3.5" />
-                    <p className="font-label text-xs">Checklist</p>
+                    <p className="font-label text-xs">
+                      {t("dashboard.customer.widget_checklist")}
+                    </p>
                   </div>
                   <p className="font-display text-2xl tnum mb-1">
                     {Math.round(
@@ -321,7 +338,10 @@ export default function CustomerDashboard() {
                     %
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    {widgets.checklistDone}/{widgets.checklistTotal} done
+                    {t("dashboard.customer.widget_done_ratio", {
+                      done: widgets.checklistDone,
+                      total: widgets.checklistTotal,
+                    })}
                   </p>
                 </Link>
               )}
@@ -332,7 +352,9 @@ export default function CustomerDashboard() {
                 >
                   <div className="flex items-center gap-2 text-muted-foreground mb-3">
                     <ListTodo className="w-3.5 h-3.5" />
-                    <p className="font-label text-xs">Open tasks</p>
+                    <p className="font-label text-xs">
+                      {t("dashboard.customer.widget_open_tasks")}
+                    </p>
                   </div>
                   <p className="font-display text-2xl tnum mb-1">
                     {widgets.tasksOpen}
@@ -345,8 +367,10 @@ export default function CustomerDashboard() {
                     }`}
                   >
                     {widgets.tasksOverdue > 0
-                      ? `${widgets.tasksOverdue} overdue`
-                      : "On track"}
+                      ? t("dashboard.common.overdue", {
+                          count: widgets.tasksOverdue,
+                        })
+                      : t("dashboard.common.on_track")}
                   </p>
                 </Link>
               )}
@@ -367,15 +391,17 @@ export default function CustomerDashboard() {
 
           {/* Quick actions */}
           <div className="bg-card rounded-2xl p-5 card-shadow">
-            <p className="font-label text-muted-foreground mb-3">Quick Actions</p>
+            <p className="font-label text-muted-foreground mb-3">
+              {t("dashboard.common.quick_actions")}
+            </p>
             <div className="flex flex-wrap gap-2">
               {[
-                { label: "Browse Vendors", path: "/vendors", icon: Store },
-                { label: "Event microsite", path: "/customer/microsite", icon: Globe },
-                { label: "Book Appointment", path: "/customer/appointments", icon: CalendarDays },
-                { label: "Create Invitation", path: "/customer/invitations", icon: Mail },
-                { label: "Add Task", path: "/customer/tasks", icon: Plus },
-                { label: "Add Checklist Item", path: "/customer/checklist", icon: CheckSquare },
+                { label: t("dashboard.customer.qa_browse_vendors"), path: "/vendors", icon: Store },
+                { label: t("dashboard.customer.qa_microsite"), path: "/customer/microsite", icon: Globe },
+                { label: t("dashboard.customer.qa_book_appt"), path: "/customer/appointments", icon: CalendarDays },
+                { label: t("dashboard.customer.qa_invite"), path: "/customer/invitations", icon: Mail },
+                { label: t("dashboard.customer.qa_add_task"), path: "/customer/tasks", icon: Plus },
+                { label: t("dashboard.customer.qa_add_check"), path: "/customer/checklist", icon: CheckSquare },
               ].map((action) => (
                 <Link key={action.path + action.label} to={action.path}>
                   <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.98 }}>
@@ -393,8 +419,12 @@ export default function CustomerDashboard() {
             {/* Checklist progress */}
             <div className="bg-card rounded-2xl p-5 card-shadow">
               <div className="flex items-center justify-between mb-4">
-                <p className="font-label text-muted-foreground">Checklist Progress</p>
-                <Link to="/customer/checklist" className="text-xs text-accent font-medium">View all</Link>
+                <p className="font-label text-muted-foreground">
+                  {t("dashboard.customer.section_checklist")}
+                </p>
+                <Link to="/customer/checklist" className="text-xs text-accent font-medium">
+                  {t("dashboard.common.view_all")}
+                </Link>
               </div>
               <div className="mb-3">
                 <div className="flex items-baseline gap-2 mb-2">
@@ -421,8 +451,12 @@ export default function CustomerDashboard() {
             {/* Tasks due soon */}
             <div className="bg-card rounded-2xl p-5 card-shadow">
               <div className="flex items-center justify-between mb-4">
-                <p className="font-label text-muted-foreground">Tasks Due Soon</p>
-                <Link to="/customer/tasks" className="text-xs text-accent font-medium">View all</Link>
+                <p className="font-label text-muted-foreground">
+                  {t("dashboard.customer.section_tasks")}
+                </p>
+                <Link to="/customer/tasks" className="text-xs text-accent font-medium">
+                  {t("dashboard.common.view_all")}
+                </Link>
               </div>
               <div className="space-y-3">
                 {customerTasks.map((task) => (
