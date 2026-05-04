@@ -8,6 +8,7 @@ import { DashboardSidebar } from "@/components/shared/DashboardSidebar";
 import { MobileNav } from "@/components/shared/MobileNav";
 import { SubNavTabs } from "@/components/shared/SubNavTabs";
 import { VENDOR_CALENDAR_HUB_TABS } from "@/data/hubTabs";
+import { RecurringAvailabilityCard } from "@/components/vendor/RecurringAvailabilityCard";
 import { Calendar } from "@/components/ui/calendar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
@@ -157,6 +158,11 @@ export default function AvailabilityPage() {
             </div>
           ) : (
             <>
+              {/* Recurring rules + buffer time. Sit above the one-off
+                  date picker so vendors set up their default pattern
+                  first, then exception-block specific dates below. */}
+              <RecurringAvailabilityCard vendorId={vendorId} />
+
               <div className="rounded-sm border border-border bg-card p-4 sm:p-6">
                 <Calendar
                   mode="multiple"
