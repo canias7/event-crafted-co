@@ -8,6 +8,8 @@ import {
   Clock,
   Star,
   Package,
+  Users,
+  AlertTriangle,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -39,7 +41,19 @@ interface PackageRow {
   is_active: boolean;
 }
 
-const WINDOW_DAYS = 30;
+interface ViewRow {
+  viewed_at: string;
+}
+
+interface Benchmark {
+  peer_count: number;
+  median_response_hours: number | null;
+  median_booking_rate: number | null;
+  median_inquiries: number | null;
+}
+
+type WindowDays = 30 | 90;
+const DEFAULT_WINDOW: WindowDays = 30;
 
 function pct(num: number, denom: number): string {
   if (!denom) return "—";
@@ -67,12 +81,15 @@ export default function VendorAnalyticsPage() {
   const { user, vendorMemberships } = useAuth();
   const vendorId = vendorMemberships[0]?.vendor_id ?? null;
 
+  const [windowDays, setWindowDays] = useState<WindowDays>(DEFAULT_WINDOW);
   const [loading, setLoading] = useState(true);
-  const [views30d, setViews30d] = useState(0);
+  const [viewRows, setViewRows] = useState<ViewRow[]>([]);
   const [inquiries, setInquiries] = useState<InquiryRow[]>([]);
   const [vendorMessages, setVendorMessages] = useState<MessageRow[]>([]);
   const [reviews, setReviews] = useState<ReviewRow[]>([]);
   const [packages, setPackages] = useState<PackageRow[]>([]);
+  const [vendorCategory, setVendorCategory] = useState<string | null>(null);
+  const [benchmark, setBenchmark] = useState<Benchmark | null>(null);
 
   useEffect(() => {
     if (!user || !vendorId) {
@@ -83,18 +100,19 @@ export default function VendorAnalyticsPage() {
     (async () => {
       setLoading(true);
       const since = new Date();
-      since.setDate(since.getDate() - WINDOW_DAYS);
+      since.setDate(since.getDate() - windowDays);
       const sinceIso = since.toISOString();
 
-      // Views (last 30 days). Headers-only count.
+      // Profile views with timestamps for the daily sparkline.
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const viewsRes = await (supabase as any)
         .from("vendor_profile_views")
-        .select("id", { count: "exact", head: true })
+        .select("viewed_at")
         .eq("vendor_id", vendorId)
-        .gte("viewed_at", sinceIso);
+        .gte("viewed_at", sinceIso)
+        .order("viewed_at", { ascending: true });
 
-      // Inquiries (last 30 days, with status).
+      // Inquiries with status.
       const inqRes = await supabase
         .from("inquiries")
         .select("id, status, created_at")
@@ -132,19 +150,46 @@ export default function VendorAnalyticsPage() {
         .eq("vendor_id", vendorId)
         .order("display_order", { ascending: true });
 
+      // Vendor category (for benchmarks).
+      const profRes = await supabase
+        .from("vendor_profiles")
+        .select("category")
+        .eq("id", vendorId)
+        .maybeSingle();
+      const cat =
+        (profRes.data as { category: string } | null)?.category ?? null;
+
+      // Cross-vendor benchmark for the same category. Best-effort —
+      // requires the get_vendor_benchmarks RPC.
+      let bench: Benchmark | null = null;
+      if (cat) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const benchRes = await (supabase as any).rpc(
+          "get_vendor_benchmarks",
+          { p_category: cat, p_window_days: windowDays },
+        );
+        if (Array.isArray(benchRes.data) && benchRes.data[0]) {
+          bench = benchRes.data[0] as Benchmark;
+        }
+      }
+
       if (cancelled) return;
-      setViews30d((viewsRes as { count: number | null }).count ?? 0);
+      setViewRows((viewsRes.data as ViewRow[] | null) ?? []);
       setInquiries(inqRows);
       setVendorMessages(msgs);
       setReviews((reviewRes.data as ReviewRow[] | null) ?? []);
       setPackages((pkgRes.data as PackageRow[] | null) ?? []);
+      setVendorCategory(cat);
+      setBenchmark(bench);
       setLoading(false);
     })();
     return () => {
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, vendorId]);
+  }, [user, vendorId, windowDays]);
+
+  const totalViews = viewRows.length;
 
   // Funnel metrics
   const stats = useMemo(() => {
@@ -176,6 +221,27 @@ export default function VendorAnalyticsPage() {
     }
     return median(hours);
   }, [vendorMessages, inquiries]);
+
+  // Daily views over the lookback window (for sparkline).
+  const dailyViews = useMemo(() => {
+    const buckets: { day: string; count: number }[] = [];
+    const now = new Date();
+    for (let i = windowDays - 1; i >= 0; i--) {
+      const d = new Date(now);
+      d.setHours(0, 0, 0, 0);
+      d.setDate(d.getDate() - i);
+      buckets.push({ day: d.toISOString().slice(0, 10), count: 0 });
+    }
+    const idxByDay = new Map(buckets.map((b, i) => [b.day, i]));
+    for (const v of viewRows) {
+      const day = new Date(v.viewed_at).toISOString().slice(0, 10);
+      const idx = idxByDay.get(day);
+      if (idx !== undefined) buckets[idx].count++;
+    }
+    return buckets;
+  }, [viewRows, windowDays]);
+
+  const maxDailyViews = Math.max(1, ...dailyViews.map((b) => b.count));
 
   // Inquiries-per-week sparkline (last 8 weeks)
   const weekly = useMemo(() => {
@@ -222,10 +288,30 @@ export default function VendorAnalyticsPage() {
 
       <main id="main-content" className="flex-1 pb-20 lg:pb-0">
         <div className="border-b border-border bg-card px-4 md:px-8 py-4 sticky top-0 z-40">
-          <h1 className="font-display text-xl">Analytics</h1>
-          <p className="text-sm text-muted-foreground">
-            Last {WINDOW_DAYS} days · how hosts are finding and converting on you
-          </p>
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <div>
+              <h1 className="font-display text-xl">Analytics</h1>
+              <p className="text-sm text-muted-foreground">
+                Last {windowDays} days · how hosts are finding and converting on you
+              </p>
+            </div>
+            <div className="inline-flex rounded-full border border-border bg-background overflow-hidden text-xs">
+              {([30, 90] as WindowDays[]).map((d) => (
+                <button
+                  key={d}
+                  type="button"
+                  onClick={() => setWindowDays(d)}
+                  className={`px-3 py-1.5 transition-colors ${
+                    windowDays === d
+                      ? "bg-foreground text-background"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {d}d
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
 
         <div className="p-4 md:p-8 max-w-5xl space-y-8">
@@ -255,7 +341,7 @@ export default function VendorAnalyticsPage() {
                   <FunnelCard
                     icon={Eye}
                     label="Profile views"
-                    value={views30d}
+                    value={totalViews}
                     sub="Anonymous + signed-in"
                     rate={null}
                   />
@@ -263,8 +349,8 @@ export default function VendorAnalyticsPage() {
                     icon={Inbox}
                     label="Inquiries"
                     value={stats.totalInquiries}
-                    sub={`${pct(stats.totalInquiries, views30d)} of views`}
-                    rate={pct(stats.totalInquiries, views30d)}
+                    sub={`${pct(stats.totalInquiries, totalViews)} of views`}
+                    rate={pct(stats.totalInquiries, totalViews)}
                   />
                   <FunnelCard
                     icon={MessageCircle}
@@ -282,6 +368,64 @@ export default function VendorAnalyticsPage() {
                   />
                 </div>
               </section>
+
+              {/* Daily profile views — fine-grained sparkline so vendors
+                  can correlate dips with off-platform changes. */}
+              <section className="bg-card border border-border rounded-sm p-5">
+                <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <Eye className="w-3.5 h-3.5" />
+                    <p className="font-label">Profile views by day</p>
+                  </div>
+                  <p className="text-xs text-muted-foreground tnum">
+                    {totalViews} total · {(totalViews / windowDays).toFixed(1)}/day avg
+                  </p>
+                </div>
+                <div className="flex items-end gap-px h-20">
+                  {dailyViews.map((b, i) => {
+                    const h = (b.count / maxDailyViews) * 100;
+                    return (
+                      <div
+                        key={i}
+                        className="flex-1 flex flex-col items-stretch group relative"
+                        title={`${b.day}: ${b.count} view${b.count === 1 ? "" : "s"}`}
+                      >
+                        <div className="flex-1 flex items-end">
+                          <div
+                            className={`w-full rounded-sm transition-colors ${
+                              b.count > 0
+                                ? "bg-foreground/85 group-hover:bg-foreground"
+                                : "bg-secondary"
+                            }`}
+                            style={{
+                              height: `${Math.max(h, b.count > 0 ? 6 : 3)}%`,
+                            }}
+                          />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+                <div className="flex justify-between text-[10px] text-muted-foreground mt-2 tnum">
+                  <span>{dailyViews[0]?.day.slice(5)}</span>
+                  <span>{dailyViews[dailyViews.length - 1]?.day.slice(5)}</span>
+                </div>
+              </section>
+
+              {/* Benchmark: how this vendor compares to peers in the same category */}
+              {benchmark && benchmark.peer_count > 1 && (
+                <BenchmarkCard
+                  benchmark={benchmark}
+                  category={vendorCategory}
+                  responseHours={responseTime}
+                  bookingRate={
+                    stats.totalInquiries > 0
+                      ? stats.won / stats.totalInquiries
+                      : null
+                  }
+                  inquiries={stats.totalInquiries}
+                />
+              )}
 
               {/* Response time + reviews row */}
               <section className="grid lg:grid-cols-2 gap-4">
@@ -404,6 +548,130 @@ export default function VendorAnalyticsPage() {
       </main>
 
       <MobileNav items={navItems} />
+    </div>
+  );
+}
+
+function BenchmarkCard({
+  benchmark,
+  category,
+  responseHours,
+  bookingRate,
+  inquiries,
+}: {
+  benchmark: Benchmark;
+  category: string | null;
+  responseHours: number;
+  bookingRate: number | null;
+  inquiries: number;
+}) {
+  const slowerThanPeers =
+    Number.isFinite(responseHours) &&
+    benchmark.median_response_hours != null &&
+    responseHours > Number(benchmark.median_response_hours) * 2;
+
+  return (
+    <section className="bg-card border border-border rounded-sm p-5">
+      <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
+        <div className="flex items-center gap-2 text-muted-foreground">
+          <Users className="w-3.5 h-3.5" />
+          <p className="font-label">
+            How you compare {category ? `to other ${category}s` : "to peers"}
+          </p>
+        </div>
+        <p className="text-xs text-muted-foreground tnum">
+          vs {benchmark.peer_count - 1} other vendor
+          {benchmark.peer_count - 1 === 1 ? "" : "s"} in your category
+        </p>
+      </div>
+
+      {slowerThanPeers && (
+        <div className="flex items-start gap-2 text-xs bg-destructive/5 border border-destructive/20 rounded-sm p-3 mb-4">
+          <AlertTriangle className="w-3.5 h-3.5 mt-0.5 text-destructive shrink-0" />
+          <span className="text-destructive/85 leading-relaxed">
+            Your reply time is more than 2× slower than the category median.
+            Hosts often book the first vendor who replies — even a one-line
+            "got your inquiry, full quote tomorrow" message keeps you in the
+            running.
+          </span>
+        </div>
+      )}
+
+      <div className="grid grid-cols-3 gap-3">
+        <BenchmarkMetric
+          label="Reply time"
+          you={formatHours(responseHours)}
+          peers={
+            benchmark.median_response_hours != null
+              ? formatHours(Number(benchmark.median_response_hours))
+              : "—"
+          }
+          better={
+            Number.isFinite(responseHours) &&
+            benchmark.median_response_hours != null
+              ? responseHours <= Number(benchmark.median_response_hours)
+              : null
+          }
+        />
+        <BenchmarkMetric
+          label="Booking rate"
+          you={bookingRate != null ? `${Math.round(bookingRate * 100)}%` : "—"}
+          peers={
+            benchmark.median_booking_rate != null
+              ? `${Math.round(Number(benchmark.median_booking_rate) * 100)}%`
+              : "—"
+          }
+          better={
+            bookingRate != null && benchmark.median_booking_rate != null
+              ? bookingRate >= Number(benchmark.median_booking_rate)
+              : null
+          }
+        />
+        <BenchmarkMetric
+          label="Inquiries"
+          you={inquiries.toString()}
+          peers={(benchmark.median_inquiries ?? 0).toString()}
+          better={
+            benchmark.median_inquiries != null
+              ? inquiries >= benchmark.median_inquiries
+              : null
+          }
+        />
+      </div>
+    </section>
+  );
+}
+
+function BenchmarkMetric({
+  label,
+  you,
+  peers,
+  better,
+}: {
+  label: string;
+  you: string;
+  peers: string;
+  better: boolean | null;
+}) {
+  return (
+    <div>
+      <p className="text-[10px] uppercase tracking-wide text-muted-foreground mb-1.5">
+        {label}
+      </p>
+      <p
+        className={`font-display text-xl tnum mb-0.5 ${
+          better === true
+            ? "text-accent"
+            : better === false
+              ? "text-destructive/80"
+              : ""
+        }`}
+      >
+        {you}
+      </p>
+      <p className="text-[10px] text-muted-foreground tnum">
+        peers: <span className="tnum">{peers}</span>
+      </p>
     </div>
   );
 }
