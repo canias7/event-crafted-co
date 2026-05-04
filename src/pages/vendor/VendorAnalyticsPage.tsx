@@ -104,8 +104,7 @@ export default function VendorAnalyticsPage() {
       const sinceIso = since.toISOString();
 
       // Profile views with timestamps for the daily sparkline.
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const viewsRes = await (supabase as any)
+      const viewsRes = await supabase
         .from("vendor_profile_views")
         .select("viewed_at")
         .eq("vendor_id", vendorId)
@@ -135,16 +134,14 @@ export default function VendorAnalyticsPage() {
       }
 
       // Reviews (all time).
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const reviewRes = await (supabase as any)
+      const reviewRes = await supabase
         .from("reviews")
         .select("rating, created_at")
         .eq("vendor_id", vendorId)
         .order("created_at", { ascending: false });
 
       // Packages.
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const pkgRes = await (supabase as any)
+      const pkgRes = await supabase
         .from("vendor_packages")
         .select("id, name, price_cents, is_active")
         .eq("vendor_id", vendorId)

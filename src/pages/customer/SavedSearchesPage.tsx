@@ -53,8 +53,7 @@ export default function SavedSearchesPage() {
   async function load() {
     if (!user) return;
     setLoading(true);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data } = await (supabase as any)
+    const { data } = await supabase
       .from("saved_searches")
       .select("id, name, filters, notify_new_matches, email_alerts_enabled, created_at")
       .eq("host_id", user.id)

@@ -45,8 +45,7 @@ export default function MoodBoardsPage() {
   async function loadBoards() {
     if (!user) return;
     setLoading(true);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: boardData } = await (supabase as any)
+    const { data: boardData } = await supabase
       .from("mood_boards")
       .select("id, name, description, cover_image_url, share_token, created_at")
       .eq("host_id", user.id)
@@ -56,8 +55,7 @@ export default function MoodBoardsPage() {
 
     if (list.length > 0) {
       // Pull pin counts in a single query
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data: itemRows } = await (supabase as any)
+      const { data: itemRows } = await supabase
         .from("mood_board_items")
         .select("board_id, image_url")
         .in(
@@ -89,8 +87,7 @@ export default function MoodBoardsPage() {
   async function handleCreate() {
     if (!user || !name.trim()) return;
     setCreating(true);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data, error } = await (supabase as any)
+    const { data, error } = await supabase
       .from("mood_boards")
       .insert({
         host_id: user.id,

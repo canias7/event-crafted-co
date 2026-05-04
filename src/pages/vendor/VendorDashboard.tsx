@@ -147,15 +147,13 @@ export default function VendorDashboard() {
         // Insights: views (last 30 days) + reviews aggregate
         const since = new Date();
         since.setDate(since.getDate() - 30);
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const [{ count: viewCount }, { data: reviews }] = await Promise.all([
-          (supabase as any)
+          supabase
             .from("vendor_profile_views")
             .select("id", { count: "exact", head: true })
             .eq("vendor_id", vpRow.id)
             .gte("viewed_at", since.toISOString()),
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          (supabase as any)
+          supabase
             .from("reviews")
             .select("rating")
             .eq("vendor_id", vpRow.id),

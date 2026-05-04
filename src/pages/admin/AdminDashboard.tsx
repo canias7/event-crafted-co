@@ -81,8 +81,7 @@ export default function AdminDashboard() {
           .from("inquiries")
           .select("id", { count: "exact", head: true })
           .eq("status", "new"),
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (supabase as any).from("reviews").select("rating"),
+        supabase.from("reviews").select("rating"),
         supabase
           .from("vendor_profiles")
           .select("id, business_name, category, location, verified_at, created_at")

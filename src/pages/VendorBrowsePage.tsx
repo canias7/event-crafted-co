@@ -117,12 +117,11 @@ export default function VendorBrowsePage() {
       return;
     }
     let cancelled = false;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (supabase as any)
+    supabase
       .from("vendor_unavailable_dates")
       .select("vendor_id")
       .eq("date", dateFilter)
-      .then(({ data }: { data: Array<{ vendor_id: string }> | null }) => {
+      .then(({ data }) => {
         if (cancelled) return;
         setUnavailableIds(new Set((data ?? []).map((r) => r.vendor_id)));
       });

@@ -21,8 +21,7 @@ export default function AppointmentsPage() {
   async function load() {
     if (!user) return;
     setLoading(true);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data } = await (supabase as any)
+    const { data } = await supabase
       .from("appointments")
       .select(
         "id, inquiry_id, vendor_id, host_id, kind, title, location, scheduled_at, duration_minutes, status, proposed_by, notes, meeting_url, meeting_provider, vendor:vendor_profiles!appointments_vendor_id_fkey(business_name)",
@@ -58,13 +57,12 @@ export default function AppointmentsPage() {
   useEffect(() => {
     if (!user) return;
     let cancelled = false;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (supabase as any)
+    supabase
       .from("profiles")
       .select("calendar_feed_token")
       .eq("id", user.id)
       .maybeSingle()
-      .then(({ data }: { data: { calendar_feed_token: string | null } | null }) => {
+      .then(({ data }) => {
         if (cancelled) return;
         setFeedToken(data?.calendar_feed_token ?? null);
       });
