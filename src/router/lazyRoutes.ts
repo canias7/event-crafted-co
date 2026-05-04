@@ -162,6 +162,9 @@ export const MicrositeEditorPage = lazy(importMicrositeEditor);
 const importEventMicrosite = () => import("@/pages/EventMicrositePage");
 export const EventMicrositePage = lazy(importEventMicrosite);
 
+const importEventAlbum = () => import("@/pages/EventAlbumPage");
+export const EventAlbumPage = lazy(importEventAlbum);
+
 // ---------------- Vendor ----------------
 const importVendorDashboard = () => import("@/pages/vendor/VendorDashboard");
 export const VendorDashboard = lazy(importVendorDashboard);
@@ -264,6 +267,7 @@ const ROUTE_IMPORTERS: Array<{ pattern: string; importer: () => Promise<unknown>
   { pattern: "/customer/gifts", importer: importGiftWishes },
   { pattern: "/customer/microsite", importer: importMicrositeEditor },
   { pattern: "/e/:token", importer: importEventMicrosite },
+  { pattern: "/album/:token", importer: importEventAlbum },
   { pattern: "/customer/appointments", importer: importAppointments },
   { pattern: "/customer/favorites", importer: importFavorites },
   { pattern: "/customer/saved-searches", importer: importSavedSearches },

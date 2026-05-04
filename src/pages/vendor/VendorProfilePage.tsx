@@ -15,6 +15,7 @@ import { ImportedReviewsManager } from "@/components/vendor/ImportedReviewsManag
 import { ShowcaseClipsManager } from "@/components/vendor/ShowcaseClipsManager";
 import { VerificationManager } from "@/components/vendor/VerificationManager";
 import { RealEventsManager } from "@/components/vendor/RealEventsManager";
+import { AlbumManager } from "@/components/vendor/AlbumManager";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -508,6 +509,12 @@ export default function VendorProfilePage() {
               </div>
               <div className="mt-12 pt-10 border-t border-border">
                 <RealEventsManager
+                  vendorId={profile.id}
+                  canEdit={canEdit}
+                />
+              </div>
+              <div className="mt-12 pt-10 border-t border-border">
+                <AlbumManager
                   vendorId={profile.id}
                   canEdit={canEdit}
                 />
