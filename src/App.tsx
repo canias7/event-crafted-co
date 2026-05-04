@@ -42,6 +42,8 @@ import {
   StaffingPage,
   VendorLocationsPage,
   VendorCityPage,
+  VendorCityCategoryPage,
+  VendorEventTypeCityPage,
   VendorMapPage,
   VendorQuizPage,
   VendorDetailPage,
@@ -144,6 +146,16 @@ const App = () => (
               <Route path="/vendors/map" element={<VendorMapPage />} />
               <Route path="/vendors/quiz" element={<VendorQuizPage />} />
               <Route path="/vendors/category/:slug" element={<VendorCategoryPage />} />
+              {/* Programmatic SEO: city × category cross-product. */}
+              <Route
+                path="/vendors/:categorySlug/in/:citySlug"
+                element={<VendorCityCategoryPage />}
+              />
+              {/* Programmatic SEO: event-type × city. Multi-event play. */}
+              <Route
+                path="/:eventTypeSlug-vendors/:citySlug"
+                element={<VendorEventTypeCityPage />}
+              />
               <Route path="/vendors/:id" element={<VendorDetailPage />} />
               <Route path="/v/:slug" element={<VendorDetailPage />} />
               <Route path="/inspiration" element={<InspirationPage />} />

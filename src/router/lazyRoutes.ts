@@ -29,6 +29,13 @@ export const VendorLocationsPage = lazy(importVendorLocations);
 const importVendorCity = () => import("@/pages/VendorCityPage");
 export const VendorCityPage = lazy(importVendorCity);
 
+const importVendorCityCategory = () => import("@/pages/VendorCityCategoryPage");
+export const VendorCityCategoryPage = lazy(importVendorCityCategory);
+
+const importVendorEventTypeCity = () =>
+  import("@/pages/VendorEventTypeCityPage");
+export const VendorEventTypeCityPage = lazy(importVendorEventTypeCity);
+
 const importVendorMap = () => import("@/pages/VendorMapPage");
 export const VendorMapPage = lazy(importVendorMap);
 
