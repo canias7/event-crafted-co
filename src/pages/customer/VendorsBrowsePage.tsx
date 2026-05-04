@@ -4,9 +4,11 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DashboardSidebar } from "@/components/shared/DashboardSidebar";
 import { MobileNav } from "@/components/shared/MobileNav";
+import { SubNavTabs } from "@/components/shared/SubNavTabs";
 import { VendorCard } from "@/components/shared/VendorCard";
 import { Skeleton } from "@/components/ui/skeleton";
 import { customerNavItems } from "@/data/navItems";
+import { VENDORS_HUB_TABS } from "@/data/hubTabs";
 import { useVendors, type Vendor } from "@/hooks/useVendors";
 
 const categories = ["All", "Photographer", "Florist", "Catering", "DJ", "Venue", "Makeup Artist"];
@@ -43,11 +45,14 @@ export default function CustomerVendorsBrowsePage() {
       <DashboardSidebar items={customerNavItems} title="Customer" backPath="/" />
 
       <main id="main-content" className="flex-1 pb-20 lg:pb-0">
-        <div className="border-b border-border bg-card px-4 md:px-8 py-4 sticky top-0 z-40">
-          <h1 className="font-display text-xl">Vendors</h1>
-          <p className="text-sm text-muted-foreground">
-            Browse our curated network without leaving your dashboard
-          </p>
+        <div className="border-b border-border bg-card px-4 md:px-8 py-4 sticky top-0 z-40 space-y-3">
+          <div>
+            <h1 className="font-display text-xl">Vendors</h1>
+            <p className="text-sm text-muted-foreground">
+              Browse our curated network without leaving your dashboard
+            </p>
+          </div>
+          <SubNavTabs tabs={VENDORS_HUB_TABS} />
         </div>
 
         <div className="p-4 md:p-8 space-y-6">

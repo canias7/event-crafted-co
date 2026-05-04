@@ -31,6 +31,8 @@ import {
 } from "@/components/ui/dialog";
 import { DashboardSidebar } from "@/components/shared/DashboardSidebar";
 import { MobileNav } from "@/components/shared/MobileNav";
+import { SubNavTabs } from "@/components/shared/SubNavTabs";
+import { PLANNING_HUB_TABS } from "@/data/hubTabs";
 import { customerNavItems as navItems } from "@/data/navItems";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -259,20 +261,23 @@ export default function TasksPage() {
       <DashboardSidebar items={navItems} title="Customer" backPath="/" />
 
       <main id="main-content" className="flex-1 pb-20 lg:pb-0">
-        <div className="border-b border-border bg-card px-4 md:px-8 py-4 flex items-center justify-between sticky top-0 z-40">
-          <div>
-            <h1 className="font-display text-xl">Tasks</h1>
-            <p className="text-sm text-muted-foreground">
-              {pendingCount} pending {pendingCount === 1 ? "task" : "tasks"}
-            </p>
+        <div className="border-b border-border bg-card px-4 md:px-8 py-4 sticky top-0 z-40 space-y-3">
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <div>
+              <h1 className="font-display text-xl">Tasks</h1>
+              <p className="text-sm text-muted-foreground">
+                {pendingCount} pending {pendingCount === 1 ? "task" : "tasks"}
+              </p>
+            </div>
+            <Button
+              onClick={() => setAddOpen(true)}
+              className="rounded-full bg-foreground text-background hover:bg-foreground/90"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              New task
+            </Button>
           </div>
-          <Button
-            onClick={() => setAddOpen(true)}
-            className="rounded-full bg-foreground text-background hover:bg-foreground/90"
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            New task
-          </Button>
+          <SubNavTabs tabs={PLANNING_HUB_TABS} />
         </div>
 
         <div className="p-4 md:p-8 space-y-6 max-w-3xl">

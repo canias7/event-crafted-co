@@ -37,6 +37,8 @@ import {
 } from "@/components/ui/dialog";
 import { DashboardSidebar } from "@/components/shared/DashboardSidebar";
 import { MobileNav } from "@/components/shared/MobileNav";
+import { SubNavTabs } from "@/components/shared/SubNavTabs";
+import { EVENT_HUB_TABS } from "@/data/hubTabs";
 import { customerNavItems as navItems } from "@/data/navItems";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -234,21 +236,24 @@ export default function EventDetailsPage() {
       <DashboardSidebar items={navItems} title="Customer" backPath="/" />
 
       <main id="main-content" className="flex-1 pb-20 lg:pb-0">
-        <div className="border-b border-border bg-card px-4 md:px-8 py-4 sticky top-0 z-40 flex items-center justify-between gap-4">
-          <div>
-            <h1 className="font-display text-xl">Event details</h1>
-            <p className="text-sm text-muted-foreground">
-              Edit the events you're planning
-            </p>
+        <div className="border-b border-border bg-card px-4 md:px-8 py-4 sticky top-0 z-40 space-y-3">
+          <div className="flex items-center justify-between gap-4 flex-wrap">
+            <div>
+              <h1 className="font-display text-xl">Event details</h1>
+              <p className="text-sm text-muted-foreground">
+                Edit the events you're planning
+              </p>
+            </div>
+            <Button
+              onClick={() => setCreateOpen(true)}
+              disabled={!user}
+              className="rounded-full bg-foreground text-background hover:bg-foreground/90"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              New event
+            </Button>
           </div>
-          <Button
-            onClick={() => setCreateOpen(true)}
-            disabled={!user}
-            className="rounded-full bg-foreground text-background hover:bg-foreground/90"
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            New event
-          </Button>
+          <SubNavTabs tabs={EVENT_HUB_TABS} />
         </div>
 
         <div className="p-4 md:p-8 max-w-3xl space-y-8">

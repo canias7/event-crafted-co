@@ -13,6 +13,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { DashboardSidebar } from "@/components/shared/DashboardSidebar";
 import { MobileNav } from "@/components/shared/MobileNav";
+import { SubNavTabs } from "@/components/shared/SubNavTabs";
+import { INQUIRIES_HUB_TABS } from "@/data/hubTabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -180,15 +182,18 @@ export default function InquiryBlastPage() {
       <DashboardSidebar items={navItems} title="Customer" backPath="/" />
 
       <main id="main-content" className="flex-1 pb-20 lg:pb-0">
-        <div className="border-b border-border bg-card px-4 md:px-8 py-4 sticky top-0 z-40">
-          <h1 className="font-display text-xl flex items-center gap-2">
-            Inquiry blast
-            <Sparkles className="w-4 h-4 text-accent" />
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            Send the same inquiry to multiple vendors at once. Each gets
-            their own thread — replies stay separate.
-          </p>
+        <div className="border-b border-border bg-card px-4 md:px-8 py-4 sticky top-0 z-40 space-y-3">
+          <div>
+            <h1 className="font-display text-xl flex items-center gap-2">
+              Inquiry blast
+              <Sparkles className="w-4 h-4 text-accent" />
+            </h1>
+            <p className="text-sm text-muted-foreground">
+              Send the same inquiry to multiple vendors at once. Each gets
+              their own thread — replies stay separate.
+            </p>
+          </div>
+          <SubNavTabs tabs={INQUIRIES_HUB_TABS} />
         </div>
 
         <div className="grid lg:grid-cols-[1fr_360px] gap-6 p-4 md:p-8">

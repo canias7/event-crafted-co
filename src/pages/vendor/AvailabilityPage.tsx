@@ -6,6 +6,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { DashboardSidebar } from "@/components/shared/DashboardSidebar";
 import { MobileNav } from "@/components/shared/MobileNav";
+import { SubNavTabs } from "@/components/shared/SubNavTabs";
+import { VENDOR_CALENDAR_HUB_TABS } from "@/data/hubTabs";
 import { Calendar } from "@/components/ui/calendar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
@@ -131,11 +133,14 @@ export default function AvailabilityPage() {
       <DashboardSidebar items={navItems} title="Vendor Portal" backPath="/" />
 
       <main id="main-content" className="flex-1 pb-20 lg:pb-0">
-        <div className="border-b border-border bg-card px-4 md:px-8 py-4 sticky top-0 z-40">
-          <h1 className="font-display text-xl">Availability</h1>
-          <p className="text-sm text-muted-foreground">
-            Block dates you're not taking events
-          </p>
+        <div className="border-b border-border bg-card px-4 md:px-8 py-4 sticky top-0 z-40 space-y-3">
+          <div>
+            <h1 className="font-display text-xl">Availability</h1>
+            <p className="text-sm text-muted-foreground">
+              Block dates you're not taking events
+            </p>
+          </div>
+          <SubNavTabs tabs={VENDOR_CALENDAR_HUB_TABS} />
         </div>
 
         <div className="p-4 md:p-8 max-w-3xl space-y-6">

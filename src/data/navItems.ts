@@ -8,21 +8,15 @@ import {
   CheckSquare,
   ListTodo,
   CreditCard,
-  Heart,
   Image,
   Inbox,
   User,
   Users,
-  Clock,
   Gift,
   Settings,
   TrendingUp,
   ShieldCheck,
-  Send,
-  Sparkles,
-  Globe,
   LifeBuoy,
-  Briefcase,
   History,
   type LucideIcon,
 } from "lucide-react";
@@ -33,29 +27,36 @@ export interface NavItem {
   icon: LucideIcon;
 }
 
+// Sidebar layout philosophy: keep the main nav at ≤10 items so the
+// sidebar fits in one viewport and the most-used surfaces are one
+// click away. Related pages get reached via in-page <SubNavTabs>
+// strips on the destination, not by adding more sidebar entries.
+//
+// Direct URLs to the "hidden" pages (e.g. /customer/seating) still
+// resolve — we just don't repeat them in the sidebar.
+
 export const customerNavItems: NavItem[] = [
   { label: "Dashboard", path: "/customer/dashboard", icon: LayoutDashboard },
+  // Vendors hub — sub-tabs: Browse, Favorites, Saved searches
   { label: "Vendors", path: "/customer/vendors", icon: Store },
+  // Inquiries hub — sub-tabs: Single, Multi-vendor blast
   { label: "Inquiries", path: "/customer/inquiries", icon: MessageSquare },
-  { label: "Messages", path: "/customer/messages", icon: MessageSquare },
-  { label: "Guests", path: "/customer/guests", icon: User },
-  { label: "Seating", path: "/customer/seating", icon: Users },
+  { label: "Messages", path: "/customer/messages", icon: Mail },
   { label: "Appointments", path: "/customer/appointments", icon: CalendarDays },
-  { label: "Event Details", path: "/customer/event", icon: FileText },
-  { label: "Day-of Timeline", path: "/customer/timeline", icon: Clock },
-  { label: "Invitations", path: "/customer/invitations", icon: Mail },
-  { label: "Microsite", path: "/customer/microsite", icon: Globe },
-  { label: "Checklist", path: "/customer/checklist", icon: CheckSquare },
-  { label: "Tasks", path: "/customer/tasks", icon: ListTodo },
+  // Event hub — sub-tabs: Details, Day-of Timeline, Microsite
+  { label: "Event", path: "/customer/event", icon: FileText },
+  // Guests hub — sub-tabs: Guests, Seating
+  { label: "Guests", path: "/customer/guests", icon: User },
+  // Planning hub — sub-tabs: Tasks, Checklist, Planning Team, Planner workspace
+  { label: "Planning", path: "/customer/tasks", icon: ListTodo },
+  // Inspiration hub — sub-tabs: Mood Boards, Invitations
+  { label: "Inspiration", path: "/customer/moodboards", icon: Image },
+  // Gifts hub — sub-tabs: Registry, Group gifts
+  { label: "Gifts", path: "/customer/registry", icon: Gift },
+];
+
+export const customerNavBottomItems: NavItem[] = [
   { label: "Payments", path: "/customer/payments", icon: CreditCard },
-  { label: "Favorites", path: "/customer/favorites", icon: Heart },
-  { label: "Saved searches", path: "/customer/saved-searches", icon: Store },
-  { label: "Mood Boards", path: "/customer/moodboards", icon: Image },
-  { label: "Registry", path: "/customer/registry", icon: Gift },
-  { label: "Group gifts", path: "/customer/gifts", icon: Sparkles },
-  { label: "Multi-vendor blast", path: "/customer/inquiry-blast", icon: Send },
-  { label: "Planning Team", path: "/customer/planning-team", icon: Users },
-  { label: "Planner workspace", path: "/planner", icon: Briefcase },
   { label: "Support", path: "/support", icon: LifeBuoy },
   { label: "Settings", path: "/settings", icon: Settings },
 ];
@@ -63,18 +64,33 @@ export const customerNavItems: NavItem[] = [
 export const vendorNavItems: NavItem[] = [
   { label: "Dashboard", path: "/vendor/dashboard", icon: LayoutDashboard },
   { label: "Inbox", path: "/vendor/inbox", icon: Inbox },
-  { label: "Messages", path: "/vendor/messages", icon: MessageSquare },
+  { label: "Messages", path: "/vendor/messages", icon: Mail },
   { label: "Analytics", path: "/vendor/analytics", icon: TrendingUp },
-  { label: "Templates", path: "/vendor/templates", icon: FileText },
+  // Calendar hub — sub-tabs: Appointments, Availability
+  { label: "Calendar", path: "/vendor/appointments", icon: CalendarDays },
+  // Profile aggregates packages, portfolio, showcase clips, real events,
+  // verifications, imported reviews — already a single page.
   { label: "Profile", path: "/vendor/profile", icon: User },
+  // Library hub — sub-tabs: Message templates, Contract templates
+  { label: "Library", path: "/vendor/templates", icon: FileText },
   { label: "Team", path: "/vendor/team", icon: Users },
-  { label: "Appointments", path: "/vendor/appointments", icon: CalendarDays },
-  { label: "Availability", path: "/vendor/availability", icon: Clock },
   { label: "Payments", path: "/vendor/payments", icon: CreditCard },
-  { label: "Contracts", path: "/vendor/contracts", icon: FileText },
+];
+
+export const vendorNavBottomItems: NavItem[] = [
   { label: "Support", path: "/support", icon: LifeBuoy },
   { label: "Settings", path: "/settings", icon: Settings },
 ];
+
+// Lookup map so DashboardSidebar can find the bottom items without
+// every page having to pass them explicitly. Keyed by reference on
+// the main nav array, so importing customerNavItems automatically
+// gives you the bottom group too.
+const NAV_BOTTOMS = new WeakMap<NavItem[], NavItem[]>();
+
+export function getBottomNav(main: NavItem[]): NavItem[] | undefined {
+  return NAV_BOTTOMS.get(main);
+}
 
 export const adminNavItems: NavItem[] = [
   { label: "Overview", path: "/admin/dashboard", icon: LayoutDashboard },
@@ -87,3 +103,6 @@ export const adminNavItems: NavItem[] = [
   { label: "Audit log", path: "/admin/audit", icon: History },
   { label: "Settings", path: "/settings", icon: Settings },
 ];
+
+NAV_BOTTOMS.set(customerNavItems, customerNavBottomItems);
+NAV_BOTTOMS.set(vendorNavItems, vendorNavBottomItems);

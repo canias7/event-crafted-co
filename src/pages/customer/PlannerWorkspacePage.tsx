@@ -16,6 +16,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { DashboardSidebar } from "@/components/shared/DashboardSidebar";
 import { MobileNav } from "@/components/shared/MobileNav";
 import { PrefetchLink as Link } from "@/components/shared/PrefetchLink";
+import { SubNavTabs } from "@/components/shared/SubNavTabs";
+import { PLANNING_HUB_TABS } from "@/data/hubTabs";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { customerNavItems as navItems } from "@/data/navItems";
@@ -101,11 +103,14 @@ export default function PlannerWorkspacePage() {
     <div className="flex min-h-screen bg-background">
       <DashboardSidebar items={navItems} title="Customer" backPath="/" />
       <main id="main-content" className="flex-1 pb-20 lg:pb-0">
-        <div className="border-b border-border bg-card px-4 md:px-8 py-4 sticky top-0 z-40">
-          <h1 className="font-display text-xl">Planner workspace</h1>
-          <p className="text-sm text-muted-foreground">
-            All client events you're collaborating on, in one place
-          </p>
+        <div className="border-b border-border bg-card px-4 md:px-8 py-4 sticky top-0 z-40 space-y-3">
+          <div>
+            <h1 className="font-display text-xl">Planner workspace</h1>
+            <p className="text-sm text-muted-foreground">
+              All client events you're collaborating on, in one place
+            </p>
+          </div>
+          <SubNavTabs tabs={PLANNING_HUB_TABS} />
         </div>
 
         <div className="p-4 md:p-8 max-w-5xl space-y-6">

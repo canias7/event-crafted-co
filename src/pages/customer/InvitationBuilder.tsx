@@ -8,6 +8,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { DashboardSidebar } from "@/components/shared/DashboardSidebar";
 import { MobileNav } from "@/components/shared/MobileNav";
+import { SubNavTabs } from "@/components/shared/SubNavTabs";
+import { INSPIRATION_HUB_TABS } from "@/data/hubTabs";
 import { customerNavItems as navItems } from "@/data/navItems";
 
 const templates = [
@@ -33,22 +35,25 @@ export default function InvitationBuilder() {
       <DashboardSidebar items={navItems} title="Customer" backPath="/" />
 
       <main id="main-content" className="flex-1 pb-20 lg:pb-0">
-        <div className="border-b border-border bg-card px-4 md:px-8 py-4 flex items-center justify-between sticky top-0 z-40">
-          <div>
-            <h1 className="font-display text-xl">Invitation Builder</h1>
-            <p className="text-sm text-muted-foreground">Design your perfect invitation</p>
+        <div className="border-b border-border bg-card px-4 md:px-8 py-4 sticky top-0 z-40 space-y-3">
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <div>
+              <h1 className="font-display text-xl">Invitation Builder</h1>
+              <p className="text-sm text-muted-foreground">Design your perfect invitation</p>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" className="h-9">
+                <Copy className="w-3.5 h-3.5 mr-1.5" /> Duplicate
+              </Button>
+              <Button variant="outline" size="sm" className="h-9">
+                <Download className="w-3.5 h-3.5 mr-1.5" /> Export
+              </Button>
+              <Button size="sm" className="h-9">
+                <Send className="w-3.5 h-3.5 mr-1.5" /> Share
+              </Button>
+            </div>
           </div>
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" className="h-9">
-              <Copy className="w-3.5 h-3.5 mr-1.5" /> Duplicate
-            </Button>
-            <Button variant="outline" size="sm" className="h-9">
-              <Download className="w-3.5 h-3.5 mr-1.5" /> Export
-            </Button>
-            <Button size="sm" className="h-9">
-              <Send className="w-3.5 h-3.5 mr-1.5" /> Share
-            </Button>
-          </div>
+          <SubNavTabs tabs={INSPIRATION_HUB_TABS} />
         </div>
 
         <div className="flex flex-col lg:flex-row min-h-[calc(100vh-65px)]">

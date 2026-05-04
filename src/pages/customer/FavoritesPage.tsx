@@ -4,6 +4,8 @@ import { Heart, ArrowRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { DashboardSidebar } from "@/components/shared/DashboardSidebar";
+import { SubNavTabs } from "@/components/shared/SubNavTabs";
+import { VENDORS_HUB_TABS } from "@/data/hubTabs";
 import { MobileNav } from "@/components/shared/MobileNav";
 import { VendorCard } from "@/components/shared/VendorCard";
 import { Button } from "@/components/ui/button";
@@ -95,13 +97,16 @@ export default function FavoritesPage() {
       <DashboardSidebar items={navItems} title="Customer" backPath="/" />
 
       <main id="main-content" className="flex-1 pb-20 lg:pb-0">
-        <div className="border-b border-border bg-card px-4 md:px-8 py-4 sticky top-0 z-40">
-          <h1 className="font-display text-xl">Saved vendors</h1>
-          <p className="text-sm text-muted-foreground">
-            {savedIds.size === 0
-              ? "Vendors you've saved while browsing will appear here"
-              : `${savedIds.size} ${savedIds.size === 1 ? "vendor" : "vendors"} saved`}
-          </p>
+        <div className="border-b border-border bg-card px-4 md:px-8 py-4 sticky top-0 z-40 space-y-3">
+          <div>
+            <h1 className="font-display text-xl">Saved vendors</h1>
+            <p className="text-sm text-muted-foreground">
+              {savedIds.size === 0
+                ? "Vendors you've saved while browsing will appear here"
+                : `${savedIds.size} ${savedIds.size === 1 ? "vendor" : "vendors"} saved`}
+            </p>
+          </div>
+          <SubNavTabs tabs={VENDORS_HUB_TABS} />
         </div>
 
         <div className="p-4 md:p-8">

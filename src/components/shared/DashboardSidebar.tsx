@@ -2,6 +2,7 @@ import { useLocation } from "react-router-dom";
 import { PrefetchLink as Link } from "@/components/shared/PrefetchLink";
 import { LucideIcon, Search } from "lucide-react";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
+import { getBottomNav } from "@/data/navItems";
 
 interface NavItem {
   label: string;
@@ -11,12 +12,43 @@ interface NavItem {
 
 interface DashboardSidebarProps {
   items: NavItem[];
+  /** Optional override; otherwise we look up the bottom group via the
+   *  WeakMap registry in navItems.ts (one map entry per side). */
+  bottomItems?: NavItem[];
   title: string;
   backPath?: string;
 }
 
-export function DashboardSidebar({ items, title, backPath = "/" }: DashboardSidebarProps) {
+export function DashboardSidebar({
+  items,
+  bottomItems,
+  title,
+  backPath = "/",
+}: DashboardSidebarProps) {
+  const resolvedBottom = bottomItems ?? getBottomNav(items);
   const location = useLocation();
+
+  function renderItem(item: NavItem) {
+    // Highlight the parent hub when sub-pages are open. The "starts with"
+    // check covers e.g. /customer/event/details under /customer/event.
+    const isActive =
+      location.pathname === item.path ||
+      location.pathname.startsWith(`${item.path}/`);
+    return (
+      <Link key={item.path} to={item.path} className="relative block">
+        <div
+          className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors duration-200 ${
+            isActive
+              ? "text-foreground bg-secondary"
+              : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
+          }`}
+        >
+          <item.icon className="w-4 h-4" />
+          {item.label}
+        </div>
+      </Link>
+    );
+  }
 
   return (
     <aside className="hidden lg:flex flex-col w-64 border-r border-border bg-card min-h-screen sticky top-0">
@@ -50,29 +82,12 @@ export function DashboardSidebar({ items, title, backPath = "/" }: DashboardSide
           </kbd>
         </button>
       </div>
-      <nav className="flex-1 p-3">
-        {items.map((item) => {
-          const isActive = location.pathname === item.path;
-          return (
-            <Link
-              key={item.path}
-              to={item.path}
-              className="relative block"
-            >
-              <div
-                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors duration-200 ${
-                  isActive
-                    ? "text-foreground bg-secondary"
-                    : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
-                }`}
-              >
-                <item.icon className="w-4 h-4" />
-                {item.label}
-              </div>
-            </Link>
-          );
-        })}
-      </nav>
+      <nav className="flex-1 p-3">{items.map(renderItem)}</nav>
+      {resolvedBottom && resolvedBottom.length > 0 && (
+        <div className="p-3 border-t border-border">
+          {resolvedBottom.map(renderItem)}
+        </div>
+      )}
     </aside>
   );
 }

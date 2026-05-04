@@ -307,6 +307,7 @@ const ROUTE_IMPORTERS: Array<{ pattern: string; importer: () => Promise<unknown>
   { pattern: "/vendor/analytics", importer: importVendorAnalytics },
   { pattern: "/vendor/appointments", importer: importVendorAppointments },
   { pattern: "/vendor/availability", importer: importAvailability },
+  { pattern: "/vendor/payments", importer: importComingSoon },
   { pattern: "/vendor/contracts", importer: importVendorContracts },
   { pattern: "/vendor/messages", importer: importVendorMessages },
   { pattern: "/vendor/inbox/:inquiryId", importer: importInquiryDetail },

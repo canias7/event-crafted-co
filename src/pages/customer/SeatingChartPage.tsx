@@ -15,6 +15,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { DashboardSidebar } from "@/components/shared/DashboardSidebar";
 import { MobileNav } from "@/components/shared/MobileNav";
+import { SubNavTabs } from "@/components/shared/SubNavTabs";
+import { GUESTS_HUB_TABS } from "@/data/hubTabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -192,7 +194,7 @@ export default function SeatingChartPage() {
       <DashboardSidebar items={navItems} title="Customer" backPath="/" />
 
       <main id="main-content" className="flex-1 pb-20 lg:pb-0">
-        <div className="border-b border-border bg-card px-4 md:px-8 py-4 sticky top-0 z-40">
+        <div className="border-b border-border bg-card px-4 md:px-8 py-4 sticky top-0 z-40 space-y-3">
           <div className="flex items-center justify-between flex-wrap gap-3">
             <div>
               <h1 className="font-display text-xl">Seating chart</h1>
@@ -235,6 +237,7 @@ export default function SeatingChartPage() {
               </Button>
             </div>
           </div>
+          <SubNavTabs tabs={GUESTS_HUB_TABS} />
         </div>
 
         <div className="p-4 md:p-8">

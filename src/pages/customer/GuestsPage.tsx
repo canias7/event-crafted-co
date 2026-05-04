@@ -33,6 +33,8 @@ import {
 } from "@/components/ui/checkbox";
 import { DashboardSidebar } from "@/components/shared/DashboardSidebar";
 import { MobileNav } from "@/components/shared/MobileNav";
+import { SubNavTabs } from "@/components/shared/SubNavTabs";
+import { GUESTS_HUB_TABS } from "@/data/hubTabs";
 import { customerNavItems as navItems } from "@/data/navItems";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -166,7 +168,8 @@ export default function GuestsPage() {
       <DashboardSidebar items={navItems} title="Customer" backPath="/" />
 
       <main id="main-content" className="flex-1 pb-20 lg:pb-0">
-        <div className="border-b border-border bg-card px-4 md:px-8 py-4 flex items-center justify-between sticky top-0 z-40">
+        <div className="border-b border-border bg-card px-4 md:px-8 py-4 sticky top-0 z-40 space-y-3">
+          <div className="flex items-center justify-between gap-3 flex-wrap">
           <div>
             <h1 className="font-display text-xl">Guests</h1>
             <p className="text-sm text-muted-foreground">
@@ -208,6 +211,8 @@ export default function GuestsPage() {
               Add guest
             </Button>
           </div>
+          </div>
+          <SubNavTabs tabs={GUESTS_HUB_TABS} />
         </div>
 
         <div className="p-4 md:p-8 space-y-6">
