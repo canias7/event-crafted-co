@@ -16,6 +16,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { BudgetBenchmarkBadge } from "@/components/budget/BudgetBenchmarkBadge";
 import {
   Dialog,
   DialogContent,
@@ -91,7 +92,7 @@ const statusStyles: Record<string, string> = {
 };
 
 export default function PaymentsPage() {
-  const { user } = useAuth();
+  const { user, activeEvent } = useAuth();
   const [items, setItems] = useState<BudgetRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [addOpen, setAddOpen] = useState(false);
@@ -464,6 +465,12 @@ function AddBudgetItemDialog({
                 ))}
               </SelectContent>
             </Select>
+            {category && (
+              <BudgetBenchmarkBadge
+                category={category}
+                location={activeEvent?.event_location ?? null}
+              />
+            )}
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
