@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useRealtime } from "@/lib/realtime";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import {
   ArrowLeft,
@@ -175,37 +176,26 @@ export default function InquiryDetailPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [inquiryId]);
 
-  // Realtime: re-fetch on messages or inquiry status change.
-  useEffect(() => {
-    if (!inquiryId) return;
-    const channel = supabase
-      .channel(`vendor-inquiry-${inquiryId}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "messages",
-          filter: `inquiry_id=eq.${inquiryId}`,
-        },
-        () => load(),
-      )
-      .on(
-        "postgres_changes",
-        {
-          event: "UPDATE",
-          schema: "public",
-          table: "inquiries",
-          filter: `id=eq.${inquiryId}`,
-        },
-        () => load(),
-      )
-      .subscribe();
-    return () => {
-      supabase.removeChannel(channel);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [inquiryId]);
+  // Realtime: re-fetch on messages or inquiry status change. Two
+  // listeners on the shared user-scoped channel — the provider de-dupes
+  // by table+event so this stays cheap.
+  const messagesConfig = useMemo(
+    () =>
+      inquiryId
+        ? { table: "messages", filter: `inquiry_id=eq.${inquiryId}` }
+        : null,
+    [inquiryId],
+  );
+  useRealtime(messagesConfig, () => load());
+
+  const inquiryConfig = useMemo(
+    () =>
+      inquiryId
+        ? { table: "inquiries", event: "UPDATE" as const, filter: `id=eq.${inquiryId}` }
+        : null,
+    [inquiryId],
+  );
+  useRealtime(inquiryConfig, () => load());
 
   async function transitionToReplied() {
     if (!inquiry || !inquiryId) return;

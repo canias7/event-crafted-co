@@ -3,6 +3,7 @@ import { Link, useSearchParams } from "react-router-dom";
 import { Send, Loader2, MessageSquare } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { useRealtime } from "@/lib/realtime";
 import { useAuth } from "@/hooks/useAuth";
 import { DashboardSidebar } from "@/components/shared/DashboardSidebar";
 import { MobileNav } from "@/components/shared/MobileNav";
@@ -90,24 +91,24 @@ export default function VendorPartnersPage() {
       return;
     }
     loadMessages(activeThreadId);
-
-    const channel = supabase
-      .channel(`partner-msgs-${activeThreadId}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "vendor_partner_messages",
-          filter: `thread_id=eq.${activeThreadId}`,
-        },
-        () => loadMessages(activeThreadId),
-      )
-      .subscribe();
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeThreadId]);
+
+  // Realtime: live-update the open partner thread via shared channel.
+  const partnerMsgConfig = useMemo(
+    () =>
+      activeThreadId
+        ? {
+            table: "vendor_partner_messages",
+            event: "INSERT" as const,
+            filter: `thread_id=eq.${activeThreadId}`,
+          }
+        : null,
+    [activeThreadId],
+  );
+  useRealtime(partnerMsgConfig, () => {
+    if (activeThreadId) loadMessages(activeThreadId);
+  });
 
   async function send() {
     if (!activeThreadId || !composer.trim() || !myVendorId) return;

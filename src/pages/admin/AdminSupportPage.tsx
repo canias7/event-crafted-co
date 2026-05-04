@@ -10,6 +10,7 @@ import {
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useRealtime } from "@/lib/realtime";
 import { DashboardSidebar } from "@/components/shared/DashboardSidebar";
 import { MobileNav } from "@/components/shared/MobileNav";
 import { Button } from "@/components/ui/button";
@@ -222,24 +223,19 @@ function AdminTicketThread({
 
   useEffect(() => {
     loadMessages();
-    const channel = supabase
-      .channel(`admin-support-${ticket.id}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "support_messages",
-          filter: `ticket_id=eq.${ticket.id}`,
-        },
-        () => loadMessages(),
-      )
-      .subscribe();
-    return () => {
-      supabase.removeChannel(channel);
-    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ticket.id]);
+
+  // Realtime via shared user-scoped channel.
+  const realtimeConfig = useMemo(
+    () => ({
+      table: "support_messages",
+      event: "INSERT" as const,
+      filter: `ticket_id=eq.${ticket.id}`,
+    }),
+    [ticket.id],
+  );
+  useRealtime(realtimeConfig, () => loadMessages());
 
   async function send(e: React.FormEvent) {
     e.preventDefault();

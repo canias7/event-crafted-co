@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useRealtime } from "@/lib/realtime";
 import { Link, useParams } from "react-router-dom";
 import { ArrowLeft, Send, Loader2, Star, Sparkles, Paperclip, X, CalendarDays } from "lucide-react";
 import { toast } from "sonner";
@@ -192,36 +193,24 @@ export default function HostInquiryDetailPage() {
   }, [inquiryId, user]);
 
   // Live updates: re-fetch when this inquiry's messages or status change.
-  useEffect(() => {
-    if (!inquiryId) return;
-    const channel = supabase
-      .channel(`host-inquiry-${inquiryId}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "messages",
-          filter: `inquiry_id=eq.${inquiryId}`,
-        },
-        () => load(),
-      )
-      .on(
-        "postgres_changes",
-        {
-          event: "UPDATE",
-          schema: "public",
-          table: "inquiries",
-          filter: `id=eq.${inquiryId}`,
-        },
-        () => load(),
-      )
-      .subscribe();
-    return () => {
-      supabase.removeChannel(channel);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [inquiryId]);
+  // Routed through the shared user-scoped channel via useRealtime.
+  const messagesConfig = useMemo(
+    () =>
+      inquiryId
+        ? { table: "messages", filter: `inquiry_id=eq.${inquiryId}` }
+        : null,
+    [inquiryId],
+  );
+  useRealtime(messagesConfig, () => load());
+
+  const inquiryConfig = useMemo(
+    () =>
+      inquiryId
+        ? { table: "inquiries", event: "UPDATE" as const, filter: `id=eq.${inquiryId}` }
+        : null,
+    [inquiryId],
+  );
+  useRealtime(inquiryConfig, () => load());
 
   function pickFiles(list: FileList) {
     const accepted: File[] = [];

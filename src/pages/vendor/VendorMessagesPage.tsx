@@ -3,6 +3,7 @@ import { Link, useSearchParams } from "react-router-dom";
 import { Send, Loader2, MessageSquare, FileText } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { useRealtime } from "@/lib/realtime";
 import { useAuth } from "@/hooks/useAuth";
 import { DashboardSidebar } from "@/components/shared/DashboardSidebar";
 import { MobileNav } from "@/components/shared/MobileNav";
@@ -88,29 +89,19 @@ export default function VendorMessagesPage() {
     }
   }, [activeThreadId]);
 
-  useEffect(() => {
-    if (!vendorId) return;
-    const channel = supabase
-      .channel(`vendor-dms-${vendorId}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "direct_messages",
-        },
-        (payload) => {
-          const msg = payload.new as DirectMessage & { thread_id: string };
-          if (msg.thread_id === activeThreadId) loadMessages(activeThreadId);
-          loadThreads();
-        },
-      )
-      .subscribe();
-    return () => {
-      supabase.removeChannel(channel);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [vendorId, activeThreadId]);
+  // Realtime via shared user-scoped channel.
+  const realtimeConfig = useMemo(
+    () =>
+      vendorId
+        ? { table: "direct_messages", event: "INSERT" as const }
+        : null,
+    [vendorId],
+  );
+  useRealtime(realtimeConfig, (payload) => {
+    const msg = payload.new as DirectMessage & { thread_id: string };
+    if (msg.thread_id === activeThreadId) loadMessages(activeThreadId);
+    loadThreads();
+  });
 
   const activeThread = useMemo(
     () => threads.find((t) => t.id === activeThreadId) ?? null,
