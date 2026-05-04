@@ -43,6 +43,7 @@ import {
   VendorFaqsPublic,
 } from "@/components/vendor/VendorFaqsManager";
 import { SocialEmbedCard } from "@/components/vendor/SocialEmbedCard";
+import { VendorBundlesPublic } from "@/components/vendor/VendorBundlesPublic";
 import {
   VendorReviewsList,
   type RealReview,
@@ -824,8 +825,14 @@ export default function VendorDetailPage() {
                 </div>
               </div>
 
+              {/* Multi-vendor bundles owned by this vendor (real DB only). */}
+              {vendor.isReal && <VendorBundlesPublic vendorId={vendor.id} />}
+
               {/* Showcase reels — vertical clips, autoplay-on-view */}
               {vendor.isReal && <ShowcaseStrip vendorId={vendor.id} />}
+
+              {/* Multi-vendor bundles — only for real DB vendors. */}
+              {vendor.isReal && <VendorBundlesPublic vendorId={vendor.id} />}
 
               {/* Reviews */}
               <VendorReviewsList

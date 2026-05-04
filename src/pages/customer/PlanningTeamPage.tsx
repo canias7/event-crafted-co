@@ -17,6 +17,7 @@ import { DashboardSidebar } from "@/components/shared/DashboardSidebar";
 import { MobileNav } from "@/components/shared/MobileNav";
 import { SubNavTabs } from "@/components/shared/SubNavTabs";
 import { PartyInviteManager } from "@/components/customer/PartyInviteManager";
+import { PlanningChannelCard } from "@/components/customer/PlanningChannelCard";
 import { PLANNING_HUB_TABS } from "@/data/hubTabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -343,6 +344,17 @@ export default function PlanningTeamPage() {
         </div>
 
         <div className="p-4 md:p-8 max-w-3xl space-y-10">
+          {/* Group planning channel — Slack-for-your-event. Sits at
+              the top of the page as the primary collaborative surface;
+              roster + invites continue below. */}
+          {user && (
+            <div>
+              <p className="font-label text-muted-foreground mb-3">
+                Group channel
+              </p>
+              <PlanningChannelCard hostId={user.id} />
+            </div>
+          )}
           {loading ? (
             <div className="text-center text-muted-foreground py-12">Loading…</div>
           ) : (
