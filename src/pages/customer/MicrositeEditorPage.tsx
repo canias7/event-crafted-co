@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { transformedImageUrl } from "@/lib/storage";
 import { useAuth } from "@/hooks/useAuth";
 import { DashboardSidebar } from "@/components/shared/DashboardSidebar";
 import { MobileNav } from "@/components/shared/MobileNav";
@@ -76,9 +77,11 @@ const EVENT_DEFAULTS: Record<string, { title: string; subtitle: string }> = {
   other: { title: "Our event", subtitle: "is almost here" },
 };
 
-function publicUrl(path: string) {
-  const { data } = supabase.storage.from(BUCKET).getPublicUrl(path);
-  return data.publicUrl;
+function publicUrl(
+  path: string,
+  opts?: { width?: number; quality?: number },
+) {
+  return transformedImageUrl(BUCKET, path, opts);
 }
 
 export default function MicrositeEditorPage() {
@@ -391,7 +394,7 @@ export default function MicrositeEditorPage() {
             <div className="mt-1.5 aspect-[16/9] rounded-sm bg-muted overflow-hidden relative">
               {event.microsite_cover_path ? (
                 <img
-                  src={publicUrl(event.microsite_cover_path)}
+                  src={publicUrl(event.microsite_cover_path, { width: 1200 })}
                   alt="Cover"
                   className="w-full h-full object-cover"
                 />
@@ -594,7 +597,7 @@ export default function MicrositeEditorPage() {
                     className="aspect-square rounded-sm overflow-hidden bg-muted relative group"
                   >
                     <img
-                      src={publicUrl(p.storage_path)}
+                      src={publicUrl(p.storage_path, { width: 400 })}
                       alt={p.caption ?? ""}
                       loading="lazy"
                       className="w-full h-full object-cover"

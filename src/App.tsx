@@ -12,6 +12,7 @@ import CheckEmailPage from "./pages/auth/CheckEmailPage";
 import ForgotPasswordPage from "./pages/auth/ForgotPasswordPage";
 import ResetPasswordPage from "./pages/auth/ResetPasswordPage";
 import { AuthProvider } from "./hooks/useAuth";
+import { RealtimeProvider } from "./lib/realtime";
 import { ThemeProvider } from "./hooks/useTheme";
 import { RequireRole } from "./components/auth/RequireRole";
 import { CookieBanner } from "./components/CookieBanner";
@@ -117,6 +118,7 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <AuthProvider>
+          <RealtimeProvider>
           <SkipLink />
           <ErrorBoundary>
           <Suspense fallback={<RouteFallback />}>
@@ -224,6 +226,7 @@ const App = () => (
           <OnboardingTour />
           <CommandPalette />
           <CookieBanner />
+          </RealtimeProvider>
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>

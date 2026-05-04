@@ -10,6 +10,7 @@ import {
   Heart,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { transformedImageUrl } from "@/lib/storage";
 import { Footer } from "@/components/public/Footer";
 import { useDocumentMeta } from "@/hooks/useDocumentMeta";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -118,9 +119,11 @@ const THEMES: Record<
   },
 };
 
-function publicUrl(path: string) {
-  const { data } = supabase.storage.from(BUCKET).getPublicUrl(path);
-  return data.publicUrl;
+function publicUrl(
+  path: string,
+  opts?: { width?: number; quality?: number },
+) {
+  return transformedImageUrl(BUCKET, path, opts);
 }
 
 function fmtMoney(cents: number) {
@@ -193,7 +196,7 @@ export default function EventMicrositePage() {
       data?.event.microsite_story?.slice(0, 160) ??
       "An event hosted on Vendora.",
     image: data?.event.microsite_cover_path
-      ? publicUrl(data.event.microsite_cover_path)
+      ? publicUrl(data.event.microsite_cover_path, { width: 1200 })
       : undefined,
     type: "article",
   });
@@ -242,7 +245,7 @@ export default function EventMicrositePage() {
       <section className="relative h-[80svh] min-h-[560px] w-full overflow-hidden">
         {ev.microsite_cover_path ? (
           <img
-            src={publicUrl(ev.microsite_cover_path)}
+            src={publicUrl(ev.microsite_cover_path, { width: 1600 })}
             alt=""
             className="absolute inset-0 w-full h-full object-cover"
           />
@@ -576,7 +579,7 @@ export default function EventMicrositePage() {
                 style={{ backgroundColor: `hsl(${theme.muted})` }}
               >
                 <img
-                  src={publicUrl(p.storage_path)}
+                  src={publicUrl(p.storage_path, { width: 800 })}
                   alt={p.caption ?? ""}
                   loading={i < 4 ? "eager" : "lazy"}
                   className="w-full h-full object-cover hover:scale-[1.03] transition-transform duration-700"

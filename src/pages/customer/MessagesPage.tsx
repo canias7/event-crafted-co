@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useRealtime } from "@/lib/realtime";
 import { Link, useSearchParams } from "react-router-dom";
 import { Send, Loader2, MessageSquare, ArrowRight } from "lucide-react";
 import { toast } from "sonner";
@@ -94,30 +95,21 @@ export default function MessagesPage() {
     }
   }, [activeThreadId]);
 
-  // Realtime: live-update active thread + thread list ordering
-  useEffect(() => {
-    if (!user) return;
-    const channel = supabase
-      .channel(`host-dms-${user.id}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "direct_messages",
-        },
-        (payload) => {
-          const msg = payload.new as DirectMessage & { thread_id: string };
-          if (msg.thread_id === activeThreadId) loadMessages(activeThreadId);
-          loadThreads();
-        },
-      )
-      .subscribe();
-    return () => {
-      supabase.removeChannel(channel);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, activeThreadId]);
+  // Realtime: live-update active thread + thread list ordering.
+  // Shares the user-scoped channel from RealtimeProvider.
+  const realtimeConfig = useMemo(
+    () =>
+      user
+        ? { table: "direct_messages", event: "INSERT" as const }
+        : null,
+    [user?.id],
+  );
+  useRealtime(realtimeConfig, (payload) => {
+    if (!mountedRef.current) return;
+    const msg = payload.new as DirectMessage & { thread_id: string };
+    if (msg.thread_id === activeThreadId) loadMessages(activeThreadId);
+    loadThreads();
+  });
 
   const activeThread = useMemo(
     () => threads.find((t) => t.id === activeThreadId) ?? null,
