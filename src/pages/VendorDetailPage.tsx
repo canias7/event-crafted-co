@@ -34,6 +34,11 @@ import { VideoEmbed } from "@/components/vendor/VideoEmbed";
 import { ShowcaseStrip } from "@/components/vendor/ShowcaseStrip";
 import { VerificationBadges } from "@/components/vendor/VerificationBadges";
 import { CoBookedRail } from "@/components/vendor/CoBookedRail";
+import {
+  ImportedReviewsList,
+  type ImportedReview,
+} from "@/components/vendor/ImportedReviewsList";
+import { VendorFaqList } from "@/components/vendor/VendorFaqList";
 import { useDocumentMeta } from "@/hooks/useDocumentMeta";
 import { InquiryFormModal } from "@/components/inquiries/InquiryFormModal";
 import { useAuth } from "@/hooks/useAuth";
@@ -268,14 +273,6 @@ export default function VendorDetailPage() {
   }, [vendor]);
 
   // Imported reviews from external platforms (vendor-pasted).
-  interface ImportedReview {
-    id: string;
-    source: string;
-    reviewer_name: string;
-    rating: number;
-    body: string | null;
-    reviewed_at: string | null;
-  }
   const [importedReviews, setImportedReviews] = useState<ImportedReview[]>([]);
   useEffect(() => {
     if (!vendor || !vendor.isReal) {
@@ -964,55 +961,10 @@ export default function VendorDetailPage() {
               </div>
 
               {/* Imported reviews from other platforms */}
-              {importedReviews.length > 0 && (
-                <div>
-                  <p className="font-label text-accent mb-4">From around the web</p>
-                  <h2 className="font-display text-3xl mb-2">
-                    Reviews from elsewhere
-                  </h2>
-                  <p className="text-sm text-muted-foreground mb-6 leading-relaxed max-w-xl">
-                    Imported by {vendor.name} from other platforms. Not
-                    booked through Vendora — but still part of their track
-                    record.
-                  </p>
-                  <div className="grid sm:grid-cols-2 gap-4">
-                    {importedReviews.map((r) => (
-                      <div
-                        key={r.id}
-                        className="rounded-sm border border-border bg-card p-4"
-                      >
-                        <div className="flex items-center gap-2 mb-2 flex-wrap">
-                          <div className="flex items-center gap-0.5">
-                            {[1, 2, 3, 4, 5].map((n) => (
-                              <Star
-                                key={n}
-                                className={`w-3.5 h-3.5 ${
-                                  n <= Math.round(r.rating)
-                                    ? "fill-accent text-accent"
-                                    : "text-muted-foreground/30"
-                                }`}
-                              />
-                            ))}
-                          </div>
-                          <span className="text-[10px] uppercase tracking-wide text-muted-foreground">
-                            via {r.source.replace("_", " ")}
-                          </span>
-                        </div>
-                        {r.body && (
-                          <p className="text-sm text-foreground/80 leading-relaxed mb-2 italic line-clamp-4">
-                            "{r.body}"
-                          </p>
-                        )}
-                        <p className="text-xs text-muted-foreground">
-                          — {r.reviewer_name}
-                          {r.reviewed_at &&
-                            ` · ${new Date(r.reviewed_at).toLocaleDateString()}`}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
+              <ImportedReviewsList
+                reviews={importedReviews}
+                vendorName={vendor.name}
+              />
 
               {/* Often booked with (cross-sell from booking signal + curated) */}
               {vendor.isReal && (
@@ -1058,22 +1010,7 @@ export default function VendorDetailPage() {
               )}
 
               {/* FAQ */}
-              <div>
-                <p className="font-label text-accent mb-4">FAQ</p>
-                <h2 className="font-display text-3xl mb-6">Common questions</h2>
-                <div>
-                  {sampleFaqs.map((f) => (
-                    <details key={f.q} className="group border-b border-border">
-                      <summary className="flex items-center justify-between py-5 cursor-pointer text-base font-medium list-none">
-                        {f.q}
-                      </summary>
-                      <p className="pb-5 text-sm text-muted-foreground leading-relaxed max-w-lg">
-                        {f.a}
-                      </p>
-                    </details>
-                  ))}
-                </div>
-              </div>
+              <VendorFaqList items={sampleFaqs} />
             </div>
 
             {/* Sticky inquiry sidebar */}
