@@ -286,6 +286,16 @@ const ROUTE_IMPORTERS: Array<{ pattern: string; importer: () => Promise<unknown>
   // Dynamic public
   { pattern: "/vendors/in/:citySlug", importer: importVendorCity },
   { pattern: "/vendors/category/:slug", importer: importVendorCategory },
+  // Programmatic SEO: city × category cross-product.
+  {
+    pattern: "/vendors/:categorySlug/in/:citySlug",
+    importer: importVendorCityCategory,
+  },
+  // Programmatic SEO: event-type × city.
+  {
+    pattern: "/:eventTypeSlug-vendors/:citySlug",
+    importer: importVendorEventTypeCity,
+  },
   { pattern: "/vendors/:id", importer: importVendorDetail },
   { pattern: "/v/:slug", importer: importVendorDetail },
   { pattern: "/inspiration/:slug", importer: importInspirationDetail },
