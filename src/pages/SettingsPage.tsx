@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { DashboardSidebar } from "@/components/shared/DashboardSidebar";
 import { MobileNav } from "@/components/shared/MobileNav";
+import { PushNotificationsCard } from "@/components/settings/PushNotificationsCard";
 import { customerNavItems, vendorNavItems } from "@/data/navItems";
 
 const COOKIE_KEY = "vendora.cookie-consent";
@@ -390,28 +391,31 @@ export default function SettingsPage() {
                 </div>
               </Section>
 
-              {/* Email preferences */}
+              {/* Push notifications */}
               <Section
                 icon={Bell}
-                title="Email preferences"
-                subtitle="Control which emails Vendora sends you"
+                title="Notifications"
+                subtitle="Get pinged in real time on this device"
               >
-                <div className="flex items-center justify-between gap-4">
-                  <div className="min-w-0">
-                    <p className="text-sm font-medium mb-1">
-                      Daily digest
-                    </p>
-                    <p className="text-xs text-muted-foreground leading-relaxed">
-                      One morning email with everything new since yesterday.
-                      Turn off to only receive per-event emails (new
-                      inquiries, team invites, review prompts).
-                    </p>
+                <div className="space-y-6">
+                  <PushNotificationsCard />
+                  <div className="flex items-center justify-between gap-4 pt-4 border-t border-border">
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium mb-1">
+                        Daily digest email
+                      </p>
+                      <p className="text-xs text-muted-foreground leading-relaxed">
+                        One morning email with everything new since
+                        yesterday. Turn off to only receive per-event
+                        emails (new inquiries, team invites, review prompts).
+                      </p>
+                    </div>
+                    <Switch
+                      checked={digestEnabled ?? true}
+                      onCheckedChange={toggleDigest}
+                      disabled={savingDigest || digestEnabled === null}
+                    />
                   </div>
-                  <Switch
-                    checked={digestEnabled ?? true}
-                    onCheckedChange={toggleDigest}
-                    disabled={savingDigest || digestEnabled === null}
-                  />
                 </div>
               </Section>
 

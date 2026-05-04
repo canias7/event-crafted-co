@@ -31,4 +31,18 @@ if (!SUPABASE_URL || !SUPABASE_KEY) {
     </div>`;
 } else {
   createRoot(root).render(<App />);
+
+  // Register the service worker that handles web push + offline shell.
+  // Production-only — dev breaks HMR if the SW caches stale assets.
+  if ("serviceWorker" in navigator && import.meta.env.PROD) {
+    window.addEventListener("load", () => {
+      navigator.serviceWorker
+        .register("/sw.js", { scope: "/" })
+        .catch((err) => {
+          // Swallow — push is opt-in; if the SW fails the rest of the
+          // app still works.
+          console.warn("SW register failed:", err);
+        });
+    });
+  }
 }
