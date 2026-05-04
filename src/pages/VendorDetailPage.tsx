@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
   Star,
@@ -143,6 +143,7 @@ const sampleFaqs = [
 const spring = { type: "spring" as const, duration: 0.6, bounce: 0 };
 
 export default function VendorDetailPage() {
+  const navigate = useNavigate();
   // Route is either /vendors/:id or /v/:slug — accept both.
   const { id, slug } = useParams();
   const { session, profile, loading: authLoading } = useAuth();
@@ -499,7 +500,7 @@ export default function VendorDetailPage() {
         toast.error(error.message);
         return;
       }
-      window.location.href = `/vendor/partners?thread=${data}`;
+      navigate(`/vendor/partners?thread=${data}`);
       return;
     }
     if (profile.role !== "host") {
@@ -515,7 +516,7 @@ export default function VendorDetailPage() {
       toast.error(error.message);
       return;
     }
-    window.location.href = `/customer/messages?thread=${data}`;
+    navigate(`/customer/messages?thread=${data}`);
   }
 
   const related = useMemo(() => {
