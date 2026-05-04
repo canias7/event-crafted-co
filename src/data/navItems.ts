@@ -21,6 +21,7 @@ import {
   Send,
   Sparkles,
   Globe,
+  LifeBuoy,
   type LucideIcon,
 } from "lucide-react";
 
@@ -52,6 +53,7 @@ export const customerNavItems: NavItem[] = [
   { label: "Group gifts", path: "/customer/gifts", icon: Sparkles },
   { label: "Multi-vendor blast", path: "/customer/inquiry-blast", icon: Send },
   { label: "Planning Team", path: "/customer/planning-team", icon: Users },
+  { label: "Support", path: "/support", icon: LifeBuoy },
   { label: "Settings", path: "/settings", icon: Settings },
 ];
 
@@ -67,6 +69,7 @@ export const vendorNavItems: NavItem[] = [
   { label: "Availability", path: "/vendor/availability", icon: Clock },
   { label: "Payments", path: "/vendor/payments", icon: CreditCard },
   { label: "Contracts", path: "/vendor/contracts", icon: FileText },
+  { label: "Support", path: "/support", icon: LifeBuoy },
   { label: "Settings", path: "/settings", icon: Settings },
 ];
 
@@ -77,5 +80,6 @@ export const adminNavItems: NavItem[] = [
   { label: "Inquiries", path: "/admin/inquiries", icon: MessageSquare },
   { label: "Reviews", path: "/admin/reviews", icon: CheckSquare },
   { label: "Inspiration", path: "/admin/inspiration", icon: FileText },
+  { label: "Support", path: "/admin/support", icon: LifeBuoy },
   { label: "Settings", path: "/settings", icon: Settings },
 ];
