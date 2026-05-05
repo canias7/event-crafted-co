@@ -1530,6 +1530,78 @@ export type Database = {
           },
         ]
       }
+      real_events: {
+        Row: {
+          cover_path: string | null
+          created_at: string
+          event_date: string | null
+          event_type: string | null
+          gallery_paths: string[]
+          host_consent_given_at: string | null
+          id: string
+          inquiry_id: string | null
+          intro: string | null
+          location: string | null
+          published_at: string | null
+          slug: string | null
+          story: string | null
+          title: string
+          updated_at: string
+          vendor_id: string
+        }
+        Insert: {
+          cover_path?: string | null
+          created_at?: string
+          event_date?: string | null
+          event_type?: string | null
+          gallery_paths?: string[]
+          host_consent_given_at?: string | null
+          id?: string
+          inquiry_id?: string | null
+          intro?: string | null
+          location?: string | null
+          published_at?: string | null
+          slug?: string | null
+          story?: string | null
+          title: string
+          updated_at?: string
+          vendor_id: string
+        }
+        Update: {
+          cover_path?: string | null
+          created_at?: string
+          event_date?: string | null
+          event_type?: string | null
+          gallery_paths?: string[]
+          host_consent_given_at?: string | null
+          id?: string
+          inquiry_id?: string | null
+          intro?: string | null
+          location?: string | null
+          published_at?: string | null
+          slug?: string | null
+          story?: string | null
+          title?: string
+          updated_at?: string
+          vendor_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "real_events_inquiry_id_fkey"
+            columns: ["inquiry_id"]
+            isOneToOne: false
+            referencedRelation: "inquiries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "real_events_vendor_id_fkey"
+            columns: ["vendor_id"]
+            isOneToOne: false
+            referencedRelation: "vendor_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       review_responses: {
         Row: {
           body: string
@@ -2367,6 +2439,10 @@ export type Database = {
       accept_planning_invite: { Args: { p_token: string }; Returns: Json }
       accept_team_invite: { Args: { p_token: string }; Returns: Json }
       can_access_inquiry: { Args: { _inquiry_id: string }; Returns: boolean }
+      generate_real_event_slug: {
+        Args: { p_id: string; p_title: string }
+        Returns: string
+      }
       get_guest_by_token: {
         Args: { p_token: string }
         Returns: {
