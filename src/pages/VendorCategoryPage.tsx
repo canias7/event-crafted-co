@@ -28,6 +28,9 @@ interface CategoryConfig {
   description: string;
   longCopy: string;
   hero: PictureSource;
+  /** When true, the category landing page shows a "coming soon" splash
+   * and the category isn't selectable in the vendor signup dropdown. */
+  comingSoon?: boolean;
 }
 
 export const categoryConfig: Record<string, CategoryConfig> = {
@@ -166,6 +169,134 @@ export const categoryConfig: Record<string, CategoryConfig> = {
       "Take over 4-8 weeks before the event to confirm vendors, build the timeline, and run the day. The right call when you've planned everything yourself but want a pro behind the wheel on the day.",
     hero: vendorVenue,
   },
+  // ─── Expanded marketplace ─── matches The Knot's category breadth.
+  bands: {
+    name: "Band",
+    display: "Bands",
+    description:
+      "Live music for ceremony, cocktail hour, and reception — from horn-section party bands to acoustic trios.",
+    longCopy:
+      "A live band is the difference between dancing and just hearing music play. Vendora bands handle the full arc — first dance through last call — with a curated repertoire and the read-the-room instincts that turn a reception into an event people remember.",
+    hero: vendorDj,
+  },
+  beauty: {
+    name: "Beauty",
+    display: "Beauty",
+    description:
+      "Hair + makeup teams for bridal parties, milestone events, and editorial shoots.",
+    longCopy:
+      "Beyond bridal — Vendora beauty pros handle hair styling, makeup, on-location touch-ups, and full-team weekends. Camera-ready looks for events that get photographed forever.",
+    hero: vendorMakeup,
+  },
+  "bridal-salons": {
+    name: "Bridal Salon",
+    display: "Bridal Salons",
+    description:
+      "Wedding-dress shops, alterations specialists, and accessories ateliers.",
+    longCopy:
+      "Salons that carry curated designer racks plus the tailoring talent to make sure the dress fits the way it should on the day. Find by region, designer focus, or price tier.",
+    hero: vendorMakeup,
+  },
+  "dance-instructors": {
+    name: "Dance Instructor",
+    display: "Dance Instructors",
+    description:
+      "First-dance choreography and pre-event lessons for wedding parties.",
+    longCopy:
+      "From a polished first dance to teaching a wedding party the basics of swing or salsa for the reception. Sessions are usually 4-8 lessons leading up to the event.",
+    hero: vendorVenue,
+  },
+  ensembles: {
+    name: "Ensemble",
+    display: "Ensembles & Soloists",
+    description:
+      "String quartets, jazz trios, soloists, and acoustic pairings for ceremonies and cocktail hours.",
+    longCopy:
+      "Live music without the full-band footprint. Ensembles fit ceremonies, cocktail receptions, dinner sets, and lounge transitions — anywhere a smaller, more atmospheric sound is right.",
+    hero: vendorDj,
+  },
+  "favors-gifts": {
+    name: "Favors & Gifts",
+    display: "Favors & Gifts",
+    description:
+      "Welcome bags, custom favors, gifting curators, and bridal-party gifts.",
+    longCopy:
+      "Curators who handle the welcome-bag-and-favor program — sourcing, custom branding, assembly, and delivery to the venue. Saves you the assembly-line evening before the event.",
+    hero: vendorFlorist,
+  },
+  hotels: {
+    name: "Hotel Block",
+    display: "Hotel Room Blocks",
+    description:
+      "Negotiated room blocks for guests at out-of-town events.",
+    longCopy:
+      "We're partnering with hotel groups to offer pre-negotiated room blocks for your guests. This category is launching soon — sign up for early access and we'll let you know.",
+    hero: vendorVenue,
+    comingSoon: true,
+  },
+  invitations: {
+    name: "Invitation Designer",
+    display: "Invitations & Paper Goods",
+    description:
+      "Custom invitation suites, save-the-dates, day-of paper, and signage.",
+    longCopy:
+      "From letterpress save-the-dates to full day-of paper programs — menus, place cards, signage, ceremony booklets. Vendora invitation designers handle the full paper arc with consistent styling.",
+    hero: vendorFlorist,
+  },
+  jewelers: {
+    name: "Jeweler",
+    display: "Jewelers",
+    description:
+      "Engagement rings, wedding bands, and bespoke fine jewelry.",
+    longCopy:
+      "Independent jewelers and design studios — bench-jeweler-made wedding bands, vintage and ethical-sourced engagement rings, and custom commissions for milestone events.",
+    hero: vendorMakeup,
+  },
+  officiants: {
+    name: "Officiant",
+    display: "Officiants",
+    description:
+      "Ordained ministers, secular officiants, and ceremony writers for weddings of any tradition.",
+    longCopy:
+      "From traditional clergy to secular officiants who'll co-write a custom ceremony with you. Vendora officiants are experienced at large gatherings and unfamiliar venues — they make the ceremony feel like the room is theirs.",
+    hero: vendorVenue,
+  },
+  "photo-booths": {
+    name: "Photo Booth",
+    display: "Photo Booths",
+    description:
+      "Open-air photo booths, mirror booths, GIF booths, and instant-print stations.",
+    longCopy:
+      "The most-used party feature at every reception. Vendora photo booth operators bring the kit, props, attendant, and instant prints — plus a digital gallery for the host afterward.",
+    hero: vendorPhotographer,
+  },
+  rentals: {
+    name: "Rentals",
+    display: "Rentals",
+    description:
+      "Tables, chairs, linens, lighting, dance floors, and event-day infrastructure.",
+    longCopy:
+      "The structural layer of an event. Rental companies on Vendora handle everything from a single sweetheart table to full-build tented receptions — coordinated with your planner so deliveries hit the right windows.",
+    hero: vendorVenue,
+  },
+  transportation: {
+    name: "Transportation",
+    display: "Transportation",
+    description:
+      "Shuttles, limos, and vintage cars for guest movement and photo moments.",
+    longCopy:
+      "Coordinated guest shuttles between hotel and venue, vintage getaway cars, and limousine transfers. Especially useful for venues without on-site parking or destination-style weekends.",
+    hero: vendorVenue,
+  },
+  "travel-specialists": {
+    name: "Travel Specialist",
+    display: "Travel Specialists",
+    description:
+      "Honeymoon planners, destination-wedding coordinators, and group-travel agents.",
+    longCopy:
+      "From honeymoon itineraries to coordinating a 60-person destination weekend. Vendora travel specialists know which villas sleep 30, which airlines block-book, and which destinations actually deliver on the brochure.",
+    hero: vendorVenue,
+  },
 };
 
 export const allCategorySlugs = Object.keys(categoryConfig);
@@ -218,6 +349,38 @@ export default function VendorCategoryPage() {
 
   if (!config) {
     return <Navigate to="/vendors" replace />;
+  }
+
+  // Coming-soon categories render a marketing splash with no vendor
+  // grid + no inquiry CTAs. They still get a real page (vs 404) so
+  // they can rank in search and capture interest.
+  if (config.comingSoon) {
+    return (
+      <div className="min-h-screen bg-background">
+        <PublicNav />
+        <section className="pt-32 pb-16 md:pt-40 md:pb-24 border-b border-border">
+          <div className="container mx-auto px-6 md:px-8 max-w-3xl text-center">
+            <p className="font-label text-accent tracking-[0.4em] mb-4 inline-flex items-center gap-2">
+              {config.display.toUpperCase()}
+            </p>
+            <h1 className="font-display text-4xl md:text-6xl leading-[1.0] mb-6">
+              {config.display} — coming soon
+            </h1>
+            <p className="text-base md:text-lg text-muted-foreground leading-relaxed mb-10">
+              {config.longCopy}
+            </p>
+            <Link
+              to="/vendors"
+              className="inline-flex items-center gap-1.5 text-sm font-medium text-accent hover:underline"
+            >
+              <ArrowLeft className="w-3.5 h-3.5" />
+              Browse other vendors
+            </Link>
+          </div>
+        </section>
+        <Footer />
+      </div>
+    );
   }
 
   return (

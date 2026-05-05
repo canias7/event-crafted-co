@@ -19,17 +19,37 @@ import { PublicNav } from "@/components/public/PublicNav";
 import { Footer } from "@/components/public/Footer";
 import heroApply from "@/assets/vendora-hero-gala.jpg";
 
+// Selectable categories on the apply form. Mirrors VendorProfilePage's
+// `categories` list (and excludes Hotels which is coming-soon-only).
 const categories = [
   "Photographer",
   "Videographer",
   "Catering",
   "DJ",
+  "Band",
+  "Ensemble",
   "Florist",
   "Event Planner",
   "Decorator",
   "Makeup Artist",
+  "Beauty",
+  "Bridal Salon",
   "Baker",
   "Venue",
+  "Bartender",
+  "Waitstaff",
+  "Security",
+  "Valet",
+  "Day-of Coordinator",
+  "Dance Instructor",
+  "Favors & Gifts",
+  "Invitation Designer",
+  "Jeweler",
+  "Officiant",
+  "Photo Booth",
+  "Rentals",
+  "Transportation",
+  "Travel Specialist",
 ];
 
 const spring = { type: "spring" as const, duration: 0.6, bounce: 0 };

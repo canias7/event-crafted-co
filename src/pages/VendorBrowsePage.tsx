@@ -23,7 +23,17 @@ const slugByCategory: Record<string, string> = Object.entries(categoryConfig).re
   {} as Record<string, string>,
 );
 
-const categories = ["All", "Photographer", "Florist", "Catering", "DJ", "Venue", "Makeup Artist"];
+// Filter options: derived from categoryConfig so adding a new
+// category there auto-shows up in the browse filter. Coming-soon
+// categories are excluded — there's no point letting users filter
+// to a category with no vendors yet.
+const categories = [
+  "All",
+  ...Object.values(categoryConfig)
+    .filter((c) => !c.comingSoon)
+    .map((c) => c.name)
+    .sort(),
+];
 
 const sortOptions: Record<string, (a: Vendor, b: Vendor) => number> = {
   popular: (a, b) => b.reviews - a.reviews,

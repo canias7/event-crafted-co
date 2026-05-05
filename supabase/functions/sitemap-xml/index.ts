@@ -44,6 +44,9 @@ interface SlugRow {
   updated_at: string | null;
 }
 
+// Mirrors the slugs in src/pages/VendorCategoryPage.tsx categoryConfig.
+// Coming-soon categories (currently: hotels) are excluded — they
+// render a splash, not a vendor list, so don't dilute search.
 const CATEGORY_SLUGS = [
   "photographers",
   "florists",
@@ -55,6 +58,24 @@ const CATEGORY_SLUGS = [
   "bakers",
   "event-planners",
   "decorators",
+  "bartenders",
+  "waitstaff",
+  "security",
+  "valets",
+  "day-of-coordinators",
+  "bands",
+  "beauty",
+  "bridal-salons",
+  "dance-instructors",
+  "ensembles",
+  "favors-gifts",
+  "invitations",
+  "jewelers",
+  "officiants",
+  "photo-booths",
+  "rentals",
+  "transportation",
+  "travel-specialists",
 ];
 
 // Map a vendor's freeform category (e.g. "Photographer") to the
@@ -79,6 +100,26 @@ function vendorCategoryToSlug(category: string): string | null {
     "event planning": "event-planners",
     decorator: "decorators",
     decor: "decorators",
+    bartender: "bartenders",
+    waitstaff: "waitstaff",
+    security: "security",
+    valet: "valets",
+    "day-of coordinator": "day-of-coordinators",
+    band: "bands",
+    beauty: "beauty",
+    "bridal salon": "bridal-salons",
+    "dance instructor": "dance-instructors",
+    ensemble: "ensembles",
+    "favors & gifts": "favors-gifts",
+    "favors and gifts": "favors-gifts",
+    "invitation designer": "invitations",
+    invitations: "invitations",
+    jeweler: "jewelers",
+    officiant: "officiants",
+    "photo booth": "photo-booths",
+    rentals: "rentals",
+    transportation: "transportation",
+    "travel specialist": "travel-specialists",
   };
   return map[k] ?? null;
 }

@@ -47,15 +47,25 @@ import { Badge } from "@/components/ui/badge";
 import { vendorNavItems as navItems } from "@/data/navItems";
 import { VendorShareKit } from "@/components/vendor/VendorShareKit";
 
+// Selectable vendor categories. Canonical list lives in
+// VendorCategoryPage's categoryConfig; this is the singular-form
+// labels we show in the signup dropdown. Any category with
+// `comingSoon: true` in categoryConfig should NOT appear here
+// (currently: Hotels). Keep the two in sync until we refactor
+// categoryConfig out into a shared data file.
 const categories = [
   "Photographer",
   "Videographer",
   "Catering",
   "DJ",
+  "Band",
+  "Ensemble",
   "Florist",
   "Event Planner",
   "Decorator",
   "Makeup Artist",
+  "Beauty",
+  "Bridal Salon",
   "Baker",
   "Venue",
   "Bartender",
@@ -63,6 +73,15 @@ const categories = [
   "Security",
   "Valet",
   "Day-of Coordinator",
+  "Dance Instructor",
+  "Favors & Gifts",
+  "Invitation Designer",
+  "Jeweler",
+  "Officiant",
+  "Photo Booth",
+  "Rentals",
+  "Transportation",
+  "Travel Specialist",
 ];
 
 interface VendorProfile {
