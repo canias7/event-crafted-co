@@ -320,6 +320,95 @@ export type Database = {
           },
         ]
       }
+      event_album_photos: {
+        Row: {
+          album_id: string
+          caption: string | null
+          created_at: string
+          display_order: number
+          id: string
+          storage_path: string
+          taken_at: string | null
+        }
+        Insert: {
+          album_id: string
+          caption?: string | null
+          created_at?: string
+          display_order?: number
+          id?: string
+          storage_path: string
+          taken_at?: string | null
+        }
+        Update: {
+          album_id?: string
+          caption?: string | null
+          created_at?: string
+          display_order?: number
+          id?: string
+          storage_path?: string
+          taken_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_album_photos_album_id_fkey"
+            columns: ["album_id"]
+            isOneToOne: false
+            referencedRelation: "event_albums"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      event_albums: {
+        Row: {
+          cover_path: string | null
+          created_at: string
+          description: string | null
+          download_enabled: boolean
+          event_id: string | null
+          host_consent_given_at: string | null
+          host_id: string | null
+          id: string
+          inquiry_id: string | null
+          published_at: string | null
+          share_token: string
+          title: string
+          updated_at: string
+          vendor_id: string
+        }
+        Insert: {
+          cover_path?: string | null
+          created_at?: string
+          description?: string | null
+          download_enabled?: boolean
+          event_id?: string | null
+          host_consent_given_at?: string | null
+          host_id?: string | null
+          id?: string
+          inquiry_id?: string | null
+          published_at?: string | null
+          share_token?: string
+          title: string
+          updated_at?: string
+          vendor_id: string
+        }
+        Update: {
+          cover_path?: string | null
+          created_at?: string
+          description?: string | null
+          download_enabled?: boolean
+          event_id?: string | null
+          host_consent_given_at?: string | null
+          host_id?: string | null
+          id?: string
+          inquiry_id?: string | null
+          published_at?: string | null
+          share_token?: string
+          title?: string
+          updated_at?: string
+          vendor_id?: string
+        }
+        Relationships: []
+      }
       event_guests: {
         Row: {
           created_at: string
@@ -2514,6 +2603,7 @@ export type Database = {
         Args: { p_id: string; p_title: string }
         Returns: string
       }
+      get_album_by_token: { Args: { p_token: string }; Returns: Json }
       get_guest_by_token: {
         Args: { p_token: string }
         Returns: {
