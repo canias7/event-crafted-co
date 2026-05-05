@@ -75,6 +75,7 @@ import { ReportButton } from "@/components/trust/ReportButton";
 import { VendorPolicyBadges } from "@/components/vendor/VendorPolicyBadges";
 import { VendorServiceAreaMap } from "@/components/vendor/VendorServiceAreaMap";
 import { CategoryAttributesDisplay } from "@/components/vendor/CategoryAttributesDisplay";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const imageMap: Record<string, string> = {
   "vendor-photographer": vendorPhotographer,
@@ -523,16 +524,7 @@ export default function VendorDetailPage() {
   }, [vendor]);
 
   if (!vendor && vendorsLoading) {
-    return (
-      <div className="min-h-screen bg-background">
-        <PublicNav />
-        <div className="pt-32 pb-24 container mx-auto px-6">
-          <div className="max-w-3xl mx-auto text-center">
-            <p className="font-label text-muted-foreground">Loading vendor…</p>
-          </div>
-        </div>
-      </div>
-    );
+    return <VendorDetailSkeleton />;
   }
 
   if (!vendor) {
@@ -1134,6 +1126,86 @@ export default function VendorDetailPage() {
         onClose={() => setLightboxIndex(null)}
         onIndexChange={setLightboxIndex}
       />
+    </div>
+  );
+}
+
+// Mirrors the real detail-page layout (hero + two-column body) so the
+// swap to actual content has near-zero layout shift. Shown while
+// useVendors() hydrates on cold cache / deep-link navigation; warm
+// cache hits skip this entirely and render the real page immediately.
+function VendorDetailSkeleton() {
+  return (
+    <div className="min-h-screen bg-background pb-24 lg:pb-0">
+      <PublicNav />
+
+      <section className="relative h-[80svh] min-h-[560px] w-full overflow-hidden bg-muted/40">
+        <div className="absolute inset-0 bg-gradient-to-b from-foreground/10 via-foreground/5 to-foreground/15" />
+        <div className="relative z-10 h-full flex flex-col">
+          <div className="container mx-auto px-6 md:px-8 pt-24">
+            <Skeleton className="h-3 w-36" />
+          </div>
+          <div className="flex-1 flex items-end pb-12 md:pb-16">
+            <div className="container mx-auto px-6 md:px-8">
+              <Skeleton className="h-3 w-24 mb-5" />
+              <Skeleton className="h-12 md:h-16 w-3/4 max-w-2xl mb-3" />
+              <Skeleton className="h-12 md:h-16 w-1/2 max-w-xl mb-6" />
+              <div className="flex flex-wrap gap-x-6 gap-y-3">
+                <Skeleton className="h-4 w-28" />
+                <Skeleton className="h-4 w-32" />
+                <Skeleton className="h-4 w-44" />
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="py-16 md:py-24">
+        <div className="container mx-auto px-6 md:px-8">
+          <div className="grid lg:grid-cols-3 gap-12 lg:gap-16">
+            <div className="lg:col-span-2 space-y-16">
+              <div>
+                <Skeleton className="h-3 w-16 mb-4" />
+                <Skeleton className="h-8 w-3/4 mb-3" />
+                <Skeleton className="h-8 w-1/2 mb-6" />
+                <Skeleton className="h-4 w-full mb-2" />
+                <Skeleton className="h-4 w-full mb-2" />
+                <Skeleton className="h-4 w-2/3" />
+              </div>
+
+              <div>
+                <Skeleton className="h-3 w-20 mb-4" />
+                <Skeleton className="h-8 w-2/3 mb-8" />
+                <div className="grid md:grid-cols-3 gap-4">
+                  {[0, 1, 2].map((i) => (
+                    <Skeleton key={i} className="h-72 w-full rounded-sm" />
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <Skeleton className="h-3 w-20 mb-4" />
+                <Skeleton className="h-8 w-1/2 mb-8" />
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                  <Skeleton className="col-span-2 row-span-2 aspect-square md:aspect-[4/3] rounded-sm" />
+                  {[1, 2, 3, 4].map((i) => (
+                    <Skeleton key={i} className="aspect-square rounded-sm" />
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <aside className="lg:col-span-1">
+              <div className="lg:sticky lg:top-24 space-y-4">
+                <Skeleton className="h-[420px] w-full rounded-sm" />
+                <Skeleton className="h-20 w-full rounded-sm" />
+              </div>
+            </aside>
+          </div>
+        </div>
+      </section>
+
+      <Footer />
     </div>
   );
 }
