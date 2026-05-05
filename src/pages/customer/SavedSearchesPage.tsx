@@ -53,10 +53,7 @@ export default function SavedSearchesPage() {
   async function load() {
     if (!user) return;
     setLoading(true);
-    // Cast to any: email_alerts_enabled landed in a forward migration
-    // that types.ts hasn't synced yet.
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data } = await (supabase as any)
+    const { data } = await supabase
       .from("saved_searches")
       .select("id, name, filters, notify_new_matches, email_alerts_enabled, created_at")
       .eq("host_id", user.id)
@@ -76,8 +73,7 @@ export default function SavedSearchesPage() {
         p.id === s.id ? { ...p, notify_new_matches: next } : p,
       ),
     );
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error } = await (supabase as any)
+    const { error } = await supabase
       .from("saved_searches")
       .update({ notify_new_matches: next })
       .eq("id", s.id);
@@ -93,8 +89,7 @@ export default function SavedSearchesPage() {
         p.id === s.id ? { ...p, email_alerts_enabled: next } : p,
       ),
     );
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error } = await (supabase as any)
+    const { error } = await supabase
       .from("saved_searches")
       .update({ email_alerts_enabled: next })
       .eq("id", s.id);
@@ -106,8 +101,7 @@ export default function SavedSearchesPage() {
 
   async function deleteSearch(id: string) {
     setPendingId(id);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error } = await (supabase as any)
+    const { error } = await supabase
       .from("saved_searches")
       .delete()
       .eq("id", id);

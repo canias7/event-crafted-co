@@ -61,8 +61,7 @@ export default function SettingsPage() {
   useEffect(() => {
     if (!user) return;
     let cancelled = false;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (supabase as any)
+    supabase
       .from("profiles")
       .select("daily_digest_enabled, reengagement_emails_enabled")
       .eq("id", user.id)
@@ -81,8 +80,7 @@ export default function SettingsPage() {
     if (!user) return;
     setSavingReengagement(true);
     setReengagementEnabled(next);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error } = await (supabase as any)
+    const { error } = await supabase
       .from("profiles")
       .update({ reengagement_emails_enabled: next })
       .eq("id", user.id);
@@ -97,8 +95,7 @@ export default function SettingsPage() {
     if (!user) return;
     setSavingDigest(true);
     setDigestEnabled(next);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error } = await (supabase as any)
+    const { error } = await supabase
       .from("profiles")
       .update({ daily_digest_enabled: next })
       .eq("id", user.id);
@@ -156,8 +153,7 @@ export default function SettingsPage() {
 
   async function deleteAccount() {
     setDeleting(true);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error } = await (supabase as any).rpc("request_account_deletion");
+    const { error } = await supabase.rpc("request_account_deletion");
     if (error) {
       setDeleting(false);
       toast.error(error.message);

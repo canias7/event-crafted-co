@@ -1,5 +1,4 @@
 import { lazy, Suspense } from "react";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
@@ -133,11 +132,8 @@ import {
   VendorBlogPage,
 } from "@/router/lazyRoutes";
 
-const queryClient = new QueryClient();
-
 const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <ThemeProvider>
+  <ThemeProvider>
     <TooltipProvider>
       <Toaster />
       <Sonner />
@@ -284,8 +280,7 @@ const App = () => (
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
-    </ThemeProvider>
-  </QueryClientProvider>
+  </ThemeProvider>
 );
 
 export default App;
