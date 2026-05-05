@@ -77,11 +77,16 @@ export type Database = {
         Row: {
           created_at: string
           duration_minutes: number
+          external_event_id: string | null
+          external_event_provider: string | null
+          external_synced_at: string | null
           host_id: string
           id: string
           inquiry_id: string | null
           kind: string
           location: string | null
+          meeting_provider: string | null
+          meeting_url: string | null
           notes: string | null
           proposed_by: string
           scheduled_at: string
@@ -93,11 +98,16 @@ export type Database = {
         Insert: {
           created_at?: string
           duration_minutes?: number
+          external_event_id?: string | null
+          external_event_provider?: string | null
+          external_synced_at?: string | null
           host_id: string
           id?: string
           inquiry_id?: string | null
           kind?: string
           location?: string | null
+          meeting_provider?: string | null
+          meeting_url?: string | null
           notes?: string | null
           proposed_by: string
           scheduled_at: string
@@ -109,11 +119,16 @@ export type Database = {
         Update: {
           created_at?: string
           duration_minutes?: number
+          external_event_id?: string | null
+          external_event_provider?: string | null
+          external_synced_at?: string | null
           host_id?: string
           id?: string
           inquiry_id?: string | null
           kind?: string
           location?: string | null
+          meeting_provider?: string | null
+          meeting_url?: string | null
           notes?: string | null
           proposed_by?: string
           scheduled_at?: string
@@ -1586,7 +1601,9 @@ export type Database = {
           phone: string | null
           phone_verified_at: string | null
           preferred_language: string
+          reengagement_emails_enabled: boolean
           role: string
+          tour_dismissed_at: string | null
           updated_at: string
         }
         Insert: {
@@ -1607,7 +1624,9 @@ export type Database = {
           phone?: string | null
           phone_verified_at?: string | null
           preferred_language?: string
+          reengagement_emails_enabled?: boolean
           role?: string
+          tour_dismissed_at?: string | null
           updated_at?: string
         }
         Update: {
@@ -1628,7 +1647,9 @@ export type Database = {
           phone?: string | null
           phone_verified_at?: string | null
           preferred_language?: string
+          reengagement_emails_enabled?: boolean
           role?: string
+          tour_dismissed_at?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -1955,6 +1976,7 @@ export type Database = {
       saved_searches: {
         Row: {
           created_at: string
+          email_alerts_enabled: boolean
           filters: Json
           host_id: string
           id: string
@@ -1965,6 +1987,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          email_alerts_enabled?: boolean
           filters?: Json
           host_id: string
           id?: string
@@ -1975,6 +1998,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          email_alerts_enabled?: boolean
           filters?: Json
           host_id?: string
           id?: string
@@ -2288,11 +2312,14 @@ export type Database = {
           created_at: string
           geocoded_at: string | null
           geocoded_location: string | null
+          hourly_rate_cents: number | null
           id: string
           intro_video_url: string | null
+          is_staffing: boolean
           latitude: number | null
           location: string | null
           longitude: number | null
+          min_hours: number | null
           onboarding_nudge_sent_at: string | null
           portfolio_summary: string | null
           responder_tier: string | null
@@ -2312,11 +2339,14 @@ export type Database = {
           created_at?: string
           geocoded_at?: string | null
           geocoded_location?: string | null
+          hourly_rate_cents?: number | null
           id?: string
           intro_video_url?: string | null
+          is_staffing?: boolean
           latitude?: number | null
           location?: string | null
           longitude?: number | null
+          min_hours?: number | null
           onboarding_nudge_sent_at?: string | null
           portfolio_summary?: string | null
           responder_tier?: string | null
@@ -2336,11 +2366,14 @@ export type Database = {
           created_at?: string
           geocoded_at?: string | null
           geocoded_location?: string | null
+          hourly_rate_cents?: number | null
           id?: string
           intro_video_url?: string | null
+          is_staffing?: boolean
           latitude?: number | null
           location?: string | null
           longitude?: number | null
+          min_hours?: number | null
           onboarding_nudge_sent_at?: string | null
           portfolio_summary?: string | null
           responder_tier?: string | null
@@ -2403,6 +2436,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      vendor_reengagement_log: {
+        Row: {
+          event_type: string | null
+          host_id: string
+          id: string
+          inquiry_id: string
+          notified_at: string
+          occasion: string
+          upcoming_date: string
+          vendor_id: string
+        }
+        Insert: {
+          event_type?: string | null
+          host_id: string
+          id?: string
+          inquiry_id: string
+          notified_at?: string
+          occasion: string
+          upcoming_date: string
+          vendor_id: string
+        }
+        Update: {
+          event_type?: string | null
+          host_id?: string
+          id?: string
+          inquiry_id?: string
+          notified_at?: string
+          occasion?: string
+          upcoming_date?: string
+          vendor_id?: string
+        }
+        Relationships: []
       }
       vendor_referrals: {
         Row: {
@@ -2691,6 +2757,17 @@ export type Database = {
         Returns: string
       }
       get_album_by_token: { Args: { p_token: string }; Returns: Json }
+      get_cobooked_vendors: {
+        Args: { p_limit?: number; p_vendor_id: string }
+        Returns: {
+          business_name: string
+          category: string
+          cobookings: number
+          is_curated: boolean
+          location: string
+          vendor_id: string
+        }[]
+      }
       get_guest_by_token: {
         Args: { p_token: string }
         Returns: {
@@ -2710,6 +2787,16 @@ export type Database = {
       get_microsite_by_token: { Args: { p_token: string }; Returns: Json }
       get_mood_board_by_token: { Args: { p_token: string }; Returns: Json }
       get_planning_invite_by_token: { Args: { p_token: string }; Returns: Json }
+      get_recommended_for_host: {
+        Args: { p_host_id: string; p_limit?: number }
+        Returns: {
+          business_name: string
+          category: string
+          cobookings: number
+          location: string
+          vendor_id: string
+        }[]
+      }
       get_team_invite_by_token: { Args: { p_token: string }; Returns: Json }
       get_vendor_benchmarks: {
         Args: { p_category: string; p_window_days?: number }
@@ -2720,6 +2807,7 @@ export type Database = {
           peer_count: number
         }[]
       }
+      get_vendor_profile_score: { Args: { p_vendor_id: string }; Returns: Json }
       is_admin: { Args: never; Returns: boolean }
       is_inquiry_vendor_member: {
         Args: { _inquiry_id: string }
