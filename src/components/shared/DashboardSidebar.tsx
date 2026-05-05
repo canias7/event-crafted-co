@@ -59,7 +59,7 @@ export function DashboardSidebar({
 
   return (
     <aside
-      className="hidden lg:flex flex-col w-64 border-r border-border bg-card min-h-screen sticky top-0"
+      className="hidden lg:flex flex-col w-64 border-r border-border bg-card h-screen sticky top-0 overflow-y-auto"
       aria-label={`${title} navigation`}
     >
       <div className="p-6 border-b border-border flex items-start justify-between gap-3">
