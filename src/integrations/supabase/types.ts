@@ -2863,6 +2863,7 @@ export type Database = {
       }
       get_microsite_by_token: { Args: { p_token: string }; Returns: Json }
       get_mood_board_by_token: { Args: { p_token: string }; Returns: Json }
+      get_planner_workspace: { Args: never; Returns: Json }
       get_planning_invite_by_token: { Args: { p_token: string }; Returns: Json }
       get_recommended_for_host: {
         Args: { p_host_id: string; p_limit?: number }
@@ -2896,6 +2897,7 @@ export type Database = {
       is_vendor_owner: { Args: { _vendor_id: string }; Returns: boolean }
       is_vendor_team_admin: { Args: { _vendor_id: string }; Returns: boolean }
       request_account_deletion: { Args: never; Returns: undefined }
+      set_active_event: { Args: { p_event_id: string }; Returns: undefined }
       shares_vendor_team: { Args: { _user_id: string }; Returns: boolean }
       slugify_vendor_name: { Args: { p_name: string }; Returns: string }
       submit_rsvp: {
