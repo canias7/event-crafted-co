@@ -8,6 +8,12 @@ export default defineConfig({
   fullyParallel: true,
   retries: process.env.CI ? 2 : 0,
   reporter: "list",
+  // Default per-test timeout is 30s. Bumped to 60s because the first
+  // test that lands on "/" triggers Vite's on-demand compile of the
+  // landing page bundle (framer-motion, hero assets, i18n lazy
+  // chunks) — that cold-start can take 30-45s on CI runners. Once
+  // warm, every other test completes in <2s.
+  timeout: 60_000,
   use: {
     baseURL: "http://127.0.0.1:8080",
     trace: "on-first-retry",
@@ -22,6 +28,6 @@ export default defineConfig({
     command: "npx vite --host 127.0.0.1 --port 8080",
     url: "http://127.0.0.1:8080",
     reuseExistingServer: !process.env.CI,
-    timeout: 30_000,
+    timeout: 60_000,
   },
 });
