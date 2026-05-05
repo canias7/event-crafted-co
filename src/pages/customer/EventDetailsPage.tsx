@@ -12,6 +12,8 @@ import {
   Trash2,
 } from "lucide-react";
 import { downloadIcs, slugForFile } from "@/lib/ics";
+import { formatDate } from "@/lib/format";
+import { PublishRealEventCard } from "@/components/customer/PublishRealEventCard";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -41,8 +43,7 @@ import { SubNavTabs } from "@/components/shared/SubNavTabs";
 import { EVENT_HUB_TABS } from "@/data/hubTabs";
 import { customerNavItems as navItems } from "@/data/navItems";
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const eventsTable = () => (supabase as any).from("host_events");
+const eventsTable = () => supabase.from("host_events");
 
 type EventType = "wedding" | "birthday" | "holiday_dinner" | "other";
 
@@ -390,13 +391,7 @@ export default function EventDetailsPage() {
                         <p className="font-label">Date</p>
                       </div>
                       <p className="font-display text-lg tnum">
-                        {eventDate
-                          ? new Date(eventDate).toLocaleDateString(undefined, {
-                              month: "short",
-                              day: "numeric",
-                              year: "numeric",
-                            })
-                          : "—"}
+                        {formatDate(eventDate, "short")}
                       </p>
                     </div>
                     <div className="bg-card border border-border rounded-sm p-4">
@@ -569,6 +564,19 @@ export default function EventDetailsPage() {
                       </Button>
                     </div>
                   </form>
+
+                  {/* Publish your event as a real-event SEO page. */}
+                  <div className="mt-8">
+                    <PublishRealEventCard
+                      event={{
+                        id: activeEvent.id,
+                        name: activeEvent.name,
+                        event_type: activeEvent.event_type,
+                        event_date: activeEvent.event_date,
+                        event_location: activeEvent.event_location,
+                      }}
+                    />
+                  </div>
                 </>
               ) : (
                 <div className="rounded-sm border border-border bg-card p-8 text-center">

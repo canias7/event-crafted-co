@@ -33,7 +33,7 @@ export function PushNotificationsCard() {
     setBusy(true);
     const result = await enablePush();
     setBusy(false);
-    if (!result.ok) {
+    if (result.ok === false) {
       toast.error(result.reason);
       return;
     }

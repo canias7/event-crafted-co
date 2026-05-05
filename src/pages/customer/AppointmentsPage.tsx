@@ -1,5 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useRealtime } from "@/lib/realtime";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Calendar, Copy } from "lucide-react";
@@ -20,6 +21,8 @@ export default function AppointmentsPage() {
   async function load() {
     if (!user) return;
     setLoading(true);
+    // Cast to any: meeting_url + meeting_provider columns landed in a
+    // forward migration that types.ts hasn't synced yet.
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data } = await (supabase as any)
       .from("appointments")
@@ -45,38 +48,24 @@ export default function AppointmentsPage() {
   }, [user]);
 
   // Realtime: refetch on any change to appointments where I'm the host.
-  useEffect(() => {
-    if (!user) return;
-    const channel = supabase
-      .channel(`host-appointments-${user.id}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "appointments",
-          filter: `host_id=eq.${user.id}`,
-        },
-        () => load(),
-      )
-      .subscribe();
-    return () => {
-      supabase.removeChannel(channel);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user]);
+  // Uses the shared user-scoped channel from RealtimeProvider.
+  const realtimeConfig = useMemo(
+    () =>
+      user ? { table: "appointments", filter: `host_id=eq.${user.id}` } : null,
+    [user?.id],
+  );
+  useRealtime(realtimeConfig, () => load());
 
   const [feedToken, setFeedToken] = useState<string | null>(null);
   useEffect(() => {
     if (!user) return;
     let cancelled = false;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (supabase as any)
+    supabase
       .from("profiles")
       .select("calendar_feed_token")
       .eq("id", user.id)
       .maybeSingle()
-      .then(({ data }: { data: { calendar_feed_token: string | null } | null }) => {
+      .then(({ data }) => {
         if (cancelled) return;
         setFeedToken(data?.calendar_feed_token ?? null);
       });

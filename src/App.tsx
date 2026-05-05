@@ -1,4 +1,4 @@
-import { Suspense } from "react";
+import { lazy, Suspense } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -12,13 +12,26 @@ import CheckEmailPage from "./pages/auth/CheckEmailPage";
 import ForgotPasswordPage from "./pages/auth/ForgotPasswordPage";
 import ResetPasswordPage from "./pages/auth/ResetPasswordPage";
 import { AuthProvider } from "./hooks/useAuth";
+import { RealtimeProvider } from "./lib/realtime";
 import { ThemeProvider } from "./hooks/useTheme";
 import { RequireRole } from "./components/auth/RequireRole";
-import { CookieBanner } from "./components/CookieBanner";
-import { CommandPalette } from "./components/CommandPalette";
+import { CommandPaletteLauncher } from "./components/CommandPaletteLauncher";
 import { SkipLink } from "./components/SkipLink";
+import { EmailVerificationBanner } from "./components/auth/EmailVerificationBanner";
 import { MobilePortalBell } from "./components/notifications/MobilePortalBell";
-import { OnboardingTour } from "@/components/shared/OnboardingTour";
+
+// Both ship-on-mount components are lazy: CookieBanner only renders
+// once for users who haven't accepted, OnboardingTour only renders for
+// fresh users — most page loads see neither, so deferring the chunks
+// shaves the initial JS budget.
+const CookieBanner = lazy(() =>
+  import("./components/CookieBanner").then((m) => ({ default: m.CookieBanner })),
+);
+const OnboardingTour = lazy(() =>
+  import("@/components/shared/OnboardingTour").then((m) => ({
+    default: m.OnboardingTour,
+  })),
+);
 import { ErrorBoundary } from "@/components/shared/ErrorBoundary";
 import { RouteFallback } from "@/components/shared/RouteFallback";
 // All lazy-loaded pages live in @/router/lazyRoutes — keeps the lazy
@@ -27,9 +40,12 @@ import { RouteFallback } from "@/components/shared/RouteFallback";
 import {
   HowItWorksPage,
   VendorBrowsePage,
+  CompareVendorsPage,
   StaffingPage,
   VendorLocationsPage,
   VendorCityPage,
+  VendorCityCategoryPage,
+  VendorEventTypeCityPage,
   VendorMapPage,
   VendorQuizPage,
   VendorDetailPage,
@@ -105,6 +121,16 @@ import {
   AdminInquiriesPage,
   AdminInspirationPage,
   AdminVerificationsPage,
+  AdminEditorialPage,
+  EditorialArticlePage,
+  ClaimVendorPage,
+  AdminClaimsPage,
+  AdminReportsPage,
+  PublicReviewPage,
+  ProposalPrintPage,
+  PublicProposalPage,
+  PlanInFivePage,
+  VendorBlogPage,
 } from "@/router/lazyRoutes";
 
 const queryClient = new QueryClient();
@@ -117,7 +143,9 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <AuthProvider>
+          <RealtimeProvider>
           <SkipLink />
+          <EmailVerificationBanner />
           <ErrorBoundary>
           <Suspense fallback={<RouteFallback />}>
             <Routes>
@@ -125,19 +153,39 @@ const App = () => (
               <Route path="/" element={<LandingPage />} />
               <Route path="/how-it-works" element={<HowItWorksPage />} />
               <Route path="/vendors" element={<VendorBrowsePage />} />
+              <Route path="/compare" element={<CompareVendorsPage />} />
               <Route path="/vendors/locations" element={<VendorLocationsPage />} />
               <Route path="/staffing" element={<StaffingPage />} />
               <Route path="/vendors/in/:citySlug" element={<VendorCityPage />} />
               <Route path="/vendors/map" element={<VendorMapPage />} />
               <Route path="/vendors/quiz" element={<VendorQuizPage />} />
               <Route path="/vendors/category/:slug" element={<VendorCategoryPage />} />
+              {/* Programmatic SEO: city × category cross-product. */}
+              <Route
+                path="/vendors/:categorySlug/in/:citySlug"
+                element={<VendorCityCategoryPage />}
+              />
+              {/* Programmatic SEO: event-type × city. Multi-event play. */}
+              <Route
+                path="/:eventTypeSlug-vendors/:citySlug"
+                element={<VendorEventTypeCityPage />}
+              />
               <Route path="/vendors/:id" element={<VendorDetailPage />} />
               <Route path="/v/:slug" element={<VendorDetailPage />} />
               <Route path="/inspiration" element={<InspirationPage />} />
               <Route path="/inspiration/:slug" element={<InspirationDetailPage />} />
+              {/* Editorial article reader (long-form CMS guides). */}
+              <Route path="/guides/:slug" element={<EditorialArticlePage />} />
+              {/* Vendor claim-listing flow — public, auth-gated to claim. */}
+              <Route path="/claim/:token" element={<ClaimVendorPage />} />
+              {/* Plan-in-5 wizard — 6-question conversion lever. */}
+              <Route path="/plan-in-5" element={<PlanInFivePage />} />
               <Route path="/real-events" element={<RealEventsPage />} />
               <Route path="/real-events/:slug" element={<RealEventDetailPage />} />
               <Route path="/rsvp/:token" element={<RsvpPage />} />
+              <Route path="/review/:token" element={<PublicReviewPage />} />
+              <Route path="/proposals/:id/print" element={<ProposalPrintPage />} />
+              <Route path="/p/:token" element={<PublicProposalPage />} />
               <Route path="/board/:token" element={<MoodBoardSharePage />} />
               <Route path="/accept-team-invite/:token" element={<AcceptTeamInvitePage />} />
               <Route path="/accept-planning-invite/:token" element={<AcceptPlanningInvitePage />} />
@@ -204,6 +252,7 @@ const App = () => (
               <Route path="/vendor/availability" element={<RequireRole role="vendor"><AvailabilityPage /></RequireRole>} />
               <Route path="/vendor/payments" element={<RequireRole role="vendor"><ComingSoonPage side="vendor" description="Connect a Stripe account, see payouts, and track the 3% commission on confirmed bookings." /></RequireRole>} />
               <Route path="/vendor/contracts" element={<RequireRole role="vendor"><VendorContractsPage /></RequireRole>} />
+              <Route path="/vendor/blog" element={<RequireRole role="vendor"><VendorBlogPage /></RequireRole>} />
               <Route path="/vendor/messages" element={<RequireRole role="vendor"><VendorMessagesPage /></RequireRole>} />
               <Route path="/vendor/partners" element={<RequireRole role="vendor"><VendorPartnersPage /></RequireRole>} />
               <Route path="/vendor/inbox/:inquiryId" element={<RequireRole role="vendor"><InquiryDetailPage /></RequireRole>} />
@@ -215,15 +264,23 @@ const App = () => (
               <Route path="/admin/reviews" element={<RequireRole role="admin"><AdminReviewsPage /></RequireRole>} />
               <Route path="/admin/inspiration" element={<RequireRole role="admin"><AdminInspirationPage /></RequireRole>} />
               <Route path="/admin/verifications" element={<RequireRole role="admin"><AdminVerificationsPage /></RequireRole>} />
+              <Route path="/admin/editorial" element={<RequireRole role="admin"><AdminEditorialPage /></RequireRole>} />
+              <Route path="/admin/claims" element={<RequireRole role="admin"><AdminClaimsPage /></RequireRole>} />
+              <Route path="/admin/reports" element={<RequireRole role="admin"><AdminReportsPage /></RequireRole>} />
 
               <Route path="*" element={<NotFound />} />
             </Routes>
           </Suspense>
           </ErrorBoundary>
           <MobilePortalBell />
-          <OnboardingTour />
-          <CommandPalette />
-          <CookieBanner />
+          <Suspense fallback={null}>
+            <OnboardingTour />
+          </Suspense>
+          <CommandPaletteLauncher />
+          <Suspense fallback={null}>
+            <CookieBanner />
+          </Suspense>
+          </RealtimeProvider>
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>

@@ -10,7 +10,7 @@ import { Lightbox } from "@/components/shared/Lightbox";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useDocumentMeta } from "@/hooks/useDocumentMeta";
-import { vendorImageUrl } from "@/lib/storage";
+import { transformedImageUrl } from "@/lib/storage";
 
 interface RealEvent {
   id: string;
@@ -24,11 +24,24 @@ interface RealEvent {
   event_date: string | null;
   location: string | null;
   published_at: string;
+  /** Storage bucket the cover + gallery photos live in. Vendor-led
+   *  events default to vendor-portfolios; host-led events use
+   *  event-microsites. Both are public buckets. */
+  media_bucket: string;
   vendor: {
     id: string;
     business_name: string | null;
     category: string | null;
   } | null;
+}
+
+// Per-event image URL helper that respects the row's media_bucket.
+function eventImageUrl(
+  event: Pick<RealEvent, "media_bucket">,
+  path: string,
+  opts?: { width?: number; height?: number; quality?: number },
+): string {
+  return transformedImageUrl(event.media_bucket, path, opts);
 }
 
 const spring = { type: "spring" as const, duration: 0.6, bounce: 0 };
@@ -44,15 +57,18 @@ export default function RealEventDetailPage() {
     if (!slug) return;
     let cancelled = false;
     (async () => {
+      // RLS handles the public-read gate (published_at present AND
+      // either vendor-led-with-consent OR host-led). We only filter
+      // by slug + published_at here; host_consent_given_at is implicit
+      // for host-led events so we don't filter on it client-side.
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data } = await (supabase as any)
         .from("real_events")
         .select(
-          "id, slug, title, intro, story, cover_path, gallery_paths, event_type, event_date, location, published_at, vendor:vendor_profiles!real_events_vendor_id_fkey(id, business_name, category)",
+          "id, slug, title, intro, story, cover_path, gallery_paths, event_type, event_date, location, published_at, media_bucket, vendor:vendor_profiles!real_events_vendor_id_fkey(id, business_name, category)",
         )
         .eq("slug", slug)
         .not("published_at", "is", null)
-        .not("host_consent_given_at", "is", null)
         .maybeSingle();
       if (cancelled) return;
       if (!data) {
@@ -76,7 +92,7 @@ export default function RealEventDetailPage() {
       event?.intro ??
       "An editorial gallery from a real Vendora booking.",
     image: event?.cover_path
-      ? vendorImageUrl(event.cover_path, { width: 1200 })
+      ? eventImageUrl(event, event.cover_path, { width: 1200 })
       : undefined,
     type: "article",
   });
@@ -103,7 +119,7 @@ export default function RealEventDetailPage() {
   const lightboxImages =
     event.gallery_paths.length > 0
       ? event.gallery_paths.map((p) => ({
-          src: vendorImageUrl(p, { width: 1600 }),
+          src: eventImageUrl(event, p, { width: 1600 }),
           alt: event.title,
         }))
       : [];
@@ -116,7 +132,7 @@ export default function RealEventDetailPage() {
       {event.cover_path && (
         <section className="relative h-[60svh] min-h-[420px] w-full overflow-hidden">
           <img
-            src={vendorImageUrl(event.cover_path, { width: 1920 })}
+            src={eventImageUrl(event, event.cover_path, { width: 1920 })}
             alt={event.title}
             className="absolute inset-0 w-full h-full object-cover"
           />
@@ -201,7 +217,7 @@ export default function RealEventDetailPage() {
                   aria-label={`Open photo ${i + 1}`}
                 >
                   <img
-                    src={vendorImageUrl(p, {
+                    src={eventImageUrl(event, p, {
                       width: i % 6 === 0 ? 1200 : 600,
                     })}
                     alt=""
@@ -257,7 +273,7 @@ export default function RealEventDetailPage() {
           headline: event.title,
           description: event.intro,
           image: event.cover_path
-            ? vendorImageUrl(event.cover_path, { width: 1200 })
+            ? eventImageUrl(event, event.cover_path, { width: 1200 })
             : undefined,
           datePublished: event.published_at,
           author: event.vendor?.business_name

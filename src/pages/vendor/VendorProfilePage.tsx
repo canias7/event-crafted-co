@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Loader2, ShieldCheck, Sparkles, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
@@ -12,10 +12,25 @@ import { VendorRecommendationManager } from "@/components/vendor/VendorRecommend
 import { IntakeFormEditor } from "@/components/vendor/IntakeFormEditor";
 import { ReferralManager } from "@/components/vendor/ReferralManager";
 import { ImportedReviewsManager } from "@/components/vendor/ImportedReviewsManager";
+import { VendorFaqsManager } from "@/components/vendor/VendorFaqsManager";
+import { VendorPolicyEditor } from "@/components/vendor/VendorPolicyEditor";
+import { LeadRulesCard } from "@/components/vendor/LeadRulesCard";
 import { ShowcaseClipsManager } from "@/components/vendor/ShowcaseClipsManager";
 import { VerificationManager } from "@/components/vendor/VerificationManager";
-import { RealEventsManager } from "@/components/vendor/RealEventsManager";
-import { AlbumManager } from "@/components/vendor/AlbumManager";
+// Lazy: both managers are below the fold and load their own data on
+// mount. Splitting them keeps the initial profile page chunk lean —
+// the user scrolls before they see either, so the fetch happens
+// during their scroll rather than blocking first paint.
+const RealEventsManager = lazy(() =>
+  import("@/components/vendor/RealEventsManager").then((m) => ({
+    default: m.RealEventsManager,
+  })),
+);
+const AlbumManager = lazy(() =>
+  import("@/components/vendor/AlbumManager").then((m) => ({
+    default: m.AlbumManager,
+  })),
+);
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -30,6 +45,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { vendorNavItems as navItems } from "@/data/navItems";
+import { VendorShareKit } from "@/components/vendor/VendorShareKit";
 
 const categories = [
   "Photographer",
@@ -131,15 +147,21 @@ export default function VendorProfilePage() {
     // (works for both owners and team members). Otherwise fall back to the
     // user_id lookup so a fresh user with no profile still hits the create
     // flow.
+    //
+    // Cast to any: hourly_rate_cents / min_hours / is_staffing landed in a
+    // forward migration that Lovable's auto-generated types.ts hasn't
+    // synced yet. Once it does, the cast can drop.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const sb = supabase as any;
     const query = membership?.vendor_id
-      ? supabase
+      ? sb
           .from("vendor_profiles")
           .select(
             "id, business_name, category, bio, base_price_cents, hourly_rate_cents, min_hours, is_staffing, location, service_radius_miles, portfolio_summary, verified_at, intro_video_url, weekly_digest_enabled, slug",
           )
           .eq("id", membership.vendor_id)
           .maybeSingle()
-      : supabase
+      : sb
           .from("vendor_profiles")
           .select(
             "id, business_name, category, bio, base_price_cents, hourly_rate_cents, min_hours, is_staffing, location, service_radius_miles, portfolio_summary, verified_at, intro_video_url, weekly_digest_enabled, slug",
@@ -202,9 +224,13 @@ export default function VendorProfilePage() {
           : null,
     };
 
+    // Cast to any: same reason as the read path above — staffing
+    // columns aren't in types.ts yet.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const sb = supabase as any;
     if (profile) {
       setSaving(true);
-      const { error } = await supabase
+      const { error } = await sb
         .from("vendor_profiles")
         .update(payload)
         .eq("id", profile.id);
@@ -224,7 +250,7 @@ export default function VendorProfilePage() {
       }
     } else {
       setCreating(true);
-      const { data, error } = await supabase
+      const { data, error } = await sb
         .from("vendor_profiles")
         .insert({ user_id: user.id, ...payload })
         .select(
@@ -481,6 +507,14 @@ export default function VendorProfilePage() {
                     </>
                   )}
                 </p>
+                {profile?.slug && (
+                  <div className="pt-1">
+                    <VendorShareKit
+                      slug={profile.slug}
+                      businessName={profile.business_name ?? "us"}
+                    />
+                  </div>
+                )}
               </div>
 
               {profile && canEdit && (
@@ -564,6 +598,17 @@ export default function VendorProfilePage() {
                 <IntakeFormEditor vendorId={profile.id} canEdit={canEdit} />
               </div>
               <div className="mt-12 pt-10 border-t border-border">
+                <VendorFaqsManager vendorId={profile.id} canEdit={canEdit} />
+              </div>
+              <div className="mt-12 pt-10 border-t border-border">
+                <VendorPolicyEditor vendorId={profile.id} canEdit={canEdit} />
+              </div>
+              {canEdit && (
+                <div className="mt-12 pt-10 border-t border-border">
+                  <LeadRulesCard vendorId={profile.id} />
+                </div>
+              )}
+              <div className="mt-12 pt-10 border-t border-border">
                 <ReferralManager vendorId={profile.id} canEdit={canEdit} />
               </div>
               <div className="mt-12 pt-10 border-t border-border">
@@ -585,16 +630,20 @@ export default function VendorProfilePage() {
                 />
               </div>
               <div className="mt-12 pt-10 border-t border-border">
-                <RealEventsManager
-                  vendorId={profile.id}
-                  canEdit={canEdit}
-                />
+                <Suspense fallback={null}>
+                  <RealEventsManager
+                    vendorId={profile.id}
+                    canEdit={canEdit}
+                  />
+                </Suspense>
               </div>
               <div className="mt-12 pt-10 border-t border-border">
-                <AlbumManager
-                  vendorId={profile.id}
-                  canEdit={canEdit}
-                />
+                <Suspense fallback={null}>
+                  <AlbumManager
+                    vendorId={profile.id}
+                    canEdit={canEdit}
+                  />
+                </Suspense>
               </div>
             </>
           )}

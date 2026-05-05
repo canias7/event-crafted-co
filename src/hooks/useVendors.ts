@@ -23,6 +23,14 @@ export interface Vendor {
   isReal: boolean;
   /** Approved verification kinds (identity / insurance / business_license) — public-safe. */
   verifiedKinds?: string[];
+  /** Public socials — without leading @. */
+  instagramHandle?: string | null;
+  tiktokHandle?: string | null;
+  /** Booking terms — surfaced as policy badges on the public profile. */
+  depositPct?: number | null;
+  cancellationPolicy?: string | null;
+  rescheduleWindowDays?: number | null;
+  policyNotes?: string | null;
 }
 
 const categoryImageFallback: Record<string, string> = {
@@ -51,6 +59,12 @@ interface VendorProfileRow {
   responder_tier: "fast" | "standard" | null;
   intro_video_url: string | null;
   slug: string | null;
+  instagram_handle: string | null;
+  tiktok_handle: string | null;
+  deposit_pct: number | null;
+  cancellation_policy: string | null;
+  reschedule_window_days: number | null;
+  policy_notes: string | null;
 }
 
 function normalizeDb(row: VendorProfileRow): Vendor {
@@ -74,6 +88,12 @@ function normalizeDb(row: VendorProfileRow): Vendor {
     responderTier: row.responder_tier ?? null,
     introVideoUrl: row.intro_video_url ?? null,
     slug: row.slug ?? null,
+    instagramHandle: row.instagram_handle ?? null,
+    tiktokHandle: row.tiktok_handle ?? null,
+    depositPct: row.deposit_pct ?? null,
+    cancellationPolicy: row.cancellation_policy ?? null,
+    rescheduleWindowDays: row.reschedule_window_days ?? null,
+    policyNotes: row.policy_notes ?? null,
     isReal: true,
   };
 }
@@ -88,13 +108,11 @@ async function fetchVendors(): Promise<Vendor[]> {
   if (inFlight) return inFlight;
   inFlight = (async () => {
     try {
-      // Cast through any: responder_tier is added by a forward migration
-      // not yet reflected in Lovable's auto-generated types.ts.
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data, error } = await (supabase as any)
         .from("vendor_profiles")
         .select(
-          "id, business_name, category, bio, base_price_cents, location, service_radius_miles, portfolio_summary, verified_at, responder_tier, intro_video_url, slug",
+          "id, business_name, category, bio, base_price_cents, location, service_radius_miles, portfolio_summary, verified_at, responder_tier, intro_video_url, slug, instagram_handle, tiktok_handle, deposit_pct, cancellation_policy, reschedule_window_days, policy_notes",
         )
         .order("verified_at", { ascending: false, nullsFirst: false });
       if (!error && data) {
@@ -103,8 +121,7 @@ async function fetchVendors(): Promise<Vendor[]> {
         // Override startingPrice with the lowest active package price for
         // each vendor. Falls back to base_price_cents (already set above)
         // when a vendor hasn't built out packages yet.
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const { data: pkgs } = await (supabase as any)
+        const { data: pkgs } = await supabase
           .from("vendor_packages")
           .select("vendor_id, price_cents")
           .eq("is_active", true);
@@ -128,6 +145,8 @@ async function fetchVendors(): Promise<Vendor[]> {
 
         // Batch-fetch verification badges so cards can render the
         // shield iconography without an N+1 fetch.
+        // vendor_public_badges is a Postgres view; views aren't in the
+        // generated types, so the cast is required.
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const { data: badges } = await (supabase as any)
           .from("vendor_public_badges")

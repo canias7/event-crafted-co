@@ -1,9 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { Bell, Check, Inbox, Sparkles, MessageCircle, Star, Calendar } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useRealtime } from "@/lib/realtime";
 import {
   Popover,
   PopoverContent,
@@ -11,8 +12,7 @@ import {
 } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const notifTable = () => (supabase as any).from("notifications");
+const notifTable = () => supabase.from("notifications");
 
 interface Notification {
   id: string;
@@ -64,27 +64,17 @@ export function NotificationBell({ variant = "dark" }: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
-  // Realtime: refresh when a new notification lands or marks change
-  useEffect(() => {
-    if (!user) return;
-    const channel = supabase
-      .channel(`notifications-${user.id}-${Math.random().toString(36).slice(2)}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "notifications",
-          filter: `user_id=eq.${user.id}`,
-        },
-        () => load(),
-      )
-      .subscribe();
-    return () => {
-      supabase.removeChannel(channel);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user]);
+  // Realtime: refresh when a new notification lands or marks change.
+  // Routes through the shared user-scoped channel from RealtimeProvider
+  // so this doesn't open its own websocket-channel slot.
+  const realtimeConfig = useMemo(
+    () =>
+      user
+        ? { table: "notifications", filter: `user_id=eq.${user.id}` as const }
+        : null,
+    [user?.id],
+  );
+  useRealtime(realtimeConfig, () => load());
 
   if (!user) return null;
 

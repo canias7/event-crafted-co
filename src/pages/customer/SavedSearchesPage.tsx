@@ -53,6 +53,8 @@ export default function SavedSearchesPage() {
   async function load() {
     if (!user) return;
     setLoading(true);
+    // Cast to any: email_alerts_enabled landed in a forward migration
+    // that types.ts hasn't synced yet.
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data } = await (supabase as any)
       .from("saved_searches")

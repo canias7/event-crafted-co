@@ -55,8 +55,7 @@ Deposits are non-refundable but transferable to a new date with at least 60 days
 The Vendor's total liability is limited to the amount paid under this agreement.
 `;
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const tplTable = () => (supabase as any).from("vendor_contract_templates");
+const tplTable = () => supabase.from("vendor_contract_templates");
 
 export default function VendorContractsPage() {
   const { user, vendorMemberships } = useAuth();

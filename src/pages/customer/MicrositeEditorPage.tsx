@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { transformedImageUrl } from "@/lib/storage";
 import { useAuth } from "@/hooks/useAuth";
 import { DashboardSidebar } from "@/components/shared/DashboardSidebar";
 import { MobileNav } from "@/components/shared/MobileNav";
@@ -27,6 +28,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Skeleton } from "@/components/ui/skeleton";
 import { customerNavItems as navItems } from "@/data/navItems";
+import { MicrositeRsvpResponsesCard } from "@/components/microsite/MicrositeRsvpResponsesCard";
 
 const BUCKET = "event-microsites";
 const MAX_BYTES = 5 * 1024 * 1024;
@@ -60,13 +62,31 @@ interface Photo {
   display_order: number;
 }
 
+// 14 microsite themes covering the spectrum of event types — wedding,
+// birthday, holiday, corporate, baby shower, anniversary. Adding a new
+// theme here also requires adding the matching palette to the THEMES
+// record in EventMicrositePage.tsx.
 const THEMES: Array<{ id: string; label: string; preview: string }> = [
+  // — Romantic / wedding-leaning —
   { id: "classic", label: "Classic", preview: "from-stone-900 to-stone-700" },
   { id: "rose", label: "Rose", preview: "from-rose-900 to-rose-700" },
+  { id: "ivory", label: "Ivory & Blush", preview: "from-rose-300 to-amber-200" },
+  { id: "garden", label: "Garden", preview: "from-emerald-700 to-lime-500" },
   { id: "sage", label: "Sage", preview: "from-emerald-900 to-emerald-700" },
+  { id: "champagne", label: "Champagne", preview: "from-amber-900 to-yellow-700" },
+  // — Evening / formal —
   { id: "dusk", label: "Dusk", preview: "from-indigo-900 to-purple-700" },
   { id: "midnight", label: "Midnight", preview: "from-slate-900 to-blue-900" },
-  { id: "champagne", label: "Champagne", preview: "from-amber-900 to-yellow-700" },
+  { id: "starlit", label: "Starlit", preview: "from-slate-950 to-amber-700" },
+  // — Festive / birthday / casual —
+  { id: "confetti", label: "Confetti", preview: "from-pink-500 to-violet-500" },
+  { id: "sunset", label: "Sunset", preview: "from-orange-600 to-rose-500" },
+  // — Holiday / winter —
+  { id: "evergreen", label: "Evergreen", preview: "from-green-900 to-red-800" },
+  // — Baby shower / soft pastels —
+  { id: "powder", label: "Powder", preview: "from-sky-200 to-pink-200" },
+  // — Corporate / minimal —
+  { id: "monochrome", label: "Monochrome", preview: "from-zinc-900 to-zinc-600" },
 ];
 
 const EVENT_DEFAULTS: Record<string, { title: string; subtitle: string }> = {
@@ -76,9 +96,11 @@ const EVENT_DEFAULTS: Record<string, { title: string; subtitle: string }> = {
   other: { title: "Our event", subtitle: "is almost here" },
 };
 
-function publicUrl(path: string) {
-  const { data } = supabase.storage.from(BUCKET).getPublicUrl(path);
-  return data.publicUrl;
+function publicUrl(
+  path: string,
+  opts?: { width?: number; quality?: number },
+) {
+  return transformedImageUrl(BUCKET, path, opts);
 }
 
 export default function MicrositeEditorPage() {
@@ -391,7 +413,7 @@ export default function MicrositeEditorPage() {
             <div className="mt-1.5 aspect-[16/9] rounded-sm bg-muted overflow-hidden relative">
               {event.microsite_cover_path ? (
                 <img
-                  src={publicUrl(event.microsite_cover_path)}
+                  src={publicUrl(event.microsite_cover_path, { width: 1200 })}
                   alt="Cover"
                   className="w-full h-full object-cover"
                 />
@@ -522,7 +544,7 @@ export default function MicrositeEditorPage() {
             <div className="space-y-3 rounded-sm border border-border bg-card p-4">
               {[
                 { key: "microsite_show_schedule", label: "Schedule / run-of-show" },
-                { key: "microsite_show_rsvp", label: "RSVP CTA" },
+                { key: "microsite_show_rsvp", label: "RSVP form" },
                 { key: "microsite_show_registry", label: "Registry links" },
                 { key: "microsite_show_gifts", label: "Group gifts" },
                 { key: "microsite_show_gallery", label: "Photo gallery" },
@@ -545,6 +567,13 @@ export default function MicrositeEditorPage() {
               })}
             </div>
           </section>
+
+          {/* RSVP responses */}
+          {event.microsite_show_rsvp && (
+            <section>
+              <MicrositeRsvpResponsesCard eventId={event.id} />
+            </section>
+          )}
 
           {/* Gallery */}
           <section>
@@ -594,7 +623,7 @@ export default function MicrositeEditorPage() {
                     className="aspect-square rounded-sm overflow-hidden bg-muted relative group"
                   >
                     <img
-                      src={publicUrl(p.storage_path)}
+                      src={publicUrl(p.storage_path, { width: 400 })}
                       alt={p.caption ?? ""}
                       loading="lazy"
                       className="w-full h-full object-cover"

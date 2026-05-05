@@ -14,6 +14,7 @@ import {
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useRealtime } from "@/lib/realtime";
 import { DashboardSidebar } from "@/components/shared/DashboardSidebar";
 import { MobileNav } from "@/components/shared/MobileNav";
 import { Button } from "@/components/ui/button";
@@ -249,12 +250,13 @@ function NewTicketDialog({
   const [priority, setPriority] = useState<"low" | "normal" | "high" | "urgent">("normal");
   const [submitting, setSubmitting] = useState(false);
 
+  const subjectValid = subject.trim().length > 0;
+  const bodyValid = body.trim().length > 0;
+  const formValid = subjectValid && bodyValid;
+
   async function submit(e: React.FormEvent) {
     e.preventDefault();
-    if (!subject.trim() || !body.trim()) {
-      toast.error("Subject and body are required");
-      return;
-    }
+    if (!formValid) return;
     setSubmitting(true);
     const { data: ticket, error: tErr } = await ticketsTable()
       .insert({
@@ -366,7 +368,7 @@ function NewTicketDialog({
             </Button>
             <Button
               type="submit"
-              disabled={submitting}
+              disabled={submitting || !formValid}
               className="rounded-full bg-foreground text-background hover:bg-foreground/90"
             >
               {submitting ? (
@@ -409,24 +411,19 @@ function TicketThread({
 
   useEffect(() => {
     loadMessages();
-    const channel = supabase
-      .channel(`support-${ticket.id}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "support_messages",
-          filter: `ticket_id=eq.${ticket.id}`,
-        },
-        () => loadMessages(),
-      )
-      .subscribe();
-    return () => {
-      supabase.removeChannel(channel);
-    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ticket.id]);
+
+  // Realtime via shared user-scoped channel.
+  const realtimeConfig = useMemo(
+    () => ({
+      table: "support_messages",
+      event: "INSERT" as const,
+      filter: `ticket_id=eq.${ticket.id}`,
+    }),
+    [ticket.id],
+  );
+  useRealtime(realtimeConfig, () => loadMessages());
 
   async function send(e: React.FormEvent) {
     e.preventDefault();

@@ -24,6 +24,7 @@ import {
 import { DashboardSidebar } from "@/components/shared/DashboardSidebar";
 import { MobileNav } from "@/components/shared/MobileNav";
 import { PushNotificationsCard } from "@/components/settings/PushNotificationsCard";
+import { NotificationPreferencesCard } from "@/components/settings/NotificationPreferencesCard";
 import { CalendarConnectionsCard } from "@/components/settings/CalendarConnectionsCard";
 import { TwoFactorCard } from "@/components/settings/TwoFactorCard";
 import { customerNavItems, vendorNavItems } from "@/data/navItems";
@@ -186,6 +187,11 @@ export default function SettingsPage() {
       { key: "budget_items", query: () => sb.from("budget_items").select("*").eq("host_id", user.id) },
       { key: "event_tasks", query: () => sb.from("event_tasks").select("*").eq("host_id", user.id) },
       { key: "notifications", query: () => sb.from("notifications").select("*").eq("user_id", user.id) },
+      { key: "host_inquiry_templates", query: () => sb.from("host_inquiry_templates").select("*").eq("host_id", user.id) },
+      { key: "content_reports_filed", query: () => sb.from("content_reports").select("*").eq("reporter_id", user.id) },
+      { key: "direct_threads", query: () => sb.from("direct_threads").select("*").eq("host_id", user.id) },
+      { key: "saved_searches", query: () => sb.from("saved_searches").select("*").eq("host_id", user.id) },
+      { key: "host_events", query: () => sb.from("host_events").select("*").eq("host_id", user.id) },
     ];
 
     const result: Record<string, unknown> = {
@@ -429,6 +435,9 @@ export default function SettingsPage() {
               >
                 <div className="space-y-6">
                   <PushNotificationsCard />
+                  <div className="pt-4 border-t border-border">
+                    <NotificationPreferencesCard />
+                  </div>
                   <div className="flex items-center justify-between gap-4 pt-4 border-t border-border">
                     <div className="min-w-0">
                       <p className="text-sm font-medium mb-1">

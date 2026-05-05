@@ -1,7 +1,8 @@
-import { useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { Plus, Sparkles, Inbox } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useRealtime } from "@/lib/realtime";
 import { useAuth } from "@/hooks/useAuth";
 import { DashboardSidebar } from "@/components/shared/DashboardSidebar";
 import { MobileNav } from "@/components/shared/MobileNav";
@@ -10,7 +11,12 @@ import { INQUIRIES_HUB_TABS } from "@/data/hubTabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { InquiryFormModal } from "@/components/inquiries/InquiryFormModal";
+// Lazy: heavy modal only loads when the host opens the inquiry form.
+const InquiryFormModal = lazy(() =>
+  import("@/components/inquiries/InquiryFormModal").then((m) => ({
+    default: m.InquiryFormModal,
+  })),
+);
 import { customerNavItems as navItems } from "@/data/navItems";
 
 interface InquiryRow {
@@ -84,27 +90,14 @@ export default function InquiriesPage() {
   }, [user]);
 
   // Realtime: refetch when this host's inquiries change (e.g. status moves
-  // from new → replied when the vendor responds).
-  useEffect(() => {
-    if (!user) return;
-    const channel = supabase
-      .channel(`host-inquiries-${user.id}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "inquiries",
-          filter: `host_id=eq.${user.id}`,
-        },
-        () => load(),
-      )
-      .subscribe();
-    return () => {
-      supabase.removeChannel(channel);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user]);
+  // from new → replied when the vendor responds). Uses the shared
+  // user-scoped channel from RealtimeProvider.
+  const realtimeConfig = useMemo(
+    () =>
+      user ? { table: "inquiries", filter: `host_id=eq.${user.id}` } : null,
+    [user?.id],
+  );
+  useRealtime(realtimeConfig, () => load());
 
   // Strip ?new=1 once consumed so refreshes don't re-open the modal
   useEffect(() => {
@@ -317,13 +310,17 @@ export default function InquiriesPage() {
 
       <MobileNav items={navItems} />
 
-      <InquiryFormModal
-        open={modalOpen}
-        onOpenChange={(o) => {
-          setModalOpen(o);
-          if (!o) load();
-        }}
-      />
+      {modalOpen && (
+        <Suspense fallback={null}>
+          <InquiryFormModal
+            open={modalOpen}
+            onOpenChange={(o) => {
+              setModalOpen(o);
+              if (!o) load();
+            }}
+          />
+        </Suspense>
+      )}
     </div>
   );
 }

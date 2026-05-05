@@ -19,11 +19,15 @@ import {
   LifeBuoy,
   History,
   MailCheck,
+  BookOpen,
+  UserPlus,
+  Flag,
   type LucideIcon,
 } from "lucide-react";
 
 export interface NavItem {
-  label: string;
+  /** i18n key resolved by the rendering component via useTranslation. */
+  labelKey: string;
   path: string;
   icon: LucideIcon;
 }
@@ -37,50 +41,50 @@ export interface NavItem {
 // resolve — we just don't repeat them in the sidebar.
 
 export const customerNavItems: NavItem[] = [
-  { label: "Dashboard", path: "/customer/dashboard", icon: LayoutDashboard },
+  { labelKey: "sidebar.customer.dashboard", path: "/customer/dashboard", icon: LayoutDashboard },
   // Vendors hub — sub-tabs: Browse, Favorites, Saved searches
-  { label: "Vendors", path: "/customer/vendors", icon: Store },
+  { labelKey: "sidebar.customer.vendors", path: "/customer/vendors", icon: Store },
   // Inquiries hub — sub-tabs: Single, Multi-vendor blast
-  { label: "Inquiries", path: "/customer/inquiries", icon: MessageSquare },
-  { label: "Messages", path: "/customer/messages", icon: Mail },
-  { label: "Appointments", path: "/customer/appointments", icon: CalendarDays },
+  { labelKey: "sidebar.customer.inquiries", path: "/customer/inquiries", icon: MessageSquare },
+  { labelKey: "sidebar.customer.messages", path: "/customer/messages", icon: Mail },
+  { labelKey: "sidebar.customer.appointments", path: "/customer/appointments", icon: CalendarDays },
   // Event hub — sub-tabs: Details, Day-of Timeline, Microsite
-  { label: "Event", path: "/customer/event", icon: FileText },
+  { labelKey: "sidebar.customer.event", path: "/customer/event", icon: FileText },
   // Guests hub — sub-tabs: Guests, Seating
-  { label: "Guests", path: "/customer/guests", icon: User },
+  { labelKey: "sidebar.customer.guests", path: "/customer/guests", icon: User },
   // Planning hub — sub-tabs: Tasks, Checklist, Planning Team, Planner workspace
-  { label: "Planning", path: "/customer/tasks", icon: ListTodo },
+  { labelKey: "sidebar.customer.planning", path: "/customer/tasks", icon: ListTodo },
   // Inspiration hub — sub-tabs: Mood Boards, Invitations
-  { label: "Inspiration", path: "/customer/moodboards", icon: Image },
+  { labelKey: "sidebar.customer.inspiration", path: "/customer/moodboards", icon: Image },
   // Gifts hub — sub-tabs: Registry, Group gifts
-  { label: "Gifts", path: "/customer/registry", icon: Gift },
+  { labelKey: "sidebar.customer.gifts", path: "/customer/registry", icon: Gift },
 ];
 
 export const customerNavBottomItems: NavItem[] = [
-  { label: "Payments", path: "/customer/payments", icon: CreditCard },
-  { label: "Support", path: "/support", icon: LifeBuoy },
-  { label: "Settings", path: "/settings", icon: Settings },
+  { labelKey: "sidebar.bottom.payments", path: "/customer/payments", icon: CreditCard },
+  { labelKey: "sidebar.bottom.support", path: "/support", icon: LifeBuoy },
+  { labelKey: "sidebar.bottom.settings", path: "/settings", icon: Settings },
 ];
 
 export const vendorNavItems: NavItem[] = [
-  { label: "Dashboard", path: "/vendor/dashboard", icon: LayoutDashboard },
-  { label: "Inbox", path: "/vendor/inbox", icon: Inbox },
-  { label: "Messages", path: "/vendor/messages", icon: Mail },
-  { label: "Analytics", path: "/vendor/analytics", icon: TrendingUp },
+  { labelKey: "sidebar.vendor.dashboard", path: "/vendor/dashboard", icon: LayoutDashboard },
+  { labelKey: "sidebar.vendor.inbox", path: "/vendor/inbox", icon: Inbox },
+  { labelKey: "sidebar.vendor.messages", path: "/vendor/messages", icon: Mail },
+  { labelKey: "sidebar.vendor.analytics", path: "/vendor/analytics", icon: TrendingUp },
   // Calendar hub — sub-tabs: Appointments, Availability
-  { label: "Calendar", path: "/vendor/appointments", icon: CalendarDays },
+  { labelKey: "sidebar.vendor.calendar", path: "/vendor/appointments", icon: CalendarDays },
   // Profile aggregates packages, portfolio, showcase clips, real events,
   // verifications, imported reviews — already a single page.
-  { label: "Profile", path: "/vendor/profile", icon: User },
+  { labelKey: "sidebar.vendor.profile", path: "/vendor/profile", icon: User },
   // Library hub — sub-tabs: Message templates, Contract templates
-  { label: "Library", path: "/vendor/templates", icon: FileText },
-  { label: "Team", path: "/vendor/team", icon: Users },
-  { label: "Payments", path: "/vendor/payments", icon: CreditCard },
+  { labelKey: "sidebar.vendor.library", path: "/vendor/templates", icon: FileText },
+  { labelKey: "sidebar.vendor.team", path: "/vendor/team", icon: Users },
+  { labelKey: "sidebar.vendor.payments", path: "/vendor/payments", icon: CreditCard },
 ];
 
 export const vendorNavBottomItems: NavItem[] = [
-  { label: "Support", path: "/support", icon: LifeBuoy },
-  { label: "Settings", path: "/settings", icon: Settings },
+  { labelKey: "sidebar.bottom.support", path: "/support", icon: LifeBuoy },
+  { labelKey: "sidebar.bottom.settings", path: "/settings", icon: Settings },
 ];
 
 // Lookup map so DashboardSidebar can find the bottom items without
@@ -94,16 +98,19 @@ export function getBottomNav(main: NavItem[]): NavItem[] | undefined {
 }
 
 export const adminNavItems: NavItem[] = [
-  { label: "Overview", path: "/admin/dashboard", icon: LayoutDashboard },
-  { label: "Vendors", path: "/admin/vendors", icon: Store },
-  { label: "Verifications", path: "/admin/verifications", icon: ShieldCheck },
-  { label: "Inquiries", path: "/admin/inquiries", icon: MessageSquare },
-  { label: "Reviews", path: "/admin/reviews", icon: CheckSquare },
-  { label: "Inspiration", path: "/admin/inspiration", icon: FileText },
-  { label: "Support", path: "/admin/support", icon: LifeBuoy },
-  { label: "Audit log", path: "/admin/audit", icon: History },
-  { label: "Email health", path: "/admin/email-deliverability", icon: MailCheck },
-  { label: "Settings", path: "/settings", icon: Settings },
+  { labelKey: "sidebar.admin.overview", path: "/admin/dashboard", icon: LayoutDashboard },
+  { labelKey: "sidebar.admin.vendors", path: "/admin/vendors", icon: Store },
+  { labelKey: "sidebar.admin.verifications", path: "/admin/verifications", icon: ShieldCheck },
+  { labelKey: "sidebar.admin.inquiries", path: "/admin/inquiries", icon: MessageSquare },
+  { labelKey: "sidebar.admin.reviews", path: "/admin/reviews", icon: CheckSquare },
+  { labelKey: "sidebar.admin.inspiration", path: "/admin/inspiration", icon: FileText },
+  { labelKey: "sidebar.admin.editorial", path: "/admin/editorial", icon: BookOpen },
+  { labelKey: "sidebar.admin.claims", path: "/admin/claims", icon: UserPlus },
+  { labelKey: "sidebar.admin.support", path: "/admin/support", icon: LifeBuoy },
+  { labelKey: "sidebar.admin.reports", path: "/admin/reports", icon: Flag },
+  { labelKey: "sidebar.admin.audit", path: "/admin/audit", icon: History },
+  { labelKey: "sidebar.admin.email_health", path: "/admin/email-deliverability", icon: MailCheck },
+  { labelKey: "sidebar.admin.settings", path: "/settings", icon: Settings },
 ];
 
 NAV_BOTTOMS.set(customerNavItems, customerNavBottomItems);

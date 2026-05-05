@@ -69,8 +69,7 @@ export function SaveSearchButton({ filters }: Props) {
   async function save() {
     if (!user || !name.trim()) return;
     setSaving(true);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error } = await (supabase as any).from("saved_searches").insert({
+    const { error } = await supabase.from("saved_searches").insert({
       host_id: user.id,
       name: name.trim(),
       filters: { _version: 1, ...filters },

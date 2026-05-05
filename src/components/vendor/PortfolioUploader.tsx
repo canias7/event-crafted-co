@@ -18,8 +18,7 @@ interface PortfolioImage {
   created_at: string;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const portfolioTable = () => (supabase as any).from("vendor_portfolio_images");
+const portfolioTable = () => supabase.from("vendor_portfolio_images");
 
 interface Props {
   vendorId: string;

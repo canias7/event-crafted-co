@@ -1,7 +1,8 @@
 import { motion } from "framer-motion";
-import { Star, MapPin, Heart, Zap } from "lucide-react";
+import { Star, MapPin, Heart, Zap, GitCompare } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useSavedVendors } from "@/hooks/useSavedVendors";
+import { useCompareVendors } from "@/hooks/useCompareVendors";
 import { PrefetchLink as Link } from "@/components/shared/PrefetchLink";
 import { Picture, type PictureSource } from "@/components/shared/Picture";
 import { VerificationBadges } from "@/components/vendor/VerificationBadges";
@@ -48,7 +49,9 @@ interface VendorCardProps {
 
 export function VendorCard({ vendor, eager = false }: VendorCardProps) {
   const { isSaved, toggle } = useSavedVendors();
+  const { isCompared, toggle: toggleCompare } = useCompareVendors();
   const saved = isSaved(vendor.id);
+  const compared = isCompared(vendor.id);
 
   return (
     <Link to={`/vendors/${vendor.id}`} className="group block">
@@ -67,20 +70,37 @@ export function VendorCard({ vendor, eager = false }: VendorCardProps) {
           />
           <div className="absolute inset-0 bg-gradient-to-t from-foreground/55 via-transparent to-transparent" />
 
-          <button
-            aria-label={saved ? "Remove from saved" : "Save vendor"}
-            onClick={(e) => {
-              e.preventDefault();
-              toggle(vendor.id, { isReal: vendor.isReal });
-            }}
-            className="absolute top-3 right-3 w-9 h-9 rounded-full bg-background/85 backdrop-blur-sm flex items-center justify-center hover:bg-background transition-colors"
-          >
-            <Heart
-              className={`w-4 h-4 transition-colors ${
-                saved ? "fill-accent text-accent" : "text-foreground"
+          <div className="absolute top-3 right-3 flex flex-col gap-2">
+            <button
+              aria-label={saved ? "Remove from saved" : "Save vendor"}
+              onClick={(e) => {
+                e.preventDefault();
+                toggle(vendor.id, { isReal: vendor.isReal });
+              }}
+              className="w-9 h-9 rounded-full bg-background/85 backdrop-blur-sm flex items-center justify-center hover:bg-background transition-colors"
+            >
+              <Heart
+                className={`w-4 h-4 transition-colors ${
+                  saved ? "fill-accent text-accent" : "text-foreground"
+                }`}
+              />
+            </button>
+            <button
+              aria-label={compared ? "Remove from compare" : "Add to compare"}
+              aria-pressed={compared}
+              onClick={(e) => {
+                e.preventDefault();
+                toggleCompare(vendor.id);
+              }}
+              className={`w-9 h-9 rounded-full backdrop-blur-sm flex items-center justify-center transition-colors ${
+                compared
+                  ? "bg-foreground text-background hover:bg-foreground/90"
+                  : "bg-background/85 hover:bg-background"
               }`}
-            />
-          </button>
+            >
+              <GitCompare className="w-4 h-4" />
+            </button>
+          </div>
 
           {vendor.responderTier === "fast" ? (
             <Badge className="absolute top-3 left-3 bg-accent text-accent-foreground backdrop-blur-sm border-none gap-1">

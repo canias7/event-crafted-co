@@ -75,7 +75,7 @@ export function CalendarConnectionsCard() {
     setBusy("connect");
     const result = await startGoogleConnect();
     setBusy(null);
-    if (!result.ok) toast.error(result.reason);
+    if (result.ok === false) toast.error(result.reason);
     // On ok we redirect away — no toast.
   }
 
@@ -84,7 +84,7 @@ export function CalendarConnectionsCard() {
     setBusy("disconnect");
     const result = await disconnectCalendar();
     setBusy(null);
-    if (!result.ok) {
+    if (result.ok === false) {
       toast.error(result.reason);
       return;
     }
@@ -97,7 +97,7 @@ export function CalendarConnectionsCard() {
     setBusy("sync");
     const result = await triggerSync(user.id);
     setBusy(null);
-    if (!result.ok) {
+    if (result.ok === false) {
       toast.error(result.reason);
       return;
     }

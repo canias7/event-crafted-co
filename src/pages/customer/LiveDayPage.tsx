@@ -23,8 +23,7 @@ interface TimelineItem {
   owner_label: string | null;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const itemsTable = () => (supabase as any).from("event_timeline_items");
+const itemsTable = () => supabase.from("event_timeline_items");
 
 function timeToMinutes(t: string) {
   const [h, m] = t.split(":").map(Number);

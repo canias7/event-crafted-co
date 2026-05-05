@@ -3,6 +3,7 @@ import { useParams, Navigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Download, Heart, ChevronLeft, ChevronRight, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { transformedImageUrl } from "@/lib/storage";
 import { PrefetchLink as Link } from "@/components/shared/PrefetchLink";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -29,12 +30,14 @@ interface AlbumData {
   }>;
 }
 
-function publicUrl(path: string) {
+function publicUrl(
+  path: string,
+  opts?: { width?: number; quality?: number },
+) {
   // The bucket is private, but the policy auto-grants read on photos in
-  // published-with-consent albums. getPublicUrl just constructs the URL
-  // string — Supabase enforces the read at the storage edge.
-  const { data } = supabase.storage.from(BUCKET).getPublicUrl(path);
-  return data.publicUrl;
+  // published-with-consent albums. transformedImageUrl just constructs the
+  // URL string — Supabase enforces the read at the storage edge.
+  return transformedImageUrl(BUCKET, path, opts);
 }
 
 export default function EventAlbumPage() {
@@ -72,7 +75,7 @@ export default function EventAlbumPage() {
     title: data ? `${data.album.title} — Vendora album` : "Event album — Vendora",
     description: data?.album.description ?? "An event album shared on Vendora.",
     image: data?.album.cover_path
-      ? publicUrl(data.album.cover_path)
+      ? publicUrl(data.album.cover_path, { width: 1200 })
       : undefined,
     type: "article",
   });
@@ -144,7 +147,7 @@ export default function EventAlbumPage() {
       <section className="relative h-[55svh] min-h-[420px] w-full overflow-hidden">
         {data.album.cover_path ? (
           <img
-            src={publicUrl(data.album.cover_path)}
+            src={publicUrl(data.album.cover_path, { width: 1600 })}
             alt=""
             className="absolute inset-0 w-full h-full object-cover"
           />
@@ -215,7 +218,7 @@ export default function EventAlbumPage() {
                   aria-label={`Open photo ${i + 1}`}
                 >
                   <img
-                    src={publicUrl(p.storage_path)}
+                    src={publicUrl(p.storage_path, { width: 600 })}
                     alt={p.caption ?? ""}
                     loading={i < 8 ? "eager" : "lazy"}
                     className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-[1.04]"
@@ -296,7 +299,7 @@ export default function EventAlbumPage() {
             </button>
           )}
           <img
-            src={publicUrl(data.photos[lightboxIndex].storage_path)}
+            src={publicUrl(data.photos[lightboxIndex].storage_path, { width: 1600 })}
             alt={data.photos[lightboxIndex].caption ?? ""}
             className="max-w-[92vw] max-h-[88vh] object-contain"
             onClick={(e) => e.stopPropagation()}

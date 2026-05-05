@@ -20,6 +20,9 @@ export const HowItWorksPage = lazy(importHowItWorks);
 const importVendorBrowse = () => import("@/pages/VendorBrowsePage");
 export const VendorBrowsePage = lazy(importVendorBrowse);
 
+const importCompareVendors = () => import("@/pages/CompareVendorsPage");
+export const CompareVendorsPage = lazy(importCompareVendors);
+
 const importStaffing = () => import("@/pages/StaffingPage");
 export const StaffingPage = lazy(importStaffing);
 
@@ -28,6 +31,43 @@ export const VendorLocationsPage = lazy(importVendorLocations);
 
 const importVendorCity = () => import("@/pages/VendorCityPage");
 export const VendorCityPage = lazy(importVendorCity);
+
+const importVendorCityCategory = () => import("@/pages/VendorCityCategoryPage");
+export const VendorCityCategoryPage = lazy(importVendorCityCategory);
+
+const importVendorEventTypeCity = () =>
+  import("@/pages/VendorEventTypeCityPage");
+export const VendorEventTypeCityPage = lazy(importVendorEventTypeCity);
+
+const importEditorialArticle = () => import("@/pages/EditorialArticlePage");
+export const EditorialArticlePage = lazy(importEditorialArticle);
+
+const importAdminEditorial = () => import("@/pages/admin/AdminEditorialPage");
+export const AdminEditorialPage = lazy(importAdminEditorial);
+
+const importClaimVendor = () => import("@/pages/ClaimVendorPage");
+export const ClaimVendorPage = lazy(importClaimVendor);
+
+const importAdminClaims = () => import("@/pages/admin/AdminClaimsPage");
+export const AdminClaimsPage = lazy(importAdminClaims);
+
+const importAdminReports = () => import("@/pages/admin/AdminReportsPage");
+export const AdminReportsPage = lazy(importAdminReports);
+
+const importPublicReview = () => import("@/pages/PublicReviewPage");
+export const PublicReviewPage = lazy(importPublicReview);
+
+const importProposalPrint = () => import("@/pages/ProposalPrintPage");
+export const ProposalPrintPage = lazy(importProposalPrint);
+
+const importPublicProposal = () => import("@/pages/PublicProposalPage");
+export const PublicProposalPage = lazy(importPublicProposal);
+
+const importPlanInFive = () => import("@/pages/PlanInFivePage");
+export const PlanInFivePage = lazy(importPlanInFive);
+
+const importVendorBlog = () => import("@/pages/vendor/VendorBlogPage");
+export const VendorBlogPage = lazy(importVendorBlog);
 
 const importVendorMap = () => import("@/pages/VendorMapPage");
 export const VendorMapPage = lazy(importVendorMap);
@@ -279,6 +319,16 @@ const ROUTE_IMPORTERS: Array<{ pattern: string; importer: () => Promise<unknown>
   // Dynamic public
   { pattern: "/vendors/in/:citySlug", importer: importVendorCity },
   { pattern: "/vendors/category/:slug", importer: importVendorCategory },
+  // Programmatic SEO: city × category cross-product.
+  {
+    pattern: "/vendors/:categorySlug/in/:citySlug",
+    importer: importVendorCityCategory,
+  },
+  // Programmatic SEO: event-type × city.
+  {
+    pattern: "/:eventTypeSlug-vendors/:citySlug",
+    importer: importVendorEventTypeCity,
+  },
   { pattern: "/vendors/:id", importer: importVendorDetail },
   { pattern: "/v/:slug", importer: importVendorDetail },
   { pattern: "/inspiration/:slug", importer: importInspirationDetail },

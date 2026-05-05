@@ -16,6 +16,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { BudgetBenchmarkBadge } from "@/components/budget/BudgetBenchmarkBadge";
 import {
   Dialog,
   DialogContent,
@@ -35,9 +36,9 @@ import { DashboardSidebar } from "@/components/shared/DashboardSidebar";
 import { MobileNav } from "@/components/shared/MobileNav";
 import { StatCard } from "@/components/shared/StatCard";
 import { customerNavItems as navItems } from "@/data/navItems";
+import { BudgetBreakdownChart } from "@/components/budget/BudgetBreakdownChart";
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const budgetTable = () => (supabase as any).from("budget_items");
+const budgetTable = () => supabase.from("budget_items");
 
 // Categories cover all event types Vendora supports — weddings, birthdays,
 // holiday dinners, baby showers, corporate, etc.
@@ -92,7 +93,7 @@ const statusStyles: Record<string, string> = {
 };
 
 export default function PaymentsPage() {
-  const { user } = useAuth();
+  const { user, activeEvent } = useAuth();
   const [items, setItems] = useState<BudgetRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [addOpen, setAddOpen] = useState(false);
@@ -244,6 +245,12 @@ export default function PaymentsPage() {
             />
           </div>
 
+          {!loading && items.length > 0 && (
+            <div className="mb-6">
+              <BudgetBreakdownChart rows={items} />
+            </div>
+          )}
+
           <div className="bg-card rounded-sm border border-border overflow-hidden">
             {loading ? (
               <div className="p-6 space-y-3">
@@ -367,6 +374,7 @@ export default function PaymentsPage() {
           open={addOpen}
           onOpenChange={setAddOpen}
           hostId={user.id}
+          eventLocation={activeEvent?.event_location ?? null}
           onSuccess={load}
         />
       )}
@@ -378,11 +386,13 @@ function AddBudgetItemDialog({
   open,
   onOpenChange,
   hostId,
+  eventLocation,
   onSuccess,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   hostId: string;
+  eventLocation: string | null;
   onSuccess: () => void;
 }) {
   const [description, setDescription] = useState("");
@@ -465,6 +475,12 @@ function AddBudgetItemDialog({
                 ))}
               </SelectContent>
             </Select>
+            {category && (
+              <BudgetBenchmarkBadge
+                category={category}
+                location={eventLocation}
+              />
+            )}
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">

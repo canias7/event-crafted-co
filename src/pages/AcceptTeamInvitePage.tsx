@@ -32,16 +32,14 @@ export default function AcceptTeamInvitePage() {
     if (!token) return;
     let cancelled = false;
     setLoading(true);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (supabase as any)
+    supabase
       .rpc("get_team_invite_by_token", { p_token: token })
-      .then(
-        ({ data, error }: { data: InviteSummary | null; error: unknown }) => {
+      .then(({ data, error }) => {
           if (cancelled) return;
           if (error || !data) {
             setNotFound(true);
           } else {
-            setInvite(data);
+            setInvite(data as unknown as InviteSummary);
           }
           setLoading(false);
         },
@@ -55,8 +53,7 @@ export default function AcceptTeamInvitePage() {
     if (!token) return;
     setAccepting(true);
     setErrorMsg(null);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data, error } = await (supabase as any).rpc("accept_team_invite", {
+    const { data, error } = await supabase.rpc("accept_team_invite", {
       p_token: token,
     });
     setAccepting(false);

@@ -45,6 +45,8 @@ export default function GiftSharePage() {
   async function load() {
     if (!token) return;
     setLoading(true);
+    // Cast to any: get_gift_wish_by_token + pledge_to_gift RPCs aren't
+    // in types.ts's Functions section yet.
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data } = await (supabase as any).rpc("get_gift_wish_by_token", {
       p_token: token,

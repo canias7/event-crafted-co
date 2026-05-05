@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Loader2 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,6 +13,7 @@ import { SocialAuthButtons } from "@/components/auth/SocialAuthButtons";
 import heroImg from "@/assets/vendora-hero-dinner.jpg";
 
 export default function SignupPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -76,22 +78,23 @@ export default function SignupPage() {
           <div>
             <div className="flex items-center gap-3 mb-5">
               <p className="font-label text-accent tracking-[0.4em]">
-                — JOIN VENDORA
+                {t("auth.signup.eyebrow")}
               </p>
               <span className="h-px w-8 bg-accent/40" />
             </div>
             <p className="text-3xl lg:text-4xl font-display leading-[1.1] max-w-sm">
-              Plan something{" "}
-              <span className="italic font-light text-accent">unforgettable.</span>
+              {t("auth.signup.tagline_lead")}{" "}
+              <span className="italic font-light text-accent">
+                {t("auth.signup.tagline_accent")}
+              </span>
             </p>
             <p className="text-sm text-background/70 mt-5 max-w-sm leading-relaxed">
-              Hand-selected vendors, AI-assisted replies, and the calm tools
-              to run your event end-to-end.
+              {t("auth.signup.tagline_subtitle")}
             </p>
           </div>
 
           <p className="text-xs text-background/50 tracking-wide">
-            © 2026 Vendora — Now in private beta
+            {t("auth.signup.footer_brand")}
           </p>
         </div>
       </div>
@@ -104,15 +107,15 @@ export default function SignupPage() {
           </Link>
 
           <h1 className="font-display text-3xl md:text-4xl mb-2 leading-tight">
-            Create your account
+            {t("auth.signup.title")}
           </h1>
           <p className="text-sm text-muted-foreground mb-10">
-            Choose how you'll use the platform.
+            {t("auth.signup.subtitle")}
           </p>
 
           <form onSubmit={onSubmit} className="space-y-5">
             <div className="space-y-2">
-              <Label>I am a…</Label>
+              <Label>{t("auth.signup.role_label")}</Label>
               <RadioGroup
                 value={role}
                 onValueChange={(v) => setRole(v as "host" | "vendor")}
@@ -127,9 +130,11 @@ export default function SignupPage() {
                 >
                   <RadioGroupItem value="host" id="host" />
                   <div>
-                    <div className="text-sm font-medium">Host</div>
+                    <div className="text-sm font-medium">
+                      {t("auth.signup.role_host")}
+                    </div>
                     <div className="text-xs text-muted-foreground">
-                      Plan an event
+                      {t("auth.signup.role_host_desc")}
                     </div>
                   </div>
                 </label>
@@ -142,16 +147,18 @@ export default function SignupPage() {
                 >
                   <RadioGroupItem value="vendor" id="vendor" />
                   <div>
-                    <div className="text-sm font-medium">Vendor</div>
+                    <div className="text-sm font-medium">
+                      {t("auth.signup.role_vendor")}
+                    </div>
                     <div className="text-xs text-muted-foreground">
-                      Offer services
+                      {t("auth.signup.role_vendor_desc")}
                     </div>
                   </div>
                 </label>
               </RadioGroup>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="name">Display name</Label>
+              <Label htmlFor="name">{t("auth.signup.name_label")}</Label>
               <Input
                 id="name"
                 value={name}
@@ -161,7 +168,7 @@ export default function SignupPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email">{t("auth.common.email")}</Label>
               <Input
                 id="email"
                 type="email"
@@ -172,7 +179,7 @@ export default function SignupPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
+              <Label htmlFor="password">{t("auth.common.password")}</Label>
               <Input
                 id="password"
                 type="password"
@@ -180,7 +187,7 @@ export default function SignupPage() {
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 minLength={8}
-                placeholder="At least 8 characters"
+                placeholder={t("auth.signup.password_hint")}
                 className="h-11"
               />
             </div>
@@ -191,13 +198,13 @@ export default function SignupPage() {
                 className="mt-0.5"
               />
               <span className="text-xs text-muted-foreground leading-relaxed">
-                I'm 18 or older and agree to Vendora's{" "}
+                {t("auth.signup.adult_lead")}{" "}
                 <Link to="/terms" className="text-accent" target="_blank">
-                  Terms
+                  {t("auth.signup.adult_terms")}
                 </Link>{" "}
-                and{" "}
+                {t("auth.signup.adult_and")}{" "}
                 <Link to="/privacy" className="text-accent" target="_blank">
-                  Privacy Policy
+                  {t("auth.signup.adult_privacy")}
                 </Link>
                 .
               </span>
@@ -210,26 +217,30 @@ export default function SignupPage() {
               {loading ? (
                 <>
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Creating…
+                  {t("auth.common.creating")}
                 </>
               ) : (
-                "Create account"
+                t("auth.signup.submit")
               )}
             </Button>
+            <p className="text-[11px] text-muted-foreground text-center leading-relaxed">
+              We use your email to send account + booking notifications
+              and to verify it's you. We don't sell your data, ever.
+            </p>
           </form>
 
           <div className="mt-6 mb-6 flex items-center gap-3 text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
             <span className="flex-1 h-px bg-border" />
-            or
+            {t("auth.common.or")}
             <span className="flex-1 h-px bg-border" />
           </div>
 
           <SocialAuthButtons />
 
           <p className="text-sm text-muted-foreground mt-8 text-center">
-            Already have an account?{" "}
+            {t("auth.signup.already_have_account")}{" "}
             <Link to="/login" className="text-accent font-medium">
-              Sign in
+              {t("auth.signup.sign_in")}
             </Link>
           </p>
         </div>

@@ -8,6 +8,7 @@ import { DashboardSidebar } from "@/components/shared/DashboardSidebar";
 import { MobileNav } from "@/components/shared/MobileNav";
 import { SubNavTabs } from "@/components/shared/SubNavTabs";
 import { VENDOR_CALENDAR_HUB_TABS } from "@/data/hubTabs";
+import { RecurringAvailabilityCard } from "@/components/vendor/RecurringAvailabilityCard";
 import { Calendar } from "@/components/ui/calendar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
@@ -21,8 +22,7 @@ interface BusyEvent {
   is_all_day: boolean;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const unavailableTable = () => (supabase as any).from("vendor_unavailable_dates");
+const unavailableTable = () => supabase.from("vendor_unavailable_dates");
 
 function dateKey(d: Date) {
   // Format as YYYY-MM-DD in local time
@@ -50,6 +50,7 @@ export default function AvailabilityPage() {
     }
     const [{ data: rows }, { data: busy }] = await Promise.all([
       unavailableTable().select("date").eq("vendor_id", vendorId),
+      // calendar_synced_busy isn't yet in the generated types.
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (supabase as any)
         .from("calendar_synced_busy")
@@ -58,9 +59,7 @@ export default function AvailabilityPage() {
         .gte("starts_at", new Date().toISOString())
         .order("starts_at", { ascending: true }),
     ]);
-    setUnavailable(
-      new Set(((rows as Array<{ date: string }> | null) ?? []).map((r) => r.date)),
-    );
+    setUnavailable(new Set((rows ?? []).map((r) => r.date)));
     setBusyEvents((busy as BusyEvent[]) ?? []);
     setLoading(false);
   }
@@ -159,6 +158,11 @@ export default function AvailabilityPage() {
             </div>
           ) : (
             <>
+              {/* Recurring rules + buffer time. Sit above the one-off
+                  date picker so vendors set up their default pattern
+                  first, then exception-block specific dates below. */}
+              <RecurringAvailabilityCard vendorId={vendorId} />
+
               <div className="rounded-sm border border-border bg-card p-4 sm:p-6">
                 <Calendar
                   mode="multiple"

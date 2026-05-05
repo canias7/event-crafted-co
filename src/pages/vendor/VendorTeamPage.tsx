@@ -107,8 +107,7 @@ export default function VendorTeamPage() {
       return;
     }
     setLoading(true);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: memberRows } = await (supabase as any)
+    const { data: memberRows } = await supabase
       .from("vendor_team_members")
       .select("id, user_id, role, created_at")
       .eq("vendor_id", vendorId)
@@ -138,8 +137,7 @@ export default function VendorTeamPage() {
     setMembers(merged);
 
     if (canManage) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data: inviteRows } = await (supabase as any)
+      const { data: inviteRows } = await supabase
         .from("vendor_team_invites")
         .select("id, email, role, token, expires_at, accepted_at, created_at")
         .eq("vendor_id", vendorId)
@@ -165,8 +163,7 @@ export default function VendorTeamPage() {
       return;
     }
     setSending(true);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data, error } = await (supabase as any)
+    const { data, error } = await supabase
       .from("vendor_team_invites")
       .insert({
         vendor_id: vendorId,
@@ -230,8 +227,7 @@ export default function VendorTeamPage() {
 
   async function removeMember(member: MemberRow) {
     setRemovingId(member.id);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error } = await (supabase as any)
+    const { error } = await supabase
       .from("vendor_team_members")
       .delete()
       .eq("id", member.id);
@@ -246,8 +242,7 @@ export default function VendorTeamPage() {
 
   async function revokeInvite(invite: InviteRow) {
     setRevokingId(invite.id);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error } = await (supabase as any)
+    const { error } = await supabase
       .from("vendor_team_invites")
       .delete()
       .eq("id", invite.id);

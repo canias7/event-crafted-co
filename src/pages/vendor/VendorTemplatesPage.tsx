@@ -22,8 +22,7 @@ import { SubNavTabs } from "@/components/shared/SubNavTabs";
 import { VENDOR_LIBRARY_HUB_TABS } from "@/data/hubTabs";
 import { vendorNavItems as navItems } from "@/data/navItems";
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const templatesTable = () => (supabase as any).from("vendor_message_templates");
+const templatesTable = () => supabase.from("vendor_message_templates");
 
 interface TemplateRow {
   id: string;

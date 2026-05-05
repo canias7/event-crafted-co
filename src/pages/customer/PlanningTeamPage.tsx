@@ -17,6 +17,7 @@ import { DashboardSidebar } from "@/components/shared/DashboardSidebar";
 import { MobileNav } from "@/components/shared/MobileNav";
 import { SubNavTabs } from "@/components/shared/SubNavTabs";
 import { PartyInviteManager } from "@/components/customer/PartyInviteManager";
+import { PlanningChannelCard } from "@/components/customer/PlanningChannelCard";
 import { PLANNING_HUB_TABS } from "@/data/hubTabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -103,8 +104,7 @@ export default function PlanningTeamPage() {
   async function load() {
     if (!user) return;
     setLoading(true);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: rows } = await (supabase as any)
+    const { data: rows } = await supabase
       .from("planning_collaborators")
       .select("id, user_id, role, created_at")
       .eq("host_id", user.id)
@@ -147,8 +147,7 @@ export default function PlanningTeamPage() {
 
     setCollaborators(merged);
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: inviteRows } = await (supabase as any)
+    const { data: inviteRows } = await supabase
       .from("planning_invites")
       .select("id, email, role, token, expires_at, created_at")
       .eq("host_id", user.id)
@@ -173,8 +172,7 @@ export default function PlanningTeamPage() {
       return;
     }
     setSending(true);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data, error } = await (supabase as any)
+    const { data, error } = await supabase
       .from("planning_invites")
       .insert({
         host_id: user.id,
@@ -229,8 +227,7 @@ export default function PlanningTeamPage() {
 
   async function removeCollaborator(c: CollaboratorRow) {
     setRemovingId(c.id);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error } = await (supabase as any)
+    const { error } = await supabase
       .from("planning_collaborators")
       .delete()
       .eq("id", c.id);
@@ -245,8 +242,7 @@ export default function PlanningTeamPage() {
 
   async function revokeInvite(i: InviteRow) {
     setRevokingId(i.id);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error } = await (supabase as any)
+    const { error } = await supabase
       .from("planning_invites")
       .delete()
       .eq("id", i.id);
@@ -348,6 +344,17 @@ export default function PlanningTeamPage() {
         </div>
 
         <div className="p-4 md:p-8 max-w-3xl space-y-10">
+          {/* Group planning channel — Slack-for-your-event. Sits at
+              the top of the page as the primary collaborative surface;
+              roster + invites continue below. */}
+          {user && (
+            <div>
+              <p className="font-label text-muted-foreground mb-3">
+                Group channel
+              </p>
+              <PlanningChannelCard hostId={user.id} />
+            </div>
+          )}
           {loading ? (
             <div className="text-center text-muted-foreground py-12">Loading…</div>
           ) : (

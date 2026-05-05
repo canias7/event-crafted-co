@@ -16,6 +16,8 @@ import { StatCard } from "@/components/shared/StatCard";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { adminNavItems as navItems } from "@/data/navItems";
+import { formatDate } from "@/lib/format";
+import { useTranslation } from "react-i18next";
 
 interface Counts {
   vendors: number;
@@ -45,6 +47,7 @@ interface RecentInquiry {
 }
 
 export default function AdminDashboard() {
+  const { t } = useTranslation();
   const [counts, setCounts] = useState<Counts | null>(null);
   const [recentVendors, setRecentVendors] = useState<RecentVendor[]>([]);
   const [recentInquiries, setRecentInquiries] = useState<RecentInquiry[]>([]);
@@ -78,8 +81,7 @@ export default function AdminDashboard() {
           .from("inquiries")
           .select("id", { count: "exact", head: true })
           .eq("status", "new"),
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (supabase as any).from("reviews").select("rating"),
+        supabase.from("reviews").select("rating"),
         supabase
           .from("vendor_profiles")
           .select("id, business_name, category, location, verified_at, created_at")
@@ -121,7 +123,7 @@ export default function AdminDashboard() {
 
   return (
     <div className="flex min-h-screen bg-background">
-      <DashboardSidebar items={navItems} title="Admin" backPath="/" />
+      <DashboardSidebar items={navItems} title={t("dashboard.admin.title")} backPath="/" />
 
       <main id="main-content" className="flex-1 pb-20 lg:pb-0">
         <div className="border-b border-border bg-card px-4 md:px-8 py-4 sticky top-0 z-40">
@@ -252,7 +254,7 @@ export default function AdminDashboard() {
                           {r.vendor?.business_name ?? "—"}
                         </p>
                         <p className="text-xs text-muted-foreground tnum">
-                          {new Date(r.created_at).toLocaleDateString()}
+                          {formatDate(r.created_at, "short")}
                         </p>
                       </div>
                       <Badge variant="outline" className="text-[10px]">

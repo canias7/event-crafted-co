@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { FieldError } from "@/components/ui/field-error";
 import heroImg from "@/assets/vendora-hero-cinematic.jpg";
 
 export default function ResetPasswordPage() {
@@ -33,16 +34,15 @@ export default function ResetPasswordPage() {
     };
   }, []);
 
+  const passwordTooShort = password.length > 0 && password.length < 8;
+  const passwordMismatch =
+    confirm.length > 0 && password.length >= 8 && password !== confirm;
+  const formValid =
+    password.length >= 8 && confirm.length >= 8 && password === confirm;
+
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (password.length < 8) {
-      toast.error("Password must be at least 8 characters");
-      return;
-    }
-    if (password !== confirm) {
-      toast.error("Passwords don't match");
-      return;
-    }
+    if (!formValid) return;
     setSubmitting(true);
     const { error } = await supabase.auth.updateUser({ password });
     setSubmitting(false);
@@ -125,7 +125,14 @@ export default function ResetPasswordPage() {
                   placeholder="At least 8 characters"
                   className="h-11"
                   required
+                  aria-invalid={passwordTooShort || undefined}
+                  aria-describedby={passwordTooShort ? "pw-error" : undefined}
                 />
+                {passwordTooShort && (
+                  <FieldError id="pw-error">
+                    Password must be at least 8 characters.
+                  </FieldError>
+                )}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="confirm">Confirm</Label>
@@ -137,11 +144,18 @@ export default function ResetPasswordPage() {
                   minLength={8}
                   className="h-11"
                   required
+                  aria-invalid={passwordMismatch || undefined}
+                  aria-describedby={passwordMismatch ? "confirm-error" : undefined}
                 />
+                {passwordMismatch && (
+                  <FieldError id="confirm-error">
+                    Passwords don't match.
+                  </FieldError>
+                )}
               </div>
               <Button
                 type="submit"
-                disabled={submitting || hasSession !== true}
+                disabled={submitting || hasSession !== true || !formValid}
                 className="w-full h-11 rounded-full bg-foreground text-background hover:bg-foreground/90"
               >
                 {submitting && (

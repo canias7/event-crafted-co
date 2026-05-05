@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useRealtime } from "@/lib/realtime";
 import { Link, useSearchParams } from "react-router-dom";
 import { Send, Loader2, MessageSquare, ArrowRight } from "lucide-react";
 import { toast } from "sonner";
@@ -10,8 +11,15 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ContactInfoWarning } from "@/components/messages/ContactInfoWarning";
+import { MessageAttachments } from "@/components/messages/MessageAttachments";
+import { AttachmentPickerButton } from "@/components/messages/AttachmentPickerButton";
 import { detectContactInfo } from "@/lib/contactInfoSignals";
+import {
+  uploadAttachments,
+  type MessageAttachment,
+} from "@/lib/messageAttachments";
 import { customerNavItems as navItems } from "@/data/navItems";
+import { formatDate } from "@/lib/format";
 
 interface ThreadRow {
   id: string;
@@ -25,13 +33,12 @@ interface DirectMessage {
   id: string;
   sender_role: "host" | "vendor";
   body: string;
+  attachments?: MessageAttachment[];
   created_at: string;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const threadsTable = () => (supabase as any).from("direct_threads");
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const dmsTable = () => (supabase as any).from("direct_messages");
+const threadsTable = () => supabase.from("direct_threads");
+const dmsTable = () => supabase.from("direct_messages");
 
 export default function MessagesPage() {
   const { user } = useAuth();
@@ -42,8 +49,20 @@ export default function MessagesPage() {
   const [loading, setLoading] = useState(true);
   const [messages, setMessages] = useState<DirectMessage[]>([]);
   const [composer, setComposer] = useState("");
+  const [pendingFiles, setPendingFiles] = useState<File[]>([]);
   const [sending, setSending] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Tracks whether the component is still mounted. Realtime callbacks
+  // and the initial fetches both close over this so we don't setState
+  // after unmount (no leak warning, no wasted render).
+  const mountedRef = useRef(true);
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
 
   async function loadThreads() {
     if (!user) return;
@@ -54,15 +73,18 @@ export default function MessagesPage() {
       )
       .eq("host_id", user.id)
       .order("last_message_at", { ascending: false });
+    if (!mountedRef.current) return;
     setThreads((data as ThreadRow[]) ?? []);
     setLoading(false);
   }
 
   async function loadMessages(threadId: string) {
-    const { data } = await dmsTable()
-      .select("id, sender_role, body, created_at")
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data } = await (dmsTable() as any)
+      .select("id, sender_role, body, attachments, created_at")
       .eq("thread_id", threadId)
       .order("created_at", { ascending: true });
+    if (!mountedRef.current) return;
     setMessages((data as DirectMessage[]) ?? []);
     setTimeout(() => {
       messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -82,30 +104,21 @@ export default function MessagesPage() {
     }
   }, [activeThreadId]);
 
-  // Realtime: live-update active thread + thread list ordering
-  useEffect(() => {
-    if (!user) return;
-    const channel = supabase
-      .channel(`host-dms-${user.id}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "direct_messages",
-        },
-        (payload) => {
-          const msg = payload.new as DirectMessage & { thread_id: string };
-          if (msg.thread_id === activeThreadId) loadMessages(activeThreadId);
-          loadThreads();
-        },
-      )
-      .subscribe();
-    return () => {
-      supabase.removeChannel(channel);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, activeThreadId]);
+  // Realtime: live-update active thread + thread list ordering.
+  // Shares the user-scoped channel from RealtimeProvider.
+  const realtimeConfig = useMemo(
+    () =>
+      user
+        ? { table: "direct_messages", event: "INSERT" as const }
+        : null,
+    [user?.id],
+  );
+  useRealtime(realtimeConfig, (payload) => {
+    if (!mountedRef.current) return;
+    const msg = payload.new as DirectMessage & { thread_id: string };
+    if (msg.thread_id === activeThreadId) loadMessages(activeThreadId);
+    loadThreads();
+  });
 
   const activeThread = useMemo(
     () => threads.find((t) => t.id === activeThreadId) ?? null,
@@ -113,14 +126,25 @@ export default function MessagesPage() {
   );
 
   async function send() {
-    if (!composer.trim() || !activeThreadId || !user) return;
+    if ((!composer.trim() && pendingFiles.length === 0) || !activeThreadId || !user)
+      return;
     setSending(true);
+    let attachments: MessageAttachment[] = [];
+    if (pendingFiles.length > 0) {
+      attachments = await uploadAttachments(
+        pendingFiles,
+        activeThreadId,
+        (n, m) => toast.error(`${n}: ${m}`),
+      );
+    }
     const flags = detectContactInfo(composer);
-    const { error } = await dmsTable().insert({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error } = await (dmsTable() as any).insert({
       thread_id: activeThreadId,
       sender_id: user.id,
       sender_role: "host",
       body: composer.trim(),
+      attachments,
       contact_info_flagged: flags.any,
     });
     setSending(false);
@@ -129,6 +153,7 @@ export default function MessagesPage() {
       return;
     }
     setComposer("");
+    setPendingFiles([]);
     loadMessages(activeThreadId);
     loadThreads();
   }
@@ -192,7 +217,7 @@ export default function MessagesPage() {
                         <p className="text-xs text-muted-foreground truncate mt-0.5">
                           {t.vendor?.category}
                           {" · "}
-                          {new Date(t.last_message_at).toLocaleDateString()}
+                          {formatDate(t.last_message_at, "short")}
                         </p>
                         {t.inquiry_id && (
                           <p className="text-[10px] text-accent mt-1 uppercase tracking-wide">
@@ -252,6 +277,9 @@ export default function MessagesPage() {
                           }`}
                         >
                           {m.body}
+                          {m.attachments && m.attachments.length > 0 && (
+                            <MessageAttachments attachments={m.attachments} />
+                          )}
                         </div>
                       );
                     })
@@ -261,7 +289,12 @@ export default function MessagesPage() {
 
                 <div className="border-t border-border p-4 space-y-2 bg-card">
                   <ContactInfoWarning body={composer} />
-                  <div className="flex items-end gap-2">
+                  <div className="flex items-end gap-2 flex-wrap">
+                    <AttachmentPickerButton
+                      pending={pendingFiles}
+                      onChange={setPendingFiles}
+                      disabled={sending}
+                    />
                     <Textarea
                       value={composer}
                       onChange={(e) => setComposer(e.target.value)}
@@ -273,11 +306,13 @@ export default function MessagesPage() {
                       }}
                       rows={2}
                       placeholder="Type a message…  (Cmd+Enter to send)"
-                      className="resize-none"
+                      className="resize-none flex-1 min-w-[180px]"
                     />
                     <Button
                       onClick={send}
-                      disabled={sending || !composer.trim()}
+                      disabled={
+                        sending || (!composer.trim() && pendingFiles.length === 0)
+                      }
                       className="rounded-full bg-foreground text-background hover:bg-foreground/90 shrink-0"
                     >
                       {sending ? (

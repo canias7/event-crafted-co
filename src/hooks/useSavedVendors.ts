@@ -11,10 +11,7 @@ interface SavedVendorsApi {
   loading: boolean;
 }
 
-// Auto-generated Supabase types don't yet include saved_vendors; cast through
-// `unknown` so we can call the table without rebuilding types.ts.
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const savedTable = () => (supabase as any).from("saved_vendors");
+const savedTable = () => supabase.from("saved_vendors");
 
 export function useSavedVendors(): SavedVendorsApi {
   const { user } = useAuth();
@@ -32,7 +29,7 @@ export function useSavedVendors(): SavedVendorsApi {
     savedTable()
       .select("vendor_id")
       .eq("host_id", user.id)
-      .then(({ data }: { data: Array<{ vendor_id: string }> | null }) => {
+      .then(({ data }) => {
         if (cancelled) return;
         setSavedIds(new Set((data ?? []).map((r) => r.vendor_id)));
         setLoading(false);
@@ -68,7 +65,7 @@ export function useSavedVendors(): SavedVendorsApi {
         return next;
       });
 
-      const result: { error: { message: string } | null } = wasSaved
+      const result = wasSaved
         ? await savedTable()
             .delete()
             .eq("host_id", user.id)

@@ -1,16 +1,23 @@
-import { useEffect, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
+import { useRealtime } from "@/lib/realtime";
 import { Link, useParams } from "react-router-dom";
 import { ArrowLeft, Send, Loader2, Star, Sparkles, Paperclip, X, CalendarDays } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useRequireVerifiedEmail } from "@/hooks/useRequireVerifiedEmail";
 import { DashboardSidebar } from "@/components/shared/DashboardSidebar";
 import { MobileNav } from "@/components/shared/MobileNav";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ReviewFormModal } from "@/components/reviews/ReviewFormModal";
+// Lazy: only loads when the host clicks "Leave a review."
+const ReviewFormModal = lazy(() =>
+  import("@/components/reviews/ReviewFormModal").then((m) => ({
+    default: m.ReviewFormModal,
+  })),
+);
 import { ProposeAppointmentModal } from "@/components/appointments/ProposeAppointmentModal";
 import {
   ProposalCard,
@@ -88,6 +95,7 @@ function fmtMoney(c: number | null) {
 export default function HostInquiryDetailPage() {
   const { inquiryId } = useParams();
   const { user } = useAuth();
+  const requireVerified = useRequireVerifiedEmail();
   const [inquiry, setInquiry] = useState<Inquiry | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [composer, setComposer] = useState("");
@@ -133,8 +141,7 @@ export default function HostInquiryDetailPage() {
     setMessages((msgs as unknown as Message[]) ?? []);
 
     // Existing review (if any)
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: r } = await (supabase as any)
+    const { data: r } = await supabase
       .from("reviews")
       .select("id, rating, body, photo_urls")
       .eq("inquiry_id", inquiryId)
@@ -145,11 +152,11 @@ export default function HostInquiryDetailPage() {
     const { data: props } = await (supabase as any)
       .from("proposals")
       .select(
-        "id, title, line_items, subtotal_cents, deposit_cents, terms, contract_body, status, sent_at, signed_at, signed_name",
+        "id, title, line_items, subtotal_cents, deposit_cents, terms, contract_body, status, sent_at, signed_at, signed_name, first_viewed_at, last_viewed_at, view_count",
       )
       .eq("inquiry_id", inquiryId)
       .order("created_at", { ascending: false });
-    setProposals((props as Proposal[]) ?? []);
+    setProposals((props as unknown as Proposal[]) ?? []);
 
     setLoading(false);
   }
@@ -169,6 +176,8 @@ export default function HostInquiryDetailPage() {
       update.signed_name = signature.signed_name;
       update.signed_user_agent = signature.signed_user_agent;
     }
+    // Update payload is dynamic (status + optional signature fields),
+    // which the typed update() can't validate. Cast through any.
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { error } = await (supabase as any)
       .from("proposals")
@@ -195,36 +204,24 @@ export default function HostInquiryDetailPage() {
   }, [inquiryId, user]);
 
   // Live updates: re-fetch when this inquiry's messages or status change.
-  useEffect(() => {
-    if (!inquiryId) return;
-    const channel = supabase
-      .channel(`host-inquiry-${inquiryId}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "messages",
-          filter: `inquiry_id=eq.${inquiryId}`,
-        },
-        () => load(),
-      )
-      .on(
-        "postgres_changes",
-        {
-          event: "UPDATE",
-          schema: "public",
-          table: "inquiries",
-          filter: `id=eq.${inquiryId}`,
-        },
-        () => load(),
-      )
-      .subscribe();
-    return () => {
-      supabase.removeChannel(channel);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [inquiryId]);
+  // Routed through the shared user-scoped channel via useRealtime.
+  const messagesConfig = useMemo(
+    () =>
+      inquiryId
+        ? { table: "messages", filter: `inquiry_id=eq.${inquiryId}` }
+        : null,
+    [inquiryId],
+  );
+  useRealtime(messagesConfig, () => load());
+
+  const inquiryConfig = useMemo(
+    () =>
+      inquiryId
+        ? { table: "inquiries", event: "UPDATE" as const, filter: `id=eq.${inquiryId}` }
+        : null,
+    [inquiryId],
+  );
+  useRealtime(inquiryConfig, () => load());
 
   function pickFiles(list: FileList) {
     const accepted: File[] = [];
@@ -439,7 +436,10 @@ export default function HostInquiryDetailPage() {
                         )}
                       </div>
                       <Button
-                        onClick={() => setReviewModalOpen(true)}
+                        onClick={() => {
+                          if (!requireVerified("posting a review")) return;
+                          setReviewModalOpen(true);
+                        }}
                         size="sm"
                         variant={review ? "outline" : "default"}
                         className={`rounded-full whitespace-nowrap ${
@@ -616,16 +616,20 @@ export default function HostInquiryDetailPage() {
 
       {inquiry && user && (
         <>
-          <ReviewFormModal
-            open={reviewModalOpen}
-            onOpenChange={setReviewModalOpen}
-            inquiryId={inquiry.id}
-            vendorId={inquiry.vendor_id}
-            hostId={user.id}
-            vendorName={inquiry.vendor?.business_name ?? "this vendor"}
-            existingReview={review}
-            onSuccess={load}
-          />
+          {reviewModalOpen && (
+            <Suspense fallback={null}>
+              <ReviewFormModal
+                open={reviewModalOpen}
+                onOpenChange={setReviewModalOpen}
+                inquiryId={inquiry.id}
+                vendorId={inquiry.vendor_id}
+                hostId={user.id}
+                vendorName={inquiry.vendor?.business_name ?? "this vendor"}
+                existingReview={review}
+                onSuccess={load}
+              />
+            </Suspense>
+          )}
           <ProposeAppointmentModal
             open={appointmentModalOpen}
             onOpenChange={setAppointmentModalOpen}

@@ -10,8 +10,11 @@ import {
   Heart,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { transformedImageUrl } from "@/lib/storage";
 import { Footer } from "@/components/public/Footer";
 import { useDocumentMeta } from "@/hooks/useDocumentMeta";
+import { MicrositeRsvpForm } from "@/components/microsite/MicrositeRsvpForm";
+import { ReportButton } from "@/components/trust/ReportButton";
 import { Skeleton } from "@/components/ui/skeleton";
 
 interface MicrositeData {
@@ -69,11 +72,18 @@ const EVENT_DEFAULTS: Record<string, { title: string; subtitle: string }> = {
   other: { title: "Our event", subtitle: "is almost here" },
 };
 
-// Theme palettes — applied as CSS variables on the page root.
+// Theme palettes — applied as CSS variables on the page root. Each is
+// HSL components (hue saturation% lightness%) so we compose with hsl()
+// at consume time. Adding a new theme here also needs a row in the
+// THEMES picker in MicrositeEditorPage.tsx.
+//
+// Dark themes (midnight, starlit, evergreen at twilight) flip the
+// `isDarkTheme` branch below so the OS color-scheme follows.
 const THEMES: Record<
   string,
   { bg: string; surface: string; accent: string; muted: string; ink: string }
 > = {
+  // — Romantic / wedding-leaning —
   classic: {
     bg: "0 0% 99%",
     surface: "30 10% 97%",
@@ -88,6 +98,20 @@ const THEMES: Record<
     muted: "350 15% 88%",
     ink: "350 30% 18%",
   },
+  ivory: {
+    bg: "35 60% 98%",
+    surface: "350 30% 96%",
+    accent: "20 60% 55%",
+    muted: "30 25% 90%",
+    ink: "20 25% 22%",
+  },
+  garden: {
+    bg: "100 30% 98%",
+    surface: "120 20% 96%",
+    accent: "140 40% 35%",
+    muted: "120 15% 88%",
+    ink: "140 30% 18%",
+  },
   sage: {
     bg: "140 18% 97%",
     surface: "140 15% 95%",
@@ -95,6 +119,14 @@ const THEMES: Record<
     muted: "140 10% 88%",
     ink: "150 25% 15%",
   },
+  champagne: {
+    bg: "40 35% 97%",
+    surface: "40 25% 94%",
+    accent: "35 55% 50%",
+    muted: "40 15% 88%",
+    ink: "30 30% 18%",
+  },
+  // — Evening / formal —
   dusk: {
     bg: "260 20% 98%",
     surface: "260 18% 96%",
@@ -109,18 +141,59 @@ const THEMES: Record<
     muted: "220 12% 22%",
     ink: "220 15% 92%",
   },
-  champagne: {
-    bg: "40 35% 97%",
-    surface: "40 25% 94%",
-    accent: "35 55% 50%",
-    muted: "40 15% 88%",
-    ink: "30 30% 18%",
+  starlit: {
+    bg: "230 30% 6%",
+    surface: "230 25% 12%",
+    accent: "40 75% 60%",
+    muted: "230 20% 22%",
+    ink: "40 25% 92%",
+  },
+  // — Festive / birthday / casual —
+  confetti: {
+    bg: "330 50% 98%",
+    surface: "320 40% 96%",
+    accent: "320 70% 55%",
+    muted: "300 25% 90%",
+    ink: "310 40% 22%",
+  },
+  sunset: {
+    bg: "30 50% 98%",
+    surface: "20 40% 95%",
+    accent: "15 75% 55%",
+    muted: "20 25% 90%",
+    ink: "15 40% 22%",
+  },
+  // — Holiday / winter —
+  evergreen: {
+    bg: "150 25% 96%",
+    surface: "150 20% 92%",
+    accent: "0 60% 35%",
+    muted: "150 15% 86%",
+    ink: "150 35% 14%",
+  },
+  // — Baby shower / soft pastels —
+  powder: {
+    bg: "210 50% 98%",
+    surface: "210 35% 96%",
+    accent: "200 50% 55%",
+    muted: "210 25% 90%",
+    ink: "210 35% 25%",
+  },
+  // — Corporate / minimal —
+  monochrome: {
+    bg: "0 0% 100%",
+    surface: "0 0% 96%",
+    accent: "0 0% 12%",
+    muted: "0 0% 88%",
+    ink: "0 0% 8%",
   },
 };
 
-function publicUrl(path: string) {
-  const { data } = supabase.storage.from(BUCKET).getPublicUrl(path);
-  return data.publicUrl;
+function publicUrl(
+  path: string,
+  opts?: { width?: number; quality?: number },
+) {
+  return transformedImageUrl(BUCKET, path, opts);
 }
 
 function fmtMoney(cents: number) {
@@ -193,7 +266,7 @@ export default function EventMicrositePage() {
       data?.event.microsite_story?.slice(0, 160) ??
       "An event hosted on Vendora.",
     image: data?.event.microsite_cover_path
-      ? publicUrl(data.event.microsite_cover_path)
+      ? publicUrl(data.event.microsite_cover_path, { width: 1200 })
       : undefined,
     type: "article",
   });
@@ -219,7 +292,8 @@ export default function EventMicrositePage() {
   const title = ev.microsite_title ?? defaults.title;
   const subtitle = ev.microsite_subtitle ?? defaults.subtitle;
   const theme = THEMES[ev.microsite_theme] ?? THEMES.classic;
-  const isDarkTheme = ev.microsite_theme === "midnight";
+  const isDarkTheme =
+    ev.microsite_theme === "midnight" || ev.microsite_theme === "starlit";
 
   return (
     <div
@@ -242,7 +316,7 @@ export default function EventMicrositePage() {
       <section className="relative h-[80svh] min-h-[560px] w-full overflow-hidden">
         {ev.microsite_cover_path ? (
           <img
-            src={publicUrl(ev.microsite_cover_path)}
+            src={publicUrl(ev.microsite_cover_path, { width: 1600 })}
             alt=""
             className="absolute inset-0 w-full h-full object-cover"
           />
@@ -392,22 +466,18 @@ export default function EventMicrositePage() {
         </Section>
       )}
 
-      {/* RSVP CTA */}
-      {ev.microsite_show_rsvp && (
+      {/* RSVP form */}
+      {ev.microsite_show_rsvp && token && (
         <Section
           eyebrow="RSVP"
           title="We'd love to know"
           theme={theme}
         >
-          <div className="text-center max-w-md mx-auto">
-            <p
-              className="text-base mb-6 leading-relaxed"
-              style={{ color: `hsl(${theme.ink} / 0.75)` }}
-            >
-              Check your invitation for the personal RSVP link, or contact{" "}
-              {ev.host_name.split(" ")[0]} if you can't find it.
-            </p>
-          </div>
+          <MicrositeRsvpForm
+            token={token}
+            hostName={ev.host_name}
+            theme={theme}
+          />
         </Section>
       )}
 
@@ -576,7 +646,7 @@ export default function EventMicrositePage() {
                 style={{ backgroundColor: `hsl(${theme.muted})` }}
               >
                 <img
-                  src={publicUrl(p.storage_path)}
+                  src={publicUrl(p.storage_path, { width: 800 })}
                   alt={p.caption ?? ""}
                   loading={i < 4 ? "eager" : "lazy"}
                   className="w-full h-full object-cover hover:scale-[1.03] transition-transform duration-700"
@@ -636,6 +706,14 @@ export default function EventMicrositePage() {
             Vendora
           </a>
         </p>
+        <div className="mt-3">
+          <ReportButton
+            contentType="microsite"
+            contentId={ev.id}
+            variant="link"
+            size="sm"
+          />
+        </div>
       </footer>
 
       {/* Reset to default theme for the Footer (if we ever decide to render it). */}

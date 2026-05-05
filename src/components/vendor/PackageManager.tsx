@@ -35,8 +35,7 @@ interface VendorPackage {
   is_active: boolean;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const packagesTable = () => (supabase as any).from("vendor_packages");
+const packagesTable = () => supabase.from("vendor_packages");
 
 interface Props {
   vendorId: string;

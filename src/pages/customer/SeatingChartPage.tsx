@@ -1,5 +1,18 @@
 import { useEffect, useMemo, useState } from "react";
 import {
+  DndContext,
+  DragOverlay,
+  PointerSensor,
+  TouchSensor,
+  KeyboardSensor,
+  useSensor,
+  useSensors,
+  useDraggable,
+  useDroppable,
+  type DragEndEvent,
+  type DragStartEvent,
+} from "@dnd-kit/core";
+import {
   Plus,
   Trash2,
   Loader2,
@@ -52,10 +65,8 @@ interface TableRow {
   notes: string | null;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const tablesTable = () => (supabase as any).from("event_tables");
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const guestsTable = () => (supabase as any).from("event_guests");
+const tablesTable = () => supabase.from("event_tables");
+const guestsTable = () => supabase.from("event_guests");
 
 export default function SeatingChartPage() {
   const { user } = useAuth();
@@ -66,10 +77,41 @@ export default function SeatingChartPage() {
   const [tableEditorOpen, setTableEditorOpen] = useState(false);
   const [editingTable, setEditingTable] = useState<TableRow | null>(null);
 
-  // Drag state for both desktop and mobile (mobile uses tap-to-pick).
+  // Drag state for tap-to-pick fallback (touch users without DnD).
   const [pickedGuestId, setPickedGuestId] = useState<string | null>(null);
-  const [dropTargetId, setDropTargetId] = useState<string | "unassigned" | null>(
-    null,
+  // Active drag id during a @dnd-kit operation — drives the DragOverlay.
+  const [activeDragId, setActiveDragId] = useState<string | null>(null);
+
+  // @dnd-kit sensors. PointerSensor activates after a small movement so
+  // single clicks still register as taps (for the pick fallback). Touch
+  // gets a 200ms hold to disambiguate from scrolling.
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
+    useSensor(TouchSensor, {
+      activationConstraint: { delay: 200, tolerance: 5 },
+    }),
+    useSensor(KeyboardSensor),
+  );
+
+  function onDragStart(e: DragStartEvent) {
+    setActiveDragId(String(e.active.id));
+  }
+
+  function onDragEnd(e: DragEndEvent) {
+    setActiveDragId(null);
+    if (!e.over) return;
+    const guestId = String(e.active.id);
+    const over = String(e.over.id);
+    if (over === "_unassigned") {
+      assignGuest(guestId, null);
+    } else {
+      assignGuest(guestId, over);
+    }
+  }
+
+  const activeGuest = useMemo(
+    () => guests.find((g) => g.id === activeDragId) ?? null,
+    [guests, activeDragId],
   );
 
   async function load() {
@@ -116,7 +158,6 @@ export default function SeatingChartPage() {
       p.map((g) => (g.id === guestId ? { ...g, table_id: tableId } : g)),
     );
     setPickedGuestId(null);
-    setDropTargetId(null);
 
     const { error } = await guestsTable()
       .update({ table_id: tableId })
@@ -257,182 +298,113 @@ export default function SeatingChartPage() {
               </p>
             </div>
           ) : (
-            <div className="grid lg:grid-cols-[260px_1fr] gap-6">
-              {/* Unassigned panel */}
-              <aside className="bg-card border border-border rounded-sm p-4 max-h-[calc(100vh-180px)] overflow-y-auto sticky top-24">
-                <div className="flex items-center justify-between mb-3">
-                  <p className="font-label text-muted-foreground">Unassigned</p>
-                  <span className="text-xs tnum text-muted-foreground">
-                    {unassigned.length}
-                  </span>
-                </div>
-                <div
-                  onDragOver={(e) => {
-                    e.preventDefault();
-                    setDropTargetId("unassigned");
-                  }}
-                  onDragLeave={() => setDropTargetId(null)}
-                  onDrop={(e) => {
-                    e.preventDefault();
-                    const id = e.dataTransfer.getData("text/guest-id");
-                    if (id) assignGuest(id, null);
-                  }}
-                  onClick={() => {
-                    if (pickedGuestId) assignGuest(pickedGuestId, null);
-                  }}
-                  className={`min-h-[120px] rounded-sm transition-colors ${
-                    dropTargetId === "unassigned"
-                      ? "bg-accent/10 ring-1 ring-accent"
-                      : ""
-                  }`}
-                >
-                  {unassigned.length === 0 ? (
-                    <p className="text-xs text-muted-foreground text-center py-6">
-                      Everyone's seated.
+            <DndContext
+              sensors={sensors}
+              onDragStart={onDragStart}
+              onDragEnd={onDragEnd}
+            >
+              <div className="grid lg:grid-cols-[260px_1fr] gap-6">
+                {/* Unassigned panel */}
+                <aside className="bg-card border border-border rounded-sm p-4 max-h-[calc(100vh-180px)] overflow-y-auto sticky top-24">
+                  <div className="flex items-center justify-between mb-3">
+                    <p className="font-label text-muted-foreground">
+                      Unassigned
                     </p>
-                  ) : (
-                    <ul className="space-y-1.5">
-                      {unassigned.map((g) => (
-                        <GuestPill
-                          key={g.id}
-                          guest={g}
-                          isPicked={pickedGuestId === g.id}
-                          onPick={() =>
-                            setPickedGuestId(pickedGuestId === g.id ? null : g.id)
-                          }
-                        />
-                      ))}
-                    </ul>
-                  )}
-                </div>
-                {pickedGuestId && (
-                  <p className="text-xs text-accent mt-3 leading-relaxed">
-                    Tap a table or "Unassigned" to drop the picked guest.
-                  </p>
-                )}
-              </aside>
-
-              {/* Tables grid */}
-              <section>
-                {tables.length === 0 ? (
-                  <div className="border border-dashed border-border rounded-sm p-12 text-center">
-                    <p className="font-display text-xl mb-2">No tables yet</p>
-                    <p className="text-sm text-muted-foreground mb-5 max-w-sm mx-auto leading-relaxed">
-                      Add a table to start arranging seats. You can edit names
-                      and capacities later.
-                    </p>
-                    <Button
-                      onClick={() => {
-                        setEditingTable(null);
-                        setTableEditorOpen(true);
-                      }}
-                      className="rounded-full bg-foreground text-background hover:bg-foreground/90"
-                    >
-                      <Plus className="w-4 h-4 mr-2" />
-                      Add a table
-                    </Button>
+                    <span className="text-xs tnum text-muted-foreground">
+                      {unassigned.length}
+                    </span>
                   </div>
-                ) : (
-                  <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-4">
-                    {tables.map((t) => {
-                      const seated = guestsByTable.get(t.id) ?? [];
-                      const overCapacity = seated.length > t.capacity;
-                      return (
-                        <div
+                  <UnassignedDropZone
+                    onTap={() => {
+                      if (pickedGuestId) assignGuest(pickedGuestId, null);
+                    }}
+                  >
+                    {unassigned.length === 0 ? (
+                      <p className="text-xs text-muted-foreground text-center py-6">
+                        Everyone's seated.
+                      </p>
+                    ) : (
+                      <ul className="space-y-1.5">
+                        {unassigned.map((g) => (
+                          <GuestPill
+                            key={g.id}
+                            guest={g}
+                            isPicked={pickedGuestId === g.id}
+                            onPick={() =>
+                              setPickedGuestId(
+                                pickedGuestId === g.id ? null : g.id,
+                              )
+                            }
+                          />
+                        ))}
+                      </ul>
+                    )}
+                  </UnassignedDropZone>
+                  {pickedGuestId && (
+                    <p className="text-xs text-accent mt-3 leading-relaxed">
+                      Tap a table or "Unassigned" to drop the picked guest.
+                    </p>
+                  )}
+                </aside>
+
+                {/* Tables grid */}
+                <section>
+                  {tables.length === 0 ? (
+                    <div className="border border-dashed border-border rounded-sm p-12 text-center">
+                      <p className="font-display text-xl mb-2">
+                        No tables yet
+                      </p>
+                      <p className="text-sm text-muted-foreground mb-5 max-w-sm mx-auto leading-relaxed">
+                        Add a table to start arranging seats. You can edit
+                        names and capacities later.
+                      </p>
+                      <Button
+                        onClick={() => {
+                          setEditingTable(null);
+                          setTableEditorOpen(true);
+                        }}
+                        className="rounded-full bg-foreground text-background hover:bg-foreground/90"
+                      >
+                        <Plus className="w-4 h-4 mr-2" />
+                        Add a table
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-4">
+                      {tables.map((t) => (
+                        <TableCard
                           key={t.id}
-                          onDragOver={(e) => {
-                            e.preventDefault();
-                            setDropTargetId(t.id);
-                          }}
-                          onDragLeave={() => setDropTargetId(null)}
-                          onDrop={(e) => {
-                            e.preventDefault();
-                            const id = e.dataTransfer.getData("text/guest-id");
-                            if (id) assignGuest(id, t.id);
-                          }}
-                          onClick={() => {
+                          table={t}
+                          seated={guestsByTable.get(t.id) ?? []}
+                          pickedGuestId={pickedGuestId}
+                          onTap={() => {
                             if (pickedGuestId)
                               assignGuest(pickedGuestId, t.id);
                           }}
-                          className={`rounded-sm border p-4 bg-card transition-colors ${
-                            dropTargetId === t.id
-                              ? "border-accent bg-accent/5"
-                              : overCapacity
-                                ? "border-destructive/40"
-                                : "border-border"
-                          }`}
-                        >
-                          <div className="flex items-start justify-between gap-2 mb-3">
-                            <div className="min-w-0">
-                              <p className="font-display text-base truncate">
-                                {t.name}
-                              </p>
-                              <p className="text-xs text-muted-foreground tnum">
-                                {seated.length} / {t.capacity} ·{" "}
-                                {t.shape === "round" ? "Round" : "Rectangle"}
-                              </p>
-                            </div>
-                            <div className="flex items-center gap-1 shrink-0">
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-7 w-7"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setEditingTable(t);
-                                  setTableEditorOpen(true);
-                                }}
-                                aria-label="Edit table"
-                              >
-                                <Edit2 className="w-3.5 h-3.5" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-7 w-7"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  deleteTable(t);
-                                }}
-                                aria-label="Delete table"
-                              >
-                                <Trash2 className="w-3.5 h-3.5 text-muted-foreground hover:text-destructive" />
-                              </Button>
-                            </div>
-                          </div>
-                          {overCapacity && (
-                            <p className="flex items-center gap-1.5 text-xs text-destructive mb-2">
-                              <AlertCircle className="w-3 h-3" />
-                              Over capacity
-                            </p>
-                          )}
-                          {seated.length === 0 ? (
-                            <p className="text-xs text-muted-foreground text-center py-6 border border-dashed border-border/50 rounded-sm">
-                              Drop guests here
-                            </p>
-                          ) : (
-                            <ul className="space-y-1.5">
-                              {seated.map((g) => (
-                                <GuestPill
-                                  key={g.id}
-                                  guest={g}
-                                  isPicked={pickedGuestId === g.id}
-                                  onPick={() =>
-                                    setPickedGuestId(
-                                      pickedGuestId === g.id ? null : g.id,
-                                    )
-                                  }
-                                />
-                              ))}
-                            </ul>
-                          )}
-                        </div>
-                      );
-                    })}
+                          onEdit={() => {
+                            setEditingTable(t);
+                            setTableEditorOpen(true);
+                          }}
+                          onDelete={() => deleteTable(t)}
+                          onPickGuest={(id) =>
+                            setPickedGuestId(pickedGuestId === id ? null : id)
+                          }
+                        />
+                      ))}
+                    </div>
+                  )}
+                </section>
+              </div>
+
+              {/* Drag preview — a faded floating chip while the user drags. */}
+              <DragOverlay>
+                {activeGuest ? (
+                  <div className="px-3 py-1.5 rounded-sm text-xs bg-foreground text-background shadow-lg">
+                    {activeGuest.name}
                   </div>
-                )}
-              </section>
-            </div>
+                ) : null}
+              </DragOverlay>
+            </DndContext>
           )}
         </div>
       </main>
@@ -464,6 +436,9 @@ function GuestPill({
   isPicked: boolean;
   onPick: () => void;
 }) {
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
+    id: guest.id,
+  });
   const rsvpDot =
     guest.rsvp_status === "attending"
       ? "bg-accent"
@@ -474,25 +449,272 @@ function GuestPill({
           : "bg-border";
   return (
     <li
-      draggable
-      onDragStart={(e) => {
-        e.dataTransfer.setData("text/guest-id", guest.id);
-        e.dataTransfer.effectAllowed = "move";
-      }}
+      ref={setNodeRef}
+      {...listeners}
+      {...attributes}
       onClick={(e) => {
-        e.stopPropagation();
-        onPick();
+        // Only fire pick when not dragging — the listeners include
+        // pointer events that fire on tap-without-drag.
+        if (!isDragging) {
+          e.stopPropagation();
+          onPick();
+        }
       }}
       className={`flex items-center gap-2 px-2.5 py-1.5 rounded-sm text-xs cursor-grab active:cursor-grabbing select-none transition-colors ${
-        isPicked
-          ? "bg-foreground text-background"
-          : "bg-secondary/60 hover:bg-secondary"
+        isDragging
+          ? "opacity-30"
+          : isPicked
+            ? "bg-foreground text-background"
+            : "bg-secondary/60 hover:bg-secondary"
       }`}
     >
       <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${rsvpDot}`} />
       <span className="truncate">{guest.name}</span>
       {isPicked && <X className="w-3 h-3 ml-auto shrink-0" />}
     </li>
+  );
+}
+
+// Drop zone for the "Unassigned" panel. Wraps the chip list and lights
+// up when a guest is dragged over.
+function UnassignedDropZone({
+  children,
+  onTap,
+}: {
+  children: React.ReactNode;
+  onTap: () => void;
+}) {
+  const { setNodeRef, isOver } = useDroppable({ id: "_unassigned" });
+  return (
+    <div
+      ref={setNodeRef}
+      onClick={onTap}
+      className={`min-h-[120px] rounded-sm transition-colors ${
+        isOver ? "bg-accent/10 ring-1 ring-accent" : ""
+      }`}
+    >
+      {children}
+    </div>
+  );
+}
+
+// Visual table card with seat slots arranged around the table shape.
+// Round tables show seats as circles around the perimeter; rect tables
+// show seats in two rows above and below. Each empty slot is a hint
+// for where the next guest will land; filled slots show the guest
+// name and remain individually draggable so the host can reseat
+// without going through the unassigned list.
+function TableCard({
+  table,
+  seated,
+  pickedGuestId,
+  onTap,
+  onEdit,
+  onDelete,
+  onPickGuest,
+}: {
+  table: TableRow;
+  seated: Guest[];
+  pickedGuestId: string | null;
+  onTap: () => void;
+  onEdit: () => void;
+  onDelete: () => void;
+  onPickGuest: (id: string) => void;
+}) {
+  const { setNodeRef, isOver } = useDroppable({ id: table.id });
+  const overCapacity = seated.length > table.capacity;
+
+  // Build a fixed array of seat slots (filled + empty placeholders up
+  // to capacity). This keeps the layout stable as guests are added.
+  const slots: Array<Guest | null> = [];
+  for (let i = 0; i < Math.max(table.capacity, seated.length); i++) {
+    slots.push(seated[i] ?? null);
+  }
+
+  return (
+    <div
+      ref={setNodeRef}
+      onClick={onTap}
+      className={`rounded-sm border p-4 bg-card transition-colors ${
+        isOver
+          ? "border-accent bg-accent/5"
+          : overCapacity
+            ? "border-destructive/40"
+            : "border-border"
+      }`}
+    >
+      <div className="flex items-start justify-between gap-2 mb-3">
+        <div className="min-w-0">
+          <p className="font-display text-base truncate">{table.name}</p>
+          <p className="text-xs text-muted-foreground tnum">
+            {seated.length} / {table.capacity} ·{" "}
+            {table.shape === "round" ? "Round" : "Rectangle"}
+          </p>
+        </div>
+        <div className="flex items-center gap-1 shrink-0">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7"
+            onClick={(e) => {
+              e.stopPropagation();
+              onEdit();
+            }}
+            aria-label="Edit table"
+          >
+            <Edit2 className="w-3.5 h-3.5" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7"
+            onClick={(e) => {
+              e.stopPropagation();
+              onDelete();
+            }}
+            aria-label="Delete table"
+          >
+            <Trash2 className="w-3.5 h-3.5 text-muted-foreground hover:text-destructive" />
+          </Button>
+        </div>
+      </div>
+      {overCapacity && (
+        <p className="flex items-center gap-1.5 text-xs text-destructive mb-2">
+          <AlertCircle className="w-3 h-3" />
+          Over capacity
+        </p>
+      )}
+
+      {seated.length === 0 ? (
+        <SeatLayout shape={table.shape} slots={slots} onPickGuest={onPickGuest} pickedGuestId={pickedGuestId} />
+      ) : (
+        <SeatLayout shape={table.shape} slots={slots} onPickGuest={onPickGuest} pickedGuestId={pickedGuestId} />
+      )}
+    </div>
+  );
+}
+
+// Visual seat layout: round tables arrange seats around the perimeter
+// of an absolutely-positioned circle; rectangle tables stack two rows
+// of seat chips on either side of the label. Filled slots are draggable
+// guest pills; empty slots show as dashed outlines that hint where
+// the next guest will land.
+function SeatLayout({
+  shape,
+  slots,
+  pickedGuestId,
+  onPickGuest,
+}: {
+  shape: "round" | "rect";
+  slots: Array<Guest | null>;
+  pickedGuestId: string | null;
+  onPickGuest: (id: string) => void;
+}) {
+  if (slots.length === 0) {
+    return (
+      <p className="text-xs text-muted-foreground text-center py-6 border border-dashed border-border/50 rounded-sm">
+        Drop guests here
+      </p>
+    );
+  }
+  if (shape === "round") {
+    // Geometry: place each chip at angle (i / n) * 2π around a circle.
+    // Inline CSS keeps the layout self-contained without polluting
+    // global styles.
+    const size = 200;
+    const radius = 72;
+    const center = size / 2;
+    return (
+      <div
+        className="relative mx-auto my-2"
+        style={{ width: size, height: size }}
+      >
+        <div
+          className="absolute rounded-full border border-border bg-secondary/30"
+          style={{
+            left: center - radius + 8,
+            top: center - radius + 8,
+            width: (radius - 8) * 2,
+            height: (radius - 8) * 2,
+          }}
+        />
+        {slots.map((g, i) => {
+          const angle = (i / slots.length) * Math.PI * 2 - Math.PI / 2;
+          const x = center + Math.cos(angle) * radius;
+          const y = center + Math.sin(angle) * radius;
+          return (
+            <div
+              key={g?.id ?? `empty-${i}`}
+              className="absolute -translate-x-1/2 -translate-y-1/2"
+              style={{ left: x, top: y }}
+            >
+              <SeatSlot
+                guest={g}
+                pickedGuestId={pickedGuestId}
+                onPickGuest={onPickGuest}
+              />
+            </div>
+          );
+        })}
+      </div>
+    );
+  }
+
+  // Rect: split into top + bottom rows for visual balance.
+  const half = Math.ceil(slots.length / 2);
+  const top = slots.slice(0, half);
+  const bottom = slots.slice(half);
+  return (
+    <div className="my-2 space-y-1.5">
+      <div className="flex justify-center gap-1.5 flex-wrap">
+        {top.map((g, i) => (
+          <SeatSlot
+            key={g?.id ?? `top-${i}`}
+            guest={g}
+            pickedGuestId={pickedGuestId}
+            onPickGuest={onPickGuest}
+          />
+        ))}
+      </div>
+      <div className="h-3 mx-auto w-3/4 rounded-sm bg-secondary/30 border border-border" />
+      <div className="flex justify-center gap-1.5 flex-wrap">
+        {bottom.map((g, i) => (
+          <SeatSlot
+            key={g?.id ?? `bot-${i}`}
+            guest={g}
+            pickedGuestId={pickedGuestId}
+            onPickGuest={onPickGuest}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function SeatSlot({
+  guest,
+  pickedGuestId,
+  onPickGuest,
+}: {
+  guest: Guest | null;
+  pickedGuestId: string | null;
+  onPickGuest: (id: string) => void;
+}) {
+  if (!guest) {
+    return (
+      <div className="w-16 h-7 rounded-sm border border-dashed border-border/60 flex items-center justify-center text-[10px] text-muted-foreground/60">
+        empty
+      </div>
+    );
+  }
+  return (
+    <ul className="contents">
+      <GuestPill
+        guest={guest}
+        isPicked={pickedGuestId === guest.id}
+        onPick={() => onPickGuest(guest.id)}
+      />
+    </ul>
   );
 }
 

@@ -12,6 +12,7 @@ import {
   Video,
 } from "lucide-react";
 import { downloadIcs, slugForFile } from "@/lib/ics";
+import { formatDate, formatTime } from "@/lib/format";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -154,8 +155,7 @@ export function AppointmentsList({ appointments, side, onMutate }: Props) {
     status: Appointment["status"],
   ) {
     setPendingId(appt.id);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error } = await (supabase as any)
+    const { error } = await supabase
       .from("appointments")
       .update({ status })
       .eq("id", appt.id);
@@ -256,21 +256,13 @@ export function AppointmentsList({ appointments, side, onMutate }: Props) {
                   <div className="flex items-center gap-1.5">
                     <CalendarDays className="w-3.5 h-3.5" />
                     <span className="tnum">
-                      {when.toLocaleDateString(undefined, {
-                        weekday: "short",
-                        month: "short",
-                        day: "numeric",
-                        year: "numeric",
-                      })}
+                      {formatDate(when, "short")}
                     </span>
                   </div>
                   <div className="flex items-center gap-1.5">
                     <Clock className="w-3.5 h-3.5" />
                     <span className="tnum">
-                      {when.toLocaleTimeString(undefined, {
-                        hour: "numeric",
-                        minute: "2-digit",
-                      })}
+                      {formatTime(when)}
                       {" · "}
                       {appt.duration_minutes} min
                     </span>

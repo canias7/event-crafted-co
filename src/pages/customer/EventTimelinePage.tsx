@@ -19,6 +19,11 @@ import { DashboardSidebar } from "@/components/shared/DashboardSidebar";
 import { MobileNav } from "@/components/shared/MobileNav";
 import { SubNavTabs } from "@/components/shared/SubNavTabs";
 import { EVENT_HUB_TABS } from "@/data/hubTabs";
+import {
+  templatesForEventType,
+  type TimelineTemplate,
+} from "@/data/timelineTemplates";
+import { Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -46,8 +51,7 @@ interface TimelineItem {
   display_order: number;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const itemsTable = () => (supabase as any).from("event_timeline_items");
+const itemsTable = () => supabase.from("event_timeline_items");
 
 function formatTime(t: string) {
   // t is "HH:MM:SS" or "HH:MM"
@@ -66,6 +70,32 @@ export default function EventTimelinePage() {
   const [editorOpen, setEditorOpen] = useState(false);
   const [editing, setEditing] = useState<TimelineItem | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [templatePickerOpen, setTemplatePickerOpen] = useState(false);
+  const [applyingTemplate, setApplyingTemplate] = useState(false);
+
+  async function applyTemplate(tpl: TimelineTemplate) {
+    if (!user || !eventId) return;
+    setApplyingTemplate(true);
+    const baseOrder =
+      items.reduce((m, i) => Math.max(m, i.display_order ?? 0), 0) + 1;
+    const rows = tpl.items.map((it, i) => ({
+      host_id: user.id,
+      event_id: eventId,
+      title: it.title,
+      start_time: it.time,
+      notes: it.notes ?? null,
+      display_order: baseOrder + i,
+    }));
+    const { error } = await itemsTable().insert(rows);
+    setApplyingTemplate(false);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    toast.success(`Added ${rows.length} timeline items`);
+    setTemplatePickerOpen(false);
+    load();
+  }
 
   async function load() {
     if (!user) return;
@@ -203,6 +233,18 @@ export default function EventTimelinePage() {
                 <CalendarPlus className="w-3.5 h-3.5 mr-1.5" />
                 Add to calendar
               </Button>
+              {templatesForEventType(activeEvent?.event_type ?? null).length >
+                0 && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setTemplatePickerOpen(true)}
+                  className="rounded-full"
+                >
+                  <Sparkles className="w-3.5 h-3.5 mr-1.5" />
+                  Use template
+                </Button>
+              )}
               <Button
                 size="sm"
                 onClick={() => {
@@ -330,6 +372,40 @@ export default function EventTimelinePage() {
       </main>
 
       <MobileNav items={navItems} />
+
+      {templatePickerOpen && (
+        <Dialog open={templatePickerOpen} onOpenChange={setTemplatePickerOpen}>
+          <DialogContent className="sm:max-w-md rounded-sm">
+            <DialogHeader>
+              <DialogTitle className="font-display text-2xl">
+                Pick a starter timeline
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-2 pt-2">
+              {templatesForEventType(activeEvent?.event_type ?? null).map(
+                (tpl) => (
+                  <button
+                    key={tpl.label}
+                    type="button"
+                    onClick={() => applyTemplate(tpl)}
+                    disabled={applyingTemplate}
+                    className="w-full text-left rounded-sm border border-border bg-card p-4 hover:border-foreground/30 transition-colors disabled:opacity-50"
+                  >
+                    <p className="font-display text-base mb-1">{tpl.label}</p>
+                    <p className="text-xs text-muted-foreground leading-relaxed">
+                      {tpl.description}
+                    </p>
+                    <p className="text-[10px] text-muted-foreground mt-2 tnum">
+                      {tpl.items.length} items · {tpl.items[0].time}–
+                      {tpl.items[tpl.items.length - 1].time}
+                    </p>
+                  </button>
+                ),
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
 
       {user && (
         <ItemEditor

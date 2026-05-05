@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
@@ -34,8 +34,27 @@ import { VideoEmbed } from "@/components/vendor/VideoEmbed";
 import { ShowcaseStrip } from "@/components/vendor/ShowcaseStrip";
 import { VerificationBadges } from "@/components/vendor/VerificationBadges";
 import { CoBookedRail } from "@/components/vendor/CoBookedRail";
+import {
+  ImportedReviewsList,
+  type ImportedReview,
+} from "@/components/vendor/ImportedReviewsList";
+import { VendorFaqList } from "@/components/vendor/VendorFaqList";
+import {
+  VendorFaqsPublic,
+} from "@/components/vendor/VendorFaqsManager";
+import { SocialEmbedCard } from "@/components/vendor/SocialEmbedCard";
+import { VendorBundlesPublic } from "@/components/vendor/VendorBundlesPublic";
+import {
+  VendorReviewsList,
+  type RealReview,
+} from "@/components/vendor/VendorReviewsList";
 import { useDocumentMeta } from "@/hooks/useDocumentMeta";
-import { InquiryFormModal } from "@/components/inquiries/InquiryFormModal";
+// Lazy: 618-line modal only loads when the user clicks "Send inquiry."
+const InquiryFormModal = lazy(() =>
+  import("@/components/inquiries/InquiryFormModal").then((m) => ({
+    default: m.InquiryFormModal,
+  })),
+);
 import { useAuth } from "@/hooks/useAuth";
 import { useVendors } from "@/hooks/useVendors";
 import { useSavedVendors } from "@/hooks/useSavedVendors";
@@ -52,6 +71,9 @@ import heroDinner from "@/assets/vendora-hero-dinner.jpg";
 import heroGala from "@/assets/vendora-hero-gala.jpg";
 import heroBirthday from "@/assets/vendora-hero-birthday.jpg";
 import heroKids from "@/assets/vendora-hero-kids.jpg";
+import { ReportButton } from "@/components/trust/ReportButton";
+import { VendorPolicyBadges } from "@/components/vendor/VendorPolicyBadges";
+import { VendorServiceAreaMap } from "@/components/vendor/VendorServiceAreaMap";
 
 const imageMap: Record<string, string> = {
   "vendor-photographer": vendorPhotographer,
@@ -172,19 +194,13 @@ export default function VendorDetailPage() {
       return;
     }
     let cancelled = false;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (supabase as any)
+    supabase
       .from("vendor_portfolio_images")
       .select("storage_path, caption, display_order, created_at")
       .eq("vendor_id", vendor.id)
       .order("display_order", { ascending: true })
       .order("created_at", { ascending: true })
-      .then(
-        ({
-          data,
-        }: {
-          data: Array<{ storage_path: string; caption: string | null }> | null;
-        }) => {
+      .then(({ data }) => {
           if (cancelled) return;
           // Detail-page portfolio renders at most ~800px wide; request
           // transformed images at that size to save bandwidth.
@@ -193,8 +209,7 @@ export default function VendorDetailPage() {
             caption: r.caption,
           }));
           setRealPortfolio(items);
-        },
-      );
+        });
     return () => {
       cancelled = true;
     };
@@ -210,8 +225,7 @@ export default function VendorDetailPage() {
   // Track a profile view (real DB-backed vendors only). Fire-and-forget.
   useEffect(() => {
     if (!vendor || !vendor.isReal) return;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (supabase as any)
+    supabase
       .from("vendor_profile_views")
       .insert({
         vendor_id: vendor.id,
@@ -222,16 +236,6 @@ export default function VendorDetailPage() {
   }, [vendor?.id, vendor?.isReal]);
 
   // Real reviews (only for DB-backed vendors)
-  interface RealReview {
-    id: string;
-    rating: number;
-    body: string | null;
-    photo_urls: string[] | null;
-    created_at: string;
-    host: { display_name: string | null } | null;
-    response: { body: string } | null;
-    inquiry: { event_type: string; event_date: string | null } | null;
-  }
   const [realReviews, setRealReviews] = useState<RealReview[]>([]);
   useEffect(() => {
     if (!vendor || !vendor.isReal) {
@@ -239,15 +243,14 @@ export default function VendorDetailPage() {
       return;
     }
     let cancelled = false;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (supabase as any)
+    supabase
       .from("reviews")
       .select(
         "id, rating, body, photo_urls, created_at, host:profiles!reviews_host_id_fkey(display_name), response:review_responses(body), inquiry:inquiries!reviews_inquiry_id_fkey(event_type, event_date)",
       )
       .eq("vendor_id", vendor.id)
       .order("created_at", { ascending: false })
-      .then(({ data }: { data: unknown }) => {
+      .then(({ data }) => {
         if (cancelled) return;
         const rows = (data as RealReview[] | null) ?? [];
         // Supabase returns response as array for has-many; flatten.
@@ -268,14 +271,6 @@ export default function VendorDetailPage() {
   }, [vendor]);
 
   // Imported reviews from external platforms (vendor-pasted).
-  interface ImportedReview {
-    id: string;
-    source: string;
-    reviewer_name: string;
-    rating: number;
-    body: string | null;
-    reviewed_at: string | null;
-  }
   const [importedReviews, setImportedReviews] = useState<ImportedReview[]>([]);
   useEffect(() => {
     if (!vendor || !vendor.isReal) {
@@ -283,16 +278,15 @@ export default function VendorDetailPage() {
       return;
     }
     let cancelled = false;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (supabase as any)
+    supabase
       .from("imported_reviews")
       .select("id, source, reviewer_name, rating, body, reviewed_at")
       .eq("vendor_id", vendor.id)
       .order("reviewed_at", { ascending: false, nullsFirst: false })
       .order("created_at", { ascending: false })
-      .then(({ data }: { data: ImportedReview[] | null }) => {
+      .then(({ data }) => {
         if (cancelled) return;
-        setImportedReviews(data ?? []);
+        setImportedReviews((data as ImportedReview[] | null) ?? []);
       });
     return () => {
       cancelled = true;
@@ -341,8 +335,7 @@ export default function VendorDetailPage() {
       return;
     }
     let cancelled = false;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (supabase as any)
+    supabase
       .from("vendor_recommendations")
       .select(
         "id, recommended_id, note, recommended:vendor_profiles!vendor_recommendations_recommended_id_fkey(id, business_name, category, location)",
@@ -350,9 +343,9 @@ export default function VendorDetailPage() {
       .eq("recommender_id", vendor.id)
       .order("display_order", { ascending: true })
       .order("created_at", { ascending: true })
-      .then(({ data }: { data: RecRow[] | null }) => {
+      .then(({ data }) => {
         if (cancelled) return;
-        setRecommendations(data ?? []);
+        setRecommendations((data as RecRow[] | null) ?? []);
       });
     return () => {
       cancelled = true;
@@ -381,17 +374,16 @@ export default function VendorDetailPage() {
       return;
     }
     let cancelled = false;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (supabase as any)
+    supabase
       .from("vendor_packages")
       .select("id, name, description, price_cents, includes, display_order")
       .eq("vendor_id", vendor.id)
       .eq("is_active", true)
       .order("display_order", { ascending: true })
       .order("price_cents", { ascending: true })
-      .then(({ data }: { data: VendorPackage[] | null }) => {
+      .then(({ data }) => {
         if (cancelled) return;
-        setPackages(data ?? []);
+        setPackages((data as VendorPackage[] | null) ?? []);
       });
     return () => {
       cancelled = true;
@@ -836,183 +828,37 @@ export default function VendorDetailPage() {
                 </div>
               </div>
 
+              {/* Multi-vendor bundles owned by this vendor (real DB only). */}
+              {vendor.isReal && <VendorBundlesPublic vendorId={vendor.id} />}
+
               {/* Showcase reels — vertical clips, autoplay-on-view */}
               {vendor.isReal && <ShowcaseStrip vendorId={vendor.id} />}
 
+              {/* Multi-vendor bundles — only for real DB vendors. */}
+              {vendor.isReal && <VendorBundlesPublic vendorId={vendor.id} />}
+
+              {/* Service area coverage map */}
+              {vendor.isReal && (
+                <VendorServiceAreaMap
+                  vendorId={vendor.id}
+                  category={vendor.category}
+                />
+              )}
+
               {/* Reviews */}
-              <div>
-                <div className="flex items-end justify-between mb-8 flex-wrap gap-4">
-                  <div>
-                    <p className="font-label text-accent mb-4">Reviews</p>
-                    <h2 className="font-display text-3xl">
-                      <span className="tnum">{reviewsAvg.toFixed(1)}</span>{" "}
-                      <span className="text-muted-foreground font-light">·</span>{" "}
-                      <span className="text-muted-foreground font-light tnum">
-                        {reviewsCount}{" "}
-                        {reviewsCount === 1 ? "review" : "reviews"}
-                      </span>
-                    </h2>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    {Array.from({ length: 5 }).map((_, i) => (
-                      <Star
-                        key={i}
-                        className={`w-4 h-4 ${
-                          i < Math.round(reviewsAvg)
-                            ? "fill-accent text-accent"
-                            : "text-muted-foreground/30"
-                        }`}
-                      />
-                    ))}
-                  </div>
-                </div>
-                <div className="space-y-8">
-                  {realReviews.length > 0
-                    ? realReviews.map((r) => (
-                        <div
-                          key={r.id}
-                          className="border-t border-border pt-8 first:border-t-0 first:pt-0"
-                        >
-                          <div className="flex items-center gap-1 mb-3">
-                            {Array.from({ length: r.rating }).map((_, j) => (
-                              <Star
-                                key={j}
-                                className="w-3.5 h-3.5 fill-accent text-accent"
-                              />
-                            ))}
-                          </div>
-                          {r.body && (
-                            <p className="text-foreground/85 leading-relaxed mb-4">
-                              "{r.body}"
-                            </p>
-                          )}
-                          {r.photo_urls && r.photo_urls.length > 0 && (
-                            <div className="grid grid-cols-4 gap-2 mb-4">
-                              {r.photo_urls.map((url, i) => (
-                                <a
-                                  key={url}
-                                  href={url}
-                                  target="_blank"
-                                  rel="noreferrer"
-                                  className="aspect-square rounded-sm overflow-hidden bg-muted block hover:opacity-80 transition-opacity"
-                                >
-                                  <img
-                                    src={url}
-                                    alt={`Photo ${i + 1} from ${r.host?.display_name ?? "host"}'s review`}
-                                    loading="lazy"
-                                    className="w-full h-full object-cover"
-                                  />
-                                </a>
-                              ))}
-                            </div>
-                          )}
-                          <div>
-                            <p className="text-sm font-medium">
-                              {r.host?.display_name ?? "Anonymous host"}
-                            </p>
-                            {r.inquiry && (
-                              <p className="text-xs text-muted-foreground capitalize">
-                                {r.inquiry.event_type.replace("_", " ")}
-                                {r.inquiry.event_date && (
-                                  <>
-                                    {" · "}
-                                    <span className="tnum">
-                                      {r.inquiry.event_date}
-                                    </span>
-                                  </>
-                                )}
-                              </p>
-                            )}
-                          </div>
-                          {r.response && (
-                            <div className="mt-4 ml-6 pl-4 border-l-2 border-accent/40">
-                              <p className="font-label text-accent mb-1.5">
-                                Response from {vendor.name}
-                              </p>
-                              <p className="text-sm text-foreground/80 leading-relaxed">
-                                {r.response.body}
-                              </p>
-                            </div>
-                          )}
-                        </div>
-                      ))
-                    : sampleReviews.map((r, i) => (
-                        <div
-                          key={i}
-                          className="border-t border-border pt-8 first:border-t-0 first:pt-0"
-                        >
-                          <div className="flex items-center gap-1 mb-3">
-                            {Array.from({ length: r.rating }).map((_, j) => (
-                              <Star
-                                key={j}
-                                className="w-3.5 h-3.5 fill-accent text-accent"
-                              />
-                            ))}
-                          </div>
-                          <p className="text-foreground/85 leading-relaxed mb-4">
-                            "{r.text}"
-                          </p>
-                          <div>
-                            <p className="text-sm font-medium">{r.name}</p>
-                            <p className="text-xs text-muted-foreground">
-                              {r.event}
-                            </p>
-                          </div>
-                        </div>
-                      ))}
-                </div>
-              </div>
+              <VendorReviewsList
+                realReviews={realReviews}
+                samples={sampleReviews}
+                averageRating={reviewsAvg}
+                totalCount={reviewsCount}
+                vendorName={vendor.name}
+              />
 
               {/* Imported reviews from other platforms */}
-              {importedReviews.length > 0 && (
-                <div>
-                  <p className="font-label text-accent mb-4">From around the web</p>
-                  <h2 className="font-display text-3xl mb-2">
-                    Reviews from elsewhere
-                  </h2>
-                  <p className="text-sm text-muted-foreground mb-6 leading-relaxed max-w-xl">
-                    Imported by {vendor.name} from other platforms. Not
-                    booked through Vendora — but still part of their track
-                    record.
-                  </p>
-                  <div className="grid sm:grid-cols-2 gap-4">
-                    {importedReviews.map((r) => (
-                      <div
-                        key={r.id}
-                        className="rounded-sm border border-border bg-card p-4"
-                      >
-                        <div className="flex items-center gap-2 mb-2 flex-wrap">
-                          <div className="flex items-center gap-0.5">
-                            {[1, 2, 3, 4, 5].map((n) => (
-                              <Star
-                                key={n}
-                                className={`w-3.5 h-3.5 ${
-                                  n <= Math.round(r.rating)
-                                    ? "fill-accent text-accent"
-                                    : "text-muted-foreground/30"
-                                }`}
-                              />
-                            ))}
-                          </div>
-                          <span className="text-[10px] uppercase tracking-wide text-muted-foreground">
-                            via {r.source.replace("_", " ")}
-                          </span>
-                        </div>
-                        {r.body && (
-                          <p className="text-sm text-foreground/80 leading-relaxed mb-2 italic line-clamp-4">
-                            "{r.body}"
-                          </p>
-                        )}
-                        <p className="text-xs text-muted-foreground">
-                          — {r.reviewer_name}
-                          {r.reviewed_at &&
-                            ` · ${new Date(r.reviewed_at).toLocaleDateString()}`}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
+              <ImportedReviewsList
+                reviews={importedReviews}
+                vendorName={vendor.name}
+              />
 
               {/* Often booked with (cross-sell from booking signal + curated) */}
               {vendor.isReal && (
@@ -1058,22 +904,15 @@ export default function VendorDetailPage() {
               )}
 
               {/* FAQ */}
-              <div>
-                <p className="font-label text-accent mb-4">FAQ</p>
-                <h2 className="font-display text-3xl mb-6">Common questions</h2>
-                <div>
-                  {sampleFaqs.map((f) => (
-                    <details key={f.q} className="group border-b border-border">
-                      <summary className="flex items-center justify-between py-5 cursor-pointer text-base font-medium list-none">
-                        {f.q}
-                      </summary>
-                      <p className="pb-5 text-sm text-muted-foreground leading-relaxed max-w-lg">
-                        {f.a}
-                      </p>
-                    </details>
-                  ))}
-                </div>
-              </div>
+              {/* Vendor's own FAQ entries take precedence; static
+                  sampleFaqs only shows when the vendor hasn't set up any. */}
+              {vendor.isReal ? (
+                <>
+                  <VendorFaqsPublic vendorId={vendor.id} />
+                </>
+              ) : (
+                <VendorFaqList items={sampleFaqs} />
+              )}
             </div>
 
             {/* Sticky inquiry sidebar */}
@@ -1152,6 +991,34 @@ export default function VendorDetailPage() {
                   Vendora doesn't accept money to influence search ranking. Vendors
                   appear based on fit and review quality, not ad spend.
                 </div>
+
+                {vendor.isReal && (
+                  <VendorPolicyBadges
+                    depositPct={vendor.depositPct}
+                    cancellationPolicy={vendor.cancellationPolicy}
+                    rescheduleWindowDays={vendor.rescheduleWindowDays}
+                    policyNotes={vendor.policyNotes}
+                  />
+                )}
+
+                {vendor.isReal && (
+                  <div className="text-center pt-1">
+                    <ReportButton
+                      contentType="vendor_profile"
+                      contentId={vendor.id}
+                      variant="link"
+                      size="sm"
+                      label="Report this profile"
+                    />
+                  </div>
+                )}
+
+                {vendor.isReal && (
+                  <SocialEmbedCard
+                    instagramHandle={vendor.instagramHandle ?? null}
+                    tiktokHandle={vendor.tiktokHandle ?? null}
+                  />
+                )}
               </div>
             </aside>
           </div>
@@ -1233,12 +1100,17 @@ export default function VendorDetailPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Logged-in host: real inquiry form */}
-      <InquiryFormModal
-        open={inquiryFormOpen}
-        onOpenChange={setInquiryFormOpen}
-        preferredVendorName={vendor.name}
-      />
+      {/* Logged-in host: real inquiry form. Lazy chunk only loads on
+          first open — most visitors browsing vendor pages never click. */}
+      {inquiryFormOpen && (
+        <Suspense fallback={null}>
+          <InquiryFormModal
+            open={inquiryFormOpen}
+            onOpenChange={setInquiryFormOpen}
+            preferredVendorName={vendor.name}
+          />
+        </Suspense>
+      )}
 
       <Lightbox
         images={portfolioItems.map((item, i) => ({

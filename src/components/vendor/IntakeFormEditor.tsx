@@ -38,6 +38,10 @@ interface FormRow {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
+// Cast to any: the typed `questions` column is Json but we work with
+// IntakeQuestion[] internally; the conversion both ways needs the
+// any-shaped table or a strict `as unknown as` everywhere.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const formsTable = () => (supabase as any).from("vendor_intake_forms");
 
 const TYPE_LABELS: Record<IntakeFieldType, string> = {

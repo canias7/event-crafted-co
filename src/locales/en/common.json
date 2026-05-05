@@ -113,6 +113,9 @@
     "how_it_works": "How it works",
     "inspiration": "Inspiration",
     "real_events": "Real events",
+    "changelog": "Changelog",
+    "press": "Press",
+    "status": "Status",
     "legal": "Legal",
     "privacy": "Privacy",
     "terms": "Terms",
@@ -122,5 +125,156 @@
   "language_switcher": {
     "label": "Language",
     "current": "Current language"
+  },
+  "auth": {
+    "common": {
+      "or": "or",
+      "email": "Email",
+      "password": "Password",
+      "signing_in": "Signing in…",
+      "creating": "Creating…"
+    },
+    "login": {
+      "eyebrow": "— WELCOME BACK",
+      "tagline_lead": "Every detail,",
+      "tagline_accent": "perfectly composed.",
+      "footer_brand": "© 2026 Vendora — Vendor-first event marketplace",
+      "title": "Sign in",
+      "subtitle": "Welcome back. Pick up where you left off.",
+      "forgot": "Forgot?",
+      "submit": "Sign in",
+      "new_here": "New to Vendora?",
+      "create_account": "Create an account"
+    },
+    "forgot": {
+      "eyebrow": "— RESET ACCESS",
+      "tagline_lead": "We'll email you a",
+      "tagline_accent": "fresh link.",
+      "title": "Forgot password?",
+      "subtitle": "Enter the email on your account and we'll send a reset link.",
+      "sent_lead": "Check your inbox at",
+      "sent_trail": "for a reset link. It'll expire in an hour.",
+      "back_to_sign_in": "Back to sign in",
+      "submit": "Send reset link",
+      "remembered": "Remembered it?",
+      "sign_in": "Sign in"
+    },
+    "signup": {
+      "eyebrow": "— JOIN VENDORA",
+      "tagline_lead": "Plan something",
+      "tagline_accent": "unforgettable.",
+      "tagline_subtitle": "Hand-selected vendors and the calm tools to run your event end-to-end.",
+      "footer_brand": "© 2026 Vendora — Now in private beta",
+      "title": "Create your account",
+      "subtitle": "Choose how you'll use the platform.",
+      "role_label": "I am a…",
+      "role_host": "Host",
+      "role_host_desc": "Plan an event",
+      "role_vendor": "Vendor",
+      "role_vendor_desc": "Offer services",
+      "name_label": "Display name",
+      "password_hint": "At least 8 characters",
+      "adult_lead": "I'm 18 or older and agree to Vendora's",
+      "adult_terms": "Terms",
+      "adult_and": "and",
+      "adult_privacy": "Privacy Policy",
+      "submit": "Create account",
+      "already_have_account": "Already have an account?",
+      "sign_in": "Sign in"
+    }
+  },
+  "sidebar": {
+    "customer": {
+      "dashboard": "Dashboard",
+      "vendors": "Vendors",
+      "inquiries": "Inquiries",
+      "messages": "Messages",
+      "appointments": "Appointments",
+      "event": "Event",
+      "guests": "Guests",
+      "planning": "Planning",
+      "inspiration": "Inspiration",
+      "gifts": "Gifts"
+    },
+    "vendor": {
+      "dashboard": "Dashboard",
+      "inbox": "Inbox",
+      "messages": "Messages",
+      "analytics": "Analytics",
+      "calendar": "Calendar",
+      "profile": "Profile",
+      "library": "Library",
+      "team": "Team",
+      "payments": "Payments"
+    },
+    "admin": {
+      "overview": "Overview",
+      "vendors": "Vendors",
+      "verifications": "Verifications",
+      "inquiries": "Inquiries",
+      "reviews": "Reviews",
+      "inspiration": "Inspiration",
+      "editorial": "Editorial",
+      "claims": "Claim invites",
+      "support": "Support",
+      "audit": "Audit log",
+      "email_health": "Email health",
+      "settings": "Settings"
+    },
+    "bottom": {
+      "payments": "Payments",
+      "support": "Support",
+      "settings": "Settings"
+    }
+  },
+  "dashboard": {
+    "common": {
+      "view_all": "View all",
+      "quick_actions": "Quick actions",
+      "welcome_back": "Welcome back",
+      "let_us_plan": "Let's plan something memorable",
+      "of": "of",
+      "completed": "completed",
+      "on_track": "On track",
+      "overdue_one": "{{count}} overdue",
+      "overdue_other": "{{count}} overdue"
+    },
+    "customer": {
+      "title": "Customer",
+      "event_in_days": "Your {{event}} is in {{count}} days",
+      "event_planning": "Your {{event}} is being planned",
+      "stat_days_until": "Days until event",
+      "stat_inquiries": "Inquiries",
+      "stat_awaiting": "Awaiting reply",
+      "stat_booked": "Booked",
+      "widget_guests": "Guests",
+      "widget_attending": "{{count}} attending",
+      "widget_spent": "Spent",
+      "widget_planned": "of {{amount}} planned",
+      "widget_checklist": "Checklist",
+      "widget_done_ratio": "{{done}}/{{total}} done",
+      "widget_open_tasks": "Open tasks",
+      "section_checklist": "Checklist progress",
+      "section_tasks": "Tasks due soon",
+      "complete_setup": "Complete setup",
+      "tell_us_about_event": "Tell us about your event",
+      "tell_us_setup_desc": "A two-minute setup so we can tailor your dashboard, recommendations, and pre-fill inquiries with your event details.",
+      "qa_browse_vendors": "Browse vendors",
+      "qa_microsite": "Event microsite",
+      "qa_book_appt": "Book appointment",
+      "qa_invite": "Create invitation",
+      "qa_add_task": "Add task",
+      "qa_add_check": "Add checklist item"
+    },
+    "vendor": {
+      "title": "Vendor",
+      "stat_new_requests": "New requests",
+      "stat_drafted": "AI-drafted",
+      "stat_replied": "Replied",
+      "stat_won": "Booked"
+    },
+    "admin": {
+      "title": "Admin"
+    }
   }
 }

@@ -82,16 +82,15 @@ export default function VendorMapPage() {
 
   useEffect(() => {
     let cancelled = false;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (supabase as any)
+    supabase
       .from("vendor_profiles")
       .select(
         "id, business_name, category, location, latitude, longitude, base_price_cents, responder_tier",
       )
       .order("verified_at", { ascending: false, nullsFirst: false })
-      .then(({ data }: { data: MapVendor[] | null }) => {
+      .then(({ data }) => {
         if (cancelled) return;
-        setVendors(data ?? []);
+        setVendors((data as MapVendor[] | null) ?? []);
         setLoading(false);
       });
     return () => {

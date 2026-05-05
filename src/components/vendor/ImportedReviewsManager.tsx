@@ -50,8 +50,7 @@ const sourceColor: Record<string, string> = {
   other: "bg-secondary text-muted-foreground border-border",
 };
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const importedTable = () => (supabase as any).from("imported_reviews");
+const importedTable = () => supabase.from("imported_reviews");
 
 export function ImportedReviewsManager({
   vendorId,

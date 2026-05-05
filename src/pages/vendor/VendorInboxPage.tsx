@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { Inbox, Download, LayoutGrid, List } from "lucide-react";
 import { InquiryKanban } from "@/components/vendor/InquiryKanban";
 import { toast } from "sonner";
+import { useRealtime } from "@/lib/realtime";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { DashboardSidebar } from "@/components/shared/DashboardSidebar";
@@ -134,8 +135,7 @@ export default function VendorInboxPage() {
 
     // Hydrate label assignments per inquiry
     if (inquiries.length > 0) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data: assigns } = await (supabase as any)
+      const { data: assigns } = await supabase
         .from("inquiry_label_assignments")
         .select(
           "inquiry_id, label:vendor_inquiry_labels!inquiry_label_assignments_label_id_fkey(id, name, color)",
@@ -162,8 +162,7 @@ export default function VendorInboxPage() {
   async function loadLabels(forVendorId?: string | null) {
     const vid = forVendorId ?? vendorId;
     if (!vid) return;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data } = await (supabase as any)
+    const { data } = await supabase
       .from("vendor_inquiry_labels")
       .select("id, name, color, display_order")
       .eq("vendor_id", vid)
@@ -199,26 +198,18 @@ export default function VendorInboxPage() {
   }, [rows, filter, labelFilter]);
 
   // Realtime: refetch when any inquiry for this vendor changes.
-  useEffect(() => {
-    if (!vendorId) return;
-    const channel = supabase
-      .channel(`vendor-inbox-${vendorId}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "inquiries",
-          filter: `vendor_id=eq.${vendorId}`,
-        },
-        () => load(vendorId),
-      )
-      .subscribe();
-    return () => {
-      supabase.removeChannel(channel);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [vendorId]);
+  // Realtime via the shared user-scoped channel — no per-page websocket
+  // subscription needed.
+  const realtimeConfig = useMemo(
+    () =>
+      vendorId
+        ? { table: "inquiries", filter: `vendor_id=eq.${vendorId}` }
+        : null,
+    [vendorId],
+  );
+  useRealtime(realtimeConfig, () => {
+    if (vendorId) load(vendorId);
+  });
 
   return (
     <div className="flex min-h-screen bg-background">
@@ -481,8 +472,7 @@ function ManageLabelsDialog({
     e.preventDefault();
     if (!name.trim()) return;
     setSubmitting(true);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error } = await (supabase as any)
+    const { error } = await supabase
       .from("vendor_inquiry_labels")
       .insert({
         vendor_id: vendorId,
@@ -501,8 +491,7 @@ function ManageLabelsDialog({
 
   async function remove(id: string) {
     setDeletingId(id);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error } = await (supabase as any)
+    const { error } = await supabase
       .from("vendor_inquiry_labels")
       .delete()
       .eq("id", id);

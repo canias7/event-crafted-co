@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
+import { useRealtime } from "@/lib/realtime";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import {
   ArrowLeft,
@@ -8,19 +9,27 @@ import {
   RotateCcw,
   Send,
   Loader2,
-  Star,
-  MessageCircle,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { ProposalFormModal } from "@/components/proposals/ProposalFormModal";
+// Lazy: only loads when the vendor opens "Send proposal."
+const ProposalFormModal = lazy(() =>
+  import("@/components/proposals/ProposalFormModal").then((m) => ({
+    default: m.ProposalFormModal,
+  })),
+);
+import {
+  InquiryReviewCard,
+  type ReviewWithResponse,
+} from "@/components/inquiries/InquiryReviewCard";
 import {
   ProposalCard,
   type Proposal,
 } from "@/components/proposals/ProposalCard";
+import { ProposalShareToggle } from "@/components/proposals/ProposalShareToggle";
 import { ProposeAppointmentModal } from "@/components/appointments/ProposeAppointmentModal";
 import { HostReputationCard } from "@/components/vendor/HostReputationCard";
 import { MessageAttachments } from "@/components/messages/MessageAttachments";
@@ -65,15 +74,6 @@ interface Message {
   attachments?: MessageAttachment[];
 }
 
-interface ReviewWithResponse {
-  id: string;
-  vendor_id: string;
-  rating: number;
-  body: string | null;
-  created_at: string;
-  response: { body: string; updated_at: string } | null;
-}
-
 const statusStyles: Record<string, string> = {
   new: "bg-accent/15 text-accent border-accent/30",
   drafted: "bg-secondary text-secondary-foreground border-border",
@@ -108,9 +108,6 @@ export default function InquiryDetailPage() {
   const [sending, setSending] = useState(false);
   const [statusUpdating, setStatusUpdating] = useState(false);
   const [review, setReview] = useState<ReviewWithResponse | null>(null);
-  const [responseDraft, setResponseDraft] = useState("");
-  const [responseEditing, setResponseEditing] = useState(false);
-  const [savingResponse, setSavingResponse] = useState(false);
   const [proposals, setProposals] = useState<Proposal[]>([]);
   const [proposalModalOpen, setProposalModalOpen] = useState(false);
   const [appointmentModalOpen, setAppointmentModalOpen] = useState(false);
@@ -144,8 +141,7 @@ export default function InquiryDetailPage() {
     setAiDraft(draft ?? null);
 
     // Review (if host left one) + vendor response
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: reviewRow } = await (supabase as any)
+    const { data: reviewRow } = await supabase
       .from("reviews")
       .select(
         "id, vendor_id, rating, body, created_at, response:review_responses(body, updated_at)",
@@ -164,10 +160,8 @@ export default function InquiryDetailPage() {
           : (reviewRow.response ?? null),
       };
       setReview(normalized);
-      setResponseDraft(normalized.response?.body ?? "");
     } else {
       setReview(null);
-      setResponseDraft("");
     }
 
     // Proposals on this inquiry
@@ -175,73 +169,40 @@ export default function InquiryDetailPage() {
     const { data: props } = await (supabase as any)
       .from("proposals")
       .select(
-        "id, title, line_items, subtotal_cents, deposit_cents, terms, contract_body, status, sent_at, signed_at, signed_name",
+        "id, title, line_items, subtotal_cents, deposit_cents, terms, contract_body, status, sent_at, signed_at, signed_name, first_viewed_at, last_viewed_at, view_count, share_token",
       )
       .eq("inquiry_id", inquiryId)
       .order("created_at", { ascending: false });
-    setProposals((props as Proposal[]) ?? []);
+    setProposals((props as unknown as Proposal[]) ?? []);
 
     setLoading(false);
   }
 
-  async function saveResponse() {
-    if (!review || !responseDraft.trim()) return;
-    setSavingResponse(true);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const tbl = (supabase as any).from("review_responses");
-    const { error } = review.response
-      ? await tbl.update({ body: responseDraft.trim() }).eq("review_id", review.id)
-      : await tbl.insert({
-          review_id: review.id,
-          vendor_id: review.vendor_id,
-          body: responseDraft.trim(),
-        });
-    setSavingResponse(false);
-    if (error) {
-      toast.error(error.message);
-      return;
-    }
-    toast.success("Response saved");
-    setResponseEditing(false);
-    load();
-  }
-
   useEffect(() => {
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [inquiryId]);
 
-  // Realtime: re-fetch on messages or inquiry status change.
-  useEffect(() => {
-    if (!inquiryId) return;
-    const channel = supabase
-      .channel(`vendor-inquiry-${inquiryId}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "messages",
-          filter: `inquiry_id=eq.${inquiryId}`,
-        },
-        () => load(),
-      )
-      .on(
-        "postgres_changes",
-        {
-          event: "UPDATE",
-          schema: "public",
-          table: "inquiries",
-          filter: `id=eq.${inquiryId}`,
-        },
-        () => load(),
-      )
-      .subscribe();
-    return () => {
-      supabase.removeChannel(channel);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [inquiryId]);
+  // Realtime: re-fetch on messages or inquiry status change. Two
+  // listeners on the shared user-scoped channel — the provider de-dupes
+  // by table+event so this stays cheap.
+  const messagesConfig = useMemo(
+    () =>
+      inquiryId
+        ? { table: "messages", filter: `inquiry_id=eq.${inquiryId}` }
+        : null,
+    [inquiryId],
+  );
+  useRealtime(messagesConfig, () => load());
+
+  const inquiryConfig = useMemo(
+    () =>
+      inquiryId
+        ? { table: "inquiries", event: "UPDATE" as const, filter: `id=eq.${inquiryId}` }
+        : null,
+    [inquiryId],
+  );
+  useRealtime(inquiryConfig, () => load());
 
   async function transitionToReplied() {
     if (!inquiry || !inquiryId) return;
@@ -542,7 +503,18 @@ export default function InquiryDetailPage() {
         {proposals.length > 0 && (
           <div className="space-y-4">
             {proposals.map((p) => (
-              <ProposalCard key={p.id} proposal={p} />
+              <div key={p.id}>
+                <ProposalCard proposal={p} />
+                {p.status === "pending" && (
+                  <ProposalShareToggle
+                    proposalId={p.id}
+                    initialToken={
+                      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                      (p as any).share_token ?? null
+                    }
+                  />
+                )}
+              </div>
             ))}
           </div>
         )}
@@ -558,110 +530,7 @@ export default function InquiryDetailPage() {
 
         {/* Review (only when host has posted one) */}
         {review && (
-          <div className="bg-card border border-border rounded-sm p-6">
-            <div className="flex items-center justify-between gap-4 mb-3 flex-wrap">
-              <div className="flex items-center gap-2">
-                <p className="font-label text-muted-foreground">
-                  Host review
-                </p>
-                <span className="text-xs text-muted-foreground tnum">
-                  {new Date(review.created_at).toLocaleDateString()}
-                </span>
-              </div>
-              <div className="flex items-center gap-1">
-                {Array.from({ length: 5 }).map((_, i) => (
-                  <Star
-                    key={i}
-                    className={`w-4 h-4 ${
-                      i < review.rating
-                        ? "fill-accent text-accent"
-                        : "text-muted-foreground/30"
-                    }`}
-                  />
-                ))}
-                <span className="ml-1.5 text-sm font-medium tnum">
-                  {review.rating}
-                </span>
-              </div>
-            </div>
-            {review.body ? (
-              <p className="text-sm leading-relaxed text-foreground/85">
-                "{review.body}"
-              </p>
-            ) : (
-              <p className="text-sm text-muted-foreground italic">
-                No written feedback.
-              </p>
-            )}
-
-            <div className="mt-5 pt-5 border-t border-border">
-              {review.response && !responseEditing ? (
-                <>
-                  <div className="flex items-center justify-between gap-4 mb-2 flex-wrap">
-                    <p className="font-label text-accent flex items-center gap-1.5">
-                      <MessageCircle className="w-3 h-3" />
-                      Your response
-                    </p>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="rounded-full text-xs"
-                      onClick={() => setResponseEditing(true)}
-                    >
-                      Edit
-                    </Button>
-                  </div>
-                  <p className="text-sm leading-relaxed text-foreground/85">
-                    {review.response.body}
-                  </p>
-                </>
-              ) : (
-                <>
-                  <p className="font-label text-muted-foreground mb-2">
-                    {review.response ? "Edit your response" : "Respond"}
-                  </p>
-                  <Textarea
-                    value={responseDraft}
-                    onChange={(e) => setResponseDraft(e.target.value)}
-                    rows={3}
-                    placeholder="Thanks for the kind words…"
-                  />
-                  <div className="flex justify-end gap-2 mt-2">
-                    {review.response && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="rounded-full"
-                        onClick={() => {
-                          setResponseEditing(false);
-                          setResponseDraft(review.response?.body ?? "");
-                        }}
-                      >
-                        Cancel
-                      </Button>
-                    )}
-                    <Button
-                      size="sm"
-                      onClick={saveResponse}
-                      disabled={savingResponse || !responseDraft.trim()}
-                      className="rounded-full bg-foreground text-background hover:bg-foreground/90"
-                    >
-                      {savingResponse ? (
-                        <>
-                          <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
-                          Saving…
-                        </>
-                      ) : review.response ? (
-                        "Save"
-                      ) : (
-                        "Post response"
-                      )}
-                    </Button>
-                  </div>
-                </>
-              )}
-            </div>
-          </div>
+          <InquiryReviewCard review={review} onResponseSaved={load} />
         )}
 
         {/* Thread */}
@@ -832,15 +701,19 @@ export default function InquiryDetailPage() {
 
       {inquiry && (
         <>
-          <ProposalFormModal
-            open={proposalModalOpen}
-            onOpenChange={setProposalModalOpen}
-            inquiryId={inquiry.id}
-            vendorId={inquiry.vendor_id}
-            hostId={inquiry.host_id}
-            defaultTitle={`${inquiry.event_type.replace("_", " ")} proposal`}
-            onSuccess={load}
-          />
+          {proposalModalOpen && (
+            <Suspense fallback={null}>
+              <ProposalFormModal
+                open={proposalModalOpen}
+                onOpenChange={setProposalModalOpen}
+                inquiryId={inquiry.id}
+                vendorId={inquiry.vendor_id}
+                hostId={inquiry.host_id}
+                defaultTitle={`${inquiry.event_type.replace("_", " ")} proposal`}
+                onSuccess={load}
+              />
+            </Suspense>
+          )}
           <ProposeAppointmentModal
             open={appointmentModalOpen}
             onOpenChange={setAppointmentModalOpen}

@@ -1,5 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
 import { Sparkles, ArrowRight } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { DashboardSidebar } from "@/components/shared/DashboardSidebar";
 import { MobileNav } from "@/components/shared/MobileNav";
@@ -28,6 +29,7 @@ export default function ComingSoonPage({
   primaryCtaLabel,
   primaryCtaPath,
 }: Props) {
+  const { t } = useTranslation();
   const location = useLocation();
   const navItems: NavItem[] =
     side === "customer"
@@ -36,7 +38,8 @@ export default function ComingSoonPage({
         ? vendorNavItems
         : adminNavItems;
   const matched = navItems.find((n) => n.path === location.pathname);
-  const heading = title ?? matched?.label ?? "Coming soon";
+  const heading =
+    title ?? (matched ? t(matched.labelKey) : "Coming soon");
   const sidebarTitle =
     side === "customer"
       ? "Customer"

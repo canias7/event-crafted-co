@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Loader2, KeyRound } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -9,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import heroImg from "@/assets/vendora-hero-cinematic.jpg";
 
 export default function ForgotPasswordPage() {
+  const { t } = useTranslation();
   const [email, setEmail] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [sent, setSent] = useState(false);
@@ -42,11 +44,13 @@ export default function ForgotPasswordPage() {
           </Link>
           <div>
             <p className="font-label text-accent tracking-[0.4em] mb-5">
-              — RESET ACCESS
+              {t("auth.forgot.eyebrow")}
             </p>
             <p className="text-3xl lg:text-4xl font-display leading-[1.1] max-w-sm">
-              We'll email you a{" "}
-              <span className="italic font-light text-accent">fresh link.</span>
+              {t("auth.forgot.tagline_lead")}{" "}
+              <span className="italic font-light text-accent">
+                {t("auth.forgot.tagline_accent")}
+              </span>
             </p>
           </div>
           <p className="text-xs text-background/50 tracking-wide">© 2026 Vendora</p>
@@ -64,31 +68,31 @@ export default function ForgotPasswordPage() {
           </div>
 
           <h1 className="font-display text-3xl md:text-4xl mb-2 leading-tight">
-            Forgot password?
+            {t("auth.forgot.title")}
           </h1>
           <p className="text-sm text-muted-foreground mb-8 leading-relaxed">
-            Enter the email on your account and we'll send a reset link.
+            {t("auth.forgot.subtitle")}
           </p>
 
           {sent ? (
             <div className="space-y-4">
               <div className="rounded-sm border border-accent/30 bg-accent/5 p-4">
                 <p className="text-sm leading-relaxed">
-                  Check your inbox at{" "}
-                  <span className="font-medium">{email}</span> for a reset
-                  link. It'll expire in an hour.
+                  {t("auth.forgot.sent_lead")}{" "}
+                  <span className="font-medium">{email}</span>{" "}
+                  {t("auth.forgot.sent_trail")}
                 </p>
               </div>
               <Link to="/login" className="block">
                 <Button variant="outline" className="w-full h-11 rounded-full">
-                  Back to sign in
+                  {t("auth.forgot.back_to_sign_in")}
                 </Button>
               </Link>
             </div>
           ) : (
             <form onSubmit={onSubmit} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="email">{t("auth.common.email")}</Label>
                 <Input
                   id="email"
                   type="email"
@@ -106,15 +110,15 @@ export default function ForgotPasswordPage() {
                 {submitting && (
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                 )}
-                Send reset link
+                {t("auth.forgot.submit")}
               </Button>
             </form>
           )}
 
           <p className="text-sm text-muted-foreground mt-8 text-center">
-            Remembered it?{" "}
+            {t("auth.forgot.remembered")}{" "}
             <Link to="/login" className="text-accent font-medium">
-              Sign in
+              {t("auth.forgot.sign_in")}
             </Link>
           </p>
         </div>

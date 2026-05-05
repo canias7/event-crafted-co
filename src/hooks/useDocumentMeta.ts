@@ -14,6 +14,13 @@ const FALLBACK_TITLE =
   "Vendora — Premium Event Planning & Vendor Marketplace";
 const FALLBACK_DESCRIPTION =
   "Discover trusted vendors, book appointments, manage your event checklist, create stunning invitations, and pay securely — all in one beautiful platform.";
+// Static branded OG image at /public/og.jpg — used when a page doesn't
+// pass its own image. Must be an absolute path so social crawlers can
+// fetch it.
+const FALLBACK_OG_IMAGE =
+  typeof window !== "undefined"
+    ? `${window.location.origin}/og.jpg`
+    : "/og.jpg";
 
 function setMetaByName(name: string, content: string) {
   let el = document.querySelector(
@@ -66,7 +73,10 @@ export function useDocumentMeta(meta: DocumentMeta) {
   useEffect(() => {
     const title = meta.title;
     const description = meta.description ?? FALLBACK_DESCRIPTION;
-    const image = meta.image;
+    // Always set an OG image — fall back to the branded /og.jpg when
+    // the page didn't set one. Social-share unfurls without an image
+    // look orphaned.
+    const image = meta.image ?? FALLBACK_OG_IMAGE;
     const url =
       meta.url ??
       (typeof window !== "undefined" ? window.location.href : undefined);
@@ -79,12 +89,12 @@ export function useDocumentMeta(meta: DocumentMeta) {
     setMetaByProperty("og:description", description);
     setMetaByProperty("og:type", type);
     if (url) setMetaByProperty("og:url", url);
-    if (image) setMetaByProperty("og:image", image);
+    setMetaByProperty("og:image", image);
 
-    setMetaByName("twitter:card", image ? "summary_large_image" : "summary");
+    setMetaByName("twitter:card", "summary_large_image");
     setMetaByName("twitter:title", title);
     setMetaByName("twitter:description", description);
-    if (image) setMetaByName("twitter:image", image);
+    setMetaByName("twitter:image", image);
 
     if (url) setCanonical(url);
 

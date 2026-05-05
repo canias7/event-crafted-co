@@ -35,8 +35,7 @@ import { SubNavTabs } from "@/components/shared/SubNavTabs";
 import { PLANNING_HUB_TABS } from "@/data/hubTabs";
 import { customerNavItems as navItems } from "@/data/navItems";
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const tasksTable = () => (supabase as any).from("event_tasks");
+const tasksTable = () => supabase.from("event_tasks");
 
 // Per-event-type task starter packs. Mirrors the per-category checklist
 // templates already shipped on /customer/checklist. Each task has a

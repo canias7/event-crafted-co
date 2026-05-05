@@ -14,8 +14,7 @@ import { SubNavTabs } from "@/components/shared/SubNavTabs";
 import { PLANNING_HUB_TABS } from "@/data/hubTabs";
 import { customerNavItems as navItems } from "@/data/navItems";
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const checklistTable = () => (supabase as any).from("checklist_items");
+const checklistTable = () => supabase.from("checklist_items");
 
 // Template starter sets by event type. Vendora is a multi-event marketplace
 // (weddings + birthdays + holiday dinners + showers + corporate + more), so

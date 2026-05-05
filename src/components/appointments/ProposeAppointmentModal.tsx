@@ -91,8 +91,7 @@ export function ProposeAppointmentModal({
       return;
     }
     setSubmitting(true);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error } = await (supabase as any).from("appointments").insert({
+    const { error } = await supabase.from("appointments").insert({
       vendor_id: vendorId,
       host_id: hostId,
       inquiry_id: inquiryId ?? null,

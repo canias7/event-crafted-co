@@ -12,8 +12,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const templatesTable = () => (supabase as any).from("vendor_message_templates");
+const templatesTable = () => supabase.from("vendor_message_templates");
 
 interface Template {
   id: string;
@@ -37,9 +36,9 @@ export function TemplatePicker({ vendorId, onPick }: Props) {
       .select("id, name, body")
       .eq("vendor_id", vendorId)
       .order("name", { ascending: true })
-      .then(({ data }: { data: Template[] | null }) => {
+      .then(({ data }) => {
         if (cancelled) return;
-        setTemplates(data ?? []);
+        setTemplates((data as Template[]) ?? []);
         setLoaded(true);
       });
     return () => {

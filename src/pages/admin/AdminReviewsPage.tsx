@@ -10,8 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { adminNavItems as navItems } from "@/data/navItems";
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const reviewsTable = () => (supabase as any).from("reviews");
+const reviewsTable = () => supabase.from("reviews");
 
 interface ReviewRow {
   id: string;

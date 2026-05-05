@@ -14,8 +14,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const reviewsTable = () => (supabase as any).from("reviews");
+const reviewsTable = () => supabase.from("reviews");
 
 interface ExistingReview {
   id: string;

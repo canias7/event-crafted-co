@@ -1,5 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useRealtime } from "@/lib/realtime";
 import { useAuth } from "@/hooks/useAuth";
 import { DashboardSidebar } from "@/components/shared/DashboardSidebar";
 import { MobileNav } from "@/components/shared/MobileNav";
@@ -48,26 +49,15 @@ export default function VendorAppointmentsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, vendorId]);
 
-  useEffect(() => {
-    if (!vendorId) return;
-    const channel = supabase
-      .channel(`vendor-appointments-${vendorId}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "appointments",
-          filter: `vendor_id=eq.${vendorId}`,
-        },
-        () => load(),
-      )
-      .subscribe();
-    return () => {
-      supabase.removeChannel(channel);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [vendorId]);
+  // Realtime via shared user-scoped channel.
+  const realtimeConfig = useMemo(
+    () =>
+      vendorId
+        ? { table: "appointments", filter: `vendor_id=eq.${vendorId}` }
+        : null,
+    [vendorId],
+  );
+  useRealtime(realtimeConfig, () => load());
 
   return (
     <div className="flex min-h-screen bg-background">

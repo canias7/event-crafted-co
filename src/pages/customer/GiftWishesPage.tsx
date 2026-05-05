@@ -43,8 +43,7 @@ interface Wish {
   pledge_count?: number;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const wishesTable = () => (supabase as any).from("gift_wishes");
+const wishesTable = () => supabase.from("gift_wishes");
 
 export default function GiftWishesPage() {
   const { user } = useAuth();
@@ -67,8 +66,7 @@ export default function GiftWishesPage() {
 
     if (baseWishes.length > 0) {
       // Hydrate per-wish pledged totals
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data: pledges } = await (supabase as any)
+      const { data: pledges } = await supabase
         .from("gift_pledges")
         .select("wish_id, amount_cents")
         .in(

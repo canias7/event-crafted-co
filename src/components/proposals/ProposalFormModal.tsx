@@ -6,6 +6,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { FieldError } from "@/components/ui/field-error";
+import { formatCents } from "@/lib/format";
+import { ProposalTemplatePicker } from "./ProposalTemplatePicker";
 import {
   Dialog,
   DialogContent,
@@ -15,8 +18,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const proposalsTable = () => (supabase as any).from("proposals");
+const proposalsTable = () => supabase.from("proposals");
 
 interface LineItem {
   description: string;
@@ -66,37 +68,23 @@ export function ProposalFormModal({
   useEffect(() => {
     if (!open || !vendorId) return;
     let cancelled = false;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (supabase as any)
+    supabase
       .from("vendor_contract_templates")
       .select("id, name, body, is_default")
       .eq("vendor_id", vendorId)
       .order("is_default", { ascending: false })
       .order("name", { ascending: true })
-      .then(
-        ({
-          data,
-        }: {
-          data:
-            | Array<{
-                id: string;
-                name: string;
-                body: string;
-                is_default: boolean;
-              }>
-            | null;
-        }) => {
-          if (cancelled) return;
-          const list = data ?? [];
-          setTemplates(list);
-          const def = list.find((t) => t.is_default);
-          if (def) {
-            setContractTemplateId(def.id);
-            setContractBody(def.body);
-            setContractName(def.name);
-          }
-        },
-      );
+      .then(({ data }) => {
+        if (cancelled) return;
+        const list = data ?? [];
+        setTemplates(list);
+        const def = list.find((t) => t.is_default);
+        if (def) {
+          setContractTemplateId(def.id);
+          setContractBody(def.body);
+          setContractName(def.name);
+        }
+      });
     return () => {
       cancelled = true;
     };
@@ -120,19 +108,15 @@ export function ProposalFormModal({
     return sum + Math.round(unit) * (it.quantity || 1);
   }, 0);
 
+  const validItems = items.filter(
+    (it) => it.description.trim() && it.unit_price,
+  );
+  const titleValid = title.trim().length > 0;
+  const formValid = titleValid && validItems.length > 0;
+
   async function submit(e: React.FormEvent) {
     e.preventDefault();
-    if (!title.trim()) {
-      toast.error("Proposal title is required");
-      return;
-    }
-    const validItems = items.filter(
-      (it) => it.description.trim() && it.unit_price,
-    );
-    if (validItems.length === 0) {
-      toast.error("Add at least one line item");
-      return;
-    }
+    if (!formValid) return;
 
     const lineItems = validItems.map((it) => ({
       description: it.description.trim(),
@@ -191,6 +175,34 @@ export function ProposalFormModal({
             The host will see Accept / Decline buttons.
           </DialogDescription>
         </DialogHeader>
+        <div className="pt-2">
+          <ProposalTemplatePicker
+            vendorId={vendorId}
+            current={{
+              title,
+              lineItems: items,
+              depositPct: deposit
+                ? subtotalCents > 0
+                  ? Math.round(
+                      (Number.parseFloat(deposit) * 100 * 100) / subtotalCents,
+                    )
+                  : null
+                : null,
+              terms,
+            }}
+            onApply={(t) => {
+              setTitle(t.title);
+              setItems(t.lineItems.length > 0 ? t.lineItems : [{ ...blank }]);
+              setTerms(t.terms);
+              // Convert percent → dollar amount based on current subtotal
+              if (t.depositPct != null && subtotalCents > 0) {
+                setDeposit(
+                  ((subtotalCents * t.depositPct) / 100 / 100).toFixed(2),
+                );
+              }
+            }}
+          />
+        </div>
         <form onSubmit={submit} className="space-y-5 pt-2">
           <div className="space-y-2">
             <Label htmlFor="prop-title">Proposal title</Label>
@@ -200,7 +212,11 @@ export function ProposalFormModal({
               onChange={(e) => setTitle(e.target.value)}
               className="h-10"
               required
+              aria-invalid={!titleValid && title.length > 0 || undefined}
             />
+            {!titleValid && title.length > 0 && (
+              <FieldError>Proposal title is required.</FieldError>
+            )}
           </div>
 
           <div className="space-y-2">
@@ -217,6 +233,12 @@ export function ProposalFormModal({
                 Add line
               </Button>
             </div>
+
+            {validItems.length === 0 && (
+              <FieldError>
+                Add at least one line item with a description and price.
+              </FieldError>
+            )}
 
             <div className="space-y-2">
               {items.map((item, i) => (
@@ -281,7 +303,7 @@ export function ProposalFormModal({
           <div className="rounded-sm border border-border bg-secondary/40 p-4 flex items-center justify-between">
             <p className="font-label text-muted-foreground">Subtotal</p>
             <p className="font-display text-2xl tnum">
-              ${(subtotalCents / 100).toLocaleString()}
+              {formatCents(subtotalCents)}
             </p>
           </div>
 
@@ -365,7 +387,7 @@ export function ProposalFormModal({
             </Button>
             <Button
               type="submit"
-              disabled={submitting}
+              disabled={submitting || !formValid}
               className="rounded-full bg-foreground text-background hover:bg-foreground/90"
             >
               {submitting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}

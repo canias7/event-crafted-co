@@ -54,17 +54,17 @@ export default function RsvpPage() {
       return;
     }
     let cancelled = false;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (supabase as any)
+    supabase
       .rpc("get_guest_by_token", { p_token: token })
-      .then(({ data, error }: { data: GuestInfo[] | null; error: unknown }) => {
+      .then(({ data, error }) => {
         if (cancelled) return;
-        if (error || !data || data.length === 0) {
+        const rows = data as GuestInfo[] | null;
+        if (error || !rows || rows.length === 0) {
           setNotFound(true);
           setLoading(false);
           return;
         }
-        const g = data[0];
+        const g = rows[0];
         setGuest(g);
         setStatus(g.rsvp_status ?? "");
         setPlusOne(g.rsvp_plus_one ?? false);
@@ -84,8 +84,7 @@ export default function RsvpPage() {
       return;
     }
     setSubmitting(true);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error } = await (supabase as any).rpc("submit_rsvp", {
+    const { error } = await supabase.rpc("submit_rsvp", {
       p_token: token,
       p_status: status,
       p_plus_one: plusOne,
