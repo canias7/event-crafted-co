@@ -87,8 +87,12 @@ const EVENT_LABEL: Record<string, string> = {
   other: "Event",
 };
 
-function fmtTime(t: string) {
-  const [h, m] = t.split(":").map(Number);
+function fmtTime(t: string | null | undefined) {
+  if (!t) return "";
+  const parts = t.split(":").map(Number);
+  const h = parts[0];
+  const m = parts[1];
+  if (!Number.isFinite(h) || !Number.isFinite(m)) return "";
   const d = new Date();
   d.setHours(h, m, 0, 0);
   return d.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });

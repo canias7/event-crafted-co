@@ -200,9 +200,14 @@ function fmtMoney(cents: number) {
   return `$${(cents / 100).toLocaleString()}`;
 }
 
-function fmtTime(t: string) {
-  // t is like "14:30:00"; render as 2:30 PM
-  const [h, m] = t.split(":").map(Number);
+function fmtTime(t: string | null | undefined) {
+  // t is like "14:30:00"; render as 2:30 PM. Supabase may return null
+  // for an unset start_time, so guard before splitting.
+  if (!t) return "";
+  const parts = t.split(":").map(Number);
+  const h = parts[0];
+  const m = parts[1];
+  if (!Number.isFinite(h) || !Number.isFinite(m)) return "";
   const date = new Date();
   date.setHours(h, m, 0, 0);
   return date.toLocaleTimeString(undefined, {

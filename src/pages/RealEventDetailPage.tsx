@@ -19,7 +19,7 @@ interface RealEvent {
   intro: string | null;
   story: string | null;
   cover_path: string | null;
-  gallery_paths: string[];
+  gallery_paths: string[] | null;
   event_type: string | null;
   event_date: string | null;
   location: string | null;
@@ -117,8 +117,8 @@ export default function RealEventDetailPage() {
   }
 
   const lightboxImages =
-    event.gallery_paths.length > 0
-      ? event.gallery_paths.map((p) => ({
+    (event.gallery_paths ?? []).length > 0
+      ? (event.gallery_paths ?? []).map((p) => ({
           src: eventImageUrl(event, p, { width: 1600 }),
           alt: event.title,
         }))
@@ -195,14 +195,14 @@ export default function RealEventDetailPage() {
       </section>
 
       {/* Gallery */}
-      {event.gallery_paths.length > 0 && (
+      {(event.gallery_paths ?? []).length > 0 && (
         <section className="py-8 md:py-12">
           <div className="container mx-auto px-6 md:px-8 max-w-6xl">
             <p className="font-label text-accent mb-6 tracking-[0.4em]">
               — GALLERY
             </p>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-              {event.gallery_paths.map((p, i) => (
+              {(event.gallery_paths ?? []).map((p, i) => (
                 <motion.button
                   type="button"
                   key={p}
