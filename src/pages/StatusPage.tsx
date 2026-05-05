@@ -73,9 +73,8 @@ const SERVICES: ServiceCheck[] = [
     ping: async () => {
       // Sitemap is a public, anonymous edge function — perfect health
       // check. We only fetch the headers (HEAD) to avoid bandwidth.
-      const url = supabase.functions.url
-        ? `${supabase.functions.url}/sitemap-xml`
-        : null;
+      const fnBase = (supabase.functions as unknown as { url?: string }).url;
+      const url = fnBase ? `${fnBase}/sitemap-xml` : null;
       if (!url) {
         // Older supabase-js doesn't expose .url; derive from env.
         const base = import.meta.env.VITE_SUPABASE_URL;
