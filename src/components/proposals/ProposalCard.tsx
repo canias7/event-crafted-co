@@ -268,6 +268,18 @@ export function ProposalCard({
         </div>
       )}
 
+      <div className="mt-3 text-right">
+        <a
+          href={`/proposals/${proposal.id}/print`}
+          target="_blank"
+          rel="noreferrer"
+          className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+        >
+          <FileText className="w-3 h-3" />
+          Print / Save as PDF
+        </a>
+      </div>
+
       <SignatureDialog
         open={signOpen}
         onOpenChange={setSignOpen}

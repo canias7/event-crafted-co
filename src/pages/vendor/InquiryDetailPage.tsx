@@ -29,6 +29,7 @@ import {
   ProposalCard,
   type Proposal,
 } from "@/components/proposals/ProposalCard";
+import { ProposalShareToggle } from "@/components/proposals/ProposalShareToggle";
 import { ProposeAppointmentModal } from "@/components/appointments/ProposeAppointmentModal";
 import { HostReputationCard } from "@/components/vendor/HostReputationCard";
 import { MessageAttachments } from "@/components/messages/MessageAttachments";
@@ -168,7 +169,7 @@ export default function InquiryDetailPage() {
     const { data: props } = await (supabase as any)
       .from("proposals")
       .select(
-        "id, title, line_items, subtotal_cents, deposit_cents, terms, contract_body, status, sent_at, signed_at, signed_name, first_viewed_at, last_viewed_at, view_count",
+        "id, title, line_items, subtotal_cents, deposit_cents, terms, contract_body, status, sent_at, signed_at, signed_name, first_viewed_at, last_viewed_at, view_count, share_token",
       )
       .eq("inquiry_id", inquiryId)
       .order("created_at", { ascending: false });
@@ -502,7 +503,18 @@ export default function InquiryDetailPage() {
         {proposals.length > 0 && (
           <div className="space-y-4">
             {proposals.map((p) => (
-              <ProposalCard key={p.id} proposal={p} />
+              <div key={p.id}>
+                <ProposalCard proposal={p} />
+                {p.status === "pending" && (
+                  <ProposalShareToggle
+                    proposalId={p.id}
+                    initialToken={
+                      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                      (p as any).share_token ?? null
+                    }
+                  />
+                )}
+              </div>
             ))}
           </div>
         )}

@@ -57,6 +57,12 @@ export const AdminReportsPage = lazy(importAdminReports);
 const importPublicReview = () => import("@/pages/PublicReviewPage");
 export const PublicReviewPage = lazy(importPublicReview);
 
+const importProposalPrint = () => import("@/pages/ProposalPrintPage");
+export const ProposalPrintPage = lazy(importProposalPrint);
+
+const importPublicProposal = () => import("@/pages/PublicProposalPage");
+export const PublicProposalPage = lazy(importPublicProposal);
+
 const importPlanInFive = () => import("@/pages/PlanInFivePage");
 export const PlanInFivePage = lazy(importPlanInFive);
 

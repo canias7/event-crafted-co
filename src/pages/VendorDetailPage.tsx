@@ -73,6 +73,7 @@ import heroBirthday from "@/assets/vendora-hero-birthday.jpg";
 import heroKids from "@/assets/vendora-hero-kids.jpg";
 import { ReportButton } from "@/components/trust/ReportButton";
 import { VendorPolicyBadges } from "@/components/vendor/VendorPolicyBadges";
+import { VendorServiceAreaMap } from "@/components/vendor/VendorServiceAreaMap";
 
 const imageMap: Record<string, string> = {
   "vendor-photographer": vendorPhotographer,
@@ -835,6 +836,14 @@ export default function VendorDetailPage() {
 
               {/* Multi-vendor bundles — only for real DB vendors. */}
               {vendor.isReal && <VendorBundlesPublic vendorId={vendor.id} />}
+
+              {/* Service area coverage map */}
+              {vendor.isReal && (
+                <VendorServiceAreaMap
+                  vendorId={vendor.id}
+                  category={vendor.category}
+                />
+              )}
 
               {/* Reviews */}
               <VendorReviewsList

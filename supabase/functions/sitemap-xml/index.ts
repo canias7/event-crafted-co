@@ -32,6 +32,15 @@ interface InspirationRow {
   updated_at?: string | null;
   published_at?: string | null;
 }
+interface EditorialRow {
+  slug: string;
+  updated_at?: string | null;
+  published_at?: string | null;
+}
+interface SlugRow {
+  slug: string | null;
+  updated_at: string | null;
+}
 
 const CATEGORY_SLUGS = [
   "photographers",
@@ -88,8 +97,11 @@ const STATIC_PATHS: Array<{ path: string; priority: number; freq: string }> = [
   { path: "/vendors/locations", priority: 0.7, freq: "weekly" },
   { path: "/real-events", priority: 0.8, freq: "weekly" },
   { path: "/inspiration", priority: 0.8, freq: "weekly" },
+  { path: "/plan-in-5", priority: 0.7, freq: "weekly" },
+  { path: "/compare", priority: 0.5, freq: "weekly" },
   { path: "/how-it-works", priority: 0.6, freq: "monthly" },
   { path: "/vendor-apply", priority: 0.6, freq: "monthly" },
+  { path: "/staffing", priority: 0.5, freq: "monthly" },
   { path: "/privacy", priority: 0.3, freq: "yearly" },
   { path: "/terms", priority: 0.3, freq: "yearly" },
 ];
@@ -105,7 +117,13 @@ serve(async (req) => {
     auth: { persistSession: false },
   });
 
-  const [{ data: vendors }, { data: inspiration }, { data: realEvents }] =
+  const [
+    { data: vendors },
+    { data: inspiration },
+    { data: realEvents },
+    { data: editorial },
+    { data: vendorSlugs },
+  ] =
     await Promise.all([
       sb
         .from("vendor_profiles")
@@ -123,6 +141,21 @@ serve(async (req) => {
         .not("host_consent_given_at", "is", null)
         .not("slug", "is", null)
         .order("published_at", { ascending: false }),
+      // Editorial CMS guides — long-form SEO surfaces. Table may not
+      // exist yet in some environments; tolerate failure gracefully.
+      sb
+        .from("editorial_articles")
+        .select("slug, updated_at, published_at")
+        .not("published_at", "is", null)
+        .order("published_at", { ascending: false })
+        .then((r: any) => r, () => ({ data: null })),
+      // Slug-based vendor URLs (/v/:slug) — index these explicitly
+      // so search engines pick the canonical pretty URL.
+      sb
+        .from("vendor_profiles")
+        .select("slug, updated_at")
+        .not("slug", "is", null)
+        .order("updated_at", { ascending: false }),
     ]);
 
   const lines: string[] = [
@@ -231,6 +264,33 @@ serve(async (req) => {
         r.updated_at ?? r.published_at ?? undefined,
         0.7,
         "monthly",
+      ),
+    );
+  }
+
+  for (const e of (editorial as EditorialRow[] | null) ?? []) {
+    lines.push(
+      urlEntry(
+        `${APP_URL}/guides/${e.slug}`,
+        e.updated_at ?? e.published_at ?? undefined,
+        0.65,
+        "monthly",
+      ),
+    );
+  }
+
+  // Slug-based vendor URLs duplicate the id-based ones above; both
+  // belong in the sitemap so search engines can pick the canonical.
+  // Vendor pages canonicalize to /v/:slug when slug is set, so list
+  // both with the slug entry slightly higher priority.
+  for (const v of (vendorSlugs as SlugRow[] | null) ?? []) {
+    if (!v.slug) continue;
+    lines.push(
+      urlEntry(
+        `${APP_URL}/v/${v.slug}`,
+        v.updated_at ?? undefined,
+        0.75,
+        "weekly",
       ),
     );
   }

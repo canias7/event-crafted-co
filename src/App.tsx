@@ -127,6 +127,8 @@ import {
   AdminClaimsPage,
   AdminReportsPage,
   PublicReviewPage,
+  ProposalPrintPage,
+  PublicProposalPage,
   PlanInFivePage,
   VendorBlogPage,
 } from "@/router/lazyRoutes";
@@ -182,6 +184,8 @@ const App = () => (
               <Route path="/real-events/:slug" element={<RealEventDetailPage />} />
               <Route path="/rsvp/:token" element={<RsvpPage />} />
               <Route path="/review/:token" element={<PublicReviewPage />} />
+              <Route path="/proposals/:id/print" element={<ProposalPrintPage />} />
+              <Route path="/p/:token" element={<PublicProposalPage />} />
               <Route path="/board/:token" element={<MoodBoardSharePage />} />
               <Route path="/accept-team-invite/:token" element={<AcceptTeamInvitePage />} />
               <Route path="/accept-planning-invite/:token" element={<AcceptPlanningInvitePage />} />

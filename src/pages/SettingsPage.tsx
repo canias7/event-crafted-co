@@ -24,6 +24,7 @@ import {
 import { DashboardSidebar } from "@/components/shared/DashboardSidebar";
 import { MobileNav } from "@/components/shared/MobileNav";
 import { PushNotificationsCard } from "@/components/settings/PushNotificationsCard";
+import { NotificationPreferencesCard } from "@/components/settings/NotificationPreferencesCard";
 import { CalendarConnectionsCard } from "@/components/settings/CalendarConnectionsCard";
 import { TwoFactorCard } from "@/components/settings/TwoFactorCard";
 import { customerNavItems, vendorNavItems } from "@/data/navItems";
@@ -434,6 +435,9 @@ export default function SettingsPage() {
               >
                 <div className="space-y-6">
                   <PushNotificationsCard />
+                  <div className="pt-4 border-t border-border">
+                    <NotificationPreferencesCard />
+                  </div>
                   <div className="flex items-center justify-between gap-4 pt-4 border-t border-border">
                     <div className="min-w-0">
                       <p className="text-sm font-medium mb-1">
