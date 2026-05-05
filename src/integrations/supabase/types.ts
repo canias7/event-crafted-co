@@ -401,6 +401,41 @@ export type Database = {
           },
         ]
       }
+      event_microsite_photos: {
+        Row: {
+          caption: string | null
+          created_at: string
+          display_order: number
+          event_id: string
+          id: string
+          storage_path: string
+        }
+        Insert: {
+          caption?: string | null
+          created_at?: string
+          display_order?: number
+          event_id: string
+          id?: string
+          storage_path: string
+        }
+        Update: {
+          caption?: string | null
+          created_at?: string
+          display_order?: number
+          event_id?: string
+          id?: string
+          storage_path?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_microsite_photos_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "host_events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       event_registry_links: {
         Row: {
           created_at: string
@@ -798,6 +833,18 @@ export type Database = {
           event_type: string
           host_id: string
           id: string
+          microsite_cover_path: string | null
+          microsite_published_at: string | null
+          microsite_show_gallery: boolean
+          microsite_show_gifts: boolean
+          microsite_show_registry: boolean
+          microsite_show_rsvp: boolean
+          microsite_show_schedule: boolean
+          microsite_story: string | null
+          microsite_subtitle: string | null
+          microsite_theme: string
+          microsite_title: string | null
+          microsite_token: string | null
           name: string | null
           updated_at: string
         }
@@ -812,6 +859,18 @@ export type Database = {
           event_type: string
           host_id: string
           id?: string
+          microsite_cover_path?: string | null
+          microsite_published_at?: string | null
+          microsite_show_gallery?: boolean
+          microsite_show_gifts?: boolean
+          microsite_show_registry?: boolean
+          microsite_show_rsvp?: boolean
+          microsite_show_schedule?: boolean
+          microsite_story?: string | null
+          microsite_subtitle?: string | null
+          microsite_theme?: string
+          microsite_title?: string | null
+          microsite_token?: string | null
           name?: string | null
           updated_at?: string
         }
@@ -826,6 +885,18 @@ export type Database = {
           event_type?: string
           host_id?: string
           id?: string
+          microsite_cover_path?: string | null
+          microsite_published_at?: string | null
+          microsite_show_gallery?: boolean
+          microsite_show_gifts?: boolean
+          microsite_show_registry?: boolean
+          microsite_show_rsvp?: boolean
+          microsite_show_schedule?: boolean
+          microsite_story?: string | null
+          microsite_subtitle?: string | null
+          microsite_theme?: string
+          microsite_title?: string | null
+          microsite_token?: string | null
           name?: string | null
           updated_at?: string
         }
@@ -1482,6 +1553,119 @@ export type Database = {
           },
           {
             foreignKeyName: "proposals_vendor_id_fkey"
+            columns: ["vendor_id"]
+            isOneToOne: false
+            referencedRelation: "vendor_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      push_subscriptions: {
+        Row: {
+          auth: string
+          created_at: string
+          endpoint: string
+          id: string
+          last_used_at: string | null
+          p256dh: string
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          auth: string
+          created_at?: string
+          endpoint: string
+          id?: string
+          last_used_at?: string | null
+          p256dh: string
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          auth?: string
+          created_at?: string
+          endpoint?: string
+          id?: string
+          last_used_at?: string | null
+          p256dh?: string
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "push_subscriptions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      real_events: {
+        Row: {
+          cover_path: string | null
+          created_at: string
+          event_date: string | null
+          event_type: string | null
+          gallery_paths: string[]
+          host_consent_given_at: string | null
+          id: string
+          inquiry_id: string | null
+          intro: string | null
+          location: string | null
+          published_at: string | null
+          slug: string | null
+          story: string | null
+          title: string
+          updated_at: string
+          vendor_id: string
+        }
+        Insert: {
+          cover_path?: string | null
+          created_at?: string
+          event_date?: string | null
+          event_type?: string | null
+          gallery_paths?: string[]
+          host_consent_given_at?: string | null
+          id?: string
+          inquiry_id?: string | null
+          intro?: string | null
+          location?: string | null
+          published_at?: string | null
+          slug?: string | null
+          story?: string | null
+          title: string
+          updated_at?: string
+          vendor_id: string
+        }
+        Update: {
+          cover_path?: string | null
+          created_at?: string
+          event_date?: string | null
+          event_type?: string | null
+          gallery_paths?: string[]
+          host_consent_given_at?: string | null
+          id?: string
+          inquiry_id?: string | null
+          intro?: string | null
+          location?: string | null
+          published_at?: string | null
+          slug?: string | null
+          story?: string | null
+          title?: string
+          updated_at?: string
+          vendor_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "real_events_inquiry_id_fkey"
+            columns: ["inquiry_id"]
+            isOneToOne: false
+            referencedRelation: "inquiries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "real_events_vendor_id_fkey"
             columns: ["vendor_id"]
             isOneToOne: false
             referencedRelation: "vendor_profiles"
@@ -2250,14 +2434,86 @@ export type Database = {
           },
         ]
       }
+      vendor_verifications: {
+        Row: {
+          document_path: string
+          expires_at: string | null
+          id: string
+          kind: string
+          notes: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          submitted_at: string
+          vendor_id: string
+        }
+        Insert: {
+          document_path: string
+          expires_at?: string | null
+          id?: string
+          kind: string
+          notes?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          submitted_at?: string
+          vendor_id: string
+        }
+        Update: {
+          document_path?: string
+          expires_at?: string | null
+          id?: string
+          kind?: string
+          notes?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          submitted_at?: string
+          vendor_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vendor_verifications_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vendor_verifications_vendor_id_fkey"
+            columns: ["vendor_id"]
+            isOneToOne: false
+            referencedRelation: "vendor_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
-      [_ in never]: never
+      vendor_public_badges: {
+        Row: {
+          kinds: string[] | null
+          vendor_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vendor_verifications_vendor_id_fkey"
+            columns: ["vendor_id"]
+            isOneToOne: false
+            referencedRelation: "vendor_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       accept_planning_invite: { Args: { p_token: string }; Returns: Json }
       accept_team_invite: { Args: { p_token: string }; Returns: Json }
       can_access_inquiry: { Args: { _inquiry_id: string }; Returns: boolean }
+      generate_real_event_slug: {
+        Args: { p_id: string; p_title: string }
+        Returns: string
+      }
       get_guest_by_token: {
         Args: { p_token: string }
         Returns: {
@@ -2274,9 +2530,19 @@ export type Database = {
           rsvp_status: string
         }[]
       }
+      get_microsite_by_token: { Args: { p_token: string }; Returns: Json }
       get_mood_board_by_token: { Args: { p_token: string }; Returns: Json }
       get_planning_invite_by_token: { Args: { p_token: string }; Returns: Json }
       get_team_invite_by_token: { Args: { p_token: string }; Returns: Json }
+      get_vendor_benchmarks: {
+        Args: { p_category: string; p_window_days?: number }
+        Returns: {
+          median_booking_rate: number
+          median_inquiries: number
+          median_response_hours: number
+          peer_count: number
+        }[]
+      }
       is_admin: { Args: never; Returns: boolean }
       is_inquiry_vendor_member: {
         Args: { _inquiry_id: string }
