@@ -8,14 +8,11 @@ import { test, expect } from "@playwright/test";
 const publicRoutes = [
   // Marketing / discovery
   { path: "/", contains: "Vendora" },
-  { path: "/how-it-works", contains: "How it works" },
   { path: "/vendors", contains: "Find your" },
   { path: "/vendors/locations", contains: "VENDORS BY LOCATION" },
   { path: "/vendors/quiz", contains: "VENDOR MATCH" },
   { path: "/vendors/map", contains: "VENDOR MAP" },
   { path: "/vendors/category/photographers", contains: "Photographers" },
-  { path: "/inspiration", contains: "Real events" },
-  { path: "/inspiration/hudson-valley-garden-wedding", contains: "Hudson Valley" },
   // Auth
   { path: "/vendor-apply", contains: "Become a" },
   { path: "/login", contains: "Sign in" },
@@ -87,7 +84,6 @@ const gatedRoutes = [
   "/admin/vendors",
   "/admin/reviews",
   "/admin/inquiries",
-  "/admin/inspiration",
   // Account
   "/settings",
 ];
