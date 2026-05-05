@@ -59,25 +59,31 @@ import { useAuth } from "@/hooks/useAuth";
 import { useVendors } from "@/hooks/useVendors";
 import { useSavedVendors } from "@/hooks/useSavedVendors";
 
-import vendorPhotographer from "@/assets/vendor-photographer.jpg";
-import vendorFlorist from "@/assets/vendor-florist.jpg";
-import vendorCatering from "@/assets/vendor-catering.jpg";
-import vendorDj from "@/assets/vendor-dj.jpg";
-import vendorVenue from "@/assets/vendor-venue.jpg";
-import vendorMakeup from "@/assets/vendor-makeup.jpg";
-import featureFlorals from "@/assets/vendora-feature-1.jpg";
-import featureVenue from "@/assets/vendora-feature-2.jpg";
-import heroDinner from "@/assets/vendora-hero-dinner.jpg";
-import heroGala from "@/assets/vendora-hero-gala.jpg";
-import heroBirthday from "@/assets/vendora-hero-birthday.jpg";
-import heroKids from "@/assets/vendora-hero-kids.jpg";
+// vite-imagetools auto-pictureifies anything in /assets/vendor-* and
+// /assets/vendora-* (see vite.config.ts) into AVIF + WebP + JPG variants
+// at 640/1024/1600 widths. Each import resolves to a { sources, img }
+// picture object — render with <Picture>, extract `.img.src` if a plain
+// URL string is needed (meta tags, JSON-LD, lightbox).
+import vendorPhotographer from "@/assets/vendor-photographer.jpg?as=picture";
+import vendorFlorist from "@/assets/vendor-florist.jpg?as=picture";
+import vendorCatering from "@/assets/vendor-catering.jpg?as=picture";
+import vendorDj from "@/assets/vendor-dj.jpg?as=picture";
+import vendorVenue from "@/assets/vendor-venue.jpg?as=picture";
+import vendorMakeup from "@/assets/vendor-makeup.jpg?as=picture";
+import featureFlorals from "@/assets/vendora-feature-1.jpg?as=picture";
+import featureVenue from "@/assets/vendora-feature-2.jpg?as=picture";
+import heroDinner from "@/assets/vendora-hero-dinner.jpg?as=picture";
+import heroGala from "@/assets/vendora-hero-gala.jpg?as=picture";
+import heroBirthday from "@/assets/vendora-hero-birthday.jpg?as=picture";
+import heroKids from "@/assets/vendora-hero-kids.jpg?as=picture";
 import { ReportButton } from "@/components/trust/ReportButton";
 import { VendorPolicyBadges } from "@/components/vendor/VendorPolicyBadges";
 import { VendorServiceAreaMap } from "@/components/vendor/VendorServiceAreaMap";
 import { CategoryAttributesDisplay } from "@/components/vendor/CategoryAttributesDisplay";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Picture, type PictureSource } from "@/components/shared/Picture";
 
-const imageMap: Record<string, string> = {
+const imageMap: Record<string, PictureSource> = {
   "vendor-photographer": vendorPhotographer,
   "vendor-florist": vendorFlorist,
   "vendor-catering": vendorCatering,
@@ -86,7 +92,7 @@ const imageMap: Record<string, string> = {
   "vendor-makeup": vendorMakeup,
 };
 
-const portfolioPool = [
+const portfolioPool: PictureSource[] = [
   featureFlorals,
   featureVenue,
   heroDinner,
@@ -220,7 +226,7 @@ export default function VendorDetailPage() {
   const portfolioItems: RealPortfolioItem[] =
     realPortfolio.length > 0
       ? realPortfolio
-      : portfolioPool.map((src) => ({ src, caption: null }));
+      : portfolioPool.map((p) => ({ src: p.img.src, caption: null }));
   // Backwards-compat: many call sites still expect a string[] of URLs.
   const portfolioImages = portfolioItems.map((p) => p.src);
 
@@ -401,7 +407,7 @@ export default function VendorDetailPage() {
           description:
             vendor.description ||
             `${vendor.category} on Vendora${vendor.location ? ` · ${vendor.location}` : ""}`,
-          image: imageMap[vendor.image] ?? featureFlorals,
+          image: (imageMap[vendor.image] ?? featureFlorals).img.src,
           type: "product",
         }
       : { title: "Vendor — Vendora" },
@@ -412,7 +418,7 @@ export default function VendorDetailPage() {
   // snippets show stars and "$$$" tier in Google.
   useEffect(() => {
     if (!vendor) return;
-    const heroForSchema = imageMap[vendor.image] ?? featureFlorals;
+    const heroForSchema = (imageMap[vendor.image] ?? featureFlorals).img.src;
     const id = "vendor-jsonld";
     const data = {
       "@context": "https://schema.org",
@@ -549,7 +555,7 @@ export default function VendorDetailPage() {
     );
   }
 
-  const heroImg = imageMap[vendor.image] ?? featureFlorals;
+  const heroPicture = imageMap[vendor.image] ?? featureFlorals;
 
   return (
     <div className="min-h-screen bg-background pb-24 lg:pb-0">
@@ -557,11 +563,16 @@ export default function VendorDetailPage() {
 
       {/* Cinematic vendor hero */}
       <section className="relative h-[80svh] min-h-[560px] w-full overflow-hidden">
-        <img
-          src={heroImg}
-          alt={vendor.name}
-          className="absolute inset-0 w-full h-full object-cover"
-        />
+        <div className="absolute inset-0">
+          <Picture
+            source={heroPicture}
+            alt={vendor.name}
+            loading="eager"
+            fetchPriority="high"
+            sizes="100vw"
+            className="w-full h-full object-cover"
+          />
+        </div>
         <div className="absolute inset-0 bg-gradient-to-b from-foreground/55 via-foreground/30 to-foreground/85" />
         <div className="absolute inset-0 bg-gradient-to-r from-foreground/55 via-transparent to-transparent" />
         <div
