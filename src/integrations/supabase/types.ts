@@ -3123,12 +3123,14 @@ export type Database = {
           category: string
           category_attributes: Json
           created_at: string
+          deposit_pct: number | null
           deposit_policy: string | null
           faq: Json | null
           geocoded_at: string | null
           geocoded_location: string | null
           hourly_rate_cents: number | null
           id: string
+          instagram_handle: string | null
           intro_video_url: string | null
           is_demo: boolean
           is_staffing: boolean
@@ -3139,11 +3141,14 @@ export type Database = {
           min_hours: number | null
           onboarding_nudge_sent_at: string | null
           payment_terms: string | null
+          policy_notes: string | null
           portfolio_summary: string | null
+          reschedule_window_days: number | null
           responder_tier: string | null
           service_radius_km: number | null
           service_radius_miles: number | null
           slug: string | null
+          tiktok_handle: string | null
           updated_at: string
           user_id: string | null
           verified_at: string | null
@@ -3160,12 +3165,14 @@ export type Database = {
           category: string
           category_attributes?: Json
           created_at?: string
+          deposit_pct?: number | null
           deposit_policy?: string | null
           faq?: Json | null
           geocoded_at?: string | null
           geocoded_location?: string | null
           hourly_rate_cents?: number | null
           id?: string
+          instagram_handle?: string | null
           intro_video_url?: string | null
           is_demo?: boolean
           is_staffing?: boolean
@@ -3176,11 +3183,14 @@ export type Database = {
           min_hours?: number | null
           onboarding_nudge_sent_at?: string | null
           payment_terms?: string | null
+          policy_notes?: string | null
           portfolio_summary?: string | null
+          reschedule_window_days?: number | null
           responder_tier?: string | null
           service_radius_km?: number | null
           service_radius_miles?: number | null
           slug?: string | null
+          tiktok_handle?: string | null
           updated_at?: string
           user_id?: string | null
           verified_at?: string | null
@@ -3197,12 +3207,14 @@ export type Database = {
           category?: string
           category_attributes?: Json
           created_at?: string
+          deposit_pct?: number | null
           deposit_policy?: string | null
           faq?: Json | null
           geocoded_at?: string | null
           geocoded_location?: string | null
           hourly_rate_cents?: number | null
           id?: string
+          instagram_handle?: string | null
           intro_video_url?: string | null
           is_demo?: boolean
           is_staffing?: boolean
@@ -3213,11 +3225,14 @@ export type Database = {
           min_hours?: number | null
           onboarding_nudge_sent_at?: string | null
           payment_terms?: string | null
+          policy_notes?: string | null
           portfolio_summary?: string | null
+          reschedule_window_days?: number | null
           responder_tier?: string | null
           service_radius_km?: number | null
           service_radius_miles?: number | null
           slug?: string | null
+          tiktok_handle?: string | null
           updated_at?: string
           user_id?: string | null
           verified_at?: string | null
