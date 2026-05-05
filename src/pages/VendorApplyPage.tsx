@@ -49,9 +49,6 @@ export default function VendorApplyPage() {
   const [businessName, setBusinessName] = useState("");
   const [category, setCategory] = useState("");
   const [bio, setBio] = useState("");
-  const [basePrice, setBasePrice] = useState("");
-  const [location, setLocation] = useState("");
-  const [serviceRadius, setServiceRadius] = useState("");
   const [portfolioSummary, setPortfolioSummary] = useState("");
 
   function step1Valid() {
@@ -97,23 +94,20 @@ export default function VendorApplyPage() {
       return;
     }
 
-    // Profile row is auto-created by handle_new_user() trigger. Insert vendor_profile.
+    // Profile row is auto-created by handle_new_user() trigger. Insert
+    // vendor_profile in 'pending' state — admin reviews + approves on
+    // /admin/vendors before the listing goes public. Pricing, location,
+    // service radius, packages and photos are filled in later from
+    // /vendor/profile after approval.
     const { data: vpData, error: vpError } = await supabase
       .from("vendor_profiles")
       .insert({
-      user_id: signUpData.user.id,
-      business_name: businessName.trim(),
-      category,
-      bio: bio.trim() || null,
-      base_price_cents: basePrice
-        ? Math.round(Number.parseFloat(basePrice) * 100)
-        : null,
-      location: location.trim() || null,
-      service_radius_miles: serviceRadius
-        ? Number.parseInt(serviceRadius, 10)
-        : null,
-      portfolio_summary: portfolioSummary.trim() || null,
-    })
+        user_id: signUpData.user.id,
+        business_name: businessName.trim(),
+        category,
+        bio: bio.trim() || null,
+        portfolio_summary: portfolioSummary.trim() || null,
+      })
       .select("id")
       .single();
 
@@ -139,7 +133,9 @@ export default function VendorApplyPage() {
         .then(() => {});
     }
 
-    toast.success("Welcome to Vendora — let's finish setting up your profile.");
+    toast.success(
+      "Application received — we'll review within 2-3 business days. You can finish setting up your profile while you wait.",
+    );
     navigate("/vendor/onboarding");
   }
 
@@ -341,47 +337,6 @@ export default function VendorApplyPage() {
                     onChange={(e) => setBio(e.target.value)}
                     rows={3}
                     placeholder="One or two sentences about your style and approach."
-                  />
-                </div>
-
-                <div className="grid sm:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="base-price">Starting price ($)</Label>
-                    <Input
-                      id="base-price"
-                      type="number"
-                      inputMode="decimal"
-                      min="0"
-                      step="100"
-                      value={basePrice}
-                      onChange={(e) => setBasePrice(e.target.value)}
-                      placeholder="2500"
-                      className="h-11"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="service-radius">Service radius (miles)</Label>
-                    <Input
-                      id="service-radius"
-                      type="number"
-                      inputMode="numeric"
-                      min="0"
-                      value={serviceRadius}
-                      onChange={(e) => setServiceRadius(e.target.value)}
-                      placeholder="60"
-                      className="h-11"
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="location">Location</Label>
-                  <Input
-                    id="location"
-                    value={location}
-                    onChange={(e) => setLocation(e.target.value)}
-                    placeholder="Brooklyn, NY"
-                    className="h-11"
                   />
                 </div>
 

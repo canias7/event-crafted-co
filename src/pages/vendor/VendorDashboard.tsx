@@ -10,6 +10,7 @@ import {
   Clock,
   CheckCircle2,
   ExternalLink,
+  AlertCircle,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -33,6 +34,8 @@ interface VendorProfile {
   service_radius_miles: number | null;
   portfolio_summary: string | null;
   verified_at: string | null;
+  application_status: "pending" | "approved" | "rejected" | null;
+  application_review_notes: string | null;
 }
 
 interface RecentInquiry {
@@ -111,10 +114,11 @@ export default function VendorDashboard() {
     (async () => {
       setLoading(true);
 
-      const { data: vp } = await supabase
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: vp } = await (supabase as any)
         .from("vendor_profiles")
         .select(
-          "id, business_name, category, bio, base_price_cents, location, service_radius_miles, portfolio_summary, verified_at",
+          "id, business_name, category, bio, base_price_cents, location, service_radius_miles, portfolio_summary, verified_at, application_status, application_review_notes",
         )
         .eq("id", membershipVendorId)
         .maybeSingle();
@@ -256,6 +260,36 @@ export default function VendorDashboard() {
         </div>
 
         <div className="p-4 md:p-8 space-y-8">
+          {/* Application-status banner: pending = under review,
+              rejected = declined with admin notes. Approved is the
+              normal state and shows nothing. */}
+          {vendorProfile?.application_status === "pending" && (
+            <div className="rounded-sm border border-accent/30 bg-accent/5 p-4 flex items-start gap-3">
+              <Clock className="w-4 h-4 text-accent mt-0.5 shrink-0" />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium">Application under review</p>
+                <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">
+                  We'll get back to you within 2-3 business days. You can
+                  finish setting up your profile, packages, and photos
+                  while you wait — your listing goes live the moment
+                  it's approved.
+                </p>
+              </div>
+            </div>
+          )}
+          {vendorProfile?.application_status === "rejected" && (
+            <div className="rounded-sm border border-destructive/30 bg-destructive/5 p-4 flex items-start gap-3">
+              <AlertCircle className="w-4 h-4 text-destructive mt-0.5 shrink-0" />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium">Application not approved</p>
+                <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">
+                  {vendorProfile.application_review_notes ??
+                    "Reach out to support if you'd like more detail."}
+                </p>
+              </div>
+            </div>
+          )}
+
           {/* Profile-not-yet-created state */}
           {!loading && !vendorProfile && (
             <div className="rounded-sm border border-accent/30 bg-accent/5 p-6 flex items-start gap-4">

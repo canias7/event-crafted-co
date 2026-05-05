@@ -108,12 +108,16 @@ async function fetchVendors(): Promise<Vendor[]> {
   if (inFlight) return inFlight;
   inFlight = (async () => {
     try {
+      // Public directory only shows approved applications. RLS enforces
+      // this server-side too; the client filter is a small redundancy
+      // that keeps the network response tight.
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data, error } = await (supabase as any)
         .from("vendor_profiles")
         .select(
           "id, business_name, category, bio, base_price_cents, location, service_radius_miles, portfolio_summary, verified_at, responder_tier, intro_video_url, slug, instagram_handle, tiktok_handle, deposit_pct, cancellation_policy, reschedule_window_days, policy_notes",
         )
+        .eq("application_status", "approved")
         .order("verified_at", { ascending: false, nullsFirst: false });
       if (!error && data) {
         const vendors = (data as VendorProfileRow[]).map(normalizeDb);

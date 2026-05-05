@@ -26,6 +26,7 @@ interface VendorRow {
   created_at: string;
   latitude: number | null;
   longitude: number | null;
+  application_status: "pending" | "approved" | "rejected";
 }
 
 export default function AdminVendorsPage() {
@@ -37,14 +38,58 @@ export default function AdminVendorsPage() {
 
   async function load() {
     setLoading(true);
-    const { data } = await supabase
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data } = await (supabase as any)
       .from("vendor_profiles")
       .select(
-        "id, business_name, category, location, verified_at, created_at, latitude, longitude",
+        "id, business_name, category, location, verified_at, created_at, latitude, longitude, application_status",
       )
+      // Pending applications first so admin sees them at the top.
+      .order("application_status", { ascending: true })
       .order("created_at", { ascending: false });
     setRows((data as VendorRow[]) ?? []);
     setLoading(false);
+  }
+
+  async function setApplicationStatus(
+    v: VendorRow,
+    next: "approved" | "rejected",
+  ) {
+    setPendingId(v.id);
+    let notes: string | null = null;
+    if (next === "rejected") {
+      // Quick prompt for a note. Optional.
+      notes = window.prompt(
+        "Reason for rejection (shown to vendor on their dashboard, optional):",
+        "",
+      );
+      if (notes === null) {
+        // User cancelled the prompt.
+        setPendingId(null);
+        return;
+      }
+      notes = notes.trim() || null;
+    }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error } = await (supabase as any)
+      .from("vendor_profiles")
+      .update({
+        application_status: next,
+        application_reviewed_at: new Date().toISOString(),
+        application_review_notes: notes,
+      })
+      .eq("id", v.id);
+    setPendingId(null);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    setRows((prev) =>
+      prev.map((r) =>
+        r.id === v.id ? { ...r, application_status: next } : r,
+      ),
+    );
+    toast.success(next === "approved" ? "Application approved — vendor is live" : "Application rejected");
   }
 
   useEffect(() => {
@@ -248,14 +293,27 @@ export default function AdminVendorsPage() {
                           {new Date(v.created_at).toLocaleDateString()}
                         </td>
                         <td className="py-3 px-5">
-                          {v.verified_at ? (
-                            <Badge className="bg-accent/15 text-accent border border-accent/30">
-                              <ShieldCheck className="w-3 h-3 mr-1" />
-                              Verified
-                            </Badge>
-                          ) : (
-                            <Badge variant="outline">Pending</Badge>
-                          )}
+                          <div className="flex flex-col gap-1">
+                            {v.application_status === "approved" ? (
+                              <Badge className="bg-accent/15 text-accent border border-accent/30">
+                                Approved
+                              </Badge>
+                            ) : v.application_status === "rejected" ? (
+                              <Badge variant="outline" className="text-destructive border-destructive/40">
+                                Rejected
+                              </Badge>
+                            ) : (
+                              <Badge variant="outline">
+                                Pending review
+                              </Badge>
+                            )}
+                            {v.verified_at && (
+                              <Badge className="bg-accent/15 text-accent border border-accent/30 w-fit">
+                                <ShieldCheck className="w-3 h-3 mr-1" />
+                                Verified
+                              </Badge>
+                            )}
+                          </div>
                         </td>
                         <td className="py-3 px-5 text-right whitespace-nowrap">
                           <Link
@@ -272,18 +330,44 @@ export default function AdminVendorsPage() {
                               View
                             </Button>
                           </Link>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="h-7 text-xs rounded-full"
-                            disabled={pendingId === v.id}
-                            onClick={() => toggleVerified(v)}
-                          >
-                            {pendingId === v.id ? (
-                              <Loader2 className="w-3 h-3 mr-1 animate-spin" />
-                            ) : null}
-                            {v.verified_at ? "Unverify" : "Verify"}
-                          </Button>
+                          {v.application_status === "pending" && (
+                            <>
+                              <Button
+                                size="sm"
+                                className="h-7 text-xs rounded-full bg-foreground text-background hover:bg-foreground/90 mr-2"
+                                disabled={pendingId === v.id}
+                                onClick={() => setApplicationStatus(v, "approved")}
+                              >
+                                {pendingId === v.id ? (
+                                  <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                                ) : null}
+                                Approve
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="h-7 text-xs rounded-full mr-2"
+                                disabled={pendingId === v.id}
+                                onClick={() => setApplicationStatus(v, "rejected")}
+                              >
+                                Reject
+                              </Button>
+                            </>
+                          )}
+                          {v.application_status === "approved" && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="h-7 text-xs rounded-full"
+                              disabled={pendingId === v.id}
+                              onClick={() => toggleVerified(v)}
+                            >
+                              {pendingId === v.id ? (
+                                <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                              ) : null}
+                              {v.verified_at ? "Unverify" : "Verify"}
+                            </Button>
+                          )}
                         </td>
                       </tr>
                     ))}
