@@ -660,6 +660,104 @@ export type Database = {
           },
         ]
       }
+      event_party_invites: {
+        Row: {
+          accepted_at: string | null
+          created_at: string
+          email: string
+          event_id: string
+          host_id: string
+          id: string
+          member_user_id: string | null
+          role_label: string
+          token: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          created_at?: string
+          email: string
+          event_id: string
+          host_id: string
+          id?: string
+          member_user_id?: string | null
+          role_label?: string
+          token?: string
+        }
+        Update: {
+          accepted_at?: string | null
+          created_at?: string
+          email?: string
+          event_id?: string
+          host_id?: string
+          id?: string
+          member_user_id?: string | null
+          role_label?: string
+          token?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_party_invites_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "host_events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      event_party_tasks: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          display_order: number
+          due_date: string | null
+          event_id: string
+          id: string
+          invite_id: string
+          notes: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          display_order?: number
+          due_date?: string | null
+          event_id: string
+          id?: string
+          invite_id: string
+          notes?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          display_order?: number
+          due_date?: string | null
+          event_id?: string
+          id?: string
+          invite_id?: string
+          notes?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_party_tasks_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "host_events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_party_tasks_invite_id_fkey"
+            columns: ["invite_id"]
+            isOneToOne: false
+            referencedRelation: "event_party_invites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       event_registry_links: {
         Row: {
           created_at: string
@@ -2915,6 +3013,7 @@ export type Database = {
       }
     }
     Functions: {
+      accept_party_invite: { Args: { p_token: string }; Returns: Json }
       accept_planning_invite: { Args: { p_token: string }; Returns: Json }
       accept_team_invite: { Args: { p_token: string }; Returns: Json }
       can_access_inquiry: { Args: { _inquiry_id: string }; Returns: boolean }
@@ -2956,6 +3055,8 @@ export type Database = {
       }
       get_microsite_by_token: { Args: { p_token: string }; Returns: Json }
       get_mood_board_by_token: { Args: { p_token: string }; Returns: Json }
+      get_party_invite_by_token: { Args: { p_token: string }; Returns: Json }
+      get_party_portal: { Args: { p_event_id: string }; Returns: Json }
       get_planner_workspace: { Args: never; Returns: Json }
       get_planning_invite_by_token: { Args: { p_token: string }; Returns: Json }
       get_recommended_for_host: {
@@ -2989,6 +3090,19 @@ export type Database = {
       is_vendor_member: { Args: { _vendor_id: string }; Returns: boolean }
       is_vendor_owner: { Args: { _vendor_id: string }; Returns: boolean }
       is_vendor_team_admin: { Args: { _vendor_id: string }; Returns: boolean }
+      list_my_party_events: {
+        Args: never
+        Returns: {
+          event_date: string
+          event_id: string
+          event_location: string
+          event_name: string
+          event_type: string
+          host_name: string
+          invite_id: string
+          role_label: string
+        }[]
+      }
       log_admin_action: {
         Args: {
           p_action: string
