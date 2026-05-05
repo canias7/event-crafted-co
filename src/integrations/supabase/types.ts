@@ -401,6 +401,41 @@ export type Database = {
           },
         ]
       }
+      event_microsite_photos: {
+        Row: {
+          caption: string | null
+          created_at: string
+          display_order: number
+          event_id: string
+          id: string
+          storage_path: string
+        }
+        Insert: {
+          caption?: string | null
+          created_at?: string
+          display_order?: number
+          event_id: string
+          id?: string
+          storage_path: string
+        }
+        Update: {
+          caption?: string | null
+          created_at?: string
+          display_order?: number
+          event_id?: string
+          id?: string
+          storage_path?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_microsite_photos_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "host_events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       event_registry_links: {
         Row: {
           created_at: string
@@ -798,6 +833,18 @@ export type Database = {
           event_type: string
           host_id: string
           id: string
+          microsite_cover_path: string | null
+          microsite_published_at: string | null
+          microsite_show_gallery: boolean
+          microsite_show_gifts: boolean
+          microsite_show_registry: boolean
+          microsite_show_rsvp: boolean
+          microsite_show_schedule: boolean
+          microsite_story: string | null
+          microsite_subtitle: string | null
+          microsite_theme: string
+          microsite_title: string | null
+          microsite_token: string | null
           name: string | null
           updated_at: string
         }
@@ -812,6 +859,18 @@ export type Database = {
           event_type: string
           host_id: string
           id?: string
+          microsite_cover_path?: string | null
+          microsite_published_at?: string | null
+          microsite_show_gallery?: boolean
+          microsite_show_gifts?: boolean
+          microsite_show_registry?: boolean
+          microsite_show_rsvp?: boolean
+          microsite_show_schedule?: boolean
+          microsite_story?: string | null
+          microsite_subtitle?: string | null
+          microsite_theme?: string
+          microsite_title?: string | null
+          microsite_token?: string | null
           name?: string | null
           updated_at?: string
         }
@@ -826,6 +885,18 @@ export type Database = {
           event_type?: string
           host_id?: string
           id?: string
+          microsite_cover_path?: string | null
+          microsite_published_at?: string | null
+          microsite_show_gallery?: boolean
+          microsite_show_gifts?: boolean
+          microsite_show_registry?: boolean
+          microsite_show_rsvp?: boolean
+          microsite_show_schedule?: boolean
+          microsite_story?: string | null
+          microsite_subtitle?: string | null
+          microsite_theme?: string
+          microsite_title?: string | null
+          microsite_token?: string | null
           name?: string | null
           updated_at?: string
         }
@@ -2459,6 +2530,7 @@ export type Database = {
           rsvp_status: string
         }[]
       }
+      get_microsite_by_token: { Args: { p_token: string }; Returns: Json }
       get_mood_board_by_token: { Args: { p_token: string }; Returns: Json }
       get_planning_invite_by_token: { Args: { p_token: string }; Returns: Json }
       get_team_invite_by_token: { Args: { p_token: string }; Returns: Json }
