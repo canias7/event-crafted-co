@@ -48,47 +48,15 @@ export default defineConfig(({ mode }) => ({
     },
   },
   build: {
-    rollupOptions: {
-      output: {
-        // Split heavy third-party deps out of the main chunk so that
-        // landing-page visitors don't download leaflet / framer-motion /
-        // radix until they actually navigate to a route that needs them.
-        // Keep groupings broad — over-fragmentation hurts HTTP/2 less
-        // than over-bundling, but each chunk has its own request cost.
-        manualChunks: (id) => {
-          if (!id.includes("node_modules")) return undefined;
-          // Order matters — most-specific first.
-          if (id.includes("leaflet") || id.includes("react-leaflet")) {
-            return "leaflet";
-          }
-          if (id.includes("framer-motion")) return "motion";
-          if (id.includes("@radix-ui")) return "radix";
-          if (id.includes("@supabase")) return "supabase";
-          if (id.includes("recharts") || id.includes("d3-")) return "charts";
-          if (id.includes("date-fns")) return "date-fns";
-          // Pull react-core out of the catch-all vendor chunk so it can
-          // cache independently across deploys (most app changes don't
-          // bump react). React-router rides along since it changes at
-          // a similar cadence.
-          if (
-            id.includes("/node_modules/react/") ||
-            id.includes("/node_modules/react-dom/") ||
-            id.includes("/node_modules/scheduler/") ||
-            id.includes("react-router")
-          ) {
-            return "react-core";
-          }
-          // i18next + locales don't change often; separate cache lane.
-          if (id.includes("i18next") || id.includes("i18n")) return "i18n";
-          // @tanstack/react-query lives in its own lane too.
-          if (id.includes("@tanstack")) return "tanstack";
-          // Everything else stays in the main vendor chunk.
-          return "vendor";
-        },
-      },
-    },
     // Bump the warn threshold so the existing chunks (still all under
     // ~250kB gzipped) don't trip a yellow warning every build.
     chunkSizeWarningLimit: 800,
+    // Note: tried `rollupOptions.output.manualChunks` to split leaflet /
+    // motion / radix / react-core into named cache lanes, but it kept
+    // creating circular cross-chunk imports — react-using packages
+    // would call React.forwardRef / createContext during module
+    // initialization while React's exports weren't ready. Vite's
+    // default chunking handles the import graph correctly; the
+    // resulting chunks are slightly larger but everything works.
   },
 }));
