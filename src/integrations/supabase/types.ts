@@ -199,6 +199,93 @@ export type Database = {
           },
         ]
       }
+      calendar_connections: {
+        Row: {
+          access_token: string
+          account_email: string | null
+          created_at: string
+          id: string
+          last_sync_error: string | null
+          last_synced_at: string | null
+          primary_calendar_id: string
+          provider: string
+          pull_busy_times: boolean
+          push_appointments: boolean
+          refresh_token: string | null
+          token_expires_at: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          access_token: string
+          account_email?: string | null
+          created_at?: string
+          id?: string
+          last_sync_error?: string | null
+          last_synced_at?: string | null
+          primary_calendar_id?: string
+          provider: string
+          pull_busy_times?: boolean
+          push_appointments?: boolean
+          refresh_token?: string | null
+          token_expires_at: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          access_token?: string
+          account_email?: string | null
+          created_at?: string
+          id?: string
+          last_sync_error?: string | null
+          last_synced_at?: string | null
+          primary_calendar_id?: string
+          provider?: string
+          pull_busy_times?: boolean
+          push_appointments?: boolean
+          refresh_token?: string | null
+          token_expires_at?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      calendar_synced_busy: {
+        Row: {
+          ends_at: string
+          external_event_id: string
+          id: string
+          is_all_day: boolean
+          provider: string
+          starts_at: string
+          summary: string | null
+          synced_at: string
+          user_id: string
+        }
+        Insert: {
+          ends_at: string
+          external_event_id: string
+          id?: string
+          is_all_day?: boolean
+          provider: string
+          starts_at: string
+          summary?: string | null
+          synced_at?: string
+          user_id: string
+        }
+        Update: {
+          ends_at?: string
+          external_event_id?: string
+          id?: string
+          is_all_day?: boolean
+          provider?: string
+          starts_at?: string
+          summary?: string | null
+          synced_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       checklist_items: {
         Row: {
           category: string | null
