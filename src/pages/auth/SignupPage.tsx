@@ -6,7 +6,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { SocialAuthButtons } from "@/components/auth/SocialAuthButtons";
@@ -18,7 +17,6 @@ export default function SignupPage() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [role, setRole] = useState<"host" | "vendor">("host");
   const [adult, setAdult] = useState(false);
   const [loading, setLoading] = useState(false);
 
@@ -34,7 +32,7 @@ export default function SignupPage() {
       password,
       options: {
         emailRedirectTo: `${window.location.origin}/`,
-        data: { display_name: name, role },
+        data: { display_name: name, role: "host" },
       },
     });
     setLoading(false);
@@ -49,7 +47,7 @@ export default function SignupPage() {
       return;
     }
     toast.success("Account created");
-    navigate(role === "vendor" ? "/vendor/dashboard" : "/customer/onboarding");
+    navigate("/customer/onboarding");
   }
 
   return (
@@ -114,49 +112,13 @@ export default function SignupPage() {
           </p>
 
           <form onSubmit={onSubmit} className="space-y-5">
-            <div className="space-y-2">
-              <Label>{t("auth.signup.role_label")}</Label>
-              <RadioGroup
-                value={role}
-                onValueChange={(v) => setRole(v as "host" | "vendor")}
-                className="grid grid-cols-2 gap-2 mt-1"
-              >
-                <label
-                  className={`flex items-center gap-3 border rounded-sm p-3 cursor-pointer transition-colors ${
-                    role === "host"
-                      ? "border-foreground bg-foreground/5"
-                      : "border-border"
-                  }`}
-                >
-                  <RadioGroupItem value="host" id="host" />
-                  <div>
-                    <div className="text-sm font-medium">
-                      {t("auth.signup.role_host")}
-                    </div>
-                    <div className="text-xs text-muted-foreground">
-                      {t("auth.signup.role_host_desc")}
-                    </div>
-                  </div>
-                </label>
-                <label
-                  className={`flex items-center gap-3 border rounded-sm p-3 cursor-pointer transition-colors ${
-                    role === "vendor"
-                      ? "border-foreground bg-foreground/5"
-                      : "border-border"
-                  }`}
-                >
-                  <RadioGroupItem value="vendor" id="vendor" />
-                  <div>
-                    <div className="text-sm font-medium">
-                      {t("auth.signup.role_vendor")}
-                    </div>
-                    <div className="text-xs text-muted-foreground">
-                      {t("auth.signup.role_vendor_desc")}
-                    </div>
-                  </div>
-                </label>
-              </RadioGroup>
-            </div>
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              Hosts only. Vendors apply via{" "}
+              <Link to="/vendor-apply" className="text-accent hover:underline">
+                vendor-apply
+              </Link>{" "}
+              — every listing is hand-reviewed before going live.
+            </p>
             <div className="space-y-2">
               <Label htmlFor="name">{t("auth.signup.name_label")}</Label>
               <Input

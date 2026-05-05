@@ -14,9 +14,6 @@ import { matchPath } from "react-router-dom";
 // matchPath (so `/vendors/:id` matches `/vendors/abc-123`).
 
 // ---------------- Public ----------------
-const importHowItWorks = () => import("@/pages/HowItWorksPage");
-export const HowItWorksPage = lazy(importHowItWorks);
-
 const importVendorBrowse = () => import("@/pages/VendorBrowsePage");
 export const VendorBrowsePage = lazy(importVendorBrowse);
 
@@ -77,12 +74,6 @@ export const VendorDetailPage = lazy(importVendorDetail);
 
 const importVendorCategory = () => import("@/pages/VendorCategoryPage");
 export const VendorCategoryPage = lazy(importVendorCategory);
-
-const importInspiration = () => import("@/pages/InspirationPage");
-export const InspirationPage = lazy(importInspiration);
-
-const importInspirationDetail = () => import("@/pages/InspirationDetailPage");
-export const InspirationDetailPage = lazy(importInspirationDetail);
 
 const importPrivacy = () => import("@/pages/PrivacyPage");
 export const PrivacyPage = lazy(importPrivacy);
@@ -288,9 +279,6 @@ export const AdminReviewsPage = lazy(importAdminReviews);
 const importAdminInquiries = () => import("@/pages/admin/AdminInquiriesPage");
 export const AdminInquiriesPage = lazy(importAdminInquiries);
 
-const importAdminInspiration = () => import("@/pages/admin/AdminInspirationPage");
-export const AdminInspirationPage = lazy(importAdminInspiration);
-
 const importAdminVerifications = () => import("@/pages/admin/AdminVerificationsPage");
 export const AdminVerificationsPage = lazy(importAdminVerifications);
 
@@ -299,12 +287,10 @@ export const AdminVerificationsPage = lazy(importAdminVerifications);
 // strings are tried before dynamic ones via Map insertion order.
 const ROUTE_IMPORTERS: Array<{ pattern: string; importer: () => Promise<unknown> }> = [
   // Static public
-  { pattern: "/how-it-works", importer: importHowItWorks },
   { pattern: "/vendors", importer: importVendorBrowse },
   { pattern: "/vendors/locations", importer: importVendorLocations },
   { pattern: "/vendors/map", importer: importVendorMap },
   { pattern: "/vendors/quiz", importer: importVendorQuiz },
-  { pattern: "/inspiration", importer: importInspiration },
   { pattern: "/privacy", importer: importPrivacy },
   { pattern: "/terms", importer: importTerms },
   { pattern: "/changelog", importer: importChangelog },
@@ -327,7 +313,6 @@ const ROUTE_IMPORTERS: Array<{ pattern: string; importer: () => Promise<unknown>
   },
   { pattern: "/vendors/:id", importer: importVendorDetail },
   { pattern: "/v/:slug", importer: importVendorDetail },
-  { pattern: "/inspiration/:slug", importer: importInspirationDetail },
   { pattern: "/rsvp/:token", importer: importRsvp },
   { pattern: "/board/:token", importer: importMoodBoardShare },
   { pattern: "/gift/:token", importer: importGiftShare },
@@ -391,7 +376,6 @@ const ROUTE_IMPORTERS: Array<{ pattern: string; importer: () => Promise<unknown>
   { pattern: "/admin/vendors", importer: importAdminVendors },
   { pattern: "/admin/inquiries", importer: importAdminInquiries },
   { pattern: "/admin/reviews", importer: importAdminReviews },
-  { pattern: "/admin/inspiration", importer: importAdminInspiration },
   { pattern: "/admin/verifications", importer: importAdminVerifications },
 ];
 

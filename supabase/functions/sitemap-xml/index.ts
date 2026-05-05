@@ -1,11 +1,13 @@
 // Dynamic sitemap.xml. Returns urlset entries for the static public pages
-// plus every public vendor profile and every published inspiration entry.
+// plus every public vendor profile, published real event, and published
+// editorial article.
 //
 // Submit to Google Search Console as <APP_URL>/functions/v1/sitemap-xml
 // (or front it behind a /sitemap.xml redirect at the hosting layer).
 //
-// No auth required (verify_jwt = false in config.toml). Uses anon-key reads
-// since both vendor_profiles and featured_events are public-readable.
+// No auth required (verify_jwt = false in config.toml). Uses anon-key
+// reads since vendor_profiles, real_events, and editorial_articles are
+// public-readable for their respective publish flags.
 
 // deno-lint-ignore-file no-explicit-any
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
@@ -96,10 +98,8 @@ const STATIC_PATHS: Array<{ path: string; priority: number; freq: string }> = [
   { path: "/vendors", priority: 0.9, freq: "daily" },
   { path: "/vendors/locations", priority: 0.7, freq: "weekly" },
   { path: "/real-events", priority: 0.8, freq: "weekly" },
-  { path: "/inspiration", priority: 0.8, freq: "weekly" },
   { path: "/plan-in-5", priority: 0.7, freq: "weekly" },
   { path: "/compare", priority: 0.5, freq: "weekly" },
-  { path: "/how-it-works", priority: 0.6, freq: "monthly" },
   { path: "/vendor-apply", priority: 0.6, freq: "monthly" },
   { path: "/guides", priority: 0.7, freq: "weekly" },
   { path: "/privacy", priority: 0.3, freq: "yearly" },
@@ -119,7 +119,6 @@ serve(async (req) => {
 
   const [
     { data: vendors },
-    { data: inspiration },
     { data: realEvents },
     { data: editorial },
     { data: vendorSlugs },
@@ -129,11 +128,6 @@ serve(async (req) => {
         .from("vendor_profiles")
         .select("id, slug, updated_at, category, location")
         .order("updated_at", { ascending: false }),
-      sb
-        .from("featured_events")
-        .select("slug, updated_at, published_at")
-        .not("published_at", "is", null)
-        .order("published_at", { ascending: false }),
       sb
         .from("real_events")
         .select("slug, updated_at, published_at, host_consent_given_at")
@@ -262,17 +256,6 @@ serve(async (req) => {
       urlEntry(
         `${APP_URL}/guides/${a.slug}`,
         a.updated_at ?? a.published_at ?? undefined,
-        0.6,
-        "monthly",
-      ),
-    );
-  }
-
-  for (const i of (inspiration as InspirationRow[] | null) ?? []) {
-    lines.push(
-      urlEntry(
-        `${APP_URL}/inspiration/${i.slug}`,
-        i.updated_at ?? i.published_at ?? undefined,
         0.6,
         "monthly",
       ),

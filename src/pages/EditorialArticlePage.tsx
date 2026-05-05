@@ -93,7 +93,7 @@ export default function EditorialArticlePage() {
   });
 
   if (notFound) {
-    return <Navigate to="/inspiration" replace />;
+    return <Navigate to="/real-events" replace />;
   }
 
   return (
@@ -115,11 +115,11 @@ export default function EditorialArticlePage() {
           ) : article ? (
             <>
               <Link
-                to="/inspiration"
+                to="/real-events"
                 className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors mb-6"
               >
                 <ArrowLeft className="w-3 h-3" />
-                Inspiration
+                Real events
               </Link>
 
               <motion.h1

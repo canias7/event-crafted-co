@@ -103,7 +103,6 @@ export const adminNavItems: NavItem[] = [
   { labelKey: "sidebar.admin.verifications", path: "/admin/verifications", icon: ShieldCheck },
   { labelKey: "sidebar.admin.inquiries", path: "/admin/inquiries", icon: MessageSquare },
   { labelKey: "sidebar.admin.reviews", path: "/admin/reviews", icon: CheckSquare },
-  { labelKey: "sidebar.admin.inspiration", path: "/admin/inspiration", icon: FileText },
   { labelKey: "sidebar.admin.editorial", path: "/admin/editorial", icon: BookOpen },
   { labelKey: "sidebar.admin.claims", path: "/admin/claims", icon: UserPlus },
   { labelKey: "sidebar.admin.support", path: "/admin/support", icon: LifeBuoy },

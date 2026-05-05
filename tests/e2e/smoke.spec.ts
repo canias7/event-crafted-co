@@ -108,7 +108,7 @@ test("Cmd-K opens the command palette from the landing page", async ({
   await page.goto("/", { waitUntil: "domcontentloaded" });
   await page.keyboard.press("Meta+K");
   await expect(
-    page.getByPlaceholder("Search vendors, inspiration, pages…"),
+    page.getByPlaceholder("Search vendors, pages…"),
   ).toBeVisible({ timeout: 2_000 });
 });
 

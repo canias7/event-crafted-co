@@ -32,11 +32,6 @@ import {
 } from "@/components/ui/command";
 import { useAuth } from "@/hooks/useAuth";
 import { useVendors } from "@/hooks/useVendors";
-import {
-  fetchInspirationEntries,
-  inspirationEntries,
-  type InspirationEntry,
-} from "@/data/inspiration";
 
 interface NavTarget {
   label: string;
@@ -51,16 +46,10 @@ const PUBLIC_NAV: NavTarget[] = [
   { label: "Map view", hint: "Pins", path: "/vendors/map", icon: Store },
   { label: "Vendor match quiz", hint: "60 sec", path: "/vendors/quiz", icon: Sparkles },
   {
-    label: "Inspiration",
-    hint: "Real events",
-    path: "/inspiration",
+    label: "Real events",
+    hint: "Past weddings",
+    path: "/real-events",
     icon: Sparkles,
-  },
-  {
-    label: "How it works",
-    hint: "Public",
-    path: "/how-it-works",
-    icon: FileText,
   },
   {
     label: "Become a vendor",
@@ -113,7 +102,6 @@ const ADMIN_NAV: NavTarget[] = [
   { label: "All vendors", path: "/admin/vendors", icon: Store },
   { label: "All inquiries", path: "/admin/inquiries", icon: MessageSquare },
   { label: "Reviews moderation", path: "/admin/reviews", icon: CheckSquare },
-  { label: "Inspiration CMS", path: "/admin/inspiration", icon: Sparkles },
 ];
 
 const SETTINGS_NAV: NavTarget[] = [
@@ -125,21 +113,6 @@ export function CommandPalette({ initialOpen = false }: { initialOpen?: boolean 
   const navigate = useNavigate();
   const { profile, vendorMemberships } = useAuth();
   const { vendors } = useVendors();
-  const [inspiration, setInspiration] = useState<InspirationEntry[]>(
-    inspirationEntries,
-  );
-
-  // Hydrate inspiration from DB so admin-published entries are searchable.
-  useEffect(() => {
-    let cancelled = false;
-    fetchInspirationEntries().then((fetched) => {
-      if (cancelled) return;
-      if (fetched.length > 0) setInspiration(fetched);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
 
   // Cmd/Ctrl + K toggles the palette globally.
   useEffect(() => {
@@ -165,7 +138,7 @@ export function CommandPalette({ initialOpen = false }: { initialOpen?: boolean 
 
   return (
     <CommandDialog open={open} onOpenChange={setOpen}>
-      <CommandInput placeholder="Search vendors, inspiration, pages…" />
+      <CommandInput placeholder="Search vendors, pages…" />
       <CommandList>
         <CommandEmpty>No results.</CommandEmpty>
 
@@ -188,30 +161,6 @@ export function CommandPalette({ initialOpen = false }: { initialOpen?: boolean 
               </CommandItem>
             ))}
           </CommandGroup>
-        )}
-
-        {inspiration.length > 0 && (
-          <>
-            <CommandSeparator />
-            <CommandGroup heading="Inspiration">
-              {inspiration.slice(0, 6).map((entry) => (
-                <CommandItem
-                  key={`insp-${entry.slug}`}
-                  value={`inspiration ${entry.title} ${entry.eventTypeLabel} ${entry.location}`}
-                  onSelect={() => go(`/inspiration/${entry.slug}`)}
-                >
-                  <Sparkles className="mr-2 text-muted-foreground" />
-                  <div className="flex-1 min-w-0">
-                    <div className="truncate">{entry.title}</div>
-                    <div className="text-xs text-muted-foreground truncate">
-                      {entry.eventTypeLabel}
-                      {entry.location ? ` · ${entry.location}` : ""}
-                    </div>
-                  </div>
-                </CommandItem>
-              ))}
-            </CommandGroup>
-          </>
         )}
 
         <CommandSeparator />

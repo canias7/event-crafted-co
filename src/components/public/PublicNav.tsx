@@ -20,8 +20,6 @@ function buildLinks(t: (key: string) => string) {
   return [
     { label: t("nav.vendors"), path: "/vendors" },
     { label: t("nav.real_events"), path: "/real-events" },
-    { label: t("nav.inspiration"), path: "/inspiration" },
-    { label: t("nav.how_it_works"), path: "/how-it-works" },
     { label: t("nav.for_vendors"), path: "/vendor-apply" },
   ];
 }

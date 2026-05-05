@@ -37,7 +37,6 @@ import { RouteFallback } from "@/components/shared/RouteFallback";
 // factories paired with a path → importer registry that PrefetchLink
 // uses to warm chunks on hover/visibility.
 import {
-  HowItWorksPage,
   VendorBrowsePage,
   CompareVendorsPage,
   VendorLocationsPage,
@@ -48,8 +47,6 @@ import {
   VendorQuizPage,
   VendorDetailPage,
   VendorCategoryPage,
-  InspirationPage,
-  InspirationDetailPage,
   PrivacyPage,
   TermsPage,
   ChangelogPage,
@@ -117,7 +114,6 @@ import {
   AdminVendorsPage,
   AdminReviewsPage,
   AdminInquiriesPage,
-  AdminInspirationPage,
   AdminVerificationsPage,
   AdminEditorialPage,
   EditorialArticlePage,
@@ -146,7 +142,6 @@ const App = () => (
             <Routes>
               {/* Public */}
               <Route path="/" element={<LandingPage />} />
-              <Route path="/how-it-works" element={<HowItWorksPage />} />
               <Route path="/vendors" element={<VendorBrowsePage />} />
               <Route path="/compare" element={<CompareVendorsPage />} />
               <Route path="/vendors/locations" element={<VendorLocationsPage />} />
@@ -166,8 +161,6 @@ const App = () => (
               />
               <Route path="/vendors/:id" element={<VendorDetailPage />} />
               <Route path="/v/:slug" element={<VendorDetailPage />} />
-              <Route path="/inspiration" element={<InspirationPage />} />
-              <Route path="/inspiration/:slug" element={<InspirationDetailPage />} />
               {/* Editorial article reader (long-form CMS guides). */}
               <Route path="/guides/:slug" element={<EditorialArticlePage />} />
               {/* Vendor claim-listing flow — public, auth-gated to claim. */}
@@ -256,7 +249,6 @@ const App = () => (
               <Route path="/admin/vendors" element={<RequireRole role="admin"><AdminVendorsPage /></RequireRole>} />
               <Route path="/admin/inquiries" element={<RequireRole role="admin"><AdminInquiriesPage /></RequireRole>} />
               <Route path="/admin/reviews" element={<RequireRole role="admin"><AdminReviewsPage /></RequireRole>} />
-              <Route path="/admin/inspiration" element={<RequireRole role="admin"><AdminInspirationPage /></RequireRole>} />
               <Route path="/admin/verifications" element={<RequireRole role="admin"><AdminVerificationsPage /></RequireRole>} />
               <Route path="/admin/editorial" element={<RequireRole role="admin"><AdminEditorialPage /></RequireRole>} />
               <Route path="/admin/claims" element={<RequireRole role="admin"><AdminClaimsPage /></RequireRole>} />
