@@ -14,6 +14,39 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_audit_log: {
+        Row: {
+          action: string
+          admin_id: string | null
+          created_at: string
+          id: string
+          metadata: Json
+          summary: string | null
+          target_id: string | null
+          target_type: string
+        }
+        Insert: {
+          action: string
+          admin_id?: string | null
+          created_at?: string
+          id?: string
+          metadata?: Json
+          summary?: string | null
+          target_id?: string | null
+          target_type: string
+        }
+        Update: {
+          action?: string
+          admin_id?: string | null
+          created_at?: string
+          id?: string
+          metadata?: Json
+          summary?: string | null
+          target_id?: string | null
+          target_type?: string
+        }
+        Relationships: []
+      }
       ai_agent_runs: {
         Row: {
           agent_name: string
@@ -2896,6 +2929,16 @@ export type Database = {
       is_vendor_member: { Args: { _vendor_id: string }; Returns: boolean }
       is_vendor_owner: { Args: { _vendor_id: string }; Returns: boolean }
       is_vendor_team_admin: { Args: { _vendor_id: string }; Returns: boolean }
+      log_admin_action: {
+        Args: {
+          p_action: string
+          p_metadata?: Json
+          p_summary?: string
+          p_target_id: string
+          p_target_type: string
+        }
+        Returns: undefined
+      }
       request_account_deletion: { Args: never; Returns: undefined }
       set_active_event: { Args: { p_event_id: string }; Returns: undefined }
       shares_vendor_team: { Args: { _user_id: string }; Returns: boolean }
