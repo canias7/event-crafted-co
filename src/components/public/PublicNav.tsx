@@ -2,23 +2,26 @@ import { useLocation } from "react-router-dom";
 import { PrefetchLink as Link } from "@/components/shared/PrefetchLink";
 import { motion } from "framer-motion";
 import { Menu, X, LogOut, LayoutDashboard, ChevronDown, Settings, Search } from "lucide-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/hooks/useAuth";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { LanguageSwitcher } from "@/components/shared/LanguageSwitcher";
+import { categoryConfig } from "@/pages/VendorCategoryPage";
 
-function buildLinks(t: (key: string) => string) {
+// Top-level public-nav links. The "Vendors" entry is rendered as a
+// dropdown menu (not just a single link) — see VendorsDropdown below.
+function buildSecondaryLinks(t: (key: string) => string) {
   return [
-    { label: t("nav.vendors"), path: "/vendors" },
     { label: t("nav.real_events"), path: "/real-events" },
     { label: t("nav.for_vendors"), path: "/vendor-apply" },
   ];
@@ -41,9 +44,21 @@ function dashboardLabel(role?: string, t?: (key: string) => string) {
 export function PublicNav() {
   const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [mobileVendorsOpen, setMobileVendorsOpen] = useState(false);
   const { session, profile, signOut } = useAuth();
   const { t } = useTranslation();
-  const baseLinks = buildLinks(t);
+  const secondaryLinks = buildSecondaryLinks(t);
+
+  // Sort categories alphabetically by display name. comingSoon items
+  // sort to the bottom so the live ones are scanned first.
+  const sortedCategories = useMemo(() => {
+    return Object.entries(categoryConfig)
+      .map(([slug, cfg]) => ({ slug, ...cfg }))
+      .sort((a, b) => {
+        if (!!a.comingSoon !== !!b.comingSoon) return a.comingSoon ? 1 : -1;
+        return a.display.localeCompare(b.display);
+      });
+  }, []);
 
   const dashLabel = dashboardLabel(profile?.role, t);
   const dashPath = dashboardPath(profile?.role);
@@ -60,7 +75,73 @@ export function PublicNav() {
 
         {/* Desktop nav */}
         <div className="hidden md:flex items-center gap-8">
-          {baseLinks.map((item) => (
+          {/* Vendors → dropdown of all categories */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                className={`inline-flex items-center gap-1 text-sm font-medium transition-colors duration-200 outline-none ${
+                  location.pathname.startsWith("/vendors")
+                    ? "text-background"
+                    : "text-background/70 hover:text-background"
+                }`}
+                aria-current={
+                  location.pathname.startsWith("/vendors") ? "page" : undefined
+                }
+              >
+                {t("nav.vendors")}
+                <ChevronDown className="w-3 h-3" aria-hidden />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent
+              align="start"
+              className="w-72 max-h-[80vh] overflow-y-auto"
+            >
+              <DropdownMenuItem asChild>
+                <Link to="/vendors" className="cursor-pointer font-medium">
+                  All vendors
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link to="/vendors/locations" className="cursor-pointer">
+                  Browse by location
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link to="/vendors/quiz" className="cursor-pointer">
+                  Take the 60-sec match quiz
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuLabel className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                Categories
+              </DropdownMenuLabel>
+              {sortedCategories.map((c) =>
+                c.comingSoon ? (
+                  <DropdownMenuItem
+                    key={c.slug}
+                    disabled
+                    className="opacity-60 cursor-not-allowed"
+                  >
+                    <span className="flex-1">{c.display}</span>
+                    <span className="text-[10px] uppercase tracking-wide bg-secondary text-muted-foreground rounded-full px-1.5 py-0.5">
+                      Soon
+                    </span>
+                  </DropdownMenuItem>
+                ) : (
+                  <DropdownMenuItem key={c.slug} asChild>
+                    <Link
+                      to={`/vendors/category/${c.slug}`}
+                      className="cursor-pointer"
+                    >
+                      {c.display}
+                    </Link>
+                  </DropdownMenuItem>
+                ),
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          {secondaryLinks.map((item) => (
             <Link
               key={item.path}
               to={item.path}
@@ -178,7 +259,71 @@ export function PublicNav() {
           animate={{ opacity: 1, y: 0 }}
           className="md:hidden bg-background border-b border-border px-4 pb-4"
         >
-          {baseLinks.map((item) => (
+          {/* Vendors expandable section */}
+          <button
+            type="button"
+            onClick={() => setMobileVendorsOpen((x) => !x)}
+            className="flex items-center justify-between w-full py-3 text-sm font-medium text-muted-foreground hover:text-foreground"
+            aria-expanded={mobileVendorsOpen}
+          >
+            <span>{t("nav.vendors")}</span>
+            <ChevronDown
+              className={`w-3.5 h-3.5 transition-transform ${
+                mobileVendorsOpen ? "rotate-180" : ""
+              }`}
+            />
+          </button>
+          {mobileVendorsOpen && (
+            <div className="pl-4 pb-2 max-h-72 overflow-y-auto">
+              <Link
+                to="/vendors"
+                onClick={() => setMobileOpen(false)}
+                className="block py-2 text-sm font-medium text-foreground"
+              >
+                All vendors
+              </Link>
+              <Link
+                to="/vendors/locations"
+                onClick={() => setMobileOpen(false)}
+                className="block py-2 text-sm text-muted-foreground"
+              >
+                By location
+              </Link>
+              <Link
+                to="/vendors/quiz"
+                onClick={() => setMobileOpen(false)}
+                className="block py-2 text-sm text-muted-foreground"
+              >
+                Match quiz
+              </Link>
+              <p className="text-[10px] uppercase tracking-wide text-muted-foreground/70 mt-3 mb-1">
+                Categories
+              </p>
+              {sortedCategories.map((c) =>
+                c.comingSoon ? (
+                  <p
+                    key={c.slug}
+                    className="block py-2 text-sm text-muted-foreground/60"
+                  >
+                    {c.display}{" "}
+                    <span className="text-[10px] uppercase tracking-wide bg-secondary rounded-full px-1.5 py-0.5 ml-1">
+                      Soon
+                    </span>
+                  </p>
+                ) : (
+                  <Link
+                    key={c.slug}
+                    to={`/vendors/category/${c.slug}`}
+                    onClick={() => setMobileOpen(false)}
+                    className="block py-2 text-sm text-muted-foreground hover:text-foreground"
+                  >
+                    {c.display}
+                  </Link>
+                ),
+              )}
+            </div>
+          )}
+          {secondaryLinks.map((item) => (
             <Link
               key={item.path}
               to={item.path}
