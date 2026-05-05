@@ -7,7 +7,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import heroImg from "@/assets/vendora-hero-cinematic.jpg";
+import { Picture } from "@/components/shared/Picture";
+import heroImg from "@/assets/vendora-hero-cinematic.jpg?as=picture";
 
 export default function ForgotPasswordPage() {
   const { t } = useTranslation();
@@ -32,11 +33,16 @@ export default function ForgotPasswordPage() {
   return (
     <div className="min-h-screen flex">
       <div className="hidden md:flex md:w-1/2 relative overflow-hidden">
-        <img
-          src={heroImg}
-          alt=""
-          className="absolute inset-0 w-full h-full object-cover"
-        />
+        <div className="absolute inset-0">
+          <Picture
+            source={heroImg}
+            alt=""
+            loading="eager"
+            fetchPriority="high"
+            sizes="50vw"
+            className="w-full h-full object-cover"
+          />
+        </div>
         <div className="absolute inset-0 bg-gradient-to-br from-foreground/85 via-foreground/60 to-foreground/35" />
         <div className="relative z-10 flex flex-col justify-between p-10 lg:p-14 text-background w-full">
           <Link to="/" className="font-display text-2xl">

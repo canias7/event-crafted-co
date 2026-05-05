@@ -23,7 +23,8 @@ import { SaveSearchButton } from "@/components/savedSearches/SaveSearchButton";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { categoryConfig } from "@/pages/VendorCategoryPage";
-import heroBrowse from "@/assets/vendora-hero-cinematic.jpg";
+import { Picture } from "@/components/shared/Picture";
+import heroBrowse from "@/assets/vendora-hero-cinematic.jpg?as=picture";
 import { CompareBar } from "@/components/shared/CompareBar";
 
 const slugByCategory: Record<string, string> = Object.entries(categoryConfig).reduce(
@@ -201,11 +202,16 @@ export default function VendorBrowsePage() {
 
       {/* Cinematic hero strip */}
       <section className="relative h-[60svh] min-h-[440px] w-full overflow-hidden">
-        <img
-          src={heroBrowse}
-          alt=""
-          className="absolute inset-0 w-full h-full object-cover"
-        />
+        <div className="absolute inset-0">
+          <Picture
+            source={heroBrowse}
+            alt=""
+            loading="eager"
+            fetchPriority="high"
+            sizes="100vw"
+            className="w-full h-full object-cover"
+          />
+        </div>
         <div className="absolute inset-0 bg-gradient-to-b from-foreground/75 via-foreground/45 to-background" />
         <div className="absolute inset-0 bg-gradient-to-r from-foreground/55 via-transparent to-foreground/20" />
         <div

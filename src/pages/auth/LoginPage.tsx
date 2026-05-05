@@ -7,7 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import heroImg from "@/assets/vendora-hero-cinematic.jpg";
+import { Picture } from "@/components/shared/Picture";
+import heroImg from "@/assets/vendora-hero-cinematic.jpg?as=picture";
 import { SocialAuthButtons } from "@/components/auth/SocialAuthButtons";
 
 export default function LoginPage() {
@@ -48,11 +49,16 @@ export default function LoginPage() {
     <div className="min-h-screen flex">
       {/* Brand panel */}
       <div className="hidden md:flex md:w-1/2 relative overflow-hidden">
-        <img
-          src={heroImg}
-          alt=""
-          className="absolute inset-0 w-full h-full object-cover"
-        />
+        <div className="absolute inset-0">
+          <Picture
+            source={heroImg}
+            alt=""
+            loading="eager"
+            fetchPriority="high"
+            sizes="50vw"
+            className="w-full h-full object-cover"
+          />
+        </div>
         <div className="absolute inset-0 bg-gradient-to-br from-foreground/85 via-foreground/60 to-foreground/35" />
         <div
           className="absolute inset-0 opacity-[0.07] mix-blend-overlay pointer-events-none"

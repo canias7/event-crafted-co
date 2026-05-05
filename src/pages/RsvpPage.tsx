@@ -8,7 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
-import heroImg from "@/assets/vendora-hero-cinematic.jpg";
+import { Picture } from "@/components/shared/Picture";
+import heroImg from "@/assets/vendora-hero-cinematic.jpg?as=picture";
 
 interface GuestInfo {
   id: string;
@@ -103,11 +104,16 @@ export default function RsvpPage() {
     <div className="min-h-screen bg-background">
       {/* Cinematic hero */}
       <section className="relative h-[44svh] min-h-[320px] w-full overflow-hidden">
-        <img
-          src={heroImg}
-          alt=""
-          className="absolute inset-0 w-full h-full object-cover"
-        />
+        <div className="absolute inset-0">
+          <Picture
+            source={heroImg}
+            alt=""
+            loading="eager"
+            fetchPriority="high"
+            sizes="100vw"
+            className="w-full h-full object-cover"
+          />
+        </div>
         <div className="absolute inset-0 bg-gradient-to-b from-foreground/75 via-foreground/45 to-background" />
         <div
           className="absolute inset-0 opacity-[0.07] mix-blend-overlay pointer-events-none"

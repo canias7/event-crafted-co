@@ -9,7 +9,8 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { SocialAuthButtons } from "@/components/auth/SocialAuthButtons";
-import heroImg from "@/assets/vendora-hero-dinner.jpg";
+import { Picture } from "@/components/shared/Picture";
+import heroImg from "@/assets/vendora-hero-dinner.jpg?as=picture";
 
 export default function SignupPage() {
   const { t } = useTranslation();
@@ -54,11 +55,16 @@ export default function SignupPage() {
     <div className="min-h-screen flex">
       {/* Brand panel */}
       <div className="hidden md:flex md:w-1/2 relative overflow-hidden">
-        <img
-          src={heroImg}
-          alt=""
-          className="absolute inset-0 w-full h-full object-cover"
-        />
+        <div className="absolute inset-0">
+          <Picture
+            source={heroImg}
+            alt=""
+            loading="eager"
+            fetchPriority="high"
+            sizes="50vw"
+            className="w-full h-full object-cover"
+          />
+        </div>
         <div className="absolute inset-0 bg-gradient-to-br from-foreground/85 via-foreground/60 to-foreground/35" />
         <div
           className="absolute inset-0 opacity-[0.07] mix-blend-overlay pointer-events-none"

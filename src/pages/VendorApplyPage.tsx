@@ -17,7 +17,8 @@ import {
 } from "@/components/ui/select";
 import { PublicNav } from "@/components/public/PublicNav";
 import { Footer } from "@/components/public/Footer";
-import heroApply from "@/assets/vendora-hero-gala.jpg";
+import { Picture } from "@/components/shared/Picture";
+import heroApply from "@/assets/vendora-hero-gala.jpg?as=picture";
 
 // Selectable categories on the apply form. Mirrors VendorProfilePage's
 // `categories` list (and excludes Hotels which is coming-soon-only).
@@ -165,11 +166,16 @@ export default function VendorApplyPage() {
 
       {/* Cinematic hero strip */}
       <section className="relative h-[44svh] min-h-[340px] w-full overflow-hidden">
-        <img
-          src={heroApply}
-          alt=""
-          className="absolute inset-0 w-full h-full object-cover"
-        />
+        <div className="absolute inset-0">
+          <Picture
+            source={heroApply}
+            alt=""
+            loading="eager"
+            fetchPriority="high"
+            sizes="100vw"
+            className="w-full h-full object-cover"
+          />
+        </div>
         <div className="absolute inset-0 bg-gradient-to-b from-foreground/75 via-foreground/55 to-background" />
         <div className="absolute inset-0 bg-gradient-to-r from-foreground/55 via-transparent to-foreground/20" />
         <div
