@@ -2318,6 +2318,15 @@ export type Database = {
       get_mood_board_by_token: { Args: { p_token: string }; Returns: Json }
       get_planning_invite_by_token: { Args: { p_token: string }; Returns: Json }
       get_team_invite_by_token: { Args: { p_token: string }; Returns: Json }
+      get_vendor_benchmarks: {
+        Args: { p_category: string; p_window_days?: number }
+        Returns: {
+          median_booking_rate: number
+          median_inquiries: number
+          median_response_hours: number
+          peer_count: number
+        }[]
+      }
       is_admin: { Args: never; Returns: boolean }
       is_inquiry_vendor_member: {
         Args: { _inquiry_id: string }
