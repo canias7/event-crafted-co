@@ -64,6 +64,9 @@ const STATIC_PATHS: Array<{ path: string; priority: number; freq: string }> = [
   { path: "/inspiration", priority: 0.8, freq: "weekly" },
   { path: "/how-it-works", priority: 0.6, freq: "monthly" },
   { path: "/vendor-apply", priority: 0.6, freq: "monthly" },
+  { path: "/compare", priority: 0.6, freq: "weekly" },
+  { path: "/guides", priority: 0.7, freq: "weekly" },
+  { path: "/admin/reports", priority: 0.1, freq: "yearly" },
   { path: "/privacy", priority: 0.3, freq: "yearly" },
   { path: "/terms", priority: 0.3, freq: "yearly" },
 ];
@@ -83,7 +86,7 @@ serve(async (req) => {
     await Promise.all([
       sb
         .from("vendor_profiles")
-        .select("id, updated_at, category, location")
+        .select("id, slug, updated_at, category, location")
         .order("updated_at", { ascending: false }),
       sb
         .from("featured_events")
@@ -98,6 +101,12 @@ serve(async (req) => {
         .not("slug", "is", null)
         .order("published_at", { ascending: false }),
     ]);
+
+  const { data: articles } = await sb
+    .from("editorial_articles")
+    .select("slug, updated_at, published_at")
+    .not("published_at", "is", null)
+    .order("published_at", { ascending: false });
 
   const lines: string[] = [
     '<?xml version="1.0" encoding="UTF-8"?>',
@@ -131,6 +140,22 @@ serve(async (req) => {
   for (const v of (vendors as VendorRow[] | null) ?? []) {
     lines.push(
       urlEntry(`${APP_URL}/vendors/${v.id}`, v.updated_at ?? undefined, 0.7, "weekly"),
+    );
+    if ((v as any).slug) {
+      lines.push(
+        urlEntry(`${APP_URL}/v/${(v as any).slug}`, v.updated_at ?? undefined, 0.7, "weekly"),
+      );
+    }
+  }
+
+  for (const a of (articles as InspirationRow[] | null) ?? []) {
+    lines.push(
+      urlEntry(
+        `${APP_URL}/guides/${a.slug}`,
+        a.updated_at ?? a.published_at ?? undefined,
+        0.6,
+        "monthly",
+      ),
     );
   }
 
