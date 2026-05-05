@@ -3114,12 +3114,14 @@ export type Database = {
       }
       vendor_profiles: {
         Row: {
+          application_status: string
           awards: string[] | null
           base_price_cents: number | null
           bio: string | null
           business_name: string
           cancellation_policy: string | null
           category: string
+          category_attributes: Json
           created_at: string
           deposit_policy: string | null
           faq: Json | null
@@ -3128,6 +3130,7 @@ export type Database = {
           hourly_rate_cents: number | null
           id: string
           intro_video_url: string | null
+          is_demo: boolean
           is_staffing: boolean
           languages: string[] | null
           latitude: number | null
@@ -3142,18 +3145,20 @@ export type Database = {
           service_radius_miles: number | null
           slug: string | null
           updated_at: string
-          user_id: string
+          user_id: string | null
           verified_at: string | null
           weekly_digest_enabled: boolean
           weekly_digest_sent_at: string | null
         }
         Insert: {
+          application_status?: string
           awards?: string[] | null
           base_price_cents?: number | null
           bio?: string | null
           business_name: string
           cancellation_policy?: string | null
           category: string
+          category_attributes?: Json
           created_at?: string
           deposit_policy?: string | null
           faq?: Json | null
@@ -3162,6 +3167,7 @@ export type Database = {
           hourly_rate_cents?: number | null
           id?: string
           intro_video_url?: string | null
+          is_demo?: boolean
           is_staffing?: boolean
           languages?: string[] | null
           latitude?: number | null
@@ -3176,18 +3182,20 @@ export type Database = {
           service_radius_miles?: number | null
           slug?: string | null
           updated_at?: string
-          user_id: string
+          user_id?: string | null
           verified_at?: string | null
           weekly_digest_enabled?: boolean
           weekly_digest_sent_at?: string | null
         }
         Update: {
+          application_status?: string
           awards?: string[] | null
           base_price_cents?: number | null
           bio?: string | null
           business_name?: string
           cancellation_policy?: string | null
           category?: string
+          category_attributes?: Json
           created_at?: string
           deposit_policy?: string | null
           faq?: Json | null
@@ -3196,6 +3204,7 @@ export type Database = {
           hourly_rate_cents?: number | null
           id?: string
           intro_video_url?: string | null
+          is_demo?: boolean
           is_staffing?: boolean
           languages?: string[] | null
           latitude?: number | null
@@ -3210,7 +3219,7 @@ export type Database = {
           service_radius_miles?: number | null
           slug?: string | null
           updated_at?: string
-          user_id?: string
+          user_id?: string | null
           verified_at?: string | null
           weekly_digest_enabled?: boolean
           weekly_digest_sent_at?: string | null
