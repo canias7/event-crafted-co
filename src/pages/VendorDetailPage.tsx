@@ -74,6 +74,7 @@ import heroKids from "@/assets/vendora-hero-kids.jpg";
 import { ReportButton } from "@/components/trust/ReportButton";
 import { VendorPolicyBadges } from "@/components/vendor/VendorPolicyBadges";
 import { VendorServiceAreaMap } from "@/components/vendor/VendorServiceAreaMap";
+import { CategoryAttributesDisplay } from "@/components/vendor/CategoryAttributesDisplay";
 
 const imageMap: Record<string, string> = {
   "vendor-photographer": vendorPhotographer,
@@ -830,6 +831,17 @@ export default function VendorDetailPage() {
 
               {/* Multi-vendor bundles owned by this vendor (real DB only). */}
               {vendor.isReal && <VendorBundlesPublic vendorId={vendor.id} />}
+
+              {/* Category-specific structured fields (capacity, ceremony
+                  types, package hours, etc — schema lives in
+                  data/categoryAttributes.ts). Renders nothing for
+                  categories without a schema yet. */}
+              {vendor.isReal && (
+                <CategoryAttributesDisplay
+                  vendorId={vendor.id}
+                  category={vendor.category}
+                />
+              )}
 
               {/* Showcase reels — vertical clips, autoplay-on-view */}
               {vendor.isReal && <ShowcaseStrip vendorId={vendor.id} />}
