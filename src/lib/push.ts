@@ -43,7 +43,7 @@ export async function isPushSubscribed(): Promise<boolean> {
 
 // Subscribe + persist server-side. Returns true on success.
 export async function enablePush(): Promise<
-  { ok: true } | { ok: false; reason: string }
+  { ok: boolean; reason?: string }
 > {
   if (getPushPermissionState() === "unsupported") {
     return { ok: false, reason: "Your browser doesn't support push notifications" };
@@ -73,7 +73,7 @@ export async function enablePush(): Promise<
       (await reg.pushManager.getSubscription()) ||
       (await reg.pushManager.subscribe({
         userVisibleOnly: true,
-        applicationServerKey: urlB64ToUint8Array(VAPID_PUBLIC_KEY),
+        applicationServerKey: urlB64ToUint8Array(VAPID_PUBLIC_KEY).buffer as ArrayBuffer,
       }));
   } catch (err) {
     return {
