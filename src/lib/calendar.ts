@@ -35,7 +35,7 @@ export async function loadCalendarConnections(): Promise<CalendarConnection[]> {
 // which handles the code exchange and finally redirects back to
 // /settings?calendar=connected.
 export async function startGoogleConnect(): Promise<
-  { ok: true } | { ok: false; reason: string }
+  { ok: boolean; reason?: string }
 > {
   const { data, error } = await supabase.functions.invoke(
     "google-calendar-oauth?action=authorize",
@@ -51,7 +51,7 @@ export async function startGoogleConnect(): Promise<
 }
 
 export async function disconnectCalendar(): Promise<
-  { ok: true } | { ok: false; reason: string }
+  { ok: boolean; reason?: string }
 > {
   const { error } = await supabase.functions.invoke(
     "google-calendar-oauth?action=disconnect",
@@ -63,7 +63,7 @@ export async function disconnectCalendar(): Promise<
 
 // Trigger a one-off sync (post-connect, or "Sync now" button).
 export async function triggerSync(userId?: string): Promise<
-  { ok: true } | { ok: false; reason: string }
+  { ok: boolean; reason?: string }
 > {
   const { error } = await supabase.functions.invoke(
     "sync-google-calendar",
