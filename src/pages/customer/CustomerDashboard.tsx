@@ -118,7 +118,7 @@ export default function CustomerDashboard() {
           .eq("host_id", user.id),
         sb
           .from("budget_items")
-          .select("estimated_cents, actual_cents, paid")
+          .select("amount_cents, paid_cents")
           .eq("host_id", user.id),
         sb
           .from("checklist_items")
@@ -135,9 +135,8 @@ export default function CustomerDashboard() {
         rsvp_status: string | null;
       }>;
       const budgetRows = (budget.data ?? []) as Array<{
-        estimated_cents: number | null;
-        actual_cents: number | null;
-        paid: boolean | null;
+        amount_cents: number | null;
+        paid_cents: number | null;
       }>;
       const checklistRows = (checklist.data ?? []) as Array<{
         completed: boolean;
@@ -153,12 +152,11 @@ export default function CustomerDashboard() {
           .length,
         guestsResponded: guestRows.filter((g) => g.rsvp_status != null).length,
         budgetSpent: budgetRows.reduce(
-          (s, r) =>
-            s + (r.paid ? (r.actual_cents ?? r.estimated_cents ?? 0) : 0),
+          (s, r) => s + (r.paid_cents ?? 0),
           0,
         ),
         budgetTotal: budgetRows.reduce(
-          (s, r) => s + (r.actual_cents ?? r.estimated_cents ?? 0),
+          (s, r) => s + (r.amount_cents ?? 0),
           0,
         ),
         checklistDone: checklistRows.filter((c) => c.completed).length,
