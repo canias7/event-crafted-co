@@ -3715,36 +3715,36 @@ export type Database = {
       request_account_deletion: { Args: never; Returns: undefined }
       send_review_request: {
         Args: {
-          p_host_email: string
           p_inquiry_id: string
-          p_message: string
+          p_recipient_email: string
+          p_recipient_name?: string
           p_vendor_id: string
         }
-        Returns: Json
+        Returns: string
       }
       set_active_event: { Args: { p_event_id: string }; Returns: undefined }
       shares_vendor_team: { Args: { _user_id: string }; Returns: boolean }
       slugify_vendor_name: { Args: { p_name: string }; Returns: string }
       submit_microsite_rsvp: {
         Args: {
-          p_answers: Json
+          p_answers?: Json
           p_attending: boolean
-          p_dietary: string
-          p_guest_email: string
-          p_guest_name: string
-          p_party_size: number
+          p_email: string
+          p_message?: string
+          p_name: string
+          p_plus_ones?: number
           p_token: string
         }
-        Returns: Json
+        Returns: string
       }
       submit_review_via_token: {
         Args: {
-          p_body: string
+          p_body?: string
           p_rating: number
-          p_title: string
+          p_reviewer_name?: string
           p_token: string
         }
-        Returns: Json
+        Returns: string
       }
       submit_rsvp: {
         Args: {
@@ -3758,7 +3758,7 @@ export type Database = {
       }
       toggle_proposal_share: {
         Args: { p_enabled: boolean; p_proposal_id: string }
-        Returns: Json
+        Returns: string
       }
     }
     Enums: {
