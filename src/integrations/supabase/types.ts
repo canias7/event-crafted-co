@@ -455,6 +455,42 @@ export type Database = {
           },
         ]
       }
+      email_events: {
+        Row: {
+          created_at: string
+          event_type: string
+          id: string
+          meta: Json
+          occurred_at: string
+          recipient_email: string | null
+          resend_email_id: string | null
+          resend_event_id: string | null
+          subject: string | null
+        }
+        Insert: {
+          created_at?: string
+          event_type: string
+          id?: string
+          meta?: Json
+          occurred_at: string
+          recipient_email?: string | null
+          resend_email_id?: string | null
+          resend_event_id?: string | null
+          subject?: string | null
+        }
+        Update: {
+          created_at?: string
+          event_type?: string
+          id?: string
+          meta?: Json
+          occurred_at?: string
+          recipient_email?: string | null
+          resend_email_id?: string | null
+          resend_event_id?: string | null
+          subject?: string | null
+        }
+        Relationships: []
+      }
       event_album_photos: {
         Row: {
           album_id: string
@@ -3036,6 +3072,19 @@ export type Database = {
           location: string
           vendor_id: string
         }[]
+      }
+      get_email_daily_volume: {
+        Args: { p_window_days?: number }
+        Returns: {
+          bounced: number
+          day: string
+          delivered: number
+          sent: number
+        }[]
+      }
+      get_email_deliverability_summary: {
+        Args: { p_window_days?: number }
+        Returns: Json
       }
       get_guest_by_token: {
         Args: { p_token: string }
