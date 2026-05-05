@@ -41,13 +41,6 @@ export const CHANGELOG: ChangelogEntry[] = [
       "Customer + vendor dashboards now top out at 10 sidebar items. Related pages live behind in-page tab strips on a hub destination — same surface area, much calmer to scan.",
   },
   {
-    date: "2026-05-04",
-    category: "feature",
-    title: "Day-of staffing marketplace",
-    description:
-      "New /staffing directory for hourly-billed vendors: bartenders, waitstaff, security, valet, day-of coordinators. Hourly rates and minimum hours visible up front.",
-  },
-  {
     date: "2026-05-03",
     category: "feature",
     title: "Two-factor authentication + social sign-in",

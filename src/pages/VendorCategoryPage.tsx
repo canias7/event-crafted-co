@@ -121,8 +121,6 @@ export const categoryConfig: Record<string, CategoryConfig> = {
       "Beyond florals — linens, lighting, signage, and the small details that make a room feel like an editorial set.",
     hero: vendorFlorist,
   },
-  // ─── Staffing categories ─── price by the hour, surfaced together
-  // on /staffing. Same inquiry/proposal flow as everyone else.
   bartenders: {
     name: "Bartender",
     display: "Bartenders",
@@ -169,17 +167,6 @@ export const categoryConfig: Record<string, CategoryConfig> = {
     hero: vendorVenue,
   },
 };
-
-// Categories priced by the hour rather than per-package — surfaced
-// together on /staffing so hosts who need warm bodies on the day
-// don't have to wade through florists.
-export const STAFFING_CATEGORY_NAMES = [
-  "Bartender",
-  "Waitstaff",
-  "Security",
-  "Valet",
-  "Day-of Coordinator",
-];
 
 export const allCategorySlugs = Object.keys(categoryConfig);
 

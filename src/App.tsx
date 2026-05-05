@@ -40,7 +40,6 @@ import {
   HowItWorksPage,
   VendorBrowsePage,
   CompareVendorsPage,
-  StaffingPage,
   VendorLocationsPage,
   VendorCityPage,
   VendorCityCategoryPage,
@@ -151,7 +150,6 @@ const App = () => (
               <Route path="/vendors" element={<VendorBrowsePage />} />
               <Route path="/compare" element={<CompareVendorsPage />} />
               <Route path="/vendors/locations" element={<VendorLocationsPage />} />
-              <Route path="/staffing" element={<StaffingPage />} />
               <Route path="/vendors/in/:citySlug" element={<VendorCityPage />} />
               <Route path="/vendors/map" element={<VendorMapPage />} />
               <Route path="/vendors/quiz" element={<VendorQuizPage />} />

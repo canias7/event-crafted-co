@@ -101,7 +101,6 @@ const STATIC_PATHS: Array<{ path: string; priority: number; freq: string }> = [
   { path: "/compare", priority: 0.5, freq: "weekly" },
   { path: "/how-it-works", priority: 0.6, freq: "monthly" },
   { path: "/vendor-apply", priority: 0.6, freq: "monthly" },
-  { path: "/staffing", priority: 0.5, freq: "monthly" },
   { path: "/guides", priority: 0.7, freq: "weekly" },
   { path: "/privacy", priority: 0.3, freq: "yearly" },
   { path: "/terms", priority: 0.3, freq: "yearly" },
