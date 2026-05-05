@@ -2342,6 +2342,62 @@ export type Database = {
           },
         ]
       }
+      vendor_partner_messages: {
+        Row: {
+          body: string
+          created_at: string
+          id: string
+          sender_vendor_id: string
+          thread_id: string
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          id?: string
+          sender_vendor_id: string
+          thread_id: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          id?: string
+          sender_vendor_id?: string
+          thread_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vendor_partner_messages_thread_id_fkey"
+            columns: ["thread_id"]
+            isOneToOne: false
+            referencedRelation: "vendor_partner_threads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vendor_partner_threads: {
+        Row: {
+          created_at: string
+          id: string
+          last_message_at: string
+          vendor_a_id: string
+          vendor_b_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          last_message_at?: string
+          vendor_a_id: string
+          vendor_b_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          last_message_at?: string
+          vendor_a_id?: string
+          vendor_b_id?: string
+        }
+        Relationships: []
+      }
       vendor_portfolio_images: {
         Row: {
           caption: string | null
@@ -2862,6 +2918,10 @@ export type Database = {
       accept_planning_invite: { Args: { p_token: string }; Returns: Json }
       accept_team_invite: { Args: { p_token: string }; Returns: Json }
       can_access_inquiry: { Args: { _inquiry_id: string }; Returns: boolean }
+      find_or_create_partner_thread: {
+        Args: { p_my_vendor_id?: string; p_other_vendor_id: string }
+        Returns: string
+      }
       generate_real_event_slug: {
         Args: { p_id: string; p_title: string }
         Returns: string
