@@ -19,9 +19,7 @@ export function CommandPaletteLauncher() {
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
-        // CommandPalette itself listens for the same shortcut to flip
-        // its internal `open` state — we just need to make sure the
-        // component is mounted by the time it fires.
+        e.preventDefault();
         setArmed(true);
       }
     }
@@ -32,7 +30,10 @@ export function CommandPaletteLauncher() {
   if (!armed) return null;
   return (
     <Suspense fallback={null}>
-      <CommandPalette />
+      {/* initialOpen handles the lazy-mount race: the first Cmd-K that
+          fires the launcher arrives before CommandPalette's own keydown
+          listener has registered, so we open the dialog from props. */}
+      <CommandPalette initialOpen />
     </Suspense>
   );
 }

@@ -120,8 +120,8 @@ const SETTINGS_NAV: NavTarget[] = [
   { label: "Settings", path: "/settings", icon: Settings },
 ];
 
-export function CommandPalette() {
-  const [open, setOpen] = useState(false);
+export function CommandPalette({ initialOpen = false }: { initialOpen?: boolean } = {}) {
+  const [open, setOpen] = useState(initialOpen);
   const navigate = useNavigate();
   const { profile, vendorMemberships } = useAuth();
   const { vendors } = useVendors();
