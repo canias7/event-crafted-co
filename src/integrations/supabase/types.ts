@@ -2291,9 +2291,77 @@ export type Database = {
           },
         ]
       }
+      vendor_verifications: {
+        Row: {
+          document_path: string
+          expires_at: string | null
+          id: string
+          kind: string
+          notes: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          submitted_at: string
+          vendor_id: string
+        }
+        Insert: {
+          document_path: string
+          expires_at?: string | null
+          id?: string
+          kind: string
+          notes?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          submitted_at?: string
+          vendor_id: string
+        }
+        Update: {
+          document_path?: string
+          expires_at?: string | null
+          id?: string
+          kind?: string
+          notes?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          submitted_at?: string
+          vendor_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vendor_verifications_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vendor_verifications_vendor_id_fkey"
+            columns: ["vendor_id"]
+            isOneToOne: false
+            referencedRelation: "vendor_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
-      [_ in never]: never
+      vendor_public_badges: {
+        Row: {
+          kinds: string[] | null
+          vendor_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vendor_verifications_vendor_id_fkey"
+            columns: ["vendor_id"]
+            isOneToOne: false
+            referencedRelation: "vendor_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       accept_planning_invite: { Args: { p_token: string }; Returns: Json }
