@@ -1,11 +1,19 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Search, Store, X, ArrowRight, Sparkles } from "lucide-react";
+import { Search, Store, X, ArrowRight, Sparkles, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { PublicNav } from "@/components/public/PublicNav";
 import { Footer } from "@/components/public/Footer";
 import { VendorCard } from "@/components/shared/VendorCard";
@@ -254,18 +262,59 @@ export default function VendorBrowsePage() {
                 className="pl-10 h-11 rounded-full bg-secondary/80 border-none focus-visible:ring-1 focus-visible:ring-accent"
               />
             </div>
-            <Select value={category} onValueChange={setCategory}>
-              <SelectTrigger className="w-full md:w-44 h-11 rounded-full bg-secondary/80 border-none">
-                <SelectValue placeholder="Category" />
-              </SelectTrigger>
-              <SelectContent>
-                {categories.map((cat) => (
-                  <SelectItem key={cat} value={cat}>
-                    {cat}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            {/* Category multi-select. Replaces an old single-select +
+                horizontal pill row with one consistent dropdown — same
+                pattern as the public-nav Vendors menu. Shows count when
+                multiple are picked, single name when one. */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  type="button"
+                  className="w-full md:w-44 h-11 rounded-full bg-secondary/80 px-4 inline-flex items-center justify-between text-sm font-medium hover:bg-secondary transition-colors"
+                >
+                  <span className="truncate">
+                    {activeCategories.size === 0
+                      ? "All categories"
+                      : activeCategories.size === 1
+                        ? Array.from(activeCategories)[0]
+                        : `${activeCategories.size} categories`}
+                  </span>
+                  <ChevronDown className="w-3.5 h-3.5 ml-2 shrink-0" aria-hidden />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                align="start"
+                className="w-64 max-h-[70vh] overflow-y-auto"
+              >
+                <DropdownMenuLabel className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                  Filter by category
+                </DropdownMenuLabel>
+                {activeCategories.size > 0 && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => setActiveCategories(new Set())}
+                      className="w-full text-left px-2 py-1.5 text-xs text-accent hover:bg-accent/10 rounded-sm"
+                    >
+                      Clear all selections
+                    </button>
+                    <DropdownMenuSeparator />
+                  </>
+                )}
+                {categories
+                  .filter((c) => c !== "All")
+                  .map((cat) => (
+                    <DropdownMenuCheckboxItem
+                      key={cat}
+                      checked={activeCategories.has(cat)}
+                      onCheckedChange={() => toggleCategory(cat)}
+                      onSelect={(e) => e.preventDefault()}
+                    >
+                      {cat}
+                    </DropdownMenuCheckboxItem>
+                  ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
             <div className="relative w-full md:w-44">
               <Label htmlFor="date-filter" className="sr-only">
                 Event date
@@ -319,42 +368,28 @@ export default function VendorBrowsePage() {
             </div>
           )}
 
-          <div className="flex items-center gap-2 mt-4 overflow-x-auto pb-1 -mx-2 px-2 scrollbar-hide">
-            {categories.map((cat) => {
-              const active =
-                cat === "All"
-                  ? activeCategories.size === 0
-                  : activeCategories.has(cat);
-              return (
-                <Button
+          {/* Active-category chips for visibility when multiple are
+              picked. Click X to remove individual filters. */}
+          {activeCategories.size > 0 && (
+            <div className="flex items-center gap-1.5 mt-3 flex-wrap">
+              {Array.from(activeCategories).map((cat) => (
+                <span
                   key={cat}
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => toggleCategory(cat)}
-                  className={`rounded-full whitespace-nowrap h-8 text-xs tracking-wide transition-all ${
-                    active
-                      ? "bg-foreground text-background hover:bg-foreground/90"
-                      : "bg-transparent text-muted-foreground hover:text-foreground"
-                  }`}
+                  className="inline-flex items-center gap-1.5 px-2.5 h-7 rounded-full bg-foreground text-background text-xs font-medium"
                 >
                   {cat}
-                </Button>
-              );
-            })}
-            <span className="ml-auto shrink-0 flex items-center gap-2">
-              <Link to="/vendors/quiz">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="rounded-full text-xs h-8 text-accent hover:text-accent hover:bg-accent/10"
-                >
-                  <Sparkles className="w-3 h-3 mr-1" />
-                  Take the 60-sec match quiz
-                </Button>
-              </Link>
-              <SaveSearchButton filters={{ q: search, category }} />
-            </span>
-          </div>
+                  <button
+                    type="button"
+                    onClick={() => toggleCategory(cat)}
+                    aria-label={`Remove ${cat} filter`}
+                    className="hover:opacity-70"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </span>
+              ))}
+            </div>
+          )}
         </div>
       </section>
 
@@ -383,15 +418,28 @@ export default function VendorBrowsePage() {
                 </p>
               )}
             </div>
-            {category !== "All" && slugByCategory[category] && (
-              <Link
-                to={`/vendors/category/${slugByCategory[category]}`}
-                className="text-xs text-accent font-medium flex items-center gap-1 hover:underline"
-              >
-                View {category} page
-                <ArrowRight className="w-3 h-3" />
+            <div className="flex items-center gap-2 flex-wrap">
+              {category !== "All" && slugByCategory[category] && (
+                <Link
+                  to={`/vendors/category/${slugByCategory[category]}`}
+                  className="text-xs text-accent font-medium flex items-center gap-1 hover:underline"
+                >
+                  View {category} page
+                  <ArrowRight className="w-3 h-3" />
+                </Link>
+              )}
+              <Link to="/vendors/quiz">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="rounded-full text-xs h-8 text-accent hover:text-accent hover:bg-accent/10"
+                >
+                  <Sparkles className="w-3 h-3 mr-1" />
+                  60-sec match quiz
+                </Button>
               </Link>
-            )}
+              <SaveSearchButton filters={{ q: search, category }} />
+            </div>
           </div>
 
           {vendors.length === 0 && loading ? (
