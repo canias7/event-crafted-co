@@ -17,7 +17,10 @@ import type { Appointment } from "@/components/appointments/AppointmentsList";
 // appointments outside the core day without the main view getting
 // cluttered. Today's date column-header gets a black circular badge.
 
-const HOUR_HEIGHT = 72; // px per hour row — taller rows for readability
+// Square cells: HOUR_HEIGHT == day-column width (80px) so every cell
+// on the grid is the same height as it is wide. Column width is set
+// in the Tailwind grid template (`grid-cols-[64px_repeat(7,80px)]`).
+const HOUR_HEIGHT = 80;
 // Core business hours: rows 9, 10, 11, 12, 1, 2, 3, 4 PM (8 rows;
 // covers 9 AM – 5 PM since each row spans its starting hour to the
 // next).
@@ -72,6 +75,18 @@ export function CalendarWeekView({ appointments, onSelectAppointment }: Props) {
     return `${format(first, "MMM d")} – ${format(last, "MMM d, yyyy")}`;
   }, [days]);
 
+  // Compact form of the visible week, shown on the action button so
+  // it always reflects the week the user is looking at instead of a
+  // static "Today" label.
+  const compactRangeLabel = useMemo(() => {
+    const first = days[0];
+    const last = days[6];
+    if (isSameMonth(first, last)) {
+      return `${format(first, "MMM d")}–${format(last, "d")}`;
+    }
+    return `${format(first, "MMM d")} – ${format(last, "MMM d")}`;
+  }, [days]);
+
   // Bucket appointments by day-key (YYYY-MM-DD) so each day column
   // only iterates its own.
   const byDay = useMemo(() => {
@@ -121,12 +136,12 @@ export function CalendarWeekView({ appointments, onSelectAppointment }: Props) {
           <Button
             variant="outline"
             size="sm"
-            className="rounded-full h-9"
+            className="rounded-full h-9 tnum"
             onClick={() =>
               setWeekStart(startOfWeek(new Date(), { weekStartsOn: 1 }))
             }
           >
-            Today
+            {compactRangeLabel}
           </Button>
           <Button
             variant="outline"
@@ -140,14 +155,14 @@ export function CalendarWeekView({ appointments, onSelectAppointment }: Props) {
         </div>
       </div>
 
-      {/* No min-width — the grid fills the parent container so the
-          whole Mon-Sun row fits without a horizontal scrollbar even
-          on narrower viewports. */}
-      <div className="rounded-sm border border-border">
-        <div className="w-full">
+      {/* Fixed cell sizing keeps every square equal. Wrapper hugs
+          the inner grid (~624px) and centers; horizontal scroll is
+          available only on viewports narrower than the grid. */}
+      <div className="rounded-sm border border-border w-fit mx-auto overflow-x-auto max-w-full">
+        <div>
           {/* Day headers (rendered once, sticky-feel via the
               border-b — applies to every grid section below). */}
-          <div className="grid grid-cols-[64px_repeat(7,1fr)] border-b border-border bg-card">
+          <div className="grid grid-cols-[64px_repeat(7,80px)] border-b border-border bg-card">
             <div />
             {days.map((d) => {
               const isToday = isSameDay(d, today);
@@ -233,7 +248,7 @@ function OffHoursSection({
 }) {
   return (
     <>
-      <div className="grid grid-cols-[64px_repeat(7,1fr)] border-t border-border bg-muted/30">
+      <div className="grid grid-cols-[64px_repeat(7,80px)] border-t border-border bg-muted/30">
         <div className="px-2 py-1.5 text-[10px] uppercase tracking-[0.25em] text-muted-foreground">
           {label}
         </div>
@@ -265,7 +280,7 @@ function WeekHourGrid({
 }) {
   const hours = hoursInRange(firstHour, lastHour);
   return (
-    <div className="grid grid-cols-[64px_repeat(7,1fr)] relative">
+    <div className="grid grid-cols-[64px_repeat(7,80px)] relative">
       {/* Left gutter — hour labels */}
       <div className="bg-card">
         {hours.map((h) => (
