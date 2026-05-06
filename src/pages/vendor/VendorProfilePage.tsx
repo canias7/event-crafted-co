@@ -133,7 +133,7 @@ export default function VendorProfilePage() {
     // triggering a phantom "create profile" path that would later
     // collide with the real row on insert.
     const SELECT_COLS =
-      "id, business_name, category, bio, base_price_cents, location, service_radius_miles, portfolio_summary, verified_at, application_status, intro_video_url, weekly_digest_enabled, slug, instagram_handle, tiktok_handle";
+      "id, business_name, category, bio, base_price_cents, location, service_radius_miles, portfolio_summary, verified_at, application_status, application_review_notes, intro_video_url, weekly_digest_enabled, slug, instagram_handle, tiktok_handle";
     (async () => {
       const own = await supabase
         .from("vendor_profiles")
@@ -141,7 +141,9 @@ export default function VendorProfilePage() {
         .eq("user_id", user.id)
         .maybeSingle();
       if (cancelled) return;
-      let data = own.data as VendorProfile | null;
+      let data = own.data as
+        | (VendorProfile & { application_review_notes?: string | null })
+        | null;
       let error = own.error;
       if (!data && !error && membership?.vendor_id) {
         const team = await supabase
@@ -150,8 +152,17 @@ export default function VendorProfilePage() {
           .eq("id", membership.vendor_id)
           .maybeSingle();
         if (cancelled) return;
-        data = team.data as VendorProfile | null;
+        data = team.data as
+          | (VendorProfile & { application_review_notes?: string | null })
+          | null;
         error = team.error;
+      }
+      // Soft-deleted rows (the listing's Delete button flipped status to
+      // 'rejected' with this sentinel because the hard-delete RPC isn't
+      // deployed yet) should look gone to the dashboard — show the
+      // create-profile flow instead of the rejection banner.
+      if (data?.application_review_notes === "__deleted_by_owner__") {
+        data = null;
       }
       if (error) {
         toast.error(`Couldn't load your profile: ${error.message}`);
@@ -274,10 +285,16 @@ export default function VendorProfilePage() {
           .eq("user_id", user.id)
           .maybeSingle();
         if (existing.data) {
+          // Reviving a soft-deleted row: also clear the deletion
+          // sentinel + the rejected status so the dashboard treats
+          // the listing as live again on next load.
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const upd = await (supabase as any)
             .from("vendor_profiles")
-            .update(payload)
+            .update({
+              ...payload,
+              application_review_notes: null,
+            })
             .eq("id", (existing.data as VendorProfile).id);
           setCreating(false);
           if (upd.error) {
@@ -462,12 +479,37 @@ export default function VendorProfilePage() {
                       .select("id");
                     if (direct.error) {
                       errorMessage = direct.error.message;
-                    } else if (!direct.data || direct.data.length === 0) {
-                      errorMessage =
-                        "Couldn't delete — your account may not have permission. Refresh the page or contact support if it keeps failing.";
-                    } else {
+                    } else if (direct.data && direct.data.length > 0) {
                       succeeded = true;
                       errorMessage = null;
+                    }
+                  }
+                  // Last-resort soft delete: when neither the RPC nor
+                  // a direct delete actually removed the row, flip
+                  // application_status off the directory and tag the
+                  // row so the dashboard treats it as gone. UPDATE
+                  // already has a working RLS policy, so this path
+                  // works on the deployed Supabase even without the
+                  // newer migrations. The hard delete will land on
+                  // the next deploy and clean the row up for real.
+                  if (!succeeded) {
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    const soft = await (supabase as any)
+                      .from("vendor_profiles")
+                      .update({
+                        application_status: "rejected",
+                        application_review_notes: "__deleted_by_owner__",
+                      })
+                      .eq("id", profile.id)
+                      .select("id");
+                    if (!soft.error && soft.data && soft.data.length > 0) {
+                      succeeded = true;
+                      errorMessage = null;
+                    } else if (soft.error) {
+                      errorMessage = soft.error.message;
+                    } else {
+                      errorMessage =
+                        "Couldn't delete — your account may not have permission. Refresh the page or contact support if it keeps failing.";
                     }
                   }
                   setDeleting(false);
