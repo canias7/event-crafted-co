@@ -75,12 +75,6 @@ export const vendorNavItems: NavItem[] = [
   { labelKey: "sidebar.vendor.analytics", path: "/vendor/analytics", icon: TrendingUp },
   // Calendar hub — sub-tabs: Appointments, Availability
   { labelKey: "sidebar.vendor.calendar", path: "/vendor/appointments", icon: CalendarDays },
-  // Profile = identity / account-level (business name, slug, socials,
-  // verification). Listing = the customer-facing listing surface
-  // (bio, pricing, packages, photos, team, availability, etc.).
-  // They share the same VendorProfilePage component but render
-  // different slices based on the path.
-  { labelKey: "sidebar.vendor.profile", path: "/vendor/profile", icon: User },
   { labelKey: "sidebar.vendor.listing", path: "/vendor/listing", icon: Store },
   // Library hub — sub-tabs: Message templates, Contract templates
   { labelKey: "sidebar.vendor.library", path: "/vendor/templates", icon: FileText },

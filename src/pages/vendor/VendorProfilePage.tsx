@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link } from "react-router-dom";
 import {
-  Calendar as CalendarIcon,
   Edit2,
   Eye,
   ExternalLink,
@@ -24,7 +23,6 @@ import { VendorTeamManager } from "@/components/vendor/VendorTeamManager";
 import { VendorPolicyEditor } from "@/components/vendor/VendorPolicyEditor";
 import { ShowcaseClipsManager } from "@/components/vendor/ShowcaseClipsManager";
 import { ImportedReviewsManager } from "@/components/vendor/ImportedReviewsManager";
-import { VerificationManager } from "@/components/vendor/VerificationManager";
 import { CategoryAttributesEditor } from "@/components/vendor/CategoryAttributesEditor";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -44,7 +42,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { vendorNavItems as navItems } from "@/data/navItems";
 import { invalidateVendorsCache } from "@/hooks/useVendors";
-import { VendorShareKit } from "@/components/vendor/VendorShareKit";
 
 // Sub-categories rendered in the dropdown grouped by parent group.
 // Source of truth lives in categoryTaxonomy.ts — adding a sub there
@@ -79,12 +76,11 @@ export default function VendorProfilePage() {
   const { user, vendorMemberships } = useAuth();
   const membership = vendorMemberships[0] ?? null;
   const canEdit = membership?.role === "owner" || membership?.role === "admin";
-  // Profile tab = identity / account; Listing tab = the customer-
-  // facing surface. Both tabs share state + the same save handler;
-  // each renders a different slice of the form + section managers.
-  const route = useLocation();
-  const isListing = route.pathname === "/vendor/listing";
-  const isProfile = !isListing;
+  // Listing-only page now — the separate Profile tab was deleted, so
+  // VendorProfilePage renders the customer-facing builder regardless
+  // of path. Keep the constant true so the conditional renders for
+  // category-gated sections, the publish CTA, etc. stay readable.
+  const isListing = true;
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [creating, setCreating] = useState(false);
@@ -643,7 +639,7 @@ export default function VendorProfilePage() {
                 </div>
               )}
 
-              {(isProfile || category) && (
+              {category && (
                 <div className="space-y-2">
                   <Label htmlFor="business-name">
                     Business name <span className="text-destructive">*</span>
@@ -747,125 +743,6 @@ export default function VendorProfilePage() {
               </div>
               )}
 
-              {isProfile && (
-              /* Social handles — render as the Contact / Socials row in
-                 the public sidebar via SocialEmbedCard. Stored without
-                 the leading "@" so URL composition stays clean. */
-              <div className="grid sm:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="instagram-handle">Instagram handle</Label>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-muted-foreground tnum">@</span>
-                    <Input
-                      id="instagram-handle"
-                      value={instagramHandle}
-                      onChange={(e) => setInstagramHandle(e.target.value)}
-                      placeholder="yourstudio"
-                      className="h-11 flex-1"
-                    />
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="tiktok-handle">TikTok handle</Label>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-muted-foreground tnum">@</span>
-                    <Input
-                      id="tiktok-handle"
-                      value={tiktokHandle}
-                      onChange={(e) => setTiktokHandle(e.target.value)}
-                      placeholder="yourstudio"
-                      className="h-11 flex-1"
-                    />
-                  </div>
-                </div>
-              </div>
-              )}
-
-              {isProfile && (
-              <div className="space-y-2">
-                <Label htmlFor="slug">Public URL slug</Label>
-                <div className="flex items-center gap-2">
-                  <span className="text-xs text-muted-foreground tnum whitespace-nowrap">
-                    vendora.events/v/
-                  </span>
-                  <Input
-                    id="slug"
-                    value={slug}
-                    onChange={(e) => setSlug(e.target.value)}
-                    placeholder="luminara-photography"
-                    className="h-11 flex-1"
-                  />
-                </div>
-                <p className="text-xs text-muted-foreground pt-1">
-                  Lowercase letters, numbers, and hyphens. Auto-generated
-                  from your business name if you leave it blank.
-                  {profile?.slug && (
-                    <>
-                      {" "}
-                      <a
-                        href={`/v/${profile.slug}`}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="text-accent hover:underline"
-                      >
-                        Open current URL
-                      </a>
-                    </>
-                  )}
-                </p>
-                {profile?.slug && (
-                  <div className="pt-1">
-                    <VendorShareKit
-                      slug={profile.slug}
-                      businessName={profile.business_name ?? "us"}
-                    />
-                  </div>
-                )}
-              </div>
-              )}
-
-              {isProfile && profile && canEdit && (
-                <div className="flex items-center justify-between gap-4 pt-4 border-t border-border">
-                  <div className="min-w-0">
-                    <p className="text-sm font-medium mb-0.5">
-                      Weekly recap email
-                    </p>
-                    <p className="text-xs text-muted-foreground leading-relaxed">
-                      One Monday-morning email with last week's inquiries,
-                      bookings, reviews, and response time.
-                    </p>
-                  </div>
-                  <input
-                    type="checkbox"
-                    checked={profile.weekly_digest_enabled !== false}
-                    onChange={async (e) => {
-                      const next = e.target.checked;
-                      const prev = profile.weekly_digest_enabled;
-                      setProfile({
-                        ...profile,
-                        weekly_digest_enabled: next,
-                      });
-                      const { error } = await supabase
-                        .from("vendor_profiles")
-                        .update({ weekly_digest_enabled: next })
-                        .eq("id", profile.id);
-                      if (error) {
-                        setProfile({
-                          ...profile,
-                          weekly_digest_enabled: prev,
-                        });
-                        toast.error(error.message);
-                        return;
-                      }
-                      toast.success(
-                        next ? "Weekly recap on" : "Weekly recap off",
-                      );
-                    }}
-                    className="w-10 h-5 rounded-full appearance-none bg-secondary checked:bg-foreground transition-colors relative cursor-pointer before:content-[''] before:absolute before:left-0.5 before:top-0.5 before:w-4 before:h-4 before:rounded-full before:bg-background before:transition-transform checked:before:translate-x-5"
-                    aria-label="Weekly recap email"
-                  />
-                </div>
-              )}
 
               <div className="flex items-center justify-end gap-3 pt-2">
                 {!canEdit && profile && (
@@ -893,17 +770,6 @@ export default function VendorProfilePage() {
                 </Button>
               </div>
             </form>
-          )}
-
-          {profile && isProfile && (
-            <>
-              <div className="mt-12 pt-10 border-t border-border">
-                <VerificationManager
-                  vendorId={profile.id}
-                  canEdit={canEdit}
-                />
-              </div>
-            </>
           )}
 
           {profile && isListing && !publishedRecently && category && (
@@ -934,11 +800,6 @@ export default function VendorProfilePage() {
               {canEdit && (
                 <div className="mt-12 pt-10 border-t border-border">
                   <VendorTeamManager vendorId={profile.id} />
-                </div>
-              )}
-              {canEdit && (
-                <div className="mt-12 pt-10 border-t border-border">
-                  <AvailabilityLinkCard />
                 </div>
               )}
               <div className="mt-12 pt-10 border-t border-border">
@@ -1083,23 +944,3 @@ function ListingPreviewCard({
   );
 }
 
-function AvailabilityLinkCard() {
-  return (
-    <div>
-      <p className="font-label text-muted-foreground inline-flex items-center gap-1.5">
-        <CalendarIcon className="w-3 h-3" />
-        Availability
-      </p>
-      <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
-        Block specific dates, set recurring weekly availability, and
-        manage buffer times around appointments.
-      </p>
-      <Link to="/vendor/availability" className="inline-block mt-4">
-        <Button variant="outline" size="sm" className="rounded-full">
-          <CalendarIcon className="w-3.5 h-3.5 mr-1.5" />
-          Open availability calendar
-        </Button>
-      </Link>
-    </div>
-  );
-}

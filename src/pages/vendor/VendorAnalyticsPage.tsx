@@ -7,7 +7,6 @@ import {
   Trophy,
   Clock,
   Star,
-  Package,
   Users,
   AlertTriangle,
 } from "lucide-react";
@@ -17,7 +16,6 @@ import { DashboardSidebar } from "@/components/shared/DashboardSidebar";
 import { MobileNav } from "@/components/shared/MobileNav";
 import { Skeleton } from "@/components/ui/skeleton";
 import { vendorNavItems as navItems } from "@/data/navItems";
-import { ReviewRequestsCard } from "@/components/vendor/ReviewRequestsCard";
 import { ProposalFunnelCard } from "@/components/vendor/ProposalFunnelCard";
 
 interface InquiryRow {
@@ -34,13 +32,6 @@ interface MessageRow {
 interface ReviewRow {
   rating: number;
   created_at: string;
-}
-
-interface PackageRow {
-  id: string;
-  name: string;
-  price_cents: number;
-  is_active: boolean;
 }
 
 interface ViewRow {
@@ -89,7 +80,6 @@ export default function VendorAnalyticsPage() {
   const [inquiries, setInquiries] = useState<InquiryRow[]>([]);
   const [vendorMessages, setVendorMessages] = useState<MessageRow[]>([]);
   const [reviews, setReviews] = useState<ReviewRow[]>([]);
-  const [packages, setPackages] = useState<PackageRow[]>([]);
   const [vendorCategory, setVendorCategory] = useState<string | null>(null);
   const [benchmark, setBenchmark] = useState<Benchmark | null>(null);
 
@@ -142,13 +132,6 @@ export default function VendorAnalyticsPage() {
         .eq("vendor_id", vendorId)
         .order("created_at", { ascending: false });
 
-      // Packages.
-      const pkgRes = await supabase
-        .from("vendor_packages")
-        .select("id, name, price_cents, is_active")
-        .eq("vendor_id", vendorId)
-        .order("display_order", { ascending: true });
-
       // Vendor category (for benchmarks).
       const profRes = await supabase
         .from("vendor_profiles")
@@ -177,7 +160,6 @@ export default function VendorAnalyticsPage() {
       setInquiries(inqRows);
       setVendorMessages(msgs);
       setReviews((reviewRes.data as ReviewRow[] | null) ?? []);
-      setPackages((pkgRes.data as PackageRow[] | null) ?? []);
       setVendorCategory(cat);
       setBenchmark(bench);
       setLoading(false);
@@ -467,12 +449,6 @@ export default function VendorAnalyticsPage() {
                 </section>
               )}
 
-              {vendorId && (
-                <section className="bg-card border border-border rounded-sm p-5">
-                  <ReviewRequestsCard vendorId={vendorId} />
-                </section>
-              )}
-
               {/* Weekly inquiries */}
               <section className="bg-card border border-border rounded-sm p-5">
                 <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
@@ -516,43 +492,6 @@ export default function VendorAnalyticsPage() {
                 </div>
               </section>
 
-              {/* Packages snapshot */}
-              <section>
-                <p className="font-label text-muted-foreground mb-3">
-                  Packages
-                </p>
-                {packages.length === 0 ? (
-                  <div className="bg-card border border-dashed border-border rounded-sm p-8 text-center">
-                    <Package className="w-8 h-8 mx-auto text-muted-foreground/40 mb-3" />
-                    <p className="text-sm font-medium mb-1">
-                      No packages yet
-                    </p>
-                    <p className="text-xs text-muted-foreground max-w-md mx-auto leading-relaxed">
-                      Vendors who publish 2-4 priced tiers convert inquiries
-                      ~2× faster than those with a single starting price.
-                    </p>
-                  </div>
-                ) : (
-                  <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                    {packages.map((p) => (
-                      <div
-                        key={p.id}
-                        className={`rounded-sm border bg-card p-4 ${
-                          p.is_active ? "border-border" : "border-border/40 opacity-60"
-                        }`}
-                      >
-                        <p className="font-display text-base mb-1">{p.name}</p>
-                        <p className="text-lg font-semibold tnum">
-                          ${(p.price_cents / 100).toLocaleString()}
-                        </p>
-                        <p className="text-xs text-muted-foreground mt-2">
-                          {p.is_active ? "Active" : "Hidden"}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </section>
             </>
           )}
         </div>
