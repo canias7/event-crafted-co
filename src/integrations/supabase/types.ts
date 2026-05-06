@@ -1822,50 +1822,6 @@ export type Database = {
           },
         ]
       }
-      microsite_rsvps: {
-        Row: {
-          answers: Json | null
-          created_at: string
-          dietary: string | null
-          event_id: string
-          guest_email: string | null
-          guest_name: string
-          id: string
-          party_size: number
-          status: string
-        }
-        Insert: {
-          answers?: Json | null
-          created_at?: string
-          dietary?: string | null
-          event_id: string
-          guest_email?: string | null
-          guest_name: string
-          id?: string
-          party_size?: number
-          status: string
-        }
-        Update: {
-          answers?: Json | null
-          created_at?: string
-          dietary?: string | null
-          event_id?: string
-          guest_email?: string | null
-          guest_name?: string
-          id?: string
-          party_size?: number
-          status?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "microsite_rsvps_event_id_fkey"
-            columns: ["event_id"]
-            isOneToOne: false
-            referencedRelation: "host_events"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       mood_board_comments: {
         Row: {
           author_id: string
