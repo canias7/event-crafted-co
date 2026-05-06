@@ -26,7 +26,6 @@ import { VendorFaqsManager } from "@/components/vendor/VendorFaqsManager";
 import { VendorTeamManager } from "@/components/vendor/VendorTeamManager";
 import { VendorPolicyEditor } from "@/components/vendor/VendorPolicyEditor";
 import { ShowcaseClipsManager } from "@/components/vendor/ShowcaseClipsManager";
-import { ImportedReviewsManager } from "@/components/vendor/ImportedReviewsManager";
 import { CategoryAttributesEditor } from "@/components/vendor/CategoryAttributesEditor";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -860,12 +859,6 @@ export default function VendorProfilePage() {
                       <VendorTeamManager vendorId={profile.id} />
                     </div>
                   )}
-                  <div className="mt-12 pt-10 border-t border-border">
-                    <ImportedReviewsManager
-                      vendorId={profile.id}
-                      canEdit={canEdit}
-                    />
-                  </div>
                   <div className="mt-12 pt-10 border-t border-border">
                     <VendorRecommendationManager
                       vendorId={profile.id}
