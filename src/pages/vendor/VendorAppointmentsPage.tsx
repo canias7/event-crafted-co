@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
 import { Calendar as CalendarIcon } from "lucide-react";
-import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useRealtime } from "@/lib/realtime";
 import { useAuth } from "@/hooks/useAuth";
@@ -11,40 +10,22 @@ import {
   type Appointment,
 } from "@/components/appointments/AppointmentsList";
 import { CalendarWeekView } from "@/components/vendor/CalendarWeekView";
-import { Calendar } from "@/components/ui/calendar";
 import { vendorNavItems as navItems } from "@/data/navItems";
 
-// Vendor Calendar dashboard. Three sections, top to bottom:
+// Vendor Calendar dashboard. Two sections, top to bottom:
 //   1. Week-view calendar (appointments rendered as time blocks)
 //   2. Upcoming-appointments detail list (Accept/Decline/Reschedule)
-//   3. Block-specific-dates month picker
-// Recurring weekly rules + Google-Calendar sync + the redundant
-// blocked-dates list were removed at the user's request to keep this
-// page focused on appointments + the one date-block surface.
-// Routes /vendor/appointments and /vendor/availability both land here.
-
-const unavailableTable = () => supabase.from("vendor_unavailable_dates");
-
-function dateKey(d: Date) {
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-}
-
-function parseDate(s: string) {
-  const [y, m, d] = s.split("-").map(Number);
-  return new Date(y, m - 1, d);
-}
+// Recurring weekly rules, Google Calendar sync, blocked-dates list,
+// and the month-grid date blocker were all removed at the user's
+// request. Routes /vendor/appointments and /vendor/availability both
+// land here.
 
 export default function VendorAppointmentsPage() {
   const { user, vendorMemberships } = useAuth();
   const vendorId = vendorMemberships[0]?.vendor_id ?? null;
 
-  // Appointments
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [appointmentsLoading, setAppointmentsLoading] = useState(true);
-
-  // One-off blocked dates (vendor_unavailable_dates)
-  const [unavailable, setUnavailable] = useState<Set<string>>(new Set());
-  const [availabilityLoading, setAvailabilityLoading] = useState(true);
 
   async function loadAppointments() {
     if (!user || !vendorId) {
@@ -72,21 +53,8 @@ export default function VendorAppointmentsPage() {
     setAppointmentsLoading(false);
   }
 
-  async function loadAvailability() {
-    if (!user || !vendorId) {
-      setAvailabilityLoading(false);
-      return;
-    }
-    const { data: rows } = await unavailableTable()
-      .select("date")
-      .eq("vendor_id", vendorId);
-    setUnavailable(new Set((rows ?? []).map((r) => r.date)));
-    setAvailabilityLoading(false);
-  }
-
   useEffect(() => {
     loadAppointments();
-    loadAvailability();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, vendorId]);
 
@@ -100,39 +68,6 @@ export default function VendorAppointmentsPage() {
   );
   useRealtime(realtimeConfig, () => loadAppointments());
 
-  async function toggleDate(date: Date) {
-    if (!vendorId) return;
-    const key = dateKey(date);
-    const wasUnavailable = unavailable.has(key);
-
-    setUnavailable((prev) => {
-      const next = new Set(prev);
-      if (wasUnavailable) next.delete(key);
-      else next.add(key);
-      return next;
-    });
-
-    const { error } = wasUnavailable
-      ? await unavailableTable()
-          .delete()
-          .eq("vendor_id", vendorId)
-          .eq("date", key)
-      : await unavailableTable().insert({ vendor_id: vendorId, date: key });
-
-    if (error) {
-      setUnavailable((prev) => {
-        const next = new Set(prev);
-        if (wasUnavailable) next.add(key);
-        else next.delete(key);
-        return next;
-      });
-      toast.error(error.message);
-    }
-  }
-
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-
   const noVendor = !vendorId;
 
   return (
@@ -143,7 +78,7 @@ export default function VendorAppointmentsPage() {
         <div className="border-b border-border bg-card px-4 md:px-8 py-4 sticky top-0 z-40">
           <h1 className="font-display text-xl">Calendar</h1>
           <p className="text-sm text-muted-foreground">
-            Upcoming appointments, weekly availability, and blocked dates
+            Upcoming appointments at a glance
           </p>
         </div>
 
@@ -156,7 +91,7 @@ export default function VendorAppointmentsPage() {
               </p>
               <p className="text-sm text-muted-foreground max-w-sm mx-auto">
                 Calendar tools are per-vendor — finish your business profile
-                so we know who's blocking dates + receiving bookings.
+                so we know who's receiving bookings.
               </p>
             </div>
           ) : (
@@ -198,37 +133,6 @@ export default function VendorAppointmentsPage() {
                     onMutate={loadAppointments}
                   />
                 </section>
-              )}
-
-              {availabilityLoading ? null : (
-                <>
-                  {/* One-off date blocking. Selected dates win over
-                      recurring rules — explicit blocks are absolute. */}
-                  <section className="space-y-3">
-                    <h2 className="font-display text-lg">Block specific dates</h2>
-                    <div className="rounded-sm border border-border bg-card p-4 sm:p-6">
-                      <Calendar
-                        mode="multiple"
-                        selected={Array.from(unavailable).map(parseDate)}
-                        onDayClick={(d) => toggleDate(d)}
-                        disabled={{ before: today }}
-                        numberOfMonths={1}
-                        className="mx-auto"
-                        classNames={{
-                          day_selected:
-                            "bg-foreground text-background hover:bg-foreground/90 focus:bg-foreground",
-                        }}
-                      />
-                      <p className="text-xs text-muted-foreground text-center mt-4">
-                        Click a date to toggle. Selected dates are{" "}
-                        <span className="font-medium text-foreground">
-                          blocked
-                        </span>
-                        .
-                      </p>
-                    </div>
-                  </section>
-                </>
               )}
             </>
           )}
