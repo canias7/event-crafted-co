@@ -22,6 +22,8 @@ import {
   BookOpen,
   UserPlus,
   Flag,
+  Bot,
+  Wand2,
   type LucideIcon,
 } from "lucide-react";
 
@@ -84,6 +86,8 @@ export const vendorNavItems: NavItem[] = [
   { labelKey: "sidebar.vendor.library", path: "/vendor/templates", icon: FileText },
   { labelKey: "sidebar.vendor.team", path: "/vendor/team", icon: Users },
   { labelKey: "sidebar.vendor.payments", path: "/vendor/payments", icon: CreditCard },
+  { labelKey: "sidebar.vendor.ai_agent", path: "/vendor/ai-agent", icon: Bot },
+  { labelKey: "sidebar.vendor.studio", path: "/vendor/studio", icon: Wand2 },
 ];
 
 export const vendorNavBottomItems: NavItem[] = [

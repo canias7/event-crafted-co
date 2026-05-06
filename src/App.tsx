@@ -107,6 +107,8 @@ import {
   VendorContractsPage,
   VendorMessagesPage,
   VendorPartnersPage,
+  VendorAiAgentPage,
+  VendorStudioPage,
   InquiryDetailPage,
   AcceptTeamInvitePage,
   AdminDashboard,
@@ -242,6 +244,8 @@ const App = () => (
               <Route path="/vendor/blog" element={<RequireRole role="vendor"><VendorBlogPage /></RequireRole>} />
               <Route path="/vendor/messages" element={<RequireRole role="vendor"><VendorMessagesPage /></RequireRole>} />
               <Route path="/vendor/partners" element={<RequireRole role="vendor"><VendorPartnersPage /></RequireRole>} />
+              <Route path="/vendor/ai-agent" element={<RequireRole role="vendor"><VendorAiAgentPage /></RequireRole>} />
+              <Route path="/vendor/studio" element={<RequireRole role="vendor"><VendorStudioPage /></RequireRole>} />
               <Route path="/vendor/inbox/:inquiryId" element={<RequireRole role="vendor"><InquiryDetailPage /></RequireRole>} />
 
               {/* Admin */}

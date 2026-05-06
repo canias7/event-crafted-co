@@ -196,7 +196,9 @@
       "listing": "Anuncio",
       "library": "Biblioteca",
       "team": "Equipo",
-      "payments": "Pagos"
+      "payments": "Pagos",
+      "ai_agent": "Agente IA",
+      "studio": "Estudio"
     },
     "admin": {
       "overview": "Resumen",

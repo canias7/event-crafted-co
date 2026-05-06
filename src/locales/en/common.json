@@ -196,7 +196,9 @@
       "listing": "Listing",
       "library": "Library",
       "team": "Team",
-      "payments": "Payments"
+      "payments": "Payments",
+      "ai_agent": "AI Agent",
+      "studio": "Studio"
     },
     "admin": {
       "overview": "Overview",

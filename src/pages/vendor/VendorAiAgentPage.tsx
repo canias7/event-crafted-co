@@ -1,0 +1,47 @@
+import { Bot, Sparkles } from "lucide-react";
+import { DashboardSidebar } from "@/components/shared/DashboardSidebar";
+import { MobileNav } from "@/components/shared/MobileNav";
+import { vendorNavItems as navItems } from "@/data/navItems";
+
+// AI Agent landing surface — placeholder shell. The eventual home for
+// the auto-reply agent that drafts replies to inquiries, suggests
+// pricing, and pre-qualifies leads. Lives behind the sidebar so it
+// can be iterated on without affecting the rest of the dashboard.
+
+export default function VendorAiAgentPage() {
+  return (
+    <div className="flex min-h-screen bg-background">
+      <DashboardSidebar items={navItems} title="Vendor Portal" backPath="/" />
+
+      <main id="main-content" className="flex-1 pb-20 lg:pb-0">
+        <div className="border-b border-border bg-card px-4 md:px-8 py-4 sticky top-0 z-40">
+          <h1 className="font-display text-xl">AI Agent</h1>
+          <p className="text-sm text-muted-foreground">
+            Auto-reply, lead qualification, and pricing assistant
+          </p>
+        </div>
+
+        <div className="p-4 md:p-8 max-w-3xl">
+          <div className="rounded-sm border border-border bg-card p-8 text-center">
+            <div className="mx-auto w-12 h-12 rounded-full bg-secondary/60 flex items-center justify-center mb-4">
+              <Bot className="w-5 h-5 text-muted-foreground" />
+            </div>
+            <p className="font-display text-xl mb-2">
+              Your AI Agent will live here
+            </p>
+            <p className="text-sm text-muted-foreground leading-relaxed max-w-md mx-auto">
+              Configure how the agent drafts replies, qualifies inquiries,
+              and prices packages. Coming online soon.
+            </p>
+            <p className="font-label text-accent inline-flex items-center gap-1.5 mt-6">
+              <Sparkles className="w-3 h-3" />
+              In development
+            </p>
+          </div>
+        </div>
+      </main>
+
+      <MobileNav items={navItems} />
+    </div>
+  );
+}

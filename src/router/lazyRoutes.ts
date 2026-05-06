@@ -260,6 +260,12 @@ export const VendorMessagesPage = lazy(importVendorMessages);
 const importVendorPartners = () => import("@/pages/vendor/VendorPartnersPage");
 export const VendorPartnersPage = lazy(importVendorPartners);
 
+const importVendorAiAgent = () => import("@/pages/vendor/VendorAiAgentPage");
+export const VendorAiAgentPage = lazy(importVendorAiAgent);
+
+const importVendorStudio = () => import("@/pages/vendor/VendorStudioPage");
+export const VendorStudioPage = lazy(importVendorStudio);
+
 const importInquiryDetail = () => import("@/pages/vendor/InquiryDetailPage");
 export const InquiryDetailPage = lazy(importInquiryDetail);
 
@@ -373,6 +379,8 @@ const ROUTE_IMPORTERS: Array<{ pattern: string; importer: () => Promise<unknown>
   { pattern: "/vendor/contracts", importer: importVendorContracts },
   { pattern: "/vendor/messages", importer: importVendorMessages },
   { pattern: "/vendor/partners", importer: importVendorPartners },
+  { pattern: "/vendor/ai-agent", importer: importVendorAiAgent },
+  { pattern: "/vendor/studio", importer: importVendorStudio },
   { pattern: "/vendor/inbox/:inquiryId", importer: importInquiryDetail },
   // Admin
   { pattern: "/admin/dashboard", importer: importAdminDashboard },
