@@ -44,8 +44,6 @@ import { Badge } from "@/components/ui/badge";
 import { vendorNavItems as navItems } from "@/data/navItems";
 import { invalidateVendorsCache } from "@/hooks/useVendors";
 import { VendorShareKit } from "@/components/vendor/VendorShareKit";
-import { SubNavTabs } from "@/components/shared/SubNavTabs";
-import { VENDOR_PROFILE_HUB_TABS } from "@/data/hubTabs";
 
 // Sub-categories rendered in the dropdown grouped by parent group.
 // Source of truth lives in categoryTaxonomy.ts — adding a sub there
@@ -332,9 +330,6 @@ export default function VendorProfilePage() {
                 </Button>
               )}
             </div>
-          </div>
-          <div className="mt-4">
-            <SubNavTabs tabs={VENDOR_PROFILE_HUB_TABS} />
           </div>
         </div>
 
