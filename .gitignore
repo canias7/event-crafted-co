@@ -12,6 +12,12 @@ dist
 dist-ssr
 *.local
 
+# Playwright artifacts — per-test traces, screenshots, error contexts,
+# HTML report. Local-only output of `npm run test:e2e`.
+test-results/
+playwright-report/
+playwright/.cache/
+
 # Environment files — contents are publishable (anon key + URL),
 # but secrets (Anthropic, service role) belong only in Supabase secrets.
 # .env committed so published build has Supabase URL+anon key
