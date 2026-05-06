@@ -2,12 +2,16 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
+  DollarSign,
   Edit2,
   Eye,
+  Image as ImageIcon,
+  Layers,
   Loader2,
   ShieldCheck,
   Sparkles,
   Trash2,
+  type LucideIcon,
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -100,6 +104,13 @@ export default function VendorProfilePage() {
   const [slug, setSlug] = useState("");
   const [instagramHandle, setInstagramHandle] = useState("");
   const [tiktokHandle, setTiktokHandle] = useState("");
+
+  // Secondary sidebar state — splits the long listing form into four
+  // bite-size tabs so the page stops being a 4-screen scroll. Default
+  // to "about" so a fresh vendor lands on the basics first.
+  const [listingTab, setListingTab] = useState<
+    "about" | "pricing" | "media" | "more"
+  >("about");
 
   function applyToForm(p: VendorProfile | null) {
     setBusinessName(p?.business_name ?? "");
@@ -441,7 +452,74 @@ export default function VendorProfilePage() {
           </div>
         </div>
 
+        {/* Secondary sidebar + main content — only on the listing
+            builder, only when there's an actual draft to navigate.
+            Pre-creation (no profile yet) the page stays a single
+            column so the category dropdown gets full attention. */}
+        <div
+          className={
+            profile && !publishedRecently
+              ? "grid lg:grid-cols-[200px_1fr]"
+              : ""
+          }
+        >
+          {profile && !publishedRecently && (
+            <aside className="hidden lg:block border-r border-border bg-card/40 p-3 sticky top-[73px] self-start max-h-[calc(100vh-73px)] overflow-y-auto">
+              <ListingTabButton
+                active={listingTab === "about"}
+                onClick={() => setListingTab("about")}
+                icon={Sparkles}
+                label={t("vendor_listing.tabs.about")}
+              />
+              <ListingTabButton
+                active={listingTab === "pricing"}
+                onClick={() => setListingTab("pricing")}
+                icon={DollarSign}
+                label={t("vendor_listing.tabs.pricing")}
+              />
+              <ListingTabButton
+                active={listingTab === "media"}
+                onClick={() => setListingTab("media")}
+                icon={ImageIcon}
+                label={t("vendor_listing.tabs.media")}
+              />
+              <ListingTabButton
+                active={listingTab === "more"}
+                onClick={() => setListingTab("more")}
+                icon={Layers}
+                label={t("vendor_listing.tabs.more")}
+              />
+            </aside>
+          )}
+
         <div className="p-4 md:p-8 max-w-3xl">
+          {/* Mobile tab strip — same four tabs, horizontal scroll. */}
+          {profile && !publishedRecently && (
+            <div className="lg:hidden flex gap-1.5 mb-4 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-hide">
+              {(
+                [
+                  ["about", Sparkles, t("vendor_listing.tabs.about")],
+                  ["pricing", DollarSign, t("vendor_listing.tabs.pricing")],
+                  ["media", ImageIcon, t("vendor_listing.tabs.media")],
+                  ["more", Layers, t("vendor_listing.tabs.more")],
+                ] as Array<["about" | "pricing" | "media" | "more", LucideIcon, string]>
+              ).map(([key, Icon, label]) => (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => setListingTab(key)}
+                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors ${
+                    listingTab === key
+                      ? "bg-foreground text-background"
+                      : "bg-secondary/50 text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  <Icon className="w-3 h-3" />
+                  {label}
+                </button>
+              ))}
+            </div>
+          )}
           {loading ? (
             <div className="space-y-4">
               <Skeleton className="h-10 w-full" />
@@ -571,11 +649,13 @@ export default function VendorProfilePage() {
             </div>
           ) : (
             <form onSubmit={handleSave} className="space-y-6">
-              {/* Category sits at the top alone — the rest of the
-                  Listing form (and the section managers below) only
-                  reveals once a sub-category is picked. The dropdown
-                  is grouped by main group, same shape as the public
-                  Vendors nav on the landing page. */}
+              {/* Category sits at the top of the About tab only —
+                  on the other listing tabs it's hidden because once
+                  a draft exists the dropdown is locked anyway and
+                  re-displaying it on every tab is just visual noise.
+                  The dropdown is grouped by main group, same shape
+                  as the public Vendors nav on the landing page. */}
+              {(!profile || listingTab === "about") && (
               <div className="space-y-2">
                 <Label htmlFor="category">
                   {t("vendor_listing.category_label")}{" "}
@@ -613,6 +693,7 @@ export default function VendorProfilePage() {
                     : t("vendor_listing.category_hint")}
                 </p>
               </div>
+              )}
 
               {isListing && !category && (
                 <div className="rounded-sm border border-dashed border-border bg-card/40 p-8 text-center">
@@ -622,7 +703,7 @@ export default function VendorProfilePage() {
                 </div>
               )}
 
-              {category && (
+              {category && listingTab === "about" && (
                 <div className="space-y-2">
                   <Label htmlFor="business-name">
                     {t("vendor_listing.business_name")}{" "}
@@ -638,7 +719,7 @@ export default function VendorProfilePage() {
                 </div>
               )}
 
-              {isListing && category && (
+              {category && listingTab === "about" && (
                 <div className="space-y-2">
                   <Label htmlFor="bio">{t("vendor_listing.short_bio")}</Label>
                   <Textarea
@@ -651,7 +732,7 @@ export default function VendorProfilePage() {
                 </div>
               )}
 
-              {isListing && category && (
+              {category && listingTab === "pricing" && (
                 <div className="space-y-2">
                   <Label htmlFor="base-price">
                     {t("vendor_listing.starting_price")}
@@ -669,7 +750,7 @@ export default function VendorProfilePage() {
                 </div>
               )}
 
-              {isListing && category && (
+              {category && listingTab === "about" && (
                 <div className="space-y-2">
                   <Label htmlFor="location">
                     {t("vendor_listing.location")}
@@ -684,7 +765,7 @@ export default function VendorProfilePage() {
                 </div>
               )}
 
-              {isListing && category && (
+              {category && listingTab === "media" && (
                 <div className="space-y-2">
                   <Label htmlFor="intro-video">
                     {t("vendor_listing.intro_video")}
@@ -732,67 +813,88 @@ export default function VendorProfilePage() {
 
           {profile && isListing && !publishedRecently && category && (
             <>
-              {/* Universal sections — every vendor regardless of
-                  category gets these. Order matches the user's
-                  universal list: Pricing → Photos → Team →
-                  Availability → Reviews → Recommendations.
-                  ("About" is the bio + portfolio-summary fields up
-                  in the form.) */}
-              {/* Per-category Details — venue offerings, food types,
-                  entertainment specialties, etc. Reads the schema for
-                  the picked sub-category and renders a tailored form
-                  saved into vendor_profiles.category_attributes. */}
-              <div className="mt-12 pt-10 border-t border-border">
-                <CategoryAttributesEditor
-                  vendorId={profile.id}
-                  category={profile.category}
-                  canEdit={canEdit}
-                />
-              </div>
-              <div className="mt-12 pt-10 border-t border-border">
-                <PackageManager vendorId={profile.id} canEdit={canEdit} />
-              </div>
-              <div className="mt-12 pt-10 border-t border-border">
-                <PortfolioUploader vendorId={profile.id} />
-              </div>
-              {canEdit && (
+              {/* About tab — category-specific Details editor sits
+                  with the basics so everything tied to "what is this
+                  business" lives in one place. */}
+              {listingTab === "about" && (
                 <div className="mt-12 pt-10 border-t border-border">
-                  <VendorTeamManager vendorId={profile.id} />
+                  <CategoryAttributesEditor
+                    vendorId={profile.id}
+                    category={profile.category}
+                    canEdit={canEdit}
+                  />
                 </div>
               )}
-              <div className="mt-12 pt-10 border-t border-border">
-                <ImportedReviewsManager
-                  vendorId={profile.id}
-                  canEdit={canEdit}
-                />
-              </div>
-              <div className="mt-12 pt-10 border-t border-border">
-                <VendorRecommendationManager
-                  vendorId={profile.id}
-                  canEdit={canEdit}
-                />
-              </div>
 
-              {/* Optional sections — vendor can fill if useful but
-                  not required to publish. Live below the universal
-                  block so they don't crowd the primary editor. */}
-              <div className="mt-12 pt-10 border-t border-border">
-                <IntakeFormEditor vendorId={profile.id} canEdit={canEdit} />
-              </div>
-              <div className="mt-12 pt-10 border-t border-border">
-                <VendorFaqsManager vendorId={profile.id} canEdit={canEdit} />
-              </div>
-              <div className="mt-12 pt-10 border-t border-border">
-                <VendorPolicyEditor vendorId={profile.id} canEdit={canEdit} />
-              </div>
-              <div className="mt-12 pt-10 border-t border-border">
-                <ShowcaseClipsManager
-                  vendorId={profile.id}
-                  canEdit={canEdit}
-                />
-              </div>
+              {/* Pricing tab — Packages live here next to the
+                  Starting price field above. */}
+              {listingTab === "pricing" && (
+                <div className="mt-12 pt-10 border-t border-border">
+                  <PackageManager vendorId={profile.id} canEdit={canEdit} />
+                </div>
+              )}
+
+              {/* Media tab — photos + showcase clips. Intro video
+                  URL is the form field above. */}
+              {listingTab === "media" && (
+                <>
+                  <div className="mt-12 pt-10 border-t border-border">
+                    <PortfolioUploader vendorId={profile.id} />
+                  </div>
+                  <div className="mt-12 pt-10 border-t border-border">
+                    <ShowcaseClipsManager
+                      vendorId={profile.id}
+                      canEdit={canEdit}
+                    />
+                  </div>
+                </>
+              )}
+
+              {/* More tab — team, social proof (reviews +
+                  recommendations), and the optional intake-form /
+                  FAQs / policy editors. */}
+              {listingTab === "more" && (
+                <>
+                  {canEdit && (
+                    <div className="mt-12 pt-10 border-t border-border">
+                      <VendorTeamManager vendorId={profile.id} />
+                    </div>
+                  )}
+                  <div className="mt-12 pt-10 border-t border-border">
+                    <ImportedReviewsManager
+                      vendorId={profile.id}
+                      canEdit={canEdit}
+                    />
+                  </div>
+                  <div className="mt-12 pt-10 border-t border-border">
+                    <VendorRecommendationManager
+                      vendorId={profile.id}
+                      canEdit={canEdit}
+                    />
+                  </div>
+                  <div className="mt-12 pt-10 border-t border-border">
+                    <IntakeFormEditor
+                      vendorId={profile.id}
+                      canEdit={canEdit}
+                    />
+                  </div>
+                  <div className="mt-12 pt-10 border-t border-border">
+                    <VendorFaqsManager
+                      vendorId={profile.id}
+                      canEdit={canEdit}
+                    />
+                  </div>
+                  <div className="mt-12 pt-10 border-t border-border">
+                    <VendorPolicyEditor
+                      vendorId={profile.id}
+                      canEdit={canEdit}
+                    />
+                  </div>
+                </>
+              )}
             </>
           )}
+        </div>
         </div>
       </main>
 
@@ -808,6 +910,36 @@ export default function VendorProfilePage() {
 // clear hand-off from this single dashboard view.
 // Compact post-publish preview — replaces the editor surface once
 // the vendor clicks Publish. Three icon buttons: View opens the
+// Single button in the listing builder's secondary sidebar. Renders
+// as a soft pill that fills with the foreground when active.
+function ListingTabButton({
+  active,
+  onClick,
+  icon: Icon,
+  label,
+}: {
+  active: boolean;
+  onClick: () => void;
+  icon: LucideIcon;
+  label: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-current={active ? "page" : undefined}
+      className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+        active
+          ? "bg-secondary text-foreground"
+          : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
+      }`}
+    >
+      <Icon className="w-4 h-4 shrink-0" aria-hidden />
+      <span className="truncate">{label}</span>
+    </button>
+  );
+}
+
 // public listing in a new tab, Edit collapses the preview back to
 // the form, Delete confirms then drops the row. Image is
 // intentionally omitted; the directory's VendorCard renders the
