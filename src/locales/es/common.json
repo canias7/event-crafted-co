@@ -387,6 +387,7 @@
     "category_required": "*",
     "category_placeholder": "Elige una categoría",
     "category_hint": "Elige la categoría que mejor describa tu negocio — los campos de abajo se adaptan a ella.",
+    "category_locked": "La categoría se bloquea una vez creado el anuncio — elimínalo si necesitas cambiarla.",
     "category_nudge": "Elige una categoría arriba para empezar a construir tu anuncio. Precios, paquetes, fotos, equipo, reseñas y recomendaciones aparecerán al elegir.",
     "business_name": "Nombre del negocio",
     "short_bio": "Bio corta",

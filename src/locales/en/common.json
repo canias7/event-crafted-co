@@ -387,6 +387,7 @@
     "category_required": "*",
     "category_placeholder": "Choose a category",
     "category_hint": "Pick the category that best matches your business — fields below are tailored to it.",
+    "category_locked": "Category is locked once your listing exists — delete the listing if you need to switch categories.",
     "category_nudge": "Choose a category above to start building your listing. Pricing, packages, photos, team, reviews, and recommendations populate once you pick.",
     "business_name": "Business name",
     "short_bio": "Short bio",

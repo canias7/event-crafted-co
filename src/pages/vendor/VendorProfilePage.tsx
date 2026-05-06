@@ -593,8 +593,15 @@ export default function VendorProfilePage() {
                   {t("vendor_listing.category_label")}{" "}
                   <span className="text-destructive">*</span>
                 </Label>
-                <Select value={category} onValueChange={setCategory}>
-                  <SelectTrigger id="category" className="h-11">
+                <Select
+                  value={category}
+                  onValueChange={setCategory}
+                  disabled={!!profile}
+                >
+                  <SelectTrigger
+                    id="category"
+                    className="h-11 disabled:opacity-100 disabled:cursor-not-allowed"
+                  >
                     <SelectValue
                       placeholder={t("vendor_listing.category_placeholder")}
                     />
@@ -613,7 +620,9 @@ export default function VendorProfilePage() {
                   </SelectContent>
                 </Select>
                 <p className="text-xs text-muted-foreground pt-1">
-                  {t("vendor_listing.category_hint")}
+                  {profile
+                    ? t("vendor_listing.category_locked")
+                    : t("vendor_listing.category_hint")}
                 </p>
               </div>
 
