@@ -34,6 +34,14 @@ export class ErrorBoundary extends Component<Props, State> {
     // Surface to console for dev tools + any external monitor (Sentry,
     // etc.) hooked up to console.error or window.onerror.
     console.error("Vendora ErrorBoundary caught:", error, errorInfo);
+    // Log the component stack as a separate plain-text entry too —
+    // it's the only fast way to see *which* component blew up in a
+    // production-minified bundle without source maps.
+    if (errorInfo?.componentStack) {
+      console.error(
+        "Vendora ErrorBoundary component stack:\n" + errorInfo.componentStack,
+      );
+    }
     this.setState({ error, errorInfo });
   }
 
@@ -84,10 +92,12 @@ export class ErrorBoundary extends Component<Props, State> {
             </button>
           </div>
 
-          {/* Dev-mode error details — hidden in prod so users don't see
-              stack traces, but lifesaving locally. */}
-          {import.meta.env.DEV && this.state.error && (
-            <details className="text-left bg-secondary/40 rounded-sm p-3 max-h-72 overflow-auto">
+          {/* Always-visible compact detail: error message + first
+              ~20 lines of the component stack. Helps with bug
+              reports from production users; full dev-mode trace is
+              still below. */}
+          {this.state.error && (
+            <details className="text-left bg-secondary/40 rounded-sm p-3 max-h-72 overflow-auto mb-3">
               <summary className="text-xs uppercase tracking-wide text-muted-foreground cursor-pointer">
                 Stack trace (dev only)
               </summary>

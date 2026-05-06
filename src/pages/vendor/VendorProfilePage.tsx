@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import {
   Calendar as CalendarIcon,
   Edit2,
@@ -75,7 +75,6 @@ export default function VendorProfilePage() {
   // facing surface. Both tabs share state + the same save handler;
   // each renders a different slice of the form + section managers.
   const route = useLocation();
-  const navigate = useNavigate();
   const isListing = route.pathname === "/vendor/listing";
   const isProfile = !isListing;
   const [loading, setLoading] = useState(true);
@@ -348,10 +347,13 @@ export default function VendorProfilePage() {
                 profile={profile}
                 saving={deleting}
                 onView={() => {
-                  // Same-window preview — keeps the back button
-                  // working so the vendor can return to the
-                  // dashboard with one tap.
-                  navigate(`/vendors/${profile.id}`);
+                  // Full-reload navigation — same window, but reboots
+                  // the SPA so useVendors fetches fresh and the
+                  // just-approved row is in the cache when
+                  // VendorDetailPage mounts. Slight white-flash, but
+                  // bullet-proof against any stale state from the
+                  // dashboard's render tree.
+                  window.location.assign(`/vendors/${profile.id}`);
                 }}
                 onEdit={() => {
                   setPublishedRecently(false);

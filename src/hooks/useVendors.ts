@@ -138,26 +138,17 @@ let cache: Vendor[] = [];
 let hydrated = false;
 let inFlight: Promise<Vendor[]> | null = null;
 
-// Subscribers re-render whenever the cache is invalidated and the
-// next fetch resolves. Lets pages like the post-publish preview
-// invalidate via `invalidateVendorsCache()` and have the directory
-// + detail pages pick up the fresh data without a full reload.
-const subscribers = new Set<(vs: Vendor[]) => void>();
-
 /**
  * Reset the module-level cache so the next consumer triggers a
- * fresh fetch. Notifies any currently-mounted useVendors() consumers
- * that they should re-render against the new fetch in flight.
- *
- * Use this after a write that should be reflected in the directory
- * — e.g. when a vendor publishes their listing for the first time.
+ * fresh fetch. Use after a write that should be reflected in the
+ * directory — e.g. a vendor publishing their listing. Pair with a
+ * full-page navigation (window.location.assign) since this only
+ * affects the next mount of useVendors.
  */
 export function invalidateVendorsCache() {
   cache = [];
   hydrated = false;
   inFlight = null;
-  // Re-trigger every subscriber so they refetch on this tick.
-  for (const sub of subscribers) sub([]);
 }
 
 async function fetchVendors(): Promise<Vendor[]> {
@@ -242,28 +233,19 @@ export function useVendors() {
   const [loading, setLoading] = useState(!hydrated);
 
   useEffect(() => {
-    let cancelled = false;
-    function syncFromCache() {
-      if (cancelled) return;
-      if (hydrated) {
-        setVendors(cache);
-        setLoading(false);
-      } else {
-        // Invalidation in flight — flip back to loading until the
-        // next fetch resolves.
-        setLoading(true);
-        fetchVendors().then((vs) => {
-          if (cancelled) return;
-          setVendors(vs);
-          setLoading(false);
-        });
-      }
+    if (hydrated) {
+      setVendors(cache);
+      setLoading(false);
+      return;
     }
-    syncFromCache();
-    subscribers.add(syncFromCache);
+    let cancelled = false;
+    fetchVendors().then((vs) => {
+      if (cancelled) return;
+      setVendors(vs);
+      setLoading(false);
+    });
     return () => {
       cancelled = true;
-      subscribers.delete(syncFromCache);
     };
   }, []);
 
