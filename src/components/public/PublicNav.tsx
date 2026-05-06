@@ -106,11 +106,6 @@ export function PublicNav() {
                   Browse by location
                 </Link>
               </DropdownMenuItem>
-              <DropdownMenuItem asChild>
-                <Link to="/vendors/quiz" className="cursor-pointer">
-                  Take the 60-sec match quiz
-                </Link>
-              </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuLabel className="text-[10px] uppercase tracking-wide text-muted-foreground">
                 Categories
@@ -288,13 +283,6 @@ export function PublicNav() {
                 className="block py-2 text-sm text-muted-foreground"
               >
                 By location
-              </Link>
-              <Link
-                to="/vendors/quiz"
-                onClick={() => setMobileOpen(false)}
-                className="block py-2 text-sm text-muted-foreground"
-              >
-                Match quiz
               </Link>
               <p className="text-[10px] uppercase tracking-wide text-muted-foreground/70 mt-3 mb-1">
                 Categories

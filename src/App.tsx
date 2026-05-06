@@ -44,7 +44,6 @@ import {
   VendorCityCategoryPage,
   VendorEventTypeCityPage,
   VendorMapPage,
-  VendorQuizPage,
   VendorDetailPage,
   VendorCategoryPage,
   PrivacyPage,
@@ -146,7 +145,6 @@ const App = () => (
               <Route path="/vendors/locations" element={<VendorLocationsPage />} />
               <Route path="/vendors/in/:citySlug" element={<VendorCityPage />} />
               <Route path="/vendors/map" element={<VendorMapPage />} />
-              <Route path="/vendors/quiz" element={<VendorQuizPage />} />
               <Route path="/vendors/category/:slug" element={<VendorCategoryPage />} />
               {/* Programmatic SEO: city × category cross-product. */}
               <Route

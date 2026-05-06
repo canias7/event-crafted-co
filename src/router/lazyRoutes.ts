@@ -66,8 +66,6 @@ export const VendorBlogPage = lazy(importVendorBlog);
 const importVendorMap = () => import("@/pages/VendorMapPage");
 export const VendorMapPage = lazy(importVendorMap);
 
-const importVendorQuiz = () => import("@/pages/VendorQuizPage");
-export const VendorQuizPage = lazy(importVendorQuiz);
 
 const importVendorDetail = () => import("@/pages/VendorDetailPage");
 export const VendorDetailPage = lazy(importVendorDetail);
@@ -290,7 +288,6 @@ const ROUTE_IMPORTERS: Array<{ pattern: string; importer: () => Promise<unknown>
   { pattern: "/vendors", importer: importVendorBrowse },
   { pattern: "/vendors/locations", importer: importVendorLocations },
   { pattern: "/vendors/map", importer: importVendorMap },
-  { pattern: "/vendors/quiz", importer: importVendorQuiz },
   { pattern: "/privacy", importer: importPrivacy },
   { pattern: "/terms", importer: importTerms },
   { pattern: "/changelog", importer: importChangelog },
