@@ -16,7 +16,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ProfileScoreCard } from "@/components/vendor/ProfileScoreCard";
+import { VendorPerformanceCharts } from "@/components/vendor/VendorPerformanceCharts";
 import { Skeleton } from "@/components/ui/skeleton";
 import { DashboardSidebar } from "@/components/shared/DashboardSidebar";
 import { MobileNav } from "@/components/shared/MobileNav";
@@ -49,16 +49,6 @@ interface RecentInquiry {
   budget_max_cents: number | null;
   host: { display_name: string | null } | null;
 }
-
-const profileFieldsForCompleteness: Array<keyof VendorProfile> = [
-  "business_name",
-  "category",
-  "bio",
-  "base_price_cents",
-  "location",
-  "service_radius_miles",
-  "portfolio_summary",
-];
 
 const statusStyles: Record<string, string> = {
   new: "bg-accent/15 text-accent border-accent/30",
@@ -93,15 +83,10 @@ export default function VendorDashboard() {
     booked: 0,
     total: 0,
   });
-  const [insights, setInsights] = useState({
-    views30d: 0,
-    avgRating: 0,
-    reviewCount: 0,
-  });
-  const [recent, setRecent] = useState<RecentInquiry[]>([]);
+  const [allInquiries, setAllInquiries] = useState<RecentInquiry[]>([]);
+  const [ratings, setRatings] = useState<Array<{ rating: number }>>([]);
+  const [viewRows, setViewRows] = useState<Array<{ viewed_at: string }>>([]);
   const [loading, setLoading] = useState(true);
-  const [packageCount, setPackageCount] = useState(0);
-  const [portfolioCount, setPortfolioCount] = useState(0);
 
   useEffect(() => {
     if (!user) return;
@@ -138,6 +123,7 @@ export default function VendorDashboard() {
 
         if (cancelled) return;
         const rows = (inquiries as unknown as RecentInquiry[]) ?? [];
+        setAllInquiries(rows);
         setStats({
           total: rows.length,
           newRequests: rows.filter((r) => r.status === "new").length,
@@ -146,15 +132,17 @@ export default function VendorDashboard() {
           ).length,
           booked: rows.filter((r) => r.status === "won").length,
         });
-        setRecent(rows.slice(0, 5));
 
-        // Insights: views (last 30 days) + reviews aggregate
+        // Raw rows that the chart panel turns into a 30-day area
+        // chart, a rating distribution, and the funnel donut. We
+        // pull rows (not just counts) so the visualisations can
+        // bucket by day / star without an extra round-trip.
         const since = new Date();
         since.setDate(since.getDate() - 30);
-        const [{ count: viewCount }, { data: reviews }] = await Promise.all([
+        const [{ data: viewData }, { data: reviewData }] = await Promise.all([
           supabase
             .from("vendor_profile_views")
-            .select("id", { count: "exact", head: true })
+            .select("viewed_at")
             .eq("vendor_id", vpRow.id)
             .gte("viewed_at", since.toISOString()),
           supabase
@@ -163,35 +151,12 @@ export default function VendorDashboard() {
             .eq("vendor_id", vpRow.id),
         ]);
         if (cancelled) return;
-        const ratingRows =
-          (reviews as Array<{ rating: number }> | null) ?? [];
-        setInsights({
-          views30d: viewCount ?? 0,
-          reviewCount: ratingRows.length,
-          avgRating:
-            ratingRows.length === 0
-              ? 0
-              : ratingRows.reduce((s, r) => s + r.rating, 0) /
-                ratingRows.length,
-        });
-
-        // Counts that feed the onboarding completeness signal.
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const [{ count: pkgCount }, { count: imgCount }] = await Promise.all([
-          (supabase as any)
-            .from("vendor_packages")
-            .select("id", { count: "exact", head: true })
-            .eq("vendor_id", vpRow.id)
-            .eq("is_active", true),
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          (supabase as any)
-            .from("vendor_portfolio_images")
-            .select("id", { count: "exact", head: true })
-            .eq("vendor_id", vpRow.id),
-        ]);
-        if (cancelled) return;
-        setPackageCount(pkgCount ?? 0);
-        setPortfolioCount(imgCount ?? 0);
+        setViewRows(
+          (viewData as Array<{ viewed_at: string }> | null) ?? [],
+        );
+        setRatings(
+          (reviewData as Array<{ rating: number }> | null) ?? [],
+        );
       }
 
       setLoading(false);
@@ -201,18 +166,6 @@ export default function VendorDashboard() {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, membershipVendorId]);
-
-  const completeness = vendorProfile
-    ? Math.round(
-        ((profileFieldsForCompleteness.filter(
-          (f) => vendorProfile[f] != null && vendorProfile[f] !== "",
-        ).length +
-          (packageCount > 0 ? 1 : 0) +
-          (portfolioCount >= 3 ? 1 : 0)) /
-          (profileFieldsForCompleteness.length + 2)) *
-          100,
-      )
-    : 0;
 
   const greeting = profile?.display_name?.split(" ")[0] ?? "there";
 
@@ -339,77 +292,16 @@ export default function VendorDashboard() {
             />
           </div>
 
-          {/* Insights */}
+          {/* Performance overview — funnel donut, 30-day views
+              area chart, and per-star rating distribution. Replaces
+              the older flat tile grid; same numbers, way more
+              scannable at a glance. */}
           {vendorProfile && (
-            <div>
-              <p className="font-label text-muted-foreground mb-3">Insights</p>
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-                <div className="rounded-sm border border-border bg-card px-5 py-4">
-                  <p className="font-label text-muted-foreground">
-                    Views · 30d
-                  </p>
-                  <p className="font-display text-2xl tnum mt-1">
-                    {insights.views30d}
-                  </p>
-                </div>
-                <div className="rounded-sm border border-border bg-card px-5 py-4">
-                  <p className="font-label text-muted-foreground">
-                    Conversion
-                  </p>
-                  <p className="font-display text-2xl tnum mt-1">
-                    {stats.total > 0
-                      ? `${Math.round((stats.booked / stats.total) * 100)}%`
-                      : "—"}
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Booked / inquired
-                  </p>
-                </div>
-                <div className="rounded-sm border border-border bg-card px-5 py-4">
-                  <p className="font-label text-muted-foreground">
-                    Avg rating
-                  </p>
-                  <p className="font-display text-2xl tnum mt-1">
-                    {insights.reviewCount > 0
-                      ? insights.avgRating.toFixed(1)
-                      : "—"}
-                  </p>
-                </div>
-                <div className="rounded-sm border border-border bg-card px-5 py-4">
-                  <p className="font-label text-muted-foreground">Reviews</p>
-                  <p className="font-display text-2xl tnum mt-1">
-                    {insights.reviewCount}
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Profile completeness — server-computed score with breakdown */}
-          {membershipVendorId && (
-            <ProfileScoreCard vendorId={membershipVendorId} />
-          )}
-
-          {/* Onboarding wizard CTA — only when truly fresh */}
-          {vendorProfile && completeness < 40 && (
-            <div className="bg-card rounded-sm border border-accent/30 bg-accent/5 p-5">
-              <div className="flex items-center justify-between gap-4 flex-wrap">
-                <p className="text-sm text-muted-foreground leading-relaxed max-w-md">
-                  New to Vendora? Walk through the guided onboarding to get
-                  the basics done in 5 minutes.
-                </p>
-                <div className="flex gap-2">
-                  <Link to="/vendor/onboarding">
-                    <Button
-                      size="sm"
-                      className="rounded-full bg-foreground text-background hover:bg-foreground/90"
-                    >
-                      Open setup wizard
-                    </Button>
-                  </Link>
-                </div>
-              </div>
-            </div>
+            <VendorPerformanceCharts
+              inquiries={allInquiries}
+              ratings={ratings}
+              views={viewRows}
+            />
           )}
 
           <div className="grid lg:grid-cols-2 gap-6">
@@ -460,13 +352,13 @@ export default function VendorDashboard() {
                     <Skeleton key={i} className="h-12 w-full" />
                   ))}
                 </div>
-              ) : recent.length === 0 ? (
+              ) : allInquiries.length === 0 ? (
                 <p className="text-sm text-muted-foreground py-6 text-center">
                   No inquiries yet — they'll appear here as hosts reach out.
                 </p>
               ) : (
                 <div className="space-y-3">
-                  {recent.map((r) => (
+                  {allInquiries.slice(0, 5).map((r) => (
                     <Link
                       key={r.id}
                       to={`/vendor/inbox/${r.id}`}

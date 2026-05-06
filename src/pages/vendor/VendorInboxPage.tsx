@@ -7,7 +7,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { DashboardSidebar } from "@/components/shared/DashboardSidebar";
 import { MobileNav } from "@/components/shared/MobileNav";
-import { EmptyState } from "@/components/shared/EmptyState";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -202,70 +201,59 @@ export default function VendorInboxPage() {
             })}
           </div>
 
-          <div className="flex flex-wrap gap-2 mb-4 items-center">
-            {labels.length > 0 && (
-              <>
-                <span className="text-xs text-muted-foreground">Labels:</span>
-                {labels.map((l) => {
-                  const active = labelFilter === l.id;
-                  const count = rows.filter((r) =>
-                    (r.labels ?? []).some((x) => x.id === l.id),
-                  ).length;
-                  return (
-                    <button
-                      key={l.id}
-                      type="button"
-                      onClick={() =>
-                        setLabelFilter(active ? null : l.id)
-                      }
-                      className={`inline-flex items-center gap-1.5 px-2.5 h-7 rounded-full text-xs font-medium border transition-colors ${
-                        active
-                          ? "border-foreground"
-                          : "border-transparent hover:border-border"
-                      }`}
-                      style={{
-                        backgroundColor: active ? l.color : `${l.color}22`,
-                        color: active ? "#fff" : l.color,
-                      }}
-                    >
-                      {l.name}
-                      <span className="tnum opacity-70">{count}</span>
-                    </button>
-                  );
-                })}
-              </>
-            )}
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setLabelsOpen(true)}
-              className="rounded-full text-xs h-7 ml-auto"
-            >
-              {labels.length === 0 ? "+ Create labels" : "Manage labels"}
-            </Button>
-          </div>
+          {labels.length > 0 && (
+            <div className="flex flex-wrap gap-2 mb-4 items-center">
+              <span className="text-xs text-muted-foreground">Labels:</span>
+              {labels.map((l) => {
+                const active = labelFilter === l.id;
+                const count = rows.filter((r) =>
+                  (r.labels ?? []).some((x) => x.id === l.id),
+                ).length;
+                return (
+                  <button
+                    key={l.id}
+                    type="button"
+                    onClick={() => setLabelFilter(active ? null : l.id)}
+                    className={`inline-flex items-center gap-1.5 px-2.5 h-7 rounded-full text-xs font-medium border transition-colors ${
+                      active
+                        ? "border-foreground"
+                        : "border-transparent hover:border-border"
+                    }`}
+                    style={{
+                      backgroundColor: active ? l.color : `${l.color}22`,
+                      color: active ? "#fff" : l.color,
+                    }}
+                  >
+                    {l.name}
+                    <span className="tnum opacity-70">{count}</span>
+                  </button>
+                );
+              })}
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setLabelsOpen(true)}
+                className="rounded-full text-xs h-7 ml-auto"
+              >
+                Manage labels
+              </Button>
+            </div>
+          )}
 
           {loading ? (
             <div className="bg-card rounded-2xl card-shadow p-12 text-center text-muted-foreground">
               Loading inquiries…
             </div>
           ) : filteredRows.length === 0 ? (
-            <div className="bg-card rounded-2xl card-shadow">
-              {rows.length === 0 ? (
-                <EmptyState
-                  icon={Inbox}
-                  title="No inquiries yet"
-                  description="Polish your profile and packages — vendors with priced tiers + 5+ portfolio shots get the most inquiries on Vendora. Hosts can also DM you directly from your public page."
-                  primaryCta={{ label: "Edit profile", to: "/vendor/profile" }}
-                  secondaryCta={{ label: "View analytics", to: "/vendor/analytics" }}
-                />
-              ) : (
-                <EmptyState
-                  icon={Inbox}
-                  title="Nothing matches that filter"
-                  description="Try a different status filter above, or clear the label filter to see everything."
-                />
-              )}
+            <div className="bg-card rounded-2xl card-shadow py-20 text-center">
+              <div className="mx-auto w-12 h-12 rounded-full bg-secondary/60 flex items-center justify-center mb-4">
+                <Inbox className="w-5 h-5 text-muted-foreground" />
+              </div>
+              <p className="font-display text-xl">
+                {rows.length === 0
+                  ? "No inquiries yet"
+                  : "Nothing matches that filter"}
+              </p>
             </div>
           ) : (
             <div className="bg-card rounded-2xl card-shadow overflow-hidden">
