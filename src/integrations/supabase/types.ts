@@ -3225,6 +3225,9 @@ export type Database = {
       }
       vendor_profiles: {
         Row: {
+          application_review_notes: string | null
+          application_reviewed_at: string | null
+          application_reviewed_by: string | null
           application_status: string
           awards: string[] | null
           base_price_cents: number | null
@@ -3239,17 +3242,14 @@ export type Database = {
           faq: Json | null
           geocoded_at: string | null
           geocoded_location: string | null
-          hourly_rate_cents: number | null
           id: string
           instagram_handle: string | null
           intro_video_url: string | null
           is_demo: boolean
-          is_staffing: boolean
           languages: string[] | null
           latitude: number | null
           location: string | null
           longitude: number | null
-          min_hours: number | null
           onboarding_nudge_sent_at: string | null
           payment_terms: string | null
           policy_notes: string | null
@@ -3267,6 +3267,9 @@ export type Database = {
           weekly_digest_sent_at: string | null
         }
         Insert: {
+          application_review_notes?: string | null
+          application_reviewed_at?: string | null
+          application_reviewed_by?: string | null
           application_status?: string
           awards?: string[] | null
           base_price_cents?: number | null
@@ -3281,17 +3284,14 @@ export type Database = {
           faq?: Json | null
           geocoded_at?: string | null
           geocoded_location?: string | null
-          hourly_rate_cents?: number | null
           id?: string
           instagram_handle?: string | null
           intro_video_url?: string | null
           is_demo?: boolean
-          is_staffing?: boolean
           languages?: string[] | null
           latitude?: number | null
           location?: string | null
           longitude?: number | null
-          min_hours?: number | null
           onboarding_nudge_sent_at?: string | null
           payment_terms?: string | null
           policy_notes?: string | null
@@ -3309,6 +3309,9 @@ export type Database = {
           weekly_digest_sent_at?: string | null
         }
         Update: {
+          application_review_notes?: string | null
+          application_reviewed_at?: string | null
+          application_reviewed_by?: string | null
           application_status?: string
           awards?: string[] | null
           base_price_cents?: number | null
@@ -3323,17 +3326,14 @@ export type Database = {
           faq?: Json | null
           geocoded_at?: string | null
           geocoded_location?: string | null
-          hourly_rate_cents?: number | null
           id?: string
           instagram_handle?: string | null
           intro_video_url?: string | null
           is_demo?: boolean
-          is_staffing?: boolean
           languages?: string[] | null
           latitude?: number | null
           location?: string | null
           longitude?: number | null
-          min_hours?: number | null
           onboarding_nudge_sent_at?: string | null
           payment_terms?: string | null
           policy_notes?: string | null
@@ -3529,6 +3529,50 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "vendor_showcase_clips_vendor_id_fkey"
+            columns: ["vendor_id"]
+            isOneToOne: false
+            referencedRelation: "vendor_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vendor_team_bios: {
+        Row: {
+          bio: string | null
+          created_at: string
+          display_name: string
+          display_order: number
+          id: string
+          is_owner: boolean
+          photo_storage_path: string | null
+          role: string | null
+          vendor_id: string
+        }
+        Insert: {
+          bio?: string | null
+          created_at?: string
+          display_name: string
+          display_order?: number
+          id?: string
+          is_owner?: boolean
+          photo_storage_path?: string | null
+          role?: string | null
+          vendor_id: string
+        }
+        Update: {
+          bio?: string | null
+          created_at?: string
+          display_name?: string
+          display_order?: number
+          id?: string
+          is_owner?: boolean
+          photo_storage_path?: string | null
+          role?: string | null
+          vendor_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vendor_team_bios_vendor_id_fkey"
             columns: ["vendor_id"]
             isOneToOne: false
             referencedRelation: "vendor_profiles"
