@@ -157,11 +157,16 @@ export function VendorCard({ vendor, eager = false }: VendorCardProps) {
 
           <div className="absolute bottom-2 left-3 right-3 flex items-end justify-between text-background">
             <p className="font-label tracking-[0.2em] text-[10px]">{vendor.category}</p>
-            <div className="flex items-center gap-1 text-[11px]">
-              <Star className="w-3 h-3 fill-accent text-accent" />
-              <span className="tnum font-medium">{vendor.rating}</span>
-              <span className="text-background/70 tnum">({vendor.reviews})</span>
-            </div>
+            {/* Hide the star block when there are no reviews — showing
+                "0 (0)" looked like a bad rating instead of "no data
+                yet". Vendors with reviews still get the live count. */}
+            {vendor.reviews > 0 && (
+              <div className="flex items-center gap-1 text-[11px]">
+                <Star className="w-3 h-3 fill-accent text-accent" />
+                <span className="tnum font-medium">{vendor.rating}</span>
+                <span className="text-background/70 tnum">({vendor.reviews})</span>
+              </div>
+            )}
           </div>
         </div>
 

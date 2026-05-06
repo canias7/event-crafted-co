@@ -699,12 +699,20 @@ export default function VendorDetailPage() {
                 transition={{ ...spring, delay: 0.5 }}
                 className="flex flex-wrap items-center gap-x-6 gap-y-3 text-background/85 text-sm"
               >
-                <div className="flex items-center gap-1.5">
-                  <Star className="w-4 h-4 fill-accent text-accent" />
-                  <span className="font-medium tnum">{vendor.rating}</span>
-                  <span className="text-background/60 tnum">({vendor.reviews} reviews)</span>
-                </div>
-                <span className="hidden md:inline text-background/30">·</span>
+                {reviewsCount > 0 && (
+                  <>
+                    <div className="flex items-center gap-1.5">
+                      <Star className="w-4 h-4 fill-accent text-accent" />
+                      <span className="font-medium tnum">
+                        {reviewsAvg.toFixed(1)}
+                      </span>
+                      <span className="text-background/60 tnum">
+                        ({reviewsCount} reviews)
+                      </span>
+                    </div>
+                    <span className="hidden md:inline text-background/30">·</span>
+                  </>
+                )}
                 <div className="flex items-center gap-1.5">
                   <MapPin className="w-3.5 h-3.5" />
                   <span>{vendor.location ?? vendor.distance}</span>
@@ -760,7 +768,12 @@ export default function VendorDetailPage() {
                       : `${packages.length} ways to work together`
                     : "Three ways to work together"}
                 </h2>
-                {packages.length > 0 ? (
+                {packages.length === 0 && vendor.isReal ? (
+                  <p className="text-sm text-muted-foreground italic max-w-lg">
+                    Packages aren't published yet — message {vendor.name} for
+                    a tailored quote.
+                  </p>
+                ) : packages.length > 0 ? (
                   <div className={`grid gap-4 ${packages.length >= 3 ? "md:grid-cols-3" : packages.length === 2 ? "md:grid-cols-2" : "md:grid-cols-1 max-w-md"}`}>
                     {packages.map((pkg, i) => {
                       const featured = packages.length >= 2 && i === Math.floor(packages.length / 2);
@@ -945,10 +958,12 @@ export default function VendorDetailPage() {
                 </SilentErrorBoundary>
               )}
 
-              {/* Reviews */}
+              {/* Reviews — real vendors only show their own reviews;
+                  demo vendors fall back to sampleReviews so the
+                  marketing pages still feel populated. */}
               <VendorReviewsList
                 realReviews={realReviews}
-                samples={sampleReviews}
+                samples={vendor.isReal ? [] : sampleReviews}
                 averageRating={reviewsAvg}
                 totalCount={reviewsCount}
                 vendorName={vendor.name}
