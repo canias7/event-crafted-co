@@ -19,7 +19,6 @@ import { IntakeFormEditor } from "@/components/vendor/IntakeFormEditor";
 import { ReferralManager } from "@/components/vendor/ReferralManager";
 import { ImportedReviewsManager } from "@/components/vendor/ImportedReviewsManager";
 import { VendorFaqsManager } from "@/components/vendor/VendorFaqsManager";
-import { CategoryAttributesEditor } from "@/components/vendor/CategoryAttributesEditor";
 import { VendorTeamManager } from "@/components/vendor/VendorTeamManager";
 import { VendorPolicyEditor } from "@/components/vendor/VendorPolicyEditor";
 import { LeadRulesCard } from "@/components/vendor/LeadRulesCard";
