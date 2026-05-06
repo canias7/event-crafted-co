@@ -23,6 +23,7 @@ import { VendorFaqsManager } from "@/components/vendor/VendorFaqsManager";
 import { VendorTeamManager } from "@/components/vendor/VendorTeamManager";
 import { VendorPolicyEditor } from "@/components/vendor/VendorPolicyEditor";
 import { ShowcaseClipsManager } from "@/components/vendor/ShowcaseClipsManager";
+import { ImportedReviewsManager } from "@/components/vendor/ImportedReviewsManager";
 import { VerificationManager } from "@/components/vendor/VerificationManager";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -697,6 +698,12 @@ export default function VendorProfilePage() {
 
           {profile && isListing && !publishedRecently && category && (
             <>
+              {/* Universal sections — every vendor regardless of
+                  category gets these. Order matches the user's
+                  universal list: Pricing → Photos → Team →
+                  Availability → Reviews → Recommendations.
+                  ("About" is the bio + portfolio-summary fields up
+                  in the form.) */}
               <div className="mt-12 pt-10 border-t border-border">
                 <PackageManager vendorId={profile.id} canEdit={canEdit} />
               </div>
@@ -714,11 +721,21 @@ export default function VendorProfilePage() {
                 </div>
               )}
               <div className="mt-12 pt-10 border-t border-border">
+                <ImportedReviewsManager
+                  vendorId={profile.id}
+                  canEdit={canEdit}
+                />
+              </div>
+              <div className="mt-12 pt-10 border-t border-border">
                 <VendorRecommendationManager
                   vendorId={profile.id}
                   canEdit={canEdit}
                 />
               </div>
+
+              {/* Optional sections — vendor can fill if useful but
+                  not required to publish. Live below the universal
+                  block so they don't crowd the primary editor. */}
               <div className="mt-12 pt-10 border-t border-border">
                 <IntakeFormEditor vendorId={profile.id} canEdit={canEdit} />
               </div>
