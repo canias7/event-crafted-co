@@ -420,26 +420,48 @@ export default function VendorProfilePage() {
                     return;
                   }
                   setDeleting(true);
-                  // Chain .select() so we can verify the row was actually
-                  // removed. Without a DELETE RLS policy, Supabase returns
-                  // a successful response with zero rows affected — the
-                  // UI would clear the form but the row would still be in
-                  // the directory on next reload. .select() lets us turn
-                  // that silent failure into a real, actionable toast.
-                  const { data, error } = await supabase
-                    .from("vendor_profiles")
-                    .delete()
-                    .eq("id", profile.id)
-                    .select("id");
-                  setDeleting(false);
-                  if (error) {
-                    toast.error(error.message);
-                    return;
+                  // Call the SECURITY DEFINER RPC instead of a raw
+                  // .delete(). The RPC does its own ownership check and
+                  // bypasses RLS, so it works in environments where the
+                  // DELETE policy migration hasn't run yet (Lovable's
+                  // hosted Supabase has been silently dropping the
+                  // direct delete without an error). Falls back to the
+                  // verified .delete() path if the RPC isn't deployed.
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                  const rpc = await (supabase as any).rpc(
+                    "delete_my_vendor_profile",
+                    { p_vendor_id: profile.id },
+                  );
+                  let succeeded = !rpc.error && rpc.data === true;
+                  let errorMessage: string | null = rpc.error?.message ?? null;
+                  // 42883 = function does not exist (migration not yet
+                  // applied). Fall back to the table-level delete with
+                  // row-count verification so we still get a real
+                  // result either way.
+                  if (
+                    !succeeded &&
+                    rpc.error &&
+                    (rpc.error.code === "42883" ||
+                      /function .* does not exist/i.test(rpc.error.message))
+                  ) {
+                    const direct = await supabase
+                      .from("vendor_profiles")
+                      .delete()
+                      .eq("id", profile.id)
+                      .select("id");
+                    if (direct.error) {
+                      errorMessage = direct.error.message;
+                    } else if (!direct.data || direct.data.length === 0) {
+                      errorMessage =
+                        "Couldn't delete — your account may not have permission. Refresh the page or contact support if it keeps failing.";
+                    } else {
+                      succeeded = true;
+                      errorMessage = null;
+                    }
                   }
-                  if (!data || data.length === 0) {
-                    toast.error(
-                      "Couldn't delete the listing — your account may not have permission. Refresh the page and try again, or contact support if the issue persists.",
-                    );
+                  setDeleting(false);
+                  if (!succeeded) {
+                    toast.error(errorMessage ?? "Couldn't delete the listing");
                     return;
                   }
                   toast.success("Listing deleted");
