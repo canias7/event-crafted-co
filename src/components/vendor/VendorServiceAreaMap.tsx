@@ -49,7 +49,21 @@ export function VendorServiceAreaMap({
         .eq("id", vendorId)
         .maybeSingle();
       if (cancelled) return;
-      setData((row as CoverageRow | null) ?? null);
+      const safeRow = (row as CoverageRow | null) ?? null;
+      // Debug — surface the exact shape we got back so we can see
+      // when lat/lon are present vs null vs unexpected types. Remove
+      // once the post-publish crash is fully resolved.
+      // eslint-disable-next-line no-console
+      console.info("[VendorServiceAreaMap] data", {
+        vendorId,
+        latitude: safeRow?.latitude,
+        latitudeType: typeof safeRow?.latitude,
+        longitude: safeRow?.longitude,
+        longitudeType: typeof safeRow?.longitude,
+        radius: safeRow?.service_radius_miles,
+        location: safeRow?.location,
+      });
+      setData(safeRow);
       setLoading(false);
     })();
     return () => {

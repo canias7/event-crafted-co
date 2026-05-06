@@ -88,6 +88,7 @@ import { ReportButton } from "@/components/trust/ReportButton";
 import { VendorPolicyBadges } from "@/components/vendor/VendorPolicyBadges";
 import { VendorServiceAreaMap } from "@/components/vendor/VendorServiceAreaMap";
 import { CategoryAttributesDisplay } from "@/components/vendor/CategoryAttributesDisplay";
+import { SilentErrorBoundary } from "@/components/shared/SilentErrorBoundary";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Picture, type PictureSource } from "@/components/shared/Picture";
 import { VendorTeamPublic } from "@/components/vendor/VendorTeamPublic";
@@ -582,6 +583,24 @@ export default function VendorDetailPage() {
 
   const heroPicture = imageMap[vendor.image] ?? featureFlorals;
 
+  // Debug — temporary instrumentation while we chase a render-time
+  // crash for newly-published vendors. Logs the resolved vendor
+  // object, the resolved hero key, and a few fields most likely to
+  // be problematic (image lookup, location, lat/lng-adjacent state).
+  // Remove once the root cause is fixed.
+  // eslint-disable-next-line no-console
+  console.info("[VendorDetailPage] render", {
+    id: vendor.id,
+    name: vendor.name,
+    category: vendor.category,
+    imageKey: vendor.image,
+    imageResolved: imageMap[vendor.image] ? "match" : "fallback(featureFlorals)",
+    location: vendor.location,
+    isReal: vendor.isReal,
+    instagramHandle: vendor.instagramHandle,
+    tiktokHandle: vendor.tiktokHandle,
+  });
+
   return (
     <div className="min-h-screen bg-background pb-24 lg:pb-0">
       <PublicNav />
@@ -857,39 +876,63 @@ export default function VendorDetailPage() {
                 </div>
               </div>
 
-              {/* Multi-vendor bundles owned by this vendor (real DB only). */}
-              {vendor.isReal && <VendorBundlesPublic vendorId={vendor.id} />}
+              {/* Each section wrapped in a per-component silent
+                  error boundary so a single rogue component (most
+                  common offender: leaflet inside the service-area
+                  map for vendors with weird geocode data) can't take
+                  the whole detail page down — it just hides itself. */}
+              {vendor.isReal && (
+                <SilentErrorBoundary label="VendorBundlesPublic">
+                  <VendorBundlesPublic vendorId={vendor.id} />
+                </SilentErrorBoundary>
+              )}
 
               {/* Category-specific structured fields (capacity, ceremony
                   types, package hours, etc — schema lives in
                   data/categoryAttributes.ts). Renders nothing for
                   categories without a schema yet. */}
               {vendor.isReal && (
-                <CategoryAttributesDisplay
-                  vendorId={vendor.id}
-                  category={vendor.category}
-                />
+                <SilentErrorBoundary label="CategoryAttributesDisplay">
+                  <CategoryAttributesDisplay
+                    vendorId={vendor.id}
+                    category={vendor.category}
+                  />
+                </SilentErrorBoundary>
               )}
 
               {/* Showcase reels — vertical clips, autoplay-on-view */}
-              {vendor.isReal && <ShowcaseStrip vendorId={vendor.id} />}
-
-              {/* Multi-vendor bundles — only for real DB vendors. */}
-              {vendor.isReal && <VendorBundlesPublic vendorId={vendor.id} />}
+              {vendor.isReal && (
+                <SilentErrorBoundary label="ShowcaseStrip">
+                  <ShowcaseStrip vendorId={vendor.id} />
+                </SilentErrorBoundary>
+              )}
 
               {/* Team — owner + staff cards. Renders nothing when empty. */}
-              {vendor.isReal && <VendorTeamPublic vendorId={vendor.id} />}
+              {vendor.isReal && (
+                <SilentErrorBoundary label="VendorTeamPublic">
+                  <VendorTeamPublic vendorId={vendor.id} />
+                </SilentErrorBoundary>
+              )}
 
               {/* Availability — Turo/Airbnb-style calendar with
                   blocked dates struck through. */}
-              {vendor.isReal && <VendorAvailabilityPublic vendorId={vendor.id} />}
-
-              {/* Service area coverage map */}
               {vendor.isReal && (
-                <VendorServiceAreaMap
-                  vendorId={vendor.id}
-                  category={vendor.category}
-                />
+                <SilentErrorBoundary label="VendorAvailabilityPublic">
+                  <VendorAvailabilityPublic vendorId={vendor.id} />
+                </SilentErrorBoundary>
+              )}
+
+              {/* Service area coverage map (leaflet) — wrapped because
+                  this is the most likely thrower; bad geocode coords
+                  or a stale leaflet build can crash inside the
+                  renderer. */}
+              {vendor.isReal && (
+                <SilentErrorBoundary label="VendorServiceAreaMap">
+                  <VendorServiceAreaMap
+                    vendorId={vendor.id}
+                    category={vendor.category}
+                  />
+                </SilentErrorBoundary>
               )}
 
               {/* Reviews */}
