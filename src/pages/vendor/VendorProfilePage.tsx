@@ -25,6 +25,7 @@ import { VendorPolicyEditor } from "@/components/vendor/VendorPolicyEditor";
 import { ShowcaseClipsManager } from "@/components/vendor/ShowcaseClipsManager";
 import { ImportedReviewsManager } from "@/components/vendor/ImportedReviewsManager";
 import { VerificationManager } from "@/components/vendor/VerificationManager";
+import { CategoryAttributesEditor } from "@/components/vendor/CategoryAttributesEditor";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -63,12 +64,16 @@ interface VendorProfile {
    *  the listing is live in the directory; the dashboard renders
    *  the preview card instead of the editor on this tab. */
   application_status: string | null;
+  application_review_notes: string | null;
   intro_video_url: string | null;
   weekly_digest_enabled: boolean | null;
   slug: string | null;
   instagram_handle: string | null;
   tiktok_handle: string | null;
 }
+
+const VENDOR_PROFILE_COLS =
+  "id, business_name, category, bio, base_price_cents, location, service_radius_miles, portfolio_summary, verified_at, application_status, application_review_notes, intro_video_url, weekly_digest_enabled, slug, instagram_handle, tiktok_handle";
 
 export default function VendorProfilePage() {
   const { user, vendorMemberships } = useAuth();
@@ -132,29 +137,23 @@ export default function VendorProfilePage() {
     // returns nothing keeps team-member access working without
     // triggering a phantom "create profile" path that would later
     // collide with the real row on insert.
-    const SELECT_COLS =
-      "id, business_name, category, bio, base_price_cents, location, service_radius_miles, portfolio_summary, verified_at, application_status, application_review_notes, intro_video_url, weekly_digest_enabled, slug, instagram_handle, tiktok_handle";
     (async () => {
       const own = await supabase
         .from("vendor_profiles")
-        .select(SELECT_COLS)
+        .select(VENDOR_PROFILE_COLS)
         .eq("user_id", user.id)
         .maybeSingle();
       if (cancelled) return;
-      let data = own.data as
-        | (VendorProfile & { application_review_notes?: string | null })
-        | null;
+      let data = own.data as VendorProfile | null;
       let error = own.error;
       if (!data && !error && membership?.vendor_id) {
         const team = await supabase
           .from("vendor_profiles")
-          .select(SELECT_COLS)
+          .select(VENDOR_PROFILE_COLS)
           .eq("id", membership.vendor_id)
           .maybeSingle();
         if (cancelled) return;
-        data = team.data as
-          | (VendorProfile & { application_review_notes?: string | null })
-          | null;
+        data = team.data as VendorProfile | null;
         error = team.error;
       }
       // Soft-deleted rows (the listing's Delete button flipped status to
@@ -180,6 +179,78 @@ export default function VendorProfilePage() {
       cancelled = true;
     };
   }, [user, membership?.vendor_id]);
+
+  // Auto-create a draft listing the moment the vendor picks a
+  // category on the Listing tab, so the section managers (packages,
+  // photos, team, availability, reviews, recommendations, and the
+  // category-specific Details editor) become available immediately
+  // instead of after a separate Save click. Also recovers any
+  // soft-deleted row tied to this user_id by clearing the deletion
+  // sentinel and resetting the row to draft state.
+  useEffect(() => {
+    if (!user || !isListing || !category || profile) return;
+    if (loading || saving || creating) return;
+    let cancelled = false;
+    (async () => {
+      setCreating(true);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const ins = await (supabase as any)
+        .from("vendor_profiles")
+        .insert({
+          user_id: user.id,
+          business_name: businessName.trim() || "",
+          category,
+          application_status: "draft",
+        })
+        .select(VENDOR_PROFILE_COLS)
+        .single();
+      if (cancelled) {
+        setCreating(false);
+        return;
+      }
+      if (ins.data) {
+        const created = ins.data as VendorProfile;
+        setProfile(created);
+        applyToForm(created);
+      } else if (ins.error?.code === "23505") {
+        // Existing row (likely soft-deleted earlier) — fetch + revive.
+        const existing = await supabase
+          .from("vendor_profiles")
+          .select(VENDOR_PROFILE_COLS)
+          .eq("user_id", user.id)
+          .maybeSingle();
+        if (cancelled) {
+          setCreating(false);
+          return;
+        }
+        if (existing.data) {
+          const row = existing.data as VendorProfile;
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          await (supabase as any)
+            .from("vendor_profiles")
+            .update({
+              category,
+              application_status: "draft",
+              application_review_notes: null,
+            })
+            .eq("id", row.id);
+          const revived: VendorProfile = {
+            ...row,
+            category,
+            application_status: "draft",
+            application_review_notes: null,
+          };
+          setProfile(revived);
+          applyToForm(revived);
+        }
+      }
+      setCreating(false);
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, isListing, category, profile?.id]);
 
   async function handleSave(
     e: React.FormEvent,
@@ -810,7 +881,11 @@ export default function VendorProfilePage() {
                   {(saving || creating) && (
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                   )}
-                  {profile
+                  {/* While the row exists in 'draft' state with an
+                      empty business_name, the form still reads as
+                      pre-creation — keep "Create listing" until the
+                      user has actually filled in the basics. */}
+                  {profile && profile.business_name?.trim()
                     ? "Save changes"
                     : isListing
                       ? "Create listing"
@@ -839,6 +914,17 @@ export default function VendorProfilePage() {
                   Availability → Reviews → Recommendations.
                   ("About" is the bio + portfolio-summary fields up
                   in the form.) */}
+              {/* Per-category Details — venue offerings, food types,
+                  entertainment specialties, etc. Reads the schema for
+                  the picked sub-category and renders a tailored form
+                  saved into vendor_profiles.category_attributes. */}
+              <div className="mt-12 pt-10 border-t border-border">
+                <CategoryAttributesEditor
+                  vendorId={profile.id}
+                  category={profile.category}
+                  canEdit={canEdit}
+                />
+              </div>
               <div className="mt-12 pt-10 border-t border-border">
                 <PackageManager vendorId={profile.id} canEdit={canEdit} />
               </div>
