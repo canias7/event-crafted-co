@@ -387,11 +387,6 @@ export default function VendorProfilePage() {
                   rows={5}
                   placeholder="What makes your work distinctive? Notable clients, signature aesthetic, typical event size."
                 />
-                <p className="text-xs text-muted-foreground flex items-center gap-1.5 pt-1">
-                  <Sparkles className="w-3 h-3 text-accent" />
-                  Used by the AI to draft replies in your voice — fuller is
-                  better.
-                </p>
               </div>
               )}
 
