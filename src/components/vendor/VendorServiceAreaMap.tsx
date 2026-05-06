@@ -57,11 +57,37 @@ export function VendorServiceAreaMap({
     };
   }, [vendorId]);
 
-  if (loading || !data?.latitude || !data?.longitude) return null;
+  if (loading) return null;
 
-  const radiusMiles = data.service_radius_miles ?? 25;
+  // Strict validation: lat/lon must be finite numbers in valid ranges
+  // before we hand them to leaflet. The previous `!data?.latitude`
+  // truthy-check let `0` through and crashed when the row had only
+  // partial geocoder output (e.g. one of the two coords missing or
+  // returned as a non-number by a stale schema). Rather than risk
+  // leaflet throwing inside its renderer, bail out cleanly.
+  const lat = data?.latitude;
+  const lng = data?.longitude;
+  if (
+    typeof lat !== "number" ||
+    typeof lng !== "number" ||
+    !Number.isFinite(lat) ||
+    !Number.isFinite(lng) ||
+    lat < -90 ||
+    lat > 90 ||
+    lng < -180 ||
+    lng > 180
+  ) {
+    return null;
+  }
+
+  const radiusMiles =
+    typeof data.service_radius_miles === "number" &&
+    Number.isFinite(data.service_radius_miles) &&
+    data.service_radius_miles > 0
+      ? data.service_radius_miles
+      : 25;
   const radiusMeters = radiusMiles * MILES_TO_METERS;
-  const center: [number, number] = [data.latitude, data.longitude];
+  const center: [number, number] = [lat, lng];
   // Pick a zoom level that fits the radius circle nicely. Approximate.
   const zoom = radiusMiles > 100 ? 7 : radiusMiles > 50 ? 8 : radiusMiles > 25 ? 9 : 10;
 
