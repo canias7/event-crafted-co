@@ -424,27 +424,47 @@ export default function VendorProfilePage() {
                   {t("vendor_listing.verified")}
                 </Badge>
               )}
-              {/* Publish — Listing tab only. Submits the same payload
-                  as the form's Save button, but with "publish" toast
-                  messaging so the affordance reads as the moment the
-                  listing goes live to hosts. */}
+              {/* Save + Publish — Listing tab only. Save persists the
+                  basics without flipping application_status; Publish
+                  flips the listing live in the directory. The bottom-
+                  of-form Save button is gone — these two are the
+                  only commit affordances now. */}
               {isListing && profile && canEdit && (
-                <Button
-                  size="sm"
-                  className="rounded-full h-8 bg-foreground text-background hover:bg-foreground/90"
-                  disabled={saving || creating}
-                  onClick={() =>
-                    handleSave(
-                      { preventDefault: () => {} } as React.FormEvent,
-                      { publish: true },
-                    )
-                  }
-                >
-                  {(saving || creating) && (
-                    <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
-                  )}
-                  {t("vendor_listing.publish")}
-                </Button>
+                <>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="rounded-full h-8"
+                    disabled={saving || creating}
+                    onClick={() =>
+                      handleSave(
+                        { preventDefault: () => {} } as React.FormEvent,
+                      )
+                    }
+                  >
+                    {saving && (
+                      <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
+                    )}
+                    {t("vendor_listing.save_changes")}
+                  </Button>
+                  <Button
+                    size="sm"
+                    className="rounded-full h-8 bg-foreground text-background hover:bg-foreground/90"
+                    disabled={saving || creating}
+                    onClick={() =>
+                      handleSave(
+                        { preventDefault: () => {} } as React.FormEvent,
+                        { publish: true },
+                      )
+                    }
+                  >
+                    {creating && (
+                      <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
+                    )}
+                    {t("vendor_listing.publish")}
+                  </Button>
+                </>
               )}
             </div>
           </div>
@@ -783,29 +803,30 @@ export default function VendorProfilePage() {
               )}
 
 
-              <div className="flex items-center justify-end gap-3 pt-2">
-                {!canEdit && profile && (
-                  <p className="text-xs text-muted-foreground">
-                    {t("vendor_listing.view_only")}
-                  </p>
-                )}
-                <Button
-                  type="submit"
-                  disabled={saving || creating || (!canEdit && !!profile)}
-                  className="rounded-full bg-foreground text-background hover:bg-foreground/90"
-                >
-                  {(saving || creating) && (
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  )}
-                  {/* While the row exists in 'draft' state with an
-                      empty business_name, the form still reads as
-                      pre-creation — keep "Create listing" until the
-                      user has actually filled in the basics. */}
-                  {profile && profile.business_name?.trim()
-                    ? t("vendor_listing.save_changes")
-                    : t("vendor_listing.create")}
-                </Button>
-              </div>
+              {/* Pre-creation only: the very first commit needs an
+                  inline button because the header Save/Publish only
+                  render once a draft profile exists. Once the row is
+                  created, the header buttons take over and this
+                  bottom commit hides. */}
+              {!profile && (
+                <div className="flex items-center justify-end gap-3 pt-2">
+                  <Button
+                    type="submit"
+                    disabled={saving || creating}
+                    className="rounded-full bg-foreground text-background hover:bg-foreground/90"
+                  >
+                    {(saving || creating) && (
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    )}
+                    {t("vendor_listing.create")}
+                  </Button>
+                </div>
+              )}
+              {!canEdit && profile && (
+                <p className="text-xs text-muted-foreground text-right pt-2">
+                  {t("vendor_listing.view_only")}
+                </p>
+              )}
             </form>
           )}
 

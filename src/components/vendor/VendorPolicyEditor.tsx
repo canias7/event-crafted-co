@@ -1,8 +1,7 @@
-import { useEffect, useState } from "react";
-import { Loader2, ShieldOff } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { ShieldOff } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -16,9 +15,10 @@ import {
 import { VendorPolicyBadges } from "./VendorPolicyBadges";
 
 // Vendor-side editor for the booking-terms surfaced as
-// VendorPolicyBadges on the public profile. Loads + saves its own
-// row slice so it can drop next to other manager cards without
-// touching the parent profile page's giant form.
+// VendorPolicyBadges on the public profile. The inline "Save terms"
+// button is gone now — fields auto-persist 600ms after the last
+// change so the listing builder only needs the global Save / Publish
+// buttons in the header.
 
 interface PolicyRow {
   deposit_pct: number | null;
@@ -37,11 +37,14 @@ export function VendorPolicyEditor({
   canEdit: boolean;
 }) {
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
   const [depositPct, setDepositPct] = useState("");
   const [cancellation, setCancellation] = useState<string>(NONE);
   const [rescheduleWindow, setRescheduleWindow] = useState("");
   const [notes, setNotes] = useState("");
+  // True once the initial load has populated state. The auto-save
+  // useEffect waits for this to flip before firing, so the load
+  // itself doesn't trigger a redundant write.
+  const hydrated = useRef(false);
 
   async function load() {
     setLoading(true);
@@ -63,6 +66,11 @@ export function VendorPolicyEditor({
     );
     setNotes(row?.policy_notes ?? "");
     setLoading(false);
+    // Wait one paint tick before flipping the hydrated guard so the
+    // controlled-input setters above don't fire the auto-save.
+    requestAnimationFrame(() => {
+      hydrated.current = true;
+    });
   }
 
   useEffect(() => {
@@ -70,29 +78,30 @@ export function VendorPolicyEditor({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [vendorId]);
 
-  async function save(e: React.FormEvent) {
-    e.preventDefault();
-    setSaving(true);
-    const payload = {
-      deposit_pct: depositPct ? Math.max(0, Math.min(100, Number.parseInt(depositPct, 10))) : null,
-      cancellation_policy: cancellation === NONE ? null : cancellation,
-      reschedule_window_days: rescheduleWindow
-        ? Math.max(0, Number.parseInt(rescheduleWindow, 10))
-        : null,
-      policy_notes: notes.trim() || null,
-    };
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error } = await (supabase as any)
-      .from("vendor_profiles")
-      .update(payload)
-      .eq("id", vendorId);
-    setSaving(false);
-    if (error) {
-      toast.error(error.message);
-      return;
-    }
-    toast.success("Saved");
-  }
+  // Debounced auto-save — fires 600ms after the last change so we
+  // don't spam writes while the vendor is still typing.
+  useEffect(() => {
+    if (!canEdit || !hydrated.current || !vendorId) return;
+    const handle = setTimeout(async () => {
+      const payload = {
+        deposit_pct: depositPct
+          ? Math.max(0, Math.min(100, Number.parseInt(depositPct, 10)))
+          : null,
+        cancellation_policy: cancellation === NONE ? null : cancellation,
+        reschedule_window_days: rescheduleWindow
+          ? Math.max(0, Number.parseInt(rescheduleWindow, 10))
+          : null,
+        policy_notes: notes.trim() || null,
+      };
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error } = await (supabase as any)
+        .from("vendor_profiles")
+        .update(payload)
+        .eq("id", vendorId);
+      if (error) toast.error(error.message);
+    }, 600);
+    return () => clearTimeout(handle);
+  }, [canEdit, vendorId, depositPct, cancellation, rescheduleWindow, notes]);
 
   if (loading) {
     return <p className="text-xs text-muted-foreground py-3">Loading…</p>;
@@ -112,7 +121,7 @@ export function VendorPolicyEditor({
       </div>
 
       {canEdit ? (
-        <form onSubmit={save} className="space-y-3">
+        <div className="space-y-3">
           <div className="grid sm:grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label htmlFor="p-deposit">Deposit (%)</Label>
@@ -171,17 +180,7 @@ export function VendorPolicyEditor({
               placeholder="Anything specific to call out — date changes, force majeure, etc."
             />
           </div>
-          <div className="flex justify-end">
-            <Button
-              type="submit"
-              disabled={saving}
-              className="rounded-full bg-foreground text-background hover:bg-foreground/90"
-            >
-              {saving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-              Save terms
-            </Button>
-          </div>
-        </form>
+        </div>
       ) : (
         <VendorPolicyBadges
           depositPct={depositPct ? Number.parseInt(depositPct, 10) : null}
