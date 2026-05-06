@@ -7,6 +7,9 @@ import { Calendar } from "@/components/ui/calendar";
 //   - one-off blocked dates (vendor_unavailable_dates)
 //   - recurring weekly rules (vendor_availability_rules → projected
 //     onto every weekday for the next ~6 months)
+//   - accepted appointments (mirrors the vendor's /vendor/calendar
+//     week view via the vendor_booked_dates RPC, which exposes only
+//     the date — no host or meeting detail leaks to anonymous hosts)
 // Renders a non-interactive month calendar with blocked dates struck
 // through; tappable dates remain visually open ("inquire to book").
 //
@@ -32,6 +35,7 @@ const HORIZON_MONTHS = 6;
 export function VendorAvailabilityPublic({ vendorId }: { vendorId: string }) {
   const [oneOffBlocks, setOneOffBlocks] = useState<string[]>([]);
   const [weeklyRules, setWeeklyRules] = useState<RecurringRule[]>([]);
+  const [bookedDates, setBookedDates] = useState<string[]>([]);
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
@@ -45,22 +49,41 @@ export function VendorAvailabilityPublic({ vendorId }: { vendorId: string }) {
       const horizon = new Date(today);
       horizon.setMonth(horizon.getMonth() + HORIZON_MONTHS);
 
-      const [{ data: blocks }, { data: rules }] = await Promise.all([
-        supabase
-          .from("vendor_unavailable_dates")
-          .select("date")
-          .eq("vendor_id", vendorId)
-          .gte("date", dateKey(today))
-          .lte("date", dateKey(horizon)),
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (supabase as any)
-          .from("vendor_availability_rules")
-          .select("day_of_week, is_unavailable")
-          .eq("vendor_id", vendorId),
-      ]);
+      const [{ data: blocks }, { data: rules }, { data: booked }] =
+        await Promise.all([
+          supabase
+            .from("vendor_unavailable_dates")
+            .select("date")
+            .eq("vendor_id", vendorId)
+            .gte("date", dateKey(today))
+            .lte("date", dateKey(horizon)),
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          (supabase as any)
+            .from("vendor_availability_rules")
+            .select("day_of_week, is_unavailable")
+            .eq("vendor_id", vendorId),
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          (supabase as any).rpc("vendor_booked_dates", {
+            p_vendor_id: vendorId,
+          }),
+        ]);
       if (cancelled) return;
       setOneOffBlocks(((blocks as Array<{ date: string }> | null) ?? []).map((r) => r.date));
       setWeeklyRules((rules as RecurringRule[] | null) ?? []);
+      // RPC returns rows shaped { vendor_booked_dates: 'YYYY-MM-DD' }
+      // when called via PostgREST, OR plain string[] depending on PG
+      // version — handle both shapes defensively.
+      const bookedRaw = (booked as unknown) ?? [];
+      const bookedList = Array.isArray(bookedRaw)
+        ? bookedRaw
+            .map((row: unknown) =>
+              typeof row === "string"
+                ? row
+                : (row as { vendor_booked_dates?: string }).vendor_booked_dates,
+            )
+            .filter((s): s is string => typeof s === "string")
+        : [];
+      setBookedDates(bookedList);
       setLoaded(true);
     })();
     return () => {
@@ -68,10 +91,12 @@ export function VendorAvailabilityPublic({ vendorId }: { vendorId: string }) {
     };
   }, [vendorId]);
 
-  // Project recurring weekly rules onto specific dates within the
-  // horizon, then merge with one-off blocks for the disabled set.
-  const blockedDates = useMemo(() => {
+  // Merge one-off blocks, the projected recurring rules, and accepted
+  // appointment dates into a single disabled set so the calendar
+  // visually matches whatever the vendor sees on /vendor/calendar.
+  const blockedDateObjects = useMemo(() => {
     const set = new Set(oneOffBlocks);
+    for (const d of bookedDates) set.add(d);
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const closedDays = new Set(
@@ -85,10 +110,16 @@ export function VendorAvailabilityPublic({ vendorId }: { vendorId: string }) {
       }
     }
     return Array.from(set).map(parseDate);
-  }, [oneOffBlocks, weeklyRules]);
+  }, [oneOffBlocks, weeklyRules, bookedDates]);
 
   if (!loaded) return null;
-  if (blockedDates.length === 0 && weeklyRules.length === 0) return null;
+  if (
+    blockedDateObjects.length === 0 &&
+    weeklyRules.length === 0 &&
+    bookedDates.length === 0
+  ) {
+    return null;
+  }
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -112,7 +143,7 @@ export function VendorAvailabilityPublic({ vendorId }: { vendorId: string }) {
           numberOfMonths={2}
           className="mx-auto"
           modifiers={{
-            blocked: blockedDates,
+            blocked: blockedDateObjects,
           }}
           modifiersClassNames={{
             blocked:
