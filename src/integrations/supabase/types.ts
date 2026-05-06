@@ -2795,6 +2795,50 @@ export type Database = {
           },
         ]
       }
+      vendor_availability_rules: {
+        Row: {
+          created_at: string
+          day_of_week: number
+          end_time: string | null
+          id: string
+          is_unavailable: boolean
+          notes: string | null
+          start_time: string | null
+          updated_at: string
+          vendor_id: string
+        }
+        Insert: {
+          created_at?: string
+          day_of_week: number
+          end_time?: string | null
+          id?: string
+          is_unavailable?: boolean
+          notes?: string | null
+          start_time?: string | null
+          updated_at?: string
+          vendor_id: string
+        }
+        Update: {
+          created_at?: string
+          day_of_week?: number
+          end_time?: string | null
+          id?: string
+          is_unavailable?: boolean
+          notes?: string | null
+          start_time?: string | null
+          updated_at?: string
+          vendor_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vendor_availability_rules_vendor_id_fkey"
+            columns: ["vendor_id"]
+            isOneToOne: false
+            referencedRelation: "vendor_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       vendor_claim_listings: {
         Row: {
           claimed_at: string | null
@@ -3229,6 +3273,8 @@ export type Database = {
           application_reviewed_at: string | null
           application_reviewed_by: string | null
           application_status: string
+          appointment_buffer_after_minutes: number
+          appointment_buffer_before_minutes: number
           awards: string[] | null
           base_price_cents: number | null
           bio: string | null
@@ -3271,6 +3317,8 @@ export type Database = {
           application_reviewed_at?: string | null
           application_reviewed_by?: string | null
           application_status?: string
+          appointment_buffer_after_minutes?: number
+          appointment_buffer_before_minutes?: number
           awards?: string[] | null
           base_price_cents?: number | null
           bio?: string | null
@@ -3313,6 +3361,8 @@ export type Database = {
           application_reviewed_at?: string | null
           application_reviewed_by?: string | null
           application_status?: string
+          appointment_buffer_after_minutes?: number
+          appointment_buffer_before_minutes?: number
           awards?: string[] | null
           base_price_cents?: number | null
           bio?: string | null
@@ -3848,10 +3898,12 @@ export type Database = {
       }
       get_review_request_context: { Args: { p_token: string }; Returns: Json }
       get_team_invite_by_token: { Args: { p_token: string }; Returns: Json }
-      get_vendor_availability: {
-        Args: { p_from: string; p_to: string; p_vendor_id: string }
-        Returns: Json
-      }
+      get_vendor_availability:
+        | { Args: { p_date: string; p_vendor_id: string }; Returns: Json }
+        | {
+            Args: { p_from: string; p_to: string; p_vendor_id: string }
+            Returns: Json
+          }
       get_vendor_benchmarks: {
         Args: { p_category: string; p_window_days?: number }
         Returns: {
