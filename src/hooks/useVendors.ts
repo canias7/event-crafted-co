@@ -33,17 +33,50 @@ export interface Vendor {
   policyNotes?: string | null;
 }
 
+// Sub-category → bundled image key. Falls back to "vendor-venue" when
+// no entry exists. Updated to match the new hierarchical taxonomy
+// (categoryTaxonomy.ts) — every sub stored in vendor_profiles.category
+// gets a sensible default hero on cards.
 const categoryImageFallback: Record<string, string> = {
-  Photographer: "vendor-photographer",
-  Videographer: "vendor-photographer",
-  Florist: "vendor-florist",
+  // Venues
+  "Event Venues": "vendor-venue",
+  "Outdoor Spaces": "vendor-venue",
+  "Private Dining Spaces": "vendor-venue",
+  "Corporate / Conference Spaces": "vendor-venue",
+  // Food & Beverage
   Catering: "vendor-catering",
-  Baker: "vendor-catering",
-  DJ: "vendor-dj",
-  Venue: "vendor-venue",
-  "Makeup Artist": "vendor-makeup",
-  "Event Planner": "vendor-venue",
-  Decorator: "vendor-florist",
+  "Bartending / Mobile Bars": "vendor-catering",
+  "Desserts & Cakes": "vendor-catering",
+  "Food Trucks / Specialty": "vendor-catering",
+  // Entertainment
+  DJs: "vendor-dj",
+  "Live Music": "vendor-dj",
+  Performers: "vendor-dj",
+  "Hosts / MCs": "vendor-dj",
+  // Media
+  Photography: "vendor-photographer",
+  Videography: "vendor-photographer",
+  "Photo Booths": "vendor-photographer",
+  // Design & Decor
+  "Event Coordinators": "vendor-venue",
+  Florists: "vendor-florist",
+  Beauty: "vendor-makeup",
+  "Decor Rentals": "vendor-florist",
+  "Grooming Services": "vendor-makeup",
+  // Rentals
+  "Furniture Rentals": "vendor-venue",
+  "Tents & Outdoor": "vendor-venue",
+  "Lighting & AV Equipment": "vendor-venue",
+  "Dance Floors & Staging": "vendor-venue",
+  Transportation: "vendor-venue",
+  // Experiences
+  Tastings: "vendor-catering",
+  "Specialty Services": "vendor-makeup",
+  // Corporate Services
+  Staffing: "vendor-venue",
+  "Speakers / Hosts": "vendor-venue",
+  Security: "vendor-venue",
+  Valet: "vendor-venue",
 };
 
 interface VendorProfileRow {

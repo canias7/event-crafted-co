@@ -21,20 +21,20 @@ interface Starter {
 }
 
 const wedding: Record<string, Starter> = {
-  Photographer: {
+  Photography: {
     greeting: "Hi! We're planning our wedding and you came up in our search.",
     body:
       "Looking for someone with a documentary / candid style — we're not big on heavily posed shots. " +
       "We'd love a 6-8 hour package covering getting-ready through the first hour of the reception. " +
       "Could you share a sample gallery from a similar wedding + a starting price?",
   },
-  Videographer: {
+  Videography: {
     greeting: "Hi! Putting together our wedding vendor team and would love to chat.",
     body:
       "We're after a highlight reel (3-5 min) plus a longer ceremony cut. Cinematic but not over-edited. " +
       "Can you share recent samples + your typical package + whether you offer drone or super 8?",
   },
-  Florist: {
+  Florists: {
     greeting: "Hi! We're getting married and your work caught our eye.",
     body:
       "We're going for a loose, garden-y feel — lots of greenery, neutrals + soft palette. " +
@@ -47,14 +47,14 @@ const wedding: Record<string, Starter> = {
       "Family-style or buffet (open to either), seasonal menu, focus on locally-sourced. " +
       "We'll need bar service too. Curious about your per-head pricing tiers + sample menus.",
   },
-  Venue: {
+  "Event Venues": {
     greeting: "Hi! Looking for our wedding venue.",
     body:
       "Outdoor ceremony, indoor reception backup, accommodating ~120 guests. " +
       "Want somewhere we can bring our own caterer + bar. " +
       "Could you share availability for our date + a venue fee + what's included?",
   },
-  DJ: {
+  DJs: {
     greeting: "Hi! Looking for a DJ for our wedding reception.",
     body:
       "Need ceremony processional/recessional, cocktail hour, and 4-hour reception. " +
@@ -71,13 +71,13 @@ const corporate: Record<string, Starter> = {
       "Need full service including setup, servers, and breakdown. " +
       "Could you share per-head + service charge + sample menus?",
   },
-  Venue: {
+  "Corporate / Conference Spaces": {
     greeting: "Hi — booking a corporate offsite.",
     body:
       "1-day workshop, ~50 attendees, looking for a flexible space (breakouts + plenary). " +
       "AV included would be ideal. Can you share day rates + what AV/catering is bundled?",
   },
-  Photographer: {
+  Photography: {
     greeting: "Hi — booking a corporate event photographer.",
     body:
       "Half-day coverage of our team summit. Need candid shots, group photos, " +
@@ -94,13 +94,13 @@ const birthday: Record<string, Starter> = {
       "Looking for someone who can also handle small bites + a custom cake. " +
       "What's your starting per-head?",
   },
-  Photographer: {
+  Photography: {
     greeting: "Hi! Looking for a photographer for my birthday party.",
     body:
       "3-4 hours of coverage at a private dinner / party. " +
       "Candid + a few group shots. Could you share recent event work + your rate?",
   },
-  DJ: {
+  DJs: {
     greeting: "Hi! Looking for a DJ for a birthday celebration.",
     body:
       "4-hour set, mix leans dance / hip-hop / 90s-2000s. " +

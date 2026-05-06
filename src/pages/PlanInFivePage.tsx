@@ -83,16 +83,17 @@ const STARTER_CHECKLIST: Record<string, string[]> = {
   ],
 };
 
-// Top vendor categories to surface per event type. Used to filter
-// the recommendations grid.
+// Top vendor sub-categories to surface per event type. Used to filter
+// the recommendations grid (matched against vendor_profiles.category,
+// which now stores the sub name from categoryTaxonomy.ts).
 const TOP_CATEGORIES: Record<string, string[]> = {
-  wedding: ["Photographer", "Florist", "Venue", "Catering", "DJ"],
-  birthday: ["Photographer", "Catering", "DJ", "Decorator"],
-  baby_shower: ["Photographer", "Florist", "Catering"],
-  anniversary: ["Photographer", "Catering", "Florist"],
-  holiday_dinner: ["Catering", "Florist", "Decorator"],
-  corporate: ["Venue", "Catering", "AV", "Photographer"],
-  other: ["Photographer", "Catering", "Florist"],
+  wedding: ["Photography", "Florists", "Event Venues", "Catering", "DJs"],
+  birthday: ["Photography", "Catering", "DJs", "Decor Rentals"],
+  baby_shower: ["Photography", "Florists", "Catering"],
+  anniversary: ["Photography", "Catering", "Florists"],
+  holiday_dinner: ["Catering", "Florists", "Decor Rentals"],
+  corporate: ["Corporate / Conference Spaces", "Catering", "Lighting & AV Equipment", "Photography"],
+  other: ["Photography", "Catering", "Florists"],
 };
 
 interface FormState {

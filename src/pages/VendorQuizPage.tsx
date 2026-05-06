@@ -44,14 +44,14 @@ const VENDOR_CATEGORIES: Array<{
   label: string;
   Icon: typeof Camera;
 }> = [
-  { value: "Photographer", label: "Photographer", Icon: Camera },
-  { value: "Florist", label: "Florist", Icon: Flower2 },
+  { value: "Photography", label: "Photography", Icon: Camera },
+  { value: "Florists", label: "Florists", Icon: Flower2 },
   { value: "Catering", label: "Catering", Icon: UtensilsCrossed },
-  { value: "DJ", label: "DJ / Music", Icon: Music },
-  { value: "Venue", label: "Venue", Icon: MapPin },
-  { value: "Baker", label: "Baker", Icon: Cake },
-  { value: "Makeup Artist", label: "Hair + Makeup", Icon: Brush },
-  { value: "Decorator", label: "Decor + Styling", Icon: Palette },
+  { value: "DJs", label: "DJ / Music", Icon: Music },
+  { value: "Event Venues", label: "Venue", Icon: MapPin },
+  { value: "Desserts & Cakes", label: "Cake / Desserts", Icon: Cake },
+  { value: "Beauty", label: "Hair + Makeup", Icon: Brush },
+  { value: "Decor Rentals", label: "Decor + Styling", Icon: Palette },
 ];
 
 const BUDGETS: Array<{ value: string; label: string; max: number | null }> = [

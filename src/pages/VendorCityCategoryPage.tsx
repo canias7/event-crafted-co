@@ -14,6 +14,10 @@ import { useDocumentMeta } from "@/hooks/useDocumentMeta";
 import { Picture } from "@/components/shared/Picture";
 import { citySlugify, citySlugDisplay } from "@/lib/citySlug";
 import { categoryConfig } from "@/pages/VendorCategoryPage";
+import {
+  CATEGORY_GROUPS,
+  groupOfSub,
+} from "@/data/categoryTaxonomy";
 import { CATEGORY_FAQS } from "@/data/categoryFaqs";
 
 // Combined city + category vendor listing page. Generated programmatically:
@@ -42,19 +46,19 @@ export default function VendorCityCategoryPage() {
   const matched = useMemo<Vendor[]>(() => {
     if (!categorySlug || !citySlug) return [];
     return vendors.filter((v) => {
-      if (v.category !== config.name) return false;
+      if (groupOfSub(v.category) !== config.name) return false;
       const loc = v.location ?? v.distance ?? "";
       return citySlugify(loc) === citySlug;
     });
   }, [vendors, categorySlug, citySlug, config]);
 
-  // Other cities with vendors of this category for cross-linking. Drives
+  // Other cities with vendors of this group for cross-linking. Drives
   // the "also serving…" rail at the bottom — internal links Google likes.
   const otherCities = useMemo(() => {
     if (!citySlug) return [];
     const counts = new Map<string, number>();
     for (const v of vendors) {
-      if (v.category !== config.name) continue;
+      if (groupOfSub(v.category) !== config.name) continue;
       const loc = v.location ?? v.distance ?? "";
       const slug = citySlugify(loc);
       if (!slug || slug === citySlug) continue;
@@ -70,36 +74,28 @@ export default function VendorCityCategoryPage() {
       }));
   }, [vendors, citySlug, config]);
 
-  // Other categories in this city for cross-linking too — surfaces "while
-  // you're here, browse florists in Austin" links.
+  // Other groups in this city — "while you're here, browse Florists
+  // in Austin" links. Counts roll up sub-categories into their parent
+  // group so the cross-link goes to the group page.
   const otherCategoriesInCity = useMemo(() => {
     if (!citySlug) return [];
-    const counts = new Map<string, { name: string; count: number }>();
+    const groupCounts = new Map<string, number>();
     for (const v of vendors) {
       const loc = v.location ?? v.distance ?? "";
       if (citySlugify(loc) !== citySlug) continue;
-      if (v.category === config.name) continue;
-      const cur = counts.get(v.category);
-      if (cur) cur.count += 1;
-      else counts.set(v.category, { name: v.category, count: 1 });
+      const group = groupOfSub(v.category);
+      if (!group || group === config.name) continue;
+      groupCounts.set(group, (groupCounts.get(group) ?? 0) + 1);
     }
-    // Map back to category slugs for the route.
-    const slugByName = Object.entries(categoryConfig).reduce(
-      (acc, [slug, cfg]) => {
-        acc[cfg.name] = slug;
-        return acc;
-      },
-      {} as Record<string, string>,
-    );
-    return Array.from(counts.values())
-      .filter((c) => slugByName[c.name])
+    return CATEGORY_GROUPS
+      .filter((g) => groupCounts.has(g.name))
+      .map((g) => ({
+        slug: g.slug,
+        display: g.name,
+        count: groupCounts.get(g.name) ?? 0,
+      }))
       .sort((a, b) => b.count - a.count)
-      .slice(0, 6)
-      .map((c) => ({
-        slug: slugByName[c.name],
-        display: categoryConfig[slugByName[c.name]].display,
-        count: c.count,
-      }));
+      .slice(0, 6);
   }, [vendors, citySlug, config]);
 
   const faqs = useMemo(

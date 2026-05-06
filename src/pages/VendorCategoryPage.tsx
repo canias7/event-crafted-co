@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { Link, useParams, Navigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ArrowLeft } from "lucide-react";
@@ -14,6 +14,7 @@ import { useDocumentMeta } from "@/hooks/useDocumentMeta";
 import { CATEGORY_FAQS } from "@/data/categoryFaqs";
 import { citySlugify, citySlugDisplay } from "@/lib/citySlug";
 import { Picture, type PictureSource } from "@/components/shared/Picture";
+import { CATEGORY_GROUPS, groupOfSub } from "@/data/categoryTaxonomy";
 
 import vendorPhotographer from "@/assets/vendor-photographer.jpg?as=picture";
 import vendorFlorist from "@/assets/vendor-florist.jpg?as=picture";
@@ -23,281 +24,50 @@ import vendorVenue from "@/assets/vendor-venue.jpg?as=picture";
 import vendorMakeup from "@/assets/vendor-makeup.jpg?as=picture";
 
 interface CategoryConfig {
+  /** Group name — also the schema lookup key in categoryAttributes. */
   name: string;
   display: string;
   description: string;
   longCopy: string;
   hero: PictureSource;
-  /** When true, the category landing page shows a "coming soon" splash
-   * and the category isn't selectable in the vendor signup dropdown. */
+  /** Sub-categories rendered as filter chips on the group page. */
+  subs: string[];
+  /** Reserved for future use — no group is coming soon today. */
   comingSoon?: boolean;
 }
 
-export const categoryConfig: Record<string, CategoryConfig> = {
-  photographers: {
-    name: "Photographer",
-    display: "Photographers",
-    description:
-      "Editorial, documentary, and fine-art photographers for weddings, milestones, and editorial events.",
-    longCopy:
-      "From candid wedding-day documentary work to polished editorial portraits, the photographers on Vendora have been hand-selected for their distinctive eye and reliability under pressure.",
-    hero: vendorPhotographer,
-  },
-  florists: {
-    name: "Florist",
-    display: "Florists",
-    description:
-      "Garden-style installations, sculptural arrangements, and seasonal florals for events of every scale.",
-    longCopy:
-      "Whether you want a single dramatic centerpiece or a full ceremony installation, our florists work with seasonal blooms and a careful color sensibility.",
-    hero: vendorFlorist,
-  },
-  catering: {
-    name: "Catering",
-    display: "Catering",
-    description:
-      "Tasting menus, family-style feasts, and bespoke beverage programs from kitchens that take the food seriously.",
-    longCopy:
-      "From private chef dinners to multi-course wedding receptions and holiday gatherings, the catering teams on Vendora bring kitchen-craft and event experience together.",
-    hero: vendorCatering,
-  },
-  djs: {
-    name: "DJ",
-    display: "DJs",
-    description:
-      "Curated DJs and music programmers — from soul and electronic crossovers to dinner-party jazz.",
-    longCopy:
-      "Music sets the room. Vendora DJs handle the full arc of an event — ceremony, dinner, reception, late-night — with taste and crowd-reading instincts.",
-    hero: vendorDj,
-  },
-  venues: {
-    name: "Venue",
-    display: "Venues",
-    description:
-      "Lofts, gardens, restaurants, and architectural spaces — venues that make the event before guests arrive.",
-    longCopy:
-      "We list venues that have personality on their own and don't need to be over-decorated. From skyline lofts to intimate restaurants, find a space that matches your event.",
-    hero: vendorVenue,
-  },
-  "makeup-artists": {
-    name: "Makeup Artist",
-    display: "Makeup Artists",
-    description:
-      "Editorial bridal beauty, soft-glam, and on-location styling for events of every kind.",
-    longCopy:
-      "Camera-ready beauty for events that will be photographed forever — wedding, anniversary, milestone birthday, or editorial shoot.",
-    hero: vendorMakeup,
-  },
-  videographers: {
-    name: "Videographer",
-    display: "Videographers",
-    description:
-      "Cinematic event films and documentary highlight reels.",
-    longCopy:
-      "Pair with a photographer for full-coverage event documentation — film captures motion, sound, and presence that stills can't.",
-    hero: vendorPhotographer,
-  },
-  bakers: {
-    name: "Baker",
-    display: "Bakers",
-    description:
-      "Cakes, dessert tables, and pastry programs for weddings, birthdays, and holiday gatherings.",
-    longCopy:
-      "From sculptural wedding cakes to seasonal pies and small-batch desserts, our bakers bring craft and flavor to the table.",
-    hero: vendorCatering,
-  },
-  "event-planners": {
-    name: "Event Planner",
-    display: "Event Planners",
-    description:
-      "Full-service planners and day-of coordinators for events that need to run on rails.",
-    longCopy:
-      "Planners on Vendora handle the production layer — vendor management, run-of-show, day-of coordination — so you can be present at your own event.",
-    hero: vendorVenue,
-  },
-  decorators: {
-    name: "Decorator",
-    display: "Decorators",
-    description:
-      "Tablescapes, lighting design, and full event styling.",
-    longCopy:
-      "Beyond florals — linens, lighting, signage, and the small details that make a room feel like an editorial set.",
-    hero: vendorFlorist,
-  },
-  bartenders: {
-    name: "Bartender",
-    display: "Bartenders",
-    description:
-      "Hourly-billed mixologists and bar staff for private events of any size.",
-    longCopy:
-      "Cocktail menus tailored to the evening, plus the staff to actually pour them. Often booked alongside catering for a coordinated bar program.",
-    hero: vendorVenue,
-  },
-  waitstaff: {
-    name: "Waitstaff",
-    display: "Waitstaff",
-    description:
-      "Servers and butlers for plated dinners, passed-canape receptions, and high-touch service.",
-    longCopy:
-      "Trained service staff who know how to time a course, clear plates without interrupting, and keep the room moving.",
-    hero: vendorCatering,
-  },
-  security: {
-    name: "Security",
-    display: "Security",
-    description:
-      "Licensed event security — access control, crowd management, VIP protection.",
-    longCopy:
-      "Licensed and insured security personnel for events that need controlled entry, large-crowd management, or high-profile guest protection.",
-    hero: vendorVenue,
-  },
-  valets: {
-    name: "Valet",
-    display: "Valet",
-    description:
-      "Insured valet teams for venues without on-site parking.",
-    longCopy:
-      "Coordinated valet for events at restaurants, private homes, or any venue where guest parking is the difference between effortless arrival and a stressful start.",
-    hero: vendorVenue,
-  },
-  "day-of-coordinators": {
-    name: "Day-of Coordinator",
-    display: "Day-of Coordinators",
-    description:
-      "Run-of-show specialists for the day itself — lower commitment than full-service planning.",
-    longCopy:
-      "Take over 4-8 weeks before the event to confirm vendors, build the timeline, and run the day. The right call when you've planned everything yourself but want a pro behind the wheel on the day.",
-    hero: vendorVenue,
-  },
-  // ─── Expanded marketplace ─── matches The Knot's category breadth.
-  bands: {
-    name: "Band",
-    display: "Bands",
-    description:
-      "Live music for ceremony, cocktail hour, and reception — from horn-section party bands to acoustic trios.",
-    longCopy:
-      "A live band is the difference between dancing and just hearing music play. Vendora bands handle the full arc — first dance through last call — with a curated repertoire and the read-the-room instincts that turn a reception into an event people remember.",
-    hero: vendorDj,
-  },
-  beauty: {
-    name: "Beauty",
-    display: "Beauty",
-    description:
-      "Hair + makeup teams for bridal parties, milestone events, and editorial shoots.",
-    longCopy:
-      "Beyond bridal — Vendora beauty pros handle hair styling, makeup, on-location touch-ups, and full-team weekends. Camera-ready looks for events that get photographed forever.",
-    hero: vendorMakeup,
-  },
-  "bridal-salons": {
-    name: "Bridal Salon",
-    display: "Bridal Salons",
-    description:
-      "Wedding-dress shops, alterations specialists, and accessories ateliers.",
-    longCopy:
-      "Salons that carry curated designer racks plus the tailoring talent to make sure the dress fits the way it should on the day. Find by region, designer focus, or price tier.",
-    hero: vendorMakeup,
-  },
-  "dance-instructors": {
-    name: "Dance Instructor",
-    display: "Dance Instructors",
-    description:
-      "First-dance choreography and pre-event lessons for wedding parties.",
-    longCopy:
-      "From a polished first dance to teaching a wedding party the basics of swing or salsa for the reception. Sessions are usually 4-8 lessons leading up to the event.",
-    hero: vendorVenue,
-  },
-  ensembles: {
-    name: "Ensemble",
-    display: "Ensembles & Soloists",
-    description:
-      "String quartets, jazz trios, soloists, and acoustic pairings for ceremonies and cocktail hours.",
-    longCopy:
-      "Live music without the full-band footprint. Ensembles fit ceremonies, cocktail receptions, dinner sets, and lounge transitions — anywhere a smaller, more atmospheric sound is right.",
-    hero: vendorDj,
-  },
-  "favors-gifts": {
-    name: "Favors & Gifts",
-    display: "Favors & Gifts",
-    description:
-      "Welcome bags, custom favors, gifting curators, and bridal-party gifts.",
-    longCopy:
-      "Curators who handle the welcome-bag-and-favor program — sourcing, custom branding, assembly, and delivery to the venue. Saves you the assembly-line evening before the event.",
-    hero: vendorFlorist,
-  },
-  hotels: {
-    name: "Hotel Block",
-    display: "Hotel Room Blocks",
-    description:
-      "Negotiated room blocks for guests at out-of-town events.",
-    longCopy:
-      "We're partnering with hotel groups to offer pre-negotiated room blocks for your guests. This category is launching soon — sign up for early access and we'll let you know.",
-    hero: vendorVenue,
-    comingSoon: true,
-  },
-  invitations: {
-    name: "Invitation Designer",
-    display: "Invitations & Paper Goods",
-    description:
-      "Custom invitation suites, save-the-dates, day-of paper, and signage.",
-    longCopy:
-      "From letterpress save-the-dates to full day-of paper programs — menus, place cards, signage, ceremony booklets. Vendora invitation designers handle the full paper arc with consistent styling.",
-    hero: vendorFlorist,
-  },
-  jewelers: {
-    name: "Jeweler",
-    display: "Jewelers",
-    description:
-      "Engagement rings, wedding bands, and bespoke fine jewelry.",
-    longCopy:
-      "Independent jewelers and design studios — bench-jeweler-made wedding bands, vintage and ethical-sourced engagement rings, and custom commissions for milestone events.",
-    hero: vendorMakeup,
-  },
-  officiants: {
-    name: "Officiant",
-    display: "Officiants",
-    description:
-      "Ordained ministers, secular officiants, and ceremony writers for weddings of any tradition.",
-    longCopy:
-      "From traditional clergy to secular officiants who'll co-write a custom ceremony with you. Vendora officiants are experienced at large gatherings and unfamiliar venues — they make the ceremony feel like the room is theirs.",
-    hero: vendorVenue,
-  },
-  "photo-booths": {
-    name: "Photo Booth",
-    display: "Photo Booths",
-    description:
-      "Open-air photo booths, mirror booths, GIF booths, and instant-print stations.",
-    longCopy:
-      "The most-used party feature at every reception. Vendora photo booth operators bring the kit, props, attendant, and instant prints — plus a digital gallery for the host afterward.",
-    hero: vendorPhotographer,
-  },
-  rentals: {
-    name: "Rentals",
-    display: "Rentals",
-    description:
-      "Tables, chairs, linens, lighting, dance floors, and event-day infrastructure.",
-    longCopy:
-      "The structural layer of an event. Rental companies on Vendora handle everything from a single sweetheart table to full-build tented receptions — coordinated with your planner so deliveries hit the right windows.",
-    hero: vendorVenue,
-  },
-  transportation: {
-    name: "Transportation",
-    display: "Transportation",
-    description:
-      "Shuttles, limos, and vintage cars for guest movement and photo moments.",
-    longCopy:
-      "Coordinated guest shuttles between hotel and venue, vintage getaway cars, and limousine transfers. Especially useful for venues without on-site parking or destination-style weekends.",
-    hero: vendorVenue,
-  },
-  "travel-specialists": {
-    name: "Travel Specialist",
-    display: "Travel Specialists",
-    description:
-      "Honeymoon planners, destination-wedding coordinators, and group-travel agents.",
-    longCopy:
-      "From honeymoon itineraries to coordinating a 60-person destination weekend. Vendora travel specialists know which villas sleep 30, which airlines block-book, and which destinations actually deliver on the brochure.",
-    hero: vendorVenue,
-  },
+// Hero image per group slug. Re-uses the existing imagetools-bundled
+// vendor-* assets — closest visual match per group, swap later when
+// per-group editorial heroes are commissioned.
+const heroByGroup: Record<string, PictureSource> = {
+  venues: vendorVenue,
+  "food-beverage": vendorCatering,
+  entertainment: vendorDj,
+  media: vendorPhotographer,
+  "design-decor": vendorFlorist,
+  rentals: vendorVenue,
+  experiences: vendorMakeup,
+  "corporate-services": vendorVenue,
 };
+
+// Single source of truth lives in categoryTaxonomy.CATEGORY_GROUPS;
+// this object adapts that list to the page-config shape used here +
+// in PublicNav + VendorBrowsePage.
+export const categoryConfig: Record<string, CategoryConfig> =
+  Object.fromEntries(
+    CATEGORY_GROUPS.map((g) => [
+      g.slug,
+      {
+        name: g.name,
+        display: g.name,
+        description: g.description,
+        longCopy: g.longCopy,
+        hero: heroByGroup[g.slug] ?? vendorVenue,
+        subs: g.subs,
+      },
+    ]),
+  ) satisfies Record<string, CategoryConfig>;
+
 
 export const allCategorySlugs = Object.keys(categoryConfig);
 
@@ -307,6 +77,7 @@ export default function VendorCategoryPage() {
   const { slug } = useParams();
   const config = slug ? categoryConfig[slug] : null;
   const { vendors, loading } = useVendors();
+  const [activeSubs, setActiveSubs] = useState<Set<string>>(new Set());
 
   useDocumentMeta({
     title: config
@@ -318,10 +89,23 @@ export default function VendorCategoryPage() {
     image: config?.hero?.img.src,
   });
 
-  const filtered = useMemo(
-    () => (config ? vendors.filter((v) => v.category === config.name) : []),
-    [vendors, config],
-  );
+  const filtered = useMemo(() => {
+    if (!config) return [];
+    return vendors.filter((v) => {
+      if (groupOfSub(v.category) !== config.name) return false;
+      if (activeSubs.size > 0 && !activeSubs.has(v.category)) return false;
+      return true;
+    });
+  }, [vendors, config, activeSubs]);
+
+  function toggleSub(sub: string) {
+    setActiveSubs((prev) => {
+      const next = new Set(prev);
+      if (next.has(sub)) next.delete(sub);
+      else next.add(sub);
+      return next;
+    });
+  }
 
   // Cities served — top 6 by vendor count for cross-linking.
   const citiesServed = useMemo(() => {
@@ -452,11 +236,47 @@ export default function VendorCategoryPage() {
       {/* Long copy + grid */}
       <section className="py-16 md:py-24">
         <div className="container mx-auto px-6 md:px-8">
-          <div className="max-w-2xl mb-12">
+          <div className="max-w-2xl mb-10">
             <p className="text-foreground/70 leading-relaxed">
               {config.longCopy}
             </p>
           </div>
+
+          {/* Sub-category filter chips. Empty selection = show every
+              vendor in the group; toggling chips narrows to the
+              selected subs. */}
+          {config.subs.length > 1 && (
+            <div className="flex flex-wrap gap-2 mb-10">
+              <button
+                type="button"
+                onClick={() => setActiveSubs(new Set())}
+                className={`text-xs rounded-full px-3 py-1.5 border transition-colors ${
+                  activeSubs.size === 0
+                    ? "bg-foreground text-background border-foreground"
+                    : "bg-background border-border text-muted-foreground hover:border-foreground/40"
+                }`}
+              >
+                All
+              </button>
+              {config.subs.map((sub) => {
+                const active = activeSubs.has(sub);
+                return (
+                  <button
+                    key={sub}
+                    type="button"
+                    onClick={() => toggleSub(sub)}
+                    className={`text-xs rounded-full px-3 py-1.5 border transition-colors ${
+                      active
+                        ? "bg-foreground text-background border-foreground"
+                        : "bg-background border-border text-foreground/80 hover:border-foreground/40"
+                    }`}
+                  >
+                    {sub}
+                  </button>
+                );
+              })}
+            </div>
+          )}
 
           <div className="flex items-end justify-between mb-8">
             <p className="font-label text-muted-foreground">

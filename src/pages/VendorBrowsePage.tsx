@@ -23,26 +23,28 @@ import { SaveSearchButton } from "@/components/savedSearches/SaveSearchButton";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { categoryConfig } from "@/pages/VendorCategoryPage";
+import {
+  CATEGORY_GROUPS,
+  ALL_SUBS,
+  groupOfSub,
+} from "@/data/categoryTaxonomy";
 import { Picture } from "@/components/shared/Picture";
 import heroBrowse from "@/assets/vendora-hero-cinematic.jpg?as=picture";
 import { CompareBar } from "@/components/shared/CompareBar";
 
-const slugByCategory: Record<string, string> = Object.entries(categoryConfig).reduce(
-  (acc, [slug, c]) => ({ ...acc, [c.name]: slug }),
-  {} as Record<string, string>,
-);
+// Sub-name → group-slug. Used to deep-link from a single-sub filter to
+// the parent group page (e.g. "Photography" → "/vendors/category/media").
+const slugByCategory: Record<string, string> = (() => {
+  const map: Record<string, string> = {};
+  for (const g of CATEGORY_GROUPS) {
+    for (const sub of g.subs) map[sub] = g.slug;
+  }
+  return map;
+})();
 
-// Filter options: derived from categoryConfig so adding a new
-// category there auto-shows up in the browse filter. Coming-soon
-// categories are excluded — there's no point letting users filter
-// to a category with no vendors yet.
-const categories = [
-  "All",
-  ...Object.values(categoryConfig)
-    .filter((c) => !c.comingSoon)
-    .map((c) => c.name)
-    .sort(),
-];
+// Filter options: every sub-category (no "All" pseudo-option here —
+// the dropdown trigger handles "All" via the empty selection state).
+const categories = ["All", ...ALL_SUBS];
 
 const sortOptions: Record<string, (a: Vendor, b: Vendor) => number> = {
   popular: (a, b) => b.reviews - a.reviews,
@@ -307,18 +309,24 @@ export default function VendorBrowsePage() {
                     <DropdownMenuSeparator />
                   </>
                 )}
-                {categories
-                  .filter((c) => c !== "All")
-                  .map((cat) => (
-                    <DropdownMenuCheckboxItem
-                      key={cat}
-                      checked={activeCategories.has(cat)}
-                      onCheckedChange={() => toggleCategory(cat)}
-                      onSelect={(e) => e.preventDefault()}
-                    >
-                      {cat}
-                    </DropdownMenuCheckboxItem>
-                  ))}
+                {CATEGORY_GROUPS.map((group, gi) => (
+                  <div key={group.slug}>
+                    {gi > 0 && <DropdownMenuSeparator />}
+                    <DropdownMenuLabel className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                      {group.name}
+                    </DropdownMenuLabel>
+                    {group.subs.map((sub) => (
+                      <DropdownMenuCheckboxItem
+                        key={sub}
+                        checked={activeCategories.has(sub)}
+                        onCheckedChange={() => toggleCategory(sub)}
+                        onSelect={(e) => e.preventDefault()}
+                      >
+                        {sub}
+                      </DropdownMenuCheckboxItem>
+                    ))}
+                  </div>
+                ))}
               </DropdownMenuContent>
             </DropdownMenu>
             <div className="relative w-full md:w-44">
@@ -430,7 +438,7 @@ export default function VendorBrowsePage() {
                   to={`/vendors/category/${slugByCategory[category]}`}
                   className="text-xs text-accent font-medium flex items-center gap-1 hover:underline"
                 >
-                  View {category} page
+                  View {groupOfSub(category) ?? category} page
                   <ArrowRight className="w-3 h-3" />
                 </Link>
               )}

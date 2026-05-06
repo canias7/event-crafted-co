@@ -39,51 +39,21 @@ import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
+  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { CATEGORY_GROUPS } from "@/data/categoryTaxonomy";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { vendorNavItems as navItems } from "@/data/navItems";
 import { VendorShareKit } from "@/components/vendor/VendorShareKit";
 
-// Selectable vendor categories. Canonical list lives in
-// VendorCategoryPage's categoryConfig; this is the singular-form
-// labels we show in the signup dropdown. Any category with
-// `comingSoon: true` in categoryConfig should NOT appear here
-// (currently: Hotels). Keep the two in sync until we refactor
-// categoryConfig out into a shared data file.
-const categories = [
-  "Photographer",
-  "Videographer",
-  "Catering",
-  "DJ",
-  "Band",
-  "Ensemble",
-  "Florist",
-  "Event Planner",
-  "Decorator",
-  "Makeup Artist",
-  "Beauty",
-  "Bridal Salon",
-  "Baker",
-  "Venue",
-  "Bartender",
-  "Waitstaff",
-  "Security",
-  "Valet",
-  "Day-of Coordinator",
-  "Dance Instructor",
-  "Favors & Gifts",
-  "Invitation Designer",
-  "Jeweler",
-  "Officiant",
-  "Photo Booth",
-  "Rentals",
-  "Transportation",
-  "Travel Specialist",
-];
+// Sub-categories rendered in the dropdown grouped by parent group.
+// Source of truth lives in categoryTaxonomy.ts — adding a sub there
+// flows through to this dropdown automatically.
 
 interface VendorProfile {
   id: string;
@@ -320,10 +290,15 @@ export default function VendorProfilePage() {
                       <SelectValue placeholder="Choose a category" />
                     </SelectTrigger>
                     <SelectContent>
-                      {categories.map((c) => (
-                        <SelectItem key={c} value={c}>
-                          {c}
-                        </SelectItem>
+                      {CATEGORY_GROUPS.map((group) => (
+                        <SelectGroup key={group.slug}>
+                          <SelectLabel>{group.name}</SelectLabel>
+                          {group.subs.map((sub) => (
+                            <SelectItem key={sub} value={sub}>
+                              {sub}
+                            </SelectItem>
+                          ))}
+                        </SelectGroup>
                       ))}
                     </SelectContent>
                   </Select>

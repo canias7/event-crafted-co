@@ -11,7 +11,9 @@ import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
+  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
@@ -19,39 +21,11 @@ import { PublicNav } from "@/components/public/PublicNav";
 import { Footer } from "@/components/public/Footer";
 import { Picture } from "@/components/shared/Picture";
 import heroApply from "@/assets/vendora-hero-gala.jpg?as=picture";
+import { CATEGORY_GROUPS } from "@/data/categoryTaxonomy";
 
-// Selectable categories on the apply form. Mirrors VendorProfilePage's
-// `categories` list (and excludes Hotels which is coming-soon-only).
-const categories = [
-  "Photographer",
-  "Videographer",
-  "Catering",
-  "DJ",
-  "Band",
-  "Ensemble",
-  "Florist",
-  "Event Planner",
-  "Decorator",
-  "Makeup Artist",
-  "Beauty",
-  "Bridal Salon",
-  "Baker",
-  "Venue",
-  "Bartender",
-  "Waitstaff",
-  "Security",
-  "Valet",
-  "Day-of Coordinator",
-  "Dance Instructor",
-  "Favors & Gifts",
-  "Invitation Designer",
-  "Jeweler",
-  "Officiant",
-  "Photo Booth",
-  "Rentals",
-  "Transportation",
-  "Travel Specialist",
-];
+// Selectable sub-categories grouped by their parent group. Source of
+// truth lives in categoryTaxonomy.ts — adding a new sub there flows
+// through to this dropdown automatically.
 
 const spring = { type: "spring" as const, duration: 0.6, bounce: 0 };
 
@@ -345,10 +319,15 @@ export default function VendorApplyPage() {
                         <SelectValue placeholder="Choose a category" />
                       </SelectTrigger>
                       <SelectContent>
-                        {categories.map((c) => (
-                          <SelectItem key={c} value={c}>
-                            {c}
-                          </SelectItem>
+                        {CATEGORY_GROUPS.map((group) => (
+                          <SelectGroup key={group.slug}>
+                            <SelectLabel>{group.name}</SelectLabel>
+                            {group.subs.map((sub) => (
+                              <SelectItem key={sub} value={sub}>
+                                {sub}
+                              </SelectItem>
+                            ))}
+                          </SelectGroup>
                         ))}
                       </SelectContent>
                     </Select>
