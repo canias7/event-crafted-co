@@ -5,7 +5,6 @@ import {
   ArrowLeft,
   Loader2,
   Check,
-  Sparkles,
   ExternalLink,
 } from "lucide-react";
 import { toast } from "sonner";
