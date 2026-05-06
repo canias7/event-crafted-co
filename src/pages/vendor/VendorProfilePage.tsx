@@ -2,15 +2,19 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
+  CalendarCheck,
   DollarSign,
   Edit2,
   Eye,
   Image as ImageIcon,
   Layers,
   Loader2,
+  MessageSquareText,
+  Share2,
   ShieldCheck,
   Sparkles,
   Trash2,
+  TrendingUp,
   type LucideIcon,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -43,6 +47,9 @@ import { CATEGORY_GROUPS } from "@/data/categoryTaxonomy";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { vendorNavItems as navItems } from "@/data/navItems";
+import { Picture } from "@/components/shared/Picture";
+import { imageMap as listingHeroImageMap } from "@/components/shared/VendorCard";
+import { categoryImageFallback } from "@/hooks/useVendors";
 import { invalidateVendorsCache } from "@/hooks/useVendors";
 
 // Sub-categories rendered in the dropdown grouped by parent group.
@@ -947,10 +954,11 @@ function ListingTabButton({
   );
 }
 
-// public listing in a new tab, Edit collapses the preview back to
-// the form, Delete confirms then drops the row. Image is
-// intentionally omitted; the directory's VendorCard renders the
-// visual version using the per-sub categoryImageFallback art.
+// Post-publish surface — celebratory hero with the listing rendered
+// the way hosts will actually see it (per-sub fallback art behind a
+// gradient), plus a "what's next" strip with sharing affordances and
+// a delete escape hatch. Replaces the slim chip-style card the page
+// shipped with originally.
 function ListingPreviewCard({
   profile,
   saving,
@@ -965,82 +973,176 @@ function ListingPreviewCard({
   onDelete: () => void;
 }) {
   const { t } = useTranslation();
+  const heroKey = categoryImageFallback[profile.category] ?? "vendor-venue";
+  const heroSource = listingHeroImageMap[heroKey];
+
+  async function shareLink() {
+    const url = `${window.location.origin}/vendors/${profile.id}`;
+    try {
+      if (navigator.share) {
+        await navigator.share({
+          title: profile.business_name,
+          text: `${profile.category} — ${profile.business_name}`,
+          url,
+        });
+      } else if (navigator.clipboard) {
+        await navigator.clipboard.writeText(url);
+        toast.success("Link copied to clipboard");
+      } else {
+        window.prompt("Copy this link", url);
+      }
+    } catch {
+      // user cancelled the native share sheet — no-op
+    }
+  }
+
   return (
-    <div className="rounded-sm border border-accent/40 bg-accent/5 p-5 max-w-md">
-      <p className="font-label text-accent mb-3 inline-flex items-center gap-1.5">
-        <Sparkles className="w-3 h-3" />
-        {t("vendor_listing.preview.live")}
-      </p>
-      <div className="space-y-3">
-        <div className="min-w-0">
-          <p className="text-[10px] uppercase tracking-[0.25em] text-muted-foreground">
+    <div className="space-y-4">
+      {/* Hero card — full-width inside the column with the actual
+          per-category fallback art behind a darkening gradient so the
+          headline reads cleanly over it. */}
+      <div className="relative overflow-hidden rounded-sm border border-accent/30 bg-foreground text-background">
+        {heroSource && (
+          <Picture
+            source={heroSource}
+            alt=""
+            className="absolute inset-0 w-full h-full object-cover opacity-60"
+          />
+        )}
+        <div
+          className="absolute inset-0 bg-gradient-to-t from-foreground via-foreground/70 to-foreground/30"
+          aria-hidden
+        />
+        <div className="relative px-6 py-8 md:px-8 md:py-10">
+          <p className="font-label text-accent inline-flex items-center gap-1.5 mb-3">
+            <Sparkles className="w-3 h-3" />
+            {t("vendor_listing.preview.live")}
+          </p>
+          <p className="text-[10px] uppercase tracking-[0.25em] text-background/70">
             {profile.category}
           </p>
-          <h3 className="font-display text-2xl mt-1 truncate">
+          <h3 className="font-display text-3xl md:text-4xl mt-1 leading-tight truncate">
             {profile.business_name}
           </h3>
-          <div className="flex items-center gap-3 text-sm text-muted-foreground mt-2 flex-wrap">
+          <div className="flex items-center gap-3 text-sm text-background/80 mt-3 flex-wrap">
             {profile.location && <span>{profile.location}</span>}
             {profile.location && profile.base_price_cents != null && (
-              <span className="text-foreground/30">·</span>
+              <span className="text-background/40">·</span>
             )}
             {profile.base_price_cents != null && (
               <span>
                 {t("vendor_listing.preview.from", {
-                  amount: (
-                    profile.base_price_cents / 100
-                  ).toLocaleString(),
+                  amount: (profile.base_price_cents / 100).toLocaleString(),
                 })}
               </span>
             )}
           </div>
           {profile.bio && (
-            <p className="text-sm text-foreground/75 mt-3 leading-relaxed line-clamp-2">
+            <p className="text-sm text-background/85 mt-4 leading-relaxed max-w-xl line-clamp-2">
               {profile.bio}
             </p>
           )}
+          <div className="flex flex-wrap gap-2 mt-6">
+            <Button
+              type="button"
+              size="sm"
+              onClick={onView}
+              disabled={saving}
+              className="rounded-full bg-background text-foreground hover:bg-background/90"
+            >
+              <Eye className="w-3.5 h-3.5 mr-1.5" />
+              {t("vendor_listing.preview.view")}
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              onClick={shareLink}
+              disabled={saving}
+              variant="outline"
+              className="rounded-full border-background/40 text-background hover:bg-background/10 hover:text-background"
+            >
+              <Share2 className="w-3.5 h-3.5 mr-1.5" />
+              Share
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={onEdit}
+              disabled={saving}
+              className="rounded-full border-background/40 text-background hover:bg-background/10 hover:text-background"
+            >
+              <Edit2 className="w-3.5 h-3.5 mr-1.5" />
+              {t("vendor_listing.preview.edit")}
+            </Button>
+          </div>
         </div>
-        <div className="flex gap-2 pt-2 border-t border-accent/20">
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={onView}
-            disabled={saving}
-            className="rounded-full"
-            aria-label="View public listing"
-          >
-            <Eye className="w-3.5 h-3.5 mr-1.5" />
-            {t("vendor_listing.preview.view")}
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={onEdit}
-            disabled={saving}
-            className="rounded-full"
-            aria-label="Edit listing"
-          >
-            <Edit2 className="w-3.5 h-3.5 mr-1.5" />
-            {t("vendor_listing.preview.edit")}
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={onDelete}
-            disabled={saving}
-            className="rounded-full text-destructive hover:bg-destructive/10 hover:text-destructive ml-auto"
-            aria-label="Delete listing"
-          >
-            {saving ? (
-              <Loader2 className="w-3.5 h-3.5 animate-spin" />
-            ) : (
-              <Trash2 className="w-3.5 h-3.5" />
-            )}
-          </Button>
-        </div>
+      </div>
+
+      {/* Next-steps strip — three soft action cards pointing the
+          vendor at the things that move the needle right after a
+          listing goes live. */}
+      <div className="grid sm:grid-cols-3 gap-3">
+        <Link
+          to="/vendor/analytics"
+          className="rounded-sm border border-border bg-card p-4 hover:border-accent/40 transition-colors"
+        >
+          <div className="w-8 h-8 rounded-md bg-accent/10 text-accent flex items-center justify-center mb-3">
+            <TrendingUp className="w-4 h-4" />
+          </div>
+          <p className="text-sm font-medium mb-1">Watch the funnel</p>
+          <p className="text-xs text-muted-foreground leading-relaxed">
+            Track views and inquiries — the first 30 days is the most
+            useful signal you'll get.
+          </p>
+        </Link>
+        <Link
+          to="/vendor/inbox"
+          className="rounded-sm border border-border bg-card p-4 hover:border-accent/40 transition-colors"
+        >
+          <div className="w-8 h-8 rounded-md bg-accent/10 text-accent flex items-center justify-center mb-3">
+            <MessageSquareText className="w-4 h-4" />
+          </div>
+          <p className="text-sm font-medium mb-1">Reply fast</p>
+          <p className="text-xs text-muted-foreground leading-relaxed">
+            Vendors who reply within 3 hours book ~3× more often. AI
+            drafts a reply for every inquiry.
+          </p>
+        </Link>
+        <Link
+          to="/vendor/appointments"
+          className="rounded-sm border border-border bg-card p-4 hover:border-accent/40 transition-colors"
+        >
+          <div className="w-8 h-8 rounded-md bg-accent/10 text-accent flex items-center justify-center mb-3">
+            <CalendarCheck className="w-4 h-4" />
+          </div>
+          <p className="text-sm font-medium mb-1">Block your dates</p>
+          <p className="text-xs text-muted-foreground leading-relaxed">
+            Set availability so the public calendar greys out days
+            you're already booked.
+          </p>
+        </Link>
+      </div>
+
+      {/* Quiet delete — far below the celebratory bits so the action
+          stays available without dominating the page. */}
+      <div className="flex justify-end pt-2">
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={onDelete}
+          disabled={saving}
+          className="rounded-full text-destructive hover:bg-destructive/10 hover:text-destructive border-destructive/30"
+          aria-label="Delete listing"
+        >
+          {saving ? (
+            <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
+          ) : (
+            <Trash2 className="w-3.5 h-3.5 mr-1.5" />
+          )}
+          Delete listing
+        </Button>
       </div>
     </div>
   );

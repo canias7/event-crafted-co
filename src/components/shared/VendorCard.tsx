@@ -36,7 +36,7 @@ import heroEngagement from "@/assets/hero/engagement.jpg?as=picture";
 // reappear across groups (e.g. NYE's late-night vibe stands in for
 // Bartending, Transportation, and Valet) which is acceptable since
 // those categories live on different pages.
-const imageMap: Record<string, PictureSource> = {
+export const imageMap: Record<string, PictureSource> = {
   "vendor-photographer": vendorPhotographer,
   "vendor-florist": vendorFlorist,
   "vendor-catering": vendorCatering,

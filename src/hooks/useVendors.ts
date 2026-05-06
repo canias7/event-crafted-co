@@ -39,7 +39,7 @@ export interface Vendor {
 // VendorCard.tsx (imageMap) — adding a new key requires importing
 // the asset there too. Falls back to "vendor-venue" when no entry
 // exists.
-const categoryImageFallback: Record<string, string> = {
+export const categoryImageFallback: Record<string, string> = {
   // Venues — varied venue + setting imagery
   "Event Venues": "vendor-venue",
   "Outdoor Spaces": "feature-lounge",
