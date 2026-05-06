@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from "react";
-import weddingHero from "@/assets/hero/wedding.jpg?url";
 
 // Self-running animated walkthrough of the Image Studio flow — used
 // in the right column of /vendor/studio so vendors can see the
@@ -8,11 +7,13 @@ import weddingHero from "@/assets/hero/wedding.jpg?url";
 // the app's design tokens; the loop restarts indefinitely until the
 // component unmounts.
 //
-// Source + result both reuse the existing /src/assets/hero/wedding.jpg
-// asset — the "before" panel applies a CSS blur + slight desaturate
-// so the same photo reads as a low-res starting point, and the
-// "after" panel renders the original sharp version. Means we don't
-// need a separate /public/wedding_*.jpg pair for the demo to work.
+// Both panels read /wedding-demo.jpg from /public — copied from
+// /src/assets/hero/wedding.jpg so vite-imagetools (which auto-
+// applies as=picture to anything under /assets/hero/) doesn't
+// transform it into a PictureSource object that won't render in a
+// plain <img>. The "before" panel applies a CSS blur + slight
+// desaturate so the same photo reads as a low-res starting point;
+// the "after" panel renders the original sharp version.
 
 export default function ImageEditorDemo() {
   const cursorRef = useRef<HTMLDivElement>(null);
@@ -40,8 +41,8 @@ export default function ImageEditorDemo() {
 
   // Same image for both — the "before" panel uses a CSS filter to
   // simulate the lower-res starting point.
-  const LOW_RES = weddingHero;
-  const HIGH_RES = weddingHero;
+  const LOW_RES = "/wedding-demo.jpg";
+  const HIGH_RES = "/wedding-demo.jpg";
 
   const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
