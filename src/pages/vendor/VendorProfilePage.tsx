@@ -54,8 +54,6 @@ interface VendorProfile {
   bio: string | null;
   base_price_cents: number | null;
   location: string | null;
-  service_radius_miles: number | null;
-  portfolio_summary: string | null;
   verified_at: string | null;
   /** "draft" | "pending" | "approved" | "rejected". When "approved"
    *  the listing is live in the directory; the dashboard renders
@@ -70,7 +68,7 @@ interface VendorProfile {
 }
 
 const VENDOR_PROFILE_COLS =
-  "id, business_name, category, bio, base_price_cents, location, service_radius_miles, portfolio_summary, verified_at, application_status, application_review_notes, intro_video_url, weekly_digest_enabled, slug, instagram_handle, tiktok_handle";
+  "id, business_name, category, bio, base_price_cents, location, verified_at, application_status, application_review_notes, intro_video_url, weekly_digest_enabled, slug, instagram_handle, tiktok_handle";
 
 export default function VendorProfilePage() {
   const { t } = useTranslation();
@@ -98,8 +96,6 @@ export default function VendorProfilePage() {
   const [bio, setBio] = useState("");
   const [basePrice, setBasePrice] = useState("");
   const [location, setLocation] = useState("");
-  const [serviceRadius, setServiceRadius] = useState("");
-  const [portfolioSummary, setPortfolioSummary] = useState("");
   const [introVideoUrl, setIntroVideoUrl] = useState("");
   const [slug, setSlug] = useState("");
   const [instagramHandle, setInstagramHandle] = useState("");
@@ -113,10 +109,6 @@ export default function VendorProfilePage() {
       p?.base_price_cents != null ? (p.base_price_cents / 100).toString() : "",
     );
     setLocation(p?.location ?? "");
-    setServiceRadius(
-      p?.service_radius_miles != null ? p.service_radius_miles.toString() : "",
-    );
-    setPortfolioSummary(p?.portfolio_summary ?? "");
     setIntroVideoUrl(p?.intro_video_url ?? "");
     setSlug(p?.slug ?? "");
     setInstagramHandle(p?.instagram_handle ?? "");
@@ -268,10 +260,6 @@ export default function VendorProfilePage() {
         ? Math.round(Number.parseFloat(basePrice) * 100)
         : null,
       location: location.trim() || null,
-      service_radius_miles: serviceRadius
-        ? Number.parseInt(serviceRadius, 10)
-        : null,
-      portfolio_summary: portfolioSummary.trim() || null,
       intro_video_url: introVideoUrl.trim() || null,
       // Slug normalization happens server-side via the trigger when
       // omitted; if the vendor sets one, we sanitize lightly here so
@@ -334,7 +322,7 @@ export default function VendorProfilePage() {
     } else {
       setCreating(true);
       const SELECT_COLS =
-        "id, business_name, category, bio, base_price_cents, location, service_radius_miles, portfolio_summary, verified_at, application_status, intro_video_url, weekly_digest_enabled, slug, instagram_handle, tiktok_handle";
+        "id, business_name, category, bio, base_price_cents, location, verified_at, application_status, intro_video_url, weekly_digest_enabled, slug, instagram_handle, tiktok_handle";
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data, error } = await (supabase as any)
         .from("vendor_profiles")
@@ -664,36 +652,20 @@ export default function VendorProfilePage() {
               )}
 
               {isListing && category && (
-                <div className="grid sm:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="base-price">
-                      {t("vendor_listing.starting_price")}
-                    </Label>
-                    <Input
-                      id="base-price"
-                      type="number"
-                      inputMode="decimal"
-                      min="0"
-                      step="100"
-                      value={basePrice}
-                      onChange={(e) => setBasePrice(e.target.value)}
-                      className="h-11"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="service-radius">
-                      {t("vendor_listing.service_radius")}
-                    </Label>
-                    <Input
-                      id="service-radius"
-                      type="number"
-                      inputMode="numeric"
-                      min="0"
-                      value={serviceRadius}
-                      onChange={(e) => setServiceRadius(e.target.value)}
-                      className="h-11"
-                    />
-                  </div>
+                <div className="space-y-2">
+                  <Label htmlFor="base-price">
+                    {t("vendor_listing.starting_price")}
+                  </Label>
+                  <Input
+                    id="base-price"
+                    type="number"
+                    inputMode="decimal"
+                    min="0"
+                    step="100"
+                    value={basePrice}
+                    onChange={(e) => setBasePrice(e.target.value)}
+                    className="h-11"
+                  />
                 </div>
               )}
 
@@ -708,21 +680,6 @@ export default function VendorProfilePage() {
                     onChange={(e) => setLocation(e.target.value)}
                     placeholder={t("vendor_listing.location_placeholder")}
                     className="h-11"
-                  />
-                </div>
-              )}
-
-              {isListing && category && (
-                <div className="space-y-2">
-                  <Label htmlFor="portfolio-summary">
-                    {t("vendor_listing.portfolio_summary")}
-                  </Label>
-                  <Textarea
-                    id="portfolio-summary"
-                    value={portfolioSummary}
-                    onChange={(e) => setPortfolioSummary(e.target.value)}
-                    rows={5}
-                    placeholder={t("vendor_listing.portfolio_placeholder")}
                   />
                 </div>
               )}
