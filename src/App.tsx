@@ -101,7 +101,6 @@ import {
   VendorTeamPage,
   VendorAppointmentsPage,
   VendorOnboardingPage,
-  VendorAnalyticsPage,
   VendorMessagesPage,
   VendorPartnersPage,
   VendorAiAgentPage,
@@ -231,7 +230,10 @@ const App = () => (
               <Route path="/vendor/inbox" element={<RequireRole role="vendor"><VendorInboxPage /></RequireRole>} />
               <Route path="/vendor/team" element={<RequireRole role="vendor"><VendorTeamPage /></RequireRole>} />
               <Route path="/vendor/onboarding" element={<RequireRole role="vendor"><VendorOnboardingPage /></RequireRole>} />
-              <Route path="/vendor/analytics" element={<RequireRole role="vendor"><VendorAnalyticsPage /></RequireRole>} />
+              {/* Analytics tab merged into Dashboard — keep the URL
+                  alive as a redirect so any old bookmarks / emails
+                  still work. */}
+              <Route path="/vendor/analytics" element={<Navigate to="/vendor/dashboard" replace />} />
               <Route path="/vendor/appointments" element={<RequireRole role="vendor"><VendorAppointmentsPage /></RequireRole>} />
               <Route path="/vendor/availability" element={<RequireRole role="vendor"><VendorAppointmentsPage /></RequireRole>} />
               <Route path="/vendor/payments" element={<RequireRole role="vendor"><ComingSoonPage side="vendor" description="Connect a Stripe account, see payouts, and track the 3% commission on confirmed bookings." /></RequireRole>} />

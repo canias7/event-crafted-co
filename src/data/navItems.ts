@@ -14,7 +14,6 @@ import {
   Users,
   Gift,
   Settings,
-  TrendingUp,
   ShieldCheck,
   LifeBuoy,
   History,
@@ -72,7 +71,6 @@ export const vendorNavItems: NavItem[] = [
   { labelKey: "sidebar.vendor.dashboard", path: "/vendor/dashboard", icon: LayoutDashboard },
   { labelKey: "sidebar.vendor.inbox", path: "/vendor/inbox", icon: Inbox },
   { labelKey: "sidebar.vendor.messages", path: "/vendor/messages", icon: Mail },
-  { labelKey: "sidebar.vendor.analytics", path: "/vendor/analytics", icon: TrendingUp },
   // Calendar hub — sub-tabs: Appointments, Availability
   { labelKey: "sidebar.vendor.calendar", path: "/vendor/appointments", icon: CalendarDays },
   { labelKey: "sidebar.vendor.listing", path: "/vendor/listing", icon: Store },

@@ -224,7 +224,7 @@ export default function VendorDashboard() {
           </div>
         </div>
 
-        <div className="p-4 md:p-6 space-y-4">
+        <div className="p-3 md:p-6 space-y-3 md:space-y-4">
           {/* Application-status banner: pending = under review,
               rejected = declined with admin notes. Approved is the
               normal state and shows nothing. */}
@@ -319,10 +319,12 @@ export default function VendorDashboard() {
             />
           )}
 
-          {/* Recent inquiries — compact full-width row, no inbox
-              shortcut card duplicating the New requests KPI. */}
-          <div className="bg-card rounded-sm border border-border p-4">
-            <div className="flex items-center justify-between mb-3">
+          {/* Recent inquiries — Instagram-style edge-to-edge feed
+              on mobile (no card border, full-bleed rows separated
+              by hairlines). On md+ goes back to the bordered card
+              treatment. */}
+          <div className="md:bg-card md:rounded-sm md:border md:border-border md:p-4 -mx-3 md:mx-0">
+            <div className="flex items-center justify-between mb-2 md:mb-3 px-3 md:px-0">
               <p className="font-label text-muted-foreground">
                 {t("vendor_dashboard.recent.title")}
               </p>
@@ -334,7 +336,7 @@ export default function VendorDashboard() {
               </Link>
             </div>
             {loading ? (
-              <div className="space-y-2">
+              <div className="space-y-2 px-3 md:px-0">
                 {[0, 1, 2].map((i) => (
                   <Skeleton key={i} className="h-10 w-full" />
                 ))}
@@ -344,15 +346,15 @@ export default function VendorDashboard() {
                 {t("vendor_dashboard.recent.empty")}
               </p>
             ) : (
-              <div className="space-y-1.5">
+              <div className="md:space-y-1.5 divide-y divide-border md:divide-y-0">
                 {allInquiries.slice(0, 5).map((r) => (
                   <Link
                     key={r.id}
                     to={`/vendor/inbox/${r.id}`}
-                    className="flex items-center gap-3 px-3 py-2 rounded-sm bg-secondary/40 hover:bg-secondary/70 transition-colors"
+                    className="flex items-center gap-3 px-3 py-3 md:py-2 md:rounded-sm bg-card md:bg-secondary/40 hover:bg-secondary/70 transition-colors active:bg-secondary"
                   >
                     <div className="flex-1 min-w-0">
-                      <p className="text-xs font-medium truncate">
+                      <p className="text-sm md:text-xs font-medium truncate">
                         {r.host?.display_name ??
                           t("vendor_dashboard.recent.host")}
                       </p>
