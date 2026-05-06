@@ -434,16 +434,27 @@ export default function VendorProfilePage() {
                   );
                   let succeeded = !rpc.error && rpc.data === true;
                   let errorMessage: string | null = rpc.error?.message ?? null;
-                  // 42883 = function does not exist (migration not yet
-                  // applied). Fall back to the table-level delete with
-                  // row-count verification so we still get a real
-                  // result either way.
-                  if (
-                    !succeeded &&
-                    rpc.error &&
+                  // Function-not-found can come back several ways:
+                  //   - Postgres 42883 (function does not exist)
+                  //   - PostgREST PGRST202 ("could not find the function …
+                  //     in the schema cache") when the migration ran but
+                  //     the API hasn't refreshed its cache yet
+                  //   - Plain message match for any other variant
+                  // In all those cases, fall through to the table-level
+                  // delete with row-count verification so we still get a
+                  // real result either way.
+                  const fnMissing =
+                    !!rpc.error &&
                     (rpc.error.code === "42883" ||
-                      /function .* does not exist/i.test(rpc.error.message))
-                  ) {
+                      rpc.error.code === "PGRST202" ||
+                      /function .* does not exist/i.test(
+                        rpc.error.message ?? "",
+                      ) ||
+                      /could not find the function/i.test(
+                        rpc.error.message ?? "",
+                      ) ||
+                      /schema cache/i.test(rpc.error.message ?? ""));
+                  if (!succeeded && fnMissing) {
                     const direct = await supabase
                       .from("vendor_profiles")
                       .delete()
