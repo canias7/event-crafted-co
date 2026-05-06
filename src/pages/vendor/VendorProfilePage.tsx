@@ -16,7 +16,6 @@ import { PortfolioUploader } from "@/components/vendor/PortfolioUploader";
 import { PackageManager } from "@/components/vendor/PackageManager";
 import { VendorRecommendationManager } from "@/components/vendor/VendorRecommendationManager";
 import { IntakeFormEditor } from "@/components/vendor/IntakeFormEditor";
-import { ImportedReviewsManager } from "@/components/vendor/ImportedReviewsManager";
 import { VendorFaqsManager } from "@/components/vendor/VendorFaqsManager";
 import { VendorTeamManager } from "@/components/vendor/VendorTeamManager";
 import { VendorPolicyEditor } from "@/components/vendor/VendorPolicyEditor";
@@ -611,12 +610,6 @@ export default function VendorProfilePage() {
               </div>
               <div className="mt-12 pt-10 border-t border-border">
                 <VendorPolicyEditor vendorId={profile.id} canEdit={canEdit} />
-              </div>
-              <div className="mt-12 pt-10 border-t border-border">
-                <ImportedReviewsManager
-                  vendorId={profile.id}
-                  canEdit={canEdit}
-                />
               </div>
               <div className="mt-12 pt-10 border-t border-border">
                 <ShowcaseClipsManager
