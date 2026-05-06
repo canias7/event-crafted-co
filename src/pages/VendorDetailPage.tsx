@@ -249,8 +249,12 @@ export default function VendorDetailPage() {
     };
   }, [vendor]);
 
-  const portfolioItems: RealPortfolioItem[] =
-    realPortfolio.length > 0
+  // Real vendors only show their own uploaded portfolio. Demo /
+  // sampleData vendors fall back to the bundled portfolioPool art so
+  // the marketing-facing showcase pages stay populated.
+  const portfolioItems: RealPortfolioItem[] = vendor?.isReal
+    ? realPortfolio
+    : realPortfolio.length > 0
       ? realPortfolio
       : portfolioPool.map((p) => ({ src: p.img.src, caption: null }));
   // Backwards-compat: many call sites still expect a string[] of URLs.
@@ -865,7 +869,11 @@ export default function VendorDetailPage() {
                 </div>
               )}
 
-              {/* Portfolio */}
+              {/* Portfolio — hidden entirely on real vendors who
+                  haven't uploaded any photos yet. The empty grid +
+                  "Recent work" headline read as a broken section
+                  rather than a not-yet-populated one. */}
+              {portfolioItems.length > 0 && (
               <div>
                 <p className="font-label text-accent mb-4">Portfolio</p>
                 <h2 className="font-display text-3xl mb-8">Recent work</h2>
@@ -898,6 +906,7 @@ export default function VendorDetailPage() {
                   })}
                 </div>
               </div>
+              )}
 
               {/* Each section wrapped in a per-component silent
                   error boundary so a single rogue component (most
