@@ -15,11 +15,6 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
-import {
-  ProTipCard,
-  VendorQuickActionsRow,
-  type ProTip,
-} from "@/components/vendor/DashboardWidgets";
 import { Badge } from "@/components/ui/badge";
 import { VendorPerformanceCharts } from "@/components/vendor/VendorPerformanceCharts";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -70,57 +65,6 @@ const statusLabel: Record<string, string> = {
   lost: "Closed",
   expired: "Expired",
 };
-
-interface ProTipState {
-  stats: { newRequests: number; awaiting: number; booked: number; total: number };
-  viewCount: number;
-  ratingCount: number;
-  avgRating: number;
-  isPending: boolean;
-}
-
-function pickDashboardTip(s: ProTipState, t: (key: string, opts?: Record<string, unknown>) => string): ProTip {
-  if (s.isPending) {
-    return {
-      title: t("vendor_pro_tips.pending.title"),
-      body: t("vendor_pro_tips.pending.body"),
-      cta: { label: t("vendor_pro_tips.cta.edit_listing"), to: "/vendor/listing" },
-    };
-  }
-  if (s.stats.newRequests > 0) {
-    return {
-      title: t("vendor_pro_tips.new_requests.title", { count: s.stats.newRequests }),
-      body: t("vendor_pro_tips.new_requests.body"),
-      cta: { label: t("vendor_pro_tips.cta.open_inbox"), to: "/vendor/inbox" },
-    };
-  }
-  if (s.viewCount > 0 && s.stats.total === 0) {
-    return {
-      title: t("vendor_pro_tips.views_no_inquiries.title"),
-      body: t("vendor_pro_tips.views_no_inquiries.body"),
-      cta: { label: t("vendor_pro_tips.cta.edit_listing"), to: "/vendor/listing" },
-    };
-  }
-  if (s.ratingCount === 0) {
-    return {
-      title: t("vendor_pro_tips.no_reviews.title"),
-      body: t("vendor_pro_tips.no_reviews.body"),
-      cta: { label: t("vendor_pro_tips.cta.edit_listing"), to: "/vendor/listing" },
-    };
-  }
-  if (s.stats.booked > 0 && s.avgRating < 4.5 && s.ratingCount > 0) {
-    return {
-      title: t("vendor_pro_tips.ask_review.title"),
-      body: t("vendor_pro_tips.ask_review.body"),
-      cta: { label: t("vendor_pro_tips.cta.open_calendar"), to: "/vendor/appointments" },
-    };
-  }
-  return {
-    title: t("vendor_pro_tips.share.title"),
-    body: t("vendor_pro_tips.share.body"),
-    cta: { label: t("vendor_pro_tips.cta.open_listing"), to: "/vendor/listing" },
-  };
-}
 
 function KpiCell({
   label,
@@ -333,53 +277,6 @@ export default function VendorDashboard() {
                 </Button>
               </Link>
             </div>
-          )}
-
-          {/* Quick actions strip — four colourful tiles linking to the
-              high-frequency surfaces. */}
-          {vendorProfile && (
-            <VendorQuickActionsRow
-              vendorId={vendorProfile.id}
-              newRequestsCount={stats.newRequests}
-              inboxLabel={
-                stats.newRequests > 0
-                  ? t("vendor_quick_actions.new_inquiries", {
-                      count: stats.newRequests,
-                    })
-                  : t("vendor_quick_actions.inbox")
-              }
-              inboxHint={
-                stats.newRequests > 0
-                  ? t("vendor_quick_actions.reply_now")
-                  : t("vendor_quick_actions.all_caught_up")
-              }
-              publicLabel={t("vendor_quick_actions.public_listing")}
-              publicHint={t("vendor_quick_actions.public_hint")}
-              calendarLabel={t("vendor_quick_actions.calendar")}
-              calendarHint={t("vendor_quick_actions.calendar_hint")}
-              editLabel={t("vendor_quick_actions.edit_listing")}
-              editHint={t("vendor_quick_actions.edit_hint")}
-            />
-          )}
-
-          {/* Pro tip — a single rotating insight surfaced based on the
-              vendor's current state. */}
-          {vendorProfile && (
-            <ProTipCard
-              tip={pickDashboardTip(
-                {
-                  stats,
-                  viewCount: viewRows.length,
-                  ratingCount: ratings.length,
-                  avgRating:
-                    ratings.length > 0
-                      ? ratings.reduce((s, r) => s + r.rating, 0) / ratings.length
-                      : 0,
-                  isPending: vendorProfile.application_status === "pending",
-                },
-                t,
-              )}
-            />
           )}
 
           {/* Compact KPI strip — single bordered card, four cells

@@ -18,11 +18,6 @@ import { MobileNav } from "@/components/shared/MobileNav";
 import { Skeleton } from "@/components/ui/skeleton";
 import { vendorNavItems as navItems } from "@/data/navItems";
 import { ProposalFunnelCard } from "@/components/vendor/ProposalFunnelCard";
-import {
-  ProTipCard,
-  VendorQuickActionsRow,
-  type ProTip,
-} from "@/components/vendor/DashboardWidgets";
 
 interface InquiryRow {
   id: string;
@@ -74,70 +69,6 @@ function median(values: number[]): number {
   return sorted.length % 2
     ? sorted[mid]
     : (sorted[mid - 1] + sorted[mid]) / 2;
-}
-
-interface AnalyticsTipState {
-  totalViews: number;
-  inquiriesCount: number;
-  bookedCount: number;
-  responseHours: number;
-  avgRating: number;
-  ratingCount: number;
-}
-
-function pickAnalyticsTip(
-  s: AnalyticsTipState,
-  t: (key: string, opts?: Record<string, unknown>) => string,
-): ProTip {
-  // Slow response time is the biggest lever — flag it first.
-  if (Number.isFinite(s.responseHours) && s.responseHours > 3) {
-    return {
-      title: t("vendor_pro_tips.slow_response.title"),
-      body: t("vendor_pro_tips.slow_response.body"),
-      cta: { label: t("vendor_pro_tips.cta.open_inbox"), to: "/vendor/inbox" },
-    };
-  }
-  // No views yet — the listing isn't being seen, fix the listing.
-  if (s.totalViews < 5) {
-    return {
-      title: t("vendor_pro_tips.low_views.title"),
-      body: t("vendor_pro_tips.low_views.body"),
-      cta: {
-        label: t("vendor_pro_tips.cta.edit_listing"),
-        to: "/vendor/listing",
-      },
-    };
-  }
-  // Plenty of views, no inquiries — pricing / packages.
-  if (s.totalViews > 0 && s.inquiriesCount === 0) {
-    return {
-      title: t("vendor_pro_tips.views_no_inquiries.title"),
-      body: t("vendor_pro_tips.views_no_inquiries.body"),
-      cta: {
-        label: t("vendor_pro_tips.cta.edit_listing"),
-        to: "/vendor/listing",
-      },
-    };
-  }
-  if (s.ratingCount === 0) {
-    return {
-      title: t("vendor_pro_tips.no_reviews.title"),
-      body: t("vendor_pro_tips.no_reviews.body"),
-      cta: {
-        label: t("vendor_pro_tips.cta.edit_listing"),
-        to: "/vendor/listing",
-      },
-    };
-  }
-  // Funnel is humming — encourage volume.
-  return {
-    title: t("vendor_pro_tips.great_funnel.title"),
-    body: t("vendor_pro_tips.great_funnel.body"),
-    cta: {
-      label: t("vendor_pro_tips.cta.open_listing"),
-      to: "/vendor/listing",
-    },
-  };
 }
 
 export default function VendorAnalyticsPage() {
@@ -388,51 +319,7 @@ export default function VendorAnalyticsPage() {
               </p>
             </div>
           ) : (
-            <div className="h-full grid grid-rows-[auto_auto_auto_auto_minmax(0,1fr)] gap-3">
-              {/* Quick actions strip — same set as the dashboard so
-                  the muscle memory transfers between the two pages. */}
-              <VendorQuickActionsRow
-                vendorId={vendorId}
-                newRequestsCount={
-                  inquiries.filter((i) => i.status === "new").length
-                }
-                inboxLabel={
-                  inquiries.filter((i) => i.status === "new").length > 0
-                    ? t("vendor_quick_actions.new_inquiries", {
-                        count: inquiries.filter((i) => i.status === "new")
-                          .length,
-                      })
-                    : t("vendor_quick_actions.inbox")
-                }
-                inboxHint={
-                  inquiries.filter((i) => i.status === "new").length > 0
-                    ? t("vendor_quick_actions.reply_now")
-                    : t("vendor_quick_actions.all_caught_up")
-                }
-                publicLabel={t("vendor_quick_actions.public_listing")}
-                publicHint={t("vendor_quick_actions.public_hint")}
-                calendarLabel={t("vendor_quick_actions.calendar")}
-                calendarHint={t("vendor_quick_actions.calendar_hint")}
-                editLabel={t("vendor_quick_actions.edit_listing")}
-                editHint={t("vendor_quick_actions.edit_hint")}
-              />
-
-              {/* Pro tip — analytics-specific insight (slow response,
-                  low views, great funnel, etc.). */}
-              <ProTipCard
-                tip={pickAnalyticsTip(
-                  {
-                    totalViews,
-                    inquiriesCount: stats.totalInquiries,
-                    bookedCount: stats.won,
-                    responseHours: responseTime,
-                    avgRating,
-                    ratingCount: reviews.length,
-                  },
-                  t,
-                )}
-              />
-
+            <div className="h-full grid grid-rows-[auto_auto_minmax(0,1fr)] gap-3">
               {/* Funnel — compact KPI strip */}
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
                 <CompactFunnelCard

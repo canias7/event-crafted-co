@@ -15,7 +15,16 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { CalendarRange, Inbox, Star, TrendingUp, Zap } from "lucide-react";
+import {
+  CalendarRange,
+  DollarSign,
+  Inbox,
+  PartyPopper,
+  Star,
+  Timer,
+  TrendingUp,
+  Zap,
+} from "lucide-react";
 
 // Performance overview for the vendor dashboard. Five coordinated
 // charts arranged in a dense 2-up / 3-up grid so the page reads as a
@@ -38,6 +47,10 @@ import { CalendarRange, Inbox, Star, TrendingUp, Zap } from "lucide-react";
 interface InquiryRow {
   status: string;
   created_at: string;
+  event_type?: string | null;
+  event_date?: string | null;
+  budget_min_cents?: number | null;
+  budget_max_cents?: number | null;
 }
 interface RatingRow {
   rating: number;
@@ -177,6 +190,96 @@ export function VendorPerformanceCharts({
       fill: "hsl(150 40% 45%)",
     },
   ];
+
+  // Event-type mix — top 5 inquiry event types, bucket the long tail
+  // into "Other". Surfaces what kind of work the vendor is actually
+  // attracting (mostly weddings? corporate? milestone birthdays?).
+  const eventTypeSeries = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const i of inquiries) {
+      const key = (i.event_type ?? "").trim();
+      if (!key) continue;
+      counts.set(key, (counts.get(key) ?? 0) + 1);
+    }
+    const sorted = Array.from(counts.entries())
+      .map(([name, value]) => ({
+        name: name.replace(/_/g, " "),
+        value,
+      }))
+      .sort((a, b) => b.value - a.value);
+    if (sorted.length <= 5) return sorted;
+    const top = sorted.slice(0, 5);
+    const rest = sorted.slice(5);
+    return [
+      ...top,
+      {
+        name: "Other",
+        value: rest.reduce((s, d) => s + d.value, 0),
+      },
+    ];
+  }, [inquiries]);
+  const eventTypeMax = Math.max(1, ...eventTypeSeries.map((d) => d.value));
+
+  // Booking lead time — how far in advance hosts typically inquire.
+  // Useful for staffing + understanding whether the marketing push
+  // should target same-week panic bookings or 6+ months out planners.
+  const leadTimeSeries = useMemo(() => {
+    const buckets = [
+      { label: "<2 wk", min: 0, max: 14, count: 0 },
+      { label: "2–4 wk", min: 14, max: 30, count: 0 },
+      { label: "1–3 mo", min: 30, max: 90, count: 0 },
+      { label: "3–6 mo", min: 90, max: 180, count: 0 },
+      { label: "6+ mo", min: 180, max: Infinity, count: 0 },
+    ];
+    for (const i of inquiries) {
+      if (!i.event_date) continue;
+      const inquired = new Date(i.created_at).getTime();
+      const event = new Date(i.event_date).getTime();
+      if (!Number.isFinite(event) || !Number.isFinite(inquired)) continue;
+      const days = Math.max(0, Math.round((event - inquired) / 86_400_000));
+      const b = buckets.find((bk) => days >= bk.min && days < bk.max);
+      if (b) b.count += 1;
+    }
+    return buckets;
+  }, [inquiries]);
+  const leadTimePeak = Math.max(1, ...leadTimeSeries.map((d) => d.count));
+  const leadTimeTotal = leadTimeSeries.reduce((s, d) => s + d.count, 0);
+
+  // Inquiry-budget headline — average of (min+max)/2 across rows that
+  // expose a budget. Single big number tile so vendors can sense
+  // whether they're getting the calibre of inquiry they want.
+  const budgetSeries = useMemo(() => {
+    const values: number[] = [];
+    for (const i of inquiries) {
+      const min = i.budget_min_cents ?? null;
+      const max = i.budget_max_cents ?? null;
+      if (min == null && max == null) continue;
+      const mid =
+        min != null && max != null
+          ? (min + max) / 2
+          : (min ?? max) ?? 0;
+      if (mid > 0) values.push(mid);
+    }
+    if (values.length === 0) {
+      return { avg: 0, median: 0, count: 0 };
+    }
+    const avg = values.reduce((s, v) => s + v, 0) / values.length;
+    const sorted = [...values].sort((a, b) => a - b);
+    const mid = sorted.length >> 1;
+    const median =
+      sorted.length % 2 === 0
+        ? (sorted[mid - 1] + sorted[mid]) / 2
+        : sorted[mid];
+    return { avg, median, count: values.length };
+  }, [inquiries]);
+  const fmtBudget = (cents: number) => {
+    if (cents <= 0) return "—";
+    return cents >= 100_000_00
+      ? `$${Math.round(cents / 100_000_00) / 10}M`
+      : cents >= 1_000_00
+        ? `$${(cents / 100_000).toFixed(1)}k`
+        : `$${Math.round(cents / 100).toLocaleString()}`;
+  };
 
   const tooltipStyle = {
     background: "hsl(var(--card))",
@@ -476,6 +579,158 @@ export function VendorPerformanceCharts({
                 );
               })}
             </ul>
+          )}
+        </div>
+      </div>
+
+      {/* Row 3 — event-type mix, lead time histogram, inquiry budget */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+        {/* Event type mix — horizontal bars so the labels stay
+            readable even when sub-types get long. */}
+        <div className="rounded-sm border border-border bg-card p-4">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <PartyPopper className="w-3.5 h-3.5" />
+              <p className="font-label">Top event types</p>
+            </div>
+            <p className="text-[10px] uppercase tracking-wide text-muted-foreground">
+              All time
+            </p>
+          </div>
+          {eventTypeSeries.length === 0 ? (
+            <p className="text-xs text-muted-foreground py-10 text-center">
+              No inquiries yet
+            </p>
+          ) : (
+            <ul className="space-y-2">
+              {eventTypeSeries.map((d) => {
+                const pct = (d.value / eventTypeMax) * 100;
+                return (
+                  <li
+                    key={d.name}
+                    className="flex items-center gap-3 text-[11px]"
+                  >
+                    <span className="w-20 capitalize truncate text-muted-foreground">
+                      {d.name}
+                    </span>
+                    <div className="flex-1 h-1.5 rounded-full bg-secondary/60 overflow-hidden">
+                      <div
+                        className="h-full bg-accent transition-all"
+                        style={{ width: `${pct}%` }}
+                      />
+                    </div>
+                    <span className="font-medium tnum w-6 text-right">
+                      {d.value}
+                    </span>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </div>
+
+        {/* Lead time histogram — how far ahead are hosts inquiring? */}
+        <div className="rounded-sm border border-border bg-card p-4">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <Timer className="w-3.5 h-3.5" />
+              <p className="font-label">Booking lead time</p>
+            </div>
+            <p className="text-[10px] uppercase tracking-wide text-muted-foreground">
+              {leadTimeTotal} dated
+            </p>
+          </div>
+          {leadTimeTotal === 0 ? (
+            <p className="text-xs text-muted-foreground py-10 text-center">
+              No dated inquiries yet
+            </p>
+          ) : (
+            <div className="h-[120px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart
+                  data={leadTimeSeries}
+                  margin={{ top: 4, right: 4, left: 0, bottom: 0 }}
+                >
+                  <Bar
+                    dataKey="count"
+                    radius={[4, 4, 0, 0]}
+                    isAnimationActive={false}
+                  >
+                    {leadTimeSeries.map((d) => (
+                      <Cell
+                        key={d.label}
+                        fill={
+                          d.count === leadTimePeak && d.count > 0
+                            ? "hsl(var(--accent))"
+                            : `hsl(var(--accent) / ${
+                                leadTimePeak > 0
+                                  ? 0.25 + (d.count / leadTimePeak) * 0.5
+                                  : 0.25
+                              })`
+                        }
+                      />
+                    ))}
+                  </Bar>
+                  <XAxis
+                    dataKey="label"
+                    tick={{
+                      fontSize: 10,
+                      fill: "hsl(var(--muted-foreground))",
+                    }}
+                    tickLine={false}
+                    axisLine={false}
+                  />
+                  <YAxis hide />
+                  <RTooltip
+                    contentStyle={tooltipStyle}
+                    cursor={{ fill: "hsl(var(--secondary) / 0.4)" }}
+                    formatter={(v: number) => [
+                      `${v} inquir${v === 1 ? "y" : "ies"}`,
+                      "",
+                    ]}
+                    separator=""
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          )}
+        </div>
+
+        {/* Inquiry budget — average + median + sample size, no chart,
+            just numbers. Big bold value tile on purpose: this is the
+            single most-asked-about number after total inquiries. */}
+        <div className="rounded-sm border border-border bg-card p-4 flex flex-col justify-between">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <DollarSign className="w-3.5 h-3.5" />
+              <p className="font-label">Avg inquiry budget</p>
+            </div>
+            {budgetSeries.count > 0 && (
+              <p className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                {budgetSeries.count} sampled
+              </p>
+            )}
+          </div>
+          {budgetSeries.count === 0 ? (
+            <p className="text-xs text-muted-foreground py-10 text-center">
+              No budget data yet
+            </p>
+          ) : (
+            <div>
+              <p className="font-display text-3xl tnum leading-none">
+                {fmtBudget(budgetSeries.avg)}
+              </p>
+              <p className="text-[11px] text-muted-foreground mt-2">
+                Median{" "}
+                <span className="font-medium tnum text-foreground">
+                  {fmtBudget(budgetSeries.median)}
+                </span>
+              </p>
+              <p className="text-[10px] text-muted-foreground mt-1">
+                Average of (min+max)/2 across inquiries that supplied a
+                range.
+              </p>
+            </div>
           )}
         </div>
       </div>
