@@ -236,11 +236,12 @@ export default function VendorStudioPage() {
             </ImagePanel>
             </div>
 
-            {/* Right column — animated walkthrough showing the editor
-                end-to-end so a vendor can preview the flow before
-                committing their own photo. Self-contained styles +
-                a synthetic cursor; restarts on a loop. */}
-            <div className="hidden xl:block sticky top-20">
+            {/* Right column at xl, stacks below the editor on
+                everything narrower. Animated walkthrough shows the
+                end-to-end flow before the vendor commits a real
+                photo. The demo's own internal 3-col grid stays
+                readable at common phone widths. */}
+            <div className="xl:sticky xl:top-20">
               <ImageEditorDemo />
             </div>
           </div>

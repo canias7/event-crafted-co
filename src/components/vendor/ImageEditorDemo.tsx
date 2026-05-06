@@ -246,6 +246,11 @@ export default function ImageEditorDemo() {
         .gf-replay:hover { background: rgba(255,255,255,0.08); color: #e5e7eb; }
         .gf-title { color: #e5e7eb; font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; margin-bottom: 8px; text-align: center; font-weight: 500; }
         .gf-title span { color: #c8a4ff; }
+        @media (max-width: 480px) {
+          .gf-grid { grid-template-columns: 1fr; }
+          .gf-prompt-area { aspect-ratio: auto; }
+          .gf-img-area { aspect-ratio: 4/3; }
+        }
       `}</style>
 
       <div className="gf-title">
