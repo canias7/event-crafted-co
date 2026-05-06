@@ -17,7 +17,7 @@ import type { Appointment } from "@/components/appointments/AppointmentsList";
 // appointments outside the core day without the main view getting
 // cluttered. Today's date column-header gets a black circular badge.
 
-const HOUR_HEIGHT = 64; // px per hour row
+const HOUR_HEIGHT = 72; // px per hour row — taller rows for readability
 // Core business hours: rows 9, 10, 11, 12, 1, 2, 3, 4 PM (8 rows;
 // covers 9 AM – 5 PM since each row spans its starting hour to the
 // next).
@@ -140,8 +140,11 @@ export function CalendarWeekView({ appointments, onSelectAppointment }: Props) {
         </div>
       </div>
 
-      <div className="overflow-x-auto rounded-sm border border-border">
-        <div className="min-w-[840px]">
+      {/* No min-width — the grid fills the parent container so the
+          whole Mon-Sun row fits without a horizontal scrollbar even
+          on narrower viewports. */}
+      <div className="rounded-sm border border-border">
+        <div className="w-full">
           {/* Day headers (rendered once, sticky-feel via the
               border-b — applies to every grid section below). */}
           <div className="grid grid-cols-[64px_repeat(7,1fr)] border-b border-border bg-card">

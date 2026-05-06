@@ -147,7 +147,7 @@ export default function VendorAppointmentsPage() {
           </p>
         </div>
 
-        <div className="p-4 md:p-8 max-w-3xl space-y-10">
+        <div className="p-4 md:p-8 max-w-7xl space-y-10">
           {noVendor ? (
             <div className="rounded-sm border border-border bg-card p-8 text-center">
               <CalendarIcon className="w-10 h-10 mx-auto text-muted-foreground/40 mb-3" />
