@@ -810,7 +810,11 @@ export default function VendorProfilePage() {
                   {(saving || creating) && (
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                   )}
-                  {profile ? "Save changes" : "Create profile"}
+                  {profile
+                    ? "Save changes"
+                    : isListing
+                      ? "Create listing"
+                      : "Create profile"}
                 </Button>
               </div>
             </form>
