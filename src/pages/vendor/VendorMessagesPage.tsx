@@ -167,7 +167,7 @@ export default function VendorMessagesPage() {
           <SubNavTabs tabs={VENDOR_MESSAGES_HUB_TABS} />
         </div>
 
-        <div className="grid lg:grid-cols-[280px_1fr] h-[calc(100vh-65px)]">
+        <div className="grid lg:grid-cols-[280px_1fr] h-[calc(100vh-160px)] lg:h-[calc(100vh-65px)]">
           <aside className="border-r border-border overflow-y-auto bg-card/30">
             {loading ? (
               <div className="p-4 space-y-2">

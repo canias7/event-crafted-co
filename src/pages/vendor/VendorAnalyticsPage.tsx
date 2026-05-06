@@ -266,12 +266,12 @@ export default function VendorAnalyticsPage() {
       : reviews.reduce((s, r) => s + r.rating, 0) / reviews.length;
 
   return (
-    <div className="flex h-screen bg-background overflow-hidden">
+    <div className="flex min-h-screen bg-background lg:h-screen lg:overflow-hidden">
       <DashboardSidebar items={navItems} title="Vendor Portal" backPath="/" />
 
       <main
         id="main-content"
-        className="flex-1 flex flex-col min-w-0 min-h-0"
+        className="flex-1 flex flex-col min-w-0 min-h-0 pb-20 lg:pb-0"
       >
         <div className="border-b border-border bg-card px-4 md:px-6 py-3 shrink-0">
           <div className="flex items-center justify-between gap-3 flex-wrap">
@@ -302,7 +302,7 @@ export default function VendorAnalyticsPage() {
           </div>
         </div>
 
-        <div className="flex-1 min-h-0 overflow-hidden p-3 md:p-4">
+        <div className="flex-1 min-h-0 lg:overflow-hidden p-3 md:p-4">
           {loading ? (
             <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
               {[0, 1, 2, 3].map((i) => (
