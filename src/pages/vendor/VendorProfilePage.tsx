@@ -125,40 +125,46 @@ export default function VendorProfilePage() {
     if (!user) return;
     let cancelled = false;
     setLoading(true);
-    // If the user has a team membership, look up the profile by vendor_id
-    // (works for both owners and team members). Otherwise fall back to the
-    // user_id lookup so a fresh user with no profile still hits the create
-    // flow.
-    const query = membership?.vendor_id
-      ? supabase
-          .from("vendor_profiles")
-          .select(
-            "id, business_name, category, bio, base_price_cents, location, service_radius_miles, portfolio_summary, verified_at, application_status, intro_video_url, weekly_digest_enabled, slug, instagram_handle, tiktok_handle",
-          )
-          .eq("id", membership.vendor_id)
-          .maybeSingle()
-      : supabase
-          .from("vendor_profiles")
-          .select(
-            "id, business_name, category, bio, base_price_cents, location, service_radius_miles, portfolio_summary, verified_at, application_status, intro_video_url, weekly_digest_enabled, slug, instagram_handle, tiktok_handle",
-          )
-          .eq("user_id", user.id)
-          .maybeSingle();
-    query.then(({ data, error }) => {
+    // Always try user_id first — covers the common case where the
+    // signed-in user owns their own vendor row. Membership state can
+    // go stale (e.g. cached vendor_id pointing at a deleted profile),
+    // so falling back to membership.vendor_id only when user_id
+    // returns nothing keeps team-member access working without
+    // triggering a phantom "create profile" path that would later
+    // collide with the real row on insert.
+    const SELECT_COLS =
+      "id, business_name, category, bio, base_price_cents, location, service_radius_miles, portfolio_summary, verified_at, application_status, intro_video_url, weekly_digest_enabled, slug, instagram_handle, tiktok_handle";
+    (async () => {
+      const own = await supabase
+        .from("vendor_profiles")
+        .select(SELECT_COLS)
+        .eq("user_id", user.id)
+        .maybeSingle();
       if (cancelled) return;
+      let data = own.data as VendorProfile | null;
+      let error = own.error;
+      if (!data && !error && membership?.vendor_id) {
+        const team = await supabase
+          .from("vendor_profiles")
+          .select(SELECT_COLS)
+          .eq("id", membership.vendor_id)
+          .maybeSingle();
+        if (cancelled) return;
+        data = team.data as VendorProfile | null;
+        error = team.error;
+      }
       if (error) {
         toast.error(`Couldn't load your profile: ${error.message}`);
       }
-      const p = (data as VendorProfile | null) ?? null;
-      setProfile(p);
-      applyToForm(p);
+      setProfile(data);
+      applyToForm(data);
       // Persist the post-publish preview across reloads + tab
       // switches: if the loaded profile is already approved, drop
       // the user straight onto the preview card. Edit on that card
       // flips this back to false so the form re-mounts.
-      setPublishedRecently(p?.application_status === "approved");
+      setPublishedRecently(data?.application_status === "approved");
       setLoading(false);
-    });
+    })();
     return () => {
       cancelled = true;
     };
@@ -248,14 +254,50 @@ export default function VendorProfilePage() {
       }
     } else {
       setCreating(true);
+      const SELECT_COLS =
+        "id, business_name, category, bio, base_price_cents, location, service_radius_miles, portfolio_summary, verified_at, application_status, intro_video_url, weekly_digest_enabled, slug, instagram_handle, tiktok_handle";
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data, error } = await (supabase as any)
         .from("vendor_profiles")
         .insert({ user_id: user.id, ...payload })
-        .select(
-          "id, business_name, category, bio, base_price_cents, location, service_radius_miles, portfolio_summary, verified_at, application_status, intro_video_url, weekly_digest_enabled, slug, instagram_handle, tiktok_handle",
-        )
+        .select(SELECT_COLS)
         .single();
+      // Recover from the rare case where the load query missed an
+      // existing row (e.g. RLS hiccup, race with a concurrent tab):
+      // a duplicate user_id surfaces as Postgres error 23505, and we
+      // can salvage the save by re-fetching the row and updating it
+      // in place rather than dropping the vendor's edits on the floor.
+      if (error?.code === "23505") {
+        const existing = await supabase
+          .from("vendor_profiles")
+          .select(SELECT_COLS)
+          .eq("user_id", user.id)
+          .maybeSingle();
+        if (existing.data) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const upd = await (supabase as any)
+            .from("vendor_profiles")
+            .update(payload)
+            .eq("id", (existing.data as VendorProfile).id);
+          setCreating(false);
+          if (upd.error) {
+            toast.error(upd.error.message);
+            return;
+          }
+          const merged = {
+            ...(existing.data as VendorProfile),
+            ...payload,
+          } as VendorProfile;
+          setProfile(merged);
+          applyToForm(merged);
+          if (opts?.publish) {
+            setPublishedRecently(true);
+            invalidateVendorsCache();
+          }
+          toast.success(opts?.publish ? "Listing published" : "Profile saved");
+          return;
+        }
+      }
       setCreating(false);
       if (error) {
         toast.error(error.message);
@@ -263,6 +305,11 @@ export default function VendorProfilePage() {
       }
       toast.success("Profile created");
       setProfile(data as VendorProfile);
+      applyToForm(data as VendorProfile);
+      if (opts?.publish) {
+        setPublishedRecently(true);
+        invalidateVendorsCache();
+      }
       if (payload.location && data) {
         supabase.functions
           .invoke("geocode-vendor", {
