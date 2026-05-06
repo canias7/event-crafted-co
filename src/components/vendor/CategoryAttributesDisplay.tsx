@@ -49,10 +49,11 @@ export function CategoryAttributesDisplay({
 
   if (!schema || !attrs) return null;
 
-  // Filter sections to only those with at least one populated field.
-  const populatedSections = schema.sections.filter((s) =>
-    s.fields.some((f) => hasValue(attrs[f.key])),
-  );
+  // Skip sections scoped to other subs in the group, then keep only
+  // those with at least one populated field.
+  const populatedSections = schema.sections
+    .filter((s) => !s.onlySubs || s.onlySubs.includes(category))
+    .filter((s) => s.fields.some((f) => hasValue(attrs[f.key])));
 
   if (populatedSections.length === 0) return null;
 

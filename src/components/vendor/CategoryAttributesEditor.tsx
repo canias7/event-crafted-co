@@ -95,6 +95,12 @@ export function CategoryAttributesEditor({
     return <p className="text-xs text-muted-foreground py-3">Loading…</p>;
   }
 
+  // Sections without `onlySubs` apply to every sub in the group;
+  // sub-specific sections only render for the matching sub.
+  const visibleSections = schema.sections.filter(
+    (s) => !s.onlySubs || s.onlySubs.includes(category),
+  );
+
   return (
     <div>
       <div className="mb-4">
@@ -110,7 +116,7 @@ export function CategoryAttributesEditor({
 
       {canEdit ? (
         <form onSubmit={save} className="space-y-6">
-          {schema.sections.map((section) => (
+          {visibleSections.map((section) => (
             <fieldset key={section.name} className="space-y-3">
               <legend className="text-sm font-medium mb-2">
                 {section.name}
