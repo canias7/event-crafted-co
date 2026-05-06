@@ -610,13 +610,6 @@ export default function VendorProfilePage() {
                 <IntakeFormEditor vendorId={profile.id} canEdit={canEdit} />
               </div>
               <div className="mt-12 pt-10 border-t border-border">
-                <CategoryAttributesEditor
-                  vendorId={profile.id}
-                  category={profile.category}
-                  canEdit={canEdit}
-                />
-              </div>
-              <div className="mt-12 pt-10 border-t border-border">
                 <VendorFaqsManager vendorId={profile.id} canEdit={canEdit} />
               </div>
               <div className="mt-12 pt-10 border-t border-border">
