@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   Calendar as CalendarIcon,
   Edit2,
@@ -41,6 +41,7 @@ import { CATEGORY_GROUPS } from "@/data/categoryTaxonomy";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { vendorNavItems as navItems } from "@/data/navItems";
+import { invalidateVendorsCache } from "@/hooks/useVendors";
 import { VendorShareKit } from "@/components/vendor/VendorShareKit";
 import { SubNavTabs } from "@/components/shared/SubNavTabs";
 import { VENDOR_PROFILE_HUB_TABS } from "@/data/hubTabs";
@@ -74,6 +75,7 @@ export default function VendorProfilePage() {
   // facing surface. Both tabs share state + the same save handler;
   // each renders a different slice of the form + section managers.
   const route = useLocation();
+  const navigate = useNavigate();
   const isListing = route.pathname === "/vendor/listing";
   const isProfile = !isListing;
   const [loading, setLoading] = useState(true);
@@ -217,6 +219,10 @@ export default function VendorProfilePage() {
       setProfile({ ...profile, ...payload });
       if (opts?.publish) {
         setPublishedRecently(true);
+        // Drop the vendors-list cache so the directory + the public
+        // detail page pick up the just-approved row on next render
+        // without a full page reload.
+        invalidateVendorsCache();
         // Wait a tick for the preview to render, then scroll it into view
         // so the post-publish card lands in front of the user without
         // them having to hunt for it.
@@ -342,7 +348,10 @@ export default function VendorProfilePage() {
                 profile={profile}
                 saving={deleting}
                 onView={() => {
-                  window.open(`/vendors/${profile.id}`, "_blank");
+                  // Same-window preview — keeps the back button
+                  // working so the vendor can return to the
+                  // dashboard with one tap.
+                  navigate(`/vendors/${profile.id}`);
                 }}
                 onEdit={() => {
                   setPublishedRecently(false);

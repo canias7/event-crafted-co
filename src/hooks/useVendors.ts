@@ -138,6 +138,28 @@ let cache: Vendor[] = [];
 let hydrated = false;
 let inFlight: Promise<Vendor[]> | null = null;
 
+// Subscribers re-render whenever the cache is invalidated and the
+// next fetch resolves. Lets pages like the post-publish preview
+// invalidate via `invalidateVendorsCache()` and have the directory
+// + detail pages pick up the fresh data without a full reload.
+const subscribers = new Set<(vs: Vendor[]) => void>();
+
+/**
+ * Reset the module-level cache so the next consumer triggers a
+ * fresh fetch. Notifies any currently-mounted useVendors() consumers
+ * that they should re-render against the new fetch in flight.
+ *
+ * Use this after a write that should be reflected in the directory
+ * — e.g. when a vendor publishes their listing for the first time.
+ */
+export function invalidateVendorsCache() {
+  cache = [];
+  hydrated = false;
+  inFlight = null;
+  // Re-trigger every subscriber so they refetch on this tick.
+  for (const sub of subscribers) sub([]);
+}
+
 async function fetchVendors(): Promise<Vendor[]> {
   if (hydrated) return cache;
   if (inFlight) return inFlight;
@@ -220,19 +242,28 @@ export function useVendors() {
   const [loading, setLoading] = useState(!hydrated);
 
   useEffect(() => {
-    if (hydrated) {
-      setVendors(cache);
-      setLoading(false);
-      return;
-    }
     let cancelled = false;
-    fetchVendors().then((vs) => {
+    function syncFromCache() {
       if (cancelled) return;
-      setVendors(vs);
-      setLoading(false);
-    });
+      if (hydrated) {
+        setVendors(cache);
+        setLoading(false);
+      } else {
+        // Invalidation in flight — flip back to loading until the
+        // next fetch resolves.
+        setLoading(true);
+        fetchVendors().then((vs) => {
+          if (cancelled) return;
+          setVendors(vs);
+          setLoading(false);
+        });
+      }
+    }
+    syncFromCache();
+    subscribers.add(syncFromCache);
     return () => {
       cancelled = true;
+      subscribers.delete(syncFromCache);
     };
   }, []);
 
