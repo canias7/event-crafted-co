@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import weddingHero from "@/assets/hero/wedding.jpg?url";
 
 // Self-running animated walkthrough of the Image Studio flow — used
 // in the right column of /vendor/studio so vendors can see the
@@ -7,10 +8,11 @@ import { useEffect, useRef, useState } from "react";
 // the app's design tokens; the loop restarts indefinitely until the
 // component unmounts.
 //
-// NOTE: The demo expects two static images in /public:
-//   /wedding_lowres.jpg — the "before" shot
-//   /wedding_4k.jpg     — the "after" 4K upscale
-// Drop those files in /public to see the demo render real photos.
+// Source + result both reuse the existing /src/assets/hero/wedding.jpg
+// asset — the "before" panel applies a CSS blur + slight desaturate
+// so the same photo reads as a low-res starting point, and the
+// "after" panel renders the original sharp version. Means we don't
+// need a separate /public/wedding_*.jpg pair for the demo to work.
 
 export default function ImageEditorDemo() {
   const cursorRef = useRef<HTMLDivElement>(null);
@@ -36,8 +38,10 @@ export default function ImageEditorDemo() {
   const [show4kBadge, setShow4kBadge] = useState(false);
   const isRunning = useRef(true);
 
-  const LOW_RES = "/wedding_lowres.jpg";
-  const HIGH_RES = "/wedding_4k.jpg";
+  // Same image for both — the "before" panel uses a CSS filter to
+  // simulate the lower-res starting point.
+  const LOW_RES = weddingHero;
+  const HIGH_RES = weddingHero;
 
   const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
@@ -197,7 +201,7 @@ export default function ImageEditorDemo() {
         .gf-drop { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; color: #6b7280; font-size: 10px; text-align: center; padding: 0 6px; transition: opacity .3s; }
         .gf-icon { width: 24px; height: 24px; border-radius: 50%; background: rgba(255,255,255,0.04); display: flex; align-items: center; justify-content: center; color: #9ca3af; font-size: 12px; }
         .gf-meta { font-size: 8px; color: #5b616e; line-height: 1.3; }
-        .gf-up { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity .5s ease; }
+        .gf-up { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity .5s ease; filter: blur(2.5px) saturate(0.75) contrast(0.92) brightness(0.92); image-rendering: pixelated; transform: scale(1.02); }
         .gf-up.show { opacity: 1; }
         .gf-prompt-area { width: 100%; aspect-ratio: 1/1; display: flex; flex-direction: column; justify-content: space-between; }
         .gf-prompt-box { flex: 1; border-radius: 6px; background: rgba(255,255,255,0.02); padding: 6px; font-size: 10px; color: #d1d5db; line-height: 1.4; position: relative; border: 1px solid rgba(255,255,255,0.05); min-height: 0; }
