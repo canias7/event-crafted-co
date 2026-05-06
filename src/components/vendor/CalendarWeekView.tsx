@@ -11,25 +11,38 @@ import { Button } from "@/components/ui/button";
 import type { Appointment } from "@/components/appointments/AppointmentsList";
 
 // Editorial-style week view (Mon-Sun) for the vendor Calendar page.
-// Hours stack vertically, days fan across the columns, appointments
-// render as absolutely-positioned blocks inside the day they belong
-// to. The header drives navigation: prev/next/Today buttons + week
-// range. Today's date in the column header gets a black circular
-// badge to anchor the user without colored row backgrounds.
+// The primary grid covers business hours (9 AM-5 PM). Off-hours
+// (6-9 AM "Before hours" + 5-10 PM "After hours") render as smaller
+// secondary grids stacked underneath so vendors can still see + book
+// appointments outside the core day without the main view getting
+// cluttered. Today's date column-header gets a black circular badge.
 
 const HOUR_HEIGHT = 64; // px per hour row
-const FIRST_HOUR = 6; // 6 AM
-const LAST_HOUR = 22; // 10 PM
-const HOURS = Array.from(
-  { length: LAST_HOUR - FIRST_HOUR + 1 },
-  (_, i) => FIRST_HOUR + i,
-);
+// Core business hours: rows 9, 10, 11, 12, 1, 2, 3, 4 PM (8 rows;
+// covers 9 AM – 5 PM since each row spans its starting hour to the
+// next).
+const CORE_FIRST = 9;
+const CORE_LAST = 16;
+// Pre-business: 6, 7, 8 AM (covers 6 AM – 9 AM).
+const PRE_FIRST = 6;
+const PRE_LAST = 8;
+// Post-business: 5, 6, 7, 8, 9 PM (covers 5 PM – 10 PM).
+const POST_FIRST = 17;
+const POST_LAST = 21;
+
 const DAY_LABELS = ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"];
 
 function hourLabel(h: number) {
   if (h === 0) return "12 AM";
   if (h === 12) return "12 PM";
   return h < 12 ? `${h} AM` : `${h - 12} PM`;
+}
+
+function hoursInRange(firstHour: number, lastHour: number) {
+  return Array.from(
+    { length: lastHour - firstHour + 1 },
+    (_, i) => firstHour + i,
+  );
 }
 
 interface Props {
@@ -73,6 +86,24 @@ export function CalendarWeekView({ appointments, onSelectAppointment }: Props) {
     return map;
   }, [appointments]);
 
+  // Track which off-hours grids actually have anything to show. If
+  // there are no early / late appointments scheduled in the visible
+  // week, hide the empty grid to keep the page tight.
+  const hasAppointmentsInRange = (firstHour: number, lastHour: number) => {
+    for (const d of days) {
+      const key = format(d, "yyyy-MM-dd");
+      const dayApts = byDay.get(key) ?? [];
+      for (const a of dayApts) {
+        const h = new Date(a.scheduled_at).getHours();
+        if (h >= firstHour && h <= lastHour) return true;
+      }
+    }
+    return false;
+  };
+
+  const showPre = hasAppointmentsInRange(PRE_FIRST, PRE_LAST);
+  const showPost = hasAppointmentsInRange(POST_FIRST, POST_LAST);
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-3">
@@ -111,7 +142,8 @@ export function CalendarWeekView({ appointments, onSelectAppointment }: Props) {
 
       <div className="overflow-x-auto rounded-sm border border-border">
         <div className="min-w-[840px]">
-          {/* Day headers */}
+          {/* Day headers (rendered once, sticky-feel via the
+              border-b — applies to every grid section below). */}
           <div className="grid grid-cols-[64px_repeat(7,1fr)] border-b border-border bg-card">
             <div />
             {days.map((d) => {
@@ -143,63 +175,150 @@ export function CalendarWeekView({ appointments, onSelectAppointment }: Props) {
             })}
           </div>
 
-          {/* Hour grid */}
-          <div className="grid grid-cols-[64px_repeat(7,1fr)] relative">
-            {/* Left gutter — hour labels */}
-            <div className="bg-card">
-              {HOURS.map((h) => (
-                <div
-                  key={h}
-                  style={{ height: HOUR_HEIGHT }}
-                  className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground px-2 pt-1 border-t border-border first:border-t-0"
-                >
-                  {hourLabel(h)}
-                </div>
-              ))}
-            </div>
+          {/* Core 9 AM – 5 PM grid — primary view. */}
+          <WeekHourGrid
+            firstHour={CORE_FIRST}
+            lastHour={CORE_LAST}
+            days={days}
+            byDay={byDay}
+            onSelect={onSelectAppointment}
+          />
 
-            {/* Day columns */}
-            {days.map((d) => {
-              const key = format(d, "yyyy-MM-dd");
-              const dayApts = byDay.get(key) ?? [];
-              return (
-                <DayColumn
-                  key={d.toISOString()}
-                  date={d}
-                  appointments={dayApts}
-                  onSelect={onSelectAppointment}
-                />
-              );
-            })}
-          </div>
+          {/* Off-hours: rendered only when the week actually contains
+              appointments outside core hours, so the empty case stays
+              clean. */}
+          {showPre && (
+            <OffHoursSection
+              label="Before hours"
+              firstHour={PRE_FIRST}
+              lastHour={PRE_LAST}
+              days={days}
+              byDay={byDay}
+              onSelect={onSelectAppointment}
+            />
+          )}
+          {showPost && (
+            <OffHoursSection
+              label="After hours"
+              firstHour={POST_FIRST}
+              lastHour={POST_LAST}
+              days={days}
+              byDay={byDay}
+              onSelect={onSelectAppointment}
+            />
+          )}
         </div>
       </div>
     </div>
   );
 }
 
+function OffHoursSection({
+  label,
+  firstHour,
+  lastHour,
+  days,
+  byDay,
+  onSelect,
+}: {
+  label: string;
+  firstHour: number;
+  lastHour: number;
+  days: Date[];
+  byDay: Map<string, Appointment[]>;
+  onSelect?: (a: Appointment) => void;
+}) {
+  return (
+    <>
+      <div className="grid grid-cols-[64px_repeat(7,1fr)] border-t border-border bg-muted/30">
+        <div className="px-2 py-1.5 text-[10px] uppercase tracking-[0.25em] text-muted-foreground">
+          {label}
+        </div>
+        <div className="col-span-7" />
+      </div>
+      <WeekHourGrid
+        firstHour={firstHour}
+        lastHour={lastHour}
+        days={days}
+        byDay={byDay}
+        onSelect={onSelect}
+      />
+    </>
+  );
+}
+
+function WeekHourGrid({
+  firstHour,
+  lastHour,
+  days,
+  byDay,
+  onSelect,
+}: {
+  firstHour: number;
+  lastHour: number;
+  days: Date[];
+  byDay: Map<string, Appointment[]>;
+  onSelect?: (a: Appointment) => void;
+}) {
+  const hours = hoursInRange(firstHour, lastHour);
+  return (
+    <div className="grid grid-cols-[64px_repeat(7,1fr)] relative">
+      {/* Left gutter — hour labels */}
+      <div className="bg-card">
+        {hours.map((h) => (
+          <div
+            key={h}
+            style={{ height: HOUR_HEIGHT }}
+            className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground px-2 pt-1 border-t border-border first:border-t-0"
+          >
+            {hourLabel(h)}
+          </div>
+        ))}
+      </div>
+
+      {/* Day columns */}
+      {days.map((d) => {
+        const key = format(d, "yyyy-MM-dd");
+        const dayApts = byDay.get(key) ?? [];
+        return (
+          <DayColumn
+            key={d.toISOString()}
+            firstHour={firstHour}
+            lastHour={lastHour}
+            appointments={dayApts}
+            onSelect={onSelect}
+          />
+        );
+      })}
+    </div>
+  );
+}
+
 function DayColumn({
-  date,
+  firstHour,
+  lastHour,
   appointments,
   onSelect,
 }: {
-  date: Date;
+  firstHour: number;
+  lastHour: number;
   appointments: Appointment[];
   onSelect?: (a: Appointment) => void;
 }) {
+  const hours = hoursInRange(firstHour, lastHour);
   return (
     <div
       className="relative border-l border-border"
       style={{
-        height: HOURS.length * HOUR_HEIGHT,
+        height: hours.length * HOUR_HEIGHT,
         // Subtle diagonal striping across the cells — gives the
         // "available time" look without coloring every empty cell.
         backgroundImage:
           "repeating-linear-gradient(45deg, transparent 0 6px, rgba(0,0,0,0.025) 6px 7px)",
       }}
     >
-      {/* Hour grid lines (visual only — match the gutter row heights). */}
-      {HOURS.map((h, i) => (
+      {/* Hour grid lines (visual only). */}
+      {hours.map((h, i) => (
         <div
           key={h}
           className="absolute left-0 right-0 border-t border-border first:border-t-0"
@@ -207,11 +326,13 @@ function DayColumn({
         />
       ))}
 
-      {/* Appointment blocks */}
+      {/* Appointment blocks scoped to this grid's hour range. */}
       {appointments.map((a) => (
         <AppointmentBlock
           key={a.id}
           appointment={a}
+          firstHour={firstHour}
+          lastHour={lastHour}
           onSelect={onSelect}
         />
       ))}
@@ -221,17 +342,21 @@ function DayColumn({
 
 function AppointmentBlock({
   appointment,
+  firstHour,
+  lastHour,
   onSelect,
 }: {
   appointment: Appointment;
+  firstHour: number;
+  lastHour: number;
   onSelect?: (a: Appointment) => void;
 }) {
   const start = new Date(appointment.scheduled_at);
   const minutesFromGridTop =
-    (start.getHours() - FIRST_HOUR) * 60 + start.getMinutes();
-  if (minutesFromGridTop < 0) return null; // before grid window
-  const totalMinutes = (LAST_HOUR - FIRST_HOUR + 1) * 60;
-  if (minutesFromGridTop >= totalMinutes) return null; // after grid window
+    (start.getHours() - firstHour) * 60 + start.getMinutes();
+  if (minutesFromGridTop < 0) return null;
+  const totalMinutes = (lastHour - firstHour + 1) * 60;
+  if (minutesFromGridTop >= totalMinutes) return null;
 
   const top = (minutesFromGridTop / 60) * HOUR_HEIGHT;
   const height = Math.max(
