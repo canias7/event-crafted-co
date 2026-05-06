@@ -10,8 +10,10 @@ interface PictureSource {
 }
 
 interface Props {
-  /** vite-imagetools picture object */
-  source: PictureSource;
+  /** vite-imagetools picture object. May be undefined when an
+   *  upstream imageMap lookup misses — render nothing in that case
+   *  so a stale data → renderer mismatch can't crash the page. */
+  source: PictureSource | undefined | null;
   alt: string;
   className?: string;
   /** "eager" for above-the-fold hero, "lazy" for everything else */
@@ -26,6 +28,12 @@ export const Picture = forwardRef<HTMLImageElement, Props>(function Picture(
   { source, alt, className, loading = "lazy", sizes, fetchPriority },
   ref,
 ) {
+  if (!source) {
+    // Defensive — upstream imageMap miss shouldn't crash the page.
+    // Returning null lets the parent's bg-muted/rounded wrapper show
+    // a blank tile instead of throwing in destructuring.
+    return null;
+  }
   const { sources, img } = source;
   return (
     <picture>

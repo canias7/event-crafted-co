@@ -92,7 +92,7 @@ export function VendorCard({ vendor, eager = false }: VendorCardProps) {
       >
         <div className="relative aspect-[4/3] overflow-hidden rounded-sm mb-3 bg-muted">
           <Picture
-            source={imageMap[vendor.image]}
+            source={imageMap[vendor.image] ?? imageMap["vendor-venue"]}
             alt={vendor.name}
             loading={eager ? "eager" : "lazy"}
             sizes="(min-width: 1280px) 20vw, (min-width: 1024px) 25vw, (min-width: 640px) 33vw, 50vw"

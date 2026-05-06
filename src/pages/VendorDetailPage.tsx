@@ -59,11 +59,12 @@ import { useAuth } from "@/hooks/useAuth";
 import { useVendors } from "@/hooks/useVendors";
 import { useSavedVendors } from "@/hooks/useSavedVendors";
 
-// vite-imagetools auto-pictureifies anything in /assets/vendor-* and
-// /assets/vendora-* (see vite.config.ts) into AVIF + WebP + JPG variants
-// at 640/1024/1600 widths. Each import resolves to a { sources, img }
-// picture object — render with <Picture>, extract `.img.src` if a plain
-// URL string is needed (meta tags, JSON-LD, lightbox).
+// vite-imagetools auto-pictureifies anything in /assets/vendor-*,
+// /assets/vendora-*, and /assets/hero/* (see vite.config.ts) into
+// AVIF + WebP + JPG variants at 640/1024/1600 widths. Each import
+// resolves to a { sources, img } picture object — render with
+// <Picture>, extract `.img.src` if a plain URL string is needed
+// (meta tags, JSON-LD, lightbox).
 import vendorPhotographer from "@/assets/vendor-photographer.jpg?as=picture";
 import vendorFlorist from "@/assets/vendor-florist.jpg?as=picture";
 import vendorCatering from "@/assets/vendor-catering.jpg?as=picture";
@@ -71,11 +72,18 @@ import vendorDj from "@/assets/vendor-dj.jpg?as=picture";
 import vendorVenue from "@/assets/vendor-venue.jpg?as=picture";
 import vendorMakeup from "@/assets/vendor-makeup.jpg?as=picture";
 import featureFlorals from "@/assets/vendora-feature-1.jpg?as=picture";
-import featureVenue from "@/assets/vendora-feature-2.jpg?as=picture";
+import featureLounge from "@/assets/vendora-feature-2.jpg?as=picture";
 import heroDinner from "@/assets/vendora-hero-dinner.jpg?as=picture";
 import heroGala from "@/assets/vendora-hero-gala.jpg?as=picture";
 import heroBirthday from "@/assets/vendora-hero-birthday.jpg?as=picture";
+import heroCinematic from "@/assets/vendora-hero-cinematic.jpg?as=picture";
 import heroKids from "@/assets/vendora-hero-kids.jpg?as=picture";
+import heroCorporate from "@/assets/hero/corporate.jpg?as=picture";
+import heroNye from "@/assets/hero/nye.jpg?as=picture";
+import heroFiesta from "@/assets/hero/fiesta.jpg?as=picture";
+import heroBeach from "@/assets/hero/beach.jpg?as=picture";
+import heroWedding from "@/assets/hero/wedding.jpg?as=picture";
+import heroEngagement from "@/assets/hero/engagement.jpg?as=picture";
 import { ReportButton } from "@/components/trust/ReportButton";
 import { VendorPolicyBadges } from "@/components/vendor/VendorPolicyBadges";
 import { VendorServiceAreaMap } from "@/components/vendor/VendorServiceAreaMap";
@@ -85,6 +93,9 @@ import { Picture, type PictureSource } from "@/components/shared/Picture";
 import { VendorTeamPublic } from "@/components/vendor/VendorTeamPublic";
 import { VendorAvailabilityPublic } from "@/components/vendor/VendorAvailabilityPublic";
 
+// Keep this in lockstep with VendorCard's imageMap — every key the
+// useVendors normalizer might emit needs an entry here too, otherwise
+// the lookup misses and the hero falls back to featureFlorals.
 const imageMap: Record<string, PictureSource> = {
   "vendor-photographer": vendorPhotographer,
   "vendor-florist": vendorFlorist,
@@ -92,11 +103,23 @@ const imageMap: Record<string, PictureSource> = {
   "vendor-dj": vendorDj,
   "vendor-venue": vendorVenue,
   "vendor-makeup": vendorMakeup,
+  "feature-florals": featureFlorals,
+  "feature-lounge": featureLounge,
+  "hero-dinner": heroDinner,
+  "hero-gala": heroGala,
+  "hero-birthday": heroBirthday,
+  "hero-cinematic": heroCinematic,
+  "hero-corporate": heroCorporate,
+  "hero-nye": heroNye,
+  "hero-fiesta": heroFiesta,
+  "hero-beach": heroBeach,
+  "hero-wedding": heroWedding,
+  "hero-engagement": heroEngagement,
 };
 
 const portfolioPool: PictureSource[] = [
   featureFlorals,
-  featureVenue,
+  featureLounge,
   heroDinner,
   heroGala,
   heroBirthday,
