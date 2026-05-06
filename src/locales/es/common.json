@@ -266,5 +266,179 @@
     "admin": {
       "title": "Administrador"
     }
+  },
+  "vendor_quick_actions": {
+    "inbox": "Bandeja",
+    "new_inquiries_one": "{{count}} consulta nueva",
+    "new_inquiries_other": "{{count}} consultas nuevas",
+    "reply_now": "Responder ahora",
+    "all_caught_up": "Todo al día",
+    "public_listing": "Anuncio público",
+    "public_hint": "Lo que ven los anfitriones",
+    "calendar": "Calendario",
+    "calendar_hint": "Gestionar disponibilidad",
+    "edit_listing": "Editar anuncio",
+    "edit_hint": "Pule tus fotos"
+  },
+  "vendor_pro_tips": {
+    "cta": {
+      "edit_listing": "Editar anuncio",
+      "open_inbox": "Abrir bandeja",
+      "open_calendar": "Abrir calendario",
+      "open_listing": "Abrir anuncio",
+      "open_analytics": "Abrir analíticas"
+    },
+    "pending": {
+      "title": "Solicitud en revisión",
+      "body": "Mientras esperas, mejora tu anuncio — los proveedores con 5+ fotos y 2+ paquetes con precio reciben consultas 2× más rápido el día que se publican."
+    },
+    "new_requests": {
+      "title_one": "Responde a {{count}} consulta nueva",
+      "title_other": "Responde a {{count}} consultas nuevas",
+      "body": "Los anfitriones que reciben respuesta en menos de 3 horas reservan ~3× más que quienes esperan un día. Abre la bandeja y la respuesta de la IA está a un clic."
+    },
+    "views_no_inquiries": {
+      "title": "Te están viendo, pero nadie escribe",
+      "body": "Los anuncios con paquetes con precio convierten a quienes navegan en consultas 2× más que los que solo dicen 'consultar precio'. Añade 2–3 niveles."
+    },
+    "no_reviews": {
+      "title": "Importa algunas reseñas",
+      "body": "¿Tienes clientes pasados en The Knot, Yelp o Google? Pegar 5–10 reseñas hace que los nuevos anfitriones confíen en ti desde el día uno."
+    },
+    "ask_review": {
+      "title": "Pídele una reseña a tu última reserva",
+      "body": "Los recordatorios automáticos salen 3 días después de un evento reservado — pero un mensaje personal tuyo dentro de la semana sube la tasa de respuesta ~40%."
+    },
+    "share": {
+      "title": "Comparte tu anuncio",
+      "body": "La mayoría de proveedores consigue su primera reserva por referidos, no por el directorio. Un enlace en tu próxima publicación de Instagram supera cualquier inversión en anuncios."
+    },
+    "slow_response": {
+      "title": "Acelera tus respuestas",
+      "body": "Tu tiempo medio de respuesta supera las 3 horas. Quienes responden más rápido reservan ~3× más. Las plantillas en la bandeja reducen el tiempo a la mitad."
+    },
+    "low_views": {
+      "title": "Tu anuncio aún no se ve mucho",
+      "body": "Añade ubicación, foto principal y 5+ fotos del portafolio. Los anfitriones filtran el directorio por ubicación primero; sin ella, eres invisible para la mayoría de búsquedas."
+    },
+    "great_funnel": {
+      "title": "Tu embudo va genial",
+      "body": "La conversión y el tiempo de respuesta se ven excelentes. Ahora es cuestión de volumen — comparte el anuncio en redes para meter más consultas en este mismo embudo."
+    }
+  },
+  "vendor_dashboard": {
+    "header": {
+      "welcome": "Hola, {{name}}",
+      "subtitle": "Panel de proveedor",
+      "verified": "Verificado",
+      "application_pending_title": "Solicitud en revisión",
+      "application_pending_body": "Te respondemos en 2-3 días hábiles. Puedes terminar de configurar tu perfil, paquetes y fotos mientras esperas — tu anuncio se publica en el momento que se aprueba.",
+      "application_rejected_title": "Solicitud no aprobada",
+      "application_rejected_default": "Contacta a soporte si quieres más detalles.",
+      "setup_title": "Configura tu perfil de negocio",
+      "setup_body": "Los anfitriones todavía no pueden encontrarte — termina tu perfil para empezar a recibir consultas.",
+      "complete_profile": "Completar perfil"
+    },
+    "recent": {
+      "title": "Consultas recientes",
+      "view_all": "Ver todo",
+      "empty": "Aún no hay consultas — aparecerán aquí cuando los anfitriones te escriban.",
+      "host": "Anfitrión",
+      "guests_one": "{{count}} invitado",
+      "guests_other": "{{count}} invitados"
+    }
+  },
+  "vendor_analytics": {
+    "title": "Analíticas",
+    "subtitle": "Últimos {{days}} días · cómo te encuentran y reservan los anfitriones",
+    "no_profile_title": "Configura tu perfil de negocio primero",
+    "no_profile_body": "Cuando tengas un perfil de proveedor, tus analíticas aparecerán aquí.",
+    "kpi": {
+      "views": "Vistas",
+      "views_sub": "Anónimos + con sesión",
+      "inquiries": "Consultas",
+      "of_views": "{{rate}} de las vistas",
+      "replied": "Respondidas",
+      "of_inquiries": "{{rate}} de las consultas",
+      "booked": "Reservadas"
+    },
+    "insights": {
+      "response_time": "Tiempo de respuesta medio",
+      "response_hint": "Menos de 3h es el objetivo de la plataforma",
+      "rating": "Calificación promedio",
+      "rating_hint_one": "{{count}} reseña publicada",
+      "rating_hint_other": "{{count}} reseñas publicadas",
+      "booking_rate": "Tasa de reserva",
+      "booking_default": "Reservadas / consultadas",
+      "booking_peers": "Pares de {{category}} · {{count}}"
+    },
+    "charts": {
+      "daily_views": "Vistas · diarias",
+      "daily_views_total": "{{total}} total · {{avg}}/día",
+      "weekly_inquiries": "Consultas · últimas 8 semanas"
+    }
+  },
+  "vendor_listing": {
+    "title": "Anuncio",
+    "subtitle": "Edita lo que ven los anfitriones cuando abren tu anuncio",
+    "verified": "Verificado",
+    "publish": "Publicar",
+    "category_label": "Categoría",
+    "category_required": "*",
+    "category_placeholder": "Elige una categoría",
+    "category_hint": "Elige la categoría que mejor describa tu negocio — los campos de abajo se adaptan a ella.",
+    "category_nudge": "Elige una categoría arriba para empezar a construir tu anuncio. Precios, paquetes, fotos, equipo, reseñas y recomendaciones aparecerán al elegir.",
+    "business_name": "Nombre del negocio",
+    "short_bio": "Bio corta",
+    "short_bio_placeholder": "Una o dos frases sobre tu estilo y enfoque.",
+    "starting_price": "Precio inicial ($)",
+    "service_radius": "Radio de servicio (millas)",
+    "location": "Ubicación",
+    "location_placeholder": "Brooklyn, NY",
+    "portfolio_summary": "Resumen de portafolio",
+    "portfolio_placeholder": "¿Qué hace que tu trabajo destaque? Clientes notables, estética distintiva, tamaño típico de evento.",
+    "intro_video": "URL de video de introducción (opcional)",
+    "intro_video_placeholder": "https://youtube.com/watch?v=… o https://vimeo.com/…",
+    "intro_video_hint": "YouTube, Vimeo, o un enlace .mp4 directo. Se incrusta en la parte superior de tu perfil público.",
+    "create": "Crear anuncio",
+    "save_changes": "Guardar cambios",
+    "view_only": "Solo lectura — pídele al dueño del equipo que haga cambios.",
+    "preview": {
+      "live": "Anuncio activo",
+      "from": "Desde ${{amount}}",
+      "view": "Ver",
+      "edit": "Editar",
+      "delete_confirm": "¿Eliminar {{name}}? Esto retira tu anuncio del directorio y no se puede deshacer."
+    }
+  },
+  "studio": {
+    "title": "Estudio",
+    "subtitle": "Sube una imagen, describe el cambio y recibe una nueva versión.",
+    "source_label": "Original",
+    "result_label": "Resultado",
+    "upload": "Sube una imagen",
+    "upload_hint": "PNG · JPG · WebP — hasta 10 MB",
+    "no_result": "Aún sin resultado",
+    "no_result_hint": "Sube una imagen y describe el cambio — el resultado aparecerá aquí.",
+    "edit_prompt": "Instrucción de edición",
+    "prompt_placeholder": "ej. quita el fondo, reemplázalo con un degradado cálido",
+    "preset_remove_bg": "Quitar fondo",
+    "preset_golden_hour": "Hora dorada",
+    "preset_cinematic": "Mejora cinematográfica",
+    "generate": "Generar",
+    "generating": "Generando…",
+    "not_wired": "La edición de imágenes aún no está conectada — conecta un proveedor de modelos (Replicate, Stability, OpenAI Edit) para activarlo."
+  },
+  "ai_agent": {
+    "title": "Agente IA",
+    "subtitle": "Respuestas automáticas, calificación de leads y asistente de precios",
+    "placeholder_title": "Tu Agente IA vivirá aquí",
+    "placeholder_body": "Configura cómo el agente redacta respuestas, califica consultas y propone precios. Próximamente.",
+    "in_development": "En desarrollo"
+  },
+  "studio_placeholder": {
+    "title": "Tu Estudio vivirá aquí",
+    "body": "Herramientas visuales para moldear cómo aparece tu trabajo — composición de portafolio, tarjetas para redes, referencias de inspiración. Próximamente.",
+    "in_development": "En desarrollo"
   }
 }

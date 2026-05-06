@@ -266,5 +266,179 @@
     "admin": {
       "title": "Admin"
     }
+  },
+  "vendor_quick_actions": {
+    "inbox": "Inbox",
+    "new_inquiries_one": "{{count}} new inquiry",
+    "new_inquiries_other": "{{count}} new inquiries",
+    "reply_now": "Reply now",
+    "all_caught_up": "All caught up",
+    "public_listing": "Public listing",
+    "public_hint": "See what hosts see",
+    "calendar": "Calendar",
+    "calendar_hint": "Manage availability",
+    "edit_listing": "Edit listing",
+    "edit_hint": "Polish your photos"
+  },
+  "vendor_pro_tips": {
+    "cta": {
+      "edit_listing": "Edit listing",
+      "open_inbox": "Open inbox",
+      "open_calendar": "Open calendar",
+      "open_listing": "Open listing",
+      "open_analytics": "Open analytics"
+    },
+    "pending": {
+      "title": "Application under review",
+      "body": "While you wait, polish the listing — vendors with 5+ photos and 2+ priced packages get inquiries 2× faster the day they go live."
+    },
+    "new_requests": {
+      "title_one": "Reply to {{count}} new inquiry",
+      "title_other": "Reply to {{count}} new inquiries",
+      "body": "Hosts who get a reply within 3 hours book ~3× more often than those who wait a day. Open the inbox and the AI-drafted reply is one click away."
+    },
+    "views_no_inquiries": {
+      "title": "Hosts are looking, no one's reached out",
+      "body": "Listings with priced packages convert browsers into inquiries 2× more often than those that just say 'contact for pricing'. Add 2–3 tiers."
+    },
+    "no_reviews": {
+      "title": "Import a few reviews",
+      "body": "Past clients on The Knot, Yelp, or Google? Pasting 5–10 of those into Reviews makes new hosts trust you on day one."
+    },
+    "ask_review": {
+      "title": "Ask your last booking for a review",
+      "body": "Auto-prompts go out 3 days after a booked event — but a personal nudge from you within the week lifts response rate ~40%."
+    },
+    "share": {
+      "title": "Share your listing",
+      "body": "Most vendors get their first booking from a referral, not the directory. A copy-paste link in your next Instagram caption beats any ad spend."
+    },
+    "slow_response": {
+      "title": "Speed up your replies",
+      "body": "Your median response time is over 3 hours. Vendors who reply faster than that book ~3× more often. Templates in the inbox cut reply time in half."
+    },
+    "low_views": {
+      "title": "Your listing isn't getting seen yet",
+      "body": "Add a location, hero photo, and 5+ portfolio shots. Hosts filter the directory by location first; without one you're invisible to most searches."
+    },
+    "great_funnel": {
+      "title": "Your funnel is humming",
+      "body": "Conversion + reply time look great. Now it's a volume game — share the listing on social to push more inquiries through this same funnel."
+    }
+  },
+  "vendor_dashboard": {
+    "header": {
+      "welcome": "Welcome, {{name}}",
+      "subtitle": "Vendor dashboard",
+      "verified": "Verified",
+      "application_pending_title": "Application under review",
+      "application_pending_body": "We'll get back to you within 2-3 business days. You can finish setting up your profile, packages, and photos while you wait — your listing goes live the moment it's approved.",
+      "application_rejected_title": "Application not approved",
+      "application_rejected_default": "Reach out to support if you'd like more detail.",
+      "setup_title": "Set up your business profile",
+      "setup_body": "Hosts can't find you yet — finish your profile to start receiving inquiries.",
+      "complete_profile": "Complete profile"
+    },
+    "recent": {
+      "title": "Recent inquiries",
+      "view_all": "View all",
+      "empty": "No inquiries yet — they'll appear here as hosts reach out.",
+      "host": "Host",
+      "guests_one": "{{count}} guest",
+      "guests_other": "{{count}} guests"
+    }
+  },
+  "vendor_analytics": {
+    "title": "Analytics",
+    "subtitle": "Last {{days}} days · how hosts are finding + converting on you",
+    "no_profile_title": "Set up your business profile first",
+    "no_profile_body": "Once you have a vendor profile, your analytics will land here.",
+    "kpi": {
+      "views": "Views",
+      "views_sub": "Anonymous + signed-in",
+      "inquiries": "Inquiries",
+      "of_views": "{{rate}} of views",
+      "replied": "Replied",
+      "of_inquiries": "{{rate}} of inquiries",
+      "booked": "Booked"
+    },
+    "insights": {
+      "response_time": "Median response time",
+      "response_hint": "Under 3h is the platform target",
+      "rating": "Avg rating",
+      "rating_hint_one": "{{count}} review posted",
+      "rating_hint_other": "{{count}} reviews posted",
+      "booking_rate": "Booking rate",
+      "booking_default": "Booked / inquired",
+      "booking_peers": "{{category}} peers · {{count}}"
+    },
+    "charts": {
+      "daily_views": "Profile views · daily",
+      "daily_views_total": "{{total}} total · {{avg}}/day",
+      "weekly_inquiries": "Inquiries · last 8 weeks"
+    }
+  },
+  "vendor_listing": {
+    "title": "Listing",
+    "subtitle": "Edit what hosts see when they open your listing",
+    "verified": "Verified",
+    "publish": "Publish",
+    "category_label": "Category",
+    "category_required": "*",
+    "category_placeholder": "Choose a category",
+    "category_hint": "Pick the category that best matches your business — fields below are tailored to it.",
+    "category_nudge": "Choose a category above to start building your listing. Pricing, packages, photos, team, reviews, and recommendations populate once you pick.",
+    "business_name": "Business name",
+    "short_bio": "Short bio",
+    "short_bio_placeholder": "One or two sentences about your style and approach.",
+    "starting_price": "Starting price ($)",
+    "service_radius": "Service radius (miles)",
+    "location": "Location",
+    "location_placeholder": "Brooklyn, NY",
+    "portfolio_summary": "Portfolio summary",
+    "portfolio_placeholder": "What makes your work distinctive? Notable clients, signature aesthetic, typical event size.",
+    "intro_video": "Intro video URL (optional)",
+    "intro_video_placeholder": "https://youtube.com/watch?v=… or https://vimeo.com/…",
+    "intro_video_hint": "YouTube, Vimeo, or a direct .mp4 link. Embeds at the top of your public profile.",
+    "create": "Create listing",
+    "save_changes": "Save changes",
+    "view_only": "View only — ask the team owner to make changes.",
+    "preview": {
+      "live": "Listing live",
+      "from": "From ${{amount}}",
+      "view": "View",
+      "edit": "Edit",
+      "delete_confirm": "Delete {{name}}? This removes your listing from the directory and cannot be undone."
+    }
+  },
+  "studio": {
+    "title": "Studio",
+    "subtitle": "Upload an image, describe the edit, get a new version back.",
+    "source_label": "Source",
+    "result_label": "Result",
+    "upload": "Upload an image",
+    "upload_hint": "PNG · JPG · WebP — up to 10 MB",
+    "no_result": "No result yet",
+    "no_result_hint": "Upload an image and describe the edit — the result lands here.",
+    "edit_prompt": "Edit prompt",
+    "prompt_placeholder": "e.g. remove the background, replace with a warm gradient",
+    "preset_remove_bg": "Remove background",
+    "preset_golden_hour": "Golden hour relight",
+    "preset_cinematic": "Cinematic upscale",
+    "generate": "Generate",
+    "generating": "Generating…",
+    "not_wired": "Image editing isn't wired yet — connect a model provider (Replicate, Stability, OpenAI Edit) to enable this."
+  },
+  "ai_agent": {
+    "title": "AI Agent",
+    "subtitle": "Auto-reply, lead qualification, and pricing assistant",
+    "placeholder_title": "Your AI Agent will live here",
+    "placeholder_body": "Configure how the agent drafts replies, qualifies inquiries, and prices packages. Coming online soon.",
+    "in_development": "In development"
+  },
+  "studio_placeholder": {
+    "title": "Your Studio will live here",
+    "body": "Visual production tools for shaping how your work shows up — portfolio composition, social cards, mood references. Coming online soon.",
+    "in_development": "In development"
   }
 }

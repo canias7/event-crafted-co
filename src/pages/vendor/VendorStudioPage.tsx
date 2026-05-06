@@ -1,4 +1,5 @@
 import { useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   ArrowRight,
   ImageIcon,
@@ -24,6 +25,7 @@ import { vendorNavItems as navItems } from "@/data/navItems";
 // honest about what's connected and what's coming.
 
 export default function VendorStudioPage() {
+  const { t } = useTranslation();
   const [sourceFile, setSourceFile] = useState<File | null>(null);
   const [sourcePreview, setSourcePreview] = useState<string | null>(null);
   const [outputPreview, setOutputPreview] = useState<string | null>(null);
@@ -66,9 +68,7 @@ export default function VendorStudioPage() {
     // and set outputPreview to the returned URL or data: payload.
     await new Promise((r) => setTimeout(r, 900));
     setRunning(false);
-    toast.error(
-      "Image editing isn't wired yet — connect a model provider (Replicate, Stability, OpenAI Edit) to enable this.",
-    );
+    toast.error(t("studio.not_wired"));
   }
 
   const canRun = Boolean(sourceFile) && prompt.trim().length > 0 && !running;
@@ -79,9 +79,9 @@ export default function VendorStudioPage() {
 
       <main id="main-content" className="flex-1 pb-20 lg:pb-0">
         <div className="border-b border-border bg-card px-4 md:px-8 py-4 sticky top-0 z-40">
-          <h1 className="font-display text-xl">Studio</h1>
+          <h1 className="font-display text-xl">{t("studio.title")}</h1>
           <p className="text-sm text-muted-foreground">
-            Upload an image, describe the edit, get a new version back.
+            {t("studio.subtitle")}
           </p>
         </div>
 
@@ -89,20 +89,22 @@ export default function VendorStudioPage() {
           <div className="grid grid-cols-1 lg:grid-cols-[1fr_280px_1fr] gap-4 items-stretch">
             {/* Source — left square */}
             <ImagePanel
-              eyebrow="Source"
+              eyebrow={t("studio.source_label")}
               empty={
                 <button
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
                   className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
-                  aria-label="Upload source image"
+                  aria-label={t("studio.upload")}
                 >
                   <div className="w-10 h-10 rounded-full bg-secondary/60 flex items-center justify-center">
                     <Upload className="w-4 h-4" />
                   </div>
-                  <span className="text-sm font-medium">Upload an image</span>
+                  <span className="text-sm font-medium">
+                    {t("studio.upload")}
+                  </span>
                   <span className="text-[11px] text-muted-foreground/80">
-                    PNG · JPG · WebP — up to 10 MB
+                    {t("studio.upload_hint")}
                   </span>
                 </button>
               }
@@ -137,35 +139,27 @@ export default function VendorStudioPage() {
             <div className="rounded-sm border border-border bg-card p-4 flex flex-col">
               <p className="font-label text-muted-foreground inline-flex items-center gap-1.5 mb-3">
                 <Sparkles className="w-3 h-3" />
-                Edit prompt
+                {t("studio.edit_prompt")}
               </p>
               <Textarea
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
-                placeholder={
-                  "e.g. remove the background, replace with a warm gradient"
-                }
+                placeholder={t("studio.prompt_placeholder")}
                 rows={6}
                 className="resize-none flex-1 min-h-[120px] text-sm"
               />
               <div className="mt-3 space-y-2">
                 <PresetChip
-                  label="Remove background"
-                  onClick={() => setPrompt("Remove the background.")}
+                  label={t("studio.preset_remove_bg")}
+                  onClick={() => setPrompt(t("studio.preset_remove_bg"))}
                 />
                 <PresetChip
-                  label="Golden hour relight"
-                  onClick={() =>
-                    setPrompt(
-                      "Relight the scene to look like golden hour — warm tones, soft side light.",
-                    )
-                  }
+                  label={t("studio.preset_golden_hour")}
+                  onClick={() => setPrompt(t("studio.preset_golden_hour"))}
                 />
                 <PresetChip
-                  label="Cinematic upscale"
-                  onClick={() =>
-                    setPrompt("Upscale and add cinematic color grading.")
-                  }
+                  label={t("studio.preset_cinematic")}
+                  onClick={() => setPrompt(t("studio.preset_cinematic"))}
                 />
               </div>
               <Button
@@ -177,11 +171,11 @@ export default function VendorStudioPage() {
                 {running ? (
                   <>
                     <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
-                    Generating…
+                    {t("studio.generating")}
                   </>
                 ) : (
                   <>
-                    Generate
+                    {t("studio.generate")}
                     <ArrowRight className="w-3.5 h-3.5 ml-1.5" />
                   </>
                 )}
@@ -190,16 +184,17 @@ export default function VendorStudioPage() {
 
             {/* Output — right square */}
             <ImagePanel
-              eyebrow="Result"
+              eyebrow={t("studio.result_label")}
               empty={
                 <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-muted-foreground">
                   <div className="w-10 h-10 rounded-full bg-secondary/60 flex items-center justify-center">
                     <ImageIcon className="w-4 h-4" />
                   </div>
-                  <span className="text-sm font-medium">No result yet</span>
+                  <span className="text-sm font-medium">
+                    {t("studio.no_result")}
+                  </span>
                   <span className="text-[11px] text-muted-foreground/80 max-w-[200px] text-center leading-relaxed">
-                    Upload an image and describe the edit — the result lands
-                    here.
+                    {t("studio.no_result_hint")}
                   </span>
                 </div>
               }

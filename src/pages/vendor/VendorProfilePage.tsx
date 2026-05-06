@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import {
   Edit2,
   Eye,
@@ -72,6 +73,7 @@ const VENDOR_PROFILE_COLS =
   "id, business_name, category, bio, base_price_cents, location, service_radius_miles, portfolio_summary, verified_at, application_status, application_review_notes, intro_video_url, weekly_digest_enabled, slug, instagram_handle, tiktok_handle";
 
 export default function VendorProfilePage() {
+  const { t } = useTranslation();
   const { user, vendorMemberships } = useAuth();
   const membership = vendorMemberships[0] ?? null;
   const canEdit = membership?.role === "owner" || membership?.role === "admin";
@@ -412,19 +414,17 @@ export default function VendorProfilePage() {
           <div className="flex items-center justify-between gap-4 flex-wrap">
             <div>
               <h1 className="font-display text-xl">
-                {isListing ? "Listing" : "Profile"}
+                {t("vendor_listing.title")}
               </h1>
               <p className="text-sm text-muted-foreground">
-                {isListing
-                  ? "Edit what hosts see when they open your listing"
-                  : "Your business identity + public URL"}
+                {t("vendor_listing.subtitle")}
               </p>
             </div>
             <div className="flex items-center gap-2">
               {profile?.verified_at && (
                 <Badge className="bg-accent/15 text-accent border border-accent/30">
                   <ShieldCheck className="w-3.5 h-3.5 mr-1.5" />
-                  Verified
+                  {t("vendor_listing.verified")}
                 </Badge>
               )}
               {/* Publish — Listing tab only. Submits the same payload
@@ -446,7 +446,7 @@ export default function VendorProfilePage() {
                   {(saving || creating) && (
                     <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
                   )}
-                  Publish
+                  {t("vendor_listing.publish")}
                 </Button>
               )}
             </div>
@@ -590,11 +590,14 @@ export default function VendorProfilePage() {
                   Vendors nav on the landing page. */}
               <div className="space-y-2">
                 <Label htmlFor="category">
-                  Category <span className="text-destructive">*</span>
+                  {t("vendor_listing.category_label")}{" "}
+                  <span className="text-destructive">*</span>
                 </Label>
                 <Select value={category} onValueChange={setCategory}>
                   <SelectTrigger id="category" className="h-11">
-                    <SelectValue placeholder="Choose a category" />
+                    <SelectValue
+                      placeholder={t("vendor_listing.category_placeholder")}
+                    />
                   </SelectTrigger>
                   <SelectContent>
                     {CATEGORY_GROUPS.map((group) => (
@@ -610,20 +613,14 @@ export default function VendorProfilePage() {
                   </SelectContent>
                 </Select>
                 <p className="text-xs text-muted-foreground pt-1">
-                  Pick the category that best matches your business —
-                  fields below are tailored to it.
+                  {t("vendor_listing.category_hint")}
                 </p>
               </div>
 
-              {/* Empty-state nudge — Listing tab without a category
-                  picked yet. Hides on Profile tab so identity fields
-                  (slug, socials) are always editable. */}
               {isListing && !category && (
                 <div className="rounded-sm border border-dashed border-border bg-card/40 p-8 text-center">
                   <p className="text-sm text-muted-foreground max-w-sm mx-auto leading-relaxed">
-                    Choose a category above to start building your
-                    listing. Pricing, packages, photos, team, reviews,
-                    and recommendations populate once you pick.
+                    {t("vendor_listing.category_nudge")}
                   </p>
                 </div>
               )}
@@ -631,7 +628,8 @@ export default function VendorProfilePage() {
               {category && (
                 <div className="space-y-2">
                   <Label htmlFor="business-name">
-                    Business name <span className="text-destructive">*</span>
+                    {t("vendor_listing.business_name")}{" "}
+                    <span className="text-destructive">*</span>
                   </Label>
                   <Input
                     id="business-name"
@@ -644,99 +642,106 @@ export default function VendorProfilePage() {
               )}
 
               {isListing && category && (
-              <div className="space-y-2">
-                <Label htmlFor="bio">Short bio</Label>
-                <Textarea
-                  id="bio"
-                  value={bio}
-                  onChange={(e) => setBio(e.target.value)}
-                  rows={3}
-                  placeholder="One or two sentences about your style and approach."
-                />
-              </div>
+                <div className="space-y-2">
+                  <Label htmlFor="bio">{t("vendor_listing.short_bio")}</Label>
+                  <Textarea
+                    id="bio"
+                    value={bio}
+                    onChange={(e) => setBio(e.target.value)}
+                    rows={3}
+                    placeholder={t("vendor_listing.short_bio_placeholder")}
+                  />
+                </div>
               )}
 
               {isListing && category && (
-              <div className="grid sm:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="base-price">Starting price ($)</Label>
-                  <Input
-                    id="base-price"
-                    type="number"
-                    inputMode="decimal"
-                    min="0"
-                    step="100"
-                    value={basePrice}
-                    onChange={(e) => setBasePrice(e.target.value)}
-                    className="h-11"
-                  />
+                <div className="grid sm:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="base-price">
+                      {t("vendor_listing.starting_price")}
+                    </Label>
+                    <Input
+                      id="base-price"
+                      type="number"
+                      inputMode="decimal"
+                      min="0"
+                      step="100"
+                      value={basePrice}
+                      onChange={(e) => setBasePrice(e.target.value)}
+                      className="h-11"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="service-radius">
+                      {t("vendor_listing.service_radius")}
+                    </Label>
+                    <Input
+                      id="service-radius"
+                      type="number"
+                      inputMode="numeric"
+                      min="0"
+                      value={serviceRadius}
+                      onChange={(e) => setServiceRadius(e.target.value)}
+                      className="h-11"
+                    />
+                  </div>
                 </div>
+              )}
+
+              {isListing && category && (
                 <div className="space-y-2">
-                  <Label htmlFor="service-radius">
-                    Service radius (miles)
+                  <Label htmlFor="location">
+                    {t("vendor_listing.location")}
                   </Label>
                   <Input
-                    id="service-radius"
-                    type="number"
-                    inputMode="numeric"
-                    min="0"
-                    value={serviceRadius}
-                    onChange={(e) => setServiceRadius(e.target.value)}
+                    id="location"
+                    value={location}
+                    onChange={(e) => setLocation(e.target.value)}
+                    placeholder={t("vendor_listing.location_placeholder")}
                     className="h-11"
                   />
                 </div>
-              </div>
               )}
 
               {isListing && category && (
-              <div className="space-y-2">
-                <Label htmlFor="location">Location</Label>
-                <Input
-                  id="location"
-                  value={location}
-                  onChange={(e) => setLocation(e.target.value)}
-                  placeholder="Brooklyn, NY"
-                  className="h-11"
-                />
-              </div>
+                <div className="space-y-2">
+                  <Label htmlFor="portfolio-summary">
+                    {t("vendor_listing.portfolio_summary")}
+                  </Label>
+                  <Textarea
+                    id="portfolio-summary"
+                    value={portfolioSummary}
+                    onChange={(e) => setPortfolioSummary(e.target.value)}
+                    rows={5}
+                    placeholder={t("vendor_listing.portfolio_placeholder")}
+                  />
+                </div>
               )}
 
               {isListing && category && (
-              <div className="space-y-2">
-                <Label htmlFor="portfolio-summary">Portfolio summary</Label>
-                <Textarea
-                  id="portfolio-summary"
-                  value={portfolioSummary}
-                  onChange={(e) => setPortfolioSummary(e.target.value)}
-                  rows={5}
-                  placeholder="What makes your work distinctive? Notable clients, signature aesthetic, typical event size."
-                />
-              </div>
-              )}
-
-              {isListing && category && (
-              <div className="space-y-2">
-                <Label htmlFor="intro-video">Intro video URL (optional)</Label>
-                <Input
-                  id="intro-video"
-                  type="url"
-                  value={introVideoUrl}
-                  onChange={(e) => setIntroVideoUrl(e.target.value)}
-                  placeholder="https://youtube.com/watch?v=… or https://vimeo.com/…"
-                  className="h-11"
-                />
-                <p className="text-xs text-muted-foreground pt-1">
-                  YouTube, Vimeo, or a direct .mp4 link. Embeds at the top
-                  of your public profile.
-                </p>
-              </div>
+                <div className="space-y-2">
+                  <Label htmlFor="intro-video">
+                    {t("vendor_listing.intro_video")}
+                  </Label>
+                  <Input
+                    id="intro-video"
+                    type="url"
+                    value={introVideoUrl}
+                    onChange={(e) => setIntroVideoUrl(e.target.value)}
+                    placeholder={t("vendor_listing.intro_video_placeholder")}
+                    className="h-11"
+                  />
+                  <p className="text-xs text-muted-foreground pt-1">
+                    {t("vendor_listing.intro_video_hint")}
+                  </p>
+                </div>
               )}
 
 
               <div className="flex items-center justify-end gap-3 pt-2">
                 {!canEdit && profile && (
                   <p className="text-xs text-muted-foreground">
-                    View only — ask the team owner to make changes.
+                    {t("vendor_listing.view_only")}
                   </p>
                 )}
                 <Button
@@ -752,10 +757,8 @@ export default function VendorProfilePage() {
                       pre-creation — keep "Create listing" until the
                       user has actually filled in the basics. */}
                   {profile && profile.business_name?.trim()
-                    ? "Save changes"
-                    : isListing
-                      ? "Create listing"
-                      : "Create profile"}
+                    ? t("vendor_listing.save_changes")
+                    : t("vendor_listing.create")}
                 </Button>
               </div>
             </form>
@@ -856,11 +859,12 @@ function ListingPreviewCard({
   onEdit: () => void;
   onDelete: () => void;
 }) {
+  const { t } = useTranslation();
   return (
     <div className="rounded-sm border border-accent/40 bg-accent/5 p-5 max-w-md">
       <p className="font-label text-accent mb-3 inline-flex items-center gap-1.5">
         <Sparkles className="w-3 h-3" />
-        Listing live
+        {t("vendor_listing.preview.live")}
       </p>
       <div className="space-y-3">
         <div className="min-w-0">
@@ -877,7 +881,11 @@ function ListingPreviewCard({
             )}
             {profile.base_price_cents != null && (
               <span>
-                From ${(profile.base_price_cents / 100).toLocaleString()}
+                {t("vendor_listing.preview.from", {
+                  amount: (
+                    profile.base_price_cents / 100
+                  ).toLocaleString(),
+                })}
               </span>
             )}
           </div>
@@ -898,7 +906,7 @@ function ListingPreviewCard({
             aria-label="View public listing"
           >
             <Eye className="w-3.5 h-3.5 mr-1.5" />
-            View
+            {t("vendor_listing.preview.view")}
           </Button>
           <Button
             type="button"
@@ -910,7 +918,7 @@ function ListingPreviewCard({
             aria-label="Edit listing"
           >
             <Edit2 className="w-3.5 h-3.5 mr-1.5" />
-            Edit
+            {t("vendor_listing.preview.edit")}
           </Button>
           <Button
             type="button"

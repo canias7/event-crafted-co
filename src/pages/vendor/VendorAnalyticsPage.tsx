@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   TrendingUp,
   Eye,
@@ -17,6 +18,11 @@ import { MobileNav } from "@/components/shared/MobileNav";
 import { Skeleton } from "@/components/ui/skeleton";
 import { vendorNavItems as navItems } from "@/data/navItems";
 import { ProposalFunnelCard } from "@/components/vendor/ProposalFunnelCard";
+import {
+  ProTipCard,
+  VendorQuickActionsRow,
+  type ProTip,
+} from "@/components/vendor/DashboardWidgets";
 
 interface InquiryRow {
   id: string;
@@ -70,7 +76,72 @@ function median(values: number[]): number {
     : (sorted[mid - 1] + sorted[mid]) / 2;
 }
 
+interface AnalyticsTipState {
+  totalViews: number;
+  inquiriesCount: number;
+  bookedCount: number;
+  responseHours: number;
+  avgRating: number;
+  ratingCount: number;
+}
+
+function pickAnalyticsTip(
+  s: AnalyticsTipState,
+  t: (key: string, opts?: Record<string, unknown>) => string,
+): ProTip {
+  // Slow response time is the biggest lever — flag it first.
+  if (Number.isFinite(s.responseHours) && s.responseHours > 3) {
+    return {
+      title: t("vendor_pro_tips.slow_response.title"),
+      body: t("vendor_pro_tips.slow_response.body"),
+      cta: { label: t("vendor_pro_tips.cta.open_inbox"), to: "/vendor/inbox" },
+    };
+  }
+  // No views yet — the listing isn't being seen, fix the listing.
+  if (s.totalViews < 5) {
+    return {
+      title: t("vendor_pro_tips.low_views.title"),
+      body: t("vendor_pro_tips.low_views.body"),
+      cta: {
+        label: t("vendor_pro_tips.cta.edit_listing"),
+        to: "/vendor/listing",
+      },
+    };
+  }
+  // Plenty of views, no inquiries — pricing / packages.
+  if (s.totalViews > 0 && s.inquiriesCount === 0) {
+    return {
+      title: t("vendor_pro_tips.views_no_inquiries.title"),
+      body: t("vendor_pro_tips.views_no_inquiries.body"),
+      cta: {
+        label: t("vendor_pro_tips.cta.edit_listing"),
+        to: "/vendor/listing",
+      },
+    };
+  }
+  if (s.ratingCount === 0) {
+    return {
+      title: t("vendor_pro_tips.no_reviews.title"),
+      body: t("vendor_pro_tips.no_reviews.body"),
+      cta: {
+        label: t("vendor_pro_tips.cta.edit_listing"),
+        to: "/vendor/listing",
+      },
+    };
+  }
+  // Funnel is humming — encourage volume.
+  return {
+    title: t("vendor_pro_tips.great_funnel.title"),
+    body: t("vendor_pro_tips.great_funnel.body"),
+    cta: {
+      label: t("vendor_pro_tips.cta.open_listing"),
+      to: "/vendor/listing",
+    },
+  };
+}
+
 export default function VendorAnalyticsPage() {
+  const { t } = useTranslation();
   const { user, vendorMemberships } = useAuth();
   const vendorId = vendorMemberships[0]?.vendor_id ?? null;
 
@@ -274,9 +345,11 @@ export default function VendorAnalyticsPage() {
         <div className="border-b border-border bg-card px-4 md:px-6 py-3 shrink-0">
           <div className="flex items-center justify-between gap-3 flex-wrap">
             <div>
-              <h1 className="font-display text-xl">Analytics</h1>
+              <h1 className="font-display text-xl">
+                {t("vendor_analytics.title")}
+              </h1>
               <p className="text-xs text-muted-foreground">
-                Last {windowDays} days · how hosts are finding + converting on you
+                {t("vendor_analytics.subtitle", { days: windowDays })}
               </p>
             </div>
             <div className="inline-flex rounded-full border border-border bg-background overflow-hidden text-xs">
@@ -308,39 +381,89 @@ export default function VendorAnalyticsPage() {
           ) : !vendorId ? (
             <div className="text-center py-20 max-w-md mx-auto">
               <p className="font-display text-xl mb-2">
-                Set up your business profile first
+                {t("vendor_analytics.no_profile_title")}
               </p>
               <p className="text-sm text-muted-foreground">
-                Once you have a vendor profile, your analytics will land here.
+                {t("vendor_analytics.no_profile_body")}
               </p>
             </div>
           ) : (
-            <div className="h-full grid grid-rows-[auto_auto_minmax(0,1fr)] gap-3">
+            <div className="h-full grid grid-rows-[auto_auto_auto_auto_minmax(0,1fr)] gap-3">
+              {/* Quick actions strip — same set as the dashboard so
+                  the muscle memory transfers between the two pages. */}
+              <VendorQuickActionsRow
+                vendorId={vendorId}
+                newRequestsCount={
+                  inquiries.filter((i) => i.status === "new").length
+                }
+                inboxLabel={
+                  inquiries.filter((i) => i.status === "new").length > 0
+                    ? t("vendor_quick_actions.new_inquiries", {
+                        count: inquiries.filter((i) => i.status === "new")
+                          .length,
+                      })
+                    : t("vendor_quick_actions.inbox")
+                }
+                inboxHint={
+                  inquiries.filter((i) => i.status === "new").length > 0
+                    ? t("vendor_quick_actions.reply_now")
+                    : t("vendor_quick_actions.all_caught_up")
+                }
+                publicLabel={t("vendor_quick_actions.public_listing")}
+                publicHint={t("vendor_quick_actions.public_hint")}
+                calendarLabel={t("vendor_quick_actions.calendar")}
+                calendarHint={t("vendor_quick_actions.calendar_hint")}
+                editLabel={t("vendor_quick_actions.edit_listing")}
+                editHint={t("vendor_quick_actions.edit_hint")}
+              />
+
+              {/* Pro tip — analytics-specific insight (slow response,
+                  low views, great funnel, etc.). */}
+              <ProTipCard
+                tip={pickAnalyticsTip(
+                  {
+                    totalViews,
+                    inquiriesCount: stats.totalInquiries,
+                    bookedCount: stats.won,
+                    responseHours: responseTime,
+                    avgRating,
+                    ratingCount: reviews.length,
+                  },
+                  t,
+                )}
+              />
+
               {/* Funnel — compact KPI strip */}
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
                 <CompactFunnelCard
                   icon={Eye}
-                  label="Views"
+                  label={t("vendor_analytics.kpi.views")}
                   value={totalViews}
-                  sub="Anonymous + signed-in"
+                  sub={t("vendor_analytics.kpi.views_sub")}
                 />
                 <CompactFunnelCard
                   icon={Inbox}
-                  label="Inquiries"
+                  label={t("vendor_analytics.kpi.inquiries")}
                   value={stats.totalInquiries}
-                  sub={`${pct(stats.totalInquiries, totalViews)} of views`}
+                  sub={t("vendor_analytics.kpi.of_views", {
+                    rate: pct(stats.totalInquiries, totalViews),
+                  })}
                 />
                 <CompactFunnelCard
                   icon={MessageCircle}
-                  label="Replied"
+                  label={t("vendor_analytics.kpi.replied")}
                   value={stats.replied}
-                  sub={`${pct(stats.replied, stats.totalInquiries)} of inquiries`}
+                  sub={t("vendor_analytics.kpi.of_inquiries", {
+                    rate: pct(stats.replied, stats.totalInquiries),
+                  })}
                 />
                 <CompactFunnelCard
                   icon={Trophy}
-                  label="Booked"
+                  label={t("vendor_analytics.kpi.booked")}
                   value={stats.won}
-                  sub={`${pct(stats.won, stats.totalInquiries)} of inquiries`}
+                  sub={t("vendor_analytics.kpi.of_inquiries", {
+                    rate: pct(stats.won, stats.totalInquiries),
+                  })}
                 />
               </div>
 
@@ -348,21 +471,21 @@ export default function VendorAnalyticsPage() {
               <div className="grid grid-cols-2 lg:grid-cols-3 gap-2">
                 <InsightTile
                   icon={Clock}
-                  label="Median response time"
+                  label={t("vendor_analytics.insights.response_time")}
                   value={formatHours(responseTime)}
-                  hint="Under 3h is the platform target"
+                  hint={t("vendor_analytics.insights.response_hint")}
                 />
                 <InsightTile
                   icon={Star}
-                  label="Avg rating"
+                  label={t("vendor_analytics.insights.rating")}
                   value={avgRating === 0 ? "—" : avgRating.toFixed(1)}
-                  hint={`${reviews.length} ${
-                    reviews.length === 1 ? "review" : "reviews"
-                  } posted`}
+                  hint={t("vendor_analytics.insights.rating_hint", {
+                    count: reviews.length,
+                  })}
                 />
                 <InsightTile
                   icon={TrendingUp}
-                  label="Booking rate"
+                  label={t("vendor_analytics.insights.booking_rate")}
                   value={
                     stats.totalInquiries > 0
                       ? `${Math.round(
@@ -372,8 +495,11 @@ export default function VendorAnalyticsPage() {
                   }
                   hint={
                     benchmark && benchmark.peer_count > 1
-                      ? `${vendorCategory ?? "Category"} peers · ${benchmark.peer_count}`
-                      : "Booked / inquired"
+                      ? t("vendor_analytics.insights.booking_peers", {
+                          category: vendorCategory ?? "—",
+                          count: benchmark.peer_count,
+                        })
+                      : t("vendor_analytics.insights.booking_default")
                   }
                 />
               </div>
@@ -386,10 +512,15 @@ export default function VendorAnalyticsPage() {
                   <div className="flex items-center justify-between mb-2 gap-2 flex-wrap">
                     <div className="flex items-center gap-2 text-muted-foreground">
                       <Eye className="w-3.5 h-3.5" />
-                      <p className="font-label">Profile views · daily</p>
+                      <p className="font-label">
+                        {t("vendor_analytics.charts.daily_views")}
+                      </p>
                     </div>
                     <p className="text-[11px] text-muted-foreground tnum">
-                      {totalViews} total · {(totalViews / windowDays).toFixed(1)}/day
+                      {t("vendor_analytics.charts.daily_views_total", {
+                        total: totalViews,
+                        avg: (totalViews / windowDays).toFixed(1),
+                      })}
                     </p>
                   </div>
                   <div className="flex-1 flex items-end gap-px min-h-[80px]">
@@ -428,7 +559,9 @@ export default function VendorAnalyticsPage() {
                   <div className="flex items-center justify-between mb-2 gap-2 flex-wrap">
                     <div className="flex items-center gap-2 text-muted-foreground">
                       <TrendingUp className="w-3.5 h-3.5" />
-                      <p className="font-label">Inquiries · last 8 weeks</p>
+                      <p className="font-label">
+                        {t("vendor_analytics.charts.weekly_inquiries")}
+                      </p>
                     </div>
                   </div>
                   <div className="flex-1 flex items-end gap-1.5 min-h-[80px]">
