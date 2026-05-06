@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { vendorImageUrl } from "@/lib/storage";
 
 export interface Vendor {
   id: string;
@@ -12,6 +13,10 @@ export interface Vendor {
   distance: string;
   availability: string;
   image: string;
+  /** Vendor-uploaded hero — first portfolio image as a public URL.
+   *  When present, the directory card and the listing detail page
+   *  use this instead of the per-category stock fallback. */
+  heroImageUrl?: string | null;
   location?: string;
   /** Computed daily by scan-responder-tiers; null = no signal yet. */
   responderTier?: "fast" | "standard" | null;
@@ -213,6 +218,35 @@ async function fetchVendors(): Promise<Vendor[]> {
           }
           for (const v of vendors) {
             if (byVendor[v.id]) v.verifiedKinds = byVendor[v.id];
+          }
+        }
+
+        // Batch-fetch hero photos — first portfolio image per vendor
+        // (lowest display_order, earliest created_at) so the
+        // directory card matches what the vendor actually uploaded.
+        // No image → fall back to the per-category stock art via
+        // categoryImageFallback (already in `v.image`).
+        const { data: photos } = await supabase
+          .from("vendor_portfolio_images")
+          .select("vendor_id, storage_path, display_order, created_at")
+          .order("display_order", { ascending: true })
+          .order("created_at", { ascending: true });
+        if (photos && photos.length > 0) {
+          const heroByVendor: Record<string, string> = {};
+          for (const row of photos as Array<{
+            vendor_id: string;
+            storage_path: string;
+          }>) {
+            // First row per vendor wins thanks to the order above.
+            if (!heroByVendor[row.vendor_id]) {
+              heroByVendor[row.vendor_id] = vendorImageUrl(
+                row.storage_path,
+                { width: 1000 },
+              );
+            }
+          }
+          for (const v of vendors) {
+            if (heroByVendor[v.id]) v.heroImageUrl = heroByVendor[v.id];
           }
         }
 

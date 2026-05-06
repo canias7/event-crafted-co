@@ -608,14 +608,24 @@ export default function VendorDetailPage() {
       {/* Cinematic vendor hero */}
       <section className="relative h-[80svh] min-h-[560px] w-full overflow-hidden">
         <div className="absolute inset-0">
-          <Picture
-            source={heroPicture}
-            alt={vendor.name}
-            loading="eager"
-            fetchPriority="high"
-            sizes="100vw"
-            className="w-full h-full object-cover"
-          />
+          {vendor.heroImageUrl ? (
+            <img
+              src={vendor.heroImageUrl}
+              alt={vendor.name}
+              loading="eager"
+              fetchPriority="high"
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            <Picture
+              source={heroPicture}
+              alt={vendor.name}
+              loading="eager"
+              fetchPriority="high"
+              sizes="100vw"
+              className="w-full h-full object-cover"
+            />
+          )}
         </div>
         <div className="absolute inset-0 bg-gradient-to-b from-foreground/55 via-foreground/30 to-foreground/85" />
         <div className="absolute inset-0 bg-gradient-to-r from-foreground/55 via-transparent to-transparent" />

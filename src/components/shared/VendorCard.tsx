@@ -69,6 +69,7 @@ interface VendorCardProps {
     distance: string;
     availability: string;
     image: string;
+    heroImageUrl?: string | null;
     location?: string;
     responderTier?: "fast" | "standard" | null;
     isReal?: boolean;
@@ -91,14 +92,24 @@ export function VendorCard({ vendor, eager = false }: VendorCardProps) {
         transition={{ type: "spring", duration: 0.4, bounce: 0 }}
       >
         <div className="relative aspect-[4/3] overflow-hidden rounded-sm mb-3 bg-muted">
-          <Picture
-            source={imageMap[vendor.image] ?? imageMap["vendor-venue"]}
-            alt={vendor.name}
-            loading={eager ? "eager" : "lazy"}
-            sizes="(min-width: 1280px) 20vw, (min-width: 1024px) 25vw, (min-width: 640px) 33vw, 50vw"
-            fetchPriority={eager ? "high" : "auto"}
-            className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.04]"
-          />
+          {vendor.heroImageUrl ? (
+            <img
+              src={vendor.heroImageUrl}
+              alt={vendor.name}
+              loading={eager ? "eager" : "lazy"}
+              fetchPriority={eager ? "high" : "auto"}
+              className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.04]"
+            />
+          ) : (
+            <Picture
+              source={imageMap[vendor.image] ?? imageMap["vendor-venue"]}
+              alt={vendor.name}
+              loading={eager ? "eager" : "lazy"}
+              sizes="(min-width: 1280px) 20vw, (min-width: 1024px) 25vw, (min-width: 640px) 33vw, 50vw"
+              fetchPriority={eager ? "high" : "auto"}
+              className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.04]"
+            />
+          )}
           <div className="absolute inset-0 bg-gradient-to-t from-foreground/55 via-transparent to-transparent" />
 
           <div className="absolute top-2 right-2 flex flex-col gap-1.5">

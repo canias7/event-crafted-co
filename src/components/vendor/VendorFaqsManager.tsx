@@ -20,6 +20,22 @@ interface Faq {
   display_order: number;
 }
 
+// Treat any "table not in schema cache" / "relation does not exist"
+// surface as a one-shot signal that the migration hasn't deployed
+// yet. Components flip into a hidden / pending state instead of
+// spamming red toasts at the user.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function isTableMissingError(err: any): boolean {
+  if (!err) return false;
+  if (err.code === "PGRST205" || err.code === "42P01") return true;
+  const msg = String(err.message ?? "").toLowerCase();
+  return (
+    msg.includes("could not find the table") ||
+    msg.includes("schema cache") ||
+    msg.includes("does not exist")
+  );
+}
+
 export function VendorFaqsManager({
   vendorId,
   canEdit,
@@ -33,17 +49,27 @@ export function VendorFaqsManager({
   const [newQ, setNewQ] = useState("");
   const [newA, setNewA] = useState("");
   const [savingId, setSavingId] = useState<string | null>(null);
+  // True when the FAQs table doesn't exist on the deployed database
+  // yet (the migration hasn't run). The component renders a tiny
+  // "coming soon" notice in place of the editor instead of throwing
+  // toast errors every time the vendor lands on the More tab.
+  const [tableMissing, setTableMissing] = useState(false);
 
   async function load() {
     setLoading(true);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data } = await (supabase as any)
+    const { data, error } = await (supabase as any)
       .from("vendor_faqs")
       .select("id, question, answer, display_order")
       .eq("vendor_id", vendorId)
       .order("display_order", { ascending: true })
       .order("created_at", { ascending: true });
-    setFaqs((data as Faq[]) ?? []);
+    if (isTableMissingError(error)) {
+      setTableMissing(true);
+      setFaqs([]);
+    } else {
+      setFaqs((data as Faq[]) ?? []);
+    }
     setLoading(false);
   }
 
@@ -67,6 +93,10 @@ export function VendorFaqsManager({
       display_order: faqs.length,
     });
     setAdding(false);
+    if (isTableMissingError(error)) {
+      setTableMissing(true);
+      return;
+    }
     if (error) {
       toast.error(error.message);
       return;
@@ -84,6 +114,10 @@ export function VendorFaqsManager({
       .update(patch)
       .eq("id", id);
     setSavingId(null);
+    if (isTableMissingError(error)) {
+      setTableMissing(true);
+      return;
+    }
     if (error) {
       toast.error(error.message);
       return;
@@ -97,11 +131,29 @@ export function VendorFaqsManager({
       .from("vendor_faqs")
       .delete()
       .eq("id", id);
+    if (isTableMissingError(error)) {
+      setTableMissing(true);
+      return;
+    }
     if (error) {
       toast.error(error.message);
       return;
     }
     setFaqs((prev) => prev.filter((f) => f.id !== id));
+  }
+
+  if (tableMissing) {
+    return (
+      <div>
+        <div className="mb-3">
+          <p className="font-label text-muted-foreground">FAQs</p>
+        </div>
+        <p className="text-xs text-muted-foreground italic">
+          FAQs are coming online soon — this section will activate once the
+          server-side update lands.
+        </p>
+      </div>
+    );
   }
 
   return (
@@ -226,10 +278,16 @@ export function VendorFaqsPublic({ vendorId }: { vendorId: string }) {
       .then(
         ({
           data,
+          error,
         }: {
           data: Array<{ question: string; answer: string }> | null;
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          error: any;
         }) => {
           if (cancelled) return;
+          // Quietly degrade if the table isn't deployed yet — the
+          // public surface should never look broken to a host.
+          if (isTableMissingError(error)) return;
           setFaqs(
             (data ?? []).map((r) => ({ q: r.question, a: r.answer })),
           );
