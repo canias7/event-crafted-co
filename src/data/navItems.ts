@@ -69,8 +69,9 @@ export const customerNavBottomItems: NavItem[] = [
 
 export const vendorNavItems: NavItem[] = [
   { labelKey: "sidebar.vendor.dashboard", path: "/vendor/dashboard", icon: LayoutDashboard },
+  // Inbox hub — sub-tabs: Inquiries (default), Hosts (DMs), Partners
+  // (vendor-to-vendor). The standalone Messages entry merged in here.
   { labelKey: "sidebar.vendor.inbox", path: "/vendor/inbox", icon: Inbox },
-  { labelKey: "sidebar.vendor.messages", path: "/vendor/messages", icon: Mail },
   // Calendar hub — sub-tabs: Appointments, Availability
   { labelKey: "sidebar.vendor.calendar", path: "/vendor/appointments", icon: CalendarDays },
   { labelKey: "sidebar.vendor.listing", path: "/vendor/listing", icon: Store },
