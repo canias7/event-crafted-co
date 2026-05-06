@@ -2,9 +2,12 @@ import { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import {
   Calendar as CalendarIcon,
+  Edit2,
   ExternalLink,
   Loader2,
   ShieldCheck,
+  Sparkles,
+  Trash2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -76,6 +79,11 @@ export default function VendorProfilePage() {
   const [saving, setSaving] = useState(false);
   const [creating, setCreating] = useState(false);
   const [profile, setProfile] = useState<VendorProfile | null>(null);
+  // True for the rest of the session after the vendor clicks Publish
+  // — shows the post-publish preview card on the Listing tab so they
+  // can confirm what just went live + edit / delete in-place.
+  const [publishedRecently, setPublishedRecently] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   // Form fields
   const [businessName, setBusinessName] = useState("");
@@ -200,6 +208,17 @@ export default function VendorProfilePage() {
       }
       toast.success(opts?.publish ? "Listing published" : "Profile saved");
       setProfile({ ...profile, ...payload });
+      if (opts?.publish) {
+        setPublishedRecently(true);
+        // Wait a tick for the preview to render, then scroll it into view
+        // so the post-publish card lands in front of the user without
+        // them having to hunt for it.
+        setTimeout(() => {
+          document
+            .getElementById("listing-preview")
+            ?.scrollIntoView({ behavior: "smooth", block: "start" });
+        }, 50);
+      }
       // Re-geocode if location changed. Fire-and-forget — failure to
       // geocode shouldn't block the save toast.
       if (payload.location) {
@@ -305,6 +324,48 @@ export default function VendorProfilePage() {
               <Skeleton className="h-10 w-1/2" />
             </div>
           ) : (
+            <>
+            {/* Post-publish preview — appears once the vendor clicks
+                Publish, mirrors how the listing reads in the directory
+                (compact card view). Edit collapses the preview and
+                scrolls back to the form; Delete confirms then drops
+                the vendor_profiles row (cascades clean up dependents). */}
+            {isListing && publishedRecently && profile && (
+              <div id="listing-preview" className="mb-8">
+                <ListingPreviewCard
+                  profile={profile}
+                  saving={deleting}
+                  onEdit={() => {
+                    setPublishedRecently(false);
+                    window.scrollTo({ top: 0, behavior: "smooth" });
+                  }}
+                  onDelete={async () => {
+                    if (
+                      !window.confirm(
+                        `Delete ${profile.business_name}? This removes your listing from the directory and cannot be undone.`,
+                      )
+                    ) {
+                      return;
+                    }
+                    setDeleting(true);
+                    const { error } = await supabase
+                      .from("vendor_profiles")
+                      .delete()
+                      .eq("id", profile.id);
+                    setDeleting(false);
+                    if (error) {
+                      toast.error(error.message);
+                      return;
+                    }
+                    toast.success("Listing deleted");
+                    setProfile(null);
+                    setPublishedRecently(false);
+                    applyToForm(null);
+                  }}
+                />
+              </div>
+            )}
+
             <form onSubmit={handleSave} className="space-y-6">
               <div className="grid sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
@@ -570,6 +631,7 @@ export default function VendorProfilePage() {
                 </Button>
               </div>
             </form>
+            </>
           )}
 
           {profile && isProfile && (
@@ -637,6 +699,84 @@ export default function VendorProfilePage() {
 // recurring rules + one-off blocks). Mounted inline on the profile
 // editor so the "Availability" section on the public profile has a
 // clear hand-off from this single dashboard view.
+// Compact post-publish preview — shows what the vendor just put live,
+// with Edit (collapses + scrolls to form) + Delete actions. Image is
+// intentionally omitted to keep the chunk light; the directory's
+// VendorCard renders the visual version with category fallback art.
+function ListingPreviewCard({
+  profile,
+  saving,
+  onEdit,
+  onDelete,
+}: {
+  profile: VendorProfile;
+  saving: boolean;
+  onEdit: () => void;
+  onDelete: () => void;
+}) {
+  return (
+    <div className="rounded-sm border border-accent/40 bg-accent/5 p-5">
+      <p className="font-label text-accent mb-3 inline-flex items-center gap-1.5">
+        <Sparkles className="w-3 h-3" />
+        Just published
+      </p>
+      <div className="flex items-start gap-4 flex-wrap">
+        <div className="flex-1 min-w-0">
+          <p className="text-[10px] uppercase tracking-[0.25em] text-muted-foreground">
+            {profile.category}
+          </p>
+          <h3 className="font-display text-2xl mt-1 truncate">
+            {profile.business_name}
+          </h3>
+          <div className="flex items-center gap-3 text-sm text-muted-foreground mt-2 flex-wrap">
+            {profile.location && <span>{profile.location}</span>}
+            {profile.location && profile.base_price_cents != null && (
+              <span className="text-foreground/30">·</span>
+            )}
+            {profile.base_price_cents != null && (
+              <span>
+                From ${(profile.base_price_cents / 100).toLocaleString()}
+              </span>
+            )}
+          </div>
+          {profile.bio && (
+            <p className="text-sm text-foreground/75 mt-3 leading-relaxed line-clamp-2">
+              {profile.bio}
+            </p>
+          )}
+        </div>
+        <div className="flex gap-2 shrink-0">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={onEdit}
+            disabled={saving}
+            className="rounded-full"
+          >
+            <Edit2 className="w-3.5 h-3.5 mr-1.5" />
+            Edit
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={onDelete}
+            disabled={saving}
+            className="rounded-full text-destructive hover:bg-destructive/10 hover:text-destructive"
+          >
+            {saving ? (
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+            ) : (
+              <Trash2 className="w-3.5 h-3.5" />
+            )}
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function AvailabilityLinkCard() {
   return (
     <div>

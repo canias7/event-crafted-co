@@ -108,7 +108,6 @@ import {
   VendorMessagesPage,
   VendorPartnersPage,
   InquiryDetailPage,
-  AvailabilityPage,
   AcceptTeamInvitePage,
   AdminDashboard,
   AdminVendorsPage,
@@ -237,7 +236,7 @@ const App = () => (
               <Route path="/vendor/onboarding" element={<RequireRole role="vendor"><VendorOnboardingPage /></RequireRole>} />
               <Route path="/vendor/analytics" element={<RequireRole role="vendor"><VendorAnalyticsPage /></RequireRole>} />
               <Route path="/vendor/appointments" element={<RequireRole role="vendor"><VendorAppointmentsPage /></RequireRole>} />
-              <Route path="/vendor/availability" element={<RequireRole role="vendor"><AvailabilityPage /></RequireRole>} />
+              <Route path="/vendor/availability" element={<RequireRole role="vendor"><VendorAppointmentsPage /></RequireRole>} />
               <Route path="/vendor/payments" element={<RequireRole role="vendor"><ComingSoonPage side="vendor" description="Connect a Stripe account, see payouts, and track the 3% commission on confirmed bookings." /></RequireRole>} />
               <Route path="/vendor/contracts" element={<RequireRole role="vendor"><VendorContractsPage /></RequireRole>} />
               <Route path="/vendor/blog" element={<RequireRole role="vendor"><VendorBlogPage /></RequireRole>} />

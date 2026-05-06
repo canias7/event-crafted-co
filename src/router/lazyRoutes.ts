@@ -366,7 +366,9 @@ const ROUTE_IMPORTERS: Array<{ pattern: string; importer: () => Promise<unknown>
   { pattern: "/vendor/onboarding", importer: importVendorOnboarding },
   { pattern: "/vendor/analytics", importer: importVendorAnalytics },
   { pattern: "/vendor/appointments", importer: importVendorAppointments },
-  { pattern: "/vendor/availability", importer: importAvailability },
+  // Availability lives on the same page as Appointments now (merged
+  // Calendar dashboard); both URLs resolve to the same chunk.
+  { pattern: "/vendor/availability", importer: importVendorAppointments },
   { pattern: "/vendor/payments", importer: importComingSoon },
   { pattern: "/vendor/contracts", importer: importVendorContracts },
   { pattern: "/vendor/messages", importer: importVendorMessages },
