@@ -58,6 +58,15 @@ export const VENDOR_CALENDAR_HUB_TABS: SubNavTab[] = [
   { label: "Availability", to: "/vendor/availability" },
 ];
 
+// Profile = vendor identity / account-level (business name, category,
+// public URL slug, social handles, verification). Listing = the
+// customer-facing surface that shows on the public vendor page (bio,
+// location, pricing, packages, photos, team, availability, etc.).
+export const VENDOR_PROFILE_HUB_TABS: SubNavTab[] = [
+  { label: "Profile", to: "/vendor/profile", exact: true },
+  { label: "Listing", to: "/vendor/listing" },
+];
+
 export const VENDOR_LIBRARY_HUB_TABS: SubNavTab[] = [
   { label: "Message templates", to: "/vendor/templates" },
   { label: "Contracts", to: "/vendor/contracts" },

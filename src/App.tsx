@@ -230,6 +230,7 @@ const App = () => (
               {/* Vendor */}
               <Route path="/vendor/dashboard" element={<RequireRole role="vendor"><VendorDashboard /></RequireRole>} />
               <Route path="/vendor/profile" element={<RequireRole role="vendor"><VendorProfilePage /></RequireRole>} />
+              <Route path="/vendor/listing" element={<RequireRole role="vendor"><VendorProfilePage /></RequireRole>} />
               <Route path="/vendor/templates" element={<RequireRole role="vendor"><VendorTemplatesPage /></RequireRole>} />
               <Route path="/vendor/inbox" element={<RequireRole role="vendor"><VendorInboxPage /></RequireRole>} />
               <Route path="/vendor/team" element={<RequireRole role="vendor"><VendorTeamPage /></RequireRole>} />

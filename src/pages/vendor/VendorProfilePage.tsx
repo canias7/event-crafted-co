@@ -1,5 +1,5 @@
 import { lazy, Suspense, useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import {
   Calendar as CalendarIcon,
   ExternalLink,
@@ -57,6 +57,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { vendorNavItems as navItems } from "@/data/navItems";
 import { VendorShareKit } from "@/components/vendor/VendorShareKit";
+import { SubNavTabs } from "@/components/shared/SubNavTabs";
+import { VENDOR_PROFILE_HUB_TABS } from "@/data/hubTabs";
 
 // Sub-categories rendered in the dropdown grouped by parent group.
 // Source of truth lives in categoryTaxonomy.ts — adding a sub there
@@ -83,6 +85,12 @@ export default function VendorProfilePage() {
   const { user, vendorMemberships } = useAuth();
   const membership = vendorMemberships[0] ?? null;
   const canEdit = membership?.role === "owner" || membership?.role === "admin";
+  // Profile tab = identity / account; Listing tab = the customer-
+  // facing surface. Both tabs share state + the same save handler;
+  // each renders a different slice of the form + section managers.
+  const route = useLocation();
+  const isListing = route.pathname === "/vendor/listing";
+  const isProfile = !isListing;
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [creating, setCreating] = useState(false);
@@ -249,9 +257,13 @@ export default function VendorProfilePage() {
         <div className="border-b border-border bg-card px-4 md:px-8 py-4 sticky top-0 z-40">
           <div className="flex items-center justify-between gap-4 flex-wrap">
             <div>
-              <h1 className="font-display text-xl">Profile</h1>
+              <h1 className="font-display text-xl">
+                {isListing ? "Listing" : "Profile"}
+              </h1>
               <p className="text-sm text-muted-foreground">
-                Edit how hosts see you on Vendora
+                {isListing
+                  ? "Edit what hosts see when they open your listing"
+                  : "Your business identity + public URL"}
               </p>
             </div>
             <div className="flex items-center gap-2">
@@ -272,6 +284,9 @@ export default function VendorProfilePage() {
                 </Link>
               )}
             </div>
+          </div>
+          <div className="mt-4">
+            <SubNavTabs tabs={VENDOR_PROFILE_HUB_TABS} />
           </div>
         </div>
 
@@ -322,6 +337,7 @@ export default function VendorProfilePage() {
                 </div>
               </div>
 
+              {isListing && (
               <div className="space-y-2">
                 <Label htmlFor="bio">Short bio</Label>
                 <Textarea
@@ -332,7 +348,9 @@ export default function VendorProfilePage() {
                   placeholder="One or two sentences about your style and approach."
                 />
               </div>
+              )}
 
+              {isListing && (
               <div className="grid sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="base-price">Starting price ($)</Label>
@@ -362,7 +380,9 @@ export default function VendorProfilePage() {
                   />
                 </div>
               </div>
+              )}
 
+              {isListing && (
               <div className="space-y-2">
                 <Label htmlFor="location">Location</Label>
                 <Input
@@ -373,7 +393,9 @@ export default function VendorProfilePage() {
                   className="h-11"
                 />
               </div>
+              )}
 
+              {isListing && (
               <div className="space-y-2">
                 <Label htmlFor="portfolio-summary">Portfolio summary</Label>
                 <Textarea
@@ -389,7 +411,9 @@ export default function VendorProfilePage() {
                   better.
                 </p>
               </div>
+              )}
 
+              {isListing && (
               <div className="space-y-2">
                 <Label htmlFor="intro-video">Intro video URL (optional)</Label>
                 <Input
@@ -405,10 +429,12 @@ export default function VendorProfilePage() {
                   of your public profile.
                 </p>
               </div>
+              )}
 
-              {/* Social handles — render as the Contact / Socials row in
-                  the public sidebar via SocialEmbedCard. Stored without
-                  the leading "@" so URL composition stays clean. */}
+              {isProfile && (
+              /* Social handles — render as the Contact / Socials row in
+                 the public sidebar via SocialEmbedCard. Stored without
+                 the leading "@" so URL composition stays clean. */
               <div className="grid sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="instagram-handle">Instagram handle</Label>
@@ -437,7 +463,9 @@ export default function VendorProfilePage() {
                   </div>
                 </div>
               </div>
+              )}
 
+              {isProfile && (
               <div className="space-y-2">
                 <Label htmlFor="slug">Public URL slug</Label>
                 <div className="flex items-center gap-2">
@@ -478,8 +506,9 @@ export default function VendorProfilePage() {
                   </div>
                 )}
               </div>
+              )}
 
-              {profile && canEdit && (
+              {isProfile && profile && canEdit && (
                 <div className="flex items-center justify-between gap-4 pt-4 border-t border-border">
                   <div className="min-w-0">
                     <p className="text-sm font-medium mb-0.5">
@@ -542,7 +571,18 @@ export default function VendorProfilePage() {
             </form>
           )}
 
-          {profile && (
+          {profile && isProfile && (
+            <>
+              <div className="mt-12 pt-10 border-t border-border">
+                <VerificationManager
+                  vendorId={profile.id}
+                  canEdit={canEdit}
+                />
+              </div>
+            </>
+          )}
+
+          {profile && isListing && (
             <>
               <div className="mt-12 pt-10 border-t border-border">
                 <PackageManager vendorId={profile.id} canEdit={canEdit} />
@@ -598,12 +638,6 @@ export default function VendorProfilePage() {
               </div>
               <div className="mt-12 pt-10 border-t border-border">
                 <ShowcaseClipsManager
-                  vendorId={profile.id}
-                  canEdit={canEdit}
-                />
-              </div>
-              <div className="mt-12 pt-10 border-t border-border">
-                <VerificationManager
                   vendorId={profile.id}
                   canEdit={canEdit}
                 />

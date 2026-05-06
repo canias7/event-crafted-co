@@ -359,6 +359,7 @@ const ROUTE_IMPORTERS: Array<{ pattern: string; importer: () => Promise<unknown>
   // Vendor
   { pattern: "/vendor/dashboard", importer: importVendorDashboard },
   { pattern: "/vendor/profile", importer: importVendorProfile },
+  { pattern: "/vendor/listing", importer: importVendorProfile },
   { pattern: "/vendor/templates", importer: importVendorTemplates },
   { pattern: "/vendor/inbox", importer: importVendorInbox },
   { pattern: "/vendor/team", importer: importVendorTeam },
