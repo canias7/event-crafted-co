@@ -33,50 +33,52 @@ export interface Vendor {
   policyNotes?: string | null;
 }
 
-// Sub-category → bundled image key. Falls back to "vendor-venue" when
-// no entry exists. Updated to match the new hierarchical taxonomy
-// (categoryTaxonomy.ts) — every sub stored in vendor_profiles.category
-// gets a sensible default hero on cards.
+// Sub-category → bundled image key. Maps every sub in
+// categoryTaxonomy.ts to its best-fit hero so cards in the same
+// browse view don't repeat. The image keys are defined in
+// VendorCard.tsx (imageMap) — adding a new key requires importing
+// the asset there too. Falls back to "vendor-venue" when no entry
+// exists.
 const categoryImageFallback: Record<string, string> = {
-  // Venues
+  // Venues — varied venue + setting imagery
   "Event Venues": "vendor-venue",
-  "Outdoor Spaces": "vendor-venue",
-  "Private Dining Spaces": "vendor-venue",
-  "Corporate / Conference Spaces": "vendor-venue",
-  // Food & Beverage
+  "Outdoor Spaces": "feature-lounge",
+  "Private Dining Spaces": "hero-dinner",
+  "Corporate / Conference Spaces": "hero-corporate",
+  // Food & Beverage — food, cocktails, cakes, street food
   Catering: "vendor-catering",
-  "Bartending / Mobile Bars": "vendor-catering",
-  "Desserts & Cakes": "vendor-catering",
-  "Food Trucks / Specialty": "vendor-catering",
-  // Entertainment
+  "Bartending / Mobile Bars": "hero-nye",
+  "Desserts & Cakes": "hero-birthday",
+  "Food Trucks / Specialty": "hero-fiesta",
+  // Entertainment — performance + stage energy
   DJs: "vendor-dj",
-  "Live Music": "vendor-dj",
-  Performers: "vendor-dj",
-  "Hosts / MCs": "vendor-dj",
-  // Media
+  "Live Music": "hero-cinematic",
+  Performers: "hero-gala",
+  "Hosts / MCs": "hero-wedding",
+  // Media — coverage / event documentation
   Photography: "vendor-photographer",
-  Videography: "vendor-photographer",
-  "Photo Booths": "vendor-photographer",
-  // Design & Decor
-  "Event Coordinators": "vendor-venue",
+  Videography: "feature-florals",
+  "Photo Booths": "hero-engagement",
+  // Design & Decor — florals, beauty, styling
+  "Event Coordinators": "feature-lounge",
   Florists: "vendor-florist",
   Beauty: "vendor-makeup",
-  "Decor Rentals": "vendor-florist",
-  "Grooming Services": "vendor-makeup",
-  // Rentals
-  "Furniture Rentals": "vendor-venue",
-  "Tents & Outdoor": "vendor-venue",
-  "Lighting & AV Equipment": "vendor-venue",
-  "Dance Floors & Staging": "vendor-venue",
-  Transportation: "vendor-venue",
+  "Decor Rentals": "feature-florals",
+  "Grooming Services": "hero-corporate",
+  // Rentals — infrastructure
+  "Furniture Rentals": "feature-lounge",
+  "Tents & Outdoor": "hero-beach",
+  "Lighting & AV Equipment": "hero-cinematic",
+  "Dance Floors & Staging": "hero-gala",
+  Transportation: "hero-nye",
   // Experiences
-  Tastings: "vendor-catering",
-  "Specialty Services": "vendor-makeup",
+  Tastings: "hero-dinner",
+  "Specialty Services": "hero-fiesta",
   // Corporate Services
-  Staffing: "vendor-venue",
-  "Speakers / Hosts": "vendor-venue",
-  Security: "vendor-venue",
-  Valet: "vendor-venue",
+  Staffing: "feature-lounge",
+  "Speakers / Hosts": "hero-corporate",
+  Security: "hero-cinematic",
+  Valet: "hero-nye",
 };
 
 interface VendorProfileRow {
