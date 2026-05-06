@@ -45,7 +45,12 @@ const EMPTY_DRAFT: DraftMember = {
   is_owner: false,
 };
 
-const teamTable = () => supabase.from("vendor_team_bios");
+// `vendor_team_bios` is brand new in this PR — the generated
+// Supabase types aren't regenerated until the migration applies, so
+// route every call through (supabase as any) to keep the build green.
+// Once types catch up, drop these casts.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const teamTable = () => (supabase as any).from("vendor_team_bios");
 
 export function VendorTeamManager({ vendorId }: { vendorId: string }) {
   const [members, setMembers] = useState<TeamMember[]>([]);

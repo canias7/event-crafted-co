@@ -22,7 +22,10 @@ export function VendorTeamPublic({ vendorId }: { vendorId: string }) {
   useEffect(() => {
     if (!vendorId) return;
     let cancelled = false;
-    supabase
+    // vendor_team_bios is new — generated Supabase types catch up
+    // after the migration runs; until then route through `as any`.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (supabase as any)
       .from("vendor_team_bios")
       .select("id, display_name, role, bio, photo_storage_path, is_owner, display_order")
       .eq("vendor_id", vendorId)
