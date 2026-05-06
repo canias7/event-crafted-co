@@ -15,6 +15,14 @@ const VAPID_PUBLIC_KEY = import.meta.env.VITE_VAPID_PUBLIC_KEY as
   | string
   | undefined;
 
+// Whether the deployment has the VAPID keypair wired up. Used by the
+// settings card to hide the entire Push section when push isn't
+// configured for this environment — better than showing an Enable
+// button that immediately surfaces a developer-flavoured error toast.
+export function isPushConfigured(): boolean {
+  return Boolean(VAPID_PUBLIC_KEY);
+}
+
 export type PushPermissionState = "unsupported" | NotificationPermission;
 
 export function getPushPermissionState(): PushPermissionState {

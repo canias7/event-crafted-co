@@ -6,6 +6,7 @@ import {
   enablePush,
   disablePush,
   isPushSubscribed,
+  isPushConfigured,
   getPushPermissionState,
   type PushPermissionState,
 } from "@/lib/push";
@@ -56,6 +57,12 @@ export function PushNotificationsCard() {
   }
 
   if (perm === null) return null;
+
+  // No VAPID keypair in this environment → Enable button would just
+  // pop a developer-flavoured error toast. Hide the card so users see
+  // a clean Notifications section; it'll re-appear automatically once
+  // the keys are wired up.
+  if (!isPushConfigured()) return null;
 
   if (perm === "unsupported") {
     return (
