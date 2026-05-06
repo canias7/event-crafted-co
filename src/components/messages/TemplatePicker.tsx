@@ -1,8 +1,6 @@
 import { useEffect, useState } from "react";
 import { ChevronDown, FileText, Sparkles } from "lucide-react";
-import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -77,40 +75,23 @@ export function TemplatePicker({ vendorId, onPick }: Props) {
               <Sparkles className="w-3.5 h-3.5 text-accent" />
               <p className="text-sm font-medium">No templates yet</p>
             </div>
-            <p className="text-xs text-muted-foreground leading-relaxed mb-3">
+            <p className="text-xs text-muted-foreground leading-relaxed">
               Save your most-used replies — they'll show up here.
             </p>
-            <Link to="/vendor/templates">
-              <Button
-                size="sm"
-                variant="outline"
-                className="w-full rounded-full text-xs"
-              >
-                Create a template
-              </Button>
-            </Link>
           </div>
         ) : (
-          <>
-            {templates.map((t) => (
-              <DropdownMenuItem
-                key={t.id}
-                onClick={() => onPick(t.body)}
-                className="cursor-pointer flex flex-col items-start gap-0.5"
-              >
-                <span className="text-sm font-medium">{t.name}</span>
-                <span className="text-xs text-muted-foreground line-clamp-1 w-full">
-                  {t.body.slice(0, 80)}…
-                </span>
-              </DropdownMenuItem>
-            ))}
-            <DropdownMenuSeparator />
-            <DropdownMenuItem asChild>
-              <Link to="/vendor/templates" className="cursor-pointer text-xs">
-                Manage templates →
-              </Link>
+          templates.map((t) => (
+            <DropdownMenuItem
+              key={t.id}
+              onClick={() => onPick(t.body)}
+              className="cursor-pointer flex flex-col items-start gap-0.5"
+            >
+              <span className="text-sm font-medium">{t.name}</span>
+              <span className="text-xs text-muted-foreground line-clamp-1 w-full">
+                {t.body.slice(0, 80)}…
+              </span>
             </DropdownMenuItem>
-          </>
+          ))
         )}
       </DropdownMenuContent>
     </DropdownMenu>

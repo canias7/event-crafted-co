@@ -233,9 +233,6 @@ export const VendorDashboard = lazy(importVendorDashboard);
 const importVendorProfile = () => import("@/pages/vendor/VendorProfilePage");
 export const VendorProfilePage = lazy(importVendorProfile);
 
-const importVendorTemplates = () => import("@/pages/vendor/VendorTemplatesPage");
-export const VendorTemplatesPage = lazy(importVendorTemplates);
-
 const importVendorInbox = () => import("@/pages/vendor/VendorInboxPage");
 export const VendorInboxPage = lazy(importVendorInbox);
 
@@ -250,9 +247,6 @@ export const VendorOnboardingPage = lazy(importVendorOnboarding);
 
 const importVendorAnalytics = () => import("@/pages/vendor/VendorAnalyticsPage");
 export const VendorAnalyticsPage = lazy(importVendorAnalytics);
-
-const importVendorContracts = () => import("@/pages/vendor/VendorContractsPage");
-export const VendorContractsPage = lazy(importVendorContracts);
 
 const importVendorMessages = () => import("@/pages/vendor/VendorMessagesPage");
 export const VendorMessagesPage = lazy(importVendorMessages);
@@ -366,7 +360,6 @@ const ROUTE_IMPORTERS: Array<{ pattern: string; importer: () => Promise<unknown>
   { pattern: "/vendor/dashboard", importer: importVendorDashboard },
   { pattern: "/vendor/profile", importer: importVendorProfile },
   { pattern: "/vendor/listing", importer: importVendorProfile },
-  { pattern: "/vendor/templates", importer: importVendorTemplates },
   { pattern: "/vendor/inbox", importer: importVendorInbox },
   { pattern: "/vendor/team", importer: importVendorTeam },
   { pattern: "/vendor/onboarding", importer: importVendorOnboarding },
@@ -376,7 +369,6 @@ const ROUTE_IMPORTERS: Array<{ pattern: string; importer: () => Promise<unknown>
   // Calendar dashboard); both URLs resolve to the same chunk.
   { pattern: "/vendor/availability", importer: importVendorAppointments },
   { pattern: "/vendor/payments", importer: importComingSoon },
-  { pattern: "/vendor/contracts", importer: importVendorContracts },
   { pattern: "/vendor/messages", importer: importVendorMessages },
   { pattern: "/vendor/partners", importer: importVendorPartners },
   { pattern: "/vendor/ai-agent", importer: importVendorAiAgent },

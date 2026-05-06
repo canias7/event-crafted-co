@@ -264,16 +264,19 @@ export default function VendorAnalyticsPage() {
       : reviews.reduce((s, r) => s + r.rating, 0) / reviews.length;
 
   return (
-    <div className="flex min-h-screen bg-background">
+    <div className="flex h-screen bg-background overflow-hidden">
       <DashboardSidebar items={navItems} title="Vendor Portal" backPath="/" />
 
-      <main id="main-content" className="flex-1 pb-20 lg:pb-0">
-        <div className="border-b border-border bg-card px-4 md:px-8 py-4 sticky top-0 z-40">
+      <main
+        id="main-content"
+        className="flex-1 flex flex-col min-w-0 min-h-0"
+      >
+        <div className="border-b border-border bg-card px-4 md:px-6 py-3 shrink-0">
           <div className="flex items-center justify-between gap-3 flex-wrap">
             <div>
               <h1 className="font-display text-xl">Analytics</h1>
-              <p className="text-sm text-muted-foreground">
-                Last {windowDays} days · how hosts are finding and converting on you
+              <p className="text-xs text-muted-foreground">
+                Last {windowDays} days · how hosts are finding + converting on you
               </p>
             </div>
             <div className="inline-flex rounded-full border border-border bg-background overflow-hidden text-xs">
@@ -295,11 +298,11 @@ export default function VendorAnalyticsPage() {
           </div>
         </div>
 
-        <div className="p-4 md:p-8 max-w-5xl space-y-8">
+        <div className="flex-1 min-h-0 overflow-hidden p-3 md:p-4">
           {loading ? (
-            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
               {[0, 1, 2, 3].map((i) => (
-                <Skeleton key={i} className="h-32 rounded-sm" />
+                <Skeleton key={i} className="h-20 rounded-sm" />
               ))}
             </div>
           ) : !vendorId ? (
@@ -312,187 +315,152 @@ export default function VendorAnalyticsPage() {
               </p>
             </div>
           ) : (
-            <>
-              {/* Funnel */}
-              <section>
-                <p className="font-label text-muted-foreground mb-3">
-                  Conversion funnel
-                </p>
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-                  <FunnelCard
-                    icon={Eye}
-                    label="Profile views"
-                    value={totalViews}
-                    sub="Anonymous + signed-in"
-                    rate={null}
-                  />
-                  <FunnelCard
-                    icon={Inbox}
-                    label="Inquiries"
-                    value={stats.totalInquiries}
-                    sub={`${pct(stats.totalInquiries, totalViews)} of views`}
-                    rate={pct(stats.totalInquiries, totalViews)}
-                  />
-                  <FunnelCard
-                    icon={MessageCircle}
-                    label="Replied"
-                    value={stats.replied}
-                    sub={`${pct(stats.replied, stats.totalInquiries)} of inquiries`}
-                    rate={pct(stats.replied, stats.totalInquiries)}
-                  />
-                  <FunnelCard
-                    icon={Trophy}
-                    label="Booked"
-                    value={stats.won}
-                    sub={`${pct(stats.won, stats.totalInquiries)} of inquiries`}
-                    rate={pct(stats.won, stats.totalInquiries)}
-                  />
-                </div>
-              </section>
-
-              {/* Daily profile views — fine-grained sparkline so vendors
-                  can correlate dips with off-platform changes. */}
-              <section className="bg-card border border-border rounded-sm p-5">
-                <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
-                  <div className="flex items-center gap-2 text-muted-foreground">
-                    <Eye className="w-3.5 h-3.5" />
-                    <p className="font-label">Profile views by day</p>
-                  </div>
-                  <p className="text-xs text-muted-foreground tnum">
-                    {totalViews} total · {(totalViews / windowDays).toFixed(1)}/day avg
-                  </p>
-                </div>
-                <div className="flex items-end gap-px h-20">
-                  {dailyViews.map((b, i) => {
-                    const h = (b.count / maxDailyViews) * 100;
-                    return (
-                      <div
-                        key={i}
-                        className="flex-1 flex flex-col items-stretch group relative"
-                        title={`${b.day}: ${b.count} view${b.count === 1 ? "" : "s"}`}
-                      >
-                        <div className="flex-1 flex items-end">
-                          <div
-                            className={`w-full rounded-sm transition-colors ${
-                              b.count > 0
-                                ? "bg-foreground/85 group-hover:bg-foreground"
-                                : "bg-secondary"
-                            }`}
-                            style={{
-                              height: `${Math.max(h, b.count > 0 ? 6 : 3)}%`,
-                            }}
-                          />
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-                <div className="flex justify-between text-[10px] text-muted-foreground mt-2 tnum">
-                  <span>{dailyViews[0]?.day.slice(5)}</span>
-                  <span>{dailyViews[dailyViews.length - 1]?.day.slice(5)}</span>
-                </div>
-              </section>
-
-              {/* Benchmark: how this vendor compares to peers in the same category */}
-              {benchmark && benchmark.peer_count > 1 && (
-                <BenchmarkCard
-                  benchmark={benchmark}
-                  category={vendorCategory}
-                  responseHours={responseTime}
-                  bookingRate={
-                    stats.totalInquiries > 0
-                      ? stats.won / stats.totalInquiries
-                      : null
-                  }
-                  inquiries={stats.totalInquiries}
+            <div className="h-full grid grid-rows-[auto_auto_minmax(0,1fr)] gap-3">
+              {/* Funnel — compact KPI strip */}
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
+                <CompactFunnelCard
+                  icon={Eye}
+                  label="Views"
+                  value={totalViews}
+                  sub="Anonymous + signed-in"
                 />
-              )}
+                <CompactFunnelCard
+                  icon={Inbox}
+                  label="Inquiries"
+                  value={stats.totalInquiries}
+                  sub={`${pct(stats.totalInquiries, totalViews)} of views`}
+                />
+                <CompactFunnelCard
+                  icon={MessageCircle}
+                  label="Replied"
+                  value={stats.replied}
+                  sub={`${pct(stats.replied, stats.totalInquiries)} of inquiries`}
+                />
+                <CompactFunnelCard
+                  icon={Trophy}
+                  label="Booked"
+                  value={stats.won}
+                  sub={`${pct(stats.won, stats.totalInquiries)} of inquiries`}
+                />
+              </div>
 
-              {/* Response time + reviews row */}
-              <section className="grid lg:grid-cols-2 gap-4">
-                <div className="bg-card border border-border rounded-sm p-5">
-                  <div className="flex items-center gap-2 text-muted-foreground mb-3">
-                    <Clock className="w-3.5 h-3.5" />
-                    <p className="font-label">Median response time</p>
+              {/* Insight strip — three small KPI tiles inline */}
+              <div className="grid grid-cols-2 lg:grid-cols-3 gap-2">
+                <InsightTile
+                  icon={Clock}
+                  label="Median response time"
+                  value={formatHours(responseTime)}
+                  hint="Under 3h is the platform target"
+                />
+                <InsightTile
+                  icon={Star}
+                  label="Avg rating"
+                  value={avgRating === 0 ? "—" : avgRating.toFixed(1)}
+                  hint={`${reviews.length} ${
+                    reviews.length === 1 ? "review" : "reviews"
+                  } posted`}
+                />
+                <InsightTile
+                  icon={TrendingUp}
+                  label="Booking rate"
+                  value={
+                    stats.totalInquiries > 0
+                      ? `${Math.round(
+                          (stats.won / stats.totalInquiries) * 100,
+                        )}%`
+                      : "—"
+                  }
+                  hint={
+                    benchmark && benchmark.peer_count > 1
+                      ? `${vendorCategory ?? "Category"} peers · ${benchmark.peer_count}`
+                      : "Booked / inquired"
+                  }
+                />
+              </div>
+
+              {/* Charts grid — fills the remaining viewport so the
+                  page stops at the bottom of the screen. */}
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-2 min-h-0">
+                {/* Daily views sparkline — wide */}
+                <section className="lg:col-span-7 bg-card border border-border rounded-sm p-3 flex flex-col min-h-0">
+                  <div className="flex items-center justify-between mb-2 gap-2 flex-wrap">
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                      <Eye className="w-3.5 h-3.5" />
+                      <p className="font-label">Profile views · daily</p>
+                    </div>
+                    <p className="text-[11px] text-muted-foreground tnum">
+                      {totalViews} total · {(totalViews / windowDays).toFixed(1)}/day
+                    </p>
                   </div>
-                  <p className="font-display text-3xl mb-2 tnum">
-                    {formatHours(responseTime)}
-                  </p>
-                  <p className="text-xs text-muted-foreground leading-relaxed">
-                    From host inquiry → your first reply. Faster replies
-                    convert more — under 3 hours is the platform target.
-                  </p>
-                </div>
-
-                <div className="bg-card border border-border rounded-sm p-5">
-                  <div className="flex items-center gap-2 text-muted-foreground mb-3">
-                    <Star className="w-3.5 h-3.5" />
-                    <p className="font-label">Reviews</p>
-                  </div>
-                  <p className="font-display text-3xl mb-2 tnum">
-                    {avgRating === 0 ? "—" : avgRating.toFixed(1)}
-                    <span className="text-base text-muted-foreground font-light ml-2">
-                      from {reviews.length}{" "}
-                      {reviews.length === 1 ? "review" : "reviews"}
-                    </span>
-                  </p>
-                  <p className="text-xs text-muted-foreground leading-relaxed">
-                    Auto-prompts go out to hosts 3 days after a booked event;
-                    encourage friction-free reviews to keep this fresh.
-                  </p>
-                </div>
-              </section>
-
-              {vendorId && (
-                <section>
-                  <ProposalFunnelCard vendorId={vendorId} />
-                </section>
-              )}
-
-              {/* Weekly inquiries */}
-              <section className="bg-card border border-border rounded-sm p-5">
-                <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
-                  <div className="flex items-center gap-2 text-muted-foreground">
-                    <TrendingUp className="w-3.5 h-3.5" />
-                    <p className="font-label">Inquiries by week</p>
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    Last 8 weeks · zero if outside the 30-day window
-                  </p>
-                </div>
-                <div className="flex items-end gap-2 h-32">
-                  {weekly.map((w, i) => {
-                    const h = (w.count / maxWeekly) * 100;
-                    return (
-                      <div
-                        key={i}
-                        className="flex-1 flex flex-col items-center gap-2"
-                      >
-                        <div className="w-full flex-1 flex items-end">
-                          <div
-                            className={`w-full rounded-sm ${
-                              w.count > 0
-                                ? "bg-foreground"
-                                : "bg-secondary"
-                            }`}
-                            style={{
-                              height: `${Math.max(h, w.count > 0 ? 8 : 4)}%`,
-                            }}
-                          />
+                  <div className="flex-1 flex items-end gap-px min-h-[80px]">
+                    {dailyViews.map((b, i) => {
+                      const h = (b.count / maxDailyViews) * 100;
+                      return (
+                        <div
+                          key={i}
+                          className="flex-1 flex flex-col items-stretch group relative"
+                          title={`${b.day}: ${b.count} view${b.count === 1 ? "" : "s"}`}
+                        >
+                          <div className="flex-1 flex items-end">
+                            <div
+                              className={`w-full rounded-sm transition-colors ${
+                                b.count > 0
+                                  ? "bg-accent group-hover:bg-accent/80"
+                                  : "bg-secondary"
+                              }`}
+                              style={{
+                                height: `${Math.max(h, b.count > 0 ? 6 : 3)}%`,
+                              }}
+                            />
+                          </div>
                         </div>
-                        <span className="text-[10px] text-muted-foreground tnum">
-                          {w.label}
-                        </span>
-                        <span className="text-[10px] font-medium tnum">
-                          {w.count}
-                        </span>
-                      </div>
-                    );
-                  })}
-                </div>
-              </section>
+                      );
+                    })}
+                  </div>
+                  <div className="flex justify-between text-[10px] text-muted-foreground mt-1 tnum">
+                    <span>{dailyViews[0]?.day.slice(5)}</span>
+                    <span>{dailyViews[dailyViews.length - 1]?.day.slice(5)}</span>
+                  </div>
+                </section>
 
-            </>
+                {/* Weekly inquiries — narrow */}
+                <section className="lg:col-span-5 bg-card border border-border rounded-sm p-3 flex flex-col min-h-0">
+                  <div className="flex items-center justify-between mb-2 gap-2 flex-wrap">
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                      <TrendingUp className="w-3.5 h-3.5" />
+                      <p className="font-label">Inquiries · last 8 weeks</p>
+                    </div>
+                  </div>
+                  <div className="flex-1 flex items-end gap-1.5 min-h-[80px]">
+                    {weekly.map((w, i) => {
+                      const h = (w.count / maxWeekly) * 100;
+                      return (
+                        <div
+                          key={i}
+                          className="flex-1 flex flex-col items-center gap-1"
+                        >
+                          <div className="w-full flex-1 flex items-end">
+                            <div
+                              className={`w-full rounded-sm transition-colors ${
+                                w.count > 0
+                                  ? "bg-foreground"
+                                  : "bg-secondary"
+                              }`}
+                              style={{
+                                height: `${Math.max(h, w.count > 0 ? 8 : 4)}%`,
+                              }}
+                            />
+                          </div>
+                          <span className="text-[9px] text-muted-foreground tnum">
+                            {w.label}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </section>
+              </div>
+            </div>
           )}
         </div>
       </main>
@@ -626,30 +594,60 @@ function BenchmarkMetric({
   );
 }
 
-function FunnelCard({
+function CompactFunnelCard({
   icon: Icon,
   label,
   value,
   sub,
-  rate,
 }: {
   icon: typeof Eye;
   label: string;
   value: number;
   sub: string;
-  rate: string | null;
 }) {
   return (
-    <div className="bg-card border border-border rounded-sm p-4">
-      <div className="flex items-center gap-2 text-muted-foreground mb-3">
-        <Icon className="w-3.5 h-3.5" />
-        <p className="font-label">{label}</p>
+    <div className="bg-card border border-border rounded-sm px-3 py-2.5 flex items-center gap-3">
+      <div className="w-8 h-8 rounded-md bg-secondary/60 flex items-center justify-center shrink-0">
+        <Icon className="w-3.5 h-3.5 text-muted-foreground" />
       </div>
-      <p className="font-display text-3xl tnum mb-1">{value}</p>
-      <p className="text-xs text-muted-foreground">{sub}</p>
-      {rate !== null && rate !== "—" && (
-        <p className="text-[10px] text-accent mt-2 font-medium tnum">{rate}</p>
-      )}
+      <div className="min-w-0 flex-1">
+        <div className="flex items-baseline gap-2">
+          <p className="font-display text-xl tnum leading-none">{value}</p>
+          <p className="font-label text-muted-foreground truncate">{label}</p>
+        </div>
+        <p className="text-[10px] text-muted-foreground mt-0.5 truncate">
+          {sub}
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function InsightTile({
+  icon: Icon,
+  label,
+  value,
+  hint,
+}: {
+  icon: typeof Eye;
+  label: string;
+  value: string;
+  hint: string;
+}) {
+  return (
+    <div className="bg-card border border-border rounded-sm px-3 py-2.5 flex items-center gap-3">
+      <div className="w-8 h-8 rounded-md bg-accent/10 text-accent flex items-center justify-center shrink-0">
+        <Icon className="w-3.5 h-3.5" />
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className="font-label text-muted-foreground">{label}</p>
+        <p className="font-display text-lg tnum leading-tight mt-0.5">
+          {value}
+        </p>
+        <p className="text-[10px] text-muted-foreground mt-0.5 truncate">
+          {hint}
+        </p>
+      </div>
     </div>
   );
 }

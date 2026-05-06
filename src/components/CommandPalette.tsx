@@ -89,12 +89,10 @@ const VENDOR_NAV: NavTarget[] = [
     icon: LayoutDashboard,
   },
   { label: "Inquiry inbox", path: "/vendor/inbox", icon: Inbox },
-  { label: "Reply templates", path: "/vendor/templates", icon: FileText },
-  { label: "Vendor profile", path: "/vendor/profile", icon: User },
+  { label: "Listing", path: "/vendor/listing", icon: Store },
   { label: "Team", path: "/vendor/team", icon: Users },
   { label: "Appointments", path: "/vendor/appointments", icon: CalendarDays },
   { label: "Availability", path: "/vendor/availability", icon: CalendarDays },
-  { label: "Contracts", path: "/vendor/contracts", icon: FileText },
 ];
 
 const ADMIN_NAV: NavTarget[] = [

@@ -67,7 +67,3 @@ export const VENDOR_PROFILE_HUB_TABS: SubNavTab[] = [
   { label: "Listing", to: "/vendor/listing" },
 ];
 
-export const VENDOR_LIBRARY_HUB_TABS: SubNavTab[] = [
-  { label: "Message templates", to: "/vendor/templates" },
-  { label: "Contracts", to: "/vendor/contracts" },
-];

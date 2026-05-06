@@ -10,6 +10,10 @@ import {
   Clock,
   CheckCircle2,
   AlertCircle,
+  CalendarDays,
+  Image as ImageIcon,
+  Lightbulb,
+  Store,
   type LucideIcon,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -65,6 +69,161 @@ const statusLabel: Record<string, string> = {
   lost: "Closed",
   expired: "Expired",
 };
+
+const QUICK_ACTION_TINTS: Record<
+  "amber" | "violet" | "emerald" | "rose",
+  string
+> = {
+  amber:
+    "bg-amber-500/10 hover:bg-amber-500/20 text-amber-200 border-amber-500/20",
+  violet:
+    "bg-violet-500/10 hover:bg-violet-500/20 text-violet-200 border-violet-500/20",
+  emerald:
+    "bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-200 border-emerald-500/20",
+  rose:
+    "bg-rose-500/10 hover:bg-rose-500/20 text-rose-200 border-rose-500/20",
+};
+
+function QuickAction({
+  to,
+  icon: Icon,
+  label,
+  hint,
+  tint,
+  badge,
+  external,
+}: {
+  to: string;
+  icon: LucideIcon;
+  label: string;
+  hint: string;
+  tint: keyof typeof QUICK_ACTION_TINTS;
+  badge?: boolean;
+  external?: boolean;
+}) {
+  const className = `relative rounded-sm border ${QUICK_ACTION_TINTS[tint]} transition-colors flex items-center gap-3 px-4 py-3`;
+  const inner = (
+    <>
+      <div className="w-9 h-9 rounded-md bg-background/40 flex items-center justify-center shrink-0">
+        <Icon className="w-4 h-4" />
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className="text-sm font-medium truncate">{label}</p>
+        <p className="text-[11px] opacity-70 truncate">{hint}</p>
+      </div>
+      {badge && (
+        <span
+          className="w-2 h-2 rounded-full bg-current shrink-0"
+          aria-hidden
+        />
+      )}
+    </>
+  );
+  if (external) {
+    return (
+      <a href={to} target="_blank" rel="noreferrer" className={className}>
+        {inner}
+      </a>
+    );
+  }
+  return (
+    <Link to={to} className={className}>
+      {inner}
+    </Link>
+  );
+}
+
+interface ProTipState {
+  stats: { newRequests: number; awaiting: number; booked: number; total: number };
+  viewCount: number;
+  ratingCount: number;
+  avgRating: number;
+  isPending: boolean;
+}
+
+function pickProTip(s: ProTipState): {
+  title: string;
+  body: string;
+  cta?: { label: string; to: string };
+} {
+  if (s.isPending) {
+    return {
+      title: "Application under review",
+      body: "While you wait, polish the listing — vendors with 5+ photos and 2+ priced packages get inquiries 2× faster the day they go live.",
+      cta: { label: "Edit listing", to: "/vendor/listing" },
+    };
+  }
+  if (s.stats.newRequests > 0) {
+    return {
+      title: `Reply to ${s.stats.newRequests} new ${
+        s.stats.newRequests === 1 ? "inquiry" : "inquiries"
+      }`,
+      body: "Hosts who get a reply within 3 hours book ~3× more often than those who wait a day. Open the inbox and the AI-drafted reply is one click away.",
+      cta: { label: "Open inbox", to: "/vendor/inbox" },
+    };
+  }
+  if (s.viewCount > 0 && s.stats.total === 0) {
+    return {
+      title: "Hosts are looking, no one's reached out",
+      body: "Listings with priced packages convert browsers into inquiries 2× more often than those that just say 'contact for pricing'. Add 2–3 tiers.",
+      cta: { label: "Edit listing", to: "/vendor/listing" },
+    };
+  }
+  if (s.ratingCount === 0) {
+    return {
+      title: "Import a few reviews",
+      body: "Past clients on The Knot, Yelp, or Google? Pasting 5–10 of those into Reviews makes new hosts trust you on day one.",
+      cta: { label: "Edit listing", to: "/vendor/listing" },
+    };
+  }
+  if (s.stats.booked > 0 && s.avgRating < 4.5 && s.ratingCount > 0) {
+    return {
+      title: "Ask your last booking for a review",
+      body: "Auto-prompts go out 3 days after a booked event — but a personal nudge from you within the week lifts response rate ~40%.",
+      cta: { label: "Open calendar", to: "/vendor/appointments" },
+    };
+  }
+  return {
+    title: "Share your listing",
+    body: "Most vendors get their first booking from a referral, not the directory. A copy-paste link in your next Instagram caption beats any ad spend.",
+    cta: { label: "Open listing", to: "/vendor/listing" },
+  };
+}
+
+function ProTipCard({
+  tip,
+}: {
+  tip: { title: string; body: string; cta?: { label: string; to: string } };
+}) {
+  return (
+    <div className="rounded-sm border border-accent/30 bg-gradient-to-br from-accent/10 via-accent/5 to-transparent p-4 flex items-start gap-4 flex-wrap">
+      <div className="w-9 h-9 rounded-md bg-accent/20 text-accent flex items-center justify-center shrink-0">
+        <Lightbulb className="w-4 h-4" />
+      </div>
+      <div className="flex-1 min-w-[240px]">
+        <p className="font-label text-accent inline-flex items-center gap-1.5 mb-1">
+          <Sparkles className="w-3 h-3" />
+          Pro tip
+        </p>
+        <p className="font-display text-base mb-1">{tip.title}</p>
+        <p className="text-xs text-muted-foreground leading-relaxed">
+          {tip.body}
+        </p>
+      </div>
+      {tip.cta && (
+        <Link to={tip.cta.to} className="shrink-0">
+          <Button
+            size="sm"
+            className="rounded-full bg-foreground text-background hover:bg-foreground/90"
+          >
+            {tip.cta.label}
+            <ArrowRight className="w-3.5 h-3.5 ml-1.5" />
+          </Button>
+        </Link>
+      )}
+    </div>
+  );
+}
 
 function KpiCell({
   label,
@@ -275,6 +434,71 @@ export default function VendorDashboard() {
                 </Button>
               </Link>
             </div>
+          )}
+
+          {/* Quick actions strip — four colourful tiles linking to the
+              high-frequency surfaces. Each tile wears a soft tinted
+              background so the row reads as decoration, not a row of
+              identical buttons. Hover lifts the tint. */}
+          {vendorProfile && (
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+              <QuickAction
+                to="/vendor/inbox"
+                icon={Inbox}
+                label={
+                  stats.newRequests > 0
+                    ? `${stats.newRequests} new ${
+                        stats.newRequests === 1 ? "inquiry" : "inquiries"
+                      }`
+                    : "Inbox"
+                }
+                hint={
+                  stats.newRequests > 0 ? "Reply now" : "All caught up"
+                }
+                tint="amber"
+                badge={stats.newRequests > 0}
+              />
+              <QuickAction
+                to={`/vendors/${vendorProfile.id}`}
+                icon={Store}
+                label="Public listing"
+                hint="See what hosts see"
+                tint="violet"
+                external
+              />
+              <QuickAction
+                to="/vendor/appointments"
+                icon={CalendarDays}
+                label="Calendar"
+                hint="Manage availability"
+                tint="emerald"
+              />
+              <QuickAction
+                to="/vendor/listing"
+                icon={ImageIcon}
+                label="Edit listing"
+                hint="Polish your photos"
+                tint="rose"
+              />
+            </div>
+          )}
+
+          {/* Pro tip — a single rotating insight surfaced based on the
+              vendor's current state. Cheap to compute; goes a long
+              way toward making the dashboard feel personal. */}
+          {vendorProfile && (
+            <ProTipCard
+              tip={pickProTip({
+                stats,
+                viewCount: viewRows.length,
+                ratingCount: ratings.length,
+                avgRating:
+                  ratings.length > 0
+                    ? ratings.reduce((s, r) => s + r.rating, 0) / ratings.length
+                    : 0,
+                isPending: vendorProfile.application_status === "pending",
+              })}
+            />
           )}
 
           {/* Compact KPI strip — single bordered card, four cells
