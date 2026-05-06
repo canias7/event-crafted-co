@@ -60,6 +60,10 @@ interface VendorProfile {
   service_radius_miles: number | null;
   portfolio_summary: string | null;
   verified_at: string | null;
+  /** "draft" | "pending" | "approved" | "rejected". When "approved"
+   *  the listing is live in the directory; the dashboard renders
+   *  the preview card instead of the editor on this tab. */
+  application_status: string | null;
   intro_video_url: string | null;
   weekly_digest_enabled: boolean | null;
   slug: string | null;
@@ -130,14 +134,14 @@ export default function VendorProfilePage() {
       ? supabase
           .from("vendor_profiles")
           .select(
-            "id, business_name, category, bio, base_price_cents, location, service_radius_miles, portfolio_summary, verified_at, intro_video_url, weekly_digest_enabled, slug, instagram_handle, tiktok_handle",
+            "id, business_name, category, bio, base_price_cents, location, service_radius_miles, portfolio_summary, verified_at, application_status, intro_video_url, weekly_digest_enabled, slug, instagram_handle, tiktok_handle",
           )
           .eq("id", membership.vendor_id)
           .maybeSingle()
       : supabase
           .from("vendor_profiles")
           .select(
-            "id, business_name, category, bio, base_price_cents, location, service_radius_miles, portfolio_summary, verified_at, intro_video_url, weekly_digest_enabled, slug, instagram_handle, tiktok_handle",
+            "id, business_name, category, bio, base_price_cents, location, service_radius_miles, portfolio_summary, verified_at, application_status, intro_video_url, weekly_digest_enabled, slug, instagram_handle, tiktok_handle",
           )
           .eq("user_id", user.id)
           .maybeSingle();
@@ -149,6 +153,11 @@ export default function VendorProfilePage() {
       const p = (data as VendorProfile | null) ?? null;
       setProfile(p);
       applyToForm(p);
+      // Persist the post-publish preview across reloads + tab
+      // switches: if the loaded profile is already approved, drop
+      // the user straight onto the preview card. Edit on that card
+      // flips this back to false so the form re-mounts.
+      setPublishedRecently(p?.application_status === "approved");
       setLoading(false);
     });
     return () => {
@@ -245,7 +254,7 @@ export default function VendorProfilePage() {
         .from("vendor_profiles")
         .insert({ user_id: user.id, ...payload })
         .select(
-          "id, business_name, category, bio, base_price_cents, location, service_radius_miles, portfolio_summary, verified_at, intro_video_url, weekly_digest_enabled, slug, instagram_handle, tiktok_handle",
+          "id, business_name, category, bio, base_price_cents, location, service_radius_miles, portfolio_summary, verified_at, application_status, intro_video_url, weekly_digest_enabled, slug, instagram_handle, tiktok_handle",
         )
         .single();
       setCreating(false);
