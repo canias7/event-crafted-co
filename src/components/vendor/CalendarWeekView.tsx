@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Edit2, Trash2 } from "lucide-react";
 import {
   addDays,
   format,
@@ -7,6 +7,7 @@ import {
   isSameMonth,
   startOfWeek,
 } from "date-fns";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import type { Appointment } from "@/components/appointments/AppointmentsList";
 
@@ -325,26 +326,15 @@ function DayColumn({
 }) {
   const hours = hoursInRange(firstHour, lastHour);
   return (
-    <div
-      className="relative border-l border-border"
-      style={{
-        height: hours.length * HOUR_HEIGHT,
-        // Subtle diagonal striping across the cells — gives the
-        // "available time" look without coloring every empty cell.
-        backgroundImage:
-          "repeating-linear-gradient(45deg, transparent 0 6px, rgba(0,0,0,0.025) 6px 7px)",
-      }}
-    >
-      {/* Hour grid lines (visual only). */}
-      {hours.map((h, i) => (
-        <div
-          key={h}
-          className="absolute left-0 right-0 border-t border-border first:border-t-0"
-          style={{ top: i * HOUR_HEIGHT }}
-        />
+    <div className="relative border-l border-border">
+      {/* Each hour cell renders as its own div so the per-cell
+          edit / delete icons have a stable anchor in the layout. */}
+      {hours.map((h) => (
+        <HourCell key={h} hour={h} />
       ))}
 
-      {/* Appointment blocks scoped to this grid's hour range. */}
+      {/* Appointment blocks overlay — absolutely positioned by their
+          start time + duration so they layer on top of the cells. */}
       {appointments.map((a) => (
         <AppointmentBlock
           key={a.id}
@@ -354,6 +344,48 @@ function DayColumn({
           onSelect={onSelect}
         />
       ))}
+    </div>
+  );
+}
+
+function HourCell({ hour }: { hour: number }) {
+  // Pencil + trash icons sit in the bottom-right corner of every
+  // cell. Both currently fire a placeholder toast — wire them up to
+  // a real "create appointment" / "block this slot" flow when the
+  // booking + availability surfaces are ready.
+  return (
+    <div
+      style={{
+        height: HOUR_HEIGHT,
+        backgroundImage:
+          "repeating-linear-gradient(45deg, transparent 0 6px, rgba(0,0,0,0.025) 6px 7px)",
+      }}
+      className="relative border-t border-border first:border-t-0 group"
+    >
+      <div className="absolute bottom-1 right-1 flex items-center gap-1 opacity-50 group-hover:opacity-100 transition-opacity">
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            toast.info(`Add appointment at ${hourLabel(hour)}`);
+          }}
+          aria-label={`Add appointment at ${hourLabel(hour)}`}
+          className="w-5 h-5 rounded-sm bg-background/85 hover:bg-background flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+        >
+          <Edit2 className="w-3 h-3" />
+        </button>
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            toast.info(`Block ${hourLabel(hour)} slot`);
+          }}
+          aria-label={`Block ${hourLabel(hour)} slot`}
+          className="w-5 h-5 rounded-sm bg-background/85 hover:bg-background flex items-center justify-center text-muted-foreground hover:text-destructive transition-colors"
+        >
+          <Trash2 className="w-3 h-3" />
+        </button>
+      </div>
     </div>
   );
 }
