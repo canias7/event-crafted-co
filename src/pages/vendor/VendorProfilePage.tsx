@@ -268,6 +268,65 @@ export default function VendorProfilePage() {
       return;
     }
 
+    // Publish-readiness: hosts hate finding a listing on the directory
+    // that turns out to be a half-built shell. Block Publish until the
+    // basics + at least one entry in each support table is filled in.
+    // Plain Save / draft is unaffected.
+    if (opts?.publish && profile) {
+      const missing: string[] = [];
+      if (!businessName.trim()) missing.push("Business name");
+      if (!location.trim()) missing.push("Location");
+      if (!bio.trim()) missing.push("Short bio");
+      // Category attributes — at least one filled key in the jsonb
+      // counts. Boolean false counts as filled-in too; we only
+      // exclude null / undefined / empty string / empty array.
+      const [
+        attrsRes,
+        portfolioCountRes,
+        teamCountRes,
+      ] = await Promise.all([
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (supabase as any)
+          .from("vendor_profiles")
+          .select("category_attributes")
+          .eq("id", profile.id)
+          .maybeSingle(),
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (supabase as any)
+          .from("vendor_portfolio_images")
+          .select("id", { count: "exact", head: true })
+          .eq("vendor_id", profile.id),
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (supabase as any)
+          .from("vendor_team_bios")
+          .select("id", { count: "exact", head: true })
+          .eq("vendor_id", profile.id),
+      ]);
+      const attrs =
+        (attrsRes.data?.category_attributes as Record<string, unknown> | null) ??
+        null;
+      const hasDetails =
+        attrs &&
+        Object.values(attrs).some((v) => {
+          if (v == null) return false;
+          if (typeof v === "string") return v.trim().length > 0;
+          if (Array.isArray(v)) return v.length > 0;
+          return true;
+        });
+      if (!hasDetails) missing.push("Category details");
+      if ((portfolioCountRes.count ?? 0) === 0)
+        missing.push("At least one portfolio photo");
+      if ((teamCountRes.count ?? 0) === 0)
+        missing.push("At least one team member");
+
+      if (missing.length > 0) {
+        toast.error(`Can't publish yet — add: ${missing.join(", ")}`, {
+          duration: 6000,
+        });
+        return;
+      }
+    }
+
     const payload = {
       business_name: businessName.trim(),
       category,
