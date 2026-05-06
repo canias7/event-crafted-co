@@ -1,6 +1,12 @@
 import { lazy, Suspense, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { Loader2, ShieldCheck, Sparkles, ExternalLink } from "lucide-react";
+import {
+  Calendar as CalendarIcon,
+  ExternalLink,
+  Loader2,
+  ShieldCheck,
+  Sparkles,
+} from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -69,6 +75,8 @@ interface VendorProfile {
   intro_video_url: string | null;
   weekly_digest_enabled: boolean | null;
   slug: string | null;
+  instagram_handle: string | null;
+  tiktok_handle: string | null;
 }
 
 export default function VendorProfilePage() {
@@ -90,6 +98,8 @@ export default function VendorProfilePage() {
   const [portfolioSummary, setPortfolioSummary] = useState("");
   const [introVideoUrl, setIntroVideoUrl] = useState("");
   const [slug, setSlug] = useState("");
+  const [instagramHandle, setInstagramHandle] = useState("");
+  const [tiktokHandle, setTiktokHandle] = useState("");
 
   function applyToForm(p: VendorProfile | null) {
     setBusinessName(p?.business_name ?? "");
@@ -105,6 +115,8 @@ export default function VendorProfilePage() {
     setPortfolioSummary(p?.portfolio_summary ?? "");
     setIntroVideoUrl(p?.intro_video_url ?? "");
     setSlug(p?.slug ?? "");
+    setInstagramHandle(p?.instagram_handle ?? "");
+    setTiktokHandle(p?.tiktok_handle ?? "");
   }
 
   useEffect(() => {
@@ -119,14 +131,14 @@ export default function VendorProfilePage() {
       ? supabase
           .from("vendor_profiles")
           .select(
-            "id, business_name, category, bio, base_price_cents, location, service_radius_miles, portfolio_summary, verified_at, intro_video_url, weekly_digest_enabled, slug",
+            "id, business_name, category, bio, base_price_cents, location, service_radius_miles, portfolio_summary, verified_at, intro_video_url, weekly_digest_enabled, slug, instagram_handle, tiktok_handle",
           )
           .eq("id", membership.vendor_id)
           .maybeSingle()
       : supabase
           .from("vendor_profiles")
           .select(
-            "id, business_name, category, bio, base_price_cents, location, service_radius_miles, portfolio_summary, verified_at, intro_video_url, weekly_digest_enabled, slug",
+            "id, business_name, category, bio, base_price_cents, location, service_radius_miles, portfolio_summary, verified_at, intro_video_url, weekly_digest_enabled, slug, instagram_handle, tiktok_handle",
           )
           .eq("user_id", user.id)
           .maybeSingle();
@@ -177,6 +189,10 @@ export default function VendorProfilePage() {
               .replace(/[^a-z0-9]+/g, "-")
               .replace(/^-+|-+$/g, "") || null
           : null,
+      // Social handles are stored without the leading "@" so the
+      // public SocialEmbedCard can compose URLs cleanly.
+      instagram_handle: instagramHandle.trim().replace(/^@+/, "") || null,
+      tiktok_handle: tiktokHandle.trim().replace(/^@+/, "") || null,
     };
 
     if (profile) {
@@ -205,7 +221,7 @@ export default function VendorProfilePage() {
         .from("vendor_profiles")
         .insert({ user_id: user.id, ...payload })
         .select(
-          "id, business_name, category, bio, base_price_cents, location, service_radius_miles, portfolio_summary, verified_at, intro_video_url, weekly_digest_enabled, slug",
+          "id, business_name, category, bio, base_price_cents, location, service_radius_miles, portfolio_summary, verified_at, intro_video_url, weekly_digest_enabled, slug, instagram_handle, tiktok_handle",
         )
         .single();
       setCreating(false);
@@ -390,6 +406,38 @@ export default function VendorProfilePage() {
                 </p>
               </div>
 
+              {/* Social handles — render as the Contact / Socials row in
+                  the public sidebar via SocialEmbedCard. Stored without
+                  the leading "@" so URL composition stays clean. */}
+              <div className="grid sm:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="instagram-handle">Instagram handle</Label>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-muted-foreground tnum">@</span>
+                    <Input
+                      id="instagram-handle"
+                      value={instagramHandle}
+                      onChange={(e) => setInstagramHandle(e.target.value)}
+                      placeholder="yourstudio"
+                      className="h-11 flex-1"
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="tiktok-handle">TikTok handle</Label>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-muted-foreground tnum">@</span>
+                    <Input
+                      id="tiktok-handle"
+                      value={tiktokHandle}
+                      onChange={(e) => setTiktokHandle(e.target.value)}
+                      placeholder="yourstudio"
+                      className="h-11 flex-1"
+                    />
+                  </div>
+                </div>
+              </div>
+
               <div className="space-y-2">
                 <Label htmlFor="slug">Public URL slug</Label>
                 <div className="flex items-center gap-2">
@@ -507,6 +555,11 @@ export default function VendorProfilePage() {
                   <VendorTeamManager vendorId={profile.id} />
                 </div>
               )}
+              {canEdit && (
+                <div className="mt-12 pt-10 border-t border-border">
+                  <AvailabilityLinkCard />
+                </div>
+              )}
               <div className="mt-12 pt-10 border-t border-border">
                 <VendorRecommendationManager
                   vendorId={profile.id}
@@ -577,6 +630,32 @@ export default function VendorProfilePage() {
       </main>
 
       <MobileNav items={navItems} />
+    </div>
+  );
+}
+
+// Small callout that points vendors to the dedicated availability
+// editor (lives at /vendor/availability — full Calendar with
+// recurring rules + one-off blocks). Mounted inline on the profile
+// editor so the "Availability" section on the public profile has a
+// clear hand-off from this single dashboard view.
+function AvailabilityLinkCard() {
+  return (
+    <div>
+      <p className="font-label text-muted-foreground inline-flex items-center gap-1.5">
+        <CalendarIcon className="w-3 h-3" />
+        Availability
+      </p>
+      <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+        Block specific dates, set recurring weekly availability, and
+        manage buffer times around appointments.
+      </p>
+      <Link to="/vendor/availability" className="inline-block mt-4">
+        <Button variant="outline" size="sm" className="rounded-full">
+          <CalendarIcon className="w-3.5 h-3.5 mr-1.5" />
+          Open availability calendar
+        </Button>
+      </Link>
     </div>
   );
 }
