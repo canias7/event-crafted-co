@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import {
   Calendar as CalendarIcon,
@@ -21,20 +21,6 @@ import { VendorTeamManager } from "@/components/vendor/VendorTeamManager";
 import { VendorPolicyEditor } from "@/components/vendor/VendorPolicyEditor";
 import { ShowcaseClipsManager } from "@/components/vendor/ShowcaseClipsManager";
 import { VerificationManager } from "@/components/vendor/VerificationManager";
-// Lazy: both managers are below the fold and load their own data on
-// mount. Splitting them keeps the initial profile page chunk lean —
-// the user scrolls before they see either, so the fetch happens
-// during their scroll rather than blocking first paint.
-const RealEventsManager = lazy(() =>
-  import("@/components/vendor/RealEventsManager").then((m) => ({
-    default: m.RealEventsManager,
-  })),
-);
-const AlbumManager = lazy(() =>
-  import("@/components/vendor/AlbumManager").then((m) => ({
-    default: m.AlbumManager,
-  })),
-);
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -616,22 +602,6 @@ export default function VendorProfilePage() {
                   vendorId={profile.id}
                   canEdit={canEdit}
                 />
-              </div>
-              <div className="mt-12 pt-10 border-t border-border">
-                <Suspense fallback={null}>
-                  <RealEventsManager
-                    vendorId={profile.id}
-                    canEdit={canEdit}
-                  />
-                </Suspense>
-              </div>
-              <div className="mt-12 pt-10 border-t border-border">
-                <Suspense fallback={null}>
-                  <AlbumManager
-                    vendorId={profile.id}
-                    canEdit={canEdit}
-                  />
-                </Suspense>
               </div>
             </>
           )}
