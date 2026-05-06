@@ -51,34 +51,6 @@ export interface CategorySchema {
 const VENUES_SCHEMA: CategorySchema = {
   sections: [
     {
-      name: "Pricing",
-      fields: [
-        {
-          type: "currency",
-          key: "reception_starting_cents",
-          label: "Reception starting price",
-          help: "What the cheapest reception package costs.",
-        },
-        {
-          type: "currency",
-          key: "ceremony_starting_cents",
-          label: "Ceremony starting price",
-        },
-        {
-          type: "currency",
-          key: "bar_services_per_person_cents",
-          label: "Bar service per person",
-          help: "Leave blank if you don't offer bar packages.",
-        },
-        {
-          type: "currency",
-          key: "couples_typical_spend_cents",
-          label: "Hosts typically spend",
-          help: "All-in average — used to set host expectations.",
-        },
-      ],
-    },
-    {
       name: "Capacity",
       fields: [
         {
@@ -221,30 +193,6 @@ const VENUES_SCHEMA: CategorySchema = {
 // ─────────────────────────────────────────────────────────────────────────
 const FOOD_BEVERAGE_SCHEMA: CategorySchema = {
   sections: [
-    {
-      name: "Pricing",
-      fields: [
-        {
-          type: "currency",
-          key: "per_person_starting_cents",
-          label: "Per-person starting price",
-          help: "Leave blank if you bill flat instead of per-head.",
-        },
-        {
-          type: "currency",
-          key: "event_minimum_cents",
-          label: "Event minimum",
-          help: "Smallest booking you'll quote.",
-        },
-        {
-          type: "currency",
-          key: "hourly_rate_cents",
-          label: "Hourly rate",
-          help: "Per bartender / attendant (Bartending only).",
-          // Mainly for bartenders; safe for cake/food-truck if they bill hourly.
-        },
-      ],
-    },
     {
       name: "Capacity",
       fields: [
@@ -488,28 +436,6 @@ const FOOD_BEVERAGE_SCHEMA: CategorySchema = {
 // ─────────────────────────────────────────────────────────────────────────
 const ENTERTAINMENT_SCHEMA: CategorySchema = {
   sections: [
-    {
-      name: "Pricing",
-      fields: [
-        {
-          type: "currency",
-          key: "package_starting_cents",
-          label: "Starting package price",
-        },
-        {
-          type: "currency",
-          key: "hourly_rate_cents",
-          label: "Hourly rate",
-          help: "If you bill hourly instead of by package.",
-        },
-        {
-          type: "int",
-          key: "travel_fee_starts_at_miles",
-          label: "Travel fee kicks in after",
-          suffix: "miles",
-        },
-      ],
-    },
     {
       name: "Coverage",
       fields: [
@@ -756,28 +682,6 @@ const ENTERTAINMENT_SCHEMA: CategorySchema = {
 const MEDIA_SCHEMA: CategorySchema = {
   sections: [
     {
-      name: "Pricing",
-      fields: [
-        {
-          type: "currency",
-          key: "package_starting_cents",
-          label: "Starting package price",
-        },
-        {
-          type: "currency",
-          key: "engagement_shoot_starting_cents",
-          label: "Engagement / pre-event shoot",
-          help: "Leave blank if always included or not offered.",
-        },
-        {
-          type: "int",
-          key: "travel_fee_starts_at_miles",
-          label: "Travel fee kicks in after",
-          suffix: "miles",
-        },
-      ],
-    },
-    {
       name: "Coverage",
       onlySubs: ["Photography", "Videography"],
       fields: [
@@ -997,28 +901,6 @@ const MEDIA_SCHEMA: CategorySchema = {
 // ─────────────────────────────────────────────────────────────────────────
 const DESIGN_DECOR_SCHEMA: CategorySchema = {
   sections: [
-    {
-      name: "Pricing",
-      fields: [
-        {
-          type: "currency",
-          key: "package_starting_cents",
-          label: "Starting package / fee",
-        },
-        {
-          type: "currency",
-          key: "minimum_order_cents",
-          label: "Order minimum",
-          help: "For Florists / Decor Rentals — leave blank if no minimum.",
-        },
-        {
-          type: "currency",
-          key: "trial_cost_cents",
-          label: "Trial session price",
-          help: "Beauty / Grooming only — leave blank if always included.",
-        },
-      ],
-    },
     {
       name: "Event coordination",
       onlySubs: ["Event Coordinators"],
@@ -1261,22 +1143,6 @@ const DESIGN_DECOR_SCHEMA: CategorySchema = {
 // ─────────────────────────────────────────────────────────────────────────
 const RENTALS_SCHEMA: CategorySchema = {
   sections: [
-    {
-      name: "Pricing",
-      fields: [
-        {
-          type: "currency",
-          key: "order_minimum_cents",
-          label: "Order minimum",
-        },
-        {
-          type: "currency",
-          key: "delivery_starting_cents",
-          label: "Delivery starting price",
-          help: "Within metro — outside metro quoted separately.",
-        },
-      ],
-    },
     {
       name: "Inventory",
       fields: [
@@ -1536,27 +1402,6 @@ const RENTALS_SCHEMA: CategorySchema = {
 const EXPERIENCES_SCHEMA: CategorySchema = {
   sections: [
     {
-      name: "Pricing",
-      fields: [
-        {
-          type: "currency",
-          key: "per_person_starting_cents",
-          label: "Per-person starting price",
-        },
-        {
-          type: "currency",
-          key: "event_minimum_cents",
-          label: "Event minimum",
-        },
-        {
-          type: "int",
-          key: "min_guest_count",
-          label: "Minimum guest count",
-          suffix: "guests",
-        },
-      ],
-    },
-    {
       name: "Tasting types",
       onlySubs: ["Tastings"],
       fields: [
@@ -1689,29 +1534,6 @@ const EXPERIENCES_SCHEMA: CategorySchema = {
 // ─────────────────────────────────────────────────────────────────────────
 const CORPORATE_SERVICES_SCHEMA: CategorySchema = {
   sections: [
-    {
-      name: "Pricing",
-      fields: [
-        {
-          type: "currency",
-          key: "hourly_rate_cents",
-          label: "Hourly rate",
-          help: "Per-staff or per-attendant.",
-        },
-        {
-          type: "currency",
-          key: "package_starting_cents",
-          label: "Starting package / day-rate",
-          help: "Speakers / Hosts often quote a flat fee.",
-        },
-        {
-          type: "int",
-          key: "min_booking_hours",
-          label: "Minimum booking",
-          suffix: "hrs",
-        },
-      ],
-    },
     {
       name: "Staffing",
       onlySubs: ["Staffing"],
