@@ -420,16 +420,30 @@ export default function VendorProfilePage() {
                     return;
                   }
                   setDeleting(true);
-                  const { error } = await supabase
+                  // Chain .select() so we can verify the row was actually
+                  // removed. Without a DELETE RLS policy, Supabase returns
+                  // a successful response with zero rows affected — the
+                  // UI would clear the form but the row would still be in
+                  // the directory on next reload. .select() lets us turn
+                  // that silent failure into a real, actionable toast.
+                  const { data, error } = await supabase
                     .from("vendor_profiles")
                     .delete()
-                    .eq("id", profile.id);
+                    .eq("id", profile.id)
+                    .select("id");
                   setDeleting(false);
                   if (error) {
                     toast.error(error.message);
                     return;
                   }
+                  if (!data || data.length === 0) {
+                    toast.error(
+                      "Couldn't delete the listing — your account may not have permission. Refresh the page and try again, or contact support if the issue persists.",
+                    );
+                    return;
+                  }
                   toast.success("Listing deleted");
+                  invalidateVendorsCache();
                   setProfile(null);
                   setPublishedRecently(false);
                   applyToForm(null);

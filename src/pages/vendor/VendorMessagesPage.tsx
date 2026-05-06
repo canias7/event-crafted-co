@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { Send, Loader2, MessageSquare, FileText } from "lucide-react";
+import { Send, Loader2, MessageSquare, FileText, Users } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useRealtime } from "@/lib/realtime";
@@ -17,12 +17,16 @@ import {
   uploadAttachments,
   type MessageAttachment,
 } from "@/lib/messageAttachments";
-import { SubNavTabs } from "@/components/shared/SubNavTabs";
 import { detectContactInfo } from "@/lib/contactInfoSignals";
 import { vendorNavItems as navItems } from "@/data/navItems";
-import { VENDOR_MESSAGES_HUB_TABS } from "@/data/hubTabs";
 
-interface ThreadRow {
+// Vendor messaging page — split-screen with Hosts on the left half and
+// Partners on the right half. The two columns are fully independent
+// (different tables, different active-thread query params, different
+// composers); both stay live at the same time so a vendor never has
+// to flip a tab to glance at the other inbox.
+
+interface HostThreadRow {
   id: string;
   host_id: string;
   last_message_at: string;
@@ -38,118 +42,240 @@ interface DirectMessage {
   created_at: string;
 }
 
-// Cast to any: threadsTable joins profiles via the host_id_fkey
-// relationship that types.ts doesn't include. dmsTable matches but
-// we keep them paired for symmetry.
+interface PartnerThreadRow {
+  id: string;
+  vendor_a_id: string;
+  vendor_b_id: string;
+  last_message_at: string;
+  vendor_a: { business_name: string | null; category: string | null } | null;
+  vendor_b: { business_name: string | null; category: string | null } | null;
+}
+
+interface PartnerMessage {
+  id: string;
+  sender_vendor_id: string;
+  body: string;
+  created_at: string;
+}
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-const threadsTable = () => (supabase as any).from("direct_threads");
-const dmsTable = () => supabase.from("direct_messages");
+const directThreadsTable = () => (supabase as any).from("direct_threads");
+const directMessagesTable = () => supabase.from("direct_messages");
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const partnerThreadsTable = () =>
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  (supabase as any).from("vendor_partner_threads");
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const partnerMessagesTable = () =>
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  (supabase as any).from("vendor_partner_messages");
 
 export default function VendorMessagesPage() {
   const { user, vendorMemberships } = useAuth();
   const vendorId = vendorMemberships[0]?.vendor_id ?? null;
   const [searchParams, setSearchParams] = useSearchParams();
-  const activeThreadId = searchParams.get("thread");
+  const activeHostThreadId = searchParams.get("host");
+  const activePartnerThreadId = searchParams.get("partner");
 
-  const [threads, setThreads] = useState<ThreadRow[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [messages, setMessages] = useState<DirectMessage[]>([]);
-  const [composer, setComposer] = useState("");
-  const [pendingFiles, setPendingFiles] = useState<File[]>([]);
-  const [sending, setSending] = useState(false);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+  // ─── Host threads ───
+  const [hostThreads, setHostThreads] = useState<HostThreadRow[]>([]);
+  const [hostLoading, setHostLoading] = useState(true);
+  const [hostMessages, setHostMessages] = useState<DirectMessage[]>([]);
+  const [hostComposer, setHostComposer] = useState("");
+  const [hostPendingFiles, setHostPendingFiles] = useState<File[]>([]);
+  const [hostSending, setHostSending] = useState(false);
+  const hostMessagesEndRef = useRef<HTMLDivElement>(null);
 
-  async function loadThreads() {
+  // ─── Partner threads ───
+  const [partnerThreads, setPartnerThreads] = useState<PartnerThreadRow[]>([]);
+  const [partnerLoading, setPartnerLoading] = useState(true);
+  const [partnerMessages, setPartnerMessages] = useState<PartnerMessage[]>([]);
+  const [partnerComposer, setPartnerComposer] = useState("");
+  const [partnerSending, setPartnerSending] = useState(false);
+  const partnerMessagesEndRef = useRef<HTMLDivElement>(null);
+
+  function setActive(side: "host" | "partner", threadId: string | null) {
+    const next = new URLSearchParams(searchParams);
+    if (threadId) next.set(side, threadId);
+    else next.delete(side);
+    setSearchParams(next, { replace: true });
+  }
+
+  // ─── Loaders ───
+
+  async function loadHostThreads() {
     if (!vendorId) {
-      setLoading(false);
+      setHostLoading(false);
       return;
     }
-    setLoading(true);
-    const { data } = await threadsTable()
+    setHostLoading(true);
+    const { data } = await directThreadsTable()
       .select(
         "id, host_id, last_message_at, inquiry_id, host:profiles!direct_threads_host_id_fkey(display_name)",
       )
       .eq("vendor_id", vendorId)
       .order("last_message_at", { ascending: false });
-    setThreads((data as ThreadRow[]) ?? []);
-    setLoading(false);
+    setHostThreads((data as HostThreadRow[]) ?? []);
+    setHostLoading(false);
   }
 
-  async function loadMessages(threadId: string) {
+  async function loadHostMessages(threadId: string) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data } = await (dmsTable() as any)
+    const { data } = await (directMessagesTable() as any)
       .select("id, sender_role, body, attachments, created_at")
       .eq("thread_id", threadId)
       .order("created_at", { ascending: true });
-    setMessages((data as DirectMessage[]) ?? []);
+    setHostMessages((data as DirectMessage[]) ?? []);
     setTimeout(() => {
-      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+      hostMessagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }, 50);
+  }
+
+  async function loadPartnerThreads() {
+    if (!vendorId) {
+      setPartnerLoading(false);
+      return;
+    }
+    setPartnerLoading(true);
+    const { data } = await partnerThreadsTable()
+      .select(
+        "id, vendor_a_id, vendor_b_id, last_message_at, vendor_a:vendor_profiles!vendor_partner_threads_vendor_a_id_fkey(business_name, category), vendor_b:vendor_profiles!vendor_partner_threads_vendor_b_id_fkey(business_name, category)",
+      )
+      .or(`vendor_a_id.eq.${vendorId},vendor_b_id.eq.${vendorId}`)
+      .order("last_message_at", { ascending: false });
+    setPartnerThreads((data as PartnerThreadRow[]) ?? []);
+    setPartnerLoading(false);
+  }
+
+  async function loadPartnerMessages(threadId: string) {
+    const { data } = await partnerMessagesTable()
+      .select("id, sender_vendor_id, body, created_at")
+      .eq("thread_id", threadId)
+      .order("created_at", { ascending: true });
+    setPartnerMessages((data as PartnerMessage[]) ?? []);
+    setTimeout(() => {
+      partnerMessagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }, 50);
   }
 
   useEffect(() => {
-    loadThreads();
+    loadHostThreads();
+    loadPartnerThreads();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [vendorId]);
 
   useEffect(() => {
-    if (activeThreadId) {
-      loadMessages(activeThreadId);
-    } else {
-      setMessages([]);
-    }
-  }, [activeThreadId]);
+    if (activeHostThreadId) loadHostMessages(activeHostThreadId);
+    else setHostMessages([]);
+  }, [activeHostThreadId]);
 
-  // Realtime via shared user-scoped channel.
-  const realtimeConfig = useMemo(
+  useEffect(() => {
+    if (activePartnerThreadId) loadPartnerMessages(activePartnerThreadId);
+    else setPartnerMessages([]);
+  }, [activePartnerThreadId]);
+
+  // ─── Realtime ───
+
+  const hostRealtimeConfig = useMemo(
     () =>
-      vendorId
-        ? { table: "direct_messages", event: "INSERT" as const }
-        : null,
+      vendorId ? { table: "direct_messages", event: "INSERT" as const } : null,
     [vendorId],
   );
-  useRealtime(realtimeConfig, (payload) => {
+  useRealtime(hostRealtimeConfig, (payload) => {
     const msg = payload.new as DirectMessage & { thread_id: string };
-    if (msg.thread_id === activeThreadId) loadMessages(activeThreadId);
-    loadThreads();
+    if (msg.thread_id === activeHostThreadId)
+      loadHostMessages(activeHostThreadId);
+    loadHostThreads();
   });
 
-  const activeThread = useMemo(
-    () => threads.find((t) => t.id === activeThreadId) ?? null,
-    [threads, activeThreadId],
+  const partnerRealtimeConfig = useMemo(
+    () =>
+      activePartnerThreadId
+        ? {
+            table: "vendor_partner_messages",
+            event: "INSERT" as const,
+            filter: `thread_id=eq.${activePartnerThreadId}`,
+          }
+        : null,
+    [activePartnerThreadId],
+  );
+  useRealtime(partnerRealtimeConfig, () => {
+    if (activePartnerThreadId) loadPartnerMessages(activePartnerThreadId);
+    loadPartnerThreads();
+  });
+
+  // ─── Senders ───
+
+  const activeHostThread = useMemo(
+    () => hostThreads.find((t) => t.id === activeHostThreadId) ?? null,
+    [hostThreads, activeHostThreadId],
   );
 
-  async function send() {
-    if ((!composer.trim() && pendingFiles.length === 0) || !activeThreadId || !user)
+  const activePartnerThread = useMemo(
+    () => partnerThreads.find((t) => t.id === activePartnerThreadId) ?? null,
+    [partnerThreads, activePartnerThreadId],
+  );
+
+  const otherPartnerName = useMemo(() => {
+    if (!activePartnerThread) return null;
+    return activePartnerThread.vendor_a_id === vendorId
+      ? activePartnerThread.vendor_b?.business_name
+      : activePartnerThread.vendor_a?.business_name;
+  }, [activePartnerThread, vendorId]);
+
+  async function sendHost() {
+    if (
+      (!hostComposer.trim() && hostPendingFiles.length === 0) ||
+      !activeHostThreadId ||
+      !user
+    )
       return;
-    setSending(true);
+    setHostSending(true);
     let attachments: MessageAttachment[] = [];
-    if (pendingFiles.length > 0) {
+    if (hostPendingFiles.length > 0) {
       attachments = await uploadAttachments(
-        pendingFiles,
-        activeThreadId,
+        hostPendingFiles,
+        activeHostThreadId,
         (n, m) => toast.error(`${n}: ${m}`),
       );
     }
-    const flags = detectContactInfo(composer);
+    const flags = detectContactInfo(hostComposer);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error } = await (dmsTable() as any).insert({
-      thread_id: activeThreadId,
+    const { error } = await (directMessagesTable() as any).insert({
+      thread_id: activeHostThreadId,
       sender_id: user.id,
       sender_role: "vendor",
-      body: composer.trim(),
+      body: hostComposer.trim(),
       attachments,
       contact_info_flagged: flags.any,
     });
-    setSending(false);
+    setHostSending(false);
     if (error) {
       toast.error(error.message);
       return;
     }
-    setComposer("");
-    setPendingFiles([]);
-    loadMessages(activeThreadId);
-    loadThreads();
+    setHostComposer("");
+    setHostPendingFiles([]);
+    loadHostMessages(activeHostThreadId);
+    loadHostThreads();
+  }
+
+  async function sendPartner() {
+    if (!activePartnerThreadId || !partnerComposer.trim() || !vendorId) return;
+    setPartnerSending(true);
+    const { error } = await partnerMessagesTable().insert({
+      thread_id: activePartnerThreadId,
+      sender_vendor_id: vendorId,
+      body: partnerComposer.trim(),
+    });
+    setPartnerSending(false);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    setPartnerComposer("");
+    loadPartnerMessages(activePartnerThreadId);
+    loadPartnerThreads();
   }
 
   return (
@@ -157,178 +283,374 @@ export default function VendorMessagesPage() {
       <DashboardSidebar items={navItems} title="Vendor Portal" backPath="/" />
 
       <main id="main-content" className="flex-1 pb-20 lg:pb-0">
-        <div className="border-b border-border bg-card px-4 md:px-8 py-4 sticky top-0 z-40 space-y-3">
-          <div>
-            <h1 className="font-display text-xl">Messages</h1>
-            <p className="text-sm text-muted-foreground">
-              Casual conversations · low-friction starting point before a formal inquiry
-            </p>
-          </div>
-          <SubNavTabs tabs={VENDOR_MESSAGES_HUB_TABS} />
+        <div className="border-b border-border bg-card px-4 md:px-8 py-4 sticky top-0 z-40">
+          <h1 className="font-display text-xl">Messages</h1>
+          <p className="text-sm text-muted-foreground">
+            Hosts on the left, partner vendors on the right — both inboxes live
+            at once.
+          </p>
         </div>
 
-        <div className="grid lg:grid-cols-[280px_1fr] h-[calc(100vh-65px)]">
-          <aside className="border-r border-border overflow-y-auto bg-card/30">
-            {loading ? (
-              <div className="p-4 space-y-2">
-                {[0, 1, 2].map((i) => (
-                  <Skeleton key={i} className="h-16 rounded-sm" />
-                ))}
-              </div>
-            ) : threads.length === 0 ? (
-              <div className="p-6 text-center">
-                <MessageSquare className="w-8 h-8 mx-auto text-muted-foreground/40 mb-3" />
-                <p className="text-sm font-medium mb-2">No messages yet</p>
-                <p className="text-xs text-muted-foreground leading-relaxed">
-                  Hosts can DM you directly from your profile. They'll show
-                  up here. For structured leads, check{" "}
-                  <Link to="/vendor/inbox" className="text-accent hover:underline">
+        {!vendorId ? (
+          <div className="p-12 text-center max-w-md mx-auto">
+            <p className="font-display text-xl mb-2">
+              Set up your business profile first
+            </p>
+            <p className="text-sm text-muted-foreground">
+              Messages come from your vendor profile — finish that first and
+              hosts and partner vendors can reach you here.
+            </p>
+          </div>
+        ) : (
+          <div className="grid lg:grid-cols-2 h-[calc(100vh-89px)] divide-y lg:divide-y-0 lg:divide-x divide-border">
+            {/* ── Hosts panel ── */}
+            <ConversationPanel
+              eyebrowIcon={MessageSquare}
+              eyebrowLabel="Hosts"
+              eyebrowSubtitle="Casual DMs from prospective hosts"
+              loading={hostLoading}
+              threads={hostThreads.map((t) => ({
+                id: t.id,
+                title: t.host?.display_name ?? "Anonymous host",
+                subtitle: new Date(t.last_message_at).toLocaleDateString(),
+                badge: t.inquiry_id ? "Linked to inquiry" : undefined,
+              }))}
+              activeThreadId={activeHostThreadId}
+              onSelectThread={(id) => setActive("host", id)}
+              emptyTitle="No host messages yet"
+              emptyHint={
+                <>
+                  Hosts can DM you directly from your profile. For structured
+                  leads, check{" "}
+                  <Link
+                    to="/vendor/inbox"
+                    className="text-accent hover:underline"
+                  >
                     Inbox
                   </Link>
                   .
-                </p>
-              </div>
-            ) : (
-              <ul>
-                {threads.map((t) => {
-                  const isActive = t.id === activeThreadId;
-                  return (
-                    <li key={t.id}>
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setSearchParams({ thread: t.id }, { replace: true })
-                        }
-                        className={`w-full text-left px-4 py-3 border-b border-border/50 transition-colors ${
-                          isActive
-                            ? "bg-secondary"
-                            : "hover:bg-secondary/40"
-                        }`}
+                </>
+              }
+              activeHeader={
+                activeHostThread ? (
+                  <div className="flex items-center justify-between gap-3 flex-wrap">
+                    <div className="min-w-0">
+                      <p className="font-display text-base truncate">
+                        {activeHostThread.host?.display_name ??
+                          "Anonymous host"}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {activeHostThread.inquiry_id
+                          ? "Has a structured inquiry"
+                          : "DM only — no inquiry yet"}
+                      </p>
+                    </div>
+                    {activeHostThread.inquiry_id && (
+                      <Link
+                        to={`/vendor/inbox/${activeHostThread.inquiry_id}`}
                       >
-                        <p className="text-sm font-medium truncate">
-                          {t.host?.display_name ?? "Anonymous host"}
-                        </p>
-                        <p className="text-xs text-muted-foreground truncate mt-0.5">
-                          {new Date(t.last_message_at).toLocaleDateString()}
-                        </p>
-                        {t.inquiry_id && (
-                          <p className="text-[10px] text-accent mt-1 uppercase tracking-wide">
-                            Linked to inquiry
-                          </p>
-                        )}
-                      </button>
-                    </li>
-                  );
-                })}
-              </ul>
-            )}
-          </aside>
-
-          <section className="flex flex-col min-w-0">
-            {!activeThread ? (
-              <div className="flex-1 flex items-center justify-center text-center p-6">
-                <p className="text-sm text-muted-foreground">
-                  Select a conversation.
-                </p>
-              </div>
-            ) : (
-              <>
-                <div className="border-b border-border px-6 py-3 bg-card flex items-center justify-between gap-3 flex-wrap">
-                  <div>
-                    <p className="font-display text-base">
-                      {activeThread.host?.display_name ?? "Anonymous host"}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {activeThread.inquiry_id
-                        ? "Has a structured inquiry"
-                        : "DM only — no inquiry yet"}
-                    </p>
-                  </div>
-                  {activeThread.inquiry_id && (
-                    <Link to={`/vendor/inbox/${activeThread.inquiry_id}`}>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="rounded-full h-8 text-xs"
-                      >
-                        <FileText className="w-3 h-3 mr-1" />
-                        Open inquiry
-                      </Button>
-                    </Link>
-                  )}
-                </div>
-
-                <div className="flex-1 overflow-y-auto p-6 space-y-3">
-                  {messages.length === 0 ? (
-                    <p className="text-xs text-muted-foreground text-center py-12">
-                      No messages yet.
-                    </p>
-                  ) : (
-                    messages.map((m) => {
-                      const isMe = m.sender_role === "vendor";
-                      return (
-                        <div
-                          key={m.id}
-                          className={`max-w-[80%] p-3 rounded-sm text-sm leading-relaxed whitespace-pre-wrap ${
-                            isMe
-                              ? "bg-foreground text-background ml-auto"
-                              : "bg-secondary"
-                          }`}
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="rounded-full h-8 text-xs"
                         >
-                          {m.body}
-                          {m.attachments && m.attachments.length > 0 && (
-                            <MessageAttachments attachments={m.attachments} />
-                          )}
-                        </div>
-                      );
-                    })
-                  )}
-                  <div ref={messagesEndRef} />
-                </div>
+                          <FileText className="w-3 h-3 mr-1" />
+                          Open inquiry
+                        </Button>
+                      </Link>
+                    )}
+                  </div>
+                ) : null
+              }
+            >
+              {activeHostThreadId && (
+                <>
+                  <div className="flex-1 overflow-y-auto p-4 space-y-3">
+                    {hostMessages.length === 0 ? (
+                      <p className="text-xs text-muted-foreground text-center py-12">
+                        No messages yet.
+                      </p>
+                    ) : (
+                      hostMessages.map((m) => {
+                        const isMe = m.sender_role === "vendor";
+                        return (
+                          <div
+                            key={m.id}
+                            className={`max-w-[85%] p-3 rounded-sm text-sm leading-relaxed whitespace-pre-wrap ${
+                              isMe
+                                ? "bg-foreground text-background ml-auto"
+                                : "bg-secondary"
+                            }`}
+                          >
+                            {m.body}
+                            {m.attachments && m.attachments.length > 0 && (
+                              <MessageAttachments attachments={m.attachments} />
+                            )}
+                          </div>
+                        );
+                      })
+                    )}
+                    <div ref={hostMessagesEndRef} />
+                  </div>
+                  <div className="border-t border-border p-3 space-y-2 bg-card">
+                    <ContactInfoWarning body={hostComposer} />
+                    <div className="flex items-end gap-2 flex-wrap">
+                      <AttachmentPickerButton
+                        pending={hostPendingFiles}
+                        onChange={setHostPendingFiles}
+                        disabled={hostSending}
+                      />
+                      <Textarea
+                        value={hostComposer}
+                        onChange={(e) => setHostComposer(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+                            e.preventDefault();
+                            sendHost();
+                          }
+                        }}
+                        rows={2}
+                        placeholder="Reply to host…  ⌘+Enter"
+                        className="resize-none flex-1 min-w-[160px] text-sm"
+                      />
+                      <Button
+                        onClick={sendHost}
+                        disabled={
+                          hostSending ||
+                          (!hostComposer.trim() && hostPendingFiles.length === 0)
+                        }
+                        className="rounded-full bg-foreground text-background hover:bg-foreground/90 shrink-0"
+                      >
+                        {hostSending ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <Send className="w-4 h-4" />
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+                </>
+              )}
+            </ConversationPanel>
 
-                <div className="border-t border-border p-4 space-y-2 bg-card">
-                  <ContactInfoWarning body={composer} />
-                  <div className="flex items-end gap-2 flex-wrap">
-                    <AttachmentPickerButton
-                      pending={pendingFiles}
-                      onChange={setPendingFiles}
-                      disabled={sending}
-                    />
+            {/* ── Partners panel ── */}
+            <ConversationPanel
+              eyebrowIcon={Users}
+              eyebrowLabel="Partners"
+              eyebrowSubtitle="Vendor-to-vendor coordination"
+              loading={partnerLoading}
+              threads={partnerThreads.map((t) => {
+                const other =
+                  t.vendor_a_id === vendorId ? t.vendor_b : t.vendor_a;
+                return {
+                  id: t.id,
+                  title: other?.business_name ?? "Vendor",
+                  subtitle: `${other?.category ?? ""} · ${new Date(
+                    t.last_message_at,
+                  ).toLocaleDateString()}`,
+                };
+              })}
+              activeThreadId={activePartnerThreadId}
+              onSelectThread={(id) => setActive("partner", id)}
+              emptyTitle="No partner threads yet"
+              emptyHint="Open a vendor's profile and tap Message vendor to start coordinating."
+              activeHeader={
+                activePartnerThread ? (
+                  <p className="font-display text-base truncate">
+                    {otherPartnerName ?? "Partner"}
+                  </p>
+                ) : null
+              }
+            >
+              {activePartnerThreadId && (
+                <>
+                  <div className="flex-1 overflow-y-auto p-4 space-y-3">
+                    {partnerMessages.length === 0 ? (
+                      <p className="text-xs text-muted-foreground text-center py-12">
+                        No messages yet.
+                      </p>
+                    ) : (
+                      partnerMessages.map((m) => {
+                        const fromMe = m.sender_vendor_id === vendorId;
+                        return (
+                          <div
+                            key={m.id}
+                            className={`max-w-[85%] rounded-sm px-3 py-2 text-sm leading-relaxed whitespace-pre-wrap ${
+                              fromMe
+                                ? "ml-auto bg-foreground text-background"
+                                : "bg-card border border-border"
+                            }`}
+                          >
+                            {m.body}
+                            <p
+                              className={`text-[10px] mt-1.5 tnum ${
+                                fromMe
+                                  ? "text-background/60"
+                                  : "text-muted-foreground"
+                              }`}
+                            >
+                              {new Date(m.created_at).toLocaleTimeString([], {
+                                hour: "numeric",
+                                minute: "2-digit",
+                              })}
+                            </p>
+                          </div>
+                        );
+                      })
+                    )}
+                    <div ref={partnerMessagesEndRef} />
+                  </div>
+                  <div className="border-t border-border bg-card p-3">
                     <Textarea
-                      value={composer}
-                      onChange={(e) => setComposer(e.target.value)}
+                      value={partnerComposer}
+                      onChange={(e) => setPartnerComposer(e.target.value)}
                       onKeyDown={(e) => {
                         if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
                           e.preventDefault();
-                          send();
+                          sendPartner();
                         }
                       }}
                       rows={2}
-                      placeholder="Type a reply…  (Cmd+Enter to send)"
-                      className="resize-none flex-1 min-w-[180px]"
+                      placeholder="Message partner…  ⌘+Enter"
+                      className="text-sm mb-2"
                     />
-                    <Button
-                      onClick={send}
-                      disabled={
-                        sending || (!composer.trim() && pendingFiles.length === 0)
-                      }
-                      className="rounded-full bg-foreground text-background hover:bg-foreground/90 shrink-0"
-                    >
-                      {sending ? (
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                      ) : (
-                        <Send className="w-4 h-4" />
-                      )}
-                    </Button>
+                    <div className="flex justify-end">
+                      <Button
+                        type="button"
+                        size="sm"
+                        onClick={sendPartner}
+                        disabled={partnerSending || !partnerComposer.trim()}
+                        className="rounded-full bg-foreground text-background hover:bg-foreground/90"
+                      >
+                        {partnerSending ? (
+                          <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
+                        ) : (
+                          <Send className="w-3.5 h-3.5 mr-1.5" />
+                        )}
+                        Send
+                      </Button>
+                    </div>
                   </div>
-                </div>
-              </>
-            )}
-          </section>
-        </div>
+                </>
+              )}
+            </ConversationPanel>
+          </div>
+        )}
       </main>
 
       <MobileNav items={navItems} />
+    </div>
+  );
+}
+
+interface ConversationPanelProps {
+  eyebrowIcon: typeof MessageSquare;
+  eyebrowLabel: string;
+  eyebrowSubtitle: string;
+  loading: boolean;
+  threads: Array<{
+    id: string;
+    title: string;
+    subtitle: string;
+    badge?: string;
+  }>;
+  activeThreadId: string | null;
+  onSelectThread: (id: string) => void;
+  emptyTitle: string;
+  emptyHint: React.ReactNode;
+  activeHeader?: React.ReactNode;
+  children?: React.ReactNode;
+}
+
+// Generic split-panel surface: left = threads list, right = active
+// conversation. Pure presentation — parent owns the data and the
+// composer. Same shape used for both Hosts and Partners.
+function ConversationPanel({
+  eyebrowIcon: EyebrowIcon,
+  eyebrowLabel,
+  eyebrowSubtitle,
+  loading,
+  threads,
+  activeThreadId,
+  onSelectThread,
+  emptyTitle,
+  emptyHint,
+  activeHeader,
+  children,
+}: ConversationPanelProps) {
+  return (
+    <div className="grid grid-cols-[200px_1fr] min-w-0">
+      <aside className="border-r border-border overflow-y-auto bg-card/30 min-w-0">
+        <div className="px-3 py-3 border-b border-border bg-card/50 sticky top-0">
+          <p className="font-label text-muted-foreground inline-flex items-center gap-1.5">
+            <EyebrowIcon className="w-3 h-3" />
+            {eyebrowLabel}
+          </p>
+          <p className="text-[10px] text-muted-foreground/80 mt-0.5 leading-snug">
+            {eyebrowSubtitle}
+          </p>
+        </div>
+        {loading ? (
+          <div className="p-3 space-y-2">
+            {[0, 1, 2].map((i) => (
+              <Skeleton key={i} className="h-14 rounded-sm" />
+            ))}
+          </div>
+        ) : threads.length === 0 ? (
+          <div className="p-4 text-center">
+            <p className="text-xs font-medium mb-1.5">{emptyTitle}</p>
+            <p className="text-[11px] text-muted-foreground leading-relaxed">
+              {emptyHint}
+            </p>
+          </div>
+        ) : (
+          <ul>
+            {threads.map((t) => {
+              const isActive = t.id === activeThreadId;
+              return (
+                <li key={t.id}>
+                  <button
+                    type="button"
+                    onClick={() => onSelectThread(t.id)}
+                    className={`w-full text-left px-3 py-2.5 border-b border-border/50 transition-colors ${
+                      isActive ? "bg-secondary" : "hover:bg-secondary/40"
+                    }`}
+                  >
+                    <p className="text-xs font-medium truncate">{t.title}</p>
+                    <p className="text-[10px] text-muted-foreground truncate mt-0.5">
+                      {t.subtitle}
+                    </p>
+                    {t.badge && (
+                      <p className="text-[9px] text-accent mt-1 uppercase tracking-wide">
+                        {t.badge}
+                      </p>
+                    )}
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </aside>
+
+      <section className="flex flex-col min-w-0">
+        {!activeThreadId ? (
+          <div className="flex-1 flex items-center justify-center text-center p-6">
+            <p className="text-xs text-muted-foreground">
+              Select a conversation.
+            </p>
+          </div>
+        ) : (
+          <>
+            {activeHeader && (
+              <div className="border-b border-border px-4 py-3 bg-card">
+                {activeHeader}
+              </div>
+            )}
+            {children}
+          </>
+        )}
+      </section>
     </div>
   );
 }
