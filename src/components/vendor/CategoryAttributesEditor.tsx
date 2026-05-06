@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { Loader2, ListPlus } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Loader2, Plus, ListPlus, Check } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -16,9 +16,10 @@ import {
 // vendor's category, renders one form section per schema section,
 // and saves into vendor_profiles.category_attributes jsonb.
 //
-// Renders nothing for categories without a schema (yet) — those
-// vendors just keep the global profile fields. As more categories
-// get schemas, this component picks them up automatically.
+// Style intent: Turo / Airbnb amenity grids — soft pills, tight
+// vertical rhythm, every tag field gets an inline "+" affordance for
+// custom entries (the schema's `allowCustom` flag is no longer the
+// gate — every tags field accepts vendor-typed extras now).
 
 type AttrValue = string | number | boolean | string[] | null | undefined;
 type Attrs = Record<string, AttrValue>;
@@ -103,43 +104,53 @@ export function CategoryAttributesEditor({
 
   return (
     <div>
-      <div className="mb-4">
+      <div className="mb-6">
         <p className="font-label text-muted-foreground inline-flex items-center gap-1.5">
           <ListPlus className="w-3 h-3" />
           {category} details
         </p>
-        <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
-          Fields specific to your category — these surface on your public
-          profile and let hosts filter the directory by what matters.
+        <p className="text-sm text-muted-foreground mt-1.5 leading-relaxed">
+          Tell hosts what your space and offering includes — these
+          surface on your public listing and let hosts filter the
+          directory by what matters.
         </p>
       </div>
 
       {canEdit ? (
-        <form onSubmit={save} className="space-y-6">
-          {visibleSections.map((section) => (
-            <fieldset key={section.name} className="space-y-3">
-              <legend className="text-sm font-medium mb-2">
+        <form onSubmit={save} className="space-y-10">
+          {visibleSections.map((section, idx) => (
+            <fieldset
+              key={section.name}
+              className={
+                idx === 0
+                  ? "space-y-5"
+                  : "space-y-5 pt-8 border-t border-border"
+              }
+            >
+              <legend className="font-display text-base">
                 {section.name}
               </legend>
-              {section.fields.map((field) => (
-                <FieldEditor
-                  key={field.key}
-                  field={field}
-                  value={attrs[field.key]}
-                  onChange={(v) => setField(field.key, v)}
-                  onToggleTag={(opt) => toggleTag(field.key, opt)}
-                />
-              ))}
+              <div className="space-y-6">
+                {section.fields.map((field) => (
+                  <FieldEditor
+                    key={field.key}
+                    field={field}
+                    value={attrs[field.key]}
+                    onChange={(v) => setField(field.key, v)}
+                    onToggleTag={(opt) => toggleTag(field.key, opt)}
+                  />
+                ))}
+              </div>
             </fieldset>
           ))}
-          <div className="flex justify-end pt-2">
+          <div className="flex justify-end pt-4 border-t border-border">
             <Button
               type="submit"
               disabled={saving}
               className="rounded-full bg-foreground text-background hover:bg-foreground/90"
             >
               {saving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-              Save {category.toLowerCase()} details
+              Save details
             </Button>
           </div>
         </form>
@@ -166,8 +177,10 @@ function FieldEditor({
   if (field.type === "currency") {
     const dollars = typeof value === "number" ? Math.round(value / 100) : "";
     return (
-      <div className="space-y-1.5">
-        <Label htmlFor={`f-${field.key}`}>{field.label}</Label>
+      <div className="space-y-2 max-w-sm">
+        <Label htmlFor={`f-${field.key}`} className="text-sm font-medium">
+          {field.label}
+        </Label>
         <Input
           id={`f-${field.key}`}
           type="number"
@@ -176,11 +189,10 @@ function FieldEditor({
           value={dollars}
           onChange={(e) => {
             const n = Number.parseFloat(e.target.value);
-            onChange(
-              Number.isFinite(n) ? Math.round(n * 100) : null,
-            );
+            onChange(Number.isFinite(n) ? Math.round(n * 100) : null);
           }}
           placeholder="$"
+          className="h-10"
         />
         {field.help && (
           <p className="text-xs text-muted-foreground">{field.help}</p>
@@ -191,8 +203,10 @@ function FieldEditor({
 
   if (field.type === "int") {
     return (
-      <div className="space-y-1.5">
-        <Label htmlFor={`f-${field.key}`}>{field.label}</Label>
+      <div className="space-y-2 max-w-sm">
+        <Label htmlFor={`f-${field.key}`} className="text-sm font-medium">
+          {field.label}
+        </Label>
         <div className="flex items-center gap-2">
           <Input
             id={`f-${field.key}`}
@@ -206,6 +220,7 @@ function FieldEditor({
               onChange(Number.isFinite(n) ? n : null);
             }}
             placeholder=""
+            className="h-10"
           />
           {field.suffix && (
             <span className="text-xs text-muted-foreground whitespace-nowrap">
@@ -222,13 +237,15 @@ function FieldEditor({
 
   if (field.type === "boolean") {
     return (
-      <div className="flex items-center justify-between gap-3 py-1">
+      <div className="flex items-center justify-between gap-4 py-1">
         <div className="min-w-0">
-          <Label className="text-sm font-normal cursor-pointer">
+          <Label className="text-sm font-medium cursor-pointer">
             {field.label}
           </Label>
           {field.help && (
-            <p className="text-xs text-muted-foreground mt-0.5">{field.help}</p>
+            <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+              {field.help}
+            </p>
           )}
         </div>
         <Switch
@@ -243,17 +260,21 @@ function FieldEditor({
     const selected = (value as string[] | undefined) ?? [];
     // Custom (vendor-added) entries = anything in `selected` that
     // isn't part of the preset options. Rendered with a subtle
-    // visual difference so the vendor can see what's hand-typed.
+    // accent tint so the vendor can see what's hand-typed.
     const customSelected = selected.filter(
       (s) => !field.options.includes(s),
     );
     return (
-      <div className="space-y-1.5">
-        <Label>{field.label}</Label>
-        {field.help && (
-          <p className="text-xs text-muted-foreground">{field.help}</p>
-        )}
-        <div className="flex flex-wrap gap-1.5">
+      <div className="space-y-3">
+        <div>
+          <Label className="text-sm font-medium">{field.label}</Label>
+          {field.help && (
+            <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">
+              {field.help}
+            </p>
+          )}
+        </div>
+        <div className="flex flex-wrap gap-2">
           {field.options.map((opt) => {
             const active = selected.includes(opt);
             return (
@@ -261,12 +282,14 @@ function FieldEditor({
                 key={opt}
                 type="button"
                 onClick={() => onToggleTag(opt)}
-                className={`text-xs rounded-full px-3 py-1 border transition-colors ${
+                className={`text-xs rounded-full px-3 py-1.5 border transition-all inline-flex items-center gap-1.5 ${
                   active
-                    ? "bg-foreground text-background border-foreground"
-                    : "bg-transparent text-muted-foreground border-border hover:border-foreground/30"
+                    ? "bg-accent/15 text-accent border-accent/40 hover:border-accent/60"
+                    : "bg-card text-muted-foreground border-border hover:border-foreground/40 hover:text-foreground"
                 }`}
+                aria-pressed={active}
               >
+                {active && <Check className="w-3 h-3" />}
                 {opt}
               </button>
             );
@@ -276,28 +299,32 @@ function FieldEditor({
               key={opt}
               type="button"
               onClick={() => onToggleTag(opt)}
-              className="text-xs rounded-full px-3 py-1 border bg-accent/15 text-accent border-accent/40 hover:bg-accent/25 transition-colors"
+              className="text-xs rounded-full px-3 py-1.5 border bg-accent/15 text-accent border-accent/40 hover:bg-accent/25 transition-colors inline-flex items-center gap-1.5"
               title="Custom entry — click to remove"
             >
+              <Check className="w-3 h-3" />
               {opt}
             </button>
           ))}
-        </div>
-        {field.allowCustom && (
-          <CustomTagInput
+          {/* Add-custom affordance — every tags field gets this now,
+              so vendors can list anything specific to their space
+              without us having to add an enum value to the schema. */}
+          <CustomTagButton
             onAdd={(custom) => {
               if (!selected.includes(custom)) onToggleTag(custom);
             }}
           />
-        )}
+        </div>
       </div>
     );
   }
 
   if (field.type === "select") {
     return (
-      <div className="space-y-1.5">
-        <Label htmlFor={`f-${field.key}`}>{field.label}</Label>
+      <div className="space-y-2 max-w-sm">
+        <Label htmlFor={`f-${field.key}`} className="text-sm font-medium">
+          {field.label}
+        </Label>
         <select
           id={`f-${field.key}`}
           value={typeof value === "string" ? value : ""}
@@ -321,41 +348,75 @@ function FieldEditor({
   return null;
 }
 
-// "Add other…" input for tag fields with allowCustom: true. Adds the
-// trimmed value to the parent's selected[] on Enter or button click;
-// the parent's onAdd dedupes against existing entries.
-function CustomTagInput({ onAdd }: { onAdd: (value: string) => void }) {
+// "+" pill that expands inline into a small input on click. Click ✓
+// or press Enter to commit; click outside or Esc to collapse. Sits in
+// the same flex row as the preset chips so it reads as part of the
+// pill cluster, not a separate form row.
+function CustomTagButton({ onAdd }: { onAdd: (value: string) => void }) {
+  const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState("");
-  const commit = () => {
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  function commit() {
     const trimmed = draft.trim();
-    if (!trimmed) return;
+    if (!trimmed) {
+      setEditing(false);
+      return;
+    }
     onAdd(trimmed);
     setDraft("");
-  };
+    // Stay open — vendors usually add 2-3 customs in a row.
+    inputRef.current?.focus();
+  }
+
+  if (!editing) {
+    return (
+      <button
+        type="button"
+        onClick={() => {
+          setEditing(true);
+          setTimeout(() => inputRef.current?.focus(), 0);
+        }}
+        className="text-xs rounded-full px-3 py-1.5 border border-dashed border-border bg-transparent text-muted-foreground hover:border-foreground/40 hover:text-foreground transition-colors inline-flex items-center gap-1.5"
+        aria-label="Add a custom option"
+      >
+        <Plus className="w-3 h-3" />
+        Add other
+      </button>
+    );
+  }
+
   return (
-    <div className="flex items-center gap-2 pt-2">
-      <Input
+    <span className="inline-flex items-center gap-1 rounded-full border border-foreground/40 bg-card pl-3 pr-1 py-0.5">
+      <input
+        ref={inputRef}
         value={draft}
         onChange={(e) => setDraft(e.target.value)}
         onKeyDown={(e) => {
           if (e.key === "Enter") {
             e.preventDefault();
             commit();
+          } else if (e.key === "Escape") {
+            setEditing(false);
+            setDraft("");
           }
         }}
-        placeholder="Other (add your own — press Enter)"
-        className="h-8 text-xs flex-1"
+        onBlur={() => {
+          if (!draft.trim()) setEditing(false);
+        }}
+        placeholder="Type and press Enter"
+        className="text-xs bg-transparent outline-none border-0 w-40 placeholder:text-muted-foreground/60"
       />
-      <Button
+      <button
         type="button"
-        size="sm"
-        variant="outline"
-        className="h-8 rounded-full text-xs"
+        onMouseDown={(e) => e.preventDefault()}
         onClick={commit}
         disabled={!draft.trim()}
+        className="w-6 h-6 rounded-full bg-foreground text-background flex items-center justify-center disabled:opacity-30 disabled:cursor-not-allowed"
+        aria-label="Add"
       >
-        Add
-      </Button>
-    </div>
+        <Check className="w-3 h-3" />
+      </button>
+    </span>
   );
 }
