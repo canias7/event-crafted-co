@@ -59,28 +59,28 @@ export function VendorCard({ vendor, eager = false }: VendorCardProps) {
         whileHover={{ y: -3 }}
         transition={{ type: "spring", duration: 0.4, bounce: 0 }}
       >
-        <div className="relative aspect-[4/5] overflow-hidden rounded-sm mb-4 bg-muted">
+        <div className="relative aspect-[4/3] overflow-hidden rounded-sm mb-3 bg-muted">
           <Picture
             source={imageMap[vendor.image]}
             alt={vendor.name}
             loading={eager ? "eager" : "lazy"}
-            sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
+            sizes="(min-width: 1280px) 20vw, (min-width: 1024px) 25vw, (min-width: 640px) 33vw, 50vw"
             fetchPriority={eager ? "high" : "auto"}
             className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.04]"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-foreground/55 via-transparent to-transparent" />
 
-          <div className="absolute top-3 right-3 flex flex-col gap-2">
+          <div className="absolute top-2 right-2 flex flex-col gap-1.5">
             <button
               aria-label={saved ? "Remove from saved" : "Save vendor"}
               onClick={(e) => {
                 e.preventDefault();
                 toggle(vendor.id, { isReal: vendor.isReal });
               }}
-              className="w-9 h-9 rounded-full bg-background/85 backdrop-blur-sm flex items-center justify-center hover:bg-background transition-colors"
+              className="w-7 h-7 rounded-full bg-background/85 backdrop-blur-sm flex items-center justify-center hover:bg-background transition-colors"
             >
               <Heart
-                className={`w-4 h-4 transition-colors ${
+                className={`w-3.5 h-3.5 transition-colors ${
                   saved ? "fill-accent text-accent" : "text-foreground"
                 }`}
               />
@@ -92,13 +92,13 @@ export function VendorCard({ vendor, eager = false }: VendorCardProps) {
                 e.preventDefault();
                 toggleCompare(vendor.id);
               }}
-              className={`w-9 h-9 rounded-full backdrop-blur-sm flex items-center justify-center transition-colors ${
+              className={`w-7 h-7 rounded-full backdrop-blur-sm flex items-center justify-center transition-colors ${
                 compared
                   ? "bg-foreground text-background hover:bg-foreground/90"
                   : "bg-background/85 hover:bg-background"
               }`}
             >
-              <GitCompare className="w-4 h-4" />
+              <GitCompare className="w-3.5 h-3.5" />
             </button>
           </div>
 
@@ -113,9 +113,9 @@ export function VendorCard({ vendor, eager = false }: VendorCardProps) {
             </Badge>
           ) : null}
 
-          <div className="absolute bottom-3 left-4 right-4 flex items-end justify-between text-background">
-            <p className="font-label tracking-[0.25em]">{vendor.category}</p>
-            <div className="flex items-center gap-1 text-xs">
+          <div className="absolute bottom-2 left-3 right-3 flex items-end justify-between text-background">
+            <p className="font-label tracking-[0.2em] text-[10px]">{vendor.category}</p>
+            <div className="flex items-center gap-1 text-[11px]">
               <Star className="w-3 h-3 fill-accent text-accent" />
               <span className="tnum font-medium">{vendor.rating}</span>
               <span className="text-background/70 tnum">({vendor.reviews})</span>
@@ -123,9 +123,9 @@ export function VendorCard({ vendor, eager = false }: VendorCardProps) {
           </div>
         </div>
 
-        <div className="space-y-1.5">
-          <div className="flex items-center gap-2 flex-wrap">
-            <h3 className="font-display text-lg leading-tight transition-colors group-hover:text-accent">
+        <div className="space-y-1">
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <h3 className="font-display text-base leading-tight transition-colors group-hover:text-accent">
               {vendor.name}
             </h3>
             {vendor.verifiedKinds && vendor.verifiedKinds.length > 0 && (
@@ -135,15 +135,15 @@ export function VendorCard({ vendor, eager = false }: VendorCardProps) {
               />
             )}
           </div>
-          <p className="text-sm text-muted-foreground line-clamp-1 leading-relaxed">
+          <p className="text-xs text-muted-foreground line-clamp-1 leading-snug">
             {vendor.description}
           </p>
-          <div className="flex items-center justify-between pt-1">
-            <p className="text-xs text-muted-foreground flex items-center gap-1.5">
-              <MapPin className="w-3 h-3" />
+          <div className="flex items-center justify-between pt-0.5">
+            <p className="text-[11px] text-muted-foreground flex items-center gap-1">
+              <MapPin className="w-2.5 h-2.5" />
               {vendor.location ?? vendor.distance}
             </p>
-            <p className="text-sm tnum font-medium">
+            <p className="text-xs tnum font-medium">
               From ${vendor.startingPrice.toLocaleString()}
             </p>
           </div>

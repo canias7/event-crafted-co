@@ -189,17 +189,17 @@ export default function VendorCityPage() {
             </p>
           </div>
           {loading && inCity.length === 0 ? (
-            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-12">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-x-4 gap-y-8">
               {[0, 1, 2].map((i) => (
                 <div key={i}>
-                  <Skeleton className="aspect-[4/5] w-full rounded-sm mb-4" />
+                  <Skeleton className="aspect-[4/3] w-full rounded-sm mb-3" />
                   <Skeleton className="h-5 w-2/3 mb-2" />
                   <Skeleton className="h-4 w-full" />
                 </div>
               ))}
             </div>
           ) : (
-            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-12">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-x-4 gap-y-8">
               {inCity.map((v, i) => (
                 <VendorCard key={v.id} vendor={v} eager={i < 6} />
               ))}

@@ -457,17 +457,17 @@ export default function VendorBrowsePage() {
           </div>
 
           {vendors.length === 0 && loading ? (
-            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-14">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-x-4 gap-y-8">
               {Array.from({ length: 6 }).map((_, i) => (
                 <div key={i}>
-                  <Skeleton className="aspect-[4/5] w-full rounded-sm mb-4" />
+                  <Skeleton className="aspect-[4/3] w-full rounded-sm mb-3" />
                   <Skeleton className="h-5 w-2/3 mb-2" />
                   <Skeleton className="h-4 w-full" />
                 </div>
               ))}
             </div>
           ) : filtered.length > 0 ? (
-            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-14">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-x-4 gap-y-8">
               {filtered.map((vendor, i) => (
                 <motion.div
                   key={vendor.id}
