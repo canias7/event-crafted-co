@@ -6,6 +6,7 @@ import {
   Loader2,
   Sparkles,
   Upload,
+  Wand2,
   X,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -14,6 +15,7 @@ import { MobileNav } from "@/components/shared/MobileNav";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { vendorNavItems as navItems } from "@/data/navItems";
+import ImageEditorDemo from "@/components/vendor/ImageEditorDemo";
 
 // Studio — image-editing surface. Two square canvases with a prompt
 // in between: left = user-uploaded source image, right = the model's
@@ -85,8 +87,28 @@ export default function VendorStudioPage() {
           </p>
         </div>
 
-        <div className="p-4 md:p-8 max-w-6xl">
-          <div className="grid grid-cols-1 lg:grid-cols-[1fr_280px_1fr] gap-4 items-stretch">
+        <div className="p-4 md:p-8 max-w-6xl space-y-6">
+          {/* Image editor section header — anchors the page so the
+              vendor knows what surface they're on; matches the
+              section-header pattern the rest of the listing builder
+              uses. */}
+          <div className="flex items-start gap-3">
+            <div className="w-9 h-9 rounded-md bg-accent/10 text-accent flex items-center justify-center shrink-0">
+              <Wand2 className="w-4 h-4" />
+            </div>
+            <div>
+              <h2 className="font-display text-lg leading-tight">
+                Image editor
+              </h2>
+              <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">
+                Upload a photo, describe the edit, and the result lands on
+                the right. Watch the demo video to see it end-to-end.
+              </p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_320px] gap-4 items-start">
+            <div className="grid grid-cols-1 sm:grid-cols-[1fr_240px_1fr] gap-3 items-stretch">
             {/* Source — left square */}
             <ImagePanel
               eyebrow={t("studio.source_label")}
@@ -212,6 +234,15 @@ export default function VendorStudioPage() {
                 />
               )}
             </ImagePanel>
+            </div>
+
+            {/* Right column — animated walkthrough showing the editor
+                end-to-end so a vendor can preview the flow before
+                committing their own photo. Self-contained styles +
+                a synthetic cursor; restarts on a loop. */}
+            <div className="hidden xl:block sticky top-20">
+              <ImageEditorDemo />
+            </div>
           </div>
         </div>
       </main>
@@ -235,7 +266,7 @@ function ImagePanel({
       <div className="px-4 py-2 border-b border-border bg-card/50">
         <p className="font-label text-muted-foreground">{eyebrow}</p>
       </div>
-      <div className="relative aspect-square bg-secondary/30">
+      <div className="relative aspect-[4/3] bg-secondary/30">
         {empty}
         {children}
       </div>
