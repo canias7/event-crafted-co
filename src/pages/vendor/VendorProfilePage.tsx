@@ -146,7 +146,10 @@ export default function VendorProfilePage() {
     };
   }, [user, membership?.vendor_id]);
 
-  async function handleSave(e: React.FormEvent) {
+  async function handleSave(
+    e: React.FormEvent,
+    opts?: { publish?: boolean },
+  ) {
     e.preventDefault();
     if (!user) return;
     if (!businessName.trim() || !category) {
@@ -195,7 +198,7 @@ export default function VendorProfilePage() {
         toast.error(error.message);
         return;
       }
-      toast.success("Profile saved");
+      toast.success(opts?.publish ? "Listing published" : "Profile saved");
       setProfile({ ...profile, ...payload });
       // Re-geocode if location changed. Fire-and-forget — failure to
       // geocode shouldn't block the save toast.
@@ -263,6 +266,28 @@ export default function VendorProfilePage() {
                     Preview
                   </Button>
                 </Link>
+              )}
+              {/* Publish — Listing tab only. Submits the same payload
+                  as the form's Save button, but with "publish" toast
+                  messaging so the affordance reads as the moment the
+                  listing goes live to hosts. */}
+              {isListing && profile && canEdit && (
+                <Button
+                  size="sm"
+                  className="rounded-full h-8 bg-foreground text-background hover:bg-foreground/90"
+                  disabled={saving || creating}
+                  onClick={() =>
+                    handleSave(
+                      { preventDefault: () => {} } as React.FormEvent,
+                      { publish: true },
+                    )
+                  }
+                >
+                  {(saving || creating) && (
+                    <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
+                  )}
+                  Publish
+                </Button>
               )}
             </div>
           </div>
