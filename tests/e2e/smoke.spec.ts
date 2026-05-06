@@ -12,7 +12,7 @@ const publicRoutes = [
   { path: "/vendors/locations", contains: "VENDORS BY LOCATION" },
   { path: "/vendors/quiz", contains: "VENDOR MATCH" },
   { path: "/vendors/map", contains: "VENDOR MAP" },
-  { path: "/vendors/category/photographers", contains: "Photographers" },
+  { path: "/vendors/category/media", contains: "Media" },
   // Auth
   { path: "/vendor-apply", contains: "Become a" },
   { path: "/login", contains: "Sign in" },
