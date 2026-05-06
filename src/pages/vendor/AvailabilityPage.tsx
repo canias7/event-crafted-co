@@ -198,62 +198,6 @@ export default function AvailabilityPage() {
                 </p>
               </div>
 
-              {/* Synced busy from connected calendar */}
-              <div className="rounded-sm border border-border bg-card p-5">
-                <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
-                  <p className="font-label text-muted-foreground inline-flex items-center gap-2">
-                    <CalendarSync className="w-3.5 h-3.5" />
-                    Synced from your calendar ({busyEvents.length})
-                  </p>
-                  <Link
-                    to="/settings"
-                    className="text-xs text-accent hover:underline"
-                  >
-                    Manage connections
-                  </Link>
-                </div>
-                {busyEvents.length === 0 ? (
-                  <p className="text-sm text-muted-foreground text-center py-4 leading-relaxed">
-                    No synced busy times. Connect Google Calendar in
-                    Settings to auto-block dates from your personal
-                    schedule.
-                  </p>
-                ) : (
-                  <ul className="space-y-2 max-h-72 overflow-y-auto pr-1">
-                    {busyEvents.slice(0, 50).map((e) => {
-                      const start = new Date(e.starts_at);
-                      const end = new Date(e.ends_at);
-                      return (
-                        <li
-                          key={e.external_event_id}
-                          className="flex items-start justify-between gap-3 py-2 border-b border-border/50 last:border-b-0"
-                        >
-                          <div className="min-w-0">
-                            <p className="text-sm leading-tight truncate">
-                              {e.summary ?? "(untitled event)"}
-                            </p>
-                            <p className="text-[11px] text-muted-foreground tnum mt-0.5">
-                              {start.toLocaleDateString()}
-                              {!e.is_all_day &&
-                                ` · ${start.toLocaleTimeString([], {
-                                  hour: "numeric",
-                                  minute: "2-digit",
-                                })} – ${end.toLocaleTimeString([], {
-                                  hour: "numeric",
-                                  minute: "2-digit",
-                                })}`}
-                            </p>
-                          </div>
-                          <span className="text-[10px] uppercase tracking-wide text-accent shrink-0 mt-1">
-                            Busy
-                          </span>
-                        </li>
-                      );
-                    })}
-                  </ul>
-                )}
-              </div>
-
               <div className="rounded-sm border border-border bg-card p-5">
                 <p className="font-label text-muted-foreground mb-3">
                   Blocked dates ({upcoming.length})
