@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
@@ -16,7 +16,15 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { VendorPerformanceCharts } from "@/components/vendor/VendorPerformanceCharts";
+// Recharts is heavy (~150kB parsed) — defer the chart panel into its
+// own chunk so the dashboard's first paint (header + KPI strip +
+// recent inquiries) doesn't have to wait for the visualisation
+// library to download or parse. Mobile feels noticeably snappier.
+const VendorPerformanceCharts = lazy(() =>
+  import("@/components/vendor/VendorPerformanceCharts").then((m) => ({
+    default: m.VendorPerformanceCharts,
+  })),
+);
 import { Skeleton } from "@/components/ui/skeleton";
 import { DashboardSidebar } from "@/components/shared/DashboardSidebar";
 import { MobileNav } from "@/components/shared/MobileNav";
@@ -312,11 +320,27 @@ export default function VendorDashboard() {
               the older flat tile grid; same numbers, way more
               scannable at a glance. */}
           {vendorProfile && (
-            <VendorPerformanceCharts
-              inquiries={allInquiries}
-              ratings={ratings}
-              views={viewRows}
-            />
+            <Suspense
+              fallback={
+                <div className="space-y-2 md:space-y-3">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                    <Skeleton className="h-[140px] md:h-[180px] rounded-sm" />
+                    <Skeleton className="h-[140px] md:h-[180px] rounded-sm" />
+                    <Skeleton className="h-[140px] md:h-[180px] rounded-sm" />
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <Skeleton className="h-[140px] md:h-[180px] rounded-sm" />
+                    <Skeleton className="h-[140px] md:h-[180px] rounded-sm" />
+                  </div>
+                </div>
+              }
+            >
+              <VendorPerformanceCharts
+                inquiries={allInquiries}
+                ratings={ratings}
+                views={viewRows}
+              />
+            </Suspense>
           )}
 
           {/* Recent inquiries — Instagram-style edge-to-edge feed
