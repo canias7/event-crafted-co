@@ -82,6 +82,8 @@ import { VendorServiceAreaMap } from "@/components/vendor/VendorServiceAreaMap";
 import { CategoryAttributesDisplay } from "@/components/vendor/CategoryAttributesDisplay";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Picture, type PictureSource } from "@/components/shared/Picture";
+import { VendorTeamPublic } from "@/components/vendor/VendorTeamPublic";
+import { VendorAvailabilityPublic } from "@/components/vendor/VendorAvailabilityPublic";
 
 const imageMap: Record<string, PictureSource> = {
   "vendor-photographer": vendorPhotographer,
@@ -851,6 +853,13 @@ export default function VendorDetailPage() {
 
               {/* Multi-vendor bundles — only for real DB vendors. */}
               {vendor.isReal && <VendorBundlesPublic vendorId={vendor.id} />}
+
+              {/* Team — owner + staff cards. Renders nothing when empty. */}
+              {vendor.isReal && <VendorTeamPublic vendorId={vendor.id} />}
+
+              {/* Availability — Turo/Airbnb-style calendar with
+                  blocked dates struck through. */}
+              {vendor.isReal && <VendorAvailabilityPublic vendorId={vendor.id} />}
 
               {/* Service area coverage map */}
               {vendor.isReal && (
