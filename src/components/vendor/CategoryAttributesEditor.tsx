@@ -241,6 +241,12 @@ function FieldEditor({
 
   if (field.type === "tags") {
     const selected = (value as string[] | undefined) ?? [];
+    // Custom (vendor-added) entries = anything in `selected` that
+    // isn't part of the preset options. Rendered with a subtle
+    // visual difference so the vendor can see what's hand-typed.
+    const customSelected = selected.filter(
+      (s) => !field.options.includes(s),
+    );
     return (
       <div className="space-y-1.5">
         <Label>{field.label}</Label>
@@ -265,7 +271,25 @@ function FieldEditor({
               </button>
             );
           })}
+          {customSelected.map((opt) => (
+            <button
+              key={opt}
+              type="button"
+              onClick={() => onToggleTag(opt)}
+              className="text-xs rounded-full px-3 py-1 border bg-accent/15 text-accent border-accent/40 hover:bg-accent/25 transition-colors"
+              title="Custom entry — click to remove"
+            >
+              {opt}
+            </button>
+          ))}
         </div>
+        {field.allowCustom && (
+          <CustomTagInput
+            onAdd={(custom) => {
+              if (!selected.includes(custom)) onToggleTag(custom);
+            }}
+          />
+        )}
       </div>
     );
   }
@@ -295,4 +319,43 @@ function FieldEditor({
   }
 
   return null;
+}
+
+// "Add other…" input for tag fields with allowCustom: true. Adds the
+// trimmed value to the parent's selected[] on Enter or button click;
+// the parent's onAdd dedupes against existing entries.
+function CustomTagInput({ onAdd }: { onAdd: (value: string) => void }) {
+  const [draft, setDraft] = useState("");
+  const commit = () => {
+    const trimmed = draft.trim();
+    if (!trimmed) return;
+    onAdd(trimmed);
+    setDraft("");
+  };
+  return (
+    <div className="flex items-center gap-2 pt-2">
+      <Input
+        value={draft}
+        onChange={(e) => setDraft(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") {
+            e.preventDefault();
+            commit();
+          }
+        }}
+        placeholder="Other (add your own — press Enter)"
+        className="h-8 text-xs flex-1"
+      />
+      <Button
+        type="button"
+        size="sm"
+        variant="outline"
+        className="h-8 rounded-full text-xs"
+        onClick={commit}
+        disabled={!draft.trim()}
+      >
+        Add
+      </Button>
+    </div>
+  );
 }
