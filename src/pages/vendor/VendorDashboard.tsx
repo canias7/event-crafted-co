@@ -9,8 +9,8 @@ import {
   ShieldCheck,
   Clock,
   CheckCircle2,
-  ExternalLink,
   AlertCircle,
+  type LucideIcon,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -20,9 +20,7 @@ import { VendorPerformanceCharts } from "@/components/vendor/VendorPerformanceCh
 import { Skeleton } from "@/components/ui/skeleton";
 import { DashboardSidebar } from "@/components/shared/DashboardSidebar";
 import { MobileNav } from "@/components/shared/MobileNav";
-import { StatCard } from "@/components/shared/StatCard";
 import { vendorNavItems as navItems } from "@/data/navItems";
-import { formatCents } from "@/lib/format";
 
 interface VendorProfile {
   id: string;
@@ -68,8 +66,32 @@ const statusLabel: Record<string, string> = {
   expired: "Expired",
 };
 
-function fmtMoney(c: number | null) {
-  return formatCents(c);
+function KpiCell({
+  label,
+  value,
+  icon: Icon,
+  accent,
+}: {
+  label: string;
+  value: number;
+  icon: LucideIcon;
+  accent?: boolean;
+}) {
+  return (
+    <div className="px-4 py-3 flex items-center justify-between gap-3">
+      <div className="min-w-0">
+        <p className="font-label text-muted-foreground truncate">{label}</p>
+        <p className="font-display text-2xl tnum mt-0.5">{value}</p>
+      </div>
+      <div
+        className={`w-7 h-7 rounded-md flex items-center justify-center shrink-0 ${
+          accent ? "bg-accent/10 text-accent" : "bg-secondary text-muted-foreground"
+        }`}
+      >
+        <Icon className="w-3.5 h-3.5" />
+      </div>
+    </div>
+  );
 }
 
 export default function VendorDashboard() {
@@ -188,23 +210,11 @@ export default function VendorDashboard() {
             </p>
           </div>
           <div className="flex items-center gap-2">
-            {vendorProfile?.verified_at ? (
+            {vendorProfile?.verified_at && (
               <Badge className="bg-accent/15 text-accent border border-accent/30 hidden sm:flex">
                 <ShieldCheck className="w-3.5 h-3.5 mr-1.5" />
                 Verified
               </Badge>
-            ) : vendorProfile ? (
-              <Badge variant="outline" className="hidden sm:flex">
-                Pending review
-              </Badge>
-            ) : null}
-            {vendorProfile && (
-              <Link to={`/vendors/${vendorProfile.id}`} target="_blank">
-                <Button variant="outline" size="sm" className="rounded-full hidden sm:inline-flex">
-                  <ExternalLink className="w-3.5 h-3.5 mr-1.5" />
-                  Preview
-                </Button>
-              </Link>
             )}
             <Button variant="outline" size="sm" className="h-9">
               <Bell className="w-4 h-4" />
@@ -212,7 +222,7 @@ export default function VendorDashboard() {
           </div>
         </div>
 
-        <div className="p-4 md:p-8 space-y-8">
+        <div className="p-4 md:p-6 space-y-4">
           {/* Application-status banner: pending = under review,
               rejected = declined with admin notes. Approved is the
               normal state and shows nothing. */}
@@ -267,25 +277,28 @@ export default function VendorDashboard() {
             </div>
           )}
 
-          {/* Stats */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            <StatCard
+          {/* Compact KPI strip — single bordered card, four cells
+              divided by hairlines. Took the place of the 4-up tile
+              grid that was wasting vertical space when the values
+              were all "0". */}
+          <div className="rounded-sm border border-border bg-card grid grid-cols-2 sm:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x divide-border">
+            <KpiCell
               label={t("dashboard.vendor.stat_new_requests")}
               value={stats.newRequests}
               icon={Bell}
               accent
             />
-            <StatCard
+            <KpiCell
               label={t("dashboard.customer.stat_awaiting")}
               value={stats.awaiting}
               icon={Clock}
             />
-            <StatCard
+            <KpiCell
               label={t("dashboard.vendor.stat_won")}
               value={stats.booked}
               icon={CheckCircle2}
             />
-            <StatCard
+            <KpiCell
               label={t("dashboard.customer.stat_inquiries")}
               value={stats.total}
               icon={Inbox}
@@ -304,98 +317,68 @@ export default function VendorDashboard() {
             />
           )}
 
-          <div className="grid lg:grid-cols-2 gap-6">
-            {/* Inbox shortcut */}
-            <Link
-              to="/vendor/inbox"
-              className="bg-card rounded-sm p-5 border border-border hover:border-accent/50 transition-colors block"
-            >
-              <div className="flex items-center justify-between mb-4">
-                <p className="font-label text-muted-foreground">Inquiry inbox</p>
-                <span className="text-xs text-accent font-medium">
-                  Open inbox →
-                </span>
-              </div>
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-full bg-accent/10 flex items-center justify-center flex-shrink-0">
-                  <Inbox className="w-5 h-5 text-accent" />
-                </div>
-                <div>
-                  <p className="font-display text-2xl">
-                    {stats.newRequests > 0
-                      ? `${stats.newRequests} new`
-                      : "All caught up"}
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    Review host inquiries and approve AI-drafted replies.
-                  </p>
-                </div>
-              </div>
-            </Link>
-
-            {/* Recent inquiries */}
-            <div className="bg-card rounded-sm border border-border p-5">
-              <div className="flex items-center justify-between mb-4">
-                <p className="font-label text-muted-foreground">
-                  Recent inquiries
-                </p>
-                <Link
-                  to="/vendor/inbox"
-                  className="text-xs text-accent font-medium"
-                >
-                  View all
-                </Link>
-              </div>
-              {loading ? (
-                <div className="space-y-3">
-                  {[0, 1, 2].map((i) => (
-                    <Skeleton key={i} className="h-12 w-full" />
-                  ))}
-                </div>
-              ) : allInquiries.length === 0 ? (
-                <p className="text-sm text-muted-foreground py-6 text-center">
-                  No inquiries yet — they'll appear here as hosts reach out.
-                </p>
-              ) : (
-                <div className="space-y-3">
-                  {allInquiries.slice(0, 5).map((r) => (
-                    <Link
-                      key={r.id}
-                      to={`/vendor/inbox/${r.id}`}
-                      className="flex items-center gap-3 p-3 rounded-sm bg-secondary/40 hover:bg-secondary/70 transition-colors"
-                    >
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium truncate">
-                          {r.host?.display_name ?? "Host"}
-                        </p>
-                        <p className="text-xs text-muted-foreground capitalize">
-                          {r.event_type.replace("_", " ")}
-                          {r.event_date && (
-                            <>
-                              {" · "}
-                              <span className="tnum">{r.event_date}</span>
-                            </>
-                          )}
-                          {r.guest_count != null && (
-                            <>
-                              {" · "}
-                              <span className="tnum">{r.guest_count}</span>{" "}
-                              guests
-                            </>
-                          )}
-                        </p>
-                      </div>
-                      <Badge
-                        variant="outline"
-                        className={statusStyles[r.status] ?? ""}
-                      >
-                        {statusLabel[r.status] ?? r.status}
-                      </Badge>
-                    </Link>
-                  ))}
-                </div>
-              )}
+          {/* Recent inquiries — compact full-width row, no inbox
+              shortcut card duplicating the New requests KPI. */}
+          <div className="bg-card rounded-sm border border-border p-4">
+            <div className="flex items-center justify-between mb-3">
+              <p className="font-label text-muted-foreground">
+                Recent inquiries
+              </p>
+              <Link
+                to="/vendor/inbox"
+                className="text-xs text-accent font-medium"
+              >
+                View all
+              </Link>
             </div>
+            {loading ? (
+              <div className="space-y-2">
+                {[0, 1, 2].map((i) => (
+                  <Skeleton key={i} className="h-10 w-full" />
+                ))}
+              </div>
+            ) : allInquiries.length === 0 ? (
+              <p className="text-xs text-muted-foreground py-4 text-center">
+                No inquiries yet — they'll appear here as hosts reach out.
+              </p>
+            ) : (
+              <div className="space-y-1.5">
+                {allInquiries.slice(0, 5).map((r) => (
+                  <Link
+                    key={r.id}
+                    to={`/vendor/inbox/${r.id}`}
+                    className="flex items-center gap-3 px-3 py-2 rounded-sm bg-secondary/40 hover:bg-secondary/70 transition-colors"
+                  >
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-medium truncate">
+                        {r.host?.display_name ?? "Host"}
+                      </p>
+                      <p className="text-[11px] text-muted-foreground capitalize">
+                        {r.event_type.replace("_", " ")}
+                        {r.event_date && (
+                          <>
+                            {" · "}
+                            <span className="tnum">{r.event_date}</span>
+                          </>
+                        )}
+                        {r.guest_count != null && (
+                          <>
+                            {" · "}
+                            <span className="tnum">{r.guest_count}</span> guests
+                          </>
+                        )}
+                      </p>
+                    </div>
+                    <Badge
+                      variant="outline"
+                      className={`text-[10px] ${statusStyles[r.status] ?? ""}`}
+                    >
+                      {statusLabel[r.status] ?? r.status}
+                    </Badge>
+                  </Link>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </main>

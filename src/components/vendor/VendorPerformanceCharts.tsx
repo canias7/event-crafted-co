@@ -2,31 +2,42 @@ import { useMemo } from "react";
 import {
   Area,
   AreaChart,
+  Bar,
+  BarChart,
   Cell,
   Pie,
   PieChart,
+  PolarAngleAxis,
+  RadialBar,
+  RadialBarChart,
   ResponsiveContainer,
   Tooltip as RTooltip,
   XAxis,
   YAxis,
 } from "recharts";
-import { Inbox, Star, TrendingUp } from "lucide-react";
+import { CalendarRange, Inbox, Star, TrendingUp, Zap } from "lucide-react";
 
-// Single performance panel for the vendor dashboard. Replaces the
-// flat 4-up "Insights" tile grid with three coordinated charts:
+// Performance overview for the vendor dashboard. Five coordinated
+// charts arranged in a dense 2-up / 3-up grid so the page reads as a
+// control panel instead of an empty corkboard:
 //
-//   1. Inquiry funnel — donut keyed by status, total in the middle,
-//      legend on the side with per-status counts and percent.
-//   2. Profile views (30d) — area sparkline keyed by day so vendors
-//      can see week-over-week traction at a glance.
-//   3. Rating distribution — horizontal bars per star with the
-//      headline avg + total review count up top.
+//   Row 1 (3-up):
+//     1. Inquiry funnel donut + booked-conversion pill in the corner
+//     2. Profile-views 30-day area chart with the headline total
+//     3. Conversion radial gauge — % of inquiries that converted to
+//        bookings, framed as a target-style donut
+//
+//   Row 2 (2-up):
+//     4. Inquiries by day-of-week — vertical bar chart so the vendor
+//        can see when leads tend to land (helps with response SLAs)
+//     5. Rating distribution — horizontal bars per star
 //
 // Pure presentational: parent owns the data fetch, this component
 // just slices and visualises whatever it gets.
 
 interface InquiryRow {
   status: string;
+  created_at: string;
 }
 interface RatingRow {
   rating: number;
@@ -72,6 +83,8 @@ const FUNNEL_GROUPS: Array<{
     match: (s) => s === "lost" || s === "expired",
   },
 ];
+
+const DOW_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 export function VendorPerformanceCharts({
   inquiries,
@@ -140,192 +153,331 @@ export function VendorPerformanceCharts({
       ? ratings.reduce((s, r) => s + r.rating, 0) / totalRatings
       : 0;
 
+  // Day-of-week distribution: which weekday do inquiries tend to
+  // land on? Useful for setting response-SLA expectations and
+  // staffing decisions.
+  const dowSeries = useMemo(() => {
+    const buckets = DOW_LABELS.map((label) => ({ label, count: 0 }));
+    for (const i of inquiries) {
+      const d = new Date(i.created_at);
+      const dow = d.getDay();
+      if (dow >= 0 && dow < 7) buckets[dow].count += 1;
+    }
+    return buckets;
+  }, [inquiries]);
+  const peakDow = Math.max(0, ...dowSeries.map((d) => d.count));
+
+  // Conversion gauge — same number that's pinned to the funnel
+  // header, but visualised as a target-style radial so it reads as
+  // "how close are you to ideal" instead of a plain percentage.
+  const conversionData = [
+    {
+      name: "booked",
+      value: conversionPct,
+      fill: "hsl(150 40% 45%)",
+    },
+  ];
+
+  const tooltipStyle = {
+    background: "hsl(var(--card))",
+    border: "1px solid hsl(var(--border))",
+    borderRadius: 4,
+    fontSize: 12,
+  };
+
   return (
-    <div className="grid lg:grid-cols-2 gap-4">
-      {/* Inquiry funnel donut */}
-      <div className="rounded-sm border border-border bg-card p-5">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2 text-muted-foreground">
-            <Inbox className="w-3.5 h-3.5" />
-            <p className="font-label">Inquiry funnel</p>
+    <div className="space-y-3">
+      {/* Row 1 — funnel, views, conversion gauge */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+        {/* Inquiry funnel donut */}
+        <div className="rounded-sm border border-border bg-card p-4">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <Inbox className="w-3.5 h-3.5" />
+              <p className="font-label">Inquiry funnel</p>
+            </div>
+            {totalInquiries > 0 && (
+              <p className="text-xs text-muted-foreground tnum">
+                <span className="text-foreground font-medium">
+                  {totalInquiries}
+                </span>{" "}
+                total
+              </p>
+            )}
           </div>
-          {totalInquiries > 0 && (
-            <p className="text-xs text-muted-foreground">
-              <span className="font-display text-base text-foreground tnum mr-1">
-                {conversionPct}%
-              </span>
-              booked
+          {totalInquiries === 0 ? (
+            <p className="text-xs text-muted-foreground py-10 text-center">
+              No inquiries yet
             </p>
+          ) : (
+            <div className="grid grid-cols-[120px_1fr] gap-3 items-center">
+              <div className="relative h-[120px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={funnel}
+                      dataKey="value"
+                      nameKey="name"
+                      innerRadius={36}
+                      outerRadius={56}
+                      paddingAngle={2}
+                      stroke="none"
+                      isAnimationActive={false}
+                    >
+                      {funnel.map((d) => (
+                        <Cell key={d.key} fill={d.color} />
+                      ))}
+                    </Pie>
+                    <RTooltip contentStyle={tooltipStyle} />
+                  </PieChart>
+                </ResponsiveContainer>
+                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                  <p className="font-display text-base tnum leading-none">
+                    {totalInquiries}
+                  </p>
+                </div>
+              </div>
+              <ul className="space-y-1">
+                {funnel.map((d) => {
+                  const pct = Math.round((d.value / totalInquiries) * 100);
+                  return (
+                    <li
+                      key={d.key}
+                      className="flex items-center gap-2 text-[11px]"
+                    >
+                      <span
+                        className="w-2.5 h-2.5 rounded-sm shrink-0"
+                        style={{ background: d.color }}
+                        aria-hidden
+                      />
+                      <span className="flex-1 truncate">{d.name}</span>
+                      <span className="text-muted-foreground tnum">
+                        {pct}%
+                      </span>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
           )}
         </div>
-        {totalInquiries === 0 ? (
-          <p className="text-sm text-muted-foreground py-12 text-center">
-            No inquiries yet — the funnel populates as hosts reach out.
-          </p>
-        ) : (
-          <div className="grid sm:grid-cols-[180px_1fr] gap-5 items-center">
-            <div className="relative h-[170px]">
+
+        {/* 30-day views trend */}
+        <div className="rounded-sm border border-border bg-card p-4">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <TrendingUp className="w-3.5 h-3.5" />
+              <p className="font-label">Views · 30d</p>
+            </div>
+            <p className="font-display text-base tnum">{totalViews}</p>
+          </div>
+          <div className="h-[120px] -mx-1">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart
+                data={viewSeries}
+                margin={{ top: 4, right: 4, left: 4, bottom: 0 }}
+              >
+                <defs>
+                  <linearGradient id="viewsFill" x1="0" y1="0" x2="0" y2="1">
+                    <stop
+                      offset="0%"
+                      stopColor="hsl(var(--accent))"
+                      stopOpacity={0.45}
+                    />
+                    <stop
+                      offset="100%"
+                      stopColor="hsl(var(--accent))"
+                      stopOpacity={0}
+                    />
+                  </linearGradient>
+                </defs>
+                <Area
+                  type="monotone"
+                  dataKey="views"
+                  stroke="hsl(var(--accent))"
+                  strokeWidth={1.75}
+                  fill="url(#viewsFill)"
+                  isAnimationActive={false}
+                />
+                <XAxis dataKey="label" hide />
+                <YAxis hide domain={[0, peakViews + 1]} />
+                <RTooltip
+                  contentStyle={tooltipStyle}
+                  formatter={(v: number) => [
+                    `${v} view${v === 1 ? "" : "s"}`,
+                    "",
+                  ]}
+                  separator=""
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+          <div className="flex items-center justify-between text-[10px] uppercase tracking-wide text-muted-foreground mt-1">
+            <span>{viewSeries[0]?.label}</span>
+            <span>{viewSeries[viewSeries.length - 1]?.label}</span>
+          </div>
+        </div>
+
+        {/* Conversion radial gauge */}
+        <div className="rounded-sm border border-border bg-card p-4">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <Zap className="w-3.5 h-3.5" />
+              <p className="font-label">Conversion</p>
+            </div>
+            <p className="text-[10px] uppercase tracking-wide text-muted-foreground">
+              Booked / total
+            </p>
+          </div>
+          <div className="relative h-[120px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <RadialBarChart
+                data={conversionData}
+                innerRadius="70%"
+                outerRadius="100%"
+                startAngle={90}
+                endAngle={-270}
+              >
+                <PolarAngleAxis
+                  type="number"
+                  domain={[0, 100]}
+                  angleAxisId={0}
+                  tick={false}
+                />
+                <RadialBar
+                  background={{ fill: "hsl(var(--secondary))" }}
+                  dataKey="value"
+                  cornerRadius={10}
+                  isAnimationActive={false}
+                />
+              </RadialBarChart>
+            </ResponsiveContainer>
+            <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+              <p className="font-display text-2xl tnum leading-none">
+                {totalInquiries > 0 ? `${conversionPct}%` : "—"}
+              </p>
+              <p className="text-[10px] uppercase tracking-wide text-muted-foreground mt-1">
+                {bookedRow?.value ?? 0} booked
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Row 2 — day-of-week + rating distribution */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        {/* Day-of-week activity */}
+        <div className="rounded-sm border border-border bg-card p-4">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <CalendarRange className="w-3.5 h-3.5" />
+              <p className="font-label">Inquiries by weekday</p>
+            </div>
+            <p className="text-[10px] uppercase tracking-wide text-muted-foreground">
+              All time
+            </p>
+          </div>
+          {totalInquiries === 0 ? (
+            <p className="text-xs text-muted-foreground py-10 text-center">
+              No inquiries yet
+            </p>
+          ) : (
+            <div className="h-[120px]">
               <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={funnel}
-                    dataKey="value"
-                    nameKey="name"
-                    innerRadius={50}
-                    outerRadius={78}
-                    paddingAngle={2}
-                    stroke="none"
+                <BarChart
+                  data={dowSeries}
+                  margin={{ top: 4, right: 4, left: 0, bottom: 0 }}
+                >
+                  <Bar
+                    dataKey="count"
+                    radius={[4, 4, 0, 0]}
                     isAnimationActive={false}
                   >
-                    {funnel.map((d) => (
-                      <Cell key={d.key} fill={d.color} />
+                    {dowSeries.map((d, idx) => (
+                      <Cell
+                        key={d.label}
+                        fill={
+                          d.count === peakDow && d.count > 0
+                            ? "hsl(var(--accent))"
+                            : `hsl(var(--accent) / ${
+                                peakDow > 0 ? 0.25 + (d.count / peakDow) * 0.5 : 0.25
+                              })`
+                        }
+                        opacity={
+                          d.count === peakDow && d.count > 0
+                            ? 1
+                            : 0.45 + (idx % 2) * 0.05
+                        }
+                      />
                     ))}
-                  </Pie>
-                  <RTooltip
-                    contentStyle={{
-                      background: "hsl(var(--card))",
-                      border: "1px solid hsl(var(--border))",
-                      borderRadius: 4,
-                      fontSize: 12,
-                    }}
+                  </Bar>
+                  <XAxis
+                    dataKey="label"
+                    tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
+                    tickLine={false}
+                    axisLine={false}
                   />
-                </PieChart>
+                  <YAxis hide />
+                  <RTooltip
+                    contentStyle={tooltipStyle}
+                    cursor={{ fill: "hsl(var(--secondary) / 0.4)" }}
+                    formatter={(v: number) => [
+                      `${v} inquir${v === 1 ? "y" : "ies"}`,
+                      "",
+                    ]}
+                    separator=""
+                  />
+                </BarChart>
               </ResponsiveContainer>
-              <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                <p className="text-[10px] uppercase tracking-wide text-muted-foreground">
-                  Total
-                </p>
-                <p className="font-display text-xl tnum">{totalInquiries}</p>
-              </div>
             </div>
+          )}
+        </div>
+
+        {/* Rating distribution */}
+        <div className="rounded-sm border border-border bg-card p-4">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <Star className="w-3.5 h-3.5" />
+              <p className="font-label">Reviews</p>
+            </div>
+            <div className="flex items-baseline gap-2">
+              <p className="font-display text-base tnum">
+                {totalRatings > 0 ? avgRating.toFixed(1) : "—"}
+              </p>
+              <p className="text-[10px] text-muted-foreground">
+                {totalRatings} review{totalRatings === 1 ? "" : "s"}
+              </p>
+            </div>
+          </div>
+          {totalRatings === 0 ? (
+            <p className="text-xs text-muted-foreground py-10 text-center">
+              No reviews yet
+            </p>
+          ) : (
             <ul className="space-y-1.5">
-              {funnel.map((d) => {
-                const pct = Math.round((d.value / totalInquiries) * 100);
+              {ratingDist.map(({ stars, count }) => {
+                const pct = totalRatings > 0 ? (count / totalRatings) * 100 : 0;
                 return (
-                  <li
-                    key={d.key}
-                    className="flex items-center gap-3 text-xs"
-                  >
-                    <span
-                      className="w-3 h-3 rounded-sm shrink-0"
-                      style={{ background: d.color }}
-                      aria-hidden
-                    />
-                    <span className="flex-1 truncate">{d.name}</span>
-                    <span className="text-muted-foreground tnum">{pct}%</span>
-                    <span className="font-medium tnum w-8 text-right">
-                      {d.value}
+                  <li key={stars} className="flex items-center gap-2 text-[11px]">
+                    <span className="w-8 text-muted-foreground tnum inline-flex items-center gap-1">
+                      {stars}
+                      <Star className="w-2.5 h-2.5 fill-current" />
+                    </span>
+                    <div className="flex-1 h-1.5 rounded-full bg-secondary/60 overflow-hidden">
+                      <div
+                        className="h-full bg-accent transition-all"
+                        style={{ width: `${pct}%` }}
+                      />
+                    </div>
+                    <span className="font-medium tnum w-6 text-right">
+                      {count}
                     </span>
                   </li>
                 );
               })}
             </ul>
-          </div>
-        )}
-      </div>
-
-      {/* 30-day views trend */}
-      <div className="rounded-sm border border-border bg-card p-5">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2 text-muted-foreground">
-            <TrendingUp className="w-3.5 h-3.5" />
-            <p className="font-label">Profile views · 30d</p>
-          </div>
-          <p className="font-display text-xl tnum">{totalViews}</p>
+          )}
         </div>
-        <div className="h-[170px] -mx-1">
-          <ResponsiveContainer width="100%" height="100%">
-            <AreaChart
-              data={viewSeries}
-              margin={{ top: 4, right: 4, left: 4, bottom: 0 }}
-            >
-              <defs>
-                <linearGradient id="viewsFill" x1="0" y1="0" x2="0" y2="1">
-                  <stop
-                    offset="0%"
-                    stopColor="hsl(var(--accent))"
-                    stopOpacity={0.45}
-                  />
-                  <stop
-                    offset="100%"
-                    stopColor="hsl(var(--accent))"
-                    stopOpacity={0}
-                  />
-                </linearGradient>
-              </defs>
-              <Area
-                type="monotone"
-                dataKey="views"
-                stroke="hsl(var(--accent))"
-                strokeWidth={1.75}
-                fill="url(#viewsFill)"
-                isAnimationActive={false}
-              />
-              <XAxis dataKey="label" hide />
-              <YAxis hide domain={[0, peakViews + 1]} />
-              <RTooltip
-                contentStyle={{
-                  background: "hsl(var(--card))",
-                  border: "1px solid hsl(var(--border))",
-                  borderRadius: 4,
-                  fontSize: 12,
-                }}
-                formatter={(v: number) => [`${v} view${v === 1 ? "" : "s"}`, ""]}
-                separator=""
-              />
-            </AreaChart>
-          </ResponsiveContainer>
-        </div>
-        <div className="flex items-center justify-between text-[10px] uppercase tracking-wide text-muted-foreground -mb-1">
-          <span>{viewSeries[0]?.label}</span>
-          <span>{viewSeries[viewSeries.length - 1]?.label}</span>
-        </div>
-      </div>
-
-      {/* Rating distribution */}
-      <div className="rounded-sm border border-border bg-card p-5 lg:col-span-2">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2 text-muted-foreground">
-            <Star className="w-3.5 h-3.5" />
-            <p className="font-label">Reviews</p>
-          </div>
-          <div className="flex items-baseline gap-2">
-            <p className="font-display text-xl tnum">
-              {totalRatings > 0 ? avgRating.toFixed(1) : "—"}
-            </p>
-            <p className="text-xs text-muted-foreground">
-              {totalRatings} review{totalRatings === 1 ? "" : "s"}
-            </p>
-          </div>
-        </div>
-        {totalRatings === 0 ? (
-          <p className="text-sm text-muted-foreground py-6 text-center">
-            No reviews yet — they'll appear here once hosts post them.
-          </p>
-        ) : (
-          <ul className="space-y-2">
-            {ratingDist.map(({ stars, count }) => {
-              const pct = totalRatings > 0 ? (count / totalRatings) * 100 : 0;
-              return (
-                <li key={stars} className="flex items-center gap-3 text-xs">
-                  <span className="w-10 text-muted-foreground tnum inline-flex items-center gap-1">
-                    {stars}
-                    <Star className="w-3 h-3 fill-current" />
-                  </span>
-                  <div className="flex-1 h-2 rounded-full bg-secondary/60 overflow-hidden">
-                    <div
-                      className="h-full bg-accent transition-all"
-                      style={{ width: `${pct}%` }}
-                    />
-                  </div>
-                  <span className="font-medium tnum w-8 text-right">
-                    {count}
-                  </span>
-                </li>
-              );
-            })}
-          </ul>
-        )}
       </div>
     </div>
   );
