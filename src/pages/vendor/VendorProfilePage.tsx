@@ -3,6 +3,7 @@ import { Link, useLocation } from "react-router-dom";
 import {
   Calendar as CalendarIcon,
   Edit2,
+  Eye,
   ExternalLink,
   Loader2,
   ShieldCheck,
@@ -193,11 +194,17 @@ export default function VendorProfilePage() {
       // public SocialEmbedCard can compose URLs cleanly.
       instagram_handle: instagramHandle.trim().replace(/^@+/, "") || null,
       tiktok_handle: tiktokHandle.trim().replace(/^@+/, "") || null,
-    };
+      // Hitting Publish flips the listing to approved so it shows up
+      // in the public directory immediately. Regular Save leaves the
+      // existing status untouched (typed as `any` because
+      // application_status isn't in the generated supabase types).
+      ...(opts?.publish ? { application_status: "approved" } : {}),
+    } as Record<string, unknown>;
 
     if (profile) {
       setSaving(true);
-      const { error } = await supabase
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error } = await (supabase as any)
         .from("vendor_profiles")
         .update(payload)
         .eq("id", profile.id);
@@ -228,7 +235,8 @@ export default function VendorProfilePage() {
       }
     } else {
       setCreating(true);
-      const { data, error } = await supabase
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data, error } = await (supabase as any)
         .from("vendor_profiles")
         .insert({ user_id: user.id, ...payload })
         .select(
@@ -323,49 +331,49 @@ export default function VendorProfilePage() {
               <Skeleton className="h-32 w-full" />
               <Skeleton className="h-10 w-1/2" />
             </div>
+          ) : isListing && publishedRecently && profile ? (
+            /* Post-publish state takes over the whole Listing tab —
+               form + section managers hide so the vendor sees just
+               the live preview card with Eye / Edit / Trash actions.
+               Edit returns to the form; Delete drops the row;
+               Eye opens the public profile in a new tab. */
+            <div id="listing-preview">
+              <ListingPreviewCard
+                profile={profile}
+                saving={deleting}
+                onView={() => {
+                  window.open(`/vendors/${profile.id}`, "_blank");
+                }}
+                onEdit={() => {
+                  setPublishedRecently(false);
+                  window.scrollTo({ top: 0, behavior: "smooth" });
+                }}
+                onDelete={async () => {
+                  if (
+                    !window.confirm(
+                      `Delete ${profile.business_name}? This removes your listing from the directory and cannot be undone.`,
+                    )
+                  ) {
+                    return;
+                  }
+                  setDeleting(true);
+                  const { error } = await supabase
+                    .from("vendor_profiles")
+                    .delete()
+                    .eq("id", profile.id);
+                  setDeleting(false);
+                  if (error) {
+                    toast.error(error.message);
+                    return;
+                  }
+                  toast.success("Listing deleted");
+                  setProfile(null);
+                  setPublishedRecently(false);
+                  applyToForm(null);
+                }}
+              />
+            </div>
           ) : (
-            <>
-            {/* Post-publish preview — appears once the vendor clicks
-                Publish, mirrors how the listing reads in the directory
-                (compact card view). Edit collapses the preview and
-                scrolls back to the form; Delete confirms then drops
-                the vendor_profiles row (cascades clean up dependents). */}
-            {isListing && publishedRecently && profile && (
-              <div id="listing-preview" className="mb-8">
-                <ListingPreviewCard
-                  profile={profile}
-                  saving={deleting}
-                  onEdit={() => {
-                    setPublishedRecently(false);
-                    window.scrollTo({ top: 0, behavior: "smooth" });
-                  }}
-                  onDelete={async () => {
-                    if (
-                      !window.confirm(
-                        `Delete ${profile.business_name}? This removes your listing from the directory and cannot be undone.`,
-                      )
-                    ) {
-                      return;
-                    }
-                    setDeleting(true);
-                    const { error } = await supabase
-                      .from("vendor_profiles")
-                      .delete()
-                      .eq("id", profile.id);
-                    setDeleting(false);
-                    if (error) {
-                      toast.error(error.message);
-                      return;
-                    }
-                    toast.success("Listing deleted");
-                    setProfile(null);
-                    setPublishedRecently(false);
-                    applyToForm(null);
-                  }}
-                />
-              </div>
-            )}
-
             <form onSubmit={handleSave} className="space-y-6">
               <div className="grid sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
@@ -631,7 +639,6 @@ export default function VendorProfilePage() {
                 </Button>
               </div>
             </form>
-            </>
           )}
 
           {profile && isProfile && (
@@ -645,7 +652,7 @@ export default function VendorProfilePage() {
             </>
           )}
 
-          {profile && isListing && (
+          {profile && isListing && !publishedRecently && (
             <>
               <div className="mt-12 pt-10 border-t border-border">
                 <PackageManager vendorId={profile.id} canEdit={canEdit} />
@@ -699,29 +706,33 @@ export default function VendorProfilePage() {
 // recurring rules + one-off blocks). Mounted inline on the profile
 // editor so the "Availability" section on the public profile has a
 // clear hand-off from this single dashboard view.
-// Compact post-publish preview — shows what the vendor just put live,
-// with Edit (collapses + scrolls to form) + Delete actions. Image is
-// intentionally omitted to keep the chunk light; the directory's
-// VendorCard renders the visual version with category fallback art.
+// Compact post-publish preview — replaces the editor surface once
+// the vendor clicks Publish. Three icon buttons: View opens the
+// public listing in a new tab, Edit collapses the preview back to
+// the form, Delete confirms then drops the row. Image is
+// intentionally omitted; the directory's VendorCard renders the
+// visual version using the per-sub categoryImageFallback art.
 function ListingPreviewCard({
   profile,
   saving,
+  onView,
   onEdit,
   onDelete,
 }: {
   profile: VendorProfile;
   saving: boolean;
+  onView: () => void;
   onEdit: () => void;
   onDelete: () => void;
 }) {
   return (
-    <div className="rounded-sm border border-accent/40 bg-accent/5 p-5">
+    <div className="rounded-sm border border-accent/40 bg-accent/5 p-5 max-w-md">
       <p className="font-label text-accent mb-3 inline-flex items-center gap-1.5">
         <Sparkles className="w-3 h-3" />
-        Just published
+        Listing live
       </p>
-      <div className="flex items-start gap-4 flex-wrap">
-        <div className="flex-1 min-w-0">
+      <div className="space-y-3">
+        <div className="min-w-0">
           <p className="text-[10px] uppercase tracking-[0.25em] text-muted-foreground">
             {profile.category}
           </p>
@@ -745,7 +756,19 @@ function ListingPreviewCard({
             </p>
           )}
         </div>
-        <div className="flex gap-2 shrink-0">
+        <div className="flex gap-2 pt-2 border-t border-accent/20">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={onView}
+            disabled={saving}
+            className="rounded-full"
+            aria-label="View public listing"
+          >
+            <Eye className="w-3.5 h-3.5 mr-1.5" />
+            View
+          </Button>
           <Button
             type="button"
             variant="outline"
@@ -753,6 +776,7 @@ function ListingPreviewCard({
             onClick={onEdit}
             disabled={saving}
             className="rounded-full"
+            aria-label="Edit listing"
           >
             <Edit2 className="w-3.5 h-3.5 mr-1.5" />
             Edit
@@ -763,7 +787,8 @@ function ListingPreviewCard({
             size="sm"
             onClick={onDelete}
             disabled={saving}
-            className="rounded-full text-destructive hover:bg-destructive/10 hover:text-destructive"
+            className="rounded-full text-destructive hover:bg-destructive/10 hover:text-destructive ml-auto"
+            aria-label="Delete listing"
           >
             {saving ? (
               <Loader2 className="w-3.5 h-3.5 animate-spin" />
