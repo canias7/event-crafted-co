@@ -395,7 +395,52 @@ export default function VendorProfilePage() {
             </div>
           ) : (
             <form onSubmit={handleSave} className="space-y-6">
-              <div className="grid sm:grid-cols-2 gap-4">
+              {/* Category sits at the top alone — the rest of the
+                  Listing form (and the section managers below) only
+                  reveals once a sub-category is picked. The dropdown
+                  is grouped by main group, same shape as the public
+                  Vendors nav on the landing page. */}
+              <div className="space-y-2">
+                <Label htmlFor="category">
+                  Category <span className="text-destructive">*</span>
+                </Label>
+                <Select value={category} onValueChange={setCategory}>
+                  <SelectTrigger id="category" className="h-11">
+                    <SelectValue placeholder="Choose a category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {CATEGORY_GROUPS.map((group) => (
+                      <SelectGroup key={group.slug}>
+                        <SelectLabel>{group.name}</SelectLabel>
+                        {group.subs.map((sub) => (
+                          <SelectItem key={sub} value={sub}>
+                            {sub}
+                          </SelectItem>
+                        ))}
+                      </SelectGroup>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground pt-1">
+                  Pick the category that best matches your business —
+                  fields below are tailored to it.
+                </p>
+              </div>
+
+              {/* Empty-state nudge — Listing tab without a category
+                  picked yet. Hides on Profile tab so identity fields
+                  (slug, socials) are always editable. */}
+              {isListing && !category && (
+                <div className="rounded-sm border border-dashed border-border bg-card/40 p-8 text-center">
+                  <p className="text-sm text-muted-foreground max-w-sm mx-auto leading-relaxed">
+                    Choose a category above to start building your
+                    listing. Pricing, packages, photos, team, reviews,
+                    and recommendations populate once you pick.
+                  </p>
+                </div>
+              )}
+
+              {(isProfile || category) && (
                 <div className="space-y-2">
                   <Label htmlFor="business-name">
                     Business name <span className="text-destructive">*</span>
@@ -408,31 +453,9 @@ export default function VendorProfilePage() {
                     className="h-11"
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="category">
-                    Category <span className="text-destructive">*</span>
-                  </Label>
-                  <Select value={category} onValueChange={setCategory}>
-                    <SelectTrigger id="category" className="h-11">
-                      <SelectValue placeholder="Choose a category" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {CATEGORY_GROUPS.map((group) => (
-                        <SelectGroup key={group.slug}>
-                          <SelectLabel>{group.name}</SelectLabel>
-                          {group.subs.map((sub) => (
-                            <SelectItem key={sub} value={sub}>
-                              {sub}
-                            </SelectItem>
-                          ))}
-                        </SelectGroup>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
+              )}
 
-              {isListing && (
+              {isListing && category && (
               <div className="space-y-2">
                 <Label htmlFor="bio">Short bio</Label>
                 <Textarea
@@ -445,7 +468,7 @@ export default function VendorProfilePage() {
               </div>
               )}
 
-              {isListing && (
+              {isListing && category && (
               <div className="grid sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="base-price">Starting price ($)</Label>
@@ -477,7 +500,7 @@ export default function VendorProfilePage() {
               </div>
               )}
 
-              {isListing && (
+              {isListing && category && (
               <div className="space-y-2">
                 <Label htmlFor="location">Location</Label>
                 <Input
@@ -490,7 +513,7 @@ export default function VendorProfilePage() {
               </div>
               )}
 
-              {isListing && (
+              {isListing && category && (
               <div className="space-y-2">
                 <Label htmlFor="portfolio-summary">Portfolio summary</Label>
                 <Textarea
@@ -503,7 +526,7 @@ export default function VendorProfilePage() {
               </div>
               )}
 
-              {isListing && (
+              {isListing && category && (
               <div className="space-y-2">
                 <Label htmlFor="intro-video">Intro video URL (optional)</Label>
                 <Input
@@ -672,7 +695,7 @@ export default function VendorProfilePage() {
             </>
           )}
 
-          {profile && isListing && !publishedRecently && (
+          {profile && isListing && !publishedRecently && category && (
             <>
               <div className="mt-12 pt-10 border-t border-border">
                 <PackageManager vendorId={profile.id} canEdit={canEdit} />
