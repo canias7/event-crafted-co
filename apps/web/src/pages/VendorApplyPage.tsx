@@ -72,7 +72,12 @@ export default function VendorApplyPage() {
       password,
       options: {
         emailRedirectTo: `${window.location.origin}/vendor/dashboard`,
-        data: { display_name: ownerName, role: "vendor" },
+        // Role starts as 'host' (set by handle_new_user) and gets
+        // bumped to 'vendor' by the vendor_profiles insert trigger
+        // below. We don't pass role in metadata — the trigger ignores
+        // it anyway, and passing it would imply a security boundary
+        // that doesn't exist client-side.
+        data: { display_name: ownerName },
       },
     });
 

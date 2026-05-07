@@ -33,7 +33,10 @@ export default function SignupPage() {
       password,
       options: {
         emailRedirectTo: `${window.location.origin}/`,
-        data: { display_name: name, role: "host" },
+        // Role is set server-side by handle_new_user() — every fresh
+        // signup is a host. Vendors get bumped to role='vendor' only
+        // when they insert a vendor_profiles row via /vendor-apply.
+        data: { display_name: name },
       },
     });
     setLoading(false);
