@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ArrowRight, ArrowLeft, Loader2 } from "lucide-react";
 import { toast } from "sonner";
@@ -30,7 +30,6 @@ const spring = { type: "spring" as const, duration: 0.6, bounce: 0 };
 
 export default function VendorApplyPage() {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
   const [step, setStep] = useState<1 | 2>(1);
   const [submitting, setSubmitting] = useState(false);
 
@@ -64,72 +63,35 @@ export default function VendorApplyPage() {
 
     setSubmitting(true);
 
-    const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+    const { error: signUpError } = await supabase.auth.signUp({
       email,
       password,
       options: {
-        emailRedirectTo: `${window.location.origin}/vendor/dashboard`,
-        // Role starts as 'host' (set by handle_new_user) and gets
-        // bumped to 'vendor' by the vendor_profiles insert trigger
-        // below. We don't pass role in metadata — the trigger ignores
-        // it anyway, and passing it would imply a security boundary
-        // that doesn't exist client-side.
-        data: { display_name: ownerName },
+        emailRedirectTo: `${window.location.origin}/login`,
+        // Role starts as 'host' (set by handle_new_user). The same
+        // trigger reads vendor_business_name + vendor_category and
+        // creates the pending vendor_profile, so this works even
+        // when email confirmation is on (no client session yet).
+        // profiles.role gets bumped to 'vendor' by the
+        // vendor_profiles approval trigger when admin approves.
+        data: {
+          display_name: ownerName,
+          vendor_business_name: businessName.trim(),
+          vendor_category: category,
+        },
       },
     });
 
+    setSubmitting(false);
+
     if (signUpError) {
-      setSubmitting(false);
       toast.error(signUpError.message);
       return;
     }
 
-    if (!signUpData.session || !signUpData.user) {
-      setSubmitting(false);
-      toast.success("Account created — check your email to confirm before signing in.");
-      navigate("/login");
-      return;
-    }
-
-    // Profile row is auto-created by handle_new_user() trigger. Insert
-    // vendor_profile in 'pending' state — admin reviews + approves on
-    // /admin/vendors before the listing goes public. Pricing, location,
-    // service radius, packages and photos are filled in later from
-    // /vendor/profile after approval.
-    const { data: vpData, error: vpError } = await supabase
-      .from("vendor_profiles")
-      .insert({
-        user_id: signUpData.user.id,
-        business_name: businessName.trim(),
-        category,
-      })
-      .select("id")
-      .single();
-
-    setSubmitting(false);
-
-    if (vpError) {
-      toast.error(`Account created, but couldn't save business profile: ${vpError.message}.`);
-      navigate("/vendor-apply/thanks");
-      return;
-    }
-
-    // If they came from a referral link, claim it. Fire-and-forget —
-    // failure shouldn't block the welcome flow.
-    const refCode = searchParams.get("ref");
-    const newVendorId = (vpData as { id: string } | null)?.id;
-    if (refCode && newVendorId) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (supabase as any)
-        .rpc("claim_vendor_referral", {
-          p_code: refCode,
-          p_new_vendor_id: newVendorId,
-        })
-        .then(() => {});
-    }
-
-    // Sign the user out — they don't get to access the vendor dashboard
-    // until admin approves the application.
+    // Always sign out — the user can't access the vendor dashboard
+    // until admin approves the application, regardless of whether
+    // email confirmation is on.
     await supabase.auth.signOut();
     navigate("/vendor-apply/thanks");
   }
