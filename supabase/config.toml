@@ -1,62 +1,29 @@
 project_id = "wdgcskeepluqxnovvsny"
 
-# Transactional email sender (team invites, new inquiry notifications).
-# Public so anonymous-side callers (none today, but reserved) work; the
-# function still validates inputs and uses service role for lookups.
-[functions.send-transactional-email]
-verify_jwt = true
-
-# Daily scan: looks for won inquiries whose event_date passed N days ago
-# and the host hasn't reviewed yet, drops in-app notifications + emails
-# asking for a review. verify_jwt = false so cron systems (or pg_cron via
-# pg_net) can hit it without managing a JWT — protect via the service
-# role key in env, and ideally a shared secret header in production.
-[functions.scan-review-prompts]
-verify_jwt = false
-
-# Daily digest: bundles each user's unread notifications from the last
-# 24 hours into a single email. Schedule once a day, ideally morning.
-[functions.scan-daily-digests]
-verify_jwt = false
-
-# Saved-search matcher: in-app notifications only, called daily.
-[functions.scan-saved-search-matches]
-verify_jwt = false
-
-# Public sitemap.xml — Google + Bing crawl this. Front it behind a
-# /sitemap.xml redirect at the hosting layer or submit the function URL
-# directly in Search Console.
-[functions.sitemap-xml]
-verify_jwt = false
-
-# Geocode a vendor's location string to lat/lng via Nominatim. Called
-# from VendorProfilePage on save and from a one-shot batch backfill.
-[functions.geocode-vendor]
-verify_jwt = true
-
-# Recomputes vendor responder_tier daily. Cron-only; no user input.
-[functions.scan-responder-tiers]
-verify_jwt = false
-
-# Inquiry decay: flips stale 'new'/'drafted' inquiries to 'expired'.
-# Cron-only; runs daily.
-[functions.scan-expired-inquiries]
-verify_jwt = false
-
-# Vendor onboarding nudge: emails vendors who haven't completed setup
-# after their grace period. Cron-only; runs daily.
-[functions.scan-vendor-onboarding-nudges]
-verify_jwt = false
-
-# Vendor weekly digest: opt-in summary of past 7 days. Schedule once
-# weekly (Monday morning). Cron-only.
-[functions.scan-vendor-weekly-digests]
-verify_jwt = false
-
-# Personal calendar feed (.ics). Auth via per-user calendar_feed_token
-# query string. Public so calendar clients can subscribe via webcal://.
-[functions.calendar-feed]
-verify_jwt = false
-
-[functions.process-email-queue]
-verify_jwt = true
+[functions]
+  [functions.auth-email-hook]
+    verify_jwt = false
+  [functions.calendar-feed]
+    verify_jwt = false
+  [functions.geocode-vendor]
+    verify_jwt = true
+  [functions.process-email-queue]
+    verify_jwt = true
+  [functions.scan-daily-digests]
+    verify_jwt = false
+  [functions.scan-expired-inquiries]
+    verify_jwt = false
+  [functions.scan-responder-tiers]
+    verify_jwt = false
+  [functions.scan-review-prompts]
+    verify_jwt = false
+  [functions.scan-saved-search-matches]
+    verify_jwt = false
+  [functions.scan-vendor-onboarding-nudges]
+    verify_jwt = false
+  [functions.scan-vendor-weekly-digests]
+    verify_jwt = false
+  [functions.send-transactional-email]
+    verify_jwt = true
+  [functions.sitemap-xml]
+    verify_jwt = false
