@@ -1,0 +1,118 @@
+name: Mobile Build
+
+# Manual-trigger workflow that dispatches EAS Build for one or both
+# mobile apps. Builds run on Expo's cloud — this workflow only kicks
+# them off and returns; you'll get an email + dashboard link when each
+# binary is ready (~12-20 min).
+#
+# First-time setup (do these once in mobile browser):
+#  1. expo.dev → Settings → Access Tokens → create one → copy
+#  2. github.com/canias7/event-crafted-co → Settings → Secrets and variables → Actions:
+#       - EXPO_TOKEN              (the value from step 1)
+#       - SUPABASE_URL            (https://<project>.supabase.co)
+#       - SUPABASE_ANON_KEY       (your publishable / anon key)
+#  3. (iOS only, also one-time) expo.dev → vendor-mobile project → Credentials →
+#     iOS → walk through Apple Dev setup. Repeat for host-mobile.
+#  4. github.com/canias7/event-crafted-co/actions → "Mobile Build" → Run workflow
+
+on:
+  workflow_dispatch:
+    inputs:
+      apps:
+        description: "Which app(s)?"
+        type: choice
+        options: [both, vendor, host]
+        default: both
+      platform:
+        description: "Which platform?"
+        type: choice
+        options: [android, ios, all]
+        default: android
+      profile:
+        description: "Which profile?"
+        type: choice
+        options: [preview, production, development]
+        default: preview
+
+permissions:
+  contents: write
+
+jobs:
+  setup:
+    name: Resolve build matrix
+    runs-on: ubuntu-latest
+    outputs:
+      apps: ${{ steps.matrix.outputs.list }}
+    steps:
+      - id: matrix
+        run: |
+          case "${{ inputs.apps }}" in
+            both)   echo 'list=["vendor-mobile","host-mobile"]' >> "$GITHUB_OUTPUT" ;;
+            vendor) echo 'list=["vendor-mobile"]' >> "$GITHUB_OUTPUT" ;;
+            host)   echo 'list=["host-mobile"]' >> "$GITHUB_OUTPUT" ;;
+          esac
+
+  build:
+    name: Build ${{ matrix.app }}
+    needs: setup
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        app: ${{ fromJSON(needs.setup.outputs.apps) }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Use a token that can push back the projectId after `eas init`.
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - run: npm ci
+
+      - name: eas init (if projectId missing)
+        working-directory: apps/${{ matrix.app }}
+        run: |
+          if grep -q '"projectId"' app.json; then
+            echo "projectId already wired — skipping eas init"
+          else
+            echo "No projectId yet — creating EAS project"
+            eas init --non-interactive --force
+          fi
+
+      - name: Commit projectId back if eas init wrote one
+        run: |
+          if [ -n "$(git status --porcelain apps/${{ matrix.app }}/app.json)" ]; then
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git add apps/${{ matrix.app }}/app.json
+            git commit -m "chore(mobile): wire EAS projectId for ${{ matrix.app }} [skip ci]"
+            git push
+          fi
+
+      - name: eas build
+        working-directory: apps/${{ matrix.app }}
+        env:
+          # Inlined into the JS bundle at build time. EAS picks up any
+          # EXPO_PUBLIC_* env var set in the shell during `eas build`.
+          EXPO_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          EXPO_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        run: |
+          eas build \
+            --non-interactive \
+            --no-wait \
+            --platform ${{ inputs.platform }} \
+            --profile ${{ inputs.profile }}
+
+      - name: Done
+        run: |
+          echo "::notice::Build queued on Expo cloud. Watch progress at https://expo.dev — Expo will email you when the binary is ready."
