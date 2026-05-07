@@ -4,7 +4,6 @@ import { AuthProvider } from "./hooks/useAuth";
 import { PinGate } from "./components/PinGate";
 import { RequireAdmin } from "./components/RequireAdmin";
 import { AdminShell } from "./components/AdminShell";
-import { LoginPage } from "./pages/LoginPage";
 import { DashboardPage } from "./pages/DashboardPage";
 import { VendorApplicationsPage } from "./pages/VendorApplicationsPage";
 import { UsersPage } from "./pages/UsersPage";
@@ -18,7 +17,6 @@ export default function App() {
         <AuthProvider>
           <Toaster position="top-right" />
           <Routes>
-            <Route path="/login" element={<LoginPage />} />
             <Route
               element={
                 <RequireAdmin>

@@ -19,7 +19,7 @@ type AuthContextValue = {
   session: Session | null;
   profile: Profile | null;
   loading: boolean;
-  signIn: (email: string, password: string) => Promise<{ error: string | null }>;
+  error: string | null;
   signOut: () => Promise<void>;
 };
 
@@ -29,14 +29,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const init = async () => {
-      const { data } = await supabase.auth.getSession();
-      setSession(data.session);
-      if (data.session) {
-        await loadProfile(data.session.user.id);
+      const existing = await supabase.auth.getSession();
+      let s = existing.data.session;
+
+      if (!s) {
+        const email = import.meta.env.VITE_ADMIN_EMAIL;
+        const password = import.meta.env.VITE_ADMIN_PASSWORD;
+        if (!email || !password) {
+          setError("Admin credentials are not configured.");
+          setLoading(false);
+          return;
+        }
+        const { data, error: signInError } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
+        if (signInError) {
+          setError(signInError.message);
+          setLoading(false);
+          return;
+        }
+        s = data.session;
       }
+
+      setSession(s);
+      if (s) await loadProfile(s.user.id);
       setLoading(false);
     };
     init();
@@ -65,11 +86,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setProfile(data as Profile | null);
   };
 
-  const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    return { error: error?.message ?? null };
-  };
-
   const signOut = async () => {
     await supabase.auth.signOut();
   };
@@ -81,7 +97,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         session,
         profile,
         loading,
-        signIn,
+        error,
         signOut,
       }}
     >
