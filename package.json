@@ -15,6 +15,9 @@
     "preview": "npm run preview --workspace=apps/web",
     "lint": "npm run lint --workspace=apps/web",
     "typecheck": "npm run typecheck --workspace=apps/web",
+    "typecheck:all": "npm run typecheck --workspace=apps/web && npm run typecheck --workspace=apps/vendor-mobile && npm run typecheck --workspace=apps/host-mobile",
+    "mobile:vendor": "npm run start --workspace=apps/vendor-mobile",
+    "mobile:host": "npm run start --workspace=apps/host-mobile",
     "test": "npm run test --workspace=apps/web",
     "test:watch": "npm run test:watch --workspace=apps/web",
     "test:e2e": "npm run test:e2e --workspace=apps/web"

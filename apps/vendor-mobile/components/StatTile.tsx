@@ -1,0 +1,24 @@
+// Small KPI tile used on the vendor dashboard. Mirrors the web's
+// dashboard stat squares — label on top, big number below — but
+// sized for thumb-tappable mobile, not dense desktop.
+import { Text, View } from "react-native";
+
+interface StatTileProps {
+  label: string;
+  value: string;
+  hint?: string;
+}
+
+export function StatTile({ label, value, hint }: StatTileProps) {
+  return (
+    <View className="flex-1 rounded-xl border border-border bg-background p-4">
+      <Text className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+        {label}
+      </Text>
+      <Text className="mt-2 text-2xl font-semibold text-foreground">{value}</Text>
+      {hint ? (
+        <Text className="mt-1 text-xs text-muted-foreground">{hint}</Text>
+      ) : null}
+    </View>
+  );
+}
