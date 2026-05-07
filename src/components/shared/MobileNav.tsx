@@ -35,8 +35,19 @@ export function MobileNav({ items }: MobileNavProps) {
   const { signOut } = useAuth();
   const [drawerOpen, setDrawerOpen] = useState(false);
 
-  const primaryItems = items.slice(0, 4);
-  const overflowItems = items.slice(4);
+  // Inbox is reachable from the floating chat-bubble at top-right of
+  // the dashboard (MobilePortalBell), so it's pulled out of the
+  // primary 4-tile bottom row to make room for higher-traffic
+  // destinations. It still appears in the More drawer for users who
+  // navigate there from a non-dashboard page.
+  const isInbox = (path: string) =>
+    path === "/vendor/inbox" ||
+    path === "/customer/inquiries" ||
+    path === "/admin/inquiries";
+  const primaryItems = items.filter((it) => !isInbox(it.path)).slice(0, 4);
+  const overflowItems = items.filter(
+    (it) => !primaryItems.some((p) => p.path === it.path),
+  );
   const bottomItems = getBottomNav(items) ?? [];
 
   async function handleLogout() {
