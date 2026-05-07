@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
+  Clock,
   DollarSign,
   Edit2,
   Eye,
@@ -166,11 +167,12 @@ export default function VendorProfilePage() {
       }
       setProfile(data);
       applyToForm(data);
-      // Persist the post-publish preview across reloads + tab
-      // switches: if the loaded profile is already approved, drop
-      // the user straight onto the preview card. Edit on that card
+      // Persist the post-publish view across reloads + tab switches.
+      // approved → live preview card. pending → "submitted for review"
+      // message (vendor can't edit while admin is reviewing). Edit
       // flips this back to false so the form re-mounts.
-      setPublishedRecently(data?.application_status === "approved");
+      const status = data?.application_status;
+      setPublishedRecently(status === "approved" || status === "pending");
       setLoading(false);
     })();
     return () => {
@@ -607,36 +609,78 @@ export default function VendorProfilePage() {
               <Skeleton className="h-10 w-1/2" />
             </div>
           ) : isListing && publishedRecently && profile ? (
-            /* Post-publish state takes over the whole Listing tab —
-               form + section managers hide so the vendor sees just
-               the live preview card with Eye / Edit / Trash actions.
-               Edit returns to the form; Delete drops the row;
-               Eye opens the public profile in a new tab. */
+            /* Post-publish state takes over the whole Listing tab.
+               If status is approved, show the live preview card with
+               View/Edit/Delete. If pending, show a "submitted for
+               review" message — the listing isn't public yet and
+               Edit is disabled until admin reviews. */
             <div id="listing-preview">
-              <ListingPreviewCard
-                profile={profile}
-                saving={deleting}
-                onView={() => {
-                  // Full-reload navigation — same window, but reboots
-                  // the SPA so useVendors fetches fresh and the
-                  // just-approved row is in the cache when
-                  // VendorDetailPage mounts. Slight white-flash, but
-                  // bullet-proof against any stale state from the
-                  // dashboard's render tree.
-                  window.location.assign(`/vendors/${profile.id}`);
-                }}
-                onEdit={() => {
-                  setPublishedRecently(false);
-                  window.scrollTo({ top: 0, behavior: "smooth" });
-                }}
-                onDelete={async () => {
-                  if (
-                    !window.confirm(
-                      `Delete ${profile.business_name}? This removes your listing from the directory and cannot be undone.`,
-                    )
-                  ) {
-                    return;
-                  }
+              {profile.application_status === "pending" ? (
+                <div className="rounded-lg border border-accent/30 bg-accent/5 p-8 text-center">
+                  <div className="mx-auto mb-4 inline-flex h-12 w-12 items-center justify-center rounded-full bg-accent/15 text-accent">
+                    <Clock className="h-6 w-6" />
+                  </div>
+                  <h3 className="font-display text-2xl mb-2">
+                    Submitted for review
+                  </h3>
+                  <p className="text-sm text-muted-foreground max-w-md mx-auto leading-relaxed">
+                    Thanks — your listing for{" "}
+                    <span className="font-medium text-foreground">
+                      {profile.business_name}
+                    </span>{" "}
+                    is queued for admin review. We hand-review every
+                    publish to keep the directory high quality. You'll
+                    get an email once it's approved and live.
+                  </p>
+                  <p className="mt-3 text-xs text-muted-foreground">
+                    Typical turnaround: 2–3 business days.
+                  </p>
+                </div>
+              ) : profile.application_status === "rejected" ? (
+                <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-8 text-center">
+                  <h3 className="font-display text-2xl mb-2">
+                    Listing not approved
+                  </h3>
+                  <p className="text-sm text-muted-foreground max-w-md mx-auto leading-relaxed">
+                    An admin reviewed your submission and asked for
+                    changes. Click Edit to update and resubmit.
+                  </p>
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setPublishedRecently(false);
+                      window.scrollTo({ top: 0, behavior: "smooth" });
+                    }}
+                    className="mt-4 rounded-full"
+                  >
+                    Edit listing
+                  </Button>
+                </div>
+              ) : (
+                <ListingPreviewCard
+                  profile={profile}
+                  saving={deleting}
+                  onView={() => {
+                    // Full-reload navigation — same window, but reboots
+                    // the SPA so useVendors fetches fresh and the
+                    // just-approved row is in the cache when
+                    // VendorDetailPage mounts. Slight white-flash, but
+                    // bullet-proof against any stale state from the
+                    // dashboard's render tree.
+                    window.location.assign(`/vendors/${profile.id}`);
+                  }}
+                  onEdit={() => {
+                    setPublishedRecently(false);
+                    window.scrollTo({ top: 0, behavior: "smooth" });
+                  }}
+                  onDelete={async () => {
+                    if (
+                      !window.confirm(
+                        `Delete ${profile.business_name}? This removes your listing from the directory and cannot be undone.`,
+                      )
+                    ) {
+                      return;
+                    }
                   setDeleting(true);
                   // Call the SECURITY DEFINER RPC instead of a raw
                   // .delete(). The RPC does its own ownership check and
@@ -725,6 +769,7 @@ export default function VendorProfilePage() {
                   applyToForm(null);
                 }}
               />
+              )}
             </div>
           ) : (
             <form onSubmit={handleSave} className="space-y-6">
