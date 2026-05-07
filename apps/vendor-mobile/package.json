@@ -22,7 +22,7 @@
     "@react-native-async-storage/async-storage": "1.23.1",
     "@supabase/supabase-js": "^2.105.1",
     "@vendora/core": "*",
-    "expo": "~51.0.28",
+    "expo": "~55.0.23",
     "expo-constants": "~16.0.2",
     "expo-linking": "~6.3.1",
     "expo-router": "~3.5.23",
