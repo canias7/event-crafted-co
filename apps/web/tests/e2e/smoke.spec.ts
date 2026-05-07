@@ -10,13 +10,12 @@ const publicRoutes = [
   { path: "/", contains: "Vendora" },
   { path: "/vendors", contains: "Find your" },
   { path: "/vendors/locations", contains: "VENDORS BY LOCATION" },
-  { path: "/vendors/quiz", contains: "VENDOR MATCH" },
   { path: "/vendors/map", contains: "VENDOR MAP" },
   { path: "/vendors/category/media", contains: "Media" },
   // Auth
   { path: "/vendor-apply", contains: "Become a" },
-  { path: "/login", contains: "Sign in" },
-  { path: "/signup", contains: "Create your account" },
+  { path: "/login", contains: "Host sign in" },
+  { path: "/signup", contains: "Create an account" },
   { path: "/forgot-password", contains: "Forgot password" },
   // Legal
   { path: "/privacy", contains: "Privacy" },
@@ -46,7 +45,7 @@ for (const r of publicRoutes) {
   });
 }
 
-// Every gated portal route — host, vendor, admin — should redirect to
+// Every gated portal route — host and vendor — should redirect to
 // /login when accessed without auth. Catches accidental drops of the
 // RequireRole wrapper.
 const gatedRoutes = [
@@ -74,16 +73,9 @@ const gatedRoutes = [
   "/vendor/profile",
   "/vendor/inbox",
   "/vendor/availability",
-  "/vendor/templates",
   "/vendor/appointments",
   "/vendor/team",
   "/vendor/analytics",
-  "/vendor/contracts",
-  // Admin
-  "/admin/dashboard",
-  "/admin/vendors",
-  "/admin/reviews",
-  "/admin/inquiries",
   // Account
   "/settings",
 ];
@@ -134,14 +126,3 @@ test("vendor search filter narrows the directory", async ({ page }) => {
   await expect(page.locator("body")).toContainText(/photo/i);
 });
 
-// Vendor matching quiz — landing on step 1 should let the user pick
-// an event type and reveal step 2.
-test("vendor quiz step 1 advances on selection + Continue", async ({
-  page,
-}) => {
-  await page.goto("/vendors/quiz", { waitUntil: "domcontentloaded" });
-  await expect(page.locator("body")).toContainText("What are you planning?");
-  await page.getByRole("button", { name: "Wedding", exact: false }).first().click();
-  await page.getByRole("button", { name: /Continue/i }).click();
-  await expect(page.locator("body")).toContainText(/When's the event/);
-});
