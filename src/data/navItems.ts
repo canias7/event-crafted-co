@@ -5,7 +5,6 @@ import {
   FileText,
   Mail,
   MessageSquare,
-  CheckSquare,
   ListTodo,
   CreditCard,
   Image,
@@ -14,13 +13,7 @@ import {
   Users,
   Gift,
   Settings,
-  ShieldCheck,
   LifeBuoy,
-  History,
-  MailCheck,
-  BookOpen,
-  UserPlus,
-  Flag,
   Bot,
   Wand2,
   type LucideIcon,
@@ -95,21 +88,6 @@ const NAV_BOTTOMS = new WeakMap<NavItem[], NavItem[]>();
 export function getBottomNav(main: NavItem[]): NavItem[] | undefined {
   return NAV_BOTTOMS.get(main);
 }
-
-export const adminNavItems: NavItem[] = [
-  { labelKey: "sidebar.admin.overview", path: "/admin/dashboard", icon: LayoutDashboard },
-  { labelKey: "sidebar.admin.vendors", path: "/admin/vendors", icon: Store },
-  { labelKey: "sidebar.admin.verifications", path: "/admin/verifications", icon: ShieldCheck },
-  { labelKey: "sidebar.admin.inquiries", path: "/admin/inquiries", icon: MessageSquare },
-  { labelKey: "sidebar.admin.reviews", path: "/admin/reviews", icon: CheckSquare },
-  { labelKey: "sidebar.admin.editorial", path: "/admin/editorial", icon: BookOpen },
-  { labelKey: "sidebar.admin.claims", path: "/admin/claims", icon: UserPlus },
-  { labelKey: "sidebar.admin.support", path: "/admin/support", icon: LifeBuoy },
-  { labelKey: "sidebar.admin.reports", path: "/admin/reports", icon: Flag },
-  { labelKey: "sidebar.admin.audit", path: "/admin/audit", icon: History },
-  { labelKey: "sidebar.admin.email_health", path: "/admin/email-deliverability", icon: MailCheck },
-  { labelKey: "sidebar.admin.settings", path: "/settings", icon: Settings },
-];
 
 NAV_BOTTOMS.set(customerNavItems, customerNavBottomItems);
 NAV_BOTTOMS.set(vendorNavItems, vendorNavBottomItems);

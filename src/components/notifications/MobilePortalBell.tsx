@@ -10,7 +10,6 @@ import { useAuth } from "@/hooks/useAuth";
 const DASHBOARD_PATHS = new Set([
   "/vendor/dashboard",
   "/customer/dashboard",
-  "/admin/dashboard",
 ]);
 
 export function MobilePortalBell() {
@@ -21,14 +20,9 @@ export function MobilePortalBell() {
   if (!DASHBOARD_PATHS.has(location.pathname)) return null;
 
   // Vendors get the merged Inbox hub (Inquiries / Hosts / Partners).
-  // Customers go to their own inquiries surface. Admins go to the
-  // admin inquiries page.
+  // Customers go to their own inquiries surface.
   const inboxPath =
-    profile.role === "vendor"
-      ? "/vendor/inbox"
-      : profile.role === "admin"
-        ? "/admin/inquiries"
-        : "/customer/inquiries";
+    profile.role === "vendor" ? "/vendor/inbox" : "/customer/inquiries";
 
   return (
     <div className="lg:hidden fixed top-3 right-3 z-50">

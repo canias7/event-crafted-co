@@ -89,9 +89,6 @@ import {
   AcceptPartyInvitePage,
   EventAlbumPage,
   SupportPage,
-  AdminSupportPage,
-  AdminAuditPage,
-  AdminEmailDeliverabilityPage,
   RealEventsPage,
   RealEventDetailPage,
   AcceptPlanningInvitePage,
@@ -107,16 +104,8 @@ import {
   VendorStudioPage,
   InquiryDetailPage,
   AcceptTeamInvitePage,
-  AdminDashboard,
-  AdminVendorsPage,
-  AdminReviewsPage,
-  AdminInquiriesPage,
-  AdminVerificationsPage,
-  AdminEditorialPage,
   EditorialArticlePage,
   ClaimVendorPage,
-  AdminClaimsPage,
-  AdminReportsPage,
   PublicReviewPage,
   ProposalPrintPage,
   PublicProposalPage,
@@ -183,7 +172,7 @@ const App = () => (
               <Route path="/check-email" element={<CheckEmailPage />} />
               <Route path="/forgot-password" element={<ForgotPasswordPage />} />
               <Route path="/reset-password" element={<ResetPasswordPage />} />
-              <Route path="/settings" element={<RequireRole role={["host", "vendor", "admin"]}><SettingsPage /></RequireRole>} />
+              <Route path="/settings" element={<RequireRole role={["host", "vendor"]}><SettingsPage /></RequireRole>} />
 
               {/* Customer */}
               <Route path="/customer/dashboard" element={<RequireRole role="host"><CustomerDashboard /></RequireRole>} />
@@ -203,16 +192,13 @@ const App = () => (
               <Route path="/customer/gifts" element={<RequireRole role="host"><GiftWishesPage /></RequireRole>} />
               <Route path="/customer/microsite" element={<RequireRole role="host"><MicrositeEditorPage /></RequireRole>} />
               <Route path="/planner" element={<RequireRole role={["host", "vendor"]}><PlannerWorkspacePage /></RequireRole>} />
-              <Route path="/party" element={<RequireRole role={["host", "vendor", "admin"]}><PartyHubPage /></RequireRole>} />
-              <Route path="/party/:eventId" element={<RequireRole role={["host", "vendor", "admin"]}><PartyHubPage /></RequireRole>} />
+              <Route path="/party" element={<RequireRole role={["host", "vendor"]}><PartyHubPage /></RequireRole>} />
+              <Route path="/party/:eventId" element={<RequireRole role={["host", "vendor"]}><PartyHubPage /></RequireRole>} />
               <Route path="/accept-party-invite/:token" element={<AcceptPartyInvitePage />} />
               <Route path="/gift/:token" element={<GiftSharePage />} />
               <Route path="/e/:token" element={<EventMicrositePage />} />
               <Route path="/album/:token" element={<EventAlbumPage />} />
-              <Route path="/support" element={<RequireRole role={["host", "vendor", "admin"]}><SupportPage /></RequireRole>} />
-              <Route path="/admin/support" element={<RequireRole role="admin"><AdminSupportPage /></RequireRole>} />
-              <Route path="/admin/audit" element={<RequireRole role="admin"><AdminAuditPage /></RequireRole>} />
-              <Route path="/admin/email-deliverability" element={<RequireRole role="admin"><AdminEmailDeliverabilityPage /></RequireRole>} />
+              <Route path="/support" element={<RequireRole role={["host", "vendor"]}><SupportPage /></RequireRole>} />
               <Route path="/customer/appointments" element={<RequireRole role="host"><AppointmentsPage /></RequireRole>} />
               <Route path="/customer/favorites" element={<RequireRole role="host"><FavoritesPage /></RequireRole>} />
               <Route path="/customer/saved-searches" element={<RequireRole role="host"><SavedSearchesPage /></RequireRole>} />
@@ -244,15 +230,6 @@ const App = () => (
               <Route path="/vendor/studio" element={<RequireRole role="vendor"><VendorStudioPage /></RequireRole>} />
               <Route path="/vendor/inbox/:inquiryId" element={<RequireRole role="vendor"><InquiryDetailPage /></RequireRole>} />
 
-              {/* Admin */}
-              <Route path="/admin/dashboard" element={<RequireRole role="admin"><AdminDashboard /></RequireRole>} />
-              <Route path="/admin/vendors" element={<RequireRole role="admin"><AdminVendorsPage /></RequireRole>} />
-              <Route path="/admin/inquiries" element={<RequireRole role="admin"><AdminInquiriesPage /></RequireRole>} />
-              <Route path="/admin/reviews" element={<RequireRole role="admin"><AdminReviewsPage /></RequireRole>} />
-              <Route path="/admin/verifications" element={<RequireRole role="admin"><AdminVerificationsPage /></RequireRole>} />
-              <Route path="/admin/editorial" element={<RequireRole role="admin"><AdminEditorialPage /></RequireRole>} />
-              <Route path="/admin/claims" element={<RequireRole role="admin"><AdminClaimsPage /></RequireRole>} />
-              <Route path="/admin/reports" element={<RequireRole role="admin"><AdminReportsPage /></RequireRole>} />
 
               <Route path="*" element={<NotFound />} />
             </Routes>

@@ -36,17 +36,8 @@ export const VendorEventTypeCityPage = lazy(importVendorEventTypeCity);
 const importEditorialArticle = () => import("@/pages/EditorialArticlePage");
 export const EditorialArticlePage = lazy(importEditorialArticle);
 
-const importAdminEditorial = () => import("@/pages/admin/AdminEditorialPage");
-export const AdminEditorialPage = lazy(importAdminEditorial);
-
 const importClaimVendor = () => import("@/pages/ClaimVendorPage");
 export const ClaimVendorPage = lazy(importClaimVendor);
-
-const importAdminClaims = () => import("@/pages/admin/AdminClaimsPage");
-export const AdminClaimsPage = lazy(importAdminClaims);
-
-const importAdminReports = () => import("@/pages/admin/AdminReportsPage");
-export const AdminReportsPage = lazy(importAdminReports);
 
 const importPublicReview = () => import("@/pages/PublicReviewPage");
 export const PublicReviewPage = lazy(importPublicReview);
@@ -215,15 +206,6 @@ export const EventAlbumPage = lazy(importEventAlbum);
 const importSupport = () => import("@/pages/SupportPage");
 export const SupportPage = lazy(importSupport);
 
-const importAdminSupport = () => import("@/pages/admin/AdminSupportPage");
-export const AdminSupportPage = lazy(importAdminSupport);
-
-const importAdminAudit = () => import("@/pages/admin/AdminAuditPage");
-export const AdminAuditPage = lazy(importAdminAudit);
-
-const importAdminEmail = () => import("@/pages/admin/AdminEmailDeliverabilityPage");
-export const AdminEmailDeliverabilityPage = lazy(importAdminEmail);
-
 // ---------------- Vendor ----------------
 const importVendorDashboard = () => import("@/pages/vendor/VendorDashboard");
 export const VendorDashboard = lazy(importVendorDashboard);
@@ -263,23 +245,6 @@ export const InquiryDetailPage = lazy(importInquiryDetail);
 
 const importAvailability = () => import("@/pages/vendor/AvailabilityPage");
 export const AvailabilityPage = lazy(importAvailability);
-
-// ---------------- Admin ----------------
-const importAdminDashboard = () => import("@/pages/admin/AdminDashboard");
-export const AdminDashboard = lazy(importAdminDashboard);
-
-const importAdminVendors = () => import("@/pages/admin/AdminVendorsPage");
-export const AdminVendorsPage = lazy(importAdminVendors);
-
-const importAdminReviews = () => import("@/pages/admin/AdminReviewsPage");
-export const AdminReviewsPage = lazy(importAdminReviews);
-
-const importAdminInquiries = () => import("@/pages/admin/AdminInquiriesPage");
-export const AdminInquiriesPage = lazy(importAdminInquiries);
-
-const importAdminVerifications = () => import("@/pages/admin/AdminVerificationsPage");
-export const AdminVerificationsPage = lazy(importAdminVerifications);
-
 // ---------------- path → importer registry ----------------
 // Order matters for matchPath — more specific patterns first. Static
 // strings are tried before dynamic ones via Map insertion order.
@@ -341,9 +306,6 @@ const ROUTE_IMPORTERS: Array<{ pattern: string; importer: () => Promise<unknown>
   { pattern: "/e/:token", importer: importEventMicrosite },
   { pattern: "/album/:token", importer: importEventAlbum },
   { pattern: "/support", importer: importSupport },
-  { pattern: "/admin/support", importer: importAdminSupport },
-  { pattern: "/admin/audit", importer: importAdminAudit },
-  { pattern: "/admin/email-deliverability", importer: importAdminEmail },
   { pattern: "/customer/appointments", importer: importAppointments },
   { pattern: "/customer/favorites", importer: importFavorites },
   { pattern: "/customer/saved-searches", importer: importSavedSearches },
@@ -371,12 +333,6 @@ const ROUTE_IMPORTERS: Array<{ pattern: string; importer: () => Promise<unknown>
   { pattern: "/vendor/ai-agent", importer: importVendorAiAgent },
   { pattern: "/vendor/studio", importer: importVendorStudio },
   { pattern: "/vendor/inbox/:inquiryId", importer: importInquiryDetail },
-  // Admin
-  { pattern: "/admin/dashboard", importer: importAdminDashboard },
-  { pattern: "/admin/vendors", importer: importAdminVendors },
-  { pattern: "/admin/inquiries", importer: importAdminInquiries },
-  { pattern: "/admin/reviews", importer: importAdminReviews },
-  { pattern: "/admin/verifications", importer: importAdminVerifications },
 ];
 
 // Resolve a path string ("/vendors/abc-123") to an importer factory if

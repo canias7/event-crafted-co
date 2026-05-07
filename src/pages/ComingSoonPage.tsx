@@ -7,12 +7,11 @@ import { MobileNav } from "@/components/shared/MobileNav";
 import {
   customerNavItems,
   vendorNavItems,
-  adminNavItems,
   type NavItem,
 } from "@/data/navItems";
 
 interface Props {
-  side: "customer" | "vendor" | "admin";
+  side: "customer" | "vendor";
   /** Override the auto-detected title (otherwise pulled from nav config). */
   title?: string;
   /** Short description of what's coming. */
@@ -32,26 +31,13 @@ export default function ComingSoonPage({
   const { t } = useTranslation();
   const location = useLocation();
   const navItems: NavItem[] =
-    side === "customer"
-      ? customerNavItems
-      : side === "vendor"
-        ? vendorNavItems
-        : adminNavItems;
+    side === "customer" ? customerNavItems : vendorNavItems;
   const matched = navItems.find((n) => n.path === location.pathname);
   const heading =
     title ?? (matched ? t(matched.labelKey) : "Coming soon");
-  const sidebarTitle =
-    side === "customer"
-      ? "Customer"
-      : side === "vendor"
-        ? "Vendor Portal"
-        : "Admin";
+  const sidebarTitle = side === "customer" ? "Customer" : "Vendor Portal";
   const fallbackCtaPath =
-    side === "customer"
-      ? "/customer/dashboard"
-      : side === "vendor"
-        ? "/vendor/dashboard"
-        : "/admin/dashboard";
+    side === "customer" ? "/customer/dashboard" : "/vendor/dashboard";
 
   return (
     <div className="flex min-h-screen bg-background">

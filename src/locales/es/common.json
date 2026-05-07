@@ -198,19 +198,6 @@
       "ai_agent": "Agente IA",
       "studio": "Estudio"
     },
-    "admin": {
-      "overview": "Resumen",
-      "vendors": "Proveedores",
-      "verifications": "Verificaciones",
-      "inquiries": "Consultas",
-      "reviews": "Reseñas",
-      "editorial": "Editorial",
-      "claims": "Invitaciones",
-      "support": "Soporte",
-      "audit": "Auditoría",
-      "email_health": "Salud de correo",
-      "settings": "Configuración"
-    },
     "bottom": {
       "payments": "Pagos",
       "support": "Soporte",
@@ -262,9 +249,6 @@
       "stat_drafted": "Borrador IA",
       "stat_replied": "Respondidas",
       "stat_won": "Reservadas"
-    },
-    "admin": {
-      "title": "Administrador"
     }
   },
   "vendor_quick_actions": {

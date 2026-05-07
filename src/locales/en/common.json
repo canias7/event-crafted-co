@@ -198,19 +198,6 @@
       "ai_agent": "AI Agent",
       "studio": "Studio"
     },
-    "admin": {
-      "overview": "Overview",
-      "vendors": "Vendors",
-      "verifications": "Verifications",
-      "inquiries": "Inquiries",
-      "reviews": "Reviews",
-      "editorial": "Editorial",
-      "claims": "Claim invites",
-      "support": "Support",
-      "audit": "Audit log",
-      "email_health": "Email health",
-      "settings": "Settings"
-    },
     "bottom": {
       "payments": "Payments",
       "support": "Support",
@@ -262,9 +249,6 @@
       "stat_drafted": "AI-drafted",
       "stat_replied": "Replied",
       "stat_won": "Booked"
-    },
-    "admin": {
-      "title": "Admin"
     }
   },
   "vendor_quick_actions": {

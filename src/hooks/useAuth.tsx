@@ -2,7 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useState, ReactNode 
 import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 
-export type AppRole = "host" | "vendor" | "admin";
+export type AppRole = "host" | "vendor";
 export type EventType = "wedding" | "birthday" | "holiday_dinner" | "other";
 
 export interface ActiveEvent {

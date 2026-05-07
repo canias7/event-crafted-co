@@ -94,13 +94,6 @@ const VENDOR_NAV: NavTarget[] = [
   { label: "Availability", path: "/vendor/availability", icon: CalendarDays },
 ];
 
-const ADMIN_NAV: NavTarget[] = [
-  { label: "Admin dashboard", path: "/admin/dashboard", icon: LayoutDashboard },
-  { label: "All vendors", path: "/admin/vendors", icon: Store },
-  { label: "All inquiries", path: "/admin/inquiries", icon: MessageSquare },
-  { label: "Reviews moderation", path: "/admin/reviews", icon: CheckSquare },
-];
-
 const SETTINGS_NAV: NavTarget[] = [
   { label: "Settings", path: "/settings", icon: Settings },
 ];
@@ -129,7 +122,6 @@ export function CommandPalette({ initialOpen = false }: { initialOpen?: boolean 
   }
 
   const isHost = profile?.role === "host";
-  const isAdmin = profile?.role === "admin";
   const isVendor =
     profile?.role === "vendor" || vendorMemberships.length > 0;
 
@@ -183,17 +175,6 @@ export function CommandPalette({ initialOpen = false }: { initialOpen?: boolean 
             <CommandSeparator />
             <CommandGroup heading="Vendor">
               {VENDOR_NAV.map((n) => (
-                <NavRow key={n.path} item={n} onSelect={() => go(n.path)} />
-              ))}
-            </CommandGroup>
-          </>
-        )}
-
-        {isAdmin && (
-          <>
-            <CommandSeparator />
-            <CommandGroup heading="Admin">
-              {ADMIN_NAV.map((n) => (
                 <NavRow key={n.path} item={n} onSelect={() => go(n.path)} />
               ))}
             </CommandGroup>

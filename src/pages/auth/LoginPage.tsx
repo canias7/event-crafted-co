@@ -37,11 +37,7 @@ export default function LoginPage() {
       .maybeSingle();
     const role = prof?.role ?? "host";
     navigate(
-      role === "vendor"
-        ? "/vendor/dashboard"
-        : role === "admin"
-          ? "/admin/dashboard"
-          : "/customer/dashboard",
+      role === "vendor" ? "/vendor/dashboard" : "/customer/dashboard",
     );
   }
 

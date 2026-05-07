@@ -29,16 +29,12 @@ function buildSecondaryLinks(t: (key: string) => string) {
 
 function dashboardPath(role?: string) {
   if (role === "vendor") return "/vendor/dashboard";
-  if (role === "admin") return "/admin/dashboard";
   return "/customer/dashboard";
 }
 
-function dashboardLabel(role?: string, t?: (key: string) => string) {
+function dashboardLabel(_role?: string, t?: (key: string) => string) {
   // Translation is best-effort — if no t passed (legacy), fall back.
-  const label = t ? t("nav.dashboard") : "My dashboard";
-  if (role === "vendor") return label;
-  if (role === "admin") return label;
-  return label;
+  return t ? t("nav.dashboard") : "My dashboard";
 }
 
 export function PublicNav() {

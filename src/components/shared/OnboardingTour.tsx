@@ -9,7 +9,7 @@ import { PrefetchLink as Link } from "@/components/shared/PrefetchLink";
 // bottom-right with N steps; user can prev/next or dismiss. Dismissal
 // writes profiles.tour_dismissed_at so it never shows again.
 //
-// Per-role copy (host / vendor / admin) — kept short by request.
+// Per-role copy (host / vendor) — kept short by request.
 
 interface Step {
   title: string;

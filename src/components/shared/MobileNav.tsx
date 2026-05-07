@@ -41,9 +41,7 @@ export function MobileNav({ items }: MobileNavProps) {
   // destinations. It still appears in the More drawer for users who
   // navigate there from a non-dashboard page.
   const isInbox = (path: string) =>
-    path === "/vendor/inbox" ||
-    path === "/customer/inquiries" ||
-    path === "/admin/inquiries";
+    path === "/vendor/inbox" || path === "/customer/inquiries";
   const primaryItems = items.filter((it) => !isInbox(it.path)).slice(0, 4);
   const overflowItems = items.filter(
     (it) => !primaryItems.some((p) => p.path === it.path),
