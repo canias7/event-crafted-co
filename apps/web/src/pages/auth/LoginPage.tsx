@@ -11,12 +11,36 @@ import { Picture } from "@/components/shared/Picture";
 import heroImg from "@/assets/vendora-hero-cinematic.jpg?as=picture";
 import { SocialAuthButtons } from "@/components/auth/SocialAuthButtons";
 
-export default function LoginPage() {
+interface LoginPageProps {
+  // When set, the form is themed for that role and the success redirect
+  // prefers that role's dashboard. We still cross-check the actual role
+  // on the profile so a host who lands on the vendor form gets routed
+  // to /customer/dashboard, not into a vendor view they can't use.
+  role?: "host" | "vendor";
+}
+
+export default function LoginPage({ role }: LoginPageProps = {}) {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+
+  const heading =
+    role === "host"
+      ? "Host sign in"
+      : role === "vendor"
+        ? "Vendor sign in"
+        : t("auth.login.title");
+  const subheading =
+    role === "host"
+      ? "Welcome back, host."
+      : role === "vendor"
+        ? "Welcome back, vendor."
+        : t("auth.login.subtitle");
+  const otherSideHref = role === "host" ? "/login/vendor" : "/login/host";
+  const otherSideLabel =
+    role === "host" ? "Sign in as a vendor" : "Sign in as a host";
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -98,11 +122,9 @@ export default function LoginPage() {
           </Link>
 
           <h1 className="font-display text-3xl md:text-4xl mb-2 leading-tight">
-            {t("auth.login.title")}
+            {heading}
           </h1>
-          <p className="text-sm text-muted-foreground mb-10">
-            {t("auth.login.subtitle")}
-          </p>
+          <p className="text-sm text-muted-foreground mb-10">{subheading}</p>
 
           <form onSubmit={onSubmit} className="space-y-4">
             <div className="space-y-2">
@@ -165,6 +187,15 @@ export default function LoginPage() {
               {t("auth.login.create_account")}
             </Link>
           </p>
+
+          {role ? (
+            <p className="text-xs text-muted-foreground mt-3 text-center">
+              On the other side?{" "}
+              <Link to={otherSideHref} className="text-accent font-medium">
+                {otherSideLabel}
+              </Link>
+            </p>
+          ) : null}
         </div>
       </div>
     </div>

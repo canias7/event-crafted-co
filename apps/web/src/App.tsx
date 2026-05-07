@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 
 import LandingPage from "./pages/LandingPage";
 import LoginPage from "./pages/auth/LoginPage";
+import LoginRoleChooserPage from "./pages/auth/LoginRoleChooserPage";
 import SignupPage from "./pages/auth/SignupPage";
 import CheckEmailPage from "./pages/auth/CheckEmailPage";
 import ForgotPasswordPage from "./pages/auth/ForgotPasswordPage";
@@ -167,7 +168,9 @@ const App = () => (
               <Route path="/status" element={<StatusPage />} />
               <Route path="/press" element={<PressPage />} />
               <Route path="/vendor-apply" element={<VendorApplyPage />} />
-              <Route path="/login" element={<LoginPage />} />
+              <Route path="/login" element={<LoginRoleChooserPage />} />
+              <Route path="/login/host" element={<LoginPage role="host" />} />
+              <Route path="/login/vendor" element={<LoginPage role="vendor" />} />
               <Route path="/signup" element={<SignupPage />} />
               <Route path="/check-email" element={<CheckEmailPage />} />
               <Route path="/forgot-password" element={<ForgotPasswordPage />} />
