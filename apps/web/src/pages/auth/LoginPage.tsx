@@ -51,7 +51,17 @@ export default function LoginPage({ role }: LoginPageProps = {}) {
     });
     setLoading(false);
     if (error) {
-      toast.error(error.message);
+      // Pending vendors are banned via auth.users.banned_until until
+      // an admin approves them — surface the actual reason instead of
+      // GoTrue's generic "User is banned".
+      const msg = (error.message || "").toLowerCase();
+      if (msg.includes("banned") || msg.includes("not allowed")) {
+        toast.error(
+          "Your vendor application is still under review. We'll email you once it's approved.",
+        );
+      } else {
+        toast.error(error.message);
+      }
       return;
     }
     const { data: prof } = await supabase
