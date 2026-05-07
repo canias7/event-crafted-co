@@ -8,7 +8,6 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
 } from "lucide-react";
-import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { getBottomNav } from "@/data/navItems";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -107,7 +106,6 @@ export function DashboardSidebar({
           >
             V
           </Link>
-          <NotificationBell variant="light" />
           <button
             type="button"
             onClick={() => setCollapsed(false)}
@@ -127,17 +125,14 @@ export function DashboardSidebar({
               {title}
             </p>
           </div>
-          <div className="flex items-center gap-1 shrink-0">
-            <NotificationBell variant="light" />
-            <button
-              type="button"
-              onClick={() => setCollapsed(true)}
-              aria-label="Collapse sidebar"
-              className="w-7 h-7 rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary/50 flex items-center justify-center transition-colors"
-            >
-              <PanelLeftClose className="w-3.5 h-3.5" />
-            </button>
-          </div>
+          <button
+            type="button"
+            onClick={() => setCollapsed(true)}
+            aria-label="Collapse sidebar"
+            className="w-7 h-7 rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary/50 flex items-center justify-center transition-colors shrink-0"
+          >
+            <PanelLeftClose className="w-3.5 h-3.5" />
+          </button>
         </div>
       )}
       <nav

@@ -226,9 +226,6 @@ export default function VendorDashboard() {
                 {t("vendor_dashboard.header.verified")}
               </Badge>
             )}
-            <Button variant="outline" size="sm" className="h-9">
-              <Bell className="w-4 h-4" />
-            </Button>
           </div>
         </div>
 

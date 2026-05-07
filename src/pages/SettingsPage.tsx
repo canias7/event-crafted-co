@@ -25,6 +25,7 @@ import { DashboardSidebar } from "@/components/shared/DashboardSidebar";
 import { MobileNav } from "@/components/shared/MobileNav";
 import { PushNotificationsCard } from "@/components/settings/PushNotificationsCard";
 import { NotificationPreferencesCard } from "@/components/settings/NotificationPreferencesCard";
+import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { TwoFactorCard } from "@/components/settings/TwoFactorCard";
 import { customerNavItems, vendorNavItems } from "@/data/navItems";
 
@@ -429,7 +430,24 @@ export default function SettingsPage() {
                 subtitle="Get pinged in real time on this device"
               >
                 <div className="space-y-6">
-                  <PushNotificationsCard />
+                  {/* Recent notifications panel — moved here from the
+                      portal top-right so the bell icon doesn't clutter
+                      every page header. */}
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium mb-1">
+                        Recent activity
+                      </p>
+                      <p className="text-xs text-muted-foreground leading-relaxed">
+                        Open the bell to see new inquiries, replies,
+                        bookings, and team alerts in one feed.
+                      </p>
+                    </div>
+                    <NotificationBell variant="light" />
+                  </div>
+                  <div className="pt-4 border-t border-border">
+                    <PushNotificationsCard />
+                  </div>
                   <div className="pt-4 border-t border-border">
                     <NotificationPreferencesCard />
                   </div>
