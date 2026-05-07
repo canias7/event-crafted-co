@@ -15,5 +15,8 @@ export const supabase = createClient(url, key, {
     storageKey: "vendora-admin-auth",
     persistSession: true,
     autoRefreshToken: true,
+    // Single-instance admin app — skip navigator.locks, which can hang
+    // for 5s on a stale lock and leave the UI stuck on "Loading...".
+    lock: async (_name, _acquireTimeout, fn) => fn(),
   },
 });

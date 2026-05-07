@@ -33,32 +33,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const init = async () => {
-      const existing = await supabase.auth.getSession();
-      let s = existing.data.session;
+      try {
+        const existing = await supabase.auth.getSession();
+        let s = existing.data.session;
 
-      if (!s) {
-        const email = import.meta.env.VITE_ADMIN_EMAIL;
-        const password = import.meta.env.VITE_ADMIN_PASSWORD;
-        if (!email || !password) {
-          setError("Admin credentials are not configured.");
-          setLoading(false);
-          return;
+        if (!s) {
+          const email = import.meta.env.VITE_ADMIN_EMAIL;
+          const password = import.meta.env.VITE_ADMIN_PASSWORD;
+          if (!email || !password) {
+            setError("Admin credentials are not configured.");
+            return;
+          }
+          const { data, error: signInError } = await supabase.auth.signInWithPassword({
+            email,
+            password,
+          });
+          if (signInError) {
+            setError(signInError.message);
+            return;
+          }
+          s = data.session;
         }
-        const { data, error: signInError } = await supabase.auth.signInWithPassword({
-          email,
-          password,
-        });
-        if (signInError) {
-          setError(signInError.message);
-          setLoading(false);
-          return;
-        }
-        s = data.session;
+
+        setSession(s);
+        if (s) await loadProfile(s.user.id);
+      } catch (e) {
+        setError(e instanceof Error ? e.message : String(e));
+      } finally {
+        setLoading(false);
       }
-
-      setSession(s);
-      if (s) await loadProfile(s.user.id);
-      setLoading(false);
     };
     init();
 
