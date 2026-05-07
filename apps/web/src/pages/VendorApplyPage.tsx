@@ -1,13 +1,12 @@
 import { useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowRight, ArrowLeft, Loader2, Sparkles } from "lucide-react";
+import { ArrowRight, ArrowLeft, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -43,8 +42,6 @@ export default function VendorApplyPage() {
   // Step 2 — business
   const [businessName, setBusinessName] = useState("");
   const [category, setCategory] = useState("");
-  const [bio, setBio] = useState("");
-  const [portfolioSummary, setPortfolioSummary] = useState("");
 
   function step1Valid() {
     return (
@@ -105,8 +102,6 @@ export default function VendorApplyPage() {
         user_id: signUpData.user.id,
         business_name: businessName.trim(),
         category,
-        bio: bio.trim() || null,
-        portfolio_summary: portfolioSummary.trim() || null,
       })
       .select("id")
       .single();
@@ -305,69 +300,36 @@ export default function VendorApplyPage() {
                   </p>
                 </div>
 
-                <div className="grid sm:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="business-name">Business name</Label>
-                    <Input
-                      id="business-name"
-                      value={businessName}
-                      onChange={(e) => setBusinessName(e.target.value)}
-                      placeholder="Luminara Photography"
-                      required
-                      className="h-11"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="category">Category</Label>
-                    <Select value={category} onValueChange={setCategory}>
-                      <SelectTrigger id="category" className="h-11">
-                        <SelectValue placeholder="Choose a category" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {CATEGORY_GROUPS.map((group) => (
-                          <SelectGroup key={group.slug}>
-                            <SelectLabel>{group.name}</SelectLabel>
-                            {group.subs.map((sub) => (
-                              <SelectItem key={sub} value={sub}>
-                                {sub}
-                              </SelectItem>
-                            ))}
-                          </SelectGroup>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-
                 <div className="space-y-2">
-                  <Label htmlFor="bio">Short bio</Label>
-                  <Textarea
-                    id="bio"
-                    value={bio}
-                    onChange={(e) => setBio(e.target.value)}
-                    rows={3}
-                    placeholder="One or two sentences about your style and approach."
+                  <Label htmlFor="business-name">Business name</Label>
+                  <Input
+                    id="business-name"
+                    value={businessName}
+                    onChange={(e) => setBusinessName(e.target.value)}
+                    placeholder="Luminara Photography"
+                    required
+                    className="h-11"
                   />
                 </div>
-
                 <div className="space-y-2">
-                  <Label htmlFor="portfolio-summary">Portfolio summary</Label>
-                  <Textarea
-                    id="portfolio-summary"
-                    value={portfolioSummary}
-                    onChange={(e) => setPortfolioSummary(e.target.value)}
-                    rows={4}
-                    placeholder="What makes your work distinctive? Notable clients, signature aesthetic, typical event size, anything that helps couples and hosts find you."
-                  />
-                </div>
-
-                <div className="rounded-sm bg-secondary/50 p-4 text-xs text-muted-foreground leading-relaxed flex gap-2">
-                  <Sparkles className="w-3.5 h-3.5 text-accent flex-shrink-0 mt-0.5" />
-                  <span>
-                    Your bio and portfolio summary feed our AI inquiry agent so
-                    it can draft replies in your voice. The more context, the
-                    better the drafts.
-                  </span>
+                  <Label htmlFor="category">Category</Label>
+                  <Select value={category} onValueChange={setCategory}>
+                    <SelectTrigger id="category" className="h-11">
+                      <SelectValue placeholder="Choose a category" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {CATEGORY_GROUPS.map((group) => (
+                        <SelectGroup key={group.slug}>
+                          <SelectLabel>{group.name}</SelectLabel>
+                          {group.subs.map((sub) => (
+                            <SelectItem key={sub} value={sub}>
+                              {sub}
+                            </SelectItem>
+                          ))}
+                        </SelectGroup>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 <div className="flex items-center justify-between pt-2">
