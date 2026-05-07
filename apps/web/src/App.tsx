@@ -55,6 +55,7 @@ import {
   PressPage,
   SettingsPage,
   VendorApplyPage,
+  VendorApplyThanksPage,
   NotFound,
   ComingSoonPage,
   CustomerDashboard,
@@ -169,6 +170,7 @@ const App = () => (
               <Route path="/status" element={<StatusPage />} />
               <Route path="/press" element={<PressPage />} />
               <Route path="/vendor-apply" element={<VendorApplyPage />} />
+              <Route path="/vendor-apply/thanks" element={<VendorApplyThanksPage />} />
               <Route path="/login" element={<LoginRoleChooserPage />} />
               <Route path="/login/host" element={<LoginPage role="host" />} />
               <Route path="/login/vendor" element={<LoginPage role="vendor" />} />

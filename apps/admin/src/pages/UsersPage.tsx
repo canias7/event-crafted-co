@@ -4,10 +4,12 @@ import { supabase } from "@/lib/supabase";
 
 type UserRow = {
   id: string;
+  email: string | null;
   display_name: string | null;
   role: "host" | "vendor" | "admin";
   suspended_at: string | null;
   created_at: string;
+  last_sign_in_at: string | null;
 };
 
 const ROLES: Array<UserRow["role"]> = ["host", "vendor", "admin"];
@@ -19,11 +21,7 @@ export function UsersPage() {
 
   const load = useCallback(async () => {
     setLoading(true);
-    const { data, error } = await supabase
-      .from("profiles")
-      .select("id, display_name, role, suspended_at, created_at")
-      .order("created_at", { ascending: false })
-      .limit(200);
+    const { data, error } = await supabase.rpc("admin_list_users");
     setLoading(false);
     if (error) {
       toast.error(error.message);
@@ -65,20 +63,26 @@ export function UsersPage() {
     );
   };
 
-  const filtered = rows.filter((r) =>
-    !filter
-      ? true
-      : (r.display_name ?? "").toLowerCase().includes(filter.toLowerCase()) ||
-        r.id.includes(filter),
-  );
+  const filtered = rows.filter((r) => {
+    if (!filter) return true;
+    const q = filter.toLowerCase();
+    return (
+      (r.display_name ?? "").toLowerCase().includes(q) ||
+      (r.email ?? "").toLowerCase().includes(q) ||
+      r.id.includes(filter)
+    );
+  });
 
   return (
     <div className="p-8">
       <h1 className="text-2xl font-semibold">Users</h1>
+      <p className="mt-1 text-sm text-ink/60">
+        {rows.length} total. Suspending blocks the account from sign-in.
+      </p>
       <input
         value={filter}
         onChange={(e) => setFilter(e.target.value)}
-        placeholder="Filter by name or id"
+        placeholder="Filter by name, email, or id"
         className="mt-4 w-full max-w-sm rounded border border-ink/15 bg-white px-3 py-2 text-sm outline-none focus:border-gold"
       />
 
@@ -89,10 +93,11 @@ export function UsersPage() {
           <table className="w-full text-sm">
             <thead className="bg-ink/5 text-left text-xs uppercase tracking-wide text-ink/60">
               <tr>
-                <th className="px-4 py-2">Name</th>
+                <th className="px-4 py-2">Name / Email</th>
                 <th className="px-4 py-2">Role</th>
                 <th className="px-4 py-2">Status</th>
                 <th className="px-4 py-2">Joined</th>
+                <th className="px-4 py-2">Last sign-in</th>
                 <th className="px-4 py-2 text-right">Actions</th>
               </tr>
             </thead>
@@ -103,6 +108,7 @@ export function UsersPage() {
                     <div className="font-medium">
                       {r.display_name ?? "—"}
                     </div>
+                    <div className="text-xs text-ink/60">{r.email ?? "—"}</div>
                     <div className="font-mono text-[11px] text-ink/40">
                       {r.id.slice(0, 8)}
                     </div>
@@ -134,12 +140,17 @@ export function UsersPage() {
                   <td className="px-4 py-2 text-xs text-ink/60">
                     {new Date(r.created_at).toLocaleDateString()}
                   </td>
+                  <td className="px-4 py-2 text-xs text-ink/60">
+                    {r.last_sign_in_at
+                      ? new Date(r.last_sign_in_at).toLocaleDateString()
+                      : "—"}
+                  </td>
                   <td className="px-4 py-2 text-right">
                     <button
                       onClick={() => toggleSuspend(r)}
                       className="text-xs underline-offset-2 hover:underline"
                     >
-                      {r.suspended_at ? "Unsuspend" : "Suspend"}
+                      {r.suspended_at ? "Unsuspend" : "Revoke access"}
                     </button>
                   </td>
                 </tr>
@@ -147,7 +158,7 @@ export function UsersPage() {
               {filtered.length === 0 ? (
                 <tr>
                   <td
-                    colSpan={5}
+                    colSpan={6}
                     className="px-4 py-8 text-center text-sm text-ink/60"
                   >
                     No users.

@@ -85,6 +85,9 @@ export const SettingsPage = lazy(importSettings);
 const importVendorApply = () => import("@/pages/VendorApplyPage");
 export const VendorApplyPage = lazy(importVendorApply);
 
+const importVendorApplyThanks = () => import("@/pages/VendorApplyThanksPage");
+export const VendorApplyThanksPage = lazy(importVendorApplyThanks);
+
 const importNotFound = () => import("@/pages/NotFound");
 export const NotFound = lazy(importNotFound);
 

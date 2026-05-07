@@ -109,8 +109,8 @@ export default function VendorApplyPage() {
     setSubmitting(false);
 
     if (vpError) {
-      toast.error(`Account created, but couldn't save business profile: ${vpError.message}. You can complete it later from your dashboard.`);
-      navigate("/vendor/dashboard");
+      toast.error(`Account created, but couldn't save business profile: ${vpError.message}.`);
+      navigate("/vendor-apply/thanks");
       return;
     }
 
@@ -128,10 +128,10 @@ export default function VendorApplyPage() {
         .then(() => {});
     }
 
-    toast.success(
-      "Application received — we'll review within 2-3 business days. You can finish setting up your profile while you wait.",
-    );
-    navigate("/vendor/onboarding");
+    // Sign the user out — they don't get to access the vendor dashboard
+    // until admin approves the application.
+    await supabase.auth.signOut();
+    navigate("/vendor-apply/thanks");
   }
 
   return (

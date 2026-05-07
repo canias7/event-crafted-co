@@ -27,7 +27,7 @@ export function VendorApplicationsPage() {
     const { data, error } = await supabase
       .from("vendor_profiles")
       .select(
-        "id, user_id, business_name, category, bio, location, application_status, created_at, profile:profiles!inner(display_name)",
+        "id, user_id, business_name, category, bio, location, application_status, created_at, profile:profiles!vendor_profiles_user_id_fkey(display_name)",
       )
       .eq("application_status", tab)
       .order("created_at", { ascending: false });

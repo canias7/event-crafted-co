@@ -344,11 +344,13 @@ export default function VendorProfilePage() {
       // public SocialEmbedCard can compose URLs cleanly.
       instagram_handle: instagramHandle.trim().replace(/^@+/, "") || null,
       tiktok_handle: tiktokHandle.trim().replace(/^@+/, "") || null,
-      // Hitting Publish flips the listing to approved so it shows up
-      // in the public directory immediately. Regular Save leaves the
-      // existing status untouched (typed as `any` because
-      // application_status isn't in the generated supabase types).
-      ...(opts?.publish ? { application_status: "approved" } : {}),
+      // Hitting Publish queues the listing for admin review. It only
+      // shows up in the public directory once an admin marks it
+      // approved from the admin app's Vendor listings tab. Regular
+      // Save leaves the existing status untouched (typed as `any`
+      // because application_status isn't in the generated supabase
+      // types).
+      ...(opts?.publish ? { application_status: "pending" } : {}),
     } as Record<string, unknown>;
 
     if (profile) {
