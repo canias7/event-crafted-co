@@ -7,22 +7,12 @@
     "orientation": "portrait",
     "userInterfaceStyle": "light",
     "newArchEnabled": false,
-    "icon": "./assets/icon.png",
-    "splash": {
-      "image": "./assets/splash.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
-    },
     "ios": {
       "bundleIdentifier": "co.eventcrafted.vendor",
       "supportsTablet": true
     },
     "android": {
-      "package": "co.eventcrafted.vendor",
-      "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
-      }
+      "package": "co.eventcrafted.vendor"
     },
     "plugins": [
       "expo-router",
