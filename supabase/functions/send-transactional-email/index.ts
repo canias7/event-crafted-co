@@ -331,16 +331,23 @@ async function vendorDecisionEmail(
   decision: "approved" | "rejected",
 ) {
   const sb = adminClient();
-  const { data } = await sb
+  const { data, error: vpErr } = await sb
     .from("vendor_profiles")
     .select("business_name, user_id")
     .eq("id", p.vendorProfileId)
     .maybeSingle();
+  if (vpErr) console.error("vendor_profiles select error:", vpErr);
+  console.log("vendor_profile lookup:", { id: p.vendorProfileId, row: data });
   const row = data as { business_name: string; user_id: string } | null;
-  if (!row) return null;
-  const { data: userData } = await sb.auth.admin.getUserById(row.user_id);
-  const email = userData?.user?.email;
-  if (!email) return null;
+  if (!row) { console.error("no vendor_profile row"); return null; }
+  if (!row.user_id) { console.error("vendor_profile has no user_id"); return null; }
+  // Use a SECURITY DEFINER RPC to read the email from auth.users.
+  // (auth.admin.getUserById doesn't always resolve cleanly inside edge functions.)
+  const { data: emailData, error: uErr } = await sb.rpc("get_user_email", { p_user_id: row.user_id });
+  if (uErr) console.error("get_user_email error:", uErr);
+  const email = emailData as string | null;
+  console.log("user lookup:", { user_id: row.user_id, email });
+  if (!email) { console.error("no email for user"); return null; }
 
   if (decision === "approved") {
     const link = `${APP_URL}/vendor/dashboard`;
