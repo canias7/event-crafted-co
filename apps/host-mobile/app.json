@@ -20,6 +20,15 @@
     ],
     "experiments": {
       "typedRoutes": true
-    }
+    },
+    "extra": {
+      "router": {
+        "origin": false
+      },
+      "eas": {
+        "projectId": "78809059-f3b6-451b-a5c1-5cae58abe87a"
+      }
+    },
+    "owner": "isibi.ai"
   }
 }
