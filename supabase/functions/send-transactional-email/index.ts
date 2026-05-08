@@ -139,11 +139,16 @@ serve(async (req) => {
     } else if (kind === "party_invite") {
       const e = await partyInviteEmail(body as PartyInvitePayload);
       if (e) emails = [e];
-    } else if (kind === "vendor_approved") {
-      const e = await vendorDecisionEmail(body as VendorDecisionPayload, "approved");
+    } else if (
+      kind === "vendor_approved" ||
+      kind === "vendor_rejected" ||
+      kind === "listing_approved" ||
+      kind === "listing_rejected"
+    ) {
+      const e = await vendorDecisionEmail(body as VendorDecisionPayload, kind as Decision);
       if (e) emails = [e];
-    } else if (kind === "vendor_rejected") {
-      const e = await vendorDecisionEmail(body as VendorDecisionPayload, "rejected");
+    } else if (kind === "signin_code") {
+      const e = signinCodeEmail(body as SigninCodePayload);
       if (e) emails = [e];
     } else {
       return json({ error: `Unknown kind: ${kind}` }, 400);
@@ -326,9 +331,15 @@ function savedSearchMatchEmail(p: SavedSearchMatchPayload) {
   };
 }
 
+type Decision =
+  | "vendor_approved"
+  | "vendor_rejected"
+  | "listing_approved"
+  | "listing_rejected";
+
 async function vendorDecisionEmail(
   p: VendorDecisionPayload,
-  decision: "approved" | "rejected",
+  decision: Decision,
 ) {
   const sb = adminClient();
   const { data, error: vpErr } = await sb
@@ -337,25 +348,24 @@ async function vendorDecisionEmail(
     .eq("id", p.vendorProfileId)
     .maybeSingle();
   if (vpErr) console.error("vendor_profiles select error:", vpErr);
-  console.log("vendor_profile lookup:", { id: p.vendorProfileId, row: data });
   const row = data as { business_name: string; user_id: string } | null;
-  if (!row) { console.error("no vendor_profile row"); return null; }
-  if (!row.user_id) { console.error("vendor_profile has no user_id"); return null; }
-  // Use a SECURITY DEFINER RPC to read the email from auth.users.
-  // (auth.admin.getUserById doesn't always resolve cleanly inside edge functions.)
-  const { data: emailData, error: uErr } = await sb.rpc("get_user_email", { p_user_id: row.user_id });
-  if (uErr) console.error("get_user_email error:", uErr);
+  if (!row || !row.user_id) return null;
+  const { data: emailData } = await sb.rpc("get_user_email", { p_user_id: row.user_id });
   const email = emailData as string | null;
-  console.log("user lookup:", { user_id: row.user_id, email });
-  if (!email) { console.error("no email for user"); return null; }
+  if (!email) return null;
 
-  if (decision === "approved") {
-    const link = `${APP_URL}/vendor/dashboard`;
+  const link = `${APP_URL}/vendor/dashboard`;
+  const business = escape(row.business_name);
+  const reasonLine = p.reviewNotes
+    ? `<p style="margin:0 0 16px;color:#555;"><strong>Reviewer notes:</strong> ${escape(p.reviewNotes)}</p>`
+    : "";
+
+  if (decision === "vendor_approved") {
     const body = `
-      <p style="margin:0 0 16px;">Your Vendora vendor application for <strong>${escape(row.business_name)}</strong> has been approved.</p>
-      <p style="margin:0 0 24px;">You can sign in now to finish setting up your listing — pricing, location, packages, and photos. Once you publish, your listing goes live in the directory.</p>
+      <p style="margin:0 0 16px;">Welcome to Vendora! Your application for <strong>${business}</strong> has been approved.</p>
+      <p style="margin:0 0 24px;">Sign in to finish setting up your listing — pricing, location, packages, photos. When you're ready, publish it and we'll review the final listing one more time before it goes live in the public directory.</p>
       <p style="margin:0 0 24px;">${button(link, "Sign in to your dashboard")}</p>
-      <p style="margin:0;font-size:13px;color:#777;">Welcome to Vendora.</p>`;
+      <p style="margin:0;font-size:13px;color:#777;">Welcome aboard.</p>`;
     return {
       to: email,
       subject: `${row.business_name} — your Vendora application is approved`,
@@ -363,18 +373,66 @@ async function vendorDecisionEmail(
     };
   }
 
-  const reasonLine = p.reviewNotes
-    ? `<p style="margin:0 0 16px;color:#555;"><strong>Reviewer notes:</strong> ${escape(p.reviewNotes)}</p>`
-    : "";
+  if (decision === "vendor_rejected") {
+    const body = `
+      <p style="margin:0 0 16px;">Thanks for applying to list <strong>${business}</strong> on Vendora. After review, we're not able to approve this application at the moment.</p>
+      ${reasonLine}
+      <p style="margin:0 0 16px;">If you'd like to address the feedback and reapply, you're welcome to submit again from the same email.</p>
+      <p style="margin:0;font-size:13px;color:#777;">Questions? Reply to this email and our team will get back to you.</p>`;
+    return {
+      to: email,
+      subject: `Update on your Vendora application for ${row.business_name}`,
+      html: shellHtml(`Application update`, body),
+    };
+  }
+
+  if (decision === "listing_approved") {
+    const body = `
+      <p style="margin:0 0 16px;">Your latest listing update for <strong>${business}</strong> has been approved and is now live in the Vendora directory.</p>
+      <p style="margin:0 0 24px;">Hosts browsing your category will see your updated profile, pricing, and photos. Inquiries flow to your inbox as usual.</p>
+      <p style="margin:0 0 24px;">${button(link, "Open your dashboard")}</p>
+      <p style="margin:0;font-size:13px;color:#777;">Thanks for keeping your listing fresh.</p>`;
+    return {
+      to: email,
+      subject: `${row.business_name} — your updated listing is live`,
+      html: shellHtml(`Listing update approved`, body),
+    };
+  }
+
+  // listing_rejected
   const body = `
-    <p style="margin:0 0 16px;">Thanks for applying to list <strong>${escape(row.business_name)}</strong> on Vendora. After review, we're not able to approve this application at the moment.</p>
+    <p style="margin:0 0 16px;">Your latest listing update for <strong>${business}</strong> wasn't approved. Your previously approved listing is still live — only the new changes are paused.</p>
     ${reasonLine}
-    <p style="margin:0 0 16px;">If you'd like to address the feedback and reapply, you're welcome to submit again from the same email.</p>
+    <p style="margin:0 0 16px;">Sign in, address the feedback, and re-publish whenever you're ready.</p>
+    <p style="margin:0 0 24px;">${button(link, "Open your dashboard")}</p>
     <p style="margin:0;font-size:13px;color:#777;">Questions? Reply to this email and our team will get back to you.</p>`;
   return {
     to: email,
-    subject: `Update on your Vendora application for ${row.business_name}`,
-    html: shellHtml(`Application update`, body),
+    subject: `${row.business_name} — listing update needs changes`,
+    html: shellHtml(`Listing update needs changes`, body),
+  };
+}
+
+interface SigninCodePayload {
+  email: string;
+  code: string;
+}
+
+function signinCodeEmail(p: SigninCodePayload) {
+  const code = String(p.code).replace(/[^0-9]/g, "").slice(0, 6);
+  const body = `
+    <p style="margin:0 0 16px;">Use this 6-digit code to finish signing in to Vendora:</p>
+    <p style="margin:0 0 24px;text-align:center;">
+      <span style="display:inline-block;font-family:'SF Mono',ui-monospace,'Cascadia Mono',Menlo,monospace;font-size:34px;letter-spacing:0.4em;font-weight:600;color:#1a1a1a;background:#f7f5f2;border:1px solid #ececec;border-radius:8px;padding:18px 28px;">
+        ${escape(code)}
+      </span>
+    </p>
+    <p style="margin:0 0 16px;font-size:13px;color:#555;">This code expires in 10 minutes. Don't share it with anyone — Vendora will never ask for it.</p>
+    <p style="margin:0;font-size:13px;color:#777;">If you didn't try to sign in, you can ignore this email.</p>`;
+  return {
+    to: p.email,
+    subject: `Your Vendora sign-in code is ${code}`,
+    html: shellHtml(`Sign-in code`, body),
   };
 }
 

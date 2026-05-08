@@ -79,9 +79,9 @@ export function VendorApplicationsPage() {
       return;
     }
     if (status === "approved" || status === "rejected") {
-      // Fire-and-forget — failure to send the email shouldn't roll
-      // back the decision. The admin sees a separate toast if the
-      // edge function returns an error.
+      // Applications tab handles the INITIAL signup decision.
+      // Subsequent re-publishes are reviewed on Vendor listings tab
+      // and use the listing_* email templates.
       supabase.functions
         .invoke("send-transactional-email", {
           body: {
@@ -95,7 +95,7 @@ export function VendorApplicationsPage() {
           }
         });
     }
-    toast.success(`Marked ${status} — email sent to applicant`);
+    toast.success(`Marked ${status} — applicant emailed`);
     setRows((prev) => prev.filter((r) => r.id !== id));
   };
 

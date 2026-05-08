@@ -84,10 +84,13 @@ export function ListingsPage() {
       return;
     }
     if (status === "approved" || status === "rejected") {
+      // Listings tab handles RE-PUBLISH decisions (vendor edited and
+      // hit Publish on an already-approved listing). Different copy
+      // than the initial vendor_* templates used on Applications tab.
       supabase.functions
         .invoke("send-transactional-email", {
           body: {
-            kind: status === "approved" ? "vendor_approved" : "vendor_rejected",
+            kind: status === "approved" ? "listing_approved" : "listing_rejected",
             vendorProfileId: row.id,
           },
         })
@@ -97,7 +100,7 @@ export function ListingsPage() {
           }
         });
     }
-    toast.success(`Marked ${status} — email sent`);
+    toast.success(`Marked ${status} — vendor emailed`);
     setRows((p) =>
       p.map((r) => (r.id === row.id ? { ...r, application_status: status } : r)),
     );
