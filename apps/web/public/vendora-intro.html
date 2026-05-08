@@ -267,6 +267,11 @@
     const stack = document.getElementById('stack');
     stack.classList.remove('collapsed');
     stack.innerHTML = '';
+    // Reset the wordmark + tagline left over from the previous loop so
+    // they don't show simultaneously with this loop's stack while
+    // scene-2 fades in.
+    document.getElementById('wordmark').innerHTML = '';
+    document.getElementById('tagline').innerHTML = '';
     const words = ['A florist with taste.', 'A photographer to chase.', 'A night without waste.'];
 
     for (let w = 0; w < words.length; w++) {
