@@ -3,7 +3,7 @@
 ## Live URLs
 
 - **Public site:** https://eventvendora.com (and https://app.eventvendora.com) — both serve the same Vercel deployment from `apps/web`. These are THE URLs for the public web app. Auto-redeploy on push to `main`.
-- **Admin:** https://vendora-admin-henna.vercel.app — PIN-gated (`9236`) admin panel from `apps/admin`. Auto-redeploys on push to `main`.
+- **Admin:** https://admin.eventvendora.com (and https://vendora-admin-henna.vercel.app) — PIN-gated (`9236`) admin panel from `apps/admin`. Auto-redeploys on push to `main`.
 
 The DNS for `eventvendora.com` and `app.eventvendora.com` was migrated off Lovable and onto Vercel. Old Lovable host is no longer in the picture.
 
