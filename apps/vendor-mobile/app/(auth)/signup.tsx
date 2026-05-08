@@ -1,290 +1,257 @@
-// Vendor signup. Two steps:
-//   1. Account — display name, email, password
-//   2. Business — business name + category
-// On submit we pass display_name, vendor_business_name, and
-// vendor_category in user_metadata. handle_new_user reads those, creates
-// a vendor_profile in 'pending' state, and sets auth.users.banned_until
-// so the user can't sign in until an admin approves them on the admin
-// app's Vendor applications tab. The web flow at /vendor-apply does
-// the same thing — this just mirrors it for mobile.
+// Vendor signup. Cream/ink themed to match the welcome screen.
+// Vendors usually arrive via /vendor-apply on web; this is the
+// mobile fallback if they tapped Sign up from the welcome screen.
 
 import { useState } from "react";
 import {
   KeyboardAvoidingView,
   Platform,
   Pressable,
-  ScrollView,
   Text,
   TextInput,
   View,
 } from "react-native";
-import { Link } from "expo-router";
+import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { CATEGORY_GROUPS } from "@vendora/core";
 import { supabase } from "@/lib/supabase";
 
+const CREAM = "#faf5ec";
+const INK = "#1a1410";
+const INK_DIM = "rgba(26,20,16,0.6)";
+const INK_BORDER = "rgba(26,20,16,0.18)";
+const INPUT_BG = "#ffffff";
+const ERROR = "#b42318";
+const ACCENT = "#a08259";
+
+const SERIF = Platform.OS === "ios" ? "Times New Roman" : "serif";
+
 export default function SignupScreen() {
-  const [step, setStep] = useState<1 | 2 | "thanks">(1);
-  const [ownerName, setOwnerName] = useState("");
+  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [businessName, setBusinessName] = useState("");
-  const [category, setCategory] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [info, setInfo] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
-  function step1Valid() {
-    return (
-      ownerName.trim().length > 0 &&
-      email.trim().length > 0 &&
-      password.length >= 8
-    );
-  }
-
-  function step2Valid() {
-    return businessName.trim().length > 0 && category.length > 0;
-  }
-
   async function onSubmit() {
-    if (!step2Valid()) {
-      setError("Business name and category are required.");
-      return;
-    }
     setError(null);
+    setInfo(null);
     setSubmitting(true);
-    const { error: signUpError } = await supabase.auth.signUp({
-      email: email.trim(),
+    const { error } = await supabase.auth.signUp({
+      email: email.trim().toLowerCase(),
       password,
-      options: {
-        data: {
-          display_name: ownerName.trim(),
-          vendor_business_name: businessName.trim(),
-          vendor_category: category,
-        },
-      },
+      options: { data: { intended_role: "host" } },
     });
-    if (signUpError) {
-      setError(signUpError.message);
-      setSubmitting(false);
-      return;
-    }
-    // Make sure the user can't access the app until admin approves —
-    // even if email confirmation is off and signUp returned a session.
-    await supabase.auth.signOut();
+    if (error) setError(error.message);
+    else setInfo("Check your email to confirm your account.");
     setSubmitting(false);
-    setStep("thanks");
-  }
-
-  if (step === "thanks") {
-    return (
-      <SafeAreaView className="flex-1 bg-background">
-        <View className="flex-1 items-center justify-center px-8">
-          <Text className="mb-3 text-3xl font-semibold text-foreground text-center">
-            Thank you for applying.
-          </Text>
-          <Text className="mb-8 text-base text-muted-foreground text-center leading-relaxed">
-            We hand-review every application within 2–3 business days.
-            We'll email you with the decision. Once approved, you'll
-            be able to sign in and finish your listing.
-          </Text>
-          <Link
-            href="/(auth)/login"
-            className="text-sm text-accent underline"
-          >
-            Back to sign in
-          </Link>
-        </View>
-      </SafeAreaView>
-    );
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-background">
+    <SafeAreaView style={{ flex: 1, backgroundColor: CREAM }}>
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : undefined}
-        className="flex-1"
+        style={{ flex: 1, paddingHorizontal: 24, paddingTop: 16, paddingBottom: 24 }}
       >
-        <ScrollView
-          contentContainerStyle={{ paddingHorizontal: 24, paddingVertical: 32 }}
-          keyboardShouldPersistTaps="handled"
+        <Pressable
+          onPress={() => router.back()}
+          hitSlop={12}
+          style={{ alignSelf: "flex-start", paddingVertical: 8 }}
         >
-          <Text className="mb-1 text-xs font-medium uppercase tracking-widest text-accent">
-            Step {step} of 2
+          <Text style={{ color: INK_DIM, fontSize: 16, fontWeight: "500" }}>
+            ← Back
           </Text>
-          <Text className="mb-1 text-3xl font-semibold text-foreground">
-            {step === 1 ? "Become a Vendora vendor" : "Tell us about your business"}
+        </Pressable>
+
+        <View style={{ marginTop: 24 }}>
+          <Text
+            style={{
+              fontFamily: SERIF,
+              fontSize: 36,
+              fontWeight: "700",
+              color: INK,
+              letterSpacing: -1,
+            }}
+          >
+            Plan your event
           </Text>
-          <Text className="mb-8 text-sm text-muted-foreground">
-            {step === 1
-              ? "Create an account. Listings are hand-reviewed before going live."
-              : "You can edit any of this after admin approves you."}
+          <Text
+            style={{
+              marginTop: 8,
+              fontSize: 15,
+              color: INK_DIM,
+              fontStyle: "italic",
+              fontFamily: SERIF,
+            }}
+          >
+            Create an account to message vendors and book events.
           </Text>
+        </View>
 
-          {step === 1 ? (
-            <View className="gap-4">
-              <Field label="Owner name">
-                <TextInput
-                  value={ownerName}
-                  onChangeText={setOwnerName}
-                  className="rounded-lg border border-border bg-background px-3 py-3 text-base text-foreground"
-                  placeholder="Your full name"
-                />
-              </Field>
-              <Field label="Email">
-                <TextInput
-                  autoCapitalize="none"
-                  autoComplete="email"
-                  keyboardType="email-address"
-                  value={email}
-                  onChangeText={setEmail}
-                  className="rounded-lg border border-border bg-background px-3 py-3 text-base text-foreground"
-                  placeholder="business@email.com"
-                />
-              </Field>
-              <Field label="Password">
-                <View className="relative">
-                  <TextInput
-                    secureTextEntry={!showPassword}
-                    value={password}
-                    onChangeText={setPassword}
-                    className="rounded-lg border border-border bg-background px-3 py-3 pr-16 text-base text-foreground"
-                    placeholder="At least 8 characters"
-                  />
-                  <Pressable
-                    onPress={() => setShowPassword((v) => !v)}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 px-2 py-1 active:opacity-60"
-                    hitSlop={8}
-                  >
-                    <Text className="text-xs font-medium text-accent">
-                      {showPassword ? "Hide" : "Show"}
-                    </Text>
-                  </Pressable>
-                </View>
-              </Field>
-
-              {error ? <Text className="text-sm text-red-600">{error}</Text> : null}
-
-              <Pressable
-                onPress={() => {
-                  if (!step1Valid()) {
-                    setError("Please complete every field. Password must be 8+ characters.");
-                    return;
-                  }
-                  setError(null);
-                  setStep(2);
+        <View style={{ marginTop: 32, gap: 16 }}>
+          <Field
+            label="Email"
+            placeholder="you@example.com"
+            value={email}
+            onChangeText={setEmail}
+            keyboardType="email-address"
+            autoComplete="email"
+            autoCapitalize="none"
+          />
+          <View>
+            <Text
+              style={{
+                marginBottom: 6,
+                fontSize: 12,
+                fontWeight: "600",
+                color: INK_DIM,
+                letterSpacing: 0.5,
+              }}
+            >
+              PASSWORD
+            </Text>
+            <View style={{ position: "relative" }}>
+              <TextInput
+                secureTextEntry={!showPassword}
+                value={password}
+                onChangeText={setPassword}
+                placeholder="At least 8 characters"
+                placeholderTextColor={INK_DIM}
+                style={{
+                  backgroundColor: INPUT_BG,
+                  borderColor: INK_BORDER,
+                  borderWidth: 1,
+                  borderRadius: 14,
+                  paddingHorizontal: 14,
+                  paddingVertical: 14,
+                  paddingRight: 64,
+                  fontSize: 16,
+                  color: INK,
                 }}
-                className="mt-2 rounded-lg bg-foreground px-4 py-3 active:opacity-80"
+              />
+              <Pressable
+                onPress={() => setShowPassword((v) => !v)}
+                hitSlop={8}
+                style={{
+                  position: "absolute",
+                  right: 12,
+                  top: 0,
+                  bottom: 0,
+                  justifyContent: "center",
+                }}
               >
-                <Text className="text-center text-base font-semibold text-background">
-                  Continue
+                <Text
+                  style={{
+                    color: ACCENT,
+                    fontSize: 13,
+                    fontWeight: "600",
+                  }}
+                >
+                  {showPassword ? "Hide" : "Show"}
                 </Text>
               </Pressable>
-
-              <Link
-                href="/(auth)/login"
-                className="mt-4 text-center text-sm text-muted-foreground"
-              >
-                Already have an account? Log in
-              </Link>
             </View>
-          ) : (
-            <View className="gap-4">
-              <Field label="Business name">
-                <TextInput
-                  value={businessName}
-                  onChangeText={setBusinessName}
-                  className="rounded-lg border border-border bg-background px-3 py-3 text-base text-foreground"
-                  placeholder="Luminara Photography"
-                />
-              </Field>
+          </View>
 
-              <View>
-                <Text className="mb-2 text-xs font-medium text-muted-foreground">
-                  Category
-                </Text>
-                <View className="rounded-lg border border-border bg-background">
-                  {CATEGORY_GROUPS.map((group) => (
-                    <View key={group.slug} className="border-b border-border last:border-b-0">
-                      <Text className="px-3 py-2 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
-                        {group.name}
-                      </Text>
-                      {group.subs.map((sub) => {
-                        const selected = category === sub;
-                        return (
-                          <Pressable
-                            key={sub}
-                            onPress={() => setCategory(sub)}
-                            className={`px-3 py-2.5 active:opacity-70 ${
-                              selected ? "bg-foreground/5" : ""
-                            }`}
-                          >
-                            <Text
-                              className={`text-sm ${
-                                selected
-                                  ? "font-semibold text-foreground"
-                                  : "text-foreground"
-                              }`}
-                            >
-                              {selected ? "● " : "○ "}
-                              {sub}
-                            </Text>
-                          </Pressable>
-                        );
-                      })}
-                    </View>
-                  ))}
-                </View>
-              </View>
+          {error ? (
+            <Text style={{ color: ERROR, fontSize: 14 }}>{error}</Text>
+          ) : null}
+          {info && !error ? (
+            <Text style={{ color: ACCENT, fontSize: 14 }}>{info}</Text>
+          ) : null}
 
-              {error ? <Text className="text-sm text-red-600">{error}</Text> : null}
+          <Pressable
+            onPress={onSubmit}
+            disabled={submitting || !email || password.length < 8}
+            style={({ pressed }) => ({
+              marginTop: 8,
+              backgroundColor: INK,
+              borderRadius: 999,
+              paddingVertical: 16,
+              alignItems: "center",
+              opacity: submitting || !email || password.length < 8
+                ? 0.5
+                : pressed ? 0.85 : 1,
+            })}
+          >
+            <Text
+              style={{
+                color: CREAM,
+                fontSize: 16,
+                fontWeight: "600",
+              }}
+            >
+              {submitting ? "Creating account…" : "Sign up"}
+            </Text>
+          </Pressable>
 
-              <View className="mt-2 flex-row gap-3">
-                <Pressable
-                  onPress={() => setStep(1)}
-                  disabled={submitting}
-                  className="flex-1 rounded-lg border border-border bg-background px-4 py-3 active:opacity-80"
-                >
-                  <Text className="text-center text-base font-semibold text-foreground">
-                    Back
-                  </Text>
-                </Pressable>
-                <Pressable
-                  onPress={onSubmit}
-                  disabled={submitting || !step2Valid()}
-                  className="flex-[2] rounded-lg bg-foreground px-4 py-3 active:opacity-80 disabled:opacity-50"
-                >
-                  <Text className="text-center text-base font-semibold text-background">
-                    {submitting ? "Submitting…" : "Submit application"}
-                  </Text>
-                </Pressable>
-              </View>
-
-              <Text className="mt-2 text-center text-[11px] text-muted-foreground leading-relaxed">
-                By submitting, you agree to Vendora's vendor terms.
-                We hand-review every application within 2–3 business days.
-              </Text>
-            </View>
-          )}
-        </ScrollView>
+          <Pressable
+            onPress={() => router.replace("/(auth)/login")}
+            style={{ marginTop: 12, alignItems: "center" }}
+          >
+            <Text style={{ color: INK_DIM, fontSize: 14 }}>
+              Already have an account?{" "}
+              <Text style={{ color: INK, fontWeight: "600" }}>Log in</Text>
+            </Text>
+          </Pressable>
+        </View>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
 
+interface FieldProps {
+  label: string;
+  placeholder?: string;
+  value: string;
+  onChangeText: (v: string) => void;
+  keyboardType?: "default" | "email-address" | "number-pad" | "numeric";
+  autoComplete?: "email" | "off";
+  autoCapitalize?: "none" | "sentences";
+}
+
 function Field({
   label,
-  children,
-}: {
-  label: string;
-  children: React.ReactNode;
-}) {
+  placeholder,
+  value,
+  onChangeText,
+  keyboardType,
+  autoComplete,
+  autoCapitalize,
+}: FieldProps) {
   return (
     <View>
-      <Text className="mb-1 text-xs font-medium text-muted-foreground">
-        {label}
+      <Text
+        style={{
+          marginBottom: 6,
+          fontSize: 12,
+          fontWeight: "600",
+          color: INK_DIM,
+          letterSpacing: 0.5,
+        }}
+      >
+        {label.toUpperCase()}
       </Text>
-      {children}
+      <TextInput
+        value={value}
+        onChangeText={onChangeText}
+        placeholder={placeholder}
+        placeholderTextColor={INK_DIM}
+        keyboardType={keyboardType}
+        autoComplete={autoComplete}
+        autoCapitalize={autoCapitalize}
+        style={{
+          backgroundColor: INPUT_BG,
+          borderColor: INK_BORDER,
+          borderWidth: 1,
+          borderRadius: 14,
+          paddingHorizontal: 14,
+          paddingVertical: 14,
+          fontSize: 16,
+          color: INK,
+        }}
+      />
     </View>
   );
 }
