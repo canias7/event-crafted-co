@@ -484,33 +484,48 @@ export default function WelcomeScreen() {
         </Pressable>
       </SafeAreaView>
 
-      {/* Auth-method sheet docked to the bottom edge — black panel
-          with rounded top corners, flowing into the home-indicator
-          safe area. Each button is a centered flex row of icon+label
-          so layout is deterministic regardless of Pressable's quirks. */}
-      <Animated.View
+      {/* Floating auth pills — two centered black ovals on cream.
+          Smaller than full width so they read as floating actions
+          rather than a docked sheet. */}
+      <View
         style={{
-          opacity: buttonsOpacity,
-          backgroundColor: "#000000",
-          paddingHorizontal: 14,
-          paddingTop: 14,
-          paddingBottom: Math.max(insets.bottom, 14),
-          borderTopLeftRadius: 28,
-          borderTopRightRadius: 28,
+          paddingBottom: Math.max(insets.bottom + 16, 28),
+          paddingTop: 8,
+          alignItems: "center",
+          gap: 12,
         }}
       >
-        <AuthButton
-          variant="solid-dark"
-          onPress={() => router.push("/(auth)/signup")}
-          label="Sign up"
-        />
-        <AuthButton
-          variant="outline"
-          onPress={() => router.push("/(auth)/login")}
-          label="Log in"
-          last
-        />
-      </Animated.View>
+        <Pill onPress={() => router.push("/(auth)/signup")} label="Sign up" />
+        <Pill onPress={() => router.push("/(auth)/login")} label="Log in" />
+      </View>
     </View>
+  );
+}
+
+function Pill({ onPress, label }: { onPress: () => void; label: string }) {
+  return (
+    <Pressable
+      onPress={onPress}
+      style={({ pressed }) => ({
+        backgroundColor: INK,
+        paddingVertical: 14,
+        paddingHorizontal: 56,
+        borderRadius: 999,
+        minWidth: 220,
+        alignItems: "center",
+        // Soft drop shadow so the pills read as floating above the
+        // cream surface, not painted onto it.
+        shadowColor: INK,
+        shadowOpacity: 0.18,
+        shadowRadius: 14,
+        shadowOffset: { width: 0, height: 8 },
+        elevation: 5,
+        opacity: pressed ? 0.85 : 1,
+      })}
+    >
+      <Text style={{ color: CREAM, fontSize: 15, fontWeight: "600" }}>
+        {label}
+      </Text>
+    </Pressable>
   );
 }
