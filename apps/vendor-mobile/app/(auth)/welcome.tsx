@@ -496,97 +496,68 @@ export default function WelcomeScreen() {
           zIndex: 40,
         }}
       >
-        <FloatingPill
-          primary
+        <Pressable
           onPress={() => router.push("/(auth)/signup")}
-          label="Sign up"
-        />
-        <View style={{ height: 10 }} />
-        <FloatingPill
+          style={{
+            width: "88%",
+            maxWidth: 320,
+            height: 54,
+            borderRadius: 999,
+            backgroundColor: INK,
+            alignItems: "center",
+            justifyContent: "center",
+            shadowColor: INK,
+            shadowOpacity: 0.18,
+            shadowRadius: 14,
+            shadowOffset: { width: 0, height: 8 },
+            elevation: 6,
+            marginBottom: 10,
+          }}
+        >
+          <Text
+            style={{
+              color: CREAM,
+              fontSize: 17,
+              fontWeight: "600",
+              fontFamily: SERIF,
+            }}
+          >
+            Sign up
+          </Text>
+        </Pressable>
+
+        <Pressable
           onPress={() => router.push("/(auth)/login")}
-          label="Sign in"
-          phaseShift
-        />
+          style={{
+            width: "88%",
+            maxWidth: 320,
+            height: 54,
+            borderRadius: 999,
+            backgroundColor: CREAM_DEEP,
+            borderWidth: 1,
+            borderColor: INK_BORDER,
+            alignItems: "center",
+            justifyContent: "center",
+            shadowColor: INK,
+            shadowOpacity: 0.08,
+            shadowRadius: 12,
+            shadowOffset: { width: 0, height: 6 },
+            elevation: 3,
+          }}
+        >
+          <Text
+            style={{
+              color: INK,
+              fontSize: 17,
+              fontWeight: "600",
+              fontFamily: SERIF,
+            }}
+          >
+            Sign in
+          </Text>
+        </Pressable>
       </View>
     </View>
   );
 }
 
-// Auth pill that gently floats up and down, matching the design's
-// `@keyframes float` (translateY 0 → -4 → 0 over 4s). The second pill
-// can opt into a phase-shifted loop so the two don't bob in lockstep.
-function FloatingPill({
-  onPress,
-  label,
-  primary,
-  phaseShift,
-}: {
-  onPress: () => void;
-  label: string;
-  primary?: boolean;
-  phaseShift?: boolean;
-}) {
-  const translateY = useRef(new Animated.Value(phaseShift ? -4 : 0)).current;
-
-  useEffect(() => {
-    const loop = Animated.loop(
-      Animated.sequence([
-        Animated.timing(translateY, {
-          toValue: phaseShift ? 0 : -4,
-          duration: 2000,
-          easing: Easing.inOut(Easing.quad),
-          useNativeDriver: true,
-        }),
-        Animated.timing(translateY, {
-          toValue: phaseShift ? -4 : 0,
-          duration: 2000,
-          easing: Easing.inOut(Easing.quad),
-          useNativeDriver: true,
-        }),
-      ]),
-    );
-    loop.start();
-    return () => loop.stop();
-  }, [translateY, phaseShift]);
-
-  return (
-    <Animated.View
-      style={{
-        width: "88%",
-        maxWidth: 320,
-        transform: [{ translateY }],
-      }}
-    >
-      <Pressable
-        onPress={onPress}
-        style={({ pressed }) => ({
-          height: 54,
-          borderRadius: 999,
-          alignItems: "center",
-          justifyContent: "center",
-          backgroundColor: primary ? INK : "rgba(250,245,236,0.7)",
-          borderWidth: primary ? 0 : 1,
-          borderColor: "rgba(26,20,16,0.18)",
-          shadowColor: INK,
-          shadowOpacity: primary ? 0.18 : 0.08,
-          shadowRadius: primary ? 14 : 12,
-          shadowOffset: { width: 0, height: primary ? 8 : 6 },
-          elevation: primary ? 6 : 3,
-          opacity: pressed ? 0.85 : 1,
-        })}
-      >
-        <Text
-          style={{
-            color: primary ? CREAM : INK,
-            fontSize: 17,
-            fontWeight: "600",
-            fontFamily: SERIF,
-            letterSpacing: -0.17,
-          }}
-        >
-          {label}
-        </Text>
-      </Pressable>
-    </Animated.View>
-  );
-}
