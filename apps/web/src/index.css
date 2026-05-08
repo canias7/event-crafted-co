@@ -6,8 +6,11 @@
 
 @layer base {
   :root {
-    /* Vendora — charcoal, champagne gold, off-white */
-    --background: 36 30% 97%;
+    /* Vendora — charcoal, champagne gold, cream. The cream matches the
+       login intro stage (#faf5ec), so every page that uses
+       bg-background reads as one continuous cream surface with the
+       login experience. */
+    --background: 39 58% 95%;
     --foreground: 220 14% 11%;
 
     --card: 0 0% 100%;
@@ -40,7 +43,7 @@
     --shadow-sm: 220 14% 11% / 0.03;
     --shadow-md: 220 14% 11% / 0.06;
 
-    --sidebar-background: 36 30% 97%;
+    --sidebar-background: 39 58% 95%;
     --sidebar-foreground: 220 14% 11%;
     --sidebar-primary: 220 14% 11%;
     --sidebar-primary-foreground: 36 30% 97%;
