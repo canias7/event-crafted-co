@@ -56,6 +56,15 @@
     white-space: pre;
   }
 
+  /* Each word's characters live inside a .word wrapper that refuses to
+     break in the middle. Spaces between words remain real soft-break
+     opportunities, so when the iframe gets narrow the WHOLE word drops
+     to the next line instead of splitting like "peo-ple". */
+  .word {
+    display: inline-block;
+    white-space: nowrap;
+  }
+
   .char.shown {
     opacity: 1;
     transform: translateY(0) scale(1);
@@ -189,14 +198,28 @@
     let inEm = false;
     let i = 0;
     const chars = [];
+    let currentWord = null;
     while (i < text.length) {
       if (text.substr(i, 6) === '{{em}}') { inEm = true; i += 6; continue; }
       if (text.substr(i, 7) === '{{/em}}') { inEm = false; i += 7; continue; }
-      const span = document.createElement('span');
-      span.className = 'char' + (inEm ? ' em' : '');
-      span.textContent = text[i];
-      el.appendChild(span);
-      chars.push(span);
+      const ch = text[i];
+      if (ch === ' ') {
+        // End the current word; emit a real space text node so the
+        // browser can wrap here naturally.
+        currentWord = null;
+        el.appendChild(document.createTextNode(' '));
+      } else {
+        if (!currentWord) {
+          currentWord = document.createElement('span');
+          currentWord.className = 'word';
+          el.appendChild(currentWord);
+        }
+        const span = document.createElement('span');
+        span.className = 'char' + (inEm ? ' em' : '');
+        span.textContent = ch;
+        currentWord.appendChild(span);
+        chars.push(span);
+      }
       i++;
     }
     return chars;
