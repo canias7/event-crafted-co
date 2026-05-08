@@ -20,7 +20,10 @@
     "production": {
       "channel": "production",
       "autoIncrement": true,
-      "ios": { "simulator": false },
+      "ios": {
+        "simulator": false,
+        "image": "latest"
+      },
       "android": { "buildType": "app-bundle" }
     }
   },
