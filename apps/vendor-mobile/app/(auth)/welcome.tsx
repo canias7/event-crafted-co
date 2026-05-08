@@ -380,18 +380,15 @@ export default function WelcomeScreen() {
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: CREAM }}>
+    <View style={{ flex: 1, backgroundColor: CREAM, justifyContent: "space-between" }}>
       <StatusBar barStyle="dark-content" backgroundColor={CREAM} />
 
-      <SafeAreaView style={{ flex: 1 }} edges={["top"]}>
-        {/* Tap-to-skip is scoped to the upper text area only — the
-            SafeAreaView's flex:1 means this Pressable naturally
-            stops where the bottom auth sheet begins. */}
+      <SafeAreaView edges={["top"]}>
+        {/* Tap-to-skip is scoped to the upper text area only. */}
         <Pressable
           onPress={skip}
           disabled={scene === "done"}
           style={{
-            flex: 1,
             paddingHorizontal: 32,
             paddingTop: "18%",
             alignItems: "center",
@@ -484,14 +481,10 @@ export default function WelcomeScreen() {
         </Pressable>
       </SafeAreaView>
 
-      {/* Floating auth pills — anchored to the bottom edge so the
-          flex:1 SafeAreaView above can't squeeze them out. */}
+      {/* Floating auth pills sit at the bottom courtesy of the outer
+          View's justifyContent: space-between. */}
       <View
         style={{
-          position: "absolute",
-          left: 0,
-          right: 0,
-          bottom: 0,
           paddingBottom: Math.max(insets.bottom + 16, 28),
           paddingTop: 8,
           alignItems: "center",
