@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { ArrowRight, ArrowLeft, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -31,7 +32,11 @@ const spring = { type: "spring" as const, duration: 0.6, bounce: 0 };
 
 export default function VendorApplyPage() {
   const navigate = useNavigate();
-  const [step, setStep] = useState<1 | 2>(1);
+  const { session, profile, ownVendorProfile, refreshProfile } = useAuth();
+  // Multi-role: an authenticated host can attach a vendor application
+  // to their existing account — skip the email/password step entirely.
+  const skipAccountStep = !!session && !!profile;
+  const [step, setStep] = useState<1 | 2>(skipAccountStep ? 2 : 1);
   const [submitting, setSubmitting] = useState(false);
 
   // Step 1 — account
@@ -64,6 +69,25 @@ export default function VendorApplyPage() {
 
     setSubmitting(true);
 
+    // Logged-in path: attach a pending vendor_profile to the current
+    // host account via the apply_as_vendor RPC. No new auth user, no
+    // email confirmation — they can keep using the host dashboard
+    // while we review.
+    if (skipAccountStep) {
+      const { error: rpcError } = await supabase.rpc("apply_as_vendor", {
+        p_business_name: businessName.trim(),
+        p_category: category,
+      });
+      setSubmitting(false);
+      if (rpcError) {
+        toast.error(rpcError.message);
+        return;
+      }
+      await refreshProfile();
+      navigate("/vendor-apply/thanks");
+      return;
+    }
+
     const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
       email,
       password,
@@ -71,10 +95,7 @@ export default function VendorApplyPage() {
         emailRedirectTo: `${window.location.origin}/login`,
         // Role starts as 'host' (set by handle_new_user). The same
         // trigger reads vendor_business_name + vendor_category and
-        // creates the pending vendor_profile, so this works even
-        // when email confirmation is on (no client session yet).
-        // profiles.role gets bumped to 'vendor' by the
-        // vendor_profiles approval trigger when admin approves.
+        // creates the pending vendor_profile.
         data: {
           display_name: ownerName,
           vendor_business_name: businessName.trim(),
@@ -91,21 +112,18 @@ export default function VendorApplyPage() {
     }
 
     // Supabase signUp silently no-ops if the email already exists,
-    // returning data.user but with identities=[]. The handle_new_user
-    // trigger doesn't fire in that case, so the vendor_profile never
-    // gets made. Detect this and tell the user to sign in with their
-    // existing account first.
+    // returning data.user with identities=[]. Tell the user to sign
+    // in to their existing account and apply from there.
     if (signUpData?.user && (signUpData.user.identities ?? []).length === 0) {
       toast.error(
-        "An account with this email already exists. Sign in to that account, then contact support to convert it into a vendor application.",
+        "An account with this email already exists. Sign in first, then click \"Become a vendor\" from your dashboard.",
       );
       return;
     }
 
-    // Always sign out — the user can't access the vendor dashboard
-    // until admin approves the application, regardless of whether
-    // email confirmation is on.
-    await supabase.auth.signOut();
+    // Pending vendor accounts are no longer auto-banned, so the email
+    // confirmation flow handles the sign-in itself. Just send them to
+    // the thanks page.
     navigate("/vendor-apply/thanks");
   }
 
@@ -173,12 +191,22 @@ export default function VendorApplyPage() {
       {/* Form */}
       <section className="py-16 md:py-24">
         <div className="container mx-auto px-6 md:px-8 max-w-2xl">
-          {/* Step indicator */}
-          <div className="flex items-center gap-3 mb-10">
-            <StepDot active={step >= 1} done={step > 1} num={1} label="Account" />
-            <span className="flex-1 h-px bg-border" />
-            <StepDot active={step >= 2} done={false} num={2} label="Business" />
-          </div>
+          {ownVendorProfile ? (
+            <ExistingApplicationCard
+              status={ownVendorProfile.application_status}
+              businessName={ownVendorProfile.business_name}
+            />
+          ) : (
+            <>
+          {/* Step indicator — hidden when the user is already signed in
+              and only needs to fill out the business details. */}
+          {!skipAccountStep && (
+            <div className="flex items-center gap-3 mb-10">
+              <StepDot active={step >= 1} done={step > 1} num={1} label="Account" />
+              <span className="flex-1 h-px bg-border" />
+              <StepDot active={step >= 2} done={false} num={2} label="Business" />
+            </div>
+          )}
 
           <form onSubmit={handleSubmit} className="space-y-6">
             {step === 1 ? (
@@ -307,16 +335,18 @@ export default function VendorApplyPage() {
                 </div>
 
                 <div className="flex items-center justify-between pt-2">
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    onClick={() => setStep(1)}
-                    disabled={submitting}
-                    className="rounded-full"
-                  >
-                    <ArrowLeft className="w-4 h-4 mr-2" />
-                    Back
-                  </Button>
+                  {skipAccountStep ? <span /> : (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      onClick={() => setStep(1)}
+                      disabled={submitting}
+                      className="rounded-full"
+                    >
+                      <ArrowLeft className="w-4 h-4 mr-2" />
+                      Back
+                    </Button>
+                  )}
                   <Button
                     type="submit"
                     disabled={submitting || !step2Valid()}
@@ -343,10 +373,58 @@ export default function VendorApplyPage() {
             By submitting, you agree to Vendora's vendor terms. We hand-review
             every application within 2–3 business days before listing publicly.
           </p>
+            </>
+          )}
         </div>
       </section>
 
       <Footer />
+    </div>
+  );
+}
+
+function ExistingApplicationCard({
+  status,
+  businessName,
+}: {
+  status: "pending" | "approved" | "rejected" | "needs_changes" | "submitted";
+  businessName: string;
+}) {
+  const heading =
+    status === "approved"
+      ? "You're already a Vendora vendor"
+      : status === "rejected"
+        ? "Your previous application wasn't approved"
+        : "Your application is in review";
+  const body =
+    status === "approved"
+      ? `${businessName} is approved. Open the vendor portal to manage your listing, inquiries, and calendar.`
+      : status === "rejected"
+        ? `We weren't able to approve ${businessName}. Reach out to support if you'd like another look — we keep the door open.`
+        : `${businessName} is in our review queue. We hand-review every application within 2–3 business days, then email you the decision.`;
+  const cta =
+    status === "approved" ? (
+      <Link to="/vendor/dashboard">
+        <Button className="rounded-full bg-foreground text-background hover:bg-foreground/90">
+          Open vendor dashboard
+          <ArrowRight className="w-4 h-4 ml-2" />
+        </Button>
+      </Link>
+    ) : (
+      <Link to="/customer/dashboard">
+        <Button variant="outline" className="rounded-full">
+          Back to my dashboard
+        </Button>
+      </Link>
+    );
+  return (
+    <div className="rounded-lg border border-border bg-card p-8 max-w-xl mx-auto text-center">
+      <p className="font-label text-accent mb-3">— Application status</p>
+      <h2 className="font-display text-2xl mb-3">{heading}</h2>
+      <p className="text-sm text-muted-foreground mb-6 leading-relaxed">
+        {body}
+      </p>
+      <div className="flex justify-center">{cta}</div>
     </div>
   );
 }

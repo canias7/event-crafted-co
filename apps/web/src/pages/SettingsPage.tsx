@@ -33,7 +33,7 @@ import { customerNavItems, vendorNavItems } from "@/data/navItems";
 const COOKIE_KEY = "vendora.cookie-consent";
 
 export default function SettingsPage() {
-  const { user, profile, signOut } = useAuth();
+  const { user, profile, isApprovedVendor, signOut } = useAuth();
   const navigate = useNavigate();
 
   const [displayName, setDisplayName] = useState("");
@@ -109,10 +109,11 @@ export default function SettingsPage() {
     toast.success(next ? "Daily digest enabled" : "Daily digest disabled");
   }
 
-  const navItems =
-    profile?.role === "vendor" ? vendorNavItems : customerNavItems;
-  const sidebarTitle =
-    profile?.role === "vendor" ? "Vendor Portal" : "Customer";
+  // Multi-role: an approved vendor sees vendor settings; everyone else
+  // sees host settings. (A user who's both can switch sides via the
+  // dashboard switcher.)
+  const navItems = isApprovedVendor ? vendorNavItems : customerNavItems;
+  const sidebarTitle = isApprovedVendor ? "Vendor Portal" : "Customer";
 
   async function saveProfile(e: React.FormEvent) {
     e.preventDefault();
@@ -522,7 +523,7 @@ export default function SettingsPage() {
                   <p className="text-xs text-muted-foreground leading-relaxed mb-4">
                     Permanently removes your profile and everything tied to
                     it: inquiries, messages, reviews, saved vendors, and
-                    {profile.role === "vendor" ? " business profile, portfolio, and availability calendar" : " event details, checklist, tasks, and budget"}.
+                    {isApprovedVendor ? " business profile, portfolio, and availability calendar" : " event details, checklist, tasks, and budget"}.
                     This can't be undone.
                   </p>
                   <AlertDialog>
@@ -541,7 +542,7 @@ export default function SettingsPage() {
                         </AlertDialogTitle>
                         <AlertDialogDescription className="text-sm leading-relaxed">
                           This will delete your profile and all related data
-                          ({profile.role === "vendor" ? "vendor profile, portfolio, inquiries, reviews, calendar" : "inquiries, messages, reviews, checklist, tasks, budget"}).
+                          ({isApprovedVendor ? "vendor profile, portfolio, inquiries, reviews, calendar" : "inquiries, messages, reviews, checklist, tasks, budget"}).
                           You'll be signed out immediately and won't be able
                           to sign back in with this email.
                         </AlertDialogDescription>

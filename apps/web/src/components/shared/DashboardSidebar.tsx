@@ -3,10 +3,12 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { PrefetchLink as Link } from "@/components/shared/PrefetchLink";
 import {
+  Briefcase,
   LogOut,
   LucideIcon,
   PanelLeftClose,
   PanelLeftOpen,
+  Sparkles,
 } from "lucide-react";
 import { getBottomNav } from "@/data/navItems";
 import { useAuth } from "@/hooks/useAuth";
@@ -38,7 +40,25 @@ export function DashboardSidebar({
   const location = useLocation();
   const navigate = useNavigate();
   const { t } = useTranslation();
-  const { signOut } = useAuth();
+  const { signOut, hasVendorAccess, ownVendorProfile, profile } = useAuth();
+
+  // Multi-role chrome. We sit on whichever side the URL says, and offer:
+  //  - on vendor side, a "back to host portal" jump (always available
+  //    since every account is a host by default);
+  //  - on host side, either "go to vendor portal" (if they have access)
+  //    or "become a vendor" (if they've never applied).
+  // Admins skip both entirely.
+  const onVendorSide = location.pathname.startsWith("/vendor");
+  const showSwitcher =
+    profile?.role !== "admin" &&
+    (onVendorSide ? true : hasVendorAccess);
+  const showApplyCta =
+    profile?.role !== "admin" && !onVendorSide && !ownVendorProfile;
+  const switcherTo = onVendorSide ? "/customer/dashboard" : "/vendor/dashboard";
+  const switcherLabel = onVendorSide ? "Switch to host" : "Switch to vendor";
+  const switcherIcon = onVendorSide ? Sparkles : Briefcase;
+  const pendingBadge =
+    !onVendorSide && ownVendorProfile?.application_status === "pending";
 
   async function handleLogout() {
     await signOut();
@@ -133,6 +153,41 @@ export function DashboardSidebar({
           >
             <PanelLeftClose className="w-3.5 h-3.5" />
           </button>
+        </div>
+      )}
+      {(showSwitcher || showApplyCta) && (
+        <div className={`${collapsed ? "px-2 pt-3" : "px-3 pt-4"}`}>
+          {showSwitcher ? (
+            <Link
+              to={switcherTo}
+              className={`flex items-center gap-2 rounded-lg border border-accent/30 bg-accent/5 text-accent hover:bg-accent/10 transition-colors text-xs font-medium ${
+                collapsed ? "justify-center p-2" : "px-3 py-2"
+              }`}
+              title={collapsed ? switcherLabel : undefined}
+            >
+              {(() => {
+                const Icon = switcherIcon;
+                return <Icon className="w-3.5 h-3.5 shrink-0" aria-hidden />;
+              })()}
+              {!collapsed && (
+                <span className="truncate">
+                  {switcherLabel}
+                  {pendingBadge ? " (pending)" : ""}
+                </span>
+              )}
+            </Link>
+          ) : showApplyCta ? (
+            <Link
+              to="/vendor-apply"
+              className={`flex items-center gap-2 rounded-lg border border-dashed border-accent/40 text-accent hover:bg-accent/5 transition-colors text-xs font-medium ${
+                collapsed ? "justify-center p-2" : "px-3 py-2"
+              }`}
+              title={collapsed ? "Become a vendor" : undefined}
+            >
+              <Briefcase className="w-3.5 h-3.5 shrink-0" aria-hidden />
+              {!collapsed && <span className="truncate">Become a vendor</span>}
+            </Link>
+          ) : null}
         </div>
       )}
       <nav

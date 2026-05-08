@@ -3,7 +3,7 @@ import { Navigate, useLocation } from "react-router-dom";
 import { AppRole, useAuth } from "@/hooks/useAuth";
 
 export function RequireRole({ role, children }: { role: AppRole | AppRole[]; children: ReactNode }) {
-  const { session, profile, vendorMemberships, planningMemberships, loading } =
+  const { session, profile, hasVendorAccess, planningMemberships, loading } =
     useAuth();
   const location = useLocation();
 
@@ -20,15 +20,17 @@ export function RequireRole({ role, children }: { role: AppRole | AppRole[]; chi
   }
 
   const allowed = Array.isArray(role) ? role : [role];
-  // Vendor team members access vendor portal even if profile.role isn't
-  // 'vendor'. Planning collaborators access the host portal even if
-  // their own profile.role isn't 'host' (e.g. a vendor invited as a
-  // partner / planner).
+  // Multi-role: every authenticated non-admin profile is a host by
+  // default. "vendor" access is granted when the user owns a vendor
+  // application (any status) or is a team member of someone else's
+  // vendor — that's `hasVendorAccess`. Planning collaborators get host
+  // access too, even if they were originally a vendor-only account.
   const matches =
     profile != null &&
-    (allowed.includes(profile.role) ||
-      (allowed.includes("vendor") && vendorMemberships.length > 0) ||
-      (allowed.includes("host") && planningMemberships.length > 0));
+    ((allowed.includes("admin") && profile.role === "admin") ||
+      (allowed.includes("vendor") && hasVendorAccess) ||
+      (allowed.includes("host") &&
+        (profile.role !== "admin" || planningMemberships.length > 0)));
   if (!matches) {
     return <Navigate to="/" replace />;
   }

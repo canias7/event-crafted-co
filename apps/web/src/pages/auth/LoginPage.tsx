@@ -63,7 +63,7 @@ export default function LoginPage({ role }: LoginPageProps = {}) {
     if (!r?.ok) {
       if (r?.reason === "banned") {
         toast.error(
-          "Your vendor application is still under review. We'll email you once it's approved.",
+          "This account is suspended. Contact support if you think that's a mistake.",
         );
       } else if (r?.reason === "invalid_credentials") {
         toast.error("Email or password is incorrect.");
@@ -109,13 +109,47 @@ export default function LoginPage({ role }: LoginPageProps = {}) {
       toast.error(signInError.message);
       return;
     }
-    const { data: prof } = await supabase
-      .from("profiles")
-      .select("role")
-      .eq("id", signInData.user.id)
-      .maybeSingle();
-    const userRole = prof?.role ?? "host";
-    navigate(userRole === "vendor" ? "/vendor/dashboard" : "/customer/dashboard");
+
+    // Multi-role redirect: the entry point (`role` prop, set by route)
+    // is the user's stated intent. Honour it when the user actually has
+    // access to that side; otherwise fall back to whichever side they
+    // do have, preferring host (the always-available default).
+    const [{ data: prof }, { data: vp }, { data: members }] = await Promise.all([
+      supabase
+        .from("profiles")
+        .select("role")
+        .eq("id", signInData.user.id)
+        .maybeSingle(),
+      supabase
+        .from("vendor_profiles")
+        .select("application_status")
+        .eq("user_id", signInData.user.id)
+        .maybeSingle(),
+      supabase
+        .from("vendor_team_members")
+        .select("vendor_id")
+        .eq("user_id", signInData.user.id)
+        .limit(1),
+    ]);
+    const profileRole = prof?.role as "host" | "vendor" | "admin" | undefined;
+    const isLegacyVendorRole = profileRole === "vendor";
+    const ownStatus = (vp as { application_status?: string } | null)
+      ?.application_status;
+    const hasVendorAccess =
+      isLegacyVendorRole ||
+      ownStatus === "approved" ||
+      ownStatus === "pending" ||
+      ((members as { vendor_id: string }[] | null) ?? []).length > 0;
+
+    if (role === "vendor" && hasVendorAccess) {
+      navigate("/vendor/dashboard");
+    } else if (role === "host") {
+      navigate("/customer/dashboard");
+    } else {
+      // No explicit intent — auto-detect: send vendors to vendor portal,
+      // everyone else to the host dashboard.
+      navigate(hasVendorAccess ? "/vendor/dashboard" : "/customer/dashboard");
+    }
   }
 
   async function resendCode() {

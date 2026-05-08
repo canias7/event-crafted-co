@@ -84,13 +84,12 @@ const ticketsTable = () => (supabase as any).from("support_tickets");
 const msgsTable = () => (supabase as any).from("support_messages");
 
 export default function SupportPage() {
-  const { user, profile } = useAuth();
+  const { user, profile, isApprovedVendor } = useAuth();
   const [params, setParams] = useSearchParams();
   const [tickets, setTickets] = useState<SupportTicket[]>([]);
   const [loading, setLoading] = useState(true);
   const [newOpen, setNewOpen] = useState(false);
-  const navItems =
-    profile?.role === "vendor" ? vendorNavItems : customerNavItems;
+  const navItems = isApprovedVendor ? vendorNavItems : customerNavItems;
 
   const activeTicketId = params.get("ticket");
   const activeTicket = useMemo(

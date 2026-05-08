@@ -19,10 +19,12 @@ export function MobilePortalBell() {
   if (!session || !profile) return null;
   if (!DASHBOARD_PATHS.has(location.pathname)) return null;
 
-  // Vendors get the merged Inbox hub (Inquiries / Hosts / Partners).
-  // Customers go to their own inquiries surface.
-  const inboxPath =
-    profile.role === "vendor" ? "/vendor/inbox" : "/customer/inquiries";
+  // The dashboard URL itself tells us which side we're on (multi-role
+  // users can be on either /vendor/dashboard or /customer/dashboard, so
+  // we no longer infer it from the profile.role).
+  const inboxPath = location.pathname.startsWith("/vendor")
+    ? "/vendor/inbox"
+    : "/customer/inquiries";
 
   return (
     <div className="lg:hidden fixed top-3 right-3 z-50">

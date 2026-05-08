@@ -101,7 +101,7 @@ const SETTINGS_NAV: NavTarget[] = [
 export function CommandPalette({ initialOpen = false }: { initialOpen?: boolean } = {}) {
   const [open, setOpen] = useState(initialOpen);
   const navigate = useNavigate();
-  const { profile, vendorMemberships } = useAuth();
+  const { profile, hasVendorAccess } = useAuth();
   const { vendors } = useVendors();
 
   // Cmd/Ctrl + K toggles the palette globally.
@@ -121,9 +121,11 @@ export function CommandPalette({ initialOpen = false }: { initialOpen?: boolean 
     navigate(path);
   }
 
-  const isHost = profile?.role === "host";
-  const isVendor =
-    profile?.role === "vendor" || vendorMemberships.length > 0;
+  // Multi-role: every authenticated non-admin user can host. Vendor
+  // capability comes from `hasVendorAccess` (covers owners + team
+  // members + the legacy role='vendor' flag).
+  const isHost = profile != null && profile.role !== "admin";
+  const isVendor = hasVendorAccess;
 
   return (
     <CommandDialog open={open} onOpenChange={setOpen}>

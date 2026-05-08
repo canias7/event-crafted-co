@@ -69,20 +69,17 @@ const VENDOR_STEPS: Step[] = [
 ];
 
 export function OnboardingTour() {
-  const { user, profile, refreshProfile } = useAuth();
+  const { user, profile, isApprovedVendor, refreshProfile } = useAuth();
   const [stepIndex, setStepIndex] = useState(0);
   const [closed, setClosed] = useState(false);
 
-  // Only render after profile loads + user hasn't seen it yet + role is host/vendor.
+  // Multi-role: pick the vendor tour for approved vendors and the host
+  // tour for everyone else who isn't admin.
   const role = profile?.role;
   const tourDismissed = (profile as { tour_dismissed_at?: string | null } | null)
     ?.tour_dismissed_at;
   const eligible =
-    !!user &&
-    !!role &&
-    (role === "host" || role === "vendor") &&
-    !tourDismissed &&
-    !closed;
+    !!user && !!profile && role !== "admin" && !tourDismissed && !closed;
 
   // Reset step when shown.
   useEffect(() => {
@@ -91,7 +88,7 @@ export function OnboardingTour() {
 
   if (!eligible) return null;
 
-  const steps = role === "vendor" ? VENDOR_STEPS : HOST_STEPS;
+  const steps = isApprovedVendor ? VENDOR_STEPS : HOST_STEPS;
   const step = steps[stepIndex];
   const isLast = stepIndex === steps.length - 1;
 

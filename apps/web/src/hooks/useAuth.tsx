@@ -2,8 +2,14 @@ import { createContext, useCallback, useContext, useEffect, useState, ReactNode 
 import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 
-export type AppRole = "host" | "vendor";
+export type AppRole = "host" | "vendor" | "admin";
 export type EventType = "wedding" | "birthday" | "holiday_dinner" | "other";
+export type VendorApplicationStatus =
+  | "pending"
+  | "approved"
+  | "rejected"
+  | "needs_changes"
+  | "submitted";
 
 export interface ActiveEvent {
   id: string;
@@ -33,6 +39,17 @@ interface Profile {
   event_notes: string | null;
 }
 
+// The user's own vendor profile (when they've applied). Multi-role:
+// every authenticated user is a host by default, and additionally has a
+// vendor identity iff this row exists. application_status drives the
+// approved-vendor checks in the UI.
+export interface OwnVendorProfile {
+  id: string;
+  business_name: string;
+  category: string;
+  application_status: VendorApplicationStatus;
+}
+
 export interface VendorMembership {
   vendor_id: string;
   role: "owner" | "admin" | "member";
@@ -48,8 +65,16 @@ interface AuthCtx {
   user: User | null;
   profile: Profile | null;
   activeEvent: ActiveEvent | null;
+  ownVendorProfile: OwnVendorProfile | null;
   vendorMemberships: VendorMembership[];
   planningMemberships: PlanningMembership[];
+  // True when the user has an approved vendor application in their own
+  // name. Use this instead of `profile.role === 'vendor'` to gate
+  // vendor-only UI — multi-role lets an approved vendor keep `role='host'`.
+  isApprovedVendor: boolean;
+  // True when the user has any vendor portal access (own pending/approved
+  // vendor OR team member of someone else's vendor).
+  hasVendorAccess: boolean;
   loading: boolean;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
@@ -60,8 +85,11 @@ const Ctx = createContext<AuthCtx>({
   user: null,
   profile: null,
   activeEvent: null,
+  ownVendorProfile: null,
   vendorMemberships: [],
   planningMemberships: [],
+  isApprovedVendor: false,
+  hasVendorAccess: false,
   loading: true,
   signOut: async () => {},
   refreshProfile: async () => {},
@@ -71,6 +99,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [activeEvent, setActiveEvent] = useState<ActiveEvent | null>(null);
+  const [ownVendorProfile, setOwnVendorProfile] =
+    useState<OwnVendorProfile | null>(null);
   const [vendorMemberships, setVendorMemberships] = useState<VendorMembership[]>(
     [],
   );
@@ -90,6 +120,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!data) {
       setProfile(null);
       setActiveEvent(null);
+      setOwnVendorProfile(null);
       setVendorMemberships([]);
       return;
     }
@@ -108,6 +139,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } else {
       setActiveEvent(null);
     }
+
+    // The user's own vendor application (if any). Multi-role: presence of
+    // this row means they're either an approved vendor or a pending
+    // applicant. Both states grant vendor portal access; only 'approved'
+    // makes the listing publicly visible (gated by RLS on the table).
+    const { data: vp } = await supabase
+      .from("vendor_profiles")
+      .select("id, business_name, category, application_status")
+      .eq("user_id", userId)
+      .maybeSingle();
+    setOwnVendorProfile((vp as OwnVendorProfile | null) ?? null);
 
     // Vendor team memberships — drives vendor portal access for non-owner
     // staff. Empty for hosts, populated for vendor owners (auto-backfilled
@@ -165,10 +207,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await supabase.auth.signOut();
     setProfile(null);
     setActiveEvent(null);
+    setOwnVendorProfile(null);
     setVendorMemberships([]);
     setPlanningMemberships([]);
     setSession(null);
   }
+
+  // Derived flags. Multi-role: an "approved vendor" is anyone with their
+  // own approved application, OR a legacy profile.role==='vendor' user
+  // (set by the old promotion trigger before the multi_role migration).
+  const isApprovedVendor =
+    ownVendorProfile?.application_status === "approved" ||
+    profile?.role === "vendor";
+  const hasVendorAccess =
+    isApprovedVendor || vendorMemberships.length > 0;
 
   return (
     <Ctx.Provider
@@ -177,8 +229,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         user: session?.user ?? null,
         profile,
         activeEvent,
+        ownVendorProfile,
         vendorMemberships,
         planningMemberships,
+        isApprovedVendor,
+        hasVendorAccess,
         loading,
         signOut,
         refreshProfile,

@@ -27,12 +27,7 @@ function buildSecondaryLinks(t: (key: string) => string) {
   ];
 }
 
-function dashboardPath(role?: string) {
-  if (role === "vendor") return "/vendor/dashboard";
-  return "/customer/dashboard";
-}
-
-function dashboardLabel(_role?: string, t?: (key: string) => string) {
+function dashboardLabel(t?: (key: string) => string) {
   // Translation is best-effort — if no t passed (legacy), fall back.
   return t ? t("nav.dashboard") : "My dashboard";
 }
@@ -41,7 +36,7 @@ export function PublicNav() {
   const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [mobileVendorsOpen, setMobileVendorsOpen] = useState(false);
-  const { session, profile, signOut } = useAuth();
+  const { session, profile, hasVendorAccess, signOut } = useAuth();
   const { t } = useTranslation();
   const secondaryLinks = buildSecondaryLinks(t);
 
@@ -56,8 +51,12 @@ export function PublicNav() {
       });
   }, []);
 
-  const dashLabel = dashboardLabel(profile?.role, t);
-  const dashPath = dashboardPath(profile?.role);
+  // Multi-role: send the user to whichever portal they're more likely to
+  // want. If they have vendor access, default to the vendor dashboard
+  // (their inbox lives there); otherwise the host dashboard. Either side
+  // exposes a switcher to flip between them.
+  const dashLabel = dashboardLabel(t);
+  const dashPath = hasVendorAccess ? "/vendor/dashboard" : "/customer/dashboard";
 
   return (
     <nav

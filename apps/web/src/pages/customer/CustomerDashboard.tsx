@@ -73,7 +73,10 @@ export default function CustomerDashboard() {
     tasksOverdue: 0,
   });
 
-  const showOnboardingBanner = profile?.role === "host" && !profile.onboarded_at;
+  // Multi-role: anyone non-admin can host events; show the onboarding
+  // banner until they've completed it once.
+  const showOnboardingBanner =
+    !!profile && profile.role !== "admin" && !profile.onboarded_at;
   // Prefer the active host_events row; fall back to legacy profile event_*
   // for hosts whose data hasn't been migrated yet.
   const eventType = activeEvent?.event_type ?? profile?.event_type ?? null;

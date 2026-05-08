@@ -202,7 +202,7 @@ export default function VendorDetailPage() {
   const navigate = useNavigate();
   // Route is either /vendors/:id or /v/:slug — accept both.
   const { id, slug } = useParams();
-  const { session, profile, loading: authLoading } = useAuth();
+  const { session, profile, isApprovedVendor, loading: authLoading } = useAuth();
   const { vendors, loading: vendorsLoading } = useVendors();
   const { isSaved, toggle: toggleSave } = useSavedVendors();
   const [signinPromptOpen, setSigninPromptOpen] = useState(false);
@@ -502,15 +502,13 @@ export default function VendorDetailPage() {
       setSigninPromptOpen(true);
       return;
     }
-    if (profile.role === "host") {
-      setInquiryFormOpen(true);
+    // Multi-role: any non-admin can send an inquiry (including approved
+    // vendors planning their own events).
+    if (profile.role === "admin") {
+      toast.info("Inquiries are sent from host or vendor accounts, not admin.");
       return;
     }
-    toast.info(
-      profile.role === "vendor"
-        ? "Switch to a host account to send inquiries."
-        : "Inquiries can only be sent from host accounts.",
-    );
+    setInquiryFormOpen(true);
   }
 
   async function handleMessageClick() {
@@ -519,8 +517,9 @@ export default function VendorDetailPage() {
       setSigninPromptOpen(true);
       return;
     }
-    // Vendors → vendor-vendor partner thread; Hosts → host-vendor DM.
-    if (profile.role === "vendor") {
+    // Approved vendors talk to other vendors through the partner thread;
+    // hosts (everyone else non-admin) get the regular host-vendor DM.
+    if (isApprovedVendor) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data, error } = await (supabase as any).rpc(
         "find_or_create_partner_thread",
@@ -533,8 +532,8 @@ export default function VendorDetailPage() {
       navigate(`/vendor/partners?thread=${data}`);
       return;
     }
-    if (profile.role !== "host") {
-      toast.info("Messages can only be sent from host or vendor accounts.");
+    if (profile.role === "admin") {
+      toast.info("Messages are sent from host or vendor accounts, not admin.");
       return;
     }
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

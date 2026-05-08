@@ -77,7 +77,9 @@ export default function OnboardingPage() {
       navigate("/login", { replace: true });
       return;
     }
-    if (profile && profile.role !== "host") {
+    // Multi-role: only admins can't onboard as hosts; everyone else
+    // (including approved vendors planning their own events) can.
+    if (profile && profile.role === "admin") {
       navigate("/", { replace: true });
     }
   }, [authLoading, user, profile, navigate]);

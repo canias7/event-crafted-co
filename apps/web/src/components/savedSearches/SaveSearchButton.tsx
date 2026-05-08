@@ -62,9 +62,8 @@ export function SaveSearchButton({ filters }: Props) {
     );
   }
 
-  // Vendor / admin profile: don't surface — saved searches are a
-  // host-side feature.
-  if (profile.role !== "host") return null;
+  // Saved searches are a host-side feature; admins don't host events.
+  if (profile.role === "admin") return null;
 
   async function save() {
     if (!user || !name.trim()) return;
