@@ -310,7 +310,9 @@ export default function WelcomeScreen() {
   const [phrasesShown, setPhrasesShown] = useState(0);
   const [stackFading, setStackFading] = useState(false);
   const [skipped, setSkipped] = useState(false);
-  const buttonsOpacity = useRef(new Animated.Value(0)).current;
+  // Auth sheet stays docked + visible the whole time so the screen
+  // reads as one screen with rotating upper copy, not three.
+  const buttonsOpacity = useRef(new Animated.Value(1)).current;
 
   // Master timeline. Cancels itself if the user taps to skip.
   useEffect(() => {
@@ -348,12 +350,6 @@ export default function WelcomeScreen() {
         wordmarkDoneMs + TAGLINE.length * TAGLINE_PER_CHAR + TAGLINE_HOLD;
       after(taglineDoneMs, () => {
         setScene("done");
-        Animated.timing(buttonsOpacity, {
-          toValue: 1,
-          duration: 600,
-          easing: Easing.out(Easing.cubic),
-          useNativeDriver: true,
-        }).start();
       });
     });
 
@@ -361,7 +357,7 @@ export default function WelcomeScreen() {
       cancelled = true;
       timeouts.forEach((t) => clearTimeout(t));
     };
-  }, [buttonsOpacity]);
+  }, []);
 
   function skip() {
     if (scene === "done" || skipped) return;
@@ -386,16 +382,13 @@ export default function WelcomeScreen() {
     <View style={{ flex: 1, backgroundColor: CREAM }}>
       <StatusBar barStyle="dark-content" backgroundColor={CREAM} />
 
-      {/* Tap-to-skip overlay; only active during the intro. */}
-      {scene !== "done" ? (
+      <SafeAreaView style={{ flex: 1 }} edges={["top"]}>
+        {/* Tap-to-skip is scoped to the upper text area only — the
+            SafeAreaView's flex:1 means this Pressable naturally
+            stops where the bottom auth sheet begins. */}
         <Pressable
           onPress={skip}
-          style={{ position: "absolute", inset: 0, zIndex: 1 }}
-        />
-      ) : null}
-
-      <SafeAreaView style={{ flex: 1 }} edges={["top"]}>
-        <View
+          disabled={scene === "done"}
           style={{
             flex: 1,
             paddingHorizontal: 32,
@@ -487,7 +480,7 @@ export default function WelcomeScreen() {
               </View>
             </View>
           ) : null}
-        </View>
+        </Pressable>
       </SafeAreaView>
 
       {/* Auth-method sheet docked to the bottom edge — black panel
@@ -495,7 +488,6 @@ export default function WelcomeScreen() {
           safe area. Each button is a centered flex row of icon+label
           so layout is deterministic regardless of Pressable's quirks. */}
       <Animated.View
-        pointerEvents={scene === "done" ? "auto" : "none"}
         style={{
           opacity: buttonsOpacity,
           backgroundColor: "#000000",
