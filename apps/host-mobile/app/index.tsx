@@ -1,7 +1,8 @@
 // Host auth gate. Boot path:
 //   resolving session → small loader (no flash)
 //   signed in → /(host)/explore (browse vendors first)
-//   signed out → /(auth)/login
+//   signed out → /(auth)/welcome (auth-method picker; tapping
+//                "Log in" or "Sign up" routes onward)
 
 import { Redirect } from "expo-router";
 import { ActivityIndicator, View } from "react-native";
@@ -18,5 +19,5 @@ export default function Index() {
     );
   }
 
-  return <Redirect href={user ? "/(host)/explore" : "/(auth)/login"} />;
+  return <Redirect href={user ? "/(host)/explore" : "/(auth)/welcome"} />;
 }

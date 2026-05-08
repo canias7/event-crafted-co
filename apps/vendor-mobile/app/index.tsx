@@ -2,7 +2,8 @@
 //   - still resolving session → show a tiny loader so we don't flash
 //     login then immediately redirect away
 //   - signed in → /(vendor)/dashboard
-//   - signed out → /(auth)/login
+//   - signed out → /(auth)/welcome (auth-method picker; tapping
+//                  "Log in" or "Sign up" routes onward)
 
 import { Redirect } from "expo-router";
 import { ActivityIndicator, View } from "react-native";
@@ -19,5 +20,5 @@ export default function Index() {
     );
   }
 
-  return <Redirect href={user ? "/(vendor)/dashboard" : "/(auth)/login"} />;
+  return <Redirect href={user ? "/(vendor)/dashboard" : "/(auth)/welcome"} />;
 }
