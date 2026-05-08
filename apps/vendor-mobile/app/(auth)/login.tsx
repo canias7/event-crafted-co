@@ -206,14 +206,15 @@ export default function LoginScreen() {
               <Pressable
                 onPress={onSubmitCredentials}
                 disabled={submitting || !email || !password}
-                style={({ pressed }) => ({
+                style={{
                   marginTop: 8,
                   backgroundColor: INK,
                   borderRadius: 999,
-                  paddingVertical: 16,
+                  height: 54,
                   alignItems: "center",
-                  opacity: submitting || !email || !password ? 0.5 : pressed ? 0.85 : 1,
-                })}
+                  justifyContent: "center",
+                  opacity: submitting || !email || !password ? 0.5 : 1,
+                }}
               >
                 <Text style={{ color: CREAM, fontSize: 16, fontWeight: "600" }}>
                   {submitting ? "Sending code…" : "Continue"}
@@ -312,14 +313,15 @@ export default function LoginScreen() {
               <Pressable
                 onPress={onSubmitCode}
                 disabled={submitting || code.length !== 6}
-                style={({ pressed }) => ({
+                style={{
                   marginTop: 8,
                   backgroundColor: INK,
                   borderRadius: 999,
-                  paddingVertical: 16,
+                  height: 54,
                   alignItems: "center",
-                  opacity: submitting || code.length !== 6 ? 0.5 : pressed ? 0.85 : 1,
-                })}
+                  justifyContent: "center",
+                  opacity: submitting || code.length !== 6 ? 0.5 : 1,
+                }}
               >
                 <Text style={{ color: CREAM, fontSize: 16, fontWeight: "600" }}>
                   {submitting ? "Verifying…" : "Sign in"}
