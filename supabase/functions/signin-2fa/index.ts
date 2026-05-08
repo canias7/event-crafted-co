@@ -96,12 +96,15 @@ serve(async (req) => {
     if (!email || !password) return json({ error: "email + password required" }, 400);
 
     // Verify password via SECURITY DEFINER RPC.
-    const { data: uid, error: vErr } = await sb.rpc("verify_user_password", {
+    const { data: result, error: vErr } = await sb.rpc("verify_user_password", {
       p_email: email,
       p_password: password,
     });
     if (vErr) return json({ error: "Verification failed" }, 500);
-    if (!uid) return json({ ok: false, reason: "invalid_credentials" }, 200);
+    const status = (result as { status?: string } | null)?.status;
+    if (status === "invalid_credentials") return json({ ok: false, reason: "invalid_credentials" }, 200);
+    if (status === "banned") return json({ ok: false, reason: "banned" }, 200);
+    if (status !== "ok") return json({ ok: false, reason: "unknown" }, 200);
 
     // Invalidate any earlier unused codes for this email.
     await sb

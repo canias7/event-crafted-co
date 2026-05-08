@@ -19,11 +19,15 @@ interface LoginPageProps {
   role?: "host" | "vendor";
 }
 
+type Step = "credentials" | "code";
+
 export default function LoginPage({ role }: LoginPageProps = {}) {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const [step, setStep] = useState<Step>("credentials");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [code, setCode] = useState("");
   const [loading, setLoading] = useState(false);
 
   const heading =
@@ -42,37 +46,88 @@ export default function LoginPage({ role }: LoginPageProps = {}) {
   const otherSideLabel =
     role === "host" ? "Sign in as a vendor" : "Sign in as a host";
 
-  async function onSubmit(e: React.FormEvent) {
+  async function onSubmitCredentials(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
+    // Step 1: verify password + send 6-digit code via signin-2fa edge fn
+    const { data, error } = await supabase.functions.invoke("signin-2fa", {
+      body: { action: "request", email: email.trim(), password },
     });
     setLoading(false);
     if (error) {
-      // Pending vendors are banned via auth.users.banned_until until
-      // an admin approves them — surface the actual reason instead of
-      // GoTrue's generic "User is banned".
-      const msg = (error.message || "").toLowerCase();
-      if (msg.includes("banned") || msg.includes("not allowed")) {
+      toast.error(error.message);
+      return;
+    }
+    const r = data as { ok?: boolean; reason?: string } | null;
+    if (!r?.ok) {
+      if (r?.reason === "banned") {
         toast.error(
           "Your vendor application is still under review. We'll email you once it's approved.",
         );
+      } else if (r?.reason === "invalid_credentials") {
+        toast.error("Email or password is incorrect.");
       } else {
-        toast.error(error.message);
+        toast.error("Couldn't start sign-in. Please try again.");
       }
+      return;
+    }
+    toast.success("We emailed you a 6-digit code.");
+    setCode("");
+    setStep("code");
+  }
+
+  async function onSubmitCode(e: React.FormEvent) {
+    e.preventDefault();
+    setLoading(true);
+    // Step 2: verify the code, then call signInWithPassword to actually
+    // establish the session.
+    const { data, error } = await supabase.functions.invoke("signin-2fa", {
+      body: { action: "verify", email: email.trim(), code: code.trim() },
+    });
+    if (error) {
+      setLoading(false);
+      toast.error(error.message);
+      return;
+    }
+    const r = data as { ok?: boolean; reason?: string } | null;
+    if (!r?.ok) {
+      setLoading(false);
+      const reason = r?.reason ?? "unknown";
+      if (reason === "invalid_code") toast.error("That code is incorrect.");
+      else if (reason === "expired") toast.error("That code expired. Request a new one.");
+      else if (reason === "too_many_attempts") toast.error("Too many attempts. Request a new code.");
+      else if (reason === "no_pending_code") toast.error("No pending code. Start over.");
+      else toast.error("Couldn't verify code.");
+      return;
+    }
+    // Code verified — now actually sign in with password.
+    const { data: signInData, error: signInError } =
+      await supabase.auth.signInWithPassword({ email: email.trim(), password });
+    setLoading(false);
+    if (signInError) {
+      toast.error(signInError.message);
       return;
     }
     const { data: prof } = await supabase
       .from("profiles")
       .select("role")
-      .eq("id", data.user.id)
+      .eq("id", signInData.user.id)
       .maybeSingle();
-    const role = prof?.role ?? "host";
-    navigate(
-      role === "vendor" ? "/vendor/dashboard" : "/customer/dashboard",
-    );
+    const userRole = prof?.role ?? "host";
+    navigate(userRole === "vendor" ? "/vendor/dashboard" : "/customer/dashboard");
+  }
+
+  async function resendCode() {
+    setLoading(true);
+    const { data, error } = await supabase.functions.invoke("signin-2fa", {
+      body: { action: "request", email: email.trim(), password },
+    });
+    setLoading(false);
+    if (error || !(data as { ok?: boolean })?.ok) {
+      toast.error("Couldn't resend the code. Try again.");
+      return;
+    }
+    toast.success("We sent a new code.");
   }
 
   return (
@@ -131,81 +186,150 @@ export default function LoginPage({ role }: LoginPageProps = {}) {
             Vendora
           </Link>
 
-          <h1 className="font-display text-3xl md:text-4xl mb-2 leading-tight">
-            {heading}
-          </h1>
-          <p className="text-sm text-muted-foreground mb-10">{subheading}</p>
+          {step === "credentials" ? (
+            <>
+              <h1 className="font-display text-3xl md:text-4xl mb-2 leading-tight">
+                {heading}
+              </h1>
+              <p className="text-sm text-muted-foreground mb-10">{subheading}</p>
 
-          <form onSubmit={onSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="email">{t("auth.common.email")}</Label>
-              <Input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                className="h-11"
-              />
-            </div>
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="password">{t("auth.common.password")}</Label>
-                <Link
-                  to="/forgot-password"
-                  className="text-xs text-accent font-medium"
+              <form onSubmit={onSubmitCredentials} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="email">{t("auth.common.email")}</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                    autoComplete="email"
+                    className="h-11"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="password">{t("auth.common.password")}</Label>
+                    <Link
+                      to="/forgot-password"
+                      className="text-xs text-accent font-medium"
+                    >
+                      {t("auth.login.forgot")}
+                    </Link>
+                  </div>
+                  <Input
+                    id="password"
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    autoComplete="current-password"
+                    className="h-11"
+                  />
+                </div>
+                <Button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full h-11 rounded-full bg-foreground text-background hover:bg-foreground/90 mt-2"
                 >
-                  {t("auth.login.forgot")}
-                </Link>
+                  {loading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Sending code…
+                    </>
+                  ) : (
+                    "Continue"
+                  )}
+                </Button>
+                <p className="text-xs text-muted-foreground text-center mt-1">
+                  We'll email you a 6-digit code to confirm it's you.
+                </p>
+              </form>
+
+              <div className="mt-6 mb-6 flex items-center gap-3 text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+                <span className="flex-1 h-px bg-border" />
+                {t("auth.common.or")}
+                <span className="flex-1 h-px bg-border" />
               </div>
-              <Input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                className="h-11"
-              />
-            </div>
-            <Button
-              type="submit"
-              disabled={loading}
-              className="w-full h-11 rounded-full bg-foreground text-background hover:bg-foreground/90 mt-2"
-            >
-              {loading ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  {t("auth.common.signing_in")}
-                </>
-              ) : (
-                t("auth.login.submit")
-              )}
-            </Button>
-          </form>
 
-          <div className="mt-6 mb-6 flex items-center gap-3 text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
-            <span className="flex-1 h-px bg-border" />
-            {t("auth.common.or")}
-            <span className="flex-1 h-px bg-border" />
-          </div>
+              <SocialAuthButtons />
 
-          <SocialAuthButtons />
+              <p className="text-sm text-muted-foreground mt-8 text-center">
+                {t("auth.login.new_here")}{" "}
+                <Link to="/signup" className="text-accent font-medium">
+                  {t("auth.login.create_account")}
+                </Link>
+              </p>
 
-          <p className="text-sm text-muted-foreground mt-8 text-center">
-            {t("auth.login.new_here")}{" "}
-            <Link to="/signup" className="text-accent font-medium">
-              {t("auth.login.create_account")}
-            </Link>
-          </p>
+              {role ? (
+                <p className="text-xs text-muted-foreground mt-3 text-center">
+                  On the other side?{" "}
+                  <Link to={otherSideHref} className="text-accent font-medium">
+                    {otherSideLabel}
+                  </Link>
+                </p>
+              ) : null}
+            </>
+          ) : (
+            <>
+              <h1 className="font-display text-3xl md:text-4xl mb-2 leading-tight">
+                Check your email
+              </h1>
+              <p className="text-sm text-muted-foreground mb-10">
+                We sent a 6-digit code to <strong>{email}</strong>. It expires in 10 minutes.
+              </p>
 
-          {role ? (
-            <p className="text-xs text-muted-foreground mt-3 text-center">
-              On the other side?{" "}
-              <Link to={otherSideHref} className="text-accent font-medium">
-                {otherSideLabel}
-              </Link>
-            </p>
-          ) : null}
+              <form onSubmit={onSubmitCode} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="code">6-digit code</Label>
+                  <Input
+                    id="code"
+                    inputMode="numeric"
+                    autoComplete="one-time-code"
+                    value={code}
+                    onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                    required
+                    maxLength={6}
+                    placeholder="••••••"
+                    className="h-12 text-center font-mono text-xl tracking-[0.4em]"
+                    autoFocus
+                  />
+                </div>
+                <Button
+                  type="submit"
+                  disabled={loading || code.length !== 6}
+                  className="w-full h-11 rounded-full bg-foreground text-background hover:bg-foreground/90 mt-2"
+                >
+                  {loading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Verifying…
+                    </>
+                  ) : (
+                    "Sign in"
+                  )}
+                </Button>
+              </form>
+
+              <div className="mt-6 flex items-center justify-between text-xs text-muted-foreground">
+                <button
+                  type="button"
+                  disabled={loading}
+                  onClick={() => setStep("credentials")}
+                  className="text-accent font-medium hover:underline disabled:opacity-50"
+                >
+                  ← Use a different account
+                </button>
+                <button
+                  type="button"
+                  disabled={loading}
+                  onClick={resendCode}
+                  className="text-accent font-medium hover:underline disabled:opacity-50"
+                >
+                  Resend code
+                </button>
+              </div>
+            </>
+          )}
         </div>
       </div>
     </div>
