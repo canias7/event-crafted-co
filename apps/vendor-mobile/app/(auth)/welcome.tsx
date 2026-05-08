@@ -484,19 +484,28 @@ export default function WelcomeScreen() {
         </Pressable>
       </SafeAreaView>
 
-      {/* Floating auth pills — two centered black ovals on cream.
-          Smaller than full width so they read as floating actions
-          rather than a docked sheet. */}
+      {/* Floating auth pills — anchored to the bottom edge so the
+          flex:1 SafeAreaView above can't squeeze them out. */}
       <View
         style={{
+          position: "absolute",
+          left: 0,
+          right: 0,
+          bottom: 0,
           paddingBottom: Math.max(insets.bottom + 16, 28),
           paddingTop: 8,
           alignItems: "center",
-          gap: 12,
         }}
       >
-        <Pill onPress={() => router.push("/(auth)/signup")} label="Sign up" />
-        <Pill onPress={() => router.push("/(auth)/login")} label="Log in" />
+        <Pill
+          onPress={() => router.push("/(auth)/signup")}
+          label="Sign up"
+        />
+        <View style={{ height: 12 }} />
+        <Pill
+          onPress={() => router.push("/(auth)/login")}
+          label="Log in"
+        />
       </View>
     </View>
   );
