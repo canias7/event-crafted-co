@@ -140,9 +140,12 @@ export default function VendorApplyPage() {
       return;
     }
 
-    // Pending vendor accounts are no longer auto-banned, so the email
-    // confirmation flow handles the sign-in itself. Just send them to
-    // the thanks page.
+    // We auto-confirm vendor applicants in handle_new_user so they can
+    // sign in the moment admin approves — but auto-confirm also means
+    // signUp establishes a client-side session right now. Sign them
+    // back out so they can't browse the vendor portal while their
+    // application is still pending.
+    await supabase.auth.signOut();
     navigate("/vendor-apply/thanks");
   }
 
