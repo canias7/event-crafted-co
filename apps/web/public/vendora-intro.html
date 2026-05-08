@@ -154,27 +154,8 @@
     color: var(--ink);
   }
 
-  .replay {
-    position: fixed;
-    top: 22px;
-    right: 22px;
-    z-index: 50;
-    width: 34px;
-    height: 34px;
-    border-radius: 50%;
-    background: rgba(26, 20, 16, 0.06);
-    border: none;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    opacity: 0;
-    transition: opacity 0.6s ease;
-  }
-
-  .replay.show { opacity: 1; }
-  .replay:active { background: rgba(26, 20, 16, 0.12); }
-  .replay svg { width: 14px; height: 14px; stroke: var(--ink); }
+  /* Replay button hidden — the sequence auto-loops. */
+  .replay { display: none; }
 </style>
 </head>
 <body>
@@ -303,9 +284,12 @@
     const taglineChars = renderChars(tagline, 'for those who plan, and those who craft.');
     await typeOut(taglineChars, 42); if (myId !== runId) return;
 
-    await wait(1200);
+    // Hold the final wordmark + tagline so it's the resting state for
+    // a beat, then loop the whole sequence so /login feels alive while
+    // the user is reading the cards on the right.
+    await wait(3500);
     if (myId !== runId) return;
-    replay.classList.add('show');
+    start();
   }
 
   function start() {

@@ -24,7 +24,7 @@ export default function LoginRoleChooserPage() {
         />
       </div>
 
-      <div className="flex-1 flex flex-col md:items-center md:justify-center px-6 pt-12 pb-12 md:p-12 bg-background">
+      <div className="flex-1 flex flex-col md:items-center md:justify-center px-6 pt-12 pb-12 md:p-12 bg-[#faf5ec]">
         <div className="w-full max-w-sm">
           <Link to="/" className="md:hidden font-display text-2xl block mb-8">
             Vendora
