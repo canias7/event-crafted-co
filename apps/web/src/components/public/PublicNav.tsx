@@ -60,11 +60,11 @@ export function PublicNav() {
 
   return (
     <nav
-      className="fixed top-0 left-0 right-0 z-50 bg-gradient-to-b from-foreground/80 via-foreground/40 to-transparent backdrop-blur-sm"
+      className="fixed top-0 left-0 right-0 z-50 bg-background/85 backdrop-blur-sm"
       aria-label="Public"
     >
       <div className="container mx-auto flex items-center justify-between h-16 px-4 md:px-8">
-        <Link to="/" className="font-display text-xl tracking-tight text-background">
+        <Link to="/" className="font-display text-xl tracking-tight text-foreground">
           Vendora
         </Link>
 
@@ -76,8 +76,8 @@ export function PublicNav() {
               <button
                 className={`inline-flex items-center gap-1 text-sm font-medium transition-colors duration-200 outline-none ${
                   location.pathname.startsWith("/vendors")
-                    ? "text-background"
-                    : "text-background/70 hover:text-background"
+                    ? "text-foreground"
+                    : "text-muted-foreground hover:text-foreground"
                 }`}
                 aria-current={
                   location.pathname.startsWith("/vendors") ? "page" : undefined
@@ -137,8 +137,8 @@ export function PublicNav() {
               to={item.path}
               className={`text-sm font-medium transition-colors duration-200 ${
                 location.pathname === item.path
-                  ? "text-background"
-                  : "text-background/70 hover:text-background"
+                  ? "text-foreground"
+                  : "text-muted-foreground hover:text-foreground"
               }`}
               aria-current={location.pathname === item.path ? "page" : undefined}
             >
@@ -159,21 +159,21 @@ export function PublicNav() {
                 }),
               );
             }}
-            className="hidden lg:inline-flex items-center gap-2 px-3 h-8 rounded-full bg-background/10 hover:bg-background/20 text-background/85 hover:text-background text-xs transition-colors mr-2"
+            className="hidden lg:inline-flex items-center gap-2 px-3 h-8 rounded-full bg-muted hover:bg-muted-foreground/10 text-muted-foreground hover:text-foreground text-xs transition-colors mr-2"
             aria-label="Open search"
           >
             <Search className="w-3.5 h-3.5" />
             Search
-            <kbd className="hidden xl:inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-background/15 text-[10px] font-mono">
+            <kbd className="hidden xl:inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-muted-foreground/10 text-[10px] font-mono">
               ⌘K
             </kbd>
           </button>
           {session && profile ? (
             <>
-              <NotificationBell variant="dark" />
+              <NotificationBell variant="light" />
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <button className="ml-2 flex items-center gap-2 text-sm font-medium text-background/85 hover:text-background transition-colors">
+                  <button className="ml-2 flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
                     <span className="w-7 h-7 rounded-full bg-accent text-accent-foreground flex items-center justify-center text-xs font-medium">
                       {(profile.display_name ?? "U").charAt(0).toUpperCase()}
                     </span>
@@ -210,7 +210,7 @@ export function PublicNav() {
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="h-9 text-background hover:bg-background/10 hover:text-background"
+                  className="h-9 text-foreground hover:bg-muted"
                 >
                   {t("nav.login")}
                 </Button>
@@ -222,12 +222,12 @@ export function PublicNav() {
               </Link>
             </>
           )}
-          <LanguageSwitcher tone="dark" />
+          <LanguageSwitcher tone="light" />
         </div>
 
         {/* Mobile toggle */}
         <button
-          className="md:hidden p-2 text-background"
+          className="md:hidden p-2 text-foreground"
           onClick={() => setMobileOpen(!mobileOpen)}
           aria-label={mobileOpen ? t("nav.close_menu") : t("nav.open_menu")}
           aria-expanded={mobileOpen}

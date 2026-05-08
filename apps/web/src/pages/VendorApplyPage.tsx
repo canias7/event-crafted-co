@@ -20,8 +20,6 @@ import {
 } from "@/components/ui/select";
 import { PublicNav } from "@/components/public/PublicNav";
 import { Footer } from "@/components/public/Footer";
-import { Picture } from "@/components/shared/Picture";
-import heroApply from "@/assets/vendora-hero-gala.jpg?as=picture";
 import { CATEGORY_GROUPS } from "@/data/categoryTaxonomy";
 
 // Selectable sub-categories grouped by their parent group. Source of
@@ -153,60 +151,38 @@ export default function VendorApplyPage() {
     <div className="min-h-screen bg-background">
       <PublicNav />
 
-      {/* Cinematic hero strip */}
-      <section className="relative h-[44svh] min-h-[340px] w-full overflow-hidden">
-        <div className="absolute inset-0">
-          <Picture
-            source={heroApply}
-            alt=""
-            loading="eager"
-            fetchPriority="high"
-            sizes="100vw"
-            className="w-full h-full object-cover"
-          />
-        </div>
-        <div className="absolute inset-0 bg-gradient-to-b from-foreground/75 via-foreground/55 to-background" />
-        <div className="absolute inset-0 bg-gradient-to-r from-foreground/55 via-transparent to-foreground/20" />
-        <div
-          className="absolute inset-0 opacity-[0.07] mix-blend-overlay pointer-events-none"
-          style={{
-            backgroundImage:
-              "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)' opacity='0.6'/></svg>\")",
-          }}
-        />
-
-        <div className="relative z-10 h-full flex items-end pb-12 md:pb-16">
-          <div className="container mx-auto px-6 md:px-8">
-            <motion.div
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ ...spring, delay: 0.15 }}
-              className="flex items-center gap-4 mb-5"
-            >
-              <p className="font-label text-accent tracking-[0.4em]">
-                — JOIN THE DIRECTORY
-              </p>
-              <span className="h-px w-8 bg-accent/40" />
-            </motion.div>
-            <motion.h1
-              initial={{ opacity: 0, y: 24 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ ...spring, delay: 0.3, duration: 0.9 }}
-              className="text-h2 md:text-hero font-display text-background leading-[1.0] max-w-3xl"
-            >
-              Become a{" "}
-              <span className="italic font-light text-accent">Vendora vendor.</span>
-            </motion.h1>
-            <motion.p
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ ...spring, delay: 0.55 }}
-              className="text-base md:text-lg text-background/80 mt-5 max-w-md leading-relaxed font-light"
-            >
-              3% on confirmed bookings. No pay-to-rank. AI-assisted replies in
-              under 3 minutes. Month-to-month, no contracts.
-            </motion.p>
-          </div>
+      {/* Hero — text-only on cream. */}
+      <section className="pt-28 md:pt-36 pb-10 md:pb-14">
+        <div className="container mx-auto px-6 md:px-8">
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ ...spring, delay: 0.15 }}
+            className="flex items-center gap-4 mb-5"
+          >
+            <p className="font-label text-accent tracking-[0.4em]">
+              — JOIN THE DIRECTORY
+            </p>
+            <span className="h-px w-8 bg-accent/40" />
+          </motion.div>
+          <motion.h1
+            initial={{ opacity: 0, y: 24 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ ...spring, delay: 0.3, duration: 0.9 }}
+            className="text-h2 md:text-hero font-display leading-[1.0] max-w-3xl"
+          >
+            Become a{" "}
+            <span className="italic font-light text-accent">Vendora vendor.</span>
+          </motion.h1>
+          <motion.p
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ ...spring, delay: 0.55 }}
+            className="text-base md:text-lg text-muted-foreground mt-5 max-w-md leading-relaxed font-light"
+          >
+            3% on confirmed bookings. No pay-to-rank. AI-assisted replies in
+            under 3 minutes. Month-to-month, no contracts.
+          </motion.p>
         </div>
       </section>
 
