@@ -380,15 +380,15 @@ export default function WelcomeScreen() {
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: CREAM, justifyContent: "space-between" }}>
+    <View style={{ flex: 1, backgroundColor: CREAM }}>
       <StatusBar barStyle="dark-content" backgroundColor={CREAM} />
 
-      <SafeAreaView edges={["top"]}>
-        {/* Tap-to-skip is scoped to the upper text area only. */}
-        <Pressable
-          onPress={skip}
-          disabled={scene === "done"}
+      <SafeAreaView style={{ flex: 1 }} edges={["top"]}>
+        {/* Upper text area — non-interactive on purpose. */}
+        <View
+          pointerEvents="none"
           style={{
+            flex: 1,
             paddingHorizontal: 32,
             paddingTop: "18%",
             alignItems: "center",
@@ -478,56 +478,115 @@ export default function WelcomeScreen() {
               </View>
             </View>
           ) : null}
-        </Pressable>
+        </View>
       </SafeAreaView>
 
-      {/* Floating auth pills sit at the bottom courtesy of the outer
-          View's justifyContent: space-between. */}
+      {/* Floating auth pills — anchored absolutely so the SafeAreaView
+          above can't squeeze them out. zIndex 40 mirrors the design. */}
       <View
         style={{
-          paddingBottom: Math.max(insets.bottom + 16, 28),
+          position: "absolute",
+          left: 0,
+          right: 0,
+          bottom: 0,
+          paddingHorizontal: 22,
           paddingTop: 8,
+          paddingBottom: Math.max(insets.bottom + 56, 64),
           alignItems: "center",
+          zIndex: 40,
         }}
       >
-        <Pill
+        <FloatingPill
+          primary
           onPress={() => router.push("/(auth)/signup")}
           label="Sign up"
         />
-        <View style={{ height: 12 }} />
-        <Pill
+        <View style={{ height: 10 }} />
+        <FloatingPill
           onPress={() => router.push("/(auth)/login")}
-          label="Log in"
+          label="Sign in"
+          phaseShift
         />
       </View>
     </View>
   );
 }
 
-function Pill({ onPress, label }: { onPress: () => void; label: string }) {
+// Auth pill that gently floats up and down, matching the design's
+// `@keyframes float` (translateY 0 → -4 → 0 over 4s). The second pill
+// can opt into a phase-shifted loop so the two don't bob in lockstep.
+function FloatingPill({
+  onPress,
+  label,
+  primary,
+  phaseShift,
+}: {
+  onPress: () => void;
+  label: string;
+  primary?: boolean;
+  phaseShift?: boolean;
+}) {
+  const translateY = useRef(new Animated.Value(phaseShift ? -4 : 0)).current;
+
+  useEffect(() => {
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(translateY, {
+          toValue: phaseShift ? 0 : -4,
+          duration: 2000,
+          easing: Easing.inOut(Easing.quad),
+          useNativeDriver: true,
+        }),
+        Animated.timing(translateY, {
+          toValue: phaseShift ? -4 : 0,
+          duration: 2000,
+          easing: Easing.inOut(Easing.quad),
+          useNativeDriver: true,
+        }),
+      ]),
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [translateY, phaseShift]);
+
   return (
-    <Pressable
-      onPress={onPress}
-      style={({ pressed }) => ({
-        backgroundColor: INK,
-        paddingVertical: 14,
-        paddingHorizontal: 56,
-        borderRadius: 999,
-        minWidth: 220,
-        alignItems: "center",
-        // Soft drop shadow so the pills read as floating above the
-        // cream surface, not painted onto it.
-        shadowColor: INK,
-        shadowOpacity: 0.18,
-        shadowRadius: 14,
-        shadowOffset: { width: 0, height: 8 },
-        elevation: 5,
-        opacity: pressed ? 0.85 : 1,
-      })}
+    <Animated.View
+      style={{
+        width: "88%",
+        maxWidth: 320,
+        transform: [{ translateY }],
+      }}
     >
-      <Text style={{ color: CREAM, fontSize: 15, fontWeight: "600" }}>
-        {label}
-      </Text>
-    </Pressable>
+      <Pressable
+        onPress={onPress}
+        style={({ pressed }) => ({
+          height: 54,
+          borderRadius: 999,
+          alignItems: "center",
+          justifyContent: "center",
+          backgroundColor: primary ? INK : "rgba(250,245,236,0.7)",
+          borderWidth: primary ? 0 : 1,
+          borderColor: "rgba(26,20,16,0.18)",
+          shadowColor: INK,
+          shadowOpacity: primary ? 0.18 : 0.08,
+          shadowRadius: primary ? 14 : 12,
+          shadowOffset: { width: 0, height: primary ? 8 : 6 },
+          elevation: primary ? 6 : 3,
+          opacity: pressed ? 0.85 : 1,
+        })}
+      >
+        <Text
+          style={{
+            color: primary ? CREAM : INK,
+            fontSize: 17,
+            fontWeight: "600",
+            fontFamily: SERIF,
+            letterSpacing: -0.17,
+          }}
+        >
+          {label}
+        </Text>
+      </Pressable>
+    </Animated.View>
   );
 }
