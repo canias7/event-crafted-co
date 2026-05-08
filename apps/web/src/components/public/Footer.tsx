@@ -5,7 +5,7 @@ import { LanguageSwitcher } from "@/components/shared/LanguageSwitcher";
 export function Footer() {
   const { t } = useTranslation();
   return (
-    <footer className="bg-primary text-primary-foreground py-16 md:py-24">
+    <footer className="bg-background text-foreground py-16 md:py-24 border-t border-foreground/10">
       <div className="container mx-auto px-4 md:px-8">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-12">
           <div className="col-span-2 md:col-span-1">
@@ -49,9 +49,9 @@ export function Footer() {
             </div>
           </div>
         </div>
-        <div className="mt-16 pt-8 border-t border-primary-foreground/10 flex items-center justify-between gap-3 text-sm opacity-50 flex-wrap">
+        <div className="mt-16 pt-8 border-t border-foreground/10 flex items-center justify-between gap-3 text-sm opacity-60 flex-wrap">
           <p>© {new Date().getFullYear()} Vendora. {t("footer.rights")}</p>
-          <LanguageSwitcher tone="light" />
+          <LanguageSwitcher tone="dark" />
         </div>
       </div>
     </footer>
