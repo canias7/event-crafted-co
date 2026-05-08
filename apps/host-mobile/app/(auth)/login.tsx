@@ -44,6 +44,8 @@ export default function LoginScreen() {
     if (!r?.ok) {
       if (r?.reason === "banned") {
         setError("This account is currently locked. Please contact support if you think this is a mistake.");
+      } else if (r?.reason === "not_confirmed") {
+        setError("Your application is still under review. We'll email you the moment it's approved.");
       } else if (r?.reason === "invalid_credentials") {
         setError("Email or password is incorrect.");
       } else {

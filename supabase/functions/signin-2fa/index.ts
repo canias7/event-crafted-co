@@ -104,6 +104,10 @@ serve(async (req) => {
     const status = (result as { status?: string } | null)?.status;
     if (status === "invalid_credentials") return json({ ok: false, reason: "invalid_credentials" }, 200);
     if (status === "banned") return json({ ok: false, reason: "banned" }, 200);
+    // Don't email a 6-digit code to an account that can't actually
+    // sign in. Pending vendor applicants land here with email_confirmed_at
+    // null until admin approves their application.
+    if (status === "not_confirmed") return json({ ok: false, reason: "not_confirmed" }, 200);
     if (status !== "ok") return json({ ok: false, reason: "unknown" }, 200);
 
     // Invalidate any earlier unused codes for this email.

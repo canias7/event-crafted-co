@@ -63,6 +63,10 @@ export default function LoginPage({ role }: LoginPageProps = {}) {
         toast.error(
           "This account is suspended. Contact support if you think that's a mistake.",
         );
+      } else if (r?.reason === "not_confirmed") {
+        toast.error(
+          "Your application is still under review. We'll email you the moment it's approved.",
+        );
       } else if (r?.reason === "invalid_credentials") {
         toast.error("Email or password is incorrect.");
       } else {
