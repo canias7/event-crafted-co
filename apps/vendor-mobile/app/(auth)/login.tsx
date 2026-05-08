@@ -94,7 +94,11 @@ export default function LoginScreen() {
       password,
     });
     setSubmitting(false);
-    if (signInErr) setError(signInErr.message);
+    if (signInErr) {
+      setError(signInErr.message);
+      return;
+    }
+    router.replace("/(vendor)/dashboard");
   }
 
   return (
