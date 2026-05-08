@@ -2,10 +2,10 @@
 
 ## Live URLs
 
-- **Public site:** https://event-crafted-co-web-git-main-canias7s-projects.vercel.app — this is THE URL for the public web app. All testing and verification happens here. Auto-redeploys on push to `main`.
-- **Admin:** https://vendora-admin-henna.vercel.app — PIN-gated (`9236`) admin panel. Auto-redeploys on push to `main`.
+- **Public site:** https://eventvendora.com (and https://app.eventvendora.com) — both serve the same Vercel deployment from `apps/web`. These are THE URLs for the public web app. Auto-redeploy on push to `main`.
+- **Admin:** https://vendora-admin-henna.vercel.app — PIN-gated (`9236`) admin panel from `apps/admin`. Auto-redeploys on push to `main`.
 
-Do NOT use `eventvendora.com` for testing — it's an old Lovable deployment that's no longer connected to this codebase. Do NOT use `event-crafted-co-web.vercel.app` either — Vercel redirects it to `eventvendora.com` because the latter is configured as the primary custom domain.
+The DNS for `eventvendora.com` and `app.eventvendora.com` was migrated off Lovable and onto Vercel. Old Lovable host is no longer in the picture.
 
 ## Workflow preferences
 
