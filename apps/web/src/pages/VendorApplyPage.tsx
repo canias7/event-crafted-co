@@ -64,7 +64,7 @@ export default function VendorApplyPage() {
 
     setSubmitting(true);
 
-    const { error: signUpError } = await supabase.auth.signUp({
+    const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
       email,
       password,
       options: {
@@ -87,6 +87,18 @@ export default function VendorApplyPage() {
 
     if (signUpError) {
       toast.error(signUpError.message);
+      return;
+    }
+
+    // Supabase signUp silently no-ops if the email already exists,
+    // returning data.user but with identities=[]. The handle_new_user
+    // trigger doesn't fire in that case, so the vendor_profile never
+    // gets made. Detect this and tell the user to sign in with their
+    // existing account first.
+    if (signUpData?.user && (signUpData.user.identities ?? []).length === 0) {
+      toast.error(
+        "An account with this email already exists. Sign in to that account, then contact support to convert it into a vendor application.",
+      );
       return;
     }
 
