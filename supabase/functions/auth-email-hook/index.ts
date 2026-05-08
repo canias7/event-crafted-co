@@ -27,7 +27,12 @@ type ActionType =
   | "reauthentication";
 
 interface HookPayload {
-  user: { email: string; id?: string };
+  user: {
+    email: string;
+    id?: string;
+    user_metadata?: Record<string, unknown>;
+    raw_user_meta_data?: Record<string, unknown>;
+  };
   email_data: {
     token: string;
     token_hash: string;
@@ -37,6 +42,18 @@ interface HookPayload {
     token_new?: string;
     token_hash_new?: string;
   };
+}
+
+function vendorBusinessName(p: HookPayload): string | null {
+  // Different versions of the hook payload use different metadata keys.
+  // Try both so we can detect vendor signups regardless of which one is set.
+  const m =
+    (p.user.user_metadata ?? p.user.raw_user_meta_data ?? {}) as Record<
+      string,
+      unknown
+    >;
+  const v = m.vendor_business_name;
+  return typeof v === "string" && v.trim().length > 0 ? v : null;
 }
 
 const cors = {
@@ -182,6 +199,23 @@ function renderEmail(p: HookPayload): { subject: string; html: string } | null {
   const verifyUrl = buildVerifyUrl(p);
 
   if (action === "signup") {
+    // Vendor applicants don't see a "confirm your email" CTA — admin
+    // review is the real gate and we auto-confirm them in
+    // handle_new_user. They get a pure thank-you email; the welcome
+    // email after approval will both prove email ownership and hand
+    // them the sign-in link.
+    const business = vendorBusinessName(p);
+    if (business) {
+      return {
+        subject: "Thanks for applying to Vendora",
+        html: shell(
+          "Application received",
+          `<p style="margin:0 0 16px;">Thanks for applying to list <strong>${escape(business)}</strong> on Vendora.</p>
+           <p style="margin:0 0 16px;">Our team hand-reviews every application. We'll email you within 2–3 business days with the decision — if approved, that email will include your sign-in details.</p>
+           <p style="margin:0;font-size:13px;color:#777;">If you didn't submit this application, you can safely ignore this message.</p>`,
+        ),
+      };
+    }
     return {
       subject: "Confirm your Vendora account",
       html: shell(

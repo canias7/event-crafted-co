@@ -147,6 +147,9 @@ serve(async (req) => {
     ) {
       const e = await vendorDecisionEmail(body as VendorDecisionPayload, kind as Decision);
       if (e) emails = [e];
+    } else if (kind === "vendor_applied") {
+      const e = await vendorAppliedEmail(body as VendorAppliedPayload);
+      if (e) emails = [e];
     } else if (kind === "signin_code") {
       const e = signinCodeEmail(body as SigninCodePayload);
       if (e) emails = [e];
@@ -410,6 +413,40 @@ async function vendorDecisionEmail(
     to: email,
     subject: `${row.business_name} — listing update needs changes`,
     html: shellHtml(`Listing update needs changes`, body),
+  };
+}
+
+interface VendorAppliedPayload {
+  vendorProfileId: string;
+}
+
+async function vendorAppliedEmail(p: VendorAppliedPayload) {
+  // Used when an already-authenticated host applies to become a vendor
+  // via the apply_as_vendor RPC — no auth.signUp fires, so the auth
+  // email hook never runs, and we send the thank-you here instead.
+  const sb = adminClient();
+  const { data } = await sb
+    .from("vendor_profiles")
+    .select("business_name, user_id")
+    .eq("id", p.vendorProfileId)
+    .maybeSingle();
+  const row = data as { business_name: string; user_id: string } | null;
+  if (!row) return null;
+  const { data: emailData } = await sb.rpc("get_user_email", {
+    p_user_id: row.user_id,
+  });
+  const email = emailData as string | null;
+  if (!email) return null;
+
+  const business = escape(row.business_name);
+  const body = `
+    <p style="margin:0 0 16px;">Thanks for applying to list <strong>${business}</strong> on Vendora.</p>
+    <p style="margin:0 0 16px;">Our team hand-reviews every application. We'll email you within 2–3 business days with the decision — if approved, you'll be able to finish setting up your listing right away.</p>
+    <p style="margin:0;font-size:13px;color:#777;">Questions? Just reply to this email.</p>`;
+  return {
+    to: email,
+    subject: "Thanks for applying to Vendora",
+    html: shellHtml("Application received", body),
   };
 }
 

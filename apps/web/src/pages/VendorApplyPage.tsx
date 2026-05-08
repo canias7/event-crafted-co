@@ -74,15 +74,30 @@ export default function VendorApplyPage() {
     // email confirmation — they can keep using the host dashboard
     // while we review.
     if (skipAccountStep) {
-      const { error: rpcError } = await supabase.rpc("apply_as_vendor", {
-        p_business_name: businessName.trim(),
-        p_category: category,
-      });
-      setSubmitting(false);
+      const { data: vp, error: rpcError } = await supabase.rpc(
+        "apply_as_vendor",
+        {
+          p_business_name: businessName.trim(),
+          p_category: category,
+        },
+      );
       if (rpcError) {
+        setSubmitting(false);
         toast.error(rpcError.message);
         return;
       }
+      // Send the "thanks for applying" email. Best-effort — we don't
+      // want a transient email failure to block the user from seeing
+      // the thanks page.
+      const vpId = (vp as { id?: string } | null)?.id;
+      if (vpId) {
+        await supabase.functions
+          .invoke("send-transactional-email", {
+            body: { kind: "vendor_applied", vendorProfileId: vpId },
+          })
+          .catch(() => {});
+      }
+      setSubmitting(false);
       await refreshProfile();
       navigate("/vendor-apply/thanks");
       return;
