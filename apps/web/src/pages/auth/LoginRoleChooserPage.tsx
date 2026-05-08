@@ -8,44 +8,20 @@
 
 import { Link } from "react-router-dom";
 import { CalendarHeart, Briefcase, ArrowRight } from "lucide-react";
-import { Picture } from "@/components/shared/Picture";
-import heroImg from "@/assets/vendora-hero-cinematic.jpg?as=picture";
 
 export default function LoginRoleChooserPage() {
   return (
     <div className="min-h-screen flex">
-      <div className="hidden md:flex md:w-1/2 relative overflow-hidden">
-        <div className="absolute inset-0">
-          <Picture
-            source={heroImg}
-            alt=""
-            loading="eager"
-            fetchPriority="high"
-            sizes="50vw"
-            className="w-full h-full object-cover"
-          />
-        </div>
-        <div className="absolute inset-0 bg-gradient-to-br from-foreground/85 via-foreground/60 to-foreground/35" />
-        <div className="relative z-10 flex flex-col justify-between p-10 lg:p-14 text-background w-full">
-          <Link to="/" className="font-display text-2xl">
-            Vendora
-          </Link>
-          <div>
-            <div className="flex items-center gap-3 mb-5">
-              <p className="font-label text-accent tracking-[0.4em]">
-                SIGN IN
-              </p>
-              <span className="h-px w-8 bg-accent/40" />
-            </div>
-            <p className="text-3xl lg:text-4xl font-display leading-[1.1] max-w-sm">
-              Welcome back to{" "}
-              <span className="italic font-light text-accent">Vendora</span>
-            </p>
-          </div>
-          <p className="text-xs text-background/50 tracking-wide">
-            Curated event vendors. Verified hosts. Privately matched.
-          </p>
-        </div>
+      <div className="hidden md:block md:w-1/2 relative overflow-hidden bg-[#faf5ec]">
+        {/* Vendora animated brand intro — hosted as a static HTML doc
+            in /public so the choreographed CSS / vanilla JS animation
+            doesn't have to be re-implemented in React. */}
+        <iframe
+          src="/vendora-intro.html"
+          title="Vendora"
+          className="absolute inset-0 w-full h-full border-0"
+          loading="eager"
+        />
       </div>
 
       <div className="flex-1 flex flex-col md:items-center md:justify-center px-6 pt-12 pb-12 md:p-12 bg-background">

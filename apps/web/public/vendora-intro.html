@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>Vendora</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;0,9..144,700;0,9..144,800;1,9..144,500;1,9..144,600;1,9..144,700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --cream-deep: #f5efe5;
+    --cream: #faf5ec;
+    --white: #ffffff;
+    --ink: #1a1410;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+  html, body {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background: var(--cream-deep);
+    color: var(--ink);
+    font-family: 'Fraunces', serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .stage {
+    position: fixed;
+    inset: 0;
+    background: var(--cream);
+  }
+
+  .scene {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    visibility: hidden;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 18vh 32px 0;
+    text-align: center;
+    transition: opacity 0.6s ease, visibility 0.6s;
+  }
+
+  .scene.active { opacity: 1; visibility: visible; }
+
+  .char {
+    display: inline-block;
+    opacity: 0;
+    transform: translateY(14px) scale(0.94);
+    filter: blur(6px);
+    white-space: pre;
+  }
+
+  .char.shown {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+    transition:
+      opacity 0.5s cubic-bezier(0.22, 1, 0.36, 1),
+      transform 0.6s cubic-bezier(0.22, 1, 0.36, 1),
+      filter 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .scene-1 .opener {
+    font-style: italic;
+    font-weight: 500;
+    font-size: clamp(26px, 4.5vw, 36px);
+    line-height: 1.4;
+    color: var(--ink);
+    max-width: 360px;
+  }
+
+  .scene-1 .opener .em {
+    font-style: normal;
+    font-weight: 700;
+  }
+
+  .scene-2 .content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+  }
+
+  .scene-2 .stack {
+    position: relative;
+    width: 100%;
+    max-width: 420px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    margin-bottom: 24px;
+    transition: opacity 0.8s ease, max-height 0.8s ease, margin-bottom 0.8s ease, gap 0.8s ease;
+    overflow: hidden;
+    max-height: 400px;
+  }
+
+  .scene-2 .stack.collapsed {
+    opacity: 0;
+    max-height: 0;
+    margin-bottom: 0;
+    gap: 0;
+  }
+
+  .flash-word {
+    font-style: italic;
+    font-weight: 600;
+    font-size: clamp(22px, 3.6vw, 32px);
+    line-height: 1.25;
+    color: var(--ink);
+    letter-spacing: -0.02em;
+    text-align: center;
+    width: 100%;
+    padding: 0 8px;
+  }
+
+  .flash-word.exit {
+    opacity: 0;
+    transform: translateY(-14px) scale(0.96);
+    filter: blur(6px);
+    transition:
+      opacity 0.7s cubic-bezier(0.22, 1, 0.36, 1),
+      transform 0.7s cubic-bezier(0.22, 1, 0.36, 1),
+      filter 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .scene-2 .content .wordmark,
+  .wordmark {
+    font-weight: 700;
+    font-size: clamp(72px, 14vw, 120px);
+    line-height: 0.95;
+    letter-spacing: -0.04em;
+    color: var(--ink);
+  }
+
+  .wordmark .accent {
+    font-style: italic;
+    font-weight: 600;
+  }
+
+  .tagline {
+    margin-top: 20px;
+    font-style: italic;
+    font-weight: 500;
+    font-size: 16px;
+    letter-spacing: 0.02em;
+    color: var(--ink);
+  }
+
+  .replay {
+    position: fixed;
+    top: 22px;
+    right: 22px;
+    z-index: 50;
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: rgba(26, 20, 16, 0.06);
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.6s ease;
+  }
+
+  .replay.show { opacity: 1; }
+  .replay:active { background: rgba(26, 20, 16, 0.12); }
+  .replay svg { width: 14px; height: 14px; stroke: var(--ink); }
+</style>
+</head>
+<body>
+
+  <button class="replay" id="replay" aria-label="Replay">
+    <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M3 12a9 9 0 1 0 3-6.7"/>
+      <path d="M3 4v5h5"/>
+    </svg>
+  </button>
+
+  <div class="stage" id="stage">
+
+    <section class="scene scene-1" id="scene-1">
+      <p class="opener" id="opener"></p>
+    </section>
+
+    <section class="scene scene-2" id="scene-2">
+      <div class="content">
+        <div class="stack" id="stack"></div>
+        <h1 class="wordmark" id="wordmark"></h1>
+        <p class="tagline" id="tagline"></p>
+      </div>
+    </section>
+
+  </div>
+
+<script>
+  function renderChars(el, text) {
+    el.innerHTML = '';
+    let inEm = false;
+    let i = 0;
+    const chars = [];
+    while (i < text.length) {
+      if (text.substr(i, 6) === '{{em}}') { inEm = true; i += 6; continue; }
+      if (text.substr(i, 7) === '{{/em}}') { inEm = false; i += 7; continue; }
+      const span = document.createElement('span');
+      span.className = 'char' + (inEm ? ' em' : '');
+      span.textContent = text[i];
+      el.appendChild(span);
+      chars.push(span);
+      i++;
+    }
+    return chars;
+  }
+
+  function typeOut(chars, perChar = 38) {
+    return new Promise(resolve => {
+      let idx = 0;
+      function step() {
+        if (idx >= chars.length) { resolve(); return; }
+        chars[idx].classList.add('shown');
+        idx++;
+        setTimeout(step, perChar);
+      }
+      step();
+    });
+  }
+
+  function wait(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+  const sceneEls = {
+    1: document.getElementById('scene-1'),
+    2: document.getElementById('scene-2'),
+  };
+  const replay = document.getElementById('replay');
+
+  let runId = 0;
+
+  function showScene(n) {
+    Object.values(sceneEls).forEach(el => el.classList.remove('active'));
+    sceneEls[n].classList.add('active');
+  }
+
+  async function runSequence(myId) {
+    replay.classList.remove('show');
+
+    showScene(1);
+    const opener = document.getElementById('opener');
+    const openerChars = renderChars(opener, 'The night is fine when the {{em}}people{{/em}} align.');
+    await wait(400); if (myId !== runId) return;
+    await typeOut(openerChars, 55); if (myId !== runId) return;
+    await wait(1700); if (myId !== runId) return;
+
+    showScene(2);
+    const stack = document.getElementById('stack');
+    stack.classList.remove('collapsed');
+    stack.innerHTML = '';
+    const words = ['A florist with taste.', 'A photographer to chase.', 'A night without waste.'];
+
+    for (let w = 0; w < words.length; w++) {
+      if (myId !== runId) return;
+      const wordEl = document.createElement('div');
+      wordEl.className = 'flash-word';
+      stack.appendChild(wordEl);
+      const chars = renderChars(wordEl, words[w]);
+      await typeOut(chars, 42); if (myId !== runId) return;
+      await wait(450); if (myId !== runId) return;
+    }
+
+    await wait(1400); if (myId !== runId) return;
+    stack.classList.add('collapsed');
+    await wait(800); if (myId !== runId) return;
+
+    const wordmark = document.getElementById('wordmark');
+    wordmark.innerHTML = '';
+    const baseChars = [];
+    'Vendor'.split('').forEach(ch => {
+      const s = document.createElement('span');
+      s.className = 'char';
+      s.textContent = ch;
+      wordmark.appendChild(s);
+      baseChars.push(s);
+    });
+    const aSpan = document.createElement('span');
+    aSpan.className = 'char accent';
+    aSpan.textContent = 'a';
+    wordmark.appendChild(aSpan);
+    baseChars.push(aSpan);
+
+    await wait(200); if (myId !== runId) return;
+    await typeOut(baseChars, 110); if (myId !== runId) return;
+    await wait(700); if (myId !== runId) return;
+
+    const tagline = document.getElementById('tagline');
+    const taglineChars = renderChars(tagline, 'for those who plan, and those who craft.');
+    await typeOut(taglineChars, 42); if (myId !== runId) return;
+
+    await wait(1200);
+    if (myId !== runId) return;
+    replay.classList.add('show');
+  }
+
+  function start() {
+    runId++;
+    const myId = runId;
+    setTimeout(() => {
+      runSequence(myId);
+    }, 50);
+  }
+
+  replay.addEventListener('click', start);
+  start();
+</script>
+
+</body>
+</html>

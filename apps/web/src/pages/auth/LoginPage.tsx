@@ -7,8 +7,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Picture } from "@/components/shared/Picture";
-import heroImg from "@/assets/vendora-hero-cinematic.jpg?as=picture";
 import { SocialAuthButtons } from "@/components/auth/SocialAuthButtons";
 import { PasswordInput } from "@/components/auth/PasswordInput";
 
@@ -167,51 +165,15 @@ export default function LoginPage({ role }: LoginPageProps = {}) {
 
   return (
     <div className="min-h-screen flex">
-      {/* Brand panel */}
-      <div className="hidden md:flex md:w-1/2 relative overflow-hidden">
-        <div className="absolute inset-0">
-          <Picture
-            source={heroImg}
-            alt=""
-            loading="eager"
-            fetchPriority="high"
-            sizes="50vw"
-            className="w-full h-full object-cover"
-          />
-        </div>
-        <div className="absolute inset-0 bg-gradient-to-br from-foreground/85 via-foreground/60 to-foreground/35" />
-        <div
-          className="absolute inset-0 opacity-[0.07] mix-blend-overlay pointer-events-none"
-          style={{
-            backgroundImage:
-              "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)' opacity='0.6'/></svg>\")",
-          }}
+      {/* Brand panel — Vendora animated intro served from /public so
+          the choreographed CSS/vanilla-JS animation runs untouched. */}
+      <div className="hidden md:block md:w-1/2 relative overflow-hidden bg-[#faf5ec]">
+        <iframe
+          src="/vendora-intro.html"
+          title="Vendora"
+          className="absolute inset-0 w-full h-full border-0"
+          loading="eager"
         />
-
-        <div className="relative z-10 flex flex-col justify-between p-10 lg:p-14 text-background w-full">
-          <Link to="/" className="font-display text-2xl">
-            Vendora
-          </Link>
-
-          <div>
-            <div className="flex items-center gap-3 mb-5">
-              <p className="font-label text-accent tracking-[0.4em]">
-                {t("auth.login.eyebrow")}
-              </p>
-              <span className="h-px w-8 bg-accent/40" />
-            </div>
-            <p className="text-3xl lg:text-4xl font-display leading-[1.1] max-w-sm">
-              {t("auth.login.tagline_lead")}{" "}
-              <span className="italic font-light text-accent">
-                {t("auth.login.tagline_accent")}
-              </span>
-            </p>
-          </div>
-
-          <p className="text-xs text-background/50 tracking-wide">
-            {t("auth.login.footer_brand")}
-          </p>
-        </div>
       </div>
 
       {/* Form */}
