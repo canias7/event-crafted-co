@@ -68,6 +68,41 @@ export function ListingsPage() {
     setRows((p) => p.filter((r) => r.id !== row.id));
   };
 
+  const setStatus = async (
+    row: Listing,
+    status: Listing["application_status"],
+  ) => {
+    const { error } = await supabase
+      .from("vendor_profiles")
+      .update({
+        application_status: status,
+        application_reviewed_at: new Date().toISOString(),
+      })
+      .eq("id", row.id);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    if (status === "approved" || status === "rejected") {
+      supabase.functions
+        .invoke("send-transactional-email", {
+          body: {
+            kind: status === "approved" ? "vendor_approved" : "vendor_rejected",
+            vendorProfileId: row.id,
+          },
+        })
+        .then(({ error: emailErr }) => {
+          if (emailErr) {
+            toast.error(`Decision saved, but email failed: ${emailErr.message}`);
+          }
+        });
+    }
+    toast.success(`Marked ${status} — email sent`);
+    setRows((p) =>
+      p.map((r) => (r.id === row.id ? { ...r, application_status: status } : r)),
+    );
+  };
+
   const filtered = rows.filter((r) =>
     !filter
       ? true
@@ -115,9 +150,25 @@ export function ListingsPage() {
                     {r.verified_at ? "✓" : "—"}
                   </td>
                   <td className="px-4 py-2 text-right">
+                    {r.application_status === "pending" ? (
+                      <>
+                        <button
+                          onClick={() => setStatus(r, "approved")}
+                          className="text-xs text-green-700 underline-offset-2 hover:underline"
+                        >
+                          Approve
+                        </button>
+                        <button
+                          onClick={() => setStatus(r, "rejected")}
+                          className="ml-3 text-xs text-red-700 underline-offset-2 hover:underline"
+                        >
+                          Reject
+                        </button>
+                      </>
+                    ) : null}
                     <button
                       onClick={() => toggleVerify(r)}
-                      className="text-xs underline-offset-2 hover:underline"
+                      className="ml-3 text-xs underline-offset-2 hover:underline"
                     >
                       {r.verified_at ? "Unverify" : "Verify"}
                     </button>

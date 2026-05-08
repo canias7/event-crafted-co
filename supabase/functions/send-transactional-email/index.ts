@@ -54,6 +54,11 @@ interface NewInquiryPayload {
   inquiryId: string;
 }
 
+interface VendorDecisionPayload {
+  vendorProfileId: string;
+  reviewNotes?: string | null;
+}
+
 interface PlanningInvitePayload {
   email: string;
   token: string;
@@ -131,6 +136,12 @@ serve(async (req) => {
       if (e) emails = [e];
     } else if (kind === "party_invite") {
       const e = await partyInviteEmail(body as PartyInvitePayload);
+      if (e) emails = [e];
+    } else if (kind === "vendor_approved") {
+      const e = await vendorDecisionEmail(body as VendorDecisionPayload, "approved");
+      if (e) emails = [e];
+    } else if (kind === "vendor_rejected") {
+      const e = await vendorDecisionEmail(body as VendorDecisionPayload, "rejected");
       if (e) emails = [e];
     } else {
       return json({ error: `Unknown kind: ${kind}` }, 400);
@@ -310,6 +321,51 @@ function savedSearchMatchEmail(p: SavedSearchMatchPayload) {
     to: p.to,
     subject: `New on Vendora: ${p.matchCount} ${noun} "${p.searchName}"`,
     html: shellHtml(`New matches for "${escape(p.searchName)}"`, body),
+  };
+}
+
+async function vendorDecisionEmail(
+  p: VendorDecisionPayload,
+  decision: "approved" | "rejected",
+) {
+  const sb = adminClient();
+  const { data } = await sb
+    .from("vendor_profiles")
+    .select("business_name, user_id")
+    .eq("id", p.vendorProfileId)
+    .maybeSingle();
+  const row = data as { business_name: string; user_id: string } | null;
+  if (!row) return null;
+  const { data: userData } = await sb.auth.admin.getUserById(row.user_id);
+  const email = userData?.user?.email;
+  if (!email) return null;
+
+  if (decision === "approved") {
+    const link = `${APP_URL}/vendor/dashboard`;
+    const body = `
+      <p style="margin:0 0 16px;">Your Vendora vendor application for <strong>${escape(row.business_name)}</strong> has been approved.</p>
+      <p style="margin:0 0 24px;">You can sign in now to finish setting up your listing — pricing, location, packages, and photos. Once you publish, your listing goes live in the directory.</p>
+      <p style="margin:0 0 24px;">${button(link, "Sign in to your dashboard")}</p>
+      <p style="margin:0;font-size:13px;color:#777;">Welcome to Vendora.</p>`;
+    return {
+      to: email,
+      subject: `${row.business_name} — your Vendora application is approved`,
+      html: shellHtml(`Welcome to Vendora`, body),
+    };
+  }
+
+  const reasonLine = p.reviewNotes
+    ? `<p style="margin:0 0 16px;color:#555;"><strong>Reviewer notes:</strong> ${escape(p.reviewNotes)}</p>`
+    : "";
+  const body = `
+    <p style="margin:0 0 16px;">Thanks for applying to list <strong>${escape(row.business_name)}</strong> on Vendora. After review, we're not able to approve this application at the moment.</p>
+    ${reasonLine}
+    <p style="margin:0 0 16px;">If you'd like to address the feedback and reapply, you're welcome to submit again from the same email.</p>
+    <p style="margin:0;font-size:13px;color:#777;">Questions? Reply to this email and our team will get back to you.</p>`;
+  return {
+    to: email,
+    subject: `Update on your Vendora application for ${row.business_name}`,
+    html: shellHtml(`Application update`, body),
   };
 }
 

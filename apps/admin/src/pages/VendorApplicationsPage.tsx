@@ -78,7 +78,24 @@ export function VendorApplicationsPage() {
       toast.error(error.message);
       return;
     }
-    toast.success(`Marked ${status}`);
+    if (status === "approved" || status === "rejected") {
+      // Fire-and-forget — failure to send the email shouldn't roll
+      // back the decision. The admin sees a separate toast if the
+      // edge function returns an error.
+      supabase.functions
+        .invoke("send-transactional-email", {
+          body: {
+            kind: status === "approved" ? "vendor_approved" : "vendor_rejected",
+            vendorProfileId: id,
+          },
+        })
+        .then(({ error: emailErr }) => {
+          if (emailErr) {
+            toast.error(`Decision saved, but email failed: ${emailErr.message}`);
+          }
+        });
+    }
+    toast.success(`Marked ${status} — email sent to applicant`);
     setRows((prev) => prev.filter((r) => r.id !== id));
   };
 
