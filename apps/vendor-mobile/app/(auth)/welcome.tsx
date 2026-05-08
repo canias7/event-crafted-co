@@ -402,109 +402,109 @@ export default function WelcomeScreen() {
         </View>
       </SafeAreaView>
 
-      {/* Auth-method sheet docked to the bottom. Hidden during the
-          animation; fades in once we're done. */}
+      {/* Auth-method sheet docked to the bottom. A black rounded panel
+          containing four buttons — same shape as the ChatGPT-style
+          entry the user sent as the reference. */}
       <Animated.View
         pointerEvents={scene === "done" ? "auto" : "none"}
         style={{
           opacity: buttonsOpacity,
-          paddingHorizontal: 16,
-          paddingBottom: 28,
-          backgroundColor: CREAM,
+          paddingHorizontal: 12,
+          paddingBottom: 16,
         }}
       >
-        <Pressable
-          onPress={() => comingSoon("Apple")}
-          style={({ pressed }) => ({
-            backgroundColor: INK,
-            paddingVertical: 16,
-            borderRadius: 18,
-            opacity: pressed ? 0.8 : 1,
-            marginBottom: 8,
-          })}
+        <View
+          style={{
+            backgroundColor: "#000",
+            borderRadius: 28,
+            padding: 10,
+          }}
         >
-          <Text
-            style={{
-              color: CREAM,
-              textAlign: "center",
-              fontSize: 16,
-              fontWeight: "600",
-              fontFamily: SERIF,
-            }}
+          <Pressable
+            onPress={() => comingSoon("Apple")}
+            style={({ pressed }) => ({
+              backgroundColor: "#ffffff",
+              paddingVertical: 16,
+              borderRadius: 22,
+              alignItems: "center",
+              opacity: pressed ? 0.85 : 1,
+              marginBottom: 8,
+            })}
           >
-            Continue with Apple
-          </Text>
-        </Pressable>
-        <Pressable
-          onPress={() => comingSoon("Google")}
-          style={({ pressed }) => ({
-            backgroundColor: CREAM_DEEP,
-            paddingVertical: 16,
-            borderRadius: 18,
-            borderWidth: 1,
-            borderColor: INK_BORDER,
-            opacity: pressed ? 0.7 : 1,
-            marginBottom: 8,
-          })}
-        >
-          <Text
-            style={{
-              color: INK,
-              textAlign: "center",
-              fontSize: 16,
-              fontWeight: "600",
-              fontFamily: SERIF,
-            }}
+            <Text
+              style={{
+                color: "#000000",
+                fontSize: 16,
+                fontWeight: "600",
+              }}
+            >
+               Continue with Apple
+            </Text>
+          </Pressable>
+          <Pressable
+            onPress={() => comingSoon("Google")}
+            style={({ pressed }) => ({
+              backgroundColor: "#262626",
+              paddingVertical: 16,
+              borderRadius: 22,
+              alignItems: "center",
+              opacity: pressed ? 0.75 : 1,
+              marginBottom: 8,
+            })}
           >
-            Continue with Google
-          </Text>
-        </Pressable>
-        <Pressable
-          onPress={() => router.push("/(auth)/signup")}
-          style={({ pressed }) => ({
-            backgroundColor: CREAM_DEEP,
-            paddingVertical: 16,
-            borderRadius: 18,
-            borderWidth: 1,
-            borderColor: INK_BORDER,
-            opacity: pressed ? 0.7 : 1,
-            marginBottom: 8,
-          })}
-        >
-          <Text
-            style={{
-              color: INK,
-              textAlign: "center",
-              fontSize: 16,
-              fontWeight: "600",
-              fontFamily: SERIF,
-            }}
+            <Text
+              style={{
+                color: "#ffffff",
+                fontSize: 16,
+                fontWeight: "600",
+              }}
+            >
+              Continue with Google
+            </Text>
+          </Pressable>
+          <Pressable
+            onPress={() => router.push("/(auth)/signup")}
+            style={({ pressed }) => ({
+              backgroundColor: "#262626",
+              paddingVertical: 16,
+              borderRadius: 22,
+              alignItems: "center",
+              opacity: pressed ? 0.75 : 1,
+              marginBottom: 8,
+            })}
           >
-            Sign up
-          </Text>
-        </Pressable>
-        <Pressable
-          onPress={() => router.push("/(auth)/login")}
-          style={({ pressed }) => ({
-            paddingVertical: 16,
-            borderRadius: 18,
-            borderWidth: 1,
-            borderColor: INK_BORDER,
-            opacity: pressed ? 0.6 : 1,
-          })}
-        >
-          <Text
-            style={{
-              color: INK,
-              textAlign: "center",
-              fontSize: 16,
-              fontWeight: "600",
-              fontFamily: SERIF,
-            }}
+            <Text
+              style={{
+                color: "#ffffff",
+                fontSize: 16,
+                fontWeight: "600",
+              }}
+            >
+              Sign up
+            </Text>
+          </Pressable>
+          <Pressable
+            onPress={() => router.push("/(auth)/login")}
+            style={({ pressed }) => ({
+              paddingVertical: 16,
+              borderRadius: 22,
+              alignItems: "center",
+              borderWidth: 1,
+              borderColor: "rgba(255,255,255,0.2)",
+              opacity: pressed ? 0.6 : 1,
+            })}
           >
-            Log in
-          </Text>
-        </Pressable>
+            <Text
+              style={{
+                color: "#ffffff",
+                fontSize: 16,
+                fontWeight: "600",
+              }}
+            >
+              Log in
+            </Text>
+          </Pressable>
+        </View>
       </Animated.View>
     </View>
   );
