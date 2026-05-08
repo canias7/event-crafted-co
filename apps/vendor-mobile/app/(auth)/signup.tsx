@@ -272,10 +272,7 @@ function AccountStep(p: AccountStepProps) {
         <Pressable
           onPress={p.onContinue}
           disabled={!p.valid}
-          style={({ pressed }) => [
-            primaryBtn,
-            { opacity: !p.valid ? 0.5 : pressed ? 0.85 : 1 },
-          ]}
+          style={{ ...primaryBtn, opacity: !p.valid ? 0.5 : 1 }}
         >
           <Text style={primaryBtnText}>Continue</Text>
         </Pressable>
@@ -355,13 +352,10 @@ function BusinessStep(p: BusinessStepProps) {
         <Pressable
           onPress={p.onSubmit}
           disabled={p.submitting || !p.valid}
-          style={({ pressed }) => [
-            primaryBtn,
-            {
-              opacity:
-                p.submitting || !p.valid ? 0.5 : pressed ? 0.85 : 1,
-            },
-          ]}
+          style={{
+            ...primaryBtn,
+            opacity: p.submitting || !p.valid ? 0.5 : 1,
+          }}
         >
           <Text style={primaryBtnText}>
             {p.submitting ? "Submitting…" : "Submit application"}
@@ -419,10 +413,12 @@ function ThanksView({ onClose }: { onClose: () => void }) {
 
       <Pressable
         onPress={onClose}
-        style={({ pressed }) => [
-          primaryBtn,
-          { marginTop: 32, width: "88%", maxWidth: 320, opacity: pressed ? 0.85 : 1 },
-        ]}
+        style={{
+          ...primaryBtn,
+          marginTop: 32,
+          width: "88%",
+          maxWidth: 320,
+        }}
       >
         <Text style={primaryBtnText}>Back to start</Text>
       </Pressable>

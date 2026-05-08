@@ -166,24 +166,18 @@ export default function SignupScreen() {
           <Pressable
             onPress={onSubmit}
             disabled={submitting || !email || password.length < 8}
-            style={({ pressed }) => ({
+            style={{
               marginTop: 8,
               backgroundColor: INK,
               borderRadius: 999,
-              paddingVertical: 16,
+              height: 54,
               alignItems: "center",
-              opacity: submitting || !email || password.length < 8
-                ? 0.5
-                : pressed ? 0.85 : 1,
-            })}
+              justifyContent: "center",
+              opacity:
+                submitting || !email || password.length < 8 ? 0.5 : 1,
+            }}
           >
-            <Text
-              style={{
-                color: CREAM,
-                fontSize: 16,
-                fontWeight: "600",
-              }}
-            >
+            <Text style={{ color: CREAM, fontSize: 16, fontWeight: "600" }}>
               {submitting ? "Creating account…" : "Sign up"}
             </Text>
           </Pressable>
