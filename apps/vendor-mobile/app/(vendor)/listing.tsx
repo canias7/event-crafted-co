@@ -24,7 +24,7 @@ export default function ListingScreen() {
         .select(
           "id, business_name, category, bio, base_price_cents, location, verified_at, application_status, application_review_notes, intro_video_url, weekly_digest_enabled, slug, instagram_handle, tiktok_handle",
         )
-        .eq("owner_id", user.id)
+        .eq("user_id", user.id)
         .maybeSingle();
       if (cancelled) return;
       setProfile(data as VendorProfile | null);

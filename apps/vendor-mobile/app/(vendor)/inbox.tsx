@@ -31,7 +31,7 @@ export default function InboxScreen() {
       const { data: vendor } = await supabase
         .from("vendor_profiles")
         .select("id")
-        .eq("owner_id", user.id)
+        .eq("user_id", user.id)
         .maybeSingle();
       const vendorId = (vendor as { id?: string } | null)?.id;
       if (!vendorId) {
