@@ -500,25 +500,6 @@ export default function WelcomeScreen() {
         }}
       >
         <AuthButton
-          variant="solid-light"
-          onPress={onGoogle}
-          icon={<GoogleG />}
-          label={googleSubmitting ? "Opening Google…" : "Continue with Google"}
-        />
-        {googleError ? (
-          <Text
-            style={{
-              color: "#ff6b6b",
-              fontSize: 12,
-              textAlign: "center",
-              marginTop: 4,
-              marginBottom: 4,
-            }}
-          >
-            {googleError}
-          </Text>
-        ) : null}
-        <AuthButton
           variant="solid-dark"
           onPress={() => router.push("/(auth)/signup")}
           label="Sign up"
