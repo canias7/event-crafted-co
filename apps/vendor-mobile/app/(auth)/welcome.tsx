@@ -19,6 +19,7 @@ import {
 import { useRouter } from "expo-router";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { Path } from "react-native-svg";
+import { signInWithGoogle } from "@/lib/google-oauth";
 
 // Inline SVG icon so we don't have to add @expo/vector-icons (a
 // native-font dep that would force a rebuild). Ships via OTA.
@@ -361,10 +362,21 @@ export default function WelcomeScreen() {
     }).start();
   }
 
-  function comingSoon(provider: string) {
-    /* eslint-disable @typescript-eslint/no-unused-vars */
-    const _ = provider;
-    /* eslint-enable @typescript-eslint/no-unused-vars */
+  const [googleSubmitting, setGoogleSubmitting] = useState(false);
+  const [googleError, setGoogleError] = useState<string | null>(null);
+
+  async function onGoogle() {
+    if (googleSubmitting) return;
+    setGoogleError(null);
+    setGoogleSubmitting(true);
+    const result = await signInWithGoogle();
+    setGoogleSubmitting(false);
+    if (!result.ok && result.reason !== "cancelled") {
+      setGoogleError(result.message ?? "Couldn't sign in with Google.");
+    }
+    // On success, the auth state listener in @/lib/auth picks up the
+    // new session and the auth gate re-routes to the host portal —
+    // we don't need to navigate manually here.
   }
 
   return (
@@ -489,10 +501,23 @@ export default function WelcomeScreen() {
       >
         <AuthButton
           variant="solid-light"
-          onPress={() => comingSoon("Google")}
+          onPress={onGoogle}
           icon={<GoogleG />}
-          label="Continue with Google"
+          label={googleSubmitting ? "Opening Google…" : "Continue with Google"}
         />
+        {googleError ? (
+          <Text
+            style={{
+              color: "#ff6b6b",
+              fontSize: 12,
+              textAlign: "center",
+              marginTop: 4,
+              marginBottom: 4,
+            }}
+          >
+            {googleError}
+          </Text>
+        ) : null}
         <AuthButton
           variant="solid-dark"
           onPress={() => router.push("/(auth)/signup")}
