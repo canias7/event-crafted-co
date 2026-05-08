@@ -74,7 +74,11 @@ export default function VendorApplyPage() {
     // email confirmation — they can keep using the host dashboard
     // while we review.
     if (skipAccountStep) {
-      const { data: vp, error: rpcError } = await supabase.rpc(
+      // Cast: the generated supabase types haven't been regenerated since
+      // the apply_as_vendor migration landed. Same pattern as the other
+      // newer RPC call sites.
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: vp, error: rpcError } = await (supabase as any).rpc(
         "apply_as_vendor",
         {
           p_business_name: businessName.trim(),
