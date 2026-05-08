@@ -9,7 +9,10 @@
     "newArchEnabled": false,
     "ios": {
       "bundleIdentifier": "co.eventcrafted.vendor",
-      "supportsTablet": true
+      "supportsTablet": true,
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "package": "co.eventcrafted.vendor"
