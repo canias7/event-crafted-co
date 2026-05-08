@@ -26,7 +26,19 @@ export default function LoginScreen() {
     setError(null);
     setSubmitting(true);
     const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) setError(error.message);
+    if (error) {
+      // Hosts shouldn't be banned (vendor approval gate doesn't apply),
+      // but admin can suspend any account from the admin panel — show
+      // a friendlier message than GoTrue's "User is banned".
+      const msg = (error.message || "").toLowerCase();
+      if (msg.includes("banned") || msg.includes("not allowed")) {
+        setError(
+          "This account is currently locked. Please contact support if you think this is a mistake.",
+        );
+      } else {
+        setError(error.message);
+      }
+    }
     setSubmitting(false);
   }
 

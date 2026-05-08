@@ -25,7 +25,19 @@ export default function LoginScreen() {
     setError(null);
     setSubmitting(true);
     const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) setError(error.message);
+    if (error) {
+      // Pending vendors are banned via auth.users.banned_until until
+      // an admin approves them — surface the actual reason instead of
+      // GoTrue's generic "User is banned".
+      const msg = (error.message || "").toLowerCase();
+      if (msg.includes("banned") || msg.includes("not allowed")) {
+        setError(
+          "Your vendor application is still under review. We'll email you once it's approved.",
+        );
+      } else {
+        setError(error.message);
+      }
+    }
     setSubmitting(false);
   }
 
