@@ -24,7 +24,7 @@
         "simulator": false,
         "image": "latest"
       },
-      "android": { "buildType": "app-bundle" }
+      "android": { "buildType": "apk" }
     }
   },
   "submit": {
