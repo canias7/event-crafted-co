@@ -13,10 +13,12 @@ The DNS for `eventvendora.com` and `app.eventvendora.com` was migrated off Lovab
 
 ## Mobile apps (host-mobile + vendor-mobile)
 
+**Cross-platform by default**: any mobile change applies to BOTH iOS and Android unless explicitly stated otherwise. JS code (components, styles, business logic) runs identically on both via React Native, so the same edit covers both platforms. For full rebuilds, run iOS *and* Android.
+
 Both apps have `expo-updates` wired up, so JS-only changes ship via OTA instead of a full rebuild:
 
-- **JS-only change** (components, styling, copy, business logic) → `cd apps/<app>-mobile && eas update --branch production --message "..."`. Installed TestFlight + production builds with the same `runtimeVersion` (tied to app version) pick it up on next launch.
-- **Native change** (new package with native code, `Info.plist`, app icon, splash, version bump) → break the runtime version → need `eas build --platform ios --profile production --auto-submit` again. Same for Android (`--platform android`).
+- **JS-only change** (components, styling, copy, business logic) → `cd apps/<app>-mobile && eas update --branch production --message "..."`. By default this pushes to iOS + Android together. Installed builds with the same `runtimeVersion` (tied to app version) pick it up on next launch.
+- **Native change** (new package with native code, `Info.plist`, app icon, splash, version bump) → break the runtime version → rebuild via `eas build --platform all --profile production --auto-submit` (or `--platform ios` / `--platform android` separately if you only need one).
 
 EAS project IDs:
 - vendor-mobile: `8a56059c-321e-4de3-938e-3e82904803c1` (App Store ID 6767470298, bundle `co.eventcrafted.vendor`)
