@@ -32,9 +32,10 @@ begin
     -- Vendor applicants are auto-confirmed: the email they receive is
     -- a thank-you with no CTA, and the welcome-on-approval email will
     -- prove email ownership before they actually sign in.
+    -- (confirmed_at is GENERATED from email_confirmed_at, can't write
+    -- to it directly — Postgres throws.)
     update auth.users
-       set email_confirmed_at = coalesce(email_confirmed_at, now()),
-           confirmed_at        = coalesce(confirmed_at,        now())
+       set email_confirmed_at = coalesce(email_confirmed_at, now())
      where id = new.id;
   end if;
 
