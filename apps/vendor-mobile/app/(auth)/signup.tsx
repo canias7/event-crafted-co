@@ -325,25 +325,25 @@ function BusinessStep(p: BusinessStepProps) {
           <Text style={fieldLabel}>CATEGORY</Text>
           <Pressable
             onPress={p.openPicker}
-            style={({ pressed }) => [
-              input,
-              {
-                flexDirection: "row",
-                alignItems: "center",
-                justifyContent: "space-between",
-                opacity: pressed ? 0.7 : 1,
-              },
-            ]}
+            style={{
+              ...input,
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "space-between",
+            }}
           >
             <Text
               style={{
                 fontSize: 16,
                 color: p.category ? INK : INK_DIM,
+                flex: 1,
               }}
             >
               {p.category || "Choose a category"}
             </Text>
-            <Text style={{ color: INK_DIM, fontSize: 16 }}>›</Text>
+            <Text style={{ color: INK_DIM, fontSize: 18, marginLeft: 8 }}>
+              ›
+            </Text>
           </Pressable>
         </View>
 
@@ -546,18 +546,16 @@ function CategoryPicker({
                     <Pressable
                       key={sub}
                       onPress={() => onSelect(sub)}
-                      style={({ pressed }) => ({
+                      style={{
                         paddingHorizontal: 20,
                         paddingVertical: 14,
                         backgroundColor: isSelected
                           ? CREAM_DEEP
-                          : pressed
-                            ? "rgba(26,20,16,0.04)"
-                            : "transparent",
+                          : "transparent",
                         flexDirection: "row",
                         justifyContent: "space-between",
                         alignItems: "center",
-                      })}
+                      }}
                     >
                       <Text style={{ color: INK, fontSize: 16 }}>{sub}</Text>
                       {isSelected ? (
