@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { SocialAuthButtons } from "@/components/auth/SocialAuthButtons";
+import { PasswordInput } from "@/components/auth/PasswordInput";
 import { Picture } from "@/components/shared/Picture";
 import heroImg from "@/assets/vendora-hero-dinner.jpg?as=picture";
 
@@ -151,9 +152,8 @@ export default function SignupPage() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="password">{t("auth.common.password")}</Label>
-              <Input
+              <PasswordInput
                 id="password"
-                type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required

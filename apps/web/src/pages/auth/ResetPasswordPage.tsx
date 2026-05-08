@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { PasswordInput } from "@/components/auth/PasswordInput";
 import { FieldError } from "@/components/ui/field-error";
 import { Picture } from "@/components/shared/Picture";
 import heroImg from "@/assets/vendora-hero-cinematic.jpg?as=picture";
@@ -122,9 +123,8 @@ export default function ResetPasswordPage() {
             <form onSubmit={onSubmit} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="new-password">New password</Label>
-                <Input
+                <PasswordInput
                   id="new-password"
-                  type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   minLength={8}
@@ -142,9 +142,8 @@ export default function ResetPasswordPage() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="confirm">Confirm</Label>
-                <Input
+                <PasswordInput
                   id="confirm"
-                  type="password"
                   value={confirm}
                   onChange={(e) => setConfirm(e.target.value)}
                   minLength={8}

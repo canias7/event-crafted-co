@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { Picture } from "@/components/shared/Picture";
 import heroImg from "@/assets/vendora-hero-cinematic.jpg?as=picture";
 import { SocialAuthButtons } from "@/components/auth/SocialAuthButtons";
+import { PasswordInput } from "@/components/auth/PasswordInput";
 
 interface LoginPageProps {
   // When set, the form is themed for that role and the success redirect
@@ -216,9 +217,8 @@ export default function LoginPage({ role }: LoginPageProps = {}) {
                       {t("auth.login.forgot")}
                     </Link>
                   </div>
-                  <Input
+                  <PasswordInput
                     id="password"
-                    type="password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required

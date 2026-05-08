@@ -18,6 +18,7 @@ import { supabase } from "@/lib/supabase";
 export default function SignupScreen() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -69,13 +70,24 @@ export default function SignupScreen() {
             <Text className="mb-1 text-xs font-medium text-muted-foreground">
               Password
             </Text>
-            <TextInput
-              secureTextEntry
-              value={password}
-              onChangeText={setPassword}
-              className="rounded-lg border border-border bg-background px-3 py-3 text-base text-foreground"
-              placeholder="At least 8 characters"
-            />
+            <View className="relative">
+              <TextInput
+                secureTextEntry={!showPassword}
+                value={password}
+                onChangeText={setPassword}
+                className="rounded-lg border border-border bg-background px-3 py-3 pr-16 text-base text-foreground"
+                placeholder="At least 8 characters"
+              />
+              <Pressable
+                onPress={() => setShowPassword((v) => !v)}
+                className="absolute right-2 top-1/2 -translate-y-1/2 px-2 py-1 active:opacity-60"
+                hitSlop={8}
+              >
+                <Text className="text-xs font-medium text-accent">
+                  {showPassword ? "Hide" : "Show"}
+                </Text>
+              </Pressable>
+            </View>
           </View>
 
           {error ? <Text className="text-sm text-red-600">{error}</Text> : null}
