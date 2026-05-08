@@ -7,6 +7,12 @@
     "orientation": "portrait",
     "userInterfaceStyle": "light",
     "newArchEnabled": false,
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/8a56059c-321e-4de3-938e-3e82904803c1"
+    },
     "ios": {
       "bundleIdentifier": "co.eventcrafted.vendor",
       "supportsTablet": true,
