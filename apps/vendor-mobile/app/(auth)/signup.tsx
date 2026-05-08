@@ -91,7 +91,18 @@ export default function VendorSignupScreen() {
     });
     if (signUpErr) {
       setSubmitting(false);
-      setError(signUpErr.message);
+      const msg = signUpErr.message?.toLowerCase() ?? "";
+      if (msg.includes("rate limit")) {
+        setError(
+          "We've sent too many emails recently. Please try again in a few minutes.",
+        );
+      } else if (msg.includes("already registered") || msg.includes("already exists")) {
+        setError(
+          "An account with this email already exists. Sign in to it on the host app first, then apply to be a vendor from your dashboard.",
+        );
+      } else {
+        setError(signUpErr.message);
+      }
       return;
     }
     // Supabase silently no-ops if the email already exists, returning
