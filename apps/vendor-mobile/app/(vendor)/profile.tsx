@@ -242,14 +242,10 @@ export default function ProfileScreen() {
               approved. The profile chrome stays clean (avatar +
               business name) regardless of listing state. */}
 
-          <Pressable
-            onPress={() => router.push("/(vendor)/dashboard")}
-            className="mt-6 rounded-lg border border-border bg-secondary/40 px-6 py-2.5 active:opacity-70"
-          >
-            <Text className="text-base font-semibold text-foreground">
-              Dashboard
-            </Text>
-          </Pressable>
+          {/* Dashboard chip removed — same call we made on the web
+              chrome. The dashboard is a tab swipe away on the bottom
+              nav, no need to duplicate the entry point under the
+              avatar. */}
         </View>
 
         {/* Generous gap between the avatar / name block and the 4-tab
