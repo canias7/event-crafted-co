@@ -3590,9 +3590,9 @@ export type Database = {
           auto_reply_template: string | null
           base_price_cents: number | null
           bio: string | null
-          business_name: string
+          business_name: string | null
           cancellation_policy: string | null
-          category: string
+          category: string | null
           category_attributes: Json
           created_at: string
           deposit_pct: number | null
@@ -3632,9 +3632,9 @@ export type Database = {
           auto_reply_template?: string | null
           base_price_cents?: number | null
           bio?: string | null
-          business_name: string
+          business_name?: string | null
           cancellation_policy?: string | null
-          category: string
+          category?: string | null
           category_attributes?: Json
           created_at?: string
           deposit_pct?: number | null
@@ -3674,9 +3674,9 @@ export type Database = {
           auto_reply_template?: string | null
           base_price_cents?: number | null
           bio?: string | null
-          business_name?: string
+          business_name?: string | null
           cancellation_policy?: string | null
-          category?: string
+          category?: string | null
           category_attributes?: Json
           created_at?: string
           deposit_pct?: number | null
@@ -4272,9 +4272,9 @@ export type Database = {
           auto_reply_template: string | null
           base_price_cents: number | null
           bio: string | null
-          business_name: string
+          business_name: string | null
           cancellation_policy: string | null
-          category: string
+          category: string | null
           category_attributes: Json
           created_at: string
           deposit_pct: number | null
