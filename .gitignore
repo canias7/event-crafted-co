@@ -40,3 +40,4 @@ apps/*/assets/icon-source.png
 
 # Stray app.json that EAS CLI sometimes creates at repo root when cwd isn't a mobile app
 /app.json
+pnpm-lock.yaml
