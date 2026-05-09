@@ -66,50 +66,73 @@ export default function ProfileScreen() {
       "New post",
       "Add a photo from your library or take one with your camera.",
       [
-        { text: "Take photo", onPress: () => pickFromCamera() },
-        { text: "Choose from library", onPress: () => pickFromLibrary() },
+        { text: "Take photo", onPress: () => pickMedia("camera", "Images") },
+        { text: "Choose from library", onPress: () => pickMedia("library", "Images") },
         { text: "Cancel", style: "cancel" },
       ],
     );
   }
 
-  async function pickFromCamera() {
-    const perm = await ImagePicker.requestCameraPermissionsAsync();
-    if (!perm.granted) {
-      Alert.alert(
-        "Camera access needed",
-        "Enable camera access in Settings to take a photo.",
-      );
-      return;
-    }
-    const result = await ImagePicker.launchCameraAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      quality: 0.85,
-    });
-    if (!result.canceled && result.assets[0]) {
-      Alert.alert(
-        "Got your photo",
-        "Posting to your grid lands in the next update — we'll save what you captured.",
-      );
-    }
+  function openCreateReel() {
+    Alert.alert(
+      "New reel",
+      "Record a short video or pick one from your library.",
+      [
+        { text: "Record video", onPress: () => pickMedia("camera", "Videos") },
+        { text: "Choose from library", onPress: () => pickMedia("library", "Videos") },
+        { text: "Cancel", style: "cancel" },
+      ],
+    );
   }
 
-  async function pickFromLibrary() {
+  async function pickMedia(
+    src: "camera" | "library",
+    kind: "Images" | "Videos",
+  ) {
+    const mediaTypes =
+      kind === "Videos"
+        ? ImagePicker.MediaTypeOptions.Videos
+        : ImagePicker.MediaTypeOptions.Images;
+    const noun = kind === "Videos" ? "video" : "photo";
+
+    if (src === "camera") {
+      const perm = await ImagePicker.requestCameraPermissionsAsync();
+      if (!perm.granted) {
+        Alert.alert(
+          "Camera access needed",
+          `Enable camera access in Settings to capture a ${noun}.`,
+        );
+        return;
+      }
+      const result = await ImagePicker.launchCameraAsync({
+        mediaTypes,
+        quality: 0.85,
+        videoMaxDuration: 60,
+      });
+      if (!result.canceled && result.assets[0]) {
+        Alert.alert(
+          `Got your ${noun}`,
+          "Posting to your grid lands in the next update — we'll save what you captured.",
+        );
+      }
+      return;
+    }
+
     const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!perm.granted) {
       Alert.alert(
-        "Photo access needed",
-        "Enable photo library access in Settings to pick a photo.",
+        "Library access needed",
+        `Enable photo library access in Settings to pick a ${noun}.`,
       );
       return;
     }
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      mediaTypes,
       quality: 0.85,
     });
     if (!result.canceled && result.assets[0]) {
       Alert.alert(
-        "Got your photo",
+        `Got your ${noun}`,
         "Posting to your grid lands in the next update — we'll save what you picked.",
       );
     }
@@ -215,9 +238,7 @@ export default function ProfileScreen() {
               title="No reels yet"
               body="Short videos help your listing convert. Coming soon."
               ctaLabel="Create"
-              onCta={() =>
-                Alert.alert("Create reel", "Reels come in a future update.")
-              }
+              onCta={openCreateReel}
             />
           ) : view === "buzz" ? (
             <EmptyState
