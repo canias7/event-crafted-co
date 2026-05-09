@@ -10,6 +10,7 @@ import { useState } from "react";
 import { Alert, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
+import * as ImagePicker from "expo-image-picker";
 import { Pressable } from "react-native";
 
 type ViewKind = "grid" | "reels" | "buzz" | "listing";
@@ -22,25 +23,53 @@ export default function HomeScreen() {
       "New post",
       "Add a photo from your library or take one with your camera.",
       [
-        {
-          text: "Take photo",
-          onPress: () =>
-            Alert.alert(
-              "Camera",
-              "Camera capture lands in the next native build.",
-            ),
-        },
-        {
-          text: "Choose from library",
-          onPress: () =>
-            Alert.alert(
-              "Library",
-              "Photo picker lands in the next native build.",
-            ),
-        },
+        { text: "Take photo", onPress: () => pickFromCamera() },
+        { text: "Choose from library", onPress: () => pickFromLibrary() },
         { text: "Cancel", style: "cancel" },
       ],
     );
+  }
+
+  async function pickFromCamera() {
+    const perm = await ImagePicker.requestCameraPermissionsAsync();
+    if (!perm.granted) {
+      Alert.alert(
+        "Camera access needed",
+        "Enable camera access in Settings to take a photo.",
+      );
+      return;
+    }
+    const result = await ImagePicker.launchCameraAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      quality: 0.85,
+    });
+    if (!result.canceled && result.assets[0]) {
+      Alert.alert(
+        "Got your photo",
+        "Posting to your grid lands in the next update — we'll save what you captured.",
+      );
+    }
+  }
+
+  async function pickFromLibrary() {
+    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!perm.granted) {
+      Alert.alert(
+        "Photo access needed",
+        "Enable photo library access in Settings to pick a photo.",
+      );
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      quality: 0.85,
+    });
+    if (!result.canceled && result.assets[0]) {
+      Alert.alert(
+        "Got your photo",
+        "Posting to your grid lands in the next update — we'll save what you picked.",
+      );
+    }
   }
 
   return (
