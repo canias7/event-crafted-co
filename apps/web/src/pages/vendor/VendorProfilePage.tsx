@@ -5,6 +5,7 @@ import {
   Clock,
   DollarSign,
   Eye,
+  Heart,
   Image as ImageIcon,
   Layers,
   Loader2,
@@ -1710,7 +1711,10 @@ type CommentRow = {
   created_at: string;
   user_id: string;
   author: { display_name: string | null; avatar_url: string | null } | null;
+  likes: Array<{ user_id: string }>;
 };
+
+const COMMENTS_PAGE = 3;
 
 function PostLightbox({
   media,
@@ -1737,13 +1741,12 @@ function PostLightbox({
   const [loading, setLoading] = useState(true);
   const [draft, setDraft] = useState("");
   const [posting, setPosting] = useState(false);
+  const [visibleCount, setVisibleCount] = useState(COMMENTS_PAGE);
 
   const isReel = media.kind === "reel";
 
   async function loadComments() {
     if (isReel) {
-      // Reels don't have a comments table yet. Skip the fetch and
-      // render the caption-only side panel.
       setComments([]);
       setLoading(false);
       return;
@@ -1753,11 +1756,20 @@ function PostLightbox({
     const { data } = await (supabase as any)
       .from("vendor_post_comments")
       .select(
-        "id, body, created_at, user_id, author:profiles!vendor_post_comments_user_id_profile_fkey(display_name, avatar_url)",
+        "id, body, created_at, user_id, author:profiles!vendor_post_comments_user_id_profile_fkey(display_name, avatar_url), likes:vendor_post_comment_likes(user_id)",
       )
-      .eq("post_id", media.id)
-      .order("created_at", { ascending: true });
-    setComments((data ?? []) as CommentRow[]);
+      .eq("post_id", media.id);
+    const rows = ((data ?? []) as CommentRow[]).slice().sort((a, b) => {
+      // Popularity-first: more likes wins; ties broken by oldest-first
+      // so the early conversation stays anchored to the top.
+      const diff = (b.likes?.length ?? 0) - (a.likes?.length ?? 0);
+      if (diff !== 0) return diff;
+      return (
+        new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+      );
+    });
+    setComments(rows);
+    setVisibleCount(COMMENTS_PAGE);
     setLoading(false);
   }
 
@@ -1785,32 +1797,58 @@ function PostLightbox({
     loadComments();
   }
 
-  return (
-    <div className="grid md:grid-cols-[minmax(0,1fr)_320px] max-h-[80vh]">
-      {/* Media panel */}
-      <div className="bg-foreground/5 flex items-center justify-center min-h-[60vh] md:min-h-0">
-        {media.kind === "post" ? (
-          <img
-            src={media.image_url}
-            alt={media.caption ?? ""}
-            className="max-w-full max-h-[80vh] object-contain"
-          />
-        ) : (
-          <video
-            src={media.video_url}
-            className="max-w-full max-h-[80vh] bg-foreground/90"
-            controls
-            autoPlay
-            playsInline
-          />
-        )}
-      </div>
+  async function toggleLike(comment: CommentRow) {
+    if (!userId) {
+      toast.info("Sign in to like comments");
+      return;
+    }
+    const liked = comment.likes?.some((l) => l.user_id === userId);
+    // Optimistic update so the heart fills before the round-trip.
+    setComments((curr) =>
+      curr.map((c) =>
+        c.id === comment.id
+          ? {
+              ...c,
+              likes: liked
+                ? c.likes.filter((l) => l.user_id !== userId)
+                : [...(c.likes ?? []), { user_id: userId }],
+            }
+          : c,
+      ),
+    );
+    if (liked) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error } = await (supabase as any)
+        .from("vendor_post_comment_likes")
+        .delete()
+        .eq("comment_id", comment.id)
+        .eq("user_id", userId);
+      if (error) toast.error(error.message);
+    } else {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error } = await (supabase as any)
+        .from("vendor_post_comment_likes")
+        .insert({ comment_id: comment.id, user_id: userId });
+      if (error) toast.error(error.message);
+    }
+  }
 
-      {/* Caption + comments panel */}
-      <div className="flex flex-col border-l border-border bg-background min-h-0">
+  const visible = comments.slice(0, visibleCount);
+  const hasMore = comments.length > visibleCount;
+
+  return (
+    <div className="grid md:grid-cols-[320px_minmax(0,1fr)] max-h-[80vh]">
+      {/* Caption + comments panel — left side. The vendor's own
+          caption is pinned at the top so it always reads as
+          authored-by-the-poster, with the comment list and the new-
+          comment form stacked below. Sorted by popularity (likes
+          desc, oldest tiebreak); 3 visible by default with an inline
+          "See more" pager that reveals 3 more at a time. */}
+      <div className="flex flex-col border-r border-border bg-background min-h-0 order-last md:order-first">
         <div className="px-5 pt-5 pb-3 border-b border-border">
           {media.caption ? (
             <p className="text-sm text-foreground whitespace-pre-wrap">
+              <span className="font-semibold mr-1">Caption</span>
               {media.caption}
             </p>
           ) : (
@@ -1833,21 +1871,58 @@ function PostLightbox({
               No comments yet — be the first to chime in.
             </p>
           ) : (
-            <ul className="space-y-3">
-              {comments.map((c) => (
-                <li key={c.id} className="text-sm">
-                  <span className="font-semibold text-foreground">
-                    {c.author?.display_name ?? "Someone"}
-                  </span>{" "}
-                  <span className="text-foreground/85 whitespace-pre-wrap">
-                    {c.body}
-                  </span>
-                  <p className="mt-0.5 text-[11px] text-muted-foreground">
-                    {new Date(c.created_at).toLocaleString()}
-                  </p>
-                </li>
-              ))}
-            </ul>
+            <>
+              <ul className="space-y-3">
+                {visible.map((c) => {
+                  const liked = !!userId && c.likes?.some((l) => l.user_id === userId);
+                  const count = c.likes?.length ?? 0;
+                  return (
+                    <li key={c.id} className="text-sm flex items-start gap-2">
+                      <div className="flex-1 min-w-0">
+                        <span className="font-semibold text-foreground">
+                          {c.author?.display_name ?? "Someone"}
+                        </span>{" "}
+                        <span className="text-foreground/85 whitespace-pre-wrap break-words">
+                          {c.body}
+                        </span>
+                        <p className="mt-0.5 text-[11px] text-muted-foreground">
+                          {new Date(c.created_at).toLocaleString()}
+                          {count > 0 && (
+                            <>
+                              {" · "}
+                              {count} like{count === 1 ? "" : "s"}
+                            </>
+                          )}
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => toggleLike(c)}
+                        aria-label={liked ? "Unlike" : "Like"}
+                        className="shrink-0 mt-0.5 active:opacity-70"
+                      >
+                        <Heart
+                          className={`w-4 h-4 ${liked ? "fill-destructive text-destructive" : "text-muted-foreground"}`}
+                        />
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+              {hasMore && (
+                <button
+                  type="button"
+                  onClick={() =>
+                    setVisibleCount((n) =>
+                      Math.min(comments.length, n + COMMENTS_PAGE),
+                    )
+                  }
+                  className="mt-4 text-xs font-medium text-muted-foreground hover:text-foreground active:opacity-70"
+                >
+                  See more comments ({comments.length - visibleCount} more)
+                </button>
+              )}
+            </>
           )}
         </div>
 
@@ -1877,6 +1952,25 @@ function PostLightbox({
               )}
             </Button>
           </form>
+        )}
+      </div>
+
+      {/* Media panel — right side. */}
+      <div className="bg-foreground/5 flex items-center justify-center min-h-[50vh] md:min-h-0">
+        {media.kind === "post" ? (
+          <img
+            src={media.image_url}
+            alt={media.caption ?? ""}
+            className="max-w-full max-h-[80vh] object-contain"
+          />
+        ) : (
+          <video
+            src={media.video_url}
+            className="max-w-full max-h-[80vh] bg-foreground/90"
+            controls
+            autoPlay
+            playsInline
+          />
         )}
       </div>
     </div>
