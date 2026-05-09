@@ -65,7 +65,7 @@ export default function HomeScreen() {
       const { data } = await supabase
         .from("vendor_profiles")
         .select(
-          "id, business_name, location, base_price_cents, application_status",
+          "id, business_name, location, base_price_cents, application_status, logo_url",
         )
         .eq("user_id", user.id)
         .maybeSingle();
