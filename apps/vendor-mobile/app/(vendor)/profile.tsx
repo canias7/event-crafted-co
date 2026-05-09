@@ -26,7 +26,7 @@ import type { VendorProfile } from "@vendora/core";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
 
-type ViewKind = "grid" | "reels" | "threads" | "listing";
+type ViewKind = "grid" | "reels" | "buzz" | "listing";
 
 export default function ProfileScreen() {
   const router = useRouter();
@@ -156,8 +156,8 @@ export default function ProfileScreen() {
             iconName="play"
           />
           <ViewTab
-            active={view === "threads"}
-            onPress={() => setView("threads")}
+            active={view === "buzz"}
+            onPress={() => setView("buzz")}
             iconName="align-left"
           />
           <ViewTab
@@ -181,11 +181,11 @@ export default function ProfileScreen() {
               title="No reels yet"
               body="Short videos help your listing convert. Coming soon."
             />
-          ) : view === "threads" ? (
+          ) : view === "buzz" ? (
             <EmptyState
               icon="align-left"
-              title="No threads yet"
-              body="Drop quick updates, behind-the-scenes notes, or news for your followers."
+              title="No buzz yet"
+              body="Post quick updates, behind-the-scenes notes, or news for your followers."
             />
           ) : (
             <ListingTab
