@@ -60,7 +60,7 @@ export default function VendorApplyThanksPage() {
               asChild
               className="rounded-full bg-foreground text-background hover:bg-foreground/90"
             >
-              <Link to="/vendor-browse">
+              <Link to="/vendors">
                 Explore the marketplace
                 <ArrowRight className="w-4 h-4 ml-2" />
               </Link>
