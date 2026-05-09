@@ -65,11 +65,11 @@ export default function ProfileScreen() {
       {/* Top bar — email centered, no dropdown */}
       <View className="flex-row items-center justify-between px-4 py-3">
         <Pressable hitSlop={8} className="active:opacity-60">
-          <Feather name="plus" size={26} color="#0a0a0a" />
+          <Feather name="plus" size={28} color="#0a0a0a" />
         </Pressable>
         <Text
           numberOfLines={1}
-          className="flex-1 px-4 text-center text-base font-semibold text-foreground"
+          className="flex-1 px-3 text-center text-lg font-bold text-foreground"
         >
           {user?.email ?? ""}
         </Text>
@@ -78,14 +78,14 @@ export default function ProfileScreen() {
           onPress={() => setMenuOpen(true)}
           className="active:opacity-60"
         >
-          <Feather name="menu" size={26} color="#0a0a0a" />
+          <Feather name="menu" size={28} color="#0a0a0a" />
         </Pressable>
       </View>
 
       <ScrollView contentContainerClassName="pb-32">
         {/* Avatar + stats row, centered */}
         <View className="items-center px-4 pt-2">
-          <View className="h-24 w-24 overflow-hidden rounded-full bg-secondary/60">
+          <View className="h-28 w-28 overflow-hidden rounded-full bg-secondary/60">
             <Image
               source={require("../../assets/icon.png")}
               className="h-full w-full"
@@ -93,24 +93,24 @@ export default function ProfileScreen() {
             />
           </View>
 
-          <View className="mt-5 flex-row items-center gap-10">
+          <View className="mt-6 flex-row items-center gap-12">
             <Stat label="posts" value={0} />
             <Stat label="listings" value={listingsCount} />
           </View>
 
           {/* Bio */}
           {profile?.business_name ? (
-            <Text className="mt-5 text-base font-semibold text-foreground">
+            <Text className="mt-6 text-lg font-bold text-foreground">
               {profile.business_name}
             </Text>
           ) : null}
           {profile?.category ? (
-            <Text className="text-sm text-muted-foreground">
+            <Text className="text-base text-muted-foreground">
               {profile.category}
             </Text>
           ) : null}
           {profile?.bio ? (
-            <Text className="mt-2 px-6 text-center text-sm text-foreground">
+            <Text className="mt-2 px-6 text-center text-base text-foreground">
               {profile.bio}
             </Text>
           ) : null}
@@ -118,9 +118,9 @@ export default function ProfileScreen() {
           {/* Dashboard CTA */}
           <Pressable
             onPress={() => router.push("/(vendor)/dashboard")}
-            className="mt-5 rounded-lg border border-border bg-secondary/40 px-5 py-2 active:opacity-70"
+            className="mt-6 rounded-lg border border-border bg-secondary/40 px-6 py-2.5 active:opacity-70"
           >
-            <Text className="text-sm font-medium text-foreground">
+            <Text className="text-base font-semibold text-foreground">
               Dashboard
             </Text>
           </Pressable>
@@ -192,8 +192,8 @@ export default function ProfileScreen() {
 function Stat({ label, value }: { label: string; value: number }) {
   return (
     <View className="items-center">
-      <Text className="text-lg font-semibold text-foreground">{value}</Text>
-      <Text className="text-xs text-muted-foreground">{label}</Text>
+      <Text className="text-2xl font-bold text-foreground">{value}</Text>
+      <Text className="text-sm text-muted-foreground">{label}</Text>
     </View>
   );
 }
@@ -232,11 +232,11 @@ function EmptyState({
 }) {
   return (
     <View className="items-center">
-      <View className="h-14 w-14 items-center justify-center rounded-full border border-border">
-        <Feather name={icon} size={20} color="#737373" />
+      <View className="h-16 w-16 items-center justify-center rounded-full border border-border">
+        <Feather name={icon} size={24} color="#737373" />
       </View>
-      <Text className="mt-3 text-base font-medium text-foreground">{title}</Text>
-      <Text className="mt-1 text-center text-sm text-muted-foreground">
+      <Text className="mt-4 text-lg font-semibold text-foreground">{title}</Text>
+      <Text className="mt-1 text-center text-base text-muted-foreground">
         {body}
       </Text>
     </View>

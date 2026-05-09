@@ -115,11 +115,11 @@ function EmptyState({
 }) {
   return (
     <View className="items-center">
-      <View className="h-14 w-14 items-center justify-center rounded-full border border-border">
-        <Feather name={icon} size={20} color="#737373" />
+      <View className="h-16 w-16 items-center justify-center rounded-full border border-border">
+        <Feather name={icon} size={24} color="#737373" />
       </View>
-      <Text className="mt-3 text-base font-medium text-foreground">{title}</Text>
-      <Text className="mt-1 text-center text-sm text-muted-foreground">
+      <Text className="mt-4 text-lg font-semibold text-foreground">{title}</Text>
+      <Text className="mt-1 text-center text-base text-muted-foreground">
         {body}
       </Text>
     </View>

@@ -49,7 +49,6 @@ export default function VendorSignupScreen() {
   const [error, setError] = useState<string | null>(null);
 
   // Step 1
-  const [ownerName, setOwnerName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -59,10 +58,7 @@ export default function VendorSignupScreen() {
   const [category, setCategory] = useState("");
   const [pickerOpen, setPickerOpen] = useState(false);
 
-  const step1Valid =
-    ownerName.trim().length > 0 &&
-    email.trim().length > 0 &&
-    password.length >= 8;
+  const step1Valid = email.trim().length > 0 && password.length >= 8;
   const step2Valid = businessName.trim().length > 0 && category.length > 0;
 
   function continueToBusiness() {
@@ -83,7 +79,8 @@ export default function VendorSignupScreen() {
       password,
       options: {
         data: {
-          display_name: ownerName.trim(),
+          // display_name not set — handle_new_user falls back to the
+          // email prefix. Owner name removed from the signup flow.
           vendor_business_name: businessName.trim(),
           vendor_category: category,
         },
@@ -153,8 +150,6 @@ export default function VendorSignupScreen() {
 
           {step === "account" ? (
             <AccountStep
-              ownerName={ownerName}
-              setOwnerName={setOwnerName}
               email={email}
               setEmail={setEmail}
               password={password}
@@ -199,8 +194,6 @@ export default function VendorSignupScreen() {
 }
 
 interface AccountStepProps {
-  ownerName: string;
-  setOwnerName: (v: string) => void;
   email: string;
   setEmail: (v: string) => void;
   password: string;
@@ -233,13 +226,6 @@ function AccountStep(p: AccountStepProps) {
       </View>
 
       <View style={{ marginTop: 32, gap: 16 }}>
-        <Field
-          label="Owner name"
-          placeholder="Your full name"
-          value={p.ownerName}
-          onChangeText={p.setOwnerName}
-          autoCapitalize="words"
-        />
         <Field
           label="Email"
           placeholder="business@email.com"
