@@ -12,7 +12,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 import { Pressable } from "react-native";
 
-type ViewKind = "grid" | "reels" | "listing";
+type ViewKind = "grid" | "reels" | "threads" | "listing";
 
 export default function HomeScreen() {
   const [view, setView] = useState<ViewKind>("grid");
@@ -39,6 +39,11 @@ export default function HomeScreen() {
           iconName="play"
         />
         <ViewTab
+          active={view === "threads"}
+          onPress={() => setView("threads")}
+          iconName="align-left"
+        />
+        <ViewTab
           active={view === "listing"}
           onPress={() => setView("listing")}
           iconName="shopping-bag"
@@ -57,6 +62,12 @@ export default function HomeScreen() {
             icon="play"
             title="No reels yet"
             body="Short videos help your listing convert. Coming soon."
+          />
+        ) : view === "threads" ? (
+          <EmptyState
+            icon="align-left"
+            title="No threads yet"
+            body="Drop quick updates, behind-the-scenes notes, or news for your followers."
           />
         ) : (
           <EmptyState
