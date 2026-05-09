@@ -530,13 +530,18 @@ export default function VendorProfilePage() {
       setProfile({ ...profile, ...payload });
       if (opts?.publish) {
         setPublishedRecently(true);
-        // Drop the vendors-list cache so the directory + the public
-        // detail page pick up the just-approved row on next render
-        // without a full page reload.
         invalidateVendorsCache();
-        // Wait a tick for the preview to render, then scroll it into view
-        // so the post-publish card lands in front of the user without
-        // them having to hunt for it.
+        // Fire the "thanks, we got it" email. Fire-and-forget — the
+        // submitted-for-review state already shows in the UI, so a
+        // failed email shouldn't block the user.
+        supabase.functions
+          .invoke("send-transactional-email", {
+            body: {
+              kind: "listing_submitted",
+              vendorProfileId: profile.id,
+            },
+          })
+          .catch(() => {});
         setTimeout(() => {
           document
             .getElementById("listing-preview")
