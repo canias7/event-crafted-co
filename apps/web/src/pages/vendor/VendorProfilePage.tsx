@@ -110,6 +110,23 @@ export default function VendorProfilePage() {
     "about" | "pricing" | "media" | "more"
   >("about");
 
+  // Outer IG-style tabs that wrap the entire page. The existing
+  // editor (form + about/pricing/media/more) only renders under the
+  // "listing" outer tab. The other three pull from public.vendor_posts
+  // / vendor_reels / vendor_buzz so vendors can flip through their
+  // social content the same way they do on mobile.
+  type OuterTab = "grid" | "reels" | "buzz" | "listing";
+  const [outerTab, setOuterTab] = useState<OuterTab>("listing");
+  const [posts, setPosts] = useState<
+    Array<{ id: string; image_url: string; caption: string | null; created_at: string }>
+  >([]);
+  const [reels, setReels] = useState<
+    Array<{ id: string; video_url: string; caption: string | null; created_at: string }>
+  >([]);
+  const [buzz, setBuzz] = useState<
+    Array<{ id: string; body: string; created_at: string }>
+  >([]);
+
   function applyToForm(p: VendorProfile | null) {
     setBusinessName(p?.business_name ?? "");
     setCategory(p?.category ?? "");
@@ -250,6 +267,45 @@ export default function VendorProfilePage() {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, isListing, category, profile?.id]);
+
+  // Pull posts / reels / buzz once the profile is known. Public
+  // SELECT RLS lets us read these — same data that populates the
+  // mobile Profile tab.
+  useEffect(() => {
+    if (!profile?.id) {
+      setPosts([]);
+      setReels([]);
+      setBuzz([]);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      const [postsRes, reelsRes, buzzRes] = await Promise.all([
+        supabase
+          .from("vendor_posts")
+          .select("id, image_url, caption, created_at")
+          .eq("vendor_id", profile.id)
+          .order("created_at", { ascending: false }),
+        supabase
+          .from("vendor_reels")
+          .select("id, video_url, caption, created_at")
+          .eq("vendor_id", profile.id)
+          .order("created_at", { ascending: false }),
+        supabase
+          .from("vendor_buzz")
+          .select("id, body, created_at")
+          .eq("vendor_id", profile.id)
+          .order("created_at", { ascending: false }),
+      ]);
+      if (cancelled) return;
+      setPosts((postsRes.data ?? []) as typeof posts);
+      setReels((reelsRes.data ?? []) as typeof reels);
+      setBuzz((buzzRes.data ?? []) as typeof buzz);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [profile?.id]);
 
   async function handleSave(
     e: React.FormEvent,
@@ -464,33 +520,180 @@ export default function VendorProfilePage() {
     }
   }
 
+  // Helpers for the Instagram-style outer chrome.
+  const initials = (() => {
+    const src = profile?.business_name ?? user?.email ?? "V";
+    return src
+      .split(/\s+/)
+      .map((w) => w[0])
+      .filter(Boolean)
+      .slice(0, 2)
+      .join("")
+      .toUpperCase();
+  })();
+  const listingsCount =
+    profile?.application_status === "approved" &&
+    profile?.location &&
+    profile?.base_price_cents != null
+      ? 1
+      : 0;
+  const showListingTab = outerTab === "listing";
+
   return (
     <div className="flex min-h-screen bg-background">
       <DashboardSidebar items={navItems} title="Vendor Portal" backPath="/" />
 
       <main id="main-content" className="flex-1 pb-20 lg:pb-0">
-        <div className="border-b border-border bg-card px-4 md:px-8 py-4 sticky top-0 z-40">
-          <div className="flex items-center justify-between gap-4 flex-wrap">
-            <div>
-              <h1 className="font-display text-xl">
-                {t("vendor_listing.title")}
-              </h1>
-              <p className="text-sm text-muted-foreground">
-                {t("vendor_listing.subtitle")}
-              </p>
+        {/* IG-style profile chrome — replaces the old sticky title bar.
+            Avatar + business name + Dashboard chip live above the four
+            outer tabs. The Listing tab keeps the existing editor; the
+            other three render counts + content from the social tables. */}
+        <div className="border-b border-border bg-card px-4 md:px-8 py-6">
+          <div className="flex flex-col items-center text-center max-w-2xl mx-auto">
+            <div className="h-24 w-24 rounded-full overflow-hidden bg-secondary/60 flex items-center justify-center">
+              {profile?.business_name ? (
+                <span className="font-display text-3xl text-foreground">
+                  {initials}
+                </span>
+              ) : (
+                <span className="font-display text-3xl text-foreground">V</span>
+              )}
             </div>
-            <div className="flex items-center gap-2">
+            <h1 className="font-display text-2xl mt-4">
+              {profile?.business_name ?? t("vendor_listing.title")}
+            </h1>
+            <div className="mt-2 flex items-center gap-2">
               {profile?.verified_at && (
                 <Badge className="bg-accent/15 text-accent border border-accent/30">
                   <ShieldCheck className="w-3.5 h-3.5 mr-1.5" />
                   {t("vendor_listing.verified")}
                 </Badge>
               )}
+            </div>
+            <Link
+              to="/vendor/dashboard"
+              className="mt-4 inline-flex items-center rounded-lg border border-border bg-secondary/40 px-5 py-2 text-sm font-semibold text-foreground hover:bg-secondary/70 transition-colors"
+            >
+              Dashboard
+            </Link>
+          </div>
+        </div>
+
+        {/* Outer 4-tab toggle bar (grid · play · buzz · listing). Counts
+            track per-tab content. */}
+        <div className="border-b border-border bg-card sticky top-0 z-40">
+          <div className="max-w-3xl mx-auto flex">
+            <OuterTabButton
+              active={outerTab === "grid"}
+              count={posts.length}
+              icon={<GridIcon />}
+              onClick={() => setOuterTab("grid")}
+            />
+            <OuterTabButton
+              active={outerTab === "reels"}
+              count={reels.length}
+              icon={<PlayIcon />}
+              onClick={() => setOuterTab("reels")}
+            />
+            <OuterTabButton
+              active={outerTab === "buzz"}
+              count={buzz.length}
+              icon={<AlignLeftIcon />}
+              onClick={() => setOuterTab("buzz")}
+            />
+            <OuterTabButton
+              active={outerTab === "listing"}
+              count={listingsCount}
+              icon={<ShoppingBagIcon />}
+              onClick={() => setOuterTab("listing")}
+            />
+          </div>
+        </div>
+
+        {/* Outer-tab content. Listing keeps the full existing editor;
+            grid / reels / buzz render from the social tables. */}
+        {outerTab === "grid" && (
+          <OuterTabContent>
+            {posts.length === 0 ? (
+              <OuterEmpty
+                icon={<GridIcon className="w-6 h-6" />}
+                title="No posts yet"
+                body="Open the Vendora vendor app to share photos from past events."
+              />
+            ) : (
+              <div className="grid grid-cols-3 gap-1 max-w-3xl mx-auto">
+                {posts.map((p) => (
+                  <div
+                    key={p.id}
+                    className="aspect-square overflow-hidden bg-secondary/40"
+                  >
+                    <img
+                      src={p.image_url}
+                      alt={p.caption ?? ""}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                ))}
+              </div>
+            )}
+          </OuterTabContent>
+        )}
+
+        {outerTab === "reels" && (
+          <OuterTabContent>
+            {reels.length === 0 ? (
+              <OuterEmpty
+                icon={<PlayIcon className="w-6 h-6" />}
+                title="No reels yet"
+                body="Short videos help your listing convert. Record one in the Vendora vendor app."
+              />
+            ) : (
+              <div className="grid grid-cols-3 gap-1 max-w-3xl mx-auto">
+                {reels.map((r) => (
+                  <div
+                    key={r.id}
+                    className="aspect-square bg-foreground/80 flex items-center justify-center"
+                  >
+                    <PlayIcon className="w-6 h-6 text-background" />
+                  </div>
+                ))}
+              </div>
+            )}
+          </OuterTabContent>
+        )}
+
+        {outerTab === "buzz" && (
+          <OuterTabContent>
+            {buzz.length === 0 ? (
+              <OuterEmpty
+                icon={<AlignLeftIcon className="w-6 h-6" />}
+                title="No buzz yet"
+                body="Post quick updates and news from the Vendora vendor app."
+              />
+            ) : (
+              <div className="max-w-2xl mx-auto px-4 space-y-3">
+                {buzz.map((b) => (
+                  <div
+                    key={b.id}
+                    className="rounded-xl border border-border bg-card p-4"
+                  >
+                    <p className="text-sm text-foreground">{b.body}</p>
+                    <p className="mt-2 text-xs text-muted-foreground">
+                      {new Date(b.created_at).toLocaleString()}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </OuterTabContent>
+        )}
+
+        {showListingTab && (
+          <>
+            <div className="border-b border-border bg-card px-4 md:px-8 py-3 flex items-center justify-end gap-2">
               {/* Save + Publish — Listing tab only. Save persists the
                   basics without flipping application_status; Publish
-                  flips the listing live in the directory. The bottom-
-                  of-form Save button is gone — these two are the
-                  only commit affordances now. */}
+                  flips the listing live in the directory. */}
               {isListing && profile && canEdit && (
                 <>
                   <Button
@@ -529,8 +732,6 @@ export default function VendorProfilePage() {
                 </>
               )}
             </div>
-          </div>
-        </div>
 
         {/* Secondary sidebar + main content — only on the listing
             builder, only when there's an actual draft to navigate.
@@ -1004,6 +1205,8 @@ export default function VendorProfilePage() {
           )}
         </div>
         </div>
+          </>
+        )}
       </main>
 
       <MobileNav items={navItems} />
@@ -1130,6 +1333,102 @@ function ListingPreviewCard({
         </div>
       </div>
     </div>
+  );
+}
+
+
+// ---------------- IG-style outer-tab helpers ----------------
+
+function OuterTabButton({
+  active,
+  count,
+  icon,
+  onClick,
+}: {
+  active: boolean;
+  count: number;
+  icon: React.ReactNode;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="flex-1 flex flex-col items-center justify-center gap-1 py-3 transition-colors"
+      style={{
+        borderBottom: active ? "2px solid #0a0a0a" : "2px solid transparent",
+        color: active ? "#0a0a0a" : "#737373",
+      }}
+    >
+      <span>{icon}</span>
+      <span className="text-xs font-semibold">{count}</span>
+    </button>
+  );
+}
+
+function OuterTabContent({ children }: { children: React.ReactNode }) {
+  return <div className="px-4 md:px-8 py-8">{children}</div>;
+}
+
+function OuterEmpty({
+  icon,
+  title,
+  body,
+}: {
+  icon: React.ReactNode;
+  title: string;
+  body: string;
+}) {
+  return (
+    <div className="max-w-md mx-auto text-center">
+      <div className="w-14 h-14 rounded-full border border-border flex items-center justify-center mx-auto text-muted-foreground">
+        {icon}
+      </div>
+      <h2 className="font-display text-lg mt-4">{title}</h2>
+      <p className="text-sm text-muted-foreground mt-1">{body}</p>
+    </div>
+  );
+}
+
+// Inline SVG icons keep the bundle lean and dodge the heavy
+// lucide-react import for these specific glyphs.
+
+function GridIcon({ className = "w-5 h-5" }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className={className} stroke="currentColor" strokeWidth="2">
+      <rect x="3" y="3" width="7" height="7" rx="1" />
+      <rect x="14" y="3" width="7" height="7" rx="1" />
+      <rect x="3" y="14" width="7" height="7" rx="1" />
+      <rect x="14" y="14" width="7" height="7" rx="1" />
+    </svg>
+  );
+}
+
+function PlayIcon({ className = "w-5 h-5" }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className={className} stroke="currentColor" strokeWidth="2" strokeLinejoin="round">
+      <polygon points="6 4 20 12 6 20 6 4" />
+    </svg>
+  );
+}
+
+function AlignLeftIcon({ className = "w-5 h-5" }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className={className} stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+      <line x1="3" y1="6" x2="21" y2="6" />
+      <line x1="3" y1="12" x2="15" y2="12" />
+      <line x1="3" y1="18" x2="18" y2="18" />
+    </svg>
+  );
+}
+
+function ShoppingBagIcon({ className = "w-5 h-5" }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className={className} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" />
+      <line x1="3" y1="6" x2="21" y2="6" />
+      <path d="M16 10a4 4 0 0 1-8 0" />
+    </svg>
   );
 }
 
