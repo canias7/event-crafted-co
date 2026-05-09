@@ -134,6 +134,20 @@ export default function VendorProfilePage() {
   // ones on populated grids both open it through this state.
   const [composerKind, setComposerKind] = useState<SocialKind | null>(null);
 
+  // Create-button click handler. If the vendor has a profile, opens the
+  // composer for the requested kind. If not, jumps them to the Listing
+  // tab so they can finish their profile setup (business name +
+  // category) — the social tables FK to vendor_profiles, so we can't
+  // accept content until that row exists.
+  function handleCreateClick(kind: SocialKind) {
+    if (profile?.id) {
+      setComposerKind(kind);
+    } else {
+      setOuterTab("listing");
+      toast.info("Add your business name and category first to start posting.");
+    }
+  }
+
   function applyToForm(p: VendorProfile | null) {
     setBusinessName(p?.business_name ?? "");
     setCategory(p?.category ?? "");
@@ -572,15 +586,21 @@ export default function VendorProfilePage() {
                 <span className="font-display text-3xl text-foreground">V</span>
               )}
             </div>
-            <h1 className="font-display text-2xl mt-4 inline-flex items-center gap-2">
-              {profile?.business_name ?? t("vendor_listing.title")}
-              {profile?.verified_at && (
-                <ShieldCheck
-                  className="w-5 h-5 text-accent"
-                  aria-label={t("vendor_listing.verified")}
-                />
-              )}
-            </h1>
+            {profile?.business_name ? (
+              <h1 className="font-display text-2xl mt-4 inline-flex items-center gap-2">
+                {profile.business_name}
+                {profile.verified_at && (
+                  <ShieldCheck
+                    className="w-5 h-5 text-accent"
+                    aria-label={t("vendor_listing.verified")}
+                  />
+                )}
+              </h1>
+            ) : (
+              <p className="mt-4 text-sm text-muted-foreground">
+                Add your business name in the form below
+              </p>
+            )}
             <Link
               to="/vendor/dashboard"
               className="mt-4 inline-flex items-center rounded-lg border border-border bg-secondary/40 px-5 py-2 text-sm font-semibold text-foreground hover:bg-secondary/70 transition-colors"
@@ -630,8 +650,8 @@ export default function VendorProfilePage() {
                 icon={<GridIcon className="w-6 h-6" />}
                 title="No posts yet"
                 body="Share a photo from a past event to start filling your grid."
-                actionLabel={profile?.id ? "Create post" : undefined}
-                onAction={profile?.id ? () => setComposerKind("post") : undefined}
+                actionLabel="Create post"
+                onAction={() => handleCreateClick("post")}
               />
             ) : (
               <div className="grid grid-cols-3 gap-1 max-w-3xl mx-auto">
@@ -659,8 +679,8 @@ export default function VendorProfilePage() {
                 icon={<PlayIcon className="w-6 h-6" />}
                 title="No reels yet"
                 body="Short videos convert hosts faster than photos — drop one in to see."
-                actionLabel={profile?.id ? "Create reel" : undefined}
-                onAction={profile?.id ? () => setComposerKind("reel") : undefined}
+                actionLabel="Create reel"
+                onAction={() => handleCreateClick("reel")}
               />
             ) : (
               <div className="grid grid-cols-3 gap-1 max-w-3xl mx-auto">
@@ -684,8 +704,8 @@ export default function VendorProfilePage() {
                 icon={<AlignLeftIcon className="w-6 h-6" />}
                 title="No buzz yet"
                 body="Post quick updates so hosts see fresh activity on your profile."
-                actionLabel={profile?.id ? "Create buzz" : undefined}
-                onAction={profile?.id ? () => setComposerKind("buzz") : undefined}
+                actionLabel="Create buzz"
+                onAction={() => handleCreateClick("buzz")}
               />
             ) : (
               <div className="max-w-2xl mx-auto px-4 space-y-3">

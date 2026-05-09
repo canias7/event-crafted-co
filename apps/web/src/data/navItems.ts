@@ -66,7 +66,6 @@ export const vendorNavItems: NavItem[] = [
   // Calendar hub — sub-tabs: Appointments, Availability
   { labelKey: "sidebar.vendor.calendar", path: "/vendor/appointments", icon: CalendarDays },
   { labelKey: "sidebar.vendor.listing", path: "/vendor/listing", icon: Store },
-  { labelKey: "sidebar.vendor.payments", path: "/vendor/payments", icon: CreditCard },
   // Studio hub — image editor + AI agent (auto-reply, lead qualifying).
   { labelKey: "sidebar.vendor.studio", path: "/vendor/studio", icon: Wand2 },
 ];
