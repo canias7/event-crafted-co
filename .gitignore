@@ -34,3 +34,6 @@ playwright/.cache/
 *.njsproj
 *.sln
 *.sw?
+
+# don't commit raw icon source — only the generated variants
+apps/*/assets/icon-source.png
