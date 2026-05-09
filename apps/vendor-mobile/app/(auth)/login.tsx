@@ -98,7 +98,7 @@ export default function LoginScreen() {
       setError(signInErr.message);
       return;
     }
-    router.replace("/(vendor)/dashboard");
+    router.replace("/(vendor)/home");
   }
 
   return (
