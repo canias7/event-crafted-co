@@ -1,24 +1,113 @@
-// Home tab — 3-segment content browser (grid · play · listings).
-//
-// The dashboard stats moved to a hidden /dashboard page reachable from
-// the Profile tab's "Dashboard" chip. Home now just shows the vendor's
-// public-facing content the way a host would browse it: grid of posts,
-// reels, listing details. Empty states placeholder until the upload
-// flows ship.
+// Home tab — 4-segment content browser. Same data and composers as
+// the Profile tab, just a different surface so the vendor can flip
+// through their grid / reels / buzz / listings without leaving the
+// home position.
 
-import { useState } from "react";
-import { Alert, ScrollView, Text, View } from "react-native";
+import { useCallback, useEffect, useState } from "react";
+import {
+  Alert,
+  FlatList,
+  Image,
+  Linking,
+  Pressable,
+  ScrollView,
+  Text,
+  View,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
-import { Pressable } from "react-native";
+import type { VendorProfile } from "@vendora/core";
+import { useAuth } from "@/lib/auth";
+import { supabase } from "@/lib/supabase";
 import { BuzzComposer } from "@/components/BuzzComposer";
+import { MediaComposer, type MediaKind } from "@/components/MediaComposer";
 
 type ViewKind = "grid" | "reels" | "buzz" | "listing";
 
+interface PostRow {
+  id: string;
+  image_url: string;
+  caption: string | null;
+  created_at: string;
+}
+interface ReelRow {
+  id: string;
+  video_url: string;
+  caption: string | null;
+  created_at: string;
+}
+interface BuzzRow {
+  id: string;
+  body: string;
+  created_at: string;
+}
+
 export default function HomeScreen() {
+  const { user } = useAuth();
+  const [profile, setProfile] = useState<VendorProfile | null>(null);
   const [view, setView] = useState<ViewKind>("grid");
   const [buzzOpen, setBuzzOpen] = useState(false);
+  const [pendingMedia, setPendingMedia] = useState<
+    { asset: ImagePicker.ImagePickerAsset; kind: MediaKind } | null
+  >(null);
+  const [posts, setPosts] = useState<PostRow[]>([]);
+  const [reels, setReels] = useState<ReelRow[]>([]);
+  const [buzz, setBuzz] = useState<BuzzRow[]>([]);
+
+  useEffect(() => {
+    if (!user) return;
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from("vendor_profiles")
+        .select(
+          "id, business_name, location, base_price_cents, application_status",
+        )
+        .eq("user_id", user.id)
+        .maybeSingle();
+      if (!cancelled) setProfile(data as VendorProfile | null);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [user]);
+
+  const loadFeeds = useCallback(async () => {
+    if (!profile?.id) return;
+    const [postsRes, reelsRes, buzzRes] = await Promise.all([
+      supabase
+        .from("vendor_posts")
+        .select("id, image_url, caption, created_at")
+        .eq("vendor_id", profile.id)
+        .order("created_at", { ascending: false }),
+      supabase
+        .from("vendor_reels")
+        .select("id, video_url, caption, created_at")
+        .eq("vendor_id", profile.id)
+        .order("created_at", { ascending: false }),
+      supabase
+        .from("vendor_buzz")
+        .select("id, body, created_at")
+        .eq("vendor_id", profile.id)
+        .order("created_at", { ascending: false }),
+    ]);
+    setPosts((postsRes.data ?? []) as PostRow[]);
+    setReels((reelsRes.data ?? []) as ReelRow[]);
+    setBuzz((buzzRes.data ?? []) as BuzzRow[]);
+  }, [profile?.id]);
+
+  useEffect(() => {
+    loadFeeds();
+  }, [loadFeeds]);
+
+  const listingsCount =
+    profile &&
+    profile.application_status === "approved" &&
+    profile.location &&
+    profile.base_price_cents != null
+      ? 1
+      : 0;
 
   function openCreatePost() {
     Alert.alert(
@@ -53,6 +142,7 @@ export default function HomeScreen() {
         ? ImagePicker.MediaTypeOptions.Videos
         : ImagePicker.MediaTypeOptions.Images;
     const noun = kind === "Videos" ? "video" : "photo";
+    const composerKind: MediaKind = kind === "Videos" ? "video" : "photo";
 
     if (src === "camera") {
       const perm = await ImagePicker.requestCameraPermissionsAsync();
@@ -69,10 +159,7 @@ export default function HomeScreen() {
         videoMaxDuration: 60,
       });
       if (!result.canceled && result.assets[0]) {
-        Alert.alert(
-          `Got your ${noun}`,
-          "Posting to your grid lands in the next update — we'll save what you captured.",
-        );
+        setPendingMedia({ asset: result.assets[0], kind: composerKind });
       }
       return;
     }
@@ -90,10 +177,7 @@ export default function HomeScreen() {
       quality: 0.85,
     });
     if (!result.canceled && result.assets[0]) {
-      Alert.alert(
-        `Got your ${noun}`,
-        "Posting to your grid lands in the next update — we'll save what you picked.",
-      );
+      setPendingMedia({ asset: result.assets[0], kind: composerKind });
     }
   }
 
@@ -106,67 +190,114 @@ export default function HomeScreen() {
         </Text>
       </View>
 
-      {/* View switcher */}
       <View className="mt-6 flex-row border-t border-border">
         <ViewTab
           active={view === "grid"}
           onPress={() => setView("grid")}
           iconName="grid"
+          count={posts.length}
         />
         <ViewTab
           active={view === "reels"}
           onPress={() => setView("reels")}
           iconName="play"
+          count={reels.length}
         />
         <ViewTab
           active={view === "buzz"}
           onPress={() => setView("buzz")}
           iconName="align-left"
+          count={buzz.length}
         />
         <ViewTab
           active={view === "listing"}
           onPress={() => setView("listing")}
           iconName="shopping-bag"
+          count={listingsCount}
         />
       </View>
 
-      <ScrollView contentContainerClassName="px-6 pb-32 pt-12 items-center">
+      <ScrollView contentContainerClassName="pb-32 pt-4">
         {view === "grid" ? (
-          <EmptyState
-            icon="grid"
-            title="No posts yet"
-            body="Share photos from past events to build trust with hosts."
-            ctaLabel="Create"
-            onCta={openCreatePost}
-          />
+          posts.length === 0 ? (
+            <View className="items-center px-6 pt-10">
+              <EmptyState
+                icon="grid"
+                title="No posts yet"
+                body="Share photos from past events to build trust with hosts."
+                ctaLabel="Create"
+                onCta={openCreatePost}
+              />
+            </View>
+          ) : (
+            <PostGrid posts={posts} />
+          )
         ) : view === "reels" ? (
-          <EmptyState
-            icon="play"
-            title="No reels yet"
-            body="Short videos help your listing convert. Coming soon."
-            ctaLabel="Create"
-            onCta={openCreateReel}
-          />
+          reels.length === 0 ? (
+            <View className="items-center px-6 pt-10">
+              <EmptyState
+                icon="play"
+                title="No reels yet"
+                body="Short videos help your listing convert."
+                ctaLabel="Create"
+                onCta={openCreateReel}
+              />
+            </View>
+          ) : (
+            <ReelGrid reels={reels} />
+          )
         ) : view === "buzz" ? (
-          <EmptyState
-            icon="align-left"
-            title="No buzz yet"
-            body="Post quick updates, behind-the-scenes notes, or news for your followers."
-            ctaLabel="Create"
-            onCta={() => setBuzzOpen(true)}
-          />
+          buzz.length === 0 ? (
+            <View className="items-center px-6 pt-10">
+              <EmptyState
+                icon="align-left"
+                title="No buzz yet"
+                body="Post quick updates, behind-the-scenes notes, or news for your followers."
+                ctaLabel="Create"
+                onCta={() => setBuzzOpen(true)}
+              />
+            </View>
+          ) : (
+            <BuzzList items={buzz} />
+          )
         ) : (
-          <EmptyState
-            icon="shopping-bag"
-            title="No listings yet"
-            body="Once your application is approved, your listing will show up here."
-          />
+          <View className="items-center px-6 pt-10">
+            <EmptyState
+              icon="shopping-bag"
+              title={listingsCount > 0 ? "Your listing" : "No listings yet"}
+              body={
+                listingsCount > 0
+                  ? "Manage details on your Profile tab."
+                  : "Add your location and starting price to publish your listing to the marketplace."
+              }
+              ctaLabel={listingsCount > 0 ? undefined : "Create listing"}
+              onCta={
+                listingsCount > 0
+                  ? undefined
+                  : () =>
+                      Linking.openURL("https://eventvendora.com/vendor/listing")
+              }
+            />
+          </View>
         )}
       </ScrollView>
 
       <BuzzComposer
         visible={buzzOpen}
+        userId={user?.id ?? null}
+        vendorId={profile?.id ?? null}
         onClose={() => setBuzzOpen(false)}
+        onPosted={loadFeeds}
+      />
+
+      <MediaComposer
+        visible={pendingMedia !== null}
+        kind={pendingMedia?.kind ?? "photo"}
+        asset={pendingMedia?.asset ?? null}
+        userId={user?.id ?? null}
+        vendorId={profile?.id ?? null}
+        onClose={() => setPendingMedia(null)}
+        onPosted={loadFeeds}
       />
     </SafeAreaView>
   );
@@ -176,21 +307,42 @@ function ViewTab({
   active,
   onPress,
   iconName,
+  count,
 }: {
   active: boolean;
   onPress: () => void;
   iconName: keyof typeof Feather.glyphMap;
+  count: number;
 }) {
   return (
     <Pressable
       onPress={onPress}
       className="flex-1 items-center justify-center py-3 active:opacity-60"
       style={{
-        borderBottomWidth: active ? 1.5 : 0,
-        borderBottomColor: "#0a0a0a",
+        backgroundColor: active ? "#ffffff" : "transparent",
+        borderRadius: active ? 14 : 0,
+        borderWidth: active ? 1 : 0,
+        borderColor: "#e5e5e5",
+        marginHorizontal: active ? 4 : 0,
+        marginVertical: active ? 4 : 0,
+        ...(active
+          ? {
+              shadowColor: "#000",
+              shadowOpacity: 0.06,
+              shadowRadius: 8,
+              shadowOffset: { width: 0, height: 2 },
+              elevation: 2,
+            }
+          : null),
       }}
     >
       <Feather name={iconName} size={22} color={active ? "#0a0a0a" : "#737373"} />
+      <Text
+        className="mt-1 text-sm font-semibold"
+        style={{ color: active ? "#0a0a0a" : "#737373" }}
+      >
+        {count}
+      </Text>
     </Pressable>
   );
 }
@@ -227,6 +379,62 @@ function EmptyState({
           </Text>
         </Pressable>
       ) : null}
+    </View>
+  );
+}
+
+function PostGrid({ posts }: { posts: PostRow[] }) {
+  return (
+    <FlatList
+      data={posts}
+      keyExtractor={(p) => p.id}
+      numColumns={3}
+      scrollEnabled={false}
+      renderItem={({ item }) => (
+        <View style={{ flex: 1 / 3, aspectRatio: 1, padding: 1 }}>
+          <Image
+            source={{ uri: item.image_url }}
+            style={{ flex: 1 }}
+            resizeMode="cover"
+          />
+        </View>
+      )}
+    />
+  );
+}
+
+function ReelGrid({ reels }: { reels: ReelRow[] }) {
+  return (
+    <FlatList
+      data={reels}
+      keyExtractor={(r) => r.id}
+      numColumns={3}
+      scrollEnabled={false}
+      renderItem={() => (
+        <View style={{ flex: 1 / 3, aspectRatio: 1, padding: 1 }}>
+          <View className="flex-1 items-center justify-center bg-secondary/50">
+            <Feather name="play" size={28} color="#fff" />
+          </View>
+        </View>
+      )}
+    />
+  );
+}
+
+function BuzzList({ items }: { items: BuzzRow[] }) {
+  return (
+    <View className="gap-3 px-4">
+      {items.map((b) => (
+        <View
+          key={b.id}
+          className="rounded-xl border border-border bg-background p-4"
+        >
+          <Text className="text-base text-foreground">{b.body}</Text>
+          <Text className="mt-2 text-xs text-muted-foreground">
+            {new Date(b.created_at).toLocaleString()}
+          </Text>
+        </View>
+      ))}
     </View>
   );
 }

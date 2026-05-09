@@ -1,17 +1,20 @@
 // Profile tab — Instagram-style layout for vendors.
 //
-// Top bar: + (left), business handle with chevron (center), ☰ (right).
-// Avatar centered with [posts | listings] stats row beneath. Bio under
-// stats, then a "Dashboard" CTA, then a 3-segment view switcher (grid /
-// reel / listing). The hamburger menu opens a sheet with email, change
-// password, and sign-out controls.
+// Top bar: + (left), email (center, no chevron), ☰ (right). Avatar +
+// business name + Dashboard chip stacked, then a 4-segment view
+// switcher (grid · play · buzz · listing) with live counts pulled
+// from public.vendor_posts / vendor_reels / vendor_buzz.
 //
-// Posts/Reels are placeholder empty states for now — content surfaces
-// will land in a future pass.
+// Tapping Create on grid → image picker → MediaComposer → uploads to
+// vendor-posts bucket and inserts vendor_posts row. Same flow for
+// reels (vendor-reels bucket + vendor_reels). Buzz uses BuzzComposer
+// which writes vendor_buzz directly. Listing tab links to the web
+// editor; the count is 1 only once the listing has location + price.
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   Alert,
+  FlatList,
   Image,
   Linking,
   Modal,
@@ -29,8 +32,29 @@ import type { VendorProfile } from "@vendora/core";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
 import { BuzzComposer } from "@/components/BuzzComposer";
+import { MediaComposer, type MediaKind } from "@/components/MediaComposer";
 
 type ViewKind = "grid" | "reels" | "buzz" | "listing";
+
+interface PostRow {
+  id: string;
+  image_url: string;
+  caption: string | null;
+  created_at: string;
+}
+interface ReelRow {
+  id: string;
+  video_url: string;
+  thumbnail_url: string | null;
+  caption: string | null;
+  duration_seconds: number | null;
+  created_at: string;
+}
+interface BuzzRow {
+  id: string;
+  body: string;
+  created_at: string;
+}
 
 export default function ProfileScreen() {
   const router = useRouter();
@@ -40,6 +64,13 @@ export default function ProfileScreen() {
   const [view, setView] = useState<ViewKind>("grid");
   const [menuOpen, setMenuOpen] = useState(false);
   const [buzzOpen, setBuzzOpen] = useState(false);
+  const [pendingMedia, setPendingMedia] = useState<
+    { asset: ImagePicker.ImagePickerAsset; kind: MediaKind } | null
+  >(null);
+
+  const [posts, setPosts] = useState<PostRow[]>([]);
+  const [reels, setReels] = useState<ReelRow[]>([]);
+  const [buzz, setBuzz] = useState<BuzzRow[]>([]);
 
   useEffect(() => {
     if (!user) return;
@@ -61,10 +92,36 @@ export default function ProfileScreen() {
     };
   }, [user]);
 
-  // A bare approved profile is just an empty shell — vendor hasn't
-  // actually uploaded a listing yet. Count it as a real listing only
-  // once they've filled in at least their location and starting price
-  // (the minimum needed for a host to find and contact them).
+  const loadFeeds = useCallback(async () => {
+    if (!profile?.id) return;
+    const [postsRes, reelsRes, buzzRes] = await Promise.all([
+      supabase
+        .from("vendor_posts")
+        .select("id, image_url, caption, created_at")
+        .eq("vendor_id", profile.id)
+        .order("created_at", { ascending: false }),
+      supabase
+        .from("vendor_reels")
+        .select(
+          "id, video_url, thumbnail_url, caption, duration_seconds, created_at",
+        )
+        .eq("vendor_id", profile.id)
+        .order("created_at", { ascending: false }),
+      supabase
+        .from("vendor_buzz")
+        .select("id, body, created_at")
+        .eq("vendor_id", profile.id)
+        .order("created_at", { ascending: false }),
+    ]);
+    setPosts((postsRes.data ?? []) as PostRow[]);
+    setReels((reelsRes.data ?? []) as ReelRow[]);
+    setBuzz((buzzRes.data ?? []) as BuzzRow[]);
+  }, [profile?.id]);
+
+  useEffect(() => {
+    loadFeeds();
+  }, [loadFeeds]);
+
   const listingsCount =
     profile &&
     profile.application_status === "approved" &&
@@ -106,6 +163,7 @@ export default function ProfileScreen() {
         ? ImagePicker.MediaTypeOptions.Videos
         : ImagePicker.MediaTypeOptions.Images;
     const noun = kind === "Videos" ? "video" : "photo";
+    const composerKind: MediaKind = kind === "Videos" ? "video" : "photo";
 
     if (src === "camera") {
       const perm = await ImagePicker.requestCameraPermissionsAsync();
@@ -122,10 +180,7 @@ export default function ProfileScreen() {
         videoMaxDuration: 60,
       });
       if (!result.canceled && result.assets[0]) {
-        Alert.alert(
-          `Got your ${noun}`,
-          "Posting to your grid lands in the next update — we'll save what you captured.",
-        );
+        setPendingMedia({ asset: result.assets[0], kind: composerKind });
       }
       return;
     }
@@ -143,16 +198,12 @@ export default function ProfileScreen() {
       quality: 0.85,
     });
     if (!result.canceled && result.assets[0]) {
-      Alert.alert(
-        `Got your ${noun}`,
-        "Posting to your grid lands in the next update — we'll save what you picked.",
-      );
+      setPendingMedia({ asset: result.assets[0], kind: composerKind });
     }
   }
 
   return (
     <SafeAreaView className="flex-1 bg-background" edges={["top"]}>
-      {/* Top bar — email centered, no dropdown */}
       <View className="flex-row items-center justify-between px-4 py-3">
         <Pressable hitSlop={8} className="active:opacity-60">
           <Feather name="plus" size={28} color="#0a0a0a" />
@@ -173,7 +224,6 @@ export default function ProfileScreen() {
       </View>
 
       <ScrollView contentContainerClassName="pb-32">
-        {/* Avatar + stats row, centered */}
         <View className="items-center px-4 pt-2">
           <View className="h-28 w-28 overflow-hidden rounded-full bg-secondary/60">
             <Image
@@ -183,7 +233,6 @@ export default function ProfileScreen() {
             />
           </View>
 
-          {/* Business name sits directly under the logo. */}
           {profile?.business_name ? (
             <Text className="mt-4 text-lg font-bold text-foreground">
               {profile.business_name}
@@ -195,7 +244,6 @@ export default function ProfileScreen() {
             </Text>
           ) : null}
 
-          {/* Dashboard CTA */}
           <Pressable
             onPress={() => router.push("/(vendor)/dashboard")}
             className="mt-6 rounded-lg border border-border bg-secondary/40 px-6 py-2.5 active:opacity-70"
@@ -206,25 +254,24 @@ export default function ProfileScreen() {
           </Pressable>
         </View>
 
-        {/* View switcher — counts live under each icon */}
         <View className="mt-8 flex-row border-t border-border">
           <ViewTab
             active={view === "grid"}
             onPress={() => setView("grid")}
             iconName="grid"
-            count={0}
+            count={posts.length}
           />
           <ViewTab
             active={view === "reels"}
             onPress={() => setView("reels")}
             iconName="play"
-            count={0}
+            count={reels.length}
           />
           <ViewTab
             active={view === "buzz"}
             onPress={() => setView("buzz")}
             iconName="align-left"
-            count={0}
+            count={buzz.length}
           />
           <ViewTab
             active={view === "listing"}
@@ -234,38 +281,57 @@ export default function ProfileScreen() {
           />
         </View>
 
-        {/* Content */}
-        <View className="mt-12 items-center px-6">
+        <View className="mt-4 px-2">
           {view === "grid" ? (
-            <EmptyState
-              icon="grid"
-              title="No posts yet"
-              body="Share photos from past events to build trust with hosts."
-              ctaLabel="Create"
-              onCta={openCreatePost}
-            />
+            posts.length === 0 ? (
+              <View className="items-center px-4 pt-10">
+                <EmptyState
+                  icon="grid"
+                  title="No posts yet"
+                  body="Share photos from past events to build trust with hosts."
+                  ctaLabel="Create"
+                  onCta={openCreatePost}
+                />
+              </View>
+            ) : (
+              <PostGrid posts={posts} />
+            )
           ) : view === "reels" ? (
-            <EmptyState
-              icon="play"
-              title="No reels yet"
-              body="Short videos help your listing convert. Coming soon."
-              ctaLabel="Create"
-              onCta={openCreateReel}
-            />
+            reels.length === 0 ? (
+              <View className="items-center px-4 pt-10">
+                <EmptyState
+                  icon="play"
+                  title="No reels yet"
+                  body="Short videos help your listing convert."
+                  ctaLabel="Create"
+                  onCta={openCreateReel}
+                />
+              </View>
+            ) : (
+              <ReelGrid reels={reels} />
+            )
           ) : view === "buzz" ? (
-            <EmptyState
-              icon="align-left"
-              title="No buzz yet"
-              body="Post quick updates, behind-the-scenes notes, or news for your followers."
-              ctaLabel="Create"
-              onCta={() => setBuzzOpen(true)}
-            />
+            buzz.length === 0 ? (
+              <View className="items-center px-4 pt-10">
+                <EmptyState
+                  icon="align-left"
+                  title="No buzz yet"
+                  body="Post quick updates, behind-the-scenes notes, or news for your followers."
+                  ctaLabel="Create"
+                  onCta={() => setBuzzOpen(true)}
+                />
+              </View>
+            ) : (
+              <BuzzList items={buzz} />
+            )
           ) : (
-            <ListingTab
-              loading={loading}
-              profile={profile}
-              isComplete={listingsCount === 1}
-            />
+            <View className="items-center px-4 pt-10">
+              <ListingTab
+                loading={loading}
+                profile={profile}
+                isComplete={listingsCount === 1}
+              />
+            </View>
           )}
         </View>
       </ScrollView>
@@ -279,7 +345,20 @@ export default function ProfileScreen() {
 
       <BuzzComposer
         visible={buzzOpen}
+        userId={user?.id ?? null}
+        vendorId={profile?.id ?? null}
         onClose={() => setBuzzOpen(false)}
+        onPosted={loadFeeds}
+      />
+
+      <MediaComposer
+        visible={pendingMedia !== null}
+        kind={pendingMedia?.kind ?? "photo"}
+        asset={pendingMedia?.asset ?? null}
+        userId={user?.id ?? null}
+        vendorId={profile?.id ?? null}
+        onClose={() => setPendingMedia(null)}
+        onPosted={loadFeeds}
       />
     </SafeAreaView>
   );
@@ -296,8 +375,6 @@ function ViewTab({
   iconName: keyof typeof Feather.glyphMap;
   count: number;
 }) {
-  // Active tab is a lifted card with subtle shadow + border. Inactive
-  // tabs are flat (transparent background, no border).
   return (
     <Pressable
       onPress={onPress}
@@ -367,6 +444,64 @@ function EmptyState({
   );
 }
 
+// Square grid of post images, 3 across.
+function PostGrid({ posts }: { posts: PostRow[] }) {
+  return (
+    <FlatList
+      data={posts}
+      keyExtractor={(p) => p.id}
+      numColumns={3}
+      scrollEnabled={false}
+      renderItem={({ item }) => (
+        <View style={{ flex: 1 / 3, aspectRatio: 1, padding: 1 }}>
+          <Image
+            source={{ uri: item.image_url }}
+            style={{ flex: 1 }}
+            resizeMode="cover"
+          />
+        </View>
+      )}
+    />
+  );
+}
+
+// Same as PostGrid but with a play-icon overlay so it reads as video.
+function ReelGrid({ reels }: { reels: ReelRow[] }) {
+  return (
+    <FlatList
+      data={reels}
+      keyExtractor={(r) => r.id}
+      numColumns={3}
+      scrollEnabled={false}
+      renderItem={({ item }) => (
+        <View style={{ flex: 1 / 3, aspectRatio: 1, padding: 1 }}>
+          <View className="flex-1 items-center justify-center bg-secondary/50">
+            <Feather name="play" size={28} color="#fff" />
+          </View>
+        </View>
+      )}
+    />
+  );
+}
+
+function BuzzList({ items }: { items: BuzzRow[] }) {
+  return (
+    <View className="gap-3 px-2">
+      {items.map((b) => (
+        <View
+          key={b.id}
+          className="rounded-xl border border-border bg-background p-4"
+        >
+          <Text className="text-base text-foreground">{b.body}</Text>
+          <Text className="mt-2 text-xs text-muted-foreground">
+            {new Date(b.created_at).toLocaleString()}
+          </Text>
+        </View>
+      ))}
+    </View>
+  );
+}
+
 function ListingTab({
   loading,
   profile,
@@ -381,8 +516,6 @@ function ListingTab({
       <Text className="text-sm text-muted-foreground">Loading…</Text>
     );
   }
-  // No listing OR an empty/incomplete one — show just the Create CTA.
-  // Web is the only editor for now.
   if (!profile || !isComplete) {
     return (
       <EmptyState
@@ -397,7 +530,7 @@ function ListingTab({
     );
   }
   return (
-    <View className="w-full gap-3">
+    <View className="w-full gap-3 px-2">
       <Field label="Business name" value={profile.business_name} />
       <Field label="Category" value={profile.category} />
       <Field label="Location" value={profile.location ?? "—"} />
@@ -409,18 +542,6 @@ function ListingTab({
         label="Application status"
         value={profile.application_status ?? "draft"}
       />
-      {!isComplete ? (
-        <Pressable
-          onPress={() =>
-            Linking.openURL("https://eventvendora.com/vendor/listing")
-          }
-          className="mt-3 items-center rounded-full bg-foreground px-6 py-3 active:opacity-80"
-        >
-          <Text className="text-sm font-semibold text-background">
-            Create listing
-          </Text>
-        </Pressable>
-      ) : null}
     </View>
   );
 }
