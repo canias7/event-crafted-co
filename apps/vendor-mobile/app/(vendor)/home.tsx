@@ -17,6 +17,32 @@ type ViewKind = "grid" | "reels" | "buzz" | "listing";
 export default function HomeScreen() {
   const [view, setView] = useState<ViewKind>("grid");
 
+  function openCreatePost() {
+    Alert.alert(
+      "New post",
+      "Add a photo from your library or take one with your camera.",
+      [
+        {
+          text: "Take photo",
+          onPress: () =>
+            Alert.alert(
+              "Camera",
+              "Camera capture lands in the next native build.",
+            ),
+        },
+        {
+          text: "Choose from library",
+          onPress: () =>
+            Alert.alert(
+              "Library",
+              "Photo picker lands in the next native build.",
+            ),
+        },
+        { text: "Cancel", style: "cancel" },
+      ],
+    );
+  }
+
   return (
     <SafeAreaView className="flex-1 bg-background" edges={["top"]}>
       <View className="px-4 pt-4">
@@ -57,9 +83,7 @@ export default function HomeScreen() {
             title="No posts yet"
             body="Share photos from past events to build trust with hosts."
             ctaLabel="Create"
-            onCta={() =>
-              Alert.alert("Create post", "Posting comes in a future update.")
-            }
+            onCta={openCreatePost}
           />
         ) : view === "reels" ? (
           <EmptyState

@@ -60,6 +60,32 @@ export default function ProfileScreen() {
   const listingsCount =
     profile && profile.application_status === "approved" ? 1 : 0;
 
+  function openCreatePost() {
+    Alert.alert(
+      "New post",
+      "Add a photo from your library or take one with your camera.",
+      [
+        {
+          text: "Take photo",
+          onPress: () =>
+            Alert.alert(
+              "Camera",
+              "Camera capture lands in the next native build.",
+            ),
+        },
+        {
+          text: "Choose from library",
+          onPress: () =>
+            Alert.alert(
+              "Library",
+              "Photo picker lands in the next native build.",
+            ),
+        },
+        { text: "Cancel", style: "cancel" },
+      ],
+    );
+  }
+
   return (
     <SafeAreaView className="flex-1 bg-background" edges={["top"]}>
       {/* Top bar — email centered, no dropdown */}
@@ -152,9 +178,7 @@ export default function ProfileScreen() {
               title="No posts yet"
               body="Share photos from past events to build trust with hosts."
               ctaLabel="Create"
-              onCta={() =>
-                Alert.alert("Create post", "Posting comes in a future update.")
-              }
+              onCta={openCreatePost}
             />
           ) : view === "reels" ? (
             <EmptyState
