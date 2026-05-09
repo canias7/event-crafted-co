@@ -22,13 +22,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { DashboardSidebar } from "@/components/shared/DashboardSidebar";
 import { MobileNav } from "@/components/shared/MobileNav";
-import { PortfolioUploader } from "@/components/vendor/PortfolioUploader";
 import { PackageManager } from "@/components/vendor/PackageManager";
 import { VendorRecommendationManager } from "@/components/vendor/VendorRecommendationManager";
 import { VendorFaqsManager } from "@/components/vendor/VendorFaqsManager";
 import { VendorTeamManager } from "@/components/vendor/VendorTeamManager";
 import { VendorPolicyEditor } from "@/components/vendor/VendorPolicyEditor";
-import { ShowcaseClipsManager } from "@/components/vendor/ShowcaseClipsManager";
 import { CategoryAttributesEditor } from "@/components/vendor/CategoryAttributesEditor";
 import {
   VendorSocialComposer,
@@ -125,11 +123,10 @@ export default function VendorProfilePage() {
   const [instagramHandle, setInstagramHandle] = useState("");
   const [tiktokHandle, setTiktokHandle] = useState("");
 
-  // Secondary sidebar state — splits the long listing form into four
-  // bite-size tabs so the page stops being a 4-screen scroll. Default
-  // to "about" so a fresh vendor lands on the basics first.
+  // Listing builder is a 3-step wizard now: About → Pricing → More.
+  // Default to "about" so a fresh vendor lands on the basics first.
   const [listingTab, setListingTab] = useState<
-    "about" | "pricing" | "media" | "more"
+    "about" | "pricing" | "more"
   >("about");
 
   // Outer IG-style tabs that wrap the entire page. The existing
@@ -692,7 +689,8 @@ export default function VendorProfilePage() {
             a logo) + business name. Dashboard chip removed per
             request. */}
         <div className="border-b border-border bg-card px-4 md:px-8 py-4">
-          <div className="flex items-center justify-between max-w-3xl mx-auto">
+          <div className="grid grid-cols-3 items-center max-w-3xl mx-auto">
+            <div className="justify-self-start">
             <DropdownMenu open={createMenuOpen} onOpenChange={setCreateMenuOpen}>
               <DropdownMenuTrigger asChild>
                 <button
@@ -743,7 +741,19 @@ export default function VendorProfilePage() {
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
+            </div>
 
+            {/* Center: signed-in vendor's email — mirrors the mobile
+                profile top bar so the active account is always visible
+                without opening the menu. */}
+            <p
+              className="justify-self-center text-base font-bold text-foreground truncate max-w-full"
+              title={user?.email ?? ""}
+            >
+              {user?.email ?? ""}
+            </p>
+
+            <div className="justify-self-end">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button
@@ -770,6 +780,7 @@ export default function VendorProfilePage() {
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
+            </div>
           </div>
 
           <div className="flex flex-col items-center text-center max-w-2xl mx-auto pt-4">
@@ -1022,69 +1033,17 @@ export default function VendorProfilePage() {
             builder, only when there's an actual draft to navigate.
             Pre-creation (no profile yet) the page stays a single
             column so the category dropdown gets full attention. */}
-        <div
-          className={
-            profile && !publishedRecently
-              ? "grid lg:grid-cols-[200px_1fr]"
-              : ""
-          }
-        >
+        <div>
+        <div className="p-4 md:p-8 max-w-3xl mx-auto">
+          {/* Step indicator — replaces the old 4-tab sidebar.
+              Listing builder is a 4-step wizard: About → Pricing →
+              Media → More. Vendors move through it with the Previous /
+              Next buttons at the bottom of the form. */}
           {profile && !publishedRecently && (
-            <aside className="hidden lg:block border-r border-border bg-card/40 p-3 sticky top-[73px] self-start max-h-[calc(100vh-73px)] overflow-y-auto">
-              <ListingTabButton
-                active={listingTab === "about"}
-                onClick={() => setListingTab("about")}
-                icon={Sparkles}
-                label={t("vendor_listing.tabs.about")}
-              />
-              <ListingTabButton
-                active={listingTab === "pricing"}
-                onClick={() => setListingTab("pricing")}
-                icon={DollarSign}
-                label={t("vendor_listing.tabs.pricing")}
-              />
-              <ListingTabButton
-                active={listingTab === "media"}
-                onClick={() => setListingTab("media")}
-                icon={ImageIcon}
-                label={t("vendor_listing.tabs.media")}
-              />
-              <ListingTabButton
-                active={listingTab === "more"}
-                onClick={() => setListingTab("more")}
-                icon={Layers}
-                label={t("vendor_listing.tabs.more")}
-              />
-            </aside>
-          )}
-
-        <div className="p-4 md:p-8 max-w-3xl">
-          {/* Mobile tab strip — same four tabs, horizontal scroll. */}
-          {profile && !publishedRecently && (
-            <div className="lg:hidden flex gap-1.5 mb-4 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-hide">
-              {(
-                [
-                  ["about", Sparkles, t("vendor_listing.tabs.about")],
-                  ["pricing", DollarSign, t("vendor_listing.tabs.pricing")],
-                  ["media", ImageIcon, t("vendor_listing.tabs.media")],
-                  ["more", Layers, t("vendor_listing.tabs.more")],
-                ] as Array<["about" | "pricing" | "media" | "more", LucideIcon, string]>
-              ).map(([key, Icon, label]) => (
-                <button
-                  key={key}
-                  type="button"
-                  onClick={() => setListingTab(key)}
-                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors ${
-                    listingTab === key
-                      ? "bg-foreground text-background"
-                      : "bg-secondary/50 text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  <Icon className="w-3 h-3" />
-                  {label}
-                </button>
-              ))}
-            </div>
+            <ListingStepHeader
+              current={LISTING_STEPS.indexOf(listingTab)}
+              steps={LISTING_STEPS.map((s) => t(`vendor_listing.tabs.${s}`))}
+            />
           )}
           {loading ? (
             <div className="space-y-4">
@@ -1299,21 +1258,9 @@ export default function VendorProfilePage() {
                 </div>
               )}
 
-              {category && listingTab === "about" && (
-                <div className="space-y-2">
-                  <Label htmlFor="business-name">
-                    {t("vendor_listing.business_name")}{" "}
-                    <span className="text-destructive">*</span>
-                  </Label>
-                  <Input
-                    id="business-name"
-                    value={businessName}
-                    onChange={(e) => setBusinessName(e.target.value)}
-                    required
-                    className="h-11"
-                  />
-                </div>
-              )}
+              {/* Business name lives on the chrome (set at signup,
+                  edited via the avatar / settings later); the listing
+                  form doesn't re-ask for it. */}
 
               {category && listingTab === "about" && (
                 <div className="space-y-2">
@@ -1361,24 +1308,6 @@ export default function VendorProfilePage() {
                 </div>
               )}
 
-              {category && listingTab === "media" && (
-                <div className="space-y-2">
-                  <Label htmlFor="intro-video">
-                    {t("vendor_listing.intro_video")}
-                  </Label>
-                  <Input
-                    id="intro-video"
-                    type="url"
-                    value={introVideoUrl}
-                    onChange={(e) => setIntroVideoUrl(e.target.value)}
-                    placeholder={t("vendor_listing.intro_video_placeholder")}
-                    className="h-11"
-                  />
-                  <p className="text-xs text-muted-foreground pt-1">
-                    {t("vendor_listing.intro_video_hint")}
-                  </p>
-                </div>
-              )}
 
 
               {/* Pre-creation only: the very first commit needs an
@@ -1431,22 +1360,6 @@ export default function VendorProfilePage() {
                 </div>
               )}
 
-              {/* Media tab — photos + showcase clips. Intro video
-                  URL is the form field above. */}
-              {listingTab === "media" && (
-                <>
-                  <div className="mt-12 pt-10 border-t border-border">
-                    <PortfolioUploader vendorId={profile.id} />
-                  </div>
-                  <div className="mt-12 pt-10 border-t border-border">
-                    <ShowcaseClipsManager
-                      vendorId={profile.id}
-                      canEdit={canEdit}
-                    />
-                  </div>
-                </>
-              )}
-
               {/* More tab — team, social proof (reviews +
                   recommendations), and the optional intake-form /
                   FAQs / policy editors. */}
@@ -1478,6 +1391,23 @@ export default function VendorProfilePage() {
                 </>
               )}
             </>
+          )}
+
+          {profile && !publishedRecently && category && (
+            <ListingStepNav
+              current={LISTING_STEPS.indexOf(listingTab)}
+              total={LISTING_STEPS.length}
+              onPrev={() => {
+                const idx = LISTING_STEPS.indexOf(listingTab);
+                if (idx > 0) setListingTab(LISTING_STEPS[idx - 1]);
+              }}
+              onNext={() => {
+                const idx = LISTING_STEPS.indexOf(listingTab);
+                if (idx < LISTING_STEPS.length - 1) {
+                  setListingTab(LISTING_STEPS[idx + 1]);
+                }
+              }}
+            />
           )}
         </div>
         </div>
@@ -1547,42 +1477,84 @@ export default function VendorProfilePage() {
 // recurring rules + one-off blocks). Mounted inline on the profile
 // editor so the "Availability" section on the public profile has a
 // clear hand-off from this single dashboard view.
-// Compact post-publish preview — replaces the editor surface once
-// the vendor clicks Publish. Three icon buttons: View opens the
-// Single button in the listing builder's secondary sidebar. Renders
-// as a soft pill that fills with the foreground when active.
-function ListingTabButton({
-  active,
-  onClick,
-  icon: Icon,
-  label,
+// 3-step wizard order. Indexed by listingTab. Adding/removing steps
+// here flows through the StepHeader + StepNav automatically.
+const LISTING_STEPS = ["about", "pricing", "more"] as const;
+
+function ListingStepHeader({
+  current,
+  steps,
 }: {
-  active: boolean;
-  onClick: () => void;
-  icon: LucideIcon;
-  label: string;
+  current: number;
+  steps: string[];
 }) {
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-current={active ? "page" : undefined}
-      className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-        active
-          ? "bg-secondary text-foreground"
-          : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
-      }`}
-    >
-      <Icon className="w-4 h-4 shrink-0" aria-hidden />
-      <span className="truncate">{label}</span>
-    </button>
+    <div className="mb-6">
+      <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground mb-2">
+        Step {current + 1} of {steps.length}
+      </p>
+      <div className="flex items-center gap-2">
+        {steps.map((label, i) => (
+          <div key={label} className="flex-1 flex items-center gap-2">
+            <div
+              className={`h-1 flex-1 rounded-full ${i <= current ? "bg-foreground" : "bg-secondary/60"}`}
+            />
+            <span
+              className={`text-xs font-medium whitespace-nowrap ${
+                i === current ? "text-foreground" : "text-muted-foreground"
+              }`}
+            >
+              {label}
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
   );
 }
 
-// public listing in a new tab, Edit collapses the preview back to
-// the form, Delete confirms then drops the row. Image is
-// intentionally omitted; the directory's VendorCard renders the
-// visual version using the per-sub categoryImageFallback art.
+function ListingStepNav({
+  current,
+  total,
+  onPrev,
+  onNext,
+}: {
+  current: number;
+  total: number;
+  onPrev: () => void;
+  onNext: () => void;
+}) {
+  const isFirst = current === 0;
+  const isLast = current === total - 1;
+  return (
+    <div className="mt-12 pt-6 border-t border-border flex items-center justify-between">
+      <Button
+        type="button"
+        variant="outline"
+        onClick={onPrev}
+        disabled={isFirst}
+        className="rounded-full"
+      >
+        Previous
+      </Button>
+      <Button
+        type="button"
+        onClick={onNext}
+        disabled={isLast}
+        className="rounded-full bg-foreground text-background hover:bg-foreground/90"
+      >
+        Next
+      </Button>
+    </div>
+  );
+}
+
+// Compact post-publish preview — replaces the editor surface once
+// the vendor clicks Publish. View opens the public listing in a new
+// tab, Edit collapses the preview back to the form, Delete confirms
+// then drops the row. Image is intentionally omitted; the directory's
+// VendorCard renders the visual version using the per-sub
+// categoryImageFallback art.
 function ListingPreviewCard({
   profile,
   saving,
