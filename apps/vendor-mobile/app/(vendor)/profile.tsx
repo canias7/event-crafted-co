@@ -415,6 +415,7 @@ function ListingTab({
           </Text>
         </Pressable>
       ) : null}
+    </View>
   );
 }
 
