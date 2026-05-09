@@ -748,7 +748,11 @@ export default function VendorProfilePage() {
             </div>
           </div>
 
-          <div className="flex flex-col items-center text-center max-w-2xl mx-auto pt-4">
+          {/* Avatar + business name. Generous bottom padding leaves
+              breathing room before the 4-tab toggle strip — that
+              space is reserved for future profile chrome (bio,
+              counters, follow button, etc). */}
+          <div className="flex flex-col items-center text-center max-w-2xl mx-auto pt-4 pb-10">
             <input
               ref={logoInputRef}
               type="file"

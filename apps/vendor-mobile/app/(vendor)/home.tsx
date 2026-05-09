@@ -177,7 +177,7 @@ export default function HomeScreen() {
         </Text>
       </View>
 
-      <View className="mt-6 flex-row border-t border-border">
+      <View className="mt-12 flex-row border-t border-border">
         <ViewTab
           active={view === "grid"}
           onPress={() => setView("grid")}
@@ -217,7 +217,7 @@ export default function HomeScreen() {
               />
             </View>
           ) : (
-            <PostGrid posts={posts} />
+            <PostGrid posts={posts} profile={profile} />
           )
         ) : view === "reels" ? (
           reels.length === 0 ? (
@@ -231,7 +231,7 @@ export default function HomeScreen() {
               />
             </View>
           ) : (
-            <ReelGrid reels={reels} />
+            <ReelGrid reels={reels} profile={profile} />
           )
         ) : view === "buzz" ? (
           buzz.length === 0 ? (
@@ -415,11 +415,46 @@ function EmptyState({
 // these stay scrollEnabled={false} on the inner list to avoid nested
 // scroll fights.
 
-function PostGrid({ posts }: { posts: PostRow[] }) {
+// IG-style author header that floats above each feed card. Shows the
+// vendor's uploaded logo (or the local fallback icon) on the left and
+// their business name next to it. Pulls from vendor_profiles.logo_url
+// so the avatar matches whatever the vendor uploaded on the web.
+function FeedAuthorHeader({ profile }: { profile: VendorProfile | null }) {
+  return (
+    <View className="flex-row items-center gap-3 mb-2 px-1">
+      <View className="h-10 w-10 overflow-hidden rounded-full bg-secondary/60">
+        <Image
+          source={
+            profile?.logo_url
+              ? { uri: profile.logo_url }
+              : require("../../assets/icon.png")
+          }
+          className="h-full w-full"
+          resizeMode="cover"
+        />
+      </View>
+      <Text
+        numberOfLines={1}
+        className="flex-1 text-base font-semibold text-foreground"
+      >
+        {profile?.business_name ?? "Vendora"}
+      </Text>
+    </View>
+  );
+}
+
+function PostGrid({
+  posts,
+  profile,
+}: {
+  posts: PostRow[];
+  profile: VendorProfile | null;
+}) {
   return (
     <View className="gap-4">
       {posts.map((p) => (
         <View key={p.id} className="px-4">
+          <FeedAuthorHeader profile={profile} />
           <View
             style={{
               borderRadius: 16,
@@ -452,11 +487,18 @@ function PostGrid({ posts }: { posts: PostRow[] }) {
   );
 }
 
-function ReelGrid({ reels }: { reels: ReelRow[] }) {
+function ReelGrid({
+  reels,
+  profile,
+}: {
+  reels: ReelRow[];
+  profile: VendorProfile | null;
+}) {
   return (
     <View className="gap-4">
       {reels.map((r) => (
         <View key={r.id} className="px-4">
+          <FeedAuthorHeader profile={profile} />
           <View
             style={{
               borderRadius: 16,
