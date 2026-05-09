@@ -93,15 +93,10 @@ export default function ProfileScreen() {
             />
           </View>
 
-          {/* Business name + category sit directly under the logo. */}
+          {/* Business name sits directly under the logo. */}
           {profile?.business_name ? (
             <Text className="mt-4 text-lg font-bold text-foreground">
               {profile.business_name}
-            </Text>
-          ) : null}
-          {profile?.category ? (
-            <Text className="text-base text-muted-foreground">
-              {profile.category}
             </Text>
           ) : null}
           {profile?.bio ? (
