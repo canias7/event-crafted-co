@@ -1421,30 +1421,23 @@ export default function VendorProfilePage() {
         open={openMedia !== null}
         onOpenChange={(o) => !o && setOpenMedia(null)}
       >
-        {/* Lightbox sized to ~95vw / 95vh so the picture fills the
-            viewport and we see the whole image at its natural ratio
-            (object-contain) instead of a tiny thumbnail. Background
-            stays the page bg so the cropped letterboxing reads as
-            chrome, not part of the image. */}
-        <DialogContent className="p-0 bg-background overflow-hidden border-none w-[95vw] sm:max-w-[95vw] max-h-[95vh] flex flex-col">
-          <div className="flex-1 min-h-0 flex items-center justify-center bg-foreground/5">
-            {openMedia?.kind === "post" && (
-              <img
-                src={openMedia.image_url}
-                alt={openMedia.caption ?? ""}
-                className="max-w-full max-h-full object-contain"
-              />
-            )}
-            {openMedia?.kind === "reel" && (
-              <video
-                src={openMedia.video_url}
-                className="max-w-full max-h-full bg-foreground/90"
-                controls
-                autoPlay
-                playsInline
-              />
-            )}
-          </div>
+        <DialogContent className="sm:max-w-2xl p-0 bg-background overflow-hidden">
+          {openMedia?.kind === "post" && (
+            <img
+              src={openMedia.image_url}
+              alt={openMedia.caption ?? ""}
+              className="w-full max-h-[80vh] object-contain bg-foreground/5"
+            />
+          )}
+          {openMedia?.kind === "reel" && (
+            <video
+              src={openMedia.video_url}
+              className="w-full max-h-[80vh] bg-foreground/90"
+              controls
+              autoPlay
+              playsInline
+            />
+          )}
           {openMedia?.caption && (
             <div className="px-5 py-4 border-t border-border">
               <p className="text-sm text-foreground whitespace-pre-wrap">
