@@ -40,20 +40,22 @@ export function DashboardSidebar({
   const location = useLocation();
   const navigate = useNavigate();
   const { t } = useTranslation();
-  const { signOut, hasVendorAccess, ownVendorProfile, profile } = useAuth();
+  const { signOut, hasVendorAccess, hasHostAccess, ownVendorProfile, profile } =
+    useAuth();
 
-  // Multi-role chrome. We sit on whichever side the URL says, and offer:
-  //  - on vendor side, a "back to host portal" jump (always available
-  //    since every account is a host by default);
-  //  - on host side, either "go to vendor portal" (if they have access)
-  //    or "become a vendor" (if they've never applied).
-  // Admins skip both entirely.
+  // Multi-role chrome. The switcher only appears when the user actually
+  // has BOTH sides — pure vendors (no host onboarding/events) never see
+  // "Switch to host", and pure hosts (no vendor profile/membership) never
+  // see "Switch to vendor". The "Become a vendor" CTA is the entry point
+  // for hosts who haven't applied yet.
   const onVendorSide = location.pathname.startsWith("/vendor");
   const showSwitcher =
-    profile?.role !== "admin" &&
-    (onVendorSide ? true : hasVendorAccess);
+    profile?.role !== "admin" && hasVendorAccess && hasHostAccess;
   const showApplyCta =
-    profile?.role !== "admin" && !onVendorSide && !ownVendorProfile;
+    profile?.role !== "admin" &&
+    !onVendorSide &&
+    !ownVendorProfile &&
+    hasHostAccess;
   const switcherTo = onVendorSide ? "/customer/dashboard" : "/vendor/dashboard";
   const switcherLabel = onVendorSide ? "Switch to host" : "Switch to vendor";
   const switcherIcon = onVendorSide ? Sparkles : Briefcase;
