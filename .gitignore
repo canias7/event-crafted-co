@@ -37,3 +37,6 @@ playwright/.cache/
 
 # don't commit raw icon source — only the generated variants
 apps/*/assets/icon-source.png
+
+# Stray app.json that EAS CLI sometimes creates at repo root when cwd isn't a mobile app
+/app.json
