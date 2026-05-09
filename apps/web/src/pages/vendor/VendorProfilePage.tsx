@@ -468,23 +468,16 @@ export default function VendorProfilePage() {
       if (!bio.trim()) missing.push("Short bio");
       // Category attributes — at least one filled key in the jsonb
       // counts. Boolean false counts as filled-in too; we only
-      // exclude null / undefined / empty string / empty array.
-      const [
-        attrsRes,
-        portfolioCountRes,
-        teamCountRes,
-      ] = await Promise.all([
+      // exclude null / undefined / empty string / empty array. Portfolio
+      // photo check was dropped along with the Media step — uploads now
+      // live in Studio → Photo Gallery and aren't gated behind publish.
+      const [attrsRes, teamCountRes] = await Promise.all([
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (supabase as any)
           .from("vendor_profiles")
           .select("category_attributes")
           .eq("id", profile.id)
           .maybeSingle(),
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (supabase as any)
-          .from("vendor_portfolio_images")
-          .select("id", { count: "exact", head: true })
-          .eq("vendor_id", profile.id),
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (supabase as any)
           .from("vendor_team_bios")
@@ -503,8 +496,6 @@ export default function VendorProfilePage() {
           return true;
         });
       if (!hasDetails) missing.push("Category details");
-      if ((portfolioCountRes.count ?? 0) === 0)
-        missing.push("At least one portfolio photo");
       if ((teamCountRes.count ?? 0) === 0)
         missing.push("At least one team member");
 
