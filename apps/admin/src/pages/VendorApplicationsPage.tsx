@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { Eye } from "lucide-react";
+import { Eye, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
 
@@ -102,6 +102,31 @@ export function VendorApplicationsPage() {
     setRows((prev) => prev.filter((r) => r.id !== id));
   };
 
+  // Hard-delete a vendor profile. Admin RLS allows it; ON DELETE
+  // CASCADE on the dependent tables (posts, reels, buzz, comments,
+  // packages, etc.) handles the rest. Used from the Approved /
+  // Rejected tabs so admins can purge a listing entirely instead of
+  // just status-flipping it.
+  const deleteRow = async (id: string, businessName: string) => {
+    if (
+      !window.confirm(
+        `Delete ${businessName}? This permanently removes the listing and all of its content. This cannot be undone.`,
+      )
+    ) {
+      return;
+    }
+    const { error } = await supabase
+      .from("vendor_profiles")
+      .delete()
+      .eq("id", id);
+    if (error) {
+      toast.error(`Couldn't delete: ${error.message}`);
+      return;
+    }
+    toast.success(`Deleted ${businessName}`);
+    setRows((prev) => prev.filter((r) => r.id !== id));
+  };
+
   return (
     <div className="p-8">
       <h1 className="text-2xl font-semibold">Vendor applications</h1>
@@ -157,21 +182,49 @@ export function VendorApplicationsPage() {
                   >
                     <Eye className="h-4 w-4" />
                   </a>
-                  {r.application_status !== "approved" ? (
+                  {r.application_status === "pending" ? (
+                    <>
+                      <button
+                        onClick={() => setStatus(r.id, "approved")}
+                        className="rounded bg-ink px-3 py-1.5 text-xs text-bone"
+                      >
+                        Approve
+                      </button>
+                      <button
+                        onClick={() => setStatus(r.id, "rejected")}
+                        className="rounded border border-red-300 px-3 py-1.5 text-xs text-red-700 hover:bg-red-50"
+                      >
+                        Reject
+                      </button>
+                    </>
+                  ) : null}
+                  {r.application_status === "approved" ? (
                     <button
-                      onClick={() => setStatus(r.id, "approved")}
-                      className="rounded bg-ink px-3 py-1.5 text-xs text-bone"
+                      onClick={() => deleteRow(r.id, r.business_name)}
+                      title="Permanently delete this listing"
+                      className="inline-flex items-center gap-1.5 rounded border border-red-300 px-3 py-1.5 text-xs text-red-700 hover:bg-red-50"
                     >
-                      Approve
+                      <Trash2 className="h-3.5 w-3.5" />
+                      Delete
                     </button>
                   ) : null}
-                  {r.application_status !== "rejected" ? (
-                    <button
-                      onClick={() => setStatus(r.id, "rejected")}
-                      className="rounded border border-red-300 px-3 py-1.5 text-xs text-red-700 hover:bg-red-50"
-                    >
-                      Reject
-                    </button>
+                  {r.application_status === "rejected" ? (
+                    <>
+                      <button
+                        onClick={() => setStatus(r.id, "approved")}
+                        className="rounded bg-ink px-3 py-1.5 text-xs text-bone"
+                      >
+                        Approve
+                      </button>
+                      <button
+                        onClick={() => deleteRow(r.id, r.business_name)}
+                        title="Permanently delete this listing"
+                        className="inline-flex items-center gap-1.5 rounded border border-red-300 px-3 py-1.5 text-xs text-red-700 hover:bg-red-50"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                        Delete
+                      </button>
+                    </>
                   ) : null}
                 </div>
               </div>
