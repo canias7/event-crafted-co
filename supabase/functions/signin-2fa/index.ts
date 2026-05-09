@@ -64,17 +64,48 @@ function randomCode(): string {
 
 async function sendCodeEmail(email: string, code: string): Promise<boolean> {
   if (!RESEND_API_KEY) return false;
-  // Reuse the signin_code template from send-transactional-email by
-  // POSTing to it directly. Saves duplicating template HTML here.
-  const r = await fetch(`${SUPABASE_URL}/functions/v1/send-transactional-email`, {
+  // Hit Resend directly. We used to forward to send-transactional-email
+  // and reuse its template, but the auto-injected SUPABASE_SERVICE_ROLE_KEY
+  // no longer round-trips through that function's verify_jwt gate
+  // (Supabase rolled out a new key format that fails the JWT check).
+  // Inlining the template here is one HTTP hop fewer and avoids the
+  // inter-function auth issue entirely.
+  const cleanCode = String(code).replace(/[^0-9]/g, "").slice(0, 6);
+  const html = `<!doctype html>
+<html><body style="margin:0;background:#f7f5f2;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;color:#1a1a1a;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="padding:48px 16px;"><tr><td align="center">
+    <table role="presentation" width="560" cellpadding="0" cellspacing="0" style="max-width:560px;background:#ffffff;border-radius:8px;padding:40px 32px;">
+      <tr><td style="font-size:14px;letter-spacing:0.18em;color:#a08259;text-transform:uppercase;padding-bottom:24px;">— Vendora</td></tr>
+      <tr><td style="font-size:24px;line-height:1.25;font-weight:600;padding-bottom:16px;">Your sign-in code</td></tr>
+      <tr><td style="font-size:15px;line-height:1.6;color:#3a3a3a;">
+        <p style="margin:0 0 16px;">Use this 6-digit code to finish signing in to Vendora:</p>
+        <p style="margin:0 0 24px;text-align:center;">
+          <span style="display:inline-block;font-family:'SF Mono',ui-monospace,Menlo,monospace;font-size:34px;letter-spacing:0.4em;font-weight:600;color:#1a1a1a;background:#f7f5f2;border:1px solid #ececec;border-radius:8px;padding:18px 28px;">${cleanCode}</span>
+        </p>
+        <p style="margin:0 0 16px;font-size:13px;color:#555;">This code expires in 10 minutes. Don't share it with anyone — Vendora will never ask for it.</p>
+      </td></tr>
+      <tr><td style="padding-top:40px;border-top:1px solid #ececec;font-size:12px;color:#999999;">Vendora · Premium event planning &amp; vendor marketplace</td></tr>
+    </table>
+  </td></tr></table>
+</body></html>`;
+  const r = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: {
-      Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+      Authorization: `Bearer ${RESEND_API_KEY}`,
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ kind: "signin_code", email, code }),
+    body: JSON.stringify({
+      from: FROM_ADDRESS,
+      to: email,
+      subject: `Your Vendora sign-in code is ${cleanCode}`,
+      html,
+    }),
   });
-  return r.ok;
+  if (!r.ok) {
+    console.error("Resend send failed", r.status, await r.text());
+    return false;
+  }
+  return true;
 }
 
 serve(async (req) => {
