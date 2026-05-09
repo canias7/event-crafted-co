@@ -10,11 +10,9 @@ import {
   Image,
   Inbox,
   User,
-  Users,
   Gift,
   Settings,
   LifeBuoy,
-  Bot,
   Wand2,
   type LucideIcon,
 } from "lucide-react";
@@ -68,9 +66,8 @@ export const vendorNavItems: NavItem[] = [
   // Calendar hub — sub-tabs: Appointments, Availability
   { labelKey: "sidebar.vendor.calendar", path: "/vendor/appointments", icon: CalendarDays },
   { labelKey: "sidebar.vendor.listing", path: "/vendor/listing", icon: Store },
-  { labelKey: "sidebar.vendor.team", path: "/vendor/team", icon: Users },
   { labelKey: "sidebar.vendor.payments", path: "/vendor/payments", icon: CreditCard },
-  { labelKey: "sidebar.vendor.ai_agent", path: "/vendor/ai-agent", icon: Bot },
+  // Studio hub — image editor + AI agent (auto-reply, lead qualifying).
   { labelKey: "sidebar.vendor.studio", path: "/vendor/studio", icon: Wand2 },
 ];
 
