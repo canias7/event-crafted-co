@@ -2,8 +2,7 @@
 // avatar in the top-left, multiline "What's happening?" input, Post button
 // on the top-right that activates once the user types something.
 //
-// Currently the Post action just flashes an Alert — wiring to a real
-// `buzz_posts` table comes when the buzz feed feature ships.
+// Posts to the public.vendor_buzz table. Schema enforces ≤280 chars.
 
 import { useState } from "react";
 import {
@@ -19,38 +18,53 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
+import { supabase } from "@/lib/supabase";
 
 const MAX_LEN = 280;
 
 export function BuzzComposer({
   visible,
+  userId,
+  vendorId,
   onClose,
+  onPosted,
 }: {
   visible: boolean;
+  userId: string | null;
+  vendorId: string | null;
   onClose: () => void;
+  onPosted: () => void;
 }) {
   const [text, setText] = useState("");
+  const [posting, setPosting] = useState(false);
   const trimmed = text.trim();
-  const canPost = trimmed.length > 0 && trimmed.length <= MAX_LEN;
+  const canPost =
+    trimmed.length > 0 && trimmed.length <= MAX_LEN && !posting && !!vendorId;
 
-  function handlePost() {
+  async function handlePost() {
     if (!canPost) return;
-    Alert.alert(
-      "Buzz queued",
-      "Posting to your followers lands in the next update — we'll save what you wrote.",
-      [
-        {
-          text: "OK",
-          onPress: () => {
-            setText("");
-            onClose();
-          },
-        },
-      ],
-    );
+    if (!userId || !vendorId) {
+      Alert.alert("Can't post yet", "Profile not loaded — try again in a sec.");
+      return;
+    }
+    setPosting(true);
+    const { error } = await supabase.from("vendor_buzz").insert({
+      vendor_id: vendorId,
+      user_id: userId,
+      body: trimmed,
+    });
+    setPosting(false);
+    if (error) {
+      Alert.alert("Couldn't post", error.message);
+      return;
+    }
+    setText("");
+    onPosted();
+    onClose();
   }
 
   function handleCancel() {
+    if (posting) return;
     if (trimmed.length > 0) {
       Alert.alert("Discard buzz?", "Your draft will be lost.", [
         { text: "Keep editing", style: "cancel" },
@@ -92,7 +106,9 @@ export function BuzzComposer({
               className="rounded-full bg-foreground px-5 py-2"
               style={{ opacity: canPost ? 1 : 0.4 }}
             >
-              <Text className="text-sm font-semibold text-background">Post</Text>
+              <Text className="text-sm font-semibold text-background">
+                {posting ? "Posting…" : "Post"}
+              </Text>
             </Pressable>
           </View>
 
@@ -112,6 +128,7 @@ export function BuzzComposer({
               placeholderTextColor="#a3a3a3"
               autoFocus
               multiline
+              editable={!posting}
               className="flex-1 text-lg text-foreground"
               style={{ paddingTop: 8, lineHeight: 24 }}
             />
