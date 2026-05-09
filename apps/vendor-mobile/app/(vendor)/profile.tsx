@@ -28,6 +28,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
+import { ResizeMode, Video } from "expo-av";
 import type { VendorProfile } from "@vendora/core";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
@@ -452,19 +453,14 @@ export default function ProfileScreen() {
                 resizeMode="contain"
               />
             ) : openMedia?.kind === "reel" ? (
-              <View className="items-center">
-                <View className="h-24 w-24 items-center justify-center rounded-full bg-background/15">
-                  <Feather name="play" size={48} color="#fff" />
-                </View>
-                <Pressable
-                  onPress={() => Linking.openURL(openMedia.video_url)}
-                  className="mt-6 rounded-full bg-background/20 px-5 py-2 active:opacity-80"
-                >
-                  <Text className="text-sm font-semibold text-background">
-                    Open video
-                  </Text>
-                </Pressable>
-              </View>
+              <Video
+                source={{ uri: openMedia.video_url }}
+                style={{ width: "100%", height: "100%", borderRadius: 12 }}
+                resizeMode={ResizeMode.CONTAIN}
+                useNativeControls
+                shouldPlay
+                isLooping
+              />
             ) : null}
           </View>
           {openMedia?.caption ? (

@@ -23,6 +23,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
+import * as VideoThumbnails from "expo-video-thumbnails";
 import { supabase } from "@/lib/supabase";
 
 interface PickedAsset {
@@ -108,10 +109,40 @@ export function MediaComposer({
         });
         if (insErr) throw insErr;
       } else {
+        // Generate a thumbnail off the local video URI (before we lose
+        // it on close). Falls back to null if the platform refuses —
+        // the grid renders the dark play-icon placeholder in that case.
+        let thumbnailUrl: string | null = null;
+        try {
+          const thumb = await VideoThumbnails.getThumbnailAsync(asset.uri, {
+            time: 100,
+            quality: 0.85,
+          });
+          if (thumb?.uri) {
+            const thumbPath = `${userId}/${filename.replace(/\.[^.]+$/, "")}.thumb.jpg`;
+            const thumbRes = await fetch(thumb.uri);
+            const thumbBlob = await thumbRes.blob();
+            const thumbUp = await supabase.storage
+              .from(bucket)
+              .upload(thumbPath, thumbBlob, {
+                contentType: "image/jpeg",
+                upsert: false,
+              });
+            if (!thumbUp.error) {
+              thumbnailUrl = supabase.storage
+                .from(bucket)
+                .getPublicUrl(thumbPath).data.publicUrl;
+            }
+          }
+        } catch {
+          // best-effort; thumbnail isn't critical
+        }
+
         const { error: insErr } = await supabase.from("vendor_reels").insert({
           vendor_id: vendorId,
           user_id: userId,
           video_url: pub.publicUrl,
+          thumbnail_url: thumbnailUrl,
           caption: caption.trim() || null,
           duration_seconds: asset.duration
             ? Math.round(asset.duration / 1000)
