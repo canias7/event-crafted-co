@@ -1,21 +1,20 @@
-// Vendora photo library picker — Vendora-themed take on the
-// Instagram-style flow:
+// Vendora media picker — Vendora-themed take on the Instagram-style
+// in-app picker. Handles both photos and videos via the `mediaType`
+// prop:
 //
-//   X            New post           Next
+//   X            New post / New reel            Next
 //   ┌────────────────────────────────┐
 //   │     1:1 preview of selected    │
 //   └────────────────────────────────┘
 //   Recents
 //   ┌──┬──┬──┬──┐
-//   │📸│  │  │  │   ← camera tile + recent photos in a 4-col grid
+//   │  │  │  │  │   ← 4-col thumbnail grid
 //   ├──┼──┼──┼──┤
-//   │  │  │  │  │
 //
-// Cream / ink palette to match the rest of the app (no IG dark).
-// Tap a thumbnail to select it (selected ring uses accent gold).
-// Tap the camera tile to open the camera, captured photo joins the
-// preview as the selected asset. "Next" hands the picked URI to the
-// caller via onPicked.
+// Camera FAB floats bottom-right and launches the camera in the right
+// mode (photo or video). Selected tile gets an accent-gold ring. Tap
+// Next → onPicked(asset) hands the URI back to the caller, which then
+// opens the MediaComposer for caption + upload.
 
 import { useEffect, useState } from "react";
 import {
@@ -36,39 +35,55 @@ const COLS = 4;
 const ACCENT = "#a08259";
 const INK = "#0a0a0a";
 const MUTED = "#737373";
-const BORDER = "#e5e5e5";
 
 interface PickedAsset {
   uri: string;
   type?: string | null;
+  duration?: number | null;
   width?: number;
   height?: number;
 }
 
+export type PickerMediaType = "photo" | "video";
+
+function formatDuration(ms: number | undefined | null): string {
+  if (!ms || ms <= 0) return "";
+  const total = Math.round(ms / 1000);
+  const m = Math.floor(total / 60);
+  const s = total % 60;
+  return `${m}:${s.toString().padStart(2, "0")}`;
+}
+
 export function PhotoLibraryPicker({
   visible,
+  mediaType = "photo",
   onClose,
   onPicked,
 }: {
   visible: boolean;
+  mediaType?: PickerMediaType;
   onClose: () => void;
   onPicked: (asset: PickedAsset) => void;
 }) {
   const [permission, setPermission] =
     useState<MediaLibrary.PermissionResponse | null>(null);
   const [recents, setRecents] = useState<MediaLibrary.Asset[]>([]);
-  const [selectedUri, setSelectedUri] = useState<string | null>(null);
-  const [selectedDims, setSelectedDims] = useState<{
-    width: number;
-    height: number;
-  } | null>(null);
+  const [selectedAsset, setSelectedAsset] =
+    useState<MediaLibrary.Asset | null>(null);
+  // Captured assets from camera don't live in MediaLibrary.Asset; track
+  // their URIs separately so we can preview + post them.
+  const [capturedOverride, setCapturedOverride] = useState<PickedAsset | null>(
+    null,
+  );
   const [loading, setLoading] = useState(false);
+
+  const isVideo = mediaType === "video";
+  const title = isVideo ? "New reel" : "New post";
 
   useEffect(() => {
     if (!visible) {
-      // Reset selection when the modal hides — fresh state next open.
-      setSelectedUri(null);
-      setSelectedDims(null);
+      setSelectedAsset(null);
+      setCapturedOverride(null);
       return;
     }
     let cancelled = false;
@@ -85,54 +100,71 @@ export function PhotoLibraryPicker({
         return;
       }
       const { assets } = await MediaLibrary.getAssetsAsync({
-        mediaType: ["photo"],
+        mediaType: isVideo ? ["video"] : ["photo"],
         first: 200,
         sortBy: [["creationTime", false]],
       });
       if (cancelled) return;
       setRecents(assets);
-      // Default-select the most recent so the preview isn't blank.
       const first = assets[0];
-      if (first) {
-        setSelectedUri(first.uri);
-        setSelectedDims({ width: first.width, height: first.height });
-      }
+      if (first) setSelectedAsset(first);
       setLoading(false);
     })();
     return () => {
       cancelled = true;
     };
-  }, [visible]);
+  }, [visible, isVideo]);
 
   async function openCamera() {
-    const perm = await ImagePicker.requestCameraPermissionsAsync();
-    if (!perm.granted) {
+    const camPerm = await ImagePicker.requestCameraPermissionsAsync();
+    if (!camPerm.granted) {
       Alert.alert(
         "Camera access needed",
-        "Enable camera access in Settings to take a photo.",
+        `Enable camera access in Settings to capture a ${isVideo ? "video" : "photo"}.`,
       );
       return;
     }
     const result = await ImagePicker.launchCameraAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      mediaTypes: isVideo
+        ? ImagePicker.MediaTypeOptions.Videos
+        : ImagePicker.MediaTypeOptions.Images,
       quality: 0.85,
+      videoMaxDuration: 60,
     });
     if (!result.canceled && result.assets[0]) {
       const a = result.assets[0];
-      setSelectedUri(a.uri);
-      setSelectedDims({ width: a.width, height: a.height });
+      setSelectedAsset(null);
+      setCapturedOverride({
+        uri: a.uri,
+        width: a.width,
+        height: a.height,
+        duration: a.duration ?? null,
+        type: isVideo ? "video/mp4" : "image/jpeg",
+      });
     }
   }
 
   function handleNext() {
-    if (!selectedUri) return;
-    onPicked({
-      uri: selectedUri,
-      width: selectedDims?.width,
-      height: selectedDims?.height,
-      type: "image/jpeg",
-    });
+    const picked: PickedAsset | null = capturedOverride
+      ? capturedOverride
+      : selectedAsset
+        ? {
+            uri: selectedAsset.uri,
+            width: selectedAsset.width,
+            height: selectedAsset.height,
+            duration: isVideo ? selectedAsset.duration * 1000 : null,
+            type: isVideo ? "video/mp4" : "image/jpeg",
+          }
+        : null;
+    if (!picked) return;
+    onPicked(picked);
   }
+
+  const previewUri = capturedOverride?.uri ?? selectedAsset?.uri ?? null;
+  const previewDurationMs =
+    capturedOverride?.duration ??
+    (selectedAsset?.duration ? selectedAsset.duration * 1000 : null);
+  const canProceed = previewUri !== null;
 
   return (
     <Modal
@@ -148,13 +180,13 @@ export function PhotoLibraryPicker({
             <Feather name="x" size={24} color={INK} />
           </Pressable>
           <Text className="text-base font-semibold text-foreground">
-            New post
+            {title}
           </Text>
           <Pressable
             onPress={handleNext}
-            disabled={!selectedUri}
+            disabled={!canProceed}
             hitSlop={8}
-            style={{ opacity: selectedUri ? 1 : 0.4 }}
+            style={{ opacity: canProceed ? 1 : 0.4 }}
           >
             <Text
               className="text-base font-semibold"
@@ -170,17 +202,34 @@ export function PhotoLibraryPicker({
           className="bg-secondary/30"
           style={{ aspectRatio: 1, width: "100%" }}
         >
-          {selectedUri ? (
-            <Image
-              source={{ uri: selectedUri }}
-              className="h-full w-full"
-              resizeMode="cover"
-            />
+          {previewUri ? (
+            isVideo ? (
+              <View className="flex-1 items-center justify-center bg-foreground/5">
+                <View className="h-16 w-16 items-center justify-center rounded-full bg-foreground/80">
+                  <Feather name="play" size={28} color="#fff" />
+                </View>
+                {previewDurationMs ? (
+                  <Text className="mt-3 text-sm text-muted-foreground">
+                    {formatDuration(previewDurationMs)}
+                  </Text>
+                ) : null}
+              </View>
+            ) : (
+              <Image
+                source={{ uri: previewUri }}
+                className="h-full w-full"
+                resizeMode="cover"
+              />
+            )
           ) : (
             <View className="flex-1 items-center justify-center">
-              <Feather name="image" size={36} color={MUTED} />
+              <Feather
+                name={isVideo ? "video" : "image"}
+                size={36}
+                color={MUTED}
+              />
               <Text className="mt-2 text-sm text-muted-foreground">
-                Pick a photo below
+                Pick a {isVideo ? "video" : "photo"} below
               </Text>
             </View>
           )}
@@ -188,22 +237,23 @@ export function PhotoLibraryPicker({
 
         {/* Recents header */}
         <View className="flex-row items-center justify-between px-4 py-2 border-b border-border">
-          <View className="flex-row items-center gap-1">
-            <Text className="text-sm font-semibold text-foreground">
-              Recents
-            </Text>
-          </View>
+          <Text className="text-sm font-semibold text-foreground">Recents</Text>
         </View>
 
         {/* Grid */}
         {permission && permission.status !== "granted" ? (
           <View className="flex-1 items-center justify-center px-8">
-            <Feather name="image" size={36} color={MUTED} />
+            <Feather
+              name={isVideo ? "video" : "image"}
+              size={36}
+              color={MUTED}
+            />
             <Text className="mt-3 text-base font-semibold text-foreground">
-              Photo access needed
+              {isVideo ? "Video" : "Photo"} access needed
             </Text>
             <Text className="mt-1 text-center text-sm text-muted-foreground">
-              Enable photo library access in Settings to pick a photo.
+              Enable photo library access in Settings to pick a{" "}
+              {isVideo ? "video" : "photo"}.
             </Text>
           </View>
         ) : loading ? (
@@ -215,25 +265,14 @@ export function PhotoLibraryPicker({
             data={recents}
             keyExtractor={(a) => a.id}
             numColumns={COLS}
-            ListHeaderComponent={
-              <View className="flex-row" style={{ flexBasis: "100%" }} />
-            }
-            renderItem={({ item, index }) => {
-              if (index === 0) {
-                // First slot is camera — but we still want the photo too,
-                // so render camera as a header tile and shift the grid by
-                // one. Easiest: render a "camera" tile at index 0 and
-                // shift the photo to index 1+. We'll handle that via a
-                // separate stickyHeader-like thumbnail. For simplicity
-                // here, split: render camera tile in line with first
-                // photo (overlaying first cell).
-              }
-              const selected = item.uri === selectedUri;
+            renderItem={({ item }) => {
+              const selected =
+                !capturedOverride && item.id === selectedAsset?.id;
               return (
                 <Pressable
                   onPress={() => {
-                    setSelectedUri(item.uri);
-                    setSelectedDims({ width: item.width, height: item.height });
+                    setCapturedOverride(null);
+                    setSelectedAsset(item);
                   }}
                   style={{
                     flex: 1 / COLS,
@@ -247,13 +286,25 @@ export function PhotoLibraryPicker({
                       borderWidth: selected ? 3 : 0,
                       borderColor: ACCENT,
                       overflow: "hidden",
+                      backgroundColor: isVideo ? "#1a1a1a" : "transparent",
                     }}
                   >
-                    <Image
-                      source={{ uri: item.uri }}
-                      style={{ flex: 1, opacity: selected ? 0.85 : 1 }}
-                      resizeMode="cover"
-                    />
+                    {isVideo ? (
+                      <View className="flex-1 items-center justify-center">
+                        <Feather name="play" size={20} color="#ffffff" />
+                        {item.duration ? (
+                          <Text className="absolute bottom-1 right-1 text-[10px] text-white">
+                            {formatDuration(item.duration * 1000)}
+                          </Text>
+                        ) : null}
+                      </View>
+                    ) : (
+                      <Image
+                        source={{ uri: item.uri }}
+                        style={{ flex: 1, opacity: selected ? 0.85 : 1 }}
+                        resizeMode="cover"
+                      />
+                    )}
                   </View>
                 </Pressable>
               );
@@ -261,21 +312,13 @@ export function PhotoLibraryPicker({
             ListEmptyComponent={
               <View className="items-center pt-10">
                 <Text className="text-sm text-muted-foreground">
-                  No photos in your library yet.
+                  No {isVideo ? "videos" : "photos"} in your library yet.
                 </Text>
               </View>
             }
-            // Camera tile pinned at the top-left of the grid via a header
-            // row. We render a single camera tile + the rest of the row
-            // is filled with the first 3 photos so the layout reads
-            // 4-up consistently.
           />
         )}
 
-        {/* Camera button — floats bottom-right above the grid for quick
-            access. Less intrusive than baking it into the grid layout
-            and avoids the alignment headache of mixing tile types in
-            FlatList. */}
         <Pressable
           onPress={openCamera}
           className="absolute right-5 bottom-5 h-14 w-14 items-center justify-center rounded-full bg-foreground active:opacity-80"
@@ -287,7 +330,7 @@ export function PhotoLibraryPicker({
             elevation: 6,
           }}
         >
-          <Feather name="camera" size={22} color="#fff" />
+          <Feather name={isVideo ? "video" : "camera"} size={22} color="#fff" />
         </Pressable>
       </SafeAreaView>
     </Modal>
