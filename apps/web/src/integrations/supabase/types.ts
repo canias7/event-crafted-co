@@ -3505,6 +3505,39 @@ export type Database = {
           },
         ]
       }
+      vendor_post_comment_likes: {
+        Row: {
+          comment_id: string
+          created_at: string
+          user_id: string
+        }
+        Insert: {
+          comment_id: string
+          created_at?: string
+          user_id: string
+        }
+        Update: {
+          comment_id?: string
+          created_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vendor_post_comment_likes_comment_id_fkey"
+            columns: ["comment_id"]
+            isOneToOne: false
+            referencedRelation: "vendor_post_comments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vendor_post_comment_likes_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       vendor_post_comments: {
         Row: {
           body: string
@@ -3533,6 +3566,13 @@ export type Database = {
             columns: ["post_id"]
             isOneToOne: false
             referencedRelation: "vendor_posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vendor_post_comments_user_id_profile_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
