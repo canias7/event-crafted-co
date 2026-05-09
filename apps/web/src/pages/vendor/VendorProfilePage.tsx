@@ -470,7 +470,6 @@ export default function VendorProfilePage() {
       if (!bio.trim()) missing.push("Short bio");
       // Category attributes — at least one filled key in the jsonb
       // counts. Boolean false counts as filled-in too; we only
-      // exclude null / undefined / empty string / empty array. Portfolio
       // photos and team members are both optional now; Studio → Photo
       // Gallery handles photos, and team bios are nice-to-have but
       // shouldn't block a fresh vendor's first publish.
