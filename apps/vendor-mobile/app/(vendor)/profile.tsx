@@ -93,14 +93,9 @@ export default function ProfileScreen() {
             />
           </View>
 
-          <View className="mt-6 flex-row items-center gap-12">
-            <Stat label="posts" value={0} />
-            <Stat label="listings" value={listingsCount} />
-          </View>
-
-          {/* Bio */}
+          {/* Business name + category sit directly under the logo. */}
           {profile?.business_name ? (
-            <Text className="mt-6 text-lg font-bold text-foreground">
+            <Text className="mt-4 text-lg font-bold text-foreground">
               {profile.business_name}
             </Text>
           ) : null}
@@ -126,27 +121,31 @@ export default function ProfileScreen() {
           </Pressable>
         </View>
 
-        {/* View switcher */}
+        {/* View switcher — counts live under each icon */}
         <View className="mt-8 flex-row border-t border-border">
           <ViewTab
             active={view === "grid"}
             onPress={() => setView("grid")}
             iconName="grid"
+            count={0}
           />
           <ViewTab
             active={view === "reels"}
             onPress={() => setView("reels")}
             iconName="play"
+            count={0}
           />
           <ViewTab
             active={view === "buzz"}
             onPress={() => setView("buzz")}
             iconName="align-left"
+            count={0}
           />
           <ViewTab
             active={view === "listing"}
             onPress={() => setView("listing")}
             iconName="shopping-bag"
+            count={listingsCount}
           />
         </View>
 
@@ -189,23 +188,16 @@ export default function ProfileScreen() {
   );
 }
 
-function Stat({ label, value }: { label: string; value: number }) {
-  return (
-    <View className="items-center">
-      <Text className="text-2xl font-bold text-foreground">{value}</Text>
-      <Text className="text-sm text-muted-foreground">{label}</Text>
-    </View>
-  );
-}
-
 function ViewTab({
   active,
   onPress,
   iconName,
+  count,
 }: {
   active: boolean;
   onPress: () => void;
   iconName: keyof typeof Feather.glyphMap;
+  count: number;
 }) {
   return (
     <Pressable
@@ -217,6 +209,12 @@ function ViewTab({
       }}
     >
       <Feather name={iconName} size={22} color={active ? "#0a0a0a" : "#737373"} />
+      <Text
+        className="mt-1 text-sm font-semibold"
+        style={{ color: active ? "#0a0a0a" : "#737373" }}
+      >
+        {count}
+      </Text>
     </Pressable>
   );
 }
