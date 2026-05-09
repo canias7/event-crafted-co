@@ -13,14 +13,14 @@ import { useAuth } from "@/lib/auth";
 
 // route name → Feather icon name
 const ICONS: Record<string, keyof typeof Feather.glyphMap> = {
-  dashboard: "home",
+  home: "home",
   calendar: "calendar",
   inbox: "inbox",
   studio: "grid",
   profile: "user",
 };
 
-const ORDER = ["dashboard", "calendar", "inbox", "studio", "profile"];
+const ORDER = ["home", "calendar", "inbox", "studio", "profile"];
 
 function FloatingTabBar({ state, navigation }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
@@ -128,11 +128,13 @@ export default function VendorLayout() {
         tabBarStyle: { position: "absolute" },
       }}
     >
-      <Tabs.Screen name="dashboard" options={{ title: "Home" }} />
+      <Tabs.Screen name="home" options={{ title: "Home" }} />
       <Tabs.Screen name="calendar" options={{ title: "Calendar" }} />
       <Tabs.Screen name="inbox" options={{ title: "Inbox" }} />
       <Tabs.Screen name="studio" options={{ title: "Studio" }} />
       <Tabs.Screen name="profile" options={{ title: "Profile" }} />
+      {/* Dashboard is reached from Profile's "Dashboard" chip, not a tab. */}
+      <Tabs.Screen name="dashboard" options={{ href: null }} />
     </Tabs>
   );
 }

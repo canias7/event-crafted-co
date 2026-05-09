@@ -2,10 +2,15 @@
 // (active inquiries, response rate, open packages, week's revenue) and
 // stacks them in 2-column grid. Reuses formatCents / formatCount from
 // @vendora/core so currency renders identically here and on the web.
+//
+// Reached from the Profile tab's "Dashboard" chip — not a tab itself —
+// so we render a back arrow that pops back to the Profile screen.
 
 import { useEffect, useState } from "react";
-import { ScrollView, Text, View } from "react-native";
+import { Pressable, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useRouter } from "expo-router";
+import { Feather } from "@expo/vector-icons";
 import { formatCents, formatCount } from "@vendora/core";
 import type { InquiryRow } from "@vendora/core";
 import { useAuth } from "@/lib/auth";
@@ -20,6 +25,7 @@ interface Stats {
 }
 
 export default function DashboardScreen() {
+  const router = useRouter();
   const { user } = useAuth();
   const [stats, setStats] = useState<Stats | null>(null);
   const [recent, setRecent] = useState<InquiryRow[]>([]);
@@ -73,8 +79,17 @@ export default function DashboardScreen() {
   }, [user]);
 
   return (
-    <SafeAreaView className="flex-1 bg-background">
-      <ScrollView contentContainerClassName="px-4 pb-32 pt-4">
+    <SafeAreaView className="flex-1 bg-background" edges={["top"]}>
+      <View className="flex-row items-center px-4 pt-3 pb-2">
+        <Pressable
+          hitSlop={10}
+          onPress={() => router.replace("/(vendor)/profile")}
+          className="active:opacity-60"
+        >
+          <Feather name="arrow-left" size={22} color="#0a0a0a" />
+        </Pressable>
+      </View>
+      <ScrollView contentContainerClassName="px-4 pb-32 pt-2">
         <Text className="mb-1 text-2xl font-semibold text-foreground">Dashboard</Text>
         <Text className="mb-6 text-sm text-muted-foreground">
           {loading ? "Loading…" : "Last 7 days"}
