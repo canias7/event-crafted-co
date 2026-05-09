@@ -21,17 +21,11 @@ import { SkipLink } from "./components/SkipLink";
 import { EmailVerificationBanner } from "./components/auth/EmailVerificationBanner";
 import { MobilePortalBell } from "./components/notifications/MobilePortalBell";
 
-// Both ship-on-mount components are lazy: CookieBanner only renders
-// once for users who haven't accepted, OnboardingTour only renders for
-// fresh users — most page loads see neither, so deferring the chunks
-// shaves the initial JS budget.
+// Lazy ship-on-mount component. CookieBanner only renders once for
+// users who haven't accepted, so deferring the chunk shaves the
+// initial JS budget.
 const CookieBanner = lazy(() =>
   import("./components/CookieBanner").then((m) => ({ default: m.CookieBanner })),
-);
-const OnboardingTour = lazy(() =>
-  import("@/components/shared/OnboardingTour").then((m) => ({
-    default: m.OnboardingTour,
-  })),
 );
 import { ErrorBoundary } from "@/components/shared/ErrorBoundary";
 import { RouteFallback } from "@/components/shared/RouteFallback";
@@ -243,9 +237,9 @@ const App = () => (
           </Suspense>
           </ErrorBoundary>
           <MobilePortalBell />
-          <Suspense fallback={null}>
-            <OnboardingTour />
-          </Suspense>
+          {/* OnboardingTour disabled — the existing 4-step wizard
+              wasn't pulling its weight. We'll bring back a leaner
+              walkthrough later. */}
           <CommandPaletteLauncher />
           <Suspense fallback={null}>
             <CookieBanner />
