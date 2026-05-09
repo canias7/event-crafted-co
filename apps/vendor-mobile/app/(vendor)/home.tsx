@@ -22,6 +22,7 @@ import { useAuth } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
 import { BuzzComposer } from "@/components/BuzzComposer";
 import { MediaComposer, type MediaKind } from "@/components/MediaComposer";
+import { PhotoLibraryPicker } from "@/components/PhotoLibraryPicker";
 
 type ViewKind = "grid" | "reels" | "buzz" | "listing";
 
@@ -48,6 +49,7 @@ export default function HomeScreen() {
   const [profile, setProfile] = useState<VendorProfile | null>(null);
   const [view, setView] = useState<ViewKind>("grid");
   const [buzzOpen, setBuzzOpen] = useState(false);
+  const [photoPickerOpen, setPhotoPickerOpen] = useState(false);
   const [pendingMedia, setPendingMedia] = useState<
     { asset: ImagePicker.ImagePickerAsset; kind: MediaKind } | null
   >(null);
@@ -110,15 +112,7 @@ export default function HomeScreen() {
       : 0;
 
   function openCreatePost() {
-    Alert.alert(
-      "New post",
-      "Add a photo from your library or take one with your camera.",
-      [
-        { text: "Take photo", onPress: () => pickMedia("camera", "Images") },
-        { text: "Choose from library", onPress: () => pickMedia("library", "Images") },
-        { text: "Cancel", style: "cancel" },
-      ],
-    );
+    setPhotoPickerOpen(true);
   }
 
   function openCreateReel() {
@@ -298,6 +292,24 @@ export default function HomeScreen() {
         vendorId={profile?.id ?? null}
         onClose={() => setPendingMedia(null)}
         onPosted={loadFeeds}
+      />
+
+      <PhotoLibraryPicker
+        visible={photoPickerOpen}
+        onClose={() => setPhotoPickerOpen(false)}
+        onPicked={(picked) => {
+          setPhotoPickerOpen(false);
+          setPendingMedia({
+            asset: {
+              uri: picked.uri,
+              width: picked.width ?? 0,
+              height: picked.height ?? 0,
+              type: "image",
+              mimeType: picked.type ?? "image/jpeg",
+            } as unknown as ImagePicker.ImagePickerAsset,
+            kind: "photo",
+          });
+        }}
       />
     </SafeAreaView>
   );

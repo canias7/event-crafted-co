@@ -3,7 +3,7 @@
     "name": "Vendora for Vendors",
     "slug": "vendora-vendor",
     "scheme": "vendora-vendor",
-    "version": "0.1.3",
+    "version": "0.1.4",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
     "icon": "./assets/icon.png",
@@ -26,6 +26,7 @@
         "ITSAppUsesNonExemptEncryption": false,
         "NSCameraUsageDescription": "Vendora uses your camera so you can take photos and short videos to post on your vendor profile.",
         "NSPhotoLibraryUsageDescription": "Vendora needs access to your photo library so you can pick photos and videos to post on your vendor profile.",
+        "NSPhotoLibraryAddUsageDescription": "Vendora can save photos you capture to your library.",
         "NSMicrophoneUsageDescription": "Vendora uses your microphone when you record video clips to post on your vendor profile."
       }
     },
@@ -45,6 +46,14 @@
           "photosPermission": "Vendora needs access to your photo library so you can pick photos and videos to post on your vendor profile.",
           "cameraPermission": "Vendora uses your camera so you can take photos and short videos to post on your vendor profile.",
           "microphonePermission": "Vendora uses your microphone when you record video clips to post on your vendor profile."
+        }
+      ],
+      [
+        "expo-media-library",
+        {
+          "photosPermission": "Vendora needs access to your photo library so you can pick photos to post on your vendor profile.",
+          "savePhotosPermission": "Vendora can save photos you capture to your library.",
+          "isAccessMediaLocationEnabled": false
         }
       ]
     ],
