@@ -41,7 +41,6 @@ import {
 } from "@/components/ui/select";
 import { CATEGORY_GROUPS } from "@/data/categoryTaxonomy";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Badge } from "@/components/ui/badge";
 import { vendorNavItems as navItems } from "@/data/navItems";
 import { invalidateVendorsCache } from "@/hooks/useVendors";
 
@@ -559,17 +558,15 @@ export default function VendorProfilePage() {
                 <span className="font-display text-3xl text-foreground">V</span>
               )}
             </div>
-            <h1 className="font-display text-2xl mt-4">
+            <h1 className="font-display text-2xl mt-4 inline-flex items-center gap-2">
               {profile?.business_name ?? t("vendor_listing.title")}
-            </h1>
-            <div className="mt-2 flex items-center gap-2">
               {profile?.verified_at && (
-                <Badge className="bg-accent/15 text-accent border border-accent/30">
-                  <ShieldCheck className="w-3.5 h-3.5 mr-1.5" />
-                  {t("vendor_listing.verified")}
-                </Badge>
+                <ShieldCheck
+                  className="w-5 h-5 text-accent"
+                  aria-label={t("vendor_listing.verified")}
+                />
               )}
-            </div>
+            </h1>
             <Link
               to="/vendor/dashboard"
               className="mt-4 inline-flex items-center rounded-lg border border-border bg-secondary/40 px-5 py-2 text-sm font-semibold text-foreground hover:bg-secondary/70 transition-colors"
