@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { SocialAuthButtons } from "@/components/auth/SocialAuthButtons";
 import { PasswordInput } from "@/components/auth/PasswordInput";
 
 interface LoginPageProps {
@@ -244,14 +243,6 @@ export default function LoginPage({ role }: LoginPageProps = {}) {
                   We'll email you a 6-digit code to confirm it's you.
                 </p>
               </form>
-
-              <div className="mt-6 mb-6 flex items-center gap-3 text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
-                <span className="flex-1 h-px bg-border" />
-                {t("auth.common.or")}
-                <span className="flex-1 h-px bg-border" />
-              </div>
-
-              <SocialAuthButtons />
 
               <p className="text-sm text-muted-foreground mt-8 text-center">
                 {t("auth.login.new_here")}{" "}
