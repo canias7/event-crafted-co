@@ -62,17 +62,23 @@ export default function ProfileScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-background" edges={["top"]}>
-      {/* Top bar — email centered, no dropdown */}
+      {/* Top bar — email centered with dropdown chevron */}
       <View className="flex-row items-center justify-between px-4 py-3">
         <Pressable hitSlop={8} className="active:opacity-60">
           <Feather name="plus" size={28} color="#0a0a0a" />
         </Pressable>
-        <Text
-          numberOfLines={1}
-          className="flex-1 px-3 text-center text-lg font-bold text-foreground"
+        <Pressable
+          hitSlop={8}
+          className="flex-row flex-1 items-center justify-center gap-1 px-2 active:opacity-60"
         >
-          {user?.email ?? ""}
-        </Text>
+          <Text
+            numberOfLines={1}
+            className="text-lg font-bold text-foreground"
+          >
+            {user?.email ?? ""}
+          </Text>
+          <Feather name="chevron-down" size={18} color="#0a0a0a" />
+        </Pressable>
         <Pressable
           hitSlop={8}
           onPress={() => setMenuOpen(true)}
@@ -105,12 +111,12 @@ export default function ProfileScreen() {
             </Text>
           ) : null}
 
-          {/* Dashboard CTA */}
+          {/* Dashboard CTA — full-width rounded outlined rectangle */}
           <Pressable
             onPress={() => router.push("/(vendor)/dashboard")}
-            className="mt-6 rounded-lg border border-border bg-secondary/40 px-6 py-2.5 active:opacity-70"
+            className="mt-6 w-full rounded-xl border border-border bg-background py-3 active:opacity-70"
           >
-            <Text className="text-base font-semibold text-foreground">
+            <Text className="text-center text-base font-semibold text-foreground">
               Dashboard
             </Text>
           </Pressable>
@@ -194,13 +200,28 @@ function ViewTab({
   iconName: keyof typeof Feather.glyphMap;
   count: number;
 }) {
+  // Active tab is a lifted card with subtle shadow + border. Inactive
+  // tabs are flat (transparent background, no border).
   return (
     <Pressable
       onPress={onPress}
       className="flex-1 items-center justify-center py-3 active:opacity-60"
       style={{
-        borderBottomWidth: active ? 1.5 : 0,
-        borderBottomColor: "#0a0a0a",
+        backgroundColor: active ? "#ffffff" : "transparent",
+        borderRadius: active ? 14 : 0,
+        borderWidth: active ? 1 : 0,
+        borderColor: "#e5e5e5",
+        marginHorizontal: active ? 4 : 0,
+        marginVertical: active ? 4 : 0,
+        ...(active
+          ? {
+              shadowColor: "#000",
+              shadowOpacity: 0.06,
+              shadowRadius: 8,
+              shadowOffset: { width: 0, height: 2 },
+              elevation: 2,
+            }
+          : null),
       }}
     >
       <Feather name={iconName} size={22} color={active ? "#0a0a0a" : "#737373"} />
