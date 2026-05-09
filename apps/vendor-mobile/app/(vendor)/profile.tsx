@@ -89,7 +89,7 @@ export default function ProfileScreen() {
       const { data } = await supabase
         .from("vendor_profiles")
         .select(
-          "id, business_name, category, bio, base_price_cents, location, verified_at, application_status, application_review_notes, intro_video_url, weekly_digest_enabled, slug, instagram_handle, tiktok_handle",
+          "id, business_name, category, bio, base_price_cents, location, verified_at, application_status, application_review_notes, intro_video_url, weekly_digest_enabled, slug, instagram_handle, tiktok_handle, logo_url",
         )
         .eq("user_id", user.id)
         .maybeSingle();
