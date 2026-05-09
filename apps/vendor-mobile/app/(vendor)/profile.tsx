@@ -572,13 +572,27 @@ function PostGrid({
       renderItem={({ item }) => (
         <Pressable
           onPress={() => onPressItem(item)}
-          style={{ flex: 1 / 3, aspectRatio: 1, padding: 1 }}
+          style={{ flex: 1 / 3, aspectRatio: 1, padding: 4 }}
         >
-          <Image
-            source={{ uri: item.image_url }}
-            style={{ flex: 1 }}
-            resizeMode="cover"
-          />
+          <View
+            style={{
+              flex: 1,
+              borderRadius: 12,
+              overflow: "hidden",
+              shadowColor: "#000",
+              shadowOpacity: 0.08,
+              shadowRadius: 6,
+              shadowOffset: { width: 0, height: 2 },
+              elevation: 2,
+              backgroundColor: "#f5f5f5",
+            }}
+          >
+            <Image
+              source={{ uri: item.image_url }}
+              style={{ flex: 1 }}
+              resizeMode="cover"
+            />
+          </View>
         </Pressable>
       )}
     />
@@ -602,10 +616,49 @@ function ReelGrid({
       renderItem={({ item }) => (
         <Pressable
           onPress={() => onPressItem(item)}
-          style={{ flex: 1 / 3, aspectRatio: 1, padding: 1 }}
+          style={{ flex: 1 / 3, aspectRatio: 1, padding: 4 }}
         >
-          <View className="flex-1 items-center justify-center bg-secondary/50">
-            <Feather name="play" size={28} color="#fff" />
+          <View
+            style={{
+              flex: 1,
+              borderRadius: 12,
+              overflow: "hidden",
+              shadowColor: "#000",
+              shadowOpacity: 0.08,
+              shadowRadius: 6,
+              shadowOffset: { width: 0, height: 2 },
+              elevation: 2,
+              backgroundColor: "#1a1a1a",
+            }}
+          >
+            {/* Use the stored thumbnail when we have one (added by the
+                MediaComposer once expo-video-thumbnails is wired up).
+                Fall back to a dark tile + play icon for older reels
+                that were uploaded before thumbnail generation
+                existed. */}
+            {item.thumbnail_url ? (
+              <Image
+                source={{ uri: item.thumbnail_url }}
+                style={{ flex: 1 }}
+                resizeMode="cover"
+              />
+            ) : null}
+            <View
+              style={{
+                position: "absolute",
+                top: 0,
+                right: 0,
+                bottom: 0,
+                left: 0,
+                alignItems: "center",
+                justifyContent: "center",
+                backgroundColor: item.thumbnail_url
+                  ? "rgba(0,0,0,0.18)"
+                  : "transparent",
+              }}
+            >
+              <Feather name="play" size={28} color="#fff" />
+            </View>
           </View>
         </Pressable>
       )}

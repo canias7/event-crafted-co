@@ -100,7 +100,8 @@ export function VendorSocialComposer({
     }
     setBusy(true);
     const ext = file.name.split(".").pop()?.toLowerCase() || (kind === "reel" ? "mp4" : "jpg");
-    const path = `${userId}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+    const baseName = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    const path = `${userId}/${baseName}.${ext}`;
     const upload = await supabase.storage.from(bucket).upload(path, file, {
       contentType: file.type || undefined,
       upsert: false,
@@ -112,10 +113,34 @@ export function VendorSocialComposer({
     }
     const { data: pub } = supabase.storage.from(bucket).getPublicUrl(path);
     const publicUrl = pub.publicUrl;
+
+    // For reels, grab the first frame off the picked file via canvas
+    // and upload it as the thumbnail so the grid shows a real preview
+    // instead of a black play-icon square. Falls back silently if the
+    // browser refuses to decode (e.g. unsupported codec).
+    let thumbnailUrl: string | null = null;
+    if (kind === "reel") {
+      const blob = await extractVideoThumbnail(file).catch(() => null);
+      if (blob) {
+        const thumbPath = `${userId}/${baseName}.thumb.jpg`;
+        const thumbUp = await supabase.storage
+          .from(bucket)
+          .upload(thumbPath, blob, {
+            contentType: "image/jpeg",
+            upsert: false,
+          });
+        if (!thumbUp.error) {
+          thumbnailUrl = supabase.storage.from(bucket).getPublicUrl(thumbPath)
+            .data.publicUrl;
+        }
+      }
+    }
+
     const row =
       kind === "reel"
         ? {
             video_url: publicUrl,
+            thumbnail_url: thumbnailUrl,
             caption: caption.trim() || null,
             vendor_id: vendorId,
             user_id: userId,
@@ -231,4 +256,62 @@ export function VendorSocialComposer({
       </DialogContent>
     </Dialog>
   );
+}
+
+// Extracts a JPEG thumbnail from a video File by seeking just past the
+// start (so we don't get a black frame) and drawing the frame to a
+// canvas. Returns null if the browser can't decode the file.
+function extractVideoThumbnail(file: File): Promise<Blob | null> {
+  return new Promise((resolve) => {
+    const url = URL.createObjectURL(file);
+    const video = document.createElement("video");
+    video.src = url;
+    video.crossOrigin = "anonymous";
+    video.muted = true;
+    video.playsInline = true;
+    video.preload = "auto";
+    let settled = false;
+    const cleanup = () => {
+      URL.revokeObjectURL(url);
+    };
+    const fail = () => {
+      if (settled) return;
+      settled = true;
+      cleanup();
+      resolve(null);
+    };
+    video.addEventListener("error", fail, { once: true });
+    video.addEventListener("loadedmetadata", () => {
+      // Seek 0.1s in to avoid the codec's "first frame is black"
+      // problem common on phone-recorded MP4s.
+      video.currentTime = Math.min(0.1, (video.duration || 1) / 2);
+    });
+    video.addEventListener("seeked", () => {
+      if (settled) return;
+      try {
+        const w = video.videoWidth;
+        const h = video.videoHeight;
+        if (!w || !h) return fail();
+        const canvas = document.createElement("canvas");
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) return fail();
+        ctx.drawImage(video, 0, 0, w, h);
+        canvas.toBlob(
+          (blob) => {
+            settled = true;
+            cleanup();
+            resolve(blob);
+          },
+          "image/jpeg",
+          0.85,
+        );
+      } catch {
+        fail();
+      }
+    });
+    // Belt-and-suspenders: bail after 8s if nothing fired.
+    setTimeout(fail, 8000);
+  });
 }
