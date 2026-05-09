@@ -13,6 +13,7 @@ import { useEffect, useState } from "react";
 import {
   Alert,
   Image,
+  Linking,
   Modal,
   Pressable,
   ScrollView,
@@ -263,6 +264,7 @@ export default function ProfileScreen() {
             <ListingTab
               loading={loading}
               profile={profile}
+              isComplete={listingsCount === 1}
             />
           )}
         </View>
@@ -368,9 +370,11 @@ function EmptyState({
 function ListingTab({
   loading,
   profile,
+  isComplete,
 }: {
   loading: boolean;
   profile: VendorProfile | null;
+  isComplete: boolean;
 }) {
   if (loading) {
     return (
@@ -399,7 +403,18 @@ function ListingTab({
         label="Application status"
         value={profile.application_status ?? "draft"}
       />
-    </View>
+      {!isComplete ? (
+        <Pressable
+          onPress={() =>
+            Linking.openURL("https://eventvendora.com/vendor/listing")
+          }
+          className="mt-3 items-center rounded-full bg-foreground px-6 py-3 active:opacity-80"
+        >
+          <Text className="text-sm font-semibold text-background">
+            Create listing
+          </Text>
+        </Pressable>
+      ) : null}
   );
 }
 
