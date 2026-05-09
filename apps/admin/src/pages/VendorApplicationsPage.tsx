@@ -1,6 +1,9 @@
 import { useCallback, useEffect, useState } from "react";
+import { Eye } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
+
+const PUBLIC_SITE = "https://eventvendora.com";
 
 type Application = {
   id: string;
@@ -143,7 +146,17 @@ export function VendorApplicationsPage() {
                     <p className="mt-3 text-sm text-ink/80">{r.bio}</p>
                   ) : null}
                 </div>
-                <div className="flex shrink-0 gap-2">
+                <div className="flex shrink-0 items-center gap-2">
+                  <a
+                    href={`${PUBLIC_SITE}/vendors/${r.id}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    title="View public listing"
+                    className="inline-flex h-8 w-8 items-center justify-center rounded border border-ink/10 text-ink/70 hover:border-ink/30 hover:text-ink"
+                    aria-label="View listing"
+                  >
+                    <Eye className="h-4 w-4" />
+                  </a>
                   {r.application_status !== "approved" ? (
                     <button
                       onClick={() => setStatus(r.id, "approved")}
