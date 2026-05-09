@@ -473,7 +473,7 @@ function PostGrid({
             </View>
             <Image
               source={{ uri: p.image_url }}
-              style={{ width: "100%", aspectRatio: 1 }}
+              style={{ width: "100%", aspectRatio: 4 / 5 }}
               resizeMode="cover"
             />
             {p.caption ? (
