@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useNavigate } from "react-router-dom";
 import {
   Clock,
   DollarSign,
@@ -8,6 +8,10 @@ import {
   Image as ImageIcon,
   Layers,
   Loader2,
+  LogOut,
+  Menu,
+  Plus,
+  Settings,
   ShieldCheck,
   Sparkles,
   Trash2,
@@ -46,6 +50,13 @@ import {
 import { CATEGORY_GROUPS } from "@/data/categoryTaxonomy";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { vendorNavItems as navItems } from "@/data/navItems";
 import { invalidateVendorsCache } from "@/hooks/useVendors";
 
@@ -73,16 +84,21 @@ interface VendorProfile {
   slug: string | null;
   instagram_handle: string | null;
   tiktok_handle: string | null;
+  logo_url: string | null;
 }
 
 const VENDOR_PROFILE_COLS =
-  "id, business_name, category, bio, base_price_cents, location, verified_at, application_status, application_review_notes, intro_video_url, weekly_digest_enabled, slug, instagram_handle, tiktok_handle";
+  "id, business_name, category, bio, base_price_cents, location, verified_at, application_status, application_review_notes, intro_video_url, weekly_digest_enabled, slug, instagram_handle, tiktok_handle, logo_url";
 
 export default function VendorProfilePage() {
   const { t } = useTranslation();
-  const { user, vendorMemberships } = useAuth();
+  const navigate = useNavigate();
+  const { user, vendorMemberships, signOut } = useAuth();
   const membership = vendorMemberships[0] ?? null;
   const canEdit = membership?.role === "owner" || membership?.role === "admin";
+  const logoInputRef = useRef<HTMLInputElement | null>(null);
+  const [logoUploading, setLogoUploading] = useState(false);
+  const [createMenuOpen, setCreateMenuOpen] = useState(false);
   // Listing-only page now — the separate Profile tab was deleted, so
   // VendorProfilePage renders the customer-facing builder regardless
   // of path. Keep the constant true so the conditional renders for
@@ -163,6 +179,44 @@ export default function VendorProfilePage() {
       return;
     }
     setComposerKind(kind);
+  }
+
+  // Upload a new logo image to vendor-posts/<userId>/logo-<ts>.<ext>
+  // and persist the public URL to vendor_profiles.logo_url. Reuses the
+  // existing vendor-posts bucket so we don't have to provision new RLS
+  // for a logo-only bucket.
+  async function handleLogoFile(file: File) {
+    if (!user?.id || !profile?.id) {
+      toast.info("Hang on — your profile is still being set up.");
+      return;
+    }
+    setLogoUploading(true);
+    const ext = (file.name.split(".").pop() || "jpg").toLowerCase();
+    const path = `${user.id}/logo-${Date.now()}.${ext}`;
+    const up = await supabase.storage.from("vendor-posts").upload(path, file, {
+      contentType: file.type || undefined,
+      upsert: false,
+    });
+    if (up.error) {
+      setLogoUploading(false);
+      toast.error(up.error.message);
+      return;
+    }
+    const { data: pub } = supabase.storage
+      .from("vendor-posts")
+      .getPublicUrl(path);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error } = await (supabase as any)
+      .from("vendor_profiles")
+      .update({ logo_url: pub.publicUrl })
+      .eq("id", profile.id);
+    setLogoUploading(false);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    setProfile({ ...profile, logo_url: pub.publicUrl });
+    toast.success("Logo updated");
   }
 
   function applyToForm(p: VendorProfile | null) {
@@ -632,21 +686,132 @@ export default function VendorProfilePage() {
       <DashboardSidebar items={navItems} title="Vendor Portal" backPath="/" />
 
       <main id="main-content" className="flex-1 pb-20 lg:pb-0">
-        {/* IG-style profile chrome — replaces the old sticky title bar.
-            Avatar + business name + Dashboard chip live above the four
-            outer tabs. The Listing tab keeps the existing editor; the
-            other three render counts + content from the social tables. */}
-        <div className="border-b border-border bg-card px-4 md:px-8 py-6">
-          <div className="flex flex-col items-center text-center max-w-2xl mx-auto">
-            <div className="h-24 w-24 rounded-full overflow-hidden bg-secondary/60 flex items-center justify-center">
-              {profile?.business_name ? (
+        {/* IG-style profile chrome. Top bar: + (left) opens the
+            create-what menu; ☰ (right) opens the account menu (mirrors
+            the mobile app's hamburger). Below: avatar (click to upload
+            a logo) + business name. Dashboard chip removed per
+            request. */}
+        <div className="border-b border-border bg-card px-4 md:px-8 py-4">
+          <div className="flex items-center justify-between max-w-3xl mx-auto">
+            <DropdownMenu open={createMenuOpen} onOpenChange={setCreateMenuOpen}>
+              <DropdownMenuTrigger asChild>
+                <button
+                  type="button"
+                  aria-label="Create"
+                  className="h-10 w-10 inline-flex items-center justify-center rounded-full hover:bg-secondary/50 active:opacity-70 transition-colors"
+                >
+                  <Plus className="w-6 h-6 text-foreground" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="w-48">
+                <DropdownMenuLabel>Create</DropdownMenuLabel>
+                <DropdownMenuItem
+                  onSelect={() => {
+                    setCreateMenuOpen(false);
+                    handleCreateClick("post");
+                  }}
+                >
+                  <GridIcon className="w-4 h-4 mr-2" />
+                  Post
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onSelect={() => {
+                    setCreateMenuOpen(false);
+                    handleCreateClick("reel");
+                  }}
+                >
+                  <PlayIcon className="w-4 h-4 mr-2" />
+                  Reel
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onSelect={() => {
+                    setCreateMenuOpen(false);
+                    handleCreateClick("buzz");
+                  }}
+                >
+                  <AlignLeftIcon className="w-4 h-4 mr-2" />
+                  Buzz
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onSelect={() => {
+                    setCreateMenuOpen(false);
+                    setOuterTab("listing");
+                  }}
+                >
+                  <ShoppingBagIcon className="w-4 h-4 mr-2" />
+                  Listing
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  type="button"
+                  aria-label="Menu"
+                  className="h-10 w-10 inline-flex items-center justify-center rounded-full hover:bg-secondary/50 active:opacity-70 transition-colors"
+                >
+                  <Menu className="w-6 h-6 text-foreground" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuItem onSelect={() => navigate("/settings")}>
+                  <Settings className="w-4 h-4 mr-2" />
+                  Settings
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onSelect={async () => {
+                    await signOut();
+                    navigate("/");
+                  }}
+                >
+                  <LogOut className="w-4 h-4 mr-2" />
+                  Log out
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+
+          <div className="flex flex-col items-center text-center max-w-2xl mx-auto pt-4">
+            <input
+              ref={logoInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                if (f) handleLogoFile(f);
+                e.target.value = "";
+              }}
+            />
+            <button
+              type="button"
+              onClick={() => logoInputRef.current?.click()}
+              disabled={logoUploading}
+              aria-label="Change logo"
+              className="h-24 w-24 rounded-full overflow-hidden bg-secondary/60 flex items-center justify-center relative group hover:opacity-90 transition-opacity"
+            >
+              {profile?.logo_url ? (
+                <img
+                  src={profile.logo_url}
+                  alt={profile.business_name ?? "Vendor logo"}
+                  className="h-full w-full object-cover"
+                />
+              ) : profile?.business_name ? (
                 <span className="font-display text-3xl text-foreground">
                   {initials}
                 </span>
               ) : (
                 <span className="font-display text-3xl text-foreground">V</span>
               )}
-            </div>
+              <span className="absolute inset-0 flex items-center justify-center bg-foreground/0 group-hover:bg-foreground/40 transition-colors">
+                {logoUploading ? (
+                  <Loader2 className="w-5 h-5 text-background animate-spin" />
+                ) : (
+                  <Plus className="w-5 h-5 text-background opacity-0 group-hover:opacity-100" />
+                )}
+              </span>
+            </button>
             {profile?.business_name && (
               <h1 className="font-display text-2xl mt-4 inline-flex items-center gap-2">
                 {profile.business_name}
@@ -658,12 +823,6 @@ export default function VendorProfilePage() {
                 )}
               </h1>
             )}
-            <Link
-              to="/vendor/dashboard"
-              className="mt-4 inline-flex items-center rounded-lg border border-border bg-secondary/40 px-5 py-2 text-sm font-semibold text-foreground hover:bg-secondary/70 transition-colors"
-            >
-              Dashboard
-            </Link>
           </div>
         </div>
 
@@ -1107,15 +1266,8 @@ export default function VendorProfilePage() {
                   {t("vendor_listing.category_label")}{" "}
                   <span className="text-destructive">*</span>
                 </Label>
-                <Select
-                  value={category}
-                  onValueChange={setCategory}
-                  disabled={!!profile}
-                >
-                  <SelectTrigger
-                    id="category"
-                    className="h-11 disabled:opacity-100 disabled:cursor-not-allowed"
-                  >
+                <Select value={category} onValueChange={setCategory}>
+                  <SelectTrigger id="category" className="h-11">
                     <SelectValue
                       placeholder={t("vendor_listing.category_placeholder")}
                     />
@@ -1134,9 +1286,7 @@ export default function VendorProfilePage() {
                   </SelectContent>
                 </Select>
                 <p className="text-xs text-muted-foreground pt-1">
-                  {profile
-                    ? t("vendor_listing.category_locked")
-                    : t("vendor_listing.category_hint")}
+                  {t("vendor_listing.category_hint")}
                 </p>
               </div>
               )}

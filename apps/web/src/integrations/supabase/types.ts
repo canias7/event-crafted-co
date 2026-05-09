@@ -3604,6 +3604,7 @@ export type Database = {
           is_demo: boolean
           latitude: number | null
           location: string | null
+          logo_url: string | null
           longitude: number | null
           onboarding_nudge_sent_at: string | null
           policy_notes: string | null
@@ -3646,6 +3647,7 @@ export type Database = {
           is_demo?: boolean
           latitude?: number | null
           location?: string | null
+          logo_url?: string | null
           longitude?: number | null
           onboarding_nudge_sent_at?: string | null
           policy_notes?: string | null
@@ -3688,6 +3690,7 @@ export type Database = {
           is_demo?: boolean
           latitude?: number | null
           location?: string | null
+          logo_url?: string | null
           longitude?: number | null
           onboarding_nudge_sent_at?: string | null
           policy_notes?: string | null
@@ -4286,6 +4289,7 @@ export type Database = {
           is_demo: boolean
           latitude: number | null
           location: string | null
+          logo_url: string | null
           longitude: number | null
           onboarding_nudge_sent_at: string | null
           policy_notes: string | null
