@@ -1720,6 +1720,7 @@ type CommentRow = {
   created_at: string;
   user_id: string;
   author: { display_name: string | null; avatar_url: string | null } | null;
+  business_name?: string | null;
   likes: Array<{ user_id: string }>;
 };
 
@@ -1768,15 +1769,38 @@ function PostLightbox({
         "id, body, created_at, user_id, author:profiles!vendor_post_comments_user_id_profile_fkey(display_name, avatar_url), likes:vendor_post_comment_likes(user_id)",
       )
       .eq("post_id", media.id);
-    const rows = ((data ?? []) as CommentRow[]).slice().sort((a, b) => {
-      // Popularity-first: more likes wins; ties broken by oldest-first
-      // so the early conversation stays anchored to the top.
-      const diff = (b.likes?.length ?? 0) - (a.likes?.length ?? 0);
-      if (diff !== 0) return diff;
-      return (
-        new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+    const baseRows = (data ?? []) as CommentRow[];
+
+    // Pull each commenter's vendor business_name in a single follow-up
+    // query so vendor authors render as their brand ("Vendora") rather
+    // than their email-derived display_name ("cristiananias7"). Hosts
+    // who don't have a vendor_profile row stay on display_name.
+    const userIds = Array.from(new Set(baseRows.map((c) => c.user_id)));
+    let nameByUser: Record<string, string | null> = {};
+    if (userIds.length > 0) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: vps } = await (supabase as any)
+        .from("vendor_profiles")
+        .select("user_id, business_name")
+        .in("user_id", userIds);
+      nameByUser = Object.fromEntries(
+        ((vps as Array<{ user_id: string; business_name: string | null }> | null) ?? [])
+          .filter((r) => r.business_name && r.business_name.trim().length > 0)
+          .map((r) => [r.user_id, r.business_name]),
       );
-    });
+    }
+
+    const rows = baseRows
+      .map((c) => ({ ...c, business_name: nameByUser[c.user_id] ?? null }))
+      .sort((a, b) => {
+        // Popularity-first: more likes wins; ties broken by oldest-
+        // first so the early conversation stays anchored to the top.
+        const diff = (b.likes?.length ?? 0) - (a.likes?.length ?? 0);
+        if (diff !== 0) return diff;
+        return (
+          new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+        );
+      });
     setComments(rows);
     setVisibleCount(COMMENTS_PAGE);
     setLoading(false);
@@ -1889,7 +1913,7 @@ function PostLightbox({
                     <li key={c.id} className="text-sm flex items-start gap-2">
                       <div className="flex-1 min-w-0">
                         <span className="font-semibold text-foreground">
-                          {c.author?.display_name ?? "Someone"}
+                          {c.business_name ?? c.author?.display_name ?? "Someone"}
                         </span>{" "}
                         <span className="text-foreground/85 whitespace-pre-wrap break-words">
                           {c.body}

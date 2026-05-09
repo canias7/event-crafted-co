@@ -1,7 +1,16 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowRight, ArrowLeft, Loader2 } from "lucide-react";
+import {
+  ArrowRight,
+  ArrowLeft,
+  CheckCircle2,
+  ExternalLink,
+  Gift,
+  LayoutDashboard,
+  Loader2,
+  Pencil,
+} from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -186,10 +195,21 @@ export default function VendorApplyPage() {
       <section className="py-16 md:py-24">
         <div className="container mx-auto px-6 md:px-8 max-w-2xl">
           {ownVendorProfile ? (
-            <ExistingApplicationCard
-              status={ownVendorProfile.application_status}
-              businessName={ownVendorProfile.business_name}
-            />
+            ownVendorProfile.application_status === "approved" ? (
+              <ApprovedVendorPanel
+                businessName={ownVendorProfile.business_name}
+                slug={
+                  (ownVendorProfile as { slug?: string | null } | null)
+                    ?.slug ?? null
+                }
+                vendorId={ownVendorProfile.id}
+              />
+            ) : (
+              <ExistingApplicationCard
+                status={ownVendorProfile.application_status}
+                businessName={ownVendorProfile.business_name}
+              />
+            )
           ) : (
             <>
           {/* Step indicator — hidden when the user is already signed in
@@ -366,6 +386,121 @@ export default function VendorApplyPage() {
   );
 }
 
+// Approved vendors who land on /vendor-apply get this panel instead of
+// the apply form. Welcome-back banner with their business name + a
+// "live" badge, three quick-action chips into the parts of the
+// portal they care about most, and a referral nudge below to keep
+// the page useful as a loyalty surface.
+function ApprovedVendorPanel({
+  businessName,
+  slug,
+  vendorId,
+}: {
+  businessName: string;
+  slug: string | null;
+  vendorId: string;
+}) {
+  const publicHref = slug ? `/vendors/${slug}` : `/vendors/${vendorId}`;
+  return (
+    <div className="space-y-8 max-w-2xl mx-auto">
+      {/* Welcome-back panel */}
+      <div className="rounded-lg border border-accent/30 bg-accent/5 p-8 text-center">
+        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-accent/15 text-accent mb-4">
+          <CheckCircle2 className="w-3.5 h-3.5" />
+          <span className="text-xs font-semibold tracking-wide uppercase">
+            You're live
+          </span>
+        </div>
+        <h2 className="font-display text-3xl mb-2">
+          Welcome back, {businessName}
+        </h2>
+        <p className="text-sm text-muted-foreground max-w-md mx-auto leading-relaxed">
+          Your listing is approved and discoverable in the directory. Pick
+          up where you left off:
+        </p>
+
+        <div className="grid sm:grid-cols-3 gap-3 mt-6 max-w-xl mx-auto">
+          <ActionChip
+            to="/vendor/dashboard"
+            icon={LayoutDashboard}
+            label="Open dashboard"
+          />
+          <ActionChip
+            to={publicHref}
+            icon={ExternalLink}
+            label="View public listing"
+            external
+          />
+          <ActionChip
+            to="/vendor/listing"
+            icon={Pencil}
+            label="Edit profile"
+          />
+        </div>
+      </div>
+
+      {/* Referral nudge */}
+      <div className="rounded-lg border border-border bg-card p-6 sm:p-8">
+        <div className="flex items-start gap-4">
+          <div className="w-10 h-10 rounded-full bg-secondary/60 flex items-center justify-center shrink-0">
+            <Gift className="w-4 h-4 text-foreground" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="font-label text-accent mb-1">— Refer & earn</p>
+            <h3 className="font-display text-xl mb-2">
+              Know another vendor who'd be a good fit?
+            </h3>
+            <p className="text-sm text-muted-foreground leading-relaxed mb-4">
+              Refer a vendor — when they're approved and complete their
+              first booking through Vendora, you both get a one-month fee
+              waiver. No cap on referrals.
+            </p>
+            <Link to="/vendor/dashboard">
+              <Button
+                variant="outline"
+                size="sm"
+                className="rounded-full"
+              >
+                Get my referral link
+                <ArrowRight className="w-3.5 h-3.5 ml-1.5" />
+              </Button>
+            </Link>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ActionChip({
+  to,
+  icon: Icon,
+  label,
+  external,
+}: {
+  to: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  icon: any;
+  label: string;
+  external?: boolean;
+}) {
+  const inner = (
+    <span className="flex items-center justify-center gap-2 rounded-lg border border-border bg-background px-4 py-3 text-sm font-medium text-foreground hover:bg-secondary/40 transition-colors">
+      <Icon className="w-4 h-4" />
+      {label}
+    </span>
+  );
+  return external ? (
+    <a href={to} target="_blank" rel="noreferrer" className="block">
+      {inner}
+    </a>
+  ) : (
+    <Link to={to} className="block">
+      {inner}
+    </Link>
+  );
+}
+
 function ExistingApplicationCard({
   status,
   businessName,
@@ -374,32 +509,20 @@ function ExistingApplicationCard({
   businessName: string;
 }) {
   const heading =
-    status === "approved"
-      ? "You're already a Vendora vendor"
-      : status === "rejected"
+    status === "rejected"
         ? "Your previous application wasn't approved"
         : "Your application is in review";
   const body =
-    status === "approved"
-      ? `${businessName} is approved. Open the vendor portal to manage your listing, inquiries, and calendar.`
-      : status === "rejected"
-        ? `We weren't able to approve ${businessName}. Reach out to support if you'd like another look — we keep the door open.`
-        : `${businessName} is in our review queue. We hand-review every application within 2–3 business days, then email you the decision.`;
-  const cta =
-    status === "approved" ? (
-      <Link to="/vendor/dashboard">
-        <Button className="rounded-full bg-foreground text-background hover:bg-foreground/90">
-          Open vendor dashboard
-          <ArrowRight className="w-4 h-4 ml-2" />
-        </Button>
-      </Link>
-    ) : (
-      <Link to="/customer/dashboard">
-        <Button variant="outline" className="rounded-full">
-          Back to my dashboard
-        </Button>
-      </Link>
-    );
+    status === "rejected"
+      ? `We weren't able to approve ${businessName}. Reach out to support if you'd like another look — we keep the door open.`
+      : `${businessName} is in our review queue. We hand-review every application within 2–3 business days, then email you the decision.`;
+  const cta = (
+    <Link to="/customer/dashboard">
+      <Button variant="outline" className="rounded-full">
+        Back to my dashboard
+      </Button>
+    </Link>
+  );
   return (
     <div className="rounded-lg border border-border bg-card p-8 max-w-xl mx-auto text-center">
       <p className="font-label text-accent mb-3">— Application status</p>
