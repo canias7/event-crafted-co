@@ -154,12 +154,14 @@ export default function VendorProfilePage() {
   const [openMedia, setOpenMedia] = useState<
     | {
         kind: "post";
+        id: string;
         image_url: string;
         caption: string | null;
         created_at: string;
       }
     | {
         kind: "reel";
+        id: string;
         video_url: string;
         caption: string | null;
         created_at: string;
@@ -469,21 +471,15 @@ export default function VendorProfilePage() {
       // Category attributes — at least one filled key in the jsonb
       // counts. Boolean false counts as filled-in too; we only
       // exclude null / undefined / empty string / empty array. Portfolio
-      // photo check was dropped along with the Media step — uploads now
-      // live in Studio → Photo Gallery and aren't gated behind publish.
-      const [attrsRes, teamCountRes] = await Promise.all([
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (supabase as any)
-          .from("vendor_profiles")
-          .select("category_attributes")
-          .eq("id", profile.id)
-          .maybeSingle(),
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (supabase as any)
-          .from("vendor_team_bios")
-          .select("id", { count: "exact", head: true })
-          .eq("vendor_id", profile.id),
-      ]);
+      // photos and team members are both optional now; Studio → Photo
+      // Gallery handles photos, and team bios are nice-to-have but
+      // shouldn't block a fresh vendor's first publish.
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const attrsRes = await (supabase as any)
+        .from("vendor_profiles")
+        .select("category_attributes")
+        .eq("id", profile.id)
+        .maybeSingle();
       const attrs =
         (attrsRes.data?.category_attributes as Record<string, unknown> | null) ??
         null;
@@ -496,8 +492,6 @@ export default function VendorProfilePage() {
           return true;
         });
       if (!hasDetails) missing.push("Category details");
-      if ((teamCountRes.count ?? 0) === 0)
-        missing.push("At least one team member");
 
       if (missing.length > 0) {
         toast.error(`Can't publish yet — add: ${missing.join(", ")}`, {
@@ -880,6 +874,7 @@ export default function VendorProfilePage() {
                     onClick={() =>
                       setOpenMedia({
                         kind: "post",
+                        id: p.id,
                         image_url: p.image_url,
                         caption: p.caption,
                         created_at: p.created_at,
@@ -918,6 +913,7 @@ export default function VendorProfilePage() {
                     onClick={() =>
                       setOpenMedia({
                         kind: "reel",
+                        id: r.id,
                         video_url: r.video_url,
                         caption: r.caption,
                         created_at: r.created_at,
@@ -1421,32 +1417,12 @@ export default function VendorProfilePage() {
         open={openMedia !== null}
         onOpenChange={(o) => !o && setOpenMedia(null)}
       >
-        <DialogContent className="sm:max-w-2xl p-0 bg-background overflow-hidden">
-          {openMedia?.kind === "post" && (
-            <img
-              src={openMedia.image_url}
-              alt={openMedia.caption ?? ""}
-              className="w-full max-h-[80vh] object-contain bg-foreground/5"
-            />
-          )}
-          {openMedia?.kind === "reel" && (
-            <video
-              src={openMedia.video_url}
-              className="w-full max-h-[80vh] bg-foreground/90"
-              controls
-              autoPlay
-              playsInline
-            />
-          )}
-          {openMedia?.caption && (
-            <div className="px-5 py-4 border-t border-border">
-              <p className="text-sm text-foreground whitespace-pre-wrap">
-                {openMedia.caption}
-              </p>
-              <p className="mt-2 text-xs text-muted-foreground">
-                {new Date(openMedia.created_at).toLocaleString()}
-              </p>
-            </div>
+        {/* IG-style two-column lightbox: media on the left, caption +
+            comments on the right. Falls back to a single column on
+            phones because the side panel needs the room. */}
+        <DialogContent className="sm:max-w-4xl p-0 bg-background overflow-hidden">
+          {openMedia && (
+            <PostLightbox media={openMedia} userId={user?.id ?? null} />
           )}
         </DialogContent>
       </Dialog>
@@ -1726,6 +1702,187 @@ function ShoppingBagIcon({ className = "w-5 h-5" }: { className?: string }) {
       <line x1="3" y1="6" x2="21" y2="6" />
       <path d="M16 10a4 4 0 0 1-8 0" />
     </svg>
+  );
+}
+
+// ---------- Post / Reel lightbox with caption + comments ----------
+
+type CommentRow = {
+  id: string;
+  body: string;
+  created_at: string;
+  user_id: string;
+  author: { display_name: string | null; avatar_url: string | null } | null;
+};
+
+function PostLightbox({
+  media,
+  userId,
+}: {
+  media:
+    | {
+        kind: "post";
+        id: string;
+        image_url: string;
+        caption: string | null;
+        created_at: string;
+      }
+    | {
+        kind: "reel";
+        id: string;
+        video_url: string;
+        caption: string | null;
+        created_at: string;
+      };
+  userId: string | null;
+}) {
+  const [comments, setComments] = useState<CommentRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [draft, setDraft] = useState("");
+  const [posting, setPosting] = useState(false);
+
+  const isReel = media.kind === "reel";
+
+  async function loadComments() {
+    if (isReel) {
+      // Reels don't have a comments table yet. Skip the fetch and
+      // render the caption-only side panel.
+      setComments([]);
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data } = await (supabase as any)
+      .from("vendor_post_comments")
+      .select(
+        "id, body, created_at, user_id, author:profiles!vendor_post_comments_user_id_profile_fkey(display_name, avatar_url)",
+      )
+      .eq("post_id", media.id)
+      .order("created_at", { ascending: true });
+    setComments((data ?? []) as CommentRow[]);
+    setLoading(false);
+  }
+
+  useEffect(() => {
+    loadComments();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [media.id, media.kind]);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!userId || isReel) return;
+    const body = draft.trim();
+    if (!body || body.length > 500) return;
+    setPosting(true);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error } = await (supabase as any)
+      .from("vendor_post_comments")
+      .insert({ post_id: media.id, user_id: userId, body });
+    setPosting(false);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    setDraft("");
+    loadComments();
+  }
+
+  return (
+    <div className="grid md:grid-cols-[minmax(0,1fr)_320px] max-h-[80vh]">
+      {/* Media panel */}
+      <div className="bg-foreground/5 flex items-center justify-center min-h-[60vh] md:min-h-0">
+        {media.kind === "post" ? (
+          <img
+            src={media.image_url}
+            alt={media.caption ?? ""}
+            className="max-w-full max-h-[80vh] object-contain"
+          />
+        ) : (
+          <video
+            src={media.video_url}
+            className="max-w-full max-h-[80vh] bg-foreground/90"
+            controls
+            autoPlay
+            playsInline
+          />
+        )}
+      </div>
+
+      {/* Caption + comments panel */}
+      <div className="flex flex-col border-l border-border bg-background min-h-0">
+        <div className="px-5 pt-5 pb-3 border-b border-border">
+          {media.caption ? (
+            <p className="text-sm text-foreground whitespace-pre-wrap">
+              {media.caption}
+            </p>
+          ) : (
+            <p className="text-sm text-muted-foreground italic">No caption</p>
+          )}
+          <p className="mt-2 text-xs text-muted-foreground">
+            {new Date(media.created_at).toLocaleString()}
+          </p>
+        </div>
+
+        <div className="flex-1 overflow-y-auto px-5 py-3">
+          {isReel ? (
+            <p className="text-sm text-muted-foreground italic">
+              Comments aren't enabled on reels yet.
+            </p>
+          ) : loading ? (
+            <p className="text-sm text-muted-foreground">Loading comments…</p>
+          ) : comments.length === 0 ? (
+            <p className="text-sm text-muted-foreground italic">
+              No comments yet — be the first to chime in.
+            </p>
+          ) : (
+            <ul className="space-y-3">
+              {comments.map((c) => (
+                <li key={c.id} className="text-sm">
+                  <span className="font-semibold text-foreground">
+                    {c.author?.display_name ?? "Someone"}
+                  </span>{" "}
+                  <span className="text-foreground/85 whitespace-pre-wrap">
+                    {c.body}
+                  </span>
+                  <p className="mt-0.5 text-[11px] text-muted-foreground">
+                    {new Date(c.created_at).toLocaleString()}
+                  </p>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+
+        {!isReel && userId && (
+          <form
+            onSubmit={handleSubmit}
+            className="border-t border-border px-3 py-3 flex items-center gap-2"
+          >
+            <Input
+              value={draft}
+              onChange={(e) => setDraft(e.target.value)}
+              placeholder="Add a comment…"
+              maxLength={500}
+              disabled={posting}
+              className="h-9 flex-1"
+            />
+            <Button
+              type="submit"
+              size="sm"
+              disabled={posting || draft.trim().length === 0}
+              className="rounded-full bg-foreground text-background hover:bg-foreground/90"
+            >
+              {posting ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              ) : (
+                "Post"
+              )}
+            </Button>
+          </form>
+        )}
+      </div>
+    </div>
   );
 }
 
