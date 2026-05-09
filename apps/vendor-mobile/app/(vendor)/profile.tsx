@@ -381,12 +381,18 @@ function ListingTab({
       <Text className="text-sm text-muted-foreground">Loading…</Text>
     );
   }
-  if (!profile) {
+  // No listing OR an empty/incomplete one — show just the Create CTA.
+  // Web is the only editor for now.
+  if (!profile || !isComplete) {
     return (
       <EmptyState
         icon="shopping-bag"
-        title="No listing yet"
-        body="Apply to become a Vendora vendor to publish your first listing."
+        title="No listings yet"
+        body="Add your location and starting price to publish your listing to the marketplace."
+        ctaLabel="Create listing"
+        onCta={() =>
+          Linking.openURL("https://eventvendora.com/vendor/listing")
+        }
       />
     );
   }
