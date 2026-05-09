@@ -3,9 +3,15 @@
     "name": "Vendora",
     "slug": "vendora-host",
     "scheme": "vendora-host",
-    "version": "0.1.1",
+    "version": "0.1.2",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
+    "icon": "./assets/icon.png",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#000000"
+    },
     "newArchEnabled": false,
     "runtimeVersion": {
       "policy": "appVersion"
@@ -21,7 +27,11 @@
       }
     },
     "android": {
-      "package": "co.eventcrafted.host"
+      "package": "co.eventcrafted.host",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#000000"
+      }
     },
     "plugins": [
       "expo-router",
