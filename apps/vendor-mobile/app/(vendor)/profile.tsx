@@ -60,25 +60,45 @@ export default function ProfileScreen() {
   const listingsCount =
     profile && profile.application_status === "approved" ? 1 : 0;
 
+  function openCreatePost() {
+    Alert.alert(
+      "New post",
+      "Add a photo from your library or take one with your camera.",
+      [
+        {
+          text: "Take photo",
+          onPress: () =>
+            Alert.alert(
+              "Camera",
+              "Camera capture lands in the next native build.",
+            ),
+        },
+        {
+          text: "Choose from library",
+          onPress: () =>
+            Alert.alert(
+              "Library",
+              "Photo picker lands in the next native build.",
+            ),
+        },
+        { text: "Cancel", style: "cancel" },
+      ],
+    );
+  }
+
   return (
     <SafeAreaView className="flex-1 bg-background" edges={["top"]}>
-      {/* Top bar — email centered with dropdown chevron */}
+      {/* Top bar — email centered, no dropdown */}
       <View className="flex-row items-center justify-between px-4 py-3">
         <Pressable hitSlop={8} className="active:opacity-60">
           <Feather name="plus" size={28} color="#0a0a0a" />
         </Pressable>
-        <Pressable
-          hitSlop={8}
-          className="flex-row flex-1 items-center justify-center gap-1 px-2 active:opacity-60"
+        <Text
+          numberOfLines={1}
+          className="flex-1 px-3 text-center text-lg font-bold text-foreground"
         >
-          <Text
-            numberOfLines={1}
-            className="text-lg font-bold text-foreground"
-          >
-            {user?.email ?? ""}
-          </Text>
-          <Feather name="chevron-down" size={18} color="#0a0a0a" />
-        </Pressable>
+          {user?.email ?? ""}
+        </Text>
         <Pressable
           hitSlop={8}
           onPress={() => setMenuOpen(true)}
@@ -111,12 +131,12 @@ export default function ProfileScreen() {
             </Text>
           ) : null}
 
-          {/* Dashboard CTA — full-width rounded outlined rectangle */}
+          {/* Dashboard CTA */}
           <Pressable
             onPress={() => router.push("/(vendor)/dashboard")}
-            className="mt-6 w-full rounded-xl border border-border bg-background py-3 active:opacity-70"
+            className="mt-6 rounded-lg border border-border bg-secondary/40 px-6 py-2.5 active:opacity-70"
           >
-            <Text className="text-center text-base font-semibold text-foreground">
+            <Text className="text-base font-semibold text-foreground">
               Dashboard
             </Text>
           </Pressable>
@@ -158,9 +178,7 @@ export default function ProfileScreen() {
               title="No posts yet"
               body="Share photos from past events to build trust with hosts."
               ctaLabel="Create"
-              onCta={() =>
-                Alert.alert("Create post", "Posting comes in a future update.")
-              }
+              onCta={openCreatePost}
             />
           ) : view === "reels" ? (
             <EmptyState
