@@ -12,11 +12,13 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import { Pressable } from "react-native";
+import { BuzzComposer } from "@/components/BuzzComposer";
 
 type ViewKind = "grid" | "reels" | "buzz" | "listing";
 
 export default function HomeScreen() {
   const [view, setView] = useState<ViewKind>("grid");
+  const [buzzOpen, setBuzzOpen] = useState(false);
 
   function openCreatePost() {
     Alert.alert(
@@ -151,9 +153,7 @@ export default function HomeScreen() {
             title="No buzz yet"
             body="Post quick updates, behind-the-scenes notes, or news for your followers."
             ctaLabel="Create"
-            onCta={() =>
-              Alert.alert("Buzz", "Buzz posts come in a future update.")
-            }
+            onCta={() => setBuzzOpen(true)}
           />
         ) : (
           <EmptyState
@@ -163,6 +163,11 @@ export default function HomeScreen() {
           />
         )}
       </ScrollView>
+
+      <BuzzComposer
+        visible={buzzOpen}
+        onClose={() => setBuzzOpen(false)}
+      />
     </SafeAreaView>
   );
 }

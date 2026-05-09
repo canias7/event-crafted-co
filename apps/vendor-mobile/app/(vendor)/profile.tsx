@@ -27,6 +27,7 @@ import * as ImagePicker from "expo-image-picker";
 import type { VendorProfile } from "@vendora/core";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
+import { BuzzComposer } from "@/components/BuzzComposer";
 
 type ViewKind = "grid" | "reels" | "buzz" | "listing";
 
@@ -37,6 +38,7 @@ export default function ProfileScreen() {
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState<ViewKind>("grid");
   const [menuOpen, setMenuOpen] = useState(false);
+  const [buzzOpen, setBuzzOpen] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -255,9 +257,7 @@ export default function ProfileScreen() {
               title="No buzz yet"
               body="Post quick updates, behind-the-scenes notes, or news for your followers."
               ctaLabel="Create"
-              onCta={() =>
-                Alert.alert("Buzz", "Buzz posts come in a future update.")
-              }
+              onCta={() => setBuzzOpen(true)}
             />
           ) : (
             <ListingTab
@@ -273,6 +273,11 @@ export default function ProfileScreen() {
         onClose={() => setMenuOpen(false)}
         email={user?.email ?? ""}
         onSignOut={signOut}
+      />
+
+      <BuzzComposer
+        visible={buzzOpen}
+        onClose={() => setBuzzOpen(false)}
       />
     </SafeAreaView>
   );
