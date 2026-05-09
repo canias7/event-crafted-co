@@ -454,12 +454,11 @@ function PostGrid({
     <View className="gap-4">
       {posts.map((p) => (
         <View key={p.id} className="px-4">
-          <FeedAuthorHeader profile={profile} />
           <View
             style={{
               borderRadius: 16,
               overflow: "hidden",
-              backgroundColor: "#f5f5f5",
+              backgroundColor: "#ffffff",
               shadowColor: "#000",
               shadowOpacity: 0.08,
               shadowRadius: 8,
@@ -467,6 +466,11 @@ function PostGrid({
               elevation: 3,
             }}
           >
+            {/* Author header sits at the top of the card so the post
+                reads as a self-contained unit, IG-style. */}
+            <View className="bg-background">
+              <FeedAuthorHeader profile={profile} />
+            </View>
             <Image
               source={{ uri: p.image_url }}
               style={{ width: "100%", aspectRatio: 1 }}
@@ -498,50 +502,58 @@ function ReelGrid({
     <View className="gap-4">
       {reels.map((r) => (
         <View key={r.id} className="px-4">
-          <FeedAuthorHeader profile={profile} />
           <View
             style={{
               borderRadius: 16,
               overflow: "hidden",
-              backgroundColor: "#1a1a1a",
+              backgroundColor: "#ffffff",
               shadowColor: "#000",
               shadowOpacity: 0.12,
               shadowRadius: 8,
               shadowOffset: { width: 0, height: 3 },
               elevation: 3,
-              aspectRatio: 4 / 5,
-              width: "100%",
             }}
           >
-            {r.thumbnail_url ? (
-              <Image
-                source={{ uri: r.thumbnail_url }}
-                style={{ flex: 1 }}
-                resizeMode="cover"
-              />
-            ) : null}
+            <View className="bg-background">
+              <FeedAuthorHeader profile={profile} />
+            </View>
             <View
               style={{
-                position: "absolute",
-                top: 0,
-                right: 0,
-                bottom: 0,
-                left: 0,
-                alignItems: "center",
-                justifyContent: "center",
-                backgroundColor: r.thumbnail_url
-                  ? "rgba(0,0,0,0.22)"
-                  : "transparent",
+                aspectRatio: 4 / 5,
+                width: "100%",
+                backgroundColor: "#1a1a1a",
               }}
             >
-              <Feather name="play" size={48} color="#fff" />
+              {r.thumbnail_url ? (
+                <Image
+                  source={{ uri: r.thumbnail_url }}
+                  style={{ flex: 1 }}
+                  resizeMode="cover"
+                />
+              ) : null}
+              <View
+                style={{
+                  position: "absolute",
+                  top: 0,
+                  right: 0,
+                  bottom: 0,
+                  left: 0,
+                  alignItems: "center",
+                  justifyContent: "center",
+                  backgroundColor: r.thumbnail_url
+                    ? "rgba(0,0,0,0.22)"
+                    : "transparent",
+                }}
+              >
+                <Feather name="play" size={48} color="#fff" />
+              </View>
             </View>
+            {r.caption ? (
+              <View className="px-4 py-3 bg-background">
+                <Text className="text-sm text-foreground">{r.caption}</Text>
+              </View>
+            ) : null}
           </View>
-          {r.caption ? (
-            <Text className="mt-2 px-1 text-sm text-foreground">
-              {r.caption}
-            </Text>
-          ) : null}
         </View>
       ))}
     </View>
