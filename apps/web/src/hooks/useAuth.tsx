@@ -45,9 +45,10 @@ interface Profile {
 // approved-vendor checks in the UI.
 export interface OwnVendorProfile {
   id: string;
-  business_name: string;
-  category: string;
+  business_name: string | null;
+  category: string | null;
   application_status: VendorApplicationStatus;
+  logo_url: string | null;
 }
 
 export interface VendorMembership {
@@ -152,7 +153,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // makes the listing publicly visible (gated by RLS on the table).
     const { data: vp } = await supabase
       .from("vendor_profiles")
-      .select("id, business_name, category, application_status")
+      .select("id, business_name, category, application_status, logo_url")
       .eq("user_id", userId)
       .maybeSingle();
     setOwnVendorProfile((vp as OwnVendorProfile | null) ?? null);

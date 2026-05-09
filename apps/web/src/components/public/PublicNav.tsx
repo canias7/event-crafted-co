@@ -1,7 +1,7 @@
 import { useLocation } from "react-router-dom";
 import { PrefetchLink as Link } from "@/components/shared/PrefetchLink";
 import { motion } from "framer-motion";
-import { Menu, X, LogOut, LayoutDashboard, ChevronDown, Settings, Search } from "lucide-react";
+import { Menu, X, LogOut, LayoutDashboard, ChevronDown, Settings } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
@@ -36,7 +36,7 @@ export function PublicNav() {
   const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [mobileVendorsOpen, setMobileVendorsOpen] = useState(false);
-  const { session, profile, hasVendorAccess, signOut } = useAuth();
+  const { session, profile, ownVendorProfile, hasVendorAccess, signOut } = useAuth();
   const { t } = useTranslation();
   const secondaryLinks = buildSecondaryLinks(t);
 
@@ -148,37 +148,31 @@ export function PublicNav() {
         </div>
 
         <div className="hidden md:flex items-center gap-1">
-          <button
-            type="button"
-            onClick={() => {
-              document.dispatchEvent(
-                new KeyboardEvent("keydown", {
-                  key: "k",
-                  metaKey: true,
-                  ctrlKey: true,
-                }),
-              );
-            }}
-            className="hidden lg:inline-flex items-center gap-2 px-3 h-8 rounded-full bg-muted hover:bg-muted-foreground/10 text-muted-foreground hover:text-foreground text-xs transition-colors mr-2"
-            aria-label="Open search"
-          >
-            <Search className="w-3.5 h-3.5" />
-            Search
-            <kbd className="hidden xl:inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-muted-foreground/10 text-[10px] font-mono">
-              ⌘K
-            </kbd>
-          </button>
           {session && profile ? (
             <>
               <NotificationBell variant="light" />
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <button className="ml-2 flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
-                    <span className="w-7 h-7 rounded-full bg-accent text-accent-foreground flex items-center justify-center text-xs font-medium">
-                      {(profile.display_name ?? "U").charAt(0).toUpperCase()}
-                    </span>
+                    {ownVendorProfile?.logo_url ? (
+                      <img
+                        src={ownVendorProfile.logo_url}
+                        alt={
+                          ownVendorProfile.business_name ??
+                          profile.display_name ??
+                          "Account"
+                        }
+                        className="w-7 h-7 rounded-full object-cover"
+                      />
+                    ) : (
+                      <span className="w-7 h-7 rounded-full bg-accent text-accent-foreground flex items-center justify-center text-xs font-medium">
+                        {(profile.display_name ?? "U").charAt(0).toUpperCase()}
+                      </span>
+                    )}
                     <span className="hidden lg:inline">
-                      {profile.display_name ?? "Account"}
+                      {ownVendorProfile?.business_name ??
+                        profile.display_name ??
+                        "Account"}
                     </span>
                     <ChevronDown className="w-3.5 h-3.5" />
                   </button>
