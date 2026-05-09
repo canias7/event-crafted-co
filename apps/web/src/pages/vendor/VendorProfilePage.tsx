@@ -711,7 +711,7 @@ export default function VendorProfilePage() {
                 onAction={() => handleCreateClick("post")}
               />
             ) : (
-              <div className="grid grid-cols-3 gap-1 max-w-3xl">
+              <div className="grid grid-cols-3 gap-2 max-w-3xl">
                 {posts.map((p) => (
                   <button
                     key={p.id}
@@ -724,7 +724,7 @@ export default function VendorProfilePage() {
                         created_at: p.created_at,
                       })
                     }
-                    className="aspect-square overflow-hidden bg-secondary/40 hover:opacity-90 transition-opacity"
+                    className="aspect-square overflow-hidden rounded-lg bg-secondary/40 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all"
                   >
                     <img
                       src={p.image_url}
@@ -749,7 +749,7 @@ export default function VendorProfilePage() {
                 onAction={() => handleCreateClick("reel")}
               />
             ) : (
-              <div className="grid grid-cols-3 gap-1 max-w-3xl">
+              <div className="grid grid-cols-3 gap-2 max-w-3xl">
                 {reels.map((r) => (
                   <button
                     key={r.id}
@@ -762,7 +762,7 @@ export default function VendorProfilePage() {
                         created_at: r.created_at,
                       })
                     }
-                    className="aspect-square bg-foreground/80 flex items-center justify-center hover:opacity-90 transition-opacity"
+                    className="aspect-square rounded-lg bg-foreground/80 flex items-center justify-center shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all"
                   >
                     <PlayIcon className="w-6 h-6 text-background" />
                   </button>

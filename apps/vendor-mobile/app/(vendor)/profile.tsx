@@ -572,13 +572,27 @@ function PostGrid({
       renderItem={({ item }) => (
         <Pressable
           onPress={() => onPressItem(item)}
-          style={{ flex: 1 / 3, aspectRatio: 1, padding: 1 }}
+          style={{ flex: 1 / 3, aspectRatio: 1, padding: 4 }}
         >
-          <Image
-            source={{ uri: item.image_url }}
-            style={{ flex: 1 }}
-            resizeMode="cover"
-          />
+          <View
+            style={{
+              flex: 1,
+              borderRadius: 12,
+              overflow: "hidden",
+              shadowColor: "#000",
+              shadowOpacity: 0.08,
+              shadowRadius: 6,
+              shadowOffset: { width: 0, height: 2 },
+              elevation: 2,
+              backgroundColor: "#f5f5f5",
+            }}
+          >
+            <Image
+              source={{ uri: item.image_url }}
+              style={{ flex: 1 }}
+              resizeMode="cover"
+            />
+          </View>
         </Pressable>
       )}
     />
@@ -602,9 +616,21 @@ function ReelGrid({
       renderItem={({ item }) => (
         <Pressable
           onPress={() => onPressItem(item)}
-          style={{ flex: 1 / 3, aspectRatio: 1, padding: 1 }}
+          style={{ flex: 1 / 3, aspectRatio: 1, padding: 4 }}
         >
-          <View className="flex-1 items-center justify-center bg-secondary/50">
+          <View
+            style={{
+              flex: 1,
+              borderRadius: 12,
+              overflow: "hidden",
+              shadowColor: "#000",
+              shadowOpacity: 0.08,
+              shadowRadius: 6,
+              shadowOffset: { width: 0, height: 2 },
+              elevation: 2,
+            }}
+            className="items-center justify-center bg-foreground/80"
+          >
             <Feather name="play" size={28} color="#fff" />
           </View>
         </Pressable>
