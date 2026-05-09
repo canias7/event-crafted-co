@@ -38,7 +38,6 @@ export default function VendorApplyPage() {
   const [submitting, setSubmitting] = useState(false);
 
   // Step 1 — account
-  const [ownerName, setOwnerName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
@@ -47,11 +46,7 @@ export default function VendorApplyPage() {
   const [category, setCategory] = useState("");
 
   function step1Valid() {
-    return (
-      ownerName.trim().length > 0 &&
-      email.trim().length > 0 &&
-      password.length >= 8
-    );
+    return email.trim().length > 0 && password.length >= 8;
   }
 
   function step2Valid() {
@@ -114,7 +109,8 @@ export default function VendorApplyPage() {
         // trigger reads vendor_business_name + vendor_category and
         // creates the pending vendor_profile.
         data: {
-          display_name: ownerName,
+          // display_name not set — handle_new_user falls back to the
+          // email prefix. Owner name removed from the signup flow.
           vendor_business_name: businessName.trim(),
           vendor_category: category,
         },
@@ -224,17 +220,6 @@ export default function VendorApplyPage() {
                   </p>
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="owner-name">Owner name</Label>
-                  <Input
-                    id="owner-name"
-                    value={ownerName}
-                    onChange={(e) => setOwnerName(e.target.value)}
-                    placeholder="Your full name"
-                    required
-                    className="h-11"
-                  />
-                </div>
                 <div className="space-y-2">
                   <Label htmlFor="email">Email</Label>
                   <Input
