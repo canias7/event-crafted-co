@@ -45,6 +45,7 @@ import {
 } from "@/components/ui/select";
 import { CATEGORY_GROUPS } from "@/data/categoryTaxonomy";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { vendorNavItems as navItems } from "@/data/navItems";
 import { invalidateVendorsCache } from "@/hooks/useVendors";
 
@@ -135,6 +136,23 @@ export default function VendorProfilePage() {
   // buzz via the kind prop. Empty-state Create buttons + the inline
   // ones on populated grids both open it through this state.
   const [composerKind, setComposerKind] = useState<SocialKind | null>(null);
+  // Lightbox: clicking a grid tile opens this; null when nothing is
+  // open. Posts vs reels distinguished by the presence of video_url.
+  const [openMedia, setOpenMedia] = useState<
+    | {
+        kind: "post";
+        image_url: string;
+        caption: string | null;
+        created_at: string;
+      }
+    | {
+        kind: "reel";
+        video_url: string;
+        caption: string | null;
+        created_at: string;
+      }
+    | null
+  >(null);
 
   // Create-button click handler. The profile row auto-exists from
   // signup (load effect inserts a stub if missing), so this just opens
@@ -693,18 +711,27 @@ export default function VendorProfilePage() {
                 onAction={() => handleCreateClick("post")}
               />
             ) : (
-              <div className="grid grid-cols-3 gap-1 max-w-3xl mx-auto">
+              <div className="grid grid-cols-3 gap-1 max-w-3xl">
                 {posts.map((p) => (
-                  <div
+                  <button
                     key={p.id}
-                    className="aspect-square overflow-hidden bg-secondary/40"
+                    type="button"
+                    onClick={() =>
+                      setOpenMedia({
+                        kind: "post",
+                        image_url: p.image_url,
+                        caption: p.caption,
+                        created_at: p.created_at,
+                      })
+                    }
+                    className="aspect-square overflow-hidden bg-secondary/40 hover:opacity-90 transition-opacity"
                   >
                     <img
                       src={p.image_url}
                       alt={p.caption ?? ""}
                       className="w-full h-full object-cover"
                     />
-                  </div>
+                  </button>
                 ))}
               </div>
             )}
@@ -722,14 +749,23 @@ export default function VendorProfilePage() {
                 onAction={() => handleCreateClick("reel")}
               />
             ) : (
-              <div className="grid grid-cols-3 gap-1 max-w-3xl mx-auto">
+              <div className="grid grid-cols-3 gap-1 max-w-3xl">
                 {reels.map((r) => (
-                  <div
+                  <button
                     key={r.id}
-                    className="aspect-square bg-foreground/80 flex items-center justify-center"
+                    type="button"
+                    onClick={() =>
+                      setOpenMedia({
+                        kind: "reel",
+                        video_url: r.video_url,
+                        caption: r.caption,
+                        created_at: r.created_at,
+                      })
+                    }
+                    className="aspect-square bg-foreground/80 flex items-center justify-center hover:opacity-90 transition-opacity"
                   >
                     <PlayIcon className="w-6 h-6 text-background" />
-                  </div>
+                  </button>
                 ))}
               </div>
             )}
@@ -1295,6 +1331,40 @@ export default function VendorProfilePage() {
           onCreated={() => loadSocial(profile.id)}
         />
       )}
+
+      <Dialog
+        open={openMedia !== null}
+        onOpenChange={(o) => !o && setOpenMedia(null)}
+      >
+        <DialogContent className="sm:max-w-2xl p-0 bg-background overflow-hidden">
+          {openMedia?.kind === "post" && (
+            <img
+              src={openMedia.image_url}
+              alt={openMedia.caption ?? ""}
+              className="w-full max-h-[80vh] object-contain bg-foreground/5"
+            />
+          )}
+          {openMedia?.kind === "reel" && (
+            <video
+              src={openMedia.video_url}
+              className="w-full max-h-[80vh] bg-foreground/90"
+              controls
+              autoPlay
+              playsInline
+            />
+          )}
+          {openMedia?.caption && (
+            <div className="px-5 py-4 border-t border-border">
+              <p className="text-sm text-foreground whitespace-pre-wrap">
+                {openMedia.caption}
+              </p>
+              <p className="mt-2 text-xs text-muted-foreground">
+                {new Date(openMedia.created_at).toLocaleString()}
+              </p>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
 
       <MobileNav items={navItems} />
     </div>
