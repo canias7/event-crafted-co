@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from "react";
-import { Calendar as CalendarIcon } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useRealtime } from "@/lib/realtime";
 import { useAuth } from "@/hooks/useAuth";
@@ -68,8 +67,6 @@ export default function VendorAppointmentsPage() {
   );
   useRealtime(realtimeConfig, () => loadAppointments());
 
-  const noVendor = !vendorId;
-
   return (
     <div className="flex min-h-screen bg-background">
       <DashboardSidebar items={navItems} title="Vendor Portal" backPath="/" />
@@ -83,58 +80,42 @@ export default function VendorAppointmentsPage() {
         </div>
 
         <div className="p-4 md:p-8 max-w-4xl space-y-10">
-          {noVendor ? (
-            <div className="rounded-sm border border-border bg-card p-8 text-center">
-              <CalendarIcon className="w-10 h-10 mx-auto text-muted-foreground/40 mb-3" />
-              <p className="font-display text-xl mb-2">
-                Set up your business profile first
+          {/* Week-view calendar — primary surface for the page.
+              Renders for every signed-in vendor account (even before
+              the business profile exists), so a brand-new vendor sees
+              their week immediately. Appointments render as blocks
+              positioned by their scheduled_at + duration_minutes;
+              clicking a block jumps to the appointment detail row
+              below. */}
+          <section>
+            {appointmentsLoading ? (
+              <p className="text-sm text-muted-foreground">
+                Loading calendar…
               </p>
-              <p className="text-sm text-muted-foreground max-w-sm mx-auto">
-                Calendar tools are per-vendor — finish your business profile
-                so we know who's receiving bookings.
-              </p>
-            </div>
-          ) : (
-            <>
-              {/* Week-view calendar — primary surface for the page.
-                  Appointments render as blocks positioned by their
-                  scheduled_at + duration_minutes; clicking a block
-                  jumps to the appointment detail row below. */}
-              <section>
-                {appointmentsLoading ? (
-                  <p className="text-sm text-muted-foreground">
-                    Loading calendar…
-                  </p>
-                ) : (
-                  <CalendarWeekView
-                    appointments={appointments}
-                    onSelectAppointment={(a) => {
-                      const el = document.getElementById(
-                        `appointment-${a.id}`,
-                      );
-                      if (el) {
-                        el.scrollIntoView({ behavior: "smooth", block: "center" });
-                      }
-                    }}
-                  />
-                )}
-              </section>
+            ) : (
+              <CalendarWeekView
+                appointments={appointments}
+                onSelectAppointment={(a) => {
+                  const el = document.getElementById(`appointment-${a.id}`);
+                  if (el) {
+                    el.scrollIntoView({ behavior: "smooth", block: "center" });
+                  }
+                }}
+              />
+            )}
+          </section>
 
-              {/* Detail list under the week view — keeps the existing
-                  Accept/Decline/Reschedule actions one tap away. */}
-              {!appointmentsLoading && appointments.length > 0 && (
-                <section>
-                  <h2 className="font-display text-lg mb-3">
-                    Upcoming appointments
-                  </h2>
-                  <AppointmentsList
-                    appointments={appointments}
-                    side="vendor"
-                    onMutate={loadAppointments}
-                  />
-                </section>
-              )}
-            </>
+          {!appointmentsLoading && appointments.length > 0 && (
+            <section>
+              <h2 className="font-display text-lg mb-3">
+                Upcoming appointments
+              </h2>
+              <AppointmentsList
+                appointments={appointments}
+                side="vendor"
+                onMutate={loadAppointments}
+              />
+            </section>
           )}
         </div>
       </main>

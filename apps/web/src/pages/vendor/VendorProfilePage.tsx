@@ -26,6 +26,10 @@ import { VendorTeamManager } from "@/components/vendor/VendorTeamManager";
 import { VendorPolicyEditor } from "@/components/vendor/VendorPolicyEditor";
 import { ShowcaseClipsManager } from "@/components/vendor/ShowcaseClipsManager";
 import { CategoryAttributesEditor } from "@/components/vendor/CategoryAttributesEditor";
+import {
+  VendorSocialComposer,
+  type SocialKind,
+} from "@/components/vendor/VendorSocialComposer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -125,6 +129,10 @@ export default function VendorProfilePage() {
   const [buzz, setBuzz] = useState<
     Array<{ id: string; body: string; created_at: string }>
   >([]);
+  // Composer modal — single component switches between post / reel /
+  // buzz via the kind prop. Empty-state Create buttons + the inline
+  // ones on populated grids both open it through this state.
+  const [composerKind, setComposerKind] = useState<SocialKind | null>(null);
 
   function applyToForm(p: VendorProfile | null) {
     setBusinessName(p?.business_name ?? "");
@@ -269,7 +277,31 @@ export default function VendorProfilePage() {
 
   // Pull posts / reels / buzz once the profile is known. Public
   // SELECT RLS lets us read these — same data that populates the
-  // mobile Profile tab.
+  // mobile Profile tab. Pulled into a callable so the composer can
+  // refresh after a successful create without remounting the page.
+  async function loadSocial(profileId: string) {
+    const [postsRes, reelsRes, buzzRes] = await Promise.all([
+      supabase
+        .from("vendor_posts")
+        .select("id, image_url, caption, created_at")
+        .eq("vendor_id", profileId)
+        .order("created_at", { ascending: false }),
+      supabase
+        .from("vendor_reels")
+        .select("id, video_url, caption, created_at")
+        .eq("vendor_id", profileId)
+        .order("created_at", { ascending: false }),
+      supabase
+        .from("vendor_buzz")
+        .select("id, body, created_at")
+        .eq("vendor_id", profileId)
+        .order("created_at", { ascending: false }),
+    ]);
+    setPosts((postsRes.data ?? []) as typeof posts);
+    setReels((reelsRes.data ?? []) as typeof reels);
+    setBuzz((buzzRes.data ?? []) as typeof buzz);
+  }
+
   useEffect(() => {
     if (!profile?.id) {
       setPosts([]);
@@ -279,31 +311,13 @@ export default function VendorProfilePage() {
     }
     let cancelled = false;
     (async () => {
-      const [postsRes, reelsRes, buzzRes] = await Promise.all([
-        supabase
-          .from("vendor_posts")
-          .select("id, image_url, caption, created_at")
-          .eq("vendor_id", profile.id)
-          .order("created_at", { ascending: false }),
-        supabase
-          .from("vendor_reels")
-          .select("id, video_url, caption, created_at")
-          .eq("vendor_id", profile.id)
-          .order("created_at", { ascending: false }),
-        supabase
-          .from("vendor_buzz")
-          .select("id, body, created_at")
-          .eq("vendor_id", profile.id)
-          .order("created_at", { ascending: false }),
-      ]);
       if (cancelled) return;
-      setPosts((postsRes.data ?? []) as typeof posts);
-      setReels((reelsRes.data ?? []) as typeof reels);
-      setBuzz((buzzRes.data ?? []) as typeof buzz);
+      await loadSocial(profile.id);
     })();
     return () => {
       cancelled = true;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profile?.id]);
 
   async function handleSave(
@@ -615,7 +629,9 @@ export default function VendorProfilePage() {
               <OuterEmpty
                 icon={<GridIcon className="w-6 h-6" />}
                 title="No posts yet"
-                body="Open the Vendora vendor app to share photos from past events."
+                body="Share a photo from a past event to start filling your grid."
+                actionLabel={profile?.id ? "Create post" : undefined}
+                onAction={profile?.id ? () => setComposerKind("post") : undefined}
               />
             ) : (
               <div className="grid grid-cols-3 gap-1 max-w-3xl mx-auto">
@@ -642,7 +658,9 @@ export default function VendorProfilePage() {
               <OuterEmpty
                 icon={<PlayIcon className="w-6 h-6" />}
                 title="No reels yet"
-                body="Short videos help your listing convert. Record one in the Vendora vendor app."
+                body="Short videos convert hosts faster than photos — drop one in to see."
+                actionLabel={profile?.id ? "Create reel" : undefined}
+                onAction={profile?.id ? () => setComposerKind("reel") : undefined}
               />
             ) : (
               <div className="grid grid-cols-3 gap-1 max-w-3xl mx-auto">
@@ -665,7 +683,9 @@ export default function VendorProfilePage() {
               <OuterEmpty
                 icon={<AlignLeftIcon className="w-6 h-6" />}
                 title="No buzz yet"
-                body="Post quick updates and news from the Vendora vendor app."
+                body="Post quick updates so hosts see fresh activity on your profile."
+                actionLabel={profile?.id ? "Create buzz" : undefined}
+                onAction={profile?.id ? () => setComposerKind("buzz") : undefined}
               />
             ) : (
               <div className="max-w-2xl mx-auto px-4 space-y-3">
@@ -1206,6 +1226,17 @@ export default function VendorProfilePage() {
         )}
       </main>
 
+      {profile?.id && user?.id && composerKind && (
+        <VendorSocialComposer
+          open={composerKind !== null}
+          kind={composerKind}
+          vendorId={profile.id}
+          userId={user.id}
+          onOpenChange={(o) => !o && setComposerKind(null)}
+          onCreated={() => loadSocial(profile.id)}
+        />
+      )}
+
       <MobileNav items={navItems} />
     </div>
   );
@@ -1371,10 +1402,14 @@ function OuterEmpty({
   icon,
   title,
   body,
+  actionLabel,
+  onAction,
 }: {
   icon: React.ReactNode;
   title: string;
   body: string;
+  actionLabel?: string;
+  onAction?: () => void;
 }) {
   return (
     <div className="max-w-md mx-auto text-center">
@@ -1383,6 +1418,15 @@ function OuterEmpty({
       </div>
       <h2 className="font-display text-lg mt-4">{title}</h2>
       <p className="text-sm text-muted-foreground mt-1">{body}</p>
+      {actionLabel && onAction && (
+        <Button
+          type="button"
+          onClick={onAction}
+          className="mt-5 rounded-full bg-foreground text-background hover:bg-foreground/90"
+        >
+          {actionLabel}
+        </Button>
+      )}
     </div>
   );
 }
