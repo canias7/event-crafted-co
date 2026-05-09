@@ -1,6 +1,9 @@
 import { useCallback, useEffect, useState } from "react";
+import { Eye } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
+
+const PUBLIC_SITE = "https://eventvendora.com";
 
 type Listing = {
   id: string;
@@ -153,6 +156,16 @@ export function ListingsPage() {
                     {r.verified_at ? "✓" : "—"}
                   </td>
                   <td className="px-4 py-2 text-right">
+                    <a
+                      href={`${PUBLIC_SITE}/vendors/${r.id}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      title="View public listing"
+                      className="mr-3 inline-flex items-center text-ink/70 hover:text-ink"
+                      aria-label="View listing"
+                    >
+                      <Eye className="h-4 w-4" />
+                    </a>
                     {r.application_status === "pending" ? (
                       <>
                         <button
