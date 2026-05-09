@@ -75,6 +75,11 @@ interface AuthCtx {
   // True when the user has any vendor portal access (own pending/approved
   // vendor OR team member of someone else's vendor).
   hasVendorAccess: boolean;
+  // True when the user has actually used host features — onboarded as a
+  // host, has an active event, or is a planning collaborator. Distinct
+  // from "has a profile" since vendor-only signups also get a default
+  // profile row but never touch the host side.
+  hasHostAccess: boolean;
   loading: boolean;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
@@ -90,6 +95,7 @@ const Ctx = createContext<AuthCtx>({
   planningMemberships: [],
   isApprovedVendor: false,
   hasVendorAccess: false,
+  hasHostAccess: false,
   loading: true,
   signOut: async () => {},
   refreshProfile: async () => {},
@@ -221,6 +227,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     profile?.role === "vendor";
   const hasVendorAccess =
     isApprovedVendor || vendorMemberships.length > 0;
+  // Real host = went through onboarding, has an active event, or is a
+  // planning collaborator. Pure vendor signups get a default profile row
+  // but none of these markers, so they don't appear as hosts.
+  const hasHostAccess =
+    profile != null &&
+    (profile.onboarded_at !== null ||
+      profile.active_event_id !== null ||
+      planningMemberships.length > 0);
 
   return (
     <Ctx.Provider
@@ -234,6 +248,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         planningMemberships,
         isApprovedVendor,
         hasVendorAccess,
+        hasHostAccess,
         loading,
         signOut,
         refreshProfile,
