@@ -6,7 +6,6 @@
 import { useCallback, useEffect, useState } from "react";
 import {
   Alert,
-  FlatList,
   Image,
   Linking,
   Pressable,
@@ -410,65 +409,71 @@ function EmptyState({
   );
 }
 
+// Instagram-style vertical feed. Each post / reel takes the full
+// screen width with a 1:1 aspect on posts and 4:5 on reels (taller,
+// reads as video). The outer ScrollView handles vertical scroll, so
+// these stay scrollEnabled={false} on the inner list to avoid nested
+// scroll fights.
+
 function PostGrid({ posts }: { posts: PostRow[] }) {
   return (
-    <FlatList
-      data={posts}
-      keyExtractor={(p) => p.id}
-      numColumns={3}
-      scrollEnabled={false}
-      renderItem={({ item }) => (
-        <View style={{ flex: 1 / 3, aspectRatio: 1, padding: 4 }}>
+    <View className="gap-4">
+      {posts.map((p) => (
+        <View key={p.id} className="px-4">
           <View
             style={{
-              flex: 1,
-              borderRadius: 12,
+              borderRadius: 16,
               overflow: "hidden",
+              backgroundColor: "#f5f5f5",
               shadowColor: "#000",
               shadowOpacity: 0.08,
-              shadowRadius: 6,
-              shadowOffset: { width: 0, height: 2 },
-              elevation: 2,
-              backgroundColor: "#f5f5f5",
+              shadowRadius: 8,
+              shadowOffset: { width: 0, height: 3 },
+              elevation: 3,
             }}
           >
             <Image
-              source={{ uri: item.image_url }}
-              style={{ flex: 1 }}
+              source={{ uri: p.image_url }}
+              style={{ width: "100%", aspectRatio: 1 }}
               resizeMode="cover"
             />
+            {p.caption ? (
+              <View className="px-4 py-3 bg-background">
+                <Text className="text-sm text-foreground">{p.caption}</Text>
+                <Text className="mt-1 text-xs text-muted-foreground">
+                  {new Date(p.created_at).toLocaleString()}
+                </Text>
+              </View>
+            ) : null}
           </View>
         </View>
-      )}
-    />
+      ))}
+    </View>
   );
 }
 
 function ReelGrid({ reels }: { reels: ReelRow[] }) {
   return (
-    <FlatList
-      data={reels}
-      keyExtractor={(r) => r.id}
-      numColumns={3}
-      scrollEnabled={false}
-      renderItem={({ item }) => (
-        <View style={{ flex: 1 / 3, aspectRatio: 1, padding: 4 }}>
+    <View className="gap-4">
+      {reels.map((r) => (
+        <View key={r.id} className="px-4">
           <View
             style={{
-              flex: 1,
-              borderRadius: 12,
+              borderRadius: 16,
               overflow: "hidden",
-              shadowColor: "#000",
-              shadowOpacity: 0.08,
-              shadowRadius: 6,
-              shadowOffset: { width: 0, height: 2 },
-              elevation: 2,
               backgroundColor: "#1a1a1a",
+              shadowColor: "#000",
+              shadowOpacity: 0.12,
+              shadowRadius: 8,
+              shadowOffset: { width: 0, height: 3 },
+              elevation: 3,
+              aspectRatio: 4 / 5,
+              width: "100%",
             }}
           >
-            {item.thumbnail_url ? (
+            {r.thumbnail_url ? (
               <Image
-                source={{ uri: item.thumbnail_url }}
+                source={{ uri: r.thumbnail_url }}
                 style={{ flex: 1 }}
                 resizeMode="cover"
               />
@@ -482,17 +487,22 @@ function ReelGrid({ reels }: { reels: ReelRow[] }) {
                 left: 0,
                 alignItems: "center",
                 justifyContent: "center",
-                backgroundColor: item.thumbnail_url
-                  ? "rgba(0,0,0,0.18)"
+                backgroundColor: r.thumbnail_url
+                  ? "rgba(0,0,0,0.22)"
                   : "transparent",
               }}
             >
-              <Feather name="play" size={28} color="#fff" />
+              <Feather name="play" size={48} color="#fff" />
             </View>
           </View>
+          {r.caption ? (
+            <Text className="mt-2 px-1 text-sm text-foreground">
+              {r.caption}
+            </Text>
+          ) : null}
         </View>
-      )}
-    />
+      ))}
+    </View>
   );
 }
 
