@@ -12,7 +12,7 @@ export default function CalendarScreen() {
         <Text className="text-xl font-semibold text-foreground">Calendar</Text>
         <Text className="text-xs text-muted-foreground">Upcoming bookings</Text>
       </View>
-      <ScrollView contentContainerClassName="px-4 py-12 items-center">
+      <ScrollView contentContainerClassName="px-4 pt-12 pb-32 items-center">
         <Text className="text-sm text-muted-foreground">
           Booking calendar arrives with the next release.
         </Text>

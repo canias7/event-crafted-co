@@ -56,7 +56,7 @@ const TOOLS: Tool[] = [
 export default function StudioScreen() {
   return (
     <SafeAreaView className="flex-1 bg-background">
-      <ScrollView contentContainerClassName="px-4 pb-12 pt-4">
+      <ScrollView contentContainerClassName="px-4 pb-32 pt-4">
         <Text className="mb-1 text-2xl font-semibold text-foreground">
           Studio
         </Text>
