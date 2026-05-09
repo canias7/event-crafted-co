@@ -74,6 +74,13 @@ export default function ProfileScreen() {
   const [posts, setPosts] = useState<PostRow[]>([]);
   const [reels, setReels] = useState<ReelRow[]>([]);
   const [buzz, setBuzz] = useState<BuzzRow[]>([]);
+  // Lightbox: tapping a grid tile opens a fullscreen modal with a back
+  // button top-left. null when nothing is open.
+  const [openMedia, setOpenMedia] = useState<
+    | { kind: "post"; image_url: string; caption: string | null; created_at: string }
+    | { kind: "reel"; video_url: string; caption: string | null; created_at: string }
+    | null
+  >(null);
 
   useEffect(() => {
     if (!user) return;
@@ -281,7 +288,17 @@ export default function ProfileScreen() {
                 />
               </View>
             ) : (
-              <PostGrid posts={posts} />
+              <PostGrid
+                posts={posts}
+                onPressItem={(p) =>
+                  setOpenMedia({
+                    kind: "post",
+                    image_url: p.image_url,
+                    caption: p.caption,
+                    created_at: p.created_at,
+                  })
+                }
+              />
             )
           ) : view === "reels" ? (
             reels.length === 0 ? (
@@ -295,7 +312,17 @@ export default function ProfileScreen() {
                 />
               </View>
             ) : (
-              <ReelGrid reels={reels} />
+              <ReelGrid
+                reels={reels}
+                onPressItem={(r) =>
+                  setOpenMedia({
+                    kind: "reel",
+                    video_url: r.video_url,
+                    caption: r.caption,
+                    created_at: r.created_at,
+                  })
+                }
+              />
             )
           ) : view === "buzz" ? (
             buzz.length === 0 ? (
@@ -386,6 +413,63 @@ export default function ProfileScreen() {
           });
         }}
       />
+
+      {/* Lightbox: tap a grid tile → fullscreen view of the image (or
+          a play-icon placeholder for reels, since expo-av isn't wired
+          up yet). Back chevron sits in the top-left over a SafeArea so
+          it never collides with the notch. */}
+      <Modal
+        visible={openMedia !== null}
+        animationType="fade"
+        presentationStyle="fullScreen"
+        onRequestClose={() => setOpenMedia(null)}
+      >
+        <SafeAreaView className="flex-1 bg-foreground" edges={["top", "bottom"]}>
+          <View className="flex-row items-center justify-between px-2 py-2">
+            <Pressable
+              onPress={() => setOpenMedia(null)}
+              hitSlop={12}
+              className="h-10 w-10 items-center justify-center rounded-full active:opacity-60"
+            >
+              <Feather name="chevron-left" size={28} color="#fff" />
+            </Pressable>
+            <View className="w-10" />
+          </View>
+          <View className="flex-1 items-center justify-center">
+            {openMedia?.kind === "post" ? (
+              <Image
+                source={{ uri: openMedia.image_url }}
+                style={{ width: "100%", height: "100%" }}
+                resizeMode="contain"
+              />
+            ) : openMedia?.kind === "reel" ? (
+              <View className="items-center">
+                <View className="h-24 w-24 items-center justify-center rounded-full bg-background/15">
+                  <Feather name="play" size={48} color="#fff" />
+                </View>
+                <Pressable
+                  onPress={() => Linking.openURL(openMedia.video_url)}
+                  className="mt-6 rounded-full bg-background/20 px-5 py-2 active:opacity-80"
+                >
+                  <Text className="text-sm font-semibold text-background">
+                    Open video
+                  </Text>
+                </Pressable>
+              </View>
+            ) : null}
+          </View>
+          {openMedia?.caption ? (
+            <View className="px-5 pb-5">
+              <Text className="text-base text-background">
+                {openMedia.caption}
+              </Text>
+              <Text className="mt-2 text-xs text-background/60">
+                {new Date(openMedia.created_at).toLocaleString()}
+              </Text>
+            </View>
+          ) : null}
+        </SafeAreaView>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -470,8 +554,15 @@ function EmptyState({
   );
 }
 
-// Square grid of post images, 3 across.
-function PostGrid({ posts }: { posts: PostRow[] }) {
+// Square grid of post images, 3 across. Tapping a tile opens the
+// fullscreen lightbox modal at the root of the screen.
+function PostGrid({
+  posts,
+  onPressItem,
+}: {
+  posts: PostRow[];
+  onPressItem: (p: PostRow) => void;
+}) {
   return (
     <FlatList
       data={posts}
@@ -479,20 +570,29 @@ function PostGrid({ posts }: { posts: PostRow[] }) {
       numColumns={3}
       scrollEnabled={false}
       renderItem={({ item }) => (
-        <View style={{ flex: 1 / 3, aspectRatio: 1, padding: 1 }}>
+        <Pressable
+          onPress={() => onPressItem(item)}
+          style={{ flex: 1 / 3, aspectRatio: 1, padding: 1 }}
+        >
           <Image
             source={{ uri: item.image_url }}
             style={{ flex: 1 }}
             resizeMode="cover"
           />
-        </View>
+        </Pressable>
       )}
     />
   );
 }
 
 // Same as PostGrid but with a play-icon overlay so it reads as video.
-function ReelGrid({ reels }: { reels: ReelRow[] }) {
+function ReelGrid({
+  reels,
+  onPressItem,
+}: {
+  reels: ReelRow[];
+  onPressItem: (r: ReelRow) => void;
+}) {
   return (
     <FlatList
       data={reels}
@@ -500,11 +600,14 @@ function ReelGrid({ reels }: { reels: ReelRow[] }) {
       numColumns={3}
       scrollEnabled={false}
       renderItem={({ item }) => (
-        <View style={{ flex: 1 / 3, aspectRatio: 1, padding: 1 }}>
+        <Pressable
+          onPress={() => onPressItem(item)}
+          style={{ flex: 1 / 3, aspectRatio: 1, padding: 1 }}
+        >
           <View className="flex-1 items-center justify-center bg-secondary/50">
             <Feather name="play" size={28} color="#fff" />
           </View>
-        </View>
+        </Pressable>
       )}
     />
   );
