@@ -4,7 +4,6 @@ import { useTranslation } from "react-i18next";
 import {
   Clock,
   DollarSign,
-  Edit2,
   Eye,
   Image as ImageIcon,
   Layers,
@@ -669,10 +668,6 @@ export default function VendorProfilePage() {
                     // dashboard's render tree.
                     window.location.assign(`/vendors/${profile.id}`);
                   }}
-                  onEdit={() => {
-                    setPublishedRecently(false);
-                    window.scrollTo({ top: 0, behavior: "smooth" });
-                  }}
                   onDelete={async () => {
                     if (
                       !window.confirm(
@@ -1061,13 +1056,11 @@ function ListingPreviewCard({
   profile,
   saving,
   onView,
-  onEdit,
   onDelete,
 }: {
   profile: VendorProfile;
   saving: boolean;
   onView: () => void;
-  onEdit: () => void;
   onDelete: () => void;
 }) {
   const { t } = useTranslation();
@@ -1118,18 +1111,6 @@ function ListingPreviewCard({
           >
             <Eye className="w-3.5 h-3.5 mr-1.5" />
             {t("vendor_listing.preview.view")}
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={onEdit}
-            disabled={saving}
-            className="rounded-full"
-            aria-label="Edit listing"
-          >
-            <Edit2 className="w-3.5 h-3.5 mr-1.5" />
-            {t("vendor_listing.preview.edit")}
           </Button>
           <Button
             type="button"
