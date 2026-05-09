@@ -54,8 +54,10 @@ import { invalidateVendorsCache } from "@/hooks/useVendors";
 
 interface VendorProfile {
   id: string;
-  business_name: string;
-  category: string;
+  // Profile = exists from signup. business_name and category start null
+  // and get filled in by the vendor as they build out their listing.
+  business_name: string | null;
+  category: string | null;
   bio: string | null;
   base_price_cents: number | null;
   location: string | null;
@@ -134,18 +136,15 @@ export default function VendorProfilePage() {
   // ones on populated grids both open it through this state.
   const [composerKind, setComposerKind] = useState<SocialKind | null>(null);
 
-  // Create-button click handler. If the vendor has a profile, opens the
-  // composer for the requested kind. If not, jumps them to the Listing
-  // tab so they can finish their profile setup (business name +
-  // category) — the social tables FK to vendor_profiles, so we can't
-  // accept content until that row exists.
+  // Create-button click handler. The profile row auto-exists from
+  // signup (load effect inserts a stub if missing), so this just opens
+  // the composer for the requested kind.
   function handleCreateClick(kind: SocialKind) {
-    if (profile?.id) {
-      setComposerKind(kind);
-    } else {
-      setOuterTab("listing");
-      toast.info("Add your business name and category first to start posting.");
+    if (!profile?.id) {
+      toast.info("Setting up your profile, try again in a second.");
+      return;
     }
+    setComposerKind(kind);
   }
 
   function applyToForm(p: VendorProfile | null) {
@@ -201,6 +200,50 @@ export default function VendorProfilePage() {
       }
       if (error) {
         toast.error(`Couldn't load your profile: ${error.message}`);
+      }
+      // Profile = exists from the moment the vendor signs in. If the
+      // row doesn't exist yet (or was soft-deleted), insert a stub now
+      // — business_name and category default to null until the vendor
+      // fills them in via the Listing tab. This unlocks posts / reels /
+      // buzz immediately since vendor_posts.vendor_id needs a real
+      // vendor_profiles.id to FK against.
+      if (!data && !error) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const stub = await (supabase as any)
+          .from("vendor_profiles")
+          .insert({ user_id: user.id, application_status: "draft" })
+          .select(VENDOR_PROFILE_COLS)
+          .single();
+        if (cancelled) return;
+        if (stub.data) {
+          data = stub.data as VendorProfile;
+        } else if (stub.error?.code === "23505") {
+          // Race / soft-deleted row collision: fetch the existing row
+          // and clear the deletion sentinel so it looks live again.
+          const existing = await supabase
+            .from("vendor_profiles")
+            .select(VENDOR_PROFILE_COLS)
+            .eq("user_id", user.id)
+            .maybeSingle();
+          if (cancelled) return;
+          if (existing.data) {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            await (supabase as any)
+              .from("vendor_profiles")
+              .update({
+                application_status: "draft",
+                application_review_notes: null,
+              })
+              .eq("id", (existing.data as VendorProfile).id);
+            data = {
+              ...(existing.data as VendorProfile),
+              application_status: "draft",
+              application_review_notes: null,
+            };
+          }
+        } else if (stub.error) {
+          toast.error(`Couldn't set up your profile: ${stub.error.message}`);
+        }
       }
       setProfile(data);
       applyToForm(data);
@@ -586,7 +629,7 @@ export default function VendorProfilePage() {
                 <span className="font-display text-3xl text-foreground">V</span>
               )}
             </div>
-            {profile?.business_name ? (
+            {profile?.business_name && (
               <h1 className="font-display text-2xl mt-4 inline-flex items-center gap-2">
                 {profile.business_name}
                 {profile.verified_at && (
@@ -596,10 +639,6 @@ export default function VendorProfilePage() {
                   />
                 )}
               </h1>
-            ) : (
-              <p className="mt-4 text-sm text-muted-foreground">
-                Add your business name in the form below
-              </p>
             )}
             <Link
               to="/vendor/dashboard"
