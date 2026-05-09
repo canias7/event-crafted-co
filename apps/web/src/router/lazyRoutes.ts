@@ -1,4 +1,4 @@
-import { lazy } from "react";
+import { lazy, type ComponentType } from "react";
 import { matchPath } from "react-router-dom";
 
 // Centralized lazy-route registry. Keeping the import factory and the
@@ -7,247 +7,281 @@ import { matchPath } from "react-router-dom";
 //
 // To add a new route:
 //   1. Add `const importFoo = () => import("@/pages/Foo")` then
-//      `export const FooPage = lazy(importFoo)` below.
+//      `export const FooPage = lazyWithReload(importFoo)` below.
 //   2. Add the path → importer entry to ROUTE_IMPORTERS at the bottom.
 //
 // Static routes match exactly; dynamic routes use react-router-dom's
 // matchPath (so `/vendors/:id` matches `/vendors/abc-123`).
+//
+// `lazyWithReload` is a thin wrapper around React.lazy that catches
+// the stale-chunk error a user gets when they have a cached index.html
+// from a previous deploy that references hashed JS chunks the new
+// deploy no longer has. In that case Vercel's SPA fallback returns
+// index.html for the missing chunk URL, the browser rejects it with
+// "Failed to fetch dynamically imported module" / MIME mismatch, and
+// the page is dead. We auto-reload once to pick up the fresh
+// index.html. Reload is rate-limited to once per 60s so a genuinely
+// broken deploy doesn't put the user in an infinite loop.
+
+function lazyWithReload<T extends ComponentType<unknown>>(
+  factory: () => Promise<{ default: T }>,
+) {
+  return lazy(() =>
+    factory().catch((err: unknown) => {
+      const msg = String((err as { message?: string })?.message ?? err);
+      const isChunkError =
+        /Failed to fetch dynamically imported module|ChunkLoadError|Loading chunk|Importing a module script failed|MIME type/i.test(
+          msg,
+        );
+      if (isChunkError && typeof window !== "undefined") {
+        const key = "vendora.lastChunkReload";
+        const last = window.sessionStorage.getItem(key);
+        const now = Date.now();
+        if (!last || now - Number(last) > 60_000) {
+          window.sessionStorage.setItem(key, String(now));
+          window.location.reload();
+        }
+      }
+      throw err;
+    }),
+  );
+}
 
 // ---------------- Public ----------------
 const importVendorBrowse = () => import("@/pages/VendorBrowsePage");
-export const VendorBrowsePage = lazy(importVendorBrowse);
+export const VendorBrowsePage = lazyWithReload(importVendorBrowse);
 
 const importCompareVendors = () => import("@/pages/CompareVendorsPage");
-export const CompareVendorsPage = lazy(importCompareVendors);
+export const CompareVendorsPage = lazyWithReload(importCompareVendors);
 
 const importVendorLocations = () => import("@/pages/VendorLocationsPage");
-export const VendorLocationsPage = lazy(importVendorLocations);
+export const VendorLocationsPage = lazyWithReload(importVendorLocations);
 
 const importVendorCity = () => import("@/pages/VendorCityPage");
-export const VendorCityPage = lazy(importVendorCity);
+export const VendorCityPage = lazyWithReload(importVendorCity);
 
 const importVendorCityCategory = () => import("@/pages/VendorCityCategoryPage");
-export const VendorCityCategoryPage = lazy(importVendorCityCategory);
+export const VendorCityCategoryPage = lazyWithReload(importVendorCityCategory);
 
 const importVendorEventTypeCity = () =>
   import("@/pages/VendorEventTypeCityPage");
-export const VendorEventTypeCityPage = lazy(importVendorEventTypeCity);
+export const VendorEventTypeCityPage = lazyWithReload(importVendorEventTypeCity);
 
 const importEditorialArticle = () => import("@/pages/EditorialArticlePage");
-export const EditorialArticlePage = lazy(importEditorialArticle);
+export const EditorialArticlePage = lazyWithReload(importEditorialArticle);
 
 const importClaimVendor = () => import("@/pages/ClaimVendorPage");
-export const ClaimVendorPage = lazy(importClaimVendor);
+export const ClaimVendorPage = lazyWithReload(importClaimVendor);
 
 const importPublicReview = () => import("@/pages/PublicReviewPage");
-export const PublicReviewPage = lazy(importPublicReview);
+export const PublicReviewPage = lazyWithReload(importPublicReview);
 
 const importProposalPrint = () => import("@/pages/ProposalPrintPage");
-export const ProposalPrintPage = lazy(importProposalPrint);
+export const ProposalPrintPage = lazyWithReload(importProposalPrint);
 
 const importPublicProposal = () => import("@/pages/PublicProposalPage");
-export const PublicProposalPage = lazy(importPublicProposal);
+export const PublicProposalPage = lazyWithReload(importPublicProposal);
 
 const importPlanInFive = () => import("@/pages/PlanInFivePage");
-export const PlanInFivePage = lazy(importPlanInFive);
+export const PlanInFivePage = lazyWithReload(importPlanInFive);
 
 const importVendorBlog = () => import("@/pages/vendor/VendorBlogPage");
-export const VendorBlogPage = lazy(importVendorBlog);
+export const VendorBlogPage = lazyWithReload(importVendorBlog);
 
 const importVendorMap = () => import("@/pages/VendorMapPage");
-export const VendorMapPage = lazy(importVendorMap);
+export const VendorMapPage = lazyWithReload(importVendorMap);
 
 
 const importVendorDetail = () => import("@/pages/VendorDetailPage");
-export const VendorDetailPage = lazy(importVendorDetail);
+export const VendorDetailPage = lazyWithReload(importVendorDetail);
 
 const importVendorCategory = () => import("@/pages/VendorCategoryPage");
-export const VendorCategoryPage = lazy(importVendorCategory);
+export const VendorCategoryPage = lazyWithReload(importVendorCategory);
 
 const importPrivacy = () => import("@/pages/PrivacyPage");
-export const PrivacyPage = lazy(importPrivacy);
+export const PrivacyPage = lazyWithReload(importPrivacy);
 
 const importTerms = () => import("@/pages/TermsPage");
-export const TermsPage = lazy(importTerms);
+export const TermsPage = lazyWithReload(importTerms);
 
 const importChangelog = () => import("@/pages/ChangelogPage");
-export const ChangelogPage = lazy(importChangelog);
+export const ChangelogPage = lazyWithReload(importChangelog);
 
 const importStatus = () => import("@/pages/StatusPage");
-export const StatusPage = lazy(importStatus);
+export const StatusPage = lazyWithReload(importStatus);
 
 const importPress = () => import("@/pages/PressPage");
-export const PressPage = lazy(importPress);
+export const PressPage = lazyWithReload(importPress);
 
 const importSettings = () => import("@/pages/SettingsPage");
-export const SettingsPage = lazy(importSettings);
+export const SettingsPage = lazyWithReload(importSettings);
 
 const importVendorApply = () => import("@/pages/VendorApplyPage");
-export const VendorApplyPage = lazy(importVendorApply);
+export const VendorApplyPage = lazyWithReload(importVendorApply);
 
 const importVendorApplyThanks = () => import("@/pages/VendorApplyThanksPage");
-export const VendorApplyThanksPage = lazy(importVendorApplyThanks);
+export const VendorApplyThanksPage = lazyWithReload(importVendorApplyThanks);
 
 const importNotFound = () => import("@/pages/NotFound");
-export const NotFound = lazy(importNotFound);
+export const NotFound = lazyWithReload(importNotFound);
 
 const importComingSoon = () => import("@/pages/ComingSoonPage");
-export const ComingSoonPage = lazy(importComingSoon);
+export const ComingSoonPage = lazyWithReload(importComingSoon);
 
 const importRsvp = () => import("@/pages/RsvpPage");
-export const RsvpPage = lazy(importRsvp);
+export const RsvpPage = lazyWithReload(importRsvp);
 
 const importMoodBoardShare = () => import("@/pages/MoodBoardSharePage");
-export const MoodBoardSharePage = lazy(importMoodBoardShare);
+export const MoodBoardSharePage = lazyWithReload(importMoodBoardShare);
 
 const importGiftShare = () => import("@/pages/GiftSharePage");
-export const GiftSharePage = lazy(importGiftShare);
+export const GiftSharePage = lazyWithReload(importGiftShare);
 
 const importRealEvents = () => import("@/pages/RealEventsPage");
-export const RealEventsPage = lazy(importRealEvents);
+export const RealEventsPage = lazyWithReload(importRealEvents);
 
 const importRealEventDetail = () => import("@/pages/RealEventDetailPage");
-export const RealEventDetailPage = lazy(importRealEventDetail);
+export const RealEventDetailPage = lazyWithReload(importRealEventDetail);
 
 const importAcceptPlanningInvite = () => import("@/pages/AcceptPlanningInvitePage");
-export const AcceptPlanningInvitePage = lazy(importAcceptPlanningInvite);
+export const AcceptPlanningInvitePage = lazyWithReload(importAcceptPlanningInvite);
 
 const importAcceptTeamInvite = () => import("@/pages/AcceptTeamInvitePage");
-export const AcceptTeamInvitePage = lazy(importAcceptTeamInvite);
+export const AcceptTeamInvitePage = lazyWithReload(importAcceptTeamInvite);
 
 // ---------------- Customer (host) ----------------
 const importCustomerDashboard = () => import("@/pages/customer/CustomerDashboard");
-export const CustomerDashboard = lazy(importCustomerDashboard);
+export const CustomerDashboard = lazyWithReload(importCustomerDashboard);
 
 const importCustomerVendorsBrowse = () => import("@/pages/customer/VendorsBrowsePage");
-export const CustomerVendorsBrowsePage = lazy(importCustomerVendorsBrowse);
+export const CustomerVendorsBrowsePage = lazyWithReload(importCustomerVendorsBrowse);
 
 const importOnboarding = () => import("@/pages/customer/OnboardingPage");
-export const OnboardingPage = lazy(importOnboarding);
+export const OnboardingPage = lazyWithReload(importOnboarding);
 
 const importInquiries = () => import("@/pages/customer/InquiriesPage");
-export const InquiriesPage = lazy(importInquiries);
+export const InquiriesPage = lazyWithReload(importInquiries);
 
 const importHostInquiryDetail = () => import("@/pages/customer/HostInquiryDetailPage");
-export const HostInquiryDetailPage = lazy(importHostInquiryDetail);
+export const HostInquiryDetailPage = lazyWithReload(importHostInquiryDetail);
 
 const importFavorites = () => import("@/pages/customer/FavoritesPage");
-export const FavoritesPage = lazy(importFavorites);
+export const FavoritesPage = lazyWithReload(importFavorites);
 
 const importEventDetails = () => import("@/pages/customer/EventDetailsPage");
-export const EventDetailsPage = lazy(importEventDetails);
+export const EventDetailsPage = lazyWithReload(importEventDetails);
 
 const importGuests = () => import("@/pages/customer/GuestsPage");
-export const GuestsPage = lazy(importGuests);
+export const GuestsPage = lazyWithReload(importGuests);
 
 const importChecklist = () => import("@/pages/customer/ChecklistPage");
-export const ChecklistPage = lazy(importChecklist);
+export const ChecklistPage = lazyWithReload(importChecklist);
 
 const importTasks = () => import("@/pages/customer/TasksPage");
-export const TasksPage = lazy(importTasks);
+export const TasksPage = lazyWithReload(importTasks);
 
 const importPayments = () => import("@/pages/customer/PaymentsPage");
-export const PaymentsPage = lazy(importPayments);
+export const PaymentsPage = lazyWithReload(importPayments);
 
 const importInvitationBuilder = () => import("@/pages/customer/InvitationBuilder");
-export const InvitationBuilder = lazy(importInvitationBuilder);
+export const InvitationBuilder = lazyWithReload(importInvitationBuilder);
 
 const importMoodBoards = () => import("@/pages/customer/MoodBoardsPage");
-export const MoodBoardsPage = lazy(importMoodBoards);
+export const MoodBoardsPage = lazyWithReload(importMoodBoards);
 
 const importMoodBoardDetail = () => import("@/pages/customer/MoodBoardDetailPage");
-export const MoodBoardDetailPage = lazy(importMoodBoardDetail);
+export const MoodBoardDetailPage = lazyWithReload(importMoodBoardDetail);
 
 const importAppointments = () => import("@/pages/customer/AppointmentsPage");
-export const AppointmentsPage = lazy(importAppointments);
+export const AppointmentsPage = lazyWithReload(importAppointments);
 
 const importSavedSearches = () => import("@/pages/customer/SavedSearchesPage");
-export const SavedSearchesPage = lazy(importSavedSearches);
+export const SavedSearchesPage = lazyWithReload(importSavedSearches);
 
 const importSeatingChart = () => import("@/pages/customer/SeatingChartPage");
-export const SeatingChartPage = lazy(importSeatingChart);
+export const SeatingChartPage = lazyWithReload(importSeatingChart);
 
 const importEventTimeline = () => import("@/pages/customer/EventTimelinePage");
-export const EventTimelinePage = lazy(importEventTimeline);
+export const EventTimelinePage = lazyWithReload(importEventTimeline);
 
 const importPlanningTeam = () => import("@/pages/customer/PlanningTeamPage");
-export const PlanningTeamPage = lazy(importPlanningTeam);
+export const PlanningTeamPage = lazyWithReload(importPlanningTeam);
 
 const importRegistry = () => import("@/pages/customer/RegistryPage");
-export const RegistryPage = lazy(importRegistry);
+export const RegistryPage = lazyWithReload(importRegistry);
 
 const importMessages = () => import("@/pages/customer/MessagesPage");
-export const MessagesPage = lazy(importMessages);
+export const MessagesPage = lazyWithReload(importMessages);
 
 const importInquiryBlast = () => import("@/pages/customer/InquiryBlastPage");
-export const InquiryBlastPage = lazy(importInquiryBlast);
+export const InquiryBlastPage = lazyWithReload(importInquiryBlast);
 
 const importLiveDay = () => import("@/pages/customer/LiveDayPage");
-export const LiveDayPage = lazy(importLiveDay);
+export const LiveDayPage = lazyWithReload(importLiveDay);
 
 const importGiftWishes = () => import("@/pages/customer/GiftWishesPage");
-export const GiftWishesPage = lazy(importGiftWishes);
+export const GiftWishesPage = lazyWithReload(importGiftWishes);
 
 const importMicrositeEditor = () => import("@/pages/customer/MicrositeEditorPage");
-export const MicrositeEditorPage = lazy(importMicrositeEditor);
+export const MicrositeEditorPage = lazyWithReload(importMicrositeEditor);
 
 const importEventMicrosite = () => import("@/pages/EventMicrositePage");
-export const EventMicrositePage = lazy(importEventMicrosite);
+export const EventMicrositePage = lazyWithReload(importEventMicrosite);
 
 const importPlannerWorkspace = () => import("@/pages/customer/PlannerWorkspacePage");
-export const PlannerWorkspacePage = lazy(importPlannerWorkspace);
+export const PlannerWorkspacePage = lazyWithReload(importPlannerWorkspace);
 
 const importPartyHub = () => import("@/pages/PartyHubPage");
-export const PartyHubPage = lazy(importPartyHub);
+export const PartyHubPage = lazyWithReload(importPartyHub);
 
 const importAcceptPartyInvite = () => import("@/pages/AcceptPartyInvitePage");
-export const AcceptPartyInvitePage = lazy(importAcceptPartyInvite);
+export const AcceptPartyInvitePage = lazyWithReload(importAcceptPartyInvite);
 
 const importEventAlbum = () => import("@/pages/EventAlbumPage");
-export const EventAlbumPage = lazy(importEventAlbum);
+export const EventAlbumPage = lazyWithReload(importEventAlbum);
 
 const importSupport = () => import("@/pages/SupportPage");
-export const SupportPage = lazy(importSupport);
+export const SupportPage = lazyWithReload(importSupport);
 
 // ---------------- Vendor ----------------
 const importVendorDashboard = () => import("@/pages/vendor/VendorDashboard");
-export const VendorDashboard = lazy(importVendorDashboard);
+export const VendorDashboard = lazyWithReload(importVendorDashboard);
 
 const importVendorProfile = () => import("@/pages/vendor/VendorProfilePage");
-export const VendorProfilePage = lazy(importVendorProfile);
+export const VendorProfilePage = lazyWithReload(importVendorProfile);
 
 const importVendorInbox = () => import("@/pages/vendor/VendorInboxPage");
-export const VendorInboxPage = lazy(importVendorInbox);
+export const VendorInboxPage = lazyWithReload(importVendorInbox);
 
 const importVendorTeam = () => import("@/pages/vendor/VendorTeamPage");
-export const VendorTeamPage = lazy(importVendorTeam);
+export const VendorTeamPage = lazyWithReload(importVendorTeam);
 
 const importVendorAppointments = () => import("@/pages/vendor/VendorAppointmentsPage");
-export const VendorAppointmentsPage = lazy(importVendorAppointments);
+export const VendorAppointmentsPage = lazyWithReload(importVendorAppointments);
 
 const importVendorOnboarding = () => import("@/pages/vendor/VendorOnboardingPage");
-export const VendorOnboardingPage = lazy(importVendorOnboarding);
+export const VendorOnboardingPage = lazyWithReload(importVendorOnboarding);
 
 const importVendorAnalytics = () => import("@/pages/vendor/VendorAnalyticsPage");
-export const VendorAnalyticsPage = lazy(importVendorAnalytics);
+export const VendorAnalyticsPage = lazyWithReload(importVendorAnalytics);
 
 const importVendorMessages = () => import("@/pages/vendor/VendorMessagesPage");
-export const VendorMessagesPage = lazy(importVendorMessages);
+export const VendorMessagesPage = lazyWithReload(importVendorMessages);
 
 const importVendorPartners = () => import("@/pages/vendor/VendorPartnersPage");
-export const VendorPartnersPage = lazy(importVendorPartners);
+export const VendorPartnersPage = lazyWithReload(importVendorPartners);
 
 const importVendorAiAgent = () => import("@/pages/vendor/VendorAiAgentPage");
-export const VendorAiAgentPage = lazy(importVendorAiAgent);
+export const VendorAiAgentPage = lazyWithReload(importVendorAiAgent);
 
 const importVendorStudio = () => import("@/pages/vendor/VendorStudioPage");
-export const VendorStudioPage = lazy(importVendorStudio);
+export const VendorStudioPage = lazyWithReload(importVendorStudio);
 
 const importInquiryDetail = () => import("@/pages/vendor/InquiryDetailPage");
-export const InquiryDetailPage = lazy(importInquiryDetail);
+export const InquiryDetailPage = lazyWithReload(importInquiryDetail);
 
 const importAvailability = () => import("@/pages/vendor/AvailabilityPage");
-export const AvailabilityPage = lazy(importAvailability);
+export const AvailabilityPage = lazyWithReload(importAvailability);
 // ---------------- path → importer registry ----------------
 // Order matters for matchPath — more specific patterns first. Static
 // strings are tried before dynamic ones via Map insertion order.
