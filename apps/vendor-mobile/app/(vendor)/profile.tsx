@@ -435,11 +435,14 @@ export default function ProfileScreen() {
             </Pressable>
             <View className="w-10" />
           </View>
-          <View className="flex-1 items-center justify-center">
+          {/* Inset the media so it doesn't crowd the screen edges —
+              feels more like a card lifted off the dark backdrop than
+              an edge-to-edge takeover. */}
+          <View className="flex-1 items-center justify-center px-5 py-4">
             {openMedia?.kind === "post" ? (
               <Image
                 source={{ uri: openMedia.image_url }}
-                style={{ width: "100%", height: "100%" }}
+                style={{ width: "100%", height: "100%", borderRadius: 12 }}
                 resizeMode="contain"
               />
             ) : openMedia?.kind === "reel" ? (
