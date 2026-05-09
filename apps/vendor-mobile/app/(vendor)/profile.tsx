@@ -20,6 +20,7 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import type { VendorProfile } from "@vendora/core";
 import { useAuth } from "@/lib/auth";
@@ -28,6 +29,7 @@ import { supabase } from "@/lib/supabase";
 type ViewKind = "grid" | "reels" | "listing";
 
 export default function ProfileScreen() {
+  const router = useRouter();
   const { user, signOut } = useAuth();
   const [profile, setProfile] = useState<VendorProfile | null>(null);
   const [loading, setLoading] = useState(true);
@@ -131,7 +133,10 @@ export default function ProfileScreen() {
           ) : null}
 
           {/* Dashboard CTA */}
-          <Pressable className="mt-5 rounded-lg border border-border bg-secondary/40 px-5 py-2 active:opacity-70">
+          <Pressable
+            onPress={() => router.push("/(vendor)/dashboard")}
+            className="mt-5 rounded-lg border border-border bg-secondary/40 px-5 py-2 active:opacity-70"
+          >
             <Text className="text-sm font-medium text-foreground">
               Dashboard
             </Text>
