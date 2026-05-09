@@ -50,6 +50,7 @@ export default function HomeScreen() {
   const [view, setView] = useState<ViewKind>("grid");
   const [buzzOpen, setBuzzOpen] = useState(false);
   const [photoPickerOpen, setPhotoPickerOpen] = useState(false);
+  const [reelPickerOpen, setReelPickerOpen] = useState(false);
   const [pendingMedia, setPendingMedia] = useState<
     { asset: ImagePicker.ImagePickerAsset; kind: MediaKind } | null
   >(null);
@@ -116,15 +117,7 @@ export default function HomeScreen() {
   }
 
   function openCreateReel() {
-    Alert.alert(
-      "New reel",
-      "Record a short video or pick one from your library.",
-      [
-        { text: "Record video", onPress: () => pickMedia("camera", "Videos") },
-        { text: "Choose from library", onPress: () => pickMedia("library", "Videos") },
-        { text: "Cancel", style: "cancel" },
-      ],
-    );
+    setReelPickerOpen(true);
   }
 
   async function pickMedia(
@@ -296,6 +289,7 @@ export default function HomeScreen() {
 
       <PhotoLibraryPicker
         visible={photoPickerOpen}
+        mediaType="photo"
         onClose={() => setPhotoPickerOpen(false)}
         onPicked={(picked) => {
           setPhotoPickerOpen(false);
@@ -308,6 +302,26 @@ export default function HomeScreen() {
               mimeType: picked.type ?? "image/jpeg",
             } as unknown as ImagePicker.ImagePickerAsset,
             kind: "photo",
+          });
+        }}
+      />
+
+      <PhotoLibraryPicker
+        visible={reelPickerOpen}
+        mediaType="video"
+        onClose={() => setReelPickerOpen(false)}
+        onPicked={(picked) => {
+          setReelPickerOpen(false);
+          setPendingMedia({
+            asset: {
+              uri: picked.uri,
+              width: picked.width ?? 0,
+              height: picked.height ?? 0,
+              type: "video",
+              duration: picked.duration ?? null,
+              mimeType: picked.type ?? "video/mp4",
+            } as unknown as ImagePicker.ImagePickerAsset,
+            kind: "video",
           });
         }}
       />
