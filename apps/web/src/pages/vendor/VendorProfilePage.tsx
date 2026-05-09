@@ -459,38 +459,18 @@ export default function VendorProfilePage() {
       return;
     }
 
-    // Publish-readiness: hosts hate finding a listing on the directory
-    // that turns out to be a half-built shell. Block Publish until the
-    // basics + at least one entry in each support table is filled in.
-    // Plain Save / draft is unaffected.
+    // Publish-readiness: a listing in the public directory needs the
+    // four basics filled in or hosts will hit a half-built shell. We
+    // gate Publish on category, short bio, location, and a starting
+    // price — everything else (team bios, portfolio photos, packages,
+    // etc.) is optional. Plain Save / draft is unaffected.
     if (opts?.publish && profile) {
       const missing: string[] = [];
-      if (!businessName.trim()) missing.push("Business name");
-      if (!location.trim()) missing.push("Location");
+      if (!category) missing.push("Category");
       if (!bio.trim()) missing.push("Short bio");
-      // Category attributes — at least one filled key in the jsonb
-      // counts. Boolean false counts as filled-in too; we only
-      // photos and team members are both optional now; Studio → Photo
-      // Gallery handles photos, and team bios are nice-to-have but
-      // shouldn't block a fresh vendor's first publish.
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const attrsRes = await (supabase as any)
-        .from("vendor_profiles")
-        .select("category_attributes")
-        .eq("id", profile.id)
-        .maybeSingle();
-      const attrs =
-        (attrsRes.data?.category_attributes as Record<string, unknown> | null) ??
-        null;
-      const hasDetails =
-        attrs &&
-        Object.values(attrs).some((v) => {
-          if (v == null) return false;
-          if (typeof v === "string") return v.trim().length > 0;
-          if (Array.isArray(v)) return v.length > 0;
-          return true;
-        });
-      if (!hasDetails) missing.push("Category details");
+      if (!location.trim()) missing.push("Location");
+      if (!basePrice.trim() || Number.parseFloat(basePrice) <= 0)
+        missing.push("Starting price");
 
       if (missing.length > 0) {
         toast.error(`Can't publish yet — add: ${missing.join(", ")}`, {
@@ -1207,9 +1187,9 @@ export default function VendorProfilePage() {
                   as the public Vendors nav on the landing page. */}
               {(!profile || listingTab === "about") && (
               <div className="space-y-2">
-                <Label htmlFor="category">
-                  {t("vendor_listing.category_label")}{" "}
-                  <span className="text-destructive">*</span>
+                <Label htmlFor="category" className="inline-flex items-center gap-1.5">
+                  {t("vendor_listing.category_label")}
+                  <RequiredDot />
                 </Label>
                 <Select value={category} onValueChange={setCategory}>
                   <SelectTrigger id="category" className="h-11">
@@ -1250,7 +1230,10 @@ export default function VendorProfilePage() {
 
               {category && listingTab === "about" && (
                 <div className="space-y-2">
-                  <Label htmlFor="bio">{t("vendor_listing.short_bio")}</Label>
+                  <Label htmlFor="bio" className="inline-flex items-center gap-1.5">
+                    {t("vendor_listing.short_bio")}
+                    <RequiredDot />
+                  </Label>
                   <Textarea
                     id="bio"
                     value={bio}
@@ -1263,8 +1246,9 @@ export default function VendorProfilePage() {
 
               {category && listingTab === "pricing" && (
                 <div className="space-y-2">
-                  <Label htmlFor="base-price">
+                  <Label htmlFor="base-price" className="inline-flex items-center gap-1.5">
                     {t("vendor_listing.starting_price")}
+                    <RequiredDot />
                   </Label>
                   <Input
                     id="base-price"
@@ -1281,8 +1265,9 @@ export default function VendorProfilePage() {
 
               {category && listingTab === "about" && (
                 <div className="space-y-2">
-                  <Label htmlFor="location">
+                  <Label htmlFor="location" className="inline-flex items-center gap-1.5">
                     {t("vendor_listing.location")}
+                    <RequiredDot />
                   </Label>
                   <Input
                     id="location"
@@ -1691,6 +1676,19 @@ function AlignLeftIcon({ className = "w-5 h-5" }: { className?: string }) {
       <line x1="3" y1="12" x2="15" y2="12" />
       <line x1="3" y1="18" x2="18" y2="18" />
     </svg>
+  );
+}
+
+// Small filled red dot used to flag fields that must be filled in
+// before a vendor can hit Publish. Sits next to the field's label so
+// the requirement is visible without scrolling — toast at submit time
+// is the secondary cue.
+function RequiredDot() {
+  return (
+    <span
+      className="inline-block w-1.5 h-1.5 rounded-full bg-destructive"
+      aria-label="Required"
+    />
   );
 }
 
