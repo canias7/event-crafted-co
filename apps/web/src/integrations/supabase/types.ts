@@ -45,7 +45,15 @@ export type Database = {
           target_id?: string | null
           target_type?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "admin_audit_log_admin_id_fkey"
+            columns: ["admin_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       ai_agent_runs: {
         Row: {
@@ -187,39 +195,6 @@ export type Database = {
           },
         ]
       }
-      blog_bundles: {
-        Row: {
-          article_ids: string[] | null
-          cover_image_url: string | null
-          created_at: string
-          description: string | null
-          id: string
-          published_at: string | null
-          slug: string
-          title: string
-        }
-        Insert: {
-          article_ids?: string[] | null
-          cover_image_url?: string | null
-          created_at?: string
-          description?: string | null
-          id?: string
-          published_at?: string | null
-          slug: string
-          title: string
-        }
-        Update: {
-          article_ids?: string[] | null
-          cover_image_url?: string | null
-          created_at?: string
-          description?: string | null
-          id?: string
-          published_at?: string | null
-          slug?: string
-          title?: string
-        }
-        Relationships: []
-      }
       budget_items: {
         Row: {
           amount_cents: number
@@ -329,7 +304,15 @@ export type Database = {
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "calendar_connections_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       calendar_synced_busy: {
         Row: {
@@ -365,7 +348,15 @@ export type Database = {
           synced_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "calendar_synced_busy_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       checklist_items: {
         Row: {
@@ -410,39 +401,52 @@ export type Database = {
       }
       content_reports: {
         Row: {
+          content_id: string
+          content_type: string
           created_at: string
           details: string | null
           id: string
           reason: string
           reporter_id: string
+          resolution_action: string | null
+          resolution_notes: string | null
+          resolved_at: string | null
+          resolved_by: string | null
           status: string
-          target_id: string
-          target_type: string
         }
         Insert: {
+          content_id: string
+          content_type: string
           created_at?: string
           details?: string | null
           id?: string
           reason: string
           reporter_id: string
+          resolution_action?: string | null
+          resolution_notes?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
           status?: string
-          target_id: string
-          target_type: string
         }
         Update: {
+          content_id?: string
+          content_type?: string
           created_at?: string
           details?: string | null
           id?: string
           reason?: string
           reporter_id?: string
+          resolution_action?: string | null
+          resolution_notes?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
           status?: string
-          target_id?: string
-          target_type?: string
         }
         Relationships: []
       }
       direct_messages: {
         Row: {
+          attachments: Json
           body: string
           contact_info_flagged: boolean
           created_at: string
@@ -452,6 +456,7 @@ export type Database = {
           thread_id: string
         }
         Insert: {
+          attachments?: Json
           body: string
           contact_info_flagged?: boolean
           created_at?: string
@@ -461,6 +466,7 @@ export type Database = {
           thread_id: string
         }
         Update: {
+          attachments?: Json
           body?: string
           contact_info_flagged?: boolean
           created_at?: string
@@ -523,48 +529,78 @@ export type Database = {
       }
       editorial_articles: {
         Row: {
+          author_id: string | null
           author_name: string | null
-          body_md: string | null
-          category: string | null
-          cover_image_url: string | null
+          body: string
+          category_slug: string | null
+          city_slug: string | null
           created_at: string
+          event_type_slug: string | null
+          excerpt: string | null
+          hero_path: string | null
           id: string
           published_at: string | null
+          read_minutes: number
           slug: string
           subtitle: string | null
-          tags: string[] | null
           title: string
           updated_at: string
+          vendor_id: string | null
         }
         Insert: {
+          author_id?: string | null
           author_name?: string | null
-          body_md?: string | null
-          category?: string | null
-          cover_image_url?: string | null
+          body: string
+          category_slug?: string | null
+          city_slug?: string | null
           created_at?: string
+          event_type_slug?: string | null
+          excerpt?: string | null
+          hero_path?: string | null
           id?: string
           published_at?: string | null
+          read_minutes?: number
           slug: string
           subtitle?: string | null
-          tags?: string[] | null
           title: string
           updated_at?: string
+          vendor_id?: string | null
         }
         Update: {
+          author_id?: string | null
           author_name?: string | null
-          body_md?: string | null
-          category?: string | null
-          cover_image_url?: string | null
+          body?: string
+          category_slug?: string | null
+          city_slug?: string | null
           created_at?: string
+          event_type_slug?: string | null
+          excerpt?: string | null
+          hero_path?: string | null
           id?: string
           published_at?: string | null
+          read_minutes?: number
           slug?: string
           subtitle?: string | null
-          tags?: string[] | null
           title?: string
           updated_at?: string
+          vendor_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "editorial_articles_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "editorial_articles_vendor_id_fkey"
+            columns: ["vendor_id"]
+            isOneToOne: false
+            referencedRelation: "vendor_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       email_events: {
         Row: {
@@ -776,7 +812,107 @@ export type Database = {
           updated_at?: string
           vendor_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "event_albums_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "host_events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_albums_host_id_fkey"
+            columns: ["host_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_albums_inquiry_id_fkey"
+            columns: ["inquiry_id"]
+            isOneToOne: false
+            referencedRelation: "inquiries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_albums_vendor_id_fkey"
+            columns: ["vendor_id"]
+            isOneToOne: false
+            referencedRelation: "vendor_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      event_channel_messages: {
+        Row: {
+          body: string
+          channel_id: string
+          created_at: string
+          id: string
+          sender_id: string
+        }
+        Insert: {
+          body: string
+          channel_id: string
+          created_at?: string
+          id?: string
+          sender_id: string
+        }
+        Update: {
+          body?: string
+          channel_id?: string
+          created_at?: string
+          id?: string
+          sender_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_channel_messages_channel_id_fkey"
+            columns: ["channel_id"]
+            isOneToOne: false
+            referencedRelation: "event_channels"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_channel_messages_sender_id_fkey"
+            columns: ["sender_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      event_channels: {
+        Row: {
+          archived_at: string | null
+          created_at: string
+          host_id: string
+          id: string
+          name: string
+        }
+        Insert: {
+          archived_at?: string | null
+          created_at?: string
+          host_id: string
+          id?: string
+          name?: string
+        }
+        Update: {
+          archived_at?: string | null
+          created_at?: string
+          host_id?: string
+          id?: string
+          name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_channels_host_id_fkey"
+            columns: ["host_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       event_guests: {
         Row: {
@@ -887,6 +1023,53 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "event_microsite_photos_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "host_events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      event_microsite_rsvps: {
+        Row: {
+          answers: Json
+          attending: boolean
+          created_at: string
+          event_id: string
+          guest_email: string
+          guest_name: string
+          id: string
+          message: string | null
+          plus_ones: number
+          updated_at: string
+        }
+        Insert: {
+          answers?: Json
+          attending: boolean
+          created_at?: string
+          event_id: string
+          guest_email: string
+          guest_name: string
+          id?: string
+          message?: string | null
+          plus_ones?: number
+          updated_at?: string
+        }
+        Update: {
+          answers?: Json
+          attending?: boolean
+          created_at?: string
+          event_id?: string
+          guest_email?: string
+          guest_name?: string
+          id?: string
+          message?: string | null
+          plus_ones?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_microsite_rsvps_event_id_fkey"
             columns: ["event_id"]
             isOneToOne: false
             referencedRelation: "host_events"
@@ -1339,59 +1522,6 @@ export type Database = {
           },
         ]
       }
-      group_channel_members: {
-        Row: {
-          channel_id: string
-          joined_at: string
-          user_id: string
-        }
-        Insert: {
-          channel_id: string
-          joined_at?: string
-          user_id: string
-        }
-        Update: {
-          channel_id?: string
-          joined_at?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "group_channel_members_channel_id_fkey"
-            columns: ["channel_id"]
-            isOneToOne: false
-            referencedRelation: "group_channels"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      group_channels: {
-        Row: {
-          created_at: string
-          created_by: string
-          description: string | null
-          id: string
-          is_private: boolean
-          name: string
-        }
-        Insert: {
-          created_at?: string
-          created_by: string
-          description?: string | null
-          id?: string
-          is_private?: boolean
-          name: string
-        }
-        Update: {
-          created_at?: string
-          created_by?: string
-          description?: string | null
-          id?: string
-          is_private?: boolean
-          name?: string
-        }
-        Relationships: []
-      }
       guest_message_blasts: {
         Row: {
           audience: Json
@@ -1445,7 +1575,8 @@ export type Database = {
           microsite_cover_path: string | null
           microsite_published_at: string | null
           microsite_rsvp_deadline: string | null
-          microsite_rsvp_questions: Json | null
+          microsite_rsvp_intro: string | null
+          microsite_rsvp_questions: Json
           microsite_show_gallery: boolean
           microsite_show_gifts: boolean
           microsite_show_registry: boolean
@@ -1473,7 +1604,8 @@ export type Database = {
           microsite_cover_path?: string | null
           microsite_published_at?: string | null
           microsite_rsvp_deadline?: string | null
-          microsite_rsvp_questions?: Json | null
+          microsite_rsvp_intro?: string | null
+          microsite_rsvp_questions?: Json
           microsite_show_gallery?: boolean
           microsite_show_gifts?: boolean
           microsite_show_registry?: boolean
@@ -1501,7 +1633,8 @@ export type Database = {
           microsite_cover_path?: string | null
           microsite_published_at?: string | null
           microsite_rsvp_deadline?: string | null
-          microsite_rsvp_questions?: Json | null
+          microsite_rsvp_intro?: string | null
+          microsite_rsvp_questions?: Json
           microsite_show_gallery?: boolean
           microsite_show_gifts?: boolean
           microsite_show_registry?: boolean
@@ -1529,29 +1662,32 @@ export type Database = {
         Row: {
           body: string
           created_at: string
-          event_type: string | null
           host_id: string
           id: string
+          is_default: boolean
           name: string
           updated_at: string
+          use_count: number
         }
         Insert: {
           body: string
           created_at?: string
-          event_type?: string | null
           host_id: string
           id?: string
+          is_default?: boolean
           name: string
           updated_at?: string
+          use_count?: number
         }
         Update: {
           body?: string
           created_at?: string
-          event_type?: string | null
           host_id?: string
           id?: string
+          is_default?: boolean
           name?: string
           updated_at?: string
+          use_count?: number
         }
         Relationships: []
       }
@@ -1764,8 +1900,6 @@ export type Database = {
       }
       messages: {
         Row: {
-          attachment_metadata: Json | null
-          attachment_paths: string[] | null
           attachments: Json
           body: string
           created_at: string
@@ -1778,8 +1912,6 @@ export type Database = {
           sent_at: string | null
         }
         Insert: {
-          attachment_metadata?: Json | null
-          attachment_paths?: string[] | null
           attachments?: Json
           body: string
           created_at?: string
@@ -1792,8 +1924,6 @@ export type Database = {
           sent_at?: string | null
         }
         Update: {
-          attachment_metadata?: Json | null
-          attachment_paths?: string[] | null
           attachments?: Json
           body?: string
           created_at?: string
@@ -2064,6 +2194,7 @@ export type Database = {
           preferred_language: string
           reengagement_emails_enabled: boolean
           role: string
+          suspended_at: string | null
           tour_dismissed_at: string | null
           updated_at: string
         }
@@ -2088,6 +2219,7 @@ export type Database = {
           preferred_language?: string
           reengagement_emails_enabled?: boolean
           role?: string
+          suspended_at?: string | null
           tour_dismissed_at?: string | null
           updated_at?: string
         }
@@ -2112,6 +2244,7 @@ export type Database = {
           preferred_language?: string
           reengagement_emails_enabled?: boolean
           role?: string
+          suspended_at?: string | null
           tour_dismissed_at?: string | null
           updated_at?: string
         }
@@ -2128,32 +2261,41 @@ export type Database = {
       proposal_templates: {
         Row: {
           created_at: string
+          deposit_pct: number | null
           id: string
-          intro: string | null
-          line_items: Json | null
+          is_default: boolean
+          line_items: Json
           name: string
           terms: string | null
+          title: string
           updated_at: string
+          use_count: number
           vendor_id: string
         }
         Insert: {
           created_at?: string
+          deposit_pct?: number | null
           id?: string
-          intro?: string | null
-          line_items?: Json | null
+          is_default?: boolean
+          line_items?: Json
           name: string
           terms?: string | null
+          title: string
           updated_at?: string
+          use_count?: number
           vendor_id: string
         }
         Update: {
           created_at?: string
+          deposit_pct?: number | null
           id?: string
-          intro?: string | null
-          line_items?: Json | null
+          is_default?: boolean
+          line_items?: Json
           name?: string
           terms?: string | null
+          title?: string
           updated_at?: string
+          use_count?: number
           vendor_id?: string
         }
         Relationships: [
@@ -2180,7 +2322,7 @@ export type Database = {
           line_items: Json
           responded_at: string | null
           sent_at: string | null
-          share_enabled: boolean
+          share_enabled_at: string | null
           share_token: string | null
           signed_at: string | null
           signed_name: string | null
@@ -2206,7 +2348,7 @@ export type Database = {
           line_items?: Json
           responded_at?: string | null
           sent_at?: string | null
-          share_enabled?: boolean
+          share_enabled_at?: string | null
           share_token?: string | null
           signed_at?: string | null
           signed_name?: string | null
@@ -2232,7 +2374,7 @@ export type Database = {
           line_items?: Json
           responded_at?: string | null
           sent_at?: string | null
-          share_enabled?: boolean
+          share_enabled_at?: string | null
           share_token?: string | null
           signed_at?: string | null
           signed_name?: string | null
@@ -2330,12 +2472,13 @@ export type Database = {
           inquiry_id: string | null
           intro: string | null
           location: string | null
+          media_bucket: string
           published_at: string | null
           slug: string | null
           story: string | null
           title: string
           updated_at: string
-          vendor_id: string
+          vendor_id: string | null
         }
         Insert: {
           cover_path?: string | null
@@ -2349,12 +2492,13 @@ export type Database = {
           inquiry_id?: string | null
           intro?: string | null
           location?: string | null
+          media_bucket?: string
           published_at?: string | null
           slug?: string | null
           story?: string | null
           title: string
           updated_at?: string
-          vendor_id: string
+          vendor_id?: string | null
         }
         Update: {
           cover_path?: string | null
@@ -2368,14 +2512,22 @@ export type Database = {
           inquiry_id?: string | null
           intro?: string | null
           location?: string | null
+          media_bucket?: string
           published_at?: string | null
           slug?: string | null
           story?: string | null
           title?: string
           updated_at?: string
-          vendor_id?: string
+          vendor_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "real_events_host_id_fkey"
+            columns: ["host_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "real_events_inquiry_id_fkey"
             columns: ["inquiry_id"]
@@ -2394,32 +2546,41 @@ export type Database = {
       }
       review_requests: {
         Row: {
-          host_id: string
+          completed_at: string | null
+          created_at: string
           id: string
-          inquiry_id: string
-          message: string | null
+          inquiry_id: string | null
+          recipient_email: string
+          recipient_name: string | null
+          send_count: number
           sent_at: string
-          submitted_at: string | null
+          status: string
           token: string
           vendor_id: string
         }
         Insert: {
-          host_id: string
+          completed_at?: string | null
+          created_at?: string
           id?: string
-          inquiry_id: string
-          message?: string | null
+          inquiry_id?: string | null
+          recipient_email: string
+          recipient_name?: string | null
+          send_count?: number
           sent_at?: string
-          submitted_at?: string | null
+          status?: string
           token?: string
           vendor_id: string
         }
         Update: {
-          host_id?: string
+          completed_at?: string | null
+          created_at?: string
           id?: string
-          inquiry_id?: string
-          message?: string | null
+          inquiry_id?: string | null
+          recipient_email?: string
+          recipient_name?: string | null
+          send_count?: number
           sent_at?: string
-          submitted_at?: string | null
+          status?: string
           token?: string
           vendor_id?: string
         }
@@ -2471,6 +2632,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "review_responses_review_id_fkey"
+            columns: ["review_id"]
+            isOneToOne: true
+            referencedRelation: "reviews_public"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "review_responses_vendor_id_fkey"
             columns: ["vendor_id"]
             isOneToOne: false
@@ -2488,6 +2656,7 @@ export type Database = {
           host_id: string
           id: string
           inquiry_id: string
+          is_hidden: boolean
           photo_urls: Json
           rating: number
           updated_at: string
@@ -2501,6 +2670,7 @@ export type Database = {
           host_id: string
           id?: string
           inquiry_id: string
+          is_hidden?: boolean
           photo_urls?: Json
           rating: number
           updated_at?: string
@@ -2514,6 +2684,7 @@ export type Database = {
           host_id?: string
           id?: string
           inquiry_id?: string
+          is_hidden?: boolean
           photo_urls?: Json
           rating?: number
           updated_at?: string
@@ -2612,6 +2783,36 @@ export type Database = {
           },
         ]
       }
+      signin_2fa_codes: {
+        Row: {
+          attempts: number
+          code_hash: string
+          created_at: string
+          email: string
+          expires_at: string
+          id: string
+          used_at: string | null
+        }
+        Insert: {
+          attempts?: number
+          code_hash: string
+          created_at?: string
+          email: string
+          expires_at: string
+          id?: string
+          used_at?: string | null
+        }
+        Update: {
+          attempts?: number
+          code_hash?: string
+          created_at?: string
+          email?: string
+          expires_at?: string
+          id?: string
+          used_at?: string | null
+        }
+        Relationships: []
+      }
       support_messages: {
         Row: {
           attachments: Json
@@ -2641,6 +2842,13 @@ export type Database = {
           ticket_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "support_messages_sender_id_fkey"
+            columns: ["sender_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "support_messages_ticket_id_fkey"
             columns: ["ticket_id"]
@@ -2687,7 +2895,22 @@ export type Database = {
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "support_tickets_assigned_admin_id_fkey"
+            columns: ["assigned_admin_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "support_tickets_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       suppressed_emails: {
         Row: {
@@ -2713,43 +2936,26 @@ export type Database = {
         }
         Relationships: []
       }
-      vendor_availability_recurring: {
+      user_roles: {
         Row: {
           created_at: string
-          end_time: string
           id: string
-          is_available: boolean
-          start_time: string
-          vendor_id: string
-          weekday: number
+          role: string
+          user_id: string
         }
         Insert: {
           created_at?: string
-          end_time: string
           id?: string
-          is_available?: boolean
-          start_time: string
-          vendor_id: string
-          weekday: number
+          role: string
+          user_id: string
         }
         Update: {
           created_at?: string
-          end_time?: string
           id?: string
-          is_available?: boolean
-          start_time?: string
-          vendor_id?: string
-          weekday?: number
+          role?: string
+          user_id?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "vendor_availability_recurring_vendor_id_fkey"
-            columns: ["vendor_id"]
-            isOneToOne: false
-            referencedRelation: "vendor_profiles"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       vendor_availability_rules: {
         Row: {
@@ -2795,37 +3001,165 @@ export type Database = {
           },
         ]
       }
-      vendor_claim_listings: {
+      vendor_bundle_members: {
         Row: {
-          claimed_at: string | null
-          claimed_by: string | null
-          created_at: string
-          id: string
-          invite_email: string | null
-          invite_token: string
+          bundle_id: string
+          display_order: number
+          role: string | null
           vendor_id: string
         }
         Insert: {
-          claimed_at?: string | null
-          claimed_by?: string | null
-          created_at?: string
-          id?: string
-          invite_email?: string | null
-          invite_token?: string
+          bundle_id: string
+          display_order?: number
+          role?: string | null
           vendor_id: string
         }
         Update: {
-          claimed_at?: string | null
-          claimed_by?: string | null
-          created_at?: string
-          id?: string
-          invite_email?: string | null
-          invite_token?: string
+          bundle_id?: string
+          display_order?: number
+          role?: string | null
           vendor_id?: string
         }
         Relationships: [
           {
-            foreignKeyName: "vendor_claim_listings_vendor_id_fkey"
+            foreignKeyName: "vendor_bundle_members_bundle_id_fkey"
+            columns: ["bundle_id"]
+            isOneToOne: false
+            referencedRelation: "vendor_bundles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vendor_bundle_members_vendor_id_fkey"
+            columns: ["vendor_id"]
+            isOneToOne: false
+            referencedRelation: "vendor_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vendor_bundles: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          name: string
+          price_cents: number | null
+          primary_vendor_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          price_cents?: number | null
+          primary_vendor_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          price_cents?: number | null
+          primary_vendor_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vendor_bundles_primary_vendor_id_fkey"
+            columns: ["primary_vendor_id"]
+            isOneToOne: false
+            referencedRelation: "vendor_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vendor_buzz: {
+        Row: {
+          body: string
+          created_at: string
+          id: string
+          user_id: string
+          vendor_id: string
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          id?: string
+          user_id: string
+          vendor_id: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          id?: string
+          user_id?: string
+          vendor_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vendor_buzz_vendor_id_fkey"
+            columns: ["vendor_id"]
+            isOneToOne: false
+            referencedRelation: "vendor_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vendor_claim_invitations: {
+        Row: {
+          accepted_at: string | null
+          contacted_at: string | null
+          created_at: string
+          email: string
+          id: string
+          invited_by: string | null
+          notes: string | null
+          status: string
+          token: string
+          updated_at: string
+          vendor_id: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          contacted_at?: string | null
+          created_at?: string
+          email: string
+          id?: string
+          invited_by?: string | null
+          notes?: string | null
+          status?: string
+          token?: string
+          updated_at?: string
+          vendor_id: string
+        }
+        Update: {
+          accepted_at?: string | null
+          contacted_at?: string | null
+          created_at?: string
+          email?: string
+          id?: string
+          invited_by?: string | null
+          notes?: string | null
+          status?: string
+          token?: string
+          updated_at?: string
+          vendor_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vendor_claim_invitations_invited_by_fkey"
+            columns: ["invited_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vendor_claim_invitations_vendor_id_fkey"
             columns: ["vendor_id"]
             isOneToOne: false
             referencedRelation: "vendor_profiles"
@@ -2864,6 +3198,41 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "vendor_contract_templates_vendor_id_fkey"
+            columns: ["vendor_id"]
+            isOneToOne: false
+            referencedRelation: "vendor_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vendor_faqs: {
+        Row: {
+          answer: string
+          created_at: string
+          display_order: number
+          id: string
+          question: string
+          vendor_id: string
+        }
+        Insert: {
+          answer: string
+          created_at?: string
+          display_order?: number
+          id?: string
+          question: string
+          vendor_id: string
+        }
+        Update: {
+          answer?: string
+          created_at?: string
+          display_order?: number
+          id?: string
+          question?: string
+          vendor_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vendor_faqs_vendor_id_fkey"
             columns: ["vendor_id"]
             isOneToOne: false
             referencedRelation: "vendor_profiles"
@@ -2936,47 +3305,6 @@ export type Database = {
             foreignKeyName: "vendor_intake_forms_vendor_id_fkey"
             columns: ["vendor_id"]
             isOneToOne: true
-            referencedRelation: "vendor_profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      vendor_lead_rules: {
-        Row: {
-          auto_reply_template: string | null
-          created_at: string
-          id: string
-          is_active: boolean
-          match_event_types: string[] | null
-          min_budget_cents: number | null
-          name: string
-          vendor_id: string
-        }
-        Insert: {
-          auto_reply_template?: string | null
-          created_at?: string
-          id?: string
-          is_active?: boolean
-          match_event_types?: string[] | null
-          min_budget_cents?: number | null
-          name: string
-          vendor_id: string
-        }
-        Update: {
-          auto_reply_template?: string | null
-          created_at?: string
-          id?: string
-          is_active?: boolean
-          match_event_types?: string[] | null
-          min_budget_cents?: number | null
-          name?: string
-          vendor_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "vendor_lead_rules_vendor_id_fkey"
-            columns: ["vendor_id"]
-            isOneToOne: false
             referencedRelation: "vendor_profiles"
             referencedColumns: ["id"]
           },
@@ -3088,6 +3416,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "vendor_partner_messages_sender_vendor_id_fkey"
+            columns: ["sender_vendor_id"]
+            isOneToOne: false
+            referencedRelation: "vendor_profiles"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "vendor_partner_messages_thread_id_fkey"
             columns: ["thread_id"]
             isOneToOne: false
@@ -3118,7 +3453,22 @@ export type Database = {
           vendor_a_id?: string
           vendor_b_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "vendor_partner_threads_vendor_a_id_fkey"
+            columns: ["vendor_a_id"]
+            isOneToOne: false
+            referencedRelation: "vendor_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vendor_partner_threads_vendor_b_id_fkey"
+            columns: ["vendor_b_id"]
+            isOneToOne: false
+            referencedRelation: "vendor_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       vendor_portfolio_images: {
         Row: {
@@ -3155,33 +3505,36 @@ export type Database = {
           },
         ]
       }
-      vendor_profile_extras: {
+      vendor_posts: {
         Row: {
-          certifications: Json | null
+          caption: string | null
           created_at: string
-          press_mentions: Json | null
-          updated_at: string
+          id: string
+          image_url: string
+          user_id: string
           vendor_id: string
         }
         Insert: {
-          certifications?: Json | null
+          caption?: string | null
           created_at?: string
-          press_mentions?: Json | null
-          updated_at?: string
+          id?: string
+          image_url: string
+          user_id: string
           vendor_id: string
         }
         Update: {
-          certifications?: Json | null
+          caption?: string | null
           created_at?: string
-          press_mentions?: Json | null
-          updated_at?: string
+          id?: string
+          image_url?: string
+          user_id?: string
           vendor_id?: string
         }
         Relationships: [
           {
-            foreignKeyName: "vendor_profile_extras_vendor_id_fkey"
+            foreignKeyName: "vendor_posts_vendor_id_fkey"
             columns: ["vendor_id"]
-            isOneToOne: true
+            isOneToOne: false
             referencedRelation: "vendor_profiles"
             referencedColumns: ["id"]
           },
@@ -3231,7 +3584,10 @@ export type Database = {
           application_status: string
           appointment_buffer_after_minutes: number
           appointment_buffer_before_minutes: number
-          awards: string[] | null
+          auto_decline_below_cents: number | null
+          auto_decline_message: string | null
+          auto_reply_enabled: boolean
+          auto_reply_template: string | null
           base_price_cents: number | null
           bio: string | null
           business_name: string
@@ -3240,25 +3596,20 @@ export type Database = {
           category_attributes: Json
           created_at: string
           deposit_pct: number | null
-          deposit_policy: string | null
-          faq: Json | null
           geocoded_at: string | null
           geocoded_location: string | null
           id: string
           instagram_handle: string | null
           intro_video_url: string | null
           is_demo: boolean
-          languages: string[] | null
           latitude: number | null
           location: string | null
           longitude: number | null
           onboarding_nudge_sent_at: string | null
-          payment_terms: string | null
           policy_notes: string | null
           portfolio_summary: string | null
           reschedule_window_days: number | null
           responder_tier: string | null
-          service_radius_km: number | null
           service_radius_miles: number | null
           slug: string | null
           tiktok_handle: string | null
@@ -3275,7 +3626,10 @@ export type Database = {
           application_status?: string
           appointment_buffer_after_minutes?: number
           appointment_buffer_before_minutes?: number
-          awards?: string[] | null
+          auto_decline_below_cents?: number | null
+          auto_decline_message?: string | null
+          auto_reply_enabled?: boolean
+          auto_reply_template?: string | null
           base_price_cents?: number | null
           bio?: string | null
           business_name: string
@@ -3284,25 +3638,20 @@ export type Database = {
           category_attributes?: Json
           created_at?: string
           deposit_pct?: number | null
-          deposit_policy?: string | null
-          faq?: Json | null
           geocoded_at?: string | null
           geocoded_location?: string | null
           id?: string
           instagram_handle?: string | null
           intro_video_url?: string | null
           is_demo?: boolean
-          languages?: string[] | null
           latitude?: number | null
           location?: string | null
           longitude?: number | null
           onboarding_nudge_sent_at?: string | null
-          payment_terms?: string | null
           policy_notes?: string | null
           portfolio_summary?: string | null
           reschedule_window_days?: number | null
           responder_tier?: string | null
-          service_radius_km?: number | null
           service_radius_miles?: number | null
           slug?: string | null
           tiktok_handle?: string | null
@@ -3319,7 +3668,10 @@ export type Database = {
           application_status?: string
           appointment_buffer_after_minutes?: number
           appointment_buffer_before_minutes?: number
-          awards?: string[] | null
+          auto_decline_below_cents?: number | null
+          auto_decline_message?: string | null
+          auto_reply_enabled?: boolean
+          auto_reply_template?: string | null
           base_price_cents?: number | null
           bio?: string | null
           business_name?: string
@@ -3328,25 +3680,20 @@ export type Database = {
           category_attributes?: Json
           created_at?: string
           deposit_pct?: number | null
-          deposit_policy?: string | null
-          faq?: Json | null
           geocoded_at?: string | null
           geocoded_location?: string | null
           id?: string
           instagram_handle?: string | null
           intro_video_url?: string | null
           is_demo?: boolean
-          languages?: string[] | null
           latitude?: number | null
           location?: string | null
           longitude?: number | null
           onboarding_nudge_sent_at?: string | null
-          payment_terms?: string | null
           policy_notes?: string | null
           portfolio_summary?: string | null
           reschedule_window_days?: number | null
           responder_tier?: string | null
-          service_radius_km?: number | null
           service_radius_miles?: number | null
           slug?: string | null
           tiktok_handle?: string | null
@@ -3360,7 +3707,7 @@ export type Database = {
           {
             foreignKeyName: "vendor_profiles_user_id_fkey"
             columns: ["user_id"]
-            isOneToOne: true
+            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -3408,6 +3755,47 @@ export type Database = {
           },
         ]
       }
+      vendor_reels: {
+        Row: {
+          caption: string | null
+          created_at: string
+          duration_seconds: number | null
+          id: string
+          thumbnail_url: string | null
+          user_id: string
+          vendor_id: string
+          video_url: string
+        }
+        Insert: {
+          caption?: string | null
+          created_at?: string
+          duration_seconds?: number | null
+          id?: string
+          thumbnail_url?: string | null
+          user_id: string
+          vendor_id: string
+          video_url: string
+        }
+        Update: {
+          caption?: string | null
+          created_at?: string
+          duration_seconds?: number | null
+          id?: string
+          thumbnail_url?: string | null
+          user_id?: string
+          vendor_id?: string
+          video_url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vendor_reels_vendor_id_fkey"
+            columns: ["vendor_id"]
+            isOneToOne: false
+            referencedRelation: "vendor_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       vendor_reengagement_log: {
         Row: {
           event_type: string | null
@@ -3439,7 +3827,29 @@ export type Database = {
           upcoming_date?: string
           vendor_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "vendor_reengagement_log_host_id_fkey"
+            columns: ["host_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vendor_reengagement_log_inquiry_id_fkey"
+            columns: ["inquiry_id"]
+            isOneToOne: false
+            referencedRelation: "inquiries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vendor_reengagement_log_vendor_id_fkey"
+            columns: ["vendor_id"]
+            isOneToOne: false
+            referencedRelation: "vendor_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       vendor_referrals: {
         Row: {
@@ -3747,6 +4157,73 @@ export type Database = {
       }
     }
     Views: {
+      reviews_public: {
+        Row: {
+          body: string | null
+          created_at: string | null
+          hidden_at: string | null
+          hidden_reason: string | null
+          host_id: string | null
+          id: string | null
+          inquiry_id: string | null
+          is_hidden: boolean | null
+          photo_urls: Json | null
+          rating: number | null
+          updated_at: string | null
+          vendor_id: string | null
+        }
+        Insert: {
+          body?: string | null
+          created_at?: string | null
+          hidden_at?: string | null
+          hidden_reason?: string | null
+          host_id?: string | null
+          id?: string | null
+          inquiry_id?: string | null
+          is_hidden?: boolean | null
+          photo_urls?: Json | null
+          rating?: number | null
+          updated_at?: string | null
+          vendor_id?: string | null
+        }
+        Update: {
+          body?: string | null
+          created_at?: string | null
+          hidden_at?: string | null
+          hidden_reason?: string | null
+          host_id?: string | null
+          id?: string | null
+          inquiry_id?: string | null
+          is_hidden?: boolean | null
+          photo_urls?: Json | null
+          rating?: number | null
+          updated_at?: string | null
+          vendor_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reviews_host_id_fkey"
+            columns: ["host_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reviews_inquiry_id_fkey"
+            columns: ["inquiry_id"]
+            isOneToOne: true
+            referencedRelation: "inquiries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reviews_vendor_id_fkey"
+            columns: ["vendor_id"]
+            isOneToOne: false
+            referencedRelation: "vendor_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       vendor_public_badges: {
         Row: {
           kinds: string[] | null
@@ -3767,19 +4244,176 @@ export type Database = {
       accept_party_invite: { Args: { p_token: string }; Returns: Json }
       accept_planning_invite: { Args: { p_token: string }; Returns: Json }
       accept_team_invite: { Args: { p_token: string }; Returns: Json }
+      admin_delete_user: { Args: { p_user_id: string }; Returns: undefined }
+      admin_list_users: {
+        Args: never
+        Returns: {
+          created_at: string
+          display_name: string
+          email: string
+          id: string
+          last_sign_in_at: string
+          role: string
+          suspended_at: string
+        }[]
+      }
+      apply_as_vendor: {
+        Args: { p_business_name: string; p_category: string }
+        Returns: {
+          application_review_notes: string | null
+          application_reviewed_at: string | null
+          application_reviewed_by: string | null
+          application_status: string
+          appointment_buffer_after_minutes: number
+          appointment_buffer_before_minutes: number
+          auto_decline_below_cents: number | null
+          auto_decline_message: string | null
+          auto_reply_enabled: boolean
+          auto_reply_template: string | null
+          base_price_cents: number | null
+          bio: string | null
+          business_name: string
+          cancellation_policy: string | null
+          category: string
+          category_attributes: Json
+          created_at: string
+          deposit_pct: number | null
+          geocoded_at: string | null
+          geocoded_location: string | null
+          id: string
+          instagram_handle: string | null
+          intro_video_url: string | null
+          is_demo: boolean
+          latitude: number | null
+          location: string | null
+          longitude: number | null
+          onboarding_nudge_sent_at: string | null
+          policy_notes: string | null
+          portfolio_summary: string | null
+          reschedule_window_days: number | null
+          responder_tier: string | null
+          service_radius_miles: number | null
+          slug: string | null
+          tiktok_handle: string | null
+          updated_at: string
+          user_id: string | null
+          verified_at: string | null
+          weekly_digest_enabled: boolean
+          weekly_digest_sent_at: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "vendor_profiles"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       can_access_inquiry: { Args: { _inquiry_id: string }; Returns: boolean }
       claim_vendor_listing: { Args: { p_token: string }; Returns: Json }
+      claim_vendor_referral: {
+        Args: { p_code: string; p_new_vendor_id: string }
+        Returns: Json
+      }
       delete_email: {
         Args: { message_id: number; queue_name: string }
+        Returns: boolean
+      }
+      delete_my_vendor_profile: {
+        Args: { p_vendor_id: string }
         Returns: boolean
       }
       enqueue_email: {
         Args: { payload: Json; queue_name: string }
         Returns: number
       }
+      enqueue_pending_digests: {
+        Args: { p_lookback_hours?: number }
+        Returns: {
+          display_name: string
+          email: string
+          notifications: Json
+          role: string
+          user_id: string
+        }[]
+      }
+      enqueue_pending_review_prompts: {
+        Args: { p_after_days?: number }
+        Returns: {
+          event_date: string
+          event_type: string
+          host_email: string
+          host_id: string
+          inquiry_id: string
+          vendor_id: string
+          vendor_name: string
+        }[]
+      }
+      enqueue_saved_search_matches: {
+        Args: never
+        Returns: {
+          email_alerts_enabled: boolean
+          host_email: string
+          host_id: string
+          match_count: number
+          saved_search_id: string
+          search_name: string
+        }[]
+      }
+      enqueue_vendor_onboarding_nudges: {
+        Args: { p_cooldown_days?: number; p_min_age_days?: number }
+        Returns: {
+          business_name: string
+          email: string
+          missing_count: number
+          user_id: string
+          vendor_id: string
+        }[]
+      }
+      enqueue_vendor_weekly_digests: {
+        Args: { p_window_days?: number }
+        Returns: {
+          bookings_new: number
+          inquiries_new: number
+          inquiries_replied: number
+          median_response_hours: number
+          recipient_email: string
+          reviews_new: number
+          vendor_id: string
+          vendor_name: string
+        }[]
+      }
+      expire_stale_inquiries: {
+        Args: { p_after_days?: number }
+        Returns: {
+          host_email: string
+          host_id: string
+          inquiry_id: string
+          vendor_id: string
+          vendor_name: string
+        }[]
+      }
+      find_or_create_direct_thread: {
+        Args: { p_vendor_id: string }
+        Returns: string
+      }
       find_or_create_partner_thread: {
         Args: { p_my_vendor_id?: string; p_other_vendor_id: string }
         Returns: string
+      }
+      find_reengagement_opportunities: {
+        Args: never
+        Returns: {
+          event_type: string
+          host_display_name: string
+          host_email: string
+          host_id: string
+          inquiry_id: string
+          occasion: string
+          upcoming_date: string
+          vendor_business_name: string
+          vendor_id: string
+          vendor_user_id: string
+        }[]
       }
       generate_real_event_slug: {
         Args: { p_id: string; p_title: string }
@@ -3790,6 +4424,7 @@ export type Database = {
         Args: { p_category: string; p_location?: string }
         Returns: Json
       }
+      get_calendar_feed_by_token: { Args: { p_token: string }; Returns: Json }
       get_claim_invitation_by_token: {
         Args: { p_token: string }
         Returns: Json
@@ -3818,6 +4453,7 @@ export type Database = {
         Args: { p_window_days?: number }
         Returns: Json
       }
+      get_gift_wish_by_token: { Args: { p_token: string }; Returns: Json }
       get_guest_by_token: {
         Args: { p_token: string }
         Returns: {
@@ -3834,9 +4470,27 @@ export type Database = {
           rsvp_status: string
         }[]
       }
+      get_host_reputation: {
+        Args: { p_host_id: string }
+        Returns: {
+          booking_rate: number
+          bookings: number
+          ghosted: number
+          joined_at: string
+          negative_flags: number
+          positive_flags: number
+          response_rate: number
+          tier: string
+          total_inquiries: number
+        }[]
+      }
       get_microsite_by_token: { Args: { p_token: string }; Returns: Json }
       get_microsite_rsvp_config: { Args: { p_token: string }; Returns: Json }
       get_mood_board_by_token: { Args: { p_token: string }; Returns: Json }
+      get_mood_board_comments_by_token: {
+        Args: { p_token: string }
+        Returns: Json
+      }
       get_party_invite_by_token: { Args: { p_token: string }; Returns: Json }
       get_party_portal: { Args: { p_event_id: string }; Returns: Json }
       get_planner_workspace: { Args: never; Returns: Json }
@@ -3852,14 +4506,14 @@ export type Database = {
           vendor_id: string
         }[]
       }
+      get_referral_by_code: { Args: { p_code: string }; Returns: Json }
       get_review_request_context: { Args: { p_token: string }; Returns: Json }
       get_team_invite_by_token: { Args: { p_token: string }; Returns: Json }
-      get_vendor_availability:
-        | { Args: { p_date: string; p_vendor_id: string }; Returns: Json }
-        | {
-            Args: { p_from: string; p_to: string; p_vendor_id: string }
-            Returns: Json
-          }
+      get_user_email: { Args: { p_user_id: string }; Returns: string }
+      get_vendor_availability: {
+        Args: { p_date: string; p_vendor_id: string }
+        Returns: Json
+      }
       get_vendor_benchmarks: {
         Args: { p_category: string; p_window_days?: number }
         Returns: {
@@ -3871,6 +4525,7 @@ export type Database = {
       }
       get_vendor_profile_score: { Args: { p_vendor_id: string }; Returns: Json }
       is_admin: { Args: never; Returns: boolean }
+      is_approved_vendor: { Args: { p_user_id: string }; Returns: boolean }
       is_inquiry_vendor_member: {
         Args: { _inquiry_id: string }
         Returns: boolean
@@ -3916,12 +4571,36 @@ export type Database = {
         }
         Returns: number
       }
+      pledge_to_gift: {
+        Args: {
+          p_amount_cents: number
+          p_email?: string
+          p_message?: string
+          p_name: string
+          p_token: string
+        }
+        Returns: string
+      }
       read_email_batch: {
         Args: { batch_size: number; queue_name: string; vt: number }
         Returns: {
           message: Json
           msg_id: number
           read_ct: number
+        }[]
+      }
+      recompute_vendor_responder_tiers: {
+        Args: {
+          p_fast_hours?: number
+          p_min_replies?: number
+          p_window_days?: number
+        }
+        Returns: {
+          median_hours: number
+          new_tier: string
+          prev_tier: string
+          reply_count: number
+          vendor_id: string
         }[]
       }
       request_account_deletion: { Args: never; Returns: undefined }
@@ -3971,6 +4650,11 @@ export type Database = {
       toggle_proposal_share: {
         Args: { p_enabled: boolean; p_proposal_id: string }
         Returns: string
+      }
+      vendor_booked_dates: { Args: { p_vendor_id: string }; Returns: string[] }
+      verify_user_password: {
+        Args: { p_email: string; p_password: string }
+        Returns: Json
       }
     }
     Enums: {
@@ -4104,3 +4788,4 @@ export const Constants = {
     Enums: {},
   },
 } as const
+
