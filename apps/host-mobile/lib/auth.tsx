@@ -35,6 +35,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => data.subscription.unsubscribe();
   }, []);
 
+  // Catch admin-deleted accounts. Supabase invalidates refresh tokens
+  // on delete but the cached access token stays valid for ~1h. Poll
+  // getUser() every 30s so a deleted user is signed out promptly.
+  useEffect(() => {
+    if (!session?.user) return;
+    let cancelled = false;
+    const tick = async () => {
+      const { data, error } = await supabase.auth.getUser();
+      if (cancelled) return;
+      if (error || !data?.user) {
+        await supabase.auth.signOut();
+      }
+    };
+    const id = setInterval(tick, 30_000);
+    return () => {
+      cancelled = true;
+      clearInterval(id);
+    };
+  }, [session?.user?.id]);
+
   const value: AuthContextValue = {
     user: session?.user ?? null,
     session,
