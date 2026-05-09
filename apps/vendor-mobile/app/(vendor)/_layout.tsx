@@ -1,8 +1,9 @@
-// Vendor tab layout. Mirrors the 4-tab bottom nav used on the web's
-// mobile breakpoint (Dashboard, Inbox, Calendar, Listing). If the user
-// isn't signed in, kick them back to the auth gate at /.
-//
-// Tab labels stay short — bottom-tab text gets cropped beyond ~7 chars.
+// Vendor mobile tab layout — 5 tabs:
+//   Home      dashboard.tsx
+//   Calendar  calendar.tsx
+//   Inbox     inbox.tsx
+//   Studio    studio.tsx   (content tools hub: packages, gallery, FAQs, policies, AI agent)
+//   Profile   profile.tsx  (public listing preview + account settings)
 
 import { Redirect, Tabs } from "expo-router";
 import { ActivityIndicator, View } from "react-native";
@@ -31,9 +32,10 @@ export default function VendorLayout() {
       }}
     >
       <Tabs.Screen name="dashboard" options={{ title: "Home" }} />
-      <Tabs.Screen name="inbox" options={{ title: "Inbox" }} />
       <Tabs.Screen name="calendar" options={{ title: "Calendar" }} />
-      <Tabs.Screen name="listing" options={{ title: "Listing" }} />
+      <Tabs.Screen name="inbox" options={{ title: "Inbox" }} />
+      <Tabs.Screen name="studio" options={{ title: "Studio" }} />
+      <Tabs.Screen name="profile" options={{ title: "Profile" }} />
     </Tabs>
   );
 }
