@@ -10,12 +10,15 @@ type UserRow = {
   suspended_at: string | null;
   created_at: string;
   last_sign_in_at: string | null;
-  // Display role — admin sees only this. Hides "Vendor" for users who
-  // submitted a vendor application but haven't been admin-approved
-  // yet (those land on the Vendor applications tab instead). Comes
-  // from a follow-up join against vendor_profiles, not the auth.users
-  // role.
-  display_role: "Host" | "Vendor" | "Admin";
+  // Display role — admin sees only this. Differentiates approved
+  // vendors from in-flight applicants so the Users tab is accurate
+  // without needing to bounce to the Vendor applications tab.
+  display_role:
+    | "Host"
+    | "Vendor"
+    | "Vendor (pending)"
+    | "Vendor (rejected)"
+    | "Admin";
 };
 
 export function UsersPage() {
@@ -38,9 +41,9 @@ export function UsersPage() {
     );
 
     // Pull the application_status for everyone who has a vendor
-    // profile. We use this to gate the "Vendor" badge on the Users
-    // tab — pending / rejected applications stay hidden behind the
-    // Vendor applications tab.
+    // profile. The Users tab uses this to differentiate approved
+    // vendors from in-flight applicants in the Role column instead
+    // of conflating them with hosts.
     const { data: vps } = await supabase
       .from("vendor_profiles")
       .select("user_id, application_status")
@@ -48,19 +51,22 @@ export function UsersPage() {
         "user_id",
         baseRows.map((r) => r.id),
       );
-    const approvedByUser = new Set(
+    const statusByUser = new Map<string, string>(
       ((vps as Array<{ user_id: string; application_status: string }> | null) ??
-        [])
-        .filter((v) => v.application_status === "approved")
-        .map((v) => v.user_id),
+        []).map((v) => [v.user_id, v.application_status]),
     );
 
     const final: UserRow[] = baseRows.map((r) => {
       let display_role: UserRow["display_role"] = "Host";
       if (r.role === "admin") {
         display_role = "Admin";
-      } else if (r.role === "vendor" && approvedByUser.has(r.id)) {
-        display_role = "Vendor";
+      } else if (r.role === "vendor") {
+        const s = statusByUser.get(r.id);
+        if (s === "approved") display_role = "Vendor";
+        else if (s === "rejected") display_role = "Vendor (rejected)";
+        else if (s === "pending" || s === "draft" || s === "submitted")
+          display_role = "Vendor (pending)";
+        else display_role = "Host";
       }
       return { ...r, display_role };
     });
