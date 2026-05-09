@@ -8,8 +8,8 @@ export type AppRole = "host" | "vendor";
 
 export interface VendorProfile {
   id: string;
-  business_name: string;
-  category: string;
+  business_name: string | null;
+  category: string | null;
   bio: string | null;
   base_price_cents: number | null;
   location: string | null;
@@ -21,6 +21,7 @@ export interface VendorProfile {
   slug: string | null;
   instagram_handle: string | null;
   tiktok_handle: string | null;
+  logo_url: string | null;
 }
 
 export interface InquiryRow {

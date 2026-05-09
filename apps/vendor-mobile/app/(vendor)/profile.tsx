@@ -221,7 +221,11 @@ export default function ProfileScreen() {
         <View className="items-center px-4 pt-2">
           <View className="h-28 w-28 overflow-hidden rounded-full bg-secondary/60">
             <Image
-              source={require("../../assets/icon.png")}
+              source={
+                profile?.logo_url
+                  ? { uri: profile.logo_url }
+                  : require("../../assets/icon.png")
+              }
               className="h-full w-full"
               resizeMode="cover"
             />
@@ -248,7 +252,10 @@ export default function ProfileScreen() {
           </Pressable>
         </View>
 
-        <View className="mt-8 flex-row border-t border-border">
+        {/* Generous gap between the avatar / name block and the 4-tab
+            strip — leaves room for future profile chrome (bio,
+            counters, follow button, etc) above the tabs. */}
+        <View className="mt-14 flex-row border-t border-border">
           <ViewTab
             active={view === "grid"}
             onPress={() => setView("grid")}
@@ -716,8 +723,8 @@ function ListingTab({
   }
   return (
     <View className="w-full gap-3 px-2">
-      <Field label="Business name" value={profile.business_name} />
-      <Field label="Category" value={profile.category} />
+      <Field label="Business name" value={profile.business_name ?? "—"} />
+      <Field label="Category" value={profile.category ?? "—"} />
       <Field label="Location" value={profile.location ?? "—"} />
       <Field
         label="Verification"
