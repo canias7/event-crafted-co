@@ -8,7 +8,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
-import { SocialAuthButtons } from "@/components/auth/SocialAuthButtons";
 import { PasswordInput } from "@/components/auth/PasswordInput";
 import { Picture } from "@/components/shared/Picture";
 import heroImg from "@/assets/vendora-hero-dinner.jpg?as=picture";
@@ -199,14 +198,6 @@ export default function SignupPage() {
               and to verify it's you. We don't sell your data, ever.
             </p>
           </form>
-
-          <div className="mt-6 mb-6 flex items-center gap-3 text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
-            <span className="flex-1 h-px bg-border" />
-            {t("auth.common.or")}
-            <span className="flex-1 h-px bg-border" />
-          </div>
-
-          <SocialAuthButtons />
 
           <p className="text-sm text-muted-foreground mt-8 text-center">
             {t("auth.signup.already_have_account")}{" "}
