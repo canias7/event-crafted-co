@@ -7,7 +7,7 @@
 // flows ship.
 
 import { useState } from "react";
-import { ScrollView, Text, View } from "react-native";
+import { Alert, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 import { Pressable } from "react-native";
@@ -56,18 +56,30 @@ export default function HomeScreen() {
             icon="grid"
             title="No posts yet"
             body="Share photos from past events to build trust with hosts."
+            ctaLabel="Create"
+            onCta={() =>
+              Alert.alert("Create post", "Posting comes in a future update.")
+            }
           />
         ) : view === "reels" ? (
           <EmptyState
             icon="play"
             title="No reels yet"
             body="Short videos help your listing convert. Coming soon."
+            ctaLabel="Create"
+            onCta={() =>
+              Alert.alert("Create reel", "Reels come in a future update.")
+            }
           />
         ) : view === "buzz" ? (
           <EmptyState
             icon="align-left"
             title="No buzz yet"
             body="Post quick updates, behind-the-scenes notes, or news for your followers."
+            ctaLabel="Create"
+            onCta={() =>
+              Alert.alert("Buzz", "Buzz posts come in a future update.")
+            }
           />
         ) : (
           <EmptyState
@@ -108,10 +120,14 @@ function EmptyState({
   icon,
   title,
   body,
+  ctaLabel,
+  onCta,
 }: {
   icon: keyof typeof Feather.glyphMap;
   title: string;
   body: string;
+  ctaLabel?: string;
+  onCta?: () => void;
 }) {
   return (
     <View className="items-center">
@@ -122,6 +138,16 @@ function EmptyState({
       <Text className="mt-1 text-center text-base text-muted-foreground">
         {body}
       </Text>
+      {ctaLabel && onCta ? (
+        <Pressable
+          onPress={onCta}
+          className="mt-5 rounded-full bg-foreground px-6 py-2.5 active:opacity-80"
+        >
+          <Text className="text-sm font-semibold text-background">
+            {ctaLabel}
+          </Text>
+        </Pressable>
+      ) : null}
     </View>
   );
 }
