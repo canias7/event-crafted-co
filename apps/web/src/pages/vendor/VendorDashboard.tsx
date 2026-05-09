@@ -230,22 +230,11 @@ export default function VendorDashboard() {
         </div>
 
         <div className="p-3 md:p-6 space-y-3 md:space-y-4">
-          {/* Application-status banner: pending = under review,
-              rejected = declined with admin notes. Approved is the
-              normal state and shows nothing. */}
-          {vendorProfile?.application_status === "pending" && (
-            <div className="rounded-sm border border-accent/30 bg-accent/5 p-4 flex items-start gap-3">
-              <Clock className="w-4 h-4 text-accent mt-0.5 shrink-0" />
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium">
-                  {t("vendor_dashboard.header.application_pending_title")}
-                </p>
-                <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">
-                  {t("vendor_dashboard.header.application_pending_body")}
-                </p>
-              </div>
-            </div>
-          )}
+          {/* The pending-application banner used to live here; dropped
+              per request because the dashboard reads as a working
+              vendor surface and the under-review state is already
+              surfaced on the Profile / listing tab. Rejected still
+              gets a banner below since that's actionable. */}
           {vendorProfile?.application_status === "rejected" && (
             <div className="rounded-sm border border-destructive/30 bg-destructive/5 p-4 flex items-start gap-3">
               <AlertCircle className="w-4 h-4 text-destructive mt-0.5 shrink-0" />
