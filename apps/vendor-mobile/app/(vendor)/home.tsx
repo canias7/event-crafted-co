@@ -35,6 +35,7 @@ interface PostRow {
 interface ReelRow {
   id: string;
   video_url: string;
+  thumbnail_url: string | null;
   caption: string | null;
   created_at: string;
 }
@@ -86,7 +87,7 @@ export default function HomeScreen() {
         .order("created_at", { ascending: false }),
       supabase
         .from("vendor_reels")
-        .select("id, video_url, caption, created_at")
+        .select("id, video_url, thumbnail_url, caption, created_at")
         .eq("vendor_id", profile.id)
         .order("created_at", { ascending: false }),
       supabase
@@ -417,12 +418,26 @@ function PostGrid({ posts }: { posts: PostRow[] }) {
       numColumns={3}
       scrollEnabled={false}
       renderItem={({ item }) => (
-        <View style={{ flex: 1 / 3, aspectRatio: 1, padding: 1 }}>
-          <Image
-            source={{ uri: item.image_url }}
-            style={{ flex: 1 }}
-            resizeMode="cover"
-          />
+        <View style={{ flex: 1 / 3, aspectRatio: 1, padding: 4 }}>
+          <View
+            style={{
+              flex: 1,
+              borderRadius: 12,
+              overflow: "hidden",
+              shadowColor: "#000",
+              shadowOpacity: 0.08,
+              shadowRadius: 6,
+              shadowOffset: { width: 0, height: 2 },
+              elevation: 2,
+              backgroundColor: "#f5f5f5",
+            }}
+          >
+            <Image
+              source={{ uri: item.image_url }}
+              style={{ flex: 1 }}
+              resizeMode="cover"
+            />
+          </View>
         </View>
       )}
     />
@@ -436,10 +451,44 @@ function ReelGrid({ reels }: { reels: ReelRow[] }) {
       keyExtractor={(r) => r.id}
       numColumns={3}
       scrollEnabled={false}
-      renderItem={() => (
-        <View style={{ flex: 1 / 3, aspectRatio: 1, padding: 1 }}>
-          <View className="flex-1 items-center justify-center bg-secondary/50">
-            <Feather name="play" size={28} color="#fff" />
+      renderItem={({ item }) => (
+        <View style={{ flex: 1 / 3, aspectRatio: 1, padding: 4 }}>
+          <View
+            style={{
+              flex: 1,
+              borderRadius: 12,
+              overflow: "hidden",
+              shadowColor: "#000",
+              shadowOpacity: 0.08,
+              shadowRadius: 6,
+              shadowOffset: { width: 0, height: 2 },
+              elevation: 2,
+              backgroundColor: "#1a1a1a",
+            }}
+          >
+            {item.thumbnail_url ? (
+              <Image
+                source={{ uri: item.thumbnail_url }}
+                style={{ flex: 1 }}
+                resizeMode="cover"
+              />
+            ) : null}
+            <View
+              style={{
+                position: "absolute",
+                top: 0,
+                right: 0,
+                bottom: 0,
+                left: 0,
+                alignItems: "center",
+                justifyContent: "center",
+                backgroundColor: item.thumbnail_url
+                  ? "rgba(0,0,0,0.18)"
+                  : "transparent",
+              }}
+            >
+              <Feather name="play" size={28} color="#fff" />
+            </View>
           </View>
         </View>
       )}

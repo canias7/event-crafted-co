@@ -762,9 +762,23 @@ export default function VendorProfilePage() {
                         created_at: r.created_at,
                       })
                     }
-                    className="aspect-square rounded-lg bg-foreground/80 flex items-center justify-center shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all"
+                    className="aspect-square rounded-lg overflow-hidden bg-foreground/80 relative shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all"
                   >
-                    <PlayIcon className="w-6 h-6 text-background" />
+                    {/* Use the video element itself as the thumbnail —
+                        preload=metadata pulls just enough for the first
+                        frame so the tile reads as a real preview, not
+                        a generic black square. muted + playsInline
+                        keeps Safari from refusing to render. */}
+                    <video
+                      src={r.video_url}
+                      muted
+                      playsInline
+                      preload="metadata"
+                      className="absolute inset-0 w-full h-full object-cover"
+                    />
+                    <span className="absolute inset-0 flex items-center justify-center bg-foreground/20">
+                      <PlayIcon className="w-6 h-6 text-background drop-shadow" />
+                    </span>
                   </button>
                 ))}
               </div>

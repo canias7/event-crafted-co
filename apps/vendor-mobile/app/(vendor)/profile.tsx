@@ -628,10 +628,37 @@ function ReelGrid({
               shadowRadius: 6,
               shadowOffset: { width: 0, height: 2 },
               elevation: 2,
+              backgroundColor: "#1a1a1a",
             }}
-            className="items-center justify-center bg-foreground/80"
           >
-            <Feather name="play" size={28} color="#fff" />
+            {/* Use the stored thumbnail when we have one (added by the
+                MediaComposer once expo-video-thumbnails is wired up).
+                Fall back to a dark tile + play icon for older reels
+                that were uploaded before thumbnail generation
+                existed. */}
+            {item.thumbnail_url ? (
+              <Image
+                source={{ uri: item.thumbnail_url }}
+                style={{ flex: 1 }}
+                resizeMode="cover"
+              />
+            ) : null}
+            <View
+              style={{
+                position: "absolute",
+                top: 0,
+                right: 0,
+                bottom: 0,
+                left: 0,
+                alignItems: "center",
+                justifyContent: "center",
+                backgroundColor: item.thumbnail_url
+                  ? "rgba(0,0,0,0.18)"
+                  : "transparent",
+              }}
+            >
+              <Feather name="play" size={28} color="#fff" />
+            </View>
           </View>
         </Pressable>
       )}
