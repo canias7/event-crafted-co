@@ -9,9 +9,10 @@
 // Posts/Reels are placeholder empty states for now — content surfaces
 // will land in a future pass.
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Alert,
+  Image,
   Modal,
   Pressable,
   ScrollView,
@@ -56,42 +57,22 @@ export default function ProfileScreen() {
     };
   }, [user]);
 
-  const handle = useMemo(() => {
-    if (profile?.slug) return profile.slug;
-    if (profile?.business_name) {
-      return profile.business_name.toLowerCase().replace(/\s+/g, "");
-    }
-    if (user?.email) return user.email.split("@")[0];
-    return "vendora";
-  }, [profile, user]);
-
-  const initials = useMemo(() => {
-    const src = profile?.business_name ?? user?.email ?? "V";
-    return src
-      .split(/\s+/)
-      .map((w) => w[0])
-      .filter(Boolean)
-      .slice(0, 2)
-      .join("")
-      .toUpperCase();
-  }, [profile, user]);
-
   const listingsCount =
     profile && profile.application_status === "approved" ? 1 : 0;
 
   return (
     <SafeAreaView className="flex-1 bg-background" edges={["top"]}>
-      {/* Top bar */}
+      {/* Top bar — email centered, no dropdown */}
       <View className="flex-row items-center justify-between px-4 py-3">
         <Pressable hitSlop={8} className="active:opacity-60">
           <Feather name="plus" size={26} color="#0a0a0a" />
         </Pressable>
-        <Pressable hitSlop={8} className="flex-row items-center gap-1 active:opacity-60">
-          <Text className="text-base font-semibold text-foreground">
-            {handle}
-          </Text>
-          <Feather name="chevron-down" size={16} color="#0a0a0a" />
-        </Pressable>
+        <Text
+          numberOfLines={1}
+          className="flex-1 px-4 text-center text-base font-semibold text-foreground"
+        >
+          {user?.email ?? ""}
+        </Text>
         <Pressable
           hitSlop={8}
           onPress={() => setMenuOpen(true)}
@@ -104,10 +85,12 @@ export default function ProfileScreen() {
       <ScrollView contentContainerClassName="pb-32">
         {/* Avatar + stats row, centered */}
         <View className="items-center px-4 pt-2">
-          <View className="h-24 w-24 items-center justify-center rounded-full bg-secondary/60">
-            <Text className="text-2xl font-semibold text-foreground">
-              {initials}
-            </Text>
+          <View className="h-24 w-24 overflow-hidden rounded-full bg-secondary/60">
+            <Image
+              source={require("../../assets/icon.png")}
+              className="h-full w-full"
+              resizeMode="cover"
+            />
           </View>
 
           <View className="mt-5 flex-row items-center gap-10">
