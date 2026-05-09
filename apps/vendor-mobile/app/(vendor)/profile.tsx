@@ -236,11 +236,10 @@ export default function ProfileScreen() {
               {profile.business_name}
             </Text>
           ) : null}
-          {profile?.bio ? (
-            <Text className="mt-2 px-6 text-center text-base text-foreground">
-              {profile.bio}
-            </Text>
-          ) : null}
+          {/* Bio belongs to the marketplace listing, not the social
+              profile — and even then only once the listing is
+              approved. The profile chrome stays clean (avatar +
+              business name) regardless of listing state. */}
 
           <Pressable
             onPress={() => router.push("/(vendor)/dashboard")}
