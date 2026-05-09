@@ -10,6 +10,12 @@ type UserRow = {
   suspended_at: string | null;
   created_at: string;
   last_sign_in_at: string | null;
+  // Display role — admin sees only this. Hides "Vendor" for users who
+  // submitted a vendor application but haven't been admin-approved
+  // yet (those land on the Vendor applications tab instead). Comes
+  // from a follow-up join against vendor_profiles, not the auth.users
+  // role.
+  display_role: "Host" | "Vendor" | "Admin";
 };
 
 export function UsersPage() {
@@ -22,12 +28,44 @@ export function UsersPage() {
   const load = useCallback(async () => {
     setLoading(true);
     const { data, error } = await supabase.rpc("admin_list_users");
-    setLoading(false);
     if (error) {
+      setLoading(false);
       toast.error(error.message);
       return;
     }
-    setRows((data ?? []) as UserRow[]);
+    const baseRows = ((data ?? []) as Omit<UserRow, "display_role">[]).map(
+      (r) => ({ ...r, display_role: undefined as unknown as UserRow["display_role"] }),
+    );
+
+    // Pull the application_status for everyone who has a vendor
+    // profile. We use this to gate the "Vendor" badge on the Users
+    // tab — pending / rejected applications stay hidden behind the
+    // Vendor applications tab.
+    const { data: vps } = await supabase
+      .from("vendor_profiles")
+      .select("user_id, application_status")
+      .in(
+        "user_id",
+        baseRows.map((r) => r.id),
+      );
+    const approvedByUser = new Set(
+      ((vps as Array<{ user_id: string; application_status: string }> | null) ??
+        [])
+        .filter((v) => v.application_status === "approved")
+        .map((v) => v.user_id),
+    );
+
+    const final: UserRow[] = baseRows.map((r) => {
+      let display_role: UserRow["display_role"] = "Host";
+      if (r.role === "admin") {
+        display_role = "Admin";
+      } else if (r.role === "vendor" && approvedByUser.has(r.id)) {
+        display_role = "Vendor";
+      }
+      return { ...r, display_role };
+    });
+    setRows(final);
+    setLoading(false);
   }, []);
 
   useEffect(() => {
@@ -126,8 +164,8 @@ export function UsersPage() {
                       {r.id.slice(0, 8)}
                     </div>
                   </td>
-                  <td className="px-4 py-2 text-xs capitalize text-ink/70">
-                    {r.role}
+                  <td className="px-4 py-2 text-xs text-ink/70">
+                    {r.display_role}
                   </td>
                   <td className="px-4 py-2">
                     {r.suspended_at ? (
