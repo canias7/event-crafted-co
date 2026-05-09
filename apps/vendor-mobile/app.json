@@ -3,7 +3,7 @@
     "name": "Vendora for Vendors",
     "slug": "vendora-vendor",
     "scheme": "vendora-vendor",
-    "version": "0.1.4",
+    "version": "0.1.5",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
     "icon": "./assets/icon.png",
@@ -54,6 +54,12 @@
           "photosPermission": "Vendora needs access to your photo library so you can pick photos to post on your vendor profile.",
           "savePhotosPermission": "Vendora can save photos you capture to your library.",
           "isAccessMediaLocationEnabled": false
+        }
+      ],
+      [
+        "expo-av",
+        {
+          "microphonePermission": "Vendora uses your microphone when you record video clips to post on your vendor profile."
         }
       ]
     ],
