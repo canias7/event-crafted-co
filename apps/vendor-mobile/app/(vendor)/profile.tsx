@@ -58,8 +58,17 @@ export default function ProfileScreen() {
     };
   }, [user]);
 
+  // A bare approved profile is just an empty shell — vendor hasn't
+  // actually uploaded a listing yet. Count it as a real listing only
+  // once they've filled in at least their location and starting price
+  // (the minimum needed for a host to find and contact them).
   const listingsCount =
-    profile && profile.application_status === "approved" ? 1 : 0;
+    profile &&
+    profile.application_status === "approved" &&
+    profile.location &&
+    profile.base_price_cents != null
+      ? 1
+      : 0;
 
   function openCreatePost() {
     Alert.alert(
