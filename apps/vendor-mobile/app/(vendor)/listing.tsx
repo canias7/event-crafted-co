@@ -38,6 +38,7 @@ import {
   PoliciesSection,
   TeamSection,
 } from "@/components/listing/Sections";
+import { DetailsSection } from "@/components/listing/DetailsSection";
 
 type ProfileRow = {
   id: string;
@@ -431,6 +432,15 @@ export default function ListingScreen() {
             keyboardType="decimal-pad"
             className="mt-2 rounded-lg border border-border bg-background px-4 py-3 text-base text-foreground"
           />
+        </View>
+
+        <View className="px-4 pt-8">
+          <View className="h-px bg-border" />
+        </View>
+        <View className="px-4 pt-6">
+          {profile?.id ? (
+            <DetailsSection vendorId={profile.id} category={category} />
+          ) : null}
         </View>
 
         <View className="px-4 pt-8">

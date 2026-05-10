@@ -12,3 +12,4 @@
 export * from "./types";
 export * from "./lib/format";
 export * from "./lib/categoryTaxonomy";
+export * from "./lib/categoryAttributes";
