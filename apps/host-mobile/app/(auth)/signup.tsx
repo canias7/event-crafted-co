@@ -133,7 +133,10 @@ export default function SignupScreen() {
     setSubmitting(false);
     if (signInErr) {
       setError(`Account created but sign-in failed: ${signInErr.message}`);
+      return;
     }
+    // Auth state has flipped; explicitly route past the (auth) stack.
+    router.replace("/(host)/explore");
   }
 
   async function resend() {
