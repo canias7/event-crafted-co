@@ -25,10 +25,10 @@ const ORDER = ["home", "calendar", "inbox", "studio", "profile"];
 function FloatingTabBar({ state, navigation }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
   // Hide the floating bar on screens that own the bottom — the listing
-  // builder has its own Save / Publish action bar pinned to the
-  // bottom edge, so the pill would overlap it.
+  // builder has its own Save / Publish action bar, and the conversation
+  // screen has its own composer pinned at the bottom.
   const focusedRoute = state.routes[state.index]?.name;
-  if (focusedRoute === "listing") return null;
+  if (focusedRoute === "listing" || focusedRoute === "thread/[id]") return null;
   // Filter to only the visible tabs we care about, in our preferred order.
   const visible = ORDER.map((name) =>
     state.routes.find((r) => r.name === name),
@@ -145,6 +145,7 @@ export default function VendorLayout() {
           because it's a one-and-done flow per vendor. */}
       <Tabs.Screen name="listing" options={{ href: null }} />
       <Tabs.Screen name="vendor/[id]" options={{ href: null }} />
+      <Tabs.Screen name="thread/[id]" options={{ href: null }} />
     </Tabs>
   );
 }

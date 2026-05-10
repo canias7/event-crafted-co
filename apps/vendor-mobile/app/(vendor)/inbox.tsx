@@ -16,6 +16,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
 import type { InquiryRow } from "@vendora/core";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
@@ -312,9 +313,7 @@ export default function InboxScreen() {
       </ScrollView>
     </SafeAreaView>
   );
-}
-
-function TabPill({
+}function TabPill({
   active,
   label,
   onPress,
@@ -395,12 +394,30 @@ function Avatar({ seed, label }: { seed: string; label: string }) {
 }
 
 function InquiryCard({ row }: { row: InquiryRow }) {
+  const router = useRouter();
+  const [opening, setOpening] = useState(false);
   const seed = row.event_type ?? row.id;
   const isUnread = row.status === "new";
   const previewBudget =
     row.budget_max_cents != null ? ` · up to $${Math.round(row.budget_max_cents / 100)}` : "";
+
+  async function open() {
+    if (opening) return;
+    setOpening(true);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data, error } = await (supabase as any).rpc("ensure_inquiry_thread", {
+      p_inquiry_id: row.id,
+    });
+    setOpening(false);
+    if (error || !data) return;
+    router.push(`/(vendor)/thread/${data as string}` as never);
+  }
+
   return (
-    <Pressable className="rounded-2xl border border-border bg-background px-4 py-4 active:opacity-70">
+    <Pressable
+      onPress={open}
+      className="rounded-2xl border border-border bg-background px-4 py-4 active:opacity-70"
+    >
       <View className="flex-row gap-3">
         <Avatar seed={seed} label={initials(row.event_type ?? "Inquiry")} />
         <View className="flex-1">

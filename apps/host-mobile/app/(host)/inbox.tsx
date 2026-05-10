@@ -6,6 +6,7 @@
 import { useEffect, useState } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useRouter } from "expo-router";
 import { formatCents } from "@vendora/core";
 import type { InquiryRow } from "@vendora/core";
 import { useAuth } from "@/lib/auth";
@@ -29,8 +30,22 @@ const STATUS_COLOR: Record<InquiryRow["status"], string> = {
 
 export default function InboxScreen() {
   const { user } = useAuth();
+  const router = useRouter();
   const [rows, setRows] = useState<RowWithVendor[]>([]);
   const [loading, setLoading] = useState(true);
+  const [openingId, setOpeningId] = useState<string | null>(null);
+
+  async function openRow(inquiryId: string) {
+    if (openingId) return;
+    setOpeningId(inquiryId);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data, error } = await (supabase as any).rpc("ensure_inquiry_thread", {
+      p_inquiry_id: inquiryId,
+    });
+    setOpeningId(null);
+    if (error || !data) return;
+    router.push(`/(host)/thread/${data as string}` as never);
+  }
 
   useEffect(() => {
     if (!user) return;
@@ -74,6 +89,7 @@ export default function InboxScreen() {
           rows.map((row, i) => (
             <Pressable
               key={row.id}
+              onPress={() => openRow(row.id)}
               className={`flex-row items-center px-4 py-4 active:bg-muted ${i > 0 ? "border-t border-border" : ""}`}
             >
               <View className={`mr-3 h-2 w-2 rounded-full ${STATUS_COLOR[row.status]}`} />

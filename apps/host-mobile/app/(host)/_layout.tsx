@@ -24,8 +24,10 @@ function FloatingTabBar({ state, navigation }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
   const focusedRoute = state.routes[state.index]?.name;
   // Hide the floating bar on screens that own the bottom — the
-  // vendor detail screen's sticky Inquire bar would overlap it.
-  if (focusedRoute === "vendor/[id]") return null;
+  // vendor detail screen's sticky Inquire bar would overlap it, and
+  // the conversation screen has its own composer pinned to the
+  // bottom.
+  if (focusedRoute === "vendor/[id]" || focusedRoute === "thread/[id]") return null;
   const visible = ORDER.map((name) =>
     state.routes.find((r) => r.name === name),
   ).filter(Boolean) as typeof state.routes;
@@ -134,6 +136,8 @@ export default function HostLayout() {
       <Tabs.Screen name="profile" options={{ title: "Profile" }} />
       {/* Vendor detail — opened from Explore card tap; not a tab. */}
       <Tabs.Screen name="vendor/[id]" options={{ href: null }} />
+      {/* Conversation — opened from Inbox row tap; not a tab. */}
+      <Tabs.Screen name="thread/[id]" options={{ href: null }} />
     </Tabs>
   );
 }
