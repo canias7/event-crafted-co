@@ -425,6 +425,7 @@ export default function ProfileScreen() {
                 loading={loading}
                 profile={profile}
                 isComplete={listingsCount === 1}
+                isPending={profile?.application_status === "pending"}
                 onEdit={() => router.push("/(vendor)/listing")}
                 onChanged={loadProfile}
               />
@@ -791,12 +792,15 @@ function ListingTab({
   loading,
   profile,
   isComplete,
+  isPending,
   onEdit,
   onChanged,
 }: {
   loading: boolean;
   profile: VendorProfile | null;
   isComplete: boolean;
+  /** True when the listing is in admin review (application_status='pending'). */
+  isPending: boolean;
   onEdit: () => void;
   onChanged: () => void;
 }) {
@@ -865,6 +869,96 @@ function ListingTab({
   if (loading) {
     return (
       <Text className="text-sm text-muted-foreground">Loading…</Text>
+    );
+  }
+  // Listing is in admin review. Render the same card the vendor will
+  // see once approved, but dimmed and non-tappable, with an "Under
+  // review" overlay so they know it exists but isn't live yet.
+  if (profile && isPending) {
+    const previewPrice =
+      profile.base_price_cents != null
+        ? `From $${Math.round(profile.base_price_cents / 100).toLocaleString()}`
+        : null;
+    return (
+      <View className="w-full px-4">
+        <View
+          className="active:opacity-100"
+          style={{
+            width: Math.round(Dimensions.get("window").width * 0.4),
+          }}
+        >
+          <View
+            style={{
+              borderRadius: 18,
+              overflow: "hidden",
+              backgroundColor: "#1a1a1a",
+              aspectRatio: 1,
+              width: "100%",
+            }}
+          >
+            {heroUrl ? (
+              <Image
+                source={{ uri: heroUrl }}
+                style={{ flex: 1, opacity: 0.35 }}
+                resizeMode="cover"
+                blurRadius={8}
+              />
+            ) : (
+              <View
+                className="flex-1 items-center justify-center"
+                style={{ backgroundColor: "#f4f4f5", opacity: 0.6 }}
+              >
+                <Feather name="image" size={28} color="#a1a1aa" />
+              </View>
+            )}
+            {/* Dim overlay + clock badge. */}
+            <View
+              pointerEvents="none"
+              style={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                backgroundColor: "rgba(0,0,0,0.4)",
+                alignItems: "center",
+                justifyContent: "center",
+                paddingHorizontal: 12,
+              }}
+            >
+              <Feather name="clock" size={28} color="#fff" />
+              <Text className="mt-2 text-center text-xs font-semibold text-white">
+                Under review
+              </Text>
+            </View>
+          </View>
+          <View className="mt-3 px-1">
+            <Text
+              numberOfLines={1}
+              className="text-base font-semibold text-foreground/70"
+            >
+              {profile.business_name ?? "Your listing"}
+            </Text>
+            <Text
+              numberOfLines={1}
+              className="mt-0.5 text-sm text-muted-foreground"
+            >
+              {profile.category ?? "—"}
+              {profile.location ? ` · ${profile.location}` : ""}
+            </Text>
+            {previewPrice ? (
+              <Text className="mt-1 text-sm text-muted-foreground">
+                {previewPrice}
+              </Text>
+            ) : null}
+            <View className="mt-3 self-start rounded-full bg-amber-100 px-3 py-1">
+              <Text className="text-[11px] font-semibold uppercase tracking-wide text-amber-800">
+                Your listing is in review
+              </Text>
+            </View>
+          </View>
+        </View>
+      </View>
     );
   }
   if (!profile || !isComplete) {
