@@ -111,40 +111,55 @@ export default function HomeScreen() {
     // rejected listings don't leak into the feed. The vendor's
     // logo + business name come back inline for the IG-style author
     // header on each card.
-    const [postsRes, reelsRes, buzzRes, listingsRes] = await Promise.all([
-      supabase
-        .from("vendor_posts")
-        .select(
-          "id, image_url, caption, created_at, vendor_id, vendor:vendor_profiles!inner(business_name, logo_url, application_status)",
-        )
-        .eq("vendor.application_status", "approved")
-        .order("created_at", { ascending: false })
-        .limit(100),
-      supabase
-        .from("vendor_reels")
-        .select(
-          "id, video_url, thumbnail_url, caption, created_at, vendor:vendor_profiles!inner(business_name, logo_url, application_status)",
-        )
-        .eq("vendor.application_status", "approved")
-        .order("created_at", { ascending: false })
-        .limit(50),
-      supabase
-        .from("vendor_buzz")
-        .select(
-          "id, body, created_at, vendor:vendor_profiles!inner(business_name, logo_url, application_status)",
-        )
-        .eq("vendor.application_status", "approved")
-        .order("created_at", { ascending: false })
-        .limit(50),
-      supabase
-        .from("vendor_profiles")
-        .select(
-          "id, business_name, category, location, base_price_cents, bio, logo_url, slug",
-        )
-        .eq("application_status", "approved")
-        .order("created_at", { ascending: false })
-        .limit(100),
-    ]);
+    const [postsRes, reelsRes, buzzRes, listingsRes, portfolioRes] =
+      await Promise.all([
+        supabase
+          .from("vendor_posts")
+          .select(
+            "id, image_url, caption, created_at, vendor_id, vendor:vendor_profiles!inner(business_name, logo_url, application_status)",
+          )
+          .eq("vendor.application_status", "approved")
+          .order("created_at", { ascending: false })
+          .limit(100),
+        supabase
+          .from("vendor_reels")
+          .select(
+            "id, video_url, thumbnail_url, caption, created_at, vendor:vendor_profiles!inner(business_name, logo_url, application_status)",
+          )
+          .eq("vendor.application_status", "approved")
+          .order("created_at", { ascending: false })
+          .limit(50),
+        supabase
+          .from("vendor_buzz")
+          .select(
+            "id, body, created_at, vendor:vendor_profiles!inner(business_name, logo_url, application_status)",
+          )
+          .eq("vendor.application_status", "approved")
+          .order("created_at", { ascending: false })
+          .limit(50),
+        supabase
+          .from("vendor_profiles")
+          .select(
+            "id, business_name, category, location, base_price_cents, bio, logo_url, slug",
+          )
+          .eq("application_status", "approved")
+          .order("created_at", { ascending: false })
+          .limit(100),
+        // Listing portfolio photos — the actual photos a vendor
+        // uploaded to their listing (Studio → Photo Gallery →
+        // PortfolioUploader → vendor_portfolio_images). Ordered by
+        // display_order so the first hit per vendor is what they
+        // intended as the lead image.
+        supabase
+          .from("vendor_portfolio_images")
+          .select(
+            "vendor_id, storage_path, display_order, vendor:vendor_profiles!inner(application_status)",
+          )
+          .eq("vendor.application_status", "approved")
+          .order("display_order", { ascending: true })
+          .order("created_at", { ascending: true })
+          .limit(500),
+      ]);
     // The auto-generated supabase TS types treat the FK embed as
     // an array, but the runtime shape (many-to-one FK) is a single
     // object. Cast through unknown to bridge the types without
@@ -153,11 +168,24 @@ export default function HomeScreen() {
     setReels((reelsRes.data ?? []) as unknown as ReelRow[]);
     setBuzz((buzzRes.data ?? []) as unknown as BuzzRow[]);
 
-    // Hydrate each listing with its most recent post image so the
-    // marketplace card has a real hero photo. The posts query already
-    // ran above (newest-first, all approved vendors) — we just have
-    // to walk it once and grab the first hit per vendor_id.
+    // Resolve the hero image for each marketplace card. Priority:
+    //   1. First listing portfolio photo (the photo the vendor
+    //      explicitly attached to their listing — what we want by
+    //      default).
+    //   2. Most recent vendor_post image (social feed fallback so
+    //      the card still has a real photo if portfolio is empty).
+    //   3. logo_url (last resort, may not fill the square but at
+    //      least carries the brand).
+    type RawPortfolio = { vendor_id: string; storage_path: string };
     const heroByVendor = new Map<string, string>();
+    for (const row of (portfolioRes.data ?? []) as unknown as RawPortfolio[]) {
+      if (!heroByVendor.has(row.vendor_id) && row.storage_path) {
+        const { data: pub } = supabase.storage
+          .from("vendor-portfolios")
+          .getPublicUrl(row.storage_path);
+        if (pub.publicUrl) heroByVendor.set(row.vendor_id, pub.publicUrl);
+      }
+    }
     type RawPost = { vendor_id?: string | null; image_url: string };
     for (const p of (postsRes.data ?? []) as unknown as RawPost[]) {
       if (p.vendor_id && !heroByVendor.has(p.vendor_id) && p.image_url) {
