@@ -99,7 +99,7 @@ export default function InboxScreen() {
         supabase
           .from("inquiries")
           .select(
-            "id, vendor_id, host_id, status, event_type, event_date, guest_count, budget_min_cents, budget_max_cents, quality_score, created_at",
+            "id, vendor_id, host_id, status, event_type, event_date, guest_count, location, budget_min_cents, budget_max_cents, special_requests, quality_score, created_at",
           )
           .eq("vendor_id", vendorId)
           .order("created_at", { ascending: false }),
@@ -422,6 +422,14 @@ function InquiryCard({ row }: { row: InquiryRow }) {
             {row.guest_count ? ` · ${row.guest_count} guests` : ""}
             {previewBudget}
           </Text>
+          {row.special_requests ? (
+            <Text
+              className="mt-1.5 text-sm text-foreground/80"
+              numberOfLines={2}
+            >
+              {row.special_requests}
+            </Text>
+          ) : null}
           {isUnread ? (
             <View className="mt-2 self-start rounded-full bg-red-100 px-2 py-0.5">
               <Text className="text-[10px] font-semibold uppercase tracking-wide text-red-600">
