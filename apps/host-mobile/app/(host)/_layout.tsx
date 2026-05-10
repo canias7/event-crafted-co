@@ -32,6 +32,8 @@ export default function HostLayout() {
       <Tabs.Screen name="inbox" options={{ title: "Inbox" }} />
       <Tabs.Screen name="events" options={{ title: "Events" }} />
       <Tabs.Screen name="profile" options={{ title: "Profile" }} />
+      {/* Vendor detail — opened from Explore card tap; not a tab. */}
+      <Tabs.Screen name="vendor/[id]" options={{ href: null }} />
     </Tabs>
   );
 }
