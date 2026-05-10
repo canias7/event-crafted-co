@@ -8,8 +8,10 @@ const PUBLIC_SITE = "https://eventvendora.com";
 type Listing = {
   id: string;
   business_name: string;
-  category: string;
+  category: string | null;
+  bio: string | null;
   location: string | null;
+  base_price_cents: number | null;
   application_status: "pending" | "approved" | "rejected";
   verified_at: string | null;
   created_at: string;
@@ -25,7 +27,7 @@ export function ListingsPage() {
     const { data, error } = await supabase
       .from("vendor_profiles")
       .select(
-        "id, business_name, category, location, application_status, verified_at, created_at",
+        "id, business_name, category, bio, location, base_price_cents, application_status, verified_at, created_at",
       )
       .order("created_at", { ascending: false })
       .limit(500);
@@ -34,7 +36,28 @@ export function ListingsPage() {
       toast.error(error.message);
       return;
     }
-    setRows((data ?? []) as Listing[]);
+    // Listings tab is the canonical surface for publish-ready
+    // submissions: vendors who completed all four required fields
+    // (category, bio, location, starting price) and hit Publish.
+    // Incomplete pending rows belong on the Vendor applications tab.
+    // Approved rows always appear here regardless of completeness so
+    // an admin can still revoke / verify / delete them.
+    const isPublishReady = (r: Listing) =>
+      !!r.category &&
+      !!r.bio &&
+      !!r.location &&
+      r.base_price_cents != null &&
+      r.base_price_cents > 0;
+    setRows(
+      ((data ?? []) as Listing[]).filter(
+        (r) =>
+          r.application_status === "approved" ||
+          (r.application_status === "pending" && isPublishReady(r)) ||
+          // Rejected rows can sit in either bucket; show them here so
+          // the admin can re-approve once the listing is fixed.
+          r.application_status === "rejected",
+      ),
+    );
   }, []);
 
   useEffect(() => {
