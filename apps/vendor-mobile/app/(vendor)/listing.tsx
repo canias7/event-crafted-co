@@ -79,11 +79,24 @@ export default function ListingScreen() {
   const loadAll = useCallback(async () => {
     if (!user) return;
     setLoading(true);
-    const { data: prof } = await supabase
+    let { data: prof } = await supabase
       .from("vendor_profiles")
       .select(PROFILE_COLS)
       .eq("user_id", user.id)
       .maybeSingle();
+    // No row yet → auto-create a stub draft so the editor doesn't
+    // block on a "still being set up" message. Mirrors the web's
+    // first-time signup flow that inserts a draft row when the
+    // vendor lands on /vendor/listing.
+    if (!prof) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: created } = await (supabase as any)
+        .from("vendor_profiles")
+        .insert({ user_id: user.id, application_status: "draft" })
+        .select(PROFILE_COLS)
+        .single();
+      prof = created;
+    }
     const row = (prof as ProfileRow | null) ?? null;
     setProfile(row);
     if (row) {
