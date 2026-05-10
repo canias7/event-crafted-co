@@ -77,6 +77,8 @@ export default function HomeScreen() {
   const [reels, setReels] = useState<ReelRow[]>([]);
   const [buzz, setBuzz] = useState<BuzzRow[]>([]);
   const [listings, setListings] = useState<ListingRow[]>([]);
+  // Category filter chip on the marketplace tab. null = "all".
+  const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
 
   useEffect(() => {
     if (!user) return;
@@ -300,7 +302,11 @@ export default function HomeScreen() {
               />
             </View>
           ) : (
-            <ListingFeed listings={listings} />
+            <ListingFeed
+              listings={listings}
+              category={categoryFilter}
+              onCategoryChange={setCategoryFilter}
+            />
           )
         )}
       </ScrollView>
@@ -584,62 +590,183 @@ function ReelGrid({ reels }: { reels: ReelRow[] }) {
   );
 }
 
-// Marketplace feed — every approved vendor as a card. Tap to open
-// the public listing page in the browser. Categories + locations +
-// starting prices visible at a glance so this reads as a directory,
-// not a wall of headshots.
-function ListingFeed({ listings }: { listings: ListingRow[] }) {
+// Marketplace feed — Airbnb-explore style. Horizontal-scroll category
+// chips at the top let the host narrow the feed; below, big rounded
+// photo cards (logo on cream BG with category accent) lead to each
+// vendor's public listing in the browser. The chip row replaces a
+// classic dropdown — same affordance, more glanceable.
+function ListingFeed({
+  listings,
+  category,
+  onCategoryChange,
+}: {
+  listings: ListingRow[];
+  category: string | null;
+  onCategoryChange: (c: string | null) => void;
+}) {
+  // Distinct categories present in the feed, sorted alphabetically.
+  // Keeps the chip row in sync with whatever's actually on the
+  // marketplace right now — empty categories don't clutter the bar.
+  const categories = Array.from(
+    new Set(
+      listings
+        .map((l) => l.category)
+        .filter((c): c is string => !!c && c.trim().length > 0),
+    ),
+  ).sort();
+
+  const filtered =
+    category == null ? listings : listings.filter((l) => l.category === category);
+
   return (
-    <View className="gap-3 px-4">
-      {listings.map((l) => {
-        const price =
-          l.base_price_cents != null
-            ? `From $${Math.round(l.base_price_cents / 100).toLocaleString()}`
-            : null;
-        const href = l.slug
-          ? `https://eventvendora.com/vendors/${l.slug}`
-          : `https://eventvendora.com/vendors/${l.id}`;
-        return (
-          <Pressable
-            key={l.id}
-            onPress={() => Linking.openURL(href)}
-            className="rounded-xl border border-border bg-background p-3 flex-row items-center gap-3 active:opacity-80"
-          >
-            <View className="h-14 w-14 overflow-hidden rounded-lg bg-secondary/60">
-              <Image
-                source={
-                  l.logo_url
-                    ? { uri: l.logo_url }
-                    : require("../../assets/icon.png")
-                }
-                className="h-full w-full"
-                resizeMode="cover"
-              />
-            </View>
-            <View className="flex-1 min-w-0">
-              <Text
-                numberOfLines={1}
-                className="text-base font-semibold text-foreground"
+    <View>
+      {/* Category chip row — replaces a dropdown. Horizontal scroll
+          so the bar never wraps regardless of how many categories
+          end up on the marketplace. */}
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerClassName="px-4 gap-2 pb-3"
+      >
+        <CategoryChip
+          label="All"
+          active={category == null}
+          onPress={() => onCategoryChange(null)}
+        />
+        {categories.map((c) => (
+          <CategoryChip
+            key={c}
+            label={c}
+            active={category === c}
+            onPress={() => onCategoryChange(c)}
+          />
+        ))}
+      </ScrollView>
+
+      <View className="gap-6 px-4">
+        {filtered.map((l) => {
+          const price =
+            l.base_price_cents != null
+              ? `From $${Math.round(l.base_price_cents / 100).toLocaleString()}`
+              : null;
+          const href = l.slug
+            ? `https://eventvendora.com/vendors/${l.slug}`
+            : `https://eventvendora.com/vendors/${l.id}`;
+          return (
+            <Pressable
+              key={l.id}
+              onPress={() => Linking.openURL(href)}
+              className="active:opacity-90"
+            >
+              <View
+                style={{
+                  borderRadius: 18,
+                  overflow: "hidden",
+                  backgroundColor: "#f5f0e8",
+                  shadowColor: "#000",
+                  shadowOpacity: 0.08,
+                  shadowRadius: 8,
+                  shadowOffset: { width: 0, height: 3 },
+                  elevation: 3,
+                  aspectRatio: 1,
+                  width: "100%",
+                }}
               >
-                {l.business_name ?? "Vendor"}
-              </Text>
-              <Text
-                numberOfLines={1}
-                className="text-xs text-muted-foreground"
-              >
-                {[l.category, l.location].filter(Boolean).join(" · ") ||
-                  "Marketplace listing"}
-              </Text>
-              {price ? (
-                <Text className="mt-0.5 text-xs text-foreground/80">
-                  {price}
+                {l.logo_url ? (
+                  <Image
+                    source={{ uri: l.logo_url }}
+                    style={{ flex: 1 }}
+                    resizeMode="cover"
+                  />
+                ) : (
+                  <View className="flex-1 items-center justify-center">
+                    <Image
+                      source={require("../../assets/icon.png")}
+                      style={{ width: 96, height: 96 }}
+                      resizeMode="contain"
+                    />
+                  </View>
+                )}
+                {/* Heart sits in the top-right like Airbnb's wishlist
+                    pin. Wishlist functionality isn't wired yet, so it's
+                    a static visual cue for now. */}
+                <View
+                  style={{
+                    position: "absolute",
+                    top: 12,
+                    right: 12,
+                    height: 32,
+                    width: 32,
+                    borderRadius: 16,
+                    backgroundColor: "rgba(0,0,0,0.18)",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <Feather name="heart" size={16} color="#fff" />
+                </View>
+              </View>
+              <View className="mt-3">
+                <Text
+                  numberOfLines={1}
+                  className="text-base font-bold text-foreground"
+                >
+                  {l.business_name ?? "Vendor"}
                 </Text>
-              ) : null}
-            </View>
-          </Pressable>
-        );
-      })}
+                <Text
+                  numberOfLines={1}
+                  className="mt-0.5 text-sm text-muted-foreground"
+                >
+                  {[l.category, l.location].filter(Boolean).join(" · ") ||
+                    "Marketplace listing"}
+                </Text>
+                {price ? (
+                  <Text className="mt-1 text-sm text-foreground/80">
+                    {price}
+                  </Text>
+                ) : null}
+              </View>
+            </Pressable>
+          );
+        })}
+        {filtered.length === 0 ? (
+          <View className="items-center pt-10">
+            <Text className="text-sm text-muted-foreground">
+              No listings in this category yet.
+            </Text>
+          </View>
+        ) : null}
+      </View>
     </View>
+  );
+}
+
+function CategoryChip({
+  label,
+  active,
+  onPress,
+}: {
+  label: string;
+  active: boolean;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      className={`rounded-full px-4 py-2 active:opacity-70 ${
+        active
+          ? "bg-foreground"
+          : "border border-border bg-background"
+      }`}
+    >
+      <Text
+        className={`text-xs font-semibold ${
+          active ? "text-background" : "text-foreground"
+        }`}
+      >
+        {label}
+      </Text>
+    </Pressable>
   );
 }
 
