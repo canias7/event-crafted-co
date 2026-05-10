@@ -72,9 +72,28 @@ jobs:
 
       - run: npm ci
 
+      - name: Pre-update diagnostics
+        working-directory: apps/${{ matrix.app }}
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: |
+          set -x
+          node --version
+          npm --version
+          eas --version
+          eas whoami || echo "WHOAMI_FAILED"
+          ls -la
+          echo "--- app.json (head) ---"
+          head -40 app.json
+          echo "--- eas.json ---"
+          cat eas.json
+          echo "--- existing branches ---"
+          eas update:branch:list || echo "BRANCH_LIST_FAILED"
+
       - name: eas update
         working-directory: apps/${{ matrix.app }}
         env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
           EXPO_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           EXPO_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
         run: |
