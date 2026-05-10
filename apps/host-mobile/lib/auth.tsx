@@ -7,6 +7,7 @@ import { createContext, useContext, useEffect, useState } from "react";
 import type { ReactNode } from "react";
 import type { Session, User } from "@supabase/supabase-js";
 import { supabase } from "./supabase";
+import { tryRegisterPushToken } from "./pushNotifications";
 
 interface AuthContextValue {
   user: User | null;
@@ -34,6 +35,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     return () => data.subscription.unsubscribe();
   }, []);
+
+  // Register the device's Expo push token any time we land in a
+  // signed-in state. The helper is idempotent (upserts on the token
+  // PK) and silently no-ops on simulators / denied permissions.
+  useEffect(() => {
+    if (!session?.user?.id) return;
+    tryRegisterPushToken(session.user.id, "host");
+  }, [session?.user?.id]);
 
   // Catch admin-deleted accounts. Supabase invalidates refresh tokens
   // on delete but the cached access token stays valid for ~1h. Poll
