@@ -71,6 +71,7 @@ export default function ListingScreen() {
   const [categoryPickerOpen, setCategoryPickerOpen] = useState(false);
 
   // Form state
+  const [businessName, setBusinessName] = useState("");
   const [category, setCategory] = useState("");
   const [bio, setBio] = useState("");
   const [location, setLocation] = useState("");
@@ -109,6 +110,7 @@ export default function ListingScreen() {
     const row = (prof as ProfileRow | null) ?? null;
     setProfile(row);
     if (row) {
+      setBusinessName(row.business_name ?? "");
       setCategory(row.category ?? "");
       setBio(row.bio ?? "");
       setLocation(row.location ?? "");
@@ -227,6 +229,7 @@ export default function ListingScreen() {
 
   function buildPayload(): Record<string, unknown> {
     return {
+      business_name: businessName.trim() || null,
       category: category || null,
       bio: bio.trim() || null,
       location: location.trim() || null,
@@ -240,6 +243,7 @@ export default function ListingScreen() {
     if (!profile?.id) return;
     if (publish) {
       const missing: string[] = [];
+      if (!businessName.trim()) missing.push("Business name");
       if (!category) missing.push("Category");
       if (!bio.trim()) missing.push("Short bio");
       if (!location.trim()) missing.push("Location");
@@ -410,6 +414,17 @@ export default function ListingScreen() {
               Long-press a photo to delete.
             </Text>
           ) : null}
+        </View>
+
+        {/* Business name */}
+        <View className="px-4 pt-6">
+          <RequiredLabel>Business name</RequiredLabel>
+          <TextInput
+            value={businessName}
+            onChangeText={setBusinessName}
+            placeholder="e.g. Last Call Bar Co."
+            className="mt-2 rounded-lg border border-border bg-background px-4 py-3 text-base text-foreground"
+          />
         </View>
 
         {/* Category */}
