@@ -8,15 +8,15 @@
 // Tapping Create on grid → image picker → MediaComposer → uploads to
 // vendor-posts bucket and inserts vendor_posts row. Same flow for
 // reels (vendor-reels bucket + vendor_reels). Buzz uses BuzzComposer
-// which writes vendor_buzz directly. Listing tab links to the web
-// editor; the count is 1 only once the listing has location + price.
+// which writes vendor_buzz directly. Listing tab links to the native
+// listing builder; the count is 1 only once the listing has location
+// and price.
 
 import { useCallback, useEffect, useState } from "react";
 import {
   Alert,
   FlatList,
   Image,
-  Linking,
   Modal,
   Pressable,
   ScrollView,
@@ -422,6 +422,7 @@ export default function ProfileScreen() {
                 loading={loading}
                 profile={profile}
                 isComplete={listingsCount === 1}
+                onEdit={() => router.push("/(vendor)/listing")}
               />
             </View>
           )}
@@ -764,10 +765,12 @@ function ListingTab({
   loading,
   profile,
   isComplete,
+  onEdit,
 }: {
   loading: boolean;
   profile: VendorProfile | null;
   isComplete: boolean;
+  onEdit: () => void;
 }) {
   if (loading) {
     return (
@@ -781,9 +784,7 @@ function ListingTab({
         title="No listings yet"
         body="Add your location and starting price to publish your listing to the marketplace."
         ctaLabel="Create listing"
-        onCta={() =>
-          Linking.openURL("https://eventvendora.com/vendor/listing")
-        }
+        onCta={onEdit}
       />
     );
   }
