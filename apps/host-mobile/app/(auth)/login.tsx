@@ -42,7 +42,12 @@ export default function LoginScreen() {
     setInfo(null);
     setSubmitting(true);
     const { data, error: invokeErr } = await supabase.functions.invoke("signin-2fa", {
-      body: { action: "request", email: email.trim().toLowerCase(), password },
+      body: {
+        action: "request",
+        email: email.trim().toLowerCase(),
+        password,
+        app: "host",
+      },
     });
     setSubmitting(false);
     if (invokeErr) {
@@ -57,6 +62,10 @@ export default function LoginScreen() {
         setError("Your application is still under review. We'll email you the moment it's approved.");
       } else if (r?.reason === "invalid_credentials") {
         setError("Email or password is incorrect.");
+      } else if (r?.reason === "wrong_app") {
+        setError(
+          "That email is a vendor account. Open the Vendora for Vendors app to sign in.",
+        );
       } else {
         setError("Couldn't start sign-in. Please try again.");
       }
