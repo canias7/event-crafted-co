@@ -11,6 +11,7 @@
     "react-native-css-interop": "0.1.22"
   },
   "scripts": {
+    "postinstall": "bash scripts/apply-patches.sh",
     "dev": "npm run dev --workspace=apps/web",
     "dev:web": "npm run dev --workspace=apps/web",
     "build": "npm run build --workspace=apps/web",
