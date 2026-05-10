@@ -887,7 +887,7 @@ function ListingTab({
       <Pressable
         onPress={onEdit}
         className="active:opacity-90"
-        style={{ width: Math.round(Dimensions.get("window").width * 0.45) }}
+        style={{ width: Math.round(Dimensions.get("window").width * 0.4) }}
       >
         <View
           style={{
