@@ -469,18 +469,11 @@ function ListingFeed({
               .filter((s) => !knownSubsForGroup.includes(s))
               .sort(),
           ];
-          const total = Array.from(subs.values()).reduce(
-            (acc, rows) => acc + rows.length,
-            0,
-          );
           return (
             <View key={groupName}>
-              <View className="px-4 mb-3 flex-row items-end justify-between">
+              <View className="px-4 mb-3">
                 <Text className="text-lg font-bold text-foreground">
                   {groupName}
-                </Text>
-                <Text className="text-xs text-muted-foreground">
-                  {total} listing{total === 1 ? "" : "s"}
                 </Text>
               </View>
               <View className="gap-5">
