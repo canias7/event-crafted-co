@@ -89,15 +89,36 @@ export default function LoginScreen() {
       else setError("Couldn't verify code.");
       return;
     }
-    const { error: signInErr } = await supabase.auth.signInWithPassword({
-      email: email.trim().toLowerCase(),
-      password,
-    });
-    setSubmitting(false);
+    const { data: signInData, error: signInErr } =
+      await supabase.auth.signInWithPassword({
+        email: email.trim().toLowerCase(),
+        password,
+      });
     if (signInErr) {
+      setSubmitting(false);
       setError(signInErr.message);
       return;
     }
+    // Gate by role: vendor app only accepts vendor (or admin)
+    // accounts. Host accounts have to sign in on the Vendora app.
+    const userId = signInData.user?.id;
+    if (userId) {
+      const { data: prof } = await supabase
+        .from("profiles")
+        .select("role")
+        .eq("id", userId)
+        .maybeSingle();
+      const role = (prof as { role?: string } | null)?.role ?? "host";
+      if (role !== "vendor" && role !== "admin") {
+        await supabase.auth.signOut();
+        setSubmitting(false);
+        setError(
+          "That email is a host account. Open the Vendora app to sign in.",
+        );
+        return;
+      }
+    }
+    setSubmitting(false);
     router.replace("/(vendor)/home");
   }
 
