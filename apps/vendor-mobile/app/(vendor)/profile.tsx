@@ -15,6 +15,7 @@
 import { useCallback, useEffect, useState } from "react";
 import {
   Alert,
+  Dimensions,
   FlatList,
   Image,
   Modal,
@@ -881,11 +882,11 @@ function ListingTab({
       ? `From $${Math.round(profile.base_price_cents / 100).toLocaleString()}`
       : null;
   return (
-    <View className="w-full items-center px-2">
+    <View className="w-full px-4">
       <Pressable
         onPress={onEdit}
         className="active:opacity-90"
-        style={{ width: "55%" }}
+        style={{ width: Math.round(Dimensions.get("window").width * 0.45) }}
       >
         <View
           style={{
