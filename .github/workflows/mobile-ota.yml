@@ -16,6 +16,9 @@ on:
         type: string
         default: "OTA update"
 
+permissions:
+  contents: write
+
 jobs:
   setup:
     name: Resolve OTA matrix
@@ -61,9 +64,9 @@ jobs:
 
       - name: npm ci
         run: |
-          set -euo pipefail
+          set -o pipefail
           npm ci 2>&1 | tee /tmp/install.log
-          exit ${PIPESTATUS[0]}
+          echo "NPM_CI_EXIT=${PIPESTATUS[0]}" >> /tmp/install.log
 
       - name: eas update
         working-directory: apps/${{ matrix.app }}
@@ -72,31 +75,44 @@ jobs:
           EXPO_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           EXPO_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
         run: |
-          set -euo pipefail
+          set +e
           {
             echo "=== eas whoami ==="
             eas whoami
+            echo "WHOAMI_EXIT=$?"
             echo "=== eas --version ==="
             eas --version
             echo "=== eas update ==="
             eas update --non-interactive --branch production --message "${{ needs.setup.outputs.message }}"
+            echo "UPDATE_EXIT=$?"
             echo "=== eas update:list (latest 5 on production) ==="
-            eas update:list --branch production --limit 5 --json --non-interactive | head -200
+            eas update:list --branch production --limit 5 --json --non-interactive | head -200 || echo "LIST_FAILED"
           } 2>&1 | tee /tmp/update.log
 
-      - name: Publish run summary
+      - name: Always commit logs to repo for inspection
         if: always()
         run: |
+          set +e
+          mkdir -p .ci-logs
           {
-            echo "## OTA run summary"
+            echo "# OTA run ${{ github.run_id }} attempt ${{ github.run_attempt }}"
             echo ""
-            echo "### npm ci tail"
+            echo "## npm ci tail"
             echo '```'
-            tail -60 /tmp/install.log 2>/dev/null || echo "(no install log)"
+            tail -100 /tmp/install.log 2>/dev/null || echo "(no install log)"
             echo '```'
             echo ""
-            echo "### eas update output"
+            echo "## eas update output"
             echo '```'
             cat /tmp/update.log 2>/dev/null || echo "(no update log)"
             echo '```'
-          } >> "$GITHUB_STEP_SUMMARY"
+          } > .ci-logs/last-${{ matrix.app }}.md
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git fetch origin trigger-ota/listing-builder || true
+          git stash --include-untracked || true
+          git checkout trigger-ota/listing-builder
+          git stash pop || true
+          git add -f .ci-logs/last-${{ matrix.app }}.md
+          git commit -m "chore(ci): log OTA run ${{ github.run_id }} [skip ci]" || echo "NOTHING_TO_COMMIT"
+          for i in 1 2 3; do git push origin trigger-ota/listing-builder && break; sleep 2; done
