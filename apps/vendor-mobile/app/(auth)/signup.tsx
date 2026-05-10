@@ -81,6 +81,7 @@ export default function VendorSignupScreen() {
         data: {
           // display_name not set — handle_new_user falls back to the
           // email prefix. Owner name removed from the signup flow.
+          intended_role: "vendor",
           vendor_business_name: businessName.trim(),
           vendor_category: category,
         },
