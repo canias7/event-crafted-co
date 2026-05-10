@@ -1,0 +1,84 @@
+name: Mobile OTA Update
+
+# Pushes a JS-only OTA update to EAS Update (production channel) for
+# vendor-mobile and/or host-mobile. Triggered on push to any branch
+# starting with `trigger-ota/`. Used by Claude in cloud sessions
+# where eas login isn't possible — the workflow runs in CI with the
+# EXPO_TOKEN secret already configured.
+#
+# Manual trigger: `git push origin <feature>:trigger-ota/<short-tag>`
+# After it completes, delete the trigger branch.
+
+on:
+  push:
+    branches:
+      - "trigger-ota/**"
+  workflow_dispatch:
+    inputs:
+      apps:
+        description: "Which app(s)?"
+        type: choice
+        options: [vendor, host, both]
+        default: vendor
+      message:
+        description: "Update message"
+        type: string
+        default: "OTA update"
+
+jobs:
+  setup:
+    name: Resolve OTA matrix
+    runs-on: ubuntu-latest
+    outputs:
+      apps: ${{ steps.matrix.outputs.list }}
+      message: ${{ steps.matrix.outputs.message }}
+    steps:
+      - id: matrix
+        env:
+          INPUT_APPS: ${{ inputs.apps }}
+          INPUT_MSG: ${{ inputs.message }}
+        run: |
+          # Default for push-triggered runs.
+          APPS_INPUT="${INPUT_APPS:-vendor}"
+          MSG_INPUT="${INPUT_MSG:-OTA update from $GITHUB_REF_NAME}"
+          case "$APPS_INPUT" in
+            both)   echo 'list=["vendor-mobile","host-mobile"]' >> "$GITHUB_OUTPUT" ;;
+            host)   echo 'list=["host-mobile"]' >> "$GITHUB_OUTPUT" ;;
+            vendor|*) echo 'list=["vendor-mobile"]' >> "$GITHUB_OUTPUT" ;;
+          esac
+          echo "message=$MSG_INPUT" >> "$GITHUB_OUTPUT"
+
+  ota:
+    name: OTA ${{ matrix.app }}
+    needs: setup
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        app: ${{ fromJSON(needs.setup.outputs.apps) }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - run: npm ci
+
+      - name: eas update
+        working-directory: apps/${{ matrix.app }}
+        env:
+          EXPO_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          EXPO_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        run: |
+          eas update \
+            --non-interactive \
+            --branch production \
+            --message "${{ needs.setup.outputs.message }}"
