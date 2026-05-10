@@ -443,6 +443,7 @@ export default function ProfileScreen() {
       <CreateSheet
         open={createOpen}
         onClose={() => setCreateOpen(false)}
+        hasListing={listingsCount === 1}
         onPost={() => {
           setCreateOpen(false);
           openCreatePost();
@@ -986,6 +987,7 @@ function ListingTab({
 function CreateSheet({
   open,
   onClose,
+  hasListing,
   onPost,
   onReel,
   onBuzz,
@@ -993,17 +995,23 @@ function CreateSheet({
 }: {
   open: boolean;
   onClose: () => void;
+  /** True when the vendor already has a publish-ready listing.
+   *  We hide the "Listing" row entirely in that case — vendors
+   *  have one listing per account, and editing happens from the
+   *  Profile listing tab's pencil icon. */
+  hasListing: boolean;
   onPost: () => void;
   onReel: () => void;
   onBuzz: () => void;
   onListing: () => void;
 }) {
-  const options: {
+  type CreateOption = {
     icon: keyof typeof Feather.glyphMap;
     label: string;
     sub: string;
     onPress: () => void;
-  }[] = [
+  };
+  const baseOptions: CreateOption[] = [
     {
       icon: "image",
       label: "Post",
@@ -1022,13 +1030,18 @@ function CreateSheet({
       sub: "Quick text update",
       onPress: onBuzz,
     },
-    {
-      icon: "shopping-bag",
-      label: "Listing",
-      sub: "Edit your marketplace listing",
-      onPress: onListing,
-    },
   ];
+  const options: CreateOption[] = hasListing
+    ? baseOptions
+    : [
+        ...baseOptions,
+        {
+          icon: "shopping-bag",
+          label: "Listing",
+          sub: "Set up your marketplace listing",
+          onPress: onListing,
+        },
+      ];
   return (
     <Modal
       visible={open}
