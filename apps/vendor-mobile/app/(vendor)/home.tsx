@@ -635,10 +635,11 @@ function ReelGrid({ reels }: { reels: ReelRow[] }) {
 // Marketplace feed — Airbnb-explore style.
 //
 // Top-level CATEGORIES (the groups in CATEGORY_GROUPS) stack
-// vertically as section headers. Inside each section a horizontal
-// chip row lets you filter by SUB-category, and the listings rail
-// below scrolls horizontally. Top chip row above the sections is
-// a quick jump filter that narrows to a single category.
+// vertically as section headers. Inside each section, sub-categories
+// stack with a small label above their own horizontal-scroll rail of
+// listing cards — so the *images* scroll horizontally per sub. Top
+// chip row above the sections is a quick jump filter that narrows to
+// a single category.
 function ListingFeed({
   listings,
   category,
@@ -649,13 +650,6 @@ function ListingFeed({
   category: string | null;
   onCategoryChange: (c: string | null) => void;
 }) {
-  // Per-section sub filter. Key = group name, value = sub name or
-  // null (= "All in this category"). Local to the feed so different
-  // sections can be filtered independently.
-  const [subByGroup, setSubByGroup] = useState<Record<string, string | null>>(
-    {},
-  );
-
   // Two-level group: top-level category → sub-category → listings.
   const byGroup = new Map<string, Map<string, ListingRow[]>>();
   for (const l of listings) {
@@ -726,11 +720,6 @@ function ListingFeed({
             (acc, rows) => acc + rows.length,
             0,
           );
-          const activeSub = subByGroup[groupName] ?? null;
-          const railRows =
-            activeSub == null
-              ? orderedSubs.flatMap((s) => subs.get(s) ?? [])
-              : subs.get(activeSub) ?? [];
           return (
             <View key={groupName}>
               <View className="px-4 mb-3 flex-row items-end justify-between">
@@ -741,41 +730,28 @@ function ListingFeed({
                   {total} listing{total === 1 ? "" : "s"}
                 </Text>
               </View>
-              {/* Sub-category chips — horizontal scroll filter
-                  scoped to this section. */}
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerClassName="px-4 gap-2 pb-3"
-              >
-                <CategoryChip
-                  label="All"
-                  active={activeSub == null}
-                  onPress={() =>
-                    setSubByGroup((m) => ({ ...m, [groupName]: null }))
-                  }
-                />
-                {orderedSubs.map((s) => (
-                  <CategoryChip
-                    key={s}
-                    label={s}
-                    active={activeSub === s}
-                    onPress={() =>
-                      setSubByGroup((m) => ({ ...m, [groupName]: s }))
-                    }
-                  />
-                ))}
-              </ScrollView>
-              {/* Listings rail — horizontal scroll. */}
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerClassName="px-4 gap-3"
-              >
-                {railRows.map((l) => (
-                  <ListingCard key={l.id} listing={l} />
-                ))}
-              </ScrollView>
+              <View className="gap-5">
+                {orderedSubs.map((subName) => {
+                  const rows = subs.get(subName) ?? [];
+                  if (rows.length === 0) return null;
+                  return (
+                    <View key={subName}>
+                      <Text className="px-4 mb-2 text-sm font-semibold text-muted-foreground">
+                        {subName}
+                      </Text>
+                      <ScrollView
+                        horizontal
+                        showsHorizontalScrollIndicator={false}
+                        contentContainerClassName="px-4 gap-3"
+                      >
+                        {rows.map((l) => (
+                          <ListingCard key={l.id} listing={l} />
+                        ))}
+                      </ScrollView>
+                    </View>
+                  );
+                })}
+              </View>
             </View>
           );
         })}
