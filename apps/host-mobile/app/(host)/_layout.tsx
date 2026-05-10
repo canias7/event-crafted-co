@@ -1,10 +1,106 @@
-// Host tab layout. The host journey is browse → message → book → plan,
-// so the bottom nav prioritizes Explore (vendor browse) as the home,
-// with Inbox (vendor threads), Events (their bookings), and Profile.
+// Host mobile tab layout — 4 tabs with a custom floating pill tab
+// bar (same shape as vendor-mobile's). Pill floats ~16px above the
+// bottom safe area, white bg, soft shadow. Inactive tabs are line
+// icons (Feather), active tab is a solid black circle with a white
+// icon. No text labels.
 
 import { Redirect, Tabs } from "expo-router";
-import { ActivityIndicator, View } from "react-native";
+import { ActivityIndicator, Pressable, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { Feather } from "@expo/vector-icons";
+import type { BottomTabBarProps } from "@react-navigation/bottom-tabs";
 import { useAuth } from "@/lib/auth";
+
+const ICONS: Record<string, keyof typeof Feather.glyphMap> = {
+  explore: "search",
+  inbox: "inbox",
+  events: "calendar",
+  profile: "user",
+};
+
+const ORDER = ["explore", "inbox", "events", "profile"];
+
+function FloatingTabBar({ state, navigation }: BottomTabBarProps) {
+  const insets = useSafeAreaInsets();
+  const focusedRoute = state.routes[state.index]?.name;
+  // Hide the floating bar on screens that own the bottom — the
+  // vendor detail screen's sticky Inquire bar would overlap it.
+  if (focusedRoute === "vendor/[id]") return null;
+  const visible = ORDER.map((name) =>
+    state.routes.find((r) => r.name === name),
+  ).filter(Boolean) as typeof state.routes;
+
+  return (
+    <View
+      pointerEvents="box-none"
+      style={{
+        position: "absolute",
+        left: 0,
+        right: 0,
+        bottom: 0,
+        paddingBottom: Math.max(insets.bottom, 12),
+        paddingHorizontal: 24,
+        alignItems: "center",
+      }}
+    >
+      <View
+        style={{
+          flexDirection: "row",
+          alignItems: "center",
+          justifyContent: "space-between",
+          backgroundColor: "#ffffff",
+          borderRadius: 999,
+          paddingHorizontal: 8,
+          paddingVertical: 8,
+          height: 64,
+          width: "100%",
+          maxWidth: 420,
+          shadowColor: "#000",
+          shadowOpacity: 0.08,
+          shadowRadius: 18,
+          shadowOffset: { width: 0, height: 6 },
+          elevation: 8,
+        }}
+      >
+        {visible.map((route) => {
+          const realIndex = state.routes.findIndex((r) => r.key === route.key);
+          const isFocused = state.index === realIndex;
+          const iconName = ICONS[route.name] ?? "circle";
+          return (
+            <Pressable
+              key={route.key}
+              onPress={() => {
+                const event = navigation.emit({
+                  type: "tabPress",
+                  target: route.key,
+                  canPreventDefault: true,
+                });
+                if (!isFocused && !event.defaultPrevented) {
+                  navigation.navigate(route.name as never);
+                }
+              }}
+              hitSlop={6}
+              style={{
+                width: 48,
+                height: 48,
+                borderRadius: 999,
+                alignItems: "center",
+                justifyContent: "center",
+                backgroundColor: isFocused ? "#0a0a0a" : "transparent",
+              }}
+            >
+              <Feather
+                name={iconName}
+                size={20}
+                color={isFocused ? "#ffffff" : "#737373"}
+              />
+            </Pressable>
+          );
+        })}
+      </View>
+    </View>
+  );
+}
 
 export default function HostLayout() {
   const { loading, user } = useAuth();
@@ -21,11 +117,15 @@ export default function HostLayout() {
 
   return (
     <Tabs
+      tabBar={(props) => <FloatingTabBar {...props} />}
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: "#0a0a0a",
-        tabBarInactiveTintColor: "#737373",
-        tabBarStyle: { borderTopColor: "#e5e5e5" },
+        tabBarShowLabel: false,
+        // Content sits behind the floating bar. Each screen's
+        // ScrollView already has pb-32 padding; the floating bar is
+        // ~76px tall (64 + safe-area), so anything that ends near
+        // the bottom should add some extra padding.
+        tabBarStyle: { position: "absolute" },
       }}
     >
       <Tabs.Screen name="explore" options={{ title: "Explore" }} />
