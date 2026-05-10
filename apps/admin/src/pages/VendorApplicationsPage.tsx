@@ -1,120 +1,80 @@
+// Vendor APPLICATION review queue.
+//
+// Different from the Vendor LISTINGS tab: this page reviews the
+// vendor account itself, not their marketplace listing. A new
+// vendor signup lands in profiles with role='vendor' and
+// application_status='pending'. Admin Approves → status flips to
+// 'approved' and the vendor can sign in to the vendor app.
+//
+// The listing (vendor_profiles row) doesn't exist yet at this
+// point — it gets created the first time the approved vendor
+// taps Create listing in the profile tab. Listing approval lives
+// on the separate Vendor listings page.
+
 import { useCallback, useEffect, useState } from "react";
-import { Eye, Trash2 } from "lucide-react";
+import { Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
 
-const PUBLIC_SITE = "https://eventvendora.com";
+type ApplicationStatus = "pending" | "approved" | "rejected";
 
 type Application = {
   id: string;
-  user_id: string;
-  business_name: string;
-  category: string;
-  bio: string | null;
-  location: string | null;
-  application_status: "pending" | "approved" | "rejected";
-  created_at: string;
-  profile_email?: string | null;
-  profile_display_name?: string | null;
+  display_name: string | null;
+  application_status: ApplicationStatus;
+  email: string | null;
+  business_name: string | null;
+  category: string | null;
 };
 
-const TABS: Array<Application["application_status"]> = ["pending", "approved", "rejected"];
+const TABS: ApplicationStatus[] = ["pending", "approved", "rejected"];
 
 export function VendorApplicationsPage() {
-  const [tab, setTab] = useState<Application["application_status"]>("pending");
+  const [tab, setTab] = useState<ApplicationStatus>("pending");
   const [rows, setRows] = useState<Application[]>([]);
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
     setLoading(true);
+    // Pull everyone whose role is 'vendor' (intent set at signup) and
+    // whose application is at the requested status. business_name +
+    // category are pulled from auth metadata via the security-definer
+    // RPC below so we can show the admin what they were planning to
+    // list.
     const { data, error } = await supabase
-      .from("vendor_profiles")
-      .select(
-        // base_price_cents is selected only so we can split signup
-        // applications (incomplete listing) from full listing
-        // submissions (publish-ready). The Vendor listings tab is
-        // the canonical surface for the latter.
-        "id, user_id, business_name, category, bio, location, base_price_cents, application_status, created_at, profile:profiles!vendor_profiles_user_id_fkey(display_name)",
-      )
-      .eq("application_status", tab)
-      .order("created_at", { ascending: false });
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .rpc<any, any>("admin_list_vendor_applications", { p_status: tab });
     setLoading(false);
     if (error) {
       toast.error(error.message);
       return;
     }
-    // A vendor profile counts as a SIGNUP APPLICATION when the
-    // listing isn't publish-ready yet — i.e. one of the four
-    // required fields is still missing. Once everything is filled
-    // and the vendor hits Publish, the row moves to the Vendor
-    // listings tab. This filter mirrors the publish-readiness gate
-    // in apps/vendor-mobile/app/(vendor)/listing.tsx.
-    const isApplication = (r: {
-      category: string | null;
-      bio: string | null;
-      location: string | null;
-      base_price_cents: number | null;
-    }) =>
-      !r.category ||
-      !r.bio ||
-      !r.location ||
-      r.base_price_cents == null ||
-      r.base_price_cents <= 0;
-    setRows(
-      (data ?? [])
-        .filter((r) => isApplication(r))
-        .map((r) => {
-          const profile = (r as unknown as {
-            profile?:
-              | { display_name: string | null }
-              | { display_name: string | null }[];
-          }).profile;
-          const display_name = Array.isArray(profile)
-            ? profile[0]?.display_name ?? null
-            : profile?.display_name ?? null;
-          return {
-            id: r.id,
-            user_id: r.user_id,
-            business_name: r.business_name,
-            category: r.category,
-            bio: r.bio,
-            location: r.location,
-            application_status: r.application_status,
-            created_at: r.created_at,
-            profile_display_name: display_name,
-          };
-        }),
-    );
+    setRows(((data ?? []) as Application[]) ?? []);
   }, [tab]);
 
   useEffect(() => {
     load();
   }, [load]);
 
-  const setStatus = async (
-    id: string,
-    status: Application["application_status"],
-  ) => {
+  const setStatus = async (id: string, status: ApplicationStatus) => {
     const { error } = await supabase
-      .from("vendor_profiles")
-      .update({
-        application_status: status,
-        application_reviewed_at: new Date().toISOString(),
-      })
+      .from("profiles")
+      .update({ application_status: status })
       .eq("id", id);
     if (error) {
       toast.error(error.message);
       return;
     }
     if (status === "approved" || status === "rejected") {
-      // Applications tab handles the INITIAL signup decision.
-      // Subsequent re-publishes are reviewed on Vendor listings tab
-      // and use the listing_* email templates.
+      // Reuse the existing vendor_approved / vendor_rejected
+      // transactional templates. They expect a vendorProfileId
+      // historically; here we pass the user_id so the function
+      // can look up the email directly.
       supabase.functions
         .invoke("send-transactional-email", {
           body: {
             kind: status === "approved" ? "vendor_approved" : "vendor_rejected",
-            vendorProfileId: id,
+            userId: id,
           },
         })
         .then(({ error: emailErr }) => {
@@ -127,28 +87,24 @@ export function VendorApplicationsPage() {
     setRows((prev) => prev.filter((r) => r.id !== id));
   };
 
-  // Hard-delete a vendor profile. Admin RLS allows it; ON DELETE
-  // CASCADE on the dependent tables (posts, reels, buzz, comments,
-  // packages, etc.) handles the rest. Used from the Approved /
-  // Rejected tabs so admins can purge a listing entirely instead of
-  // just status-flipping it.
-  const deleteRow = async (id: string, businessName: string) => {
+  const removeAccount = async (id: string, name: string | null) => {
     if (
       !window.confirm(
-        `Delete ${businessName}? This permanently removes the listing and all of its content. This cannot be undone.`,
+        `Delete ${name ?? "this vendor"}'s account? This permanently removes the auth user, profile, and any listing data. This cannot be undone.`,
       )
     ) {
       return;
     }
-    const { error } = await supabase
-      .from("vendor_profiles")
-      .delete()
-      .eq("id", id);
+    // We can't delete from auth.users via the standard client — go
+    // through the admin RPC that wraps it.
+    const { error } = await supabase.rpc("admin_delete_user", {
+      p_user_id: id,
+    });
     if (error) {
       toast.error(`Couldn't delete: ${error.message}`);
       return;
     }
-    toast.success(`Deleted ${businessName}`);
+    toast.success(`Deleted ${name ?? "vendor"}`);
     setRows((prev) => prev.filter((r) => r.id !== id));
   };
 
@@ -184,29 +140,15 @@ export function VendorApplicationsPage() {
             >
               <div className="flex items-start justify-between gap-4">
                 <div className="min-w-0">
-                  <p className="font-semibold">{r.business_name}</p>
+                  <p className="font-semibold">
+                    {r.business_name ?? r.display_name ?? "(no name)"}
+                  </p>
                   <p className="text-xs text-ink/60">
-                    {r.category}
-                    {r.location ? ` · ${r.location}` : ""}
+                    {r.category ?? "—"}
+                    {r.email ? ` · ${r.email}` : ""}
                   </p>
-                  <p className="mt-1 text-xs text-ink/50">
-                    Applicant: {r.profile_display_name ?? r.user_id}
-                  </p>
-                  {r.bio ? (
-                    <p className="mt-3 text-sm text-ink/80">{r.bio}</p>
-                  ) : null}
                 </div>
                 <div className="flex shrink-0 items-center gap-2">
-                  <a
-                    href={`${PUBLIC_SITE}/vendors/${r.id}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    title="View public listing"
-                    className="inline-flex h-8 w-8 items-center justify-center rounded border border-ink/10 text-ink/70 hover:border-ink/30 hover:text-ink"
-                    aria-label="View listing"
-                  >
-                    <Eye className="h-4 w-4" />
-                  </a>
                   {r.application_status === "pending" ? (
                     <>
                       <button
@@ -225,8 +167,8 @@ export function VendorApplicationsPage() {
                   ) : null}
                   {r.application_status === "approved" ? (
                     <button
-                      onClick={() => deleteRow(r.id, r.business_name)}
-                      title="Permanently delete this listing"
+                      onClick={() => removeAccount(r.id, r.business_name)}
+                      title="Delete this vendor account"
                       className="inline-flex items-center gap-1.5 rounded border border-red-300 px-3 py-1.5 text-xs text-red-700 hover:bg-red-50"
                     >
                       <Trash2 className="h-3.5 w-3.5" />
@@ -242,8 +184,8 @@ export function VendorApplicationsPage() {
                         Approve
                       </button>
                       <button
-                        onClick={() => deleteRow(r.id, r.business_name)}
-                        title="Permanently delete this listing"
+                        onClick={() => removeAccount(r.id, r.business_name)}
+                        title="Delete this vendor account"
                         className="inline-flex items-center gap-1.5 rounded border border-red-300 px-3 py-1.5 text-xs text-red-700 hover:bg-red-50"
                       >
                         <Trash2 className="h-3.5 w-3.5" />
