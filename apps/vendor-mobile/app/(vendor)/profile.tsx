@@ -167,8 +167,6 @@ export default function ProfileScreen() {
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       quality: 0.9,
-      allowsEditing: true,
-      aspect: [1, 1],
     });
     if (result.canceled || !result.assets[0]) return;
     const asset = result.assets[0];
@@ -178,11 +176,19 @@ export default function ProfileScreen() {
         .toLowerCase()
         .replace(/[^a-z0-9]/g, "");
       const path = `${user?.id}/logo-${Date.now()}.${ext}`;
-      const res = await fetch(asset.uri);
-      const blob = await res.blob();
+      // RN's fetch().blob() returns an empty payload for local file://
+      // URIs on iOS, which makes Supabase Storage reject the upload
+      // with "No content provided". arrayBuffer() reliably reads the
+      // underlying bytes, which we wrap as a Uint8Array — the
+      // supabase-js storage client accepts that directly.
+      const arrayBuffer = await (await fetch(asset.uri)).arrayBuffer();
+      const bytes = new Uint8Array(arrayBuffer);
+      if (bytes.byteLength === 0) {
+        throw new Error("Couldn't read the picked photo. Try a different image.");
+      }
       const up = await supabase.storage
         .from("vendor-posts")
-        .upload(path, blob, {
+        .upload(path, bytes, {
           contentType: asset.mimeType ?? "image/jpeg",
           upsert: false,
         });
