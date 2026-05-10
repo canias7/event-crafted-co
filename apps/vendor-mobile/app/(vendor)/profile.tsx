@@ -65,6 +65,7 @@ export default function ProfileScreen() {
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState<ViewKind>("grid");
   const [menuOpen, setMenuOpen] = useState(false);
+  const [createOpen, setCreateOpen] = useState(false);
   const [buzzOpen, setBuzzOpen] = useState(false);
   const [photoPickerOpen, setPhotoPickerOpen] = useState(false);
   const [reelPickerOpen, setReelPickerOpen] = useState(false);
@@ -261,7 +262,11 @@ export default function ProfileScreen() {
   return (
     <SafeAreaView className="flex-1 bg-background" edges={["top"]}>
       <View className="flex-row items-center justify-between px-4 py-3">
-        <Pressable hitSlop={8} className="active:opacity-60">
+        <Pressable
+          hitSlop={8}
+          onPress={() => setCreateOpen(true)}
+          className="active:opacity-60"
+        >
           <Feather name="plus" size={28} color="#0a0a0a" />
         </Pressable>
         <Text
@@ -432,6 +437,27 @@ export default function ProfileScreen() {
         onClose={() => setMenuOpen(false)}
         email={user?.email ?? ""}
         onSignOut={signOut}
+      />
+
+      <CreateSheet
+        open={createOpen}
+        onClose={() => setCreateOpen(false)}
+        onPost={() => {
+          setCreateOpen(false);
+          openCreatePost();
+        }}
+        onReel={() => {
+          setCreateOpen(false);
+          openCreateReel();
+        }}
+        onBuzz={() => {
+          setCreateOpen(false);
+          setBuzzOpen(true);
+        }}
+        onListing={() => {
+          setCreateOpen(false);
+          router.push("/(vendor)/listing");
+        }}
       />
 
       <BuzzComposer
@@ -859,7 +885,7 @@ function ListingTab({
       <Pressable
         onPress={onEdit}
         className="active:opacity-90"
-        style={{ width: "60%" }}
+        style={{ width: "55%" }}
       >
         <View
           style={{
@@ -950,6 +976,127 @@ function ListingTab({
         </View>
       </Pressable>
     </View>
+  );
+}
+
+// Bottom-sheet style menu opened by the "+" button. Same four
+// surfaces as the segmented profile view (post / reel / buzz /
+// listing), each routing into its existing creation flow.
+function CreateSheet({
+  open,
+  onClose,
+  onPost,
+  onReel,
+  onBuzz,
+  onListing,
+}: {
+  open: boolean;
+  onClose: () => void;
+  onPost: () => void;
+  onReel: () => void;
+  onBuzz: () => void;
+  onListing: () => void;
+}) {
+  const options: {
+    icon: keyof typeof Feather.glyphMap;
+    label: string;
+    sub: string;
+    onPress: () => void;
+  }[] = [
+    {
+      icon: "image",
+      label: "Post",
+      sub: "Photo for your grid",
+      onPress: onPost,
+    },
+    {
+      icon: "play",
+      label: "Reel",
+      sub: "Short video",
+      onPress: onReel,
+    },
+    {
+      icon: "edit-3",
+      label: "Buzz",
+      sub: "Quick text update",
+      onPress: onBuzz,
+    },
+    {
+      icon: "shopping-bag",
+      label: "Listing",
+      sub: "Edit your marketplace listing",
+      onPress: onListing,
+    },
+  ];
+  return (
+    <Modal
+      visible={open}
+      transparent
+      animationType="slide"
+      onRequestClose={onClose}
+    >
+      <Pressable
+        onPress={onClose}
+        style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.4)" }}
+      >
+        <View style={{ flex: 1 }} />
+      </Pressable>
+      <SafeAreaView
+        edges={["bottom"]}
+        style={{
+          backgroundColor: "#fff",
+          borderTopLeftRadius: 20,
+          borderTopRightRadius: 20,
+          paddingTop: 12,
+          paddingHorizontal: 12,
+          position: "absolute",
+          left: 0,
+          right: 0,
+          bottom: 0,
+        }}
+      >
+        <View
+          style={{
+            alignSelf: "center",
+            width: 40,
+            height: 4,
+            borderRadius: 2,
+            backgroundColor: "#d4d4d8",
+            marginBottom: 8,
+          }}
+        />
+        <Text className="px-3 pt-2 pb-3 text-base font-semibold text-foreground">
+          Create
+        </Text>
+        {options.map((o) => (
+          <Pressable
+            key={o.label}
+            onPress={o.onPress}
+            className="flex-row items-center gap-3 px-3 py-3 rounded-xl active:bg-muted"
+          >
+            <View
+              style={{
+                width: 40,
+                height: 40,
+                borderRadius: 999,
+                backgroundColor: "#f4f4f5",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <Feather name={o.icon} size={18} color="#0a0a0a" />
+            </View>
+            <View className="flex-1">
+              <Text className="text-base font-medium text-foreground">
+                {o.label}
+              </Text>
+              <Text className="text-xs text-muted-foreground">{o.sub}</Text>
+            </View>
+            <Feather name="chevron-right" size={18} color="#a1a1aa" />
+          </Pressable>
+        ))}
+      </SafeAreaView>
+    </Modal>
   );
 }
 
