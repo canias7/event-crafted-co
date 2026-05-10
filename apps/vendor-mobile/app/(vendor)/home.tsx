@@ -52,6 +52,16 @@ interface BuzzRow {
   created_at: string;
   vendor: Author;
 }
+interface ListingRow {
+  id: string;
+  business_name: string | null;
+  category: string | null;
+  location: string | null;
+  base_price_cents: number | null;
+  bio: string | null;
+  logo_url: string | null;
+  slug: string | null;
+}
 
 export default function HomeScreen() {
   const { user } = useAuth();
@@ -66,6 +76,7 @@ export default function HomeScreen() {
   const [posts, setPosts] = useState<PostRow[]>([]);
   const [reels, setReels] = useState<ReelRow[]>([]);
   const [buzz, setBuzz] = useState<BuzzRow[]>([]);
+  const [listings, setListings] = useState<ListingRow[]>([]);
 
   useEffect(() => {
     if (!user) return;
@@ -92,7 +103,7 @@ export default function HomeScreen() {
     // rejected listings don't leak into the feed. The vendor's
     // logo + business name come back inline for the IG-style author
     // header on each card.
-    const [postsRes, reelsRes, buzzRes] = await Promise.all([
+    const [postsRes, reelsRes, buzzRes, listingsRes] = await Promise.all([
       supabase
         .from("vendor_posts")
         .select(
@@ -117,6 +128,14 @@ export default function HomeScreen() {
         .eq("vendor.application_status", "approved")
         .order("created_at", { ascending: false })
         .limit(50),
+      supabase
+        .from("vendor_profiles")
+        .select(
+          "id, business_name, category, location, base_price_cents, bio, logo_url, slug",
+        )
+        .eq("application_status", "approved")
+        .order("created_at", { ascending: false })
+        .limit(100),
     ]);
     // The auto-generated supabase TS types treat the FK embed as
     // an array, but the runtime shape (many-to-one FK) is a single
@@ -125,19 +144,16 @@ export default function HomeScreen() {
     setPosts((postsRes.data ?? []) as unknown as PostRow[]);
     setReels((reelsRes.data ?? []) as unknown as ReelRow[]);
     setBuzz((buzzRes.data ?? []) as unknown as BuzzRow[]);
+    setListings((listingsRes.data ?? []) as ListingRow[]);
   }, []);
 
   useEffect(() => {
     loadFeeds();
   }, [loadFeeds]);
 
-  const listingsCount =
-    profile &&
-    profile.application_status === "approved" &&
-    profile.location &&
-    profile.base_price_cents != null
-      ? 1
-      : 0;
+  // Home tab listings count = global count of approved vendors in
+  // the marketplace, not just whether the current user has one.
+  const listingsCount = listings.length;
 
   function openCreatePost() {
     setPhotoPickerOpen(true);
@@ -275,24 +291,17 @@ export default function HomeScreen() {
             <BuzzList items={buzz} />
           )
         ) : (
-          <View className="items-center px-6 pt-10">
-            <EmptyState
-              icon="shopping-bag"
-              title={listingsCount > 0 ? "Your listing" : "No listings yet"}
-              body={
-                listingsCount > 0
-                  ? "Manage details on your Profile tab."
-                  : "Add your location and starting price to publish your listing to the marketplace."
-              }
-              ctaLabel={listingsCount > 0 ? undefined : "Create listing"}
-              onCta={
-                listingsCount > 0
-                  ? undefined
-                  : () =>
-                      Linking.openURL("https://eventvendora.com/vendor/listing")
-              }
-            />
-          </View>
+          listingsCount === 0 ? (
+            <View className="items-center px-6 pt-10">
+              <EmptyState
+                icon="shopping-bag"
+                title="No listings yet"
+                body="The marketplace is empty right now — listings populate the feed once vendors get approved."
+              />
+            </View>
+          ) : (
+            <ListingFeed listings={listings} />
+          )
         )}
       </ScrollView>
 
@@ -571,6 +580,65 @@ function ReelGrid({ reels }: { reels: ReelRow[] }) {
           </View>
         </View>
       ))}
+    </View>
+  );
+}
+
+// Marketplace feed — every approved vendor as a card. Tap to open
+// the public listing page in the browser. Categories + locations +
+// starting prices visible at a glance so this reads as a directory,
+// not a wall of headshots.
+function ListingFeed({ listings }: { listings: ListingRow[] }) {
+  return (
+    <View className="gap-3 px-4">
+      {listings.map((l) => {
+        const price =
+          l.base_price_cents != null
+            ? `From $${Math.round(l.base_price_cents / 100).toLocaleString()}`
+            : null;
+        const href = l.slug
+          ? `https://eventvendora.com/vendors/${l.slug}`
+          : `https://eventvendora.com/vendors/${l.id}`;
+        return (
+          <Pressable
+            key={l.id}
+            onPress={() => Linking.openURL(href)}
+            className="rounded-xl border border-border bg-background p-3 flex-row items-center gap-3 active:opacity-80"
+          >
+            <View className="h-14 w-14 overflow-hidden rounded-lg bg-secondary/60">
+              <Image
+                source={
+                  l.logo_url
+                    ? { uri: l.logo_url }
+                    : require("../../assets/icon.png")
+                }
+                className="h-full w-full"
+                resizeMode="cover"
+              />
+            </View>
+            <View className="flex-1 min-w-0">
+              <Text
+                numberOfLines={1}
+                className="text-base font-semibold text-foreground"
+              >
+                {l.business_name ?? "Vendor"}
+              </Text>
+              <Text
+                numberOfLines={1}
+                className="text-xs text-muted-foreground"
+              >
+                {[l.category, l.location].filter(Boolean).join(" · ") ||
+                  "Marketplace listing"}
+              </Text>
+              {price ? (
+                <Text className="mt-0.5 text-xs text-foreground/80">
+                  {price}
+                </Text>
+              ) : null}
+            </View>
+          </Pressable>
+        );
+      })}
     </View>
   );
 }
