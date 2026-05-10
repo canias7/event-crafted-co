@@ -3,33 +3,34 @@
 // On web, /vendor/studio is the AI image editor. The "Studio" tab on
 // mobile is wider: a hub that surfaces every content surface a vendor
 // might want to manage on the go (packages, gallery, FAQs, policies,
-// AI agent). Each row is a tappable card; for now the editing flows
-// open the matching web page in a system browser, since the heaviest
-// editors (image upload, AI agent prompts, policy editor) are easier
-// on a real keyboard. Mobile-native managers can replace these
-// shortcuts iteratively.
+// AI agent). The core listing fields (photos, category, bio, price)
+// open the native listing builder. Heavier editors that don't yet
+// have a native flow open the matching web page in a system browser.
 
 import { Linking, Pressable, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useRouter } from "expo-router";
 
 const WEB = "https://eventvendora.com";
 
 interface Tool {
   title: string;
   subtitle: string;
-  url: string;
+  // Either a native route (router.push) or an external URL (Linking).
+  route?: string;
+  url?: string;
 }
 
 const TOOLS: Tool[] = [
   {
+    title: "Photo gallery",
+    subtitle: "Upload portfolio images, drag to reorder",
+    route: "/(vendor)/listing",
+  },
+  {
     title: "Packages",
     subtitle: "Pricing tiers and what's included",
     url: `${WEB}/vendor/listing#packages`,
-  },
-  {
-    title: "Photo gallery",
-    subtitle: "Upload portfolio images, drag to reorder",
-    url: `${WEB}/vendor/listing#gallery`,
   },
   {
     title: "FAQs",
@@ -54,6 +55,7 @@ const TOOLS: Tool[] = [
 ];
 
 export default function StudioScreen() {
+  const router = useRouter();
   return (
     <SafeAreaView className="flex-1 bg-background">
       <ScrollView contentContainerClassName="px-4 pb-32 pt-4">
@@ -68,7 +70,10 @@ export default function StudioScreen() {
           {TOOLS.map((t) => (
             <Pressable
               key={t.title}
-              onPress={() => Linking.openURL(t.url)}
+              onPress={() => {
+                if (t.route) router.push(t.route as never);
+                else if (t.url) Linking.openURL(t.url);
+              }}
               className="rounded-xl border border-border bg-background px-4 py-4 active:opacity-70"
             >
               <View className="flex-row items-start justify-between">
@@ -87,8 +92,8 @@ export default function StudioScreen() {
         </View>
 
         <Text className="mt-6 text-center text-xs text-muted-foreground">
-          Tap any tool to open the full editor in your browser. Native
-          editing comes in a future update.
+          Photo gallery edits live in the app. Packages, FAQs, policies,
+          and AI agent open in your browser for now.
         </Text>
       </ScrollView>
     </SafeAreaView>
