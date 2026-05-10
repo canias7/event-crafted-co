@@ -40,7 +40,7 @@ const ACCENT = "#a08259";
 
 const SERIF = Platform.OS === "ios" ? "Times New Roman" : "serif";
 
-type Step = "account" | "business" | "done";
+type Step = "account" | "business" | "code" | "done";
 
 export default function VendorSignupScreen() {
   const router = useRouter();
@@ -58,8 +58,12 @@ export default function VendorSignupScreen() {
   const [category, setCategory] = useState("");
   const [pickerOpen, setPickerOpen] = useState(false);
 
+  // Step 3 (code)
+  const [code, setCode] = useState("");
+
   const step1Valid = email.trim().length > 0 && password.length >= 8;
   const step2Valid = businessName.trim().length > 0 && category.length > 0;
+  const codeValid = code.length === 6;
 
   function continueToBusiness() {
     setError(null);
@@ -70,54 +74,111 @@ export default function VendorSignupScreen() {
     setStep("business");
   }
 
-  async function submit() {
+  // Step 2 submit: ask the edge function to email a 6-digit code.
+  async function sendCode() {
     if (!step2Valid) return;
     setError(null);
     setSubmitting(true);
-    const { data, error: signUpErr } = await supabase.auth.signUp({
-      email: email.trim().toLowerCase(),
-      password,
-      options: {
-        data: {
-          // display_name not set — handle_new_user falls back to the
-          // email prefix. Owner name removed from the signup flow.
-          intended_role: "vendor",
-          vendor_business_name: businessName.trim(),
-          vendor_category: category,
-        },
+    const cleanEmail = email.trim().toLowerCase();
+    const { data, error: invokeErr } = await supabase.functions.invoke<{
+      ok?: boolean;
+      reason?: string;
+      error?: string;
+    }>("vendor-signup", {
+      body: {
+        action: "request",
+        email: cleanEmail,
+        businessName: businessName.trim(),
+        category,
       },
     });
-    if (signUpErr) {
-      setSubmitting(false);
-      const msg = signUpErr.message?.toLowerCase() ?? "";
-      if (msg.includes("rate limit")) {
-        setError(
-          "We've sent too many emails recently. Please try again in a few minutes.",
-        );
-      } else if (msg.includes("already registered") || msg.includes("already exists")) {
+    setSubmitting(false);
+    if (invokeErr) {
+      setError(invokeErr.message);
+      return;
+    }
+    if (data?.ok === false) {
+      if (data.reason === "email_taken") {
         setError(
           "An account with this email already exists. Tap Log in instead.",
         );
       } else {
-        setError(signUpErr.message);
+        setError(data.reason ?? "Couldn't send code.");
       }
       return;
     }
-    // Supabase silently no-ops if the email already exists, returning
-    // user.identities = []. handle_new_user never fires in that case.
-    if (data?.user && (data.user.identities ?? []).length === 0) {
-      setSubmitting(false);
-      setError(
-        "An account with this email already exists. Tap Log in instead.",
-      );
+    if (data?.error) {
+      setError(data.error);
       return;
     }
-    // Sign out so the user can't access the vendor portal until admin
-    // approves. They'll receive a "thanks for applying" email and an
-    // approval email later.
-    await supabase.auth.signOut();
+    setCode("");
+    setStep("code");
+  }
+
+  // Step 3 submit: verify the code, then signInWithPassword.
+  async function verifyCode() {
+    if (!codeValid) return;
+    setError(null);
+    setSubmitting(true);
+    const cleanEmail = email.trim().toLowerCase();
+    const { data, error: invokeErr } = await supabase.functions.invoke<{
+      ok?: boolean;
+      reason?: string;
+      error?: string;
+    }>("vendor-signup", {
+      body: {
+        action: "verify",
+        email: cleanEmail,
+        code: code.trim(),
+        password,
+        businessName: businessName.trim(),
+        category,
+      },
+    });
+    if (invokeErr) {
+      setSubmitting(false);
+      setError(invokeErr.message);
+      return;
+    }
+    if (data?.ok === false) {
+      setSubmitting(false);
+      if (data.reason === "wrong_code") {
+        setError("That code didn't match. Try again or resend.");
+      } else if (data.reason === "expired") {
+        setError("That code expired. Hit Resend code for a new one.");
+      } else if (data.reason === "too_many_attempts") {
+        setError("Too many wrong tries. Hit Resend code to start over.");
+      } else if (data.reason === "no_pending_code") {
+        setError("We couldn't find a pending code. Hit Resend code.");
+      } else if (data.reason === "weak_password") {
+        setError("Password must be at least 8 characters.");
+      } else {
+        setError(data.reason ?? "Verification failed.");
+      }
+      return;
+    }
+    if (data?.error) {
+      setSubmitting(false);
+      setError(data.error);
+      return;
+    }
+    // Account created via admin API with email_confirm:true. Sign in
+    // to obtain a session and land in the vendor app.
+    const { error: signInErr } = await supabase.auth.signInWithPassword({
+      email: cleanEmail,
+      password,
+    });
     setSubmitting(false);
-    setStep("done");
+    if (signInErr) {
+      setError(`Account created but sign-in failed: ${signInErr.message}`);
+      return;
+    }
+    router.replace("/(vendor)/home");
+  }
+
+  async function resend() {
+    setCode("");
+    await sendCode();
   }
 
   return (
@@ -137,8 +198,15 @@ export default function VendorSignupScreen() {
         >
           <Pressable
             onPress={() => {
-              if (step === "business") setStep("account");
-              else router.back();
+              if (step === "code") {
+                setStep("business");
+                setCode("");
+                setError(null);
+              } else if (step === "business") {
+                setStep("account");
+              } else {
+                router.back();
+              }
             }}
             hitSlop={12}
             style={{ alignSelf: "flex-start", paddingVertical: 8 }}
@@ -172,8 +240,21 @@ export default function VendorSignupScreen() {
               openPicker={() => setPickerOpen(true)}
               error={error}
               submitting={submitting}
-              onSubmit={submit}
+              onSubmit={sendCode}
               valid={step2Valid}
+            />
+          ) : null}
+
+          {step === "code" ? (
+            <CodeStep
+              email={email.trim().toLowerCase()}
+              code={code}
+              setCode={setCode}
+              error={error}
+              submitting={submitting}
+              onVerify={verifyCode}
+              onResend={resend}
+              valid={codeValid}
             />
           ) : null}
 
@@ -374,6 +455,125 @@ function BusinessStep(p: BusinessStepProps) {
         </Text>
       </View>
     </>
+  );
+}
+
+interface CodeStepProps {
+  email: string;
+  code: string;
+  setCode: (v: string) => void;
+  error: string | null;
+  submitting: boolean;
+  onVerify: () => void;
+  onResend: () => void;
+  valid: boolean;
+}
+
+function CodeStep(p: CodeStepProps) {
+  return (
+    <View style={{ marginTop: 24 }}>
+      <Text
+        style={{
+          fontFamily: SERIF,
+          fontSize: 14,
+          color: ACCENT,
+          letterSpacing: 0.5,
+          textTransform: "uppercase",
+        }}
+      >
+        Step 3 of 3
+      </Text>
+      <Text
+        style={{
+          fontFamily: SERIF,
+          fontSize: 32,
+          lineHeight: 38,
+          fontWeight: "700",
+          color: INK,
+          marginTop: 8,
+        }}
+      >
+        Enter your code
+      </Text>
+      <Text
+        style={{
+          fontFamily: SERIF,
+          fontSize: 15,
+          color: INK_DIM,
+          fontStyle: "italic",
+          marginTop: 8,
+        }}
+      >
+        We sent a 6-digit code to {p.email}.
+      </Text>
+
+      <View style={{ marginTop: 32, gap: 16 }}>
+        <View>
+          <Text
+            style={{
+              marginBottom: 6,
+              fontSize: 12,
+              fontWeight: "600",
+              color: INK_DIM,
+              letterSpacing: 0.5,
+            }}
+          >
+            6-DIGIT CODE
+          </Text>
+          <TextInput
+            value={p.code}
+            onChangeText={(v) => p.setCode(v.replace(/[^0-9]/g, "").slice(0, 6))}
+            placeholder="123456"
+            placeholderTextColor={INK_DIM}
+            keyboardType="number-pad"
+            autoCapitalize="none"
+            style={{
+              backgroundColor: "#ffffff",
+              borderColor: INK_BORDER,
+              borderWidth: 1,
+              borderRadius: 14,
+              paddingHorizontal: 14,
+              paddingVertical: 14,
+              fontSize: 18,
+              color: INK,
+              letterSpacing: 4,
+            }}
+          />
+        </View>
+
+        {p.error ? (
+          <Text style={{ color: "#b42318", fontSize: 14 }}>{p.error}</Text>
+        ) : null}
+
+        <Pressable
+          onPress={p.onVerify}
+          disabled={p.submitting || !p.valid}
+          style={{
+            marginTop: 8,
+            backgroundColor: INK,
+            borderRadius: 999,
+            height: 54,
+            alignItems: "center",
+            justifyContent: "center",
+            opacity: p.submitting || !p.valid ? 0.5 : 1,
+          }}
+        >
+          <Text style={{ color: CREAM, fontSize: 16, fontWeight: "600" }}>
+            {p.submitting ? "Verifying…" : "Verify"}
+          </Text>
+        </Pressable>
+
+        <Pressable
+          onPress={p.onResend}
+          disabled={p.submitting}
+          style={{ alignItems: "center", paddingVertical: 8 }}
+        >
+          <Text style={{ color: ACCENT, fontSize: 14, fontWeight: "600" }}>
+            Resend code
+          </Text>
+        </Pressable>
+      </View>
+    </View>
   );
 }
 
