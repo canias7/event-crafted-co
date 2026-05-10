@@ -72,8 +72,7 @@ export default function ProfileScreen() {
     { asset: ImagePicker.ImagePickerAsset; kind: MediaKind } | null
   >(null);
 
-  const [posts, setPosts] = useState<PostRow[]>([]);
-  const [reels, setReels] = useState<ReelRow[]>([]);
+  const [posts, setPosts] = useState<PostRow[]>([]);  const [reels, setReels] = useState<ReelRow[]>([]);
   const [buzz, setBuzz] = useState<BuzzRow[]>([]);
   // Lightbox: tapping a grid tile opens a fullscreen modal with a back
   // button top-left. null when nothing is open.
@@ -149,6 +148,65 @@ export default function ProfileScreen() {
     setReelPickerOpen(true);
   }
 
+  // Tap the avatar → photo picker → upload to vendor-posts/<userId>/
+  // logo-<ts>.<ext> → persist URL to vendor_profiles.logo_url. Reuses
+  // the existing vendor-posts bucket (owner-folder RLS already in
+  // place) so no new storage rules needed. Mirrors what the web
+  // Profile page does on logo click.
+  const [logoUploading, setLogoUploading] = useState(false);
+  async function changeLogo() {
+    if (!profile?.id || logoUploading) return;
+    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!perm.granted) {
+      Alert.alert(
+        "Library access needed",
+        "Enable photo library access in Settings to pick a logo.",
+      );
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      quality: 0.9,
+      allowsEditing: true,
+      aspect: [1, 1],
+    });
+    if (result.canceled || !result.assets[0]) return;
+    const asset = result.assets[0];
+    setLogoUploading(true);
+    try {
+      const ext = (asset.uri.split(".").pop() ?? "jpg")
+        .toLowerCase()
+        .replace(/[^a-z0-9]/g, "");
+      const path = `${user?.id}/logo-${Date.now()}.${ext}`;
+      const res = await fetch(asset.uri);
+      const blob = await res.blob();
+      const up = await supabase.storage
+        .from("vendor-posts")
+        .upload(path, blob, {
+          contentType: asset.mimeType ?? "image/jpeg",
+          upsert: false,
+        });
+      if (up.error) throw up.error;
+      const { data: pub } = supabase.storage
+        .from("vendor-posts")
+        .getPublicUrl(path);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error } = await (supabase as any)
+        .from("vendor_profiles")
+        .update({ logo_url: pub.publicUrl })
+        .eq("id", profile.id);
+      if (error) throw error;
+      setProfile({ ...profile, logo_url: pub.publicUrl });
+    } catch (err) {
+      Alert.alert(
+        "Couldn't update logo",
+        (err as { message?: string })?.message ?? "Try again in a moment.",
+      );
+    } finally {
+      setLogoUploading(false);
+    }
+  }
+
   async function pickMedia(
     src: "camera" | "library",
     kind: "Images" | "Videos",
@@ -220,7 +278,11 @@ export default function ProfileScreen() {
 
       <ScrollView contentContainerClassName="pb-32">
         <View className="items-center px-4 pt-2">
-          <View className="h-28 w-28 overflow-hidden rounded-full bg-secondary/60">
+          <Pressable
+            onPress={changeLogo}
+            disabled={logoUploading || !profile?.id}
+            className="h-28 w-28 overflow-hidden rounded-full bg-secondary/60 active:opacity-80"
+          >
             <Image
               source={
                 profile?.logo_url
@@ -230,7 +292,14 @@ export default function ProfileScreen() {
               className="h-full w-full"
               resizeMode="cover"
             />
-          </View>
+            {logoUploading ? (
+              <View className="absolute top-0 right-0 bottom-0 left-0 items-center justify-center bg-black/40">
+                <Text className="text-xs font-semibold text-white">
+                  Uploading…
+                </Text>
+              </View>
+            ) : null}
+          </Pressable>
 
           {profile?.business_name ? (
             <Text className="mt-4 text-lg font-bold text-foreground">
