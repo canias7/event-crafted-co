@@ -60,30 +60,29 @@ jobs:
           token: ${{ secrets.EXPO_TOKEN }}
 
       - name: npm ci
-        id: install
         run: |
+          set -euo pipefail
           npm ci 2>&1 | tee /tmp/install.log
-          echo "exit=${PIPESTATUS[0]}" >> "$GITHUB_OUTPUT"
+          exit ${PIPESTATUS[0]}
 
       - name: eas update
-        id: update
-        if: steps.install.outputs.exit == '0'
         working-directory: apps/${{ matrix.app }}
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
           EXPO_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           EXPO_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
         run: |
-          set +e
+          set -euo pipefail
           {
-            echo "=== whoami ==="
-            eas whoami 2>&1 || true
+            echo "=== eas whoami ==="
+            eas whoami
             echo "=== eas --version ==="
-            eas --version 2>&1 || true
+            eas --version
             echo "=== eas update ==="
-            eas update --non-interactive --branch production --message "${{ needs.setup.outputs.message }}" 2>&1
-            echo "EXIT=$?"
-          } | tee /tmp/update.log
+            eas update --non-interactive --branch production --message "${{ needs.setup.outputs.message }}"
+            echo "=== eas update:list (latest 5 on production) ==="
+            eas update:list --branch production --limit 5 --json --non-interactive | head -200
+          } 2>&1 | tee /tmp/update.log
 
       - name: Publish run summary
         if: always()
@@ -91,13 +90,13 @@ jobs:
           {
             echo "## OTA run summary"
             echo ""
-            echo "### npm ci (last 80 lines)"
+            echo "### npm ci tail"
             echo '```'
-            tail -80 /tmp/install.log 2>/dev/null || echo "(no install log)"
+            tail -60 /tmp/install.log 2>/dev/null || echo "(no install log)"
             echo '```'
             echo ""
-            echo "### eas update (last 200 lines)"
+            echo "### eas update output"
             echo '```'
-            tail -200 /tmp/update.log 2>/dev/null || echo "(no update log)"
+            cat /tmp/update.log 2>/dev/null || echo "(no update log)"
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
