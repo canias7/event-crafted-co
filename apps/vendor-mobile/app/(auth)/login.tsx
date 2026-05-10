@@ -46,7 +46,10 @@ export default function LoginScreen() {
         action: "request",
         email: email.trim().toLowerCase(),
         password,
-        app: "vendor",
+        // Don't pass `app` — the vendor app accepts hosts too (a
+        // fresh signup with role='host' has to be able to reach
+        // Create listing). Cross-app prevention is handled on the
+        // host side only.
       },
     });
     setSubmitting(false);
@@ -108,8 +111,12 @@ export default function LoginScreen() {
       setError(signInErr.message);
       return;
     }
-    // Gate by role: vendor app only accepts vendor (or admin)
-    // accounts. Host accounts have to sign in on the Vendora app.
+    // Gate by role: vendor app accepts vendors, admins, AND fresh
+    // signups whose profiles.role is still 'host' — they need to
+    // get into the app to hit Create listing, which is where the
+    // vendor_profile (and the vendor role bump) is born. Only
+    // explicit host-only roles get rejected if we ever introduce
+    // them (e.g. a marketplace-only buyer role).
     const userId = signInData.user?.id;
     if (userId) {
       const { data: prof } = await supabase
@@ -118,11 +125,11 @@ export default function LoginScreen() {
         .eq("id", userId)
         .maybeSingle();
       const role = (prof as { role?: string } | null)?.role ?? "host";
-      if (role !== "vendor" && role !== "admin") {
+      if (role !== "vendor" && role !== "host" && role !== "admin") {
         await supabase.auth.signOut();
         setSubmitting(false);
         setError(
-          "That email is a host account. Open the Vendora app to sign in.",
+          "That email isn't authorized for the Vendor app.",
         );
         return;
       }
