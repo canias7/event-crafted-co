@@ -95,7 +95,7 @@ export default function VendorSignupScreen() {
         );
       } else if (msg.includes("already registered") || msg.includes("already exists")) {
         setError(
-          "An account with this email already exists. Sign in to it on the host app first, then apply to be a vendor from your dashboard.",
+          "An account with this email already exists. Tap Log in instead.",
         );
       } else {
         setError(signUpErr.message);
@@ -107,7 +107,7 @@ export default function VendorSignupScreen() {
     if (data?.user && (data.user.identities ?? []).length === 0) {
       setSubmitting(false);
       setError(
-        "An account with this email already exists. Sign in to it on the host app first, then apply to be a vendor from your dashboard.",
+        "An account with this email already exists. Tap Log in instead.",
       );
       return;
     }
