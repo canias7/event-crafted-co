@@ -287,7 +287,6 @@ export default function HomeScreen() {
           active={view === "listing"}
           onPress={() => setView("listing")}
           iconName="shopping-bag"
-          count={listingsCount}
         />
       </View>
 
@@ -422,7 +421,8 @@ function ViewTab({
   active: boolean;
   onPress: () => void;
   iconName: keyof typeof Feather.glyphMap;
-  count: number;
+  /** Pass undefined to hide the numeric badge entirely. */
+  count?: number;
 }) {
   return (
     <Pressable
@@ -447,12 +447,14 @@ function ViewTab({
       }}
     >
       <Feather name={iconName} size={22} color={active ? "#0a0a0a" : "#737373"} />
-      <Text
-        className="mt-1 text-sm font-semibold"
-        style={{ color: active ? "#0a0a0a" : "#737373" }}
-      >
-        {count}
-      </Text>
+      {count != null ? (
+        <Text
+          className="mt-1 text-sm font-semibold"
+          style={{ color: active ? "#0a0a0a" : "#737373" }}
+        >
+          {count}
+        </Text>
+      ) : null}
     </Pressable>
   );
 }
