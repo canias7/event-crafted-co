@@ -25,7 +25,7 @@ import { Feather } from "@expo/vector-icons";
 import { CATEGORY_GROUPS, groupOfSub } from "@vendora/core";
 import { supabase } from "@/lib/supabase";
 
-type ViewKind = "listing" | "grid" | "reels" | "buzz";
+type ViewKind = "grid" | "reels" | "buzz" | "listing";
 
 type Author = { business_name: string | null; logo_url: string | null } | null;
 
@@ -63,7 +63,7 @@ interface ListingRow {
 }
 
 export default function ExploreScreen() {
-  const [view, setView] = useState<ViewKind>("listing");
+  const [view, setView] = useState<ViewKind>("grid");
   const [posts, setPosts] = useState<PostRow[]>([]);
   const [reels, setReels] = useState<ReelRow[]>([]);
   const [buzz, setBuzz] = useState<BuzzRow[]>([]);
@@ -150,12 +150,7 @@ export default function ExploreScreen() {
         </Text>
       </View>
 
-      <View className="mt-6 flex-row border-t border-border">
-        <ViewTab
-          active={view === "listing"}
-          onPress={() => setView("listing")}
-          iconName="shopping-bag"
-        />
+      <View className="mt-12 flex-row border-t border-border">
         <ViewTab
           active={view === "grid"}
           onPress={() => setView("grid")}
@@ -171,20 +166,15 @@ export default function ExploreScreen() {
           onPress={() => setView("buzz")}
           iconName="align-left"
         />
+        <ViewTab
+          active={view === "listing"}
+          onPress={() => setView("listing")}
+          iconName="shopping-bag"
+        />
       </View>
 
       <ScrollView contentContainerClassName="pb-32 pt-4">
-        {view === "listing" ? (
-          listings.length === 0 ? (
-            <EmptyMessage body="No vendor listings yet." />
-          ) : (
-            <ListingFeed
-              listings={listings}
-              category={categoryFilter}
-              onCategoryChange={setCategoryFilter}
-            />
-          )
-        ) : view === "grid" ? (
+        {view === "grid" ? (
           posts.length === 0 ? (
             <EmptyMessage body="No vendor posts yet." />
           ) : (
@@ -196,10 +186,20 @@ export default function ExploreScreen() {
           ) : (
             <ReelGrid reels={reels} />
           )
-        ) : buzz.length === 0 ? (
-          <EmptyMessage body="No buzz yet." />
+        ) : view === "buzz" ? (
+          buzz.length === 0 ? (
+            <EmptyMessage body="No buzz yet." />
+          ) : (
+            <BuzzList items={buzz} />
+          )
+        ) : listings.length === 0 ? (
+          <EmptyMessage body="No vendor listings yet." />
         ) : (
-          <BuzzList items={buzz} />
+          <ListingFeed
+            listings={listings}
+            category={categoryFilter}
+            onCategoryChange={setCategoryFilter}
+          />
         )}
       </ScrollView>
     </SafeAreaView>
