@@ -103,6 +103,14 @@ export default function ExploreScreen() {
             "id, business_name, category, location, base_price_cents, bio, logo_url, slug",
           )
           .eq("application_status", "approved")
+          // Only show listings that are actually publish-ready —
+          // same four fields the listing builder requires. Admin can
+          // approve a half-baked row but the marketplace shouldn't
+          // surface it until the vendor fills everything in.
+          .not("location", "is", null)
+          .not("bio", "is", null)
+          .not("category", "is", null)
+          .gt("base_price_cents", 0)
           .order("created_at", { ascending: false })
           .limit(100),
         supabase

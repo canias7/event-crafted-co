@@ -141,6 +141,25 @@ serve(async (req) => {
     if (status === "not_confirmed") return json({ ok: false, reason: "not_confirmed" }, 200);
     if (status !== "ok") return json({ ok: false, reason: "unknown" }, 200);
 
+    // Optional per-app role gate. Each mobile app passes `app` so we
+    // reject cross-app sign-ins (vendor email → host app, host email
+    // → vendor app) BEFORE emailing a code. Admins bypass.
+    const app = String(body.app ?? "").trim().toLowerCase();
+    if (app === "host" || app === "vendor") {
+      const userId = (result as { user_id?: string } | null)?.user_id;
+      if (userId) {
+        const { data: prof } = await sb
+          .from("profiles")
+          .select("role")
+          .eq("id", userId)
+          .maybeSingle();
+        const role = (prof as { role?: string } | null)?.role ?? "host";
+        if (role !== "admin" && role !== app) {
+          return json({ ok: false, reason: "wrong_app" }, 200);
+        }
+      }
+    }
+
     // Invalidate any earlier unused codes for this email.
     await sb
       .from("signin_2fa_codes")
