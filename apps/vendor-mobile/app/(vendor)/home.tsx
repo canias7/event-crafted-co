@@ -168,14 +168,11 @@ export default function HomeScreen() {
     setReels((reelsRes.data ?? []) as unknown as ReelRow[]);
     setBuzz((buzzRes.data ?? []) as unknown as BuzzRow[]);
 
-    // Resolve the hero image for each marketplace card. Priority:
-    //   1. First listing portfolio photo (the photo the vendor
-    //      explicitly attached to their listing — what we want by
-    //      default).
-    //   2. Most recent vendor_post image (social feed fallback so
-    //      the card still has a real photo if portfolio is empty).
-    //   3. logo_url (last resort, may not fill the square but at
-    //      least carries the brand).
+    // Hero image source is strictly the listing's own portfolio
+    // photos (vendor_portfolio_images). Posts, reels, buzz, and
+    // logo never appear on the marketplace card — the listing
+    // shows what the vendor put into the listing, nothing else.
+    // Empty hero → the card renders a neutral placeholder.
     type RawPortfolio = { vendor_id: string; storage_path: string };
     const heroByVendor = new Map<string, string>();
     for (const row of (portfolioRes.data ?? []) as unknown as RawPortfolio[]) {
@@ -186,15 +183,9 @@ export default function HomeScreen() {
         if (pub.publicUrl) heroByVendor.set(row.vendor_id, pub.publicUrl);
       }
     }
-    type RawPost = { vendor_id?: string | null; image_url: string };
-    for (const p of (postsRes.data ?? []) as unknown as RawPost[]) {
-      if (p.vendor_id && !heroByVendor.has(p.vendor_id) && p.image_url) {
-        heroByVendor.set(p.vendor_id, p.image_url);
-      }
-    }
     const enriched = ((listingsRes.data ?? []) as ListingRow[]).map((l) => ({
       ...l,
-      hero_url: heroByVendor.get(l.id) ?? l.logo_url,
+      hero_url: heroByVendor.get(l.id) ?? null,
     }));
     setListings(enriched);
   }, []);
@@ -761,12 +752,18 @@ function ListingCard({ listing }: { listing: ListingRow }) {
             resizeMode="cover"
           />
         ) : (
-          <View className="flex-1 items-center justify-center">
-            <Image
-              source={require("../../assets/icon.png")}
-              style={{ width: 120, height: 120 }}
-              resizeMode="contain"
-            />
+          // No portfolio photo on the listing itself → render a
+          // neutral placeholder. We intentionally don't borrow a
+          // post / reel / logo image; the card only ever shows what
+          // the vendor put into the listing.
+          <View
+            className="flex-1 items-center justify-center px-6"
+            style={{ backgroundColor: "#f4f4f5" }}
+          >
+            <Feather name="image" size={28} color="#a1a1aa" />
+            <Text className="mt-2 text-center text-xs text-muted-foreground">
+              No listing photos yet
+            </Text>
           </View>
         )}
         {/* White stroked heart with drop shadow — Airbnb's wishlist

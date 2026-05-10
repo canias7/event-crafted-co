@@ -1,5 +1,12 @@
 import { motion } from "framer-motion";
-import { Star, MapPin, Heart, Zap, GitCompare } from "lucide-react";
+import {
+  Star,
+  MapPin,
+  Heart,
+  Zap,
+  GitCompare,
+  ImageIcon,
+} from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useSavedVendors } from "@/hooks/useSavedVendors";
 import { useCompareVendors } from "@/hooks/useCompareVendors";
@@ -101,14 +108,14 @@ export function VendorCard({ vendor, eager = false }: VendorCardProps) {
               className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.04]"
             />
           ) : (
-            <Picture
-              source={imageMap[vendor.image] ?? imageMap["vendor-venue"]}
-              alt={vendor.name}
-              loading={eager ? "eager" : "lazy"}
-              sizes="(min-width: 1280px) 20vw, (min-width: 1024px) 25vw, (min-width: 640px) 33vw, 50vw"
-              fetchPriority={eager ? "high" : "auto"}
-              className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.04]"
-            />
+            // No portfolio photo on the listing → neutral placeholder.
+            // We never substitute stock category art / posts / logos:
+            // the marketplace card only shows what the vendor put
+            // into their listing.
+            <div className="w-full h-full flex flex-col items-center justify-center gap-1 bg-muted text-muted-foreground">
+              <ImageIcon className="w-6 h-6" aria-hidden="true" />
+              <span className="text-xs">No listing photos yet</span>
+            </div>
           )}
           <div className="absolute inset-0 bg-gradient-to-t from-foreground/55 via-transparent to-transparent" />
 
