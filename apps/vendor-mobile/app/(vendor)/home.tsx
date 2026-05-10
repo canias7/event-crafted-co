@@ -269,19 +269,16 @@ export default function HomeScreen() {
           active={view === "grid"}
           onPress={() => setView("grid")}
           iconName="grid"
-          count={posts.length}
         />
         <ViewTab
           active={view === "reels"}
           onPress={() => setView("reels")}
           iconName="play"
-          count={reels.length}
         />
         <ViewTab
           active={view === "buzz"}
           onPress={() => setView("buzz")}
           iconName="align-left"
-          count={buzz.length}
         />
         <ViewTab
           active={view === "listing"}
