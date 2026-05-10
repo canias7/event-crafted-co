@@ -1,15 +1,18 @@
 // Host signup — email + password on step 1, 6-digit code on step 2.
 //
-// Flow:
-//   1. User enters email + password → tap Sign up → we call
-//      signInWithOtp({ shouldCreateUser:true, data:{intended_role:"host"} })
-//      which mails a 6-digit code AND creates the auth user (the
-//      role lands in user_metadata so handle_new_user provisions
-//      the host profile).
-//   2. User enters the code → verifyOtp signs them in. We then
-//      call updateUser({ password }) to set the password they
-//      typed on step 1, so future logins can use email + password
-//      (login.tsx) instead of OTP.
+// Backed by the host-signup edge function so we can email a real
+// 6-digit code (Resend) instead of relying on Supabase Auth's
+// magic-link template. Flow:
+//
+//   1. User enters email + password → tap Sign up → invoke
+//      host-signup with action="request" → server emails a code,
+//      caches a hash in host_signup_codes (TTL 10min).
+//   2. User enters the code → invoke host-signup with
+//      action="verify" → server verifies the code, then creates the
+//      auth user via the admin API with email_confirm:true and
+//      intended_role:"host" metadata.
+//   3. Client calls signInWithPassword to obtain a session — the
+//      (host) layout redirects once useAuth picks it up.
 
 import { useState } from "react";
 import {
@@ -36,6 +39,24 @@ const SERIF = Platform.OS === "ios" ? "Times New Roman" : "serif";
 
 type Stage = "form" | "code";
 
+interface SignupResponse {
+  ok?: boolean;
+  reason?: string;
+  error?: string;
+}
+
+const REASON_COPY: Record<string, string> = {
+  email_taken:
+    "An account with that email already exists. Try logging in instead.",
+  no_pending_code:
+    "We couldn't find a pending code. Hit Resend code to get a new one.",
+  expired: "That code has expired. Hit Resend code for a new one.",
+  too_many_attempts:
+    "Too many wrong tries. Hit Resend code to start a new attempt.",
+  wrong_code: "That code didn't match. Try again or resend.",
+  weak_password: "Password must be at least 8 characters.",
+};
+
 export default function SignupScreen() {
   const router = useRouter();
   const [stage, setStage] = useState<Stage>("form");
@@ -52,49 +73,67 @@ export default function SignupScreen() {
     setInfo(null);
     setSubmitting(true);
     const cleanEmail = email.trim().toLowerCase();
-    const { error } = await supabase.auth.signInWithOtp({
-      email: cleanEmail,
-      options: {
-        shouldCreateUser: true,
-        data: { intended_role: "host" },
-      },
-    });
+    const { data, error } = await supabase.functions.invoke<SignupResponse>(
+      "host-signup",
+      { body: { action: "request", email: cleanEmail } },
+    );
     setSubmitting(false);
     if (error) {
       setError(error.message);
+      return;
+    }
+    if (data?.ok === false) {
+      setError(REASON_COPY[data.reason ?? ""] ?? data.reason ?? "Request failed");
+      return;
+    }
+    if (data?.error) {
+      setError(data.error);
       return;
     }
     setStage("code");
     setInfo("We emailed you a 6-digit code. Enter it below.");
   }
 
-  async function verifyAndSetPassword() {
+  async function verifyAndSignIn() {
     setError(null);
     setInfo(null);
     setSubmitting(true);
     const cleanEmail = email.trim().toLowerCase();
-    const { error: verifyErr } = await supabase.auth.verifyOtp({
-      email: cleanEmail,
-      token: code.trim(),
-      type: "email",
-    });
-    if (verifyErr) {
+    const { data, error } = await supabase.functions.invoke<SignupResponse>(
+      "host-signup",
+      {
+        body: {
+          action: "verify",
+          email: cleanEmail,
+          code: code.trim(),
+          password,
+        },
+      },
+    );
+    if (error) {
       setSubmitting(false);
-      setError(verifyErr.message);
+      setError(error.message);
       return;
     }
-    // Now signed in — set the password the user typed on step 1 so
-    // they can log in with email + password from now on.
-    const { error: passErr } = await supabase.auth.updateUser({ password });
+    if (data?.ok === false) {
+      setSubmitting(false);
+      setError(REASON_COPY[data.reason ?? ""] ?? data.reason ?? "Verification failed");
+      return;
+    }
+    if (data?.error) {
+      setSubmitting(false);
+      setError(data.error);
+      return;
+    }
+    // User created with email_confirm:true. Sign in to get the session.
+    const { error: signInErr } = await supabase.auth.signInWithPassword({
+      email: cleanEmail,
+      password,
+    });
     setSubmitting(false);
-    if (passErr) {
-      setError(
-        `Account created, but couldn't save password: ${passErr.message}`,
-      );
-      return;
+    if (signInErr) {
+      setError(`Account created but sign-in failed: ${signInErr.message}`);
     }
-    // The (host) layout redirects to home automatically once useAuth
-    // picks up the session.
   }
 
   async function resend() {
@@ -239,7 +278,7 @@ export default function SignupScreen() {
           ) : null}
 
           <Pressable
-            onPress={stage === "form" ? sendCode : verifyAndSetPassword}
+            onPress={stage === "form" ? sendCode : verifyAndSignIn}
             disabled={
               submitting || (stage === "form" ? !formValid : !codeValid)
             }
