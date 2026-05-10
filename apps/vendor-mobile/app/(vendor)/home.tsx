@@ -62,6 +62,11 @@ interface ListingRow {
   bio: string | null;
   logo_url: string | null;
   slug: string | null;
+  // Filled in client-side after the query — most recent vendor_post
+  // image_url for this vendor, used as the card hero so the marketplace
+  // tile reads as a real photo (Airbnb-style) instead of an empty
+  // logo plate. Falls back to logo_url when the vendor has no posts.
+  hero_url?: string | null;
 }
 
 export default function HomeScreen() {
@@ -110,11 +115,11 @@ export default function HomeScreen() {
       supabase
         .from("vendor_posts")
         .select(
-          "id, image_url, caption, created_at, vendor:vendor_profiles!inner(business_name, logo_url, application_status)",
+          "id, image_url, caption, created_at, vendor_id, vendor:vendor_profiles!inner(business_name, logo_url, application_status)",
         )
         .eq("vendor.application_status", "approved")
         .order("created_at", { ascending: false })
-        .limit(50),
+        .limit(100),
       supabase
         .from("vendor_reels")
         .select(
@@ -147,7 +152,23 @@ export default function HomeScreen() {
     setPosts((postsRes.data ?? []) as unknown as PostRow[]);
     setReels((reelsRes.data ?? []) as unknown as ReelRow[]);
     setBuzz((buzzRes.data ?? []) as unknown as BuzzRow[]);
-    setListings((listingsRes.data ?? []) as ListingRow[]);
+
+    // Hydrate each listing with its most recent post image so the
+    // marketplace card has a real hero photo. The posts query already
+    // ran above (newest-first, all approved vendors) — we just have
+    // to walk it once and grab the first hit per vendor_id.
+    const heroByVendor = new Map<string, string>();
+    type RawPost = { vendor_id?: string | null; image_url: string };
+    for (const p of (postsRes.data ?? []) as unknown as RawPost[]) {
+      if (p.vendor_id && !heroByVendor.has(p.vendor_id) && p.image_url) {
+        heroByVendor.set(p.vendor_id, p.image_url);
+      }
+    }
+    const enriched = ((listingsRes.data ?? []) as ListingRow[]).map((l) => ({
+      ...l,
+      hero_url: heroByVendor.get(l.id) ?? l.logo_url,
+    }));
+    setListings(enriched);
   }, []);
 
   useEffect(() => {
@@ -700,14 +721,14 @@ function ListingCard({ listing }: { listing: ListingRow }) {
         style={{
           borderRadius: 18,
           overflow: "hidden",
-          backgroundColor: "#f5f0e8",
+          backgroundColor: "#1a1a1a",
           aspectRatio: 1,
           width: "100%",
         }}
       >
-        {listing.logo_url ? (
+        {listing.hero_url ? (
           <Image
-            source={{ uri: listing.logo_url }}
+            source={{ uri: listing.hero_url }}
             style={{ flex: 1 }}
             resizeMode="cover"
           />
