@@ -855,8 +855,12 @@ function ListingTab({
       ? `From $${Math.round(profile.base_price_cents / 100).toLocaleString()}`
       : null;
   return (
-    <View className="w-full px-2">
-      <Pressable onPress={onEdit} className="active:opacity-90">
+    <View className="w-full items-center px-2">
+      <Pressable
+        onPress={onEdit}
+        className="active:opacity-90"
+        style={{ width: "75%" }}
+      >
         <View
           style={{
             borderRadius: 18,
