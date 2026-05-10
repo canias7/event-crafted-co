@@ -29,6 +29,7 @@ import { VendorFaqsManager } from "@/components/vendor/VendorFaqsManager";
 import { VendorTeamManager } from "@/components/vendor/VendorTeamManager";
 import { VendorPolicyEditor } from "@/components/vendor/VendorPolicyEditor";
 import { CategoryAttributesEditor } from "@/components/vendor/CategoryAttributesEditor";
+import { PortfolioUploader } from "@/components/vendor/PortfolioUploader";
 import {
   VendorSocialComposer,
   type SocialKind,
@@ -1237,6 +1238,25 @@ export default function VendorProfilePage() {
               {/* Business name lives on the chrome (set at signup,
                   edited via the avatar / settings later); the listing
                   form doesn't re-ask for it. */}
+
+              {/* Photos sit at the top of the About step — they're
+                  the first impression on the marketplace card and
+                  the public listing page, so prompt for them before
+                  bio / location / price. The same uploader writes to
+                  vendor_portfolio_images, which is what the mobile
+                  Home → Listings tab pulls for the card hero. */}
+              {category && profile && listingTab === "about" && (
+                <div className="space-y-2">
+                  <Label className="inline-flex items-center gap-1.5">
+                    Listing photos
+                  </Label>
+                  <p className="text-xs text-muted-foreground">
+                    Upload 3–5 photos that show your range. The first one
+                    becomes your marketplace cover.
+                  </p>
+                  <PortfolioUploader vendorId={profile.id} />
+                </div>
+              )}
 
               {category && listingTab === "about" && (
                 <div className="space-y-2">
