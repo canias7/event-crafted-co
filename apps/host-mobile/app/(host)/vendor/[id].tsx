@@ -15,7 +15,6 @@ import { useEffect, useState } from "react";
 import {
   Dimensions,
   Image,
-  Linking,
   Pressable,
   ScrollView,
   Share,
@@ -26,6 +25,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import { supabase } from "@/lib/supabase";
+import { InquiryComposer } from "@/components/InquiryComposer";
 
 type VendorRow = {
   id: string;
@@ -88,6 +88,7 @@ export default function VendorDetailScreen() {
   const [loading, setLoading] = useState(true);
   const [photoIndex, setPhotoIndex] = useState(0);
   const [saved, setSaved] = useState(false);
+  const [inquireOpen, setInquireOpen] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -576,12 +577,7 @@ export default function VendorDetailScreen() {
             )}
           </View>
           <Pressable
-            onPress={() => {
-              const url = vendor.slug
-                ? `https://eventvendora.com/vendors/${vendor.slug}`
-                : `https://eventvendora.com/vendors/${vendor.id}`;
-              Linking.openURL(url).catch(() => {});
-            }}
+            onPress={() => setInquireOpen(true)}
             className="rounded-full active:opacity-80"
             style={{
               backgroundColor: "#dc2626",
@@ -593,6 +589,13 @@ export default function VendorDetailScreen() {
           </Pressable>
         </View>
       </SafeAreaView>
+
+      <InquiryComposer
+        visible={inquireOpen}
+        vendorId={vendor.id}
+        vendorName={vendor.business_name}
+        onClose={() => setInquireOpen(false)}
+      />
     </View>
   );
 }
