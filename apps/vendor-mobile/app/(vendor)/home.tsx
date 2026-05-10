@@ -6,6 +6,7 @@
 import { useCallback, useEffect, useState } from "react";
 import {
   Alert,
+  Dimensions,
   Image,
   Linking,
   Pressable,
@@ -693,18 +694,13 @@ function ListingCard({ listing }: { listing: ListingRow }) {
     <Pressable
       onPress={() => Linking.openURL(href)}
       className="active:opacity-90"
-      style={{ width: 260 }}
+      style={{ width: Math.round(Dimensions.get("window").width * 0.8) }}
     >
       <View
         style={{
           borderRadius: 18,
           overflow: "hidden",
           backgroundColor: "#f5f0e8",
-          shadowColor: "#000",
-          shadowOpacity: 0.08,
-          shadowRadius: 8,
-          shadowOffset: { width: 0, height: 3 },
-          elevation: 3,
           aspectRatio: 1,
           width: "100%",
         }}
@@ -719,31 +715,32 @@ function ListingCard({ listing }: { listing: ListingRow }) {
           <View className="flex-1 items-center justify-center">
             <Image
               source={require("../../assets/icon.png")}
-              style={{ width: 96, height: 96 }}
+              style={{ width: 120, height: 120 }}
               resizeMode="contain"
             />
           </View>
         )}
+        {/* White stroked heart with drop shadow — Airbnb's wishlist
+            pin style. Relies on the shadow to stay legible over busy
+            photos so we don't need a pill backdrop. */}
         <View
           style={{
             position: "absolute",
-            top: 12,
-            right: 12,
-            height: 32,
-            width: 32,
-            borderRadius: 16,
-            backgroundColor: "rgba(0,0,0,0.18)",
-            alignItems: "center",
-            justifyContent: "center",
+            top: 14,
+            right: 14,
+            shadowColor: "#000",
+            shadowOpacity: 0.4,
+            shadowRadius: 4,
+            shadowOffset: { width: 0, height: 1 },
           }}
         >
-          <Feather name="heart" size={16} color="#fff" />
+          <Feather name="heart" size={26} color="#fff" />
         </View>
       </View>
       <View className="mt-3">
         <Text
           numberOfLines={1}
-          className="text-base font-bold text-foreground"
+          className="text-base font-semibold text-foreground"
         >
           {listing.business_name ?? "Vendor"}
         </Text>
