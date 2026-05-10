@@ -32,6 +32,12 @@ import * as ImagePicker from "expo-image-picker";
 import { CATEGORY_GROUPS } from "@vendora/core";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
+import {
+  PackagesSection,
+  FaqsSection,
+  PoliciesSection,
+  TeamSection,
+} from "@/components/listing/Sections";
 
 type ProfileRow = {
   id: string;
@@ -427,11 +433,38 @@ export default function ListingScreen() {
           />
         </View>
 
-        <View className="px-4 pt-6 pb-2">
-          <Text className="text-xs text-muted-foreground leading-relaxed">
-            Packages, FAQs, policies, and team bios live on the web for now —
-            you can manage those from Studio.
-          </Text>
+        <View className="px-4 pt-8">
+          <View className="h-px bg-border" />
+        </View>
+        <View className="px-4 pt-6">
+          {profile?.id ? (
+            <PackagesSection vendorId={profile.id} />
+          ) : (
+            <Text className="text-xs text-muted-foreground">
+              Save the listing once to enable packages.
+            </Text>
+          )}
+        </View>
+
+        <View className="px-4 pt-8">
+          <View className="h-px bg-border" />
+        </View>
+        <View className="px-4 pt-6">
+          {profile?.id ? <FaqsSection vendorId={profile.id} /> : null}
+        </View>
+
+        <View className="px-4 pt-8">
+          <View className="h-px bg-border" />
+        </View>
+        <View className="px-4 pt-6">
+          {profile?.id ? <PoliciesSection vendorId={profile.id} /> : null}
+        </View>
+
+        <View className="px-4 pt-8">
+          <View className="h-px bg-border" />
+        </View>
+        <View className="px-4 pt-6 pb-4">
+          {profile?.id ? <TeamSection vendorId={profile.id} /> : null}
         </View>
       </ScrollView>
 
