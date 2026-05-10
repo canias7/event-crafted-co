@@ -17,6 +17,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
+import { CATEGORY_GROUPS, groupOfSub } from "@vendora/core";
 import type { VendorProfile } from "@vendora/core";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
@@ -631,37 +632,55 @@ function ReelGrid({ reels }: { reels: ReelRow[] }) {
   );
 }
 
-// Marketplace feed — Airbnb-explore style. Vertical scroll moves
-// between categories; each category is a horizontal-scroll rail of
-// vendor cards. Chip row at the top doubles as a quick jump filter
-// (selecting a chip narrows to a single section).
+// Marketplace feed — Airbnb-explore style.
+//
+// Vertical scroll moves between top-level CATEGORIES (the groups in
+// CATEGORY_GROUPS: Venues, Food & Beverage, Entertainment, …). Inside
+// each category section the SUB-categories are stacked, each with its
+// own horizontal-scroll rail of vendor cards. Chip row at the top is a
+// quick jump filter — tapping a chip narrows to a single category.
 function ListingFeed({
   listings,
   category,
   onCategoryChange,
 }: {
   listings: ListingRow[];
+  /** Selected top-level group name, or null for "All". */
   category: string | null;
   onCategoryChange: (c: string | null) => void;
 }) {
-  // Group by category. We want categories ordered by the most recent
-  // listing in each so the freshest categories surface up top.
-  const byCategory = new Map<string, ListingRow[]>();
+  // Two-level group: top-level category → sub-category → listings.
+  const byGroup = new Map<string, Map<string, ListingRow[]>>();
   for (const l of listings) {
-    const key = l.category && l.category.trim().length > 0 ? l.category : "Other";
-    const arr = byCategory.get(key);
+    const sub =
+      l.category && l.category.trim().length > 0 ? l.category : "Other";
+    const group = groupOfSub(sub) ?? "Other";
+    let subs = byGroup.get(group);
+    if (!subs) {
+      subs = new Map<string, ListingRow[]>();
+      byGroup.set(group, subs);
+    }
+    const arr = subs.get(sub);
     if (arr) arr.push(l);
-    else byCategory.set(key, [l]);
+    else subs.set(sub, [l]);
   }
-  const orderedCategories = Array.from(byCategory.keys()).sort();
-  const visibleCategories =
+
+  // Order groups in the canonical taxonomy order, then any "Other"
+  // / unknown groups alphabetically at the end.
+  const taxonomyOrder = CATEGORY_GROUPS.map((g) => g.name);
+  const knownGroups = taxonomyOrder.filter((n) => byGroup.has(n));
+  const otherGroups = Array.from(byGroup.keys())
+    .filter((n) => !taxonomyOrder.includes(n))
+    .sort();
+  const orderedGroups = [...knownGroups, ...otherGroups];
+  const visibleGroups =
     category == null
-      ? orderedCategories
-      : orderedCategories.filter((c) => c === category);
+      ? orderedGroups
+      : orderedGroups.filter((g) => g === category);
 
   return (
     <View>
-      {/* Category chip row at the top — quick jump / filter. */}
+      {/* Top-level category chip row — quick jump / filter. */}
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
@@ -672,42 +691,70 @@ function ListingFeed({
           active={category == null}
           onPress={() => onCategoryChange(null)}
         />
-        {orderedCategories.map((c) => (
+        {orderedGroups.map((g) => (
           <CategoryChip
-            key={c}
-            label={c}
-            active={category === c}
-            onPress={() => onCategoryChange(c)}
+            key={g}
+            label={g}
+            active={category === g}
+            onPress={() => onCategoryChange(g)}
           />
         ))}
       </ScrollView>
 
-      <View className="gap-8">
-        {visibleCategories.map((cat) => {
-          const rows = byCategory.get(cat) ?? [];
+      <View className="gap-10">
+        {visibleGroups.map((groupName) => {
+          const subs = byGroup.get(groupName);
+          if (!subs) return null;
+          // Order subs by their position in the canonical taxonomy,
+          // then any unknown subs alphabetically.
+          const knownSubsForGroup =
+            CATEGORY_GROUPS.find((g) => g.name === groupName)?.subs ?? [];
+          const orderedSubs = [
+            ...knownSubsForGroup.filter((s) => subs.has(s)),
+            ...Array.from(subs.keys())
+              .filter((s) => !knownSubsForGroup.includes(s))
+              .sort(),
+          ];
+          const total = Array.from(subs.values()).reduce(
+            (acc, rows) => acc + rows.length,
+            0,
+          );
           return (
-            <View key={cat}>
+            <View key={groupName}>
               <View className="px-4 mb-3 flex-row items-end justify-between">
                 <Text className="text-lg font-bold text-foreground">
-                  {cat}
+                  {groupName}
                 </Text>
                 <Text className="text-xs text-muted-foreground">
-                  {rows.length} listing{rows.length === 1 ? "" : "s"}
+                  {total} listing{total === 1 ? "" : "s"}
                 </Text>
               </View>
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerClassName="px-4 gap-3"
-              >
-                {rows.map((l) => (
-                  <ListingCard key={l.id} listing={l} />
-                ))}
-              </ScrollView>
+              <View className="gap-5">
+                {orderedSubs.map((subName) => {
+                  const rows = subs.get(subName) ?? [];
+                  if (rows.length === 0) return null;
+                  return (
+                    <View key={subName}>
+                      <Text className="px-4 mb-2 text-sm font-semibold text-muted-foreground">
+                        {subName}
+                      </Text>
+                      <ScrollView
+                        horizontal
+                        showsHorizontalScrollIndicator={false}
+                        contentContainerClassName="px-4 gap-3"
+                      >
+                        {rows.map((l) => (
+                          <ListingCard key={l.id} listing={l} />
+                        ))}
+                      </ScrollView>
+                    </View>
+                  );
+                })}
+              </View>
             </View>
           );
         })}
-        {visibleCategories.length === 0 ? (
+        {visibleGroups.length === 0 ? (
           <View className="items-center pt-10 px-4">
             <Text className="text-sm text-muted-foreground">
               No listings in this category yet.
