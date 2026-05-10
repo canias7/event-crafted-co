@@ -782,7 +782,7 @@ function ListingCard({ listing }: { listing: ListingRow }) {
     <Pressable
       onPress={() => Linking.openURL(href)}
       className="active:opacity-90"
-      style={{ width: Math.round(Dimensions.get("window").width * 0.55) }}
+      style={{ width: Math.round(Dimensions.get("window").width * 0.45) }}
     >
       <View
         style={{

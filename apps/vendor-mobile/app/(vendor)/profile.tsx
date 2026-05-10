@@ -859,7 +859,7 @@ function ListingTab({
       <Pressable
         onPress={onEdit}
         className="active:opacity-90"
-        style={{ width: "75%" }}
+        style={{ width: "60%" }}
       >
         <View
           style={{
