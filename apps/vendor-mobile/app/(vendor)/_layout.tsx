@@ -24,6 +24,11 @@ const ORDER = ["home", "calendar", "inbox", "studio", "profile"];
 
 function FloatingTabBar({ state, navigation }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
+  // Hide the floating bar on screens that own the bottom — the listing
+  // builder has its own Save / Publish action bar pinned to the
+  // bottom edge, so the pill would overlap it.
+  const focusedRoute = state.routes[state.index]?.name;
+  if (focusedRoute === "listing") return null;
   // Filter to only the visible tabs we care about, in our preferred order.
   const visible = ORDER.map((name) =>
     state.routes.find((r) => r.name === name),

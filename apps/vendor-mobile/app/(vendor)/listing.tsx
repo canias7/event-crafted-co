@@ -131,7 +131,7 @@ export default function ListingScreen() {
       const ext = (asset.uri.split(".").pop() ?? "jpg")
         .toLowerCase()
         .replace(/[^a-z0-9]/g, "");
-      const path = `${user.id}/${profile.id}/${Date.now()}.${ext}`;
+      const path = `${profile.id}/${Date.now()}.${ext}`;
       const arrayBuffer = await (await fetch(asset.uri)).arrayBuffer();
       const bytes = new Uint8Array(arrayBuffer);
       if (bytes.byteLength === 0) {
