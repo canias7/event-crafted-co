@@ -1,8 +1,12 @@
-// Host signup. Cream/ink themed to match the welcome screen — same
-// fonts, same dark pill submit, same back affordance into the
-// auth-method picker. Logic is unchanged: signs up via Supabase
-// auth.signUp with intended_role: 'host' so handle_new_user
-// provisions a host profile.
+// Host signup — passwordless email-OTP flow.
+//
+// Step 1: vendor enters email → tap Send code → Supabase emails a
+// 6-digit code via signInWithOtp.
+// Step 2: vendor enters the code → verifyOtp creates the auth user
+// (intended_role: 'host' is set in user_metadata so handle_new_user
+// provisions a host profile) and signs them in.
+//
+// No password field at all. Mirrors the canonical auth path on web.
 
 import { useState } from "react";
 import {
@@ -27,27 +31,60 @@ const ACCENT = "#a08259";
 
 const SERIF = Platform.OS === "ios" ? "Times New Roman" : "serif";
 
+type Stage = "email" | "code";
+
 export default function SignupScreen() {
   const router = useRouter();
+  const [stage, setStage] = useState<Stage>("email");
   const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
+  const [code, setCode] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
-  async function onSubmit() {
+  async function sendCode() {
     setError(null);
     setInfo(null);
     setSubmitting(true);
-    const { error } = await supabase.auth.signUp({
-      email: email.trim().toLowerCase(),
-      password,
-      options: { data: { intended_role: "host" } },
+    const cleanEmail = email.trim().toLowerCase();
+    const { error } = await supabase.auth.signInWithOtp({
+      email: cleanEmail,
+      options: {
+        shouldCreateUser: true,
+        data: { intended_role: "host" },
+      },
     });
-    if (error) setError(error.message);
-    else setInfo("Check your email to confirm your account.");
     setSubmitting(false);
+    if (error) {
+      setError(error.message);
+      return;
+    }
+    setStage("code");
+    setInfo("We sent a 6-digit code to your email. Enter it below.");
+  }
+
+  async function verifyCode() {
+    setError(null);
+    setInfo(null);
+    setSubmitting(true);
+    const cleanEmail = email.trim().toLowerCase();
+    const { error } = await supabase.auth.verifyOtp({
+      email: cleanEmail,
+      token: code.trim(),
+      type: "email",
+    });
+    setSubmitting(false);
+    if (error) {
+      setError(error.message);
+      return;
+    }
+    // Signed in. The (host) layout will redirect to home automatically
+    // once useAuth picks up the session.
+  }
+
+  async function resend() {
+    setCode("");
+    await sendCode();
   }
 
   return (
@@ -57,7 +94,16 @@ export default function SignupScreen() {
         style={{ flex: 1, paddingHorizontal: 24, paddingTop: 16, paddingBottom: 24 }}
       >
         <Pressable
-          onPress={() => router.back()}
+          onPress={() => {
+            if (stage === "code") {
+              setStage("email");
+              setCode("");
+              setError(null);
+              setInfo(null);
+            } else {
+              router.back();
+            }
+          }}
           hitSlop={12}
           style={{ alignSelf: "flex-start", paddingVertical: 8 }}
         >
@@ -76,7 +122,7 @@ export default function SignupScreen() {
               letterSpacing: -1,
             }}
           >
-            Plan your event
+            {stage === "email" ? "Plan your event" : "Enter your code"}
           </Text>
           <Text
             style={{
@@ -87,74 +133,33 @@ export default function SignupScreen() {
               fontFamily: SERIF,
             }}
           >
-            Create an account to message vendors and book events.
+            {stage === "email"
+              ? "Create an account to message vendors and book events."
+              : `We sent a 6-digit code to ${email.trim().toLowerCase()}.`}
           </Text>
         </View>
 
         <View style={{ marginTop: 32, gap: 16 }}>
-          <Field
-            label="Email"
-            placeholder="you@example.com"
-            value={email}
-            onChangeText={setEmail}
-            keyboardType="email-address"
-            autoComplete="email"
-            autoCapitalize="none"
-          />
-          <View>
-            <Text
-              style={{
-                marginBottom: 6,
-                fontSize: 12,
-                fontWeight: "600",
-                color: INK_DIM,
-                letterSpacing: 0.5,
-              }}
-            >
-              PASSWORD
-            </Text>
-            <View style={{ position: "relative" }}>
-              <TextInput
-                secureTextEntry={!showPassword}
-                value={password}
-                onChangeText={setPassword}
-                placeholder="At least 8 characters"
-                placeholderTextColor={INK_DIM}
-                style={{
-                  backgroundColor: INPUT_BG,
-                  borderColor: INK_BORDER,
-                  borderWidth: 1,
-                  borderRadius: 14,
-                  paddingHorizontal: 14,
-                  paddingVertical: 14,
-                  paddingRight: 64,
-                  fontSize: 16,
-                  color: INK,
-                }}
-              />
-              <Pressable
-                onPress={() => setShowPassword((v) => !v)}
-                hitSlop={8}
-                style={{
-                  position: "absolute",
-                  right: 12,
-                  top: 0,
-                  bottom: 0,
-                  justifyContent: "center",
-                }}
-              >
-                <Text
-                  style={{
-                    color: ACCENT,
-                    fontSize: 13,
-                    fontWeight: "600",
-                  }}
-                >
-                  {showPassword ? "Hide" : "Show"}
-                </Text>
-              </Pressable>
-            </View>
-          </View>
+          {stage === "email" ? (
+            <Field
+              label="Email"
+              placeholder="you@example.com"
+              value={email}
+              onChangeText={setEmail}
+              keyboardType="email-address"
+              autoComplete="email"
+              autoCapitalize="none"
+            />
+          ) : (
+            <Field
+              label="Code"
+              placeholder="123456"
+              value={code}
+              onChangeText={(v) => setCode(v.replace(/[^0-9]/g, "").slice(0, 6))}
+              keyboardType="number-pad"
+              autoCapitalize="none"
+            />
+          )}
 
           {error ? (
             <Text style={{ color: ERROR, fontSize: 14 }}>{error}</Text>
@@ -164,8 +169,11 @@ export default function SignupScreen() {
           ) : null}
 
           <Pressable
-            onPress={onSubmit}
-            disabled={submitting || !email || password.length < 8}
+            onPress={stage === "email" ? sendCode : verifyCode}
+            disabled={
+              submitting ||
+              (stage === "email" ? !email.trim() : code.length !== 6)
+            }
             style={{
               marginTop: 8,
               backgroundColor: INK,
@@ -174,23 +182,44 @@ export default function SignupScreen() {
               alignItems: "center",
               justifyContent: "center",
               opacity:
-                submitting || !email || password.length < 8 ? 0.5 : 1,
+                submitting ||
+                (stage === "email" ? !email.trim() : code.length !== 6)
+                  ? 0.5
+                  : 1,
             }}
           >
             <Text style={{ color: CREAM, fontSize: 16, fontWeight: "600" }}>
-              {submitting ? "Creating account…" : "Sign up"}
+              {submitting
+                ? stage === "email"
+                  ? "Sending…"
+                  : "Verifying…"
+                : stage === "email"
+                  ? "Send code"
+                  : "Verify"}
             </Text>
           </Pressable>
 
-          <Pressable
-            onPress={() => router.replace("/(auth)/login")}
-            style={{ marginTop: 12, alignItems: "center" }}
-          >
-            <Text style={{ color: INK_DIM, fontSize: 14 }}>
-              Already have an account?{" "}
-              <Text style={{ color: INK, fontWeight: "600" }}>Log in</Text>
-            </Text>
-          </Pressable>
+          {stage === "code" ? (
+            <Pressable
+              onPress={resend}
+              disabled={submitting}
+              style={{ alignItems: "center", paddingVertical: 8 }}
+            >
+              <Text style={{ color: ACCENT, fontSize: 14, fontWeight: "600" }}>
+                Resend code
+              </Text>
+            </Pressable>
+          ) : (
+            <Pressable
+              onPress={() => router.replace("/(auth)/login")}
+              style={{ marginTop: 12, alignItems: "center" }}
+            >
+              <Text style={{ color: INK_DIM, fontSize: 14 }}>
+                Already have an account?{" "}
+                <Text style={{ color: INK, fontWeight: "600" }}>Log in</Text>
+              </Text>
+            </Pressable>
+          )}
         </View>
       </KeyboardAvoidingView>
     </SafeAreaView>
