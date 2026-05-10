@@ -1,15 +1,24 @@
-// Public listing detail screen — read-only view of a vendor's
-// marketplace listing. Reached from Home → Listings card tap.
-// Mirrors the web /vendors/<id-or-slug> page with the bits hosts
-// actually look at (photos, bio, price, packages, FAQs, policies,
-// team). Inquiries / appointments are still web-only for now.
+// Public listing detail screen — Airbnb-style read-only view of a
+// vendor's marketplace listing. Reached from Home → Listings card
+// tap. Mirrors the web /vendors/<id-or-slug> page with the bits
+// hosts actually look at (photos, headline, bio, price, packages,
+// FAQs, policies, team). Inquiries / appointments are still web-
+// only for now.
+//
+// Layout: full-bleed photo gallery at the top with circular
+// back / share / heart overlays, page indicator pill (1 / N) at the
+// bottom-right of the image. The white content card has rounded top
+// corners that sit over the bottom of the gallery. Sticky bottom
+// action bar with "From $X" and an Inquire CTA.
 
 import { useEffect, useState } from "react";
 import {
   Dimensions,
   Image,
+  Linking,
   Pressable,
   ScrollView,
+  Share,
   Text,
   View,
 } from "react-native";
@@ -27,6 +36,7 @@ type VendorRow = {
   base_price_cents: number | null;
   application_status: string | null;
   slug: string | null;
+  verified_at: string | null;
 };
 
 type PortfolioRow = { storage_path: string };
@@ -76,12 +86,13 @@ export default function VendorDetailScreen() {
   const [team, setTeam] = useState<TeamRow[]>([]);
   const [policy, setPolicy] = useState<PolicyRow | null>(null);
   const [loading, setLoading] = useState(true);
+  const [photoIndex, setPhotoIndex] = useState(0);
+  const [saved, setSaved] = useState(false);
 
   useEffect(() => {
     if (!id) return;
     let cancelled = false;
     (async () => {
-      // Resolve by id first; fall back to slug if the param isn't a UUID.
       const isUuid =
         /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
           id,
@@ -89,7 +100,7 @@ export default function VendorDetailScreen() {
       const baseQuery = supabase
         .from("vendor_profiles")
         .select(
-          "id, business_name, category, bio, location, base_price_cents, application_status, slug, deposit_pct, cancellation_policy, reschedule_window_days, policy_notes",
+          "id, business_name, category, bio, location, base_price_cents, application_status, slug, verified_at, deposit_pct, cancellation_policy, reschedule_window_days, policy_notes",
         );
       const { data: vp } = isUuid
         ? await baseQuery.eq("id", id).maybeSingle()
@@ -110,6 +121,7 @@ export default function VendorDetailScreen() {
         base_price_cents: row.base_price_cents,
         application_status: row.application_status,
         slug: row.slug,
+        verified_at: row.verified_at,
       });
       setPolicy({
         deposit_pct: row.deposit_pct,
@@ -165,8 +177,7 @@ export default function VendorDetailScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView className="flex-1 bg-background" edges={["top"]}>
-        <TopBar onBack={() => router.back()} />
+      <SafeAreaView className="flex-1 bg-background" edges={["top", "bottom"]}>
         <View className="flex-1 items-center justify-center">
           <Text className="text-sm text-muted-foreground">Loading…</Text>
         </View>
@@ -176,8 +187,16 @@ export default function VendorDetailScreen() {
 
   if (!vendor) {
     return (
-      <SafeAreaView className="flex-1 bg-background" edges={["top"]}>
-        <TopBar onBack={() => router.back()} />
+      <SafeAreaView className="flex-1 bg-background" edges={["top", "bottom"]}>
+        <View className="flex-row items-center px-4 py-3">
+          <Pressable
+            onPress={() => router.back()}
+            hitSlop={8}
+            className="active:opacity-70"
+          >
+            <Feather name="chevron-left" size={26} color="#0a0a0a" />
+          </Pressable>
+        </View>
         <View className="flex-1 items-center justify-center px-6">
           <Text className="text-base text-foreground text-center">
             Listing not found.
@@ -187,196 +206,462 @@ export default function VendorDetailScreen() {
     );
   }
 
+  const screenWidth = Dimensions.get("window").width;
+  const galleryHeight = Math.round(screenWidth * 0.95);
   const price =
     vendor.base_price_cents != null
-      ? `From $${Math.round(vendor.base_price_cents / 100).toLocaleString()}`
+      ? `$${Math.round(vendor.base_price_cents / 100).toLocaleString()}`
       : null;
-  const screenWidth = Dimensions.get("window").width;
+  const owner = team.find((m) => m.is_owner) ?? team[0];
+
+  async function shareListing() {
+    if (!vendor) return;
+    const url = vendor.slug
+      ? `https://eventvendora.com/vendors/${vendor.slug}`
+      : `https://eventvendora.com/vendors/${vendor.id}`;
+    await Share.share({
+      message: `${vendor.business_name ?? "This vendor"} on Vendora — ${url}`,
+      url,
+    }).catch(() => {});
+  }
 
   return (
-    <SafeAreaView className="flex-1 bg-background" edges={["top"]}>
-      <TopBar onBack={() => router.back()} />
-      <ScrollView contentContainerClassName="pb-12">
-        {/* Photo gallery — horizontal swipe through portfolio images. */}
-        {photos.length > 0 ? (
-          <ScrollView
-            horizontal
-            pagingEnabled
-            showsHorizontalScrollIndicator={false}
-          >
-            {photos.map((url, i) => (
-              <Image
-                key={`${url}-${i}`}
-                source={{ uri: url }}
-                style={{ width: screenWidth, aspectRatio: 1 }}
-                resizeMode="cover"
-              />
-            ))}
-          </ScrollView>
-        ) : (
-          <View
-            style={{
-              width: screenWidth,
-              aspectRatio: 1,
-              backgroundColor: "#f4f4f5",
-            }}
-            className="items-center justify-center"
-          >
-            <Feather name="image" size={36} color="#a1a1aa" />
-            <Text className="mt-2 text-sm text-muted-foreground">
-              No listing photos yet
-            </Text>
-          </View>
-        )}
-
-        {/* Header — name, category · location, price */}
-        <View className="px-4 pt-5">
-          <Text className="text-2xl font-bold text-foreground">
-            {vendor.business_name ?? "Vendor"}
-          </Text>
-          <Text className="mt-1 text-sm text-muted-foreground">
-            {vendor.category ?? ""}
-            {vendor.location ? ` · ${vendor.location}` : ""}
-          </Text>
-          {price ? (
-            <Text className="mt-2 text-base font-semibold text-foreground">
-              {price}
-            </Text>
-          ) : null}
+    <View className="flex-1 bg-background">
+      <ScrollView
+        contentContainerStyle={{ paddingBottom: 120 }}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Photo gallery — full-bleed, swipeable. */}
+        <View
+          style={{ width: screenWidth, height: galleryHeight }}
+          className="bg-muted"
+        >
+          {photos.length > 0 ? (
+            <ScrollView
+              horizontal
+              pagingEnabled
+              showsHorizontalScrollIndicator={false}
+              onMomentumScrollEnd={(e) => {
+                const x = e.nativeEvent.contentOffset.x;
+                setPhotoIndex(Math.round(x / screenWidth));
+              }}
+            >
+              {photos.map((url, i) => (
+                <Image
+                  key={`${url}-${i}`}
+                  source={{ uri: url }}
+                  style={{ width: screenWidth, height: galleryHeight }}
+                  resizeMode="cover"
+                />
+              ))}
+            </ScrollView>
+          ) : (
+            <View
+              style={{ width: screenWidth, height: galleryHeight }}
+              className="items-center justify-center"
+            >
+              <Feather name="image" size={36} color="#a1a1aa" />
+              <Text className="mt-2 text-sm text-muted-foreground">
+                No listing photos yet
+              </Text>
+            </View>
+          )}
         </View>
 
-        {/* Bio */}
-        {vendor.bio ? (
-          <View className="px-4 pt-6">
-            <Text className="text-base text-foreground/90 leading-relaxed">
-              {vendor.bio}
-            </Text>
+        {/* Floating overlay buttons + page indicator. SafeArea-aware. */}
+        <SafeAreaView
+          edges={["top"]}
+          pointerEvents="box-none"
+          style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+          }}
+        >
+          <View
+            pointerEvents="box-none"
+            className="flex-row items-center justify-between px-4 pt-2"
+          >
+            <RoundButton onPress={() => router.back()} icon="chevron-left" />
+            <View className="flex-row gap-2">
+              <RoundButton onPress={shareListing} icon="share" />
+              <RoundButton
+                onPress={() => setSaved((v) => !v)}
+                icon={saved ? "heart" : "heart"}
+                iconColor={saved ? "#dc2626" : "#0a0a0a"}
+                fillHeart={saved}
+              />
+            </View>
+          </View>
+        </SafeAreaView>
+
+        {photos.length > 1 ? (
+          <View
+            style={{
+              position: "absolute",
+              top: galleryHeight - 36,
+              right: 16,
+            }}
+          >
+            <View
+              style={{
+                paddingHorizontal: 10,
+                paddingVertical: 4,
+                borderRadius: 999,
+                backgroundColor: "rgba(0,0,0,0.55)",
+              }}
+            >
+              <Text className="text-xs font-semibold text-white">
+                {photoIndex + 1} / {photos.length}
+              </Text>
+            </View>
           </View>
         ) : null}
 
-        {packages.length > 0 ? (
-          <Section title="Packages">
-            {packages.map((p) => (
-              <View
-                key={p.id}
-                className="rounded-lg border border-border bg-background p-3 mb-3"
-              >
-                <View className="flex-row items-start justify-between">
-                  <Text className="flex-1 text-base font-semibold text-foreground pr-3">
-                    {p.name}
+        {/* White content card — overlaps the bottom of the gallery. */}
+        <View
+          style={{
+            backgroundColor: "#ffffff",
+            borderTopLeftRadius: 20,
+            borderTopRightRadius: 20,
+            marginTop: -22,
+            paddingTop: 20,
+            paddingBottom: 8,
+          }}
+        >
+          {/* Title */}
+          <View className="px-5">
+            <Text className="text-3xl font-bold text-foreground leading-9">
+              {vendor.business_name ?? "Vendor"}
+            </Text>
+            <Text className="mt-2 text-base text-muted-foreground">
+              {vendor.category ?? ""}
+              {vendor.location ? ` · ${vendor.location}` : ""}
+            </Text>
+          </View>
+
+          {/* Stats row — 3 cells separated by vertical lines. */}
+          <View className="mx-5 mt-5 rounded-2xl border border-border">
+            <View className="flex-row">
+              <StatCell
+                top={
+                  <View className="flex-row items-center gap-1">
+                    <Text className="text-base font-bold text-foreground">
+                      {vendor.verified_at ? "Verified" : "New"}
+                    </Text>
+                  </View>
+                }
+                bottom={vendor.verified_at ? "Vendora-checked" : "Just listed"}
+              />
+              <Divider />
+              <StatCell
+                top={
+                  <View className="flex-row items-center gap-1">
+                    <Feather
+                      name="package"
+                      size={14}
+                      color="#0a0a0a"
+                    />
+                    <Text className="text-base font-bold text-foreground">
+                      {packages.length || "—"}
+                    </Text>
+                  </View>
+                }
+                bottom={packages.length === 1 ? "Package" : "Packages"}
+              />
+              <Divider />
+              <StatCell
+                top={
+                  <Text className="text-base font-bold text-foreground">
+                    {faqs.length}
                   </Text>
-                  <Text className="text-base font-semibold text-foreground">
-                    ${(p.price_cents / 100).toLocaleString()}
+                }
+                bottom={faqs.length === 1 ? "FAQ" : "FAQs"}
+              />
+            </View>
+          </View>
+
+          {/* Host / owner */}
+          {owner ? (
+            <View className="mt-6 px-5 pt-5 border-t border-border">
+              <View className="flex-row items-center gap-3">
+                <View
+                  style={{
+                    width: 44,
+                    height: 44,
+                    borderRadius: 999,
+                    backgroundColor: "#0a0a0a",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <Text className="text-base font-bold text-white">
+                    {(owner.display_name?.[0] ?? "V").toUpperCase()}
                   </Text>
                 </View>
-                {p.description ? (
-                  <Text className="mt-1 text-sm text-foreground/80">
-                    {p.description}
+                <View className="flex-1">
+                  <Text className="text-base font-semibold text-foreground">
+                    Hosted by {owner.display_name}
                   </Text>
-                ) : null}
-                {p.includes && p.includes.length > 0 ? (
-                  <View className="mt-2 gap-1">
-                    {p.includes.map((line, idx) => (
-                      <Text key={idx} className="text-xs text-muted-foreground">
-                        • {line}
-                      </Text>
-                    ))}
+                  <Text className="text-sm text-muted-foreground">
+                    {owner.role ?? "Lead"}
+                  </Text>
+                </View>
+              </View>
+            </View>
+          ) : null}
+
+          {/* Bio */}
+          {vendor.bio ? (
+            <View className="px-5 pt-6">
+              <Text className="text-base text-foreground/90 leading-relaxed">
+                {vendor.bio}
+              </Text>
+            </View>
+          ) : null}
+
+          {/* Packages */}
+          {packages.length > 0 ? (
+            <Section title="Packages">
+              {packages.map((p) => (
+                <View
+                  key={p.id}
+                  className="rounded-xl border border-border bg-background p-4 mb-3"
+                >
+                  <View className="flex-row items-start justify-between">
+                    <Text className="flex-1 pr-3 text-base font-semibold text-foreground">
+                      {p.name}
+                    </Text>
+                    <Text className="text-base font-semibold text-foreground">
+                      ${(p.price_cents / 100).toLocaleString()}
+                    </Text>
                   </View>
-                ) : null}
-              </View>
-            ))}
-          </Section>
-        ) : null}
+                  {p.description ? (
+                    <Text className="mt-1 text-sm text-foreground/80">
+                      {p.description}
+                    </Text>
+                  ) : null}
+                  {p.includes && p.includes.length > 0 ? (
+                    <View className="mt-2 gap-1">
+                      {p.includes.map((line, idx) => (
+                        <Text
+                          key={idx}
+                          className="text-xs text-muted-foreground"
+                        >
+                          • {line}
+                        </Text>
+                      ))}
+                    </View>
+                  ) : null}
+                </View>
+              ))}
+            </Section>
+          ) : null}
 
-        {team.length > 0 ? (
-          <Section title="Team">
-            {team.map((m) => (
-              <View
-                key={m.id}
-                className="rounded-lg border border-border bg-background p-3 mb-3"
-              >
-                <Text className="text-base font-semibold text-foreground">
-                  {m.display_name}
-                  {m.is_owner ? " · Owner" : ""}
-                </Text>
-                {m.role ? (
-                  <Text className="text-sm text-muted-foreground">{m.role}</Text>
-                ) : null}
-                {m.bio ? (
-                  <Text className="mt-1 text-sm text-foreground/80">
-                    {m.bio}
+          {/* Team */}
+          {team.length > 0 ? (
+            <Section title="Team">
+              {team.map((m) => (
+                <View
+                  key={m.id}
+                  className="rounded-xl border border-border bg-background p-4 mb-3"
+                >
+                  <Text className="text-base font-semibold text-foreground">
+                    {m.display_name}
+                    {m.is_owner ? " · Owner" : ""}
                   </Text>
-                ) : null}
-              </View>
-            ))}
-          </Section>
-        ) : null}
+                  {m.role ? (
+                    <Text className="text-sm text-muted-foreground">
+                      {m.role}
+                    </Text>
+                  ) : null}
+                  {m.bio ? (
+                    <Text className="mt-2 text-sm text-foreground/80">
+                      {m.bio}
+                    </Text>
+                  ) : null}
+                </View>
+              ))}
+            </Section>
+          ) : null}
 
-        {faqs.length > 0 ? (
-          <Section title="FAQ">
-            {faqs.map((f) => (
-              <View key={f.id} className="mb-4">
-                <Text className="text-base font-semibold text-foreground">
-                  {f.question}
-                </Text>
-                <Text className="mt-1 text-sm text-foreground/80">
-                  {f.answer}
-                </Text>
-              </View>
-            ))}
-          </Section>
-        ) : null}
+          {/* FAQ */}
+          {faqs.length > 0 ? (
+            <Section title="FAQ">
+              {faqs.map((f) => (
+                <View key={f.id} className="mb-4">
+                  <Text className="text-base font-semibold text-foreground">
+                    {f.question}
+                  </Text>
+                  <Text className="mt-1 text-sm text-foreground/80">
+                    {f.answer}
+                  </Text>
+                </View>
+              ))}
+            </Section>
+          ) : null}
 
-        {policy &&
-        (policy.deposit_pct != null ||
-          policy.cancellation_policy ||
-          policy.reschedule_window_days != null ||
-          policy.policy_notes) ? (
-          <Section title="Policies">
-            {policy.deposit_pct != null ? (
-              <PolicyRow label="Deposit" value={`${policy.deposit_pct}%`} />
-            ) : null}
-            {policy.cancellation_policy ? (
-              <PolicyRow
-                label="Cancellation"
-                value={
-                  CANCELLATION_LABEL[policy.cancellation_policy] ??
-                  policy.cancellation_policy
-                }
-              />
-            ) : null}
-            {policy.reschedule_window_days != null ? (
-              <PolicyRow
-                label="Reschedule window"
-                value={`${policy.reschedule_window_days} days`}
-              />
-            ) : null}
-            {policy.policy_notes ? (
-              <View className="pt-3">
-                <Text className="text-sm text-foreground/90 leading-relaxed">
-                  {policy.policy_notes}
-                </Text>
-              </View>
-            ) : null}
-          </Section>
-        ) : null}
+          {/* Policies */}
+          {policy &&
+          (policy.deposit_pct != null ||
+            policy.cancellation_policy ||
+            policy.reschedule_window_days != null ||
+            policy.policy_notes) ? (
+            <Section title="Policies">
+              {policy.deposit_pct != null ? (
+                <PolicyRowItem
+                  label="Deposit"
+                  value={`${policy.deposit_pct}%`}
+                />
+              ) : null}
+              {policy.cancellation_policy ? (
+                <PolicyRowItem
+                  label="Cancellation"
+                  value={
+                    CANCELLATION_LABEL[policy.cancellation_policy] ??
+                    policy.cancellation_policy
+                  }
+                />
+              ) : null}
+              {policy.reschedule_window_days != null ? (
+                <PolicyRowItem
+                  label="Reschedule window"
+                  value={`${policy.reschedule_window_days} days`}
+                />
+              ) : null}
+              {policy.policy_notes ? (
+                <View className="pt-3">
+                  <Text className="text-sm text-foreground/90 leading-relaxed">
+                    {policy.policy_notes}
+                  </Text>
+                </View>
+              ) : null}
+            </Section>
+          ) : null}
+        </View>
       </ScrollView>
-    </SafeAreaView>
+
+      {/* Sticky bottom action bar — Reserve-style. */}
+      <SafeAreaView
+        edges={["bottom"]}
+        style={{
+          position: "absolute",
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: "#ffffff",
+          borderTopWidth: 1,
+          borderTopColor: "#e5e7eb",
+        }}
+      >
+        <View className="flex-row items-center justify-between px-5 py-3">
+          <View className="flex-1 pr-3">
+            {price ? (
+              <>
+                <Text
+                  className="text-xl font-bold text-foreground"
+                  style={{ textDecorationLine: "underline" }}
+                >
+                  From {price}
+                </Text>
+                <Text className="mt-0.5 text-xs text-muted-foreground">
+                  {vendor.category ?? "Marketplace listing"}
+                </Text>
+              </>
+            ) : (
+              <Text className="text-xl font-bold text-foreground">
+                Pricing on request
+              </Text>
+            )}
+          </View>
+          <Pressable
+            onPress={() => {
+              const url = vendor.slug
+                ? `https://eventvendora.com/vendors/${vendor.slug}`
+                : `https://eventvendora.com/vendors/${vendor.id}`;
+              Linking.openURL(url).catch(() => {});
+            }}
+            className="rounded-full active:opacity-80"
+            style={{
+              backgroundColor: "#dc2626",
+              paddingHorizontal: 28,
+              paddingVertical: 14,
+            }}
+          >
+            <Text className="text-base font-bold text-white">Inquire</Text>
+          </Pressable>
+        </View>
+      </SafeAreaView>
+    </View>
   );
 }
 
-function TopBar({ onBack }: { onBack: () => void }) {
+function RoundButton({
+  onPress,
+  icon,
+  iconColor,
+  fillHeart,
+}: {
+  onPress: () => void;
+  icon: keyof typeof Feather.glyphMap;
+  iconColor?: string;
+  fillHeart?: boolean;
+}) {
   return (
-    <View className="flex-row items-center px-4 py-3 border-b border-border">
-      <Pressable onPress={onBack} hitSlop={8} className="active:opacity-60">
-        <Feather name="chevron-left" size={26} color="#0a0a0a" />
-      </Pressable>
-      <Text className="flex-1 text-center text-base font-bold text-foreground">
-        Listing
-      </Text>
-      <View className="w-7" />
+    <Pressable
+      onPress={onPress}
+      hitSlop={6}
+      style={{
+        width: 36,
+        height: 36,
+        borderRadius: 999,
+        backgroundColor: "rgba(255,255,255,0.92)",
+        alignItems: "center",
+        justifyContent: "center",
+      }}
+      className="active:opacity-80"
+    >
+      <Feather
+        name={icon}
+        size={18}
+        color={iconColor ?? "#0a0a0a"}
+        // expo's Feather doesn't support fill; render filled heart by
+        // overlaying a colored circle inside on save.
+      />
+      {fillHeart ? (
+        <View
+          pointerEvents="none"
+          style={{
+            position: "absolute",
+            width: 10,
+            height: 10,
+            borderRadius: 999,
+            backgroundColor: iconColor ?? "#dc2626",
+          }}
+        />
+      ) : null}
+    </Pressable>
+  );
+}
+
+function StatCell({
+  top,
+  bottom,
+}: {
+  top: React.ReactNode;
+  bottom: string;
+}) {
+  return (
+    <View className="flex-1 items-center px-2 py-3">
+      {top}
+      <Text className="mt-1 text-xs text-muted-foreground">{bottom}</Text>
     </View>
   );
+}
+
+function Divider() {
+  return <View style={{ width: 1, backgroundColor: "#e5e7eb" }} />;
 }
 
 function Section({
@@ -387,8 +672,8 @@ function Section({
   children: React.ReactNode;
 }) {
   return (
-    <View className="px-4 pt-7">
-      <Text className="text-lg font-semibold text-foreground mb-3">
+    <View className="px-5 pt-7">
+      <Text className="text-xl font-semibold text-foreground mb-3">
         {title}
       </Text>
       {children}
@@ -396,7 +681,7 @@ function Section({
   );
 }
 
-function PolicyRow({ label, value }: { label: string; value: string }) {
+function PolicyRowItem({ label, value }: { label: string; value: string }) {
   return (
     <View className="flex-row items-start py-2 border-b border-border">
       <Text className="w-32 text-sm text-muted-foreground">{label}</Text>
