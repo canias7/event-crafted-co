@@ -25,11 +25,18 @@ import { PhotoLibraryPicker } from "@/components/PhotoLibraryPicker";
 
 type ViewKind = "grid" | "reels" | "buzz" | "listing";
 
+// Each row now carries the author's vendor card (business_name +
+// logo_url) inline because the home feed is global — different
+// vendors' posts show side-by-side, so one shared profile prop no
+// longer covers it.
+type Author = { business_name: string | null; logo_url: string | null } | null;
+
 interface PostRow {
   id: string;
   image_url: string;
   caption: string | null;
   created_at: string;
+  vendor: Author;
 }
 interface ReelRow {
   id: string;
@@ -37,11 +44,13 @@ interface ReelRow {
   thumbnail_url: string | null;
   caption: string | null;
   created_at: string;
+  vendor: Author;
 }
 interface BuzzRow {
   id: string;
   body: string;
   created_at: string;
+  vendor: Author;
 }
 
 export default function HomeScreen() {
@@ -77,28 +86,46 @@ export default function HomeScreen() {
   }, [user]);
 
   const loadFeeds = useCallback(async () => {
-    if (!profile?.id) return;
+    // Home is the global feed — every approved vendor's content,
+    // newest first. Inner-joined against vendor_profiles + filtered
+    // to application_status='approved' so unpublished drafts and
+    // rejected listings don't leak into the feed. The vendor's
+    // logo + business name come back inline for the IG-style author
+    // header on each card.
     const [postsRes, reelsRes, buzzRes] = await Promise.all([
       supabase
         .from("vendor_posts")
-        .select("id, image_url, caption, created_at")
-        .eq("vendor_id", profile.id)
-        .order("created_at", { ascending: false }),
+        .select(
+          "id, image_url, caption, created_at, vendor:vendor_profiles!inner(business_name, logo_url, application_status)",
+        )
+        .eq("vendor.application_status", "approved")
+        .order("created_at", { ascending: false })
+        .limit(50),
       supabase
         .from("vendor_reels")
-        .select("id, video_url, thumbnail_url, caption, created_at")
-        .eq("vendor_id", profile.id)
-        .order("created_at", { ascending: false }),
+        .select(
+          "id, video_url, thumbnail_url, caption, created_at, vendor:vendor_profiles!inner(business_name, logo_url, application_status)",
+        )
+        .eq("vendor.application_status", "approved")
+        .order("created_at", { ascending: false })
+        .limit(50),
       supabase
         .from("vendor_buzz")
-        .select("id, body, created_at")
-        .eq("vendor_id", profile.id)
-        .order("created_at", { ascending: false }),
+        .select(
+          "id, body, created_at, vendor:vendor_profiles!inner(business_name, logo_url, application_status)",
+        )
+        .eq("vendor.application_status", "approved")
+        .order("created_at", { ascending: false })
+        .limit(50),
     ]);
-    setPosts((postsRes.data ?? []) as PostRow[]);
-    setReels((reelsRes.data ?? []) as ReelRow[]);
-    setBuzz((buzzRes.data ?? []) as BuzzRow[]);
-  }, [profile?.id]);
+    // The auto-generated supabase TS types treat the FK embed as
+    // an array, but the runtime shape (many-to-one FK) is a single
+    // object. Cast through unknown to bridge the types without
+    // restructuring at runtime.
+    setPosts((postsRes.data ?? []) as unknown as PostRow[]);
+    setReels((reelsRes.data ?? []) as unknown as ReelRow[]);
+    setBuzz((buzzRes.data ?? []) as unknown as BuzzRow[]);
+  }, []);
 
   useEffect(() => {
     loadFeeds();
@@ -217,7 +244,7 @@ export default function HomeScreen() {
               />
             </View>
           ) : (
-            <PostGrid posts={posts} profile={profile} />
+            <PostGrid posts={posts} />
           )
         ) : view === "reels" ? (
           reels.length === 0 ? (
@@ -231,7 +258,7 @@ export default function HomeScreen() {
               />
             </View>
           ) : (
-            <ReelGrid reels={reels} profile={profile} />
+            <ReelGrid reels={reels} />
           )
         ) : view === "buzz" ? (
           buzz.length === 0 ? (
@@ -419,14 +446,14 @@ function EmptyState({
 // vendor's uploaded logo (or the local fallback icon) on the left and
 // their business name next to it. Pulls from vendor_profiles.logo_url
 // so the avatar matches whatever the vendor uploaded on the web.
-function FeedAuthorHeader({ profile }: { profile: VendorProfile | null }) {
+function FeedAuthorHeader({ vendor }: { vendor: Author }) {
   return (
-    <View className="flex-row items-center gap-3 mb-2 px-1">
+    <View className="flex-row items-center gap-3 px-3 py-3">
       <View className="h-10 w-10 overflow-hidden rounded-full bg-secondary/60">
         <Image
           source={
-            profile?.logo_url
-              ? { uri: profile.logo_url }
+            vendor?.logo_url
+              ? { uri: vendor.logo_url }
               : require("../../assets/icon.png")
           }
           className="h-full w-full"
@@ -437,19 +464,13 @@ function FeedAuthorHeader({ profile }: { profile: VendorProfile | null }) {
         numberOfLines={1}
         className="flex-1 text-base font-semibold text-foreground"
       >
-        {profile?.business_name ?? "Vendora"}
+        {vendor?.business_name ?? "Vendora"}
       </Text>
     </View>
   );
 }
 
-function PostGrid({
-  posts,
-  profile,
-}: {
-  posts: PostRow[];
-  profile: VendorProfile | null;
-}) {
+function PostGrid({ posts }: { posts: PostRow[] }) {
   return (
     <View className="gap-4">
       {posts.map((p) => (
@@ -469,7 +490,7 @@ function PostGrid({
             {/* Author header sits at the top of the card so the post
                 reads as a self-contained unit, IG-style. */}
             <View className="bg-background">
-              <FeedAuthorHeader profile={profile} />
+              <FeedAuthorHeader vendor={p.vendor} />
             </View>
             <Image
               source={{ uri: p.image_url }}
@@ -491,13 +512,7 @@ function PostGrid({
   );
 }
 
-function ReelGrid({
-  reels,
-  profile,
-}: {
-  reels: ReelRow[];
-  profile: VendorProfile | null;
-}) {
+function ReelGrid({ reels }: { reels: ReelRow[] }) {
   return (
     <View className="gap-4">
       {reels.map((r) => (
@@ -515,7 +530,7 @@ function ReelGrid({
             }}
           >
             <View className="bg-background">
-              <FeedAuthorHeader profile={profile} />
+              <FeedAuthorHeader vendor={r.vendor} />
             </View>
             <View
               style={{
@@ -566,10 +581,11 @@ function BuzzList({ items }: { items: BuzzRow[] }) {
       {items.map((b) => (
         <View
           key={b.id}
-          className="rounded-xl border border-border bg-background p-4"
+          className="rounded-xl border border-border bg-background p-2"
         >
-          <Text className="text-base text-foreground">{b.body}</Text>
-          <Text className="mt-2 text-xs text-muted-foreground">
+          <FeedAuthorHeader vendor={b.vendor} />
+          <Text className="px-3 pb-3 text-base text-foreground">{b.body}</Text>
+          <Text className="px-3 pb-3 text-xs text-muted-foreground">
             {new Date(b.created_at).toLocaleString()}
           </Text>
         </View>
