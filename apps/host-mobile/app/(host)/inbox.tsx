@@ -39,7 +39,7 @@ export default function InboxScreen() {
       const { data } = await supabase
         .from("inquiries")
         .select(
-          "id, vendor_id, host_id, status, event_type, event_date, guest_count, budget_min_cents, budget_max_cents, quality_score, created_at, vendor_profiles(business_name)",
+          "id, vendor_id, host_id, status, event_type, event_date, guest_count, location, budget_min_cents, budget_max_cents, special_requests, quality_score, created_at, vendor_profiles(business_name)",
         )
         .eq("host_id", user.id)
         .order("created_at", { ascending: false });
@@ -88,6 +88,14 @@ export default function InboxScreen() {
                     ? ` · up to ${formatCents(row.budget_max_cents)}`
                     : ""}
                 </Text>
+                {row.special_requests ? (
+                  <Text
+                    className="mt-1 text-sm text-foreground/80"
+                    numberOfLines={2}
+                  >
+                    {row.special_requests}
+                  </Text>
+                ) : null}
               </View>
               <Text className="text-xs uppercase tracking-wide text-muted-foreground">
                 {row.status}

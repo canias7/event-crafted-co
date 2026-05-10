@@ -32,8 +32,11 @@ export interface InquiryRow {
   event_type: string;
   event_date: string | null;
   guest_count: number | null;
+  location: string | null;
   budget_min_cents: number | null;
   budget_max_cents: number | null;
+  /** Host's freeform message from the inquiry composer. */
+  special_requests: string | null;
   quality_score: number | null;
   created_at: string;
 }
