@@ -590,11 +590,10 @@ function ReelGrid({ reels }: { reels: ReelRow[] }) {
   );
 }
 
-// Marketplace feed — Airbnb-explore style. Horizontal-scroll category
-// chips at the top let the host narrow the feed; below, big rounded
-// photo cards (logo on cream BG with category accent) lead to each
-// vendor's public listing in the browser. The chip row replaces a
-// classic dropdown — same affordance, more glanceable.
+// Marketplace feed — Airbnb-explore style. Vertical scroll moves
+// between categories; each category is a horizontal-scroll rail of
+// vendor cards. Chip row at the top doubles as a quick jump filter
+// (selecting a chip narrows to a single section).
 function ListingFeed({
   listings,
   category,
@@ -604,36 +603,35 @@ function ListingFeed({
   category: string | null;
   onCategoryChange: (c: string | null) => void;
 }) {
-  // Distinct categories present in the feed, sorted alphabetically.
-  // Keeps the chip row in sync with whatever's actually on the
-  // marketplace right now — empty categories don't clutter the bar.
-  const categories = Array.from(
-    new Set(
-      listings
-        .map((l) => l.category)
-        .filter((c): c is string => !!c && c.trim().length > 0),
-    ),
-  ).sort();
-
-  const filtered =
-    category == null ? listings : listings.filter((l) => l.category === category);
+  // Group by category. We want categories ordered by the most recent
+  // listing in each so the freshest categories surface up top.
+  const byCategory = new Map<string, ListingRow[]>();
+  for (const l of listings) {
+    const key = l.category && l.category.trim().length > 0 ? l.category : "Other";
+    const arr = byCategory.get(key);
+    if (arr) arr.push(l);
+    else byCategory.set(key, [l]);
+  }
+  const orderedCategories = Array.from(byCategory.keys()).sort();
+  const visibleCategories =
+    category == null
+      ? orderedCategories
+      : orderedCategories.filter((c) => c === category);
 
   return (
     <View>
-      {/* Category chip row — replaces a dropdown. Horizontal scroll
-          so the bar never wraps regardless of how many categories
-          end up on the marketplace. */}
+      {/* Category chip row at the top — quick jump / filter. */}
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
-        contentContainerClassName="px-4 gap-2 pb-3"
+        contentContainerClassName="px-4 gap-2 pb-4"
       >
         <CategoryChip
           label="All"
           active={category == null}
           onPress={() => onCategoryChange(null)}
         />
-        {categories.map((c) => (
+        {orderedCategories.map((c) => (
           <CategoryChip
             key={c}
             label={c}
@@ -643,94 +641,33 @@ function ListingFeed({
         ))}
       </ScrollView>
 
-      <View className="gap-6 px-4">
-        {filtered.map((l) => {
-          const price =
-            l.base_price_cents != null
-              ? `From $${Math.round(l.base_price_cents / 100).toLocaleString()}`
-              : null;
-          const href = l.slug
-            ? `https://eventvendora.com/vendors/${l.slug}`
-            : `https://eventvendora.com/vendors/${l.id}`;
+      <View className="gap-8">
+        {visibleCategories.map((cat) => {
+          const rows = byCategory.get(cat) ?? [];
           return (
-            <Pressable
-              key={l.id}
-              onPress={() => Linking.openURL(href)}
-              className="active:opacity-90"
-            >
-              <View
-                style={{
-                  borderRadius: 18,
-                  overflow: "hidden",
-                  backgroundColor: "#f5f0e8",
-                  shadowColor: "#000",
-                  shadowOpacity: 0.08,
-                  shadowRadius: 8,
-                  shadowOffset: { width: 0, height: 3 },
-                  elevation: 3,
-                  aspectRatio: 1,
-                  width: "100%",
-                }}
+            <View key={cat}>
+              <View className="px-4 mb-3 flex-row items-end justify-between">
+                <Text className="text-lg font-bold text-foreground">
+                  {cat}
+                </Text>
+                <Text className="text-xs text-muted-foreground">
+                  {rows.length} listing{rows.length === 1 ? "" : "s"}
+                </Text>
+              </View>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerClassName="px-4 gap-3"
               >
-                {l.logo_url ? (
-                  <Image
-                    source={{ uri: l.logo_url }}
-                    style={{ flex: 1 }}
-                    resizeMode="cover"
-                  />
-                ) : (
-                  <View className="flex-1 items-center justify-center">
-                    <Image
-                      source={require("../../assets/icon.png")}
-                      style={{ width: 96, height: 96 }}
-                      resizeMode="contain"
-                    />
-                  </View>
-                )}
-                {/* Heart sits in the top-right like Airbnb's wishlist
-                    pin. Wishlist functionality isn't wired yet, so it's
-                    a static visual cue for now. */}
-                <View
-                  style={{
-                    position: "absolute",
-                    top: 12,
-                    right: 12,
-                    height: 32,
-                    width: 32,
-                    borderRadius: 16,
-                    backgroundColor: "rgba(0,0,0,0.18)",
-                    alignItems: "center",
-                    justifyContent: "center",
-                  }}
-                >
-                  <Feather name="heart" size={16} color="#fff" />
-                </View>
-              </View>
-              <View className="mt-3">
-                <Text
-                  numberOfLines={1}
-                  className="text-base font-bold text-foreground"
-                >
-                  {l.business_name ?? "Vendor"}
-                </Text>
-                <Text
-                  numberOfLines={1}
-                  className="mt-0.5 text-sm text-muted-foreground"
-                >
-                  {[l.category, l.location].filter(Boolean).join(" · ") ||
-                    "Marketplace listing"}
-                </Text>
-                {price ? (
-                  <Text className="mt-1 text-sm text-foreground/80">
-                    {price}
-                  </Text>
-                ) : null}
-              </View>
-            </Pressable>
+                {rows.map((l) => (
+                  <ListingCard key={l.id} listing={l} />
+                ))}
+              </ScrollView>
+            </View>
           );
         })}
-        {filtered.length === 0 ? (
-          <View className="items-center pt-10">
+        {visibleCategories.length === 0 ? (
+          <View className="items-center pt-10 px-4">
             <Text className="text-sm text-muted-foreground">
               No listings in this category yet.
             </Text>
@@ -738,6 +675,89 @@ function ListingFeed({
         ) : null}
       </View>
     </View>
+  );
+}
+
+// One vendor card. Sized for the horizontal rail (~70% of screen
+// width feels right on phones — keeps the next card hinted on the
+// right edge so the rail reads as scrollable).
+function ListingCard({ listing }: { listing: ListingRow }) {
+  const price =
+    listing.base_price_cents != null
+      ? `From $${Math.round(listing.base_price_cents / 100).toLocaleString()}`
+      : null;
+  const href = listing.slug
+    ? `https://eventvendora.com/vendors/${listing.slug}`
+    : `https://eventvendora.com/vendors/${listing.id}`;
+  return (
+    <Pressable
+      onPress={() => Linking.openURL(href)}
+      className="active:opacity-90"
+      style={{ width: 260 }}
+    >
+      <View
+        style={{
+          borderRadius: 18,
+          overflow: "hidden",
+          backgroundColor: "#f5f0e8",
+          shadowColor: "#000",
+          shadowOpacity: 0.08,
+          shadowRadius: 8,
+          shadowOffset: { width: 0, height: 3 },
+          elevation: 3,
+          aspectRatio: 1,
+          width: "100%",
+        }}
+      >
+        {listing.logo_url ? (
+          <Image
+            source={{ uri: listing.logo_url }}
+            style={{ flex: 1 }}
+            resizeMode="cover"
+          />
+        ) : (
+          <View className="flex-1 items-center justify-center">
+            <Image
+              source={require("../../assets/icon.png")}
+              style={{ width: 96, height: 96 }}
+              resizeMode="contain"
+            />
+          </View>
+        )}
+        <View
+          style={{
+            position: "absolute",
+            top: 12,
+            right: 12,
+            height: 32,
+            width: 32,
+            borderRadius: 16,
+            backgroundColor: "rgba(0,0,0,0.18)",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <Feather name="heart" size={16} color="#fff" />
+        </View>
+      </View>
+      <View className="mt-3">
+        <Text
+          numberOfLines={1}
+          className="text-base font-bold text-foreground"
+        >
+          {listing.business_name ?? "Vendor"}
+        </Text>
+        <Text
+          numberOfLines={1}
+          className="mt-0.5 text-sm text-muted-foreground"
+        >
+          {listing.location ?? "Marketplace listing"}
+        </Text>
+        {price ? (
+          <Text className="mt-1 text-sm text-foreground/80">{price}</Text>
+        ) : null}
+      </View>
+    </Pressable>
   );
 }
 
