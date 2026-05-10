@@ -30,7 +30,11 @@ export function VendorApplicationsPage() {
     const { data, error } = await supabase
       .from("vendor_profiles")
       .select(
-        "id, user_id, business_name, category, bio, location, application_status, created_at, profile:profiles!vendor_profiles_user_id_fkey(display_name)",
+        // base_price_cents is selected only so we can split signup
+        // applications (incomplete listing) from full listing
+        // submissions (publish-ready). The Vendor listings tab is
+        // the canonical surface for the latter.
+        "id, user_id, business_name, category, bio, location, base_price_cents, application_status, created_at, profile:profiles!vendor_profiles_user_id_fkey(display_name)",
       )
       .eq("application_status", tab)
       .order("created_at", { ascending: false });
@@ -39,26 +43,47 @@ export function VendorApplicationsPage() {
       toast.error(error.message);
       return;
     }
+    // A vendor profile counts as a SIGNUP APPLICATION when the
+    // listing isn't publish-ready yet — i.e. one of the four
+    // required fields is still missing. Once everything is filled
+    // and the vendor hits Publish, the row moves to the Vendor
+    // listings tab. This filter mirrors the publish-readiness gate
+    // in apps/vendor-mobile/app/(vendor)/listing.tsx.
+    const isApplication = (r: {
+      category: string | null;
+      bio: string | null;
+      location: string | null;
+      base_price_cents: number | null;
+    }) =>
+      !r.category ||
+      !r.bio ||
+      !r.location ||
+      r.base_price_cents == null ||
+      r.base_price_cents <= 0;
     setRows(
-      (data ?? []).map((r) => {
-        const profile = (r as unknown as {
-          profile?: { display_name: string | null } | { display_name: string | null }[];
-        }).profile;
-        const display_name = Array.isArray(profile)
-          ? profile[0]?.display_name ?? null
-          : profile?.display_name ?? null;
-        return {
-          id: r.id,
-          user_id: r.user_id,
-          business_name: r.business_name,
-          category: r.category,
-          bio: r.bio,
-          location: r.location,
-          application_status: r.application_status,
-          created_at: r.created_at,
-          profile_display_name: display_name,
-        };
-      }),
+      (data ?? [])
+        .filter((r) => isApplication(r))
+        .map((r) => {
+          const profile = (r as unknown as {
+            profile?:
+              | { display_name: string | null }
+              | { display_name: string | null }[];
+          }).profile;
+          const display_name = Array.isArray(profile)
+            ? profile[0]?.display_name ?? null
+            : profile?.display_name ?? null;
+          return {
+            id: r.id,
+            user_id: r.user_id,
+            business_name: r.business_name,
+            category: r.category,
+            bio: r.bio,
+            location: r.location,
+            application_status: r.application_status,
+            created_at: r.created_at,
+            profile_display_name: display_name,
+          };
+        }),
     );
   }, [tab]);
 
