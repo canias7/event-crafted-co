@@ -82,25 +82,22 @@ export default function ProfileScreen() {
     | null
   >(null);
 
-  useEffect(() => {
+  const loadProfile = useCallback(async () => {
     if (!user) return;
-    let cancelled = false;
-    (async () => {
-      const { data } = await supabase
-        .from("vendor_profiles")
-        .select(
-          "id, business_name, category, bio, base_price_cents, location, verified_at, application_status, application_review_notes, intro_video_url, weekly_digest_enabled, slug, instagram_handle, tiktok_handle, logo_url",
-        )
-        .eq("user_id", user.id)
-        .maybeSingle();
-      if (cancelled) return;
-      setProfile(data as VendorProfile | null);
-      setLoading(false);
-    })();
-    return () => {
-      cancelled = true;
-    };
+    const { data } = await supabase
+      .from("vendor_profiles")
+      .select(
+        "id, business_name, category, bio, base_price_cents, location, verified_at, application_status, application_review_notes, intro_video_url, weekly_digest_enabled, slug, instagram_handle, tiktok_handle, logo_url",
+      )
+      .eq("user_id", user.id)
+      .maybeSingle();
+    setProfile(data as VendorProfile | null);
+    setLoading(false);
   }, [user]);
+
+  useEffect(() => {
+    loadProfile();
+  }, [loadProfile]);
 
   const loadFeeds = useCallback(async () => {
     if (!profile?.id) return;
@@ -423,6 +420,7 @@ export default function ProfileScreen() {
                 profile={profile}
                 isComplete={listingsCount === 1}
                 onEdit={() => router.push("/(vendor)/listing")}
+                onChanged={loadProfile}
               />
             </View>
           )}
@@ -766,12 +764,76 @@ function ListingTab({
   profile,
   isComplete,
   onEdit,
+  onChanged,
 }: {
   loading: boolean;
   profile: VendorProfile | null;
   isComplete: boolean;
   onEdit: () => void;
+  onChanged: () => void;
 }) {
+  const [heroUrl, setHeroUrl] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      if (!profile?.id) {
+        setHeroUrl(null);
+        return;
+      }
+      const { data } = await supabase
+        .from("vendor_portfolio_images")
+        .select("storage_path")
+        .eq("vendor_id", profile.id)
+        .order("display_order", { ascending: true })
+        .order("created_at", { ascending: true })
+        .limit(1);
+      if (cancelled) return;
+      const row = (data ?? [])[0] as { storage_path: string } | undefined;
+      if (!row) {
+        setHeroUrl(null);
+        return;
+      }
+      const { data: pub } = supabase.storage
+        .from("vendor-portfolios")
+        .getPublicUrl(row.storage_path);
+      setHeroUrl(pub.publicUrl ?? null);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [profile?.id]);
+
+  async function unpublish() {
+    if (!profile?.id) return;
+    Alert.alert(
+      "Remove from marketplace?",
+      "Your listing leaves the marketplace but your photos, packages, and other data stay. You can re-publish anytime.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Remove",
+          style: "destructive",
+          onPress: async () => {
+            setBusy(true);
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const { error } = await (supabase as any)
+              .from("vendor_profiles")
+              .update({ application_status: "draft" })
+              .eq("id", profile.id);
+            setBusy(false);
+            if (error) {
+              Alert.alert("Couldn't remove listing", error.message);
+            } else {
+              onChanged();
+            }
+          },
+        },
+      ],
+    );
+  }
+
   if (loading) {
     return (
       <Text className="text-sm text-muted-foreground">Loading…</Text>
@@ -788,30 +850,101 @@ function ListingTab({
       />
     );
   }
+  const price =
+    profile.base_price_cents != null
+      ? `From $${Math.round(profile.base_price_cents / 100).toLocaleString()}`
+      : null;
   return (
-    <View className="w-full gap-3 px-2">
-      <Field label="Business name" value={profile.business_name ?? "—"} />
-      <Field label="Category" value={profile.category ?? "—"} />
-      <Field label="Location" value={profile.location ?? "—"} />
-      <Field
-        label="Verification"
-        value={profile.verified_at ? "Verified" : "Unverified"}
-      />
-      <Field
-        label="Application status"
-        value={profile.application_status ?? "draft"}
-      />
-    </View>
-  );
-}
-
-function Field({ label, value }: { label: string; value: string }) {
-  return (
-    <View className="rounded-xl border border-border bg-background px-4 py-3">
-      <Text className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-        {label}
-      </Text>
-      <Text className="mt-1 text-base text-foreground">{value}</Text>
+    <View className="w-full px-2">
+      <Pressable onPress={onEdit} className="active:opacity-90">
+        <View
+          style={{
+            borderRadius: 18,
+            overflow: "hidden",
+            backgroundColor: "#1a1a1a",
+            aspectRatio: 1,
+            width: "100%",
+          }}
+        >
+          {heroUrl ? (
+            <Image
+              source={{ uri: heroUrl }}
+              style={{ flex: 1 }}
+              resizeMode="cover"
+            />
+          ) : (
+            <View
+              className="flex-1 items-center justify-center px-6"
+              style={{ backgroundColor: "#f4f4f5" }}
+            >
+              <Feather name="image" size={28} color="#a1a1aa" />
+              <Text className="mt-2 text-center text-xs text-muted-foreground">
+                No listing photos yet
+              </Text>
+            </View>
+          )}
+          {/* Edit + delete overlay — top-right corner like wishlist
+              hearts on the marketplace, but vendor-side actions. */}
+          <View
+            style={{
+              position: "absolute",
+              top: 12,
+              right: 12,
+              flexDirection: "row",
+              gap: 8,
+            }}
+          >
+            <Pressable
+              onPress={onEdit}
+              hitSlop={6}
+              disabled={busy}
+              style={{
+                width: 36,
+                height: 36,
+                borderRadius: 999,
+                backgroundColor: "rgba(255,255,255,0.92)",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <Feather name="edit-2" size={16} color="#0a0a0a" />
+            </Pressable>
+            <Pressable
+              onPress={unpublish}
+              hitSlop={6}
+              disabled={busy}
+              style={{
+                width: 36,
+                height: 36,
+                borderRadius: 999,
+                backgroundColor: "rgba(255,255,255,0.92)",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <Feather name="trash-2" size={16} color="#dc2626" />
+            </Pressable>
+          </View>
+        </View>
+        <View className="mt-3 px-1">
+          <Text
+            numberOfLines={1}
+            className="text-base font-semibold text-foreground"
+          >
+            {profile.business_name ?? "Vendor"}
+          </Text>
+          <Text
+            numberOfLines={1}
+            className="mt-0.5 text-sm text-muted-foreground"
+          >
+            {profile.category ?? "—"}
+            {profile.location ? ` · ${profile.location}` : ""}
+          </Text>
+          {price ? (
+            <Text className="mt-1 text-sm text-foreground/80">{price}</Text>
+          ) : null}
+        </View>
+      </Pressable>
     </View>
   );
 }
