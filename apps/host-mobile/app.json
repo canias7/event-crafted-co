@@ -22,6 +22,9 @@
     "ios": {
       "bundleIdentifier": "co.eventcrafted.host",
       "supportsTablet": true,
+      "entitlements": {
+        "aps-environment": "production"
+      },
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       }
