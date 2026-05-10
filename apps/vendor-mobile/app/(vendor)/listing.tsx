@@ -76,25 +76,34 @@ export default function ListingScreen() {
   const [location, setLocation] = useState("");
   const [basePrice, setBasePrice] = useState("");
 
+  const [setupError, setSetupError] = useState<string | null>(null);
+
   const loadAll = useCallback(async () => {
     if (!user) return;
     setLoading(true);
-    let { data: prof } = await supabase
+    setSetupError(null);
+    let { data: prof, error: selErr } = await supabase
       .from("vendor_profiles")
       .select(PROFILE_COLS)
       .eq("user_id", user.id)
       .maybeSingle();
+    if (selErr) {
+      setSetupError(`Couldn't load your profile: ${selErr.message}`);
+    }
     // No row yet → auto-create a stub draft so the editor doesn't
     // block on a "still being set up" message. Mirrors the web's
     // first-time signup flow that inserts a draft row when the
     // vendor lands on /vendor/listing.
     if (!prof) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data: created } = await (supabase as any)
+      const { data: created, error: insErr } = await (supabase as any)
         .from("vendor_profiles")
         .insert({ user_id: user.id, application_status: "draft" })
         .select(PROFILE_COLS)
         .single();
+      if (insErr) {
+        setSetupError(`Couldn't set up your profile: ${insErr.message}`);
+      }
       prof = created;
     }
     const row = (prof as ProfileRow | null) ?? null;
@@ -295,11 +304,20 @@ export default function ListingScreen() {
   if (!profile) {
     return (
       <SafeAreaView className="flex-1 bg-background" edges={["top"]}>
-        <View className="flex-1 items-center justify-center px-6">
+        <View className="flex-1 items-center justify-center px-6 gap-4">
           <Text className="text-base text-foreground text-center">
-            Hang on — your vendor profile is still being set up. Try again in
-            a moment.
+            {setupError
+              ? setupError
+              : "Couldn't open the listing editor."}
           </Text>
+          <Pressable
+            onPress={loadAll}
+            className="rounded-full bg-foreground px-6 py-3 active:opacity-80"
+          >
+            <Text className="text-sm font-semibold text-background">
+              Try again
+            </Text>
+          </Pressable>
         </View>
       </SafeAreaView>
     );
