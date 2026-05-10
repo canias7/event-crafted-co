@@ -481,32 +481,48 @@ export default function ListingScreen() {
       {/* Action bar — labels follow application_status so an
           approved listing isn't accidentally bumped back into review.
             draft / rejected → Save changes + Publish (or Re-submit)
-            pending          → Save changes only (already submitted)
-            approved         → Save changes only (edits stay live) */}
+            pending          → single primary "Save changes"
+            approved         → single primary "Save changes" (live) */}
       <View className="absolute left-0 right-0 bottom-0 border-t border-border bg-background px-4 pb-6 pt-3 flex-row gap-2">
-        <Pressable
-          onPress={() => save({ publish: false })}
-          disabled={busy}
-          className="flex-1 rounded-full border border-border bg-background py-3 items-center active:opacity-80"
-        >
-          <Text className="text-sm font-semibold text-foreground">
-            {busy ? "Saving…" : "Save changes"}
-          </Text>
-        </Pressable>
-        {status === "pending" || status === "approved" ? null : (
+        {status === "pending" || status === "approved" ? (
           <Pressable
-            onPress={() => save({ publish: true })}
+            onPress={() => save({ publish: false })}
             disabled={busy}
             className="flex-1 rounded-full bg-foreground py-3 items-center active:opacity-80"
           >
             <Text className="text-sm font-semibold text-background">
               {busy
-                ? "Publishing…"
-                : status === "rejected"
-                  ? "Re-submit"
-                  : "Publish"}
+                ? "Saving…"
+                : status === "approved"
+                  ? "Save changes"
+                  : "Save changes"}
             </Text>
           </Pressable>
+        ) : (
+          <>
+            <Pressable
+              onPress={() => save({ publish: false })}
+              disabled={busy}
+              className="flex-1 rounded-full border border-border bg-background py-3 items-center active:opacity-80"
+            >
+              <Text className="text-sm font-semibold text-foreground">
+                {busy ? "Saving…" : "Save changes"}
+              </Text>
+            </Pressable>
+            <Pressable
+              onPress={() => save({ publish: true })}
+              disabled={busy}
+              className="flex-1 rounded-full bg-foreground py-3 items-center active:opacity-80"
+            >
+              <Text className="text-sm font-semibold text-background">
+                {busy
+                  ? "Publishing…"
+                  : status === "rejected"
+                    ? "Re-submit"
+                    : "Publish"}
+              </Text>
+            </Pressable>
+          </>
         )}
       </View>
 
