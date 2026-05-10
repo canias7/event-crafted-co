@@ -8,13 +8,13 @@ import {
   Alert,
   Dimensions,
   Image,
-  Linking,
   Pressable,
   ScrollView,
   Text,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import { CATEGORY_GROUPS, groupOfSub } from "@vendora/core";
@@ -767,20 +767,19 @@ function ListingFeed({
   );
 }
 
-// One vendor card. Sized for the horizontal rail (~70% of screen
-// width feels right on phones — keeps the next card hinted on the
-// right edge so the rail reads as scrollable).
+// One vendor card. Sized for the horizontal rail (~45% of screen
+// width — Airbnb-style two-up with a slim peek of the next card).
 function ListingCard({ listing }: { listing: ListingRow }) {
+  const router = useRouter();
   const price =
     listing.base_price_cents != null
       ? `From $${Math.round(listing.base_price_cents / 100).toLocaleString()}`
       : null;
-  const href = listing.slug
-    ? `https://eventvendora.com/vendors/${listing.slug}`
-    : `https://eventvendora.com/vendors/${listing.id}`;
   return (
     <Pressable
-      onPress={() => Linking.openURL(href)}
+      onPress={() =>
+        router.push(`/(vendor)/vendor/${listing.slug ?? listing.id}` as never)
+      }
       className="active:opacity-90"
       style={{ width: Math.round(Dimensions.get("window").width * 0.45) }}
     >
