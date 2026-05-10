@@ -162,18 +162,11 @@ export default function VendorSignupScreen() {
       setError(data.error);
       return;
     }
-    // Account created via admin API with email_confirm:true. Sign in
-    // to obtain a session and land in the vendor app.
-    const { error: signInErr } = await supabase.auth.signInWithPassword({
-      email: cleanEmail,
-      password,
-    });
+    // Account created at status='pending' (handle_new_user). Don't
+    // sign in — admin has to approve the application first. Land
+    // on the "thanks, we'll review" screen.
     setSubmitting(false);
-    if (signInErr) {
-      setError(`Account created but sign-in failed: ${signInErr.message}`);
-      return;
-    }
-    router.replace("/(vendor)/home");
+    setStep("done");
   }
 
   async function resend() {

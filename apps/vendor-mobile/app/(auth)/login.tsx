@@ -108,23 +108,44 @@ export default function LoginScreen() {
       setError(signInErr.message);
       return;
     }
-    // Gate by role: vendor app only accepts vendors and admins.
-    // Brand-new vendor signups land at role='vendor' from the
-    // trigger (intended_role metadata) — no chicken-and-egg.
+    // Vendor app gate. Two checks:
+    //   1. role IN ('vendor','admin') — host accounts go elsewhere.
+    //   2. application_status = 'approved' — vendor signups have to
+    //      be reviewed + approved by an admin before they can use
+    //      the app. Pending / rejected signups bounce here.
     const userId = signInData.user?.id;
     if (userId) {
       const { data: prof } = await supabase
         .from("profiles")
-        .select("role")
+        .select("role, application_status")
         .eq("id", userId)
         .maybeSingle();
-      const role = (prof as { role?: string } | null)?.role ?? "host";
+      const row = (prof as {
+        role?: string;
+        application_status?: string;
+      } | null) ?? {};
+      const role = row.role ?? "host";
+      const status = row.application_status ?? "approved";
       if (role !== "vendor" && role !== "admin") {
         await supabase.auth.signOut();
         setSubmitting(false);
         setError(
           "That email is a host account. Open the Vendora app to sign in.",
         );
+        return;
+      }
+      if (role === "vendor" && status !== "approved") {
+        await supabase.auth.signOut();
+        setSubmitting(false);
+        if (status === "rejected") {
+          setError(
+            "Your vendor application wasn't approved. Reach out to support if you think this is a mistake.",
+          );
+        } else {
+          setError(
+            "Your vendor application is still under review. We'll email you the moment it's approved.",
+          );
+        }
         return;
       }
     }
