@@ -264,31 +264,34 @@ function AuthButton({ variant, onPress, label, icon, last }: AuthButtonProps) {
       : "#262626";
   const fg = isLight ? "#000000" : "#ffffff";
   return (
-    <Pressable
-      onPress={onPress}
-      style={({ pressed }) => ({
-        backgroundColor: bg,
-        borderRadius: 22,
-        marginBottom: last ? 0 : 8,
-        opacity: pressed ? 0.7 : 1,
-        borderWidth: isOutline ? 1 : 0,
-        borderColor: "rgba(255,255,255,0.22)",
-      })}
-    >
-      <View
-        style={{
-          flexDirection: "row",
-          alignItems: "center",
-          justifyContent: "center",
-          paddingVertical: 16,
-          gap: 10,
-        }}
-      >
-        {icon ?? null}
-        <Text style={{ color: fg, fontSize: 16, fontWeight: "600" }}>
-          {label}
-        </Text>
-      </View>
+    <Pressable onPress={onPress}>
+      {({ pressed }) => (
+        <View
+          style={{
+            backgroundColor: bg,
+            borderRadius: 22,
+            marginBottom: last ? 0 : 8,
+            opacity: pressed ? 0.7 : 1,
+            borderWidth: isOutline ? 1 : 0,
+            borderColor: "rgba(255,255,255,0.22)",
+          }}
+        >
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "center",
+              paddingVertical: 16,
+              gap: 10,
+            }}
+          >
+            {icon ?? null}
+            <Text style={{ color: fg, fontSize: 16, fontWeight: "600" }}>
+              {label}
+            </Text>
+          </View>
+        </View>
+      )}
     </Pressable>
   );
 }

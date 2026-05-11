@@ -224,19 +224,24 @@ export default function ProfileScreen() {
             onPress={() => router.push("/(host)/settings" as never)}
           />
 
-          <Pressable
-            onPress={signOut}
-            style={({ pressed }) => ({
-              marginTop: 12,
-              paddingVertical: 16,
-              borderRadius: 18,
-              backgroundColor: pressed ? "#efe6d6" : "transparent",
-              alignItems: "center",
-            })}
-          >
-            <Text style={{ color: INK_DIM, fontSize: 15, fontWeight: "500" }}>
-              Log out
-            </Text>
+          <Pressable onPress={signOut}>
+            {({ pressed }) => (
+              <View
+                style={{
+                  marginTop: 12,
+                  paddingVertical: 16,
+                  borderRadius: 18,
+                  backgroundColor: pressed ? "#efe6d6" : "transparent",
+                  alignItems: "center",
+                }}
+              >
+                <Text
+                  style={{ color: INK_DIM, fontSize: 15, fontWeight: "500" }}
+                >
+                  Log out
+                </Text>
+              </View>
+            )}
           </Pressable>
         </ScrollView>
       </SafeAreaView>
@@ -409,64 +414,72 @@ function ShortcutTile({
   onPress: () => void;
 }) {
   return (
-    <Pressable
-      onPress={onPress}
-      style={({ pressed }) => ({
-        flex: 1,
-        backgroundColor: "#ffffff",
-        borderRadius: 22,
-        padding: 16,
-        opacity: pressed ? 0.85 : 1,
-        shadowColor: INK,
-        shadowOpacity: 0.05,
-        shadowRadius: 14,
-        shadowOffset: { width: 0, height: 6 },
-        elevation: 2,
-      })}
-    >
-      <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" }}>
+    <Pressable onPress={onPress} style={{ flex: 1 }}>
+      {({ pressed }) => (
         <View
           style={{
-            width: 40,
-            height: 40,
-            borderRadius: 12,
-            backgroundColor: CREAM_DEEP,
-            alignItems: "center",
-            justifyContent: "center",
+            backgroundColor: "#ffffff",
+            borderRadius: 22,
+            padding: 16,
+            opacity: pressed ? 0.85 : 1,
+            shadowColor: INK,
+            shadowOpacity: 0.05,
+            shadowRadius: 14,
+            shadowOffset: { width: 0, height: 6 },
+            elevation: 2,
           }}
         >
-          <Feather name={icon} size={20} color={INK} />
-        </View>
-        {badge ? (
           <View
             style={{
-              backgroundColor: INK,
-              borderRadius: 999,
-              paddingHorizontal: 10,
-              paddingVertical: 4,
+              flexDirection: "row",
+              justifyContent: "space-between",
+              alignItems: "flex-start",
             }}
           >
-            <Text style={{ color: CREAM, fontSize: 11, fontWeight: "700" }}>
-              {badge}
-            </Text>
+            <View
+              style={{
+                width: 40,
+                height: 40,
+                borderRadius: 12,
+                backgroundColor: CREAM_DEEP,
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <Feather name={icon} size={20} color={INK} />
+            </View>
+            {badge ? (
+              <View
+                style={{
+                  backgroundColor: INK,
+                  borderRadius: 999,
+                  paddingHorizontal: 10,
+                  paddingVertical: 4,
+                }}
+              >
+                <Text style={{ color: CREAM, fontSize: 11, fontWeight: "700" }}>
+                  {badge}
+                </Text>
+              </View>
+            ) : null}
           </View>
-        ) : null}
-      </View>
-      <Text
-        style={{
-          marginTop: 14,
-          color: INK,
-          fontFamily: SERIF,
-          fontStyle: "italic",
-          fontSize: 18,
-          fontWeight: "500",
-        }}
-      >
-        {title}
-      </Text>
-      <Text style={{ marginTop: 2, color: INK_DIM, fontSize: 13 }}>
-        {subtitle}
-      </Text>
+          <Text
+            style={{
+              marginTop: 14,
+              color: INK,
+              fontFamily: SERIF,
+              fontStyle: "italic",
+              fontSize: 18,
+              fontWeight: "500",
+            }}
+          >
+            {title}
+          </Text>
+          <Text style={{ marginTop: 2, color: INK_DIM, fontSize: 13 }}>
+            {subtitle}
+          </Text>
+        </View>
+      )}
     </Pressable>
   );
 }
@@ -487,56 +500,59 @@ function ActionCard({
   onPress: () => void;
 }) {
   return (
-    <Pressable
-      onPress={onPress}
-      style={({ pressed }) => ({
-        marginTop: 12,
-        backgroundColor: "#ffffff",
-        borderRadius: 20,
-        paddingVertical: 16,
-        paddingHorizontal: 16,
-        flexDirection: "row",
-        alignItems: "center",
-        opacity: pressed ? 0.85 : 1,
-        shadowColor: INK,
-        shadowOpacity: 0.05,
-        shadowRadius: 14,
-        shadowOffset: { width: 0, height: 6 },
-        elevation: 2,
-      })}
-    >
-      <View
-        style={{
-          width: 40,
-          height: 40,
-          borderRadius: 12,
-          backgroundColor: iconBgColor,
-          alignItems: "center",
-          justifyContent: "center",
-        }}
-      >
-        <Feather name={icon} size={20} color={iconColor} />
-      </View>
-      <View style={{ flex: 1, marginLeft: 14 }}>
-        <Text
+    <Pressable onPress={onPress}>
+      {({ pressed }) => (
+        <View
           style={{
-            color: INK,
-            fontSize: 16,
-            fontWeight: "600",
+            marginTop: 12,
+            backgroundColor: "#ffffff",
+            borderRadius: 20,
+            paddingVertical: 16,
+            paddingHorizontal: 16,
+            flexDirection: "row",
+            alignItems: "center",
+            opacity: pressed ? 0.85 : 1,
+            shadowColor: INK,
+            shadowOpacity: 0.05,
+            shadowRadius: 14,
+            shadowOffset: { width: 0, height: 6 },
+            elevation: 2,
           }}
         >
-          {title}
-        </Text>
-        {subtitle ? (
-          <Text
-            style={{ marginTop: 2, color: INK_DIM, fontSize: 13 }}
-            numberOfLines={1}
+          <View
+            style={{
+              width: 40,
+              height: 40,
+              borderRadius: 12,
+              backgroundColor: iconBgColor,
+              alignItems: "center",
+              justifyContent: "center",
+            }}
           >
-            {subtitle}
-          </Text>
-        ) : null}
-      </View>
-      <Feather name="chevron-right" size={20} color={INK_DIM} />
+            <Feather name={icon} size={20} color={iconColor} />
+          </View>
+          <View style={{ flex: 1, marginLeft: 14 }}>
+            <Text
+              style={{
+                color: INK,
+                fontSize: 16,
+                fontWeight: "600",
+              }}
+            >
+              {title}
+            </Text>
+            {subtitle ? (
+              <Text
+                style={{ marginTop: 2, color: INK_DIM, fontSize: 13 }}
+                numberOfLines={1}
+              >
+                {subtitle}
+              </Text>
+            ) : null}
+          </View>
+          <Feather name="chevron-right" size={20} color={INK_DIM} />
+        </View>
+      )}
     </Pressable>
   );
 }

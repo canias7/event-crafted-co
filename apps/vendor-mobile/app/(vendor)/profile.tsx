@@ -861,25 +861,28 @@ function ListingTab({
           onChanged={onChanged}
         />
       ))}
-      <Pressable
-        onPress={onCreateNew}
-        style={({ pressed }) => ({
-          marginTop: 4,
-          paddingVertical: 18,
-          borderRadius: 18,
-          borderWidth: 1,
-          borderStyle: "dashed",
-          borderColor: "#dcd1c1",
-          alignItems: "center",
-          justifyContent: "center",
-          flexDirection: "row",
-          opacity: pressed ? 0.7 : 1,
-        })}
-      >
-        <Feather name="plus" size={16} color="#1a1410" />
-        <Text className="ml-2 text-sm font-semibold text-foreground">
-          Add another listing
-        </Text>
+      <Pressable onPress={onCreateNew}>
+        {({ pressed }) => (
+          <View
+            style={{
+              marginTop: 4,
+              paddingVertical: 18,
+              borderRadius: 18,
+              borderWidth: 1,
+              borderStyle: "dashed",
+              borderColor: "#dcd1c1",
+              alignItems: "center",
+              justifyContent: "center",
+              flexDirection: "row",
+              opacity: pressed ? 0.7 : 1,
+            }}
+          >
+            <Feather name="plus" size={16} color="#1a1410" />
+            <Text className="ml-2 text-sm font-semibold text-foreground">
+              Add another listing
+            </Text>
+          </View>
+        )}
       </Pressable>
     </View>
   );
@@ -988,48 +991,51 @@ function ListingCard({
   // Draft / rejected card — full-width row with status pill + CTA
   if (!isComplete && !isPending) {
     return (
-      <Pressable
-        onPress={onEdit}
-        style={({ pressed }) => ({
-          flexDirection: "row",
-          alignItems: "center",
-          backgroundColor: "#ffffff",
-          borderRadius: 18,
-          padding: 14,
-          opacity: pressed ? 0.85 : 1,
-          shadowColor: "#1a1410",
-          shadowOpacity: 0.04,
-          shadowRadius: 12,
-          shadowOffset: { width: 0, height: 4 },
-          elevation: 1,
-        })}
-      >
-        <View
-          style={{
-            width: 56,
-            height: 56,
-            borderRadius: 14,
-            backgroundColor: "#f5efe5",
-            alignItems: "center",
-            justifyContent: "center",
-          }}
-        >
-          <Feather name="shopping-bag" size={22} color="#1a1410" />
-        </View>
-        <View style={{ flex: 1, marginLeft: 12 }}>
-          <Text
-            className="text-base font-semibold text-foreground"
-            numberOfLines={1}
+      <Pressable onPress={onEdit}>
+        {({ pressed }) => (
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              backgroundColor: "#ffffff",
+              borderRadius: 18,
+              padding: 14,
+              opacity: pressed ? 0.85 : 1,
+              shadowColor: "#1a1410",
+              shadowOpacity: 0.04,
+              shadowRadius: 12,
+              shadowOffset: { width: 0, height: 4 },
+              elevation: 1,
+            }}
           >
-            {listing.business_name ?? "Untitled listing"}
-          </Text>
-          <Text className="mt-0.5 text-xs text-muted-foreground">
-            {listing.application_status === "rejected"
-              ? "Rejected — tap to revise"
-              : "Draft — tap to finish setup"}
-          </Text>
-        </View>
-        <Feather name="chevron-right" size={20} color="#776c5f" />
+            <View
+              style={{
+                width: 56,
+                height: 56,
+                borderRadius: 14,
+                backgroundColor: "#f5efe5",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <Feather name="shopping-bag" size={22} color="#1a1410" />
+            </View>
+            <View style={{ flex: 1, marginLeft: 12 }}>
+              <Text
+                className="text-base font-semibold text-foreground"
+                numberOfLines={1}
+              >
+                {listing.business_name ?? "Untitled listing"}
+              </Text>
+              <Text className="mt-0.5 text-xs text-muted-foreground">
+                {listing.application_status === "rejected"
+                  ? "Rejected — tap to revise"
+                  : "Draft — tap to finish setup"}
+              </Text>
+            </View>
+            <Feather name="chevron-right" size={20} color="#776c5f" />
+          </View>
+        )}
       </Pressable>
     );
   }
@@ -1307,20 +1313,22 @@ function CreateSheet({
           >
             Create
           </Text>
-          <Pressable
-            onPress={onClose}
-            hitSlop={10}
-            style={({ pressed }) => ({
-              width: 32,
-              height: 32,
-              borderRadius: 999,
-              backgroundColor: SHEET_X_BG,
-              alignItems: "center",
-              justifyContent: "center",
-              opacity: pressed ? 0.6 : 1,
-            })}
-          >
-            <Feather name="x" size={16} color={SHEET_TEXT} />
+          <Pressable onPress={onClose} hitSlop={10}>
+            {({ pressed }) => (
+              <View
+                style={{
+                  width: 32,
+                  height: 32,
+                  borderRadius: 999,
+                  backgroundColor: SHEET_X_BG,
+                  alignItems: "center",
+                  justifyContent: "center",
+                  opacity: pressed ? 0.6 : 1,
+                }}
+              >
+                <Feather name="x" size={16} color={SHEET_TEXT} />
+              </View>
+            )}
           </Pressable>
         </View>
 
