@@ -3,7 +3,7 @@
     "name": "Vendora for Vendors",
     "slug": "vendora-vendor",
     "scheme": "vendora-vendor",
-    "version": "0.1.5",
+    "version": "0.1.6",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
     "icon": "./assets/icon.png",
@@ -22,6 +22,9 @@
     "ios": {
       "bundleIdentifier": "co.eventcrafted.vendor",
       "supportsTablet": true,
+      "entitlements": {
+        "aps-environment": "production"
+      },
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
         "NSCameraUsageDescription": "Vendora uses your camera so you can take photos and short videos to post on your vendor profile.",
@@ -40,6 +43,14 @@
     "plugins": [
       "expo-router",
       "expo-secure-store",
+      "./plugins/patch-expo-device.js",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/icon.png",
+          "color": "#0a0a0a"
+        }
+      ],
       [
         "expo-image-picker",
         {

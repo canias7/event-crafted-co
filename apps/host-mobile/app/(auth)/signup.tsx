@@ -46,8 +46,10 @@ interface SignupResponse {
 }
 
 const REASON_COPY: Record<string, string> = {
-  email_taken:
-    "An account with that email already exists. Try logging in instead.",
+  // Note: host-signup no longer returns "email_taken" — the server
+  // now sends a "you already have an account, log in" email instead
+  // (anti-enumeration). Keeping the map without that entry so it
+  // doesn't dangle as dead copy.
   no_pending_code:
     "We couldn't find a pending code. Hit Resend code to get a new one.",
   expired: "That code has expired. Hit Resend code for a new one.",

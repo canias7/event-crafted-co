@@ -11,7 +11,7 @@
 // corners that sit over the bottom of the gallery. Sticky bottom
 // action bar with "From $X" and an Inquire CTA.
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   Dimensions,
   Image,
@@ -25,6 +25,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
+import { useAuth } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
 
 type VendorRow = {
@@ -78,6 +79,7 @@ const CANCELLATION_LABEL: Record<string, string> = {
 
 export default function VendorDetailScreen() {
   const router = useRouter();
+  const { user } = useAuth();
   const { id } = useLocalSearchParams<{ id: string }>();
   const [vendor, setVendor] = useState<VendorRow | null>(null);
   const [photos, setPhotos] = useState<string[]>([]);
@@ -88,6 +90,7 @@ export default function VendorDetailScreen() {
   const [loading, setLoading] = useState(true);
   const [photoIndex, setPhotoIndex] = useState(0);
   const [saved, setSaved] = useState(false);
+  const [savingHeart, setSavingHeart] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -168,12 +171,51 @@ export default function VendorDetailScreen() {
       setPackages((packRes.data ?? []) as unknown as PackageRow[]);
       setFaqs((faqRes.data ?? []) as unknown as FaqRow[]);
       setTeam(((teamRes as { data?: TeamRow[] }).data ?? []) as TeamRow[]);
+
+      // Seed the heart from saved_vendors. saved_vendors.host_id points
+      // at the profiles row (any role), so a vendor can save another
+      // vendor — RLS only enforces auth.uid() = host_id.
+      if (user?.id) {
+        const { data: savedRow } = await supabase
+          .from("saved_vendors")
+          .select("vendor_id")
+          .eq("host_id", user.id)
+          .eq("vendor_id", row.id)
+          .maybeSingle();
+        if (!cancelled) setSaved(savedRow != null);
+      }
+
       setLoading(false);
     })();
     return () => {
       cancelled = true;
     };
-  }, [id]);
+  }, [id, user?.id]);
+
+  const toggleSaved = useCallback(async () => {
+    if (!user?.id || !vendor?.id || savingHeart) return;
+    setSavingHeart(true);
+    const next = !saved;
+    setSaved(next);
+    if (next) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error } = await (supabase as any)
+        .from("saved_vendors")
+        .upsert(
+          { host_id: user.id, vendor_id: vendor.id },
+          { onConflict: "host_id,vendor_id" },
+        );
+      if (error) setSaved(false);
+    } else {
+      const { error } = await supabase
+        .from("saved_vendors")
+        .delete()
+        .eq("host_id", user.id)
+        .eq("vendor_id", vendor.id);
+      if (error) setSaved(true);
+    }
+    setSavingHeart(false);
+  }, [user?.id, vendor?.id, saved, savingHeart]);
 
   if (loading) {
     return (
@@ -287,8 +329,8 @@ export default function VendorDetailScreen() {
             <View className="flex-row gap-2">
               <RoundButton onPress={shareListing} icon="share" />
               <RoundButton
-                onPress={() => setSaved((v) => !v)}
-                icon={saved ? "heart" : "heart"}
+                onPress={toggleSaved}
+                icon="heart"
                 iconColor={saved ? "#dc2626" : "#0a0a0a"}
                 fillHeart={saved}
               />
@@ -575,6 +617,12 @@ export default function VendorDetailScreen() {
               </Text>
             )}
           </View>
+          {/* Vendors browsing other vendors don't "inquire" — this
+              is the marketplace's own listing page, useful for
+              comparing your listing against a peer's. We label it
+              honestly as "View on web" since that's exactly what the
+              tap does. Hosts use a separate Inquire CTA in
+              host-mobile. */}
           <Pressable
             onPress={() => {
               const url = vendor.slug
@@ -584,12 +632,17 @@ export default function VendorDetailScreen() {
             }}
             className="rounded-full active:opacity-80"
             style={{
-              backgroundColor: "#dc2626",
-              paddingHorizontal: 28,
+              backgroundColor: "#1a1a1a",
+              paddingHorizontal: 22,
               paddingVertical: 14,
+              flexDirection: "row",
+              alignItems: "center",
             }}
           >
-            <Text className="text-base font-bold text-white">Inquire</Text>
+            <Feather name="external-link" size={16} color="#ffffff" />
+            <Text className="ml-2 text-base font-bold text-white">
+              View on web
+            </Text>
           </Pressable>
         </View>
       </SafeAreaView>

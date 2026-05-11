@@ -35,14 +35,14 @@ export default function DashboardScreen() {
     if (!user) return;
     let cancelled = false;
     (async () => {
-      const { data: vendor } = await supabase
+      const { data: vendorRows } = await supabase
         .from("vendor_profiles")
         .select("id")
-        .eq("user_id", user.id)
-        .maybeSingle();
-
-      const vendorId = (vendor as { id?: string } | null)?.id;
-      if (!vendorId) {
+        .eq("user_id", user.id);
+      const vendorIds = ((vendorRows ?? []) as { id: string }[]).map(
+        (r) => r.id,
+      );
+      if (vendorIds.length === 0) {
         if (!cancelled) {
           setStats({ activeInquiries: 0, weekRevenueCents: 0, views: 0, responseRate: 0 });
           setLoading(false);
@@ -54,7 +54,7 @@ export default function DashboardScreen() {
       const { data: inquiries } = await supabase
         .from("inquiries")
         .select("id, vendor_id, host_id, status, event_type, event_date, guest_count, budget_min_cents, budget_max_cents, quality_score, created_at")
-        .eq("vendor_id", vendorId)
+        .in("vendor_id", vendorIds)
         .order("created_at", { ascending: false })
         .limit(20);
 

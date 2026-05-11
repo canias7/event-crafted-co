@@ -10,6 +10,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 import type { BottomTabBarProps } from "@react-navigation/bottom-tabs";
 import { useAuth } from "@/lib/auth";
+import { usePushNotificationTapHandler } from "@/lib/pushNotifications";
 
 const ICONS: Record<string, keyof typeof Feather.glyphMap> = {
   explore: "search",
@@ -24,8 +25,10 @@ function FloatingTabBar({ state, navigation }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
   const focusedRoute = state.routes[state.index]?.name;
   // Hide the floating bar on screens that own the bottom — the
-  // vendor detail screen's sticky Inquire bar would overlap it.
-  if (focusedRoute === "vendor/[id]") return null;
+  // vendor detail screen's sticky Inquire bar would overlap it, and
+  // the conversation screen has its own composer pinned to the
+  // bottom.
+  if (focusedRoute === "vendor/[id]" || focusedRoute === "thread/[id]") return null;
   const visible = ORDER.map((name) =>
     state.routes.find((r) => r.name === name),
   ).filter(Boolean) as typeof state.routes;
@@ -48,7 +51,7 @@ function FloatingTabBar({ state, navigation }: BottomTabBarProps) {
           flexDirection: "row",
           alignItems: "center",
           justifyContent: "space-between",
-          backgroundColor: "#ffffff",
+          backgroundColor: "#f5efe5",
           borderRadius: 999,
           paddingHorizontal: 8,
           paddingVertical: 8,
@@ -86,13 +89,13 @@ function FloatingTabBar({ state, navigation }: BottomTabBarProps) {
                 borderRadius: 999,
                 alignItems: "center",
                 justifyContent: "center",
-                backgroundColor: isFocused ? "#0a0a0a" : "transparent",
+                backgroundColor: isFocused ? "#1a1410" : "transparent",
               }}
             >
               <Feather
                 name={iconName}
                 size={20}
-                color={isFocused ? "#ffffff" : "#737373"}
+                color={isFocused ? "#faf5ec" : "#776c5f"}
               />
             </Pressable>
           );
@@ -104,6 +107,9 @@ function FloatingTabBar({ state, navigation }: BottomTabBarProps) {
 
 export default function HostLayout() {
   const { loading, user } = useAuth();
+  // Wire push-tap → deep-link routing once the tab navigator is mounted.
+  // Both cold-start taps (app killed) and warm taps go through here.
+  usePushNotificationTapHandler();
 
   if (loading) {
     return (
@@ -134,6 +140,10 @@ export default function HostLayout() {
       <Tabs.Screen name="profile" options={{ title: "Profile" }} />
       {/* Vendor detail — opened from Explore card tap; not a tab. */}
       <Tabs.Screen name="vendor/[id]" options={{ href: null }} />
+      {/* Conversation — opened from Inbox row tap; not a tab. */}
+      <Tabs.Screen name="thread/[id]" options={{ href: null }} />
+      {/* Account settings — reached from Profile's "Account settings" card. */}
+      <Tabs.Screen name="settings" options={{ href: null }} />
     </Tabs>
   );
 }

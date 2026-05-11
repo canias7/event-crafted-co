@@ -23,6 +23,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import { CATEGORY_GROUPS, groupOfSub } from "@vendora/core";
+import { useAuth } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
 
 type ViewKind = "grid" | "reels" | "buzz" | "listing";
@@ -63,12 +64,69 @@ interface ListingRow {
 }
 
 export default function ExploreScreen() {
+  const { user } = useAuth();
   const [view, setView] = useState<ViewKind>("grid");
   const [posts, setPosts] = useState<PostRow[]>([]);
   const [reels, setReels] = useState<ReelRow[]>([]);
   const [buzz, setBuzz] = useState<BuzzRow[]>([]);
   const [listings, setListings] = useState<ListingRow[]>([]);
   const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
+  // Set of saved vendor_ids for this host. Each ListingCard heart reads
+  // membership from here and flips it via toggleSave, which mirrors
+  // saved_vendors (RLS: auth.uid() = host_id).
+  const [savedIds, setSavedIds] = useState<Set<string>>(() => new Set());
+
+  const loadSaved = useCallback(async () => {
+    if (!user?.id) return;
+    const { data } = await supabase
+      .from("saved_vendors")
+      .select("vendor_id")
+      .eq("host_id", user.id);
+    const next = new Set<string>(
+      ((data ?? []) as { vendor_id: string }[]).map((r) => r.vendor_id),
+    );
+    setSavedIds(next);
+  }, [user?.id]);
+
+  const toggleSave = useCallback(
+    async (vendorId: string) => {
+      if (!user?.id) return;
+      const wasSaved = savedIds.has(vendorId);
+      // Optimistic.
+      setSavedIds((prev) => {
+        const next = new Set(prev);
+        if (wasSaved) next.delete(vendorId);
+        else next.add(vendorId);
+        return next;
+      });
+      if (wasSaved) {
+        const { error } = await supabase
+          .from("saved_vendors")
+          .delete()
+          .eq("host_id", user.id)
+          .eq("vendor_id", vendorId);
+        if (error) {
+          setSavedIds((prev) => new Set(prev).add(vendorId));
+        }
+      } else {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { error } = await (supabase as any)
+          .from("saved_vendors")
+          .upsert(
+            { host_id: user.id, vendor_id: vendorId },
+            { onConflict: "host_id,vendor_id" },
+          );
+        if (error) {
+          setSavedIds((prev) => {
+            const n = new Set(prev);
+            n.delete(vendorId);
+            return n;
+          });
+        }
+      }
+    },
+    [user?.id, savedIds],
+  );
 
   const loadFeeds = useCallback(async () => {
     const [postsRes, reelsRes, buzzRes, listingsRes, portfolioRes] =
@@ -149,6 +207,10 @@ export default function ExploreScreen() {
     loadFeeds();
   }, [loadFeeds]);
 
+  useEffect(() => {
+    loadSaved();
+  }, [loadSaved]);
+
   return (
     <SafeAreaView className="flex-1 bg-background" edges={["top"]}>
       <View className="px-4 pt-4">
@@ -207,6 +269,8 @@ export default function ExploreScreen() {
             listings={listings}
             category={categoryFilter}
             onCategoryChange={setCategoryFilter}
+            savedIds={savedIds}
+            onToggleSave={toggleSave}
           />
         )}
       </ScrollView>
@@ -412,10 +476,14 @@ function ListingFeed({
   listings,
   category,
   onCategoryChange,
+  savedIds,
+  onToggleSave,
 }: {
   listings: ListingRow[];
   category: string | null;
   onCategoryChange: (c: string | null) => void;
+  savedIds: Set<string>;
+  onToggleSave: (vendorId: string) => void;
 }) {
   const byGroup = new Map<string, Map<string, ListingRow[]>>();
   for (const l of listings) {
@@ -499,7 +567,12 @@ function ListingFeed({
                         contentContainerClassName="px-4 gap-3"
                       >
                         {rows.map((l) => (
-                          <ListingCard key={l.id} listing={l} />
+                          <ListingCard
+                            key={l.id}
+                            listing={l}
+                            saved={savedIds.has(l.id)}
+                            onToggleSave={() => onToggleSave(l.id)}
+                          />
                         ))}
                       </ScrollView>
                     </View>
@@ -521,7 +594,15 @@ function ListingFeed({
   );
 }
 
-function ListingCard({ listing }: { listing: ListingRow }) {
+function ListingCard({
+  listing,
+  saved,
+  onToggleSave,
+}: {
+  listing: ListingRow;
+  saved: boolean;
+  onToggleSave: () => void;
+}) {
   const router = useRouter();
   const price =
     listing.base_price_cents != null
@@ -561,7 +642,14 @@ function ListingCard({ listing }: { listing: ListingRow }) {
             </Text>
           </View>
         )}
-        <View
+        <Pressable
+          onPress={(e) => {
+            // Don't let the card-level Pressable also fire and route
+            // away from the explore feed.
+            e.stopPropagation();
+            onToggleSave();
+          }}
+          hitSlop={10}
           style={{
             position: "absolute",
             top: 12,
@@ -572,8 +660,12 @@ function ListingCard({ listing }: { listing: ListingRow }) {
             shadowOffset: { width: 0, height: 1 },
           }}
         >
-          <Feather name="heart" size={22} color="#fff" />
-        </View>
+          <Feather
+            name="heart"
+            size={22}
+            color={saved ? "#dc2626" : "#fff"}
+          />
+        </Pressable>
       </View>
       <View className="mt-3 px-1">
         <Text

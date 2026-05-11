@@ -22,9 +22,11 @@
       "autoIncrement": true,
       "ios": {
         "simulator": false,
-        "image": "latest"
+        "image": "macos-sequoia-15.6-xcode-26.1"
       },
-      "android": { "buildType": "apk" }
+      "android": { "buildType": "apk" },
+      "node": "20.19.4",
+      "bun": "1.2.20"
     }
   },
   "submit": {

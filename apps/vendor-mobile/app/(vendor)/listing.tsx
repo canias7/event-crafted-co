@@ -26,7 +26,7 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import { CATEGORY_GROUPS } from "@vendora/core";
@@ -63,6 +63,13 @@ const PROFILE_COLS =
 export default function ListingScreen() {
   const router = useRouter();
   const { user } = useAuth();
+  // When we navigate here from the profile pencil (edit one specific
+  // listing) or the CreateSheet "+ Listing" flow, we pass the
+  // vendor_profiles.id explicitly. Without an id we fall back to the
+  // legacy "first listing for this user, auto-create if none" path,
+  // which keeps the onboarding flow intact for vendors who don't have
+  // a listing yet.
+  const { id: routeId } = useLocalSearchParams<{ id?: string }>();
   const [profile, setProfile] = useState<ProfileRow | null>(null);
   const [photos, setPhotos] = useState<PortfolioRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -83,31 +90,48 @@ export default function ListingScreen() {
     if (!user) return;
     setLoading(true);
     setSetupError(null);
-    let { data: prof, error: selErr } = await supabase
-      .from("vendor_profiles")
-      .select(PROFILE_COLS)
-      .eq("user_id", user.id)
-      .maybeSingle();
-    if (selErr) {
-      setSetupError(`Couldn't load your profile: ${selErr.message}`);
-    }
-    // No row yet → auto-create a stub draft so the editor doesn't
-    // block on a "still being set up" message. Mirrors the web's
-    // first-time signup flow that inserts a draft row when the
-    // vendor lands on /vendor/listing.
-    if (!prof) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data: created, error: insErr } = await (supabase as any)
+
+    let prof: ProfileRow | null = null;
+
+    if (routeId) {
+      // Edit a specific listing.
+      const { data, error } = await supabase
         .from("vendor_profiles")
-        .insert({ user_id: user.id, application_status: "draft" })
         .select(PROFILE_COLS)
-        .single();
-      if (insErr) {
-        setSetupError(`Couldn't set up your profile: ${insErr.message}`);
+        .eq("id", routeId)
+        .eq("user_id", user.id)
+        .maybeSingle();
+      if (error) setSetupError(`Couldn't load this listing: ${error.message}`);
+      prof = (data as ProfileRow | null) ?? null;
+    } else {
+      // Legacy/onboarding path — pick this user's first listing, or
+      // auto-create a draft so the editor doesn't block on a "still
+      // being set up" message.
+      const { data: rows, error: selErr } = await supabase
+        .from("vendor_profiles")
+        .select(PROFILE_COLS)
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: true })
+        .limit(1);
+      if (selErr) {
+        setSetupError(`Couldn't load your profile: ${selErr.message}`);
       }
-      prof = created;
+      prof = ((rows ?? []) as ProfileRow[])[0] ?? null;
+      if (!prof) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { data: created, error: insErr } = await (supabase as any)
+          .from("vendor_profiles")
+          .insert({ user_id: user.id, application_status: "draft" })
+          .select(PROFILE_COLS)
+          .single();
+        if (insErr) {
+          setSetupError(`Couldn't set up your profile: ${insErr.message}`);
+        }
+        prof = (created as ProfileRow | null) ?? null;
+      }
     }
-    const row = (prof as ProfileRow | null) ?? null;
+
+    const row = prof;
     setProfile(row);
     if (row) {
       setBusinessName(row.business_name ?? "");

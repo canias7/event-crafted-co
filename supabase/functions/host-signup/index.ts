@@ -69,6 +69,51 @@ function randomCode(): string {
   return n.toString().padStart(6, "0");
 }
 
+// Sent in place of the 6-digit code when /request is invoked with an
+// email that's already a confirmed user. Keeps the API response shape
+// identical to a fresh signup so the endpoint can't be used to
+// enumerate which emails are registered — the differentiation happens
+// privately in the user's inbox instead of in the JSON response.
+async function sendAlreadyRegisteredEmail(email: string): Promise<boolean> {
+  if (!RESEND_API_KEY) return false;
+  const loginUrl = "https://eventvendora.com/login/host";
+  const html = `<!doctype html>
+<html><body style="margin:0;background:#f7f5f2;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;color:#1a1a1a;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="padding:48px 16px;"><tr><td align="center">
+    <table role="presentation" width="560" cellpadding="0" cellspacing="0" style="max-width:560px;background:#ffffff;border-radius:8px;padding:40px 32px;">
+      <tr><td style="font-size:14px;letter-spacing:0.18em;color:#a08259;text-transform:uppercase;padding-bottom:24px;">— Vendora</td></tr>
+      <tr><td style="font-size:24px;line-height:1.25;font-weight:600;padding-bottom:16px;">You already have an account</td></tr>
+      <tr><td style="font-size:15px;line-height:1.6;color:#3a3a3a;">
+        <p style="margin:0 0 16px;">Someone (probably you) just tried to sign up for Vendora with this email, but you already have an account. Tap below to log in:</p>
+        <p style="margin:0 0 24px;text-align:center;">
+          <a href="${loginUrl}" style="display:inline-block;background:#1a1410;color:#faf5ec;text-decoration:none;font-size:15px;font-weight:600;border-radius:8px;padding:14px 28px;">Log in to Vendora</a>
+        </p>
+        <p style="margin:0 0 16px;font-size:13px;color:#555;">If you didn't try to sign up, you can safely ignore this email — nothing has changed on your account.</p>
+      </td></tr>
+      <tr><td style="padding-top:40px;border-top:1px solid #ececec;font-size:12px;color:#999999;">Vendora · Premium event planning &amp; vendor marketplace</td></tr>
+    </table>
+  </td></tr></table>
+</body></html>`;
+  const r = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${RESEND_API_KEY}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      from: FROM_ADDRESS,
+      to: email,
+      subject: "You already have a Vendora account",
+      html,
+    }),
+  });
+  if (!r.ok) {
+    console.error("Resend already-registered send failed", r.status, await r.text());
+    return false;
+  }
+  return true;
+}
+
 async function sendCodeEmail(email: string, code: string): Promise<boolean> {
   if (!RESEND_API_KEY) return false;
   const cleanCode = String(code).replace(/[^0-9]/g, "").slice(0, 6);
@@ -126,9 +171,11 @@ serve(async (req) => {
     const email = String(body.email ?? "").trim().toLowerCase();
     if (!email) return json({ error: "email required" }, 400);
 
-    // Refuse if there's already a confirmed user with this email —
-    // they should log in instead. Unconfirmed rows from previous
-    // half-finished signups are fine; we'll re-create on verify.
+    // If there's already a confirmed user with this email, swap the
+    // 6-digit code for a "you already have an account" email and
+    // return the SAME success shape as a fresh signup. The API can no
+    // longer be used to enumerate registered emails — the user finds
+    // out from their inbox, not from the JSON response.
     const { data: existing } = await sb.auth.admin.listUsers();
     const taken = existing?.users?.some(
       (u) =>
@@ -136,7 +183,8 @@ serve(async (req) => {
         u.email_confirmed_at != null,
     );
     if (taken) {
-      return json({ ok: false, reason: "email_taken" }, 200);
+      await sendAlreadyRegisteredEmail(email);
+      return json({ ok: true, expiresInMinutes: CODE_TTL_MIN });
     }
 
     const code = randomCode();

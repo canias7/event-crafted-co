@@ -1,0 +1,13 @@
+# Bun install behavior. Trusted-dependencies / package.json's
+# trustedDependencies array doesn't stop sharp's install script from
+# running on bun 1.3.x, but ignore-scripts here does.
+#
+# We don't lose anything by skipping transitive install scripts —
+# sharp is a web-only dep, and the iOS Pods install (which runs in
+# a separate phase) doesn't go through bun. The expo-device patch
+# that used to run via root postinstall now ships as an Expo config
+# plugin (apps/<app>/plugins/patch-expo-device.js) so it applies at
+# prebuild time on every build host.
+
+[install]
+ignore-scripts = true

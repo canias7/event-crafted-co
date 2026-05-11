@@ -4,6 +4,7 @@
   "private": true,
   "main": "expo-router/entry",
   "scripts": {
+    "eas-build-pre-install": "cd ../.. && bun install --ignore-scripts && bash scripts/apply-patches.sh",
     "start": "expo start",
     "android": "expo start --android",
     "ios": "expo start --ios",
@@ -24,7 +25,9 @@
     "@vendora/core": "*",
     "expo": "~51.0.28",
     "expo-constants": "~16.0.2",
+    "expo-device": "~6.0.2",
     "expo-linking": "~6.3.1",
+    "expo-notifications": "~0.28.19",
     "expo-router": "~3.5.23",
     "expo-secure-store": "~13.0.2",
     "expo-status-bar": "~1.12.1",
