@@ -1,8 +1,15 @@
-// Host-side conversation screen — same shape as the vendor-mobile
-// equivalent but the "other party" is the vendor (business name) and
-// outgoing messages carry sender_role = 'host'.
+// Host-side conversation screen. Bubble grouping mirrors iMessage —
+// consecutive messages from the same sender within the same day form
+// a "group", and only the FIRST message of the other party's group
+// shows the avatar. Date separators ("— Today —", "— Yesterday —",
+// etc.) cut the timeline visually.
+//
+// Presence: we peek at the other party's most recent
+// device_push_tokens.last_seen_at via the get_user_last_seen RPC.
+// If it was within the last 5 minutes, we render the green dot +
+// "Active now"; otherwise the subtitle hides.
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -19,6 +26,15 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
 
+const CREAM = "#faf5ec";
+const CREAM_DEEP = "#f5efe5";
+const INK = "#1a1410";
+const INK_DIM = "#776c5f";
+const ACTIVE_GREEN = "#22c55e";
+const SERIF = Platform.OS === "ios" ? "Times New Roman" : "serif";
+
+const ACTIVE_WINDOW_MS = 5 * 60 * 1000;
+
 interface DirectMessage {
   id: string;
   sender_id: string;
@@ -28,8 +44,59 @@ interface DirectMessage {
 }
 
 interface ThreadHeader {
-  vendorName: string;
-  inquirySummary: string | null;
+  otherName: string;
+  otherUserId: string | null;
+  isActive: boolean;
+}
+
+function initialsOf(name: string): string {
+  const s = name.trim();
+  if (!s) return "?";
+  return s.charAt(0).toUpperCase();
+}
+
+function formatDateSeparator(iso: string): string {
+  const d = new Date(iso);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const day = new Date(d);
+  day.setHours(0, 0, 0, 0);
+  const diff = Math.floor((today.getTime() - day.getTime()) / 86_400_000);
+  if (diff === 0) return "Today";
+  if (diff === 1) return "Yesterday";
+  if (diff < 7) return d.toLocaleDateString(undefined, { weekday: "long" });
+  return d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+}
+
+type EnrichedMessage = DirectMessage & {
+  dateBreak: string | null;
+  isFirstInGroup: boolean;
+  isLastInGroup: boolean;
+};
+
+function enrichMessages(msgs: DirectMessage[]): EnrichedMessage[] {
+  const out: EnrichedMessage[] = [];
+  let lastLabel: string | null = null;
+  for (let i = 0; i < msgs.length; i++) {
+    const m = msgs[i];
+    const label = formatDateSeparator(m.created_at);
+    const dateBreak = label !== lastLabel ? label : null;
+    lastLabel = label;
+    const prev = i > 0 ? msgs[i - 1] : null;
+    const next = i + 1 < msgs.length ? msgs[i + 1] : null;
+    const sameSenderAsPrev =
+      prev && prev.sender_role === m.sender_role && !dateBreak;
+    const nextLabel = next ? formatDateSeparator(next.created_at) : null;
+    const sameSenderAsNext =
+      next && next.sender_role === m.sender_role && nextLabel === label;
+    out.push({
+      ...m,
+      dateBreak,
+      isFirstInGroup: !sameSenderAsPrev,
+      isLastInGroup: !sameSenderAsNext,
+    });
+  }
+  return out;
 }
 
 export default function ThreadScreen() {
@@ -49,17 +116,27 @@ export default function ThreadScreen() {
     const { data } = await (supabase as any)
       .from("direct_threads")
       .select(
-        "id, vendor_id, inquiry_id, vendor:vendor_profiles!direct_threads_vendor_id_fkey(business_name, category), inquiry:inquiries!direct_threads_inquiry_id_fkey(event_type, event_date)",
+        "vendor_id, vendor:vendor_profiles!direct_threads_vendor_id_fkey(business_name, user_id)",
       )
       .eq("id", threadId)
       .maybeSingle();
     if (!data) return;
-    const inquiry = data.inquiry;
+    const otherUserId: string | null = data.vendor?.user_id ?? null;
+    let isActive = false;
+    if (otherUserId) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: lastSeen } = await (supabase as any).rpc(
+        "get_user_last_seen",
+        { p_user_id: otherUserId },
+      );
+      if (lastSeen) {
+        isActive = Date.now() - new Date(lastSeen as string).getTime() < ACTIVE_WINDOW_MS;
+      }
+    }
     setHeader({
-      vendorName: data.vendor?.business_name ?? "Vendor",
-      inquirySummary: inquiry
-        ? [inquiry.event_type, inquiry.event_date].filter(Boolean).join(" · ")
-        : null,
+      otherName: data.vendor?.business_name ?? "Vendor",
+      otherUserId,
+      isActive,
     });
   }, [threadId]);
 
@@ -72,13 +149,21 @@ export default function ThreadScreen() {
       .order("created_at", { ascending: true });
     setMessages((data ?? []) as DirectMessage[]);
     setLoading(false);
-    requestAnimationFrame(() => scrollRef.current?.scrollToEnd({ animated: false }));
+    requestAnimationFrame(() =>
+      scrollRef.current?.scrollToEnd({ animated: false }),
+    );
   }, [threadId]);
 
   useEffect(() => {
     loadHeader();
     loadMessages();
   }, [loadHeader, loadMessages]);
+
+  // Refresh presence every 30s while the thread is open.
+  useEffect(() => {
+    const id = setInterval(loadHeader, 30_000);
+    return () => clearInterval(id);
+  }, [loadHeader]);
 
   useEffect(() => {
     if (!threadId) return;
@@ -129,95 +214,364 @@ export default function ThreadScreen() {
         created_at: new Date().toISOString(),
       };
       setMessages((prev) => [...prev, optimistic]);
-      requestAnimationFrame(() => scrollRef.current?.scrollToEnd({ animated: true }));
+      requestAnimationFrame(() =>
+        scrollRef.current?.scrollToEnd({ animated: true }),
+      );
     }
   }
 
+  const enriched = useMemo(() => enrichMessages(messages), [messages]);
+  const myLastSentId = useMemo(() => {
+    for (let i = enriched.length - 1; i >= 0; i--) {
+      if (enriched[i].sender_role === "host") return enriched[i].id;
+    }
+    return null;
+  }, [enriched]);
+
+  const initial = header ? initialsOf(header.otherName) : "?";
+
   return (
-    <SafeAreaView className="flex-1 bg-background" edges={["top"]}>
-      <View className="flex-row items-center px-4 py-3 border-b border-border">
-        <Pressable onPress={() => router.back()} hitSlop={10} className="mr-2">
-          <Feather name="chevron-left" size={26} color="#1a1410" />
-        </Pressable>
-        <View className="flex-1">
-          <Text className="text-base font-semibold text-foreground" numberOfLines={1}>
-            {header?.vendorName ?? "Conversation"}
-          </Text>
-          {header?.inquirySummary ? (
-            <Text className="text-xs text-muted-foreground" numberOfLines={1}>
-              {header.inquirySummary}
-            </Text>
-          ) : null}
-        </View>
-      </View>
+    <View style={{ flex: 1, backgroundColor: CREAM }}>
+      <SafeAreaView style={{ flex: 1 }} edges={["top"]}>
+        <Header
+          name={header?.otherName ?? "Conversation"}
+          initial={initial}
+          isActive={!!header?.isActive}
+          onBack={() => router.back()}
+        />
 
-      <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
-        keyboardVerticalOffset={Platform.OS === "ios" ? 88 : 0}
-        className="flex-1"
-      >
-        <ScrollView
-          ref={scrollRef}
-          contentContainerClassName="px-4 py-4 gap-2"
-          onContentSizeChange={() =>
-            scrollRef.current?.scrollToEnd({ animated: false })
-          }
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : undefined}
+          keyboardVerticalOffset={Platform.OS === "ios" ? 64 : 0}
+          style={{ flex: 1 }}
         >
-          {loading ? (
-            <View className="items-center py-12">
-              <ActivityIndicator />
-            </View>
-          ) : messages.length === 0 ? (
-            <View className="items-center pt-16 px-6">
-              <Feather name="message-square" size={28} color="#776c5f" />
-              <Text className="mt-3 text-sm text-muted-foreground text-center">
-                No messages yet — say hi.
-              </Text>
-            </View>
-          ) : (
-            messages.map((m) => <Bubble key={m.id} msg={m} mine={m.sender_role === "host"} />)
-          )}
-        </ScrollView>
-
-        <View className="flex-row items-end gap-2 px-3 py-2 border-t border-border bg-background">
-          <View className="flex-1 rounded-2xl bg-muted px-4 py-2">
-            <TextInput
-              value={draft}
-              onChangeText={setDraft}
-              placeholder="Message"
-              placeholderTextColor="#a89b8a"
-              multiline
-              className="text-base text-foreground"
-              style={{ maxHeight: 120 }}
-            />
-          </View>
-          <Pressable
-            onPress={send}
-            disabled={!draft.trim() || sending}
-            className="h-11 w-11 rounded-full items-center justify-center"
-            style={{
-              backgroundColor: draft.trim() && !sending ? "#1a1410" : "#dcd1c1",
-            }}
-            hitSlop={6}
+          <ScrollView
+            ref={scrollRef}
+            contentContainerStyle={{ paddingHorizontal: 14, paddingTop: 4, paddingBottom: 16 }}
+            onContentSizeChange={() =>
+              scrollRef.current?.scrollToEnd({ animated: false })
+            }
           >
-            <Feather name="send" size={18} color="#fff" />
-          </Pressable>
-        </View>
-      </KeyboardAvoidingView>
-    </SafeAreaView>
+            {loading ? (
+              <View style={{ alignItems: "center", paddingVertical: 48 }}>
+                <ActivityIndicator color={INK} />
+              </View>
+            ) : enriched.length === 0 ? (
+              <EmptyState />
+            ) : (
+              enriched.map((m) => (
+                <MessageRow
+                  key={m.id}
+                  m={m}
+                  initial={initial}
+                  isMine={m.sender_role === "host"}
+                  showDelivered={m.id === myLastSentId}
+                />
+              ))
+            )}
+          </ScrollView>
+
+          <Composer
+            value={draft}
+            onChange={setDraft}
+            onSend={send}
+            sending={sending}
+          />
+        </KeyboardAvoidingView>
+      </SafeAreaView>
+    </View>
   );
 }
 
-function Bubble({ msg, mine }: { msg: DirectMessage; mine: boolean }) {
+function Header({
+  name,
+  initial,
+  isActive,
+  onBack,
+}: {
+  name: string;
+  initial: string;
+  isActive: boolean;
+  onBack: () => void;
+}) {
   return (
     <View
-      className={`max-w-[80%] rounded-2xl px-4 py-2 ${
-        mine ? "self-end bg-foreground" : "self-start bg-muted"
-      }`}
+      style={{
+        flexDirection: "row",
+        alignItems: "center",
+        paddingHorizontal: 16,
+        paddingBottom: 12,
+        borderBottomWidth: 1,
+        borderBottomColor: "#e8dfcf",
+      }}
     >
-      <Text className={`text-base ${mine ? "text-background" : "text-foreground"}`}>
-        {msg.body}
+      <Pressable onPress={onBack} hitSlop={10} style={{ paddingRight: 8 }}>
+        <Feather name="chevron-left" size={26} color={INK} />
+      </Pressable>
+      <View style={{ position: "relative" }}>
+        <View
+          style={{
+            width: 42,
+            height: 42,
+            borderRadius: 999,
+            backgroundColor: INK,
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <Text
+            style={{
+              color: CREAM,
+              fontFamily: SERIF,
+              fontWeight: "600",
+              fontSize: 18,
+            }}
+          >
+            {initial}
+          </Text>
+        </View>
+        {isActive ? (
+          <View
+            style={{
+              position: "absolute",
+              right: -1,
+              bottom: -1,
+              width: 12,
+              height: 12,
+              borderRadius: 999,
+              backgroundColor: ACTIVE_GREEN,
+              borderWidth: 2,
+              borderColor: CREAM,
+            }}
+          />
+        ) : null}
+      </View>
+      <View style={{ flex: 1, marginLeft: 12 }}>
+        <Text
+          numberOfLines={1}
+          style={{
+            color: INK,
+            fontFamily: SERIF,
+            fontStyle: "italic",
+            fontWeight: "700",
+            fontSize: 18,
+          }}
+        >
+          {name}
+        </Text>
+        {isActive ? (
+          <Text
+            style={{
+              color: ACTIVE_GREEN,
+              fontSize: 12,
+              fontWeight: "600",
+              marginTop: 1,
+            }}
+          >
+            Active now
+          </Text>
+        ) : null}
+      </View>
+      <Pressable hitSlop={10} style={{ paddingLeft: 8 }}>
+        <Feather name="more-horizontal" size={22} color={INK} />
+      </Pressable>
+    </View>
+  );
+}
+
+function MessageRow({
+  m,
+  initial,
+  isMine,
+  showDelivered,
+}: {
+  m: EnrichedMessage;
+  initial: string;
+  isMine: boolean;
+  showDelivered: boolean;
+}) {
+  return (
+    <View>
+      {m.dateBreak ? <DateSeparator label={m.dateBreak} /> : null}
+      <View
+        style={{
+          flexDirection: "row",
+          alignItems: "flex-end",
+          marginTop: m.isFirstInGroup ? 10 : 2,
+          paddingHorizontal: 2,
+          justifyContent: isMine ? "flex-end" : "flex-start",
+        }}
+      >
+        {!isMine ? (
+          <View style={{ width: 30, marginRight: 8 }}>
+            {m.isFirstInGroup ? (
+              <View
+                style={{
+                  width: 30,
+                  height: 30,
+                  borderRadius: 999,
+                  backgroundColor: INK,
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <Text
+                  style={{
+                    color: CREAM,
+                    fontFamily: SERIF,
+                    fontWeight: "600",
+                    fontSize: 13,
+                  }}
+                >
+                  {initial}
+                </Text>
+              </View>
+            ) : null}
+          </View>
+        ) : null}
+
+        <View
+          style={{
+            maxWidth: "78%",
+            backgroundColor: isMine ? INK : CREAM_DEEP,
+            paddingHorizontal: 16,
+            paddingVertical: 10,
+            borderRadius: 22,
+            borderTopRightRadius: isMine && m.isFirstInGroup ? 22 : 22,
+            borderBottomRightRadius: isMine && !m.isLastInGroup ? 8 : 22,
+            borderTopLeftRadius: !isMine && m.isFirstInGroup ? 22 : 22,
+            borderBottomLeftRadius: !isMine && !m.isLastInGroup ? 8 : 22,
+          }}
+        >
+          <Text
+            style={{
+              color: isMine ? CREAM : INK,
+              fontSize: 16,
+              lineHeight: 22,
+            }}
+          >
+            {m.body}
+          </Text>
+        </View>
+      </View>
+      {isMine && showDelivered && m.isLastInGroup ? (
+        <Text
+          style={{
+            alignSelf: "flex-end",
+            color: INK_DIM,
+            fontSize: 11,
+            marginTop: 4,
+            marginRight: 4,
+          }}
+        >
+          Delivered
+        </Text>
+      ) : null}
+    </View>
+  );
+}
+
+function DateSeparator({ label }: { label: string }) {
+  return (
+    <View style={{ alignItems: "center", marginTop: 16, marginBottom: 4 }}>
+      <Text
+        style={{
+          color: INK_DIM,
+          fontFamily: SERIF,
+          fontStyle: "italic",
+          fontSize: 13,
+        }}
+      >
+        — {label} —
       </Text>
+    </View>
+  );
+}
+
+function EmptyState() {
+  return (
+    <View style={{ alignItems: "center", paddingTop: 64, paddingHorizontal: 24 }}>
+      <Feather name="message-square" size={28} color={INK_DIM} />
+      <Text
+        style={{
+          color: INK_DIM,
+          marginTop: 12,
+          textAlign: "center",
+          fontSize: 14,
+        }}
+      >
+        No messages yet — say hi.
+      </Text>
+    </View>
+  );
+}
+
+function Composer({
+  value,
+  onChange,
+  onSend,
+  sending,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  onSend: () => void;
+  sending: boolean;
+}) {
+  const enabled = value.trim().length > 0 && !sending;
+  return (
+    <View style={{ paddingHorizontal: 12, paddingTop: 8, paddingBottom: 12 }}>
+      <View
+        style={{
+          flexDirection: "row",
+          alignItems: "center",
+          backgroundColor: "#ffffff",
+          borderRadius: 999,
+          paddingLeft: 14,
+          paddingRight: 6,
+          paddingVertical: 6,
+          shadowColor: INK,
+          shadowOpacity: 0.06,
+          shadowRadius: 12,
+          shadowOffset: { width: 0, height: 4 },
+          elevation: 2,
+        }}
+      >
+        <Pressable hitSlop={6} style={{ paddingRight: 10 }}>
+          <Feather name="plus" size={22} color={INK_DIM} />
+        </Pressable>
+        <TextInput
+          value={value}
+          onChangeText={onChange}
+          placeholder="Write a message…"
+          placeholderTextColor="#a89b8a"
+          multiline
+          style={{
+            flex: 1,
+            color: INK,
+            fontSize: 15,
+            paddingVertical: Platform.OS === "ios" ? 8 : 4,
+            maxHeight: 120,
+          }}
+        />
+        <Pressable hitSlop={6} style={{ paddingHorizontal: 6 }}>
+          <Feather name="smile" size={22} color={INK_DIM} />
+        </Pressable>
+        <Pressable
+          onPress={onSend}
+          disabled={!enabled}
+          style={{
+            width: 38,
+            height: 38,
+            borderRadius: 999,
+            backgroundColor: enabled ? INK : "#dcd1c1",
+            alignItems: "center",
+            justifyContent: "center",
+            marginLeft: 4,
+          }}
+        >
+          <Feather name="navigation" size={18} color={CREAM} />
+        </Pressable>
+      </View>
     </View>
   );
 }
