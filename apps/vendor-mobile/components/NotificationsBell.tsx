@@ -134,7 +134,7 @@ export function NotificationsBell({
             >
               <Text
                 className="text-sm font-semibold"
-                style={{ color: unread > 0 ? "#0a0a0a" : "#a1a1aa" }}
+                style={{ color: unread > 0 ? "#1a1410" : "#a89b8a" }}
               >
                 Mark read
               </Text>
@@ -148,7 +148,7 @@ export function NotificationsBell({
               </View>
             ) : rows.length === 0 ? (
               <View className="items-center pt-16 px-6">
-                <Feather name="bell-off" size={28} color="#a1a1aa" />
+                <Feather name="bell-off" size={28} color="#776c5f" />
                 <Text className="mt-3 text-sm text-muted-foreground text-center">
                   No notifications yet.
                 </Text>

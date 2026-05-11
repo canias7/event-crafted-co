@@ -1,6 +1,10 @@
-// NativeWind / Tailwind config for vendor-mobile. Color palette
-// mirrors the web app (apps/web/tailwind.config.ts) so the same
-// neutrals + brand greens render identically across platforms.
+// NativeWind / Tailwind config for vendor-mobile.
+//
+// Palette is the "cream + ink" set originally inlined in
+// app/(auth)/welcome.tsx (CREAM / CREAM_DEEP / INK / INK_DIM /
+// INK_BORDER). Lifting it into Tailwind tokens so every screen
+// that uses bg-background / text-foreground / bg-muted / etc.
+// picks up the warm aesthetic without per-screen overrides.
 /** @type {import('tailwindcss').Config} */
 module.exports = {
   content: [
@@ -11,11 +15,18 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        background: "#ffffff",
-        foreground: "#0a0a0a",
-        muted: "#f5f5f5",
-        "muted-foreground": "#737373",
-        border: "#e5e5e5",
+        // CREAM — main canvas
+        background: "#faf5ec",
+        // INK — body text + solid CTAs
+        foreground: "#1a1410",
+        // CREAM_DEEP — secondary surfaces (sign-in button, message
+        // bubbles received, filter chips inactive, "muted" backgrounds)
+        muted: "#f5efe5",
+        // INK at 60% over CREAM, rendered as solid for stability
+        "muted-foreground": "#776c5f",
+        // INK at ~18% over CREAM, solid
+        border: "#dcd1c1",
+        // Brand accent kept for "approved / available" affordances.
         accent: "#16a34a",
         "accent-foreground": "#ffffff",
       },

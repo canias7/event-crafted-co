@@ -50,7 +50,7 @@ function FloatingTabBar({ state, navigation }: BottomTabBarProps) {
           flexDirection: "row",
           alignItems: "center",
           justifyContent: "space-between",
-          backgroundColor: "#ffffff",
+          backgroundColor: "#f5efe5",
           borderRadius: 999,
           paddingHorizontal: 8,
           paddingVertical: 8,
@@ -88,13 +88,13 @@ function FloatingTabBar({ state, navigation }: BottomTabBarProps) {
                 borderRadius: 999,
                 alignItems: "center",
                 justifyContent: "center",
-                backgroundColor: isFocused ? "#0a0a0a" : "transparent",
+                backgroundColor: isFocused ? "#1a1410" : "transparent",
               }}
             >
               <Feather
                 name={iconName}
                 size={20}
-                color={isFocused ? "#ffffff" : "#737373"}
+                color={isFocused ? "#faf5ec" : "#776c5f"}
               />
             </Pressable>
           );

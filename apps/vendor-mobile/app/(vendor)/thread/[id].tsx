@@ -142,7 +142,7 @@ export default function ThreadScreen() {
     <SafeAreaView className="flex-1 bg-background" edges={["top"]}>
       <View className="flex-row items-center px-4 py-3 border-b border-border">
         <Pressable onPress={() => router.back()} hitSlop={10} className="mr-2">
-          <Feather name="chevron-left" size={26} color="#0a0a0a" />
+          <Feather name="chevron-left" size={26} color="#1a1410" />
         </Pressable>
         <View className="flex-1">
           <Text className="text-base font-semibold text-foreground" numberOfLines={1}>
@@ -174,7 +174,7 @@ export default function ThreadScreen() {
             </View>
           ) : messages.length === 0 ? (
             <View className="items-center pt-16 px-6">
-              <Feather name="message-square" size={28} color="#a1a1aa" />
+              <Feather name="message-square" size={28} color="#776c5f" />
               <Text className="mt-3 text-sm text-muted-foreground text-center">
                 Say hi! Reply to this inquiry to start the conversation.
               </Text>
@@ -190,7 +190,7 @@ export default function ThreadScreen() {
               value={draft}
               onChangeText={setDraft}
               placeholder="Message"
-              placeholderTextColor="#a3a3a3"
+              placeholderTextColor="#a89b8a"
               multiline
               className="text-base text-foreground"
               style={{ maxHeight: 120 }}
@@ -201,7 +201,7 @@ export default function ThreadScreen() {
             disabled={!draft.trim() || sending}
             className="h-11 w-11 rounded-full items-center justify-center"
             style={{
-              backgroundColor: draft.trim() && !sending ? "#0a0a0a" : "#d4d4d8",
+              backgroundColor: draft.trim() && !sending ? "#1a1410" : "#dcd1c1",
             }}
             hitSlop={6}
           >
