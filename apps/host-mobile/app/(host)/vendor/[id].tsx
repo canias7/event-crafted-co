@@ -936,29 +936,37 @@ export default function VendorDetailScreen() {
               </Text>
             )}
           </View>
-          <Pressable
-            onPress={() => setInquireOpen(true)}
-            style={({ pressed }) => ({
-              backgroundColor: "#1a1410",
-              paddingHorizontal: 22,
-              paddingVertical: 14,
-              borderRadius: 999,
-              flexDirection: "row",
-              alignItems: "center",
-              opacity: pressed ? 0.85 : 1,
-            })}
-          >
-            <Text
-              style={{
-                color: "#faf5ec",
-                fontSize: 15,
-                fontWeight: "700",
-                marginRight: 6,
-              }}
-            >
-              Inquire
-            </Text>
-            <Feather name="chevron-right" size={16} color="#faf5ec" />
+          {/* Children-as-function pattern — Hermes silently drops the
+              `style={({pressed}) => …}` form, which on the previous
+              build collapsed this pill to text-only (no background,
+              no flexDirection). Wrap a View instead so styles always
+              land. */}
+          <Pressable onPress={() => setInquireOpen(true)}>
+            {({ pressed }) => (
+              <View
+                style={{
+                  backgroundColor: "#1a1410",
+                  paddingHorizontal: 22,
+                  paddingVertical: 14,
+                  borderRadius: 999,
+                  flexDirection: "row",
+                  alignItems: "center",
+                  opacity: pressed ? 0.85 : 1,
+                }}
+              >
+                <Text
+                  style={{
+                    color: "#faf5ec",
+                    fontSize: 15,
+                    fontWeight: "700",
+                    marginRight: 6,
+                  }}
+                >
+                  Inquire
+                </Text>
+                <Feather name="chevron-right" size={16} color="#faf5ec" />
+              </View>
+            )}
           </Pressable>
         </View>
       </SafeAreaView>
