@@ -592,7 +592,6 @@ export default function VendorDetailScreen() {
                       .slice(0, 18)}
                   </Text>
                 </View>
-                <Feather name="chevron-right" size={20} color={INK_DIM} />
               </View>
             </View>
           ) : null}

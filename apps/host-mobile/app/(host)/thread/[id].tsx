@@ -425,14 +425,19 @@ function EmojiPickerModal({
               <Pressable
                 key={e}
                 onPress={() => onPick(e)}
-                style={({ pressed }) => ({
-                  width: "16.66%",
-                  paddingVertical: 12,
-                  alignItems: "center",
-                  opacity: pressed ? 0.6 : 1,
-                })}
+                style={{ width: "16.66%" }}
               >
-                <Text style={{ fontSize: 28 }}>{e}</Text>
+                {({ pressed }) => (
+                  <View
+                    style={{
+                      paddingVertical: 12,
+                      alignItems: "center",
+                      opacity: pressed ? 0.6 : 1,
+                    }}
+                  >
+                    <Text style={{ fontSize: 28 }}>{e}</Text>
+                  </View>
+                )}
               </Pressable>
             ))}
           </View>

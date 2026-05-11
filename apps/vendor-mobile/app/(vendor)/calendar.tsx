@@ -438,17 +438,22 @@ export default function CalendarScreen() {
                 setSelectedYmd(ymdKey(today));
               }}
               hitSlop={6}
-              style={({ pressed }) => ({
-                width: 40,
-                height: 40,
-                borderRadius: 999,
-                backgroundColor: CREAM_DEEP,
-                alignItems: "center",
-                justifyContent: "center",
-                opacity: pressed ? 0.85 : 1,
-              })}
             >
-              <Feather name="calendar" size={18} color={INK} />
+              {({ pressed }) => (
+                <View
+                  style={{
+                    width: 40,
+                    height: 40,
+                    borderRadius: 999,
+                    backgroundColor: CREAM_DEEP,
+                    alignItems: "center",
+                    justifyContent: "center",
+                    opacity: pressed ? 0.85 : 1,
+                  }}
+                >
+                  <Feather name="calendar" size={18} color={INK} />
+                </View>
+              )}
             </Pressable>
           </View>
 
@@ -609,31 +614,36 @@ export default function CalendarScreen() {
               <Pressable
                 onPress={toggleSelectedDayBlock}
                 disabled={blocking}
-                style={({ pressed }) => ({
-                  flexDirection: "row",
-                  alignItems: "center",
-                  backgroundColor: INK,
-                  paddingHorizontal: 14,
-                  paddingVertical: 9,
-                  borderRadius: 999,
-                  opacity: pressed || blocking ? 0.6 : 1,
-                })}
               >
-                <Feather
-                  name={isSelectedBlocked ? "x" : "plus"}
-                  size={14}
-                  color={CREAM}
-                  style={{ marginRight: 4 }}
-                />
-                <Text
-                  style={{ color: CREAM, fontSize: 13, fontWeight: "700" }}
-                >
-                  {blocking
-                    ? "Saving…"
-                    : isSelectedBlocked
-                      ? "Unblock"
-                      : "Block"}
-                </Text>
+                {({ pressed }) => (
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "center",
+                      backgroundColor: INK,
+                      paddingHorizontal: 14,
+                      paddingVertical: 9,
+                      borderRadius: 999,
+                      opacity: pressed || blocking ? 0.6 : 1,
+                    }}
+                  >
+                    <Feather
+                      name={isSelectedBlocked ? "x" : "plus"}
+                      size={14}
+                      color={CREAM}
+                      style={{ marginRight: 4 }}
+                    />
+                    <Text
+                      style={{ color: CREAM, fontSize: 13, fontWeight: "700" }}
+                    >
+                      {blocking
+                        ? "Saving…"
+                        : isSelectedBlocked
+                          ? "Unblock"
+                          : "Block"}
+                    </Text>
+                  </View>
+                )}
               </Pressable>
             </View>
           ) : null}
@@ -979,90 +989,92 @@ function BookingRow({
 }) {
   const tappable = !!onPress;
   return (
-    <Pressable
-      onPress={onPress}
-      disabled={!tappable}
-      style={({ pressed }) => ({
-        backgroundColor: "#ffffff",
-        borderRadius: 18,
-        flexDirection: "row",
-        alignItems: "center",
-        marginBottom: 10,
-        overflow: "hidden",
-        shadowColor: INK,
-        shadowOpacity: 0.04,
-        shadowRadius: 10,
-        shadowOffset: { width: 0, height: 4 },
-        opacity: pressed && tappable ? 0.85 : 1,
-      })}
-    >
-      <View
-        style={{
-          width: 4,
-          alignSelf: "stretch",
-          backgroundColor: item.accent,
-        }}
-      />
-      {item.timeLabel ? (
+    <Pressable onPress={onPress} disabled={!tappable}>
+      {({ pressed }) => (
         <View
           style={{
-            paddingHorizontal: 14,
-            paddingVertical: 14,
+            backgroundColor: "#ffffff",
+            borderRadius: 18,
+            flexDirection: "row",
             alignItems: "center",
-            width: 76,
+            marginBottom: 10,
+            overflow: "hidden",
+            shadowColor: INK,
+            shadowOpacity: 0.04,
+            shadowRadius: 10,
+            shadowOffset: { width: 0, height: 4 },
+            opacity: pressed && tappable ? 0.85 : 1,
           }}
         >
-          <Text
+          <View
             style={{
-              color: INK,
-              fontSize: 16,
-              fontWeight: "700",
-              fontFamily: SERIF,
+              width: 4,
+              alignSelf: "stretch",
+              backgroundColor: item.accent,
             }}
-          >
-            {item.timeLabel.split(" ")[0]}
-          </Text>
-          <Text
-            style={{
-              color: INK_DIM,
-              fontSize: 10,
-              fontWeight: "700",
-              letterSpacing: 0.6,
-            }}
-          >
-            {item.timeLabel.split(" ").slice(1).join(" ")}
-          </Text>
+          />
+          {item.timeLabel ? (
+            <View
+              style={{
+                paddingHorizontal: 14,
+                paddingVertical: 14,
+                alignItems: "center",
+                width: 76,
+              }}
+            >
+              <Text
+                style={{
+                  color: INK,
+                  fontSize: 16,
+                  fontWeight: "700",
+                  fontFamily: SERIF,
+                }}
+              >
+                {item.timeLabel.split(" ")[0]}
+              </Text>
+              <Text
+                style={{
+                  color: INK_DIM,
+                  fontSize: 10,
+                  fontWeight: "700",
+                  letterSpacing: 0.6,
+                }}
+              >
+                {item.timeLabel.split(" ").slice(1).join(" ")}
+              </Text>
+            </View>
+          ) : (
+            <View style={{ width: 12 }} />
+          )}
+          <View style={{ flex: 1, paddingVertical: 14, paddingRight: 14 }}>
+            <Text
+              style={{ color: INK, fontSize: 15, fontWeight: "700" }}
+              numberOfLines={1}
+            >
+              {item.title}
+            </Text>
+            <Text
+              style={{ marginTop: 2, color: INK_DIM, fontSize: 12 }}
+              numberOfLines={1}
+            >
+              {item.subtitle}
+            </Text>
+          </View>
+          {item.amountCents != null ? (
+            <Text
+              style={{
+                color: INK,
+                fontSize: 15,
+                fontWeight: "700",
+                marginRight: 14,
+                fontFamily: SERIF,
+              }}
+            >
+              {fmtMoneyShort(item.amountCents)}
+            </Text>
+          ) : null}
         </View>
-      ) : (
-        <View style={{ width: 12 }} />
       )}
-      <View style={{ flex: 1, paddingVertical: 14, paddingRight: 14 }}>
-        <Text
-          style={{ color: INK, fontSize: 15, fontWeight: "700" }}
-          numberOfLines={1}
-        >
-          {item.title}
-        </Text>
-        <Text
-          style={{ marginTop: 2, color: INK_DIM, fontSize: 12 }}
-          numberOfLines={1}
-        >
-          {item.subtitle}
-        </Text>
-      </View>
-      {item.amountCents != null ? (
-        <Text
-          style={{
-            color: INK,
-            fontSize: 15,
-            fontWeight: "700",
-            marginRight: 14,
-            fontFamily: SERIF,
-          }}
-        >
-          {fmtMoneyShort(item.amountCents)}
-        </Text>
-      ) : null}
     </Pressable>
   );
 }

@@ -316,21 +316,26 @@ export default function EventsScreen() {
             <Pressable
               onPress={() => setShowPast((v) => !v)}
               hitSlop={6}
-              style={({ pressed }) => ({
-                width: 40,
-                height: 40,
-                borderRadius: 999,
-                backgroundColor: showPast ? INK : CREAM_DEEP,
-                alignItems: "center",
-                justifyContent: "center",
-                opacity: pressed ? 0.85 : 1,
-              })}
             >
-              <Feather
-                name="filter"
-                size={18}
-                color={showPast ? CREAM : INK}
-              />
+              {({ pressed }) => (
+                <View
+                  style={{
+                    width: 40,
+                    height: 40,
+                    borderRadius: 999,
+                    backgroundColor: showPast ? INK : CREAM_DEEP,
+                    alignItems: "center",
+                    justifyContent: "center",
+                    opacity: pressed ? 0.85 : 1,
+                  }}
+                >
+                  <Feather
+                    name="filter"
+                    size={18}
+                    color={showPast ? CREAM : INK}
+                  />
+                </View>
+              )}
             </Pressable>
           </View>
 
@@ -758,27 +763,30 @@ function UpNextCard({ event, onOpen }: { event: HostEvent; onOpen: () => void })
               {summary}
             </Text>
           </View>
-          <Pressable
-            onPress={onOpen}
-            style={({ pressed }) => ({
-              backgroundColor: CREAM_DEEP,
-              borderRadius: 999,
-              paddingHorizontal: 14,
-              paddingVertical: 8,
-              flexDirection: "row",
-              alignItems: "center",
-              opacity: pressed ? 0.85 : 1,
-            })}
-          >
-            <Text style={{ color: INK, fontSize: 13, fontWeight: "700" }}>
-              View
-            </Text>
-            <Feather
-              name="chevron-right"
-              size={14}
-              color={INK}
-              style={{ marginLeft: 2 }}
-            />
+          <Pressable onPress={onOpen}>
+            {({ pressed }) => (
+              <View
+                style={{
+                  backgroundColor: CREAM_DEEP,
+                  borderRadius: 999,
+                  paddingHorizontal: 14,
+                  paddingVertical: 8,
+                  flexDirection: "row",
+                  alignItems: "center",
+                  opacity: pressed ? 0.85 : 1,
+                }}
+              >
+                <Text style={{ color: INK, fontSize: 13, fontWeight: "700" }}>
+                  View
+                </Text>
+                <Feather
+                  name="chevron-right"
+                  size={14}
+                  color={INK}
+                  style={{ marginLeft: 2 }}
+                />
+              </View>
+            )}
           </Pressable>
         </View>
       </View>
@@ -797,23 +805,24 @@ function EventRow({ event, onOpen }: { event: HostEvent; onOpen: () => void }) {
     : null;
 
   return (
-    <Pressable
-      onPress={onOpen}
-      style={({ pressed }) => ({
-        backgroundColor: "#ffffff",
-        borderRadius: 20,
-        flexDirection: "row",
-        alignItems: "center",
-        padding: 12,
-        marginBottom: 10,
-        shadowColor: INK,
-        shadowOpacity: 0.04,
-        shadowRadius: 10,
-        shadowOffset: { width: 0, height: 4 },
-        elevation: 1,
-        opacity: pressed ? 0.85 : 1,
-      })}
-    >
+    <Pressable onPress={onOpen}>
+      {({ pressed }) => (
+      <View
+        style={{
+          backgroundColor: "#ffffff",
+          borderRadius: 20,
+          flexDirection: "row",
+          alignItems: "center",
+          padding: 12,
+          marginBottom: 10,
+          shadowColor: INK,
+          shadowOpacity: 0.04,
+          shadowRadius: 10,
+          shadowOffset: { width: 0, height: 4 },
+          elevation: 1,
+          opacity: pressed ? 0.85 : 1,
+        }}
+      >
       {/* Date block */}
       <View
         style={{
@@ -901,6 +910,8 @@ function EventRow({ event, onOpen }: { event: HostEvent; onOpen: () => void }) {
           </View>
         </View>
       </View>
+      </View>
+      )}
     </Pressable>
   );
 }
