@@ -23,6 +23,7 @@ import { useAuth } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
 import { BuzzComposer } from "@/components/BuzzComposer";
 import { MediaComposer, type MediaKind } from "@/components/MediaComposer";
+import { NotificationsBell } from "@/components/NotificationsBell";
 import { PhotoLibraryPicker } from "@/components/PhotoLibraryPicker";
 
 type ViewKind = "grid" | "reels" | "buzz" | "listing";
@@ -328,11 +329,19 @@ export default function HomeScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-background" edges={["top"]}>
-      <View className="px-4 pt-4">
-        <Text className="text-2xl font-semibold text-foreground">Home</Text>
-        <Text className="mt-1 text-sm text-muted-foreground">
-          Your posts, reels, and listings
-        </Text>
+      <View className="flex-row items-start px-4 pt-4">
+        <View className="flex-1">
+          <Text className="text-2xl font-semibold text-foreground">Home</Text>
+          <Text className="mt-1 text-sm text-muted-foreground">
+            Your posts, reels, and listings
+          </Text>
+        </View>
+        {/* Bell sits top-right of every Home visit so vendors don't
+            have to dig into a menu to see new inquiry / message
+            notifications. Tap opens the slide-up sheet, rows route. */}
+        <View className="ml-3 pt-1">
+          <NotificationsBell />
+        </View>
       </View>
 
       <View className="mt-12 flex-row border-t border-border">
