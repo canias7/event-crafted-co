@@ -912,17 +912,28 @@ export default function VendorDetailScreen() {
                 >
                   FROM
                 </Text>
-                <Text
+                {/* Manual underline via borderBottom — RN's
+                    textDecorationLine on heavy-bold sits right at
+                    the line-height box and clips into a ragged bar. */}
+                <View
                   style={{
+                    alignSelf: "flex-start",
                     marginTop: 2,
-                    color: "#1a1410",
-                    fontSize: 22,
-                    fontWeight: "800",
-                    textDecorationLine: "underline",
+                    borderBottomWidth: 2,
+                    borderBottomColor: INK,
+                    paddingBottom: 2,
                   }}
                 >
-                  {price}
-                </Text>
+                  <Text
+                    style={{
+                      color: INK,
+                      fontSize: 22,
+                      fontWeight: "800",
+                    }}
+                  >
+                    {price}
+                  </Text>
+                </View>
               </>
             ) : (
               <Text
