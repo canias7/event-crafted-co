@@ -86,6 +86,59 @@ export default function HomeScreen() {
   const [listings, setListings] = useState<ListingRow[]>([]);
   // Category filter chip on the marketplace tab. null = "all".
   const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
+  // Set of saved vendor_ids for this user. The heart on each
+  // ListingCard reads membership here and flips it via toggleSave.
+  // saved_vendors.host_id is just "the user who saved" — vendors are
+  // allowed to save other vendors (RLS only enforces auth.uid()).
+  const [savedIds, setSavedIds] = useState<Set<string>>(() => new Set());
+
+  const loadSaved = useCallback(async () => {
+    if (!user?.id) return;
+    const { data } = await supabase
+      .from("saved_vendors")
+      .select("vendor_id")
+      .eq("host_id", user.id);
+    setSavedIds(
+      new Set(((data ?? []) as { vendor_id: string }[]).map((r) => r.vendor_id)),
+    );
+  }, [user?.id]);
+
+  const toggleSave = useCallback(
+    async (vendorId: string) => {
+      if (!user?.id) return;
+      const wasSaved = savedIds.has(vendorId);
+      setSavedIds((prev) => {
+        const next = new Set(prev);
+        if (wasSaved) next.delete(vendorId);
+        else next.add(vendorId);
+        return next;
+      });
+      if (wasSaved) {
+        const { error } = await supabase
+          .from("saved_vendors")
+          .delete()
+          .eq("host_id", user.id)
+          .eq("vendor_id", vendorId);
+        if (error) setSavedIds((prev) => new Set(prev).add(vendorId));
+      } else {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { error } = await (supabase as any)
+          .from("saved_vendors")
+          .upsert(
+            { host_id: user.id, vendor_id: vendorId },
+            { onConflict: "host_id,vendor_id" },
+          );
+        if (error) {
+          setSavedIds((prev) => {
+            const n = new Set(prev);
+            n.delete(vendorId);
+            return n;
+          });
+        }
+      }
+    },
+    [user?.id, savedIds],
+  );
 
   useEffect(() => {
     if (!user) return;
@@ -208,6 +261,10 @@ export default function HomeScreen() {
   useEffect(() => {
     loadFeeds();
   }, [loadFeeds]);
+
+  useEffect(() => {
+    loadSaved();
+  }, [loadSaved]);
 
   // Home tab listings count = global count of approved vendors in
   // the marketplace, not just whether the current user has one.
@@ -358,6 +415,8 @@ export default function HomeScreen() {
               listings={listings}
               category={categoryFilter}
               onCategoryChange={setCategoryFilter}
+              savedIds={savedIds}
+              onToggleSave={toggleSave}
             />
           )
         )}
@@ -657,11 +716,15 @@ function ListingFeed({
   listings,
   category,
   onCategoryChange,
+  savedIds,
+  onToggleSave,
 }: {
   listings: ListingRow[];
   /** Selected top-level group name, or null for "All". */
   category: string | null;
   onCategoryChange: (c: string | null) => void;
+  savedIds: Set<string>;
+  onToggleSave: (vendorId: string) => void;
 }) {
   // Two-level group: top-level category → sub-category → listings.
   const byGroup = new Map<string, Map<string, ListingRow[]>>();
@@ -751,7 +814,12 @@ function ListingFeed({
                         contentContainerClassName="px-4 gap-3"
                       >
                         {rows.map((l) => (
-                          <ListingCard key={l.id} listing={l} />
+                          <ListingCard
+                            key={l.id}
+                            listing={l}
+                            saved={savedIds.has(l.id)}
+                            onToggleSave={() => onToggleSave(l.id)}
+                          />
                         ))}
                       </ScrollView>
                     </View>
@@ -775,7 +843,15 @@ function ListingFeed({
 
 // One vendor card. Sized for the horizontal rail (~45% of screen
 // width — Airbnb-style two-up with a slim peek of the next card).
-function ListingCard({ listing }: { listing: ListingRow }) {
+function ListingCard({
+  listing,
+  saved,
+  onToggleSave,
+}: {
+  listing: ListingRow;
+  saved: boolean;
+  onToggleSave: () => void;
+}) {
   const router = useRouter();
   const price =
     listing.base_price_cents != null
@@ -821,8 +897,15 @@ function ListingCard({ listing }: { listing: ListingRow }) {
         )}
         {/* White stroked heart with drop shadow — Airbnb's wishlist
             pin style. Relies on the shadow to stay legible over busy
-            photos so we don't need a pill backdrop. */}
-        <View
+            photos so we don't need a pill backdrop. Filled red when
+            this vendor is in the user's saved_vendors. */}
+        <Pressable
+          onPress={(e) => {
+            // Don't let the card-level Pressable also fire.
+            e.stopPropagation();
+            onToggleSave();
+          }}
+          hitSlop={10}
           style={{
             position: "absolute",
             top: 14,
@@ -833,8 +916,12 @@ function ListingCard({ listing }: { listing: ListingRow }) {
             shadowOffset: { width: 0, height: 1 },
           }}
         >
-          <Feather name="heart" size={26} color="#fff" />
-        </View>
+          <Feather
+            name="heart"
+            size={26}
+            color={saved ? "#dc2626" : "#fff"}
+          />
+        </Pressable>
       </View>
       <View className="mt-3">
         <Text

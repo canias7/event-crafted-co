@@ -9,6 +9,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
+  Alert,
   Platform,
   Pressable,
   ScrollView,
@@ -17,6 +18,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
 
@@ -76,6 +78,7 @@ interface RawInquiry {
 }
 
 interface VendorChip {
+  inquiry_id: string;
   vendor_id: string;
   name: string;
   status: string;
@@ -113,6 +116,7 @@ function groupIntoEvents(rows: RawInquiry[]): HostEvent[] {
       });
     }
     map.get(key)!.vendors.push({
+      inquiry_id: r.id,
       vendor_id: r.vendor_id,
       name: r.vendor?.business_name ?? "Vendor",
       status: r.status,
@@ -158,9 +162,39 @@ function fmtFullDate(date: Date): string {
 
 export default function EventsScreen() {
   const { user } = useAuth();
+  const router = useRouter();
   const [events, setEvents] = useState<HostEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedDayKey, setSelectedDayKey] = useState<string | null>(null);
+  // Filter pill cycles "upcoming only" (default) -> "all" (includes past).
+  // The hero "Up next" card stays bound to the next future event either way.
+  const [showPast, setShowPast] = useState(false);
+
+  // Tap an event card -> drop into the matching conversation. Single
+  // vendor goes straight to that thread via ensure_inquiry_thread.
+  // Multi-vendor events bounce to the inbox so the host can pick.
+  const openEvent = useCallback(
+    async (event: HostEvent) => {
+      if (event.vendors.length === 0) return;
+      if (event.vendors.length === 1) {
+        const inquiryId = event.vendors[0].inquiry_id;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { data, error } = await (supabase as any).rpc(
+          "ensure_inquiry_thread",
+          { p_inquiry_id: inquiryId },
+        );
+        if (error || !data) {
+          Alert.alert("Couldn't open this thread", error?.message ?? "Try again from the inbox.");
+          return;
+        }
+        router.push(`/(host)/thread/${data as string}` as never);
+        return;
+      }
+      // 2+ vendors on the same event date: jump to inbox.
+      router.push("/(host)/inbox" as never);
+    },
+    [router],
+  );
 
   const load = useCallback(async () => {
     if (!user?.id) return;
@@ -213,6 +247,8 @@ export default function EventsScreen() {
     [events, today],
   );
 
+  // The "Up next" hero ALWAYS targets the next future event. The
+  // showPast toggle only widens what the "This month" list renders.
   const upNext = upcoming[0] ?? null;
   const upNextKey = upNext?.key ?? null;
 
@@ -229,17 +265,16 @@ export default function EventsScreen() {
     ).length;
   }, [events, today]);
 
-  const thisMonthList = useMemo(
-    () =>
-      upcoming.filter(
-        (e) =>
-          e.key !== upNextKey &&
-          e.eventDate &&
-          e.eventDate.getMonth() === today.getMonth() &&
-          e.eventDate.getFullYear() === today.getFullYear(),
-      ),
-    [upcoming, upNextKey, today],
-  );
+  const thisMonthList = useMemo(() => {
+    const source = showPast ? events : upcoming;
+    return source.filter(
+      (e) =>
+        e.key !== upNextKey &&
+        e.eventDate &&
+        e.eventDate.getMonth() === today.getMonth() &&
+        e.eventDate.getFullYear() === today.getFullYear(),
+    );
+  }, [showPast, events, upcoming, upNextKey, today]);
 
   const filteredByDay = useMemo(() => {
     if (!selectedDayKey) return null;
@@ -278,18 +313,25 @@ export default function EventsScreen() {
                 {upcoming.length} upcoming · {fmtMonthYear(today)}
               </Text>
             </View>
-            <View
-              style={{
+            <Pressable
+              onPress={() => setShowPast((v) => !v)}
+              hitSlop={6}
+              style={({ pressed }) => ({
                 width: 40,
                 height: 40,
                 borderRadius: 999,
-                backgroundColor: CREAM_DEEP,
+                backgroundColor: showPast ? INK : CREAM_DEEP,
                 alignItems: "center",
                 justifyContent: "center",
-              }}
+                opacity: pressed ? 0.85 : 1,
+              })}
             >
-              <Feather name="filter" size={18} color={INK} />
-            </View>
+              <Feather
+                name="filter"
+                size={18}
+                color={showPast ? CREAM : INK}
+              />
+            </Pressable>
           </View>
 
           {/* 14-day strip */}
@@ -334,7 +376,7 @@ export default function EventsScreen() {
                 {filteredByDay.length === 0 ? "Nothing on this day" : "On this day"}
               </Text>
               {filteredByDay.map((e) => (
-                <EventRow key={e.key} event={e} />
+                <EventRow key={e.key} event={e} onOpen={() => openEvent(e)} />
               ))}
             </View>
           ) : (
@@ -371,7 +413,7 @@ export default function EventsScreen() {
                       Up next
                     </Text>
                   </View>
-                  <UpNextCard event={upNext} />
+                  <UpNextCard event={upNext} onOpen={() => openEvent(upNext)} />
                 </>
               ) : null}
 
@@ -396,12 +438,17 @@ export default function EventsScreen() {
                     >
                       This month
                     </Text>
-                    <Text style={{ color: INK_DIM, fontSize: 13 }}>
-                      See all
-                    </Text>
+                    <Pressable
+                      onPress={() => router.push("/(host)/inbox" as never)}
+                      hitSlop={6}
+                    >
+                      <Text style={{ color: INK_DIM, fontSize: 13 }}>
+                        See all
+                      </Text>
+                    </Pressable>
                   </View>
                   {thisMonthList.map((e) => (
-                    <EventRow key={e.key} event={e} />
+                    <EventRow key={e.key} event={e} onOpen={() => openEvent(e)} />
                   ))}
                 </View>
               ) : null}
@@ -593,7 +640,7 @@ function statusOf(vendors: VendorChip[]): {
   };
 }
 
-function UpNextCard({ event }: { event: HostEvent }) {
+function UpNextCard({ event, onOpen }: { event: HostEvent; onOpen: () => void }) {
   const confirmed = event.vendors.filter((v) => v.status === "won").length;
   const summary =
     confirmed > 0
@@ -641,7 +688,7 @@ function UpNextCard({ event }: { event: HostEvent }) {
           ) : (
             <View />
           )}
-          <Pressable hitSlop={6}>
+          <Pressable hitSlop={6} onPress={onOpen}>
             <Feather name="more-horizontal" size={20} color={CREAM} />
           </Pressable>
         </View>
@@ -712,14 +759,16 @@ function UpNextCard({ event }: { event: HostEvent }) {
             </Text>
           </View>
           <Pressable
-            style={{
+            onPress={onOpen}
+            style={({ pressed }) => ({
               backgroundColor: CREAM_DEEP,
               borderRadius: 999,
               paddingHorizontal: 14,
               paddingVertical: 8,
               flexDirection: "row",
               alignItems: "center",
-            }}
+              opacity: pressed ? 0.85 : 1,
+            })}
           >
             <Text style={{ color: INK, fontSize: 13, fontWeight: "700" }}>
               View
@@ -737,7 +786,7 @@ function UpNextCard({ event }: { event: HostEvent }) {
   );
 }
 
-function EventRow({ event }: { event: HostEvent }) {
+function EventRow({ event, onOpen }: { event: HostEvent; onOpen: () => void }) {
   const status = statusOf(event.vendors);
   const month = event.eventDate
     ? event.eventDate.toLocaleDateString(undefined, { month: "short" }).toUpperCase()
@@ -748,8 +797,9 @@ function EventRow({ event }: { event: HostEvent }) {
     : null;
 
   return (
-    <View
-      style={{
+    <Pressable
+      onPress={onOpen}
+      style={({ pressed }) => ({
         backgroundColor: "#ffffff",
         borderRadius: 20,
         flexDirection: "row",
@@ -761,7 +811,8 @@ function EventRow({ event }: { event: HostEvent }) {
         shadowRadius: 10,
         shadowOffset: { width: 0, height: 4 },
         elevation: 1,
-      }}
+        opacity: pressed ? 0.85 : 1,
+      })}
     >
       {/* Date block */}
       <View
@@ -850,6 +901,6 @@ function EventRow({ event }: { event: HostEvent }) {
           </View>
         </View>
       </View>
-    </View>
+    </Pressable>
   );
 }

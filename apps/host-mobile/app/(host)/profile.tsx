@@ -8,6 +8,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import {
+  Alert,
   Platform,
   Pressable,
   ScrollView,
@@ -208,14 +209,20 @@ export default function ProfileScreen() {
             />
           </View>
 
-          {/* Verification upsell — visual only for now */}
+          {/* Verification upsell — opens an explainer Alert until the
+              host verification flow lands as a real screen. */}
           <ActionCard
             iconBgColor={INK}
             iconColor={CREAM}
             icon="award"
             title="Become Verified"
             subtitle="Build trust with vendors. Faster replies, better matches."
-            onPress={() => {}}
+            onPress={() =>
+              Alert.alert(
+                "Coming soon",
+                "Host verification is in the works — ID check + a small badge on your inquiries so vendors prioritize you. We'll ping you the moment it's live.",
+              )
+            }
           />
 
           {/* Wide actions */}
@@ -225,7 +232,7 @@ export default function ProfileScreen() {
             icon="settings"
             title="Account settings"
             subtitle={state?.email ?? ""}
-            onPress={() => {}}
+            onPress={() => router.push("/(host)/settings" as never)}
           />
 
           <Pressable

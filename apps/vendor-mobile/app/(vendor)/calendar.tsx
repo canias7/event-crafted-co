@@ -14,6 +14,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
+  Alert,
   Platform,
   Pressable,
   ScrollView,
@@ -23,6 +24,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 import Svg, { Line } from "react-native-svg";
+import { useRouter } from "expo-router";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
 
@@ -113,12 +115,19 @@ function prettyDay(ymd: string): string {
 
 export default function CalendarScreen() {
   const { user } = useAuth();
+  const router = useRouter();
+  const [blocking, setBlocking] = useState(false);
   // Every vendor_profiles row this user owns. Calendar aggregates
   // bookings + pending inquiries across all of them so a vendor with
   // multiple marketplace listings still sees one unified schedule.
   const [vendorIds, setVendorIds] = useState<string[]>([]);
   const [inquiries, setInquiries] = useState<InquiryRow[]>([]);
   const [busy, setBusy] = useState<BusyRow[]>([]);
+  // Manual blocks the vendor has placed on specific dates across any
+  // of their listings. Kept separate from `busy` (google-calendar
+  // sync) since they're a different model + the rest of the marketplace
+  // (e.g. the host explore filter) joins on this table directly.
+  const [manualBlocks, setManualBlocks] = useState<string[]>([]);
   const [viewMonth, setViewMonth] = useState(() => {
     const d = new Date();
     return new Date(d.getFullYear(), d.getMonth(), 1);
@@ -150,7 +159,7 @@ export default function CalendarScreen() {
     const startYmd = ymdKey(monthBounds.start);
     const endYmd = ymdKey(monthBounds.end);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const [{ data: inqs }, { data: busyRows }] = await Promise.all([
+    const [{ data: inqs }, { data: busyRows }, { data: blockRows }] = await Promise.all([
       (supabase as any)
         .from("inquiries")
         .select(
@@ -165,9 +174,18 @@ export default function CalendarScreen() {
         .eq("user_id", user.id)
         .gte("starts_at", monthBounds.start.toISOString())
         .lt("starts_at", monthBounds.end.toISOString()),
+      supabase
+        .from("vendor_unavailable_dates")
+        .select("date")
+        .in("vendor_id", vendorIds)
+        .gte("date", startYmd)
+        .lt("date", endYmd),
     ]);
     setInquiries((inqs ?? []) as InquiryRow[]);
     setBusy((busyRows ?? []) as BusyRow[]);
+    setManualBlocks(
+      ((blockRows ?? []) as { date: string }[]).map((r) => r.date),
+    );
   }, [vendorIds, user?.id, monthBounds]);
 
   useEffect(() => {
@@ -196,8 +214,12 @@ export default function CalendarScreen() {
       const prev = m.get(key);
       if (prev !== "booked" && prev !== "pending") m.set(key, "blocked");
     }
+    for (const key of manualBlocks) {
+      const prev = m.get(key);
+      if (prev !== "booked" && prev !== "pending") m.set(key, "blocked");
+    }
     return m;
-  }, [inquiries, busy]);
+  }, [inquiries, busy, manualBlocks]);
 
   const stats = useMemo(() => {
     let booked = 0;
@@ -222,6 +244,7 @@ export default function CalendarScreen() {
     if (!selectedYmd) return [];
     const out: Array<{
       kind: "inquiry" | "busy";
+      inquiryId: string | null;
       title: string;
       subtitle: string;
       amountCents: number | null;
@@ -234,6 +257,7 @@ export default function CalendarScreen() {
       if (!d || ymdKey(d) !== selectedYmd) continue;
       out.push({
         kind: "inquiry",
+        inquiryId: i.id,
         title: i.event_type
           ? i.event_type[0].toUpperCase() + i.event_type.slice(1)
           : "Booking",
@@ -255,6 +279,7 @@ export default function CalendarScreen() {
           });
       out.push({
         kind: "busy",
+        inquiryId: null,
         title: b.summary ?? "Blocked",
         subtitle: "Calendar sync",
         amountCents: null,
@@ -262,8 +287,100 @@ export default function CalendarScreen() {
         timeLabel: time,
       });
     }
+    if (manualBlocks.includes(selectedYmd)) {
+      out.push({
+        kind: "busy",
+        inquiryId: null,
+        title: "Blocked",
+        subtitle: "Marked unavailable",
+        amountCents: null,
+        accent: INK_DIM,
+        timeLabel: "All day",
+      });
+    }
     return out;
-  }, [selectedYmd, inquiries, busy]);
+  }, [selectedYmd, inquiries, busy, manualBlocks]);
+
+  // Tap a booking → open the host conversation. ensure_inquiry_thread
+  // is idempotent so consecutive taps just resolve to the existing
+  // direct_thread row.
+  const openBooking = useCallback(
+    async (inquiryId: string) => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data, error } = await (supabase as any).rpc(
+        "ensure_inquiry_thread",
+        { p_inquiry_id: inquiryId },
+      );
+      if (error || !data) {
+        Alert.alert("Couldn't open thread", error?.message ?? "Try the inbox.");
+        return;
+      }
+      router.push(`/(vendor)/thread/${data as string}` as never);
+    },
+    [router],
+  );
+
+  const isSelectedBlocked = !!selectedYmd && manualBlocks.includes(selectedYmd);
+
+  // Block / unblock the selected day across every listing this user
+  // owns. Writes one vendor_unavailable_dates row per vendor_profile
+  // (or deletes them all if currently blocked).
+  const toggleSelectedDayBlock = useCallback(() => {
+    if (!selectedYmd || vendorIds.length === 0 || blocking) return;
+    const willBlock = !isSelectedBlocked;
+    Alert.alert(
+      willBlock ? "Block this day?" : "Unblock this day?",
+      willBlock
+        ? `Mark ${prettyDay(selectedYmd)} unavailable across ${
+            vendorIds.length === 1
+              ? "your listing"
+              : `your ${vendorIds.length} listings`
+          }. Hosts won't see you as bookable for that date.`
+        : `Re-open ${prettyDay(selectedYmd)} across ${
+            vendorIds.length === 1
+              ? "your listing"
+              : `your ${vendorIds.length} listings`
+          }.`,
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: willBlock ? "Block" : "Unblock",
+          style: willBlock ? "destructive" : "default",
+          onPress: async () => {
+            setBlocking(true);
+            if (willBlock) {
+              const rows = vendorIds.map((vid) => ({
+                vendor_id: vid,
+                date: selectedYmd,
+                reason: "Blocked manually",
+              }));
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              const { error } = await (supabase as any)
+                .from("vendor_unavailable_dates")
+                .upsert(rows, { onConflict: "vendor_id,date" });
+              setBlocking(false);
+              if (error) {
+                Alert.alert("Couldn't block", error.message);
+                return;
+              }
+            } else {
+              const { error } = await supabase
+                .from("vendor_unavailable_dates")
+                .delete()
+                .in("vendor_id", vendorIds)
+                .eq("date", selectedYmd);
+              setBlocking(false);
+              if (error) {
+                Alert.alert("Couldn't unblock", error.message);
+                return;
+              }
+            }
+            load();
+          },
+        },
+      ],
+    );
+  }, [selectedYmd, vendorIds, blocking, isSelectedBlocked, load]);
 
   function shiftMonth(delta: number) {
     const next = new Date(viewMonth);
@@ -479,6 +596,8 @@ export default function CalendarScreen() {
                 {prettyDay(selectedYmd)}
               </Text>
               <Pressable
+                onPress={toggleSelectedDayBlock}
+                disabled={blocking}
                 style={({ pressed }) => ({
                   flexDirection: "row",
                   alignItems: "center",
@@ -486,11 +605,11 @@ export default function CalendarScreen() {
                   paddingHorizontal: 14,
                   paddingVertical: 9,
                   borderRadius: 999,
-                  opacity: pressed ? 0.85 : 1,
+                  opacity: pressed || blocking ? 0.6 : 1,
                 })}
               >
                 <Feather
-                  name="plus"
+                  name={isSelectedBlocked ? "x" : "plus"}
                   size={14}
                   color={CREAM}
                   style={{ marginRight: 4 }}
@@ -498,7 +617,11 @@ export default function CalendarScreen() {
                 <Text
                   style={{ color: CREAM, fontSize: 13, fontWeight: "700" }}
                 >
-                  Block
+                  {blocking
+                    ? "Saving…"
+                    : isSelectedBlocked
+                      ? "Unblock"
+                      : "Block"}
                 </Text>
               </Pressable>
             </View>
@@ -521,7 +644,15 @@ export default function CalendarScreen() {
                 </View>
               ) : (
                 selectedItems.map((it, idx) => (
-                  <BookingRow key={idx} item={it} />
+                  <BookingRow
+                    key={idx}
+                    item={it}
+                    onPress={
+                      it.kind === "inquiry" && it.inquiryId
+                        ? () => openBooking(it.inquiryId as string)
+                        : undefined
+                    }
+                  />
                 ))
               )}
             </View>
@@ -822,19 +953,25 @@ function DayCell({
 
 function BookingRow({
   item,
+  onPress,
 }: {
   item: {
     kind: "inquiry" | "busy";
+    inquiryId: string | null;
     title: string;
     subtitle: string;
     amountCents: number | null;
     accent: string;
     timeLabel: string | null;
   };
+  onPress?: () => void;
 }) {
+  const tappable = !!onPress;
   return (
-    <View
-      style={{
+    <Pressable
+      onPress={onPress}
+      disabled={!tappable}
+      style={({ pressed }) => ({
         backgroundColor: "#ffffff",
         borderRadius: 18,
         flexDirection: "row",
@@ -845,7 +982,8 @@ function BookingRow({
         shadowOpacity: 0.04,
         shadowRadius: 10,
         shadowOffset: { width: 0, height: 4 },
-      }}
+        opacity: pressed && tappable ? 0.85 : 1,
+      })}
     >
       <View
         style={{
@@ -914,6 +1052,6 @@ function BookingRow({
           {fmtMoneyShort(item.amountCents)}
         </Text>
       ) : null}
-    </View>
+    </Pressable>
   );
 }

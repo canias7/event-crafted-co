@@ -142,6 +142,8 @@ export default function HostLayout() {
       <Tabs.Screen name="vendor/[id]" options={{ href: null }} />
       {/* Conversation — opened from Inbox row tap; not a tab. */}
       <Tabs.Screen name="thread/[id]" options={{ href: null }} />
+      {/* Account settings — reached from Profile's "Account settings" card. */}
+      <Tabs.Screen name="settings" options={{ href: null }} />
     </Tabs>
   );
 }
