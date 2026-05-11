@@ -8,8 +8,6 @@
 
 import { useEffect, useMemo, useState } from "react";
 import {
-  Alert,
-  Linking,
   Pressable,
   ScrollView,
   Text,
@@ -470,22 +468,10 @@ function InquiryCard({ row }: { row: InquiryRow }) {
 }
 
 function PartnerRow({ thread, divider }: { thread: PartnerThread; divider: boolean }) {
-  // Partner-to-partner chat doesn't have a native screen yet — only
-  // the web app at /vendor/partners. Open the web thread in the
-  // system browser so the tap does something useful instead of
-  // sitting inert. When the native partner thread screen lands, swap
-  // this for router.push("/(vendor)/partner-thread/<id>").
-  async function open() {
-    const url = `https://eventvendora.com/vendor/partners?thread=${thread.id}`;
-    const can = await Linking.canOpenURL(url);
-    if (!can) {
-      Alert.alert(
-        "Couldn't open",
-        "Partner messaging is web-only for now. Visit eventvendora.com/vendor/partners on a browser.",
-      );
-      return;
-    }
-    Linking.openURL(url);
+  // Partner-to-partner chat now has a native screen.
+  const router = useRouter();
+  function open() {
+    router.push(`/(vendor)/partner-thread/${thread.id}` as never);
   }
 
   return (
