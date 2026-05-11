@@ -19,6 +19,7 @@ import {
   FlatList,
   Image,
   Modal,
+  Platform,
   Pressable,
   ScrollView,
   Text,
@@ -1199,38 +1200,55 @@ function CreateSheet({
   onBuzz: () => void;
   onListing: () => void;
 }) {
+  // Dark editorial sheet — black canvas with cream serif numerals on
+  // each row, a tan "EARN" badge on the Listing entry to signal that
+  // a marketplace listing is the money path, and a faint divider
+  // between rows so it reads like a numbered table of contents.
   type CreateOption = {
-    icon: keyof typeof Feather.glyphMap;
+    serial: string;
     label: string;
     sub: string;
+    badge?: string;
     onPress: () => void;
   };
+  const SHEET_BG = "#0e0c0a";
+  const SHEET_TEXT = "#faf5ec";
+  const SHEET_TEXT_DIM = "rgba(250,245,236,0.55)";
+  const SHEET_DIVIDER = "rgba(250,245,236,0.10)";
+  const SHEET_X_BG = "rgba(250,245,236,0.10)";
+  const BADGE_BG = "#f5efe5";
+  const BADGE_FG = "#1a1410";
+  const SERIF =
+    Platform.OS === "ios" ? "Times New Roman" : "serif";
+
   const options: CreateOption[] = [
     {
-      icon: "image",
+      serial: "01",
       label: "Post",
       sub: "Photo for your grid",
       onPress: onPost,
     },
     {
-      icon: "play",
+      serial: "02",
       label: "Reel",
-      sub: "Short video",
+      sub: "Short vertical video",
       onPress: onReel,
     },
     {
-      icon: "edit-3",
+      serial: "03",
       label: "Buzz",
       sub: "Quick text update",
       onPress: onBuzz,
     },
     {
-      icon: "shopping-bag",
+      serial: "04",
       label: "Listing",
-      sub: "New marketplace listing",
+      sub: "Set up your marketplace listing",
+      badge: "EARN",
       onPress: onListing,
     },
   ];
+
   return (
     <Modal
       visible={open}
@@ -1238,66 +1256,162 @@ function CreateSheet({
       animationType="slide"
       onRequestClose={onClose}
     >
+      {/* Backdrop dim — taps fall through to close. */}
       <Pressable
         onPress={onClose}
-        style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.4)" }}
-      >
-        <View style={{ flex: 1 }} />
-      </Pressable>
+        style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.55)" }}
+      />
       <SafeAreaView
         edges={["bottom"]}
         style={{
-          backgroundColor: "#fff",
-          borderTopLeftRadius: 20,
-          borderTopRightRadius: 20,
-          paddingTop: 12,
-          paddingHorizontal: 12,
           position: "absolute",
           left: 0,
           right: 0,
           bottom: 0,
+          backgroundColor: SHEET_BG,
+          borderTopLeftRadius: 28,
+          borderTopRightRadius: 28,
         }}
       >
+        {/* Grabber */}
         <View
           style={{
             alignSelf: "center",
-            width: 40,
+            width: 44,
             height: 4,
-            borderRadius: 2,
-            backgroundColor: "#d4d4d8",
-            marginBottom: 8,
+            borderRadius: 999,
+            backgroundColor: "rgba(250,245,236,0.25)",
+            marginTop: 10,
+            marginBottom: 14,
           }}
         />
-        <Text className="px-3 pt-2 pb-3 text-base font-semibold text-foreground">
-          Create
-        </Text>
-        {options.map((o) => (
-          <Pressable
-            key={o.label}
-            onPress={o.onPress}
-            className="flex-row items-center gap-3 px-3 py-3 rounded-xl active:bg-muted"
+
+        {/* Title row */}
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "space-between",
+            paddingHorizontal: 24,
+            paddingBottom: 8,
+          }}
+        >
+          <Text
+            style={{
+              color: SHEET_TEXT,
+              fontFamily: SERIF,
+              fontStyle: "italic",
+              fontSize: 30,
+              fontWeight: "500",
+            }}
           >
-            <View
-              style={{
-                width: 40,
-                height: 40,
-                borderRadius: 999,
-                backgroundColor: "#f4f4f5",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
-              <Feather name={o.icon} size={18} color="#0a0a0a" />
-            </View>
-            <View className="flex-1">
-              <Text className="text-base font-medium text-foreground">
-                {o.label}
-              </Text>
-              <Text className="text-xs text-muted-foreground">{o.sub}</Text>
-            </View>
-            <Feather name="chevron-right" size={18} color="#a1a1aa" />
+            Create
+          </Text>
+          <Pressable
+            onPress={onClose}
+            hitSlop={10}
+            style={({ pressed }) => ({
+              width: 32,
+              height: 32,
+              borderRadius: 999,
+              backgroundColor: SHEET_X_BG,
+              alignItems: "center",
+              justifyContent: "center",
+              opacity: pressed ? 0.6 : 1,
+            })}
+          >
+            <Feather name="x" size={16} color={SHEET_TEXT} />
           </Pressable>
-        ))}
+        </View>
+
+        {/* Rows */}
+        <View style={{ paddingHorizontal: 24, paddingBottom: 12 }}>
+          {options.map((o, idx) => (
+            <Pressable
+              key={o.label}
+              onPress={o.onPress}
+              style={({ pressed }) => ({
+                flexDirection: "row",
+                alignItems: "center",
+                paddingVertical: 18,
+                borderTopWidth: 1,
+                borderTopColor: SHEET_DIVIDER,
+                opacity: pressed ? 0.65 : 1,
+                // Last row gets a bottom divider too so the bottom of
+                // the list doesn't float against the safe area.
+                borderBottomWidth: idx === options.length - 1 ? 1 : 0,
+                borderBottomColor: SHEET_DIVIDER,
+              })}
+            >
+              <Text
+                style={{
+                  color: SHEET_TEXT_DIM,
+                  fontSize: 13,
+                  width: 32,
+                  letterSpacing: 0.4,
+                }}
+              >
+                {o.serial}
+              </Text>
+              <View style={{ flex: 1 }}>
+                <View
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                  }}
+                >
+                  <Text
+                    style={{
+                      color: SHEET_TEXT,
+                      fontFamily: SERIF,
+                      fontStyle: "italic",
+                      fontSize: 24,
+                      fontWeight: "500",
+                    }}
+                  >
+                    {o.label}
+                  </Text>
+                  {o.badge ? (
+                    <View
+                      style={{
+                        marginLeft: 10,
+                        backgroundColor: BADGE_BG,
+                        paddingHorizontal: 8,
+                        paddingVertical: 3,
+                        borderRadius: 6,
+                      }}
+                    >
+                      <Text
+                        style={{
+                          color: BADGE_FG,
+                          fontSize: 10,
+                          fontWeight: "800",
+                          letterSpacing: 0.8,
+                        }}
+                      >
+                        {o.badge}
+                      </Text>
+                    </View>
+                  ) : null}
+                </View>
+                <Text
+                  style={{
+                    marginTop: 2,
+                    color: SHEET_TEXT_DIM,
+                    fontSize: 13,
+                  }}
+                >
+                  {o.sub}
+                </Text>
+              </View>
+              <Feather
+                name="chevron-right"
+                size={20}
+                color={SHEET_TEXT_DIM}
+              />
+            </Pressable>
+          ))}
+        </View>
       </SafeAreaView>
     </Modal>
   );
