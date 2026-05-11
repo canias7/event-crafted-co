@@ -7,6 +7,10 @@
 // permission / simulator / unsupported-device edge cases — every
 // failure mode is silently swallowed (push is a best-effort layer
 // on top of the in-app inbox).
+//
+// tryUnregisterPushToken is the sign-out counterpart: it removes the
+// device_push_tokens row for the current device so push notifications
+// for the just-signed-out account don't keep landing on this phone.
 
 import { Platform } from "react-native";
 import Constants from "expo-constants";
@@ -84,5 +88,33 @@ export async function tryRegisterPushToken(
   } catch (err) {
     // Push is a best-effort layer — never crash the app over it.
     console.warn("push token registration failed", err);
+  }
+}
+
+export async function tryUnregisterPushToken(userId: string): Promise<void> {
+  try {
+    if (!Device.isDevice) return;
+    const projectId =
+      (Constants.expoConfig?.extra as { eas?: { projectId?: string } })?.eas
+        ?.projectId ??
+      (Constants.easConfig as { projectId?: string } | undefined)?.projectId;
+    if (!projectId) return;
+    let token: string | null = null;
+    try {
+      const r = await Notifications.getExpoPushTokenAsync({ projectId });
+      token = r.data;
+    } catch {
+      // Permission revoked / simulator / unsupported — nothing to clean up.
+      return;
+    }
+    if (!token) return;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (supabase as any)
+      .from("device_push_tokens")
+      .delete()
+      .eq("token", token)
+      .eq("user_id", userId);
+  } catch (err) {
+    console.warn("push token cleanup failed", err);
   }
 }

@@ -9,7 +9,10 @@ import { createContext, useContext, useEffect, useState } from "react";
 import type { ReactNode } from "react";
 import type { Session, User } from "@supabase/supabase-js";
 import { supabase } from "./supabase";
-import { tryRegisterPushToken } from "./pushNotifications";
+import {
+  tryRegisterPushToken,
+  tryUnregisterPushToken,
+} from "./pushNotifications";
 
 interface AuthContextValue {
   user: User | null;
@@ -71,6 +74,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     session,
     loading,
     signOut: async () => {
+      // Remove this device's push token BEFORE clearing the session.
+      // Once auth.uid() goes null, RLS on device_push_tokens blocks
+      // the delete and the row would persist — meaning push for the
+      // just-signed-out account keeps landing on this phone.
+      const uid = session?.user?.id;
+      if (uid) await tryUnregisterPushToken(uid);
       await supabase.auth.signOut();
     },
   };
