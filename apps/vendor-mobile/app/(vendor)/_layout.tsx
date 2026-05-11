@@ -29,7 +29,12 @@ function FloatingTabBar({ state, navigation }: BottomTabBarProps) {
   // builder has its own Save / Publish action bar, and the conversation
   // screen has its own composer pinned at the bottom.
   const focusedRoute = state.routes[state.index]?.name;
-  if (focusedRoute === "listing" || focusedRoute === "thread/[id]") return null;
+  if (
+    focusedRoute === "listing" ||
+    focusedRoute === "thread/[id]" ||
+    focusedRoute === "partner-thread/[id]"
+  )
+    return null;
   // Filter to only the visible tabs we care about, in our preferred order.
   const visible = ORDER.map((name) =>
     state.routes.find((r) => r.name === name),
@@ -150,6 +155,7 @@ export default function VendorLayout() {
       <Tabs.Screen name="listing" options={{ href: null }} />
       <Tabs.Screen name="vendor/[id]" options={{ href: null }} />
       <Tabs.Screen name="thread/[id]" options={{ href: null }} />
+      <Tabs.Screen name="partner-thread/[id]" options={{ href: null }} />
     </Tabs>
   );
 }
