@@ -12,10 +12,12 @@
 // device_push_tokens row for the current device so push notifications
 // for the just-signed-out account don't keep landing on this phone.
 
+import { useEffect } from "react";
 import { Platform } from "react-native";
 import Constants from "expo-constants";
 import * as Device from "expo-device";
 import * as Notifications from "expo-notifications";
+import { useRouter, type Router } from "expo-router";
 import { supabase } from "@/lib/supabase";
 
 // Foreground behavior: show the banner + play sound even when the
@@ -89,6 +91,58 @@ export async function tryRegisterPushToken(
     // Push is a best-effort layer — never crash the app over it.
     console.warn("push token registration failed", err);
   }
+}
+
+// Parse the link string carried in a notification's data payload into a
+// route inside this app. Push payloads come from the server-side
+// notify_* triggers which use web-style links (e.g.
+// "/customer/messages?thread=<uuid>" or "/vendor/inbox/<inquiry_id>").
+// We map them to the matching mobile routes:
+//   - any link containing /thread/<uuid> or ?thread=<uuid>  → /(host)/thread/<uuid>
+//   - any /inquir(y|ies)/ link                              → /(host)/inbox
+//   - everything else                                       → /(host)/inbox
+function routeFromLink(link: string | null | undefined): string | null {
+  if (!link) return "/(host)/inbox";
+  let m = link.match(/\/thread\/([0-9a-f-]{36})/i);
+  if (m) return `/(host)/thread/${m[1]}`;
+  m = link.match(/[?&]thread=([0-9a-f-]{36})/i);
+  if (m) return `/(host)/thread/${m[1]}`;
+  if (/\/inquir(y|ies)\//i.test(link)) return "/(host)/inbox";
+  return "/(host)/inbox";
+}
+
+function navigateFromNotification(router: Router, response: Notifications.NotificationResponse) {
+  const data = response.notification.request.content.data as {
+    link?: string;
+  } | null;
+  const route = routeFromLink(data?.link ?? null);
+  if (!route) return;
+  router.push(route as never);
+}
+
+// Hook that wires up notification-tap → route navigation. Call it once
+// after the user is signed in (e.g. from the (host) tab layout) so the
+// router is mounted by the time a tap fires.
+//
+// Handles both:
+//   1) Cold start — getLastNotificationResponseAsync() for taps that
+//      launched the app from a killed state.
+//   2) Warm taps — addNotificationResponseReceivedListener() for taps
+//      that happened while the app was already running.
+export function usePushNotificationTapHandler(): void {
+  const router = useRouter();
+  useEffect(() => {
+    let handledColdStart = false;
+    Notifications.getLastNotificationResponseAsync().then((response) => {
+      if (handledColdStart || !response) return;
+      handledColdStart = true;
+      navigateFromNotification(router, response);
+    });
+    const sub = Notifications.addNotificationResponseReceivedListener(
+      (response) => navigateFromNotification(router, response),
+    );
+    return () => sub.remove();
+  }, [router]);
 }
 
 export async function tryUnregisterPushToken(userId: string): Promise<void> {

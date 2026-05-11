@@ -10,6 +10,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 import type { BottomTabBarProps } from "@react-navigation/bottom-tabs";
 import { useAuth } from "@/lib/auth";
+import { usePushNotificationTapHandler } from "@/lib/pushNotifications";
 
 // route name → Feather icon name
 const ICONS: Record<string, keyof typeof Feather.glyphMap> = {
@@ -109,6 +110,9 @@ function FloatingTabBar({ state, navigation }: BottomTabBarProps) {
 
 export default function VendorLayout() {
   const { loading, user } = useAuth();
+  // Wire push-tap → deep-link routing once the tab navigator is mounted.
+  // Both cold-start taps (app killed) and warm taps go through here.
+  usePushNotificationTapHandler();
 
   if (loading) {
     return (
