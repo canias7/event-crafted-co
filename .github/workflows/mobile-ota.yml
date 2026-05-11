@@ -39,7 +39,7 @@ jobs:
           INPUT_MSG: ${{ inputs.message }}
         run: |
           # Default for push-triggered runs.
-          APPS_INPUT="${INPUT_APPS:-vendor}"
+          APPS_INPUT="${INPUT_APPS:-host}"
           MSG_INPUT="${INPUT_MSG:-OTA update from $GITHUB_REF_NAME}"
           case "$APPS_INPUT" in
             both)   echo 'list=["vendor-mobile","host-mobile"]' >> "$GITHUB_OUTPUT" ;;
@@ -81,4 +81,5 @@ jobs:
           eas update \
             --non-interactive \
             --branch production \
+            --clear-cache \
             --message "${{ needs.setup.outputs.message }}"
