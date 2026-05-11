@@ -10,6 +10,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  Image,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -21,9 +22,12 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
+import * as ImagePicker from "expo-image-picker";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
+
+type AttachmentRef = { url: string; kind?: string };
 
 const QUICK_EMOJIS = ["👍", "❤️", "🎉", "🙏", "😂", "🔥", "😍", "😅", "👋", "🤝", "✨", "💯"];
 
@@ -42,6 +46,7 @@ interface DirectMessage {
   sender_role: "host" | "vendor";
   body: string;
   created_at: string;
+  attachments: AttachmentRef[] | null;
 }
 
 interface ThreadHeader {
@@ -110,41 +115,141 @@ export default function ThreadScreen() {
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
   const [emojiOpen, setEmojiOpen] = useState(false);
+  const [muted, setMuted] = useState(false);
   const scrollRef = useRef<ScrollView>(null);
 
-  // Header overflow → quick options. Vendor app has no host-detail
-  // screen yet, so mute/report are the realistic actions; both are
-  // flagged as in-progress so the button still feels alive without
-  // claiming features that don't exist.
+  const toggleMute = useCallback(async () => {
+    if (!user?.id || !threadId) return;
+    const next = !muted;
+    setMuted(next);
+    if (next) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error } = await (supabase as any)
+        .from("thread_mutes")
+        .upsert(
+          { user_id: user.id, thread_id: threadId },
+          { onConflict: "user_id,thread_id" },
+        );
+      if (error) setMuted(false);
+    } else {
+      const { error } = await supabase
+        .from("thread_mutes")
+        .delete()
+        .eq("user_id", user.id)
+        .eq("thread_id", threadId);
+      if (error) setMuted(true);
+    }
+  }, [user?.id, threadId, muted]);
+
+  const submitReport = useCallback(
+    async (reason: string) => {
+      if (!user?.id || !threadId) return;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error } = await (supabase as any).from("thread_reports").insert({
+        thread_id: threadId,
+        reporter_id: user.id,
+        reason,
+      });
+      if (error) {
+        Alert.alert("Couldn't send report", "Please try again in a moment.");
+        return;
+      }
+      Alert.alert(
+        "Report received",
+        "Thanks — our team will review this thread.",
+      );
+    },
+    [user?.id, threadId],
+  );
+
+  const onReport = useCallback(() => {
+    Alert.alert("Report this thread", "Pick a reason:", [
+      { text: "Spam or scam", onPress: () => submitReport("spam") },
+      { text: "Harassment or abuse", onPress: () => submitReport("harassment") },
+      { text: "Inappropriate content", onPress: () => submitReport("inappropriate") },
+      { text: "Something else", onPress: () => submitReport("other") },
+      { text: "Cancel", style: "cancel" },
+    ]);
+  }, [submitReport]);
+
+  // Header overflow → quick options with real mute toggle + report.
   const onHeaderMore = useCallback(() => {
     Alert.alert(header?.otherName ?? "Conversation", undefined, [
       {
-        text: "Mute notifications",
-        onPress: () =>
-          Alert.alert(
-            "Coming soon",
-            "Per-thread mute is in development — for now, manage notifications in your device settings.",
-          ),
+        text: muted ? "Unmute notifications" : "Mute notifications",
+        onPress: toggleMute,
       },
       {
         text: "Report",
         style: "destructive",
-        onPress: () =>
-          Alert.alert(
-            "Reported",
-            "Thanks — our team will review this thread.",
-          ),
+        onPress: onReport,
       },
       { text: "Cancel", style: "cancel" },
     ]);
-  }, [header]);
+  }, [header, muted, toggleMute, onReport]);
 
-  const onAttach = useCallback(() => {
-    Alert.alert(
-      "Attachments coming soon",
-      "Sending photos and files in chat is on the roadmap. For now, paste a link or describe what you'd send.",
-    );
-  }, []);
+  // Pick a photo from the library, upload to the message-attachments
+  // bucket, and post a message with the public URL in attachments[].
+  // body is "" because the column is NOT NULL — the renderer treats
+  // attachment-only messages as image-only bubbles.
+  const onAttach = useCallback(async () => {
+    if (!user?.id || !threadId || sending) return;
+    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!perm.granted) {
+      Alert.alert(
+        "Photos access needed",
+        "Enable Photos access in Settings to send pictures in chat.",
+      );
+      return;
+    }
+    const pick = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      quality: 0.85,
+      allowsEditing: false,
+    });
+    if (pick.canceled || !pick.assets?.[0]) return;
+    const asset = pick.assets[0];
+    setSending(true);
+    try {
+      const resp = await fetch(asset.uri);
+      const blob = await resp.blob();
+      const ext = (asset.uri.split(".").pop() || "jpg").toLowerCase();
+      const path = `${user.id}/${threadId}/${Date.now()}-${Math.random()
+        .toString(36)
+        .slice(2, 10)}.${ext}`;
+      const { error: upErr } = await supabase.storage
+        .from("message-attachments")
+        .upload(path, blob, {
+          contentType: asset.mimeType ?? `image/${ext}`,
+          upsert: false,
+        });
+      if (upErr) throw upErr;
+      const { data: pub } = supabase.storage
+        .from("message-attachments")
+        .getPublicUrl(path);
+      const attachments: AttachmentRef[] = [
+        { url: pub.publicUrl, kind: "image" },
+      ];
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error: insErr } = await (supabase as any)
+        .from("direct_messages")
+        .insert({
+          thread_id: threadId,
+          sender_id: user.id,
+          sender_role: "vendor",
+          body: "",
+          attachments,
+        });
+      if (insErr) throw insErr;
+    } catch (e) {
+      Alert.alert(
+        "Couldn't send attachment",
+        e instanceof Error ? e.message : "Please try again.",
+      );
+    } finally {
+      setSending(false);
+    }
+  }, [user?.id, threadId, sending]);
 
   const onEmojiPick = useCallback((emoji: string) => {
     setDraft((v) => v + emoji);
@@ -185,7 +290,7 @@ export default function ThreadScreen() {
     if (!threadId) return;
     const { data } = await supabase
       .from("direct_messages")
-      .select("id, sender_id, sender_role, body, created_at")
+      .select("id, sender_id, sender_role, body, created_at, attachments")
       .eq("thread_id", threadId)
       .order("created_at", { ascending: true });
     setMessages((data ?? []) as DirectMessage[]);
@@ -199,6 +304,24 @@ export default function ThreadScreen() {
     loadHeader();
     loadMessages();
   }, [loadHeader, loadMessages]);
+
+  // Seed mute state from thread_mutes.
+  useEffect(() => {
+    if (!user?.id || !threadId) return;
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from("thread_mutes")
+        .select("thread_id")
+        .eq("user_id", user.id)
+        .eq("thread_id", threadId)
+        .maybeSingle();
+      if (!cancelled) setMuted(data != null);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.id, threadId]);
 
   useEffect(() => {
     const id = setInterval(loadHeader, 30_000);
@@ -252,6 +375,7 @@ export default function ThreadScreen() {
         sender_role: "vendor",
         body,
         created_at: new Date().toISOString(),
+        attachments: null,
       };
       setMessages((prev) => [...prev, optimistic]);
       requestAnimationFrame(() =>
@@ -570,28 +694,49 @@ function MessageRow({
           </View>
         ) : null}
 
-        <View
-          style={{
-            maxWidth: "78%",
-            backgroundColor: isMine ? INK : CREAM_DEEP,
-            paddingHorizontal: 16,
-            paddingVertical: 10,
-            borderRadius: 22,
-            borderTopRightRadius: isMine && m.isFirstInGroup ? 22 : 22,
-            borderBottomRightRadius: isMine && !m.isLastInGroup ? 8 : 22,
-            borderTopLeftRadius: !isMine && m.isFirstInGroup ? 22 : 22,
-            borderBottomLeftRadius: !isMine && !m.isLastInGroup ? 8 : 22,
-          }}
-        >
-          <Text
-            style={{
-              color: isMine ? CREAM : INK,
-              fontSize: 16,
-              lineHeight: 22,
-            }}
-          >
-            {m.body}
-          </Text>
+        <View style={{ maxWidth: "78%" }}>
+          {m.attachments && m.attachments.length > 0
+            ? m.attachments.map((a, idx) =>
+                a.kind === "image" || /\.(jpe?g|png|webp|gif|heic)$/i.test(a.url) ? (
+                  <Image
+                    key={idx}
+                    source={{ uri: a.url }}
+                    style={{
+                      width: 220,
+                      height: 220,
+                      borderRadius: 18,
+                      marginBottom: m.body || idx < m.attachments!.length - 1 ? 6 : 0,
+                      backgroundColor: CREAM_DEEP,
+                    }}
+                    resizeMode="cover"
+                  />
+                ) : null,
+              )
+            : null}
+          {m.body ? (
+            <View
+              style={{
+                backgroundColor: isMine ? INK : CREAM_DEEP,
+                paddingHorizontal: 16,
+                paddingVertical: 10,
+                borderRadius: 22,
+                borderTopRightRadius: isMine && m.isFirstInGroup ? 22 : 22,
+                borderBottomRightRadius: isMine && !m.isLastInGroup ? 8 : 22,
+                borderTopLeftRadius: !isMine && m.isFirstInGroup ? 22 : 22,
+                borderBottomLeftRadius: !isMine && !m.isLastInGroup ? 8 : 22,
+              }}
+            >
+              <Text
+                style={{
+                  color: isMine ? CREAM : INK,
+                  fontSize: 16,
+                  lineHeight: 22,
+                }}
+              >
+                {m.body}
+              </Text>
+            </View>
+          ) : null}
         </View>
       </View>
       {isMine && showDelivered && m.isLastInGroup ? (
