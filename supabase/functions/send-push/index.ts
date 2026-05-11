@@ -148,11 +148,17 @@ async function deliverMobile(sb: any, payload: Payload) {
   if (!tokens || tokens.length === 0) return { delivered: 0 };
 
   // Expo accepts batches of up to 100 messages per request.
+  // priority "high" tells APNs/FCM to deliver immediately even when the
+  // device is in Low Power Mode / Doze. Without it iOS may batch the
+  // notification for several minutes, and Focus filters can suppress
+  // it entirely while the app is closed.
   const messages = tokens.map((t: any) => ({
     to: t.token,
     sound: "default",
+    priority: "high",
     title: payload.title,
     body: payload.body ?? "",
+    channelId: "default",
     data: {
       link: payload.link ?? null,
       tag: payload.tag ?? null,
