@@ -1330,85 +1330,89 @@ function CreateSheet({
             <Pressable
               key={o.label}
               onPress={o.onPress}
-              style={({ pressed }) => ({
-                flexDirection: "row",
-                alignItems: "center",
-                paddingVertical: 18,
-                borderTopWidth: 1,
-                borderTopColor: SHEET_DIVIDER,
-                opacity: pressed ? 0.65 : 1,
-                // Last row gets a bottom divider too so the bottom of
-                // the list doesn't float against the safe area.
-                borderBottomWidth: idx === options.length - 1 ? 1 : 0,
-                borderBottomColor: SHEET_DIVIDER,
-              })}
+              android_ripple={{ color: SHEET_DIVIDER }}
             >
-              <Text
-                style={{
-                  color: SHEET_TEXT_DIM,
-                  fontSize: 13,
-                  width: 32,
-                  letterSpacing: 0.4,
-                }}
-              >
-                {o.serial}
-              </Text>
-              <View style={{ flex: 1 }}>
+              {({ pressed }) => (
                 <View
                   style={{
                     flexDirection: "row",
                     alignItems: "center",
+                    paddingVertical: 18,
+                    borderTopWidth: 1,
+                    borderTopColor: SHEET_DIVIDER,
+                    borderBottomWidth: idx === options.length - 1 ? 1 : 0,
+                    borderBottomColor: SHEET_DIVIDER,
+                    opacity: pressed ? 0.65 : 1,
                   }}
                 >
                   <Text
                     style={{
-                      color: SHEET_TEXT,
-                      fontFamily: SERIF,
-                      fontStyle: "italic",
-                      fontSize: 24,
-                      fontWeight: "500",
+                      color: SHEET_TEXT_DIM,
+                      fontSize: 13,
+                      width: 32,
+                      letterSpacing: 0.4,
                     }}
                   >
-                    {o.label}
+                    {o.serial}
                   </Text>
-                  {o.badge ? (
+                  <View style={{ flex: 1 }}>
                     <View
                       style={{
-                        marginLeft: 10,
-                        backgroundColor: BADGE_BG,
-                        paddingHorizontal: 8,
-                        paddingVertical: 3,
-                        borderRadius: 6,
+                        flexDirection: "row",
+                        alignItems: "center",
                       }}
                     >
                       <Text
                         style={{
-                          color: BADGE_FG,
-                          fontSize: 10,
-                          fontWeight: "800",
-                          letterSpacing: 0.8,
+                          color: SHEET_TEXT,
+                          fontFamily: SERIF,
+                          fontStyle: "italic",
+                          fontSize: 24,
+                          fontWeight: "500",
                         }}
                       >
-                        {o.badge}
+                        {o.label}
                       </Text>
+                      {o.badge ? (
+                        <View
+                          style={{
+                            marginLeft: 10,
+                            backgroundColor: BADGE_BG,
+                            paddingHorizontal: 8,
+                            paddingVertical: 3,
+                            borderRadius: 6,
+                          }}
+                        >
+                          <Text
+                            style={{
+                              color: BADGE_FG,
+                              fontSize: 10,
+                              fontWeight: "800",
+                              letterSpacing: 0.8,
+                            }}
+                          >
+                            {o.badge}
+                          </Text>
+                        </View>
+                      ) : null}
                     </View>
-                  ) : null}
+                    <Text
+                      style={{
+                        marginTop: 2,
+                        color: SHEET_TEXT_DIM,
+                        fontSize: 13,
+                      }}
+                    >
+                      {o.sub}
+                    </Text>
+                  </View>
+                  <Feather
+                    name="chevron-right"
+                    size={20}
+                    color={SHEET_TEXT_DIM}
+                  />
                 </View>
-                <Text
-                  style={{
-                    marginTop: 2,
-                    color: SHEET_TEXT_DIM,
-                    fontSize: 13,
-                  }}
-                >
-                  {o.sub}
-                </Text>
-              </View>
-              <Feather
-                name="chevron-right"
-                size={20}
-                color={SHEET_TEXT_DIM}
-              />
+              )}
             </Pressable>
           ))}
         </View>
