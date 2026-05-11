@@ -74,6 +74,11 @@ export default function ProfileScreen() {
     { asset: ImagePicker.ImagePickerAsset; kind: MediaKind } | null
   >(null);
 
+  // All vendor_profiles rows this user owns. profile = the first/
+  // primary one (used for top-of-profile identity — logo, name, stats).
+  // listings = the full set, rendered as separate cards on the
+  // "Listing" tab so the vendor can manage multiple.
+  const [listings, setListings] = useState<VendorProfile[]>([]);
   const [posts, setPosts] = useState<PostRow[]>([]);  const [reels, setReels] = useState<ReelRow[]>([]);
   const [buzz, setBuzz] = useState<BuzzRow[]>([]);
   // Lightbox: tapping a grid tile opens a fullscreen modal with a back
@@ -92,8 +97,10 @@ export default function ProfileScreen() {
         "id, business_name, category, bio, base_price_cents, location, verified_at, application_status, application_review_notes, intro_video_url, weekly_digest_enabled, slug, instagram_handle, tiktok_handle, logo_url",
       )
       .eq("user_id", user.id)
-      .maybeSingle();
-    setProfile(data as VendorProfile | null);
+      .order("created_at", { ascending: true });
+    const rows = (data ?? []) as VendorProfile[];
+    setListings(rows);
+    setProfile(rows[0] ?? null);
     setLoading(false);
   }, [user]);
 
@@ -131,13 +138,34 @@ export default function ProfileScreen() {
     loadFeeds();
   }, [loadFeeds]);
 
-  const listingsCount =
-    profile &&
-    profile.application_status === "approved" &&
-    profile.location &&
-    profile.base_price_cents != null
-      ? 1
-      : 0;
+  // Count of *publishable* listings — used by the Profile stat row.
+  // A listing counts once it has the bare minimum to live in the
+  // marketplace (approved status + location + starting price).
+  const listingsCount = listings.filter(
+    (l) =>
+      l.application_status === "approved" &&
+      l.location &&
+      l.base_price_cents != null,
+  ).length;
+
+  // Insert a fresh draft and jump to its editor. Used by the "+
+  // Listing" row in CreateSheet so vendors can create additional
+  // marketplace listings without being blocked by the existing one.
+  async function createNewListing() {
+    if (!user?.id) return;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data, error } = await (supabase as any)
+      .from("vendor_profiles")
+      .insert({ user_id: user.id, application_status: "draft" })
+      .select("id")
+      .single();
+    if (error || !data?.id) {
+      Alert.alert("Couldn't create listing", error?.message ?? "Unknown error");
+      return;
+    }
+    await loadProfile();
+    router.push(`/(vendor)/listing?id=${data.id}` as never);
+  }
 
   function openCreatePost() {
     setPhotoPickerOpen(true);
@@ -423,10 +451,11 @@ export default function ProfileScreen() {
             <View className="items-center px-4 pt-10">
               <ListingTab
                 loading={loading}
-                profile={profile}
-                isComplete={listingsCount === 1}
-                isPending={profile?.application_status === "pending"}
-                onEdit={() => router.push("/(vendor)/listing")}
+                listings={listings}
+                onEdit={(id) =>
+                  router.push(`/(vendor)/listing?id=${id}` as never)
+                }
+                onCreateNew={createNewListing}
                 onChanged={loadProfile}
               />
             </View>
@@ -444,7 +473,6 @@ export default function ProfileScreen() {
       <CreateSheet
         open={createOpen}
         onClose={() => setCreateOpen(false)}
-        hasListing={listingsCount === 1}
         onPost={() => {
           setCreateOpen(false);
           openCreatePost();
@@ -459,7 +487,7 @@ export default function ProfileScreen() {
         }}
         onListing={() => {
           setCreateOpen(false);
-          router.push("/(vendor)/listing");
+          createNewListing();
         }}
       />
 
@@ -788,36 +816,99 @@ function BuzzList({ items }: { items: BuzzRow[] }) {
   );
 }
 
+// Renders every vendor_profiles row this user owns as its own card.
+// Each card has three flavors keyed off application_status:
+//   - approved (+ has location + base price) → "Live" card, tappable
+//   - pending                                → dimmed "Under review"
+//   - draft / rejected / anything else       → "Draft" card with CTA
+// An "Add another listing" tile sits at the end so the vendor can
+// spin up a second / third / nth listing without leaving the tab.
 function ListingTab({
   loading,
-  profile,
-  isComplete,
-  isPending,
+  listings,
   onEdit,
+  onCreateNew,
   onChanged,
 }: {
   loading: boolean;
-  profile: VendorProfile | null;
-  isComplete: boolean;
-  /** True when the listing is in admin review (application_status='pending'). */
-  isPending: boolean;
+  listings: VendorProfile[];
+  onEdit: (id: string) => void;
+  onCreateNew: () => void;
+  onChanged: () => void;
+}) {
+  if (loading) {
+    return <Text className="text-sm text-muted-foreground">Loading…</Text>;
+  }
+  if (listings.length === 0) {
+    return (
+      <EmptyState
+        icon="shopping-bag"
+        title="No listings yet"
+        body="Add your location and starting price to publish your listing to the marketplace."
+        ctaLabel="Create listing"
+        onCta={onCreateNew}
+      />
+    );
+  }
+  return (
+    <View className="w-full px-4" style={{ gap: 18 }}>
+      {listings.map((l) => (
+        <ListingCard
+          key={l.id}
+          listing={l}
+          onEdit={() => onEdit(l.id)}
+          onChanged={onChanged}
+        />
+      ))}
+      <Pressable
+        onPress={onCreateNew}
+        style={({ pressed }) => ({
+          marginTop: 4,
+          paddingVertical: 18,
+          borderRadius: 18,
+          borderWidth: 1,
+          borderStyle: "dashed",
+          borderColor: "#dcd1c1",
+          alignItems: "center",
+          justifyContent: "center",
+          flexDirection: "row",
+          opacity: pressed ? 0.7 : 1,
+        })}
+      >
+        <Feather name="plus" size={16} color="#1a1410" />
+        <Text className="ml-2 text-sm font-semibold text-foreground">
+          Add another listing
+        </Text>
+      </Pressable>
+    </View>
+  );
+}
+
+function ListingCard({
+  listing,
+  onEdit,
+  onChanged,
+}: {
+  listing: VendorProfile;
   onEdit: () => void;
   onChanged: () => void;
 }) {
   const [heroUrl, setHeroUrl] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
+  const isComplete =
+    listing.application_status === "approved" &&
+    !!listing.location &&
+    listing.base_price_cents != null;
+  const isPending = listing.application_status === "pending";
+
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      if (!profile?.id) {
-        setHeroUrl(null);
-        return;
-      }
       const { data } = await supabase
         .from("vendor_portfolio_images")
         .select("storage_path")
-        .eq("vendor_id", profile.id)
+        .eq("vendor_id", listing.id)
         .order("display_order", { ascending: true })
         .order("created_at", { ascending: true })
         .limit(1);
@@ -835,10 +926,9 @@ function ListingTab({
     return () => {
       cancelled = true;
     };
-  }, [profile?.id]);
+  }, [listing.id]);
 
   async function unpublish() {
-    if (!profile?.id) return;
     Alert.alert(
       "Remove from marketplace?",
       "Your listing leaves the marketplace but your photos, packages, and other data stay. You can re-publish anytime.",
@@ -853,7 +943,7 @@ function ListingTab({
             const { error } = await (supabase as any)
               .from("vendor_profiles")
               .update({ application_status: "draft" })
-              .eq("id", profile.id);
+              .eq("id", listing.id);
             setBusy(false);
             if (error) {
               Alert.alert("Couldn't remove listing", error.message);
@@ -866,151 +956,137 @@ function ListingTab({
     );
   }
 
-  if (loading) {
-    return (
-      <Text className="text-sm text-muted-foreground">Loading…</Text>
+  async function destroy() {
+    Alert.alert(
+      "Delete this listing?",
+      "All photos, packages, FAQs, and inquiries tied to this listing will be permanently removed.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            setBusy(true);
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const { error } = await (supabase as any).rpc(
+              "delete_my_vendor_profile",
+              { p_vendor_id: listing.id },
+            );
+            setBusy(false);
+            if (error) {
+              Alert.alert("Couldn't delete listing", error.message);
+            } else {
+              onChanged();
+            }
+          },
+        },
+      ],
     );
   }
-  // Listing is in admin review. Render the same card the vendor will
-  // see once approved, but dimmed and non-tappable, with an "Under
-  // review" overlay so they know it exists but isn't live yet.
-  if (profile && isPending) {
-    const previewPrice =
-      profile.base_price_cents != null
-        ? `From $${Math.round(profile.base_price_cents / 100).toLocaleString()}`
-        : null;
+
+  // Draft / rejected card — full-width row with status pill + CTA
+  if (!isComplete && !isPending) {
     return (
-      <View className="w-full px-4">
-        <View
-          className="active:opacity-100"
-          style={{
-            width: Math.round(Dimensions.get("window").width * 0.4),
-          }}
-        >
-          <View
-            style={{
-              borderRadius: 18,
-              overflow: "hidden",
-              backgroundColor: "#1a1a1a",
-              aspectRatio: 1,
-              width: "100%",
-            }}
-          >
-            {heroUrl ? (
-              <Image
-                source={{ uri: heroUrl }}
-                style={{ flex: 1, opacity: 0.35 }}
-                resizeMode="cover"
-                blurRadius={8}
-              />
-            ) : (
-              <View
-                className="flex-1 items-center justify-center"
-                style={{ backgroundColor: "#f4f4f5", opacity: 0.6 }}
-              >
-                <Feather name="image" size={28} color="#a1a1aa" />
-              </View>
-            )}
-            {/* Dim overlay + clock badge. */}
-            <View
-              pointerEvents="none"
-              style={{
-                position: "absolute",
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
-                backgroundColor: "rgba(0,0,0,0.4)",
-                alignItems: "center",
-                justifyContent: "center",
-                paddingHorizontal: 12,
-              }}
-            >
-              <Feather name="clock" size={28} color="#fff" />
-              <Text className="mt-2 text-center text-xs font-semibold text-white">
-                Under review
-              </Text>
-            </View>
-          </View>
-          <View className="mt-3 px-1">
-            <Text
-              numberOfLines={1}
-              className="text-base font-semibold text-foreground/70"
-            >
-              {profile.business_name ?? "Your listing"}
-            </Text>
-            <Text
-              numberOfLines={1}
-              className="mt-0.5 text-sm text-muted-foreground"
-            >
-              {profile.category ?? "—"}
-              {profile.location ? ` · ${profile.location}` : ""}
-            </Text>
-            {previewPrice ? (
-              <Text className="mt-1 text-sm text-muted-foreground">
-                {previewPrice}
-              </Text>
-            ) : null}
-            <View className="mt-3 self-start rounded-full bg-amber-100 px-3 py-1">
-              <Text className="text-[11px] font-semibold uppercase tracking-wide text-amber-800">
-                Your listing is in review
-              </Text>
-            </View>
-          </View>
-        </View>
-      </View>
-    );
-  }
-  if (!profile || !isComplete) {
-    return (
-      <EmptyState
-        icon="shopping-bag"
-        title="No listings yet"
-        body="Add your location and starting price to publish your listing to the marketplace."
-        ctaLabel="Create listing"
-        onCta={onEdit}
-      />
-    );
-  }
-  const price =
-    profile.base_price_cents != null
-      ? `From $${Math.round(profile.base_price_cents / 100).toLocaleString()}`
-      : null;
-  return (
-    <View className="w-full px-4">
       <Pressable
         onPress={onEdit}
-        className="active:opacity-90"
-        style={{ width: Math.round(Dimensions.get("window").width * 0.4) }}
+        style={({ pressed }) => ({
+          flexDirection: "row",
+          alignItems: "center",
+          backgroundColor: "#ffffff",
+          borderRadius: 18,
+          padding: 14,
+          opacity: pressed ? 0.85 : 1,
+          shadowColor: "#1a1410",
+          shadowOpacity: 0.04,
+          shadowRadius: 12,
+          shadowOffset: { width: 0, height: 4 },
+          elevation: 1,
+        })}
       >
         <View
           style={{
-            borderRadius: 18,
-            overflow: "hidden",
-            backgroundColor: "#1a1a1a",
-            aspectRatio: 1,
-            width: "100%",
+            width: 56,
+            height: 56,
+            borderRadius: 14,
+            backgroundColor: "#f5efe5",
+            alignItems: "center",
+            justifyContent: "center",
           }}
         >
-          {heroUrl ? (
-            <Image
-              source={{ uri: heroUrl }}
-              style={{ flex: 1 }}
-              resizeMode="cover"
-            />
-          ) : (
-            <View
-              className="flex-1 items-center justify-center px-6"
-              style={{ backgroundColor: "#f4f4f5" }}
-            >
-              <Feather name="image" size={28} color="#a1a1aa" />
-              <Text className="mt-2 text-center text-xs text-muted-foreground">
-                No listing photos yet
-              </Text>
-            </View>
-          )}
-          {/* Edit + delete overlay — top-right corner like wishlist
-              hearts on the marketplace, but vendor-side actions. */}
+          <Feather name="shopping-bag" size={22} color="#1a1410" />
+        </View>
+        <View style={{ flex: 1, marginLeft: 12 }}>
+          <Text
+            className="text-base font-semibold text-foreground"
+            numberOfLines={1}
+          >
+            {listing.business_name ?? "Untitled listing"}
+          </Text>
+          <Text className="mt-0.5 text-xs text-muted-foreground">
+            {listing.application_status === "rejected"
+              ? "Rejected — tap to revise"
+              : "Draft — tap to finish setup"}
+          </Text>
+        </View>
+        <Feather name="chevron-right" size={20} color="#776c5f" />
+      </Pressable>
+    );
+  }
+
+  return (
+    <Pressable
+      onPress={onEdit}
+      className="active:opacity-90"
+      style={{ width: Math.round(Dimensions.get("window").width * 0.4) }}
+    >
+      <View
+        style={{
+          borderRadius: 18,
+          overflow: "hidden",
+          backgroundColor: "#1a1a1a",
+          aspectRatio: 1,
+          width: "100%",
+        }}
+      >
+        {heroUrl ? (
+          <Image
+            source={{ uri: heroUrl }}
+            style={{ flex: 1, opacity: isPending ? 0.35 : 1 }}
+            resizeMode="cover"
+            blurRadius={isPending ? 8 : 0}
+          />
+        ) : (
+          <View
+            className="flex-1 items-center justify-center px-6"
+            style={{ backgroundColor: "#f4f4f5" }}
+          >
+            <Feather name="image" size={28} color="#a1a1aa" />
+            <Text className="mt-2 text-center text-xs text-muted-foreground">
+              No listing photos yet
+            </Text>
+          </View>
+        )}
+        {isPending ? (
+          <View
+            pointerEvents="none"
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: "rgba(0,0,0,0.4)",
+              alignItems: "center",
+              justifyContent: "center",
+              paddingHorizontal: 12,
+            }}
+          >
+            <Feather name="clock" size={28} color="#fff" />
+            <Text className="mt-2 text-center text-xs font-semibold text-white">
+              Under review
+            </Text>
+          </View>
+        ) : (
           <View
             style={{
               position: "absolute",
@@ -1033,7 +1109,7 @@ function ListingTab({
                 justifyContent: "center",
               }}
             >
-              <Feather name="edit-2" size={16} color="#0a0a0a" />
+              <Feather name="edit-2" size={16} color="#1a1410" />
             </Pressable>
             <Pressable
               onPress={unpublish}
@@ -1048,40 +1124,69 @@ function ListingTab({
                 justifyContent: "center",
               }}
             >
+              <Feather name="eye-off" size={16} color="#1a1410" />
+            </Pressable>
+            <Pressable
+              onPress={destroy}
+              hitSlop={6}
+              disabled={busy}
+              style={{
+                width: 36,
+                height: 36,
+                borderRadius: 999,
+                backgroundColor: "rgba(255,255,255,0.92)",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
               <Feather name="trash-2" size={16} color="#dc2626" />
             </Pressable>
           </View>
-        </View>
-        <View className="mt-3 px-1">
-          <Text
-            numberOfLines={1}
-            className="text-base font-semibold text-foreground"
-          >
-            {profile.business_name ?? "Vendor"}
+        )}
+      </View>
+      <View className="mt-3 px-1">
+        <Text
+          numberOfLines={1}
+          className={
+            isPending
+              ? "text-base font-semibold text-foreground/70"
+              : "text-base font-semibold text-foreground"
+          }
+        >
+          {listing.business_name ?? "Vendor"}
+        </Text>
+        <Text
+          numberOfLines={1}
+          className="mt-0.5 text-sm text-muted-foreground"
+        >
+          {listing.category ?? "—"}
+          {listing.location ? ` · ${listing.location}` : ""}
+        </Text>
+        {listing.base_price_cents != null ? (
+          <Text className="mt-1 text-sm text-foreground/80">
+            From ${Math.round(listing.base_price_cents / 100).toLocaleString()}
           </Text>
-          <Text
-            numberOfLines={1}
-            className="mt-0.5 text-sm text-muted-foreground"
-          >
-            {profile.category ?? "—"}
-            {profile.location ? ` · ${profile.location}` : ""}
-          </Text>
-          {price ? (
-            <Text className="mt-1 text-sm text-foreground/80">{price}</Text>
-          ) : null}
-        </View>
-      </Pressable>
-    </View>
+        ) : null}
+        {isPending ? (
+          <View className="mt-3 self-start rounded-full bg-amber-100 px-3 py-1">
+            <Text className="text-[11px] font-semibold uppercase tracking-wide text-amber-800">
+              In review
+            </Text>
+          </View>
+        ) : null}
+      </View>
+    </Pressable>
   );
 }
 
-// Bottom-sheet style menu opened by the "+" button. Same four
-// surfaces as the segmented profile view (post / reel / buzz /
-// listing), each routing into its existing creation flow.
+
+// Bottom-sheet style menu opened by the "+" button. The "Listing"
+// row is always present now — vendors can run multiple marketplace
+// listings off a single account, and CreateSheet's job is to give
+// them every "new content" surface, including a new listing.
 function CreateSheet({
   open,
   onClose,
-  hasListing,
   onPost,
   onReel,
   onBuzz,
@@ -1089,11 +1194,6 @@ function CreateSheet({
 }: {
   open: boolean;
   onClose: () => void;
-  /** True when the vendor already has a publish-ready listing.
-   *  We hide the "Listing" row entirely in that case — vendors
-   *  have one listing per account, and editing happens from the
-   *  Profile listing tab's pencil icon. */
-  hasListing: boolean;
   onPost: () => void;
   onReel: () => void;
   onBuzz: () => void;
@@ -1105,7 +1205,7 @@ function CreateSheet({
     sub: string;
     onPress: () => void;
   };
-  const baseOptions: CreateOption[] = [
+  const options: CreateOption[] = [
     {
       icon: "image",
       label: "Post",
@@ -1124,18 +1224,13 @@ function CreateSheet({
       sub: "Quick text update",
       onPress: onBuzz,
     },
+    {
+      icon: "shopping-bag",
+      label: "Listing",
+      sub: "New marketplace listing",
+      onPress: onListing,
+    },
   ];
-  const options: CreateOption[] = hasListing
-    ? baseOptions
-    : [
-        ...baseOptions,
-        {
-          icon: "shopping-bag",
-          label: "Listing",
-          sub: "Set up your marketplace listing",
-          onPress: onListing,
-        },
-      ];
   return (
     <Modal
       visible={open}

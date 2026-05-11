@@ -85,13 +85,17 @@ export default function InboxScreen() {
     let cancelled = false;
     (async () => {
       setLoading(true);
-      const { data: vendor } = await supabase
+      // Pull every vendor_profiles row this user owns so the inbox
+      // aggregates inquiries + partner threads across all of their
+      // marketplace listings, not just one.
+      const { data: vendorRows } = await supabase
         .from("vendor_profiles")
         .select("id")
-        .eq("user_id", user.id)
-        .maybeSingle();
-      const vendorId = (vendor as { id?: string } | null)?.id;
-      if (!vendorId) {
+        .eq("user_id", user.id);
+      const vendorIds = ((vendorRows ?? []) as { id: string }[]).map(
+        (r) => r.id,
+      );
+      if (vendorIds.length === 0) {
         if (!cancelled) setLoading(false);
         return;
       }
@@ -102,7 +106,7 @@ export default function InboxScreen() {
           .select(
             "id, vendor_id, host_id, status, event_type, event_date, guest_count, location, budget_min_cents, budget_max_cents, special_requests, quality_score, created_at",
           )
-          .eq("vendor_id", vendorId)
+          .in("vendor_id", vendorIds)
           .order("created_at", { ascending: false }),
         // Partners — use the wide-select web pattern; columns flagged as
         // any so older codegens don't choke.
@@ -111,14 +115,17 @@ export default function InboxScreen() {
           .select(
             "id, vendor_a_id, vendor_b_id, last_message_at, vendor_a:vendor_profiles!vendor_partner_threads_vendor_a_id_fkey(business_name, category), vendor_b:vendor_profiles!vendor_partner_threads_vendor_b_id_fkey(business_name, category)",
           )
-          .or(`vendor_a_id.eq.${vendorId},vendor_b_id.eq.${vendorId}`)
+          .or(
+            `vendor_a_id.in.(${vendorIds.join(",")}),vendor_b_id.in.(${vendorIds.join(",")})`,
+          )
           .order("last_message_at", { ascending: false, nullsFirst: false }),
       ]);
 
       if (cancelled) return;
       setInquiries(((inqRes.data ?? []) as InquiryRow[]) || []);
+      const vendorIdSet = new Set(vendorIds);
       const partRows = ((partRes as { data?: any[] }).data ?? []).map((r) => {
-        const isA = r.vendor_a_id === vendorId;
+        const isA = vendorIdSet.has(r.vendor_a_id);
         const other = isA ? r.vendor_b : r.vendor_a;
         return {
           id: r.id,

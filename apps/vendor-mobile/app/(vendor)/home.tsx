@@ -91,14 +91,20 @@ export default function HomeScreen() {
     if (!user) return;
     let cancelled = false;
     (async () => {
+      // For the personalized header we only need ONE listing's
+      // identity, so pick the user's first one. Vendors with multiple
+      // marketplace listings see all of them rendered as cards on
+      // the Profile tab — this surface is just identity.
       const { data } = await supabase
         .from("vendor_profiles")
         .select(
           "id, business_name, location, base_price_cents, application_status, logo_url",
         )
         .eq("user_id", user.id)
-        .maybeSingle();
-      if (!cancelled) setProfile(data as VendorProfile | null);
+        .order("created_at", { ascending: true })
+        .limit(1);
+      const first = ((data ?? []) as VendorProfile[])[0] ?? null;
+      if (!cancelled) setProfile(first);
     })();
     return () => {
       cancelled = true;

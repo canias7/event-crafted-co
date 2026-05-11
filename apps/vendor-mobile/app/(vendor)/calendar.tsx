@@ -113,7 +113,10 @@ function prettyDay(ymd: string): string {
 
 export default function CalendarScreen() {
   const { user } = useAuth();
-  const [vendorId, setVendorId] = useState<string | null>(null);
+  // Every vendor_profiles row this user owns. Calendar aggregates
+  // bookings + pending inquiries across all of them so a vendor with
+  // multiple marketplace listings still sees one unified schedule.
+  const [vendorIds, setVendorIds] = useState<string[]>([]);
   const [inquiries, setInquiries] = useState<InquiryRow[]>([]);
   const [busy, setBusy] = useState<BusyRow[]>([]);
   const [viewMonth, setViewMonth] = useState(() => {
@@ -130,9 +133,8 @@ export default function CalendarScreen() {
       const { data } = await supabase
         .from("vendor_profiles")
         .select("id")
-        .eq("user_id", user.id)
-        .maybeSingle();
-      setVendorId((data as { id?: string } | null)?.id ?? null);
+        .eq("user_id", user.id);
+      setVendorIds(((data ?? []) as { id: string }[]).map((r) => r.id));
     })();
   }, [user?.id]);
 
@@ -144,7 +146,7 @@ export default function CalendarScreen() {
   }, [viewMonth]);
 
   const load = useCallback(async () => {
-    if (!vendorId || !user?.id) return;
+    if (vendorIds.length === 0 || !user?.id) return;
     const startYmd = ymdKey(monthBounds.start);
     const endYmd = ymdKey(monthBounds.end);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -154,7 +156,7 @@ export default function CalendarScreen() {
         .select(
           "id, status, event_date, event_type, budget_min_cents, budget_max_cents, host_id, host:profiles!inquiries_host_id_fkey(display_name)",
         )
-        .eq("vendor_id", vendorId)
+        .in("vendor_id", vendorIds)
         .gte("event_date", startYmd)
         .lt("event_date", endYmd),
       supabase
@@ -166,7 +168,7 @@ export default function CalendarScreen() {
     ]);
     setInquiries((inqs ?? []) as InquiryRow[]);
     setBusy((busyRows ?? []) as BusyRow[]);
-  }, [vendorId, user?.id, monthBounds]);
+  }, [vendorIds, user?.id, monthBounds]);
 
   useEffect(() => {
     load();
