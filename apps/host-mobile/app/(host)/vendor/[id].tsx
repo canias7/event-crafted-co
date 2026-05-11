@@ -15,6 +15,7 @@ import { useCallback, useEffect, useState } from "react";
 import {
   Dimensions,
   Image,
+  Platform,
   Pressable,
   ScrollView,
   Share,
@@ -27,6 +28,29 @@ import { Feather } from "@expo/vector-icons";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
 import { InquiryComposer } from "@/components/InquiryComposer";
+
+// Editorial type + tone palette — bold serif title, muted ink for
+// supporting copy. Matches the listing-detail design (cream cards on
+// white, with deep ink #1a1410 as the foreground anchor).
+const SERIF = Platform.OS === "ios" ? "Times New Roman" : "serif";
+const INK = "#1a1410";
+const INK_DIM = "#776c5f";
+const CREAM = "#f5efe5";
+
+const sectionHeaderStyle = {
+  paddingHorizontal: 20,
+  color: INK,
+  fontSize: 13,
+  fontWeight: "800",
+  letterSpacing: 0.8,
+} as const;
+
+const statValueStyle = {
+  color: INK,
+  fontSize: 17,
+  fontWeight: "700",
+  fontFamily: SERIF,
+} as const;
 
 type VendorRow = {
   id: string;
@@ -372,84 +396,197 @@ export default function VendorDetailScreen() {
             paddingBottom: 8,
           }}
         >
-          {/* Title */}
-          <View className="px-5">
-            <Text className="text-3xl font-bold text-foreground leading-9">
+          {/* Pill row above title — "NEW" + category — matches the
+              editorial chip strip on the design. */}
+          <View
+            className="px-5 pt-2"
+            style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}
+          >
+            <View
+              style={{
+                backgroundColor: "#1a1410",
+                borderRadius: 999,
+                paddingHorizontal: 12,
+                paddingVertical: 5,
+              }}
+            >
+              <Text
+                style={{
+                  color: "#faf5ec",
+                  fontSize: 11,
+                  fontWeight: "800",
+                  letterSpacing: 0.6,
+                }}
+              >
+                {vendor.verified_at ? "VERIFIED" : "NEW"}
+              </Text>
+            </View>
+            {vendor.category ? (
+              <View
+                style={{
+                  backgroundColor: "#f5efe5",
+                  borderRadius: 999,
+                  paddingHorizontal: 12,
+                  paddingVertical: 5,
+                }}
+              >
+                <Text
+                  style={{
+                    color: "#1a1410",
+                    fontSize: 12,
+                    fontWeight: "600",
+                  }}
+                >
+                  {vendor.category}
+                </Text>
+              </View>
+            ) : null}
+          </View>
+
+          {/* Title — bold serif, large. */}
+          <View className="px-5 pt-3">
+            <Text
+              style={{
+                color: "#1a1410",
+                fontFamily: SERIF,
+                fontSize: 34,
+                fontWeight: "700",
+                lineHeight: 38,
+              }}
+              numberOfLines={2}
+            >
               {vendor.business_name ?? "Vendor"}
             </Text>
-            <Text className="mt-2 text-base text-muted-foreground">
-              {vendor.category ?? ""}
-              {vendor.location ? ` · ${vendor.location}` : ""}
-            </Text>
+
+            {/* Location row with map-pin glyph */}
+            {vendor.location || vendor.category ? (
+              <View
+                style={{
+                  marginTop: 10,
+                  flexDirection: "row",
+                  alignItems: "center",
+                }}
+              >
+                <Feather name="map-pin" size={14} color={INK_DIM} />
+                <Text
+                  style={{
+                    marginLeft: 6,
+                    color: INK_DIM,
+                    fontSize: 14,
+                  }}
+                >
+                  {vendor.location ?? ""}
+                  {vendor.location && vendor.category ? "  ·  " : ""}
+                  {vendor.category ?? ""}
+                </Text>
+              </View>
+            ) : null}
           </View>
 
-          {/* Stats row — 3 cells separated by vertical lines. */}
-          <View className="mx-5 mt-5 rounded-2xl border border-border">
-            <View className="flex-row">
-              <StatCell
-                top={
-                  <View className="flex-row items-center gap-1">
-                    <Text className="text-base font-bold text-foreground">
-                      {vendor.verified_at ? "Verified" : "New"}
-                    </Text>
-                  </View>
-                }
-                bottom={vendor.verified_at ? "Vendora-checked" : "Just listed"}
-              />
-              <Divider />
-              <StatCell
-                top={
-                  <View className="flex-row items-center gap-1">
-                    <Feather
-                      name="package"
-                      size={14}
-                      color="#0a0a0a"
-                    />
-                    <Text className="text-base font-bold text-foreground">
-                      {packages.length || "—"}
-                    </Text>
-                  </View>
-                }
-                bottom={packages.length === 1 ? "Package" : "Packages"}
-              />
-              <Divider />
-              <StatCell
-                top={
-                  <Text className="text-base font-bold text-foreground">
-                    {faqs.length}
-                  </Text>
-                }
-                bottom={faqs.length === 1 ? "FAQ" : "FAQs"}
-              />
-            </View>
+          {/* Stats row — 3 cells in a white card with vertical dividers. */}
+          <View
+            style={{
+              marginHorizontal: 20,
+              marginTop: 18,
+              backgroundColor: "#ffffff",
+              borderRadius: 18,
+              flexDirection: "row",
+              shadowColor: "#1a1410",
+              shadowOpacity: 0.05,
+              shadowRadius: 12,
+              shadowOffset: { width: 0, height: 4 },
+              elevation: 2,
+            }}
+          >
+            <StatCell
+              top={
+                <Text style={statValueStyle}>
+                  {vendor.verified_at ? "Verified" : "Just listed"}
+                </Text>
+              }
+              bottom={vendor.verified_at ? "Vendora-checked" : "NEW"}
+            />
+            <Divider />
+            <StatCell
+              top={<Text style={statValueStyle}>{packages.length || 0}</Text>}
+              bottom={packages.length === 1 ? "PACKAGE" : "PACKAGES"}
+            />
+            <Divider />
+            <StatCell
+              top={<Text style={statValueStyle}>{faqs.length}</Text>}
+              bottom={faqs.length === 1 ? "FAQ" : "FAQS"}
+            />
           </View>
 
-          {/* Host / owner */}
+          {/* Host section — own header + card with chevron */}
           {owner ? (
-            <View className="mt-6 px-5 pt-5 border-t border-border">
-              <View className="flex-row items-center gap-3">
+            <View style={{ marginTop: 26 }}>
+              <Text style={sectionHeaderStyle}>Host</Text>
+              <View
+                style={{
+                  marginHorizontal: 20,
+                  marginTop: 10,
+                  backgroundColor: "#ffffff",
+                  borderRadius: 18,
+                  paddingVertical: 14,
+                  paddingHorizontal: 14,
+                  flexDirection: "row",
+                  alignItems: "center",
+                  shadowColor: "#1a1410",
+                  shadowOpacity: 0.05,
+                  shadowRadius: 12,
+                  shadowOffset: { width: 0, height: 4 },
+                  elevation: 2,
+                }}
+              >
                 <View
                   style={{
                     width: 44,
                     height: 44,
                     borderRadius: 999,
-                    backgroundColor: "#0a0a0a",
+                    backgroundColor: "#1a1410",
                     alignItems: "center",
                     justifyContent: "center",
                   }}
                 >
-                  <Text className="text-base font-bold text-white">
+                  <Text
+                    style={{
+                      color: "#faf5ec",
+                      fontFamily: SERIF,
+                      fontWeight: "600",
+                      fontSize: 18,
+                    }}
+                  >
                     {(owner.display_name?.[0] ?? "V").toUpperCase()}
                   </Text>
                 </View>
-                <View className="flex-1">
-                  <Text className="text-base font-semibold text-foreground">
+                <View style={{ flex: 1, marginLeft: 12 }}>
+                  <Text
+                    style={{
+                      color: "#1a1410",
+                      fontSize: 15,
+                      fontWeight: "700",
+                    }}
+                    numberOfLines={1}
+                  >
                     Hosted by {owner.display_name}
                   </Text>
-                  <Text className="text-sm text-muted-foreground">
-                    {owner.role ?? "Lead"}
+                  <Text
+                    style={{
+                      marginTop: 1,
+                      color: INK_DIM,
+                      fontSize: 13,
+                    }}
+                    numberOfLines={1}
+                  >
+                    @
+                    {(vendor.business_name ?? owner.display_name ?? "vendor")
+                      .toLowerCase()
+                      .replace(/[^a-z0-9]+/g, "")
+                      .slice(0, 18)}
                   </Text>
                 </View>
+                <Feather name="chevron-right" size={20} color={INK_DIM} />
               </View>
             </View>
           ) : null}
@@ -463,128 +600,264 @@ export default function VendorDetailScreen() {
             </View>
           ) : null}
 
-          {/* Packages */}
+          {/* Packages — cream/beige cards */}
           {packages.length > 0 ? (
-            <Section title="Packages">
-              {packages.map((p) => (
-                <View
-                  key={p.id}
-                  className="rounded-xl border border-border bg-background p-4 mb-3"
-                >
-                  <View className="flex-row items-start justify-between">
-                    <Text className="flex-1 pr-3 text-base font-semibold text-foreground">
-                      {p.name}
-                    </Text>
-                    <Text className="text-base font-semibold text-foreground">
-                      ${(p.price_cents / 100).toLocaleString()}
-                    </Text>
-                  </View>
-                  {p.description ? (
-                    <Text className="mt-1 text-sm text-foreground/80">
-                      {p.description}
-                    </Text>
-                  ) : null}
-                  {p.includes && p.includes.length > 0 ? (
-                    <View className="mt-2 gap-1">
-                      {p.includes.map((line, idx) => (
-                        <Text
-                          key={idx}
-                          className="text-xs text-muted-foreground"
-                        >
-                          • {line}
-                        </Text>
-                      ))}
+            <View style={{ marginTop: 24 }}>
+              <Text style={sectionHeaderStyle}>Packages</Text>
+              <View style={{ paddingHorizontal: 20, marginTop: 10 }}>
+                {packages.map((p) => (
+                  <View
+                    key={p.id}
+                    style={{
+                      backgroundColor: "#f5efe5",
+                      borderRadius: 18,
+                      padding: 16,
+                      marginBottom: 12,
+                    }}
+                  >
+                    <View
+                      style={{
+                        flexDirection: "row",
+                        alignItems: "flex-start",
+                        justifyContent: "space-between",
+                      }}
+                    >
+                      <Text
+                        style={{
+                          flex: 1,
+                          paddingRight: 12,
+                          color: "#1a1410",
+                          fontSize: 17,
+                          fontWeight: "700",
+                        }}
+                      >
+                        {p.name}
+                      </Text>
+                      <Text
+                        style={{
+                          color: "#1a1410",
+                          fontSize: 17,
+                          fontWeight: "700",
+                        }}
+                      >
+                        ${(p.price_cents / 100).toLocaleString()}
+                      </Text>
                     </View>
-                  ) : null}
-                </View>
-              ))}
-            </Section>
+                    {p.description ? (
+                      <Text
+                        style={{
+                          marginTop: 4,
+                          color: INK_DIM,
+                          fontSize: 14,
+                        }}
+                      >
+                        {p.description}
+                      </Text>
+                    ) : null}
+                    {p.includes && p.includes.length > 0 ? (
+                      <View style={{ marginTop: 8 }}>
+                        {p.includes.map((line, idx) => (
+                          <Text
+                            key={idx}
+                            style={{
+                              color: INK_DIM,
+                              fontSize: 13,
+                              marginTop: 2,
+                            }}
+                          >
+                            •  {line}
+                          </Text>
+                        ))}
+                      </View>
+                    ) : null}
+                  </View>
+                ))}
+              </View>
+            </View>
           ) : null}
 
-          {/* Team */}
+          {/* Team — cream cards with avatar circle + OWNER pill */}
           {team.length > 0 ? (
-            <Section title="Team">
-              {team.map((m) => (
-                <View
-                  key={m.id}
-                  className="rounded-xl border border-border bg-background p-4 mb-3"
-                >
-                  <Text className="text-base font-semibold text-foreground">
-                    {m.display_name}
-                    {m.is_owner ? " · Owner" : ""}
-                  </Text>
-                  {m.role ? (
-                    <Text className="text-sm text-muted-foreground">
-                      {m.role}
-                    </Text>
-                  ) : null}
-                  {m.bio ? (
-                    <Text className="mt-2 text-sm text-foreground/80">
-                      {m.bio}
-                    </Text>
-                  ) : null}
-                </View>
-              ))}
-            </Section>
+            <View style={{ marginTop: 14 }}>
+              <Text style={sectionHeaderStyle}>Team</Text>
+              <View style={{ paddingHorizontal: 20, marginTop: 10 }}>
+                {team.map((m) => (
+                  <View
+                    key={m.id}
+                    style={{
+                      backgroundColor: "#f5efe5",
+                      borderRadius: 18,
+                      padding: 16,
+                      marginBottom: 12,
+                    }}
+                  >
+                    <View
+                      style={{
+                        flexDirection: "row",
+                        alignItems: "center",
+                      }}
+                    >
+                      <View
+                        style={{
+                          width: 44,
+                          height: 44,
+                          borderRadius: 999,
+                          backgroundColor: "#1a1410",
+                          alignItems: "center",
+                          justifyContent: "center",
+                        }}
+                      >
+                        <Text
+                          style={{
+                            color: "#faf5ec",
+                            fontFamily: SERIF,
+                            fontWeight: "600",
+                            fontSize: 18,
+                          }}
+                        >
+                          {(m.display_name?.[0] ?? "?").toUpperCase()}
+                        </Text>
+                      </View>
+                      <View
+                        style={{
+                          flex: 1,
+                          marginLeft: 12,
+                        }}
+                      >
+                        <View
+                          style={{
+                            flexDirection: "row",
+                            alignItems: "center",
+                          }}
+                        >
+                          <Text
+                            style={{
+                              color: "#1a1410",
+                              fontSize: 16,
+                              fontWeight: "700",
+                            }}
+                          >
+                            {m.display_name}
+                          </Text>
+                          {m.is_owner ? (
+                            <View
+                              style={{
+                                marginLeft: 8,
+                                backgroundColor: "#e9dfc8",
+                                paddingHorizontal: 8,
+                                paddingVertical: 2,
+                                borderRadius: 6,
+                              }}
+                            >
+                              <Text
+                                style={{
+                                  color: "#1a1410",
+                                  fontSize: 10,
+                                  fontWeight: "800",
+                                  letterSpacing: 0.8,
+                                }}
+                              >
+                                OWNER
+                              </Text>
+                            </View>
+                          ) : null}
+                        </View>
+                        {m.role ? (
+                          <Text
+                            style={{
+                              marginTop: 1,
+                              color: INK_DIM,
+                              fontSize: 13,
+                            }}
+                            numberOfLines={1}
+                          >
+                            {m.role}
+                          </Text>
+                        ) : null}
+                      </View>
+                    </View>
+                    {m.bio ? (
+                      <Text
+                        style={{
+                          marginTop: 12,
+                          color: "#1a1410",
+                          fontSize: 14,
+                          lineHeight: 20,
+                        }}
+                      >
+                        {m.bio}
+                      </Text>
+                    ) : null}
+                  </View>
+                ))}
+              </View>
+            </View>
           ) : null}
 
-          {/* FAQ */}
+          {/* FAQ — collapsible cream cards */}
           {faqs.length > 0 ? (
-            <Section title="FAQ">
-              {faqs.map((f) => (
-                <View key={f.id} className="mb-4">
-                  <Text className="text-base font-semibold text-foreground">
-                    {f.question}
-                  </Text>
-                  <Text className="mt-1 text-sm text-foreground/80">
-                    {f.answer}
-                  </Text>
-                </View>
-              ))}
-            </Section>
+            <View style={{ marginTop: 14 }}>
+              <Text style={sectionHeaderStyle}>FAQ</Text>
+              <View style={{ paddingHorizontal: 20, marginTop: 10 }}>
+                {faqs.map((f) => (
+                  <FaqCard key={f.id} question={f.question} answer={f.answer} />
+                ))}
+              </View>
+            </View>
           ) : null}
 
-          {/* Policies */}
+          {/* Policies — cream cards */}
           {policy &&
           (policy.deposit_pct != null ||
             policy.cancellation_policy ||
             policy.reschedule_window_days != null ||
             policy.policy_notes) ? (
-            <Section title="Policies">
-              {policy.deposit_pct != null ? (
-                <PolicyRowItem
-                  label="Deposit"
-                  value={`${policy.deposit_pct}%`}
-                />
-              ) : null}
-              {policy.cancellation_policy ? (
-                <PolicyRowItem
-                  label="Cancellation"
-                  value={
-                    CANCELLATION_LABEL[policy.cancellation_policy] ??
-                    policy.cancellation_policy
-                  }
-                />
-              ) : null}
-              {policy.reschedule_window_days != null ? (
-                <PolicyRowItem
-                  label="Reschedule window"
-                  value={`${policy.reschedule_window_days} days`}
-                />
-              ) : null}
-              {policy.policy_notes ? (
-                <View className="pt-3">
-                  <Text className="text-sm text-foreground/90 leading-relaxed">
-                    {policy.policy_notes}
-                  </Text>
-                </View>
-              ) : null}
-            </Section>
+            <View style={{ marginTop: 14 }}>
+              <Text style={sectionHeaderStyle}>Policies</Text>
+              <View style={{ paddingHorizontal: 20, marginTop: 10 }}>
+                {policy.cancellation_policy ? (
+                  <PolicyCard
+                    label="Cancellation"
+                    value={
+                      CANCELLATION_LABEL[policy.cancellation_policy] ??
+                      policy.cancellation_policy
+                    }
+                  />
+                ) : null}
+                {policy.deposit_pct != null ? (
+                  <PolicyCard label="Deposit" value={`${policy.deposit_pct}%`} />
+                ) : null}
+                {policy.reschedule_window_days != null ? (
+                  <PolicyCard
+                    label="Reschedule"
+                    value={`${policy.reschedule_window_days} days`}
+                  />
+                ) : null}
+                {policy.policy_notes ? (
+                  <View
+                    style={{
+                      marginTop: 4,
+                      paddingHorizontal: 4,
+                    }}
+                  >
+                    <Text
+                      style={{
+                        color: "#1a1410",
+                        fontSize: 14,
+                        lineHeight: 20,
+                      }}
+                    >
+                      {policy.policy_notes}
+                    </Text>
+                  </View>
+                ) : null}
+              </View>
+            </View>
           ) : null}
         </View>
       </ScrollView>
 
-      {/* Sticky bottom action bar — Reserve-style. */}
+      {/* Sticky bottom action bar — FROM $X + black "Inquire >" pill */}
       <SafeAreaView
         edges={["bottom"]}
         style={{
@@ -594,39 +867,78 @@ export default function VendorDetailScreen() {
           bottom: 0,
           backgroundColor: "#ffffff",
           borderTopWidth: 1,
-          borderTopColor: "#e5e7eb",
+          borderTopColor: "#e8dfcf",
         }}
       >
-        <View className="flex-row items-center justify-between px-5 py-3">
-          <View className="flex-1 pr-3">
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "space-between",
+            paddingHorizontal: 20,
+            paddingVertical: 12,
+          }}
+        >
+          <View style={{ flex: 1, paddingRight: 12 }}>
             {price ? (
               <>
                 <Text
-                  className="text-xl font-bold text-foreground"
-                  style={{ textDecorationLine: "underline" }}
+                  style={{
+                    color: INK_DIM,
+                    fontSize: 11,
+                    fontWeight: "700",
+                    letterSpacing: 0.6,
+                  }}
                 >
-                  From {price}
+                  FROM
                 </Text>
-                <Text className="mt-0.5 text-xs text-muted-foreground">
-                  {vendor.category ?? "Marketplace listing"}
+                <Text
+                  style={{
+                    marginTop: 2,
+                    color: "#1a1410",
+                    fontSize: 22,
+                    fontWeight: "800",
+                    textDecorationLine: "underline",
+                  }}
+                >
+                  {price}
                 </Text>
               </>
             ) : (
-              <Text className="text-xl font-bold text-foreground">
+              <Text
+                style={{
+                  color: "#1a1410",
+                  fontSize: 18,
+                  fontWeight: "700",
+                }}
+              >
                 Pricing on request
               </Text>
             )}
           </View>
           <Pressable
             onPress={() => setInquireOpen(true)}
-            className="rounded-full active:opacity-80"
-            style={{
-              backgroundColor: "#dc2626",
-              paddingHorizontal: 28,
+            style={({ pressed }) => ({
+              backgroundColor: "#1a1410",
+              paddingHorizontal: 22,
               paddingVertical: 14,
-            }}
+              borderRadius: 999,
+              flexDirection: "row",
+              alignItems: "center",
+              opacity: pressed ? 0.85 : 1,
+            })}
           >
-            <Text className="text-base font-bold text-white">Inquire</Text>
+            <Text
+              style={{
+                color: "#faf5ec",
+                fontSize: 15,
+                fontWeight: "700",
+                marginRight: 6,
+              }}
+            >
+              Inquire
+            </Text>
+            <Feather name="chevron-right" size={16} color="#faf5ec" />
           </Pressable>
         </View>
       </SafeAreaView>
@@ -697,39 +1009,110 @@ function StatCell({
   bottom: string;
 }) {
   return (
-    <View className="flex-1 items-center px-2 py-3">
+    <View style={{ flex: 1, alignItems: "center", paddingHorizontal: 8, paddingVertical: 14 }}>
       {top}
-      <Text className="mt-1 text-xs text-muted-foreground">{bottom}</Text>
+      <Text
+        style={{
+          marginTop: 4,
+          color: INK_DIM,
+          fontSize: 10,
+          fontWeight: "700",
+          letterSpacing: 0.8,
+        }}
+      >
+        {bottom}
+      </Text>
     </View>
   );
 }
 
 function Divider() {
-  return <View style={{ width: 1, backgroundColor: "#e5e7eb" }} />;
+  return <View style={{ width: 1, backgroundColor: "#ece4d4", marginVertical: 12 }} />;
 }
 
-function Section({
-  title,
-  children,
-}: {
-  title: string;
-  children: React.ReactNode;
-}) {
+// Collapsible FAQ card — cream surface, question + chevron header.
+// Tap toggles the answer; chevron rotates conceptually (down vs. up).
+function FaqCard({ question, answer }: { question: string; answer: string }) {
+  const [open, setOpen] = useState(false);
   return (
-    <View className="px-5 pt-7">
-      <Text className="text-xl font-semibold text-foreground mb-3">
-        {title}
-      </Text>
-      {children}
-    </View>
+    <Pressable
+      onPress={() => setOpen((v) => !v)}
+      style={{
+        backgroundColor: CREAM,
+        borderRadius: 18,
+        paddingHorizontal: 16,
+        paddingVertical: 14,
+        marginBottom: 10,
+      }}
+    >
+      <View
+        style={{
+          flexDirection: "row",
+          alignItems: "center",
+          justifyContent: "space-between",
+        }}
+      >
+        <Text
+          style={{
+            flex: 1,
+            paddingRight: 12,
+            color: INK,
+            fontSize: 15,
+            fontWeight: "700",
+          }}
+        >
+          {question}
+        </Text>
+        <Feather name={open ? "chevron-up" : "chevron-down"} size={18} color={INK} />
+      </View>
+      {open ? (
+        <Text
+          style={{
+            marginTop: 10,
+            color: INK_DIM,
+            fontSize: 14,
+            lineHeight: 20,
+          }}
+        >
+          {answer}
+        </Text>
+      ) : null}
+    </Pressable>
   );
 }
 
-function PolicyRowItem({ label, value }: { label: string; value: string }) {
+// Policy card — cream surface with small label above larger value.
+function PolicyCard({ label, value }: { label: string; value: string }) {
   return (
-    <View className="flex-row items-start py-2 border-b border-border">
-      <Text className="w-32 text-sm text-muted-foreground">{label}</Text>
-      <Text className="flex-1 text-sm text-foreground">{value}</Text>
+    <View
+      style={{
+        backgroundColor: CREAM,
+        borderRadius: 18,
+        paddingHorizontal: 16,
+        paddingVertical: 14,
+        marginBottom: 10,
+      }}
+    >
+      <Text
+        style={{
+          color: INK_DIM,
+          fontSize: 11,
+          fontWeight: "800",
+          letterSpacing: 0.8,
+        }}
+      >
+        {label.toUpperCase()}
+      </Text>
+      <Text
+        style={{
+          marginTop: 4,
+          color: INK,
+          fontSize: 15,
+          fontWeight: "600",
+        }}
+      >
+        {value}
+      </Text>
     </View>
   );
 }
