@@ -427,18 +427,29 @@ export default function CalendarScreen() {
                 Manage your bookings & availability
               </Text>
             </View>
-            <View
-              style={{
+            <Pressable
+              onPress={() => {
+                // Jump the calendar back to today and select today
+                // in the day list. The "filter" framing was leftover
+                // chrome; this is the action vendors actually want
+                // when they tap a header-right icon on a calendar.
+                const today = new Date();
+                setViewMonth(new Date(today.getFullYear(), today.getMonth(), 1));
+                setSelectedYmd(ymdKey(today));
+              }}
+              hitSlop={6}
+              style={({ pressed }) => ({
                 width: 40,
                 height: 40,
                 borderRadius: 999,
                 backgroundColor: CREAM_DEEP,
                 alignItems: "center",
                 justifyContent: "center",
-              }}
+                opacity: pressed ? 0.85 : 1,
+              })}
             >
-              <Feather name="filter" size={18} color={INK} />
-            </View>
+              <Feather name="calendar" size={18} color={INK} />
+            </Pressable>
           </View>
 
           <View style={{ flexDirection: "row", gap: 10, marginTop: 18 }}>

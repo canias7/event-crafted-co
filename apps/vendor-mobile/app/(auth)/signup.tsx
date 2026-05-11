@@ -98,13 +98,11 @@ export default function VendorSignupScreen() {
       return;
     }
     if (data?.ok === false) {
-      if (data.reason === "email_taken") {
-        setError(
-          "An account with this email already exists. Tap Log in instead.",
-        );
-      } else {
-        setError(data.reason ?? "Couldn't send code.");
-      }
+      // vendor-signup no longer returns "email_taken" — it instead
+      // sends an "already registered, log in" email and returns
+      // ok:true so the API can't be used to enumerate accounts.
+      // Any other ok:false here is genuinely something else.
+      setError(data.reason ?? "Couldn't send code.");
       return;
     }
     if (data?.error) {

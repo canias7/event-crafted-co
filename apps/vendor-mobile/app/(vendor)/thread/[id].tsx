@@ -9,7 +9,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   KeyboardAvoidingView,
+  Modal,
   Platform,
   Pressable,
   ScrollView,
@@ -22,6 +24,8 @@ import { Feather } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
+
+const QUICK_EMOJIS = ["👍", "❤️", "🎉", "🙏", "😂", "🔥", "😍", "😅", "👋", "🤝", "✨", "💯"];
 
 const CREAM = "#faf5ec";
 const CREAM_DEEP = "#f5efe5";
@@ -105,7 +109,47 @@ export default function ThreadScreen() {
   const [loading, setLoading] = useState(true);
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
+  const [emojiOpen, setEmojiOpen] = useState(false);
   const scrollRef = useRef<ScrollView>(null);
+
+  // Header overflow → quick options. Vendor app has no host-detail
+  // screen yet, so mute/report are the realistic actions; both are
+  // flagged as in-progress so the button still feels alive without
+  // claiming features that don't exist.
+  const onHeaderMore = useCallback(() => {
+    Alert.alert(header?.otherName ?? "Conversation", undefined, [
+      {
+        text: "Mute notifications",
+        onPress: () =>
+          Alert.alert(
+            "Coming soon",
+            "Per-thread mute is in development — for now, manage notifications in your device settings.",
+          ),
+      },
+      {
+        text: "Report",
+        style: "destructive",
+        onPress: () =>
+          Alert.alert(
+            "Reported",
+            "Thanks — our team will review this thread.",
+          ),
+      },
+      { text: "Cancel", style: "cancel" },
+    ]);
+  }, [header]);
+
+  const onAttach = useCallback(() => {
+    Alert.alert(
+      "Attachments coming soon",
+      "Sending photos and files in chat is on the roadmap. For now, paste a link or describe what you'd send.",
+    );
+  }, []);
+
+  const onEmojiPick = useCallback((emoji: string) => {
+    setDraft((v) => v + emoji);
+    setEmojiOpen(false);
+  }, []);
 
   const loadHeader = useCallback(async () => {
     if (!threadId) return;
@@ -234,6 +278,7 @@ export default function ThreadScreen() {
           initial={initial}
           isActive={!!header?.isActive}
           onBack={() => router.back()}
+          onMore={onHeaderMore}
         />
 
         <KeyboardAvoidingView
@@ -272,10 +317,98 @@ export default function ThreadScreen() {
             onChange={setDraft}
             onSend={send}
             sending={sending}
+            onAttach={onAttach}
+            onEmoji={() => setEmojiOpen(true)}
           />
         </KeyboardAvoidingView>
       </SafeAreaView>
+
+      <EmojiPickerModal
+        visible={emojiOpen}
+        onPick={onEmojiPick}
+        onClose={() => setEmojiOpen(false)}
+      />
     </View>
+  );
+}
+
+function EmojiPickerModal({
+  visible,
+  onPick,
+  onClose,
+}: {
+  visible: boolean;
+  onPick: (e: string) => void;
+  onClose: () => void;
+}) {
+  return (
+    <Modal
+      visible={visible}
+      animationType="fade"
+      transparent
+      onRequestClose={onClose}
+    >
+      <Pressable
+        onPress={onClose}
+        style={{
+          flex: 1,
+          backgroundColor: "rgba(0,0,0,0.35)",
+          justifyContent: "flex-end",
+        }}
+      >
+        <Pressable
+          onPress={(e) => e.stopPropagation()}
+          style={{
+            backgroundColor: "#ffffff",
+            borderTopLeftRadius: 24,
+            borderTopRightRadius: 24,
+            paddingTop: 12,
+            paddingBottom: 32,
+            paddingHorizontal: 16,
+          }}
+        >
+          <View
+            style={{
+              width: 48,
+              height: 4,
+              borderRadius: 2,
+              backgroundColor: "#dcd1c1",
+              alignSelf: "center",
+              marginBottom: 12,
+            }}
+          />
+          <Text
+            style={{
+              color: INK,
+              fontFamily: SERIF,
+              fontStyle: "italic",
+              fontSize: 18,
+              fontWeight: "500",
+              marginBottom: 12,
+              paddingHorizontal: 4,
+            }}
+          >
+            Quick reactions
+          </Text>
+          <View style={{ flexDirection: "row", flexWrap: "wrap" }}>
+            {QUICK_EMOJIS.map((e) => (
+              <Pressable
+                key={e}
+                onPress={() => onPick(e)}
+                style={({ pressed }) => ({
+                  width: "16.66%",
+                  paddingVertical: 12,
+                  alignItems: "center",
+                  opacity: pressed ? 0.6 : 1,
+                })}
+              >
+                <Text style={{ fontSize: 28 }}>{e}</Text>
+              </Pressable>
+            ))}
+          </View>
+        </Pressable>
+      </Pressable>
+    </Modal>
   );
 }
 
@@ -284,11 +417,13 @@ function Header({
   initial,
   isActive,
   onBack,
+  onMore,
 }: {
   name: string;
   initial: string;
   isActive: boolean;
   onBack: () => void;
+  onMore: () => void;
 }) {
   return (
     <View
@@ -368,7 +503,11 @@ function Header({
           </Text>
         ) : null}
       </View>
-      <Pressable hitSlop={10} style={{ paddingLeft: 8 }}>
+      <Pressable
+        onPress={onMore}
+        hitSlop={10}
+        style={{ paddingLeft: 8 }}
+      >
         <Feather name="more-horizontal" size={22} color={INK} />
       </Pressable>
     </View>
@@ -507,11 +646,15 @@ function Composer({
   onChange,
   onSend,
   sending,
+  onAttach,
+  onEmoji,
 }: {
   value: string;
   onChange: (v: string) => void;
   onSend: () => void;
   sending: boolean;
+  onAttach: () => void;
+  onEmoji: () => void;
 }) {
   const enabled = value.trim().length > 0 && !sending;
   return (
@@ -532,7 +675,7 @@ function Composer({
           elevation: 2,
         }}
       >
-        <Pressable hitSlop={6} style={{ paddingRight: 10 }}>
+        <Pressable onPress={onAttach} hitSlop={6} style={{ paddingRight: 10 }}>
           <Feather name="plus" size={22} color={INK_DIM} />
         </Pressable>
         <TextInput
@@ -549,7 +692,7 @@ function Composer({
             maxHeight: 120,
           }}
         />
-        <Pressable hitSlop={6} style={{ paddingHorizontal: 6 }}>
+        <Pressable onPress={onEmoji} hitSlop={6} style={{ paddingHorizontal: 6 }}>
           <Feather name="smile" size={22} color={INK_DIM} />
         </Pressable>
         <Pressable

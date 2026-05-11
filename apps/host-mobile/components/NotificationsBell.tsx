@@ -16,8 +16,24 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
+
+// Translate a notification's web-style link (e.g.
+// "/customer/messages?thread=<uuid>", "/customer/inquiries/<id>") into
+// the matching native route. Mirrors the logic in
+// lib/pushNotifications.ts so tap-routing is consistent whether the
+// user opens via push or via the bell sheet.
+function routeFromLink(link: string | null | undefined): string | null {
+  if (!link) return "/(host)/inbox";
+  let m = link.match(/\/thread\/([0-9a-f-]{36})/i);
+  if (m) return `/(host)/thread/${m[1]}`;
+  m = link.match(/[?&]thread=([0-9a-f-]{36})/i);
+  if (m) return `/(host)/thread/${m[1]}`;
+  if (/\/inquir(y|ies)\//i.test(link)) return "/(host)/inbox";
+  return "/(host)/inbox";
+}
 
 interface NotificationRow {
   id: string;
@@ -33,9 +49,34 @@ export function NotificationsBell({
   iconColor = "#1a1410",
 }: { iconColor?: string }) {
   const { user } = useAuth();
+  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [rows, setRows] = useState<NotificationRow[]>([]);
   const [loading, setLoading] = useState(false);
+
+  const openNotification = useCallback(
+    async (n: NotificationRow) => {
+      // Mark this single row read so the badge count drops as soon
+      // as the user taps in. Optimistic local update; the DB write
+      // races in the background and we don't care if it's slow.
+      if (n.read_at == null && user?.id) {
+        setRows((prev) =>
+          prev.map((r) =>
+            r.id === n.id ? { ...r, read_at: new Date().toISOString() } : r,
+          ),
+        );
+        supabase
+          .from("notifications")
+          .update({ read_at: new Date().toISOString() })
+          .eq("id", n.id)
+          .then(() => undefined);
+      }
+      const route = routeFromLink(n.link);
+      setOpen(false);
+      if (route) router.push(route as never);
+    },
+    [user?.id, router],
+  );
 
   const load = useCallback(async () => {
     if (!user?.id) return;
@@ -155,9 +196,10 @@ export function NotificationsBell({
               </View>
             ) : (
               rows.map((r) => (
-                <View
+                <Pressable
                   key={r.id}
-                  className={`px-5 py-4 border-b border-border ${
+                  onPress={() => openNotification(r)}
+                  className={`px-5 py-4 border-b border-border active:opacity-70 ${
                     r.read_at == null ? "bg-muted/40" : ""
                   }`}
                 >
@@ -190,7 +232,7 @@ export function NotificationsBell({
                       </Text>
                     </View>
                   </View>
-                </View>
+                </Pressable>
               ))
             )}
           </ScrollView>

@@ -20,6 +20,7 @@ import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
+import { NotificationsBell } from "@/components/NotificationsBell";
 
 const CREAM = "#faf5ec";
 const CREAM_DEEP = "#f5efe5";
@@ -149,9 +150,7 @@ export default function ProfileScreen() {
             >
               Profile
             </Text>
-            <Pressable
-              onPress={() => router.push("/(host)/inbox" as never)}
-              hitSlop={6}
+            <View
               style={{
                 width: 38,
                 height: 38,
@@ -161,21 +160,11 @@ export default function ProfileScreen() {
                 justifyContent: "center",
               }}
             >
-              <Feather name="bell" size={18} color={INK} />
-              {state && state.unread > 0 ? (
-                <View
-                  style={{
-                    position: "absolute",
-                    top: 8,
-                    right: 9,
-                    width: 8,
-                    height: 8,
-                    borderRadius: 999,
-                    backgroundColor: "#dc2626",
-                  }}
-                />
-              ) : null}
-            </Pressable>
+              {/* Real notifications surface: tap opens a sheet of the
+                  user's last 50 notifications with mark-all-read. Replaces
+                  the previous dead-end where the bell routed to /inbox. */}
+              <NotificationsBell iconColor={INK} />
+            </View>
           </View>
 
           <HeroCard

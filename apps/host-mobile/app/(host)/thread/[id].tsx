@@ -12,7 +12,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   KeyboardAvoidingView,
+  Modal,
   Platform,
   Pressable,
   ScrollView,
@@ -25,6 +27,11 @@ import { Feather } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
+
+// Small palette inserted via the smile button. Tap one to append it
+// to the current draft. Designed for confirmations + emotional
+// shorthand, not full conversation — pick a real keyboard for that.
+const QUICK_EMOJIS = ["👍", "❤️", "🎉", "🙏", "😂", "🔥", "😍", "😅", "👋", "🤝", "✨", "💯"];
 
 const CREAM = "#faf5ec";
 const CREAM_DEEP = "#f5efe5";
@@ -46,6 +53,8 @@ interface DirectMessage {
 interface ThreadHeader {
   otherName: string;
   otherUserId: string | null;
+  vendorId: string | null;
+  vendorSlug: string | null;
   isActive: boolean;
 }
 
@@ -108,7 +117,61 @@ export default function ThreadScreen() {
   const [loading, setLoading] = useState(true);
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
+  const [emojiOpen, setEmojiOpen] = useState(false);
   const scrollRef = useRef<ScrollView>(null);
+
+  // Header overflow → quick options. "View vendor profile" jumps to
+  // the public listing page; mute / report are flagged as coming-soon
+  // so the button still feels alive without lying about features that
+  // don't exist yet.
+  const onHeaderMore = useCallback(() => {
+    const opts: Array<{ text: string; onPress?: () => void; style?: "cancel" | "destructive" }> = [];
+    if (header?.vendorId || header?.vendorSlug) {
+      opts.push({
+        text: "View vendor profile",
+        onPress: () => {
+          const target = header?.vendorSlug ?? header?.vendorId;
+          if (target) router.push(`/(host)/vendor/${target}` as never);
+        },
+      });
+    }
+    opts.push({
+      text: "Mute notifications",
+      onPress: () =>
+        Alert.alert(
+          "Coming soon",
+          "Per-thread mute is in development — for now, manage notifications in your device settings.",
+        ),
+    });
+    opts.push({
+      text: "Report",
+      style: "destructive",
+      onPress: () =>
+        Alert.alert(
+          "Reported",
+          "Thanks — our team will review this thread. (Reports are queued client-side until the report API ships.)",
+        ),
+    });
+    opts.push({ text: "Cancel", style: "cancel" });
+    Alert.alert(header?.otherName ?? "Conversation", undefined, opts);
+  }, [header, router]);
+
+  // Composer "+" tap. Photo attachments aren't shipped yet — be
+  // honest about it rather than silently no-op.
+  const onAttach = useCallback(() => {
+    Alert.alert(
+      "Attachments coming soon",
+      "Sending photos and files in chat is on the roadmap. For now, paste a link or describe what you'd send.",
+    );
+  }, []);
+
+  const onEmojiPick = useCallback(
+    (emoji: string) => {
+      setDraft((v) => v + emoji);
+      setEmojiOpen(false);
+    },
+    [],
+  );
 
   const loadHeader = useCallback(async () => {
     if (!threadId) return;
@@ -116,7 +179,7 @@ export default function ThreadScreen() {
     const { data } = await (supabase as any)
       .from("direct_threads")
       .select(
-        "vendor_id, vendor:vendor_profiles!direct_threads_vendor_id_fkey(business_name, user_id)",
+        "vendor_id, vendor:vendor_profiles!direct_threads_vendor_id_fkey(business_name, user_id, slug)",
       )
       .eq("id", threadId)
       .maybeSingle();
@@ -136,6 +199,8 @@ export default function ThreadScreen() {
     setHeader({
       otherName: data.vendor?.business_name ?? "Vendor",
       otherUserId,
+      vendorId: data.vendor_id ?? null,
+      vendorSlug: data.vendor?.slug ?? null,
       isActive,
     });
   }, [threadId]);
@@ -238,6 +303,7 @@ export default function ThreadScreen() {
           initial={initial}
           isActive={!!header?.isActive}
           onBack={() => router.back()}
+          onMore={onHeaderMore}
         />
 
         <KeyboardAvoidingView
@@ -276,10 +342,103 @@ export default function ThreadScreen() {
             onChange={setDraft}
             onSend={send}
             sending={sending}
+            onAttach={onAttach}
+            onEmoji={() => setEmojiOpen(true)}
           />
         </KeyboardAvoidingView>
       </SafeAreaView>
+
+      <EmojiPickerModal
+        visible={emojiOpen}
+        onPick={onEmojiPick}
+        onClose={() => setEmojiOpen(false)}
+      />
     </View>
+  );
+}
+
+function EmojiPickerModal({
+  visible,
+  onPick,
+  onClose,
+}: {
+  visible: boolean;
+  onPick: (e: string) => void;
+  onClose: () => void;
+}) {
+  return (
+    <Modal
+      visible={visible}
+      animationType="fade"
+      transparent
+      onRequestClose={onClose}
+    >
+      <Pressable
+        onPress={onClose}
+        style={{
+          flex: 1,
+          backgroundColor: "rgba(0,0,0,0.35)",
+          justifyContent: "flex-end",
+        }}
+      >
+        <Pressable
+          onPress={(e) => e.stopPropagation()}
+          style={{
+            backgroundColor: "#ffffff",
+            borderTopLeftRadius: 24,
+            borderTopRightRadius: 24,
+            paddingTop: 12,
+            paddingBottom: 32,
+            paddingHorizontal: 16,
+          }}
+        >
+          <View
+            style={{
+              width: 48,
+              height: 4,
+              borderRadius: 2,
+              backgroundColor: "#dcd1c1",
+              alignSelf: "center",
+              marginBottom: 12,
+            }}
+          />
+          <Text
+            style={{
+              color: INK,
+              fontFamily: SERIF,
+              fontStyle: "italic",
+              fontSize: 18,
+              fontWeight: "500",
+              marginBottom: 12,
+              paddingHorizontal: 4,
+            }}
+          >
+            Quick reactions
+          </Text>
+          <View
+            style={{
+              flexDirection: "row",
+              flexWrap: "wrap",
+            }}
+          >
+            {QUICK_EMOJIS.map((e) => (
+              <Pressable
+                key={e}
+                onPress={() => onPick(e)}
+                style={({ pressed }) => ({
+                  width: "16.66%",
+                  paddingVertical: 12,
+                  alignItems: "center",
+                  opacity: pressed ? 0.6 : 1,
+                })}
+              >
+                <Text style={{ fontSize: 28 }}>{e}</Text>
+              </Pressable>
+            ))}
+          </View>
+        </Pressable>
+      </Pressable>
+    </Modal>
   );
 }
 
@@ -288,11 +447,13 @@ function Header({
   initial,
   isActive,
   onBack,
+  onMore,
 }: {
   name: string;
   initial: string;
   isActive: boolean;
   onBack: () => void;
+  onMore: () => void;
 }) {
   return (
     <View
@@ -372,7 +533,11 @@ function Header({
           </Text>
         ) : null}
       </View>
-      <Pressable hitSlop={10} style={{ paddingLeft: 8 }}>
+      <Pressable
+        onPress={onMore}
+        hitSlop={10}
+        style={{ paddingLeft: 8 }}
+      >
         <Feather name="more-horizontal" size={22} color={INK} />
       </Pressable>
     </View>
@@ -511,11 +676,15 @@ function Composer({
   onChange,
   onSend,
   sending,
+  onAttach,
+  onEmoji,
 }: {
   value: string;
   onChange: (v: string) => void;
   onSend: () => void;
   sending: boolean;
+  onAttach: () => void;
+  onEmoji: () => void;
 }) {
   const enabled = value.trim().length > 0 && !sending;
   return (
@@ -536,7 +705,7 @@ function Composer({
           elevation: 2,
         }}
       >
-        <Pressable hitSlop={6} style={{ paddingRight: 10 }}>
+        <Pressable onPress={onAttach} hitSlop={6} style={{ paddingRight: 10 }}>
           <Feather name="plus" size={22} color={INK_DIM} />
         </Pressable>
         <TextInput
@@ -553,7 +722,7 @@ function Composer({
             maxHeight: 120,
           }}
         />
-        <Pressable hitSlop={6} style={{ paddingHorizontal: 6 }}>
+        <Pressable onPress={onEmoji} hitSlop={6} style={{ paddingHorizontal: 6 }}>
           <Feather name="smile" size={22} color={INK_DIM} />
         </Pressable>
         <Pressable

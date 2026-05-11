@@ -617,6 +617,12 @@ export default function VendorDetailScreen() {
               </Text>
             )}
           </View>
+          {/* Vendors browsing other vendors don't "inquire" — this
+              is the marketplace's own listing page, useful for
+              comparing your listing against a peer's. We label it
+              honestly as "View on web" since that's exactly what the
+              tap does. Hosts use a separate Inquire CTA in
+              host-mobile. */}
           <Pressable
             onPress={() => {
               const url = vendor.slug
@@ -626,12 +632,17 @@ export default function VendorDetailScreen() {
             }}
             className="rounded-full active:opacity-80"
             style={{
-              backgroundColor: "#dc2626",
-              paddingHorizontal: 28,
+              backgroundColor: "#1a1a1a",
+              paddingHorizontal: 22,
               paddingVertical: 14,
+              flexDirection: "row",
+              alignItems: "center",
             }}
           >
-            <Text className="text-base font-bold text-white">Inquire</Text>
+            <Feather name="external-link" size={16} color="#ffffff" />
+            <Text className="ml-2 text-base font-bold text-white">
+              View on web
+            </Text>
           </Pressable>
         </View>
       </SafeAreaView>
