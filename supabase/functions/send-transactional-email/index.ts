@@ -57,7 +57,14 @@ interface NewInquiryPayload {
 }
 
 interface VendorDecisionPayload {
-  vendorProfileId: string;
+  // Original: caller passes the listing id (vendor_profiles.id) and we
+  // join through to user_id. Still used for listing_approved / listing_rejected
+  // from the admin Listings tab.
+  vendorProfileId?: string;
+  // Newer: admin VendorApplicationsPage calls with userId because at
+  // approval time there may not be a publish-ready vendor_profiles row,
+  // and the row id is irrelevant when we just need the email + name.
+  userId?: string;
   reviewNotes?: string | null;
 }
 
@@ -345,17 +352,50 @@ async function vendorDecisionEmail(
   decision: Decision,
 ) {
   const sb = adminClient();
-  const { data, error: vpErr } = await sb
-    .from("vendor_profiles")
-    .select("business_name, user_id")
-    .eq("id", p.vendorProfileId)
-    .maybeSingle();
-  if (vpErr) console.error("vendor_profiles select error:", vpErr);
-  const row = data as { business_name: string; user_id: string } | null;
-  if (!row || !row.user_id) return null;
-  const { data: emailData } = await sb.rpc("get_user_email", { p_user_id: row.user_id });
+  let userId: string | null = null;
+  let businessName: string | null = null;
+
+  // Two entry shapes (see VendorDecisionPayload). Resolve user_id +
+  // business_name from whichever was passed.
+  if (p.vendorProfileId) {
+    const { data, error: vpErr } = await sb
+      .from("vendor_profiles")
+      .select("business_name, user_id")
+      .eq("id", p.vendorProfileId)
+      .maybeSingle();
+    if (vpErr) console.error("vendor_profiles select error:", vpErr);
+    const row = data as { business_name: string; user_id: string } | null;
+    if (row?.user_id) {
+      userId = row.user_id;
+      businessName = row.business_name ?? null;
+    }
+  } else if (p.userId) {
+    userId = p.userId;
+    // Pull business_name from auth metadata first (set at signup),
+    // fall back to a stub vendor_profiles row if one exists.
+    const { data: userRow } = await sb
+      .from("profiles")
+      .select("display_name")
+      .eq("id", p.userId)
+      .maybeSingle();
+    const profileName =
+      (userRow as { display_name?: string | null } | null)?.display_name ?? null;
+    const { data: vpRow } = await sb
+      .from("vendor_profiles")
+      .select("business_name")
+      .eq("user_id", p.userId)
+      .maybeSingle();
+    businessName =
+      (vpRow as { business_name?: string | null } | null)?.business_name ??
+      profileName ??
+      "Your business";
+  }
+
+  if (!userId) return null;
+  const { data: emailData } = await sb.rpc("get_user_email", { p_user_id: userId });
   const email = emailData as string | null;
   if (!email) return null;
+  const row = { business_name: businessName ?? "Your business", user_id: userId };
 
   const link = `${APP_URL}/vendor/dashboard`;
   const business = escape(row.business_name);
