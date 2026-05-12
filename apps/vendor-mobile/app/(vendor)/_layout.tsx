@@ -32,7 +32,8 @@ function FloatingTabBar({ state, navigation }: BottomTabBarProps) {
   if (
     focusedRoute === "listing" ||
     focusedRoute === "thread/[id]" ||
-    focusedRoute === "partner-thread/[id]"
+    focusedRoute === "partner-thread/[id]" ||
+    focusedRoute === "edit-profile"
   )
     return null;
   // Filter to only the visible tabs we care about, in our preferred order.
@@ -156,6 +157,7 @@ export default function VendorLayout() {
       <Tabs.Screen name="vendor/[id]" options={{ href: null }} />
       <Tabs.Screen name="thread/[id]" options={{ href: null }} />
       <Tabs.Screen name="partner-thread/[id]" options={{ href: null }} />
+      <Tabs.Screen name="edit-profile" options={{ href: null }} />
     </Tabs>
   );
 }

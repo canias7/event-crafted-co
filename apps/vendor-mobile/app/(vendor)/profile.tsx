@@ -28,7 +28,7 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useRouter } from "expo-router";
+import { useFocusEffect, useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import { ResizeMode, Video } from "expo-av";
@@ -106,6 +106,22 @@ export default function ProfileScreen() {
   const { user, signOut } = useAuth();
   const [profile, setProfile] = useState<VendorProfile | null>(null);
   const [profileCreatedAt, setProfileCreatedAt] = useState<string | null>(null);
+  // Identity stored on public.profiles (separate from any listing —
+  // see migration 20260512150000). Falls back to the user's primary
+  // vendor_profiles row only if the profile fields are still null.
+  const [identity, setIdentity] = useState<{
+    business_name: string | null;
+    category: string | null;
+    location: string | null;
+    bio: string | null;
+    logo_url: string | null;
+  }>({
+    business_name: null,
+    category: null,
+    location: null,
+    bio: null,
+    logo_url: null,
+  });
   const [stats, setStats] = useState<{
     bookings: number;
     reviews: number;
@@ -139,25 +155,54 @@ export default function ProfileScreen() {
 
   const loadProfile = useCallback(async () => {
     if (!user) return;
-    const { data } = await supabase
-      .from("vendor_profiles")
-      .select(
-        "id, business_name, category, bio, base_price_cents, location, verified_at, application_status, application_review_notes, intro_video_url, weekly_digest_enabled, slug, instagram_handle, tiktok_handle, logo_url, created_at",
-      )
-      .eq("user_id", user.id)
-      .order("created_at", { ascending: true });
+    const [{ data: vpData }, { data: identityData }] = await Promise.all([
+      supabase
+        .from("vendor_profiles")
+        .select(
+          "id, business_name, category, bio, base_price_cents, location, verified_at, application_status, application_review_notes, intro_video_url, weekly_digest_enabled, slug, instagram_handle, tiktok_handle, logo_url, created_at",
+        )
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: true }),
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (supabase as any)
+        .from("profiles")
+        .select("business_name, category, location, bio, logo_url, created_at")
+        .eq("id", user.id)
+        .maybeSingle(),
+    ]);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const rows = (data ?? []) as any[];
+    const rows = (vpData ?? []) as any[];
     setListings(rows as VendorProfile[]);
     const primary = rows[0] ?? null;
     setProfile(primary);
-    setProfileCreatedAt(primary?.created_at ?? null);
+    // Identity comes from profiles; fall back to the primary listing's
+    // values if the profile column is still empty (vendors created
+    // before the 20260512150000 backfill). The user can overwrite via
+    // the Edit profile screen.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const id: any = identityData ?? {};
+    setIdentity({
+      business_name: id.business_name ?? primary?.business_name ?? null,
+      category: id.category ?? primary?.category ?? null,
+      location: id.location ?? primary?.location ?? null,
+      bio: id.bio ?? primary?.bio ?? null,
+      logo_url: id.logo_url ?? primary?.logo_url ?? null,
+    });
+    setProfileCreatedAt(id.created_at ?? primary?.created_at ?? null);
     setLoading(false);
   }, [user]);
 
   useEffect(() => {
     loadProfile();
   }, [loadProfile]);
+
+  // Re-fetch identity when we navigate back from /(vendor)/edit-profile
+  // so saved changes show up immediately on the Profile tab.
+  useFocusEffect(
+    useCallback(() => {
+      loadProfile();
+    }, [loadProfile]),
+  );
 
   // Stats card: bookings = won inquiries across all the user's
   // listings; reviews + rating = aggregate of public reviews on those
@@ -254,13 +299,11 @@ export default function ProfileScreen() {
     }).catch(() => {});
   }
 
-  // Edit profile → jump straight into the listing builder for the
-  // primary listing. Vendors with multiple listings still pick which
-  // one to edit on the Listing tab; this button is the fast path for
-  // the most common case (one listing).
-  function openEditListing() {
-    if (!profile?.id) return;
-    router.push(`/(vendor)/listing?id=${profile.id}` as never);
+  // Edit profile → opens the profile-level edit screen which writes
+  // to public.profiles. Listings have their own builder reached from
+  // the Listing tab; this button is intentionally separate.
+  function openEditProfile() {
+    router.push("/(vendor)/edit-profile" as never);
   }
 
   // Insert a fresh draft and jump to its editor. Used by the "+
@@ -288,71 +331,6 @@ export default function ProfileScreen() {
 
   function openCreateReel() {
     setReelPickerOpen(true);
-  }
-
-  // Tap the avatar → photo picker → upload to vendor-posts/<userId>/
-  // logo-<ts>.<ext> → persist URL to vendor_profiles.logo_url. Reuses
-  // the existing vendor-posts bucket (owner-folder RLS already in
-  // place) so no new storage rules needed. Mirrors what the web
-  // Profile page does on logo click.
-  const [logoUploading, setLogoUploading] = useState(false);
-  async function changeLogo() {
-    if (!profile?.id || logoUploading) return;
-    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!perm.granted) {
-      Alert.alert(
-        "Library access needed",
-        "Enable photo library access in Settings to pick a logo.",
-      );
-      return;
-    }
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      quality: 0.9,
-    });
-    if (result.canceled || !result.assets[0]) return;
-    const asset = result.assets[0];
-    setLogoUploading(true);
-    try {
-      const ext = (asset.uri.split(".").pop() ?? "jpg")
-        .toLowerCase()
-        .replace(/[^a-z0-9]/g, "");
-      const path = `${user?.id}/logo-${Date.now()}.${ext}`;
-      // RN's fetch().blob() returns an empty payload for local file://
-      // URIs on iOS, which makes Supabase Storage reject the upload
-      // with "No content provided". arrayBuffer() reliably reads the
-      // underlying bytes, which we wrap as a Uint8Array — the
-      // supabase-js storage client accepts that directly.
-      const arrayBuffer = await (await fetch(asset.uri)).arrayBuffer();
-      const bytes = new Uint8Array(arrayBuffer);
-      if (bytes.byteLength === 0) {
-        throw new Error("Couldn't read the picked photo. Try a different image.");
-      }
-      const up = await supabase.storage
-        .from("vendor-posts")
-        .upload(path, bytes, {
-          contentType: asset.mimeType ?? "image/jpeg",
-          upsert: false,
-        });
-      if (up.error) throw up.error;
-      const { data: pub } = supabase.storage
-        .from("vendor-posts")
-        .getPublicUrl(path);
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { error } = await (supabase as any)
-        .from("vendor_profiles")
-        .update({ logo_url: pub.publicUrl })
-        .eq("id", profile.id);
-      if (error) throw error;
-      setProfile({ ...profile, logo_url: pub.publicUrl });
-    } catch (err) {
-      Alert.alert(
-        "Couldn't update logo",
-        (err as { message?: string })?.message ?? "Try again in a moment.",
-      );
-    } finally {
-      setLogoUploading(false);
-    }
   }
 
   async function pickMedia(
@@ -404,6 +382,7 @@ export default function ProfileScreen() {
   }
 
   const businessInitial =
+    identity.business_name?.trim()?.[0]?.toUpperCase() ??
     profile?.business_name?.trim()?.[0]?.toUpperCase() ??
     user?.email?.[0]?.toUpperCase() ??
     "V";
@@ -519,8 +498,7 @@ export default function ProfileScreen() {
           }}
         >
           <Pressable
-            onPress={changeLogo}
-            disabled={logoUploading || !profile?.id}
+            onPress={openEditProfile}
             style={{
               width: 116,
               height: 116,
@@ -533,9 +511,9 @@ export default function ProfileScreen() {
               overflow: "visible",
             }}
           >
-            {profile?.logo_url ? (
+            {identity.logo_url ? (
               <Image
-                source={{ uri: profile.logo_url }}
+                source={{ uri: identity.logo_url }}
                 style={{
                   width: "100%",
                   height: "100%",
@@ -557,25 +535,6 @@ export default function ProfileScreen() {
                 {businessInitial}
               </Text>
             )}
-            {logoUploading ? (
-              <View
-                style={{
-                  position: "absolute",
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  bottom: 0,
-                  alignItems: "center",
-                  justifyContent: "center",
-                  backgroundColor: "rgba(0,0,0,0.4)",
-                  borderRadius: 19,
-                }}
-              >
-                <Text style={{ color: "#fff", fontSize: 12, fontWeight: "600" }}>
-                  Uploading…
-                </Text>
-              </View>
-            ) : null}
             {profile?.verified_at ? (
               <View
                 style={{
@@ -614,7 +573,7 @@ export default function ProfileScreen() {
               <Feather name="share" size={18} color={INK} />
             </Pressable>
             <Pressable
-              onPress={openEditListing}
+              onPress={openEditProfile}
               style={{
                 backgroundColor: INK,
                 borderRadius: 999,
@@ -652,9 +611,9 @@ export default function ProfileScreen() {
             }}
             numberOfLines={2}
           >
-            {profile?.business_name ?? "Your business"}
+            {identity.business_name ?? "Your business"}
           </Text>
-          {profile?.category || profile?.location || profileCreatedAt ? (
+          {identity.category || identity.location || profileCreatedAt ? (
             <View
               style={{
                 marginTop: 8,
@@ -663,26 +622,26 @@ export default function ProfileScreen() {
                 flexWrap: "wrap",
               }}
             >
-              {profile?.category ? (
+              {identity.category ? (
                 <View style={{ flexDirection: "row", alignItems: "center" }}>
                   <Feather
-                    name={categoryIcon(profile.category)}
+                    name={categoryIcon(identity.category)}
                     size={13}
                     color={INK_DIM}
                   />
                   <Text style={{ color: INK_DIM, fontSize: 14, marginLeft: 5 }}>
-                    {profile.category}
+                    {identity.category}
                   </Text>
                 </View>
               ) : null}
-              {profile?.location ? (
+              {identity.location ? (
                 <View style={{ flexDirection: "row", alignItems: "center" }}>
                   <Text style={{ color: INK_DIM, fontSize: 14, marginHorizontal: 8 }}>
                     ·
                   </Text>
                   <Feather name="map-pin" size={13} color={INK_DIM} />
                   <Text style={{ color: INK_DIM, fontSize: 14, marginLeft: 5 }}>
-                    {profile.location}
+                    {identity.location}
                   </Text>
                 </View>
               ) : null}
@@ -704,7 +663,7 @@ export default function ProfileScreen() {
             on "one or two sentences" when the vendor hasn't written
             one yet (invites them to fill it in via Edit profile). */}
         <View style={{ paddingHorizontal: 18, marginTop: 18 }}>
-          {profile?.bio?.trim() ? (
+          {identity.bio?.trim() ? (
             <Text
               style={{
                 fontFamily: SERIF,
@@ -714,7 +673,7 @@ export default function ProfileScreen() {
                 lineHeight: 24,
               }}
             >
-              {profile.bio}
+              {identity.bio}
             </Text>
           ) : (
             <Text
