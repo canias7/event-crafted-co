@@ -586,24 +586,6 @@ export default function VendorDetailPage() {
 
   const heroPicture = imageMap[vendor.image] ?? featureFlorals;
 
-  // Debug — temporary instrumentation while we chase a render-time
-  // crash for newly-published vendors. Logs the resolved vendor
-  // object, the resolved hero key, and a few fields most likely to
-  // be problematic (image lookup, location, lat/lng-adjacent state).
-  // Remove once the root cause is fixed.
-  // eslint-disable-next-line no-console
-  console.info("[VendorDetailPage] render", {
-    id: vendor.id,
-    name: vendor.name,
-    category: vendor.category,
-    imageKey: vendor.image,
-    imageResolved: imageMap[vendor.image] ? "match" : "fallback(featureFlorals)",
-    location: vendor.location,
-    isReal: vendor.isReal,
-    instagramHandle: vendor.instagramHandle,
-    tiktokHandle: vendor.tiktokHandle,
-  });
-
   return (
     <div className="min-h-screen bg-background pb-24 lg:pb-0">
       <PublicNav />

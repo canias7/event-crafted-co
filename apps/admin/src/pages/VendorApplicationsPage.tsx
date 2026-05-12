@@ -57,6 +57,7 @@ export function VendorApplicationsPage() {
   }, [load]);
 
   const setStatus = async (id: string, status: ApplicationStatus) => {
+    const target = rows.find((r) => r.id === id);
     const { error } = await supabase
       .from("profiles")
       .update({ application_status: status })
@@ -65,6 +66,18 @@ export function VendorApplicationsPage() {
       toast.error(error.message);
       return;
     }
+    void supabase.rpc("log_admin_action", {
+      p_action: `vendor_application_${status}`,
+      p_target_type: "user",
+      p_target_id: id,
+      p_summary: `Vendor application ${status} for ${target?.business_name ?? target?.email ?? id}`,
+      p_metadata: {
+        previous: target?.application_status,
+        email: target?.email,
+        business_name: target?.business_name,
+        category: target?.category,
+      },
+    });
     if (status === "approved" || status === "rejected") {
       // Reuse the existing vendor_approved / vendor_rejected
       // transactional templates. They expect a vendorProfileId
@@ -88,6 +101,7 @@ export function VendorApplicationsPage() {
   };
 
   const removeAccount = async (id: string, name: string | null) => {
+    const target = rows.find((r) => r.id === id);
     if (
       !window.confirm(
         `Delete ${name ?? "this vendor"}'s account? This permanently removes the auth user, profile, and any listing data. This cannot be undone.`,
@@ -104,6 +118,17 @@ export function VendorApplicationsPage() {
       toast.error(`Couldn't delete: ${error.message}`);
       return;
     }
+    void supabase.rpc("log_admin_action", {
+      p_action: "vendor_account_delete",
+      p_target_type: "user",
+      p_target_id: id,
+      p_summary: `Deleted vendor account ${name ?? target?.email ?? id}`,
+      p_metadata: {
+        email: target?.email,
+        business_name: target?.business_name,
+        was_status: target?.application_status,
+      },
+    });
     toast.success(`Deleted ${name ?? "vendor"}`);
     setRows((prev) => prev.filter((r) => r.id !== id));
   };

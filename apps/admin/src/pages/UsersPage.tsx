@@ -88,6 +88,15 @@ export function UsersPage() {
       toast.error(error.message);
       return;
     }
+    // Audit trail — log the suspend/unsuspend so admin actions are
+    // searchable later. Best-effort; we don't block the UI on it.
+    void supabase.rpc("log_admin_action", {
+      p_action: next ? "user_suspend" : "user_unsuspend",
+      p_target_type: "user",
+      p_target_id: row.id,
+      p_summary: `${next ? "Suspended" : "Unsuspended"} ${row.display_name ?? row.email ?? row.id}`,
+      p_metadata: { role: row.role },
+    });
     toast.success(next ? "Suspended" : "Unsuspended");
     setRows((p) =>
       p.map((r) => (r.id === row.id ? { ...r, suspended_at: next } : r)),
@@ -97,16 +106,27 @@ export function UsersPage() {
   const confirmDelete = async () => {
     if (!pendingDelete) return;
     setDeleting(true);
+    const target = pendingDelete;
     const { error } = await supabase.rpc("admin_delete_user", {
-      p_user_id: pendingDelete.id,
+      p_user_id: target.id,
     });
     setDeleting(false);
     if (error) {
       toast.error(error.message);
       return;
     }
+    // Audit trail — log the deletion before the row disappears from
+    // our local state. The DB CASCADE has already wiped any related
+    // rows so we keep the human-readable summary here.
+    void supabase.rpc("log_admin_action", {
+      p_action: "user_delete",
+      p_target_type: "user",
+      p_target_id: target.id,
+      p_summary: `Deleted account ${target.display_name ?? target.email ?? target.id}`,
+      p_metadata: { role: target.role, email: target.email },
+    });
     toast.success("Account deleted");
-    setRows((p) => p.filter((r) => r.id !== pendingDelete.id));
+    setRows((p) => p.filter((r) => r.id !== target.id));
     setPendingDelete(null);
   };
 
@@ -125,7 +145,7 @@ export function UsersPage() {
     return (
       (r.display_name ?? "").toLowerCase().includes(q) ||
       (r.email ?? "").toLowerCase().includes(q) ||
-      r.id.includes(filter)
+      r.id.toLowerCase().includes(q)
     );
   });
 
