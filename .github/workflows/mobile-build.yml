@@ -45,8 +45,10 @@ jobs:
       apps: ${{ steps.matrix.outputs.list }}
     steps:
       - id: matrix
+        env:
+          APPS: ${{ inputs.apps }}
         run: |
-          case "${{ inputs.apps }}" in
+          case "$APPS" in
             both)   echo 'list=["vendor-mobile","host-mobile"]' >> "$GITHUB_OUTPUT" ;;
             vendor) echo 'list=["vendor-mobile"]' >> "$GITHUB_OUTPUT" ;;
             host)   echo 'list=["host-mobile"]' >> "$GITHUB_OUTPUT" ;;
