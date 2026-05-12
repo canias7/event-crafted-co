@@ -42,7 +42,13 @@ export default function DashboardScreen() {
 
   const load = useCallback(
     async (isRefresh: boolean) => {
-      if (!user) return;
+      if (!user) {
+        // Make sure pull-to-refresh doesn't hang the spinner if we
+        // re-enter while signed-out.
+        if (isRefresh) setRefreshing(false);
+        else setLoading(false);
+        return;
+      }
       if (isRefresh) setRefreshing(true);
       else setLoading(true);
       setError(null);

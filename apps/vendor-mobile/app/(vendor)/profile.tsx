@@ -15,6 +15,7 @@
 import { useCallback, useEffect, useState } from "react";
 import {
   Alert,
+  AppState,
   Dimensions,
   FlatList,
   Image,
@@ -34,6 +35,7 @@ import * as ImagePicker from "expo-image-picker";
 import { ResizeMode, Video } from "expo-av";
 import type { VendorProfile } from "@vendora/core";
 import { useAuth } from "@/lib/auth";
+import { tryRegisterPushToken } from "@/lib/pushNotifications";
 import { supabase } from "@/lib/supabase";
 import { BuzzComposer } from "@/components/BuzzComposer";
 import { MediaComposer, type MediaKind } from "@/components/MediaComposer";
@@ -1875,30 +1877,43 @@ function SettingsSheet({
   const [pushOn, setPushOn] = useState(true);
   const [pushBusy, setPushBusy] = useState(false);
 
+  const refreshAccountState = useCallback(async () => {
+    const { data } = await supabase.auth.getUser();
+    setEmailVerified(!!data?.user?.email_confirmed_at);
+    if (user?.id) {
+      const [{ data: prof }, { count }] = await Promise.all([
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (supabase as any)
+          .from("profiles")
+          .select("preferred_language")
+          .eq("id", user.id)
+          .maybeSingle(),
+        supabase
+          .from("device_push_tokens")
+          .select("token", { count: "exact", head: true })
+          .eq("user_id", user.id),
+      ]);
+      setLanguage(prof?.preferred_language ?? "en-US");
+      setPushOn((count ?? 0) > 0);
+    }
+  }, [user?.id]);
+
   useEffect(() => {
     if (!open) return;
     setView("main");
-    (async () => {
-      const { data } = await supabase.auth.getUser();
-      setEmailVerified(!!data?.user?.email_confirmed_at);
-      if (user?.id) {
-        const [{ data: prof }, { count }] = await Promise.all([
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          (supabase as any)
-            .from("profiles")
-            .select("preferred_language")
-            .eq("id", user.id)
-            .maybeSingle(),
-          supabase
-            .from("device_push_tokens")
-            .select("token", { count: "exact", head: true })
-            .eq("user_id", user.id),
-        ]);
-        setLanguage(prof?.preferred_language ?? "en-US");
-        setPushOn((count ?? 0) > 0);
-      }
-    })();
-  }, [open, user?.id]);
+    refreshAccountState();
+  }, [open, refreshAccountState]);
+
+  // Re-check email-verified state when the app comes back to
+  // foreground while the sheet is open. Catches the "user verified
+  // in a browser tab and switched back" path.
+  useEffect(() => {
+    if (!open) return;
+    const sub = AppState.addEventListener("change", (next) => {
+      if (next === "active") refreshAccountState();
+    });
+    return () => sub.remove();
+  }, [open, refreshAccountState]);
 
   async function changePassword() {
     if (newPwd.length < 8) {
@@ -1922,9 +1937,10 @@ function SettingsSheet({
     Alert.alert("Password updated", "Your new password is active.");
   }
 
-  // Toggle persists by inserting / deleting rows on device_push_tokens
-  // for the current user. The next foreground will re-register a token
-  // via the existing auth-state listener if push is back on.
+  // OFF deletes the device_push_tokens rows; ON re-runs the
+  // permission + token-registration flow inline (don't wait for
+  // next cold-start). If the OS permission is denied, the
+  // tryRegisterPushToken call no-ops and we revert the toggle.
   async function togglePush() {
     if (!user?.id || pushBusy) return;
     setPushBusy(true);
@@ -1937,10 +1953,24 @@ function SettingsSheet({
         .eq("user_id", user.id);
       if (error) setPushOn(true);
     } else {
-      // The auth-state listener re-registers on next mount/foreground.
-      // For an immediate ping we'd need to call tryRegisterPushToken
-      // here, but importing pushNotifications would couple this sheet
-      // to permission state. Leave the listener to handle it.
+      try {
+        await tryRegisterPushToken(user.id, "vendor");
+        // Verify a token row actually landed — if the OS denied
+        // permission, none was inserted and we should reflect that.
+        const { count } = await supabase
+          .from("device_push_tokens")
+          .select("token", { count: "exact", head: true })
+          .eq("user_id", user.id);
+        if ((count ?? 0) === 0) {
+          setPushOn(false);
+          Alert.alert(
+            "Push permission needed",
+            "Enable notifications for Vendora in your device Settings to receive pushes.",
+          );
+        }
+      } catch {
+        setPushOn(false);
+      }
     }
     setPushBusy(false);
   }

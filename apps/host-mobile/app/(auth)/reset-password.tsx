@@ -102,7 +102,7 @@ export default function ResetPasswordScreen() {
       return;
     }
     setState("done");
-    setTimeout(() => router.replace("/(host)/explore"), 800);
+    setTimeout(() => router.replace("/(host)/inbox"), 800);
   }
 
   if (state === "loading") {

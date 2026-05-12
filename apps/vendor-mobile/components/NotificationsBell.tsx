@@ -97,17 +97,16 @@ export function NotificationsBell({
 
   async function markAllRead() {
     if (!user?.id) return;
+    // Optimistic first so the bell badge drops to 0 immediately.
+    const now = new Date().toISOString();
+    setRows((prev) =>
+      prev.map((r) => ({ ...r, read_at: r.read_at ?? now })),
+    );
     await supabase
       .from("notifications")
-      .update({ read_at: new Date().toISOString() })
+      .update({ read_at: now })
       .eq("user_id", user.id)
       .is("read_at", null);
-    setRows((prev) =>
-      prev.map((r) => ({
-        ...r,
-        read_at: r.read_at ?? new Date().toISOString(),
-      })),
-    );
   }
 
   const unread = rows.filter((r) => r.read_at == null).length;
