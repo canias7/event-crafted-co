@@ -1590,6 +1590,44 @@ function SettingsSheet({
               Log out
             </Text>
           </Pressable>
+
+          <Pressable
+            onPress={() => {
+              Alert.alert(
+                "Delete your account?",
+                "This permanently deletes your account, all listings, messages, and history. You can't undo this.",
+                [
+                  { text: "Cancel", style: "cancel" },
+                  {
+                    text: "Delete account",
+                    style: "destructive",
+                    onPress: async () => {
+                      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                      const { error } = await (supabase as any).rpc(
+                        "request_account_deletion",
+                      );
+                      if (error) {
+                        Alert.alert(
+                          "Couldn't delete account",
+                          error.message,
+                        );
+                        return;
+                      }
+                      onClose();
+                      // The auth.users row is now gone — sign-out
+                      // clears the local session and routes to auth.
+                      onSignOut();
+                    },
+                  },
+                ],
+              );
+            }}
+            className="mt-2 rounded-lg border border-rose-300 bg-background py-3 active:opacity-70"
+          >
+            <Text className="text-center text-sm font-medium text-rose-600">
+              Delete account
+            </Text>
+          </Pressable>
         </Pressable>
       </Pressable>
     </Modal>

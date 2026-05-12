@@ -42,6 +42,41 @@ interface Payload {
   body?: string | null;
   link?: string | null;
   tag?: string | null;
+  notification_id?: string | null;
+}
+
+type PushEventStatus =
+  | "sent"
+  | "failed"
+  | "invalid_token"
+  | "rate_limited"
+  | "unknown";
+
+interface PushEventRow {
+  notification_id: string | null;
+  user_id: string;
+  token_preview: string;
+  token_kind: "expo" | "web";
+  status: PushEventStatus;
+  expo_ticket_id?: string | null;
+  error?: string | null;
+}
+
+// Best-effort batch insert into push_events. Failures here MUST NOT
+// break delivery — wrap and swallow.
+async function logEvents(sb: any, rows: PushEventRow[]) {
+  if (rows.length === 0) return;
+  try {
+    await sb.from("push_events").insert(rows);
+  } catch {
+    // swallow
+  }
+}
+
+function previewToken(t: string): string {
+  // Tokens are sensitive; keep only the trailing 8 chars for forensics.
+  if (!t) return "";
+  return t.length > 12 ? "…" + t.slice(-8) : t;
 }
 
 serve(async (req) => {
@@ -102,6 +137,7 @@ async function deliverWeb(sb: any, payload: Payload) {
 
   let delivered = 0;
   const dead: string[] = [];
+  const events: PushEventRow[] = [];
 
   await Promise.all(
     subs.map(async (s: any) => {
@@ -114,12 +150,30 @@ async function deliverWeb(sb: any, payload: Payload) {
           body,
         );
         delivered++;
+        events.push({
+          notification_id: payload.notification_id ?? null,
+          user_id: payload.user_id,
+          token_preview: previewToken(s.endpoint),
+          token_kind: "web",
+          status: "sent",
+        });
       } catch (err: any) {
-        // 404 / 410 = subscription is gone (uninstalled, denied) →
-        // purge so we don't keep retrying.
-        if (err?.statusCode === 404 || err?.statusCode === 410) {
-          dead.push(s.id);
-        }
+        const code = err?.statusCode;
+        const isDead = code === 404 || code === 410;
+        const isRate = code === 429;
+        if (isDead) dead.push(s.id);
+        events.push({
+          notification_id: payload.notification_id ?? null,
+          user_id: payload.user_id,
+          token_preview: previewToken(s.endpoint),
+          token_kind: "web",
+          status: isDead
+            ? "invalid_token"
+            : isRate
+              ? "rate_limited"
+              : "failed",
+          error: err?.body ?? err?.message ?? String(code ?? "unknown"),
+        });
       }
     }),
   );
@@ -127,6 +181,7 @@ async function deliverWeb(sb: any, payload: Payload) {
   if (dead.length > 0) {
     await sb.from("push_subscriptions").delete().in("id", dead);
   }
+  await logEvents(sb, events);
 
   if (delivered > 0) {
     await sb
@@ -167,6 +222,7 @@ async function deliverMobile(sb: any, payload: Payload) {
 
   let delivered = 0;
   const dead: string[] = [];
+  const events: PushEventRow[] = [];
 
   // Chunk just in case — practically tokens.length is tiny but the
   // ceiling is real.
@@ -182,28 +238,76 @@ async function deliverMobile(sb: any, payload: Payload) {
         },
         body: JSON.stringify(chunk),
       });
-      const json = await res.json();
+      const isRate = res.status === 429;
+      const json = await res.json().catch(() => null);
       const tickets: any[] = json?.data ?? [];
+      // If Expo returned no tickets (e.g. global 429), still log one
+      // event per token so we don't lose the trail.
+      if (tickets.length === 0) {
+        chunk.forEach((m: any) => {
+          events.push({
+            notification_id: payload.notification_id ?? null,
+            user_id: payload.user_id,
+            token_preview: previewToken(m.to),
+            token_kind: "expo",
+            status: isRate ? "rate_limited" : "unknown",
+            error: typeof json === "object" ? JSON.stringify(json) : null,
+          });
+        });
+        continue;
+      }
       tickets.forEach((ticket, idx) => {
+        const to = chunk[idx].to as string;
         if (ticket?.status === "ok") {
           delivered++;
-        } else if (
-          ticket?.status === "error" &&
-          (ticket?.details?.error === "DeviceNotRegistered" ||
-            ticket?.details?.error === "InvalidCredentials")
-        ) {
-          dead.push(chunk[idx].to);
+          events.push({
+            notification_id: payload.notification_id ?? null,
+            user_id: payload.user_id,
+            token_preview: previewToken(to),
+            token_kind: "expo",
+            status: "sent",
+            expo_ticket_id: ticket?.id ?? null,
+          });
+          return;
         }
+        const err = ticket?.details?.error;
+        const isInvalid =
+          err === "DeviceNotRegistered" || err === "InvalidCredentials";
+        if (isInvalid) dead.push(to);
+        events.push({
+          notification_id: payload.notification_id ?? null,
+          user_id: payload.user_id,
+          token_preview: previewToken(to),
+          token_kind: "expo",
+          status: isInvalid
+            ? "invalid_token"
+            : err === "MessageRateExceeded"
+              ? "rate_limited"
+              : "failed",
+          error: ticket?.message ?? err ?? null,
+        });
       });
-    } catch {
+    } catch (e) {
       // Network blip — leave tokens in place, the next notification
-      // will retry.
+      // will retry. Log a per-token "failed" event so the admin
+      // dashboard still sees the attempt.
+      chunk.forEach((m: any) => {
+        events.push({
+          notification_id: payload.notification_id ?? null,
+          user_id: payload.user_id,
+          token_preview: previewToken(m.to),
+          token_kind: "expo",
+          status: "failed",
+          error: e instanceof Error ? e.message : String(e),
+        });
+      });
     }
   }
 
   if (dead.length > 0) {
     await sb.from("device_push_tokens").delete().in("token", dead);
   }
+  await logEvents(sb, events);
 
   if (delivered > 0) {
     await sb

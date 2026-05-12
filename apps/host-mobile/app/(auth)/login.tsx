@@ -266,6 +266,15 @@ export default function LoginScreen() {
               </Text>
 
               <Pressable
+                onPress={() => router.push("/(auth)/forgot-password")}
+                style={{ marginTop: 12, alignItems: "center" }}
+              >
+                <Text style={{ color: INK, fontWeight: "600", fontSize: 14 }}>
+                  Forgot your password?
+                </Text>
+              </Pressable>
+
+              <Pressable
                 onPress={() => router.replace("/(auth)/signup")}
                 style={{ marginTop: 12, alignItems: "center" }}
               >
