@@ -122,18 +122,32 @@ export default function EditProfileScreen() {
     const asset = pick.assets[0];
     setLogoUploading(true);
     try {
+      // Read the picked file as an ArrayBuffer instead of going through
+      // fetch().blob(). The blob path is unreliable on iOS for the
+      // cropped image URI ImagePicker hands back when allowsEditing is
+      // true — supabase-js gets a Blob with size=0 and the server
+      // responds with "No content provided". ArrayBuffer reads the
+      // bytes eagerly and uploads cleanly.
       const resp = await fetch(asset.uri);
-      const blob = await resp.blob();
+      const arrayBuffer = await resp.arrayBuffer();
       // 10 MB cap on logos so we don't bloat the CDN with high-res
       // camera roll originals when we only use them small.
-      if (blob.size > 10 * 1024 * 1024) {
+      if (arrayBuffer.byteLength > 10 * 1024 * 1024) {
         Alert.alert("Photo too large", "Pick a logo under 10 MB.");
         return;
       }
-      const ext = (asset.uri.split(".").pop() || "jpg").toLowerCase();
+      if (arrayBuffer.byteLength === 0) {
+        Alert.alert(
+          "Couldn't read photo",
+          "The picked image came back empty. Try a different photo.",
+        );
+        return;
+      }
+      const ext = (asset.uri.split(".").pop() || "jpg")
+        .toLowerCase()
+        .split("?")[0]; // strip any query string the picker may append
       const path = `${user.id}/profile-logo-${Date.now()}.${ext}`;
-      // Same MIME priority as message attachments: explicit picker
-      // value → blob.type from bytes → known-ext map → image/jpeg.
+      // MIME priority: explicit picker value → known-ext map → jpeg.
       const extMime: Record<string, string> = {
         jpg: "image/jpeg",
         jpeg: "image/jpeg",
@@ -144,10 +158,10 @@ export default function EditProfileScreen() {
         heif: "image/heif",
       };
       const contentType =
-        asset.mimeType || blob.type || extMime[ext] || "image/jpeg";
+        asset.mimeType || extMime[ext] || "image/jpeg";
       const { error: upErr } = await supabase.storage
         .from("vendor-posts")
-        .upload(path, blob, {
+        .upload(path, arrayBuffer, {
           contentType,
           upsert: false,
         });
