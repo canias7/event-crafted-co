@@ -94,7 +94,7 @@ export default function ClaimVendorPage() {
       return;
     }
     toast.success("Claimed — welcome to Vendora");
-    navigate("/vendor/profile");
+    navigate("/vendor/listing");
   }
 
   if (notFound) {

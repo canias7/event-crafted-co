@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Plus,
   Trash2,
@@ -80,9 +80,12 @@ export default function GuestsPage() {
   const [importOpen, setImportOpen] = useState(false);
   const [blastOpen, setBlastOpen] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  // Versioned cancel guard — only the latest load() may call setState.
+  const loadVersion = useRef(0);
 
   async function load() {
     if (!user) return;
+    const myVersion = ++loadVersion.current;
     setLoading(true);
     const { data } = await guestsTable()
       .select(
@@ -90,12 +93,16 @@ export default function GuestsPage() {
       )
       .eq("host_id", user.id)
       .order("created_at", { ascending: false });
+    if (myVersion !== loadVersion.current) return;
     setRows((data as GuestRow[]) ?? []);
     setLoading(false);
   }
 
   useEffect(() => {
     load();
+    return () => {
+      loadVersion.current = -1;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 

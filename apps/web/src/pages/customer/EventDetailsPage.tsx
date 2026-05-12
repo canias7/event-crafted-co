@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { Link } from "react-router-dom";
 import {
   Calendar,
   CalendarPlus,
@@ -90,8 +91,12 @@ export default function EventDetailsPage() {
   const [budgetMax, setBudgetMax] = useState("");
   const [eventNotes, setEventNotes] = useState("");
 
+  // Versioned cancel guard — only the latest loadEvents() may setState.
+  const loadVersion = useRef(0);
+
   async function loadEvents() {
     if (!user) return;
+    const myVersion = ++loadVersion.current;
     setLoading(true);
     const { data } = await eventsTable()
       .select(
@@ -100,12 +105,16 @@ export default function EventDetailsPage() {
       .eq("host_id", user.id)
       .order("archived_at", { ascending: true, nullsFirst: true })
       .order("created_at", { ascending: false });
+    if (myVersion !== loadVersion.current) return;
     setEvents((data as EventRow[]) ?? []);
     setLoading(false);
   }
 
   useEffect(() => {
     loadEvents();
+    return () => {
+      loadVersion.current = -1;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
@@ -172,11 +181,15 @@ export default function EventDetailsPage() {
       .update(payload)
       .eq("id", activeEvent.id);
     if (!error) {
-      // Mirror to legacy profile fields so old code paths keep working
-      await supabase
+      // Mirror to legacy profile fields so old code paths keep working.
+      // Mirror failure is non-fatal: host_events is the source of truth.
+      const { error: mirrorErr } = await supabase
         .from("profiles")
         .update(payload as never)
         .eq("id", user.id);
+      if (mirrorErr) {
+        console.error("[EventDetails] profile mirror failed", mirrorErr.message);
+      }
     }
     setSaving(false);
 
@@ -191,25 +204,36 @@ export default function EventDetailsPage() {
 
   async function setActive(eventId: string) {
     if (!user) return;
-    await supabase
+    const { error } = await supabase
       .from("profiles")
       .update({ active_event_id: eventId } as never)
       .eq("id", user.id);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
     await refreshProfile();
     toast.success("Active event switched");
   }
 
   async function archiveEvent(ev: EventRow) {
-    await eventsTable()
+    const { error } = await eventsTable()
       .update({ archived_at: new Date().toISOString() })
       .eq("id", ev.id);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
     if (activeEvent?.id === ev.id) {
       // Pick another non-archived event as active, or null
       const next = events.find((x) => x.id !== ev.id && !x.archived_at);
-      await supabase
+      const { error: profileErr } = await supabase
         .from("profiles")
         .update({ active_event_id: next?.id ?? null } as never)
         .eq("id", user!.id);
+      if (profileErr) {
+        console.error("[EventDetails] active_event_id swap failed", profileErr.message);
+      }
     }
     await refreshProfile();
     loadEvents();
@@ -218,12 +242,19 @@ export default function EventDetailsPage() {
 
   async function deleteEvent(ev: EventRow) {
     if (!confirm("Delete this event permanently? This can't be undone.")) return;
-    await eventsTable().delete().eq("id", ev.id);
+    const { error } = await eventsTable().delete().eq("id", ev.id);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
     if (activeEvent?.id === ev.id) {
-      await supabase
+      const { error: profileErr } = await supabase
         .from("profiles")
         .update({ active_event_id: null } as never)
         .eq("id", user!.id);
+      if (profileErr) {
+        console.error("[EventDetails] active_event_id clear failed", profileErr.message);
+      }
     }
     await refreshProfile();
     loadEvents();
@@ -276,7 +307,7 @@ export default function EventDetailsPage() {
                   asChild
                   className="rounded-full bg-foreground text-background hover:bg-foreground/90"
                 >
-                  <a href="/customer/onboarding">Go to onboarding</a>
+                  <Link to="/customer/onboarding">Go to onboarding</Link>
                 </Button>
               )}
               {profile?.onboarded_at && (
@@ -643,11 +674,15 @@ function CreateEventDialog({
       toast.error(error?.message ?? "Couldn't create");
       return;
     }
-    // Make it the active event
-    await supabase
+    // Make it the active event. Mirror failure is non-fatal — host can
+    // pick it from the picker; we just won't auto-select it.
+    const { error: profileErr } = await supabase
       .from("profiles")
       .update({ active_event_id: data.id } as never)
       .eq("id", hostId);
+    if (profileErr) {
+      console.error("[CreateEvent] active_event_id set failed", profileErr.message);
+    }
     setSubmitting(false);
     setName("");
     setEventDate("");

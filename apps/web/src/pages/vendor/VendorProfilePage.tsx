@@ -517,18 +517,26 @@ export default function VendorProfilePage() {
 
     if (profile) {
       setSaving(true);
+      // Update AND return the row so the local state reflects what's
+      // actually in the DB now (triggers may have rewritten fields).
+      // Falling back to the optimistic merge if the select fails for
+      // any reason — DB write already succeeded by that point.
+      const SELECT_COLS =
+        "id, business_name, category, bio, base_price_cents, location, verified_at, application_status, intro_video_url, weekly_digest_enabled, slug, instagram_handle, tiktok_handle";
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { error } = await (supabase as any)
+      const { data: updated, error } = await (supabase as any)
         .from("vendor_profiles")
         .update(payload)
-        .eq("id", profile.id);
+        .eq("id", profile.id)
+        .select(SELECT_COLS)
+        .single();
       setSaving(false);
       if (error) {
         toast.error(error.message);
         return;
       }
       toast.success(opts?.publish ? "Listing published" : "Profile saved");
-      setProfile({ ...profile, ...payload });
+      setProfile((updated as VendorProfile) ?? { ...profile, ...payload });
       if (opts?.publish) {
         setPublishedRecently(true);
         invalidateVendorsCache();
@@ -542,7 +550,17 @@ export default function VendorProfilePage() {
               vendorProfileId: profile.id,
             },
           })
-          .catch(() => {});
+          .then(({ error: emailErr }) => {
+            if (emailErr) {
+              console.error(
+                "[VendorProfile] listing_submitted email failed",
+                emailErr.message,
+              );
+            }
+          })
+          .catch((e) => {
+            console.error("[VendorProfile] listing_submitted email threw", e);
+          });
         setTimeout(() => {
           document
             .getElementById("listing-preview")
@@ -550,11 +568,22 @@ export default function VendorProfilePage() {
         }, 50);
       }
       // Re-geocode if location changed. Fire-and-forget — failure to
-      // geocode shouldn't block the save toast.
+      // geocode shouldn't block the save toast, but DO log so we'd
+      // notice if vendors stop showing up on the map filter.
       if (payload.location) {
         supabase.functions
           .invoke("geocode-vendor", { body: { vendorId: profile.id } })
-          .catch(() => {});
+          .then(({ error: geoErr }) => {
+            if (geoErr) {
+              console.error(
+                "[VendorProfile] geocode-vendor failed",
+                geoErr.message,
+              );
+            }
+          })
+          .catch((e) => {
+            console.error("[VendorProfile] geocode-vendor threw", e);
+          });
       }
     } else {
       setCreating(true);

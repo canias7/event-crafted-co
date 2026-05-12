@@ -207,10 +207,17 @@ export default function InquiryDetailPage() {
   async function transitionToReplied() {
     if (!inquiry || !inquiryId) return;
     if (inquiry.status !== "new" && inquiry.status !== "drafted") return;
-    await supabase
+    const { error } = await supabase
       .from("inquiries")
       .update({ status: "replied" })
       .eq("id", inquiryId);
+    if (error) {
+      // Don't toast — this is a background transition triggered by
+      // sending a message. The message itself already went through; a
+      // status-update failure is purely housekeeping that the next
+      // realtime tick will re-attempt. Log so we'd notice in Sentry.
+      console.error("[InquiryDetail] transitionToReplied failed", error.message);
+    }
   }
 
   async function setStatus(next: "won" | "lost" | "replied") {
@@ -309,10 +316,15 @@ export default function InquiryDetailPage() {
       return toast.error(error.message);
     }
     if (editingDraftId) {
-      await supabase
+      const { error: draftErr } = await supabase
         .from("messages")
         .update({ draft_status: "edited" })
         .eq("id", editingDraftId);
+      if (draftErr) {
+        // Soft failure — the new message went through, this just flips
+        // the prior draft to "edited" so the timeline can hide it.
+        console.error("[InquiryDetail] draft flip failed", draftErr.message);
+      }
       setEditingDraftId(null);
     }
     await transitionToReplied();
@@ -779,7 +791,7 @@ function AlbumCta({
       return;
     }
     toast.success("Album created — finish setup on your profile");
-    navigate("/vendor/profile");
+    navigate("/vendor/listing");
   }
 
   if (loading) return null;
