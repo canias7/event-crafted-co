@@ -83,7 +83,14 @@ serve(async (req) => {
       return json({ error: "Invalid signature" }, 401);
     }
   } else {
-    console.warn("SEND_EMAIL_HOOK_SECRET not set — accepting unsigned hook");
+    // Raise this from warn → error so it stands out in dashboards.
+    // This hook handles password-reset + email-confirmation links;
+    // accepting unsigned input is a security gap. Set
+    // SEND_EMAIL_HOOK_SECRET (Supabase → Auth → Email hook) to close it.
+    console.error(
+      "SEND_EMAIL_HOOK_SECRET not set — accepting unsigned hook. " +
+        "Set this secret to enable HMAC verification.",
+    );
   }
 
   let payload: HookPayload;

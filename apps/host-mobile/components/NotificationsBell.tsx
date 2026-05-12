@@ -58,7 +58,8 @@ export function NotificationsBell({
     async (n: NotificationRow) => {
       // Mark this single row read so the badge count drops as soon
       // as the user taps in. Optimistic local update; the DB write
-      // races in the background and we don't care if it's slow.
+      // races in the background. Log failures so we'd notice if
+      // notifications never mark read across the fleet.
       if (n.read_at == null && user?.id) {
         setRows((prev) =>
           prev.map((r) =>
@@ -69,7 +70,15 @@ export function NotificationsBell({
           .from("notifications")
           .update({ read_at: new Date().toISOString() })
           .eq("id", n.id)
-          .then(() => undefined);
+          .then(({ error }) => {
+            if (error) {
+              // eslint-disable-next-line no-console
+              console.warn(
+                "[NotificationsBell] mark-read failed",
+                error.message,
+              );
+            }
+          });
       }
       const route = routeFromLink(n.link);
       setOpen(false);
@@ -102,11 +111,16 @@ export function NotificationsBell({
 
   async function markAllRead() {
     if (!user?.id) return;
-    await supabase
+    const { error } = await supabase
       .from("notifications")
       .update({ read_at: new Date().toISOString() })
       .eq("user_id", user.id)
       .is("read_at", null);
+    if (error) {
+      // eslint-disable-next-line no-console
+      console.warn("[NotificationsBell] mark-all-read failed", error.message);
+      return;
+    }
     setRows((prev) =>
       prev.map((r) => ({
         ...r,

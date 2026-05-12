@@ -64,7 +64,15 @@ export function NotificationsBell({
           .from("notifications")
           .update({ read_at: new Date().toISOString() })
           .eq("id", n.id)
-          .then(() => undefined);
+          .then(({ error }) => {
+            if (error) {
+              // eslint-disable-next-line no-console
+              console.warn(
+                "[NotificationsBell] mark-read failed",
+                error.message,
+              );
+            }
+          });
       }
       const route = routeFromLink(n.link);
       setOpen(false);
@@ -97,11 +105,16 @@ export function NotificationsBell({
 
   async function markAllRead() {
     if (!user?.id) return;
-    await supabase
+    const { error } = await supabase
       .from("notifications")
       .update({ read_at: new Date().toISOString() })
       .eq("user_id", user.id)
       .is("read_at", null);
+    if (error) {
+      // eslint-disable-next-line no-console
+      console.warn("[NotificationsBell] mark-all-read failed", error.message);
+      return;
+    }
     setRows((prev) =>
       prev.map((r) => ({
         ...r,

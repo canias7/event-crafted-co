@@ -88,19 +88,33 @@ async function sendCodeEmail(email: string, code: string): Promise<boolean> {
     </table>
   </td></tr></table>
 </body></html>`;
-  const r = await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${RESEND_API_KEY}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      from: FROM_ADDRESS,
-      to: email,
-      subject: `Your Vendora sign-in code is ${cleanCode}`,
-      html,
-    }),
-  });
+  // 10s timeout — if Resend stalls, fail the request fast so the
+  // signed-in user can retry rather than wait on a hung function.
+  const ac = new AbortController();
+  const timeout = setTimeout(() => ac.abort(), 10_000);
+  let r: Response;
+  try {
+    r = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      signal: ac.signal,
+      headers: {
+        Authorization: `Bearer ${RESEND_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        from: FROM_ADDRESS,
+        to: email,
+        subject: `Your Vendora sign-in code is ${cleanCode}`,
+        html,
+      }),
+    });
+  } catch (e) {
+    clearTimeout(timeout);
+    const aborted = e instanceof DOMException && e.name === "AbortError";
+    console.error("Resend send failed", aborted ? "timeout" : String(e));
+    return false;
+  }
+  clearTimeout(timeout);
   if (!r.ok) {
     console.error("Resend send failed", r.status, await r.text());
     return false;

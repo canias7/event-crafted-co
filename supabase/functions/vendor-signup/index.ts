@@ -182,7 +182,15 @@ serve(async (req) => {
         u.email_confirmed_at != null,
     );
     if (taken) {
-      await sendAlreadyRegisteredEmail(email);
+      // Return success shape regardless to avoid leaking which emails
+      // are registered. Log on failure so we'd notice in dashboards.
+      const sent = await sendAlreadyRegisteredEmail(email);
+      if (!sent) {
+        console.error(
+          "[vendor-signup] sendAlreadyRegisteredEmail failed",
+          { email },
+        );
+      }
       return json({ ok: true, expiresInMinutes: CODE_TTL_MIN });
     }
 
