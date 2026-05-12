@@ -27,6 +27,14 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
+import Svg, {
+  Defs,
+  LinearGradient as SvgLinearGradient,
+  RadialGradient,
+  Rect,
+  Stop,
+  Path,
+} from "react-native-svg";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
 import { InquiryComposer } from "@/components/InquiryComposer";
@@ -1430,117 +1438,13 @@ function VendorProfileSheet({
         </View>
 
         <ScrollView contentContainerStyle={{ paddingBottom: 32 }}>
-          {/* Big avatar + name */}
-          <View style={{ alignItems: "center", paddingTop: 16 }}>
-            {vendor.logo_url ? (
-              <Image
-                source={{ uri: vendor.logo_url }}
-                style={{
-                  width: 110,
-                  height: 110,
-                  borderRadius: 26,
-                  backgroundColor: "#ffffff",
-                }}
-                accessibilityIgnoresInvertColors
-              />
-            ) : (
-              <View
-                style={{
-                  width: 110,
-                  height: 110,
-                  borderRadius: 26,
-                  backgroundColor: INK,
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
-                <Text
-                  style={{
-                    color: "#faf5ec",
-                    fontFamily: SERIF,
-                    fontWeight: "600",
-                    fontSize: 44,
-                  }}
-                >
-                  {initial}
-                </Text>
-              </View>
-            )}
-            <Text
-              style={{
-                marginTop: 14,
-                color: INK,
-                fontFamily: SERIF,
-                fontStyle: "italic",
-                fontSize: 26,
-                fontWeight: "600",
-                textAlign: "center",
-                paddingHorizontal: 24,
-              }}
-              numberOfLines={2}
-            >
-              {vendor.business_name ?? "Vendor"}
-            </Text>
-            {vendor.category ? (
-              <Text
-                style={{
-                  marginTop: 4,
-                  color: INK_DIM,
-                  fontSize: 14,
-                }}
-              >
-                {vendor.category}
-              </Text>
-            ) : null}
-            {vendor.verified_at ? (
-              <View
-                style={{
-                  marginTop: 12,
-                  flexDirection: "row",
-                  alignItems: "center",
-                  gap: 6,
-                  backgroundColor: "#1a1410",
-                  paddingHorizontal: 12,
-                  paddingVertical: 5,
-                  borderRadius: 999,
-                }}
-              >
-                <Feather name="check-circle" size={13} color="#faf5ec" />
-                <Text
-                  style={{
-                    color: "#faf5ec",
-                    fontSize: 11,
-                    fontWeight: "800",
-                    letterSpacing: 0.6,
-                  }}
-                >
-                  VERIFIED
-                </Text>
-              </View>
-            ) : null}
-          </View>
-
-          {/* Stats: time on Vendora + location */}
-          <View
-            style={{
-              marginTop: 26,
-              marginHorizontal: 20,
-              backgroundColor: "#ffffff",
-              borderRadius: 18,
-              paddingVertical: 16,
-              flexDirection: "row",
-            }}
-          >
-            <ProfileSheetStat
-              label="On Vendora"
-              value={joinedLabel(vendor.created_at)}
-            />
-            <View style={{ width: 1, backgroundColor: "#efe5d2" }} />
-            <ProfileSheetStat
-              label="Based in"
-              value={vendor.location ?? "—"}
-            />
-          </View>
+          {/* Cream Ocean business card — gradient cream-to-warm canvas
+              with avatar tile, italic-serif name, location, and a
+              translucent stat strip. */}
+          <CreamOceanCard
+            vendor={vendor}
+            initial={initial}
+          />
 
           {/* Bio */}
           {vendor.bio ? (
@@ -2007,4 +1911,305 @@ function ProfileSheetStat({ label, value }: { label: string; value: string }) {
       </Text>
     </View>
   );
+}
+
+// ─── Cream Ocean card ─────────────────────────────────────────────────
+// Editorial business card matching the cream-ocean web mock. Uses
+// react-native-svg for the gradient backdrop + decorative ripple
+// stripes (no native deps required, ships via OTA). Animated ripples
+// / foam / shimmer are intentionally deferred — they need expo-blur
+// or reanimated-svg work that requires a native rebuild.
+function CreamOceanCard({
+  vendor,
+  initial,
+}: {
+  vendor: VendorRow;
+  initial: string;
+}) {
+  const CARD_W = Dimensions.get("window").width - 36;
+  const CARD_H = 230;
+
+  return (
+    <View
+      style={{
+        marginHorizontal: 18,
+        marginTop: 12,
+        borderRadius: 22,
+        backgroundColor: "#fffbf2",
+        borderWidth: 1,
+        borderColor: "#ebe1ce",
+        overflow: "hidden",
+        shadowColor: INK,
+        shadowOpacity: 0.1,
+        shadowRadius: 24,
+        shadowOffset: { width: 0, height: 12 },
+        elevation: 4,
+      }}
+    >
+      {/* Painted backdrop — cream-to-warm gradient + sun glow + ripple
+          stripes + a soft swell rising from the bottom. */}
+      <Svg
+        width={CARD_W}
+        height={CARD_H}
+        viewBox={`0 0 ${CARD_W} ${CARD_H}`}
+        style={{ position: "absolute", top: 0, left: 0 }}
+      >
+        <Defs>
+          <SvgLinearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+            <Stop offset="0" stopColor="#fffbf2" />
+            <Stop offset="1" stopColor="#faecd0" />
+          </SvgLinearGradient>
+          <RadialGradient id="sun" cx="0.18" cy="0.18" rx="0.55" ry="0.55">
+            <Stop offset="0" stopColor="#ffe6b4" stopOpacity="0.55" />
+            <Stop offset="1" stopColor="#ffe6b4" stopOpacity="0" />
+          </RadialGradient>
+          <SvgLinearGradient id="ripple" x1="0" y1="0" x2="1" y2="0">
+            <Stop offset="0" stopColor="#a8893f" stopOpacity="0" />
+            <Stop offset="0.5" stopColor="#fff0c8" stopOpacity="0.55" />
+            <Stop offset="1" stopColor="#a8893f" stopOpacity="0" />
+          </SvgLinearGradient>
+          <SvgLinearGradient id="swell" x1="0" y1="1" x2="0" y2="0">
+            <Stop offset="0" stopColor="#d9c599" stopOpacity="0.55" />
+            <Stop offset="0.5" stopColor="#ecdfc1" stopOpacity="0.3" />
+            <Stop offset="1" stopColor="#ecdfc1" stopOpacity="0" />
+          </SvgLinearGradient>
+        </Defs>
+
+        <Rect x={0} y={0} width={CARD_W} height={CARD_H} fill="url(#bg)" />
+        <Rect x={0} y={0} width={CARD_W} height={CARD_H} fill="url(#sun)" />
+        <Rect x={0} y={CARD_H * 0.32} width={CARD_W} height={1.5} fill="url(#ripple)" />
+        <Rect x={0} y={CARD_H * 0.48} width={CARD_W} height={1.5} fill="url(#ripple)" opacity={0.7} />
+        <Rect x={0} y={CARD_H * 0.62} width={CARD_W} height={1.5} fill="url(#ripple)" opacity={0.55} />
+        <Rect x={0} y={CARD_H * 0.76} width={CARD_W} height={1.5} fill="url(#ripple)" opacity={0.4} />
+        <Path
+          d={`M -20 ${CARD_H} Q ${CARD_W / 2} ${CARD_H * 0.55} ${CARD_W + 20} ${CARD_H} Z`}
+          fill="url(#swell)"
+        />
+      </Svg>
+
+      <View style={{ padding: 18 }}>
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            gap: 18,
+            marginBottom: 18,
+          }}
+        >
+          {/* Avatar tile — dark base + warm radial glows when no logo */}
+          <View
+            style={{
+              width: 110,
+              height: 110,
+              borderRadius: 20,
+              overflow: "hidden",
+              backgroundColor: "#1a1410",
+              shadowColor: INK,
+              shadowOpacity: 0.3,
+              shadowRadius: 18,
+              shadowOffset: { width: 0, height: 6 },
+              elevation: 4,
+            }}
+          >
+            {vendor.logo_url ? (
+              <Image
+                source={{ uri: vendor.logo_url }}
+                style={{ flex: 1 }}
+                resizeMode="cover"
+              />
+            ) : (
+              <>
+                <Svg width={110} height={110} viewBox="0 0 110 110">
+                  <Defs>
+                    <RadialGradient id="tileA" cx="0.3" cy="0.3" rx="0.6" ry="0.6">
+                      <Stop offset="0" stopColor="#b8472f" stopOpacity="0.55" />
+                      <Stop offset="1" stopColor="#b8472f" stopOpacity="0" />
+                    </RadialGradient>
+                    <RadialGradient id="tileB" cx="0.7" cy="0.75" rx="0.6" ry="0.6">
+                      <Stop offset="0" stopColor="#b89556" stopOpacity="0.3" />
+                      <Stop offset="1" stopColor="#b89556" stopOpacity="0" />
+                    </RadialGradient>
+                  </Defs>
+                  <Rect x={0} y={0} width={110} height={110} fill="url(#tileA)" />
+                  <Rect x={0} y={0} width={110} height={110} fill="url(#tileB)" />
+                </Svg>
+                <View
+                  style={{
+                    position: "absolute",
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <Text
+                    style={{
+                      color: "#faf5ec",
+                      fontFamily: SERIF,
+                      fontStyle: "italic",
+                      fontWeight: "700",
+                      fontSize: 72,
+                      lineHeight: 76,
+                      letterSpacing: -2,
+                    }}
+                  >
+                    {initial}
+                  </Text>
+                </View>
+              </>
+            )}
+
+            {vendor.verified_at ? (
+              <View
+                style={{
+                  position: "absolute",
+                  bottom: -4,
+                  right: -4,
+                  width: 26,
+                  height: 26,
+                  borderRadius: 13,
+                  backgroundColor: "#b8472f",
+                  borderWidth: 3,
+                  borderColor: "#fffbf2",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <Feather name="check" size={11} color="#ffffff" />
+              </View>
+            ) : null}
+          </View>
+
+          <View style={{ flex: 1 }}>
+            <Text
+              style={{
+                fontFamily: SERIF,
+                fontStyle: "italic",
+                fontWeight: "700",
+                fontSize: 32,
+                lineHeight: 34,
+                letterSpacing: -0.6,
+                color: INK,
+                marginBottom: 6,
+              }}
+              numberOfLines={2}
+            >
+              {vendor.business_name ?? "Vendor"}
+            </Text>
+            {vendor.location ? (
+              <View
+                style={{ flexDirection: "row", alignItems: "center", gap: 6 }}
+              >
+                <Feather name="map-pin" size={12} color="#9c8f80" />
+                <Text
+                  style={{
+                    fontSize: 13,
+                    fontWeight: "500",
+                    color: "#5a4f44",
+                  }}
+                  numberOfLines={1}
+                >
+                  {vendor.location}
+                </Text>
+              </View>
+            ) : null}
+          </View>
+        </View>
+
+        {/* Translucent stat strip */}
+        <View
+          style={{
+            flexDirection: "row",
+            backgroundColor: "rgba(255, 251, 242, 0.65)",
+            borderWidth: 1,
+            borderColor: "rgba(235, 225, 206, 0.7)",
+            borderRadius: 14,
+            paddingVertical: 12,
+            shadowColor: INK,
+            shadowOpacity: 0.05,
+            shadowRadius: 10,
+            shadowOffset: { width: 0, height: 2 },
+            elevation: 1,
+          }}
+        >
+          <CreamOceanStat label="Bookings" value="0" />
+          <View
+            style={{ width: 1, backgroundColor: "rgba(235, 225, 206, 0.7)" }}
+          />
+          <CreamOceanStat label="Rating" value="—" italic />
+          <View
+            style={{ width: 1, backgroundColor: "rgba(235, 225, 206, 0.7)" }}
+          />
+          <CreamOceanStat
+            label="Joined"
+            value={shortJoined(vendor.created_at)}
+            italic
+          />
+        </View>
+      </View>
+    </View>
+  );
+}
+
+function CreamOceanStat({
+  label,
+  value,
+  italic,
+}: {
+  label: string;
+  value: string;
+  italic?: boolean;
+}) {
+  return (
+    <View style={{ flex: 1, paddingHorizontal: 8, alignItems: "center" }}>
+      <Text
+        style={{
+          fontSize: 9,
+          fontWeight: "700",
+          letterSpacing: 1.8,
+          textTransform: "uppercase",
+          color: "#9c8f80",
+          marginBottom: 3,
+        }}
+      >
+        {label}
+      </Text>
+      <Text
+        style={{
+          fontFamily: SERIF,
+          fontWeight: italic ? "500" : "600",
+          fontStyle: italic ? "italic" : "normal",
+          fontSize: italic ? 14 : 16,
+          color: italic ? "#5a4f44" : INK,
+        }}
+        numberOfLines={1}
+      >
+        {value}
+      </Text>
+    </View>
+  );
+}
+
+function shortJoined(iso: string | null | undefined): string {
+  if (!iso) return "today";
+  const then = new Date(iso);
+  if (Number.isNaN(then.getTime())) return "today";
+  const now = new Date();
+  const isSameDay =
+    then.getFullYear() === now.getFullYear() &&
+    then.getMonth() === now.getMonth() &&
+    then.getDate() === now.getDate();
+  if (isSameDay) return "today";
+  const months =
+    (now.getFullYear() - then.getFullYear()) * 12 +
+    (now.getMonth() - then.getMonth());
+  if (months < 12) {
+    return then.toLocaleDateString(undefined, {
+      month: "short",
+      year: "numeric",
+    });
+  }
+  return String(then.getFullYear());
 }
