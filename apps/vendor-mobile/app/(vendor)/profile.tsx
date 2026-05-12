@@ -22,6 +22,7 @@ import {
   Platform,
   Pressable,
   ScrollView,
+  Share,
   Text,
   TextInput,
   View,
@@ -37,6 +38,46 @@ import { supabase } from "@/lib/supabase";
 import { BuzzComposer } from "@/components/BuzzComposer";
 import { MediaComposer, type MediaKind } from "@/components/MediaComposer";
 import { PhotoLibraryPicker } from "@/components/PhotoLibraryPicker";
+
+// Editorial palette + helpers — match the Profile redesign mockup
+// (cream + ink + soft peach gradient, italic serif for personal
+// details, sans for chrome).
+const CREAM = "#faf5ec";
+const CREAM_DEEP = "#f5efe5";
+const INK = "#1a1410";
+const INK_DIM = "#776c5f";
+const GREEN_OK = "#3a7d4a";
+const SERIF = Platform.OS === "ios" ? "Times New Roman" : "serif";
+
+function categoryIcon(cat: string | null): keyof typeof Feather.glyphMap {
+  if (!cat) return "circle";
+  const c = cat.toLowerCase();
+  if (/catering|cake|dessert|food|coffee|bake/.test(c)) return "coffee";
+  if (/music|dj|band|sound/.test(c)) return "music";
+  if (/photo|video|film/.test(c)) return "camera";
+  if (/floral|florist|flower/.test(c)) return "feather";
+  if (/venue|space|loft/.test(c)) return "home";
+  if (/plan|coord/.test(c)) return "clipboard";
+  return "circle";
+}
+
+function joinedLabel(createdAt: string | null): string {
+  if (!createdAt) return "";
+  const d = new Date(createdAt);
+  const now = new Date();
+  const sameDay =
+    d.getFullYear() === now.getFullYear() &&
+    d.getMonth() === now.getMonth() &&
+    d.getDate() === now.getDate();
+  if (sameDay) return "Joined today";
+  const days = Math.floor((now.getTime() - d.getTime()) / 86400000);
+  if (days < 7) return `Joined ${days}d ago`;
+  if (days < 30) return `Joined ${Math.floor(days / 7)}w ago`;
+  if (days < 365) {
+    return `Joined ${d.toLocaleDateString(undefined, { month: "short", year: "numeric" })}`;
+  }
+  return `Joined ${d.toLocaleDateString(undefined, { year: "numeric" })}`;
+}
 
 type ViewKind = "grid" | "reels" | "buzz" | "listing";
 
@@ -64,6 +105,12 @@ export default function ProfileScreen() {
   const router = useRouter();
   const { user, signOut } = useAuth();
   const [profile, setProfile] = useState<VendorProfile | null>(null);
+  const [profileCreatedAt, setProfileCreatedAt] = useState<string | null>(null);
+  const [stats, setStats] = useState<{
+    bookings: number;
+    reviews: number;
+    rating: number | null;
+  }>({ bookings: 0, reviews: 0, rating: null });
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState<ViewKind>("grid");
   const [menuOpen, setMenuOpen] = useState(false);
@@ -95,19 +142,65 @@ export default function ProfileScreen() {
     const { data } = await supabase
       .from("vendor_profiles")
       .select(
-        "id, business_name, category, bio, base_price_cents, location, verified_at, application_status, application_review_notes, intro_video_url, weekly_digest_enabled, slug, instagram_handle, tiktok_handle, logo_url",
+        "id, business_name, category, bio, base_price_cents, location, verified_at, application_status, application_review_notes, intro_video_url, weekly_digest_enabled, slug, instagram_handle, tiktok_handle, logo_url, created_at",
       )
       .eq("user_id", user.id)
       .order("created_at", { ascending: true });
-    const rows = (data ?? []) as VendorProfile[];
-    setListings(rows);
-    setProfile(rows[0] ?? null);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const rows = (data ?? []) as any[];
+    setListings(rows as VendorProfile[]);
+    const primary = rows[0] ?? null;
+    setProfile(primary);
+    setProfileCreatedAt(primary?.created_at ?? null);
     setLoading(false);
   }, [user]);
 
   useEffect(() => {
     loadProfile();
   }, [loadProfile]);
+
+  // Stats card: bookings = won inquiries across all the user's
+  // listings; reviews + rating = aggregate of public reviews on those
+  // listings. Single round-trip per side. Falls back to "—" / "0" when
+  // there's no data yet (matches the mockup's empty-state numerals).
+  useEffect(() => {
+    if (listings.length === 0) {
+      setStats({ bookings: 0, reviews: 0, rating: null });
+      return;
+    }
+    const vendorIds = listings.map((l) => l.id);
+    let cancelled = false;
+    (async () => {
+      const [{ count: bookings }, { data: reviewRows }] = await Promise.all([
+        supabase
+          .from("inquiries")
+          .select("id", { count: "exact", head: true })
+          .in("vendor_id", vendorIds)
+          .eq("status", "won"),
+        supabase
+          .from("reviews")
+          .select("rating")
+          .in("vendor_id", vendorIds),
+      ]);
+      if (cancelled) return;
+      const rs = (reviewRows ?? []) as { rating: number | null }[];
+      const ratings = rs
+        .map((r) => r.rating)
+        .filter((r): r is number => typeof r === "number");
+      const avg =
+        ratings.length === 0
+          ? null
+          : Math.round((ratings.reduce((s, n) => s + n, 0) / ratings.length) * 10) / 10;
+      setStats({
+        bookings: bookings ?? 0,
+        reviews: rs.length,
+        rating: avg,
+      });
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [listings]);
 
   const loadFeeds = useCallback(async () => {
     if (!profile?.id) return;
@@ -148,6 +241,27 @@ export default function ProfileScreen() {
       l.location &&
       l.base_price_cents != null,
   ).length;
+
+  // Share the vendor's public listing URL — uses slug when available
+  // so the receiver lands on the SEO-friendly path.
+  async function shareProfile() {
+    if (!profile) return;
+    const slugOrId = profile.slug ?? profile.id;
+    const url = `https://eventvendora.com/vendors/${slugOrId}`;
+    await Share.share({
+      message: `${profile.business_name ?? "Check out my listing"} on Vendora — ${url}`,
+      url,
+    }).catch(() => {});
+  }
+
+  // Edit profile → jump straight into the listing builder for the
+  // primary listing. Vendors with multiple listings still pick which
+  // one to edit on the Listing tab; this button is the fast path for
+  // the most common case (one listing).
+  function openEditListing() {
+    if (!profile?.id) return;
+    router.push(`/(vendor)/listing?id=${profile.id}` as never);
+  }
 
   // Insert a fresh draft and jump to its editor. Used by the "+
   // Listing" row in CreateSheet so vendors can create additional
@@ -289,98 +403,409 @@ export default function ProfileScreen() {
     }
   }
 
-  return (
-    <SafeAreaView className="flex-1 bg-background" edges={["top"]}>
-      <View className="flex-row items-center justify-between px-4 py-3">
-        <Pressable
-          hitSlop={8}
-          onPress={() => setCreateOpen(true)}
-          className="active:opacity-60"
-        >
-          <Feather name="plus" size={28} color="#0a0a0a" />
-        </Pressable>
-        <Text
-          numberOfLines={1}
-          className="flex-1 px-3 text-center text-lg font-bold text-foreground"
-        >
-          {user?.email ?? ""}
-        </Text>
-        <Pressable
-          hitSlop={8}
-          onPress={() => setMenuOpen(true)}
-          className="active:opacity-60"
-        >
-          <Feather name="menu" size={28} color="#0a0a0a" />
-        </Pressable>
-      </View>
+  const businessInitial =
+    profile?.business_name?.trim()?.[0]?.toUpperCase() ??
+    user?.email?.[0]?.toUpperCase() ??
+    "V";
 
-      <ScrollView contentContainerClassName="pb-32">
-        <View className="items-center px-4 pt-2">
+  return (
+    <View className="flex-1" style={{ backgroundColor: CREAM }}>
+      <ScrollView
+        contentContainerStyle={{ paddingBottom: 140 }}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Hero banner — warm peach plate. Three layered tints fake a
+            soft gradient without adding expo-linear-gradient (native
+            dep would block OTA). */}
+        <View style={{ height: 220, backgroundColor: "#f0d4ba" }}>
+          <View
+            pointerEvents="none"
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: "#d9c0a4",
+              opacity: 0.45,
+            }}
+          />
+          <View
+            pointerEvents="none"
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              right: 0,
+              height: 110,
+              backgroundColor: "#f3dcc2",
+              opacity: 0.7,
+            }}
+          />
+          <SafeAreaView edges={["top"]}>
+            {/* Top row: +  email pill  ☰ */}
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                paddingHorizontal: 14,
+                paddingTop: 6,
+              }}
+            >
+              <Pressable
+                hitSlop={8}
+                onPress={() => setCreateOpen(true)}
+                style={{
+                  width: 38,
+                  height: 38,
+                  borderRadius: 999,
+                  backgroundColor: CREAM_DEEP,
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <Feather name="plus" size={20} color={INK} />
+              </Pressable>
+
+              <View
+                style={{
+                  flex: 1,
+                  marginHorizontal: 10,
+                  backgroundColor: CREAM_DEEP,
+                  borderRadius: 999,
+                  paddingHorizontal: 16,
+                  paddingVertical: 9,
+                  alignItems: "center",
+                }}
+              >
+                <Text
+                  numberOfLines={1}
+                  style={{
+                    color: INK,
+                    fontSize: 14,
+                    fontWeight: "500",
+                  }}
+                >
+                  {user?.email ?? ""}
+                </Text>
+              </View>
+
+              <Pressable
+                hitSlop={8}
+                onPress={() => setMenuOpen(true)}
+                style={{
+                  width: 38,
+                  height: 38,
+                  borderRadius: 999,
+                  backgroundColor: CREAM_DEEP,
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <Feather name="menu" size={20} color={INK} />
+              </Pressable>
+            </View>
+          </SafeAreaView>
+        </View>
+
+        {/* Avatar + actions row — avatar pulled up to overlap banner */}
+        <View
+          style={{
+            paddingHorizontal: 18,
+            marginTop: -56,
+            flexDirection: "row",
+            alignItems: "flex-end",
+            justifyContent: "space-between",
+          }}
+        >
           <Pressable
             onPress={changeLogo}
             disabled={logoUploading || !profile?.id}
-            className="h-28 w-28 overflow-hidden rounded-full bg-secondary/60 active:opacity-80"
+            style={{
+              width: 116,
+              height: 116,
+              borderRadius: 24,
+              backgroundColor: INK,
+              borderWidth: 5,
+              borderColor: CREAM,
+              alignItems: "center",
+              justifyContent: "center",
+              overflow: "visible",
+            }}
           >
-            <Image
-              source={
-                profile?.logo_url
-                  ? { uri: profile.logo_url }
-                  : require("../../assets/icon.png")
-              }
-              className="h-full w-full"
-              resizeMode="cover"
-            />
+            {profile?.logo_url ? (
+              <Image
+                source={{ uri: profile.logo_url }}
+                style={{
+                  width: "100%",
+                  height: "100%",
+                  borderRadius: 19,
+                }}
+                resizeMode="cover"
+              />
+            ) : (
+              <Text
+                style={{
+                  color: CREAM,
+                  fontFamily: SERIF,
+                  fontStyle: "italic",
+                  fontWeight: "700",
+                  fontSize: 64,
+                  lineHeight: 72,
+                }}
+              >
+                {businessInitial}
+              </Text>
+            )}
             {logoUploading ? (
-              <View className="absolute top-0 right-0 bottom-0 left-0 items-center justify-center bg-black/40">
-                <Text className="text-xs font-semibold text-white">
+              <View
+                style={{
+                  position: "absolute",
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  alignItems: "center",
+                  justifyContent: "center",
+                  backgroundColor: "rgba(0,0,0,0.4)",
+                  borderRadius: 19,
+                }}
+              >
+                <Text style={{ color: "#fff", fontSize: 12, fontWeight: "600" }}>
                   Uploading…
                 </Text>
               </View>
             ) : null}
+            {profile?.verified_at ? (
+              <View
+                style={{
+                  position: "absolute",
+                  right: -2,
+                  bottom: -2,
+                  width: 30,
+                  height: 30,
+                  borderRadius: 999,
+                  backgroundColor: GREEN_OK,
+                  borderWidth: 3,
+                  borderColor: CREAM,
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <Feather name="check" size={14} color="#fff" />
+              </View>
+            ) : null}
           </Pressable>
 
-          {profile?.business_name ? (
-            <Text className="mt-4 text-lg font-bold text-foreground">
-              {profile.business_name}
-            </Text>
-          ) : null}
-          {/* Bio belongs to the marketplace listing, not the social
-              profile — and even then only once the listing is
-              approved. The profile chrome stays clean (avatar +
-              business name) regardless of listing state. */}
-
-          {/* Dashboard chip removed — same call we made on the web
-              chrome. The dashboard is a tab swipe away on the bottom
-              nav, no need to duplicate the entry point under the
-              avatar. */}
+          <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 4 }}>
+            <Pressable
+              onPress={shareProfile}
+              hitSlop={8}
+              style={{
+                width: 44,
+                height: 44,
+                borderRadius: 999,
+                backgroundColor: CREAM_DEEP,
+                alignItems: "center",
+                justifyContent: "center",
+                marginRight: 10,
+              }}
+            >
+              <Feather name="share" size={18} color={INK} />
+            </Pressable>
+            <Pressable
+              onPress={openEditListing}
+              style={{
+                backgroundColor: INK,
+                borderRadius: 999,
+                paddingHorizontal: 18,
+                paddingVertical: 12,
+                flexDirection: "row",
+                alignItems: "center",
+              }}
+            >
+              <Feather name="edit-2" size={14} color={CREAM} />
+              <Text
+                style={{
+                  color: CREAM,
+                  fontSize: 14,
+                  fontWeight: "600",
+                  marginLeft: 6,
+                }}
+              >
+                Edit profile
+              </Text>
+            </Pressable>
+          </View>
         </View>
 
-        {/* Generous gap between the avatar / name block and the 4-tab
-            strip — leaves room for future profile chrome (bio,
-            counters, follow button, etc) above the tabs. */}
-        <View className="mt-14 flex-row border-t border-border">
+        {/* Identity */}
+        <View style={{ paddingHorizontal: 18, marginTop: 16 }}>
+          <Text
+            style={{
+              color: INK,
+              fontFamily: SERIF,
+              fontWeight: "700",
+              fontSize: 36,
+              lineHeight: 40,
+              letterSpacing: -0.5,
+            }}
+            numberOfLines={2}
+          >
+            {profile?.business_name ?? "Your business"}
+          </Text>
+          {profile?.category || profile?.location || profileCreatedAt ? (
+            <View
+              style={{
+                marginTop: 8,
+                flexDirection: "row",
+                alignItems: "center",
+                flexWrap: "wrap",
+              }}
+            >
+              {profile?.category ? (
+                <View style={{ flexDirection: "row", alignItems: "center" }}>
+                  <Feather
+                    name={categoryIcon(profile.category)}
+                    size={13}
+                    color={INK_DIM}
+                  />
+                  <Text style={{ color: INK_DIM, fontSize: 14, marginLeft: 5 }}>
+                    {profile.category}
+                  </Text>
+                </View>
+              ) : null}
+              {profile?.location ? (
+                <View style={{ flexDirection: "row", alignItems: "center" }}>
+                  <Text style={{ color: INK_DIM, fontSize: 14, marginHorizontal: 8 }}>
+                    ·
+                  </Text>
+                  <Feather name="map-pin" size={13} color={INK_DIM} />
+                  <Text style={{ color: INK_DIM, fontSize: 14, marginLeft: 5 }}>
+                    {profile.location}
+                  </Text>
+                </View>
+              ) : null}
+              {profileCreatedAt ? (
+                <View style={{ flexDirection: "row", alignItems: "center" }}>
+                  <Text style={{ color: INK_DIM, fontSize: 14, marginHorizontal: 8 }}>
+                    ·
+                  </Text>
+                  <Text style={{ color: INK_DIM, fontSize: 14 }}>
+                    {joinedLabel(profileCreatedAt)}
+                  </Text>
+                </View>
+              ) : null}
+            </View>
+          ) : null}
+        </View>
+
+        {/* Bio — italic serif. Placeholder copy with subtle highlight
+            on "one or two sentences" when the vendor hasn't written
+            one yet (invites them to fill it in via Edit profile). */}
+        <View style={{ paddingHorizontal: 18, marginTop: 18 }}>
+          {profile?.bio?.trim() ? (
+            <Text
+              style={{
+                fontFamily: SERIF,
+                fontStyle: "italic",
+                color: INK,
+                fontSize: 17,
+                lineHeight: 24,
+              }}
+            >
+              {profile.bio}
+            </Text>
+          ) : (
+            <Text
+              style={{
+                fontFamily: SERIF,
+                fontStyle: "italic",
+                color: INK,
+                fontSize: 17,
+                lineHeight: 24,
+              }}
+            >
+              A short bio belongs here —{" "}
+              <Text
+                style={{
+                  backgroundColor: "#f5e2c9",
+                  fontWeight: "700",
+                }}
+              >
+                {" one or two sentences "}
+              </Text>{" "}
+              on what makes your work worth booking.
+            </Text>
+          )}
+        </View>
+
+        {/* Stats card */}
+        <View
+          style={{
+            marginHorizontal: 18,
+            marginTop: 22,
+            paddingVertical: 16,
+            borderTopWidth: 1,
+            borderBottomWidth: 1,
+            borderColor: "#e9dfc8",
+            flexDirection: "row",
+            alignItems: "center",
+          }}
+        >
+          <StatCell value={String(stats.bookings)} label="BOOKINGS" />
+          <View
+            style={{
+              width: 1,
+              alignSelf: "stretch",
+              backgroundColor: "#e9dfc8",
+            }}
+          />
+          <StatCell
+            value={stats.rating != null ? stats.rating.toFixed(1) : "—"}
+            label="RATING"
+          />
+          <View
+            style={{
+              width: 1,
+              alignSelf: "stretch",
+              backgroundColor: "#e9dfc8",
+            }}
+          />
+          <StatCell value={String(stats.reviews)} label="REVIEWS" />
+        </View>
+
+        {/* Tabs — chip-pill row */}
+        <View
+          style={{
+            marginTop: 22,
+            paddingHorizontal: 18,
+            flexDirection: "row",
+            gap: 8,
+          }}
+        >
           <ViewTab
             active={view === "grid"}
             onPress={() => setView("grid")}
-            iconName="grid"
+            label="Posts"
             count={posts.length}
           />
           <ViewTab
             active={view === "reels"}
             onPress={() => setView("reels")}
-            iconName="play"
+            label="Reels"
             count={reels.length}
           />
           <ViewTab
             active={view === "buzz"}
             onPress={() => setView("buzz")}
-            iconName="align-left"
+            label="Buzz"
             count={buzz.length}
           />
           <ViewTab
             active={view === "listing"}
             onPress={() => setView("listing")}
-            iconName="shopping-bag"
+            label="Listings"
             count={listingsCount}
           />
         </View>
@@ -603,51 +1028,87 @@ export default function ProfileScreen() {
           ) : null}
         </SafeAreaView>
       </Modal>
-    </SafeAreaView>
+    </View>
   );
 }
 
+// Chip-pill tab. Active state = cream-deep capsule with INK label +
+// count; inactive = transparent with muted ink.
 function ViewTab({
   active,
   onPress,
-  iconName,
+  label,
   count,
 }: {
   active: boolean;
   onPress: () => void;
-  iconName: keyof typeof Feather.glyphMap;
+  label: string;
   count: number;
 }) {
   return (
     <Pressable
       onPress={onPress}
-      className="flex-1 items-center justify-center py-3 active:opacity-60"
       style={{
-        backgroundColor: active ? "#ffffff" : "transparent",
-        borderRadius: active ? 14 : 0,
-        borderWidth: active ? 1 : 0,
-        borderColor: "#e5e5e5",
-        marginHorizontal: active ? 4 : 0,
-        marginVertical: active ? 4 : 0,
-        ...(active
-          ? {
-              shadowColor: "#000",
-              shadowOpacity: 0.06,
-              shadowRadius: 8,
-              shadowOffset: { width: 0, height: 2 },
-              elevation: 2,
-            }
-          : null),
+        paddingHorizontal: 14,
+        paddingVertical: 9,
+        borderRadius: 999,
+        backgroundColor: active ? CREAM_DEEP : "transparent",
+        flexDirection: "row",
+        alignItems: "center",
       }}
     >
-      <Feather name={iconName} size={22} color={active ? "#0a0a0a" : "#737373"} />
       <Text
-        className="mt-1 text-sm font-semibold"
-        style={{ color: active ? "#0a0a0a" : "#737373" }}
+        style={{
+          color: active ? INK : INK_DIM,
+          fontSize: 15,
+          fontWeight: active ? "700" : "500",
+          marginRight: 6,
+        }}
+      >
+        {label}
+      </Text>
+      <Text
+        style={{
+          color: active ? INK_DIM : INK_DIM,
+          fontSize: 14,
+          fontWeight: "500",
+        }}
       >
         {count}
       </Text>
     </Pressable>
+  );
+}
+
+// Single stat (Bookings / Rating / Reviews). Large italic-serif numeral
+// over a tracked uppercase label. Used in the stats row above the
+// tab pills.
+function StatCell({ value, label }: { value: string; label: string }) {
+  return (
+    <View style={{ flex: 1, alignItems: "center", paddingVertical: 2 }}>
+      <Text
+        style={{
+          color: INK,
+          fontFamily: SERIF,
+          fontWeight: "700",
+          fontSize: 26,
+          lineHeight: 30,
+        }}
+      >
+        {value}
+      </Text>
+      <Text
+        style={{
+          marginTop: 4,
+          color: INK_DIM,
+          fontSize: 11,
+          fontWeight: "700",
+          letterSpacing: 1.4,
+        }}
+      >
+        {label}
+      </Text>
+    </View>
   );
 }
 
