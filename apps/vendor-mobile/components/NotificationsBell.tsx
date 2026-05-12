@@ -8,6 +8,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import {
+  Image,
   Modal,
   Pressable,
   ScrollView,
@@ -41,6 +42,7 @@ interface NotificationRow {
   link: string | null;
   read_at: string | null;
   created_at: string;
+  actor_image_url: string | null;
 }
 
 export function NotificationsBell({
@@ -86,7 +88,7 @@ export function NotificationsBell({
     setLoading(true);
     const { data } = await supabase
       .from("notifications")
-      .select("id, type, title, body, link, read_at, created_at")
+      .select("id, type, title, body, link, read_at, created_at, actor_image_url")
       .eq("user_id", user.id)
       .order("created_at", { ascending: false })
       .limit(50);
@@ -209,7 +211,7 @@ export function NotificationsBell({
                     r.read_at == null ? "bg-muted/40" : ""
                   }`}
                 >
-                  <View className="flex-row items-start gap-2">
+                  <View className="flex-row items-start gap-3">
                     {r.read_at == null ? (
                       <View
                         style={{
@@ -219,6 +221,18 @@ export function NotificationsBell({
                           backgroundColor: "#dc2626",
                           marginTop: 7,
                         }}
+                      />
+                    ) : null}
+                    {r.actor_image_url ? (
+                      <Image
+                        source={{ uri: r.actor_image_url }}
+                        style={{
+                          width: 36,
+                          height: 36,
+                          borderRadius: 18,
+                          backgroundColor: "#f5e7da",
+                        }}
+                        accessibilityIgnoresInvertColors
                       />
                     ) : null}
                     <View className="flex-1">
