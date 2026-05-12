@@ -498,31 +498,34 @@ function CategoryPickerField({
       >
         CATEGORY
       </Text>
-      <Pressable
-        onPress={onPress}
-        style={({ pressed }) => ({
-          marginTop: 6,
-          backgroundColor: "#ffffff",
-          borderRadius: 14,
-          borderWidth: 1,
-          borderColor: BORDER,
-          paddingHorizontal: 14,
-          paddingVertical: 14,
-          opacity: pressed ? 0.7 : 1,
-          flexDirection: "row",
-          alignItems: "center",
-          justifyContent: "space-between",
-        })}
-      >
-        <Text
+      <Pressable onPress={onPress}>
+        <View
           style={{
-            color: hasValue ? INK : INK_DIM,
-            fontSize: 16,
+            marginTop: 6,
+            backgroundColor: "#ffffff",
+            borderRadius: 14,
+            borderWidth: 1,
+            borderColor: BORDER,
+            paddingHorizontal: 14,
+            paddingVertical: 14,
+            flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "space-between",
+            minHeight: 50,
           }}
         >
-          {hasValue ? value : "Pick a category"}
-        </Text>
-        <Feather name="chevron-down" size={18} color={INK_DIM} />
+          <Text
+            style={{
+              color: hasValue ? INK : INK_DIM,
+              fontSize: 16,
+              flex: 1,
+            }}
+            numberOfLines={1}
+          >
+            {hasValue ? value : "Pick a category"}
+          </Text>
+          <Feather name="chevron-down" size={18} color={INK_DIM} />
+        </View>
       </Pressable>
     </View>
   );
