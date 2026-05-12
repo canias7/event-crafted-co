@@ -143,6 +143,11 @@ export default function SignupPage() {
               <Input
                 id="email"
                 type="email"
+                inputMode="email"
+                autoCapitalize="off"
+                autoCorrect="off"
+                spellCheck={false}
+                autoComplete="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required

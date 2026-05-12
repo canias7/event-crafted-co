@@ -83,12 +83,28 @@ serve(async (req) => {
   url.searchParams.set("limit", "1");
   url.searchParams.set("addressdetails", "0");
 
-  const r = await fetch(url.toString(), {
-    headers: {
-      "User-Agent": `Vendora geocode-vendor / ${APP_URL}`,
-      Accept: "application/json",
-    },
-  });
+  // 10s timeout so a hung Nominatim doesn't make this function hang
+  // until its global ceiling. Vendors retry on the next location edit.
+  const ac = new AbortController();
+  const timeout = setTimeout(() => ac.abort(), 10_000);
+  let r: Response;
+  try {
+    r = await fetch(url.toString(), {
+      signal: ac.signal,
+      headers: {
+        "User-Agent": `Vendora geocode-vendor / ${APP_URL}`,
+        Accept: "application/json",
+      },
+    });
+  } catch (e) {
+    clearTimeout(timeout);
+    const aborted = e instanceof DOMException && e.name === "AbortError";
+    return json(
+      { ok: false, error: aborted ? "nominatim timeout" : String(e) },
+      504,
+    );
+  }
+  clearTimeout(timeout);
   if (!r.ok) {
     return json(
       { ok: false, error: `nominatim ${r.status}: ${await r.text()}` },

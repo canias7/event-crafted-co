@@ -8,6 +8,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import {
+  Image,
   Modal,
   Pressable,
   ScrollView,
@@ -41,6 +42,7 @@ interface NotificationRow {
   link: string | null;
   read_at: string | null;
   created_at: string;
+  actor_image_url: string | null;
 }
 
 export function NotificationsBell({
@@ -64,7 +66,15 @@ export function NotificationsBell({
           .from("notifications")
           .update({ read_at: new Date().toISOString() })
           .eq("id", n.id)
-          .then(() => undefined);
+          .then(({ error }) => {
+            if (error) {
+              // eslint-disable-next-line no-console
+              console.warn(
+                "[NotificationsBell] mark-read failed",
+                error.message,
+              );
+            }
+          });
       }
       const route = routeFromLink(n.link);
       setOpen(false);
@@ -78,7 +88,7 @@ export function NotificationsBell({
     setLoading(true);
     const { data } = await supabase
       .from("notifications")
-      .select("id, type, title, body, link, read_at, created_at")
+      .select("id, type, title, body, link, read_at, created_at, actor_image_url")
       .eq("user_id", user.id)
       .order("created_at", { ascending: false })
       .limit(50);
@@ -102,11 +112,15 @@ export function NotificationsBell({
     setRows((prev) =>
       prev.map((r) => ({ ...r, read_at: r.read_at ?? now })),
     );
-    await supabase
+    const { error } = await supabase
       .from("notifications")
       .update({ read_at: now })
       .eq("user_id", user.id)
       .is("read_at", null);
+    if (error) {
+      // eslint-disable-next-line no-console
+      console.warn("[NotificationsBell] mark-all-read failed", error.message);
+    }
   }
 
   const unread = rows.filter((r) => r.read_at == null).length;
@@ -197,7 +211,7 @@ export function NotificationsBell({
                     r.read_at == null ? "bg-muted/40" : ""
                   }`}
                 >
-                  <View className="flex-row items-start gap-2">
+                  <View className="flex-row items-start gap-3">
                     {r.read_at == null ? (
                       <View
                         style={{
@@ -207,6 +221,18 @@ export function NotificationsBell({
                           backgroundColor: "#dc2626",
                           marginTop: 7,
                         }}
+                      />
+                    ) : null}
+                    {r.actor_image_url ? (
+                      <Image
+                        source={{ uri: r.actor_image_url }}
+                        style={{
+                          width: 36,
+                          height: 36,
+                          borderRadius: 18,
+                          backgroundColor: "#f5e7da",
+                        }}
+                        accessibilityIgnoresInvertColors
                       />
                     ) : null}
                     <View className="flex-1">

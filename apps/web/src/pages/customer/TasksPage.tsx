@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Plus,
   Check,
@@ -169,6 +169,10 @@ export default function TasksPage() {
   const [filter, setFilter] = useState("all");
   const [addOpen, setAddOpen] = useState(false);
   const [seeding, setSeeding] = useState<string | null>(null);
+  // Versioned cancel guard — every load() bumps the version; only the
+  // latest result is allowed to call setState. Stops rapid re-loads
+  // (and unmounts) from setting stale data.
+  const loadVersion = useRef(0);
 
   const eventType =
     activeEvent?.event_type ?? profile?.event_type ?? null;
@@ -207,18 +211,24 @@ export default function TasksPage() {
 
   async function load() {
     if (!user) return;
+    const myVersion = ++loadVersion.current;
     setLoading(true);
     const { data } = await tasksTable()
       .select("id, title, category, priority, status, due_date, notes")
       .eq("host_id", user.id)
       .order("due_date", { ascending: true, nullsFirst: false })
       .order("created_at", { ascending: false });
+    if (myVersion !== loadVersion.current) return;
     setTasks((data as TaskRow[]) ?? []);
     setLoading(false);
   }
 
   useEffect(() => {
     load();
+    return () => {
+      // Invalidate any in-flight load so it can't setState after unmount.
+      loadVersion.current = -1;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 

@@ -183,7 +183,17 @@ serve(async (req) => {
         u.email_confirmed_at != null,
     );
     if (taken) {
-      await sendAlreadyRegisteredEmail(email);
+      // Return success shape regardless — the email IS sent or it's
+      // logged. We must not leak "this email is already registered"
+      // back to the API caller, so any failure is logged server-side
+      // only. The user is told to check their inbox in both branches.
+      const sent = await sendAlreadyRegisteredEmail(email);
+      if (!sent) {
+        console.error(
+          "[host-signup] sendAlreadyRegisteredEmail failed",
+          { email },
+        );
+      }
       return json({ ok: true, expiresInMinutes: CODE_TTL_MIN });
     }
 

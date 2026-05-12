@@ -98,6 +98,25 @@ export function VendorSocialComposer({
       toast.error(`Pick a ${kind === "reel" ? "video" : "photo"} first`);
       return;
     }
+    // Size cap differs per surface — reels (short loops) shouldn't be
+    // movies, posts (single photo) shouldn't be raw camera files.
+    // Server has a 50 MB upload ceiling so we'd 413 above this anyway.
+    const MAX_BYTES = kind === "reel" ? 50 * 1024 * 1024 : 10 * 1024 * 1024;
+    if (file.size > MAX_BYTES) {
+      const max = kind === "reel" ? "50 MB" : "10 MB";
+      toast.error(`${kind === "reel" ? "Video" : "Photo"} too large — max ${max}`);
+      return;
+    }
+    // Cheap MIME sanity. accept= filters at the picker but doesn't
+    // stop drag-drop or programmatic file injection.
+    if (kind === "reel" && !file.type.startsWith("video/")) {
+      toast.error("Pick a video file");
+      return;
+    }
+    if (kind === "post" && !file.type.startsWith("image/")) {
+      toast.error("Pick an image file");
+      return;
+    }
     setBusy(true);
     const ext = file.name.split(".").pop()?.toLowerCase() || (kind === "reel" ? "mp4" : "jpg");
     const baseName = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;

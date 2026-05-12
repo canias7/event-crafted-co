@@ -124,12 +124,31 @@ export default function EditProfileScreen() {
     try {
       const resp = await fetch(asset.uri);
       const blob = await resp.blob();
+      // 10 MB cap on logos so we don't bloat the CDN with high-res
+      // camera roll originals when we only use them small.
+      if (blob.size > 10 * 1024 * 1024) {
+        Alert.alert("Photo too large", "Pick a logo under 10 MB.");
+        return;
+      }
       const ext = (asset.uri.split(".").pop() || "jpg").toLowerCase();
       const path = `${user.id}/profile-logo-${Date.now()}.${ext}`;
+      // Same MIME priority as message attachments: explicit picker
+      // value → blob.type from bytes → known-ext map → image/jpeg.
+      const extMime: Record<string, string> = {
+        jpg: "image/jpeg",
+        jpeg: "image/jpeg",
+        png: "image/png",
+        gif: "image/gif",
+        webp: "image/webp",
+        heic: "image/heic",
+        heif: "image/heif",
+      };
+      const contentType =
+        asset.mimeType || blob.type || extMime[ext] || "image/jpeg";
       const { error: upErr } = await supabase.storage
         .from("vendor-posts")
         .upload(path, blob, {
-          contentType: asset.mimeType ?? `image/${ext}`,
+          contentType,
           upsert: false,
         });
       if (upErr) throw upErr;
@@ -149,12 +168,19 @@ export default function EditProfileScreen() {
 
   async function save() {
     if (!user?.id || !dirty || saving) return;
+    // Business name is the headline of the profile. Saving it empty
+    // would null out the row and break the auto-sync to the solo
+    // listing. Force a value before we even hit the network.
+    if (!form.business_name.trim()) {
+      Alert.alert("Add a business name", "Your name is required.");
+      return;
+    }
     setSaving(true);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { error } = await (supabase as any)
       .from("profiles")
       .update({
-        business_name: form.business_name.trim() || null,
+        business_name: form.business_name.trim(),
         category: form.category.trim() || null,
         location: form.location.trim() || null,
         bio: form.bio.trim() || null,

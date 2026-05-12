@@ -31,7 +31,7 @@ export function InquiryReviewCard({ review, onResponseSaved }: Props) {
   const [saving, setSaving] = useState(false);
 
   async function save() {
-    if (!draft.trim()) return;
+    if (!draft.trim() || saving) return;
     setSaving(true);
     const tbl = supabase.from("review_responses");
     const { error } = review.response

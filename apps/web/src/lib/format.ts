@@ -146,6 +146,15 @@ function parseInput(input: string | Date): Date | null {
   // timezones. Force local-midnight parsing for date-only strings.
   if (/^\d{4}-\d{2}-\d{2}$/.test(input)) {
     const [y, m, d] = input.split("-").map(Number);
+    // Reject obviously-bad input like "2026-13-45" before Date rolls
+    // it forward to next year. The regex above guarantees three
+    // numeric segments but not that the values are in-range.
+    if (
+      !Number.isFinite(y) || !Number.isFinite(m) || !Number.isFinite(d) ||
+      m < 1 || m > 12 || d < 1 || d > 31
+    ) {
+      return null;
+    }
     return new Date(y, m - 1, d);
   }
   const d = new Date(input);

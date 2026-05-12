@@ -33,6 +33,8 @@ export function VendorApplicationsPage() {
   const [tab, setTab] = useState<ApplicationStatus>("pending");
   const [rows, setRows] = useState<Application[]>([]);
   const [loading, setLoading] = useState(true);
+  const [pendingDelete, setPendingDelete] = useState<Application | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -57,6 +59,7 @@ export function VendorApplicationsPage() {
   }, [load]);
 
   const setStatus = async (id: string, status: ApplicationStatus) => {
+    const target = rows.find((r) => r.id === id);
     const { error } = await supabase
       .from("profiles")
       .update({ application_status: status })
@@ -65,6 +68,18 @@ export function VendorApplicationsPage() {
       toast.error(error.message);
       return;
     }
+    void supabase.rpc("log_admin_action", {
+      p_action: `vendor_application_${status}`,
+      p_target_type: "user",
+      p_target_id: id,
+      p_summary: `Vendor application ${status} for ${target?.business_name ?? target?.email ?? id}`,
+      p_metadata: {
+        previous: target?.application_status,
+        email: target?.email,
+        business_name: target?.business_name,
+        category: target?.category,
+      },
+    });
     if (status === "approved" || status === "rejected") {
       // Reuse the existing vendor_approved / vendor_rejected
       // transactional templates. They expect a vendorProfileId
@@ -87,25 +102,34 @@ export function VendorApplicationsPage() {
     setRows((prev) => prev.filter((r) => r.id !== id));
   };
 
-  const removeAccount = async (id: string, name: string | null) => {
-    if (
-      !window.confirm(
-        `Delete ${name ?? "this vendor"}'s account? This permanently removes the auth user, profile, and any listing data. This cannot be undone.`,
-      )
-    ) {
-      return;
-    }
+  const confirmDelete = async () => {
+    if (!pendingDelete) return;
+    setDeleting(true);
+    const target = pendingDelete;
     // We can't delete from auth.users via the standard client — go
     // through the admin RPC that wraps it.
     const { error } = await supabase.rpc("admin_delete_user", {
-      p_user_id: id,
+      p_user_id: target.id,
     });
+    setDeleting(false);
     if (error) {
       toast.error(`Couldn't delete: ${error.message}`);
       return;
     }
-    toast.success(`Deleted ${name ?? "vendor"}`);
-    setRows((prev) => prev.filter((r) => r.id !== id));
+    void supabase.rpc("log_admin_action", {
+      p_action: "vendor_account_delete",
+      p_target_type: "user",
+      p_target_id: target.id,
+      p_summary: `Deleted vendor account ${target.business_name ?? target.email ?? target.id}`,
+      p_metadata: {
+        email: target.email,
+        business_name: target.business_name,
+        was_status: target.application_status,
+      },
+    });
+    toast.success(`Deleted ${target.business_name ?? "vendor"}`);
+    setRows((prev) => prev.filter((r) => r.id !== target.id));
+    setPendingDelete(null);
   };
 
   return (
@@ -167,7 +191,7 @@ export function VendorApplicationsPage() {
                   ) : null}
                   {r.application_status === "approved" ? (
                     <button
-                      onClick={() => removeAccount(r.id, r.business_name)}
+                      onClick={() => setPendingDelete(r)}
                       title="Delete this vendor account"
                       className="inline-flex items-center gap-1.5 rounded border border-red-300 px-3 py-1.5 text-xs text-red-700 hover:bg-red-50"
                     >
@@ -184,7 +208,7 @@ export function VendorApplicationsPage() {
                         Approve
                       </button>
                       <button
-                        onClick={() => removeAccount(r.id, r.business_name)}
+                        onClick={() => setPendingDelete(r)}
                         title="Delete this vendor account"
                         className="inline-flex items-center gap-1.5 rounded border border-red-300 px-3 py-1.5 text-xs text-red-700 hover:bg-red-50"
                       >
@@ -199,6 +223,44 @@ export function VendorApplicationsPage() {
           ))}
         </ul>
       )}
+
+      {pendingDelete ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-xl">
+            <h2 className="text-lg font-semibold">Delete this account?</h2>
+            <p className="mt-2 text-sm text-ink/70">
+              <strong>
+                {pendingDelete.business_name ??
+                  pendingDelete.display_name ??
+                  pendingDelete.email}
+              </strong>{" "}
+              will be permanently removed, along with their auth user, profile,
+              and any listing data.
+            </p>
+            <p className="mt-2 text-xs text-ink/60">
+              The email{" "}
+              <span className="font-mono">{pendingDelete.email}</span> will be
+              free to sign up again from scratch. This can't be undone.
+            </p>
+            <div className="mt-6 flex justify-end gap-2">
+              <button
+                onClick={() => setPendingDelete(null)}
+                disabled={deleting}
+                className="rounded border border-ink/15 px-3 py-1.5 text-sm hover:bg-ink/5 disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmDelete}
+                disabled={deleting}
+                className="rounded bg-red-600 px-3 py-1.5 text-sm text-white hover:bg-red-700 disabled:opacity-50"
+              >
+                {deleting ? "Deleting…" : "Delete account"}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

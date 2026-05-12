@@ -298,11 +298,25 @@ export default function ListingScreen() {
     }
     if (publish) {
       // Fire-and-forget — UI already shows the submitted state.
+      // Log on failure so the operator would notice if the vendor
+      // never gets the "thanks, we got it" email.
       supabase.functions
         .invoke("send-transactional-email", {
           body: { kind: "listing_submitted", vendorProfileId: profile.id },
         })
-        .catch(() => {});
+        .then(({ error: emailErr }) => {
+          if (emailErr) {
+            // eslint-disable-next-line no-console
+            console.warn(
+              "[listing] listing_submitted email failed",
+              emailErr.message,
+            );
+          }
+        })
+        .catch((e) => {
+          // eslint-disable-next-line no-console
+          console.warn("[listing] listing_submitted email threw", e);
+        });
     }
     setProfile((p) =>
       p

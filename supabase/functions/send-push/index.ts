@@ -184,11 +184,17 @@ async function deliverWeb(sb: any, payload: Payload) {
   await logEvents(sb, events);
 
   if (delivered > 0) {
-    await sb
+    // Only touch last_used_at on subscriptions that didn't just get
+    // purged. PostgREST's .not("id","in",...) handles arrays directly;
+    // building a string with `(${join(",")})` works in the happy path
+    // but the prior `"''"` fallback for empty dead arrays produced
+    // invalid SQL. Skip the filter entirely when nothing was purged.
+    let q = sb
       .from("push_subscriptions")
       .update({ last_used_at: new Date().toISOString() })
-      .eq("user_id", payload.user_id)
-      .not("id", "in", `(${dead.join(",") || "''"})`);
+      .eq("user_id", payload.user_id);
+    if (dead.length > 0) q = q.not("id", "in", `(${dead.join(",")})`);
+    await q;
   }
 
   return { delivered, purged: dead.length };

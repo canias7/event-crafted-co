@@ -213,14 +213,40 @@ export default function ThreadScreen() {
     try {
       const resp = await fetch(asset.uri);
       const blob = await resp.blob();
+      // Cap message attachments at 25 MB. Above that the upload starts
+      // to fight phone storage timeouts and the recipient inbox UI.
+      const MAX_BYTES = 25 * 1024 * 1024;
+      if (blob.size > MAX_BYTES) {
+        setSending(false);
+        Alert.alert("Photo too large", "Pick a photo under 25 MB.");
+        return;
+      }
       const ext = (asset.uri.split(".").pop() || "jpg").toLowerCase();
       const path = `${user.id}/${threadId}/${Date.now()}-${Math.random()
         .toString(36)
         .slice(2, 10)}.${ext}`;
+      // Mime resolution priority: explicit mimeType from picker →
+      // blob.type from the fetched data → ext-derived fallback. The
+      // ext fallback maps to known image MIMEs so we don't ship the
+      // invalid "image/jpg" (should always be "image/jpeg").
+      const extMime: Record<string, string> = {
+        jpg: "image/jpeg",
+        jpeg: "image/jpeg",
+        png: "image/png",
+        gif: "image/gif",
+        webp: "image/webp",
+        heic: "image/heic",
+        heif: "image/heif",
+      };
+      const contentType =
+        asset.mimeType ||
+        blob.type ||
+        extMime[ext] ||
+        "image/jpeg";
       const { error: upErr } = await supabase.storage
         .from("message-attachments")
         .upload(path, blob, {
-          contentType: asset.mimeType ?? `image/${ext}`,
+          contentType,
           upsert: false,
         });
       if (upErr) throw upErr;
@@ -367,21 +393,23 @@ export default function ThreadScreen() {
       body,
     });
     setSending(false);
-    if (!error) {
-      setDraft("");
-      const optimistic: DirectMessage = {
-        id: `tmp-${Date.now()}`,
-        sender_id: user.id,
-        sender_role: "vendor",
-        body,
-        created_at: new Date().toISOString(),
-        attachments: null,
-      };
-      setMessages((prev) => [...prev, optimistic]);
-      requestAnimationFrame(() =>
-        scrollRef.current?.scrollToEnd({ animated: true }),
-      );
+    if (error) {
+      Alert.alert("Couldn't send", error.message);
+      return;
     }
+    setDraft("");
+    const optimistic: DirectMessage = {
+      id: `tmp-${Date.now()}`,
+      sender_id: user.id,
+      sender_role: "vendor",
+      body,
+      created_at: new Date().toISOString(),
+      attachments: null,
+    };
+    setMessages((prev) => [...prev, optimistic]);
+    requestAnimationFrame(() =>
+      scrollRef.current?.scrollToEnd({ animated: true }),
+    );
   }
 
   const enriched = useMemo(() => enrichMessages(messages), [messages]);

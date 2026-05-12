@@ -232,6 +232,7 @@ export default function ProfileScreen() {
             initial={initialOf(state?.name ?? "")}
             name={state?.name ?? "—"}
             memberSince={state?.memberSince ?? "—"}
+            verified={state?.verifStatus === "approved"}
             stats={
               state?.stats ?? { inquiries: 0, booked: 0, vendors: 0, events: 0 }
             }
@@ -345,11 +346,13 @@ function HeroCard({
   name,
   memberSince,
   stats,
+  verified,
 }: {
   initial: string;
   name: string;
   memberSince: string;
   stats: Stats;
+  verified: boolean;
 }) {
   return (
     <View
@@ -423,7 +426,7 @@ function HeroCard({
         {name}
       </Text>
       <Text style={{ marginTop: 4, color: INK_DIM, fontSize: 13 }}>
-        Verified Host{"  •  "}Member since {memberSince}
+        {verified ? "Verified Host  •  " : ""}Member since {memberSince}
       </Text>
 
       <View

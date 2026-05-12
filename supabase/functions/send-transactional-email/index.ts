@@ -547,12 +547,23 @@ async function newInquiryEmails(p: NewInquiryPayload) {
   const dateLine = (inquiry as any).event_date
     ? `<li style="margin:0 0 6px;">Event date: <strong>${escape((inquiry as any).event_date)}</strong></li>`
     : "";
-  const budgetMin = (inquiry as any).budget_min_cents;
-  const budgetMax = (inquiry as any).budget_max_cents;
-  const budgetLine =
-    budgetMin != null || budgetMax != null
-      ? `<li style="margin:0 0 6px;">Budget: <strong>$${Math.round((budgetMin ?? 0) / 100).toLocaleString()} – $${Math.round((budgetMax ?? 0) / 100).toLocaleString()}</strong></li>`
-      : "";
+  const budgetMin = (inquiry as any).budget_min_cents as number | null;
+  const budgetMax = (inquiry as any).budget_max_cents as number | null;
+  // Render an open-ended range when only one side is set instead of
+  // pinning the missing side to "$0", which made the email read
+  // "Budget: $0 – $5,000" or "Budget: $0 – $0" when both were null
+  // and the line shouldn't have rendered at all.
+  function fmtDollars(cents: number): string {
+    return `$${Math.round(cents / 100).toLocaleString()}`;
+  }
+  let budgetLine = "";
+  if (budgetMin != null && budgetMax != null) {
+    budgetLine = `<li style="margin:0 0 6px;">Budget: <strong>${fmtDollars(budgetMin)} – ${fmtDollars(budgetMax)}</strong></li>`;
+  } else if (budgetMin != null) {
+    budgetLine = `<li style="margin:0 0 6px;">Budget: <strong>${fmtDollars(budgetMin)}+</strong></li>`;
+  } else if (budgetMax != null) {
+    budgetLine = `<li style="margin:0 0 6px;">Budget: <strong>up to ${fmtDollars(budgetMax)}</strong></li>`;
+  }
   const subject = `New inquiry from ${hostName} (${eventType})`;
   const html = shellHtml(
     `New inquiry from ${escape(hostName)}`,

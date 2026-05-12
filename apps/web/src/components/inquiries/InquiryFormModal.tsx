@@ -247,6 +247,23 @@ export function InquiryFormModal({
       return;
     }
 
+    // Validate every required intake question has a non-empty answer
+    // before insert. The native HTML `required` attr is unreliable
+    // (custom button groups don't fire constraint validation; users
+    // can also bypass via DevTools), so we re-check here.
+    const missingRequired = intakeQuestions.find((q) => {
+      if (!q.required) return false;
+      const v = intakeAnswers[q.id];
+      if (q.type === "multiselect") return !Array.isArray(v) || v.length === 0;
+      if (q.type === "yesno") return v == null;
+      if (typeof v === "string") return v.trim().length === 0;
+      return v == null;
+    });
+    if (missingRequired) {
+      toast.error(`Please answer: ${missingRequired.label}`);
+      return;
+    }
+
     setSubmitting(true);
     const { data, error } = await supabase
       .from("inquiries")
@@ -275,11 +292,20 @@ export function InquiryFormModal({
 
     // Fire-and-forget email to the vendor team. Don't block the user on it
     // — the in-app notification trigger already covers the inbox bell.
+    // Log failures so they show up in Sentry / dashboard logs instead
+    // of dying silently; the 3-hour reply SLA depends on these landing.
     supabase.functions
       .invoke("send-transactional-email", {
         body: { kind: "new_inquiry", inquiryId: data.id },
       })
-      .catch(() => {});
+      .then(({ error: emailErr }) => {
+        if (emailErr) {
+          console.error("[Inquiry] new_inquiry email failed", emailErr.message);
+        }
+      })
+      .catch((e) => {
+        console.error("[Inquiry] new_inquiry email threw", e);
+      });
 
     toast.success("Inquiry sent — vendor will reply soon");
     onSuccess?.(data.id);

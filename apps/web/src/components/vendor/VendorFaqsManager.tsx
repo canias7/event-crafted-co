@@ -107,6 +107,10 @@ export function VendorFaqsManager({
   }
 
   async function patchFaq(id: string, patch: Partial<Faq>) {
+    // Snapshot the row before the update so a failed patch can roll
+    // the inputs back to the DB-known value (otherwise the user keeps
+    // typing into a field that's silently out of sync).
+    const before = faqs.find((f) => f.id === id);
     setSavingId(id);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { error } = await (supabase as any)
@@ -120,6 +124,9 @@ export function VendorFaqsManager({
     }
     if (error) {
       toast.error(error.message);
+      if (before) {
+        setFaqs((prev) => prev.map((f) => (f.id === id ? before : f)));
+      }
       return;
     }
     setFaqs((prev) => prev.map((f) => (f.id === id ? { ...f, ...patch } : f)));

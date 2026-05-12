@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { Flag, Loader2, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -158,9 +159,9 @@ function ReportDialog({
         {!user ? (
           <div className="py-4 text-sm text-muted-foreground">
             You need to be signed in to report content.{" "}
-            <a href="/login" className="text-accent hover:underline">
+            <Link to="/login" className="text-accent hover:underline">
               Sign in
-            </a>
+            </Link>
           </div>
         ) : done ? (
           <div className="py-6 text-center">

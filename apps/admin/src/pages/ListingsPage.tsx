@@ -21,6 +21,8 @@ export function ListingsPage() {
   const [rows, setRows] = useState<Listing[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("");
+  const [pendingDelete, setPendingDelete] = useState<Listing | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -74,24 +76,46 @@ export function ListingsPage() {
       toast.error(error.message);
       return;
     }
+    void supabase.rpc("log_admin_action", {
+      p_action: next ? "listing_verify" : "listing_unverify",
+      p_target_type: "vendor_profile",
+      p_target_id: row.id,
+      p_summary: `${next ? "Verified" : "Unverified"} listing ${row.business_name}`,
+      p_metadata: { category: row.category },
+    });
     toast.success(next ? "Verified" : "Unverified");
     setRows((p) =>
       p.map((r) => (r.id === row.id ? { ...r, verified_at: next } : r)),
     );
   };
 
-  const remove = async (row: Listing) => {
-    if (!confirm(`Delete ${row.business_name}? This cannot be undone.`)) return;
+  const confirmDelete = async () => {
+    if (!pendingDelete) return;
+    setDeleting(true);
+    const target = pendingDelete;
     const { error } = await supabase
       .from("vendor_profiles")
       .delete()
-      .eq("id", row.id);
+      .eq("id", target.id);
+    setDeleting(false);
     if (error) {
       toast.error(error.message);
       return;
     }
+    void supabase.rpc("log_admin_action", {
+      p_action: "listing_delete",
+      p_target_type: "vendor_profile",
+      p_target_id: target.id,
+      p_summary: `Deleted listing ${target.business_name}`,
+      p_metadata: {
+        category: target.category,
+        location: target.location,
+        was_status: target.application_status,
+      },
+    });
     toast.success("Listing deleted");
-    setRows((p) => p.filter((r) => r.id !== row.id));
+    setRows((p) => p.filter((r) => r.id !== target.id));
+    setPendingDelete(null);
   };
 
   const setStatus = async (
@@ -109,6 +133,13 @@ export function ListingsPage() {
       toast.error(error.message);
       return;
     }
+    void supabase.rpc("log_admin_action", {
+      p_action: `listing_${status}`,
+      p_target_type: "vendor_profile",
+      p_target_id: row.id,
+      p_summary: `Marked ${row.business_name} ${status}`,
+      p_metadata: { previous: row.application_status },
+    });
     if (status === "approved" || status === "rejected") {
       // Listings tab handles RE-PUBLISH decisions (vendor edited and
       // hit Publish on an already-approved listing). Different copy
@@ -144,6 +175,12 @@ export function ListingsPage() {
   return (
     <div className="p-8">
       <h1 className="text-2xl font-semibold">Vendor listings</h1>
+      {rows.length === 500 ? (
+        <p className="mt-2 text-xs text-amber-700">
+          Showing first 500 listings. Filter to narrow results — older rows are
+          truncated.
+        </p>
+      ) : null}
       <input
         value={filter}
         onChange={(e) => setFilter(e.target.value)}
@@ -214,7 +251,7 @@ export function ListingsPage() {
                       {r.verified_at ? "Unverify" : "Verify"}
                     </button>
                     <button
-                      onClick={() => remove(r)}
+                      onClick={() => setPendingDelete(r)}
                       className="ml-3 text-xs text-red-700 underline-offset-2 hover:underline"
                     >
                       Delete
@@ -236,6 +273,36 @@ export function ListingsPage() {
           </table>
         </div>
       )}
+
+      {pendingDelete ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-xl">
+            <h2 className="text-lg font-semibold">Delete this listing?</h2>
+            <p className="mt-2 text-sm text-ink/70">
+              <strong>{pendingDelete.business_name}</strong> will be permanently
+              removed, along with its photos, packages, FAQs, inquiries, and
+              reviews. The vendor account itself stays.
+            </p>
+            <p className="mt-2 text-xs text-ink/60">This can't be undone.</p>
+            <div className="mt-6 flex justify-end gap-2">
+              <button
+                onClick={() => setPendingDelete(null)}
+                disabled={deleting}
+                className="rounded border border-ink/15 px-3 py-1.5 text-sm hover:bg-ink/5 disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmDelete}
+                disabled={deleting}
+                className="rounded bg-red-600 px-3 py-1.5 text-sm text-white hover:bg-red-700 disabled:opacity-50"
+              >
+                {deleting ? "Deleting…" : "Delete listing"}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

@@ -48,6 +48,9 @@ export function PackageManager({ vendorId, canEdit }: Props) {
   const [editorOpen, setEditorOpen] = useState(false);
   const [editing, setEditing] = useState<VendorPackage | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  // Track which package is mid-toggle so a rapid double-click on the
+  // visibility switch can't fire two competing UPDATEs.
+  const [togglingId, setTogglingId] = useState<string | null>(null);
 
   async function load() {
     setLoading(true);
@@ -78,9 +81,12 @@ export function PackageManager({ vendorId, canEdit }: Props) {
   }
 
   async function toggleActive(pkg: VendorPackage) {
+    if (togglingId === pkg.id) return;
+    setTogglingId(pkg.id);
     const { error } = await packagesTable()
       .update({ is_active: !pkg.is_active })
       .eq("id", pkg.id);
+    setTogglingId(null);
     if (error) {
       toast.error(error.message);
       return;
@@ -180,6 +186,7 @@ export function PackageManager({ vendorId, canEdit }: Props) {
                   <div className="flex items-center gap-2">
                     <Switch
                       checked={p.is_active}
+                      disabled={togglingId === p.id}
                       onCheckedChange={() => toggleActive(p)}
                     />
                     <span className="text-xs text-muted-foreground">

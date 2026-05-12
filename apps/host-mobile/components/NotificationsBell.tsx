@@ -10,6 +10,7 @@
 
 import { Fragment, useCallback, useEffect, useState } from "react";
 import {
+  Image,
   Modal,
   Platform,
   Pressable,
@@ -80,12 +81,15 @@ interface NotificationRow {
   link: string | null;
   read_at: string | null;
   created_at: string;
+  actor_image_url: string | null;
 }
 
-// Classify a notification into one of four icon styles. Booking /
-// accepted events get a green check; chat-style events get a letter
-// avatar from the title; system pushes get a bell; default to a
-// letter avatar so empty types still look intentional.
+// Classify a notification into one of four icon styles:
+//   1. Sender's actor_image_url present and notification is person-shaped
+//      (message / proposal / inquiry / review) → real avatar photo.
+//   2. Booking / accepted / confirmed → green check tile (action, not a person).
+//   3. System / push / test → bell tile.
+//   4. Fallback → letter avatar derived from the title.
 function NotificationIcon({ row }: { row: NotificationRow }) {
   const box = {
     width: 44,
@@ -107,12 +111,31 @@ function NotificationIcon({ row }: { row: NotificationRow }) {
     );
   }
 
-  const isMessage =
+  // Person-shaped types where a real avatar is meaningful. Show the
+  // photo when the trigger populated it; otherwise fall through to the
+  // letter avatar so legacy rows (pre-migration) still look intentional.
+  const isPerson =
     type === "direct_message" ||
     type === "message_received" ||
+    type === "proposal_sent" ||
+    type === "inquiry_created" ||
+    type === "review_posted" ||
+    type === "party_invite_accepted" ||
+    type.startsWith("appointment_") ||
     /message|reply|replied/.test(type) ||
     /replied/i.test(title);
-  if (isMessage) {
+  if (isPerson && row.actor_image_url) {
+    return (
+      <View style={{ ...box, backgroundColor: "#f5e7da", overflow: "hidden" }}>
+        <Image
+          source={{ uri: row.actor_image_url }}
+          style={{ width: 44, height: 44 }}
+          accessibilityIgnoresInvertColors
+        />
+      </View>
+    );
+  }
+  if (isPerson) {
     const initial = (title.trim()[0] ?? "?").toUpperCase();
     return (
       <View style={{ ...box, backgroundColor: "#f5e7da" }}>
@@ -305,6 +328,10 @@ export function NotificationsBell({
 
   const openNotification = useCallback(
     async (n: NotificationRow) => {
+      // Mark this single row read so the badge count drops as soon
+      // as the user taps in. Optimistic local update; the DB write
+      // races in the background. Log failures so we'd notice if
+      // notifications never mark read across the fleet.
       if (n.read_at == null && user?.id) {
         setRows((prev) =>
           prev.map((r) =>
@@ -315,7 +342,15 @@ export function NotificationsBell({
           .from("notifications")
           .update({ read_at: new Date().toISOString() })
           .eq("id", n.id)
-          .then(() => undefined);
+          .then(({ error }) => {
+            if (error) {
+              // eslint-disable-next-line no-console
+              console.warn(
+                "[NotificationsBell] mark-read failed",
+                error.message,
+              );
+            }
+          });
       }
       const route = routeFromLink(n.link);
       setOpen(false);
@@ -329,7 +364,7 @@ export function NotificationsBell({
     setLoading(true);
     const { data } = await supabase
       .from("notifications")
-      .select("id, type, title, body, link, read_at, created_at")
+      .select("id, type, title, body, link, read_at, created_at, actor_image_url")
       .eq("user_id", user.id)
       .order("created_at", { ascending: false })
       .limit(50);
@@ -354,11 +389,15 @@ export function NotificationsBell({
     setRows((prev) =>
       prev.map((r) => ({ ...r, read_at: r.read_at ?? now })),
     );
-    await supabase
+    const { error } = await supabase
       .from("notifications")
       .update({ read_at: now })
       .eq("user_id", user.id)
       .is("read_at", null);
+    if (error) {
+      // eslint-disable-next-line no-console
+      console.warn("[NotificationsBell] mark-all-read failed", error.message);
+    }
   }
 
   const unread = rows.filter((r) => r.read_at == null).length;

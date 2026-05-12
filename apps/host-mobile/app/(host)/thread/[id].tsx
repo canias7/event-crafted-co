@@ -340,21 +340,23 @@ export default function ThreadScreen() {
       body,
     });
     setSending(false);
-    if (!error) {
-      setDraft("");
-      const optimistic: DirectMessage = {
-        id: `tmp-${Date.now()}`,
-        sender_id: user.id,
-        sender_role: "host",
-        body,
-        created_at: new Date().toISOString(),
-        attachments: null,
-      };
-      setMessages((prev) => [...prev, optimistic]);
-      requestAnimationFrame(() =>
-        scrollRef.current?.scrollToEnd({ animated: true }),
-      );
+    if (error) {
+      Alert.alert("Couldn't send", error.message);
+      return;
     }
+    setDraft("");
+    const optimistic: DirectMessage = {
+      id: `tmp-${Date.now()}`,
+      sender_id: user.id,
+      sender_role: "host",
+      body,
+      created_at: new Date().toISOString(),
+      attachments: null,
+    };
+    setMessages((prev) => [...prev, optimistic]);
+    requestAnimationFrame(() =>
+      scrollRef.current?.scrollToEnd({ animated: true }),
+    );
   }
 
   const enriched = useMemo(() => enrichMessages(messages), [messages]);

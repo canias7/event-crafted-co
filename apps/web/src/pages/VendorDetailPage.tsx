@@ -511,6 +511,34 @@ export default function VendorDetailPage() {
     setInquiryFormOpen(true);
   }
 
+  async function handleShare() {
+    if (!vendor) return;
+    const shareUrl = `${window.location.origin}/vendors/${vendor.id}`;
+    const shareData = {
+      title: vendor.name,
+      text: `Check out ${vendor.name} on Vendora`,
+      url: shareUrl,
+    };
+    // Web Share API is the right experience on mobile (system share
+    // sheet). On desktop where it's missing, fall back to clipboard.
+    if (typeof navigator.share === "function") {
+      try {
+        await navigator.share(shareData);
+        return;
+      } catch (e) {
+        // AbortError fires when the user dismisses the share sheet —
+        // not an error, just a cancel. Silently no-op.
+        if (e instanceof DOMException && e.name === "AbortError") return;
+      }
+    }
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      toast.success("Link copied");
+    } catch {
+      toast.error("Couldn't copy the link");
+    }
+  }
+
   async function handleMessageClick() {
     if (authLoading || !vendor) return;
     if (!session || !profile) {
@@ -585,24 +613,6 @@ export default function VendorDetailPage() {
   }
 
   const heroPicture = imageMap[vendor.image] ?? featureFlorals;
-
-  // Debug — temporary instrumentation while we chase a render-time
-  // crash for newly-published vendors. Logs the resolved vendor
-  // object, the resolved hero key, and a few fields most likely to
-  // be problematic (image lookup, location, lat/lng-adjacent state).
-  // Remove once the root cause is fixed.
-  // eslint-disable-next-line no-console
-  console.info("[VendorDetailPage] render", {
-    id: vendor.id,
-    name: vendor.name,
-    category: vendor.category,
-    imageKey: vendor.image,
-    imageResolved: imageMap[vendor.image] ? "match" : "fallback(featureFlorals)",
-    location: vendor.location,
-    isReal: vendor.isReal,
-    instagramHandle: vendor.instagramHandle,
-    tiktokHandle: vendor.tiktokHandle,
-  });
 
   return (
     <div className="min-h-screen bg-background pb-24 lg:pb-0">
@@ -1102,7 +1112,11 @@ export default function VendorDetailPage() {
                       />
                       {saved ? "Saved" : "Save"}
                     </Button>
-                    <Button variant="outline" className="rounded-full h-10">
+                    <Button
+                      variant="outline"
+                      className="rounded-full h-10"
+                      onClick={handleShare}
+                    >
                       <Share2 className="w-3.5 h-3.5 mr-2" />
                       Share
                     </Button>

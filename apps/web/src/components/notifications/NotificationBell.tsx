@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { Bell, Check, Inbox, Sparkles, MessageCircle, Star, Calendar } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
@@ -22,6 +22,7 @@ interface Notification {
   link: string | null;
   read_at: string | null;
   created_at: string;
+  actor_image_url: string | null;
 }
 
 const typeIcons: Record<string, typeof Inbox> = {
@@ -42,16 +43,31 @@ export function NotificationBell({ variant = "dark" }: Props) {
   const [open, setOpen] = useState(false);
   const [items, setItems] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(false);
+  // Versioned cancel guard so a rapid realtime burst (or unmount mid-
+  // fetch) can't setState on the wrong result.
+  const loadVersion = useRef(0);
 
   async function load() {
     if (!user) return;
+    const myVersion = ++loadVersion.current;
     setLoading(true);
-    const { data } = await notifTable()
-      .select("id, type, title, body, link, read_at, created_at")
+    const { data, error } = await notifTable()
+      .select("id, type, title, body, link, read_at, created_at, actor_image_url")
       .eq("user_id", user.id)
       .order("created_at", { ascending: false })
       .limit(20);
-    setItems((data as Notification[]) ?? []);
+    if (myVersion !== loadVersion.current) return;
+    if (error) {
+      // Don't toast — the bell is ambient UI, no need to bother the
+      // user. Log so we'd notice if the inbox stops loading at scale.
+      console.error("[NotificationBell] load failed", error.message);
+      setLoading(false);
+      return;
+    }
+    // Autogen Supabase types don't know about actor_image_url yet
+    // (it's a fresh migration). Cast through unknown so the SelectQueryError
+    // intersection doesn't fail the compile until types regen.
+    setItems(((data ?? []) as unknown) as Notification[]);
     setLoading(false);
   }
 
@@ -61,6 +77,9 @@ export function NotificationBell({ variant = "dark" }: Props) {
       return;
     }
     load();
+    return () => {
+      loadVersion.current = -1;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
@@ -170,15 +189,24 @@ export function NotificationBell({ variant = "dark" }: Props) {
                     isUnread ? "bg-accent/5" : ""
                   }`}
                 >
-                  <div
-                    className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
-                      isUnread
-                        ? "bg-accent text-accent-foreground"
-                        : "bg-secondary text-muted-foreground"
-                    }`}
-                  >
-                    <Icon className="w-3.5 h-3.5" />
-                  </div>
+                  {n.actor_image_url ? (
+                    <img
+                      src={n.actor_image_url}
+                      alt=""
+                      className="w-8 h-8 rounded-full object-cover flex-shrink-0"
+                      loading="lazy"
+                    />
+                  ) : (
+                    <div
+                      className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
+                        isUnread
+                          ? "bg-accent text-accent-foreground"
+                          : "bg-secondary text-muted-foreground"
+                      }`}
+                    >
+                      <Icon className="w-3.5 h-3.5" />
+                    </div>
+                  )}
                   <div className="flex-1 min-w-0">
                     <p
                       className={`text-sm truncate ${
