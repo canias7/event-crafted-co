@@ -1367,12 +1367,15 @@ function VendorProfileSheet({
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const uid = (ownerVendorRes.data as any)?.user_id as string | undefined;
       if (uid) {
+        // Pull every approved listing this vendor account owns,
+        // including the one the host is currently viewing — the user
+        // wants to see the full set in the sheet, with the current
+        // one marked.
         const { data: more } = await supabase
           .from("vendor_profiles")
           .select("id, business_name, category, logo_url")
           .eq("user_id", uid)
           .eq("application_status", "approved")
-          .neq("id", vendor.id)
           .order("created_at", { ascending: false });
         if (!cancelled) {
           setOtherListings(((more ?? []) as SheetListingRow[]) ?? []);
@@ -1651,11 +1654,17 @@ function VendorProfileSheet({
                   <SheetBuzzList items={buzz} />
                 )
               ) : otherListings.length === 0 ? (
-                <SheetEmpty body="No other listings." />
+                <SheetEmpty body="No listings yet." />
               ) : (
                 <SheetListingsList
                   listings={otherListings}
+                  currentId={vendor.id}
                   onPress={(id) => {
+                    if (id === vendor.id) {
+                      // Already on this listing — just dismiss the sheet.
+                      onClose();
+                      return;
+                    }
                     onClose();
                     // Allow the modal close animation to finish before
                     // navigating so the new route doesn't render
@@ -1856,79 +1865,117 @@ function SheetBuzzList({ items }: { items: SheetBuzzRow[] }) {
 
 function SheetListingsList({
   listings,
+  currentId,
   onPress,
 }: {
   listings: SheetListingRow[];
+  currentId: string;
   onPress: (id: string) => void;
 }) {
   return (
     <View style={{ gap: 10, paddingTop: 4 }}>
-      {listings.map((l) => (
-        <Pressable key={l.id} onPress={() => onPress(l.id)}>
-          <View
-            style={{
-              backgroundColor: "#ffffff",
-              borderRadius: 14,
-              padding: 12,
-              marginHorizontal: 4,
-              flexDirection: "row",
-              alignItems: "center",
-              gap: 12,
-            }}
-          >
-            {l.logo_url ? (
-              <Image
-                source={{ uri: l.logo_url }}
-                style={{
-                  width: 48,
-                  height: 48,
-                  borderRadius: 12,
-                  backgroundColor: CREAM,
-                }}
-              />
-            ) : (
-              <View
-                style={{
-                  width: 48,
-                  height: 48,
-                  borderRadius: 12,
-                  backgroundColor: INK,
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
-                <Text
+      {listings.map((l) => {
+        const isCurrent = l.id === currentId;
+        return (
+          <Pressable key={l.id} onPress={() => onPress(l.id)}>
+            <View
+              style={{
+                backgroundColor: "#ffffff",
+                borderRadius: 14,
+                padding: 12,
+                marginHorizontal: 4,
+                flexDirection: "row",
+                alignItems: "center",
+                gap: 12,
+                borderWidth: isCurrent ? 1.5 : 0,
+                borderColor: isCurrent ? INK : "transparent",
+              }}
+            >
+              {l.logo_url ? (
+                <Image
+                  source={{ uri: l.logo_url }}
                   style={{
-                    color: "#faf5ec",
-                    fontFamily: SERIF,
-                    fontSize: 18,
-                    fontWeight: "600",
+                    width: 48,
+                    height: 48,
+                    borderRadius: 12,
+                    backgroundColor: CREAM,
+                  }}
+                />
+              ) : (
+                <View
+                  style={{
+                    width: 48,
+                    height: 48,
+                    borderRadius: 12,
+                    backgroundColor: INK,
+                    alignItems: "center",
+                    justifyContent: "center",
                   }}
                 >
-                  {(l.business_name?.[0] ?? "V").toUpperCase()}
-                </Text>
-              </View>
-            )}
-            <View style={{ flex: 1 }}>
-              <Text
-                style={{ color: INK, fontSize: 15, fontWeight: "700" }}
-                numberOfLines={1}
-              >
-                {l.business_name ?? "Listing"}
-              </Text>
-              {l.category ? (
-                <Text
-                  style={{ marginTop: 2, color: INK_DIM, fontSize: 13 }}
-                  numberOfLines={1}
+                  <Text
+                    style={{
+                      color: "#faf5ec",
+                      fontFamily: SERIF,
+                      fontSize: 18,
+                      fontWeight: "600",
+                    }}
+                  >
+                    {(l.business_name?.[0] ?? "V").toUpperCase()}
+                  </Text>
+                </View>
+              )}
+              <View style={{ flex: 1 }}>
+                <View
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    gap: 6,
+                  }}
                 >
-                  {l.category}
-                </Text>
-              ) : null}
+                  <Text
+                    style={{ color: INK, fontSize: 15, fontWeight: "700", flexShrink: 1 }}
+                    numberOfLines={1}
+                  >
+                    {l.business_name ?? "Listing"}
+                  </Text>
+                  {isCurrent ? (
+                    <View
+                      style={{
+                        backgroundColor: INK,
+                        paddingHorizontal: 7,
+                        paddingVertical: 2,
+                        borderRadius: 999,
+                      }}
+                    >
+                      <Text
+                        style={{
+                          color: "#faf5ec",
+                          fontSize: 9,
+                          fontWeight: "800",
+                          letterSpacing: 0.6,
+                        }}
+                      >
+                        VIEWING
+                      </Text>
+                    </View>
+                  ) : null}
+                </View>
+                {l.category ? (
+                  <Text
+                    style={{ marginTop: 2, color: INK_DIM, fontSize: 13 }}
+                    numberOfLines={1}
+                  >
+                    {l.category}
+                  </Text>
+                ) : null}
+              </View>
+              {isCurrent ? null : (
+                <Feather name="chevron-right" size={20} color={INK_DIM} />
+              )}
             </View>
-            <Feather name="chevron-right" size={20} color={INK_DIM} />
-          </View>
-        </Pressable>
-      ))}
+          </Pressable>
+        );
+      })}
     </View>
   );
 }
