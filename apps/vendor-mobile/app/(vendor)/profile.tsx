@@ -1860,10 +1860,45 @@ function SettingsSheet({
   email: string;
   onSignOut: () => Promise<void>;
 }) {
-  const [pwdOpen, setPwdOpen] = useState(false);
+  const { user } = useAuth();
+
+  // "Account" view vs inline "Change password" form. The sheet swaps
+  // its body when the password row is tapped so the design stays
+  // single-column.
+  const [view, setView] = useState<"main" | "password">("main");
   const [newPwd, setNewPwd] = useState("");
   const [confirmPwd, setConfirmPwd] = useState("");
   const [pwdSubmitting, setPwdSubmitting] = useState(false);
+
+  const [emailVerified, setEmailVerified] = useState(false);
+  const [language, setLanguage] = useState("en-US");
+  const [pushOn, setPushOn] = useState(true);
+  const [pushBusy, setPushBusy] = useState(false);
+
+  useEffect(() => {
+    if (!open) return;
+    setView("main");
+    (async () => {
+      const { data } = await supabase.auth.getUser();
+      setEmailVerified(!!data?.user?.email_confirmed_at);
+      if (user?.id) {
+        const [{ data: prof }, { count }] = await Promise.all([
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          (supabase as any)
+            .from("profiles")
+            .select("preferred_language")
+            .eq("id", user.id)
+            .maybeSingle(),
+          supabase
+            .from("device_push_tokens")
+            .select("token", { count: "exact", head: true })
+            .eq("user_id", user.id),
+        ]);
+        setLanguage(prof?.preferred_language ?? "en-US");
+        setPushOn((count ?? 0) > 0);
+      }
+    })();
+  }, [open, user?.id]);
 
   async function changePassword() {
     if (newPwd.length < 8) {
@@ -1883,8 +1918,85 @@ function SettingsSheet({
     }
     setNewPwd("");
     setConfirmPwd("");
-    setPwdOpen(false);
+    setView("main");
     Alert.alert("Password updated", "Your new password is active.");
+  }
+
+  // Toggle persists by inserting / deleting rows on device_push_tokens
+  // for the current user. The next foreground will re-register a token
+  // via the existing auth-state listener if push is back on.
+  async function togglePush() {
+    if (!user?.id || pushBusy) return;
+    setPushBusy(true);
+    const next = !pushOn;
+    setPushOn(next);
+    if (!next) {
+      const { error } = await supabase
+        .from("device_push_tokens")
+        .delete()
+        .eq("user_id", user.id);
+      if (error) setPushOn(true);
+    } else {
+      // The auth-state listener re-registers on next mount/foreground.
+      // For an immediate ping we'd need to call tryRegisterPushToken
+      // here, but importing pushNotifications would couple this sheet
+      // to permission state. Leave the listener to handle it.
+    }
+    setPushBusy(false);
+  }
+
+  function onTwoStep() {
+    Alert.alert(
+      "Two-step verification",
+      "Stronger sign-in is on the roadmap. Today every login already uses an email-code check; the toggle will switch to authenticator-app 2FA when it ships.",
+    );
+  }
+
+  function onLanguage() {
+    Alert.alert(
+      "Language",
+      "More languages are on the way. The app currently runs in English (US).",
+    );
+  }
+
+  function onSignOutPress() {
+    Alert.alert("Sign out", "Are you sure?", [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Sign out",
+        style: "destructive",
+        onPress: () => {
+          onClose();
+          onSignOut();
+        },
+      },
+    ]);
+  }
+
+  function onDeleteAccount() {
+    Alert.alert(
+      "Delete your account?",
+      "This permanently deletes your account, all listings, messages, and history. You can't undo this.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete account",
+          style: "destructive",
+          onPress: async () => {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const { error } = await (supabase as any).rpc(
+              "request_account_deletion",
+            );
+            if (error) {
+              Alert.alert("Couldn't delete account", error.message);
+              return;
+            }
+            onClose();
+            onSignOut();
+          },
+        },
+      ],
+    );
   }
 
   return (
@@ -1905,151 +2017,529 @@ function SettingsSheet({
         <Pressable
           onPress={() => {}}
           style={{
-            backgroundColor: "#fff",
-            borderTopLeftRadius: 24,
-            borderTopRightRadius: 24,
-            paddingHorizontal: 16,
-            paddingTop: 12,
-            paddingBottom: 32,
+            backgroundColor: CREAM,
+            borderTopLeftRadius: 28,
+            borderTopRightRadius: 28,
+            paddingTop: 10,
+            paddingBottom: 24,
+            maxHeight: "92%",
           }}
         >
+          {/* Drag handle */}
           <View
             style={{
               alignSelf: "center",
-              width: 40,
+              width: 36,
               height: 4,
               borderRadius: 2,
-              backgroundColor: "rgba(10,10,10,0.18)",
-              marginBottom: 16,
+              backgroundColor: "rgba(26,20,16,0.18)",
+              marginBottom: 14,
             }}
           />
 
-          <Text className="mb-3 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-            Account
-          </Text>
+          {view === "main" ? (
+            <ScrollView
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={{ paddingHorizontal: 18, paddingBottom: 8 }}
+            >
+              {/* Title row */}
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                }}
+              >
+                <Text
+                  style={{
+                    color: INK,
+                    fontFamily: SERIF,
+                    fontWeight: "700",
+                    fontSize: 30,
+                    letterSpacing: -0.5,
+                  }}
+                >
+                  Account
+                </Text>
+                <Pressable
+                  onPress={onClose}
+                  hitSlop={10}
+                  style={{
+                    width: 32,
+                    height: 32,
+                    borderRadius: 999,
+                    backgroundColor: CREAM_DEEP,
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <Feather name="x" size={16} color={INK} />
+                </Pressable>
+              </View>
+              <Text
+                style={{
+                  marginTop: 8,
+                  color: INK_DIM,
+                  fontFamily: SERIF,
+                  fontStyle: "italic",
+                  fontSize: 15,
+                }}
+              >
+                Sign-in details and how Vendora reaches you.
+              </Text>
 
-          <View className="rounded-xl border border-border bg-background px-4 py-3">
-            <Text className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-              Email
-            </Text>
-            <Text className="mt-1 text-base text-foreground">{email || "—"}</Text>
-          </View>
+              {/* SIGN IN */}
+              <Text
+                style={{
+                  marginTop: 26,
+                  marginBottom: 10,
+                  color: INK_DIM,
+                  fontSize: 11,
+                  fontWeight: "800",
+                  letterSpacing: 1.2,
+                }}
+              >
+                SIGN IN
+              </Text>
+              <View
+                style={{
+                  backgroundColor: "#fbf4e6",
+                  borderRadius: 18,
+                  overflow: "hidden",
+                }}
+              >
+                <SettingsRow
+                  icon="mail"
+                  label="EMAIL"
+                  body={email || "—"}
+                  right={
+                    emailVerified ? (
+                      <View
+                        style={{
+                          paddingHorizontal: 10,
+                          paddingVertical: 5,
+                          backgroundColor: "#d4ead8",
+                          borderRadius: 999,
+                          flexDirection: "row",
+                          alignItems: "center",
+                        }}
+                      >
+                        <View
+                          style={{
+                            width: 6,
+                            height: 6,
+                            borderRadius: 999,
+                            backgroundColor: "#2f7a40",
+                            marginRight: 5,
+                          }}
+                        />
+                        <Text
+                          style={{
+                            color: "#2f7a40",
+                            fontSize: 12,
+                            fontWeight: "700",
+                          }}
+                        >
+                          Verified
+                        </Text>
+                      </View>
+                    ) : null
+                  }
+                />
+                <RowDivider />
+                <SettingsRow
+                  icon="lock"
+                  label="Change password"
+                  body="Tap to update"
+                  onPress={() => setView("password")}
+                />
+                <RowDivider />
+                <SettingsRow
+                  icon="shield"
+                  label="Two-step verification"
+                  body="Off — recommended for vendors"
+                  right={<Toggle value={false} onPress={onTwoStep} />}
+                  onPress={onTwoStep}
+                />
+              </View>
 
-          {pwdOpen ? (
-            <View className="mt-2 rounded-xl border border-border bg-background p-4 gap-3">
-              <Text className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                Change password
+              {/* PREFERENCES */}
+              <Text
+                style={{
+                  marginTop: 26,
+                  marginBottom: 10,
+                  color: INK_DIM,
+                  fontSize: 11,
+                  fontWeight: "800",
+                  letterSpacing: 1.2,
+                }}
+              >
+                PREFERENCES
+              </Text>
+              <View
+                style={{
+                  backgroundColor: "#fbf4e6",
+                  borderRadius: 18,
+                  overflow: "hidden",
+                }}
+              >
+                <SettingsRow
+                  icon="bell"
+                  label="Push notifications"
+                  body="Bookings, messages, reminders"
+                  right={<Toggle value={pushOn} onPress={togglePush} disabled={pushBusy} />}
+                  onPress={togglePush}
+                />
+                <RowDivider />
+                <SettingsRow
+                  icon="globe"
+                  label="Language"
+                  body={language === "en-US" ? "English (US)" : language}
+                  onPress={onLanguage}
+                />
+              </View>
+
+              {/* Log out + Delete */}
+              <Pressable
+                onPress={onSignOutPress}
+                style={{
+                  marginTop: 24,
+                  backgroundColor: "#fbf4e6",
+                  borderRadius: 18,
+                  paddingVertical: 16,
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <Feather name="log-out" size={18} color={INK} />
+                <Text
+                  style={{
+                    color: INK,
+                    fontSize: 16,
+                    fontWeight: "700",
+                    marginLeft: 8,
+                  }}
+                >
+                  Log out
+                </Text>
+              </Pressable>
+
+              <Pressable
+                onPress={onDeleteAccount}
+                style={{
+                  marginTop: 10,
+                  backgroundColor: "#fbf4e6",
+                  borderRadius: 18,
+                  borderWidth: 1,
+                  borderColor: "#d99c98",
+                  paddingVertical: 16,
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <Feather name="trash-2" size={16} color="#b42318" />
+                <Text
+                  style={{
+                    color: "#b42318",
+                    fontSize: 16,
+                    fontWeight: "700",
+                    marginLeft: 8,
+                  }}
+                >
+                  Delete account
+                </Text>
+              </Pressable>
+
+              <Text
+                style={{
+                  marginTop: 16,
+                  textAlign: "center",
+                  color: INK_DIM,
+                  fontFamily: SERIF,
+                  fontStyle: "italic",
+                  fontSize: 13,
+                  lineHeight: 18,
+                  paddingHorizontal: 12,
+                }}
+              >
+                Deleting your account is permanent. Your listings, messages, and
+                reviews will be removed.
+              </Text>
+            </ScrollView>
+          ) : (
+            // Inline "Change password" form — back chevron returns to
+            // the main settings view, save updates the auth user.
+            <ScrollView
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={{ paddingHorizontal: 18, paddingBottom: 24 }}
+              keyboardShouldPersistTaps="handled"
+            >
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                }}
+              >
+                <Pressable
+                  onPress={() => {
+                    setView("main");
+                    setNewPwd("");
+                    setConfirmPwd("");
+                  }}
+                  hitSlop={10}
+                  style={{
+                    width: 32,
+                    height: 32,
+                    borderRadius: 999,
+                    backgroundColor: CREAM_DEEP,
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <Feather name="chevron-left" size={18} color={INK} />
+                </Pressable>
+                <Text
+                  style={{
+                    color: INK,
+                    fontFamily: SERIF,
+                    fontStyle: "italic",
+                    fontWeight: "700",
+                    fontSize: 20,
+                  }}
+                >
+                  Change password
+                </Text>
+                <View style={{ width: 32 }} />
+              </View>
+              <Text
+                style={{
+                  marginTop: 14,
+                  color: INK_DIM,
+                  fontSize: 14,
+                  lineHeight: 20,
+                }}
+              >
+                At least 8 characters. Pick something you don&apos;t use
+                anywhere else.
+              </Text>
+
+              <Text
+                style={{
+                  marginTop: 24,
+                  color: INK_DIM,
+                  fontSize: 11,
+                  fontWeight: "800",
+                  letterSpacing: 1,
+                }}
+              >
+                NEW PASSWORD
               </Text>
               <TextInput
                 secureTextEntry
                 value={newPwd}
                 onChangeText={setNewPwd}
-                placeholder="New password (min 8 chars)"
-                placeholderTextColor="#a3a3a3"
-                className="rounded-lg border border-border px-3 py-2 text-base text-foreground"
+                placeholder="••••••••"
+                placeholderTextColor={INK_DIM}
+                style={{
+                  marginTop: 6,
+                  backgroundColor: "#fbf4e6",
+                  borderRadius: 14,
+                  borderWidth: 1,
+                  borderColor: "#e9dfc8",
+                  paddingHorizontal: 14,
+                  paddingVertical: 12,
+                  color: INK,
+                  fontSize: 16,
+                }}
               />
+
+              <Text
+                style={{
+                  marginTop: 18,
+                  color: INK_DIM,
+                  fontSize: 11,
+                  fontWeight: "800",
+                  letterSpacing: 1,
+                }}
+              >
+                CONFIRM PASSWORD
+              </Text>
               <TextInput
                 secureTextEntry
                 value={confirmPwd}
                 onChangeText={setConfirmPwd}
-                placeholder="Confirm new password"
-                placeholderTextColor="#a3a3a3"
-                className="rounded-lg border border-border px-3 py-2 text-base text-foreground"
+                placeholder="••••••••"
+                placeholderTextColor={INK_DIM}
+                style={{
+                  marginTop: 6,
+                  backgroundColor: "#fbf4e6",
+                  borderRadius: 14,
+                  borderWidth: 1,
+                  borderColor: "#e9dfc8",
+                  paddingHorizontal: 14,
+                  paddingVertical: 12,
+                  color: INK,
+                  fontSize: 16,
+                }}
               />
-              <View className="flex-row gap-2">
-                <Pressable
-                  onPress={() => {
-                    setPwdOpen(false);
-                    setNewPwd("");
-                    setConfirmPwd("");
-                  }}
-                  disabled={pwdSubmitting}
-                  className="flex-1 rounded-lg border border-border py-2.5 active:opacity-70"
+
+              <Pressable
+                onPress={changePassword}
+                disabled={pwdSubmitting || newPwd.length < 8 || newPwd !== confirmPwd}
+                style={{
+                  marginTop: 22,
+                  backgroundColor: INK,
+                  borderRadius: 999,
+                  height: 52,
+                  alignItems: "center",
+                  justifyContent: "center",
+                  opacity:
+                    pwdSubmitting || newPwd.length < 8 || newPwd !== confirmPwd
+                      ? 0.5
+                      : 1,
+                }}
+              >
+                <Text
+                  style={{ color: CREAM, fontSize: 15, fontWeight: "700" }}
                 >
-                  <Text className="text-center text-sm font-medium text-foreground">
-                    Cancel
-                  </Text>
-                </Pressable>
-                <Pressable
-                  onPress={changePassword}
-                  disabled={pwdSubmitting}
-                  className="flex-1 rounded-lg bg-foreground py-2.5 active:opacity-70"
-                >
-                  <Text className="text-center text-sm font-medium text-background">
-                    {pwdSubmitting ? "Saving…" : "Save"}
-                  </Text>
-                </Pressable>
-              </View>
-            </View>
-          ) : (
-            <Pressable
-              onPress={() => setPwdOpen(true)}
-              className="mt-2 rounded-xl border border-border bg-background px-4 py-3 active:opacity-70"
-            >
-              <Text className="text-sm text-foreground">Change password</Text>
-            </Pressable>
+                  {pwdSubmitting ? "Saving…" : "Save password"}
+                </Text>
+              </Pressable>
+            </ScrollView>
           )}
-
-          <Pressable
-            onPress={() => {
-              Alert.alert("Sign out", "Are you sure?", [
-                { text: "Cancel", style: "cancel" },
-                {
-                  text: "Sign out",
-                  style: "destructive",
-                  onPress: () => {
-                    onClose();
-                    onSignOut();
-                  },
-                },
-              ]);
-            }}
-            className="mt-6 rounded-lg border border-border bg-background py-3 active:opacity-70"
-          >
-            <Text className="text-center text-sm font-medium text-foreground">
-              Log out
-            </Text>
-          </Pressable>
-
-          <Pressable
-            onPress={() => {
-              Alert.alert(
-                "Delete your account?",
-                "This permanently deletes your account, all listings, messages, and history. You can't undo this.",
-                [
-                  { text: "Cancel", style: "cancel" },
-                  {
-                    text: "Delete account",
-                    style: "destructive",
-                    onPress: async () => {
-                      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                      const { error } = await (supabase as any).rpc(
-                        "request_account_deletion",
-                      );
-                      if (error) {
-                        Alert.alert(
-                          "Couldn't delete account",
-                          error.message,
-                        );
-                        return;
-                      }
-                      onClose();
-                      // The auth.users row is now gone — sign-out
-                      // clears the local session and routes to auth.
-                      onSignOut();
-                    },
-                  },
-                ],
-              );
-            }}
-            className="mt-2 rounded-lg border border-rose-300 bg-background py-3 active:opacity-70"
-          >
-            <Text className="text-center text-sm font-medium text-rose-600">
-              Delete account
-            </Text>
-          </Pressable>
         </Pressable>
       </Pressable>
     </Modal>
+  );
+}
+
+function SettingsRow({
+  icon,
+  label,
+  body,
+  right,
+  onPress,
+}: {
+  icon: keyof typeof Feather.glyphMap;
+  label: string;
+  body: string;
+  right?: React.ReactNode;
+  onPress?: () => void;
+}) {
+  const Inner = (
+    <View
+      style={{
+        flexDirection: "row",
+        alignItems: "center",
+        paddingHorizontal: 14,
+        paddingVertical: 14,
+      }}
+    >
+      <View
+        style={{
+          width: 38,
+          height: 38,
+          borderRadius: 12,
+          backgroundColor: "#efe5d2",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <Feather name={icon} size={18} color={INK} />
+      </View>
+      <View style={{ flex: 1, marginLeft: 12 }}>
+        <Text
+          style={{
+            color: INK_DIM,
+            fontSize: 11,
+            fontWeight: "800",
+            letterSpacing: 0.8,
+          }}
+        >
+          {label.toUpperCase() === label ? label : null}
+        </Text>
+        <Text
+          style={{
+            color: INK,
+            fontSize: 16,
+            fontWeight: "700",
+            marginTop: label.toUpperCase() === label ? 2 : 0,
+          }}
+          numberOfLines={1}
+        >
+          {label.toUpperCase() === label ? body : label}
+        </Text>
+        {label.toUpperCase() === label ? null : (
+          <Text
+            style={{
+              marginTop: 2,
+              color: INK_DIM,
+              fontSize: 13,
+            }}
+            numberOfLines={1}
+          >
+            {body}
+          </Text>
+        )}
+      </View>
+      {right ?? (
+        onPress ? (
+          <Feather name="chevron-right" size={20} color={INK_DIM} />
+        ) : null
+      )}
+    </View>
+  );
+  if (!onPress) return Inner;
+  return <Pressable onPress={onPress}>{Inner}</Pressable>;
+}
+
+function RowDivider() {
+  return (
+    <View
+      style={{
+        height: 1,
+        backgroundColor: "#efe5d2",
+        marginLeft: 64,
+      }}
+    />
+  );
+}
+
+function Toggle({
+  value,
+  onPress,
+  disabled,
+}: {
+  value: boolean;
+  onPress: () => void;
+  disabled?: boolean;
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      disabled={disabled}
+      hitSlop={8}
+      style={{
+        width: 48,
+        height: 28,
+        borderRadius: 999,
+        backgroundColor: value ? "#3a7d4a" : "#dccbb0",
+        padding: 3,
+        opacity: disabled ? 0.6 : 1,
+      }}
+    >
+      <View
+        style={{
+          width: 22,
+          height: 22,
+          borderRadius: 999,
+          backgroundColor: "#ffffff",
+          transform: [{ translateX: value ? 20 : 0 }],
+        }}
+      />
+    </Pressable>
   );
 }
