@@ -78,6 +78,10 @@ export default function LoginScreen() {
 
   async function onSubmitCode() {
     setError(null);
+    if (code.trim().length !== 6) {
+      setError("Enter the 6-digit code we emailed you.");
+      return;
+    }
     setSubmitting(true);
     const { data, error: invokeErr } = await supabase.functions.invoke("signin-2fa", {
       body: { action: "verify", email: email.trim().toLowerCase(), code: code.trim() },
