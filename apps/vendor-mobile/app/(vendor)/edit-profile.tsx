@@ -20,6 +20,7 @@ import {
   Alert,
   Image,
   KeyboardAvoidingView,
+  Modal,
   Platform,
   Pressable,
   ScrollView,
@@ -40,6 +41,69 @@ const INK = "#1a1410";
 const INK_DIM = "#776c5f";
 const BORDER = "#e9dfc8";
 const SERIF = Platform.OS === "ios" ? "Times New Roman" : "serif";
+
+// Canonical vendor taxonomy — must stay in lockstep with
+// apps/web/src/data/categoryTaxonomy.ts. Free-text would let vendors
+// type things like "Chria"/"Cakez" that never match a directory filter
+// or appear on a category page; constraining to this list keeps the
+// vendor discoverable.
+const CATEGORY_GROUPS: { group: string; subs: string[] }[] = [
+  {
+    group: "Venues",
+    subs: [
+      "Event Venues",
+      "Outdoor Spaces",
+      "Private Dining Spaces",
+      "Corporate / Conference Spaces",
+    ],
+  },
+  {
+    group: "Food & Beverage",
+    subs: [
+      "Catering",
+      "Bartending / Mobile Bars",
+      "Desserts & Cakes",
+      "Food Trucks / Specialty",
+    ],
+  },
+  {
+    group: "Entertainment",
+    subs: ["DJs", "Live Music", "Performers", "Hosts / MCs"],
+  },
+  {
+    group: "Media",
+    subs: ["Photography", "Videography", "Photo Booths"],
+  },
+  {
+    group: "Design & Decor",
+    subs: [
+      "Event Coordinators",
+      "Florists",
+      "Beauty",
+      "Decor Rentals",
+      "Grooming Services",
+    ],
+  },
+  {
+    group: "Rentals",
+    subs: [
+      "Furniture Rentals",
+      "Tents & Outdoor",
+      "Lighting & AV Equipment",
+      "Dance Floors & Staging",
+      "Transportation",
+    ],
+  },
+  {
+    group: "Experiences",
+    subs: ["Tastings", "Specialty Services"],
+  },
+  {
+    group: "Corporate Services",
+    subs: ["Staffing", "Speakers / Hosts", "Security", "Valet"],
+  },
+];
+const ALL_CATEGORIES = CATEGORY_GROUPS.flatMap((g) => g.subs);
 
 interface ProfileForm {
   business_name: string;
@@ -65,6 +129,7 @@ export default function EditProfileScreen() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [logoUploading, setLogoUploading] = useState(false);
+  const [categoryPickerOpen, setCategoryPickerOpen] = useState(false);
 
   const load = useCallback(async () => {
     if (!user) return;
@@ -187,6 +252,17 @@ export default function EditProfileScreen() {
     // listing. Force a value before we even hit the network.
     if (!form.business_name.trim()) {
       Alert.alert("Add a business name", "Your name is required.");
+      return;
+    }
+    // Category must come from the canonical taxonomy. The picker
+    // enforces this on the way in, but legacy rows could still hold
+    // free-text — block save until the vendor picks one so they can
+    // be discovered via the category browse / filter pages.
+    if (!form.category.trim() || !ALL_CATEGORIES.includes(form.category.trim())) {
+      Alert.alert(
+        "Pick a category",
+        "Tap the Category field and choose one of the listed categories so hosts can find you in the directory.",
+      );
       return;
     }
     setSaving(true);
@@ -366,11 +442,9 @@ export default function EditProfileScreen() {
                   onChange={(v) => set("business_name", v)}
                   placeholder="Chris Cakes"
                 />
-                <Field
-                  label="CATEGORY"
+                <CategoryPickerField
                   value={form.category}
-                  onChange={(v) => set("category", v)}
-                  placeholder="Desserts & Cakes"
+                  onPress={() => setCategoryPickerOpen(true)}
                 />
                 <Field
                   label="CITY"
@@ -390,7 +464,162 @@ export default function EditProfileScreen() {
           </ScrollView>
         </KeyboardAvoidingView>
       </SafeAreaView>
+
+      <CategoryPickerModal
+        visible={categoryPickerOpen}
+        selected={form.category}
+        onClose={() => setCategoryPickerOpen(false)}
+        onPick={(c) => {
+          set("category", c);
+          setCategoryPickerOpen(false);
+        }}
+      />
     </View>
+  );
+}
+
+function CategoryPickerField({
+  value,
+  onPress,
+}: {
+  value: string;
+  onPress: () => void;
+}) {
+  const hasValue = value.trim().length > 0;
+  return (
+    <View style={{ marginTop: 18 }}>
+      <Text
+        style={{
+          fontSize: 12,
+          fontWeight: "700",
+          letterSpacing: 1.2,
+          color: INK_DIM,
+        }}
+      >
+        CATEGORY
+      </Text>
+      <Pressable
+        onPress={onPress}
+        style={({ pressed }) => ({
+          marginTop: 6,
+          backgroundColor: "#ffffff",
+          borderRadius: 14,
+          borderWidth: 1,
+          borderColor: BORDER,
+          paddingHorizontal: 14,
+          paddingVertical: 14,
+          opacity: pressed ? 0.7 : 1,
+          flexDirection: "row",
+          alignItems: "center",
+          justifyContent: "space-between",
+        })}
+      >
+        <Text
+          style={{
+            color: hasValue ? INK : INK_DIM,
+            fontSize: 16,
+          }}
+        >
+          {hasValue ? value : "Pick a category"}
+        </Text>
+        <Feather name="chevron-down" size={18} color={INK_DIM} />
+      </Pressable>
+    </View>
+  );
+}
+
+function CategoryPickerModal({
+  visible,
+  selected,
+  onClose,
+  onPick,
+}: {
+  visible: boolean;
+  selected: string;
+  onClose: () => void;
+  onPick: (c: string) => void;
+}) {
+  return (
+    <Modal
+      visible={visible}
+      animationType="slide"
+      presentationStyle="pageSheet"
+      onRequestClose={onClose}
+    >
+      <SafeAreaView style={{ flex: 1, backgroundColor: CREAM }} edges={["top"]}>
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "space-between",
+            paddingHorizontal: 16,
+            paddingVertical: 12,
+            borderBottomWidth: 1,
+            borderColor: BORDER,
+          }}
+        >
+          <Pressable onPress={onClose} hitSlop={8}>
+            <Text style={{ fontSize: 16, color: INK_DIM }}>Cancel</Text>
+          </Pressable>
+          <Text
+            style={{ fontSize: 17, fontWeight: "600", color: INK, fontFamily: SERIF }}
+          >
+            Category
+          </Text>
+          <View style={{ width: 60 }} />
+        </View>
+        <ScrollView contentContainerStyle={{ paddingBottom: 32 }}>
+          {CATEGORY_GROUPS.map((g) => (
+            <View key={g.group} style={{ marginTop: 18 }}>
+              <Text
+                style={{
+                  paddingHorizontal: 18,
+                  paddingBottom: 8,
+                  fontSize: 12,
+                  fontWeight: "700",
+                  letterSpacing: 1.4,
+                  color: INK_DIM,
+                }}
+              >
+                {g.group.toUpperCase()}
+              </Text>
+              {g.subs.map((sub) => {
+                const isSelected = sub === selected;
+                return (
+                  <Pressable
+                    key={sub}
+                    onPress={() => onPick(sub)}
+                    style={({ pressed }) => ({
+                      paddingHorizontal: 18,
+                      paddingVertical: 14,
+                      flexDirection: "row",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      backgroundColor: pressed ? CREAM_DEEP : "transparent",
+                      borderBottomWidth: 1,
+                      borderColor: BORDER,
+                    })}
+                  >
+                    <Text
+                      style={{
+                        fontSize: 16,
+                        color: INK,
+                        fontWeight: isSelected ? "600" : "400",
+                      }}
+                    >
+                      {sub}
+                    </Text>
+                    {isSelected ? (
+                      <Feather name="check" size={20} color={INK} />
+                    ) : null}
+                  </Pressable>
+                );
+              })}
+            </View>
+          ))}
+        </ScrollView>
+      </SafeAreaView>
+    </Modal>
   );
 }
 
