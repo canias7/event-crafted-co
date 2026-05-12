@@ -15,6 +15,7 @@
 import { useCallback, useEffect, useState } from "react";
 import {
   Alert,
+  AppState,
   Dimensions,
   FlatList,
   Image,
@@ -22,21 +23,63 @@ import {
   Platform,
   Pressable,
   ScrollView,
+  Share,
   Text,
   TextInput,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useRouter } from "expo-router";
+import { useFocusEffect, useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import { ResizeMode, Video } from "expo-av";
 import type { VendorProfile } from "@vendora/core";
 import { useAuth } from "@/lib/auth";
+import { tryRegisterPushToken } from "@/lib/pushNotifications";
 import { supabase } from "@/lib/supabase";
 import { BuzzComposer } from "@/components/BuzzComposer";
 import { MediaComposer, type MediaKind } from "@/components/MediaComposer";
 import { PhotoLibraryPicker } from "@/components/PhotoLibraryPicker";
+
+// Editorial palette + helpers — match the Profile redesign mockup
+// (cream + ink + soft peach gradient, italic serif for personal
+// details, sans for chrome).
+const CREAM = "#faf5ec";
+const CREAM_DEEP = "#f5efe5";
+const INK = "#1a1410";
+const INK_DIM = "#776c5f";
+const GREEN_OK = "#3a7d4a";
+const SERIF = Platform.OS === "ios" ? "Times New Roman" : "serif";
+
+function categoryIcon(cat: string | null): keyof typeof Feather.glyphMap {
+  if (!cat) return "circle";
+  const c = cat.toLowerCase();
+  if (/catering|cake|dessert|food|coffee|bake/.test(c)) return "coffee";
+  if (/music|dj|band|sound/.test(c)) return "music";
+  if (/photo|video|film/.test(c)) return "camera";
+  if (/floral|florist|flower/.test(c)) return "feather";
+  if (/venue|space|loft/.test(c)) return "home";
+  if (/plan|coord/.test(c)) return "clipboard";
+  return "circle";
+}
+
+function joinedLabel(createdAt: string | null): string {
+  if (!createdAt) return "";
+  const d = new Date(createdAt);
+  const now = new Date();
+  const sameDay =
+    d.getFullYear() === now.getFullYear() &&
+    d.getMonth() === now.getMonth() &&
+    d.getDate() === now.getDate();
+  if (sameDay) return "Joined today";
+  const days = Math.floor((now.getTime() - d.getTime()) / 86400000);
+  if (days < 7) return `Joined ${days}d ago`;
+  if (days < 30) return `Joined ${Math.floor(days / 7)}w ago`;
+  if (days < 365) {
+    return `Joined ${d.toLocaleDateString(undefined, { month: "short", year: "numeric" })}`;
+  }
+  return `Joined ${d.toLocaleDateString(undefined, { year: "numeric" })}`;
+}
 
 type ViewKind = "grid" | "reels" | "buzz" | "listing";
 
@@ -64,6 +107,28 @@ export default function ProfileScreen() {
   const router = useRouter();
   const { user, signOut } = useAuth();
   const [profile, setProfile] = useState<VendorProfile | null>(null);
+  const [profileCreatedAt, setProfileCreatedAt] = useState<string | null>(null);
+  // Identity stored on public.profiles (separate from any listing —
+  // see migration 20260512150000). Falls back to the user's primary
+  // vendor_profiles row only if the profile fields are still null.
+  const [identity, setIdentity] = useState<{
+    business_name: string | null;
+    category: string | null;
+    location: string | null;
+    bio: string | null;
+    logo_url: string | null;
+  }>({
+    business_name: null,
+    category: null,
+    location: null,
+    bio: null,
+    logo_url: null,
+  });
+  const [stats, setStats] = useState<{
+    bookings: number;
+    reviews: number;
+    rating: number | null;
+  }>({ bookings: 0, reviews: 0, rating: null });
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState<ViewKind>("grid");
   const [menuOpen, setMenuOpen] = useState(false);
@@ -92,22 +157,97 @@ export default function ProfileScreen() {
 
   const loadProfile = useCallback(async () => {
     if (!user) return;
-    const { data } = await supabase
-      .from("vendor_profiles")
-      .select(
-        "id, business_name, category, bio, base_price_cents, location, verified_at, application_status, application_review_notes, intro_video_url, weekly_digest_enabled, slug, instagram_handle, tiktok_handle, logo_url",
-      )
-      .eq("user_id", user.id)
-      .order("created_at", { ascending: true });
-    const rows = (data ?? []) as VendorProfile[];
-    setListings(rows);
-    setProfile(rows[0] ?? null);
+    const [{ data: vpData }, { data: identityData }] = await Promise.all([
+      supabase
+        .from("vendor_profiles")
+        .select(
+          "id, business_name, category, bio, base_price_cents, location, verified_at, application_status, application_review_notes, intro_video_url, weekly_digest_enabled, slug, instagram_handle, tiktok_handle, logo_url, created_at",
+        )
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: true }),
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (supabase as any)
+        .from("profiles")
+        .select("business_name, category, location, bio, logo_url, created_at")
+        .eq("id", user.id)
+        .maybeSingle(),
+    ]);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const rows = (vpData ?? []) as any[];
+    setListings(rows as VendorProfile[]);
+    const primary = rows[0] ?? null;
+    setProfile(primary);
+    // Identity comes from profiles; fall back to the primary listing's
+    // values if the profile column is still empty (vendors created
+    // before the 20260512150000 backfill). The user can overwrite via
+    // the Edit profile screen.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const id: any = identityData ?? {};
+    setIdentity({
+      business_name: id.business_name ?? primary?.business_name ?? null,
+      category: id.category ?? primary?.category ?? null,
+      location: id.location ?? primary?.location ?? null,
+      bio: id.bio ?? primary?.bio ?? null,
+      logo_url: id.logo_url ?? primary?.logo_url ?? null,
+    });
+    setProfileCreatedAt(id.created_at ?? primary?.created_at ?? null);
     setLoading(false);
   }, [user]);
 
   useEffect(() => {
     loadProfile();
   }, [loadProfile]);
+
+  // Re-fetch identity when we navigate back from /(vendor)/edit-profile
+  // so saved changes show up immediately on the Profile tab.
+  useFocusEffect(
+    useCallback(() => {
+      loadProfile();
+    }, [loadProfile]),
+  );
+
+  // Stats card: bookings = won inquiries across all the user's
+  // listings; reviews + rating = aggregate of public reviews on those
+  // listings. Single round-trip per side. Falls back to "—" / "0" when
+  // there's no data yet (matches the mockup's empty-state numerals).
+  useEffect(() => {
+    if (listings.length === 0) {
+      setStats({ bookings: 0, reviews: 0, rating: null });
+      return;
+    }
+    const vendorIds = listings.map((l) => l.id);
+    let cancelled = false;
+    (async () => {
+      const [{ count: bookings }, { data: reviewRows }] = await Promise.all([
+        supabase
+          .from("inquiries")
+          .select("id", { count: "exact", head: true })
+          .in("vendor_id", vendorIds)
+          .eq("status", "won"),
+        supabase
+          .from("reviews")
+          .select("rating")
+          .in("vendor_id", vendorIds),
+      ]);
+      if (cancelled) return;
+      const rs = (reviewRows ?? []) as { rating: number | null }[];
+      const ratings = rs
+        .map((r) => r.rating)
+        .filter((r): r is number => typeof r === "number");
+      const avg =
+        ratings.length === 0
+          ? null
+          : Math.round((ratings.reduce((s, n) => s + n, 0) / ratings.length) * 10) / 10;
+      setStats({
+        bookings: bookings ?? 0,
+        reviews: rs.length,
+        rating: avg,
+      });
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [listings]);
 
   const loadFeeds = useCallback(async () => {
     if (!profile?.id) return;
@@ -149,6 +289,25 @@ export default function ProfileScreen() {
       l.base_price_cents != null,
   ).length;
 
+  // Share the vendor's public listing URL — uses slug when available
+  // so the receiver lands on the SEO-friendly path.
+  async function shareProfile() {
+    if (!profile) return;
+    const slugOrId = profile.slug ?? profile.id;
+    const url = `https://eventvendora.com/vendors/${slugOrId}`;
+    await Share.share({
+      message: `${profile.business_name ?? "Check out my listing"} on Vendora — ${url}`,
+      url,
+    }).catch(() => {});
+  }
+
+  // Edit profile → opens the profile-level edit screen which writes
+  // to public.profiles. Listings have their own builder reached from
+  // the Listing tab; this button is intentionally separate.
+  function openEditProfile() {
+    router.push("/(vendor)/edit-profile" as never);
+  }
+
   // Insert a fresh draft and jump to its editor. Used by the "+
   // Listing" row in CreateSheet so vendors can create additional
   // marketplace listings without being blocked by the existing one.
@@ -174,71 +333,6 @@ export default function ProfileScreen() {
 
   function openCreateReel() {
     setReelPickerOpen(true);
-  }
-
-  // Tap the avatar → photo picker → upload to vendor-posts/<userId>/
-  // logo-<ts>.<ext> → persist URL to vendor_profiles.logo_url. Reuses
-  // the existing vendor-posts bucket (owner-folder RLS already in
-  // place) so no new storage rules needed. Mirrors what the web
-  // Profile page does on logo click.
-  const [logoUploading, setLogoUploading] = useState(false);
-  async function changeLogo() {
-    if (!profile?.id || logoUploading) return;
-    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!perm.granted) {
-      Alert.alert(
-        "Library access needed",
-        "Enable photo library access in Settings to pick a logo.",
-      );
-      return;
-    }
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      quality: 0.9,
-    });
-    if (result.canceled || !result.assets[0]) return;
-    const asset = result.assets[0];
-    setLogoUploading(true);
-    try {
-      const ext = (asset.uri.split(".").pop() ?? "jpg")
-        .toLowerCase()
-        .replace(/[^a-z0-9]/g, "");
-      const path = `${user?.id}/logo-${Date.now()}.${ext}`;
-      // RN's fetch().blob() returns an empty payload for local file://
-      // URIs on iOS, which makes Supabase Storage reject the upload
-      // with "No content provided". arrayBuffer() reliably reads the
-      // underlying bytes, which we wrap as a Uint8Array — the
-      // supabase-js storage client accepts that directly.
-      const arrayBuffer = await (await fetch(asset.uri)).arrayBuffer();
-      const bytes = new Uint8Array(arrayBuffer);
-      if (bytes.byteLength === 0) {
-        throw new Error("Couldn't read the picked photo. Try a different image.");
-      }
-      const up = await supabase.storage
-        .from("vendor-posts")
-        .upload(path, bytes, {
-          contentType: asset.mimeType ?? "image/jpeg",
-          upsert: false,
-        });
-      if (up.error) throw up.error;
-      const { data: pub } = supabase.storage
-        .from("vendor-posts")
-        .getPublicUrl(path);
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { error } = await (supabase as any)
-        .from("vendor_profiles")
-        .update({ logo_url: pub.publicUrl })
-        .eq("id", profile.id);
-      if (error) throw error;
-      setProfile({ ...profile, logo_url: pub.publicUrl });
-    } catch (err) {
-      Alert.alert(
-        "Couldn't update logo",
-        (err as { message?: string })?.message ?? "Try again in a moment.",
-      );
-    } finally {
-      setLogoUploading(false);
-    }
   }
 
   async function pickMedia(
@@ -289,98 +383,390 @@ export default function ProfileScreen() {
     }
   }
 
-  return (
-    <SafeAreaView className="flex-1 bg-background" edges={["top"]}>
-      <View className="flex-row items-center justify-between px-4 py-3">
-        <Pressable
-          hitSlop={8}
-          onPress={() => setCreateOpen(true)}
-          className="active:opacity-60"
-        >
-          <Feather name="plus" size={28} color="#0a0a0a" />
-        </Pressable>
-        <Text
-          numberOfLines={1}
-          className="flex-1 px-3 text-center text-lg font-bold text-foreground"
-        >
-          {user?.email ?? ""}
-        </Text>
-        <Pressable
-          hitSlop={8}
-          onPress={() => setMenuOpen(true)}
-          className="active:opacity-60"
-        >
-          <Feather name="menu" size={28} color="#0a0a0a" />
-        </Pressable>
-      </View>
+  const businessInitial =
+    identity.business_name?.trim()?.[0]?.toUpperCase() ??
+    profile?.business_name?.trim()?.[0]?.toUpperCase() ??
+    user?.email?.[0]?.toUpperCase() ??
+    "V";
 
-      <ScrollView contentContainerClassName="pb-32">
-        <View className="items-center px-4 pt-2">
-          <Pressable
-            onPress={changeLogo}
-            disabled={logoUploading || !profile?.id}
-            className="h-28 w-28 overflow-hidden rounded-full bg-secondary/60 active:opacity-80"
-          >
-            <Image
-              source={
-                profile?.logo_url
-                  ? { uri: profile.logo_url }
-                  : require("../../assets/icon.png")
-              }
-              className="h-full w-full"
-              resizeMode="cover"
-            />
-            {logoUploading ? (
-              <View className="absolute top-0 right-0 bottom-0 left-0 items-center justify-center bg-black/40">
-                <Text className="text-xs font-semibold text-white">
-                  Uploading…
+  return (
+    <View className="flex-1" style={{ backgroundColor: CREAM }}>
+      <ScrollView
+        contentContainerStyle={{ paddingBottom: 140 }}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Hero banner — warm peach plate. Three layered tints fake a
+            soft gradient without adding expo-linear-gradient (native
+            dep would block OTA). */}
+        <View style={{ height: 220, backgroundColor: "#f0d4ba" }}>
+          <View
+            pointerEvents="none"
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: "#d9c0a4",
+              opacity: 0.45,
+            }}
+          />
+          <View
+            pointerEvents="none"
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              right: 0,
+              height: 110,
+              backgroundColor: "#f3dcc2",
+              opacity: 0.7,
+            }}
+          />
+          <SafeAreaView edges={["top"]}>
+            {/* Top row: +  email pill  ☰ */}
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                paddingHorizontal: 14,
+                paddingTop: 6,
+              }}
+            >
+              <Pressable
+                hitSlop={8}
+                onPress={() => setCreateOpen(true)}
+                style={{
+                  width: 38,
+                  height: 38,
+                  borderRadius: 999,
+                  backgroundColor: CREAM_DEEP,
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <Feather name="plus" size={20} color={INK} />
+              </Pressable>
+
+              <View
+                style={{
+                  flex: 1,
+                  marginHorizontal: 10,
+                  backgroundColor: CREAM_DEEP,
+                  borderRadius: 999,
+                  paddingHorizontal: 16,
+                  paddingVertical: 9,
+                  alignItems: "center",
+                }}
+              >
+                <Text
+                  numberOfLines={1}
+                  style={{
+                    color: INK,
+                    fontSize: 14,
+                    fontWeight: "500",
+                  }}
+                >
+                  {user?.email ?? ""}
                 </Text>
+              </View>
+
+              <Pressable
+                hitSlop={8}
+                onPress={() => setMenuOpen(true)}
+                style={{
+                  width: 38,
+                  height: 38,
+                  borderRadius: 999,
+                  backgroundColor: CREAM_DEEP,
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <Feather name="menu" size={20} color={INK} />
+              </Pressable>
+            </View>
+          </SafeAreaView>
+        </View>
+
+        {/* Avatar + actions row — avatar pulled up to overlap banner */}
+        <View
+          style={{
+            paddingHorizontal: 18,
+            marginTop: -56,
+            flexDirection: "row",
+            alignItems: "flex-end",
+            justifyContent: "space-between",
+          }}
+        >
+          <Pressable
+            onPress={openEditProfile}
+            style={{
+              width: 116,
+              height: 116,
+              borderRadius: 24,
+              backgroundColor: INK,
+              borderWidth: 5,
+              borderColor: CREAM,
+              alignItems: "center",
+              justifyContent: "center",
+              overflow: "visible",
+            }}
+          >
+            {identity.logo_url ? (
+              <Image
+                source={{ uri: identity.logo_url }}
+                style={{
+                  width: "100%",
+                  height: "100%",
+                  borderRadius: 19,
+                }}
+                resizeMode="cover"
+              />
+            ) : (
+              <Text
+                style={{
+                  color: CREAM,
+                  fontFamily: SERIF,
+                  fontStyle: "italic",
+                  fontWeight: "700",
+                  fontSize: 64,
+                  lineHeight: 72,
+                }}
+              >
+                {businessInitial}
+              </Text>
+            )}
+            {profile?.verified_at ? (
+              <View
+                style={{
+                  position: "absolute",
+                  right: -2,
+                  bottom: -2,
+                  width: 30,
+                  height: 30,
+                  borderRadius: 999,
+                  backgroundColor: GREEN_OK,
+                  borderWidth: 3,
+                  borderColor: CREAM,
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <Feather name="check" size={14} color="#fff" />
               </View>
             ) : null}
           </Pressable>
 
-          {profile?.business_name ? (
-            <Text className="mt-4 text-lg font-bold text-foreground">
-              {profile.business_name}
-            </Text>
-          ) : null}
-          {/* Bio belongs to the marketplace listing, not the social
-              profile — and even then only once the listing is
-              approved. The profile chrome stays clean (avatar +
-              business name) regardless of listing state. */}
-
-          {/* Dashboard chip removed — same call we made on the web
-              chrome. The dashboard is a tab swipe away on the bottom
-              nav, no need to duplicate the entry point under the
-              avatar. */}
+          <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 4 }}>
+            <Pressable
+              onPress={shareProfile}
+              hitSlop={8}
+              style={{
+                width: 44,
+                height: 44,
+                borderRadius: 999,
+                backgroundColor: CREAM_DEEP,
+                alignItems: "center",
+                justifyContent: "center",
+                marginRight: 10,
+              }}
+            >
+              <Feather name="share" size={18} color={INK} />
+            </Pressable>
+            <Pressable
+              onPress={openEditProfile}
+              style={{
+                backgroundColor: INK,
+                borderRadius: 999,
+                paddingHorizontal: 18,
+                paddingVertical: 12,
+                flexDirection: "row",
+                alignItems: "center",
+              }}
+            >
+              <Feather name="edit-2" size={14} color={CREAM} />
+              <Text
+                style={{
+                  color: CREAM,
+                  fontSize: 14,
+                  fontWeight: "600",
+                  marginLeft: 6,
+                }}
+              >
+                Edit profile
+              </Text>
+            </Pressable>
+          </View>
         </View>
 
-        {/* Generous gap between the avatar / name block and the 4-tab
-            strip — leaves room for future profile chrome (bio,
-            counters, follow button, etc) above the tabs. */}
-        <View className="mt-14 flex-row border-t border-border">
+        {/* Identity */}
+        <View style={{ paddingHorizontal: 18, marginTop: 16 }}>
+          <Text
+            style={{
+              color: INK,
+              fontFamily: SERIF,
+              fontWeight: "700",
+              fontSize: 36,
+              lineHeight: 40,
+              letterSpacing: -0.5,
+            }}
+            numberOfLines={2}
+          >
+            {identity.business_name ?? "Your business"}
+          </Text>
+          {identity.category || identity.location || profileCreatedAt ? (
+            <View
+              style={{
+                marginTop: 8,
+                flexDirection: "row",
+                alignItems: "center",
+                flexWrap: "wrap",
+              }}
+            >
+              {identity.category ? (
+                <View style={{ flexDirection: "row", alignItems: "center" }}>
+                  <Feather
+                    name={categoryIcon(identity.category)}
+                    size={13}
+                    color={INK_DIM}
+                  />
+                  <Text style={{ color: INK_DIM, fontSize: 14, marginLeft: 5 }}>
+                    {identity.category}
+                  </Text>
+                </View>
+              ) : null}
+              {identity.location ? (
+                <View style={{ flexDirection: "row", alignItems: "center" }}>
+                  <Text style={{ color: INK_DIM, fontSize: 14, marginHorizontal: 8 }}>
+                    ·
+                  </Text>
+                  <Feather name="map-pin" size={13} color={INK_DIM} />
+                  <Text style={{ color: INK_DIM, fontSize: 14, marginLeft: 5 }}>
+                    {identity.location}
+                  </Text>
+                </View>
+              ) : null}
+              {profileCreatedAt ? (
+                <View style={{ flexDirection: "row", alignItems: "center" }}>
+                  <Text style={{ color: INK_DIM, fontSize: 14, marginHorizontal: 8 }}>
+                    ·
+                  </Text>
+                  <Text style={{ color: INK_DIM, fontSize: 14 }}>
+                    {joinedLabel(profileCreatedAt)}
+                  </Text>
+                </View>
+              ) : null}
+            </View>
+          ) : null}
+        </View>
+
+        {/* Bio — italic serif. Placeholder copy with subtle highlight
+            on "one or two sentences" when the vendor hasn't written
+            one yet (invites them to fill it in via Edit profile). */}
+        <View style={{ paddingHorizontal: 18, marginTop: 18 }}>
+          {identity.bio?.trim() ? (
+            <Text
+              style={{
+                fontFamily: SERIF,
+                fontStyle: "italic",
+                color: INK,
+                fontSize: 17,
+                lineHeight: 24,
+              }}
+            >
+              {identity.bio}
+            </Text>
+          ) : (
+            <Text
+              style={{
+                fontFamily: SERIF,
+                fontStyle: "italic",
+                color: INK,
+                fontSize: 17,
+                lineHeight: 24,
+              }}
+            >
+              A short bio belongs here —{" "}
+              <Text
+                style={{
+                  backgroundColor: "#f5e2c9",
+                  fontWeight: "700",
+                }}
+              >
+                {" one or two sentences "}
+              </Text>{" "}
+              on what makes your work worth booking.
+            </Text>
+          )}
+        </View>
+
+        {/* Stats card */}
+        <View
+          style={{
+            marginHorizontal: 18,
+            marginTop: 22,
+            paddingVertical: 16,
+            borderTopWidth: 1,
+            borderBottomWidth: 1,
+            borderColor: "#e9dfc8",
+            flexDirection: "row",
+            alignItems: "center",
+          }}
+        >
+          <StatCell value={String(stats.bookings)} label="BOOKINGS" />
+          <View
+            style={{
+              width: 1,
+              alignSelf: "stretch",
+              backgroundColor: "#e9dfc8",
+            }}
+          />
+          <StatCell
+            value={stats.rating != null ? stats.rating.toFixed(1) : "—"}
+            label="RATING"
+          />
+          <View
+            style={{
+              width: 1,
+              alignSelf: "stretch",
+              backgroundColor: "#e9dfc8",
+            }}
+          />
+          <StatCell value={String(stats.reviews)} label="REVIEWS" />
+        </View>
+
+        {/* Tabs — chip-pill row */}
+        <View
+          style={{
+            marginTop: 22,
+            paddingHorizontal: 18,
+            flexDirection: "row",
+            gap: 8,
+          }}
+        >
           <ViewTab
             active={view === "grid"}
             onPress={() => setView("grid")}
-            iconName="grid"
+            label="Posts"
             count={posts.length}
           />
           <ViewTab
             active={view === "reels"}
             onPress={() => setView("reels")}
-            iconName="play"
+            label="Reels"
             count={reels.length}
           />
           <ViewTab
             active={view === "buzz"}
             onPress={() => setView("buzz")}
-            iconName="align-left"
+            label="Buzz"
             count={buzz.length}
           />
           <ViewTab
             active={view === "listing"}
             onPress={() => setView("listing")}
-            iconName="shopping-bag"
+            label="Listings"
             count={listingsCount}
           />
         </View>
@@ -603,51 +989,87 @@ export default function ProfileScreen() {
           ) : null}
         </SafeAreaView>
       </Modal>
-    </SafeAreaView>
+    </View>
   );
 }
 
+// Chip-pill tab. Active state = cream-deep capsule with INK label +
+// count; inactive = transparent with muted ink.
 function ViewTab({
   active,
   onPress,
-  iconName,
+  label,
   count,
 }: {
   active: boolean;
   onPress: () => void;
-  iconName: keyof typeof Feather.glyphMap;
+  label: string;
   count: number;
 }) {
   return (
     <Pressable
       onPress={onPress}
-      className="flex-1 items-center justify-center py-3 active:opacity-60"
       style={{
-        backgroundColor: active ? "#ffffff" : "transparent",
-        borderRadius: active ? 14 : 0,
-        borderWidth: active ? 1 : 0,
-        borderColor: "#e5e5e5",
-        marginHorizontal: active ? 4 : 0,
-        marginVertical: active ? 4 : 0,
-        ...(active
-          ? {
-              shadowColor: "#000",
-              shadowOpacity: 0.06,
-              shadowRadius: 8,
-              shadowOffset: { width: 0, height: 2 },
-              elevation: 2,
-            }
-          : null),
+        paddingHorizontal: 14,
+        paddingVertical: 9,
+        borderRadius: 999,
+        backgroundColor: active ? CREAM_DEEP : "transparent",
+        flexDirection: "row",
+        alignItems: "center",
       }}
     >
-      <Feather name={iconName} size={22} color={active ? "#0a0a0a" : "#737373"} />
       <Text
-        className="mt-1 text-sm font-semibold"
-        style={{ color: active ? "#0a0a0a" : "#737373" }}
+        style={{
+          color: active ? INK : INK_DIM,
+          fontSize: 15,
+          fontWeight: active ? "700" : "500",
+          marginRight: 6,
+        }}
+      >
+        {label}
+      </Text>
+      <Text
+        style={{
+          color: active ? INK_DIM : INK_DIM,
+          fontSize: 14,
+          fontWeight: "500",
+        }}
       >
         {count}
       </Text>
     </Pressable>
+  );
+}
+
+// Single stat (Bookings / Rating / Reviews). Large italic-serif numeral
+// over a tracked uppercase label. Used in the stats row above the
+// tab pills.
+function StatCell({ value, label }: { value: string; label: string }) {
+  return (
+    <View style={{ flex: 1, alignItems: "center", paddingVertical: 2 }}>
+      <Text
+        style={{
+          color: INK,
+          fontFamily: SERIF,
+          fontWeight: "700",
+          fontSize: 26,
+          lineHeight: 30,
+        }}
+      >
+        {value}
+      </Text>
+      <Text
+        style={{
+          marginTop: 4,
+          color: INK_DIM,
+          fontSize: 11,
+          fontWeight: "700",
+          letterSpacing: 1.4,
+        }}
+      >
+        {label}
+      </Text>
+    </View>
   );
 }
 
@@ -861,25 +1283,28 @@ function ListingTab({
           onChanged={onChanged}
         />
       ))}
-      <Pressable
-        onPress={onCreateNew}
-        style={({ pressed }) => ({
-          marginTop: 4,
-          paddingVertical: 18,
-          borderRadius: 18,
-          borderWidth: 1,
-          borderStyle: "dashed",
-          borderColor: "#dcd1c1",
-          alignItems: "center",
-          justifyContent: "center",
-          flexDirection: "row",
-          opacity: pressed ? 0.7 : 1,
-        })}
-      >
-        <Feather name="plus" size={16} color="#1a1410" />
-        <Text className="ml-2 text-sm font-semibold text-foreground">
-          Add another listing
-        </Text>
+      <Pressable onPress={onCreateNew}>
+        {({ pressed }) => (
+          <View
+            style={{
+              marginTop: 4,
+              paddingVertical: 18,
+              borderRadius: 18,
+              borderWidth: 1,
+              borderStyle: "dashed",
+              borderColor: "#dcd1c1",
+              alignItems: "center",
+              justifyContent: "center",
+              flexDirection: "row",
+              opacity: pressed ? 0.7 : 1,
+            }}
+          >
+            <Feather name="plus" size={16} color="#1a1410" />
+            <Text className="ml-2 text-sm font-semibold text-foreground">
+              Add another listing
+            </Text>
+          </View>
+        )}
       </Pressable>
     </View>
   );
@@ -988,48 +1413,51 @@ function ListingCard({
   // Draft / rejected card — full-width row with status pill + CTA
   if (!isComplete && !isPending) {
     return (
-      <Pressable
-        onPress={onEdit}
-        style={({ pressed }) => ({
-          flexDirection: "row",
-          alignItems: "center",
-          backgroundColor: "#ffffff",
-          borderRadius: 18,
-          padding: 14,
-          opacity: pressed ? 0.85 : 1,
-          shadowColor: "#1a1410",
-          shadowOpacity: 0.04,
-          shadowRadius: 12,
-          shadowOffset: { width: 0, height: 4 },
-          elevation: 1,
-        })}
-      >
-        <View
-          style={{
-            width: 56,
-            height: 56,
-            borderRadius: 14,
-            backgroundColor: "#f5efe5",
-            alignItems: "center",
-            justifyContent: "center",
-          }}
-        >
-          <Feather name="shopping-bag" size={22} color="#1a1410" />
-        </View>
-        <View style={{ flex: 1, marginLeft: 12 }}>
-          <Text
-            className="text-base font-semibold text-foreground"
-            numberOfLines={1}
+      <Pressable onPress={onEdit}>
+        {({ pressed }) => (
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              backgroundColor: "#ffffff",
+              borderRadius: 18,
+              padding: 14,
+              opacity: pressed ? 0.85 : 1,
+              shadowColor: "#1a1410",
+              shadowOpacity: 0.04,
+              shadowRadius: 12,
+              shadowOffset: { width: 0, height: 4 },
+              elevation: 1,
+            }}
           >
-            {listing.business_name ?? "Untitled listing"}
-          </Text>
-          <Text className="mt-0.5 text-xs text-muted-foreground">
-            {listing.application_status === "rejected"
-              ? "Rejected — tap to revise"
-              : "Draft — tap to finish setup"}
-          </Text>
-        </View>
-        <Feather name="chevron-right" size={20} color="#776c5f" />
+            <View
+              style={{
+                width: 56,
+                height: 56,
+                borderRadius: 14,
+                backgroundColor: "#f5efe5",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <Feather name="shopping-bag" size={22} color="#1a1410" />
+            </View>
+            <View style={{ flex: 1, marginLeft: 12 }}>
+              <Text
+                className="text-base font-semibold text-foreground"
+                numberOfLines={1}
+              >
+                {listing.business_name ?? "Untitled listing"}
+              </Text>
+              <Text className="mt-0.5 text-xs text-muted-foreground">
+                {listing.application_status === "rejected"
+                  ? "Rejected — tap to revise"
+                  : "Draft — tap to finish setup"}
+              </Text>
+            </View>
+            <Feather name="chevron-right" size={20} color="#776c5f" />
+          </View>
+        )}
       </Pressable>
     );
   }
@@ -1307,20 +1735,22 @@ function CreateSheet({
           >
             Create
           </Text>
-          <Pressable
-            onPress={onClose}
-            hitSlop={10}
-            style={({ pressed }) => ({
-              width: 32,
-              height: 32,
-              borderRadius: 999,
-              backgroundColor: SHEET_X_BG,
-              alignItems: "center",
-              justifyContent: "center",
-              opacity: pressed ? 0.6 : 1,
-            })}
-          >
-            <Feather name="x" size={16} color={SHEET_TEXT} />
+          <Pressable onPress={onClose} hitSlop={10}>
+            {({ pressed }) => (
+              <View
+                style={{
+                  width: 32,
+                  height: 32,
+                  borderRadius: 999,
+                  backgroundColor: SHEET_X_BG,
+                  alignItems: "center",
+                  justifyContent: "center",
+                  opacity: pressed ? 0.6 : 1,
+                }}
+              >
+                <Feather name="x" size={16} color={SHEET_TEXT} />
+              </View>
+            )}
           </Pressable>
         </View>
 
@@ -1432,10 +1862,58 @@ function SettingsSheet({
   email: string;
   onSignOut: () => Promise<void>;
 }) {
-  const [pwdOpen, setPwdOpen] = useState(false);
+  const { user } = useAuth();
+
+  // "Account" view vs inline "Change password" form. The sheet swaps
+  // its body when the password row is tapped so the design stays
+  // single-column.
+  const [view, setView] = useState<"main" | "password">("main");
   const [newPwd, setNewPwd] = useState("");
   const [confirmPwd, setConfirmPwd] = useState("");
   const [pwdSubmitting, setPwdSubmitting] = useState(false);
+
+  const [emailVerified, setEmailVerified] = useState(false);
+  const [language, setLanguage] = useState("en-US");
+  const [pushOn, setPushOn] = useState(true);
+  const [pushBusy, setPushBusy] = useState(false);
+
+  const refreshAccountState = useCallback(async () => {
+    const { data } = await supabase.auth.getUser();
+    setEmailVerified(!!data?.user?.email_confirmed_at);
+    if (user?.id) {
+      const [{ data: prof }, { count }] = await Promise.all([
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (supabase as any)
+          .from("profiles")
+          .select("preferred_language")
+          .eq("id", user.id)
+          .maybeSingle(),
+        supabase
+          .from("device_push_tokens")
+          .select("token", { count: "exact", head: true })
+          .eq("user_id", user.id),
+      ]);
+      setLanguage(prof?.preferred_language ?? "en-US");
+      setPushOn((count ?? 0) > 0);
+    }
+  }, [user?.id]);
+
+  useEffect(() => {
+    if (!open) return;
+    setView("main");
+    refreshAccountState();
+  }, [open, refreshAccountState]);
+
+  // Re-check email-verified state when the app comes back to
+  // foreground while the sheet is open. Catches the "user verified
+  // in a browser tab and switched back" path.
+  useEffect(() => {
+    if (!open) return;
+    const sub = AppState.addEventListener("change", (next) => {
+      if (next === "active") refreshAccountState();
+    });
+    return () => sub.remove();
+  }, [open, refreshAccountState]);
 
   async function changePassword() {
     if (newPwd.length < 8) {
@@ -1455,8 +1933,100 @@ function SettingsSheet({
     }
     setNewPwd("");
     setConfirmPwd("");
-    setPwdOpen(false);
+    setView("main");
     Alert.alert("Password updated", "Your new password is active.");
+  }
+
+  // OFF deletes the device_push_tokens rows; ON re-runs the
+  // permission + token-registration flow inline (don't wait for
+  // next cold-start). If the OS permission is denied, the
+  // tryRegisterPushToken call no-ops and we revert the toggle.
+  async function togglePush() {
+    if (!user?.id || pushBusy) return;
+    setPushBusy(true);
+    const next = !pushOn;
+    setPushOn(next);
+    if (!next) {
+      const { error } = await supabase
+        .from("device_push_tokens")
+        .delete()
+        .eq("user_id", user.id);
+      if (error) setPushOn(true);
+    } else {
+      try {
+        await tryRegisterPushToken(user.id, "vendor");
+        // Verify a token row actually landed — if the OS denied
+        // permission, none was inserted and we should reflect that.
+        const { count } = await supabase
+          .from("device_push_tokens")
+          .select("token", { count: "exact", head: true })
+          .eq("user_id", user.id);
+        if ((count ?? 0) === 0) {
+          setPushOn(false);
+          Alert.alert(
+            "Push permission needed",
+            "Enable notifications for Vendora in your device Settings to receive pushes.",
+          );
+        }
+      } catch {
+        setPushOn(false);
+      }
+    }
+    setPushBusy(false);
+  }
+
+  function onTwoStep() {
+    Alert.alert(
+      "Two-step verification",
+      "Stronger sign-in is on the roadmap. Today every login already uses an email-code check; the toggle will switch to authenticator-app 2FA when it ships.",
+    );
+  }
+
+  function onLanguage() {
+    Alert.alert(
+      "Language",
+      "More languages are on the way. The app currently runs in English (US).",
+    );
+  }
+
+  function onSignOutPress() {
+    Alert.alert("Sign out", "Are you sure?", [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Sign out",
+        style: "destructive",
+        onPress: () => {
+          onClose();
+          onSignOut();
+        },
+      },
+    ]);
+  }
+
+  function onDeleteAccount() {
+    Alert.alert(
+      "Delete your account?",
+      "This permanently deletes your account, all listings, messages, and history. You can't undo this.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete account",
+          style: "destructive",
+          onPress: async () => {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const { error } = await (supabase as any).rpc(
+              "request_account_deletion",
+            );
+            if (error) {
+              Alert.alert("Couldn't delete account", error.message);
+              return;
+            }
+            onClose();
+            onSignOut();
+          },
+        },
+      ],
+    );
   }
 
   return (
@@ -1477,113 +2047,529 @@ function SettingsSheet({
         <Pressable
           onPress={() => {}}
           style={{
-            backgroundColor: "#fff",
-            borderTopLeftRadius: 24,
-            borderTopRightRadius: 24,
-            paddingHorizontal: 16,
-            paddingTop: 12,
-            paddingBottom: 32,
+            backgroundColor: CREAM,
+            borderTopLeftRadius: 28,
+            borderTopRightRadius: 28,
+            paddingTop: 10,
+            paddingBottom: 24,
+            maxHeight: "92%",
           }}
         >
+          {/* Drag handle */}
           <View
             style={{
               alignSelf: "center",
-              width: 40,
+              width: 36,
               height: 4,
               borderRadius: 2,
-              backgroundColor: "rgba(10,10,10,0.18)",
-              marginBottom: 16,
+              backgroundColor: "rgba(26,20,16,0.18)",
+              marginBottom: 14,
             }}
           />
 
-          <Text className="mb-3 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-            Account
-          </Text>
+          {view === "main" ? (
+            <ScrollView
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={{ paddingHorizontal: 18, paddingBottom: 8 }}
+            >
+              {/* Title row */}
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                }}
+              >
+                <Text
+                  style={{
+                    color: INK,
+                    fontFamily: SERIF,
+                    fontWeight: "700",
+                    fontSize: 30,
+                    letterSpacing: -0.5,
+                  }}
+                >
+                  Account
+                </Text>
+                <Pressable
+                  onPress={onClose}
+                  hitSlop={10}
+                  style={{
+                    width: 32,
+                    height: 32,
+                    borderRadius: 999,
+                    backgroundColor: CREAM_DEEP,
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <Feather name="x" size={16} color={INK} />
+                </Pressable>
+              </View>
+              <Text
+                style={{
+                  marginTop: 8,
+                  color: INK_DIM,
+                  fontFamily: SERIF,
+                  fontStyle: "italic",
+                  fontSize: 15,
+                }}
+              >
+                Sign-in details and how Vendora reaches you.
+              </Text>
 
-          <View className="rounded-xl border border-border bg-background px-4 py-3">
-            <Text className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-              Email
-            </Text>
-            <Text className="mt-1 text-base text-foreground">{email || "—"}</Text>
-          </View>
+              {/* SIGN IN */}
+              <Text
+                style={{
+                  marginTop: 26,
+                  marginBottom: 10,
+                  color: INK_DIM,
+                  fontSize: 11,
+                  fontWeight: "800",
+                  letterSpacing: 1.2,
+                }}
+              >
+                SIGN IN
+              </Text>
+              <View
+                style={{
+                  backgroundColor: "#fbf4e6",
+                  borderRadius: 18,
+                  overflow: "hidden",
+                }}
+              >
+                <SettingsRow
+                  icon="mail"
+                  label="EMAIL"
+                  body={email || "—"}
+                  right={
+                    emailVerified ? (
+                      <View
+                        style={{
+                          paddingHorizontal: 10,
+                          paddingVertical: 5,
+                          backgroundColor: "#d4ead8",
+                          borderRadius: 999,
+                          flexDirection: "row",
+                          alignItems: "center",
+                        }}
+                      >
+                        <View
+                          style={{
+                            width: 6,
+                            height: 6,
+                            borderRadius: 999,
+                            backgroundColor: "#2f7a40",
+                            marginRight: 5,
+                          }}
+                        />
+                        <Text
+                          style={{
+                            color: "#2f7a40",
+                            fontSize: 12,
+                            fontWeight: "700",
+                          }}
+                        >
+                          Verified
+                        </Text>
+                      </View>
+                    ) : null
+                  }
+                />
+                <RowDivider />
+                <SettingsRow
+                  icon="lock"
+                  label="Change password"
+                  body="Tap to update"
+                  onPress={() => setView("password")}
+                />
+                <RowDivider />
+                <SettingsRow
+                  icon="shield"
+                  label="Two-step verification"
+                  body="Off — recommended for vendors"
+                  right={<Toggle value={false} onPress={onTwoStep} />}
+                  onPress={onTwoStep}
+                />
+              </View>
 
-          {pwdOpen ? (
-            <View className="mt-2 rounded-xl border border-border bg-background p-4 gap-3">
-              <Text className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                Change password
+              {/* PREFERENCES */}
+              <Text
+                style={{
+                  marginTop: 26,
+                  marginBottom: 10,
+                  color: INK_DIM,
+                  fontSize: 11,
+                  fontWeight: "800",
+                  letterSpacing: 1.2,
+                }}
+              >
+                PREFERENCES
+              </Text>
+              <View
+                style={{
+                  backgroundColor: "#fbf4e6",
+                  borderRadius: 18,
+                  overflow: "hidden",
+                }}
+              >
+                <SettingsRow
+                  icon="bell"
+                  label="Push notifications"
+                  body="Bookings, messages, reminders"
+                  right={<Toggle value={pushOn} onPress={togglePush} disabled={pushBusy} />}
+                  onPress={togglePush}
+                />
+                <RowDivider />
+                <SettingsRow
+                  icon="globe"
+                  label="Language"
+                  body={language === "en-US" ? "English (US)" : language}
+                  onPress={onLanguage}
+                />
+              </View>
+
+              {/* Log out + Delete */}
+              <Pressable
+                onPress={onSignOutPress}
+                style={{
+                  marginTop: 24,
+                  backgroundColor: "#fbf4e6",
+                  borderRadius: 18,
+                  paddingVertical: 16,
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <Feather name="log-out" size={18} color={INK} />
+                <Text
+                  style={{
+                    color: INK,
+                    fontSize: 16,
+                    fontWeight: "700",
+                    marginLeft: 8,
+                  }}
+                >
+                  Log out
+                </Text>
+              </Pressable>
+
+              <Pressable
+                onPress={onDeleteAccount}
+                style={{
+                  marginTop: 10,
+                  backgroundColor: "#fbf4e6",
+                  borderRadius: 18,
+                  borderWidth: 1,
+                  borderColor: "#d99c98",
+                  paddingVertical: 16,
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <Feather name="trash-2" size={16} color="#b42318" />
+                <Text
+                  style={{
+                    color: "#b42318",
+                    fontSize: 16,
+                    fontWeight: "700",
+                    marginLeft: 8,
+                  }}
+                >
+                  Delete account
+                </Text>
+              </Pressable>
+
+              <Text
+                style={{
+                  marginTop: 16,
+                  textAlign: "center",
+                  color: INK_DIM,
+                  fontFamily: SERIF,
+                  fontStyle: "italic",
+                  fontSize: 13,
+                  lineHeight: 18,
+                  paddingHorizontal: 12,
+                }}
+              >
+                Deleting your account is permanent. Your listings, messages, and
+                reviews will be removed.
+              </Text>
+            </ScrollView>
+          ) : (
+            // Inline "Change password" form — back chevron returns to
+            // the main settings view, save updates the auth user.
+            <ScrollView
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={{ paddingHorizontal: 18, paddingBottom: 24 }}
+              keyboardShouldPersistTaps="handled"
+            >
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                }}
+              >
+                <Pressable
+                  onPress={() => {
+                    setView("main");
+                    setNewPwd("");
+                    setConfirmPwd("");
+                  }}
+                  hitSlop={10}
+                  style={{
+                    width: 32,
+                    height: 32,
+                    borderRadius: 999,
+                    backgroundColor: CREAM_DEEP,
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <Feather name="chevron-left" size={18} color={INK} />
+                </Pressable>
+                <Text
+                  style={{
+                    color: INK,
+                    fontFamily: SERIF,
+                    fontStyle: "italic",
+                    fontWeight: "700",
+                    fontSize: 20,
+                  }}
+                >
+                  Change password
+                </Text>
+                <View style={{ width: 32 }} />
+              </View>
+              <Text
+                style={{
+                  marginTop: 14,
+                  color: INK_DIM,
+                  fontSize: 14,
+                  lineHeight: 20,
+                }}
+              >
+                At least 8 characters. Pick something you don&apos;t use
+                anywhere else.
+              </Text>
+
+              <Text
+                style={{
+                  marginTop: 24,
+                  color: INK_DIM,
+                  fontSize: 11,
+                  fontWeight: "800",
+                  letterSpacing: 1,
+                }}
+              >
+                NEW PASSWORD
               </Text>
               <TextInput
                 secureTextEntry
                 value={newPwd}
                 onChangeText={setNewPwd}
-                placeholder="New password (min 8 chars)"
-                placeholderTextColor="#a3a3a3"
-                className="rounded-lg border border-border px-3 py-2 text-base text-foreground"
+                placeholder="••••••••"
+                placeholderTextColor={INK_DIM}
+                style={{
+                  marginTop: 6,
+                  backgroundColor: "#fbf4e6",
+                  borderRadius: 14,
+                  borderWidth: 1,
+                  borderColor: "#e9dfc8",
+                  paddingHorizontal: 14,
+                  paddingVertical: 12,
+                  color: INK,
+                  fontSize: 16,
+                }}
               />
+
+              <Text
+                style={{
+                  marginTop: 18,
+                  color: INK_DIM,
+                  fontSize: 11,
+                  fontWeight: "800",
+                  letterSpacing: 1,
+                }}
+              >
+                CONFIRM PASSWORD
+              </Text>
               <TextInput
                 secureTextEntry
                 value={confirmPwd}
                 onChangeText={setConfirmPwd}
-                placeholder="Confirm new password"
-                placeholderTextColor="#a3a3a3"
-                className="rounded-lg border border-border px-3 py-2 text-base text-foreground"
+                placeholder="••••••••"
+                placeholderTextColor={INK_DIM}
+                style={{
+                  marginTop: 6,
+                  backgroundColor: "#fbf4e6",
+                  borderRadius: 14,
+                  borderWidth: 1,
+                  borderColor: "#e9dfc8",
+                  paddingHorizontal: 14,
+                  paddingVertical: 12,
+                  color: INK,
+                  fontSize: 16,
+                }}
               />
-              <View className="flex-row gap-2">
-                <Pressable
-                  onPress={() => {
-                    setPwdOpen(false);
-                    setNewPwd("");
-                    setConfirmPwd("");
-                  }}
-                  disabled={pwdSubmitting}
-                  className="flex-1 rounded-lg border border-border py-2.5 active:opacity-70"
-                >
-                  <Text className="text-center text-sm font-medium text-foreground">
-                    Cancel
-                  </Text>
-                </Pressable>
-                <Pressable
-                  onPress={changePassword}
-                  disabled={pwdSubmitting}
-                  className="flex-1 rounded-lg bg-foreground py-2.5 active:opacity-70"
-                >
-                  <Text className="text-center text-sm font-medium text-background">
-                    {pwdSubmitting ? "Saving…" : "Save"}
-                  </Text>
-                </Pressable>
-              </View>
-            </View>
-          ) : (
-            <Pressable
-              onPress={() => setPwdOpen(true)}
-              className="mt-2 rounded-xl border border-border bg-background px-4 py-3 active:opacity-70"
-            >
-              <Text className="text-sm text-foreground">Change password</Text>
-            </Pressable>
-          )}
 
-          <Pressable
-            onPress={() => {
-              Alert.alert("Sign out", "Are you sure?", [
-                { text: "Cancel", style: "cancel" },
-                {
-                  text: "Sign out",
-                  style: "destructive",
-                  onPress: () => {
-                    onClose();
-                    onSignOut();
-                  },
-                },
-              ]);
-            }}
-            className="mt-6 rounded-lg border border-border bg-background py-3 active:opacity-70"
-          >
-            <Text className="text-center text-sm font-medium text-foreground">
-              Log out
-            </Text>
-          </Pressable>
+              <Pressable
+                onPress={changePassword}
+                disabled={pwdSubmitting || newPwd.length < 8 || newPwd !== confirmPwd}
+                style={{
+                  marginTop: 22,
+                  backgroundColor: INK,
+                  borderRadius: 999,
+                  height: 52,
+                  alignItems: "center",
+                  justifyContent: "center",
+                  opacity:
+                    pwdSubmitting || newPwd.length < 8 || newPwd !== confirmPwd
+                      ? 0.5
+                      : 1,
+                }}
+              >
+                <Text
+                  style={{ color: CREAM, fontSize: 15, fontWeight: "700" }}
+                >
+                  {pwdSubmitting ? "Saving…" : "Save password"}
+                </Text>
+              </Pressable>
+            </ScrollView>
+          )}
         </Pressable>
       </Pressable>
     </Modal>
+  );
+}
+
+function SettingsRow({
+  icon,
+  label,
+  body,
+  right,
+  onPress,
+}: {
+  icon: keyof typeof Feather.glyphMap;
+  label: string;
+  body: string;
+  right?: React.ReactNode;
+  onPress?: () => void;
+}) {
+  const Inner = (
+    <View
+      style={{
+        flexDirection: "row",
+        alignItems: "center",
+        paddingHorizontal: 14,
+        paddingVertical: 14,
+      }}
+    >
+      <View
+        style={{
+          width: 38,
+          height: 38,
+          borderRadius: 12,
+          backgroundColor: "#efe5d2",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <Feather name={icon} size={18} color={INK} />
+      </View>
+      <View style={{ flex: 1, marginLeft: 12 }}>
+        <Text
+          style={{
+            color: INK_DIM,
+            fontSize: 11,
+            fontWeight: "800",
+            letterSpacing: 0.8,
+          }}
+        >
+          {label.toUpperCase() === label ? label : null}
+        </Text>
+        <Text
+          style={{
+            color: INK,
+            fontSize: 16,
+            fontWeight: "700",
+            marginTop: label.toUpperCase() === label ? 2 : 0,
+          }}
+          numberOfLines={1}
+        >
+          {label.toUpperCase() === label ? body : label}
+        </Text>
+        {label.toUpperCase() === label ? null : (
+          <Text
+            style={{
+              marginTop: 2,
+              color: INK_DIM,
+              fontSize: 13,
+            }}
+            numberOfLines={1}
+          >
+            {body}
+          </Text>
+        )}
+      </View>
+      {right ?? (
+        onPress ? (
+          <Feather name="chevron-right" size={20} color={INK_DIM} />
+        ) : null
+      )}
+    </View>
+  );
+  if (!onPress) return Inner;
+  return <Pressable onPress={onPress}>{Inner}</Pressable>;
+}
+
+function RowDivider() {
+  return (
+    <View
+      style={{
+        height: 1,
+        backgroundColor: "#efe5d2",
+        marginLeft: 64,
+      }}
+    />
+  );
+}
+
+function Toggle({
+  value,
+  onPress,
+  disabled,
+}: {
+  value: boolean;
+  onPress: () => void;
+  disabled?: boolean;
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      disabled={disabled}
+      hitSlop={8}
+      style={{
+        width: 48,
+        height: 28,
+        borderRadius: 999,
+        backgroundColor: value ? "#3a7d4a" : "#dccbb0",
+        padding: 3,
+        opacity: disabled ? 0.6 : 1,
+      }}
+    >
+      <View
+        style={{
+          width: 22,
+          height: 22,
+          borderRadius: 999,
+          backgroundColor: "#ffffff",
+          transform: [{ translateX: value ? 20 : 0 }],
+        }}
+      />
+    </Pressable>
   );
 }

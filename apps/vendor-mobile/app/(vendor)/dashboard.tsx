@@ -6,8 +6,15 @@
 // Reached from the Profile tab's "Dashboard" chip — not a tab itself —
 // so we render a back arrow that pops back to the Profile screen.
 
-import { useEffect, useState } from "react";
-import { Pressable, ScrollView, Text, View } from "react-native";
+import { useCallback, useEffect, useState } from "react";
+import {
+  ActivityIndicator,
+  Pressable,
+  RefreshControl,
+  ScrollView,
+  Text,
+  View,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
@@ -30,34 +37,53 @@ export default function DashboardScreen() {
   const [stats, setStats] = useState<Stats | null>(null);
   const [recent, setRecent] = useState<InquiryRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (!user) return;
-    let cancelled = false;
-    (async () => {
-      const { data: vendorRows } = await supabase
+  const load = useCallback(
+    async (isRefresh: boolean) => {
+      if (!user) {
+        // Make sure pull-to-refresh doesn't hang the spinner if we
+        // re-enter while signed-out.
+        if (isRefresh) setRefreshing(false);
+        else setLoading(false);
+        return;
+      }
+      if (isRefresh) setRefreshing(true);
+      else setLoading(true);
+      setError(null);
+      const { data: vendorRows, error: vErr } = await supabase
         .from("vendor_profiles")
         .select("id")
         .eq("user_id", user.id);
-      const vendorIds = ((vendorRows ?? []) as { id: string }[]).map(
-        (r) => r.id,
-      );
-      if (vendorIds.length === 0) {
-        if (!cancelled) {
-          setStats({ activeInquiries: 0, weekRevenueCents: 0, views: 0, responseRate: 0 });
-          setLoading(false);
-        }
+      if (vErr) {
+        setError(vErr.message);
+        if (isRefresh) setRefreshing(false);
+        else setLoading(false);
         return;
       }
-
+      const vendorIds = ((vendorRows ?? []) as { id: string }[]).map((r) => r.id);
+      if (vendorIds.length === 0) {
+        setStats({ activeInquiries: 0, weekRevenueCents: 0, views: 0, responseRate: 0 });
+        if (isRefresh) setRefreshing(false);
+        else setLoading(false);
+        return;
+      }
       const sinceISO = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
-      const { data: inquiries } = await supabase
+      const { data: inquiries, error: iErr } = await supabase
         .from("inquiries")
-        .select("id, vendor_id, host_id, status, event_type, event_date, guest_count, budget_min_cents, budget_max_cents, quality_score, created_at")
+        .select(
+          "id, vendor_id, host_id, status, event_type, event_date, guest_count, budget_min_cents, budget_max_cents, quality_score, created_at",
+        )
         .in("vendor_id", vendorIds)
         .order("created_at", { ascending: false })
         .limit(20);
-
+      if (iErr) {
+        setError(iErr.message);
+        if (isRefresh) setRefreshing(false);
+        else setLoading(false);
+        return;
+      }
       const rows = (inquiries ?? []) as InquiryRow[];
       const active = rows.filter((r) => r.status === "new" || r.status === "drafted").length;
       const wonThisWeek = rows.filter((r) => r.status === "won" && r.created_at >= sinceISO);
@@ -67,16 +93,17 @@ export default function DashboardScreen() {
       );
       const replied = rows.filter((r) => r.status !== "new").length;
       const responseRate = rows.length === 0 ? 0 : Math.round((replied / rows.length) * 100);
-
-      if (cancelled) return;
       setStats({ activeInquiries: active, weekRevenueCents: weekCents, views: 0, responseRate });
       setRecent(rows.slice(0, 5));
-      setLoading(false);
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [user]);
+      if (isRefresh) setRefreshing(false);
+      else setLoading(false);
+    },
+    [user],
+  );
+
+  useEffect(() => {
+    load(false);
+  }, [load]);
 
   return (
     <SafeAreaView className="flex-1 bg-background" edges={["top"]}>
@@ -89,11 +116,33 @@ export default function DashboardScreen() {
           <Feather name="arrow-left" size={22} color="#0a0a0a" />
         </Pressable>
       </View>
-      <ScrollView contentContainerClassName="px-4 pb-32 pt-2">
+      <ScrollView
+        contentContainerClassName="px-4 pb-32 pt-2"
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={() => load(true)}
+            tintColor="#1a1410"
+          />
+        }
+      >
         <Text className="mb-1 text-2xl font-semibold text-foreground">Dashboard</Text>
         <Text className="mb-6 text-sm text-muted-foreground">
           {loading ? "Loading…" : "Last 7 days"}
         </Text>
+        {error ? (
+          <View className="mb-4 rounded-xl bg-red-50 px-4 py-3 border border-red-200">
+            <Text className="text-sm text-red-700">{error}</Text>
+            <Pressable onPress={() => load(false)} className="mt-2 active:opacity-70">
+              <Text className="text-sm font-semibold text-red-700">Try again</Text>
+            </Pressable>
+          </View>
+        ) : null}
+        {loading ? (
+          <View className="items-center py-8">
+            <ActivityIndicator color="#1a1410" />
+          </View>
+        ) : null}
 
         <View className="mb-3 flex-row gap-3">
           <StatTile

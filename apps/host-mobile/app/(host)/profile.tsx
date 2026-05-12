@@ -44,6 +44,7 @@ interface ProfileState {
   memberSince: string;
   unread: number;
   stats: Stats;
+  verifStatus: "none" | "pending" | "approved" | "rejected";
 }
 
 function initialOf(name: string): string {
@@ -58,24 +59,39 @@ export default function ProfileScreen() {
   const load = useCallback(async () => {
     if (!user?.id) return;
 
-    const [{ data: profile }, { data: inquiries }, { count: unread }, { data: authUser }] =
-      await Promise.all([
-        supabase
-          .from("profiles")
-          .select("display_name")
-          .eq("id", user.id)
-          .maybeSingle(),
-        supabase
-          .from("inquiries")
-          .select("status, vendor_id, event_type, event_date")
-          .eq("host_id", user.id),
-        supabase
-          .from("notifications")
-          .select("*", { count: "exact", head: true })
-          .eq("user_id", user.id)
-          .is("read_at", null),
-        supabase.auth.getUser().then((r) => ({ data: r.data.user })),
-      ]);
+    const [
+      { data: profile },
+      { data: inquiries },
+      { count: unread },
+      { data: authUser },
+      { data: verifRow },
+    ] = await Promise.all([
+      supabase
+        .from("profiles")
+        .select("display_name")
+        .eq("id", user.id)
+        .maybeSingle(),
+      supabase
+        .from("inquiries")
+        .select("status, vendor_id, event_type, event_date")
+        .eq("host_id", user.id),
+      supabase
+        .from("notifications")
+        .select("*", { count: "exact", head: true })
+        .eq("user_id", user.id)
+        .is("read_at", null),
+      supabase.auth.getUser().then((r) => ({ data: r.data.user })),
+      // Pick the latest verification request so we know whether to
+      // show "Become Verified", "Pending review", or "Verified".
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (supabase as any)
+        .from("host_verification_requests")
+        .select("status")
+        .eq("user_id", user.id)
+        .order("requested_at", { ascending: false })
+        .limit(1)
+        .maybeSingle(),
+    ]);
 
     const rows = (inquiries ?? []) as Array<{
       status: string;
@@ -105,6 +121,14 @@ export default function ProfileScreen() {
       .map((w) => (w ? w[0].toUpperCase() + w.slice(1) : ""))
       .join(" ");
 
+    const status =
+      (verifRow as { status?: string } | null)?.status === "approved"
+        ? "approved"
+        : (verifRow as { status?: string } | null)?.status === "pending"
+          ? "pending"
+          : (verifRow as { status?: string } | null)?.status === "rejected"
+            ? "rejected"
+            : "none";
     setState({
       name: titleCase,
       email: user.email ?? "",
@@ -116,8 +140,45 @@ export default function ProfileScreen() {
         vendors: vendors.size,
         events: events.size,
       },
+      verifStatus: status,
     });
   }, [user?.id, user?.email]);
+
+  // Request host verification. Lightweight version: inserts a
+  // host_verification_requests row, admins receive a notification and
+  // follow up via support to collect ID. A future native build will
+  // add an in-app upload step.
+  const requestVerification = useCallback(() => {
+    if (!user?.id) return;
+    Alert.alert(
+      "Request host verification",
+      "We'll send your request to our team. Someone will reach out within 48 hours to verify your identity (a photo of a government ID is enough). It typically unlocks faster vendor replies.",
+      [
+        { text: "Not now", style: "cancel" },
+        {
+          text: "Request",
+          onPress: async () => {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const { error } = await (supabase as any)
+              .from("host_verification_requests")
+              .insert({ user_id: user.id, status: "pending" });
+            if (error) {
+              Alert.alert(
+                "Couldn't send request",
+                "Please try again in a moment.",
+              );
+              return;
+            }
+            Alert.alert(
+              "Request received",
+              "Thanks — our team will reach out within 48 hours.",
+            );
+            load();
+          },
+        },
+      ],
+    );
+  }, [user?.id, load]);
 
   useEffect(() => {
     load();
@@ -198,21 +259,51 @@ export default function ProfileScreen() {
             />
           </View>
 
-          {/* Verification upsell — opens an explainer Alert until the
-              host verification flow lands as a real screen. */}
-          <ActionCard
-            iconBgColor={INK}
-            iconColor={CREAM}
-            icon="award"
-            title="Become Verified"
-            subtitle="Build trust with vendors. Faster replies, better matches."
-            onPress={() =>
-              Alert.alert(
-                "Coming soon",
-                "Host verification is in the works — ID check + a small badge on your inquiries so vendors prioritize you. We'll ping you the moment it's live.",
-              )
-            }
-          />
+          {/* Verification upsell — real flow now: tap submits a
+              host_verification_requests row, admins follow up via
+              support. */}
+          {state?.verifStatus === "approved" ? (
+            <ActionCard
+              iconBgColor={GREEN}
+              iconColor={CREAM}
+              icon="check-circle"
+              title="You're verified"
+              subtitle="Vendors prioritize verified hosts."
+              onPress={() =>
+                Alert.alert(
+                  "Verified host",
+                  "Your identity has been verified — vendors see a badge on your inquiries.",
+                )
+              }
+            />
+          ) : state?.verifStatus === "pending" ? (
+            <ActionCard
+              iconBgColor={GOLD}
+              iconColor={CREAM}
+              icon="clock"
+              title="Verification pending"
+              subtitle="We'll reach out within 48 hours."
+              onPress={() =>
+                Alert.alert(
+                  "Verification pending",
+                  "Your request is in our queue. We'll email you within 48 hours to collect ID.",
+                )
+              }
+            />
+          ) : (
+            <ActionCard
+              iconBgColor={INK}
+              iconColor={CREAM}
+              icon="award"
+              title={
+                state?.verifStatus === "rejected"
+                  ? "Try verifying again"
+                  : "Become Verified"
+              }
+              subtitle="Build trust with vendors. Faster replies, better matches."
+              onPress={requestVerification}
+            />
+          )}
 
           {/* Wide actions */}
           <ActionCard
@@ -224,19 +315,24 @@ export default function ProfileScreen() {
             onPress={() => router.push("/(host)/settings" as never)}
           />
 
-          <Pressable
-            onPress={signOut}
-            style={({ pressed }) => ({
-              marginTop: 12,
-              paddingVertical: 16,
-              borderRadius: 18,
-              backgroundColor: pressed ? "#efe6d6" : "transparent",
-              alignItems: "center",
-            })}
-          >
-            <Text style={{ color: INK_DIM, fontSize: 15, fontWeight: "500" }}>
-              Log out
-            </Text>
+          <Pressable onPress={signOut}>
+            {({ pressed }) => (
+              <View
+                style={{
+                  marginTop: 12,
+                  paddingVertical: 16,
+                  borderRadius: 18,
+                  backgroundColor: pressed ? "#efe6d6" : "transparent",
+                  alignItems: "center",
+                }}
+              >
+                <Text
+                  style={{ color: INK_DIM, fontSize: 15, fontWeight: "500" }}
+                >
+                  Log out
+                </Text>
+              </View>
+            )}
           </Pressable>
         </ScrollView>
       </SafeAreaView>
@@ -409,64 +505,72 @@ function ShortcutTile({
   onPress: () => void;
 }) {
   return (
-    <Pressable
-      onPress={onPress}
-      style={({ pressed }) => ({
-        flex: 1,
-        backgroundColor: "#ffffff",
-        borderRadius: 22,
-        padding: 16,
-        opacity: pressed ? 0.85 : 1,
-        shadowColor: INK,
-        shadowOpacity: 0.05,
-        shadowRadius: 14,
-        shadowOffset: { width: 0, height: 6 },
-        elevation: 2,
-      })}
-    >
-      <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" }}>
+    <Pressable onPress={onPress} style={{ flex: 1 }}>
+      {({ pressed }) => (
         <View
           style={{
-            width: 40,
-            height: 40,
-            borderRadius: 12,
-            backgroundColor: CREAM_DEEP,
-            alignItems: "center",
-            justifyContent: "center",
+            backgroundColor: "#ffffff",
+            borderRadius: 22,
+            padding: 16,
+            opacity: pressed ? 0.85 : 1,
+            shadowColor: INK,
+            shadowOpacity: 0.05,
+            shadowRadius: 14,
+            shadowOffset: { width: 0, height: 6 },
+            elevation: 2,
           }}
         >
-          <Feather name={icon} size={20} color={INK} />
-        </View>
-        {badge ? (
           <View
             style={{
-              backgroundColor: INK,
-              borderRadius: 999,
-              paddingHorizontal: 10,
-              paddingVertical: 4,
+              flexDirection: "row",
+              justifyContent: "space-between",
+              alignItems: "flex-start",
             }}
           >
-            <Text style={{ color: CREAM, fontSize: 11, fontWeight: "700" }}>
-              {badge}
-            </Text>
+            <View
+              style={{
+                width: 40,
+                height: 40,
+                borderRadius: 12,
+                backgroundColor: CREAM_DEEP,
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <Feather name={icon} size={20} color={INK} />
+            </View>
+            {badge ? (
+              <View
+                style={{
+                  backgroundColor: INK,
+                  borderRadius: 999,
+                  paddingHorizontal: 10,
+                  paddingVertical: 4,
+                }}
+              >
+                <Text style={{ color: CREAM, fontSize: 11, fontWeight: "700" }}>
+                  {badge}
+                </Text>
+              </View>
+            ) : null}
           </View>
-        ) : null}
-      </View>
-      <Text
-        style={{
-          marginTop: 14,
-          color: INK,
-          fontFamily: SERIF,
-          fontStyle: "italic",
-          fontSize: 18,
-          fontWeight: "500",
-        }}
-      >
-        {title}
-      </Text>
-      <Text style={{ marginTop: 2, color: INK_DIM, fontSize: 13 }}>
-        {subtitle}
-      </Text>
+          <Text
+            style={{
+              marginTop: 14,
+              color: INK,
+              fontFamily: SERIF,
+              fontStyle: "italic",
+              fontSize: 18,
+              fontWeight: "500",
+            }}
+          >
+            {title}
+          </Text>
+          <Text style={{ marginTop: 2, color: INK_DIM, fontSize: 13 }}>
+            {subtitle}
+          </Text>
+        </View>
+      )}
     </Pressable>
   );
 }
@@ -487,56 +591,59 @@ function ActionCard({
   onPress: () => void;
 }) {
   return (
-    <Pressable
-      onPress={onPress}
-      style={({ pressed }) => ({
-        marginTop: 12,
-        backgroundColor: "#ffffff",
-        borderRadius: 20,
-        paddingVertical: 16,
-        paddingHorizontal: 16,
-        flexDirection: "row",
-        alignItems: "center",
-        opacity: pressed ? 0.85 : 1,
-        shadowColor: INK,
-        shadowOpacity: 0.05,
-        shadowRadius: 14,
-        shadowOffset: { width: 0, height: 6 },
-        elevation: 2,
-      })}
-    >
-      <View
-        style={{
-          width: 40,
-          height: 40,
-          borderRadius: 12,
-          backgroundColor: iconBgColor,
-          alignItems: "center",
-          justifyContent: "center",
-        }}
-      >
-        <Feather name={icon} size={20} color={iconColor} />
-      </View>
-      <View style={{ flex: 1, marginLeft: 14 }}>
-        <Text
+    <Pressable onPress={onPress}>
+      {({ pressed }) => (
+        <View
           style={{
-            color: INK,
-            fontSize: 16,
-            fontWeight: "600",
+            marginTop: 12,
+            backgroundColor: "#ffffff",
+            borderRadius: 20,
+            paddingVertical: 16,
+            paddingHorizontal: 16,
+            flexDirection: "row",
+            alignItems: "center",
+            opacity: pressed ? 0.85 : 1,
+            shadowColor: INK,
+            shadowOpacity: 0.05,
+            shadowRadius: 14,
+            shadowOffset: { width: 0, height: 6 },
+            elevation: 2,
           }}
         >
-          {title}
-        </Text>
-        {subtitle ? (
-          <Text
-            style={{ marginTop: 2, color: INK_DIM, fontSize: 13 }}
-            numberOfLines={1}
+          <View
+            style={{
+              width: 40,
+              height: 40,
+              borderRadius: 12,
+              backgroundColor: iconBgColor,
+              alignItems: "center",
+              justifyContent: "center",
+            }}
           >
-            {subtitle}
-          </Text>
-        ) : null}
-      </View>
-      <Feather name="chevron-right" size={20} color={INK_DIM} />
+            <Feather name={icon} size={20} color={iconColor} />
+          </View>
+          <View style={{ flex: 1, marginLeft: 14 }}>
+            <Text
+              style={{
+                color: INK,
+                fontSize: 16,
+                fontWeight: "600",
+              }}
+            >
+              {title}
+            </Text>
+            {subtitle ? (
+              <Text
+                style={{ marginTop: 2, color: INK_DIM, fontSize: 13 }}
+                numberOfLines={1}
+              >
+                {subtitle}
+              </Text>
+            ) : null}
+          </View>
+          <Feather name="chevron-right" size={20} color={INK_DIM} />
+        </View>
+      )}
     </Pressable>
   );
 }

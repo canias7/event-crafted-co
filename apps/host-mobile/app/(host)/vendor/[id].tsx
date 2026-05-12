@@ -47,9 +47,19 @@ const sectionHeaderStyle = {
 
 const statValueStyle = {
   color: INK,
-  fontSize: 17,
-  fontWeight: "700",
+  fontSize: 18,
+  fontWeight: "600",
   fontFamily: SERIF,
+  fontStyle: "italic",
+} as const;
+
+// Shared shadow style for white cards floating on the cream backdrop.
+const CARD_SHADOW = {
+  shadowColor: "#1a1410",
+  shadowOpacity: 0.06,
+  shadowRadius: 14,
+  shadowOffset: { width: 0, height: 6 },
+  elevation: 2,
 } as const;
 
 type VendorRow = {
@@ -297,9 +307,16 @@ export default function VendorDetailScreen() {
         contentContainerStyle={{ paddingBottom: 120 }}
         showsVerticalScrollIndicator={false}
       >
-        {/* Photo gallery — full-bleed, swipeable. */}
+        {/* Photo gallery — full-bleed, swipeable, with rounded bottom
+            corners so the cream backdrop peeks through. */}
         <View
-          style={{ width: screenWidth, height: galleryHeight }}
+          style={{
+            width: screenWidth,
+            height: galleryHeight,
+            borderBottomLeftRadius: 28,
+            borderBottomRightRadius: 28,
+            overflow: "hidden",
+          }}
           className="bg-muted"
         >
           {photos.length > 0 ? (
@@ -385,21 +402,12 @@ export default function VendorDetailScreen() {
           </View>
         ) : null}
 
-        {/* White content card — overlaps the bottom of the gallery. */}
-        <View
-          style={{
-            backgroundColor: "#ffffff",
-            borderTopLeftRadius: 20,
-            borderTopRightRadius: 20,
-            marginTop: -22,
-            paddingTop: 20,
-            paddingBottom: 8,
-          }}
-        >
+        {/* Content area — sits directly on the cream backdrop. */}
+        <View style={{ paddingTop: 18, paddingBottom: 8 }}>
           {/* Pill row above title — "NEW" + category — matches the
               editorial chip strip on the design. */}
           <View
-            className="px-5 pt-2"
+            className="px-5"
             style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}
           >
             <View
@@ -424,7 +432,7 @@ export default function VendorDetailScreen() {
             {vendor.category ? (
               <View
                 style={{
-                  backgroundColor: "#f5efe5",
+                  backgroundColor: "#efe5d2",
                   borderRadius: 999,
                   paddingHorizontal: 12,
                   paddingVertical: 5,
@@ -432,7 +440,7 @@ export default function VendorDetailScreen() {
               >
                 <Text
                   style={{
-                    color: "#1a1410",
+                    color: INK,
                     fontSize: 12,
                     fontWeight: "600",
                   }}
@@ -443,15 +451,16 @@ export default function VendorDetailScreen() {
             ) : null}
           </View>
 
-          {/* Title — bold serif, large. */}
+          {/* Title — bold italic serif, large. */}
           <View className="px-5 pt-3">
             <Text
               style={{
-                color: "#1a1410",
+                color: INK,
                 fontFamily: SERIF,
-                fontSize: 34,
+                fontSize: 38,
                 fontWeight: "700",
-                lineHeight: 38,
+                fontStyle: "italic",
+                lineHeight: 42,
               }}
               numberOfLines={2}
             >
@@ -483,7 +492,8 @@ export default function VendorDetailScreen() {
             ) : null}
           </View>
 
-          {/* Stats row — 3 cells in a white card with vertical dividers. */}
+          {/* Stats row — 3 cells in a white card with vertical dividers,
+              floating on the cream backdrop. */}
           <View
             style={{
               marginHorizontal: 20,
@@ -491,11 +501,7 @@ export default function VendorDetailScreen() {
               backgroundColor: "#ffffff",
               borderRadius: 18,
               flexDirection: "row",
-              shadowColor: "#1a1410",
-              shadowOpacity: 0.05,
-              shadowRadius: 12,
-              shadowOffset: { width: 0, height: 4 },
-              elevation: 2,
+              ...CARD_SHADOW,
             }}
           >
             <StatCell
@@ -586,21 +592,23 @@ export default function VendorDetailScreen() {
                       .slice(0, 18)}
                   </Text>
                 </View>
-                <Feather name="chevron-right" size={20} color={INK_DIM} />
               </View>
             </View>
           ) : null}
 
-          {/* Bio */}
+          {/* About — bio paragraph, sits directly on cream */}
           {vendor.bio ? (
-            <View className="px-5 pt-6">
-              <Text className="text-base text-foreground/90 leading-relaxed">
-                {vendor.bio}
-              </Text>
+            <View style={{ marginTop: 26 }}>
+              <Text style={sectionHeaderStyle}>About</Text>
+              <View style={{ paddingHorizontal: 20, marginTop: 10 }}>
+                <Text style={{ color: INK, fontSize: 15, lineHeight: 22 }}>
+                  {vendor.bio}
+                </Text>
+              </View>
             </View>
           ) : null}
 
-          {/* Packages — cream/beige cards */}
+          {/* Packages — white cards on cream backdrop */}
           {packages.length > 0 ? (
             <View style={{ marginTop: 24 }}>
               <Text style={sectionHeaderStyle}>Packages</Text>
@@ -609,10 +617,11 @@ export default function VendorDetailScreen() {
                   <View
                     key={p.id}
                     style={{
-                      backgroundColor: "#f5efe5",
+                      backgroundColor: "#ffffff",
                       borderRadius: 18,
                       padding: 16,
                       marginBottom: 12,
+                      ...CARD_SHADOW,
                     }}
                   >
                     <View
@@ -676,7 +685,7 @@ export default function VendorDetailScreen() {
             </View>
           ) : null}
 
-          {/* Team — cream cards with avatar circle + OWNER pill */}
+          {/* Team — white cards on cream backdrop, avatar + OWNER pill */}
           {team.length > 0 ? (
             <View style={{ marginTop: 14 }}>
               <Text style={sectionHeaderStyle}>Team</Text>
@@ -685,10 +694,11 @@ export default function VendorDetailScreen() {
                   <View
                     key={m.id}
                     style={{
-                      backgroundColor: "#f5efe5",
+                      backgroundColor: "#ffffff",
                       borderRadius: 18,
                       padding: 16,
                       marginBottom: 12,
+                      ...CARD_SHADOW,
                     }}
                   >
                     <View
@@ -777,16 +787,25 @@ export default function VendorDetailScreen() {
                       </View>
                     </View>
                     {m.bio ? (
-                      <Text
-                        style={{
-                          marginTop: 12,
-                          color: "#1a1410",
-                          fontSize: 14,
-                          lineHeight: 20,
-                        }}
-                      >
-                        {m.bio}
-                      </Text>
+                      <>
+                        <View
+                          style={{
+                            height: 1,
+                            backgroundColor: "#efe5d2",
+                            marginTop: 12,
+                            marginBottom: 12,
+                          }}
+                        />
+                        <Text
+                          style={{
+                            color: INK,
+                            fontSize: 14,
+                            lineHeight: 20,
+                          }}
+                        >
+                          {m.bio}
+                        </Text>
+                      </>
                     ) : null}
                   </View>
                 ))}
@@ -892,17 +911,28 @@ export default function VendorDetailScreen() {
                 >
                   FROM
                 </Text>
-                <Text
+                {/* Manual underline via borderBottom — RN's
+                    textDecorationLine on heavy-bold sits right at
+                    the line-height box and clips into a ragged bar. */}
+                <View
                   style={{
+                    alignSelf: "flex-start",
                     marginTop: 2,
-                    color: "#1a1410",
-                    fontSize: 22,
-                    fontWeight: "800",
-                    textDecorationLine: "underline",
+                    borderBottomWidth: 2,
+                    borderBottomColor: INK,
+                    paddingBottom: 2,
                   }}
                 >
-                  {price}
-                </Text>
+                  <Text
+                    style={{
+                      color: INK,
+                      fontSize: 22,
+                      fontWeight: "800",
+                    }}
+                  >
+                    {price}
+                  </Text>
+                </View>
               </>
             ) : (
               <Text
@@ -916,29 +946,37 @@ export default function VendorDetailScreen() {
               </Text>
             )}
           </View>
-          <Pressable
-            onPress={() => setInquireOpen(true)}
-            style={({ pressed }) => ({
-              backgroundColor: "#1a1410",
-              paddingHorizontal: 22,
-              paddingVertical: 14,
-              borderRadius: 999,
-              flexDirection: "row",
-              alignItems: "center",
-              opacity: pressed ? 0.85 : 1,
-            })}
-          >
-            <Text
-              style={{
-                color: "#faf5ec",
-                fontSize: 15,
-                fontWeight: "700",
-                marginRight: 6,
-              }}
-            >
-              Inquire
-            </Text>
-            <Feather name="chevron-right" size={16} color="#faf5ec" />
+          {/* Children-as-function pattern — Hermes silently drops the
+              `style={({pressed}) => …}` form, which on the previous
+              build collapsed this pill to text-only (no background,
+              no flexDirection). Wrap a View instead so styles always
+              land. */}
+          <Pressable onPress={() => setInquireOpen(true)}>
+            {({ pressed }) => (
+              <View
+                style={{
+                  backgroundColor: "#1a1410",
+                  paddingHorizontal: 22,
+                  paddingVertical: 14,
+                  borderRadius: 999,
+                  flexDirection: "row",
+                  alignItems: "center",
+                  opacity: pressed ? 0.85 : 1,
+                }}
+              >
+                <Text
+                  style={{
+                    color: "#faf5ec",
+                    fontSize: 15,
+                    fontWeight: "700",
+                    marginRight: 6,
+                  }}
+                >
+                  Inquire
+                </Text>
+                <Feather name="chevron-right" size={16} color="#faf5ec" />
+              </View>
+            )}
           </Pressable>
         </View>
       </SafeAreaView>
@@ -1030,19 +1068,20 @@ function Divider() {
   return <View style={{ width: 1, backgroundColor: "#ece4d4", marginVertical: 12 }} />;
 }
 
-// Collapsible FAQ card — cream surface, question + chevron header.
-// Tap toggles the answer; chevron rotates conceptually (down vs. up).
+// Collapsible FAQ card — white surface on cream backdrop, question +
+// chevron header. Tap toggles the answer; chevron flips down↔up.
 function FaqCard({ question, answer }: { question: string; answer: string }) {
   const [open, setOpen] = useState(false);
   return (
     <Pressable
       onPress={() => setOpen((v) => !v)}
       style={{
-        backgroundColor: CREAM,
+        backgroundColor: "#ffffff",
         borderRadius: 18,
         paddingHorizontal: 16,
         paddingVertical: 14,
         marginBottom: 10,
+        ...CARD_SHADOW,
       }}
     >
       <View
@@ -1063,7 +1102,11 @@ function FaqCard({ question, answer }: { question: string; answer: string }) {
         >
           {question}
         </Text>
-        <Feather name={open ? "chevron-up" : "chevron-down"} size={18} color={INK} />
+        <Feather
+          name={open ? "chevron-up" : "chevron-down"}
+          size={18}
+          color={INK}
+        />
       </View>
       {open ? (
         <Text
@@ -1081,34 +1124,38 @@ function FaqCard({ question, answer }: { question: string; answer: string }) {
   );
 }
 
-// Policy card — cream surface with small label above larger value.
+// Policy card — white card with label on the left and value on the
+// right (horizontal layout matches the editorial reference).
 function PolicyCard({ label, value }: { label: string; value: string }) {
   return (
     <View
       style={{
-        backgroundColor: CREAM,
+        backgroundColor: "#ffffff",
         borderRadius: 18,
         paddingHorizontal: 16,
         paddingVertical: 14,
         marginBottom: 10,
+        flexDirection: "row",
+        alignItems: "center",
+        ...CARD_SHADOW,
       }}
     >
       <Text
         style={{
-          color: INK_DIM,
-          fontSize: 11,
-          fontWeight: "800",
-          letterSpacing: 0.8,
+          color: INK,
+          fontSize: 15,
+          fontWeight: "700",
         }}
       >
-        {label.toUpperCase()}
+        {label}
       </Text>
       <Text
         style={{
-          marginTop: 4,
-          color: INK,
-          fontSize: 15,
-          fontWeight: "600",
+          flex: 1,
+          marginLeft: 12,
+          textAlign: "right",
+          color: INK_DIM,
+          fontSize: 14,
         }}
       >
         {value}

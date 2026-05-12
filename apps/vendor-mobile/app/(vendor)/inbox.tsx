@@ -6,11 +6,11 @@
 // circles, NEW pills on unread inquiry rows, online dot on active
 // partner rows. Filter chips switch between subsets.
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
-  Alert,
-  Linking,
+  ActivityIndicator,
   Pressable,
+  RefreshControl,
   ScrollView,
   Text,
   TextInput,
@@ -81,27 +81,35 @@ export default function InboxScreen() {
   const [inquiries, setInquiries] = useState<InquiryRow[]>([]);
   const [partners, setPartners] = useState<PartnerThread[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (!user) return;
-    let cancelled = false;
-    (async () => {
-      setLoading(true);
-      // Pull every vendor_profiles row this user owns so the inbox
-      // aggregates inquiries + partner threads across all of their
-      // marketplace listings, not just one.
-      const { data: vendorRows } = await supabase
+  const load = useCallback(
+    async (isRefresh: boolean) => {
+      if (!user) return;
+      if (isRefresh) setRefreshing(true);
+      else setLoading(true);
+      setError(null);
+      const { data: vendorRows, error: vErr } = await supabase
         .from("vendor_profiles")
         .select("id")
         .eq("user_id", user.id);
+      if (vErr) {
+        setError(vErr.message);
+        if (isRefresh) setRefreshing(false);
+        else setLoading(false);
+        return;
+      }
       const vendorIds = ((vendorRows ?? []) as { id: string }[]).map(
         (r) => r.id,
       );
       if (vendorIds.length === 0) {
-        if (!cancelled) setLoading(false);
+        setInquiries([]);
+        setPartners([]);
+        if (isRefresh) setRefreshing(false);
+        else setLoading(false);
         return;
       }
-
       const [inqRes, partRes] = await Promise.all([
         supabase
           .from("inquiries")
@@ -110,8 +118,7 @@ export default function InboxScreen() {
           )
           .in("vendor_id", vendorIds)
           .order("created_at", { ascending: false }),
-        // Partners — use the wide-select web pattern; columns flagged as
-        // any so older codegens don't choke.
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (supabase as any)
           .from("vendor_partner_threads")
           .select(
@@ -122,27 +129,33 @@ export default function InboxScreen() {
           )
           .order("last_message_at", { ascending: false, nullsFirst: false }),
       ]);
-
-      if (cancelled) return;
-      setInquiries(((inqRes.data ?? []) as InquiryRow[]) || []);
+      if (inqRes.error) setError(inqRes.error.message);
+      else setInquiries(((inqRes.data ?? []) as InquiryRow[]) || []);
       const vendorIdSet = new Set(vendorIds);
-      const partRows = ((partRes as { data?: any[] }).data ?? []).map((r) => {
-        const isA = vendorIdSet.has(r.vendor_a_id);
-        const other = isA ? r.vendor_b : r.vendor_a;
-        return {
-          id: r.id,
-          other_business_name: other?.business_name ?? "Vendor",
-          other_category: other?.category ?? null,
-          last_message_at: r.last_message_at ?? null,
-        } as PartnerThread;
-      });
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const partRows = (((partRes as { data?: any[] }).data ?? []) as any[]).map(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (r: any) => {
+          const isA = vendorIdSet.has(r.vendor_a_id);
+          const other = isA ? r.vendor_b : r.vendor_a;
+          return {
+            id: r.id,
+            other_business_name: other?.business_name ?? "Vendor",
+            other_category: other?.category ?? null,
+            last_message_at: r.last_message_at ?? null,
+          } as PartnerThread;
+        },
+      );
       setPartners(partRows);
-      setLoading(false);
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [user]);
+      if (isRefresh) setRefreshing(false);
+      else setLoading(false);
+    },
+    [user],
+  );
+
+  useEffect(() => {
+    load(false);
+  }, [load]);
 
   // Filter logic
   const filteredInquiries = useMemo(() => {
@@ -187,7 +200,17 @@ export default function InboxScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-background">
-      <ScrollView contentContainerClassName="pb-32" keyboardShouldPersistTaps="handled">
+      <ScrollView
+        contentContainerClassName="pb-32"
+        keyboardShouldPersistTaps="handled"
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={() => load(true)}
+            tintColor="#1a1410"
+          />
+        }
+      >
         {/* Header */}
         <View className="px-5 pt-2 pb-4">
           <Text className="text-3xl font-semibold text-foreground">Inbox</Text>
@@ -281,11 +304,25 @@ export default function InboxScreen() {
           </View>
         )}
 
+        {error ? (
+          <View className="mx-5 mb-3 rounded-xl bg-red-50 px-4 py-3 border border-red-200">
+            <Text className="text-sm text-red-700">{error}</Text>
+            <Pressable
+              onPress={() => load(false)}
+              className="mt-2 active:opacity-70"
+            >
+              <Text className="text-sm font-semibold text-red-700">
+                Try again
+              </Text>
+            </Pressable>
+          </View>
+        ) : null}
+
         {/* List */}
         <View className="mt-2">
           {loading ? (
             <View className="px-5 py-12 items-center">
-              <Text className="text-sm text-muted-foreground">Loading…</Text>
+              <ActivityIndicator color="#1a1410" />
             </View>
           ) : tab === "inquiries" ? (
             filteredInquiries.length === 0 ? (
@@ -470,22 +507,10 @@ function InquiryCard({ row }: { row: InquiryRow }) {
 }
 
 function PartnerRow({ thread, divider }: { thread: PartnerThread; divider: boolean }) {
-  // Partner-to-partner chat doesn't have a native screen yet — only
-  // the web app at /vendor/partners. Open the web thread in the
-  // system browser so the tap does something useful instead of
-  // sitting inert. When the native partner thread screen lands, swap
-  // this for router.push("/(vendor)/partner-thread/<id>").
-  async function open() {
-    const url = `https://eventvendora.com/vendor/partners?thread=${thread.id}`;
-    const can = await Linking.canOpenURL(url);
-    if (!can) {
-      Alert.alert(
-        "Couldn't open",
-        "Partner messaging is web-only for now. Visit eventvendora.com/vendor/partners on a browser.",
-      );
-      return;
-    }
-    Linking.openURL(url);
+  // Partner-to-partner chat now has a native screen.
+  const router = useRouter();
+  function open() {
+    router.push(`/(vendor)/partner-thread/${thread.id}` as never);
   }
 
   return (

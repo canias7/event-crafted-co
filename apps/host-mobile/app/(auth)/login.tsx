@@ -78,6 +78,10 @@ export default function LoginScreen() {
 
   async function onSubmitCode() {
     setError(null);
+    if (code.trim().length !== 6) {
+      setError("Enter the 6-digit code we emailed you.");
+      return;
+    }
     setSubmitting(true);
     const { data, error: invokeErr } = await supabase.functions.invoke("signin-2fa", {
       body: { action: "verify", email: email.trim().toLowerCase(), code: code.trim() },
@@ -264,6 +268,15 @@ export default function LoginScreen() {
               >
                 We'll email you a 6-digit code to confirm it's you.
               </Text>
+
+              <Pressable
+                onPress={() => router.push("/(auth)/forgot-password")}
+                style={{ marginTop: 12, alignItems: "center" }}
+              >
+                <Text style={{ color: INK, fontWeight: "600", fontSize: 14 }}>
+                  Forgot your password?
+                </Text>
+              </Pressable>
 
               <Pressable
                 onPress={() => router.replace("/(auth)/signup")}

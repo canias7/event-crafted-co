@@ -8,9 +8,11 @@
 // There's no "Partners" tab here since partner threads are a
 // vendor-to-vendor concept that doesn't apply to hosts.
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
+  ActivityIndicator,
   Pressable,
+  RefreshControl,
   ScrollView,
   Text,
   TextInput,
@@ -80,27 +82,33 @@ export default function InboxScreen() {
   const [filter, setFilter] = useState<Filter>("all");
   const [rows, setRows] = useState<InquiryRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (!user) return;
-    let cancelled = false;
-    (async () => {
-      setLoading(true);
-      const { data } = await supabase
+  const load = useCallback(
+    async (isRefresh: boolean) => {
+      if (!user) return;
+      if (isRefresh) setRefreshing(true);
+      else setLoading(true);
+      setError(null);
+      const { data, error: e } = await supabase
         .from("inquiries")
         .select(
           "id, status, event_type, event_date, guest_count, budget_max_cents, special_requests, created_at, vendor_profiles(business_name, category)",
         )
         .eq("host_id", user.id)
         .order("created_at", { ascending: false });
-      if (cancelled) return;
-      setRows((data ?? []) as InquiryRow[]);
-      setLoading(false);
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [user]);
+      if (e) setError(e.message);
+      else setRows((data ?? []) as InquiryRow[]);
+      if (isRefresh) setRefreshing(false);
+      else setLoading(false);
+    },
+    [user],
+  );
+
+  useEffect(() => {
+    load(false);
+  }, [load]);
 
   const counts = useMemo(
     () => ({
@@ -132,7 +140,17 @@ export default function InboxScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-background">
-      <ScrollView contentContainerClassName="pb-32" keyboardShouldPersistTaps="handled">
+      <ScrollView
+        contentContainerClassName="pb-32"
+        keyboardShouldPersistTaps="handled"
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={() => load(true)}
+            tintColor="#1a1410"
+          />
+        }
+      >
         <View className="px-5 pt-2 pb-4">
           <Text className="text-3xl font-semibold text-foreground">Inbox</Text>
           <Text className="mt-1 text-sm text-muted-foreground">
@@ -184,9 +202,25 @@ export default function InboxScreen() {
           />
         </ScrollView>
 
+        {error ? (
+          <View className="mx-5 mb-3 rounded-xl bg-red-50 px-4 py-3 border border-red-200">
+            <Text className="text-sm text-red-700">{error}</Text>
+            <Pressable
+              onPress={() => load(false)}
+              className="mt-2 active:opacity-70"
+            >
+              <Text className="text-sm font-semibold text-red-700">
+                Try again
+              </Text>
+            </Pressable>
+          </View>
+        ) : null}
+
         <View className="mt-2">
           {loading ? (
-            <Empty msg="Loading…" />
+            <View className="items-center pt-16">
+              <ActivityIndicator color="#1a1410" />
+            </View>
           ) : filteredRows.length === 0 ? (
             <Empty
               msg={

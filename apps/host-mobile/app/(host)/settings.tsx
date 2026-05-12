@@ -182,89 +182,96 @@ export default function SettingsScreen() {
                   </Text>
                 </View>
 
-                <Pressable
-                  onPress={saveName}
-                  disabled={!dirty || saving}
-                  style={({ pressed }) => ({
-                    marginTop: 12,
-                    backgroundColor: dirty ? INK : BORDER,
-                    paddingVertical: 14,
-                    borderRadius: 16,
-                    alignItems: "center",
-                    opacity: pressed ? 0.85 : 1,
-                  })}
-                >
-                  {saving ? (
-                    <ActivityIndicator color={CREAM} />
-                  ) : (
-                    <Text
+                <Pressable onPress={saveName} disabled={!dirty || saving}>
+                  {({ pressed }) => (
+                    <View
                       style={{
-                        color: dirty ? CREAM : INK_DIM,
-                        fontWeight: "700",
+                        marginTop: 12,
+                        backgroundColor: dirty ? INK : BORDER,
+                        paddingVertical: 14,
+                        borderRadius: 16,
+                        alignItems: "center",
+                        opacity: pressed ? 0.85 : 1,
                       }}
                     >
-                      Save
-                    </Text>
+                      {saving ? (
+                        <ActivityIndicator color={CREAM} />
+                      ) : (
+                        <Text
+                          style={{
+                            color: dirty ? CREAM : INK_DIM,
+                            fontWeight: "700",
+                          }}
+                        >
+                          Save
+                        </Text>
+                      )}
+                    </View>
                   )}
                 </Pressable>
 
                 <SectionLabel style={{ marginTop: 32 }}>Session</SectionLabel>
-                <Pressable
-                  onPress={signOut}
-                  style={({ pressed }) => ({
-                    marginTop: 12,
-                    backgroundColor: "#ffffff",
-                    paddingVertical: 16,
-                    paddingHorizontal: 16,
-                    borderRadius: 18,
-                    flexDirection: "row",
-                    alignItems: "center",
-                    opacity: pressed ? 0.85 : 1,
-                  })}
-                >
-                  <Feather name="log-out" size={18} color={INK} />
-                  <Text
-                    style={{
-                      marginLeft: 12,
-                      color: INK,
-                      fontSize: 15,
-                      fontWeight: "600",
-                    }}
-                  >
-                    Sign out
-                  </Text>
+                <Pressable onPress={signOut}>
+                  {({ pressed }) => (
+                    <View
+                      style={{
+                        marginTop: 12,
+                        backgroundColor: "#ffffff",
+                        paddingVertical: 16,
+                        paddingHorizontal: 16,
+                        borderRadius: 18,
+                        flexDirection: "row",
+                        alignItems: "center",
+                        opacity: pressed ? 0.85 : 1,
+                      }}
+                    >
+                      <Feather name="log-out" size={18} color={INK} />
+                      <Text
+                        style={{
+                          marginLeft: 12,
+                          color: INK,
+                          fontSize: 15,
+                          fontWeight: "600",
+                        }}
+                      >
+                        Sign out
+                      </Text>
+                    </View>
+                  )}
                 </Pressable>
 
                 <SectionLabel style={{ marginTop: 32, color: DANGER }}>
                   Danger zone
                 </SectionLabel>
-                <Pressable
-                  onPress={confirmDelete}
-                  disabled={deleting}
-                  style={({ pressed }) => ({
-                    marginTop: 12,
-                    backgroundColor: "#ffffff",
-                    paddingVertical: 16,
-                    paddingHorizontal: 16,
-                    borderRadius: 18,
-                    flexDirection: "row",
-                    alignItems: "center",
-                    borderWidth: 1,
-                    borderColor: "#f5d5d2",
-                    opacity: pressed ? 0.85 : 1,
-                  })}
-                >
-                  <Feather name="trash-2" size={18} color={DANGER} />
-                  <Text
-                    style={{
-                      marginLeft: 12,
-                      color: DANGER,
-                      fontSize: 15,
-                      fontWeight: "600",
-                    }}
-                  >
-                    {deleting ? "Submitting…" : "Delete account"}
-                  </Text>
+                <Pressable onPress={confirmDelete} disabled={deleting}>
+                  {({ pressed }) => (
+                    <View
+                      style={{
+                        marginTop: 12,
+                        backgroundColor: "#ffffff",
+                        paddingVertical: 16,
+                        paddingHorizontal: 16,
+                        borderRadius: 18,
+                        flexDirection: "row",
+                        alignItems: "center",
+                        borderWidth: 1,
+                        borderColor: "#f5d5d2",
+                        opacity: pressed ? 0.85 : 1,
+                      }}
+                    >
+                      <Feather name="trash-2" size={18} color={DANGER} />
+                      <Text
+                        style={{
+                          marginLeft: 12,
+                          color: DANGER,
+                          fontSize: 15,
+                          fontWeight: "600",
+                        }}
+                      >
+                        {deleting ? "Submitting…" : "Delete account"}
+                      </Text>
+                    </View>
+                  )}
                 </Pressable>
               </>
             )}

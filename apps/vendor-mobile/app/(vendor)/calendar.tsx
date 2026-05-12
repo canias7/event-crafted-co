@@ -14,9 +14,11 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
+  ActivityIndicator,
   Alert,
   Platform,
   Pressable,
+  RefreshControl,
   ScrollView,
   Text,
   View,
@@ -123,6 +125,9 @@ export default function CalendarScreen() {
   const [vendorIds, setVendorIds] = useState<string[]>([]);
   const [inquiries, setInquiries] = useState<InquiryRow[]>([]);
   const [busy, setBusy] = useState<BusyRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   // Manual blocks the vendor has placed on specific dates across any
   // of their listings. Kept separate from `busy` (google-calendar
   // sync) since they're a different model + the rest of the marketplace
@@ -154,42 +159,59 @@ export default function CalendarScreen() {
     return { start, end };
   }, [viewMonth]);
 
-  const load = useCallback(async () => {
-    if (vendorIds.length === 0 || !user?.id) return;
-    const startYmd = ymdKey(monthBounds.start);
-    const endYmd = ymdKey(monthBounds.end);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const [{ data: inqs }, { data: busyRows }, { data: blockRows }] = await Promise.all([
-      (supabase as any)
-        .from("inquiries")
-        .select(
-          "id, status, event_date, event_type, budget_min_cents, budget_max_cents, host_id, host:profiles!inquiries_host_id_fkey(display_name)",
-        )
-        .in("vendor_id", vendorIds)
-        .gte("event_date", startYmd)
-        .lt("event_date", endYmd),
-      supabase
-        .from("calendar_synced_busy")
-        .select("id, starts_at, ends_at, summary, is_all_day")
-        .eq("user_id", user.id)
-        .gte("starts_at", monthBounds.start.toISOString())
-        .lt("starts_at", monthBounds.end.toISOString()),
-      supabase
-        .from("vendor_unavailable_dates")
-        .select("date")
-        .in("vendor_id", vendorIds)
-        .gte("date", startYmd)
-        .lt("date", endYmd),
-    ]);
-    setInquiries((inqs ?? []) as InquiryRow[]);
-    setBusy((busyRows ?? []) as BusyRow[]);
-    setManualBlocks(
-      ((blockRows ?? []) as { date: string }[]).map((r) => r.date),
-    );
-  }, [vendorIds, user?.id, monthBounds]);
+  const load = useCallback(
+    async (isRefresh: boolean) => {
+      if (vendorIds.length === 0 || !user?.id) {
+        setLoading(false);
+        return;
+      }
+      if (isRefresh) setRefreshing(true);
+      else setLoading(true);
+      setError(null);
+      const startYmd = ymdKey(monthBounds.start);
+      const endYmd = ymdKey(monthBounds.end);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const [inqRes, busyRes, blockRes] = await Promise.all([
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (supabase as any)
+          .from("inquiries")
+          .select(
+            "id, status, event_date, event_type, budget_min_cents, budget_max_cents, host_id, host:profiles!inquiries_host_id_fkey(display_name)",
+          )
+          .in("vendor_id", vendorIds)
+          .gte("event_date", startYmd)
+          .lt("event_date", endYmd),
+        supabase
+          .from("calendar_synced_busy")
+          .select("id, starts_at, ends_at, summary, is_all_day")
+          .eq("user_id", user.id)
+          .gte("starts_at", monthBounds.start.toISOString())
+          .lt("starts_at", monthBounds.end.toISOString()),
+        supabase
+          .from("vendor_unavailable_dates")
+          .select("date")
+          .in("vendor_id", vendorIds)
+          .gte("date", startYmd)
+          .lt("date", endYmd),
+      ]);
+      const firstErr =
+        inqRes.error ?? busyRes.error ?? blockRes.error ?? null;
+      if (firstErr) setError(firstErr.message);
+      else {
+        setInquiries((inqRes.data ?? []) as InquiryRow[]);
+        setBusy((busyRes.data ?? []) as BusyRow[]);
+        setManualBlocks(
+          ((blockRes.data ?? []) as { date: string }[]).map((r) => r.date),
+        );
+      }
+      if (isRefresh) setRefreshing(false);
+      else setLoading(false);
+    },
+    [vendorIds, user?.id, monthBounds],
+  );
 
   useEffect(() => {
-    load();
+    load(false);
   }, [load]);
 
   const dayState = useMemo(() => {
@@ -375,7 +397,7 @@ export default function CalendarScreen() {
                 return;
               }
             }
-            load();
+            load(false);
           },
         },
       ],
@@ -403,7 +425,45 @@ export default function CalendarScreen() {
             paddingBottom: 140,
           }}
           showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={() => load(true)}
+              tintColor={INK}
+            />
+          }
         >
+          {error ? (
+            <View
+              style={{
+                marginBottom: 12,
+                borderRadius: 12,
+                backgroundColor: "#fdecea",
+                borderWidth: 1,
+                borderColor: "#f5c5c0",
+                paddingHorizontal: 14,
+                paddingVertical: 12,
+              }}
+            >
+              <Text style={{ color: "#9b2c1b", fontSize: 13 }}>{error}</Text>
+              <Pressable onPress={() => load(false)} style={{ marginTop: 8 }}>
+                <Text
+                  style={{
+                    color: "#9b2c1b",
+                    fontSize: 13,
+                    fontWeight: "700",
+                  }}
+                >
+                  Try again
+                </Text>
+              </Pressable>
+            </View>
+          ) : null}
+          {loading ? (
+            <View style={{ paddingVertical: 60, alignItems: "center" }}>
+              <ActivityIndicator color={INK} />
+            </View>
+          ) : null}
           <View
             style={{
               flexDirection: "row",
@@ -438,17 +498,22 @@ export default function CalendarScreen() {
                 setSelectedYmd(ymdKey(today));
               }}
               hitSlop={6}
-              style={({ pressed }) => ({
-                width: 40,
-                height: 40,
-                borderRadius: 999,
-                backgroundColor: CREAM_DEEP,
-                alignItems: "center",
-                justifyContent: "center",
-                opacity: pressed ? 0.85 : 1,
-              })}
             >
-              <Feather name="calendar" size={18} color={INK} />
+              {({ pressed }) => (
+                <View
+                  style={{
+                    width: 40,
+                    height: 40,
+                    borderRadius: 999,
+                    backgroundColor: CREAM_DEEP,
+                    alignItems: "center",
+                    justifyContent: "center",
+                    opacity: pressed ? 0.85 : 1,
+                  }}
+                >
+                  <Feather name="calendar" size={18} color={INK} />
+                </View>
+              )}
             </Pressable>
           </View>
 
@@ -609,31 +674,36 @@ export default function CalendarScreen() {
               <Pressable
                 onPress={toggleSelectedDayBlock}
                 disabled={blocking}
-                style={({ pressed }) => ({
-                  flexDirection: "row",
-                  alignItems: "center",
-                  backgroundColor: INK,
-                  paddingHorizontal: 14,
-                  paddingVertical: 9,
-                  borderRadius: 999,
-                  opacity: pressed || blocking ? 0.6 : 1,
-                })}
               >
-                <Feather
-                  name={isSelectedBlocked ? "x" : "plus"}
-                  size={14}
-                  color={CREAM}
-                  style={{ marginRight: 4 }}
-                />
-                <Text
-                  style={{ color: CREAM, fontSize: 13, fontWeight: "700" }}
-                >
-                  {blocking
-                    ? "Saving…"
-                    : isSelectedBlocked
-                      ? "Unblock"
-                      : "Block"}
-                </Text>
+                {({ pressed }) => (
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "center",
+                      backgroundColor: INK,
+                      paddingHorizontal: 14,
+                      paddingVertical: 9,
+                      borderRadius: 999,
+                      opacity: pressed || blocking ? 0.6 : 1,
+                    }}
+                  >
+                    <Feather
+                      name={isSelectedBlocked ? "x" : "plus"}
+                      size={14}
+                      color={CREAM}
+                      style={{ marginRight: 4 }}
+                    />
+                    <Text
+                      style={{ color: CREAM, fontSize: 13, fontWeight: "700" }}
+                    >
+                      {blocking
+                        ? "Saving…"
+                        : isSelectedBlocked
+                          ? "Unblock"
+                          : "Block"}
+                    </Text>
+                  </View>
+                )}
               </Pressable>
             </View>
           ) : null}
@@ -979,90 +1049,92 @@ function BookingRow({
 }) {
   const tappable = !!onPress;
   return (
-    <Pressable
-      onPress={onPress}
-      disabled={!tappable}
-      style={({ pressed }) => ({
-        backgroundColor: "#ffffff",
-        borderRadius: 18,
-        flexDirection: "row",
-        alignItems: "center",
-        marginBottom: 10,
-        overflow: "hidden",
-        shadowColor: INK,
-        shadowOpacity: 0.04,
-        shadowRadius: 10,
-        shadowOffset: { width: 0, height: 4 },
-        opacity: pressed && tappable ? 0.85 : 1,
-      })}
-    >
-      <View
-        style={{
-          width: 4,
-          alignSelf: "stretch",
-          backgroundColor: item.accent,
-        }}
-      />
-      {item.timeLabel ? (
+    <Pressable onPress={onPress} disabled={!tappable}>
+      {({ pressed }) => (
         <View
           style={{
-            paddingHorizontal: 14,
-            paddingVertical: 14,
+            backgroundColor: "#ffffff",
+            borderRadius: 18,
+            flexDirection: "row",
             alignItems: "center",
-            width: 76,
+            marginBottom: 10,
+            overflow: "hidden",
+            shadowColor: INK,
+            shadowOpacity: 0.04,
+            shadowRadius: 10,
+            shadowOffset: { width: 0, height: 4 },
+            opacity: pressed && tappable ? 0.85 : 1,
           }}
         >
-          <Text
+          <View
             style={{
-              color: INK,
-              fontSize: 16,
-              fontWeight: "700",
-              fontFamily: SERIF,
+              width: 4,
+              alignSelf: "stretch",
+              backgroundColor: item.accent,
             }}
-          >
-            {item.timeLabel.split(" ")[0]}
-          </Text>
-          <Text
-            style={{
-              color: INK_DIM,
-              fontSize: 10,
-              fontWeight: "700",
-              letterSpacing: 0.6,
-            }}
-          >
-            {item.timeLabel.split(" ").slice(1).join(" ")}
-          </Text>
+          />
+          {item.timeLabel ? (
+            <View
+              style={{
+                paddingHorizontal: 14,
+                paddingVertical: 14,
+                alignItems: "center",
+                width: 76,
+              }}
+            >
+              <Text
+                style={{
+                  color: INK,
+                  fontSize: 16,
+                  fontWeight: "700",
+                  fontFamily: SERIF,
+                }}
+              >
+                {item.timeLabel.split(" ")[0]}
+              </Text>
+              <Text
+                style={{
+                  color: INK_DIM,
+                  fontSize: 10,
+                  fontWeight: "700",
+                  letterSpacing: 0.6,
+                }}
+              >
+                {item.timeLabel.split(" ").slice(1).join(" ")}
+              </Text>
+            </View>
+          ) : (
+            <View style={{ width: 12 }} />
+          )}
+          <View style={{ flex: 1, paddingVertical: 14, paddingRight: 14 }}>
+            <Text
+              style={{ color: INK, fontSize: 15, fontWeight: "700" }}
+              numberOfLines={1}
+            >
+              {item.title}
+            </Text>
+            <Text
+              style={{ marginTop: 2, color: INK_DIM, fontSize: 12 }}
+              numberOfLines={1}
+            >
+              {item.subtitle}
+            </Text>
+          </View>
+          {item.amountCents != null ? (
+            <Text
+              style={{
+                color: INK,
+                fontSize: 15,
+                fontWeight: "700",
+                marginRight: 14,
+                fontFamily: SERIF,
+              }}
+            >
+              {fmtMoneyShort(item.amountCents)}
+            </Text>
+          ) : null}
         </View>
-      ) : (
-        <View style={{ width: 12 }} />
       )}
-      <View style={{ flex: 1, paddingVertical: 14, paddingRight: 14 }}>
-        <Text
-          style={{ color: INK, fontSize: 15, fontWeight: "700" }}
-          numberOfLines={1}
-        >
-          {item.title}
-        </Text>
-        <Text
-          style={{ marginTop: 2, color: INK_DIM, fontSize: 12 }}
-          numberOfLines={1}
-        >
-          {item.subtitle}
-        </Text>
-      </View>
-      {item.amountCents != null ? (
-        <Text
-          style={{
-            color: INK,
-            fontSize: 15,
-            fontWeight: "700",
-            marginRight: 14,
-            fontFamily: SERIF,
-          }}
-        >
-          {fmtMoneyShort(item.amountCents)}
-        </Text>
-      ) : null}
     </Pressable>
   );
 }

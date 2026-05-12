@@ -75,10 +75,14 @@ jobs:
       - name: eas update
         working-directory: apps/${{ matrix.app }}
         env:
+          # expo/expo-github-action@v8 no longer auto-exports EXPO_TOKEN
+          # to subsequent steps — pass it explicitly so eas-cli can auth.
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
           EXPO_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           EXPO_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
         run: |
           eas update \
             --non-interactive \
             --branch production \
+            --clear-cache \
             --message "${{ needs.setup.outputs.message }}"

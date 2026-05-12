@@ -18,7 +18,10 @@ jobs:
           node-version: "20"
           cache: "npm"
       - run: npm ci
-      - run: npm run typecheck
+      # typecheck:all covers web + admin + vendor-mobile + host-mobile.
+      # We were only running `npm run typecheck` (web only) which let
+      # admin and mobile typecheck errors slip past CI for weeks.
+      - run: npm run typecheck:all
       - run: npm run build
         env:
           # Build needs the Vite env vars but their values can be the placeholders;
