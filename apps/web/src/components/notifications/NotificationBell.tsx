@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { Bell, Check, Inbox, Sparkles, MessageCircle, Star, Calendar } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
@@ -42,15 +42,27 @@ export function NotificationBell({ variant = "dark" }: Props) {
   const [open, setOpen] = useState(false);
   const [items, setItems] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(false);
+  // Versioned cancel guard so a rapid realtime burst (or unmount mid-
+  // fetch) can't setState on the wrong result.
+  const loadVersion = useRef(0);
 
   async function load() {
     if (!user) return;
+    const myVersion = ++loadVersion.current;
     setLoading(true);
-    const { data } = await notifTable()
+    const { data, error } = await notifTable()
       .select("id, type, title, body, link, read_at, created_at")
       .eq("user_id", user.id)
       .order("created_at", { ascending: false })
       .limit(20);
+    if (myVersion !== loadVersion.current) return;
+    if (error) {
+      // Don't toast — the bell is ambient UI, no need to bother the
+      // user. Log so we'd notice if the inbox stops loading at scale.
+      console.error("[NotificationBell] load failed", error.message);
+      setLoading(false);
+      return;
+    }
     setItems((data as Notification[]) ?? []);
     setLoading(false);
   }
@@ -61,6 +73,9 @@ export function NotificationBell({ variant = "dark" }: Props) {
       return;
     }
     load();
+    return () => {
+      loadVersion.current = -1;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 

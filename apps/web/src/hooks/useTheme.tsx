@@ -28,9 +28,16 @@ const STORAGE_KEY = "vendora-theme-preference";
 
 function readPreference(): ThemePreference {
   if (typeof window === "undefined") return "system";
-  const stored = window.localStorage.getItem(STORAGE_KEY);
-  if (stored === "light" || stored === "dark" || stored === "system") {
-    return stored;
+  // localStorage can throw in Safari private browsing and when the
+  // storage quota is exhausted. The theme toggle isn't worth a hard
+  // crash — fall back to system preference.
+  try {
+    const stored = window.localStorage.getItem(STORAGE_KEY);
+    if (stored === "light" || stored === "dark" || stored === "system") {
+      return stored;
+    }
+  } catch {
+    // ignore — system default
   }
   return "system";
 }
@@ -78,7 +85,12 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
   const setPreference = useCallback((p: ThemePreference) => {
     setPreferenceState(p);
-    window.localStorage.setItem(STORAGE_KEY, p);
+    try {
+      window.localStorage.setItem(STORAGE_KEY, p);
+    } catch {
+      // private browsing / storage full — preference still applies
+      // for the current session via the React state above.
+    }
   }, []);
 
   const value = useMemo(
