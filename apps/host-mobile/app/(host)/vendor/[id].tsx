@@ -1246,35 +1246,13 @@ function VendorBusinessCard({
           elevation: 2,
         }}
       >
-        {vendor.logo_url ? (
-          <Image
-            source={{ uri: vendor.logo_url }}
-            style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: CREAM }}
-            accessibilityIgnoresInvertColors
-          />
-        ) : (
-          <View
-            style={{
-              width: 48,
-              height: 48,
-              borderRadius: 24,
-              backgroundColor: INK,
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-          >
-            <Text
-              style={{
-                color: "#faf5ec",
-                fontFamily: SERIF,
-                fontWeight: "600",
-                fontSize: 20,
-              }}
-            >
-              {initial}
-            </Text>
-          </View>
-        )}
+        <CreamOceanAvatar
+          size={48}
+          logoUrl={vendor.logo_url}
+          initial={initial}
+          fontSize={22}
+          radius={14}
+        />
         <View style={{ flex: 1, marginLeft: 12 }}>
           <Text
             style={{ color: INK, fontSize: 15, fontWeight: "700" }}
@@ -1292,6 +1270,86 @@ function VendorBusinessCard({
         <Feather name="chevron-right" size={20} color={INK_DIM} />
       </View>
     </Pressable>
+  );
+}
+
+// Reused on the small business card and the big profile-sheet card —
+// dark base + warm radial overlays (red + gold) + italic-serif letter
+// when no logo is uploaded; renders the logo image otherwise.
+function CreamOceanAvatar({
+  size,
+  logoUrl,
+  initial,
+  fontSize,
+  radius,
+}: {
+  size: number;
+  logoUrl: string | null;
+  initial: string;
+  fontSize: number;
+  radius: number;
+}) {
+  return (
+    <View
+      style={{
+        width: size,
+        height: size,
+        borderRadius: radius,
+        overflow: "hidden",
+        backgroundColor: "#1a1410",
+      }}
+    >
+      {logoUrl ? (
+        <Image
+          source={{ uri: logoUrl }}
+          style={{ flex: 1 }}
+          resizeMode="cover"
+          accessibilityIgnoresInvertColors
+        />
+      ) : (
+        <>
+          <Svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+            <Defs>
+              <RadialGradient id={`avA-${size}`} cx="0.3" cy="0.3" rx="0.6" ry="0.6">
+                <Stop offset="0" stopColor="#b8472f" stopOpacity="0.55" />
+                <Stop offset="1" stopColor="#b8472f" stopOpacity="0" />
+              </RadialGradient>
+              <RadialGradient id={`avB-${size}`} cx="0.7" cy="0.75" rx="0.6" ry="0.6">
+                <Stop offset="0" stopColor="#b89556" stopOpacity="0.3" />
+                <Stop offset="1" stopColor="#b89556" stopOpacity="0" />
+              </RadialGradient>
+            </Defs>
+            <Rect x={0} y={0} width={size} height={size} fill={`url(#avA-${size})`} />
+            <Rect x={0} y={0} width={size} height={size} fill={`url(#avB-${size})`} />
+          </Svg>
+          <View
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <Text
+              style={{
+                color: "#faf5ec",
+                fontFamily: SERIF,
+                fontStyle: "italic",
+                fontWeight: "700",
+                fontSize,
+                lineHeight: fontSize * 1.05,
+                letterSpacing: -1,
+              }}
+            >
+              {initial}
+            </Text>
+          </View>
+        </>
+      )}
+    </View>
   );
 }
 
@@ -1996,14 +2054,10 @@ function CreamOceanCard({
             marginBottom: 18,
           }}
         >
-          {/* Avatar tile — dark base + warm radial glows when no logo */}
+          {/* Avatar tile — dark base + warm radial glows when no logo.
+              Same look the small business card uses; just bigger. */}
           <View
             style={{
-              width: 110,
-              height: 110,
-              borderRadius: 20,
-              overflow: "hidden",
-              backgroundColor: "#1a1410",
               shadowColor: INK,
               shadowOpacity: 0.3,
               shadowRadius: 18,
@@ -2011,56 +2065,13 @@ function CreamOceanCard({
               elevation: 4,
             }}
           >
-            {vendor.logo_url ? (
-              <Image
-                source={{ uri: vendor.logo_url }}
-                style={{ flex: 1 }}
-                resizeMode="cover"
-              />
-            ) : (
-              <>
-                <Svg width={110} height={110} viewBox="0 0 110 110">
-                  <Defs>
-                    <RadialGradient id="tileA" cx="0.3" cy="0.3" rx="0.6" ry="0.6">
-                      <Stop offset="0" stopColor="#b8472f" stopOpacity="0.55" />
-                      <Stop offset="1" stopColor="#b8472f" stopOpacity="0" />
-                    </RadialGradient>
-                    <RadialGradient id="tileB" cx="0.7" cy="0.75" rx="0.6" ry="0.6">
-                      <Stop offset="0" stopColor="#b89556" stopOpacity="0.3" />
-                      <Stop offset="1" stopColor="#b89556" stopOpacity="0" />
-                    </RadialGradient>
-                  </Defs>
-                  <Rect x={0} y={0} width={110} height={110} fill="url(#tileA)" />
-                  <Rect x={0} y={0} width={110} height={110} fill="url(#tileB)" />
-                </Svg>
-                <View
-                  style={{
-                    position: "absolute",
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    alignItems: "center",
-                    justifyContent: "center",
-                  }}
-                >
-                  <Text
-                    style={{
-                      color: "#faf5ec",
-                      fontFamily: SERIF,
-                      fontStyle: "italic",
-                      fontWeight: "700",
-                      fontSize: 72,
-                      lineHeight: 76,
-                      letterSpacing: -2,
-                    }}
-                  >
-                    {initial}
-                  </Text>
-                </View>
-              </>
-            )}
-
+            <CreamOceanAvatar
+              size={110}
+              logoUrl={vendor.logo_url}
+              initial={initial}
+              fontSize={72}
+              radius={20}
+            />
             {vendor.verified_at ? (
               <View
                 style={{
