@@ -14,6 +14,7 @@
 import { useCallback, useEffect, useState } from "react";
 import {
   Dimensions,
+  FlatList,
   Image,
   Modal,
   Platform,
@@ -1286,6 +1287,30 @@ function VendorBusinessCard({
   );
 }
 
+interface SheetPostRow {
+  id: string;
+  image_url: string;
+  caption: string | null;
+}
+interface SheetReelRow {
+  id: string;
+  thumbnail_url: string | null;
+  video_url: string;
+}
+interface SheetBuzzRow {
+  id: string;
+  body: string;
+  created_at: string;
+}
+interface SheetListingRow {
+  id: string;
+  business_name: string | null;
+  category: string | null;
+  logo_url: string | null;
+}
+
+type SheetTab = "posts" | "reels" | "buzz" | "listings";
+
 function VendorProfileSheet({
   visible,
   vendor,
@@ -1297,6 +1322,74 @@ function VendorProfileSheet({
   owner: TeamRow | null;
   onClose: () => void;
 }) {
+  const router = useRouter();
+  const [tab, setTab] = useState<SheetTab>("posts");
+  const [posts, setPosts] = useState<SheetPostRow[]>([]);
+  const [reels, setReels] = useState<SheetReelRow[]>([]);
+  const [buzz, setBuzz] = useState<SheetBuzzRow[]>([]);
+  const [otherListings, setOtherListings] = useState<SheetListingRow[]>([]);
+
+  useEffect(() => {
+    if (!visible || !vendor.id) return;
+    let cancelled = false;
+    (async () => {
+      const [postsRes, reelsRes, buzzRes, ownerVendorRes] = await Promise.all([
+        supabase
+          .from("vendor_posts")
+          .select("id, image_url, caption")
+          .eq("vendor_id", vendor.id)
+          .order("created_at", { ascending: false })
+          .limit(60),
+        supabase
+          .from("vendor_reels")
+          .select("id, thumbnail_url, video_url")
+          .eq("vendor_id", vendor.id)
+          .order("created_at", { ascending: false })
+          .limit(60),
+        supabase
+          .from("vendor_buzz")
+          .select("id, body, created_at")
+          .eq("vendor_id", vendor.id)
+          .order("created_at", { ascending: false })
+          .limit(40),
+        // Other listings owned by the same vendor account, resolved via
+        // the row's user_id. Excludes this listing itself.
+        supabase
+          .from("vendor_profiles")
+          .select("user_id")
+          .eq("id", vendor.id)
+          .maybeSingle(),
+      ]);
+      if (cancelled) return;
+      setPosts((postsRes.data ?? []) as SheetPostRow[]);
+      setReels((reelsRes.data ?? []) as SheetReelRow[]);
+      setBuzz((buzzRes.data ?? []) as SheetBuzzRow[]);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const uid = (ownerVendorRes.data as any)?.user_id as string | undefined;
+      if (uid) {
+        const { data: more } = await supabase
+          .from("vendor_profiles")
+          .select("id, business_name, category, logo_url")
+          .eq("user_id", uid)
+          .eq("application_status", "approved")
+          .neq("id", vendor.id)
+          .order("created_at", { ascending: false });
+        if (!cancelled) {
+          setOtherListings(((more ?? []) as SheetListingRow[]) ?? []);
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [visible, vendor.id]);
+
+  const counts = {
+    posts: posts.length,
+    reels: reels.length,
+    buzz: buzz.length,
+    listings: otherListings.length,
+  };
   const initial = (
     vendor.business_name?.[0] ??
     owner?.display_name?.[0] ??
@@ -1499,9 +1592,344 @@ function VendorProfileSheet({
               </Text>
             </View>
           ) : null}
+
+          {/* Feed tabs — mirrors the vendor's own profile (Posts /
+              Reels / Buzz / Listings) read-only. No edit buttons,
+              no Create CTAs. */}
+          <View style={{ marginTop: 28 }}>
+            <View
+              style={{
+                flexDirection: "row",
+                paddingHorizontal: 16,
+                gap: 8,
+                flexWrap: "wrap",
+              }}
+            >
+              <SheetTabPill
+                active={tab === "posts"}
+                label="Posts"
+                count={counts.posts}
+                onPress={() => setTab("posts")}
+              />
+              <SheetTabPill
+                active={tab === "reels"}
+                label="Reels"
+                count={counts.reels}
+                onPress={() => setTab("reels")}
+              />
+              <SheetTabPill
+                active={tab === "buzz"}
+                label="Buzz"
+                count={counts.buzz}
+                onPress={() => setTab("buzz")}
+              />
+              <SheetTabPill
+                active={tab === "listings"}
+                label="Listings"
+                count={counts.listings}
+                onPress={() => setTab("listings")}
+              />
+            </View>
+
+            <View style={{ paddingHorizontal: 12, paddingTop: 14 }}>
+              {tab === "posts" ? (
+                posts.length === 0 ? (
+                  <SheetEmpty body="No posts yet." />
+                ) : (
+                  <SheetPostGrid posts={posts} />
+                )
+              ) : tab === "reels" ? (
+                reels.length === 0 ? (
+                  <SheetEmpty body="No reels yet." />
+                ) : (
+                  <SheetReelGrid reels={reels} />
+                )
+              ) : tab === "buzz" ? (
+                buzz.length === 0 ? (
+                  <SheetEmpty body="No buzz yet." />
+                ) : (
+                  <SheetBuzzList items={buzz} />
+                )
+              ) : otherListings.length === 0 ? (
+                <SheetEmpty body="No other listings." />
+              ) : (
+                <SheetListingsList
+                  listings={otherListings}
+                  onPress={(id) => {
+                    onClose();
+                    // Allow the modal close animation to finish before
+                    // navigating so the new route doesn't render
+                    // underneath the dismissing sheet.
+                    setTimeout(() => {
+                      router.push(`/(host)/vendor/${id}` as never);
+                    }, 220);
+                  }}
+                />
+              )}
+            </View>
+          </View>
         </ScrollView>
       </SafeAreaView>
     </Modal>
+  );
+}
+
+function SheetTabPill({
+  active,
+  label,
+  count,
+  onPress,
+}: {
+  active: boolean;
+  label: string;
+  count: number;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable onPress={onPress} hitSlop={4}>
+      <View
+        style={{
+          paddingHorizontal: 14,
+          paddingVertical: 8,
+          borderRadius: 999,
+          backgroundColor: active ? INK : "#ffffff",
+          flexDirection: "row",
+          alignItems: "center",
+          gap: 8,
+        }}
+      >
+        <Text
+          style={{
+            color: active ? "#faf5ec" : INK,
+            fontSize: 13,
+            fontWeight: "700",
+          }}
+        >
+          {label}
+        </Text>
+        <Text
+          style={{
+            color: active ? "#faf5ec" : INK_DIM,
+            fontSize: 13,
+            fontWeight: "600",
+          }}
+        >
+          {count}
+        </Text>
+      </View>
+    </Pressable>
+  );
+}
+
+function SheetEmpty({ body }: { body: string }) {
+  return (
+    <View style={{ alignItems: "center", paddingVertical: 32 }}>
+      <Text
+        style={{
+          fontFamily: SERIF,
+          fontStyle: "italic",
+          color: INK_DIM,
+          fontSize: 15,
+        }}
+      >
+        {body}
+      </Text>
+    </View>
+  );
+}
+
+function SheetPostGrid({ posts }: { posts: SheetPostRow[] }) {
+  return (
+    <FlatList
+      data={posts}
+      keyExtractor={(p) => p.id}
+      numColumns={3}
+      scrollEnabled={false}
+      renderItem={({ item }) => (
+        <View style={{ flex: 1 / 3, aspectRatio: 1, padding: 4 }}>
+          <View
+            style={{
+              flex: 1,
+              borderRadius: 12,
+              overflow: "hidden",
+              backgroundColor: "#efe5d2",
+            }}
+          >
+            <Image
+              source={{ uri: item.image_url }}
+              style={{ flex: 1 }}
+              resizeMode="cover"
+            />
+          </View>
+        </View>
+      )}
+    />
+  );
+}
+
+function SheetReelGrid({ reels }: { reels: SheetReelRow[] }) {
+  return (
+    <FlatList
+      data={reels}
+      keyExtractor={(r) => r.id}
+      numColumns={3}
+      scrollEnabled={false}
+      renderItem={({ item }) => (
+        <View style={{ flex: 1 / 3, aspectRatio: 9 / 16, padding: 4 }}>
+          <View
+            style={{
+              flex: 1,
+              borderRadius: 12,
+              overflow: "hidden",
+              backgroundColor: "#1a1410",
+            }}
+          >
+            {item.thumbnail_url ? (
+              <Image
+                source={{ uri: item.thumbnail_url }}
+                style={{ flex: 1 }}
+                resizeMode="cover"
+              />
+            ) : null}
+            <View
+              style={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <View
+                style={{
+                  width: 32,
+                  height: 32,
+                  borderRadius: 16,
+                  backgroundColor: "rgba(0,0,0,0.55)",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <Feather name="play" size={14} color="#ffffff" />
+              </View>
+            </View>
+          </View>
+        </View>
+      )}
+    />
+  );
+}
+
+function SheetBuzzList({ items }: { items: SheetBuzzRow[] }) {
+  return (
+    <View style={{ gap: 10, paddingTop: 4 }}>
+      {items.map((b) => (
+        <View
+          key={b.id}
+          style={{
+            backgroundColor: "#ffffff",
+            borderRadius: 14,
+            padding: 14,
+            marginHorizontal: 4,
+          }}
+        >
+          <Text
+            style={{
+              color: INK,
+              fontSize: 15,
+              lineHeight: 21,
+              fontFamily: SERIF,
+            }}
+          >
+            {b.body}
+          </Text>
+          <Text style={{ marginTop: 6, color: INK_DIM, fontSize: 12 }}>
+            {new Date(b.created_at).toLocaleDateString()}
+          </Text>
+        </View>
+      ))}
+    </View>
+  );
+}
+
+function SheetListingsList({
+  listings,
+  onPress,
+}: {
+  listings: SheetListingRow[];
+  onPress: (id: string) => void;
+}) {
+  return (
+    <View style={{ gap: 10, paddingTop: 4 }}>
+      {listings.map((l) => (
+        <Pressable key={l.id} onPress={() => onPress(l.id)}>
+          <View
+            style={{
+              backgroundColor: "#ffffff",
+              borderRadius: 14,
+              padding: 12,
+              marginHorizontal: 4,
+              flexDirection: "row",
+              alignItems: "center",
+              gap: 12,
+            }}
+          >
+            {l.logo_url ? (
+              <Image
+                source={{ uri: l.logo_url }}
+                style={{
+                  width: 48,
+                  height: 48,
+                  borderRadius: 12,
+                  backgroundColor: CREAM,
+                }}
+              />
+            ) : (
+              <View
+                style={{
+                  width: 48,
+                  height: 48,
+                  borderRadius: 12,
+                  backgroundColor: INK,
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <Text
+                  style={{
+                    color: "#faf5ec",
+                    fontFamily: SERIF,
+                    fontSize: 18,
+                    fontWeight: "600",
+                  }}
+                >
+                  {(l.business_name?.[0] ?? "V").toUpperCase()}
+                </Text>
+              </View>
+            )}
+            <View style={{ flex: 1 }}>
+              <Text
+                style={{ color: INK, fontSize: 15, fontWeight: "700" }}
+                numberOfLines={1}
+              >
+                {l.business_name ?? "Listing"}
+              </Text>
+              {l.category ? (
+                <Text
+                  style={{ marginTop: 2, color: INK_DIM, fontSize: 13 }}
+                  numberOfLines={1}
+                >
+                  {l.category}
+                </Text>
+              ) : null}
+            </View>
+            <Feather name="chevron-right" size={20} color={INK_DIM} />
+          </View>
+        </Pressable>
+      ))}
+    </View>
   );
 }
 
