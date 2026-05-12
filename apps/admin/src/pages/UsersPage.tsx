@@ -7,6 +7,7 @@ type UserRow = {
   email: string | null;
   display_name: string | null;
   role: "host" | "vendor" | "admin";
+  application_status: "draft" | "pending" | "submitted" | "approved" | "rejected" | null;
   suspended_at: string | null;
   created_at: string;
   last_sign_in_at: string | null;
@@ -40,33 +41,19 @@ export function UsersPage() {
       (r) => ({ ...r, display_role: undefined as unknown as UserRow["display_role"] }),
     );
 
-    // Pull the application_status for everyone who has a vendor
-    // profile. The Users tab uses this to differentiate approved
-    // vendors from in-flight applicants in the Role column instead
-    // of conflating them with hosts.
-    const { data: vps } = await supabase
-      .from("vendor_profiles")
-      .select("user_id, application_status")
-      .in(
-        "user_id",
-        baseRows.map((r) => r.id),
-      );
-    const statusByUser = new Map<string, string>(
-      ((vps as Array<{ user_id: string; application_status: string }> | null) ??
-        []).map((v) => [v.user_id, v.application_status]),
-    );
-
     const final: UserRow[] = baseRows.map((r) => {
       let display_role: UserRow["display_role"] = "Host";
       if (r.role === "admin") {
         display_role = "Admin";
       } else if (r.role === "vendor") {
-        const s = statusByUser.get(r.id);
+        // Source of truth is profile.application_status. Vendors don't
+        // necessarily have a vendor_profiles row at signup anymore, so
+        // joining through that table would mis-classify them as Host
+        // until they tap "Create listing" for the first time.
+        const s = r.application_status;
         if (s === "approved") display_role = "Vendor";
         else if (s === "rejected") display_role = "Vendor (rejected)";
-        else if (s === "pending" || s === "draft" || s === "submitted")
-          display_role = "Vendor (pending)";
-        else display_role = "Host";
+        else display_role = "Vendor (pending)";
       }
       return { ...r, display_role };
     });
