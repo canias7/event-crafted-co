@@ -234,7 +234,32 @@ export function NotificationsBell({
                         }}
                         accessibilityIgnoresInvertColors
                       />
-                    ) : null}
+                    ) : (
+                      // Default avatar when the sender hasn't uploaded
+                      // a logo / photo yet. Mirrors the styled initial
+                      // tile pattern used everywhere else in the app
+                      // (profile screens, host-mobile bell, etc).
+                      <View
+                        style={{
+                          width: 36,
+                          height: 36,
+                          borderRadius: 18,
+                          backgroundColor: "#1a1410",
+                          alignItems: "center",
+                          justifyContent: "center",
+                        }}
+                      >
+                        <Text
+                          style={{
+                            color: "#faf5ec",
+                            fontSize: 16,
+                            fontWeight: "700",
+                          }}
+                        >
+                          {(r.title?.trim()[0] ?? "?").toUpperCase()}
+                        </Text>
+                      </View>
+                    )}
                     <View className="flex-1">
                       <Text className="text-base font-semibold text-foreground">
                         {r.title}
