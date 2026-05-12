@@ -132,12 +132,14 @@ export function ListingsPage() {
     );
   };
 
-  const filtered = rows.filter((r) =>
-    !filter
-      ? true
-      : r.business_name.toLowerCase().includes(filter.toLowerCase()) ||
-        r.category.toLowerCase().includes(filter.toLowerCase()),
-  );
+  const filtered = rows.filter((r) => {
+    if (!filter) return true;
+    const q = filter.toLowerCase();
+    return (
+      r.business_name.toLowerCase().includes(q) ||
+      (r.category?.toLowerCase().includes(q) ?? false)
+    );
+  });
 
   return (
     <div className="p-8">
