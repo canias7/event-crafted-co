@@ -253,6 +253,19 @@ export default function MicrositeEditorPage() {
       toast.error("Add a cover image first");
       return;
     }
+    // A microsite with a cover image but no title/subtitle/story is
+    // visually broken — the cover loads but the page is empty. Force
+    // the minimum content set before allowing publish.
+    const title = (event.microsite_title ?? "").trim();
+    const subtitle = (event.microsite_subtitle ?? "").trim();
+    if (!title) {
+      toast.error("Add a title before publishing");
+      return;
+    }
+    if (!subtitle) {
+      toast.error("Add a subtitle before publishing");
+      return;
+    }
     await update({ microsite_published_at: new Date().toISOString() });
     toast.success("Microsite published");
   }

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
@@ -27,6 +27,10 @@ export default function LoginPage({ role }: LoginPageProps = {}) {
   const [password, setPassword] = useState("");
   const [code, setCode] = useState("");
   const [loading, setLoading] = useState(false);
+  // Client-side cooldown for Resend code so a rapid-fire button-mash
+  // doesn't burn through Resend quota / annoy the user with duplicates.
+  // Counts down from 30s on every successful resend.
+  const [resendCooldown, setResendCooldown] = useState(0);
 
   const heading =
     role === "host"
@@ -153,7 +157,15 @@ export default function LoginPage({ role }: LoginPageProps = {}) {
     }
   }
 
+  // Tick the cooldown down once per second while it's active.
+  useEffect(() => {
+    if (resendCooldown <= 0) return;
+    const id = setTimeout(() => setResendCooldown((s) => s - 1), 1000);
+    return () => clearTimeout(id);
+  }, [resendCooldown]);
+
   async function resendCode() {
+    if (resendCooldown > 0 || loading) return;
     setLoading(true);
     const { data, error } = await supabase.functions.invoke("signin-2fa", {
       body: { action: "request", email: email.trim(), password },
@@ -163,6 +175,7 @@ export default function LoginPage({ role }: LoginPageProps = {}) {
       toast.error("Couldn't resend the code. Try again.");
       return;
     }
+    setResendCooldown(30);
     toast.success("We sent a new code.");
   }
 
@@ -199,6 +212,10 @@ export default function LoginPage({ role }: LoginPageProps = {}) {
                   <Input
                     id="email"
                     type="email"
+                    inputMode="email"
+                    autoCapitalize="off"
+                    autoCorrect="off"
+                    spellCheck={false}
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
@@ -312,11 +329,13 @@ export default function LoginPage({ role }: LoginPageProps = {}) {
                 </button>
                 <button
                   type="button"
-                  disabled={loading}
+                  disabled={loading || resendCooldown > 0}
                   onClick={resendCode}
                   className="text-accent font-medium hover:underline disabled:opacity-50"
                 >
-                  Resend code
+                  {resendCooldown > 0
+                    ? `Resend code (${resendCooldown}s)`
+                    : "Resend code"}
                 </button>
               </div>
             </>
