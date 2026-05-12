@@ -133,6 +133,13 @@ export default function VendorDetailScreen() {
   const [faqs, setFaqs] = useState<FaqRow[]>([]);
   const [team, setTeam] = useState<TeamRow[]>([]);
   const [policy, setPolicy] = useState<PolicyRow | null>(null);
+  // Fallback avatar when vendor_profiles.logo_url is null. Pulled from
+  // profiles.logo_url of the listing's user_id — the auto-sync trigger
+  // only mirrors profile→listing for vendors with exactly one listing,
+  // so multi-listing vendors otherwise show a blank tile here.
+  const [ownerProfileLogoUrl, setOwnerProfileLogoUrl] = useState<string | null>(
+    null,
+  );
   const [loading, setLoading] = useState(true);
   const [photoIndex, setPhotoIndex] = useState(0);
   const [saved, setSaved] = useState(false);
@@ -223,6 +230,29 @@ export default function VendorDetailScreen() {
       setPackages((packRes.data ?? []) as unknown as PackageRow[]);
       setFaqs((faqRes.data ?? []) as unknown as FaqRow[]);
       setTeam(((teamRes as { data?: TeamRow[] }).data ?? []) as TeamRow[]);
+
+      // Resolve the vendor account's identity logo as the avatar
+      // fallback. We need user_id from vendor_profiles to look it up.
+      const { data: ownerRow } = await supabase
+        .from("vendor_profiles")
+        .select("user_id")
+        .eq("id", row.id)
+        .maybeSingle();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const uid = (ownerRow as any)?.user_id as string | undefined;
+      if (uid) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { data: prof } = await (supabase as any)
+          .from("profiles")
+          .select("logo_url")
+          .eq("id", uid)
+          .maybeSingle();
+        if (!cancelled) {
+          setOwnerProfileLogoUrl(
+            (prof as { logo_url?: string | null } | null)?.logo_url ?? null,
+          );
+        }
+      }
 
       // Seed the heart from saved_vendors so the icon survives a
       // screen remount. RLS scopes the row to auth.uid() = host_id.
@@ -425,6 +455,7 @@ export default function VendorDetailScreen() {
         <VendorBusinessCard
           vendor={vendor}
           owner={team.find((m) => m.is_owner) ?? team[0] ?? null}
+          fallbackLogoUrl={ownerProfileLogoUrl}
           onPress={() => setProfileSheetOpen(true)}
         />
 
@@ -1018,6 +1049,7 @@ export default function VendorDetailScreen() {
         visible={profileSheetOpen}
         vendor={vendor}
         owner={team.find((m) => m.is_owner) ?? team[0] ?? null}
+        fallbackLogoUrl={ownerProfileLogoUrl}
         onClose={() => setProfileSheetOpen(false)}
       />
     </View>
@@ -1216,10 +1248,12 @@ function joinedLabel(iso: string | null | undefined): string {
 function VendorBusinessCard({
   vendor,
   owner,
+  fallbackLogoUrl,
   onPress,
 }: {
   vendor: VendorRow;
   owner: TeamRow | null;
+  fallbackLogoUrl: string | null;
   onPress: () => void;
 }) {
   const initial = (
@@ -1248,7 +1282,7 @@ function VendorBusinessCard({
       >
         <CreamOceanAvatar
           size={48}
-          logoUrl={vendor.logo_url}
+          logoUrl={vendor.logo_url ?? fallbackLogoUrl}
           initial={initial}
           fontSize={22}
           radius={14}
@@ -1381,11 +1415,13 @@ function VendorProfileSheet({
   visible,
   vendor,
   owner,
+  fallbackLogoUrl,
   onClose,
 }: {
   visible: boolean;
   vendor: VendorRow;
   owner: TeamRow | null;
+  fallbackLogoUrl: string | null;
   onClose: () => void;
 }) {
   const router = useRouter();
@@ -1502,6 +1538,7 @@ function VendorProfileSheet({
           <CreamOceanCard
             vendor={vendor}
             initial={initial}
+            fallbackLogoUrl={fallbackLogoUrl}
           />
 
           {/* Bio */}
@@ -1980,9 +2017,11 @@ function ProfileSheetStat({ label, value }: { label: string; value: string }) {
 function CreamOceanCard({
   vendor,
   initial,
+  fallbackLogoUrl,
 }: {
   vendor: VendorRow;
   initial: string;
+  fallbackLogoUrl: string | null;
 }) {
   const CARD_W = Dimensions.get("window").width - 36;
   const CARD_H = 230;
@@ -2067,7 +2106,7 @@ function CreamOceanCard({
           >
             <CreamOceanAvatar
               size={110}
-              logoUrl={vendor.logo_url}
+              logoUrl={vendor.logo_url ?? fallbackLogoUrl}
               initial={initial}
               fontSize={72}
               radius={20}
