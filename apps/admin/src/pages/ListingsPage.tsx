@@ -175,6 +175,12 @@ export function ListingsPage() {
   return (
     <div className="p-8">
       <h1 className="text-2xl font-semibold">Vendor listings</h1>
+      {rows.length === 500 ? (
+        <p className="mt-2 text-xs text-amber-700">
+          Showing first 500 listings. Filter to narrow results — older rows are
+          truncated.
+        </p>
+      ) : null}
       <input
         value={filter}
         onChange={(e) => setFilter(e.target.value)}

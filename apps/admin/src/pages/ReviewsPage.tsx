@@ -70,6 +70,15 @@ export function ReviewsPage() {
       toast.error(error.message);
       return;
     }
+    // Hide / restore is a content-moderation action — must land in
+    // the admin audit log for compliance / dispute review.
+    void supabase.rpc("log_admin_action", {
+      p_action: next ? "review_hide" : "review_restore",
+      p_target_type: "review",
+      p_target_id: row.id,
+      p_summary: `${next ? "Hid" : "Restored"} review ${row.id}`,
+      p_metadata: { vendor_id: row.vendor_id, rating: row.rating },
+    });
     toast.success(next ? "Hidden" : "Restored");
     setRows((p) =>
       p.map((r) => (r.id === row.id ? { ...r, is_hidden: next } : r)),

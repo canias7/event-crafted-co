@@ -145,12 +145,20 @@ export function ProposalFormModal({
     });
 
     if (!error) {
-      // Move the inquiry to 'replied' so the pipeline reflects vendor activity
-      await supabase
+      // Move the inquiry to 'replied' so the pipeline reflects vendor activity.
+      // Failure is non-fatal — the proposal already landed; we just log so the
+      // pipeline drift would surface in Sentry instead of disappearing.
+      const { error: statusErr } = await supabase
         .from("inquiries")
         .update({ status: "replied" })
         .eq("id", inquiryId)
         .in("status", ["new", "drafted"]);
+      if (statusErr) {
+        console.error(
+          "[Proposal] inquiry status flip failed",
+          statusErr.message,
+        );
+      }
     }
 
     setSubmitting(false);

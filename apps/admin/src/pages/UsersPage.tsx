@@ -156,6 +156,12 @@ export function UsersPage() {
         {rows.length} total. Delete to permanently remove the account and free
         up the email.
       </p>
+      {rows.length === 500 ? (
+        <p className="mt-2 text-xs text-amber-700">
+          Showing first 500 users. Filter to narrow results — older rows are
+          truncated.
+        </p>
+      ) : null}
       <input
         value={filter}
         onChange={(e) => setFilter(e.target.value)}
