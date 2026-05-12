@@ -19,6 +19,7 @@ import {
   Alert,
   Image,
   Modal,
+  Platform,
   Pressable,
   ScrollView,
   Text,
@@ -39,6 +40,20 @@ import {
   TeamSection,
 } from "@/components/listing/Sections";
 import { DetailsSection } from "@/components/listing/DetailsSection";
+
+// Editorial palette — kept in lockstep with edit-profile.tsx and the
+// vendor profile screen so the listing builder doesn't feel like a
+// different app section.
+const CREAM = "#faf5ec";
+const CREAM_DEEP = "#f5efe5";
+const INK = "#1a1410";
+const INK_DIM = "#776c5f";
+const BORDER = "#e9dfc8";
+const ACCENT = "#a08259";
+const SERIF = Platform.OS === "ios" ? "Times New Roman" : "serif";
+
+// Vendor cap is 5 listings — the "1 of 5" indicator at the top right.
+const LISTING_LIMIT = 5;
 
 type ProfileRow = {
   id: string;
@@ -85,6 +100,11 @@ export default function ListingScreen() {
   const [basePrice, setBasePrice] = useState("");
 
   const [setupError, setSetupError] = useState<string | null>(null);
+  // "1 of N" header indicator. Resolved when loadAll fetches every
+  // vendor_profiles row for this user — number is the 1-based index
+  // of THIS listing within that set (or 1 if this is the first).
+  const [listingIndex, setListingIndex] = useState(1);
+  const [listingCount, setListingCount] = useState(1);
 
   const loadAll = useCallback(async () => {
     if (!user) return;
@@ -157,6 +177,18 @@ export default function ListingScreen() {
         }),
       );
       setPhotos(enriched);
+
+      // Resolve "X of 5" — this listing's index within the user's
+      // ordered listings. Fired once after the row loads.
+      const { data: allRows } = await supabase
+        .from("vendor_profiles")
+        .select("id, created_at")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: true });
+      const ordered = (allRows ?? []) as Array<{ id: string }>;
+      const idx = ordered.findIndex((r) => r.id === row.id);
+      setListingIndex(idx >= 0 ? idx + 1 : 1);
+      setListingCount(Math.max(ordered.length, 1));
     }
     setLoading(false);
   }, [user]);
@@ -365,250 +397,320 @@ export default function ListingScreen() {
     );
   }
 
+  const heading =
+    status === "approved"
+      ? "Edit listing"
+      : status === "pending"
+        ? "Under review"
+        : "New listing";
+
   return (
-    <SafeAreaView className="flex-1 bg-background" edges={["top"]}>
-      {/* Top bar */}
-      <View className="flex-row items-center justify-between px-4 py-3 border-b border-border">
-        <Pressable
-          onPress={() => router.back()}
-          hitSlop={8}
-          className="active:opacity-60"
+    <View style={{ flex: 1, backgroundColor: CREAM }}>
+      <SafeAreaView style={{ flex: 1 }} edges={["top"]}>
+        {/* Top bar — close X · "vendora-listing" handle · more */}
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "space-between",
+            paddingHorizontal: 16,
+            paddingTop: 8,
+            paddingBottom: 6,
+          }}
         >
-          <Feather name="chevron-left" size={26} color="#0a0a0a" />
-        </Pressable>
-        <Text className="text-base font-bold text-foreground">Listing</Text>
-        <View className="w-7" />
-      </View>
-
-      <ScrollView contentContainerClassName="pb-32">
-        {/* Status banner */}
-        {status === "pending" ? (
-          <View className="mx-4 mt-4 rounded-lg border border-accent/30 bg-accent/5 p-4">
-            <Text className="text-sm font-semibold text-foreground">
-              Submitted for review
-            </Text>
-            <Text className="mt-1 text-xs text-muted-foreground">
-              We hand-review every listing within 2–3 business days. You'll
-              get an email when it's live.
-            </Text>
-          </View>
-        ) : status === "approved" ? (
-          <View className="mx-4 mt-4 rounded-lg border border-green-200 bg-green-50 p-4">
-            <Text className="text-sm font-semibold text-foreground">
-              Live in the directory
-            </Text>
-            <Text className="mt-1 text-xs text-muted-foreground">
-              Edits save instantly to your live listing.
-            </Text>
-          </View>
-        ) : null}
-
-        {/* Photos */}
-        <View className="px-4 pt-6">
-          <Text className="text-base font-semibold text-foreground">
-            Listing photos
+          <CircleButton onPress={() => router.back()} icon="x" />
+          <Text
+            style={{
+              fontFamily: SERIF,
+              fontSize: 18,
+              fontWeight: "600",
+              color: INK,
+            }}
+          >
+            vendora-listing
           </Text>
-          <Text className="mt-1 text-xs text-muted-foreground">
-            Upload 3–5 photos that show your range. The first one becomes
-            your marketplace cover.
+          <CircleButton icon="more-horizontal" onPress={() => undefined} />
+        </View>
+
+        {/* Sub header — back · italic title · "X of N" */}
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "space-between",
+            paddingHorizontal: 16,
+            paddingVertical: 18,
+          }}
+        >
+          <CircleButton onPress={() => router.back()} icon="chevron-left" />
+          <Text
+            style={{
+              fontFamily: SERIF,
+              fontSize: 24,
+              fontStyle: "italic",
+              fontWeight: "500",
+              color: INK,
+            }}
+          >
+            {heading}
           </Text>
-          <View className="mt-3 flex-row flex-wrap gap-2">
-            {photos.map((p) => (
-              <Pressable
-                key={p.id}
-                onLongPress={() => deletePhoto(p)}
-                className="active:opacity-80"
-                style={{ width: "31%", aspectRatio: 1 }}
-              >
-                <Image
-                  source={{ uri: p.url }}
-                  style={{ flex: 1, borderRadius: 10 }}
-                  resizeMode="cover"
-                />
-              </Pressable>
-            ))}
-            <Pressable
-              onPress={pickAndUploadPhoto}
-              disabled={photoUploading}
-              className="items-center justify-center rounded-lg border border-dashed border-border bg-secondary/30 active:opacity-70"
-              style={{ width: "31%", aspectRatio: 1 }}
-            >
-              {photoUploading ? (
-                <Text className="text-xs text-muted-foreground">
-                  Uploading…
+          <Text
+            style={{
+              fontFamily: SERIF,
+              fontSize: 15,
+              color: INK_DIM,
+              minWidth: 44,
+              textAlign: "right",
+            }}
+          >
+            {listingIndex} of {LISTING_LIMIT}
+          </Text>
+        </View>
+
+        {/* Progress underline — filled portion = listingIndex / LIMIT */}
+        <View
+          style={{
+            height: 2,
+            backgroundColor: BORDER,
+            marginHorizontal: 16,
+            overflow: "hidden",
+          }}
+        >
+          <View
+            style={{
+              height: "100%",
+              width: `${Math.min(100, (listingIndex / LISTING_LIMIT) * 100)}%`,
+              backgroundColor: INK,
+            }}
+          />
+        </View>
+
+        <ScrollView
+          contentContainerStyle={{ paddingBottom: 140 }}
+          showsVerticalScrollIndicator={false}
+        >
+          {/* Status banner */}
+          {status === "pending" ? (
+            <BannerCard
+              tone="accent"
+              title="Submitted for review"
+              body="We hand-review every listing within 2–3 business days. You'll get an email when it's live."
+            />
+          ) : status === "approved" ? (
+            <BannerCard
+              tone="good"
+              title="Live in the directory"
+              body="Edits save instantly to your live listing."
+            />
+          ) : null}
+
+          {/* STEP 1 · IDENTITY */}
+          <StepHeader
+            step="STEP 1 · IDENTITY"
+            title="Introduce yourself."
+            body="Photos and a few sentences are usually enough to make a host stop scrolling."
+          />
+
+          {/* Listing photos */}
+          <SectionBlock
+            title="Listing photos"
+            subtitle="3–5 photos. Your first becomes the cover."
+            footnote="Bright, recent photos work best. Drag to reorder once uploaded."
+          >
+            <PhotoGrid
+              photos={photos}
+              onAdd={pickAndUploadPhoto}
+              uploading={photoUploading}
+              onLongPress={deletePhoto}
+            />
+          </SectionBlock>
+
+          {/* The basics */}
+          <SectionBlock
+            title="The basics"
+            subtitle="Who you are and where to find you."
+            footnote="This is the first thing hosts read. Make it sound like you."
+          >
+            <FieldLabel required>Business name</FieldLabel>
+            <TextField
+              value={businessName}
+              onChangeText={setBusinessName}
+              placeholder="e.g. Last Call Bar Co."
+            />
+
+            <View style={{ height: 14 }} />
+            <FieldLabel required>Category</FieldLabel>
+            <Pressable onPress={() => setCategoryPickerOpen(true)}>
+              <View style={fieldBox()}>
+                <Text
+                  style={{
+                    color: category ? INK : INK_DIM,
+                    fontSize: 16,
+                    flex: 1,
+                  }}
+                  numberOfLines={1}
+                >
+                  {category || "Pick a category"}
                 </Text>
-              ) : (
-                <>
-                  <Feather name="plus" size={24} color="#737373" />
-                  <Text className="mt-1 text-xs text-muted-foreground">
-                    Add
-                  </Text>
-                </>
-              )}
+                <Feather name="chevron-down" size={18} color={INK_DIM} />
+              </View>
             </Pressable>
-          </View>
-          {photos.length > 0 ? (
-            <Text className="mt-2 text-[11px] text-muted-foreground">
-              Long-press a photo to delete.
-            </Text>
-          ) : null}
-        </View>
 
-        {/* Business name */}
-        <View className="px-4 pt-6">
-          <RequiredLabel>Business name</RequiredLabel>
-          <TextInput
-            value={businessName}
-            onChangeText={setBusinessName}
-            placeholder="e.g. Last Call Bar Co."
-            className="mt-2 rounded-lg border border-border bg-background px-4 py-3 text-base text-foreground"
+            <View style={{ height: 14 }} />
+            <FieldLabel required>Short bio</FieldLabel>
+            <TextField
+              value={bio}
+              onChangeText={setBio}
+              placeholder="One or two sentences on what makes your work worth booking."
+              multiline
+            />
+
+            <View style={{ height: 14 }} />
+            <View style={{ flexDirection: "row", gap: 12 }}>
+              <View style={{ flex: 1 }}>
+                <FieldLabel required>Location</FieldLabel>
+                <TextField
+                  value={location}
+                  onChangeText={setLocation}
+                  placeholder="City, State"
+                />
+              </View>
+              <View style={{ flex: 1 }}>
+                <FieldLabel required>Starting price</FieldLabel>
+                <View style={fieldBox()}>
+                  <Text style={{ color: INK_DIM, fontSize: 16, marginRight: 6 }}>
+                    $
+                  </Text>
+                  <TextInput
+                    value={basePrice}
+                    onChangeText={setBasePrice}
+                    placeholder="0"
+                    placeholderTextColor={INK_DIM}
+                    keyboardType="decimal-pad"
+                    style={{ flex: 1, fontSize: 16, color: INK, paddingVertical: 0 }}
+                  />
+                </View>
+              </View>
+            </View>
+          </SectionBlock>
+
+          {/* STEP 2 · DETAILS */}
+          <StepHeader
+            step="STEP 2 · DETAILS"
+            title="The fine print."
+            body={
+              category
+                ? "Structured fields hosts filter on. The more specific, the better."
+                : "Pick a category above to unlock structured details."
+            }
           />
-        </View>
-
-        {/* Category */}
-        <View className="px-4 pt-6">
-          <RequiredLabel>Category</RequiredLabel>
-          <Pressable
-            onPress={() => setCategoryPickerOpen(true)}
-            className="mt-2 rounded-lg border border-border bg-background px-4 py-3 flex-row items-center justify-between active:opacity-80"
-          >
-            <Text
-              className={`text-base ${category ? "text-foreground" : "text-muted-foreground"}`}
-            >
-              {category || "Pick a category"}
-            </Text>
-            <Feather name="chevron-down" size={18} color="#737373" />
-          </Pressable>
-        </View>
-
-        {/* Short bio */}
-        <View className="px-4 pt-6">
-          <RequiredLabel>Short bio</RequiredLabel>
-          <TextInput
-            value={bio}
-            onChangeText={setBio}
-            placeholder="One or two sentences on what makes your business unique."
-            multiline
-            numberOfLines={4}
-            textAlignVertical="top"
-            className="mt-2 min-h-[100px] rounded-lg border border-border bg-background px-4 py-3 text-base text-foreground"
-          />
-        </View>
-
-        {/* Location */}
-        <View className="px-4 pt-6">
-          <RequiredLabel>Location</RequiredLabel>
-          <TextInput
-            value={location}
-            onChangeText={setLocation}
-            placeholder="City, State"
-            className="mt-2 rounded-lg border border-border bg-background px-4 py-3 text-base text-foreground"
-          />
-        </View>
-
-        {/* Starting price */}
-        <View className="px-4 pt-6">
-          <RequiredLabel>Starting price ($)</RequiredLabel>
-          <TextInput
-            value={basePrice}
-            onChangeText={setBasePrice}
-            placeholder="0"
-            keyboardType="decimal-pad"
-            className="mt-2 rounded-lg border border-border bg-background px-4 py-3 text-base text-foreground"
-          />
-        </View>
-
-        <View className="px-4 pt-8">
-          <View className="h-px bg-border" />
-        </View>
-        <View className="px-4 pt-6">
-          {profile?.id ? (
-            <DetailsSection vendorId={profile.id} category={category} />
-          ) : null}
-        </View>
-
-        <View className="px-4 pt-8">
-          <View className="h-px bg-border" />
-        </View>
-        <View className="px-4 pt-6">
-          {profile?.id ? (
-            <PackagesSection vendorId={profile.id} />
+          {profile?.id && category ? (
+            <View style={{ paddingHorizontal: 16, paddingTop: 4 }}>
+              <DetailsSection vendorId={profile.id} category={category} />
+            </View>
           ) : (
-            <Text className="text-xs text-muted-foreground">
-              Save the listing once to enable packages.
-            </Text>
+            <EmptyCard body="Pick a category above to unlock structured details." />
           )}
-        </View>
 
-        <View className="px-4 pt-8">
-          <View className="h-px bg-border" />
-        </View>
-        <View className="px-4 pt-6">
-          {profile?.id ? <FaqsSection vendorId={profile.id} /> : null}
-        </View>
+          {/* STEP 3 · OFFERINGS */}
+          <StepHeader
+            step="STEP 3 · OFFERINGS"
+            title="What you sell."
+            body="Pricing tiers and the questions hosts ask first."
+          />
+          <SectionBlock title="Packages" subtitle="Pricing tiers and what's included.">
+            {profile?.id ? (
+              <PackagesSection vendorId={profile.id} />
+            ) : (
+              <EmptyCard body="Save the listing once to enable packages." />
+            )}
+          </SectionBlock>
+          <SectionBlock title="FAQs" subtitle="Common questions hosts ask.">
+            {profile?.id ? <FaqsSection vendorId={profile.id} /> : null}
+          </SectionBlock>
 
-        <View className="px-4 pt-8">
-          <View className="h-px bg-border" />
-        </View>
-        <View className="px-4 pt-6">
-          {profile?.id ? <PoliciesSection vendorId={profile.id} /> : null}
-        </View>
+          {/* STEP 4 · POLICIES */}
+          <StepHeader
+            step="STEP 4 · POLICIES"
+            title="Trust signals."
+            body="Cancellation, deposits, payment terms."
+          />
+          {profile?.id ? (
+            <View style={{ paddingHorizontal: 16, paddingTop: 4 }}>
+              <PoliciesSection vendorId={profile.id} />
+            </View>
+          ) : null}
 
-        <View className="px-4 pt-8">
-          <View className="h-px bg-border" />
-        </View>
-        <View className="px-4 pt-6 pb-4">
-          {profile?.id ? <TeamSection vendorId={profile.id} /> : null}
-        </View>
-      </ScrollView>
+          {/* STEP 5 · TEAM */}
+          <StepHeader
+            step="STEP 5 · TEAM"
+            title="Who you are."
+            body="Names, roles, short bios. Public on your page."
+          />
+          {profile?.id ? (
+            <View style={{ paddingHorizontal: 16, paddingTop: 4, paddingBottom: 8 }}>
+              <TeamSection vendorId={profile.id} />
+            </View>
+          ) : null}
+        </ScrollView>
 
-      {/* Action bar — labels follow application_status so an
-          approved listing isn't accidentally bumped back into review.
-            draft / rejected → Save changes + Publish (or Re-submit)
-            pending          → single primary "Save changes"
-            approved         → single primary "Save changes" (live) */}
-      <View className="absolute left-0 right-0 bottom-0 border-t border-border bg-background px-4 pb-6 pt-3 flex-row gap-2">
-        {status === "pending" || status === "approved" ? (
-          <Pressable
-            onPress={() => save({ publish: false })}
-            disabled={busy}
-            className="flex-1 rounded-full bg-foreground py-3 items-center active:opacity-80"
-          >
-            <Text className="text-sm font-semibold text-background">
-              {busy
-                ? "Saving…"
-                : status === "approved"
-                  ? "Save changes"
-                  : "Save changes"}
-            </Text>
-          </Pressable>
-        ) : (
-          <>
+        {/* Sticky action bar — Save draft (text pill) + Publish (filled).
+            Approved/pending listings show a single "Save changes" so we
+            don't bounce them back into review on an accidental tap. */}
+        <View
+          style={{
+            position: "absolute",
+            left: 0,
+            right: 0,
+            bottom: 0,
+            paddingHorizontal: 16,
+            paddingTop: 12,
+            paddingBottom: 24,
+            flexDirection: "row",
+            gap: 10,
+            backgroundColor: CREAM,
+            borderTopWidth: 1,
+            borderColor: BORDER,
+          }}
+        >
+          {status === "pending" || status === "approved" ? (
             <Pressable
               onPress={() => save({ publish: false })}
               disabled={busy}
-              className="flex-1 rounded-full border border-border bg-background py-3 items-center active:opacity-80"
+              style={[publishPillStyle, { flex: 1 }]}
             >
-              <Text className="text-sm font-semibold text-foreground">
+              <Text style={publishPillText}>
                 {busy ? "Saving…" : "Save changes"}
               </Text>
             </Pressable>
-            <Pressable
-              onPress={() => save({ publish: true })}
-              disabled={busy}
-              className="flex-1 rounded-full bg-foreground py-3 items-center active:opacity-80"
-            >
-              <Text className="text-sm font-semibold text-background">
-                {busy
-                  ? "Publishing…"
-                  : status === "rejected"
-                    ? "Re-submit"
-                    : "Publish"}
-              </Text>
-            </Pressable>
-          </>
-        )}
-      </View>
+          ) : (
+            <>
+              <Pressable
+                onPress={() => save({ publish: false })}
+                disabled={busy}
+                style={[savePillStyle, { flex: 1 }]}
+              >
+                <Text style={savePillText}>
+                  {busy ? "Saving…" : "Save draft"}
+                </Text>
+              </Pressable>
+              <Pressable
+                onPress={() => save({ publish: true })}
+                disabled={busy}
+                style={[publishPillStyle, { flex: 1 }]}
+              >
+                <Text style={publishPillText}>
+                  {busy
+                    ? "Publishing…"
+                    : status === "rejected"
+                      ? "Re-submit"
+                      : "Publish"}
+                </Text>
+              </Pressable>
+            </>
+          )}
+        </View>
+      </SafeAreaView>
 
       {/* Category picker modal */}
       <Modal
@@ -617,77 +719,564 @@ export default function ListingScreen() {
         presentationStyle="pageSheet"
         onRequestClose={() => setCategoryPickerOpen(false)}
       >
-        <SafeAreaView
-          className="flex-1 bg-background"
-          edges={["top", "bottom"]}
-        >
-          <View className="flex-row items-center justify-between px-4 py-3 border-b border-border">
-            <Pressable
-              onPress={() => setCategoryPickerOpen(false)}
-              hitSlop={8}
-              className="active:opacity-60"
-            >
-              <Text className="text-base text-muted-foreground">Cancel</Text>
+        <SafeAreaView style={{ flex: 1, backgroundColor: CREAM }} edges={["top"]}>
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "space-between",
+              paddingHorizontal: 16,
+              paddingVertical: 12,
+              borderBottomWidth: 1,
+              borderColor: BORDER,
+            }}
+          >
+            <Pressable onPress={() => setCategoryPickerOpen(false)} hitSlop={8}>
+              <Text style={{ fontSize: 16, color: INK_DIM }}>Cancel</Text>
             </Pressable>
-            <Text className="text-base font-bold text-foreground">
-              Pick a category
+            <Text
+              style={{ fontSize: 17, fontWeight: "600", color: INK, fontFamily: SERIF }}
+            >
+              Category
             </Text>
-            <View className="w-12" />
+            <View style={{ width: 60 }} />
           </View>
-          <ScrollView contentContainerClassName="pb-12">
+          <ScrollView contentContainerStyle={{ paddingBottom: 32 }}>
             {CATEGORY_GROUPS.map((group) => (
-              <View key={group.slug}>
-                <Text className="px-4 pt-5 pb-2 text-xs uppercase tracking-[0.2em] text-muted-foreground">
-                  {group.name}
+              <View key={group.slug} style={{ marginTop: 18 }}>
+                <Text
+                  style={{
+                    paddingHorizontal: 24,
+                    paddingBottom: 8,
+                    fontSize: 12,
+                    fontWeight: "700",
+                    letterSpacing: 1.4,
+                    color: INK_DIM,
+                  }}
+                >
+                  {group.name.toUpperCase()}
                 </Text>
-                {group.subs.map((sub) => {
-                  const active = category === sub;
-                  return (
-                    <Pressable
-                      key={sub}
-                      onPress={() => {
-                        setCategory(sub);
-                        setCategoryPickerOpen(false);
-                      }}
-                      className={`px-4 py-3 active:opacity-70 ${
-                        active ? "bg-secondary" : ""
-                      }`}
-                    >
-                      <Text
-                        className={`text-base ${
-                          active
-                            ? "font-semibold text-foreground"
-                            : "text-foreground"
-                        }`}
+                <View
+                  style={{
+                    marginHorizontal: 16,
+                    backgroundColor: "#ffffff",
+                    borderRadius: 14,
+                    borderWidth: 1,
+                    borderColor: BORDER,
+                    overflow: "hidden",
+                  }}
+                >
+                  {group.subs.map((sub, idx) => {
+                    const active = category === sub;
+                    const isLast = idx === group.subs.length - 1;
+                    return (
+                      <Pressable
+                        key={sub}
+                        onPress={() => {
+                          setCategory(sub);
+                          setCategoryPickerOpen(false);
+                        }}
                       >
-                        {sub}
-                      </Text>
-                    </Pressable>
-                  );
-                })}
+                        <View
+                          style={{
+                            paddingHorizontal: 16,
+                            paddingVertical: 14,
+                            flexDirection: "row",
+                            alignItems: "center",
+                            justifyContent: "space-between",
+                            borderBottomWidth: isLast ? 0 : 1,
+                            borderColor: BORDER,
+                            minHeight: 50,
+                          }}
+                        >
+                          <Text
+                            style={{
+                              fontSize: 16,
+                              color: INK,
+                              fontWeight: active ? "600" : "400",
+                              flex: 1,
+                            }}
+                            numberOfLines={1}
+                          >
+                            {sub}
+                          </Text>
+                          {active ? (
+                            <Feather name="check" size={20} color={INK} />
+                          ) : null}
+                        </View>
+                      </Pressable>
+                    );
+                  })}
+                </View>
               </View>
             ))}
           </ScrollView>
         </SafeAreaView>
       </Modal>
-    </SafeAreaView>
+    </View>
   );
 }
 
-function RequiredLabel({ children }: { children: React.ReactNode }) {
+// ─── Editorial primitives ───
+
+function CircleButton({
+  onPress,
+  icon,
+}: {
+  onPress: () => void;
+  icon: React.ComponentProps<typeof Feather>["name"];
+}) {
   return (
-    <View className="flex-row items-center gap-2">
-      <Text className="text-base font-semibold text-foreground">
+    <Pressable
+      onPress={onPress}
+      hitSlop={6}
+      style={({ pressed }) => ({
+        width: 36,
+        height: 36,
+        borderRadius: 18,
+        backgroundColor: "#ffffff",
+        alignItems: "center",
+        justifyContent: "center",
+        opacity: pressed ? 0.7 : 1,
+        shadowColor: INK,
+        shadowOpacity: 0.06,
+        shadowRadius: 6,
+        shadowOffset: { width: 0, height: 2 },
+        elevation: 1,
+      })}
+    >
+      <Feather name={icon} size={18} color={INK} />
+    </Pressable>
+  );
+}
+
+function StepHeader({
+  step,
+  title,
+  body,
+}: {
+  step: string;
+  title: string;
+  body: string;
+}) {
+  return (
+    <View style={{ paddingHorizontal: 22, paddingTop: 28, paddingBottom: 4 }}>
+      <Text
+        style={{
+          fontSize: 11,
+          fontWeight: "700",
+          letterSpacing: 1.6,
+          color: INK_DIM,
+        }}
+      >
+        {step}
+      </Text>
+      <Text
+        style={{
+          fontFamily: SERIF,
+          fontSize: 30,
+          fontWeight: "600",
+          color: INK,
+          marginTop: 8,
+          lineHeight: 36,
+        }}
+      >
+        {title}
+      </Text>
+      <Text
+        style={{
+          fontFamily: SERIF,
+          fontSize: 16,
+          fontStyle: "italic",
+          color: INK_DIM,
+          marginTop: 10,
+          lineHeight: 22,
+        }}
+      >
+        {body}
+      </Text>
+    </View>
+  );
+}
+
+function SectionBlock({
+  title,
+  subtitle,
+  footnote,
+  children,
+}: {
+  title: string;
+  subtitle?: string;
+  footnote?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <View style={{ paddingHorizontal: 22, paddingTop: 22 }}>
+      <Text
+        style={{
+          fontFamily: SERIF,
+          fontSize: 22,
+          fontWeight: "600",
+          color: INK,
+        }}
+      >
+        {title}
+      </Text>
+      {subtitle ? (
+        <Text
+          style={{
+            fontFamily: SERIF,
+            fontSize: 14,
+            fontStyle: "italic",
+            color: INK_DIM,
+            marginTop: 4,
+          }}
+        >
+          {subtitle}
+        </Text>
+      ) : null}
+      <View style={{ marginTop: 16 }}>{children}</View>
+      {footnote ? (
+        <Text
+          style={{
+            fontFamily: SERIF,
+            fontSize: 13,
+            fontStyle: "italic",
+            color: INK_DIM,
+            marginTop: 10,
+          }}
+        >
+          {footnote}
+        </Text>
+      ) : null}
+    </View>
+  );
+}
+
+function FieldLabel({
+  children,
+  required,
+}: {
+  children: React.ReactNode;
+  required?: boolean;
+}) {
+  return (
+    <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+      <Text style={{ fontSize: 15, fontWeight: "700", color: INK }}>
         {children}
       </Text>
-      <View
+      {required ? (
+        <View
+          style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: "#c0533a" }}
+        />
+      ) : null}
+    </View>
+  );
+}
+
+function TextField({
+  value,
+  onChangeText,
+  placeholder,
+  multiline,
+  keyboardType,
+}: {
+  value: string;
+  onChangeText: (v: string) => void;
+  placeholder?: string;
+  multiline?: boolean;
+  keyboardType?: "default" | "decimal-pad" | "numeric" | "email-address";
+}) {
+  return (
+    <View style={fieldBox(multiline)}>
+      <TextInput
+        value={value}
+        onChangeText={onChangeText}
+        placeholder={placeholder}
+        placeholderTextColor={INK_DIM}
+        multiline={multiline}
+        keyboardType={keyboardType}
         style={{
-          width: 6,
-          height: 6,
-          borderRadius: 3,
-          backgroundColor: "#dc2626",
+          flex: 1,
+          fontSize: 16,
+          color: INK,
+          paddingVertical: 0,
+          minHeight: multiline ? 90 : undefined,
+          textAlignVertical: multiline ? "top" : "auto",
         }}
       />
     </View>
   );
 }
+
+function PhotoGrid({
+  photos,
+  onAdd,
+  uploading,
+  onLongPress,
+}: {
+  photos: PortfolioRow[];
+  onAdd: () => void;
+  uploading: boolean;
+  onLongPress: (p: PortfolioRow) => void;
+}) {
+  // Cover (big square left) + 2×2 thumbs grid right. Empty slots are
+  // dashed-border placeholders matching the rest of the editorial
+  // empty-state pattern.
+  const thumbs = photos.slice(1, 5);
+  const cover = photos[0] ?? null;
+  const remaining = Math.max(0, 4 - thumbs.length);
+
+  return (
+    <View style={{ flexDirection: "row", gap: 10 }}>
+      {/* Cover */}
+      <Pressable
+        onPress={cover ? undefined : onAdd}
+        onLongPress={cover ? () => onLongPress(cover) : undefined}
+        style={{ flex: 1, aspectRatio: 1 }}
+      >
+        {cover ? (
+          <View style={{ flex: 1, position: "relative" }}>
+            <Image
+              source={{ uri: cover.url }}
+              style={{ flex: 1, borderRadius: 16 }}
+              resizeMode="cover"
+            />
+            <View
+              style={{
+                position: "absolute",
+                top: 10,
+                left: 10,
+                backgroundColor: INK,
+                paddingHorizontal: 10,
+                paddingVertical: 4,
+                borderRadius: 999,
+              }}
+            >
+              <Text
+                style={{
+                  color: CREAM,
+                  fontSize: 11,
+                  fontWeight: "700",
+                  letterSpacing: 1.2,
+                }}
+              >
+                COVER
+              </Text>
+            </View>
+          </View>
+        ) : (
+          <View style={dashedSlot()}>
+            <Feather name="camera" size={28} color={INK_DIM} />
+            <Text
+              style={{
+                fontFamily: SERIF,
+                fontSize: 14,
+                fontStyle: "italic",
+                color: INK_DIM,
+                marginTop: 8,
+              }}
+            >
+              {uploading ? "Uploading…" : "Add cover photo"}
+            </Text>
+          </View>
+        )}
+      </Pressable>
+      {/* 2×2 thumb grid */}
+      <View style={{ flex: 1, gap: 10 }}>
+        <View style={{ flex: 1, flexDirection: "row", gap: 10 }}>
+          {[0, 1].map((i) => (
+            <ThumbSlot
+              key={i}
+              photo={thumbs[i]}
+              onAdd={onAdd}
+              onLongPress={onLongPress}
+              uploading={uploading}
+            />
+          ))}
+        </View>
+        <View style={{ flex: 1, flexDirection: "row", gap: 10 }}>
+          {[2, 3].map((i) => (
+            <ThumbSlot
+              key={i}
+              photo={thumbs[i]}
+              onAdd={onAdd}
+              onLongPress={onLongPress}
+              uploading={uploading}
+            />
+          ))}
+        </View>
+      </View>
+      {/* Touch handler covers but `remaining` is informational. */}
+      <View style={{ width: 0, height: 0 }}>
+        {remaining > 0 ? <Text>{remaining}</Text> : null}
+      </View>
+    </View>
+  );
+}
+
+function ThumbSlot({
+  photo,
+  onAdd,
+  onLongPress,
+  uploading,
+}: {
+  photo: PortfolioRow | undefined;
+  onAdd: () => void;
+  onLongPress: (p: PortfolioRow) => void;
+  uploading: boolean;
+}) {
+  if (photo) {
+    return (
+      <Pressable
+        onLongPress={() => onLongPress(photo)}
+        style={{ flex: 1, aspectRatio: 1 }}
+      >
+        <Image
+          source={{ uri: photo.url }}
+          style={{ flex: 1, borderRadius: 14 }}
+          resizeMode="cover"
+        />
+      </Pressable>
+    );
+  }
+  return (
+    <Pressable
+      onPress={onAdd}
+      disabled={uploading}
+      style={{ flex: 1, aspectRatio: 1 }}
+    >
+      <View style={dashedSlot()}>
+        <Feather name="plus" size={22} color={INK_DIM} />
+      </View>
+    </Pressable>
+  );
+}
+
+function BannerCard({
+  tone,
+  title,
+  body,
+}: {
+  tone: "accent" | "good";
+  title: string;
+  body: string;
+}) {
+  const accentBg = tone === "accent" ? "#f4ecdc" : "#e3efe0";
+  const accentBorder = tone === "accent" ? "#d6bf94" : "#bcd5b3";
+  return (
+    <View
+      style={{
+        marginHorizontal: 16,
+        marginTop: 18,
+        borderRadius: 14,
+        borderWidth: 1,
+        borderColor: accentBorder,
+        backgroundColor: accentBg,
+        padding: 14,
+      }}
+    >
+      <Text style={{ fontSize: 15, fontWeight: "700", color: INK }}>{title}</Text>
+      <Text
+        style={{
+          marginTop: 4,
+          fontSize: 13,
+          color: INK_DIM,
+          fontFamily: SERIF,
+          fontStyle: "italic",
+          lineHeight: 19,
+        }}
+      >
+        {body}
+      </Text>
+    </View>
+  );
+}
+
+function EmptyCard({ body }: { body: string }) {
+  return (
+    <View style={{ paddingHorizontal: 22, paddingTop: 14 }}>
+      <View
+        style={{
+          borderRadius: 14,
+          borderWidth: 1,
+          borderColor: BORDER,
+          borderStyle: "dashed",
+          backgroundColor: CREAM_DEEP,
+          paddingVertical: 28,
+          paddingHorizontal: 18,
+          alignItems: "center",
+        }}
+      >
+        <Text
+          style={{
+            fontFamily: SERIF,
+            fontSize: 14,
+            fontStyle: "italic",
+            color: INK_DIM,
+            textAlign: "center",
+          }}
+        >
+          {body}
+        </Text>
+      </View>
+    </View>
+  );
+}
+
+function fieldBox(multiline = false) {
+  return {
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    backgroundColor: "#ffffff",
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: BORDER,
+    paddingHorizontal: 14,
+    paddingVertical: multiline ? 12 : 14,
+    minHeight: multiline ? 100 : 50,
+    marginTop: 6,
+  };
+}
+
+function dashedSlot() {
+  return {
+    flex: 1,
+    backgroundColor: CREAM_DEEP,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: BORDER,
+    borderStyle: "dashed" as const,
+    alignItems: "center" as const,
+    justifyContent: "center" as const,
+  };
+}
+
+const savePillStyle = {
+  borderRadius: 999,
+  borderWidth: 1,
+  borderColor: BORDER,
+  backgroundColor: "#ffffff",
+  paddingVertical: 14,
+  alignItems: "center" as const,
+};
+
+const savePillText = {
+  fontSize: 15,
+  fontWeight: "700" as const,
+  color: INK,
+};
+
+const publishPillStyle = {
+  borderRadius: 999,
+  backgroundColor: INK,
+  paddingVertical: 14,
+  alignItems: "center" as const,
+};
+
+const publishPillText = {
+  fontSize: 15,
+  fontWeight: "700" as const,
+  color: CREAM,
+};
+
