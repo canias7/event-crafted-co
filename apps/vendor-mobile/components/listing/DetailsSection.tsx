@@ -240,52 +240,22 @@ function FieldEditor({
   }
   if (field.type === "tags") {
     const arr = Array.isArray(value) ? (value as string[]) : [];
-    const toggle = (opt: string) => {
-      onChange(arr.includes(opt) ? arr.filter((x) => x !== opt) : [...arr, opt]);
-    };
+    // Mobile renders tag fields as a free-text chip input rather than a
+    // preset toggle grid. The schema's `options` array becomes the
+    // example placeholder so vendors see suggested values but can type
+    // anything specific to their business. Web still uses the chip
+    // toggle picker — see apps/web/src/components/vendor/CategoryAttributesEditor.
     return (
-      <View>
-        <Text className="text-sm font-medium text-foreground">
-          {field.label}
-        </Text>
-        {field.help ? (
-          <Text className="mt-1 text-xs text-muted-foreground">
-            {field.help}
-          </Text>
-        ) : null}
-        <View className="mt-2 flex-row flex-wrap gap-2">
-          {field.options.map((opt) => {
-            const active = arr.includes(opt);
-            return (
-              <Pressable
-                key={opt}
-                onPress={() => toggle(opt)}
-                className={`rounded-full px-3 py-1.5 active:opacity-70 ${
-                  active
-                    ? "bg-foreground"
-                    : "border border-border bg-background"
-                }`}
-              >
-                <Text
-                  className={`text-xs font-semibold ${
-                    active ? "text-background" : "text-foreground"
-                  }`}
-                >
-                  {opt}
-                </Text>
-              </Pressable>
-            );
-          })}
-        </View>
-        {field.allowCustom ? (
-          <CustomTagInput
-            existing={arr}
-            presets={field.options}
-            onAdd={(t) => onChange([...arr, t])}
-            onRemove={(t) => onChange(arr.filter((x) => x !== t))}
-          />
-        ) : null}
-      </View>
+      <FreeTagsField
+        label={field.label}
+        help={field.help}
+        examples={field.options}
+        value={arr}
+        onAdd={(t) =>
+          arr.includes(t) ? undefined : onChange([...arr, t])
+        }
+        onRemove={(t) => onChange(arr.filter((x) => x !== t))}
+      />
     );
   }
   if (field.type === "select") {
@@ -300,24 +270,51 @@ function FieldEditor({
   return null;
 }
 
-function CustomTagInput({
-  existing,
-  presets,
+function FreeTagsField({
+  label,
+  help,
+  examples,
+  value,
   onAdd,
   onRemove,
 }: {
-  existing: string[];
-  presets: string[];
+  label: string;
+  help?: string;
+  examples: string[];
+  value: string[];
   onAdd: (t: string) => void;
   onRemove: (t: string) => void;
 }) {
   const [input, setInput] = useState("");
-  const customs = existing.filter((t) => !presets.includes(t));
+  // Placeholder rotates through the first few schema-defined options
+  // so the vendor sees a concrete example of what kind of thing to type.
+  // Truncate to fit on one line — long examples would push the cursor
+  // off-screen on narrow phones.
+  const placeholder =
+    examples.length === 0
+      ? "Type a tag and tap Add"
+      : `e.g. ${examples.slice(0, 3).join(", ")}`;
+
+  const commit = () => {
+    const t = input.trim();
+    if (!t) return;
+    if (value.includes(t)) {
+      setInput("");
+      return;
+    }
+    onAdd(t);
+    setInput("");
+  };
+
   return (
-    <View className="mt-2">
-      {customs.length > 0 ? (
-        <View className="flex-row flex-wrap gap-2 mb-2">
-          {customs.map((t) => (
+    <View>
+      <Text className="text-sm font-medium text-foreground">{label}</Text>
+      {help ? (
+        <Text className="mt-1 text-xs text-muted-foreground">{help}</Text>
+      ) : null}
+      {value.length > 0 ? (
+        <View className="mt-2 flex-row flex-wrap gap-2">
+          {value.map((t) => (
             <Pressable
               key={t}
               onPress={() => onRemove(t)}
@@ -329,21 +326,18 @@ function CustomTagInput({
           ))}
         </View>
       ) : null}
-      <View className="flex-row gap-2">
+      <View className="mt-2 flex-row gap-2">
         <TextInput
           value={input}
           onChangeText={setInput}
-          placeholder="Add other…"
+          placeholder={placeholder}
+          returnKeyType="done"
+          onSubmitEditing={commit}
+          blurOnSubmit={false}
           className="flex-1 rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground"
         />
         <Pressable
-          onPress={() => {
-            const t = input.trim();
-            if (t && !existing.includes(t)) {
-              onAdd(t);
-              setInput("");
-            }
-          }}
+          onPress={commit}
           className="rounded-lg border border-border px-3 justify-center active:opacity-70"
         >
           <Text className="text-sm font-semibold text-foreground">Add</Text>
