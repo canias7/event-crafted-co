@@ -576,7 +576,7 @@ function CategoryPickerModal({
             <View key={g.group} style={{ marginTop: 18 }}>
               <Text
                 style={{
-                  paddingHorizontal: 18,
+                  paddingHorizontal: 24,
                   paddingBottom: 8,
                   fontSize: 12,
                   fontWeight: "700",
@@ -586,38 +586,52 @@ function CategoryPickerModal({
               >
                 {g.group.toUpperCase()}
               </Text>
-              {g.subs.map((sub) => {
-                const isSelected = sub === selected;
-                return (
-                  <Pressable
-                    key={sub}
-                    onPress={() => onPick(sub)}
-                    style={({ pressed }) => ({
-                      paddingHorizontal: 18,
-                      paddingVertical: 14,
-                      flexDirection: "row",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                      backgroundColor: pressed ? CREAM_DEEP : "transparent",
-                      borderBottomWidth: 1,
-                      borderColor: BORDER,
-                    })}
-                  >
-                    <Text
-                      style={{
-                        fontSize: 16,
-                        color: INK,
-                        fontWeight: isSelected ? "600" : "400",
-                      }}
-                    >
-                      {sub}
-                    </Text>
-                    {isSelected ? (
-                      <Feather name="check" size={20} color={INK} />
-                    ) : null}
-                  </Pressable>
-                );
-              })}
+              <View
+                style={{
+                  marginHorizontal: 16,
+                  backgroundColor: "#ffffff",
+                  borderRadius: 14,
+                  borderWidth: 1,
+                  borderColor: BORDER,
+                  overflow: "hidden",
+                }}
+              >
+                {g.subs.map((sub, idx) => {
+                  const isSelected = sub === selected;
+                  const isLast = idx === g.subs.length - 1;
+                  return (
+                    <Pressable key={sub} onPress={() => onPick(sub)}>
+                      <View
+                        style={{
+                          paddingHorizontal: 16,
+                          paddingVertical: 14,
+                          flexDirection: "row",
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                          borderBottomWidth: isLast ? 0 : 1,
+                          borderColor: BORDER,
+                          minHeight: 50,
+                        }}
+                      >
+                        <Text
+                          style={{
+                            fontSize: 16,
+                            color: INK,
+                            fontWeight: isSelected ? "600" : "400",
+                            flex: 1,
+                          }}
+                          numberOfLines={1}
+                        >
+                          {sub}
+                        </Text>
+                        {isSelected ? (
+                          <Feather name="check" size={20} color={INK} />
+                        ) : null}
+                      </View>
+                    </Pressable>
+                  );
+                })}
+              </View>
             </View>
           ))}
         </ScrollView>
