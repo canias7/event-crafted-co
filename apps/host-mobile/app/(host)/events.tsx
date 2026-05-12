@@ -9,9 +9,11 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
+  ActivityIndicator,
   Alert,
   Platform,
   Pressable,
+  RefreshControl,
   ScrollView,
   Text,
   View,
@@ -165,6 +167,8 @@ export default function EventsScreen() {
   const router = useRouter();
   const [events, setEvents] = useState<HostEvent[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [selectedDayKey, setSelectedDayKey] = useState<string | null>(null);
   // Filter pill cycles "upcoming only" (default) -> "all" (includes past).
   // The hero "Up next" card stays bound to the next future event either way.
@@ -196,23 +200,30 @@ export default function EventsScreen() {
     [router],
   );
 
-  const load = useCallback(async () => {
-    if (!user?.id) return;
-    setLoading(true);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data } = await (supabase as any)
-      .from("inquiries")
-      .select(
-        "id, vendor_id, status, event_type, event_date, location, vendor:vendor_profiles!inquiries_vendor_id_fkey(business_name, category)",
-      )
-      .eq("host_id", user.id)
-      .order("event_date", { ascending: true, nullsFirst: false });
-    setEvents(groupIntoEvents((data ?? []) as RawInquiry[]));
-    setLoading(false);
-  }, [user?.id]);
+  const load = useCallback(
+    async (isRefresh: boolean) => {
+      if (!user?.id) return;
+      if (isRefresh) setRefreshing(true);
+      else setLoading(true);
+      setError(null);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data, error: e } = await (supabase as any)
+        .from("inquiries")
+        .select(
+          "id, vendor_id, status, event_type, event_date, location, vendor:vendor_profiles!inquiries_vendor_id_fkey(business_name, category)",
+        )
+        .eq("host_id", user.id)
+        .order("event_date", { ascending: true, nullsFirst: false });
+      if (e) setError(e.message);
+      else setEvents(groupIntoEvents((data ?? []) as RawInquiry[]));
+      if (isRefresh) setRefreshing(false);
+      else setLoading(false);
+    },
+    [user?.id],
+  );
 
   useEffect(() => {
-    load();
+    load(false);
   }, [load]);
 
   // The 14-day strip starts on today and walks forward two weeks.
@@ -287,6 +298,13 @@ export default function EventsScreen() {
         <ScrollView
           contentContainerStyle={{ paddingTop: 6, paddingBottom: 120 }}
           showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={() => load(true)}
+              tintColor={INK}
+            />
+          }
         >
           {/* Header */}
           <View
@@ -458,8 +476,39 @@ export default function EventsScreen() {
                 </View>
               ) : null}
 
-              {/* Empty state */}
-              {!loading && events.length === 0 ? (
+              {/* Error / loading / empty */}
+              {error ? (
+                <View
+                  style={{
+                    marginHorizontal: 20,
+                    marginTop: 16,
+                    borderRadius: 12,
+                    backgroundColor: "#fdecea",
+                    borderWidth: 1,
+                    borderColor: "#f5c5c0",
+                    paddingHorizontal: 14,
+                    paddingVertical: 12,
+                  }}
+                >
+                  <Text style={{ color: "#9b2c1b", fontSize: 13 }}>{error}</Text>
+                  <Pressable onPress={() => load(false)} style={{ marginTop: 8 }}>
+                    <Text
+                      style={{
+                        color: "#9b2c1b",
+                        fontSize: 13,
+                        fontWeight: "700",
+                      }}
+                    >
+                      Try again
+                    </Text>
+                  </Pressable>
+                </View>
+              ) : null}
+              {loading ? (
+                <View style={{ alignItems: "center", paddingVertical: 64 }}>
+                  <ActivityIndicator color={INK} />
+                </View>
+              ) : events.length === 0 && !error ? (
                 <View
                   style={{
                     alignItems: "center",

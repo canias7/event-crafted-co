@@ -5,10 +5,12 @@
 
 import { useCallback, useEffect, useState } from "react";
 import {
+  ActivityIndicator,
   Alert,
   Dimensions,
   Image,
   Pressable,
+  RefreshControl,
   ScrollView,
   Text,
   View,
@@ -85,6 +87,9 @@ export default function HomeScreen() {
   const [reels, setReels] = useState<ReelRow[]>([]);
   const [buzz, setBuzz] = useState<BuzzRow[]>([]);
   const [listings, setListings] = useState<ListingRow[]>([]);
+  const [loadingFeeds, setLoadingFeeds] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [feedsError, setFeedsError] = useState<string | null>(null);
   // Category filter chip on the marketplace tab. null = "all".
   const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
   // Set of saved vendor_ids for this user. The heart on each
@@ -165,7 +170,10 @@ export default function HomeScreen() {
     };
   }, [user]);
 
-  const loadFeeds = useCallback(async () => {
+  const loadFeeds = useCallback(async (isRefresh: boolean = false) => {
+    if (isRefresh) setRefreshing(true);
+    else setLoadingFeeds(true);
+    setFeedsError(null);
     // Home is the global feed — every approved vendor's content,
     // newest first. Inner-joined against vendor_profiles + filtered
     // to application_status='approved' so unpublished drafts and
@@ -257,6 +265,16 @@ export default function HomeScreen() {
       hero_url: heroByVendor.get(l.id) ?? null,
     }));
     setListings(enriched);
+    const firstErr =
+      postsRes.error ??
+      reelsRes.error ??
+      buzzRes.error ??
+      listingsRes.error ??
+      portfolioRes.error ??
+      null;
+    if (firstErr) setFeedsError(firstErr.message);
+    if (isRefresh) setRefreshing(false);
+    else setLoadingFeeds(false);
   }, []);
 
   useEffect(() => {
@@ -367,7 +385,36 @@ export default function HomeScreen() {
         />
       </View>
 
-      <ScrollView contentContainerClassName="pb-32 pt-4">
+      <ScrollView
+        contentContainerClassName="pb-32 pt-4"
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={() => loadFeeds(true)}
+            tintColor="#1a1410"
+          />
+        }
+      >
+        {feedsError ? (
+          <View
+            className="mx-4 mb-3 rounded-xl bg-red-50 px-4 py-3 border border-red-200"
+          >
+            <Text className="text-sm text-red-700">{feedsError}</Text>
+            <Pressable
+              onPress={() => loadFeeds(false)}
+              className="mt-2 active:opacity-70"
+            >
+              <Text className="text-sm font-semibold text-red-700">
+                Try again
+              </Text>
+            </Pressable>
+          </View>
+        ) : null}
+        {loadingFeeds ? (
+          <View className="items-center py-8">
+            <ActivityIndicator color="#1a1410" />
+          </View>
+        ) : null}
         {view === "grid" ? (
           posts.length === 0 ? (
             <View className="items-center px-6 pt-10">

@@ -14,9 +14,11 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
+  ActivityIndicator,
   Alert,
   Platform,
   Pressable,
+  RefreshControl,
   ScrollView,
   Text,
   View,
@@ -123,6 +125,9 @@ export default function CalendarScreen() {
   const [vendorIds, setVendorIds] = useState<string[]>([]);
   const [inquiries, setInquiries] = useState<InquiryRow[]>([]);
   const [busy, setBusy] = useState<BusyRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   // Manual blocks the vendor has placed on specific dates across any
   // of their listings. Kept separate from `busy` (google-calendar
   // sync) since they're a different model + the rest of the marketplace
@@ -154,42 +159,59 @@ export default function CalendarScreen() {
     return { start, end };
   }, [viewMonth]);
 
-  const load = useCallback(async () => {
-    if (vendorIds.length === 0 || !user?.id) return;
-    const startYmd = ymdKey(monthBounds.start);
-    const endYmd = ymdKey(monthBounds.end);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const [{ data: inqs }, { data: busyRows }, { data: blockRows }] = await Promise.all([
-      (supabase as any)
-        .from("inquiries")
-        .select(
-          "id, status, event_date, event_type, budget_min_cents, budget_max_cents, host_id, host:profiles!inquiries_host_id_fkey(display_name)",
-        )
-        .in("vendor_id", vendorIds)
-        .gte("event_date", startYmd)
-        .lt("event_date", endYmd),
-      supabase
-        .from("calendar_synced_busy")
-        .select("id, starts_at, ends_at, summary, is_all_day")
-        .eq("user_id", user.id)
-        .gte("starts_at", monthBounds.start.toISOString())
-        .lt("starts_at", monthBounds.end.toISOString()),
-      supabase
-        .from("vendor_unavailable_dates")
-        .select("date")
-        .in("vendor_id", vendorIds)
-        .gte("date", startYmd)
-        .lt("date", endYmd),
-    ]);
-    setInquiries((inqs ?? []) as InquiryRow[]);
-    setBusy((busyRows ?? []) as BusyRow[]);
-    setManualBlocks(
-      ((blockRows ?? []) as { date: string }[]).map((r) => r.date),
-    );
-  }, [vendorIds, user?.id, monthBounds]);
+  const load = useCallback(
+    async (isRefresh: boolean) => {
+      if (vendorIds.length === 0 || !user?.id) {
+        setLoading(false);
+        return;
+      }
+      if (isRefresh) setRefreshing(true);
+      else setLoading(true);
+      setError(null);
+      const startYmd = ymdKey(monthBounds.start);
+      const endYmd = ymdKey(monthBounds.end);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const [inqRes, busyRes, blockRes] = await Promise.all([
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (supabase as any)
+          .from("inquiries")
+          .select(
+            "id, status, event_date, event_type, budget_min_cents, budget_max_cents, host_id, host:profiles!inquiries_host_id_fkey(display_name)",
+          )
+          .in("vendor_id", vendorIds)
+          .gte("event_date", startYmd)
+          .lt("event_date", endYmd),
+        supabase
+          .from("calendar_synced_busy")
+          .select("id, starts_at, ends_at, summary, is_all_day")
+          .eq("user_id", user.id)
+          .gte("starts_at", monthBounds.start.toISOString())
+          .lt("starts_at", monthBounds.end.toISOString()),
+        supabase
+          .from("vendor_unavailable_dates")
+          .select("date")
+          .in("vendor_id", vendorIds)
+          .gte("date", startYmd)
+          .lt("date", endYmd),
+      ]);
+      const firstErr =
+        inqRes.error ?? busyRes.error ?? blockRes.error ?? null;
+      if (firstErr) setError(firstErr.message);
+      else {
+        setInquiries((inqRes.data ?? []) as InquiryRow[]);
+        setBusy((busyRes.data ?? []) as BusyRow[]);
+        setManualBlocks(
+          ((blockRes.data ?? []) as { date: string }[]).map((r) => r.date),
+        );
+      }
+      if (isRefresh) setRefreshing(false);
+      else setLoading(false);
+    },
+    [vendorIds, user?.id, monthBounds],
+  );
 
   useEffect(() => {
-    load();
+    load(false);
   }, [load]);
 
   const dayState = useMemo(() => {
@@ -375,7 +397,7 @@ export default function CalendarScreen() {
                 return;
               }
             }
-            load();
+            load(false);
           },
         },
       ],
@@ -403,7 +425,45 @@ export default function CalendarScreen() {
             paddingBottom: 140,
           }}
           showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={() => load(true)}
+              tintColor={INK}
+            />
+          }
         >
+          {error ? (
+            <View
+              style={{
+                marginBottom: 12,
+                borderRadius: 12,
+                backgroundColor: "#fdecea",
+                borderWidth: 1,
+                borderColor: "#f5c5c0",
+                paddingHorizontal: 14,
+                paddingVertical: 12,
+              }}
+            >
+              <Text style={{ color: "#9b2c1b", fontSize: 13 }}>{error}</Text>
+              <Pressable onPress={() => load(false)} style={{ marginTop: 8 }}>
+                <Text
+                  style={{
+                    color: "#9b2c1b",
+                    fontSize: 13,
+                    fontWeight: "700",
+                  }}
+                >
+                  Try again
+                </Text>
+              </Pressable>
+            </View>
+          ) : null}
+          {loading ? (
+            <View style={{ paddingVertical: 60, alignItems: "center" }}>
+              <ActivityIndicator color={INK} />
+            </View>
+          ) : null}
           <View
             style={{
               flexDirection: "row",
