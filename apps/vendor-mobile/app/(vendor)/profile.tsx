@@ -495,6 +495,7 @@ export default function ProfileScreen() {
           initial={businessInitial}
           verifiedAt={profile?.verified_at ?? null}
           createdAt={profileCreatedAt}
+          bio={identity.bio}
         />
 
         {/* Share + Edit profile actions sit just below the card. */}
@@ -545,46 +546,6 @@ export default function ProfileScreen() {
               Edit profile
             </Text>
           </Pressable>
-        </View>
-
-        {/* Bio — italic serif. Placeholder copy with subtle highlight
-            on "one or two sentences" when the vendor hasn't written
-            one yet (invites them to fill it in via Edit profile). */}
-        <View style={{ paddingHorizontal: 18, marginTop: 18 }}>
-          {identity.bio?.trim() ? (
-            <Text
-              style={{
-                fontFamily: SERIF,
-                fontStyle: "italic",
-                color: INK,
-                fontSize: 17,
-                lineHeight: 24,
-              }}
-            >
-              {identity.bio}
-            </Text>
-          ) : (
-            <Text
-              style={{
-                fontFamily: SERIF,
-                fontStyle: "italic",
-                color: INK,
-                fontSize: 17,
-                lineHeight: 24,
-              }}
-            >
-              A short bio belongs here —{" "}
-              <Text
-                style={{
-                  backgroundColor: "#f5e2c9",
-                  fontWeight: "700",
-                }}
-              >
-                {" one or two sentences "}
-              </Text>{" "}
-              on what makes your work worth booking.
-            </Text>
-          )}
         </View>
 
         {/* Stats card */}
@@ -2470,12 +2431,14 @@ function CreamOceanCard({
   initial,
   verifiedAt,
   createdAt,
+  bio,
 }: {
   businessName: string | null;
   logoUrl: string | null;
   initial: string;
   verifiedAt: string | null;
   createdAt: string | null;
+  bio: string | null;
 }) {
   const CARD_W = Dimensions.get("window").width - 36;
   const CARD_H = 230;
@@ -2582,6 +2545,7 @@ function CreamOceanCard({
           width={CARD_W}
           height={CARD_H}
           onFlip={toggleFlip}
+          bio={bio}
         />
       </Animated.View>
     </View>
@@ -2771,11 +2735,14 @@ function CreamOceanBack({
   width,
   height,
   onFlip,
+  bio,
 }: {
   width: number;
   height: number;
   onFlip: () => void;
+  bio: string | null;
 }) {
+  const hasBio = !!bio?.trim();
   return (
     <>
       <Svg
@@ -2808,7 +2775,55 @@ function CreamOceanBack({
         />
       </Svg>
 
-      <View style={{ flex: 1 }} />
+      {/* Bio takes the back face — italic serif paragraph centered on
+          the card. Placeholder copy with subtle highlight when empty,
+          inviting the vendor to fill it via Edit profile. */}
+      <View
+        style={{
+          flex: 1,
+          paddingHorizontal: 22,
+          paddingTop: 26,
+          paddingBottom: 18,
+          justifyContent: "center",
+        }}
+      >
+        {hasBio ? (
+          <Text
+            style={{
+              fontFamily: SERIF,
+              fontStyle: "italic",
+              color: INK,
+              fontSize: 17,
+              lineHeight: 24,
+            }}
+            numberOfLines={6}
+          >
+            {bio}
+          </Text>
+        ) : (
+          <Text
+            style={{
+              fontFamily: SERIF,
+              fontStyle: "italic",
+              color: INK,
+              fontSize: 16,
+              lineHeight: 22,
+            }}
+            numberOfLines={6}
+          >
+            A short bio belongs here —{" "}
+            <Text
+              style={{
+                backgroundColor: "#f5e2c9",
+                fontWeight: "700",
+              }}
+            >
+              {" one or two sentences "}
+            </Text>{" "}
+            on what makes your work worth booking.
+          </Text>
+        )}
+      </View>
 
       <Pressable
         onPress={onFlip}
