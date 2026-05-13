@@ -1,14 +1,5 @@
 name: Mobile OTA Update
 
-# Pushes a JS-only OTA update to EAS Update (production channel) for
-# vendor-mobile and/or host-mobile. Triggered on push to any branch
-# starting with `trigger-ota/`. Used by Claude in cloud sessions
-# where eas login isn't possible — the workflow runs in CI with the
-# EXPO_TOKEN secret already configured.
-#
-# Manual trigger: `git push origin <feature>:trigger-ota/<short-tag>`
-# After it completes, delete the trigger branch.
-
 on:
   push:
     branches:
@@ -38,7 +29,6 @@ jobs:
           INPUT_APPS: ${{ inputs.apps }}
           INPUT_MSG: ${{ inputs.message }}
         run: |
-          # Default for push-triggered runs.
           APPS_INPUT="${INPUT_APPS:-vendor}"
           MSG_INPUT="${INPUT_MSG:-OTA update from $GITHUB_REF_NAME}"
           case "$APPS_INPUT" in
@@ -72,52 +62,40 @@ jobs:
 
       - run: npm ci
 
-      - name: Diagnose EXPO_TOKEN
-        id: diag
+      - name: Diagnose and report
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
           EAS_TOKEN: ${{ secrets.EAS_TOKEN }}
           EXPO_ACCESS_TOKEN: ${{ secrets.EXPO_ACCESS_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           {
             echo "## Mobile OTA secret diagnostic"
             echo ""
             echo "### Secret presence"
-            if [ -z "$EXPO_TOKEN" ]; then echo "- EXPO_TOKEN: **EMPTY**"; else echo "- EXPO_TOKEN: SET (len=${#EXPO_TOKEN})"; fi
-            if [ -z "$EAS_TOKEN" ]; then echo "- EAS_TOKEN: **EMPTY**"; else echo "- EAS_TOKEN: SET (len=${#EAS_TOKEN})"; fi
-            if [ -z "$EXPO_ACCESS_TOKEN" ]; then echo "- EXPO_ACCESS_TOKEN: **EMPTY**"; else echo "- EXPO_ACCESS_TOKEN: SET (len=${#EXPO_ACCESS_TOKEN})"; fi
+            if [ -z "$EXPO_TOKEN" ]; then echo "- EXPO_TOKEN: **EMPTY** (the secret is not set, or stored in an environment this job has no access to)"; else echo "- EXPO_TOKEN: SET (len=${#EXPO_TOKEN}, prefix=${EXPO_TOKEN:0:4})"; fi
+            if [ -z "$EAS_TOKEN" ]; then echo "- EAS_TOKEN: empty"; else echo "- EAS_TOKEN: SET (len=${#EAS_TOKEN}, prefix=${EAS_TOKEN:0:4})"; fi
+            if [ -z "$EXPO_ACCESS_TOKEN" ]; then echo "- EXPO_ACCESS_TOKEN: empty"; else echo "- EXPO_ACCESS_TOKEN: SET (len=${#EXPO_ACCESS_TOKEN}, prefix=${EXPO_ACCESS_TOKEN:0:4})"; fi
             echo ""
             echo "### eas whoami output"
+            echo ""
             echo '```'
-            EXPO_TOKEN="$EXPO_TOKEN" eas whoami 2>&1 || echo "(eas whoami exited non-zero)"
+            EXPO_TOKEN="$EXPO_TOKEN" eas whoami 2>&1 || true
             echo '```'
           } > /tmp/diag.md
           cat /tmp/diag.md
-          {
-            echo "body<<EOF"
-            cat /tmp/diag.md
-            echo "EOF"
-          } >> "$GITHUB_OUTPUT"
-
-      - name: Report diagnostic via issue comment
-        if: always()
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          BODY: ${{ steps.diag.outputs.body }}
-        run: |
-          # Append the diagnostic to PR #180 so we can read it back
-          # through the GitHub MCP without needing Actions UI auth.
-          curl -sSL -X POST \
-            -H "Authorization: Bearer $GH_TOKEN" \
-            -H "Accept: application/vnd.github+json" \
-            "https://api.github.com/repos/${GITHUB_REPOSITORY}/issues/180/comments" \
-            -d "$(jq -nc --arg body "$BODY" '{body: $body}')"
+          gh issue create \
+            --repo "$GITHUB_REPOSITORY" \
+            --title "OTA diagnostic: secret presence check" \
+            --body-file /tmp/diag.md \
+            --label "diagnostic" || gh issue create \
+            --repo "$GITHUB_REPOSITORY" \
+            --title "OTA diagnostic: secret presence check" \
+            --body-file /tmp/diag.md
 
       - name: eas update
         working-directory: apps/${{ matrix.app }}
         env:
-          # expo/expo-github-action@v8 no longer auto-exports EXPO_TOKEN
-          # to subsequent steps — pass it explicitly so eas-cli can auth.
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
           EXPO_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           EXPO_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
