@@ -183,6 +183,34 @@ serve(async (req) => {
 
     const conversation = buildConversation(history ?? []);
 
+    // Pre-load every email already in email_leads (case-insensitive,
+    // global across all admins — same outreach list). Used for two
+    // things: (1) appended to the system context so Claude knows to
+    // skip them when searching, (2) checked locally in the add_lead
+    // path so we return a clear tool_result and don't burn the unique
+    // index. Limit is generous; if the list grows past ~5k leads we'll
+    // want to send only relevant slices.
+    const { data: existingLeads } = await admin
+      .from("email_leads")
+      .select("email")
+      .limit(2000);
+    const existingEmails = new Set<string>(
+      (existingLeads ?? [])
+        .map((r: any) => String(r.email ?? "").trim().toLowerCase())
+        .filter(Boolean),
+    );
+    const existingList = [...existingEmails].sort();
+    const dedupBlock = existingList.length === 0
+      ? null
+      : {
+          type: "text",
+          text:
+            `Leads already in the database (${existingList.length} total) — do NOT add these again. If your search surfaces any of these, skip them and find different businesses:\n` +
+            existingList.join(", "),
+        };
+    // System blocks: cached static prompt + uncached dedup list.
+    const systemForApi = dedupBlock ? [...SYSTEM_BLOCKS, dedupBlock] : SYSTEM_BLOCKS;
+
     let leadsAdded = 0;
     let finalText = "";
 
@@ -204,7 +232,7 @@ serve(async (req) => {
           "anthropic-version": "2023-06-01",
           "content-type": "application/json",
         },
-        body: JSON.stringify({ model: MODEL, max_tokens: 2048, system: SYSTEM_BLOCKS, tools: TOOLS, messages: messagesForApi }),
+        body: JSON.stringify({ model: MODEL, max_tokens: 2048, system: systemForApi, tools: TOOLS, messages: messagesForApi }),
       });
 
       if (!apiRes.ok) {
@@ -238,8 +266,17 @@ serve(async (req) => {
         if (tu.name === "add_lead") {
           const args = tu.input ?? {};
           const email = String(args.email ?? "").trim();
+          const emailKey = email.toLowerCase();
           if (!email) {
             toolResults.push({ type: "tool_result", tool_use_id: tu.id, content: "Error: email is required.", is_error: true });
+            continue;
+          }
+          if (existingEmails.has(emailKey)) {
+            toolResults.push({
+              type: "tool_result",
+              tool_use_id: tu.id,
+              content: `Skipped: ${email} is already in the database. Find a different business.`,
+            });
             continue;
           }
           const { data: insertedLead, error: leadErr } = await admin
@@ -254,10 +291,22 @@ serve(async (req) => {
             .select("id, email")
             .single();
           if (leadErr) {
+            // 23505 = unique_violation. Treat as a skip rather than an
+            // error so Claude keeps searching for a different business.
+            const isDup = (leadErr as any).code === "23505";
             console.error("[chat-email-scraping] add_lead db error:", leadErr);
-            toolResults.push({ type: "tool_result", tool_use_id: tu.id, content: `Error adding lead: ${leadErr.message}`, is_error: true });
+            toolResults.push({
+              type: "tool_result",
+              tool_use_id: tu.id,
+              content: isDup
+                ? `Skipped: ${email} is already in the database. Find a different business.`
+                : `Error adding lead: ${leadErr.message}`,
+              is_error: !isDup,
+            });
+            if (isDup) existingEmails.add(emailKey);
           } else {
             leadsAdded++;
+            existingEmails.add(emailKey);
             toolResults.push({ type: "tool_result", tool_use_id: tu.id, content: `Lead added (id=${insertedLead?.id}, email=${insertedLead?.email}).` });
           }
         } else {
