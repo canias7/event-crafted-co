@@ -72,6 +72,19 @@ jobs:
 
       - run: npm ci
 
+      - name: Diagnose EXPO_TOKEN
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+          EAS_TOKEN: ${{ secrets.EAS_TOKEN }}
+          EXPO_ACCESS_TOKEN: ${{ secrets.EXPO_ACCESS_TOKEN }}
+        run: |
+          echo "=== Secret presence check ==="
+          if [ -z "$EXPO_TOKEN" ]; then echo "EXPO_TOKEN: EMPTY"; else echo "EXPO_TOKEN: SET (len=${#EXPO_TOKEN})"; fi
+          if [ -z "$EAS_TOKEN" ]; then echo "EAS_TOKEN: EMPTY"; else echo "EAS_TOKEN: SET (len=${#EAS_TOKEN})"; fi
+          if [ -z "$EXPO_ACCESS_TOKEN" ]; then echo "EXPO_ACCESS_TOKEN: EMPTY"; else echo "EXPO_ACCESS_TOKEN: SET (len=${#EXPO_ACCESS_TOKEN})"; fi
+          echo "=== eas whoami ==="
+          EXPO_TOKEN="$EXPO_TOKEN" eas whoami || echo "(eas whoami failed)"
+
       - name: eas update
         working-directory: apps/${{ matrix.app }}
         env:
