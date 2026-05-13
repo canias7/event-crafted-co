@@ -27,6 +27,11 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from "react-native-reanimated";
 import Svg, {
   Defs,
   LinearGradient as SvgLinearGradient,
@@ -2026,63 +2031,183 @@ function CreamOceanCard({
   const CARD_W = Dimensions.get("window").width - 36;
   const CARD_H = 230;
 
+  // Flip animation — front is at rotateY: 0, back at 180. When flipped
+  // the front rotates to 180 (away from camera), back to 0 (toward).
+  // backfaceVisibility hides whichever side is facing away.
+  const flip = useSharedValue(0);
+  const isFlipped = useSharedValue(false);
+  const toggleFlip = () => {
+    isFlipped.value = !isFlipped.value;
+    flip.value = withTiming(isFlipped.value ? 180 : 0, { duration: 500 });
+  };
+
+  const frontStyle = useAnimatedStyle(() => ({
+    transform: [
+      { perspective: 1000 },
+      { rotateY: `${flip.value}deg` },
+    ],
+  }));
+  const backStyle = useAnimatedStyle(() => ({
+    transform: [
+      { perspective: 1000 },
+      { rotateY: `${flip.value + 180}deg` },
+    ],
+  }));
+
   return (
     <View
       style={{
         marginHorizontal: 18,
         marginTop: 12,
-        borderRadius: 22,
-        backgroundColor: "#fffbf2",
-        borderWidth: 1,
-        borderColor: "#ebe1ce",
-        overflow: "hidden",
-        shadowColor: INK,
-        shadowOpacity: 0.1,
-        shadowRadius: 24,
-        shadowOffset: { width: 0, height: 12 },
-        elevation: 4,
+        height: CARD_H,
       }}
     >
-      {/* Painted backdrop — cream-to-warm gradient + sun glow + ripple
-          stripes + a soft swell rising from the bottom. */}
+      {/* Front */}
+      <Animated.View
+        style={[
+          {
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            height: CARD_H,
+            borderRadius: 22,
+            backgroundColor: "#fffbf2",
+            borderWidth: 1,
+            borderColor: "#ebe1ce",
+            overflow: "hidden",
+            shadowColor: INK,
+            shadowOpacity: 0.1,
+            shadowRadius: 24,
+            shadowOffset: { width: 0, height: 12 },
+            elevation: 4,
+            backfaceVisibility: "hidden",
+          },
+          frontStyle,
+        ]}
+      >
+        <CreamOceanFront
+          vendor={vendor}
+          initial={initial}
+          fallbackLogoUrl={fallbackLogoUrl}
+          width={CARD_W}
+          height={CARD_H}
+          onFlip={toggleFlip}
+        />
+      </Animated.View>
+
+      {/* Back */}
+      <Animated.View
+        style={[
+          {
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            height: CARD_H,
+            borderRadius: 22,
+            backgroundColor: "#fffbf2",
+            borderWidth: 1,
+            borderColor: "#ebe1ce",
+            overflow: "hidden",
+            shadowColor: INK,
+            shadowOpacity: 0.1,
+            shadowRadius: 24,
+            shadowOffset: { width: 0, height: 12 },
+            elevation: 4,
+            backfaceVisibility: "hidden",
+          },
+          backStyle,
+        ]}
+      >
+        <CreamOceanBack
+          vendor={vendor}
+          width={CARD_W}
+          height={CARD_H}
+          onFlip={toggleFlip}
+        />
+      </Animated.View>
+    </View>
+  );
+}
+
+// Front face — gradient backdrop + sun glow + ripples + swell + avatar
+// tile + name + location + stat strip. The flip button sits top-right.
+function CreamOceanFront({
+  vendor,
+  initial,
+  fallbackLogoUrl,
+  width,
+  height,
+  onFlip,
+}: {
+  vendor: VendorRow;
+  initial: string;
+  fallbackLogoUrl: string | null;
+  width: number;
+  height: number;
+  onFlip: () => void;
+}) {
+  return (
+    <>
       <Svg
-        width={CARD_W}
-        height={CARD_H}
-        viewBox={`0 0 ${CARD_W} ${CARD_H}`}
+        width={width}
+        height={height}
+        viewBox={`0 0 ${width} ${height}`}
         style={{ position: "absolute", top: 0, left: 0 }}
       >
         <Defs>
-          <SvgLinearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+          <SvgLinearGradient id="bgF" x1="0" y1="0" x2="0" y2="1">
             <Stop offset="0" stopColor="#fffbf2" />
             <Stop offset="1" stopColor="#faecd0" />
           </SvgLinearGradient>
-          <RadialGradient id="sun" cx="0.18" cy="0.18" rx="0.55" ry="0.55">
+          <RadialGradient id="sunF" cx="0.18" cy="0.18" rx="0.55" ry="0.55">
             <Stop offset="0" stopColor="#ffe6b4" stopOpacity="0.55" />
             <Stop offset="1" stopColor="#ffe6b4" stopOpacity="0" />
           </RadialGradient>
-          <SvgLinearGradient id="ripple" x1="0" y1="0" x2="1" y2="0">
+          <SvgLinearGradient id="rippleF" x1="0" y1="0" x2="1" y2="0">
             <Stop offset="0" stopColor="#a8893f" stopOpacity="0" />
             <Stop offset="0.5" stopColor="#fff0c8" stopOpacity="0.55" />
             <Stop offset="1" stopColor="#a8893f" stopOpacity="0" />
           </SvgLinearGradient>
-          <SvgLinearGradient id="swell" x1="0" y1="1" x2="0" y2="0">
+          <SvgLinearGradient id="swellF" x1="0" y1="1" x2="0" y2="0">
             <Stop offset="0" stopColor="#d9c599" stopOpacity="0.55" />
             <Stop offset="0.5" stopColor="#ecdfc1" stopOpacity="0.3" />
             <Stop offset="1" stopColor="#ecdfc1" stopOpacity="0" />
           </SvgLinearGradient>
         </Defs>
-
-        <Rect x={0} y={0} width={CARD_W} height={CARD_H} fill="url(#bg)" />
-        <Rect x={0} y={0} width={CARD_W} height={CARD_H} fill="url(#sun)" />
-        <Rect x={0} y={CARD_H * 0.32} width={CARD_W} height={1.5} fill="url(#ripple)" />
-        <Rect x={0} y={CARD_H * 0.48} width={CARD_W} height={1.5} fill="url(#ripple)" opacity={0.7} />
-        <Rect x={0} y={CARD_H * 0.62} width={CARD_W} height={1.5} fill="url(#ripple)" opacity={0.55} />
-        <Rect x={0} y={CARD_H * 0.76} width={CARD_W} height={1.5} fill="url(#ripple)" opacity={0.4} />
+        <Rect x={0} y={0} width={width} height={height} fill="url(#bgF)" />
+        <Rect x={0} y={0} width={width} height={height} fill="url(#sunF)" />
+        <Rect x={0} y={height * 0.32} width={width} height={1.5} fill="url(#rippleF)" />
+        <Rect x={0} y={height * 0.48} width={width} height={1.5} fill="url(#rippleF)" opacity={0.7} />
+        <Rect x={0} y={height * 0.62} width={width} height={1.5} fill="url(#rippleF)" opacity={0.55} />
+        <Rect x={0} y={height * 0.76} width={width} height={1.5} fill="url(#rippleF)" opacity={0.4} />
         <Path
-          d={`M -20 ${CARD_H} Q ${CARD_W / 2} ${CARD_H * 0.55} ${CARD_W + 20} ${CARD_H} Z`}
-          fill="url(#swell)"
+          d={`M -20 ${height} Q ${width / 2} ${height * 0.55} ${width + 20} ${height} Z`}
+          fill="url(#swellF)"
         />
       </Svg>
+
+      {/* Flip button — top right */}
+      <Pressable
+        onPress={onFlip}
+        hitSlop={8}
+        style={{
+          position: "absolute",
+          top: 12,
+          right: 12,
+          width: 32,
+          height: 32,
+          borderRadius: 16,
+          backgroundColor: "rgba(255, 251, 242, 0.65)",
+          borderWidth: 1,
+          borderColor: "rgba(235, 225, 206, 0.7)",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <Feather name="rotate-cw" size={14} color="#5a4f44" />
+      </Pressable>
 
       <View style={{ padding: 18 }}>
         <View
@@ -2093,8 +2218,6 @@ function CreamOceanCard({
             marginBottom: 18,
           }}
         >
-          {/* Avatar tile — dark base + warm radial glows when no logo.
-              Same look the small business card uses; just bigger. */}
           <View
             style={{
               shadowColor: INK,
@@ -2143,6 +2266,7 @@ function CreamOceanCard({
                 letterSpacing: -0.6,
                 color: INK,
                 marginBottom: 6,
+                paddingRight: 28,
               }}
               numberOfLines={2}
             >
@@ -2168,7 +2292,6 @@ function CreamOceanCard({
           </View>
         </View>
 
-        {/* Translucent stat strip */}
         <View
           style={{
             flexDirection: "row",
@@ -2199,7 +2322,178 @@ function CreamOceanCard({
           />
         </View>
       </View>
-    </View>
+    </>
+  );
+}
+
+// Back face — a "studio note" letterpress-style page. Italic-serif
+// bio paragraph, category line, and verified status. Same gradient
+// backdrop but no avatar / stat strip so the front and back read as
+// different sides of the same physical card.
+function CreamOceanBack({
+  vendor,
+  width,
+  height,
+  onFlip,
+}: {
+  vendor: VendorRow;
+  width: number;
+  height: number;
+  onFlip: () => void;
+}) {
+  return (
+    <>
+      <Svg
+        width={width}
+        height={height}
+        viewBox={`0 0 ${width} ${height}`}
+        style={{ position: "absolute", top: 0, left: 0 }}
+      >
+        <Defs>
+          <SvgLinearGradient id="bgB" x1="0" y1="0" x2="0" y2="1">
+            <Stop offset="0" stopColor="#fffbf2" />
+            <Stop offset="1" stopColor="#faecd0" />
+          </SvgLinearGradient>
+          <RadialGradient id="sunB" cx="0.82" cy="0.18" rx="0.55" ry="0.55">
+            <Stop offset="0" stopColor="#ffe6b4" stopOpacity="0.5" />
+            <Stop offset="1" stopColor="#ffe6b4" stopOpacity="0" />
+          </RadialGradient>
+          <SvgLinearGradient id="swellB" x1="0" y1="1" x2="0" y2="0">
+            <Stop offset="0" stopColor="#d9c599" stopOpacity="0.5" />
+            <Stop offset="0.5" stopColor="#ecdfc1" stopOpacity="0.25" />
+            <Stop offset="1" stopColor="#ecdfc1" stopOpacity="0" />
+          </SvgLinearGradient>
+        </Defs>
+        <Rect x={0} y={0} width={width} height={height} fill="url(#bgB)" />
+        <Rect x={0} y={0} width={width} height={height} fill="url(#sunB)" />
+        <Path
+          d={`M -20 0 Q ${width / 2} ${height * 0.45} ${width + 20} 0 Z`}
+          fill="url(#swellB)"
+        />
+      </Svg>
+
+      {/* Flip back button — top right */}
+      <Pressable
+        onPress={onFlip}
+        hitSlop={8}
+        style={{
+          position: "absolute",
+          top: 12,
+          right: 12,
+          width: 32,
+          height: 32,
+          borderRadius: 16,
+          backgroundColor: "rgba(255, 251, 242, 0.65)",
+          borderWidth: 1,
+          borderColor: "rgba(235, 225, 206, 0.7)",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <Feather name="rotate-ccw" size={14} color="#5a4f44" />
+      </Pressable>
+
+      <View style={{ padding: 22, paddingTop: 18, flex: 1 }}>
+        <Text
+          style={{
+            fontSize: 10,
+            fontWeight: "800",
+            letterSpacing: 2,
+            color: "#9c8f80",
+          }}
+        >
+          STUDIO NOTE
+        </Text>
+        <Text
+          style={{
+            marginTop: 8,
+            fontFamily: SERIF,
+            fontStyle: "italic",
+            fontWeight: "700",
+            fontSize: 22,
+            lineHeight: 26,
+            color: INK,
+            letterSpacing: -0.3,
+            paddingRight: 36,
+          }}
+          numberOfLines={2}
+        >
+          {vendor.business_name ?? "Vendor"}
+        </Text>
+
+        <Text
+          style={{
+            marginTop: 14,
+            fontFamily: SERIF,
+            fontStyle: "italic",
+            fontSize: 15,
+            lineHeight: 21,
+            color: "#5a4f44",
+          }}
+          numberOfLines={5}
+        >
+          {vendor.bio?.trim() ||
+            "Tap inquire on the listing to start a conversation. We reply within a few hours, usually same day."}
+        </Text>
+
+        <View
+          style={{
+            position: "absolute",
+            left: 22,
+            right: 22,
+            bottom: 18,
+            flexDirection: "row",
+            alignItems: "center",
+            gap: 10,
+            flexWrap: "wrap",
+          }}
+        >
+          {vendor.category ? (
+            <View
+              style={{
+                backgroundColor: "rgba(255, 251, 242, 0.65)",
+                borderWidth: 1,
+                borderColor: "rgba(235, 225, 206, 0.7)",
+                paddingHorizontal: 10,
+                paddingVertical: 5,
+                borderRadius: 999,
+              }}
+            >
+              <Text
+                style={{ color: INK, fontSize: 12, fontWeight: "600" }}
+              >
+                {vendor.category}
+              </Text>
+            </View>
+          ) : null}
+          {vendor.verified_at ? (
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                gap: 5,
+                backgroundColor: INK,
+                paddingHorizontal: 10,
+                paddingVertical: 5,
+                borderRadius: 999,
+              }}
+            >
+              <Feather name="check" size={11} color="#faf5ec" />
+              <Text
+                style={{
+                  color: "#faf5ec",
+                  fontSize: 10,
+                  fontWeight: "800",
+                  letterSpacing: 0.6,
+                }}
+              >
+                VERIFIED
+              </Text>
+            </View>
+          ) : null}
+        </View>
+      </View>
+    </>
   );
 }
 
