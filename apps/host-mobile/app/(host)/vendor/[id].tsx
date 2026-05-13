@@ -11,8 +11,9 @@
 // corners that sit over the bottom of the gallery. Sticky bottom
 // action bar with "From $X" and an Inquire CTA.
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
+  Animated,
   Dimensions,
   FlatList,
   Image,
@@ -27,11 +28,6 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
-import Animated, {
-  useAnimatedStyle,
-  useSharedValue,
-  withTiming,
-} from "react-native-reanimated";
 import Svg, {
   Defs,
   LinearGradient as SvgLinearGradient,
@@ -2031,28 +2027,34 @@ function CreamOceanCard({
   const CARD_W = Dimensions.get("window").width - 36;
   const CARD_H = 230;
 
-  // Flip animation — front is at rotateY: 0, back at 180. When flipped
-  // the front rotates to 180 (away from camera), back to 0 (toward).
-  // backfaceVisibility hides whichever side is facing away.
-  const flip = useSharedValue(0);
-  const isFlipped = useSharedValue(false);
+  // Flip animation using React Native's built-in Animated. The
+  // reanimated equivalent needs the babel plugin which isn't in
+  // host-mobile's babel.config — Animated is always available.
+  const flipAnim = useRef(new Animated.Value(0)).current;
+  const flippedRef = useRef(false);
   const toggleFlip = () => {
-    isFlipped.value = !isFlipped.value;
-    flip.value = withTiming(isFlipped.value ? 180 : 0, { duration: 500 });
+    flippedRef.current = !flippedRef.current;
+    Animated.timing(flipAnim, {
+      toValue: flippedRef.current ? 1 : 0,
+      duration: 500,
+      useNativeDriver: true,
+    }).start();
   };
 
-  const frontStyle = useAnimatedStyle(() => ({
-    transform: [
-      { perspective: 1000 },
-      { rotateY: `${flip.value}deg` },
-    ],
-  }));
-  const backStyle = useAnimatedStyle(() => ({
-    transform: [
-      { perspective: 1000 },
-      { rotateY: `${flip.value + 180}deg` },
-    ],
-  }));
+  const frontRotate = flipAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ["0deg", "180deg"],
+  });
+  const backRotate = flipAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ["180deg", "360deg"],
+  });
+  const frontStyle = {
+    transform: [{ perspective: 1000 }, { rotateY: frontRotate }],
+  };
+  const backStyle = {
+    transform: [{ perspective: 1000 }, { rotateY: backRotate }],
+  };
 
   return (
     <View

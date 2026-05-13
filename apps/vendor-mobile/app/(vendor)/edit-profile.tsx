@@ -179,7 +179,10 @@ export default function EditProfileScreen() {
     }
     const pick = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      quality: 0.85,
+      // Logos render at ~110px max — we don't need megabyte-scale
+      // originals. 0.55 quality + the iOS crop already brings most
+      // photos down to ~200 KB.
+      quality: 0.55,
       allowsEditing: true,
       aspect: [1, 1],
     });
