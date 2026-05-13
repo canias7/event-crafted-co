@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { NavLink, Outlet } from "react-router-dom";
 import {
+  Briefcase,
   ChevronLeft,
   ChevronRight,
   FileCheck2,
@@ -23,6 +24,7 @@ const NAV: Array<{
   { to: "/users", label: "Users", icon: Users },
   { to: "/listings", label: "Vendor listings", icon: Store },
   { to: "/reviews", label: "Reviews", icon: Star },
+  { to: "/workspace", label: "Workspace", icon: Briefcase },
 ];
 
 const STORAGE_KEY = "vendora-admin-sidebar-collapsed";
