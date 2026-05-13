@@ -2466,24 +2466,10 @@ function CreamOceanCard({
     inputRange: [0, 1],
     outputRange: ["180deg", "360deg"],
   });
-  // Opacity gating swaps the visible face at the flip midpoint —
-  // backfaceVisibility:"hidden" alone has been unreliable on some iOS
-  // builds (front face renders blank), so we layer this on top as a
-  // defensive cross-fade that snaps at 50% of the rotation.
-  const frontOpacity = flipAnim.interpolate({
-    inputRange: [0, 0.49, 0.5, 1],
-    outputRange: [1, 1, 0, 0],
-  });
-  const backOpacity = flipAnim.interpolate({
-    inputRange: [0, 0.5, 0.51, 1],
-    outputRange: [0, 0, 1, 1],
-  });
   const frontStyle = {
-    opacity: frontOpacity,
     transform: [{ perspective: 1000 }, { rotateY: frontRotate }],
   };
   const backStyle = {
-    opacity: backOpacity,
     transform: [{ perspective: 1000 }, { rotateY: backRotate }],
   };
 
