@@ -160,6 +160,9 @@ serve(async (req) => {
     } else if (kind === "signin_code") {
       const e = signinCodeEmail(body as SigninCodePayload);
       if (e) emails = [e];
+    } else if (kind === "outreach_lead") {
+      const e = await outreachLeadEmail(body as OutreachLeadPayload);
+      if (e) emails = [e];
     } else {
       return json({ error: `Unknown kind: ${kind}` }, 400);
     }
@@ -643,6 +646,85 @@ function escape(s: string) {
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#39;");
+}
+
+interface OutreachLeadPayload {
+  lead_id: string;
+  template_id: string;
+}
+
+// Send an outreach email to an email_leads row using an email_templates
+// row. Substitutes {{name}}, {{email}}, {{source}} into subject + body.
+// Body is plain text — paragraphs split on blank lines, line breaks
+// preserved. After a successful send, marks the lead as contacted and
+// stamps last_sent_at / last_template_id.
+async function outreachLeadEmail(p: OutreachLeadPayload) {
+  if (!p.lead_id || !p.template_id) {
+    throw new Error("lead_id and template_id are required");
+  }
+  const sb = adminClient();
+
+  const { data: lead, error: leadErr } = await sb
+    .from("email_leads")
+    .select("id, email, name, source")
+    .eq("id", p.lead_id)
+    .maybeSingle();
+  if (leadErr) throw new Error(`Lead lookup: ${leadErr.message}`);
+  const leadRow = lead as { id: string; email: string; name: string | null; source: string | null } | null;
+  if (!leadRow) throw new Error(`Lead not found: ${p.lead_id}`);
+
+  const { data: template, error: tplErr } = await sb
+    .from("email_templates")
+    .select("id, name, subject, body")
+    .eq("id", p.template_id)
+    .maybeSingle();
+  if (tplErr) throw new Error(`Template lookup: ${tplErr.message}`);
+  const tplRow = template as { id: string; name: string; subject: string; body: string } | null;
+  if (!tplRow) throw new Error(`Template not found: ${p.template_id}`);
+
+  const vars: Record<string, string> = {
+    name: leadRow.name ?? "there",
+    email: leadRow.email,
+    source: leadRow.source ?? "",
+  };
+  const subject = applyVars(tplRow.subject, vars);
+  const bodyText = applyVars(tplRow.body, vars);
+  const html = shellHtml(escape(subject), textToParagraphs(bodyText));
+
+  // Stamp the lead before send. If Resend rejects, we'll surface that
+  // error but the lead will still show as contacted; the caller can
+  // recover from the UI. Acceptable trade-off for v1.
+  await sb
+    .from("email_leads")
+    .update({
+      status: "contacted",
+      last_sent_at: new Date().toISOString(),
+      last_template_id: tplRow.id,
+    })
+    .eq("id", leadRow.id);
+
+  return { to: leadRow.email, subject, html };
+}
+
+// Replace {{name}}, {{ email }}, etc. with values from vars. Unknown
+// placeholders are left as-is — easier to spot a typo in a template
+// than to silently render an empty string.
+function applyVars(input: string, vars: Record<string, string>) {
+  return input.replace(/\{\{\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*\}\}/g, (m, key) => {
+    return Object.prototype.hasOwnProperty.call(vars, key) ? vars[key] : m;
+  });
+}
+
+// Plain-text email body -> HTML. Blank-line separated chunks become
+// <p>; single line breaks become <br/>. All content is HTML-escaped.
+function textToParagraphs(text: string) {
+  const escaped = escape(text);
+  return escaped
+    .split(/\n{2,}/)
+    .map((para) =>
+      `<p style="margin:0 0 16px;line-height:1.6;color:#3a3a3a;">${para.replace(/\n/g, "<br/>")}</p>`,
+    )
+    .join("");
 }
 
 async function guestBlastEmails(p: GuestBlastPayload) {

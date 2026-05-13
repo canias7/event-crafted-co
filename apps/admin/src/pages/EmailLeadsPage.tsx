@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
-import { ChevronLeft, Plus, Trash2 } from "lucide-react";
+import { ChevronLeft, Plus, Send, Trash2 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 
 // Email leads — a contact list for outreach campaigns. Manual add
@@ -19,6 +19,13 @@ type EmailLead = {
   notes: string | null;
   created_at: string;
   updated_at: string;
+  last_sent_at: string | null;
+  last_template_id: string | null;
+};
+
+type EmailTemplate = {
+  id: string;
+  name: string;
 };
 
 const STATUS_OPTIONS: ReadonlyArray<{ value: LeadStatus; label: string }> = [
@@ -39,23 +46,51 @@ const STATUS_TINT: Record<LeadStatus, string> = {
 
 export function EmailLeadsPage() {
   const [rows, setRows] = useState<EmailLead[]>([]);
+  const [templates, setTemplates] = useState<EmailTemplate[]>([]);
+  // Per-row selected template id, keyed by lead id. Defaults to the
+  // lead's last_template_id (if any) so re-sending the same template
+  // is one click.
+  const [pickedTemplate, setPickedTemplate] = useState<Record<string, string>>({});
+  const [sending, setSending] = useState<Record<string, boolean>>({});
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<LeadStatus | "all">("all");
   const [showAdd, setShowAdd] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
-    const { data, error } = await supabase
-      .from("email_leads")
-      .select("id, email, name, source, status, notes, created_at, updated_at")
-      .order("created_at", { ascending: false })
-      .limit(500);
+    const [{ data: leads, error: leadsErr }, { data: tpls, error: tplsErr }] =
+      await Promise.all([
+        supabase
+          .from("email_leads")
+          .select(
+            "id, email, name, source, status, notes, created_at, updated_at, last_sent_at, last_template_id",
+          )
+          .order("created_at", { ascending: false })
+          .limit(500),
+        supabase
+          .from("email_templates")
+          .select("id, name")
+          .order("created_at", { ascending: false }),
+      ]);
     setLoading(false);
-    if (error) {
-      toast.error(error.message);
+    if (leadsErr) {
+      toast.error(leadsErr.message);
       return;
     }
-    setRows((data ?? []) as EmailLead[]);
+    if (tplsErr) {
+      // Non-fatal: leads still render without template options.
+      console.warn("templates load failed:", tplsErr.message);
+    }
+    const leadRows = (leads ?? []) as EmailLead[];
+    setRows(leadRows);
+    setTemplates((tpls ?? []) as EmailTemplate[]);
+    setPickedTemplate(
+      Object.fromEntries(
+        leadRows
+          .filter((l) => l.last_template_id)
+          .map((l) => [l.id, l.last_template_id as string]),
+      ),
+    );
   }, []);
 
   useEffect(() => {
@@ -103,6 +138,33 @@ export function EmailLeadsPage() {
     }
     setRows((p) =>
       p.map((r) => (r.id === id ? { ...r, notes: notes.trim() || null } : r)),
+    );
+  }
+
+  async function sendEmail(lead: EmailLead) {
+    const templateId = pickedTemplate[lead.id];
+    if (!templateId) {
+      toast.error("Pick a template first");
+      return;
+    }
+    setSending((p) => ({ ...p, [lead.id]: true }));
+    const { data, error } = await supabase.functions.invoke(
+      "send-transactional-email",
+      { body: { kind: "outreach_lead", lead_id: lead.id, template_id: templateId } },
+    );
+    setSending((p) => ({ ...p, [lead.id]: false }));
+    if (error || data?.ok === false) {
+      toast.error(error?.message ?? data?.error ?? "Send failed");
+      return;
+    }
+    toast.success(`Sent to ${lead.email}`);
+    const now = new Date().toISOString();
+    setRows((p) =>
+      p.map((r) =>
+        r.id === lead.id
+          ? { ...r, status: "contacted" as LeadStatus, last_sent_at: now, last_template_id: templateId }
+          : r,
+      ),
     );
   }
 
@@ -221,6 +283,7 @@ export function EmailLeadsPage() {
                 <th className="px-4 py-3 text-left font-medium">Status</th>
                 <th className="px-4 py-3 text-left font-medium">Notes</th>
                 <th className="px-4 py-3 text-left font-medium">Added</th>
+                <th className="px-4 py-3 text-left font-medium">Send</th>
                 <th className="px-4 py-3"></th>
               </tr>
             </thead>
@@ -229,6 +292,13 @@ export function EmailLeadsPage() {
                 <LeadRow
                   key={r.id}
                   lead={r}
+                  templates={templates}
+                  templateId={pickedTemplate[r.id] ?? ""}
+                  onTemplateChange={(id) =>
+                    setPickedTemplate((p) => ({ ...p, [r.id]: id }))
+                  }
+                  sending={!!sending[r.id]}
+                  onSend={() => sendEmail(r)}
                   onStatus={(next) => updateStatus(r.id, next)}
                   onNotes={(next) => updateNotes(r.id, next)}
                   onDelete={() => deleteLead(r.id)}
@@ -364,11 +434,21 @@ function AddLeadForm({
 
 function LeadRow({
   lead,
+  templates,
+  templateId,
+  onTemplateChange,
+  sending,
+  onSend,
   onStatus,
   onNotes,
   onDelete,
 }: {
   lead: EmailLead;
+  templates: EmailTemplate[];
+  templateId: string;
+  onTemplateChange: (id: string) => void;
+  sending: boolean;
+  onSend: () => void;
   onStatus: (next: LeadStatus) => void;
   onNotes: (next: string) => void;
   onDelete: () => void;
@@ -439,6 +519,44 @@ function LeadRow({
       </td>
       <td className="whitespace-nowrap px-4 py-3 align-top text-ink/60">
         {new Date(lead.created_at).toLocaleDateString()}
+      </td>
+      <td className="px-4 py-3 align-top">
+        <div className="flex items-center gap-2">
+          <select
+            value={templateId}
+            onChange={(e) => onTemplateChange(e.target.value)}
+            disabled={templates.length === 0 || sending}
+            className="max-w-[160px] rounded border border-ink/15 bg-white px-2 py-1 text-xs text-ink/80 outline-none focus:border-ink/40 disabled:opacity-50"
+            title={
+              templates.length === 0
+                ? "Create a template first in /workspace/templates"
+                : "Pick a template"
+            }
+          >
+            <option value="">
+              {templates.length === 0 ? "No templates" : "Pick template…"}
+            </option>
+            {templates.map((t) => (
+              <option key={t.id} value={t.id}>
+                {t.name}
+              </option>
+            ))}
+          </select>
+          <button
+            onClick={onSend}
+            disabled={!templateId || sending}
+            className="flex items-center gap-1 rounded bg-ink px-2.5 py-1 text-xs font-medium text-bone hover:bg-ink/90 disabled:cursor-not-allowed disabled:opacity-40"
+            title={lead.last_sent_at ? `Last sent ${new Date(lead.last_sent_at).toLocaleString()}` : "Send this template"}
+          >
+            <Send className="h-3 w-3" />
+            {sending ? "Sending…" : "Send"}
+          </button>
+        </div>
+        {lead.last_sent_at ? (
+          <p className="mt-1 text-[10px] text-ink/40">
+            Sent {new Date(lead.last_sent_at).toLocaleDateString()}
+          </p>
+        ) : null}
       </td>
       <td className="px-4 py-3 align-top">
         <button
