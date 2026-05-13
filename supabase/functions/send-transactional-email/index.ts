@@ -124,7 +124,11 @@ serve(async (req) => {
   }
 
   const kind = body.kind;
-  let emails: { to: string; subject: string; html: string }[] = [];
+  // `from` is optional — when set, overrides FROM_ADDRESS for that
+  // specific email. Used by cold-outreach paths so each template can
+  // send from a real person (chris@eventvendora.com) instead of the
+  // default noreply@.
+  let emails: { to: string; subject: string; html: string; from?: string }[] = [];
 
   try {
     if (kind === "team_invite") {
@@ -184,7 +188,7 @@ serve(async (req) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        from: FROM_ADDRESS,
+        from: email.from ?? FROM_ADDRESS,
         to: email.to,
         subject: email.subject,
         html: email.html,
@@ -655,9 +659,17 @@ interface OutreachLeadPayload {
 
 // Send an outreach email to an email_leads row using an email_templates
 // row. Substitutes {{name}}, {{email}}, {{source}} into subject + body.
-// Body is plain text — paragraphs split on blank lines, line breaks
-// preserved. After a successful send, marks the lead as contacted and
-// stamps last_sent_at / last_template_id.
+//
+// Cold-outreach deliverability is brittle: branded HTML wrappers,
+// noreply@ senders, and big logos all push these into spam. So we
+// deliberately do NOT use shellHtml here — outreach goes out as
+// minimal HTML (just paragraph tags) so it reads like a 1:1 email,
+// not a newsletter. The template can also carry its own from_name /
+// from_address override so the email is sent from a real person on a
+// verified Resend domain.
+//
+// After a successful send, marks the lead as contacted and stamps
+// last_sent_at / last_template_id.
 async function outreachLeadEmail(p: OutreachLeadPayload) {
   if (!p.lead_id || !p.template_id) {
     throw new Error("lead_id and template_id are required");
@@ -675,11 +687,18 @@ async function outreachLeadEmail(p: OutreachLeadPayload) {
 
   const { data: template, error: tplErr } = await sb
     .from("email_templates")
-    .select("id, name, subject, body")
+    .select("id, name, subject, body, from_name, from_address")
     .eq("id", p.template_id)
     .maybeSingle();
   if (tplErr) throw new Error(`Template lookup: ${tplErr.message}`);
-  const tplRow = template as { id: string; name: string; subject: string; body: string } | null;
+  const tplRow = template as {
+    id: string;
+    name: string;
+    subject: string;
+    body: string;
+    from_name: string | null;
+    from_address: string | null;
+  } | null;
   if (!tplRow) throw new Error(`Template not found: ${p.template_id}`);
 
   const vars: Record<string, string> = {
@@ -689,7 +708,13 @@ async function outreachLeadEmail(p: OutreachLeadPayload) {
   };
   const subject = applyVars(tplRow.subject, vars);
   const bodyText = applyVars(tplRow.body, vars);
-  const html = shellHtml(escape(subject), textToParagraphs(bodyText));
+  const html = outreachBodyHtml(bodyText);
+
+  const from = tplRow.from_address
+    ? tplRow.from_name
+      ? `${tplRow.from_name} <${tplRow.from_address}>`
+      : tplRow.from_address
+    : undefined;
 
   // Stamp the lead before send. If Resend rejects, we'll surface that
   // error but the lead will still show as contacted; the caller can
@@ -703,7 +728,23 @@ async function outreachLeadEmail(p: OutreachLeadPayload) {
     })
     .eq("id", leadRow.id);
 
-  return { to: leadRow.email, subject, html };
+  return { to: leadRow.email, subject, html, from };
+}
+
+// Minimal HTML wrapper for cold outreach. No logo, no header, no
+// footer, no branding — just paragraphs in a vanilla <html><body>.
+// Looks like a 1:1 personal email when rendered. All content is
+// HTML-escaped before substitution.
+function outreachBodyHtml(text: string) {
+  const escaped = escape(text);
+  const paragraphs = escaped
+    .split(/\n{2,}/)
+    .map(
+      (para) =>
+        `<p style="margin:0 0 12px;">${para.replace(/\n/g, "<br/>")}</p>`,
+    )
+    .join("");
+  return `<!doctype html><html><body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:15px;line-height:1.5;color:#1a1a1a;">${paragraphs}</body></html>`;
 }
 
 // Replace {{name}}, {{ email }}, etc. with values from vars. Unknown
@@ -713,18 +754,6 @@ function applyVars(input: string, vars: Record<string, string>) {
   return input.replace(/\{\{\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*\}\}/g, (m, key) => {
     return Object.prototype.hasOwnProperty.call(vars, key) ? vars[key] : m;
   });
-}
-
-// Plain-text email body -> HTML. Blank-line separated chunks become
-// <p>; single line breaks become <br/>. All content is HTML-escaped.
-function textToParagraphs(text: string) {
-  const escaped = escape(text);
-  return escaped
-    .split(/\n{2,}/)
-    .map((para) =>
-      `<p style="margin:0 0 16px;line-height:1.6;color:#3a3a3a;">${para.replace(/\n/g, "<br/>")}</p>`,
-    )
-    .join("");
 }
 
 async function guestBlastEmails(p: GuestBlastPayload) {

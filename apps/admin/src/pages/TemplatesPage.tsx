@@ -9,6 +9,8 @@ type EmailTemplate = {
   name: string;
   subject: string;
   body: string;
+  from_name: string | null;
+  from_address: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -26,7 +28,7 @@ export function TemplatesPage() {
     setLoading(true);
     const { data, error } = await supabase
       .from("email_templates")
-      .select("id, name, subject, body, created_at, updated_at")
+      .select("id, name, subject, body, from_name, from_address, created_at, updated_at")
       .order("created_at", { ascending: false });
     setLoading(false);
     if (error) {
@@ -41,13 +43,21 @@ export function TemplatesPage() {
   }, [load]);
 
   async function saveTemplate(
-    form: { name: string; subject: string; body: string },
+    form: {
+      name: string;
+      subject: string;
+      body: string;
+      from_name: string;
+      from_address: string;
+    },
     id?: string,
   ) {
     const payload = {
       name: form.name.trim(),
       subject: form.subject.trim(),
       body: form.body,
+      from_name: form.from_name.trim() || null,
+      from_address: form.from_address.trim() || null,
     };
     if (!payload.name || !payload.subject || !payload.body.trim()) {
       toast.error("Name, subject, and body are required");
@@ -58,7 +68,7 @@ export function TemplatesPage() {
         .from("email_templates")
         .update(payload)
         .eq("id", id)
-        .select("id, name, subject, body, created_at, updated_at")
+        .select("id, name, subject, body, from_name, from_address, created_at, updated_at")
         .single();
       if (error) {
         toast.error(error.message);
@@ -70,7 +80,7 @@ export function TemplatesPage() {
       const { data, error } = await supabase
         .from("email_templates")
         .insert(payload)
-        .select("id, name, subject, body, created_at, updated_at")
+        .select("id, name, subject, body, from_name, from_address, created_at, updated_at")
         .single();
       if (error) {
         toast.error(error.message);
@@ -170,6 +180,12 @@ export function TemplatesPage() {
                   {t.body}
                 </p>
                 <p className="mt-2 text-xs text-ink/40">
+                  {t.from_address ? (
+                    <>
+                      From {t.from_name ? `${t.from_name} <${t.from_address}>` : t.from_address}
+                      {" · "}
+                    </>
+                  ) : null}
                   Updated {new Date(t.updated_at).toLocaleString()}
                 </p>
               </div>
@@ -209,11 +225,19 @@ function TemplateForm({
   mode: "create" | "edit";
   initial?: EmailTemplate;
   onCancel: () => void;
-  onSubmit: (f: { name: string; subject: string; body: string }) => Promise<void>;
+  onSubmit: (f: {
+    name: string;
+    subject: string;
+    body: string;
+    from_name: string;
+    from_address: string;
+  }) => Promise<void>;
 }) {
   const [name, setName] = useState(initial?.name ?? "");
   const [subject, setSubject] = useState(initial?.subject ?? "");
   const [body, setBody] = useState(initial?.body ?? "");
+  const [fromName, setFromName] = useState(initial?.from_name ?? "");
+  const [fromAddress, setFromAddress] = useState(initial?.from_address ?? "");
   const [busy, setBusy] = useState(false);
 
   return (
@@ -222,7 +246,13 @@ function TemplateForm({
       onSubmit={async (e) => {
         e.preventDefault();
         setBusy(true);
-        await onSubmit({ name, subject, body });
+        await onSubmit({
+          name,
+          subject,
+          body,
+          from_name: fromName,
+          from_address: fromAddress,
+        });
         setBusy(false);
       }}
     >
@@ -266,6 +296,36 @@ function TemplateForm({
             className="mt-1 w-full rounded border border-ink/15 px-3 py-2 outline-none focus:border-ink/40"
           />
         </label>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <label className="text-sm">
+            <span className="block text-xs uppercase tracking-wide text-ink/60">
+              From name
+            </span>
+            <input
+              type="text"
+              value={fromName}
+              onChange={(e) => setFromName(e.target.value)}
+              placeholder="Chris from Vendora"
+              className="mt-1 w-full rounded border border-ink/15 px-3 py-2 outline-none focus:border-ink/40"
+            />
+          </label>
+          <label className="text-sm">
+            <span className="block text-xs uppercase tracking-wide text-ink/60">
+              From address
+            </span>
+            <input
+              type="email"
+              value={fromAddress}
+              onChange={(e) => setFromAddress(e.target.value)}
+              placeholder="chris@eventvendora.com"
+              className="mt-1 w-full rounded border border-ink/15 px-3 py-2 outline-none focus:border-ink/40"
+            />
+            <p className="mt-1 text-[11px] text-ink/50">
+              Must be on a domain verified in Resend. Leave blank to use the
+              default noreply@.
+            </p>
+          </label>
+        </div>
         <label className="text-sm">
           <span className="block text-xs uppercase tracking-wide text-ink/60">
             Body <span className="text-red-500">*</span>
