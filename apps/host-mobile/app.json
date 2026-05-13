@@ -17,7 +17,9 @@
       "policy": "appVersion"
     },
     "updates": {
-      "url": "https://u.expo.dev/78809059-f3b6-451b-a5c1-5cae58abe87a"
+      "url": "https://u.expo.dev/78809059-f3b6-451b-a5c1-5cae58abe87a",
+      "checkAutomatically": "ON_LOAD",
+      "fallbackToCacheTimeout": 30000
     },
     "ios": {
       "bundleIdentifier": "co.eventcrafted.host",
