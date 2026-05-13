@@ -1,18 +1,16 @@
-// Native listing builder for vendor-mobile. Mirrors the web wizard's
-// About / Pricing / More steps with the core fields:
+// Native listing builder for vendor-mobile. Per-listing fields only:
 //   - Listing photos (vendor_portfolio_images)
-//   - Category, short bio, location (vendor_profiles)
+//   - Category, location (vendor_profiles)
 //   - Starting price (vendor_profiles.base_price_cents)
+//   - Details / FAQs / Team (per-listing children)
+//
+// Business name + bio live on the vendor's identity profile and are
+// mirrored onto every listing by tg_profiles_sync_solo_listing — we
+// don't ask for them here.
 //
 // Save persists to draft. Publish flips application_status to
-// 'pending' and fires the listing_submitted email. Mirrors web's
-// publish-readiness check (category + bio + location + starting
-// price required).
-//
-// Intentionally does NOT include packages, FAQs, policies, team,
-// recommendations — those live on web for now and ship to mobile in
-// follow-up. The 80/20 here is the core listing fields that gate
-// going live in the marketplace.
+// 'pending' and fires the listing_submitted email. Publish-readiness
+// check: category + location + starting price.
 
 import { useCallback, useEffect, useState } from "react";
 import {
@@ -34,9 +32,7 @@ import { CATEGORY_GROUPS } from "@vendora/core";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
 import {
-  PackagesSection,
   FaqsSection,
-  PoliciesSection,
   TeamSection,
 } from "@/components/listing/Sections";
 import { DetailsSection } from "@/components/listing/DetailsSection";
@@ -57,9 +53,7 @@ const LISTING_LIMIT = 5;
 
 type ProfileRow = {
   id: string;
-  business_name: string | null;
   category: string | null;
-  bio: string | null;
   location: string | null;
   base_price_cents: number | null;
   application_status: "draft" | "pending" | "approved" | "rejected" | null;
@@ -73,7 +67,7 @@ type PortfolioRow = {
 };
 
 const PROFILE_COLS =
-  "id, business_name, category, bio, base_price_cents, location, application_status";
+  "id, category, base_price_cents, location, application_status";
 
 export default function ListingScreen() {
   const router = useRouter();
@@ -93,9 +87,7 @@ export default function ListingScreen() {
   const [categoryPickerOpen, setCategoryPickerOpen] = useState(false);
 
   // Form state
-  const [businessName, setBusinessName] = useState("");
   const [category, setCategory] = useState("");
-  const [bio, setBio] = useState("");
   const [location, setLocation] = useState("");
   const [basePrice, setBasePrice] = useState("");
 
@@ -154,9 +146,7 @@ export default function ListingScreen() {
     const row = prof;
     setProfile(row);
     if (row) {
-      setBusinessName(row.business_name ?? "");
       setCategory(row.category ?? "");
-      setBio(row.bio ?? "");
       setLocation(row.location ?? "");
       setBasePrice(
         row.base_price_cents != null
@@ -285,9 +275,7 @@ export default function ListingScreen() {
 
   function buildPayload(): Record<string, unknown> {
     return {
-      business_name: businessName.trim() || null,
       category: category || null,
-      bio: bio.trim() || null,
       location: location.trim() || null,
       base_price_cents: basePrice
         ? Math.round(Number.parseFloat(basePrice) * 100)
@@ -299,9 +287,7 @@ export default function ListingScreen() {
     if (!profile?.id) return;
     if (publish) {
       const missing: string[] = [];
-      if (!businessName.trim()) missing.push("Business name");
       if (!category) missing.push("Category");
-      if (!bio.trim()) missing.push("Short bio");
       if (!location.trim()) missing.push("Location");
       if (!basePrice.trim() || Number.parseFloat(basePrice) <= 0)
         missing.push("Starting price");
@@ -525,20 +511,14 @@ export default function ListingScreen() {
             />
           </SectionBlock>
 
-          {/* The basics */}
+          {/* The basics — business name + bio come from the vendor's
+              identity profile (auto-synced), so we don't ask for them
+              here. Just category + where + starting price. */}
           <SectionBlock
             title="The basics"
-            subtitle="Who you are and where to find you."
-            footnote="This is the first thing hosts read. Make it sound like you."
+            subtitle="Where you work and where you start."
+            footnote="Set your business name + bio once from your profile — they sync to every listing automatically."
           >
-            <FieldLabel required>Business name</FieldLabel>
-            <TextField
-              value={businessName}
-              onChangeText={setBusinessName}
-              placeholder="e.g. Last Call Bar Co."
-            />
-
-            <View style={{ height: 14 }} />
             <FieldLabel required>Category</FieldLabel>
             <Pressable onPress={() => setCategoryPickerOpen(true)}>
               <View style={fieldBox()}>
@@ -555,15 +535,6 @@ export default function ListingScreen() {
                 <Feather name="chevron-down" size={18} color={INK_DIM} />
               </View>
             </Pressable>
-
-            <View style={{ height: 14 }} />
-            <FieldLabel required>Short bio</FieldLabel>
-            <TextField
-              value={bio}
-              onChangeText={setBio}
-              placeholder="One or two sentences on what makes your work worth booking."
-              multiline
-            />
 
             <View style={{ height: 14 }} />
             <View style={{ flexDirection: "row", gap: 12 }}>
@@ -612,38 +583,21 @@ export default function ListingScreen() {
             <EmptyCard body="Pick a category above to unlock structured details." />
           )}
 
-          {/* STEP 3 · OFFERINGS */}
+          {/* STEP 3 · FAQs */}
           <StepHeader
-            step="STEP 3 · OFFERINGS"
-            title="What you sell."
-            body="Pricing tiers and the questions hosts ask first."
-          />
-          <SectionBlock title="Packages" subtitle="Pricing tiers and what's included.">
-            {profile?.id ? (
-              <PackagesSection vendorId={profile.id} />
-            ) : (
-              <EmptyCard body="Save the listing once to enable packages." />
-            )}
-          </SectionBlock>
-          <SectionBlock title="FAQs" subtitle="Common questions hosts ask.">
-            {profile?.id ? <FaqsSection vendorId={profile.id} /> : null}
-          </SectionBlock>
-
-          {/* STEP 4 · POLICIES */}
-          <StepHeader
-            step="STEP 4 · POLICIES"
-            title="Trust signals."
-            body="Cancellation, deposits, payment terms."
+            step="STEP 3 · FAQs"
+            title="Common questions."
+            body="Answer the first three or four hosts will ask — saves you typing later."
           />
           {profile?.id ? (
             <View style={{ paddingHorizontal: 16, paddingTop: 4 }}>
-              <PoliciesSection vendorId={profile.id} />
+              <FaqsSection vendorId={profile.id} />
             </View>
           ) : null}
 
-          {/* STEP 5 · TEAM */}
+          {/* STEP 4 · TEAM */}
           <StepHeader
-            step="STEP 5 · TEAM"
+            step="STEP 4 · TEAM"
             title="Who you are."
             body="Names, roles, short bios. Public on your page."
           />
