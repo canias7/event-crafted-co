@@ -2775,6 +2775,17 @@ function CreamOceanBack({
         />
       </Svg>
 
+      {/* Bio on back — minimal rendering. Just a Text in a padded
+          View. No numberOfLines, no nested Text, no fancy positioning,
+          to avoid the crash modes the richer renderings hit. */}
+      {hasBio ? (
+        <View style={{ padding: 22, paddingTop: 60 }}>
+          <Text style={{ color: INK, fontSize: 18, textAlign: "center" }}>
+            {bio}
+          </Text>
+        </View>
+      ) : null}
+
       <Pressable
         onPress={onFlip}
         hitSlop={8}
