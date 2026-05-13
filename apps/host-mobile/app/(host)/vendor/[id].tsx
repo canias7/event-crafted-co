@@ -1338,56 +1338,56 @@ function CreamOceanAvatar({
         backgroundColor: "#1a1410",
       }}
     >
+      {/* Always paint the gradient + initial first. When a logo URL is
+          provided, the Image renders on top — but until it loads the
+          user already sees the styled tile instead of a black square. */}
+      <Svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+        <Defs>
+          <RadialGradient id={`avA-${size}`} cx="0.3" cy="0.3" rx="0.6" ry="0.6">
+            <Stop offset="0" stopColor="#b8472f" stopOpacity="0.55" />
+            <Stop offset="1" stopColor="#b8472f" stopOpacity="0" />
+          </RadialGradient>
+          <RadialGradient id={`avB-${size}`} cx="0.7" cy="0.75" rx="0.6" ry="0.6">
+            <Stop offset="0" stopColor="#b89556" stopOpacity="0.3" />
+            <Stop offset="1" stopColor="#b89556" stopOpacity="0" />
+          </RadialGradient>
+        </Defs>
+        <Rect x={0} y={0} width={size} height={size} fill={`url(#avA-${size})`} />
+        <Rect x={0} y={0} width={size} height={size} fill={`url(#avB-${size})`} />
+      </Svg>
+      <View
+        style={{
+          position: "absolute",
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <Text
+          style={{
+            color: "#faf5ec",
+            fontFamily: SERIF,
+            fontStyle: "italic",
+            fontWeight: "700",
+            fontSize,
+            lineHeight: fontSize * 1.05,
+            letterSpacing: -1,
+          }}
+        >
+          {initial}
+        </Text>
+      </View>
       {logoUrl ? (
         <Image
           source={{ uri: logoUrl }}
-          style={{ flex: 1 }}
+          style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }}
           resizeMode="cover"
           accessibilityIgnoresInvertColors
         />
-      ) : (
-        <>
-          <Svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
-            <Defs>
-              <RadialGradient id={`avA-${size}`} cx="0.3" cy="0.3" rx="0.6" ry="0.6">
-                <Stop offset="0" stopColor="#b8472f" stopOpacity="0.55" />
-                <Stop offset="1" stopColor="#b8472f" stopOpacity="0" />
-              </RadialGradient>
-              <RadialGradient id={`avB-${size}`} cx="0.7" cy="0.75" rx="0.6" ry="0.6">
-                <Stop offset="0" stopColor="#b89556" stopOpacity="0.3" />
-                <Stop offset="1" stopColor="#b89556" stopOpacity="0" />
-              </RadialGradient>
-            </Defs>
-            <Rect x={0} y={0} width={size} height={size} fill={`url(#avA-${size})`} />
-            <Rect x={0} y={0} width={size} height={size} fill={`url(#avB-${size})`} />
-          </Svg>
-          <View
-            style={{
-              position: "absolute",
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-          >
-            <Text
-              style={{
-                color: "#faf5ec",
-                fontFamily: SERIF,
-                fontStyle: "italic",
-                fontWeight: "700",
-                fontSize,
-                lineHeight: fontSize * 1.05,
-                letterSpacing: -1,
-              }}
-            >
-              {initial}
-            </Text>
-          </View>
-        </>
-      )}
+      ) : null}
     </View>
   );
 }
@@ -2154,6 +2154,7 @@ function CreamOceanFront({
         width={width}
         height={height}
         viewBox={`0 0 ${width} ${height}`}
+        pointerEvents="none"
         style={{ position: "absolute", top: 0, left: 0 }}
       >
         <Defs>
@@ -2347,6 +2348,7 @@ function CreamOceanBack({
         width={width}
         height={height}
         viewBox={`0 0 ${width} ${height}`}
+        pointerEvents="none"
         style={{ position: "absolute", top: 0, left: 0 }}
       >
         <Defs>
