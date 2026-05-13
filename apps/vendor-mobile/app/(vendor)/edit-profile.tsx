@@ -1,11 +1,8 @@
-// Vendor "Edit profile" screen — edits identity stored on
-// public.profiles (NOT on any one vendor_profiles row). The Profile
-// tab reads from the same five columns, so changes show up immediately.
+// Vendor "Edit profile" screen — identity fields on public.profiles.
+// Category + city used to live here but they're per-listing now (the
+// listing builder owns those), so the profile is just brand identity:
 //
-// Fields:
 //   - business_name      brand name shown on the profile chrome
-//   - category           e.g. "Desserts & Cakes"
-//   - location           city
 //   - bio                italic-serif paragraph under the title
 //   - logo_url           rounded-square avatar
 //
@@ -20,7 +17,6 @@ import {
   Alert,
   Image,
   KeyboardAvoidingView,
-  Modal,
   Platform,
   Pressable,
   ScrollView,
@@ -36,87 +32,19 @@ import { useAuth } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
 
 const CREAM = "#faf5ec";
-const CREAM_DEEP = "#f5efe5";
 const INK = "#1a1410";
 const INK_DIM = "#776c5f";
 const BORDER = "#e9dfc8";
 const SERIF = Platform.OS === "ios" ? "Times New Roman" : "serif";
 
-// Canonical vendor taxonomy — must stay in lockstep with
-// apps/web/src/data/categoryTaxonomy.ts. Free-text would let vendors
-// type things like "Chria"/"Cakez" that never match a directory filter
-// or appear on a category page; constraining to this list keeps the
-// vendor discoverable.
-const CATEGORY_GROUPS: { group: string; subs: string[] }[] = [
-  {
-    group: "Venues",
-    subs: [
-      "Event Venues",
-      "Outdoor Spaces",
-      "Private Dining Spaces",
-      "Corporate / Conference Spaces",
-    ],
-  },
-  {
-    group: "Food & Beverage",
-    subs: [
-      "Catering",
-      "Bartending / Mobile Bars",
-      "Desserts & Cakes",
-      "Food Trucks / Specialty",
-    ],
-  },
-  {
-    group: "Entertainment",
-    subs: ["DJs", "Live Music", "Performers", "Hosts / MCs"],
-  },
-  {
-    group: "Media",
-    subs: ["Photography", "Videography", "Photo Booths"],
-  },
-  {
-    group: "Design & Decor",
-    subs: [
-      "Event Coordinators",
-      "Florists",
-      "Beauty",
-      "Decor Rentals",
-      "Grooming Services",
-    ],
-  },
-  {
-    group: "Rentals",
-    subs: [
-      "Furniture Rentals",
-      "Tents & Outdoor",
-      "Lighting & AV Equipment",
-      "Dance Floors & Staging",
-      "Transportation",
-    ],
-  },
-  {
-    group: "Experiences",
-    subs: ["Tastings", "Specialty Services"],
-  },
-  {
-    group: "Corporate Services",
-    subs: ["Staffing", "Speakers / Hosts", "Security", "Valet"],
-  },
-];
-const ALL_CATEGORIES = CATEGORY_GROUPS.flatMap((g) => g.subs);
-
 interface ProfileForm {
   business_name: string;
-  category: string;
-  location: string;
   bio: string;
   logo_url: string | null;
 }
 
 const EMPTY: ProfileForm = {
   business_name: "",
-  category: "",
-  location: "",
   bio: "",
   logo_url: null,
 };
@@ -129,7 +57,6 @@ export default function EditProfileScreen() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [logoUploading, setLogoUploading] = useState(false);
-  const [categoryPickerOpen, setCategoryPickerOpen] = useState(false);
 
   const load = useCallback(async () => {
     if (!user) return;
@@ -137,13 +64,11 @@ export default function EditProfileScreen() {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data } = await (supabase as any)
       .from("profiles")
-      .select("business_name, category, location, bio, logo_url")
+      .select("business_name, bio, logo_url")
       .eq("id", user.id)
       .maybeSingle();
     const next: ProfileForm = {
       business_name: data?.business_name ?? "",
-      category: data?.category ?? "",
-      location: data?.location ?? "",
       bio: data?.bio ?? "",
       logo_url: data?.logo_url ?? null,
     };
@@ -158,8 +83,6 @@ export default function EditProfileScreen() {
 
   const dirty =
     initial.business_name !== form.business_name ||
-    initial.category !== form.category ||
-    initial.location !== form.location ||
     initial.bio !== form.bio ||
     initial.logo_url !== form.logo_url;
 
@@ -257,25 +180,12 @@ export default function EditProfileScreen() {
       Alert.alert("Add a business name", "Your name is required.");
       return;
     }
-    // Category must come from the canonical taxonomy. The picker
-    // enforces this on the way in, but legacy rows could still hold
-    // free-text — block save until the vendor picks one so they can
-    // be discovered via the category browse / filter pages.
-    if (!form.category.trim() || !ALL_CATEGORIES.includes(form.category.trim())) {
-      Alert.alert(
-        "Pick a category",
-        "Tap the Category field and choose one of the listed categories so hosts can find you in the directory.",
-      );
-      return;
-    }
     setSaving(true);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { error } = await (supabase as any)
       .from("profiles")
       .update({
         business_name: form.business_name.trim(),
-        category: form.category.trim() || null,
-        location: form.location.trim() || null,
         bio: form.bio.trim() || null,
         logo_url: form.logo_url,
       })
@@ -445,16 +355,6 @@ export default function EditProfileScreen() {
                   onChange={(v) => set("business_name", v)}
                   placeholder="Chris Cakes"
                 />
-                <CategoryPickerField
-                  value={form.category}
-                  onPress={() => setCategoryPickerOpen(true)}
-                />
-                <Field
-                  label="CITY"
-                  value={form.location}
-                  onChange={(v) => set("location", v)}
-                  placeholder="Brooklyn, NY"
-                />
                 <Field
                   label="BIO"
                   value={form.bio}
@@ -467,179 +367,7 @@ export default function EditProfileScreen() {
           </ScrollView>
         </KeyboardAvoidingView>
       </SafeAreaView>
-
-      <CategoryPickerModal
-        visible={categoryPickerOpen}
-        selected={form.category}
-        onClose={() => setCategoryPickerOpen(false)}
-        onPick={(c) => {
-          set("category", c);
-          setCategoryPickerOpen(false);
-        }}
-      />
     </View>
-  );
-}
-
-function CategoryPickerField({
-  value,
-  onPress,
-}: {
-  value: string;
-  onPress: () => void;
-}) {
-  const hasValue = value.trim().length > 0;
-  return (
-    <View style={{ marginTop: 18 }}>
-      <Text
-        style={{
-          fontSize: 12,
-          fontWeight: "700",
-          letterSpacing: 1.2,
-          color: INK_DIM,
-        }}
-      >
-        CATEGORY
-      </Text>
-      <Pressable onPress={onPress}>
-        <View
-          style={{
-            marginTop: 6,
-            backgroundColor: "#ffffff",
-            borderRadius: 14,
-            borderWidth: 1,
-            borderColor: BORDER,
-            paddingHorizontal: 14,
-            paddingVertical: 14,
-            flexDirection: "row",
-            alignItems: "center",
-            justifyContent: "space-between",
-            minHeight: 50,
-          }}
-        >
-          <Text
-            style={{
-              color: hasValue ? INK : INK_DIM,
-              fontSize: 16,
-              flex: 1,
-            }}
-            numberOfLines={1}
-          >
-            {hasValue ? value : "Pick a category"}
-          </Text>
-          <Feather name="chevron-down" size={18} color={INK_DIM} />
-        </View>
-      </Pressable>
-    </View>
-  );
-}
-
-function CategoryPickerModal({
-  visible,
-  selected,
-  onClose,
-  onPick,
-}: {
-  visible: boolean;
-  selected: string;
-  onClose: () => void;
-  onPick: (c: string) => void;
-}) {
-  return (
-    <Modal
-      visible={visible}
-      animationType="slide"
-      presentationStyle="pageSheet"
-      onRequestClose={onClose}
-    >
-      <SafeAreaView style={{ flex: 1, backgroundColor: CREAM }} edges={["top"]}>
-        <View
-          style={{
-            flexDirection: "row",
-            alignItems: "center",
-            justifyContent: "space-between",
-            paddingHorizontal: 16,
-            paddingVertical: 12,
-            borderBottomWidth: 1,
-            borderColor: BORDER,
-          }}
-        >
-          <Pressable onPress={onClose} hitSlop={8}>
-            <Text style={{ fontSize: 16, color: INK_DIM }}>Cancel</Text>
-          </Pressable>
-          <Text
-            style={{ fontSize: 17, fontWeight: "600", color: INK, fontFamily: SERIF }}
-          >
-            Category
-          </Text>
-          <View style={{ width: 60 }} />
-        </View>
-        <ScrollView contentContainerStyle={{ paddingBottom: 32 }}>
-          {CATEGORY_GROUPS.map((g) => (
-            <View key={g.group} style={{ marginTop: 18 }}>
-              <Text
-                style={{
-                  paddingHorizontal: 24,
-                  paddingBottom: 8,
-                  fontSize: 12,
-                  fontWeight: "700",
-                  letterSpacing: 1.4,
-                  color: INK_DIM,
-                }}
-              >
-                {g.group.toUpperCase()}
-              </Text>
-              <View
-                style={{
-                  marginHorizontal: 16,
-                  backgroundColor: "#ffffff",
-                  borderRadius: 14,
-                  borderWidth: 1,
-                  borderColor: BORDER,
-                  overflow: "hidden",
-                }}
-              >
-                {g.subs.map((sub, idx) => {
-                  const isSelected = sub === selected;
-                  const isLast = idx === g.subs.length - 1;
-                  return (
-                    <Pressable key={sub} onPress={() => onPick(sub)}>
-                      <View
-                        style={{
-                          paddingHorizontal: 16,
-                          paddingVertical: 14,
-                          flexDirection: "row",
-                          alignItems: "center",
-                          justifyContent: "space-between",
-                          borderBottomWidth: isLast ? 0 : 1,
-                          borderColor: BORDER,
-                          minHeight: 50,
-                        }}
-                      >
-                        <Text
-                          style={{
-                            fontSize: 16,
-                            color: INK,
-                            fontWeight: isSelected ? "600" : "400",
-                            flex: 1,
-                          }}
-                          numberOfLines={1}
-                        >
-                          {sub}
-                        </Text>
-                        {isSelected ? (
-                          <Feather name="check" size={20} color={INK} />
-                        ) : null}
-                      </View>
-                    </Pressable>
-                  );
-                })}
-              </View>
-            </View>
-          ))}
-        </ScrollView>
-      </SafeAreaView>
-    </Modal>
   );
 }
 
