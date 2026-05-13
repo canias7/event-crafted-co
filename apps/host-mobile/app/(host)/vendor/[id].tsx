@@ -399,6 +399,15 @@ export default function VendorDetailScreen() {
                 />
               ))}
             </ScrollView>
+          ) : vendor.logo_url || ownerProfileLogoUrl ? (
+            // No portfolio photos uploaded — fall back to the vendor's
+            // profile pic so the listing always opens with brand
+            // identity instead of a generic gray tile.
+            <Image
+              source={{ uri: (vendor.logo_url ?? ownerProfileLogoUrl)! }}
+              style={{ width: screenWidth, height: galleryHeight }}
+              resizeMode="cover"
+            />
           ) : (
             <View
               style={{ width: screenWidth, height: galleryHeight }}
@@ -1781,31 +1790,8 @@ function VendorProfileSheet({
             fallbackLogoUrl={fallbackLogoUrl}
           />
 
-          {/* Bio */}
-          {vendor.bio ? (
-            <View style={{ marginTop: 26, paddingHorizontal: 22 }}>
-              <Text
-                style={{
-                  fontSize: 11,
-                  fontWeight: "800",
-                  letterSpacing: 1.6,
-                  color: INK_DIM,
-                }}
-              >
-                ABOUT
-              </Text>
-              <Text
-                style={{
-                  marginTop: 10,
-                  color: INK,
-                  fontSize: 15,
-                  lineHeight: 22,
-                }}
-              >
-                {vendor.bio}
-              </Text>
-            </View>
-          ) : null}
+          {/* Bio lives on the back of the Cream Ocean card above —
+              tap the rotate button on the card to flip it over. */}
 
           {/* Owner bio (from vendor_team_bios) */}
           {owner?.bio ? (
@@ -2590,6 +2576,7 @@ function CreamOceanBack({
   height: number;
   onFlip: () => void;
 }) {
+  const hasBio = !!vendor.bio?.trim();
   return (
     <>
       <Svg
@@ -2622,9 +2609,31 @@ function CreamOceanBack({
         />
       </Svg>
 
-      {/* Back is intentionally blank for now — placeholder canvas
-          for whatever you want to put there next. */}
-      <View style={{ flex: 1 }} />
+      {/* Bio takes the back face — italic serif paragraph centered on
+          the card. Falls back to a short prompt when the vendor hasn't
+          set a bio yet. Matches the vendor-side flip card. */}
+      <View
+        style={{
+          flex: 1,
+          paddingHorizontal: 22,
+          paddingTop: 26,
+          paddingBottom: 18,
+          justifyContent: "center",
+        }}
+      >
+        <Text
+          style={{
+            fontFamily: SERIF,
+            fontStyle: "italic",
+            color: INK,
+            fontSize: hasBio ? 17 : 16,
+            lineHeight: hasBio ? 24 : 22,
+          }}
+          numberOfLines={6}
+        >
+          {hasBio ? vendor.bio : "No bio yet."}
+        </Text>
+      </View>
 
       {/* Flip back button — rendered LAST so it stays on top of the
           padded content for touch capture. */}
