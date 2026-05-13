@@ -2189,27 +2189,6 @@ function CreamOceanFront({
         />
       </Svg>
 
-      {/* Flip button — top right */}
-      <Pressable
-        onPress={onFlip}
-        hitSlop={8}
-        style={{
-          position: "absolute",
-          top: 12,
-          right: 12,
-          width: 32,
-          height: 32,
-          borderRadius: 16,
-          backgroundColor: "rgba(255, 251, 242, 0.65)",
-          borderWidth: 1,
-          borderColor: "rgba(235, 225, 206, 0.7)",
-          alignItems: "center",
-          justifyContent: "center",
-        }}
-      >
-        <Feather name="rotate-cw" size={14} color="#5a4f44" />
-      </Pressable>
-
       <View style={{ padding: 18 }}>
         <View
           style={{
@@ -2323,6 +2302,29 @@ function CreamOceanFront({
           />
         </View>
       </View>
+
+      {/* Flip button — rendered LAST so its absolute layer sits on top
+          of the padded content for touch event capture (transparent
+          content View was eating the tap when rendered after). */}
+      <Pressable
+        onPress={onFlip}
+        hitSlop={8}
+        style={{
+          position: "absolute",
+          top: 12,
+          right: 12,
+          width: 32,
+          height: 32,
+          borderRadius: 16,
+          backgroundColor: "rgba(255, 251, 242, 0.85)",
+          borderWidth: 1,
+          borderColor: "rgba(235, 225, 206, 0.7)",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <Feather name="rotate-cw" size={14} color="#5a4f44" />
+      </Pressable>
     </>
   );
 }
@@ -2373,27 +2375,6 @@ function CreamOceanBack({
           fill="url(#swellB)"
         />
       </Svg>
-
-      {/* Flip back button — top right */}
-      <Pressable
-        onPress={onFlip}
-        hitSlop={8}
-        style={{
-          position: "absolute",
-          top: 12,
-          right: 12,
-          width: 32,
-          height: 32,
-          borderRadius: 16,
-          backgroundColor: "rgba(255, 251, 242, 0.65)",
-          borderWidth: 1,
-          borderColor: "rgba(235, 225, 206, 0.7)",
-          alignItems: "center",
-          justifyContent: "center",
-        }}
-      >
-        <Feather name="rotate-ccw" size={14} color="#5a4f44" />
-      </Pressable>
 
       <View style={{ padding: 22, paddingTop: 18, flex: 1 }}>
         <Text
@@ -2495,6 +2476,28 @@ function CreamOceanBack({
           ) : null}
         </View>
       </View>
+
+      {/* Flip back button — rendered LAST so it stays on top of the
+          padded content for touch capture. */}
+      <Pressable
+        onPress={onFlip}
+        hitSlop={8}
+        style={{
+          position: "absolute",
+          top: 12,
+          right: 12,
+          width: 32,
+          height: 32,
+          borderRadius: 16,
+          backgroundColor: "rgba(255, 251, 242, 0.85)",
+          borderWidth: 1,
+          borderColor: "rgba(235, 225, 206, 0.7)",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <Feather name="rotate-ccw" size={14} color="#5a4f44" />
+      </Pressable>
     </>
   );
 }
