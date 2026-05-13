@@ -2775,10 +2775,50 @@ function CreamOceanBack({
         />
       </Svg>
 
-      {/* Bio on the back — mirrors the front-face structure (plain View
-          with padding, no flex/no position:absolute) since the front
-          variant renders reliably across iOS versions. */}
-      <View style={{ padding: 22, paddingTop: 60 }}>
+      {/* DEBUG: visible markers so we can see what is and isn't
+          rendering on the back face. Remove after diagnosing. */}
+      <View
+        style={{
+          position: "absolute",
+          top: 8,
+          left: 8,
+          backgroundColor: "red",
+          paddingHorizontal: 8,
+          paddingVertical: 4,
+          borderRadius: 4,
+          zIndex: 9999,
+        }}
+      >
+        <Text style={{ color: "white", fontSize: 11, fontWeight: "800" }}>
+          BACK len={bio?.length ?? "null"}
+        </Text>
+      </View>
+      <View
+        style={{
+          position: "absolute",
+          bottom: 8,
+          left: 8,
+          backgroundColor: "lime",
+          paddingHorizontal: 8,
+          paddingVertical: 4,
+          borderRadius: 4,
+          zIndex: 9999,
+        }}
+      >
+        <Text style={{ color: "black", fontSize: 11, fontWeight: "800" }}>
+          BACK_FACE_OK
+        </Text>
+      </View>
+
+      {/* Bio on the back — wrapped with a yellow debug background so
+          the container itself is clearly visible. */}
+      <View
+        style={{
+          padding: 22,
+          paddingTop: 60,
+          backgroundColor: "rgba(255, 255, 0, 0.3)",
+        }}
+      >
         {hasBio ? (
           <Text
             style={{
