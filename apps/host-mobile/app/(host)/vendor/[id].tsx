@@ -39,6 +39,11 @@ import Svg, {
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
 import { InquiryComposer } from "@/components/InquiryComposer";
+import {
+  getCategorySchema,
+  type AttributeField,
+  type CategorySection,
+} from "@vendora/core";
 
 // Editorial type + tone palette — bold serif title, muted ink for
 // supporting copy. Matches the listing-detail design (cream cards on
@@ -118,6 +123,9 @@ type PolicyRow = {
   policy_notes: string | null;
 };
 
+type AttrValue = string | number | boolean | string[] | null | undefined;
+type AttrMap = Record<string, AttrValue>;
+
 const CANCELLATION_LABEL: Record<string, string> = {
   flexible: "Flexible — full refund up to 7 days before",
   moderate: "Moderate — 50% up to 30 days before",
@@ -134,6 +142,10 @@ export default function VendorDetailScreen() {
   const [faqs, setFaqs] = useState<FaqRow[]>([]);
   const [team, setTeam] = useState<TeamRow[]>([]);
   const [policy, setPolicy] = useState<PolicyRow | null>(null);
+  // Per-category structured fields (vendor_profiles.category_attributes
+  // jsonb). Rendered by <CategoryDetails> when the vendor's sub-category
+  // has a schema in @vendora/core and at least one field has a value.
+  const [categoryAttrs, setCategoryAttrs] = useState<AttrMap | null>(null);
   // Fallback avatar when vendor_profiles.logo_url is null. Pulled from
   // profiles.logo_url of the listing's user_id — the auto-sync trigger
   // only mirrors profile→listing for vendors with exactly one listing,
@@ -161,7 +173,7 @@ export default function VendorDetailScreen() {
       const baseQuery = supabase
         .from("vendor_profiles")
         .select(
-          "id, business_name, category, bio, location, base_price_cents, application_status, slug, verified_at, logo_url, created_at, deposit_pct, cancellation_policy, reschedule_window_days, policy_notes",
+          "id, business_name, category, bio, location, base_price_cents, application_status, slug, verified_at, logo_url, created_at, deposit_pct, cancellation_policy, reschedule_window_days, policy_notes, category_attributes",
         );
       const { data: vp } = isUuid
         ? await baseQuery.eq("id", id).maybeSingle()
@@ -192,6 +204,7 @@ export default function VendorDetailScreen() {
         reschedule_window_days: row.reschedule_window_days,
         policy_notes: row.policy_notes,
       });
+      setCategoryAttrs((row.category_attributes as AttrMap | null) ?? null);
 
       const [imgsRes, packRes, faqRes, teamRes] = await Promise.all([
         supabase
@@ -664,6 +677,13 @@ export default function VendorDetailScreen() {
                 </Text>
               </View>
             </View>
+          ) : null}
+
+          {/* Per-category structured details. Mirror of the web's
+              CategoryAttributesDisplay — renders nothing when the
+              vendor's sub-category has no schema or no field is filled. */}
+          {vendor.category && categoryAttrs ? (
+            <CategoryDetails category={vendor.category} attrs={categoryAttrs} />
           ) : null}
 
           {/* Packages — white cards on cream backdrop */}
@@ -1228,6 +1248,225 @@ function PolicyCard({ label, value }: { label: string; value: string }) {
       </Text>
     </View>
   );
+}
+
+// Per-category structured details. Each section in the schema becomes
+// a subhead with a white card of label/value rows underneath. Sections
+// with no populated field are skipped entirely so the page doesn't
+// show empty rails for vendors who haven't filled the form yet.
+function CategoryDetails({
+  category,
+  attrs,
+}: {
+  category: string;
+  attrs: AttrMap;
+}) {
+  const schema = getCategorySchema(category);
+  if (!schema) return null;
+
+  const populatedSections = schema.sections
+    .filter((s) => !s.onlySubs || s.onlySubs.includes(category))
+    .filter((s) => s.fields.some((f) => hasAttrValue(attrs[f.key])));
+
+  if (populatedSections.length === 0) return null;
+
+  return (
+    <View style={{ marginTop: 26 }}>
+      <Text style={sectionHeaderStyle}>Details</Text>
+      <View style={{ paddingHorizontal: 20, marginTop: 10 }}>
+        {populatedSections.map((section) => (
+          <CategoryDetailSection
+            key={section.name}
+            section={section}
+            attrs={attrs}
+          />
+        ))}
+      </View>
+    </View>
+  );
+}
+
+function CategoryDetailSection({
+  section,
+  attrs,
+}: {
+  section: CategorySection;
+  attrs: AttrMap;
+}) {
+  const populated = section.fields.filter((f) => hasAttrValue(attrs[f.key]));
+  if (populated.length === 0) return null;
+
+  return (
+    <View style={{ marginBottom: 14 }}>
+      <Text
+        style={{
+          color: INK_DIM,
+          fontSize: 11,
+          fontWeight: "800",
+          letterSpacing: 1.2,
+          marginBottom: 8,
+        }}
+      >
+        {section.name.toUpperCase()}
+      </Text>
+      <View
+        style={{
+          backgroundColor: "#ffffff",
+          borderRadius: 18,
+          paddingHorizontal: 16,
+          paddingVertical: 4,
+          ...CARD_SHADOW,
+        }}
+      >
+        {populated.map((field, idx) => (
+          <CategoryDetailRow
+            key={field.key}
+            field={field}
+            value={attrs[field.key]}
+            divider={idx < populated.length - 1}
+          />
+        ))}
+      </View>
+    </View>
+  );
+}
+
+function CategoryDetailRow({
+  field,
+  value,
+  divider,
+}: {
+  field: AttributeField;
+  value: AttrValue;
+  divider: boolean;
+}) {
+  return (
+    <View
+      style={{
+        paddingVertical: 12,
+        borderBottomWidth: divider ? 1 : 0,
+        borderBottomColor: "#efe5d2",
+      }}
+    >
+      <CategoryDetailValue field={field} value={value} />
+    </View>
+  );
+}
+
+function CategoryDetailValue({
+  field,
+  value,
+}: {
+  field: AttributeField;
+  value: AttrValue;
+}) {
+  if (field.type === "currency" && typeof value === "number") {
+    return (
+      <RowLabelValue
+        label={field.label}
+        value={`$${(value / 100).toLocaleString()}`}
+      />
+    );
+  }
+  if (field.type === "int" && typeof value === "number") {
+    return (
+      <RowLabelValue
+        label={field.label}
+        value={`${value}${field.suffix ? ` ${field.suffix}` : ""}`}
+      />
+    );
+  }
+  if (field.type === "boolean" && value === true) {
+    return (
+      <View style={{ flexDirection: "row", alignItems: "center" }}>
+        <Feather name="check" size={16} color="#1a1410" />
+        <Text
+          style={{
+            marginLeft: 8,
+            color: INK,
+            fontSize: 15,
+            fontWeight: "600",
+          }}
+        >
+          {field.label}
+        </Text>
+      </View>
+    );
+  }
+  if (field.type === "select" && typeof value === "string" && value) {
+    return <RowLabelValue label={field.label} value={value} />;
+  }
+  if (field.type === "tags") {
+    const tags = (value as string[] | undefined) ?? [];
+    if (tags.length === 0) return null;
+    return (
+      <View>
+        <Text
+          style={{
+            color: INK_DIM,
+            fontSize: 13,
+            marginBottom: 8,
+          }}
+        >
+          {field.label}
+        </Text>
+        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
+          {tags.map((t) => (
+            <View
+              key={t}
+              style={{
+                backgroundColor: "#efe5d2",
+                borderRadius: 999,
+                paddingHorizontal: 10,
+                paddingVertical: 4,
+              }}
+            >
+              <Text style={{ color: INK, fontSize: 12, fontWeight: "600" }}>
+                {t}
+              </Text>
+            </View>
+          ))}
+        </View>
+      </View>
+    );
+  }
+  return null;
+}
+
+function RowLabelValue({ label, value }: { label: string; value: string }) {
+  return (
+    <View
+      style={{
+        flexDirection: "row",
+        alignItems: "baseline",
+        justifyContent: "space-between",
+      }}
+    >
+      <Text style={{ flex: 1, color: INK_DIM, fontSize: 14, paddingRight: 12 }}>
+        {label}
+      </Text>
+      <Text
+        style={{
+          color: INK,
+          fontSize: 15,
+          fontWeight: "700",
+          textAlign: "right",
+        }}
+        numberOfLines={2}
+      >
+        {value}
+      </Text>
+    </View>
+  );
+}
+
+function hasAttrValue(v: AttrValue): boolean {
+  if (v == null) return false;
+  if (typeof v === "string") return v.trim().length > 0;
+  if (typeof v === "boolean") return v;
+  if (Array.isArray(v)) return v.length > 0;
+  if (typeof v === "number") return Number.isFinite(v);
+  return false;
 }
 
 // "Listing since Mar 2026" style label — short month + year is enough,
