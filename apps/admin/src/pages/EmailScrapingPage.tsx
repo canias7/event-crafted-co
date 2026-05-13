@@ -72,42 +72,34 @@ export function EmailScrapingPage() {
     setMessages((p) => [...p, userMsg]);
     setDraft("");
 
-    const { data: inserted, error: insErr } = await supabase
-      .from("email_scraping_messages")
-      .insert({ user_id: user.id, role: "user", content })
-      .select("id, role, content, created_at")
-      .single();
-    if (insErr) {
-      toast.error(insErr.message);
+    // Call the chat-email-scraping Edge Function. It inserts the user
+    // message + the assistant reply on the server side (running the
+    // Anthropic API tool-use loop), and returns both rows so we can
+    // swap the optimistic one and append the assistant reply.
+    const { data, error: fnErr } = await supabase.functions.invoke(
+      "chat-email-scraping",
+      { body: { message: content } },
+    );
+    if (fnErr || !data?.assistant_message) {
+      toast.error(fnErr?.message ?? "Chat failed");
       setMessages((p) => p.filter((m) => m.id !== optimisticId));
       setSending(false);
       return;
     }
-    setMessages((p) =>
-      p.map((m) => (m.id === optimisticId ? (inserted as Message) : m)),
-    );
-
-    // Placeholder assistant response until the Anthropic Edge Function
-    // is wired up. Saves the placeholder so the conversation reads
-    // naturally next time.
-    const assistantPlaceholder =
-      "I hear you. The scraping + email-send wiring is being set up — once it's live I'll find these contacts, email them, and drop them into the Email leads tab automatically.";
-    const { data: asstInserted, error: asstErr } = await supabase
-      .from("email_scraping_messages")
-      .insert({
-        user_id: user.id,
-        role: "assistant",
-        content: assistantPlaceholder,
-        metadata: { stub: true },
-      })
-      .select("id, role, content, created_at")
-      .single();
-    if (asstErr) {
-      toast.error(asstErr.message);
-      setSending(false);
-      return;
+    const { user_message, assistant_message, leads_added } = data as {
+      user_message: Message;
+      assistant_message: Message;
+      leads_added?: number;
+    };
+    setMessages((p) => {
+      const next = p.filter((m) => m.id !== optimisticId);
+      next.push(user_message);
+      next.push(assistant_message);
+      return next;
+    });
+    if (typeof leads_added === "number" && leads_added > 0) {
+      toast.success(`${leads_added} lead${leads_added === 1 ? "" : "s"} added`);
     }
-    setMessages((p) => [...p, asstInserted as Message]);
     setSending(false);
   }
 
