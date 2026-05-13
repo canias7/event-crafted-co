@@ -51,18 +51,6 @@ const INK_DIM = "#776c5f";
 const GREEN_OK = "#3a7d4a";
 const SERIF = Platform.OS === "ios" ? "Times New Roman" : "serif";
 
-function categoryIcon(cat: string | null): keyof typeof Feather.glyphMap {
-  if (!cat) return "circle";
-  const c = cat.toLowerCase();
-  if (/catering|cake|dessert|food|coffee|bake/.test(c)) return "coffee";
-  if (/music|dj|band|sound/.test(c)) return "music";
-  if (/photo|video|film/.test(c)) return "camera";
-  if (/floral|florist|flower/.test(c)) return "feather";
-  if (/venue|space|loft/.test(c)) return "home";
-  if (/plan|coord/.test(c)) return "clipboard";
-  return "circle";
-}
-
 function joinedLabel(createdAt: string | null): string {
   if (!createdAt) return "";
   const d = new Date(createdAt);
@@ -615,48 +603,17 @@ export default function ProfileScreen() {
           >
             {identity.business_name ?? "Your business"}
           </Text>
-          {identity.category || identity.location || profileCreatedAt ? (
+          {profileCreatedAt ? (
             <View
               style={{
                 marginTop: 8,
                 flexDirection: "row",
                 alignItems: "center",
-                flexWrap: "wrap",
               }}
             >
-              {identity.category ? (
-                <View style={{ flexDirection: "row", alignItems: "center" }}>
-                  <Feather
-                    name={categoryIcon(identity.category)}
-                    size={13}
-                    color={INK_DIM}
-                  />
-                  <Text style={{ color: INK_DIM, fontSize: 14, marginLeft: 5 }}>
-                    {identity.category}
-                  </Text>
-                </View>
-              ) : null}
-              {identity.location ? (
-                <View style={{ flexDirection: "row", alignItems: "center" }}>
-                  <Text style={{ color: INK_DIM, fontSize: 14, marginHorizontal: 8 }}>
-                    ·
-                  </Text>
-                  <Feather name="map-pin" size={13} color={INK_DIM} />
-                  <Text style={{ color: INK_DIM, fontSize: 14, marginLeft: 5 }}>
-                    {identity.location}
-                  </Text>
-                </View>
-              ) : null}
-              {profileCreatedAt ? (
-                <View style={{ flexDirection: "row", alignItems: "center" }}>
-                  <Text style={{ color: INK_DIM, fontSize: 14, marginHorizontal: 8 }}>
-                    ·
-                  </Text>
-                  <Text style={{ color: INK_DIM, fontSize: 14 }}>
-                    {joinedLabel(profileCreatedAt)}
-                  </Text>
-                </View>
-              ) : null}
+              <Text style={{ color: INK_DIM, fontSize: 14 }}>
+                {joinedLabel(profileCreatedAt)}
+              </Text>
             </View>
           ) : null}
         </View>
