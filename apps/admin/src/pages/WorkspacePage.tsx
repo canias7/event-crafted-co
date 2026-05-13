@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { ChevronRight, Mail } from "lucide-react";
+import { ChevronRight, Mail, Sparkles } from "lucide-react";
 
 // Workspace — internal tools area for the admin team. Unrelated to
 // the marketplace (vendors / hosts / listings) data. The hub page
@@ -11,6 +11,13 @@ const TOOLS: Array<{
   description: string;
   icon: typeof Mail;
 }> = [
+  {
+    to: "/workspace/email-scraping",
+    label: "Email scraping",
+    description:
+      "Chat with the assistant — find contacts, send outreach, drop them into Email leads.",
+    icon: Sparkles,
+  },
   {
     to: "/workspace/email-leads",
     label: "Email leads",
