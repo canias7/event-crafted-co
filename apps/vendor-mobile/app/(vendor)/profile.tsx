@@ -2789,34 +2789,21 @@ function CreamOceanBack({
         />
       </Svg>
 
-      {/* Bio takes the back face — italic serif paragraph centered on
-          the card. Absolute-positioned so it reliably fills the stage
-          even when its Animated.View parent has 3D transforms applied. */}
-      <View
-        pointerEvents="none"
-        style={{
-          position: "absolute",
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          paddingHorizontal: 22,
-          paddingTop: 26,
-          paddingBottom: 18,
-          alignItems: "center",
-          justifyContent: "center",
-        }}
-      >
+      {/* Bio on the back — mirrors the front-face structure (plain View
+          with padding, no flex/no position:absolute) since the front
+          variant renders reliably across iOS versions. */}
+      <View style={{ padding: 22, paddingTop: 60 }}>
         {hasBio ? (
           <Text
             style={{
               fontFamily: SERIF,
               fontStyle: "italic",
               color: INK,
-              fontSize: 17,
-              lineHeight: 24,
+              fontSize: 18,
+              lineHeight: 26,
+              textAlign: "center",
             }}
-            numberOfLines={6}
+            numberOfLines={5}
           >
             {bio}
           </Text>
@@ -2828,8 +2815,9 @@ function CreamOceanBack({
               color: INK,
               fontSize: 16,
               lineHeight: 22,
+              textAlign: "center",
             }}
-            numberOfLines={6}
+            numberOfLines={5}
           >
             A short bio belongs here —{" "}
             <Text
