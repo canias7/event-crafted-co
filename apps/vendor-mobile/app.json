@@ -74,7 +74,8 @@
         {
           "microphonePermission": "Vendora uses your microphone when you record video clips to post on your vendor profile."
         }
-      ]
+      ],
+      "expo-web-browser"
     ],
     "experiments": {
       "typedRoutes": true
