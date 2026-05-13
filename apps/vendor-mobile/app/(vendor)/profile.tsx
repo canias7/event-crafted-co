@@ -548,6 +548,37 @@ export default function ProfileScreen() {
           </Pressable>
         </View>
 
+        {/* Bio below the card — back-of-card rendering kept crashing
+            on this build, so we keep the bio paragraph here in the
+            normal flow. Italic serif placeholder when empty. */}
+        <View style={{ paddingHorizontal: 18, marginTop: 18 }}>
+          {identity.bio?.trim() ? (
+            <Text
+              style={{
+                fontFamily: SERIF,
+                fontStyle: "italic",
+                color: INK,
+                fontSize: 17,
+                lineHeight: 24,
+              }}
+            >
+              {identity.bio}
+            </Text>
+          ) : (
+            <Text
+              style={{
+                fontFamily: SERIF,
+                fontStyle: "italic",
+                color: INK_DIM,
+                fontSize: 16,
+                lineHeight: 22,
+              }}
+            >
+              Add a short bio from Edit profile.
+            </Text>
+          )}
+        </View>
+
         {/* Stats card */}
         <View
           style={{
@@ -2774,25 +2805,6 @@ function CreamOceanBack({
           fill="url(#swellBv)"
         />
       </Svg>
-
-      {/* Bio on back — host-mobile's CreamOceanBack uses this exact
-          pattern and renders fine. Always renders Text (no conditional
-          View wrapper), uses fontFamily + italic + numberOfLines. */}
-      <View style={{ padding: 22, paddingTop: 60 }}>
-        <Text
-          style={{
-            fontFamily: SERIF,
-            fontStyle: "italic",
-            color: INK,
-            fontSize: hasBio ? 18 : 16,
-            lineHeight: hasBio ? 26 : 22,
-            textAlign: "center",
-          }}
-          numberOfLines={5}
-        >
-          {hasBio ? bio : "No bio yet."}
-        </Text>
-      </View>
 
       <Pressable
         onPress={onFlip}
