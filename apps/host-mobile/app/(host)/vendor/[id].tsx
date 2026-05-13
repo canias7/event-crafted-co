@@ -2623,14 +2623,20 @@ function CreamOceanBack({
       </Svg>
 
       {/* Bio takes the back face — italic serif paragraph centered on
-          the card. Falls back to a short prompt when the vendor hasn't
-          set a bio yet. Matches the vendor-side flip card. */}
+          the card. Absolute-positioned so it reliably fills the stage
+          even when its Animated.View parent has 3D transforms applied. */}
       <View
+        pointerEvents="none"
         style={{
-          flex: 1,
+          position: "absolute",
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
           paddingHorizontal: 22,
           paddingTop: 26,
           paddingBottom: 18,
+          alignItems: "center",
           justifyContent: "center",
         }}
       >
