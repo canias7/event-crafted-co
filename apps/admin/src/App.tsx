@@ -11,6 +11,7 @@ import { ListingsPage } from "./pages/ListingsPage";
 import { ReviewsPage } from "./pages/ReviewsPage";
 import { WorkspacePage } from "./pages/WorkspacePage";
 import { EmailLeadsPage } from "./pages/EmailLeadsPage";
+import { EmailScrapingPage } from "./pages/EmailScrapingPage";
 
 export default function App() {
   return (
@@ -33,6 +34,10 @@ export default function App() {
               <Route path="/reviews" element={<ReviewsPage />} />
               <Route path="/workspace" element={<WorkspacePage />} />
               <Route path="/workspace/email-leads" element={<EmailLeadsPage />} />
+              <Route
+                path="/workspace/email-scraping"
+                element={<EmailScrapingPage />}
+              />
             </Route>
           </Routes>
         </AuthProvider>
