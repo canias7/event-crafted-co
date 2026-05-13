@@ -17,10 +17,11 @@ const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
 const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY")!;
 
 const MODEL = "claude-sonnet-4-6";
-// Tight caps to stay under the org's 30K input TPM. web_search results
-// are large (~5–10K tokens each) and accumulate across loop iterations.
-const MAX_LOOPS = 4;
-const WEB_SEARCH_MAX_USES = 2;
+// Loop and search caps. Prompt caching covers system + tools + the
+// conversation prefix, so we can afford a few more searches per
+// request without blowing the org's 30K input TPM.
+const MAX_LOOPS = 6;
+const WEB_SEARCH_MAX_USES = 4;
 const HISTORY_TURNS = 12;
 
 const cors = {
@@ -37,12 +38,13 @@ When (and ONLY when) the admin explicitly asks you to find / scrape / look up le
 
 If the admin's message is a greeting, a question, a clarification, or anything other than an explicit lead-finding request, do NOT call any tools — just reply briefly in plain text.
 
-Rules:
-- Only add a lead when you have a real email address you found on the web. Don't fabricate emails.
-- When asked for "N" results, aim for N but don't pad with bad data — quality over quantity.
-- After adding leads, summarize in plain text: how many added, where they came from, anything notable.
-- The admin can review and edit each lead in the Email leads tab. You do NOT send actual emails in this version.
-- Keep prose short. Bullet points if needed.`;
+Persistence rules — when the admin asks for "N" leads, treat N as a real target:
+- Don't stop after one search. If your first query doesn't surface N businesses with public emails, run another search from a different angle: a tighter niche ("wedding photographers Charlotte"), a directory ("Charlotte photographers Yelp", "site:theknot.com Charlotte photographer"), a different keyword ("studio", "freelance"), or nearby towns.
+- Most small-business sites don't list emails on the homepage. Check About / Contact pages in search results, business directories, and review sites. The email may be in a directory listing rather than the business's own site.
+- Only stop short of N if you've exhausted your tool budget across multiple distinct queries — not after one search that "mostly used contact forms".
+- Still: do NOT fabricate emails. Quality bar: a real email address you actually saw in search results.
+
+After adding leads, summarize in plain text: how many added (e.g. "3 of 3 added"), where they came from, anything notable. The admin can review and edit each lead in the Email leads tab. You do NOT send actual emails in this version. Keep prose short. Bullet points if needed.`;
 
 // Prompt caching: system prompt + tools are static, so marking them
 // cache_control: ephemeral lets Anthropic cache the prefix and only
@@ -88,6 +90,28 @@ async function reply(admin: any, userId: string, userMsg: any, text: string, met
     }),
     { headers: { ...cors, "Content-Type": "application/json" } },
   );
+}
+
+// Returns a copy of `msgs` with cache_control: ephemeral applied to
+// the last content block of the last message. This caches the entire
+// conversation prefix up to that point. Mutates a deep-ish copy so
+// the caller's array isn't poisoned with the breakpoint between
+// iterations (we want it set fresh on the new tail each loop).
+function withCacheBreakpoint(msgs: any[]): any[] {
+  if (msgs.length === 0) return msgs;
+  const copy = msgs.map((m) => ({ ...m }));
+  const last = copy[copy.length - 1];
+  if (typeof last.content === "string") {
+    last.content = [
+      { type: "text", text: last.content, cache_control: { type: "ephemeral" } },
+    ];
+  } else if (Array.isArray(last.content) && last.content.length > 0) {
+    const blocks = last.content.map((b: any) => ({ ...b }));
+    const tail = blocks[blocks.length - 1];
+    blocks[blocks.length - 1] = { ...tail, cache_control: { type: "ephemeral" } };
+    last.content = blocks;
+  }
+  return copy;
 }
 
 // Trim history to stay under the input TPM cap. Take the most recent
@@ -165,6 +189,14 @@ serve(async (req) => {
     for (let i = 0; i < MAX_LOOPS; i++) {
       console.log(`[chat-email-scraping] loop ${i + 1}, conversation length ${conversation.length}`);
 
+      // Mark a cache breakpoint on the latest message so the entire
+      // conversation prefix (including prior loop iterations' assistant
+      // tool_use + tool_result + web_search results) is cached and
+      // doesn't re-count against input TPM on the next iteration.
+      // Anthropic caps at 4 breakpoints total; we use 3 here
+      // (system + last tool + last message).
+      const messagesForApi = withCacheBreakpoint(conversation);
+
       const apiRes = await fetch("https://api.anthropic.com/v1/messages", {
         method: "POST",
         headers: {
@@ -172,7 +204,7 @@ serve(async (req) => {
           "anthropic-version": "2023-06-01",
           "content-type": "application/json",
         },
-        body: JSON.stringify({ model: MODEL, max_tokens: 2048, system: SYSTEM_BLOCKS, tools: TOOLS, messages: conversation }),
+        body: JSON.stringify({ model: MODEL, max_tokens: 2048, system: SYSTEM_BLOCKS, tools: TOOLS, messages: messagesForApi }),
       });
 
       if (!apiRes.ok) {
