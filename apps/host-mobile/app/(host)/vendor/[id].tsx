@@ -2027,15 +2027,17 @@ function CreamOceanCard({
   const CARD_W = Dimensions.get("window").width - 36;
   const CARD_H = 230;
 
-  // Flip animation using React Native's built-in Animated. The
-  // reanimated equivalent needs the babel plugin which isn't in
-  // host-mobile's babel.config — Animated is always available.
+  // Flip animation using RN's built-in Animated. Plain React state
+  // tracks the "facing" side so we can gate pointerEvents — the
+  // backface-visibility trick hides rendering but the View still
+  // captures touches, which is what was breaking the flip button.
   const flipAnim = useRef(new Animated.Value(0)).current;
-  const flippedRef = useRef(false);
+  const [flipped, setFlipped] = useState(false);
   const toggleFlip = () => {
-    flippedRef.current = !flippedRef.current;
+    const next = !flipped;
+    setFlipped(next);
     Animated.timing(flipAnim, {
-      toValue: flippedRef.current ? 1 : 0,
+      toValue: next ? 1 : 0,
       duration: 500,
       useNativeDriver: true,
     }).start();
@@ -2064,8 +2066,10 @@ function CreamOceanCard({
         height: CARD_H,
       }}
     >
-      {/* Front */}
+      {/* Front — pointerEvents disabled when flipped so the hidden
+          face doesn't intercept taps on the visible back. */}
       <Animated.View
+        pointerEvents={flipped ? "none" : "auto"}
         style={[
           {
             position: "absolute",
@@ -2098,8 +2102,9 @@ function CreamOceanCard({
         />
       </Animated.View>
 
-      {/* Back */}
+      {/* Back — same pointerEvents gating, inverted. */}
       <Animated.View
+        pointerEvents={flipped ? "auto" : "none"}
         style={[
           {
             position: "absolute",
