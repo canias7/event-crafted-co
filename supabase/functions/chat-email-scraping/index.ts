@@ -44,6 +44,15 @@ Rules:
 - The admin can review and edit each lead in the Email leads tab. You do NOT send actual emails in this version.
 - Keep prose short. Bullet points if needed.`;
 
+// Prompt caching: system prompt + tools are static, so marking them
+// cache_control: ephemeral lets Anthropic cache the prefix and only
+// charge ~10% input TPM on subsequent loop iterations within the same
+// request, AND on subsequent admin requests within the 5-min cache
+// window. This is what stops the 30K input TPM cap from biting.
+const SYSTEM_BLOCKS: any[] = [
+  { type: "text", text: SYSTEM_PROMPT, cache_control: { type: "ephemeral" } },
+];
+
 const TOOLS: any[] = [
   { type: "web_search_20250305", name: "web_search", max_uses: WEB_SEARCH_MAX_USES },
   {
@@ -60,6 +69,7 @@ const TOOLS: any[] = [
       },
       required: ["email"],
     },
+    cache_control: { type: "ephemeral" },
   },
 ];
 
@@ -162,7 +172,7 @@ serve(async (req) => {
           "anthropic-version": "2023-06-01",
           "content-type": "application/json",
         },
-        body: JSON.stringify({ model: MODEL, max_tokens: 2048, system: SYSTEM_PROMPT, tools: TOOLS, messages: conversation }),
+        body: JSON.stringify({ model: MODEL, max_tokens: 2048, system: SYSTEM_BLOCKS, tools: TOOLS, messages: conversation }),
       });
 
       if (!apiRes.ok) {
@@ -177,8 +187,11 @@ serve(async (req) => {
       const apiBody = (await apiRes.json()) as any;
       const stopReason = apiBody.stop_reason;
       const contentBlocks = (apiBody.content ?? []) as any[];
+      const u = apiBody.usage ?? {};
 
-      console.log(`[chat-email-scraping] stop_reason=${stopReason} blocks=${contentBlocks.map((b: any) => b.type).join(",")}`);
+      console.log(
+        `[chat-email-scraping] stop_reason=${stopReason} blocks=${contentBlocks.map((b: any) => b.type).join(",")} usage=in:${u.input_tokens ?? 0}/out:${u.output_tokens ?? 0}/cache_create:${u.cache_creation_input_tokens ?? 0}/cache_read:${u.cache_read_input_tokens ?? 0}`,
+      );
 
       const turnText = contentBlocks.filter((b: any) => b.type === "text").map((b: any) => b.text).join("\n\n").trim();
       if (turnText) finalText = turnText;
