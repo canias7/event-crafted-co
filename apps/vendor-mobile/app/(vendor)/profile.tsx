@@ -12,9 +12,10 @@
 // listing builder; the count is 1 only once the listing has location
 // and price.
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Alert,
+  Animated,
   AppState,
   Dimensions,
   FlatList,
@@ -33,6 +34,14 @@ import { useFocusEffect, useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import { ResizeMode, Video } from "expo-av";
+import Svg, {
+  Defs,
+  LinearGradient as SvgLinearGradient,
+  Path,
+  RadialGradient,
+  Rect,
+  Stop,
+} from "react-native-svg";
 import type { VendorProfile } from "@vendora/core";
 import { useAuth } from "@/lib/auth";
 import { tryRegisterPushToken } from "@/lib/pushNotifications";
@@ -48,7 +57,6 @@ const CREAM = "#faf5ec";
 const CREAM_DEEP = "#f5efe5";
 const INK = "#1a1410";
 const INK_DIM = "#776c5f";
-const GREEN_OK = "#3a7d4a";
 const SERIF = Platform.OS === "ios" ? "Times New Roman" : "serif";
 
 function joinedLabel(createdAt: string | null): string {
@@ -477,145 +485,66 @@ export default function ProfileScreen() {
           </SafeAreaView>
         </View>
 
-        {/* Avatar + actions row — avatar pulled up to overlap banner */}
+        {/* Cream Ocean flip card — mirrors how a host sees this vendor in
+            the host app's VendorProfileSheet. Logo + name + bookings/
+            rating/joined on the front, blank canvas on the back. Tap
+            the rotate-cw button to flip. */}
+        <CreamOceanCard
+          businessName={identity.business_name}
+          logoUrl={identity.logo_url}
+          initial={businessInitial}
+          verifiedAt={profile?.verified_at ?? null}
+          createdAt={profileCreatedAt}
+        />
+
+        {/* Share + Edit profile actions sit just below the card. */}
         <View
           style={{
-            paddingHorizontal: 18,
-            marginTop: -56,
             flexDirection: "row",
-            alignItems: "flex-end",
-            justifyContent: "space-between",
+            alignItems: "center",
+            justifyContent: "flex-end",
+            paddingHorizontal: 18,
+            marginTop: 14,
           }}
         >
           <Pressable
-            onPress={openEditProfile}
+            onPress={shareProfile}
+            hitSlop={8}
             style={{
-              width: 116,
-              height: 116,
-              borderRadius: 24,
-              backgroundColor: INK,
-              borderWidth: 5,
-              borderColor: CREAM,
+              width: 44,
+              height: 44,
+              borderRadius: 999,
+              backgroundColor: CREAM_DEEP,
               alignItems: "center",
               justifyContent: "center",
-              overflow: "visible",
+              marginRight: 10,
             }}
           >
-            {identity.logo_url ? (
-              <Image
-                source={{ uri: identity.logo_url }}
-                style={{
-                  width: "100%",
-                  height: "100%",
-                  borderRadius: 19,
-                }}
-                resizeMode="cover"
-              />
-            ) : (
-              <Text
-                style={{
-                  color: CREAM,
-                  fontFamily: SERIF,
-                  fontStyle: "italic",
-                  fontWeight: "700",
-                  fontSize: 64,
-                  lineHeight: 72,
-                }}
-              >
-                {businessInitial}
-              </Text>
-            )}
-            {profile?.verified_at ? (
-              <View
-                style={{
-                  position: "absolute",
-                  right: -2,
-                  bottom: -2,
-                  width: 30,
-                  height: 30,
-                  borderRadius: 999,
-                  backgroundColor: GREEN_OK,
-                  borderWidth: 3,
-                  borderColor: CREAM,
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
-                <Feather name="check" size={14} color="#fff" />
-              </View>
-            ) : null}
+            <Feather name="share" size={18} color={INK} />
           </Pressable>
-
-          <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 4 }}>
-            <Pressable
-              onPress={shareProfile}
-              hitSlop={8}
-              style={{
-                width: 44,
-                height: 44,
-                borderRadius: 999,
-                backgroundColor: CREAM_DEEP,
-                alignItems: "center",
-                justifyContent: "center",
-                marginRight: 10,
-              }}
-            >
-              <Feather name="share" size={18} color={INK} />
-            </Pressable>
-            <Pressable
-              onPress={openEditProfile}
-              style={{
-                backgroundColor: INK,
-                borderRadius: 999,
-                paddingHorizontal: 18,
-                paddingVertical: 12,
-                flexDirection: "row",
-                alignItems: "center",
-              }}
-            >
-              <Feather name="edit-2" size={14} color={CREAM} />
-              <Text
-                style={{
-                  color: CREAM,
-                  fontSize: 14,
-                  fontWeight: "600",
-                  marginLeft: 6,
-                }}
-              >
-                Edit profile
-              </Text>
-            </Pressable>
-          </View>
-        </View>
-
-        {/* Identity */}
-        <View style={{ paddingHorizontal: 18, marginTop: 16 }}>
-          <Text
+          <Pressable
+            onPress={openEditProfile}
             style={{
-              color: INK,
-              fontFamily: SERIF,
-              fontWeight: "700",
-              fontSize: 36,
-              lineHeight: 40,
-              letterSpacing: -0.5,
+              backgroundColor: INK,
+              borderRadius: 999,
+              paddingHorizontal: 18,
+              paddingVertical: 12,
+              flexDirection: "row",
+              alignItems: "center",
             }}
-            numberOfLines={2}
           >
-            {identity.business_name ?? "Your business"}
-          </Text>
-          {profileCreatedAt ? (
-            <View
+            <Feather name="edit-2" size={14} color={CREAM} />
+            <Text
               style={{
-                marginTop: 8,
-                flexDirection: "row",
-                alignItems: "center",
+                color: CREAM,
+                fontSize: 14,
+                fontWeight: "600",
+                marginLeft: 6,
               }}
             >
-              <Text style={{ color: INK_DIM, fontSize: 14 }}>
-                {joinedLabel(profileCreatedAt)}
-              </Text>
-            </View>
-          ) : null}
+              Edit profile
+            </Text>
+          </Pressable>
         </View>
 
         {/* Bio — italic serif. Placeholder copy with subtle highlight
@@ -2529,4 +2458,509 @@ function Toggle({
       />
     </Pressable>
   );
+}
+
+// Cream Ocean flip card — same component the host app's vendor sheet
+// uses, ported over so the vendor sees themselves the way hosts do.
+// Front: logo + business name + bookings/rating/joined. Back: blank.
+// Tap the rotate button top-right to flip.
+function CreamOceanCard({
+  businessName,
+  logoUrl,
+  initial,
+  verifiedAt,
+  createdAt,
+}: {
+  businessName: string | null;
+  logoUrl: string | null;
+  initial: string;
+  verifiedAt: string | null;
+  createdAt: string | null;
+}) {
+  const CARD_W = Dimensions.get("window").width - 36;
+  const CARD_H = 230;
+
+  // RN Animated flip. backfaceVisibility hides the away-side render but
+  // the View still captures touches — so we gate pointerEvents per face
+  // off plain state too.
+  const flipAnim = useRef(new Animated.Value(0)).current;
+  const [flipped, setFlipped] = useState(false);
+  const toggleFlip = () => {
+    const next = !flipped;
+    setFlipped(next);
+    Animated.timing(flipAnim, {
+      toValue: next ? 1 : 0,
+      duration: 500,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const frontRotate = flipAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ["0deg", "180deg"],
+  });
+  const backRotate = flipAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ["180deg", "360deg"],
+  });
+  const frontStyle = {
+    transform: [{ perspective: 1000 }, { rotateY: frontRotate }],
+  };
+  const backStyle = {
+    transform: [{ perspective: 1000 }, { rotateY: backRotate }],
+  };
+
+  return (
+    <View
+      style={{
+        marginHorizontal: 18,
+        marginTop: 12,
+        height: CARD_H,
+      }}
+    >
+      <Animated.View
+        pointerEvents={flipped ? "none" : "auto"}
+        style={[
+          {
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            height: CARD_H,
+            borderRadius: 22,
+            backgroundColor: "#fffbf2",
+            borderWidth: 1,
+            borderColor: "#ebe1ce",
+            overflow: "hidden",
+            shadowColor: INK,
+            shadowOpacity: 0.1,
+            shadowRadius: 24,
+            shadowOffset: { width: 0, height: 12 },
+            elevation: 4,
+            backfaceVisibility: "hidden",
+          },
+          frontStyle,
+        ]}
+      >
+        <CreamOceanFront
+          businessName={businessName}
+          logoUrl={logoUrl}
+          initial={initial}
+          verifiedAt={verifiedAt}
+          createdAt={createdAt}
+          width={CARD_W}
+          height={CARD_H}
+          onFlip={toggleFlip}
+        />
+      </Animated.View>
+
+      <Animated.View
+        pointerEvents={flipped ? "auto" : "none"}
+        style={[
+          {
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            height: CARD_H,
+            borderRadius: 22,
+            backgroundColor: "#fffbf2",
+            borderWidth: 1,
+            borderColor: "#ebe1ce",
+            overflow: "hidden",
+            shadowColor: INK,
+            shadowOpacity: 0.1,
+            shadowRadius: 24,
+            shadowOffset: { width: 0, height: 12 },
+            elevation: 4,
+            backfaceVisibility: "hidden",
+          },
+          backStyle,
+        ]}
+      >
+        <CreamOceanBack
+          width={CARD_W}
+          height={CARD_H}
+          onFlip={toggleFlip}
+        />
+      </Animated.View>
+    </View>
+  );
+}
+
+function CreamOceanFront({
+  businessName,
+  logoUrl,
+  initial,
+  verifiedAt,
+  createdAt,
+  width,
+  height,
+  onFlip,
+}: {
+  businessName: string | null;
+  logoUrl: string | null;
+  initial: string;
+  verifiedAt: string | null;
+  createdAt: string | null;
+  width: number;
+  height: number;
+  onFlip: () => void;
+}) {
+  return (
+    <>
+      <Svg
+        width={width}
+        height={height}
+        viewBox={`0 0 ${width} ${height}`}
+        pointerEvents="none"
+        style={{ position: "absolute", top: 0, left: 0 }}
+      >
+        <Defs>
+          <SvgLinearGradient id="bgFv" x1="0" y1="0" x2="0" y2="1">
+            <Stop offset="0" stopColor="#fffbf2" />
+            <Stop offset="1" stopColor="#faecd0" />
+          </SvgLinearGradient>
+          <RadialGradient id="sunFv" cx="0.18" cy="0.18" rx="0.55" ry="0.55">
+            <Stop offset="0" stopColor="#ffe6b4" stopOpacity="0.55" />
+            <Stop offset="1" stopColor="#ffe6b4" stopOpacity="0" />
+          </RadialGradient>
+          <SvgLinearGradient id="rippleFv" x1="0" y1="0" x2="1" y2="0">
+            <Stop offset="0" stopColor="#a8893f" stopOpacity="0" />
+            <Stop offset="0.5" stopColor="#fff0c8" stopOpacity="0.55" />
+            <Stop offset="1" stopColor="#a8893f" stopOpacity="0" />
+          </SvgLinearGradient>
+          <SvgLinearGradient id="swellFv" x1="0" y1="1" x2="0" y2="0">
+            <Stop offset="0" stopColor="#d9c599" stopOpacity="0.55" />
+            <Stop offset="0.5" stopColor="#ecdfc1" stopOpacity="0.3" />
+            <Stop offset="1" stopColor="#ecdfc1" stopOpacity="0" />
+          </SvgLinearGradient>
+        </Defs>
+        <Rect x={0} y={0} width={width} height={height} fill="url(#bgFv)" />
+        <Rect x={0} y={0} width={width} height={height} fill="url(#sunFv)" />
+        <Rect x={0} y={height * 0.32} width={width} height={1.5} fill="url(#rippleFv)" />
+        <Rect x={0} y={height * 0.48} width={width} height={1.5} fill="url(#rippleFv)" opacity={0.7} />
+        <Rect x={0} y={height * 0.62} width={width} height={1.5} fill="url(#rippleFv)" opacity={0.55} />
+        <Rect x={0} y={height * 0.76} width={width} height={1.5} fill="url(#rippleFv)" opacity={0.4} />
+        <Path
+          d={`M -20 ${height} Q ${width / 2} ${height * 0.55} ${width + 20} ${height} Z`}
+          fill="url(#swellFv)"
+        />
+      </Svg>
+
+      <View style={{ padding: 18 }}>
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            gap: 18,
+            marginBottom: 18,
+          }}
+        >
+          <View
+            style={{
+              shadowColor: INK,
+              shadowOpacity: 0.3,
+              shadowRadius: 18,
+              shadowOffset: { width: 0, height: 6 },
+              elevation: 4,
+            }}
+          >
+            <CreamOceanAvatar
+              size={110}
+              logoUrl={logoUrl}
+              initial={initial}
+              fontSize={72}
+              radius={20}
+            />
+            {verifiedAt ? (
+              <View
+                style={{
+                  position: "absolute",
+                  bottom: -4,
+                  right: -4,
+                  width: 26,
+                  height: 26,
+                  borderRadius: 13,
+                  backgroundColor: "#b8472f",
+                  borderWidth: 3,
+                  borderColor: "#fffbf2",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <Feather name="check" size={11} color="#ffffff" />
+              </View>
+            ) : null}
+          </View>
+
+          <View style={{ flex: 1 }}>
+            <Text
+              style={{
+                fontFamily: SERIF,
+                fontStyle: "italic",
+                fontWeight: "700",
+                fontSize: 32,
+                lineHeight: 34,
+                letterSpacing: -0.6,
+                color: INK,
+                paddingRight: 28,
+              }}
+              numberOfLines={2}
+            >
+              {businessName ?? "Your business"}
+            </Text>
+          </View>
+        </View>
+
+        <View
+          style={{
+            flexDirection: "row",
+            backgroundColor: "rgba(255, 251, 242, 0.65)",
+            borderWidth: 1,
+            borderColor: "rgba(235, 225, 206, 0.7)",
+            borderRadius: 14,
+            paddingVertical: 12,
+            shadowColor: INK,
+            shadowOpacity: 0.05,
+            shadowRadius: 10,
+            shadowOffset: { width: 0, height: 2 },
+            elevation: 1,
+          }}
+        >
+          <CreamOceanStat label="Bookings" value="0" />
+          <View
+            style={{ width: 1, backgroundColor: "rgba(235, 225, 206, 0.7)" }}
+          />
+          <CreamOceanStat label="Rating" value="—" italic />
+          <View
+            style={{ width: 1, backgroundColor: "rgba(235, 225, 206, 0.7)" }}
+          />
+          <CreamOceanStat
+            label="Joined"
+            value={shortJoined(createdAt)}
+            italic
+          />
+        </View>
+      </View>
+
+      <Pressable
+        onPress={onFlip}
+        hitSlop={8}
+        style={{
+          position: "absolute",
+          top: 12,
+          right: 12,
+          width: 32,
+          height: 32,
+          borderRadius: 16,
+          backgroundColor: "rgba(255, 251, 242, 0.85)",
+          borderWidth: 1,
+          borderColor: "rgba(235, 225, 206, 0.7)",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <Feather name="rotate-cw" size={14} color="#5a4f44" />
+      </Pressable>
+    </>
+  );
+}
+
+function CreamOceanBack({
+  width,
+  height,
+  onFlip,
+}: {
+  width: number;
+  height: number;
+  onFlip: () => void;
+}) {
+  return (
+    <>
+      <Svg
+        width={width}
+        height={height}
+        viewBox={`0 0 ${width} ${height}`}
+        pointerEvents="none"
+        style={{ position: "absolute", top: 0, left: 0 }}
+      >
+        <Defs>
+          <SvgLinearGradient id="bgBv" x1="0" y1="0" x2="0" y2="1">
+            <Stop offset="0" stopColor="#fffbf2" />
+            <Stop offset="1" stopColor="#faecd0" />
+          </SvgLinearGradient>
+          <RadialGradient id="sunBv" cx="0.82" cy="0.18" rx="0.55" ry="0.55">
+            <Stop offset="0" stopColor="#ffe6b4" stopOpacity="0.5" />
+            <Stop offset="1" stopColor="#ffe6b4" stopOpacity="0" />
+          </RadialGradient>
+          <SvgLinearGradient id="swellBv" x1="0" y1="1" x2="0" y2="0">
+            <Stop offset="0" stopColor="#d9c599" stopOpacity="0.5" />
+            <Stop offset="0.5" stopColor="#ecdfc1" stopOpacity="0.25" />
+            <Stop offset="1" stopColor="#ecdfc1" stopOpacity="0" />
+          </SvgLinearGradient>
+        </Defs>
+        <Rect x={0} y={0} width={width} height={height} fill="url(#bgBv)" />
+        <Rect x={0} y={0} width={width} height={height} fill="url(#sunBv)" />
+        <Path
+          d={`M -20 0 Q ${width / 2} ${height * 0.45} ${width + 20} 0 Z`}
+          fill="url(#swellBv)"
+        />
+      </Svg>
+
+      <View style={{ flex: 1 }} />
+
+      <Pressable
+        onPress={onFlip}
+        hitSlop={8}
+        style={{
+          position: "absolute",
+          top: 12,
+          right: 12,
+          width: 32,
+          height: 32,
+          borderRadius: 16,
+          backgroundColor: "rgba(255, 251, 242, 0.85)",
+          borderWidth: 1,
+          borderColor: "rgba(235, 225, 206, 0.7)",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <Feather name="rotate-ccw" size={14} color="#5a4f44" />
+      </Pressable>
+    </>
+  );
+}
+
+function CreamOceanAvatar({
+  size,
+  logoUrl,
+  initial,
+  fontSize,
+  radius,
+}: {
+  size: number;
+  logoUrl: string | null;
+  initial: string;
+  fontSize: number;
+  radius: number;
+}) {
+  return (
+    <View
+      style={{
+        width: size,
+        height: size,
+        borderRadius: radius,
+        overflow: "hidden",
+        backgroundColor: "#1a1410",
+      }}
+    >
+      <Svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+        <Defs>
+          <RadialGradient id={`avAv-${size}`} cx="0.3" cy="0.3" rx="0.6" ry="0.6">
+            <Stop offset="0" stopColor="#b8472f" stopOpacity="0.55" />
+            <Stop offset="1" stopColor="#b8472f" stopOpacity="0" />
+          </RadialGradient>
+          <RadialGradient id={`avBv-${size}`} cx="0.7" cy="0.75" rx="0.6" ry="0.6">
+            <Stop offset="0" stopColor="#b89556" stopOpacity="0.3" />
+            <Stop offset="1" stopColor="#b89556" stopOpacity="0" />
+          </RadialGradient>
+        </Defs>
+        <Rect x={0} y={0} width={size} height={size} fill={`url(#avAv-${size})`} />
+        <Rect x={0} y={0} width={size} height={size} fill={`url(#avBv-${size})`} />
+      </Svg>
+      <View
+        style={{
+          position: "absolute",
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <Text
+          style={{
+            color: "#faf5ec",
+            fontFamily: SERIF,
+            fontStyle: "italic",
+            fontWeight: "700",
+            fontSize,
+            lineHeight: fontSize * 1.05,
+            letterSpacing: -1,
+          }}
+        >
+          {initial}
+        </Text>
+      </View>
+      {logoUrl ? (
+        <Image
+          source={{ uri: logoUrl }}
+          style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }}
+          resizeMode="cover"
+          accessibilityIgnoresInvertColors
+        />
+      ) : null}
+    </View>
+  );
+}
+
+function CreamOceanStat({
+  label,
+  value,
+  italic,
+}: {
+  label: string;
+  value: string;
+  italic?: boolean;
+}) {
+  return (
+    <View style={{ flex: 1, paddingHorizontal: 8, alignItems: "center" }}>
+      <Text
+        style={{
+          fontSize: 9,
+          fontWeight: "700",
+          letterSpacing: 1.8,
+          textTransform: "uppercase",
+          color: "#9c8f80",
+          marginBottom: 3,
+        }}
+      >
+        {label}
+      </Text>
+      <Text
+        style={{
+          fontFamily: SERIF,
+          fontWeight: italic ? "500" : "600",
+          fontStyle: italic ? "italic" : "normal",
+          fontSize: italic ? 14 : 16,
+          color: italic ? "#5a4f44" : INK,
+        }}
+        numberOfLines={1}
+      >
+        {value}
+      </Text>
+    </View>
+  );
+}
+
+function shortJoined(iso: string | null | undefined): string {
+  if (!iso) return "today";
+  const then = new Date(iso);
+  if (Number.isNaN(then.getTime())) return "today";
+  const now = new Date();
+  const isSameDay =
+    then.getFullYear() === now.getFullYear() &&
+    then.getMonth() === now.getMonth() &&
+    then.getDate() === now.getDate();
+  if (isSameDay) return "today";
+  const months =
+    (now.getFullYear() - then.getFullYear()) * 12 +
+    (now.getMonth() - then.getMonth());
+  if (months < 12) {
+    return then.toLocaleDateString(undefined, { month: "short" });
+  }
+  return then.toLocaleDateString(undefined, { year: "numeric" });
 }
