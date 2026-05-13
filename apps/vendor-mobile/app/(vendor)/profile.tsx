@@ -2775,16 +2775,24 @@ function CreamOceanBack({
         />
       </Svg>
 
-      {/* Bio on back — minimal rendering. Just a Text in a padded
-          View. No numberOfLines, no nested Text, no fancy positioning,
-          to avoid the crash modes the richer renderings hit. */}
-      {hasBio ? (
-        <View style={{ padding: 22, paddingTop: 60 }}>
-          <Text style={{ color: INK, fontSize: 18, textAlign: "center" }}>
-            {bio}
-          </Text>
-        </View>
-      ) : null}
+      {/* Bio on back — host-mobile's CreamOceanBack uses this exact
+          pattern and renders fine. Always renders Text (no conditional
+          View wrapper), uses fontFamily + italic + numberOfLines. */}
+      <View style={{ padding: 22, paddingTop: 60 }}>
+        <Text
+          style={{
+            fontFamily: SERIF,
+            fontStyle: "italic",
+            color: INK,
+            fontSize: hasBio ? 18 : 16,
+            lineHeight: hasBio ? 26 : 22,
+            textAlign: "center",
+          }}
+          numberOfLines={5}
+        >
+          {hasBio ? bio : "No bio yet."}
+        </Text>
+      </View>
 
       <Pressable
         onPress={onFlip}
