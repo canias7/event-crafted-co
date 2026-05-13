@@ -2612,24 +2612,6 @@ function CreamOceanFront({
         />
       </Svg>
 
-      {/* DEBUG version marker — confirms what bundle the app is on. */}
-      <View
-        style={{
-          position: "absolute",
-          top: 8,
-          left: 8,
-          backgroundColor: "magenta",
-          paddingHorizontal: 10,
-          paddingVertical: 5,
-          borderRadius: 6,
-          zIndex: 9999,
-        }}
-      >
-        <Text style={{ color: "white", fontSize: 12, fontWeight: "900" }}>
-          BUNDLE v192 · name={businessName ?? "null"}
-        </Text>
-      </View>
-
       <View style={{ padding: 18 }}>
         <View
           style={{
@@ -2792,90 +2774,6 @@ function CreamOceanBack({
           fill="url(#swellBv)"
         />
       </Svg>
-
-      {/* DEBUG: visible markers so we can see what is and isn't
-          rendering on the back face. Remove after diagnosing. */}
-      <View
-        style={{
-          position: "absolute",
-          top: 8,
-          left: 8,
-          backgroundColor: "red",
-          paddingHorizontal: 8,
-          paddingVertical: 4,
-          borderRadius: 4,
-          zIndex: 9999,
-        }}
-      >
-        <Text style={{ color: "white", fontSize: 11, fontWeight: "800" }}>
-          BACK len={bio?.length ?? "null"}
-        </Text>
-      </View>
-      <View
-        style={{
-          position: "absolute",
-          bottom: 8,
-          left: 8,
-          backgroundColor: "lime",
-          paddingHorizontal: 8,
-          paddingVertical: 4,
-          borderRadius: 4,
-          zIndex: 9999,
-        }}
-      >
-        <Text style={{ color: "black", fontSize: 11, fontWeight: "800" }}>
-          BACK_FACE_OK
-        </Text>
-      </View>
-
-      {/* Bio on the back — wrapped with a yellow debug background so
-          the container itself is clearly visible. */}
-      <View
-        style={{
-          padding: 22,
-          paddingTop: 60,
-          backgroundColor: "rgba(255, 255, 0, 0.3)",
-        }}
-      >
-        {hasBio ? (
-          <Text
-            style={{
-              fontFamily: SERIF,
-              fontStyle: "italic",
-              color: INK,
-              fontSize: 18,
-              lineHeight: 26,
-              textAlign: "center",
-            }}
-            numberOfLines={5}
-          >
-            {bio}
-          </Text>
-        ) : (
-          <Text
-            style={{
-              fontFamily: SERIF,
-              fontStyle: "italic",
-              color: INK,
-              fontSize: 16,
-              lineHeight: 22,
-              textAlign: "center",
-            }}
-            numberOfLines={5}
-          >
-            A short bio belongs here —{" "}
-            <Text
-              style={{
-                backgroundColor: "#f5e2c9",
-                fontWeight: "700",
-              }}
-            >
-              {" one or two sentences "}
-            </Text>{" "}
-            on what makes your work worth booking.
-          </Text>
-        )}
-      </View>
 
       <Pressable
         onPress={onFlip}
