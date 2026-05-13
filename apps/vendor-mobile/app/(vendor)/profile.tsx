@@ -2612,6 +2612,24 @@ function CreamOceanFront({
         />
       </Svg>
 
+      {/* DEBUG version marker — confirms what bundle the app is on. */}
+      <View
+        style={{
+          position: "absolute",
+          top: 8,
+          left: 8,
+          backgroundColor: "magenta",
+          paddingHorizontal: 10,
+          paddingVertical: 5,
+          borderRadius: 6,
+          zIndex: 9999,
+        }}
+      >
+        <Text style={{ color: "white", fontSize: 12, fontWeight: "900" }}>
+          BUNDLE v192 · name={businessName ?? "null"}
+        </Text>
+      </View>
+
       <View style={{ padding: 18 }}>
         <View
           style={{
