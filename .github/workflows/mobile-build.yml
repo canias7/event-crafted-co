@@ -61,7 +61,7 @@ jobs:
           # set to "production".
           APPS_INPUT="${INPUT_APPS:-both}"
           PLATFORM_INPUT="${INPUT_PLATFORM:-ios}"
-          PROFILE_INPUT="${INPUT_PROFILE:-preview}"
+          PROFILE_INPUT="${INPUT_PROFILE:-production}"
           case "$APPS_INPUT" in
             both)   echo 'list=["vendor-mobile","host-mobile"]' >> "$GITHUB_OUTPUT" ;;
             vendor) echo 'list=["vendor-mobile"]' >> "$GITHUB_OUTPUT" ;;
