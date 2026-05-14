@@ -46,16 +46,27 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       apps: ${{ steps.matrix.outputs.list }}
+      platform: ${{ steps.matrix.outputs.platform }}
+      profile: ${{ steps.matrix.outputs.profile }}
     steps:
       - id: matrix
         env:
-          APPS: ${{ inputs.apps }}
+          INPUT_APPS: ${{ inputs.apps }}
+          INPUT_PLATFORM: ${{ inputs.platform }}
+          INPUT_PROFILE: ${{ inputs.profile }}
         run: |
-          case "$APPS" in
+          # Defaults for push-triggered runs (no inputs.* values).
+          APPS_INPUT="${INPUT_APPS:-both}"
+          PLATFORM_INPUT="${INPUT_PLATFORM:-ios}"
+          PROFILE_INPUT="${INPUT_PROFILE:-production}"
+          case "$APPS_INPUT" in
             both)   echo 'list=["vendor-mobile","host-mobile"]' >> "$GITHUB_OUTPUT" ;;
             vendor) echo 'list=["vendor-mobile"]' >> "$GITHUB_OUTPUT" ;;
             host)   echo 'list=["host-mobile"]' >> "$GITHUB_OUTPUT" ;;
+            *)      echo 'list=["vendor-mobile","host-mobile"]' >> "$GITHUB_OUTPUT" ;;
           esac
+          echo "platform=$PLATFORM_INPUT" >> "$GITHUB_OUTPUT"
+          echo "profile=$PROFILE_INPUT" >> "$GITHUB_OUTPUT"
 
   build:
     name: Build ${{ matrix.app }}
@@ -125,9 +136,9 @@ jobs:
           eas build \
             --non-interactive \
             --no-wait \
-            --platform ${{ inputs.platform }} \
-            --profile ${{ inputs.profile }} \
-            --auto-submit-with-profile ${{ inputs.profile }}
+            --platform ${{ needs.setup.outputs.platform }} \
+            --profile ${{ needs.setup.outputs.profile }} \
+            --auto-submit-with-profile ${{ needs.setup.outputs.profile }}
 
       - name: Done
         run: |
