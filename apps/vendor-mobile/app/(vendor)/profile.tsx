@@ -2491,9 +2491,15 @@ function CreamOceanCard({
   const flipAnim = useRef(new Animated.Value(0)).current;
   const [flipped, setFlipped] = useState(false);
   const [tapCount, setTapCount] = useState(0);
+  // Ref-based source of truth for flipped state — closure-safe under
+  // rapid taps. Without this, toggleFlip captures stale `flipped` and
+  // computes the wrong `next` when taps fire faster than re-renders,
+  // which leaves the state and animation out of sync.
+  const flippedRef = useRef(false);
   const toggleFlip = () => {
     setTapCount((c) => c + 1);
-    const next = !flipped;
+    const next = !flippedRef.current;
+    flippedRef.current = next;
     setFlipped(next);
     Animated.timing(flipAnim, {
       toValue: next ? 1 : 0,
@@ -2505,6 +2511,18 @@ function CreamOceanCard({
   const rotateY = flipAnim.interpolate({
     inputRange: [0, 1],
     outputRange: ["0deg", "180deg"],
+  });
+  // Opacity gates so only one face is visible at a time — iOS's
+  // backfaceVisibility isn't reliably hiding the away-facing side, so
+  // we swap visibility at the halfway point of the rotation. Front
+  // visible 0→0.5, back visible 0.5→1.
+  const frontOpacity = flipAnim.interpolate({
+    inputRange: [0, 0.5, 0.5001, 1],
+    outputRange: [1, 1, 0, 0],
+  });
+  const backOpacity = flipAnim.interpolate({
+    inputRange: [0, 0.4999, 0.5, 1],
+    outputRange: [0, 0, 1, 1],
   });
 
   return (
@@ -2552,10 +2570,10 @@ function CreamOceanCard({
           transform: [{ perspective: 1600 }, { rotateY }],
         }}
       >
-        {/* Front face — at rest. Hidden when parent rotates past 90deg
-            by backfaceVisibility. pointerEvents gated so the back
-            half-rotated face doesn't intercept taps. */}
-        <View
+        {/* Front face. Opacity gate swaps which face shows at the
+            halfway point of the rotation, since backfaceVisibility on
+            RN/iOS isn't reliable. */}
+        <Animated.View
           pointerEvents={flipped ? "none" : "auto"}
           style={{
             position: "absolute",
@@ -2573,7 +2591,7 @@ function CreamOceanCard({
             shadowRadius: 24,
             shadowOffset: { width: 0, height: 12 },
             elevation: 4,
-            backfaceVisibility: "hidden",
+            opacity: frontOpacity,
           }}
         >
           <CreamOceanFront
@@ -2586,11 +2604,11 @@ function CreamOceanCard({
             height={CARD_H}
             onFlip={toggleFlip}
           />
-        </View>
+        </Animated.View>
 
-        {/* Back face — static rotateY(180deg) so it faces away at rest
-            and comes to camera when parent rotates to 180deg. */}
-        <View
+        {/* Back face — static rotateY(180deg) so its content is upright
+            once the parent reaches 180deg. */}
+        <Animated.View
           pointerEvents={flipped ? "auto" : "none"}
           style={{
             position: "absolute",
@@ -2608,7 +2626,7 @@ function CreamOceanCard({
             shadowRadius: 24,
             shadowOffset: { width: 0, height: 12 },
             elevation: 4,
-            backfaceVisibility: "hidden",
+            opacity: backOpacity,
             transform: [{ rotateY: "180deg" }],
           }}
         >
@@ -2618,7 +2636,7 @@ function CreamOceanCard({
             onFlip={toggleFlip}
             bio={bio}
           />
-        </View>
+        </Animated.View>
       </Animated.View>
     </Pressable>
   );
