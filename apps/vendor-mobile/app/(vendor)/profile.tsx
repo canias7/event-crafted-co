@@ -495,7 +495,6 @@ export default function ProfileScreen() {
           initial={businessInitial}
           verifiedAt={profile?.verified_at ?? null}
           createdAt={profileCreatedAt}
-          bio={identity.bio}
         />
 
         {/* Share + Edit profile actions sit just below the card. */}
@@ -2462,14 +2461,12 @@ function CreamOceanCard({
   initial,
   verifiedAt,
   createdAt,
-  bio,
 }: {
   businessName: string | null;
   logoUrl: string | null;
   initial: string;
   verifiedAt: string | null;
   createdAt: string | null;
-  bio: string | null;
 }) {
   const CARD_W = Dimensions.get("window").width - 36;
   const CARD_H = 230;
@@ -2544,7 +2541,6 @@ function CreamOceanCard({
           createdAt={createdAt}
           width={CARD_W}
           height={CARD_H}
-          onFlip={toggleFlip}
         />
       </Animated.View>
 
@@ -2572,13 +2568,40 @@ function CreamOceanCard({
           backStyle,
         ]}
       >
-        <CreamOceanBack
-          width={CARD_W}
-          height={CARD_H}
-          onFlip={toggleFlip}
-          bio={bio}
-        />
+        <CreamOceanBack width={CARD_W} height={CARD_H} />
       </Animated.View>
+
+      {/* Flip button — rendered OUTSIDE both rotating Animated.Views
+          so its hit area stays in a flat (non-3D) coordinate space.
+          When the button sat inside a face with active rotateY +
+          perspective + useNativeDriver, iOS hit-testing routed the
+          tap unreliably and the card sometimes refused to flip.
+          Single button now, with the icon swapping based on state. */}
+      <Pressable
+        onPress={toggleFlip}
+        hitSlop={12}
+        style={{
+          position: "absolute",
+          top: 12,
+          right: 12,
+          width: 32,
+          height: 32,
+          borderRadius: 16,
+          backgroundColor: "rgba(255, 251, 242, 0.85)",
+          borderWidth: 1,
+          borderColor: "rgba(235, 225, 206, 0.7)",
+          alignItems: "center",
+          justifyContent: "center",
+          zIndex: 10,
+          elevation: 6,
+        }}
+      >
+        <Feather
+          name={flipped ? "rotate-ccw" : "rotate-cw"}
+          size={14}
+          color="#5a4f44"
+        />
+      </Pressable>
     </View>
   );
 }
@@ -2591,7 +2614,6 @@ function CreamOceanFront({
   createdAt,
   width,
   height,
-  onFlip,
 }: {
   businessName: string | null;
   logoUrl: string | null;
@@ -2600,7 +2622,6 @@ function CreamOceanFront({
   createdAt: string | null;
   width: number;
   height: number;
-  onFlip: () => void;
 }) {
   return (
     <>
@@ -2738,26 +2759,6 @@ function CreamOceanFront({
           />
         </View>
       </View>
-
-      <Pressable
-        onPress={onFlip}
-        hitSlop={8}
-        style={{
-          position: "absolute",
-          top: 12,
-          right: 12,
-          width: 32,
-          height: 32,
-          borderRadius: 16,
-          backgroundColor: "rgba(255, 251, 242, 0.85)",
-          borderWidth: 1,
-          borderColor: "rgba(235, 225, 206, 0.7)",
-          alignItems: "center",
-          justifyContent: "center",
-        }}
-      >
-        <Feather name="rotate-cw" size={14} color="#5a4f44" />
-      </Pressable>
     </>
   );
 }
@@ -2765,15 +2766,10 @@ function CreamOceanFront({
 function CreamOceanBack({
   width,
   height,
-  onFlip,
-  bio,
 }: {
   width: number;
   height: number;
-  onFlip: () => void;
-  bio: string | null;
 }) {
-  const hasBio = !!bio?.trim();
   return (
     <>
       <Svg
@@ -2805,26 +2801,6 @@ function CreamOceanBack({
           fill="url(#swellBv)"
         />
       </Svg>
-
-      <Pressable
-        onPress={onFlip}
-        hitSlop={8}
-        style={{
-          position: "absolute",
-          top: 12,
-          right: 12,
-          width: 32,
-          height: 32,
-          borderRadius: 16,
-          backgroundColor: "rgba(255, 251, 242, 0.85)",
-          borderWidth: 1,
-          borderColor: "rgba(235, 225, 206, 0.7)",
-          alignItems: "center",
-          justifyContent: "center",
-        }}
-      >
-        <Feather name="rotate-ccw" size={14} color="#5a4f44" />
-      </Pressable>
     </>
   );
 }
