@@ -20,6 +20,7 @@ import {
   Modal,
   Platform,
   Pressable,
+  RefreshControl,
   ScrollView,
   Share,
   Text,
@@ -167,6 +168,14 @@ export default function VendorDetailScreen() {
   // Page-sheet that opens when host taps the business card under the
   // photos. Renders a compact vendor profile snapshot.
   const [profileSheetOpen, setProfileSheetOpen] = useState(false);
+  // Pull-to-refresh state. refreshToken bumps re-trigger the load
+  // effect; refreshing drives the RefreshControl spinner.
+  const [refreshing, setRefreshing] = useState(false);
+  const [refreshToken, setRefreshToken] = useState(0);
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    setRefreshToken((t) => t + 1);
+  }, []);
 
   useEffect(() => {
     if (!id) return;
@@ -287,11 +296,12 @@ export default function VendorDetailScreen() {
       }
 
       setLoading(false);
+      setRefreshing(false);
     })();
     return () => {
       cancelled = true;
     };
-  }, [id, user?.id]);
+  }, [id, user?.id, refreshToken]);
 
   const toggleSaved = useCallback(async () => {
     if (!user?.id || !vendor?.id || savingHeart) return;
@@ -373,6 +383,13 @@ export default function VendorDetailScreen() {
       <ScrollView
         contentContainerStyle={{ paddingBottom: 120 }}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={INK_DIM}
+          />
+        }
       >
         {/* Photo gallery — full-bleed, swipeable, with rounded bottom
             corners so the cream backdrop peeks through. */}
