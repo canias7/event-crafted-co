@@ -21,6 +21,7 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.7";
 
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
+const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
 const FROM_ADDRESS =
   Deno.env.get("EMAIL_FROM_ADDRESS") ?? "Vendora <noreply@eventvendora.com>";
 const APP_URL =
@@ -167,6 +168,13 @@ serve(async (req) => {
     } else if (kind === "outreach_lead") {
       const e = await outreachLeadEmail(body as OutreachLeadPayload);
       if (e) emails = [e];
+    } else if (kind === "outreach_lead_preview") {
+      // Preview-only path. AI-personalizes the email body for this lead
+      // and returns it without sending. The caller (admin UI) shows it
+      // in a modal, the operator can edit, then calls `outreach_lead`
+      // with subject_override / body_override to actually send.
+      const preview = await outreachLeadPreview(body as OutreachLeadPayload);
+      return json(preview, 200);
     } else {
       return json({ error: `Unknown kind: ${kind}` }, 400);
     }
@@ -655,34 +663,32 @@ function escape(s: string) {
 interface OutreachLeadPayload {
   lead_id: string;
   template_id: string;
+  // Optional overrides for the actually-sent subject / body. The admin
+  // UI does an AI-personalized preview first, lets the operator edit,
+  // then passes the final versions back in these fields. When absent,
+  // we fall back to template + {{var}} substitution (no AI rewrite).
+  subject_override?: string;
+  body_override?: string;
 }
 
-// Send an outreach email to an email_leads row using an email_templates
-// row. Substitutes {{name}}, {{email}}, {{source}} into subject + body.
-//
-// Cold-outreach deliverability is brittle: branded HTML wrappers,
-// noreply@ senders, and big logos all push these into spam. So we
-// deliberately do NOT use shellHtml here — outreach goes out as
-// minimal HTML (just paragraph tags) so it reads like a 1:1 email,
-// not a newsletter. The template can also carry its own from_name /
-// from_address override so the email is sent from a real person on a
-// verified Resend domain.
-//
-// After a successful send, marks the lead as contacted and stamps
-// last_sent_at / last_template_id.
-async function outreachLeadEmail(p: OutreachLeadPayload) {
+async function loadLeadAndTemplate(p: OutreachLeadPayload) {
   if (!p.lead_id || !p.template_id) {
     throw new Error("lead_id and template_id are required");
   }
   const sb = adminClient();
-
   const { data: lead, error: leadErr } = await sb
     .from("email_leads")
-    .select("id, email, name, source")
+    .select("id, email, name, source, notes")
     .eq("id", p.lead_id)
     .maybeSingle();
   if (leadErr) throw new Error(`Lead lookup: ${leadErr.message}`);
-  const leadRow = lead as { id: string; email: string; name: string | null; source: string | null } | null;
+  const leadRow = lead as {
+    id: string;
+    email: string;
+    name: string | null;
+    source: string | null;
+    notes: string | null;
+  } | null;
   if (!leadRow) throw new Error(`Lead not found: ${p.lead_id}`);
 
   const { data: template, error: tplErr } = await sb
@@ -700,35 +706,139 @@ async function outreachLeadEmail(p: OutreachLeadPayload) {
     from_address: string | null;
   } | null;
   if (!tplRow) throw new Error(`Template not found: ${p.template_id}`);
+  return { sb, lead: leadRow, template: tplRow };
+}
+
+const PERSONALIZE_SYSTEM = `You are personalizing a cold-outreach email for one specific event vendor we want to recruit to our new marketplace.
+
+You will receive:
+- The template email body (the message we want to convey)
+- What we know about the vendor (name, source/context, notes)
+
+Your job: rewrite the body so it feels written specifically for this vendor. Pull 1-2 concrete details from the notes and weave them in naturally — a quick compliment about their style, a reference to their specialty / location / niche, etc. Keep the same value prop, hook, and CTA the template has. Match the tone (warm, inviting, not salesy).
+
+Rules:
+- Output only the rewritten email body. No subject, no preamble, no markdown, no quotes around the output.
+- Plain text only. Use blank lines between paragraphs. No HTML.
+- Stay roughly the same length as the template. Don't pad.
+- DO NOT invent facts. If the notes are thin or vague, keep the personalization light — just use the vendor's name and a generic-but-warm reference. Better to under-personalize than to make things up.
+- Never reference the notes verbatim. Re-phrase them as natural observations a human would make.
+- Sign off with the same closing the template uses ("— Vendora team" etc.).`;
+
+async function personalizeBody(input: {
+  templateBody: string;
+  name: string | null;
+  source: string | null;
+  notes: string | null;
+}) {
+  if (!ANTHROPIC_API_KEY) {
+    // No key configured — fall back to the template as-is.
+    console.warn("[outreach] ANTHROPIC_API_KEY not set; skipping personalization");
+    return input.templateBody;
+  }
+  const userMsg = `Template body (the message to convey):\n---\n${input.templateBody}\n---\n\nWhat we know about this vendor:\n- Business name: ${input.name ?? "(unknown)"}\n- Source / context: ${input.source ?? "(unknown)"}\n- Notes: ${input.notes ?? "(no notes captured)"}\n\nReturn ONLY the rewritten email body.`;
+
+  const res = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: {
+      "x-api-key": ANTHROPIC_API_KEY,
+      "anthropic-version": "2023-06-01",
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({
+      model: "claude-sonnet-4-6",
+      max_tokens: 1024,
+      system: [
+        { type: "text", text: PERSONALIZE_SYSTEM, cache_control: { type: "ephemeral" } },
+      ],
+      messages: [{ role: "user", content: userMsg }],
+    }),
+  });
+  if (!res.ok) {
+    const errText = await res.text();
+    console.error("[outreach] anthropic personalize failed:", res.status, errText.slice(0, 500));
+    // Fail open — fall back to the template body so the send still works.
+    return input.templateBody;
+  }
+  const apiBody = (await res.json()) as any;
+  const text = ((apiBody.content ?? []) as any[])
+    .filter((b: any) => b.type === "text")
+    .map((b: any) => b.text)
+    .join("\n")
+    .trim();
+  return text || input.templateBody;
+}
+
+// Preview: returns the AI-personalized email subject + body for this
+// lead without sending. Caller (admin UI) shows it in a modal, lets
+// the operator edit, then calls outreach_lead with the final overrides.
+async function outreachLeadPreview(p: OutreachLeadPayload) {
+  const { lead, template } = await loadLeadAndTemplate(p);
+  const vars: Record<string, string> = {
+    name: lead.name ?? "there",
+    email: lead.email,
+    source: lead.source ?? "",
+  };
+  const subject = applyVars(template.subject, vars);
+  const personalizedBody = await personalizeBody({
+    templateBody: applyVars(template.body, vars),
+    name: lead.name,
+    source: lead.source,
+    notes: lead.notes,
+  });
+  return {
+    subject,
+    body: personalizedBody,
+    from_name: template.from_name,
+    from_address: template.from_address,
+    lead: { id: lead.id, email: lead.email, name: lead.name },
+  };
+}
+
+// Send an outreach email. If subject_override / body_override are
+// provided (the typical path — UI shows a preview, operator edits, then
+// confirms), we send those verbatim. Otherwise we fall back to the
+// template with {{var}} substitution (no AI rewrite).
+//
+// Cold-outreach deliverability is brittle: branded HTML wrappers,
+// noreply@ senders, and big logos all push these into spam. So we
+// deliberately do NOT use shellHtml here — outreach goes out as
+// minimal HTML (just paragraph tags) so it reads like a 1:1 email,
+// not a newsletter.
+//
+// After a successful send, marks the lead as contacted and stamps
+// last_sent_at / last_template_id.
+async function outreachLeadEmail(p: OutreachLeadPayload) {
+  const { sb, lead, template } = await loadLeadAndTemplate(p);
 
   const vars: Record<string, string> = {
-    name: leadRow.name ?? "there",
-    email: leadRow.email,
-    source: leadRow.source ?? "",
+    name: lead.name ?? "there",
+    email: lead.email,
+    source: lead.source ?? "",
   };
-  const subject = applyVars(tplRow.subject, vars);
-  const bodyText = applyVars(tplRow.body, vars);
+  const subject = (p.subject_override ?? applyVars(template.subject, vars)).trim();
+  const bodyText = (p.body_override ?? applyVars(template.body, vars)).trim();
+  if (!subject || !bodyText) {
+    throw new Error("Subject and body are required");
+  }
   const html = outreachBodyHtml(bodyText);
 
-  const from = tplRow.from_address
-    ? tplRow.from_name
-      ? `${tplRow.from_name} <${tplRow.from_address}>`
-      : tplRow.from_address
+  const from = template.from_address
+    ? template.from_name
+      ? `${template.from_name} <${template.from_address}>`
+      : template.from_address
     : undefined;
 
-  // Stamp the lead before send. If Resend rejects, we'll surface that
-  // error but the lead will still show as contacted; the caller can
-  // recover from the UI. Acceptable trade-off for v1.
   await sb
     .from("email_leads")
     .update({
       status: "contacted",
       last_sent_at: new Date().toISOString(),
-      last_template_id: tplRow.id,
+      last_template_id: template.id,
     })
-    .eq("id", leadRow.id);
+    .eq("id", lead.id);
 
-  return { to: leadRow.email, subject, html, from };
+  return { to: lead.email, subject, html, from };
 }
 
 // Minimal HTML wrapper for cold outreach. No logo, no header, no

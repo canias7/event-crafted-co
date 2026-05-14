@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
-import { ChevronLeft, Plus, Send, Trash2 } from "lucide-react";
+import { ChevronLeft, Plus, Send, Trash2, X } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 
 // Email leads — a contact list for outreach campaigns. Manual add
@@ -28,6 +28,15 @@ type EmailTemplate = {
   name: string;
 };
 
+type PreviewState = {
+  lead: EmailLead;
+  templateId: string;
+  subject: string;
+  body: string;
+  fromName: string | null;
+  fromAddress: string | null;
+};
+
 const STATUS_OPTIONS: ReadonlyArray<{ value: LeadStatus; label: string }> = [
   { value: "new", label: "New" },
   { value: "contacted", label: "Contacted" },
@@ -52,6 +61,7 @@ export function EmailLeadsPage() {
   // is one click.
   const [pickedTemplate, setPickedTemplate] = useState<Record<string, string>>({});
   const [sending, setSending] = useState<Record<string, boolean>>({});
+  const [preview, setPreview] = useState<PreviewState | null>(null);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<LeadStatus | "all">("all");
   const [showAdd, setShowAdd] = useState(false);
@@ -141,7 +151,7 @@ export function EmailLeadsPage() {
     );
   }
 
-  async function sendEmail(lead: EmailLead) {
+  async function openPreview(lead: EmailLead) {
     const templateId = pickedTemplate[lead.id];
     if (!templateId) {
       toast.error("Pick a template first");
@@ -150,22 +160,64 @@ export function EmailLeadsPage() {
     setSending((p) => ({ ...p, [lead.id]: true }));
     const { data, error } = await supabase.functions.invoke(
       "send-transactional-email",
-      { body: { kind: "outreach_lead", lead_id: lead.id, template_id: templateId } },
+      {
+        body: {
+          kind: "outreach_lead_preview",
+          lead_id: lead.id,
+          template_id: templateId,
+        },
+      },
     );
     setSending((p) => ({ ...p, [lead.id]: false }));
+    if (error || data?.error) {
+      toast.error(error?.message ?? data?.error ?? "Preview failed");
+      return;
+    }
+    setPreview({
+      lead,
+      templateId,
+      subject: data.subject ?? "",
+      body: data.body ?? "",
+      fromName: data.from_name ?? null,
+      fromAddress: data.from_address ?? null,
+    });
+  }
+
+  async function confirmSend(finalSubject: string, finalBody: string) {
+    if (!preview) return;
+    setSending((p) => ({ ...p, [preview.lead.id]: true }));
+    const { data, error } = await supabase.functions.invoke(
+      "send-transactional-email",
+      {
+        body: {
+          kind: "outreach_lead",
+          lead_id: preview.lead.id,
+          template_id: preview.templateId,
+          subject_override: finalSubject,
+          body_override: finalBody,
+        },
+      },
+    );
+    setSending((p) => ({ ...p, [preview.lead.id]: false }));
     if (error || data?.ok === false) {
       toast.error(error?.message ?? data?.error ?? "Send failed");
       return;
     }
-    toast.success(`Sent to ${lead.email}`);
+    toast.success(`Sent to ${preview.lead.email}`);
     const now = new Date().toISOString();
     setRows((p) =>
       p.map((r) =>
-        r.id === lead.id
-          ? { ...r, status: "contacted" as LeadStatus, last_sent_at: now, last_template_id: templateId }
+        r.id === preview.lead.id
+          ? {
+              ...r,
+              status: "contacted" as LeadStatus,
+              last_sent_at: now,
+              last_template_id: preview.templateId,
+            }
           : r,
       ),
     );
+    setPreview(null);
   }
 
   async function deleteLead(id: string) {
@@ -298,7 +350,7 @@ export function EmailLeadsPage() {
                     setPickedTemplate((p) => ({ ...p, [r.id]: id }))
                   }
                   sending={!!sending[r.id]}
-                  onSend={() => sendEmail(r)}
+                  onSend={() => openPreview(r)}
                   onStatus={(next) => updateStatus(r.id, next)}
                   onNotes={(next) => updateNotes(r.id, next)}
                   onDelete={() => deleteLead(r.id)}
@@ -308,6 +360,113 @@ export function EmailLeadsPage() {
           </table>
         </div>
       )}
+
+      {preview ? (
+        <PreviewModal
+          preview={preview}
+          sending={!!sending[preview.lead.id]}
+          onClose={() => setPreview(null)}
+          onSend={(subj, body) => confirmSend(subj, body)}
+        />
+      ) : null}
+    </div>
+  );
+}
+
+function PreviewModal({
+  preview,
+  sending,
+  onClose,
+  onSend,
+}: {
+  preview: PreviewState;
+  sending: boolean;
+  onClose: () => void;
+  onSend: (subject: string, body: string) => void;
+}) {
+  const [subject, setSubject] = useState(preview.subject);
+  const [body, setBody] = useState(preview.body);
+  const fromLine =
+    preview.fromAddress
+      ? preview.fromName
+        ? `${preview.fromName} <${preview.fromAddress}>`
+        : preview.fromAddress
+      : "Default (noreply@eventvendora.com)";
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-ink/40 p-4"
+      onClick={onClose}
+    >
+      <div
+        className="w-full max-w-2xl rounded-lg bg-white shadow-xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between border-b border-ink/10 px-5 py-4">
+          <div>
+            <p className="text-sm font-medium">Review before sending</p>
+            <p className="mt-0.5 text-xs text-ink/60">
+              AI-personalized for {preview.lead.name ?? preview.lead.email}. Edit
+              anything you want before it goes out.
+            </p>
+          </div>
+          <button
+            onClick={onClose}
+            className="rounded p-1 text-ink/50 hover:bg-ink/5 hover:text-ink"
+            title="Close"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+        <div className="space-y-3 px-5 py-4">
+          <div className="text-xs text-ink/60">
+            <span className="block">
+              <span className="font-medium text-ink/70">From:</span> {fromLine}
+            </span>
+            <span className="block">
+              <span className="font-medium text-ink/70">To:</span>{" "}
+              {preview.lead.email}
+            </span>
+          </div>
+          <label className="block text-sm">
+            <span className="block text-xs uppercase tracking-wide text-ink/60">
+              Subject
+            </span>
+            <input
+              type="text"
+              value={subject}
+              onChange={(e) => setSubject(e.target.value)}
+              className="mt-1 w-full rounded border border-ink/15 px-3 py-2 outline-none focus:border-ink/40"
+            />
+          </label>
+          <label className="block text-sm">
+            <span className="block text-xs uppercase tracking-wide text-ink/60">
+              Body
+            </span>
+            <textarea
+              value={body}
+              onChange={(e) => setBody(e.target.value)}
+              rows={16}
+              className="mt-1 w-full rounded border border-ink/15 px-3 py-2 font-mono text-[13px] leading-relaxed outline-none focus:border-ink/40"
+            />
+          </label>
+        </div>
+        <div className="flex justify-end gap-2 border-t border-ink/10 px-5 py-3">
+          <button
+            onClick={onClose}
+            className="rounded border border-ink/15 px-4 py-2 text-sm text-ink/70 hover:bg-ink/5"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={() => onSend(subject, body)}
+            disabled={sending || !subject.trim() || !body.trim()}
+            className="flex items-center gap-2 rounded bg-ink px-4 py-2 text-sm font-medium text-bone hover:bg-ink/90 disabled:opacity-50"
+          >
+            <Send className="h-3 w-3" />
+            {sending ? "Sending…" : "Send"}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

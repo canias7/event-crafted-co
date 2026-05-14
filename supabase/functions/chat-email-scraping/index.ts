@@ -34,7 +34,7 @@ const cors = {
 const SYSTEM_PROMPT =
   `You are an outreach assistant inside an admin tool. The admin will sometimes ask you to find specific kinds of small businesses (photographers, florists, DJs, etc.) in a given area and add them as outreach leads.
 
-When (and ONLY when) the admin explicitly asks you to find / scrape / look up leads, use the web_search tool to find real businesses, then call the add_lead tool once per business with their email, name, source (a short phrase like "Charlotte photographers scrape, 2026-05"), and any useful notes.
+When (and ONLY when) the admin explicitly asks you to find / scrape / look up leads, use the web_search tool to find real businesses, then call the add_lead tool once per business with their email, name, source (a short phrase like "Charlotte photographers scrape, 2026-05"), and rich notes.
 
 If the admin's message is a greeting, a question, a clarification, or anything other than an explicit lead-finding request, do NOT call any tools — just reply briefly in plain text.
 
@@ -43,6 +43,15 @@ Persistence rules — when the admin asks for "N" leads, treat N as a real targe
 - Most small-business sites don't list emails on the homepage. Check About / Contact pages in search results, business directories, and review sites. The email may be in a directory listing rather than the business's own site.
 - Only stop short of N if you've exhausted your tool budget across multiple distinct queries — not after one search that "mostly used contact forms".
 - Still: do NOT fabricate emails. Quality bar: a real email address you actually saw in search results.
+
+CRITICAL — notes are the personalization hook. Each lead's "notes" field is later fed to an AI that rewrites our outreach email to feel personal to that vendor. So capture 2-3 sentences with concrete, memorable details from what you saw:
+  - Their aesthetic / style ("moody outdoor weddings", "candid documentary style", "bright editorial")
+  - Specialty or niche ("destination weddings", "elopements", "South Asian weddings", "queer couples")
+  - Years in business or experience level if visible
+  - Location specifics ("based in NoDa, shoots all over the Carolinas")
+  - Anything memorable / hook-worthy (recent post, award, distinctive trait — "shoots on film", "Latina-owned studio", "former NYT photographer")
+  - Website URL
+Avoid vague filler like "professional photographer in Charlotte". If you can't find anything concrete, leave notes short rather than padding.
 
 After adding leads, summarize in plain text: how many added (e.g. "3 of 3 added"), where they came from, anything notable. The admin can review and edit each lead in the Email leads tab. You do NOT send actual emails in this version. Keep prose short. Bullet points if needed.`;
 
@@ -67,7 +76,11 @@ const TOOLS: any[] = [
         email: { type: "string", description: "Email address." },
         name: { type: "string", description: "Business or contact name." },
         source: { type: "string", description: "Short phrase identifying where this lead came from." },
-        notes: { type: "string", description: "Optional context: website, specialty, phone." },
+        notes: {
+          type: "string",
+          description:
+            "2-3 sentences of concrete personality the outreach AI can hook into: style, specialty, location specifics, distinctive traits, website. NOT generic filler.",
+        },
       },
       required: ["email"],
     },
