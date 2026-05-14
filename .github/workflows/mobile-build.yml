@@ -55,10 +55,13 @@ jobs:
           INPUT_PLATFORM: ${{ inputs.platform }}
           INPUT_PROFILE: ${{ inputs.profile }}
         run: |
-          # Defaults for push-triggered runs (no inputs.* values).
+          # Defaults for push-triggered runs. Default to PREVIEW so
+          # iteration builds don't auto-submit to TestFlight. For the
+          # actual release build, use workflow_dispatch with profile
+          # set to "production".
           APPS_INPUT="${INPUT_APPS:-both}"
           PLATFORM_INPUT="${INPUT_PLATFORM:-ios}"
-          PROFILE_INPUT="${INPUT_PROFILE:-production}"
+          PROFILE_INPUT="${INPUT_PROFILE:-preview}"
           case "$APPS_INPUT" in
             both)   echo 'list=["vendor-mobile","host-mobile"]' >> "$GITHUB_OUTPUT" ;;
             vendor) echo 'list=["vendor-mobile"]' >> "$GITHUB_OUTPUT" ;;
@@ -130,15 +133,19 @@ jobs:
           # expo-cli no longer accepts --non-interactive flag — wants CI=1.
           CI: "1"
         run: |
-          # --auto-submit-with-profile production sends iOS builds to
-          # TestFlight automatically once the binary is ready. No-op for
-          # android profile.
+          # Only auto-submit to TestFlight on production profile.
+          # Preview builds are for iteration — submit only when ready.
+          PROFILE="${{ needs.setup.outputs.profile }}"
+          AUTO_SUBMIT=""
+          if [ "$PROFILE" = "production" ]; then
+            AUTO_SUBMIT="--auto-submit-with-profile production"
+          fi
           eas build \
             --non-interactive \
             --no-wait \
             --platform ${{ needs.setup.outputs.platform }} \
-            --profile ${{ needs.setup.outputs.profile }} \
-            --auto-submit-with-profile ${{ needs.setup.outputs.profile }}
+            --profile "$PROFILE" \
+            $AUTO_SUBMIT
 
       - name: Done
         run: |
