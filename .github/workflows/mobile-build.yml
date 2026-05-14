@@ -16,6 +16,9 @@ name: Mobile Build
 #  4. github.com/canias7/event-crafted-co/actions → "Mobile Build" → Run workflow
 
 on:
+  push:
+    branches:
+      - "trigger-build/**"
   workflow_dispatch:
     inputs:
       apps:
@@ -27,12 +30,12 @@ on:
         description: "Which platform?"
         type: choice
         options: [android, ios, all]
-        default: android
+        default: ios
       profile:
         description: "Which profile?"
         type: choice
         options: [preview, production, development]
-        default: preview
+        default: production
 
 permissions:
   contents: write
