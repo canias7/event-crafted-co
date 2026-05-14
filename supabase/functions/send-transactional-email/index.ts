@@ -129,7 +129,13 @@ serve(async (req) => {
   // specific email. Used by cold-outreach paths so each template can
   // send from a real person (chris@eventvendora.com) instead of the
   // default noreply@.
-  let emails: { to: string; subject: string; html: string; from?: string }[] = [];
+  let emails: {
+    to: string;
+    subject: string;
+    html?: string;
+    text?: string;
+    from?: string;
+  }[] = [];
 
   try {
     if (kind === "team_invite") {
@@ -199,7 +205,9 @@ serve(async (req) => {
         from: email.from ?? FROM_ADDRESS,
         to: email.to,
         subject: email.subject,
-        html: email.html,
+        // Outreach emails go out as text-only (better Gmail Primary
+        // tab placement). Everything else stays HTML.
+        ...(email.text ? { text: email.text } : { html: email.html }),
       }),
     });
     if (send.ok) {
@@ -800,11 +808,9 @@ async function outreachLeadPreview(p: OutreachLeadPayload) {
 // confirms), we send those verbatim. Otherwise we fall back to the
 // template with {{var}} substitution (no AI rewrite).
 //
-// Cold-outreach deliverability is brittle: branded HTML wrappers,
-// noreply@ senders, and big logos all push these into spam. So we
-// deliberately do NOT use shellHtml here — outreach goes out as
-// minimal HTML (just paragraph tags) so it reads like a 1:1 email,
-// not a newsletter.
+// Cold-outreach goes out as text-only (no `html` field on Resend) so
+// Gmail puts it in Primary instead of Promotions. Resend handles the
+// MIME wrapping. Any HTML in the body would be sent literally as text.
 //
 // After a successful send, marks the lead as contacted and stamps
 // last_sent_at / last_template_id.
@@ -821,7 +827,6 @@ async function outreachLeadEmail(p: OutreachLeadPayload) {
   if (!subject || !bodyText) {
     throw new Error("Subject and body are required");
   }
-  const html = outreachBodyHtml(bodyText);
 
   const from = template.from_address
     ? template.from_name
@@ -838,23 +843,7 @@ async function outreachLeadEmail(p: OutreachLeadPayload) {
     })
     .eq("id", lead.id);
 
-  return { to: lead.email, subject, html, from };
-}
-
-// Minimal HTML wrapper for cold outreach. No logo, no header, no
-// footer, no branding — just paragraphs in a vanilla <html><body>.
-// Looks like a 1:1 personal email when rendered. All content is
-// HTML-escaped before substitution.
-function outreachBodyHtml(text: string) {
-  const escaped = escape(text);
-  const paragraphs = escaped
-    .split(/\n{2,}/)
-    .map(
-      (para) =>
-        `<p style="margin:0 0 12px;">${para.replace(/\n/g, "<br/>")}</p>`,
-    )
-    .join("");
-  return `<!doctype html><html><body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:15px;line-height:1.5;color:#1a1a1a;">${paragraphs}</body></html>`;
+  return { to: lead.email, subject, text: bodyText, from };
 }
 
 // Replace {{name}}, {{ email }}, etc. with values from vars. Unknown
