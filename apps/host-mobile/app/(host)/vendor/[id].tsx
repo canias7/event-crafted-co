@@ -2252,10 +2252,12 @@ function CreamOceanCard({
   const CARD_W = Dimensions.get("window").width - 36;
   const CARD_H = 230;
 
-  // Flip animation using RN's built-in Animated. Plain React state
-  // tracks the "facing" side so we can gate pointerEvents — the
-  // backface-visibility trick hides rendering but the View still
-  // captures touches, which is what was breaking the flip button.
+  // Flip animation that mirrors the HTML reference pattern: ONE parent
+  // Animated.View rotates 0deg → 180deg, both faces sit as children
+  // with the back wearing a static rotateY(180deg). Equivalent to CSS
+  // transform-style: preserve-3d. Only one animation interpolation
+  // instead of two — simpler, fewer surfaces for iOS hit-testing to
+  // misbehave through.
   const flipAnim = useRef(new Animated.Value(0)).current;
   const [flipped, setFlipped] = useState(false);
   const toggleFlip = () => {
@@ -2263,25 +2265,15 @@ function CreamOceanCard({
     setFlipped(next);
     Animated.timing(flipAnim, {
       toValue: next ? 1 : 0,
-      duration: 500,
+      duration: 800,
       useNativeDriver: true,
     }).start();
   };
 
-  const frontRotate = flipAnim.interpolate({
+  const rotateY = flipAnim.interpolate({
     inputRange: [0, 1],
     outputRange: ["0deg", "180deg"],
   });
-  const backRotate = flipAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: ["180deg", "360deg"],
-  });
-  const frontStyle = {
-    transform: [{ perspective: 1000 }, { rotateY: frontRotate }],
-  };
-  const backStyle = {
-    transform: [{ perspective: 1000 }, { rotateY: backRotate }],
-  };
 
   return (
     <View
@@ -2291,12 +2283,21 @@ function CreamOceanCard({
         height: CARD_H,
       }}
     >
-      {/* Front — pointerEvents disabled when flipped so the hidden
-          face doesn't intercept taps on the visible back. */}
       <Animated.View
-        pointerEvents={flipped ? "none" : "auto"}
-        style={[
-          {
+        style={{
+          position: "absolute",
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          transform: [{ perspective: 1600 }, { rotateY }],
+        }}
+      >
+        {/* Front face. pointerEvents gated so the rotated face doesn't
+            intercept taps as it goes past 90 degrees. */}
+        <View
+          pointerEvents={flipped ? "none" : "auto"}
+          style={{
             position: "absolute",
             top: 0,
             left: 0,
@@ -2313,25 +2314,23 @@ function CreamOceanCard({
             shadowOffset: { width: 0, height: 12 },
             elevation: 4,
             backfaceVisibility: "hidden",
-          },
-          frontStyle,
-        ]}
-      >
-        <CreamOceanFront
-          vendor={vendor}
-          initial={initial}
-          fallbackLogoUrl={fallbackLogoUrl}
-          width={CARD_W}
-          height={CARD_H}
-          onFlip={toggleFlip}
-        />
-      </Animated.View>
+          }}
+        >
+          <CreamOceanFront
+            vendor={vendor}
+            initial={initial}
+            fallbackLogoUrl={fallbackLogoUrl}
+            width={CARD_W}
+            height={CARD_H}
+            onFlip={toggleFlip}
+          />
+        </View>
 
-      {/* Back — same pointerEvents gating, inverted. */}
-      <Animated.View
-        pointerEvents={flipped ? "auto" : "none"}
-        style={[
-          {
+        {/* Back face — static rotateY(180deg) so it faces away at rest
+            and rotates to camera when parent reaches 180deg. */}
+        <View
+          pointerEvents={flipped ? "auto" : "none"}
+          style={{
             position: "absolute",
             top: 0,
             left: 0,
@@ -2348,16 +2347,16 @@ function CreamOceanCard({
             shadowOffset: { width: 0, height: 12 },
             elevation: 4,
             backfaceVisibility: "hidden",
-          },
-          backStyle,
-        ]}
-      >
-        <CreamOceanBack
-          vendor={vendor}
-          width={CARD_W}
-          height={CARD_H}
-          onFlip={toggleFlip}
-        />
+            transform: [{ rotateY: "180deg" }],
+          }}
+        >
+          <CreamOceanBack
+            vendor={vendor}
+            width={CARD_W}
+            height={CARD_H}
+            onFlip={toggleFlip}
+          />
+        </View>
       </Animated.View>
     </View>
   );

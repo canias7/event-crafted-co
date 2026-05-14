@@ -2474,9 +2474,12 @@ function CreamOceanCard({
   const CARD_W = Dimensions.get("window").width - 36;
   const CARD_H = 230;
 
-  // RN Animated flip. backfaceVisibility hides the away-side render but
-  // the View still captures touches — so we gate pointerEvents per face
-  // off plain state too.
+  // Flip animation that mirrors the HTML reference pattern: ONE parent
+  // Animated.View rotates 0deg → 180deg, both faces sit as children
+  // with the back wearing a static rotateY(180deg). Equivalent to CSS
+  // transform-style: preserve-3d. Only one animation interpolation
+  // instead of two — simpler, fewer surfaces for iOS hit-testing to
+  // misbehave through.
   const flipAnim = useRef(new Animated.Value(0)).current;
   const [flipped, setFlipped] = useState(false);
   const toggleFlip = () => {
@@ -2484,25 +2487,15 @@ function CreamOceanCard({
     setFlipped(next);
     Animated.timing(flipAnim, {
       toValue: next ? 1 : 0,
-      duration: 500,
+      duration: 800,
       useNativeDriver: true,
     }).start();
   };
 
-  const frontRotate = flipAnim.interpolate({
+  const rotateY = flipAnim.interpolate({
     inputRange: [0, 1],
     outputRange: ["0deg", "180deg"],
   });
-  const backRotate = flipAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: ["180deg", "360deg"],
-  });
-  const frontStyle = {
-    transform: [{ perspective: 1000 }, { rotateY: frontRotate }],
-  };
-  const backStyle = {
-    transform: [{ perspective: 1000 }, { rotateY: backRotate }],
-  };
 
   return (
     <View
@@ -2513,9 +2506,21 @@ function CreamOceanCard({
       }}
     >
       <Animated.View
-        pointerEvents={flipped ? "none" : "auto"}
-        style={[
-          {
+        style={{
+          position: "absolute",
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          transform: [{ perspective: 1600 }, { rotateY }],
+        }}
+      >
+        {/* Front face — at rest. Hidden when parent rotates past 90deg
+            by backfaceVisibility. pointerEvents gated so the back
+            half-rotated face doesn't intercept taps. */}
+        <View
+          pointerEvents={flipped ? "none" : "auto"}
+          style={{
             position: "absolute",
             top: 0,
             left: 0,
@@ -2532,26 +2537,25 @@ function CreamOceanCard({
             shadowOffset: { width: 0, height: 12 },
             elevation: 4,
             backfaceVisibility: "hidden",
-          },
-          frontStyle,
-        ]}
-      >
-        <CreamOceanFront
-          businessName={businessName}
-          logoUrl={logoUrl}
-          initial={initial}
-          verifiedAt={verifiedAt}
-          createdAt={createdAt}
-          width={CARD_W}
-          height={CARD_H}
-          onFlip={toggleFlip}
-        />
-      </Animated.View>
+          }}
+        >
+          <CreamOceanFront
+            businessName={businessName}
+            logoUrl={logoUrl}
+            initial={initial}
+            verifiedAt={verifiedAt}
+            createdAt={createdAt}
+            width={CARD_W}
+            height={CARD_H}
+            onFlip={toggleFlip}
+          />
+        </View>
 
-      <Animated.View
-        pointerEvents={flipped ? "auto" : "none"}
-        style={[
-          {
+        {/* Back face — static rotateY(180deg) so it faces away at rest
+            and comes to camera when parent rotates to 180deg. */}
+        <View
+          pointerEvents={flipped ? "auto" : "none"}
+          style={{
             position: "absolute",
             top: 0,
             left: 0,
@@ -2568,16 +2572,16 @@ function CreamOceanCard({
             shadowOffset: { width: 0, height: 12 },
             elevation: 4,
             backfaceVisibility: "hidden",
-          },
-          backStyle,
-        ]}
-      >
-        <CreamOceanBack
-          width={CARD_W}
-          height={CARD_H}
-          onFlip={toggleFlip}
-          bio={bio}
-        />
+            transform: [{ rotateY: "180deg" }],
+          }}
+        >
+          <CreamOceanBack
+            width={CARD_W}
+            height={CARD_H}
+            onFlip={toggleFlip}
+            bio={bio}
+          />
+        </View>
       </Animated.View>
     </View>
   );
