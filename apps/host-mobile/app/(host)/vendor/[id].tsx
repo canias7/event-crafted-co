@@ -2323,7 +2323,6 @@ function CreamOceanCard({
           fallbackLogoUrl={fallbackLogoUrl}
           width={CARD_W}
           height={CARD_H}
-          onFlip={toggleFlip}
         />
       </Animated.View>
 
@@ -2352,13 +2351,39 @@ function CreamOceanCard({
           backStyle,
         ]}
       >
-        <CreamOceanBack
-          vendor={vendor}
-          width={CARD_W}
-          height={CARD_H}
-          onFlip={toggleFlip}
-        />
+        <CreamOceanBack vendor={vendor} width={CARD_W} height={CARD_H} />
       </Animated.View>
+
+      {/* Flip button — outside both rotating Animated.Views so its hit
+          area stays in a flat coordinate space. iOS hit-testing on
+          Pressables inside views with active rotateY + perspective +
+          useNativeDriver was routing the tap unreliably; pulling the
+          button out fixes that. One button, icon swaps with state. */}
+      <Pressable
+        onPress={toggleFlip}
+        hitSlop={12}
+        style={{
+          position: "absolute",
+          top: 12,
+          right: 12,
+          width: 32,
+          height: 32,
+          borderRadius: 16,
+          backgroundColor: "rgba(255, 251, 242, 0.85)",
+          borderWidth: 1,
+          borderColor: "rgba(235, 225, 206, 0.7)",
+          alignItems: "center",
+          justifyContent: "center",
+          zIndex: 10,
+          elevation: 6,
+        }}
+      >
+        <Feather
+          name={flipped ? "rotate-ccw" : "rotate-cw"}
+          size={14}
+          color="#5a4f44"
+        />
+      </Pressable>
     </View>
   );
 }
@@ -2371,14 +2396,12 @@ function CreamOceanFront({
   fallbackLogoUrl,
   width,
   height,
-  onFlip,
 }: {
   vendor: VendorRow;
   initial: string;
   fallbackLogoUrl: string | null;
   width: number;
   height: number;
-  onFlip: () => void;
 }) {
   return (
     <>
@@ -2535,28 +2558,6 @@ function CreamOceanFront({
         </View>
       </View>
 
-      {/* Flip button — rendered LAST so its absolute layer sits on top
-          of the padded content for touch event capture (transparent
-          content View was eating the tap when rendered after). */}
-      <Pressable
-        onPress={onFlip}
-        hitSlop={8}
-        style={{
-          position: "absolute",
-          top: 12,
-          right: 12,
-          width: 32,
-          height: 32,
-          borderRadius: 16,
-          backgroundColor: "rgba(255, 251, 242, 0.85)",
-          borderWidth: 1,
-          borderColor: "rgba(235, 225, 206, 0.7)",
-          alignItems: "center",
-          justifyContent: "center",
-        }}
-      >
-        <Feather name="rotate-cw" size={14} color="#5a4f44" />
-      </Pressable>
     </>
   );
 }
@@ -2569,12 +2570,10 @@ function CreamOceanBack({
   vendor,
   width,
   height,
-  onFlip,
 }: {
   vendor: VendorRow;
   width: number;
   height: number;
-  onFlip: () => void;
 }) {
   const hasBio = !!vendor.bio?.trim();
   return (
@@ -2627,27 +2626,6 @@ function CreamOceanBack({
         </Text>
       </View>
 
-      {/* Flip back button — rendered LAST so it stays on top of the
-          padded content for touch capture. */}
-      <Pressable
-        onPress={onFlip}
-        hitSlop={8}
-        style={{
-          position: "absolute",
-          top: 12,
-          right: 12,
-          width: 32,
-          height: 32,
-          borderRadius: 16,
-          backgroundColor: "rgba(255, 251, 242, 0.85)",
-          borderWidth: 1,
-          borderColor: "rgba(235, 225, 206, 0.7)",
-          alignItems: "center",
-          justifyContent: "center",
-        }}
-      >
-        <Feather name="rotate-ccw" size={14} color="#5a4f44" />
-      </Pressable>
     </>
   );
 }
