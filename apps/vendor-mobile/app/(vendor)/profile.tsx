@@ -2498,7 +2498,8 @@ function CreamOceanCard({
   });
 
   return (
-    <View
+    <Pressable
+      onPress={toggleFlip}
       style={{
         marginHorizontal: 18,
         marginTop: 12,
@@ -2583,7 +2584,7 @@ function CreamOceanCard({
           />
         </View>
       </Animated.View>
-    </View>
+    </Pressable>
   );
 }
 
