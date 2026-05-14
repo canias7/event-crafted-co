@@ -1,0 +1,79 @@
+name: Mobile EAS Diagnostic
+
+# One-shot: dumps EAS state (channel mappings, recent updates,
+# build history) for both apps to a Supabase log sink so we can
+# debug why OTAs aren't applying.
+#
+# Trigger: push trigger-diag/<anything>
+
+on:
+  push:
+    branches:
+      - "trigger-diag/**"
+  workflow_dispatch:
+
+jobs:
+  diag:
+    name: Diag ${{ matrix.app }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        app: ["vendor-mobile", "host-mobile"]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - run: bun install --frozen-lockfile --linker=hoisted
+
+      - name: Gather EAS state and post to log sink
+        working-directory: apps/${{ matrix.app }}
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+          CI: "1"
+        run: |
+          APP="${{ matrix.app }}"
+          SINK="https://pahpjjubhbcbwqjpamwv.supabase.co/functions/v1/mobile-debug-log"
+
+          post() {
+            local kind="$1"
+            local payload="$2"
+            curl -s -X POST "$SINK" \
+              -H "content-type: application/json" \
+              -d "{\"app\":\"$APP\",\"kind\":\"$kind\",\"payload\":$payload}" \
+              --max-time 10 || true
+          }
+
+          echo "==> channel:view production"
+          CHAN=$(eas channel:view production --non-interactive --json 2>&1 || echo '{"error":"channel:view failed"}')
+          echo "$CHAN" | head -c 2000
+          post "channel-view" "$(echo "$CHAN" | jq -c . 2>/dev/null || echo '"parse-error"')"
+
+          echo "==> update:list (last 5 on production branch)"
+          UPDATES=$(eas update:list --branch production --limit 5 --non-interactive --json 2>&1 || echo '{"error":"update:list failed"}')
+          echo "$UPDATES" | head -c 4000
+          post "updates-list" "$(echo "$UPDATES" | jq -c . 2>/dev/null || echo '"parse-error"')"
+
+          echo "==> branch:list"
+          BRANCHES=$(eas branch:list --non-interactive --json 2>&1 || echo '{"error":"branch:list failed"}')
+          echo "$BRANCHES" | head -c 3000
+          post "branches" "$(echo "$BRANCHES" | jq -c . 2>/dev/null || echo '"parse-error"')"
+
+          echo "==> app version + runtime"
+          VERSION=$(jq -r '.expo.version' app.json)
+          RUNTIME=$(jq -r '.expo.runtimeVersion' app.json)
+          post "app-config" "{\"version\":\"$VERSION\",\"runtimeVersion\":$RUNTIME}"
+
+          echo "Done."
