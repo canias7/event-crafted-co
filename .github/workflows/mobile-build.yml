@@ -69,17 +69,22 @@ jobs:
           # Use a token that can push back the projectId after `eas init`.
           token: ${{ secrets.GITHUB_TOKEN }}
 
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
-          cache: "npm"
 
       - uses: expo/expo-github-action@v8
         with:
           eas-version: latest
           token: ${{ secrets.EXPO_TOKEN }}
 
-      - run: npm ci
+      # --linker=hoisted — Bun's default isolated linker breaks Metro's
+      # babel-preset-expo resolution. See PR #216.
+      - run: bun install --frozen-lockfile --linker=hoisted
 
       - name: eas init (if projectId missing)
         working-directory: apps/${{ matrix.app }}
@@ -108,12 +113,18 @@ jobs:
           # EXPO_PUBLIC_* env var set in the shell during `eas build`.
           EXPO_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           EXPO_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+          # expo-cli no longer accepts --non-interactive flag — wants CI=1.
+          CI: "1"
         run: |
+          # --auto-submit-with-profile production sends iOS builds to
+          # TestFlight automatically once the binary is ready. No-op for
+          # android profile.
           eas build \
             --non-interactive \
             --no-wait \
             --platform ${{ inputs.platform }} \
-            --profile ${{ inputs.profile }}
+            --profile ${{ inputs.profile }} \
+            --auto-submit-with-profile ${{ inputs.profile }}
 
       - name: Done
         run: |
