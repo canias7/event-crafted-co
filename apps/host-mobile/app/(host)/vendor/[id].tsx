@@ -2269,13 +2269,11 @@ function CreamOceanCard({
   // more reliable than RN's built-in Animated for iOS 3D transforms.
   const flipProgress = useSharedValue(0);
   const [flipped, setFlipped] = useState(false);
-  const [tapCount, setTapCount] = useState(0);
   const flippedRef = useRef(false);
   const isAnimatingRef = useRef(false);
   const toggleFlip = () => {
     if (isAnimatingRef.current) return;
     isAnimatingRef.current = true;
-    setTapCount((c) => c + 1);
     const next = !flippedRef.current;
     flippedRef.current = next;
     setFlipped(next);
@@ -2307,40 +2305,14 @@ function CreamOceanCard({
       style={{
         marginHorizontal: 18,
         marginTop: 12,
-        height: CARD_H + 32,
-        paddingTop: 32,
+        height: CARD_H,
       }}
     >
-      {/* TEMP DEBUG BANNER. If you can read this, the new bundle is
-          running. Tells us flipped state + tap counter live. */}
-      <View
-        style={{
-          position: "absolute",
-          top: 0,
-          left: 0,
-          right: 0,
-          height: 28,
-          backgroundColor: "#ff0000",
-          paddingHorizontal: 12,
-          flexDirection: "row",
-          alignItems: "center",
-          justifyContent: "space-between",
-          zIndex: 100,
-          borderRadius: 6,
-        }}
-      >
-        <Text style={{ color: "#fff", fontSize: 12, fontWeight: "700" }}>
-          DEBUG v2 · host
-        </Text>
-        <Text style={{ color: "#fff", fontSize: 12 }}>
-          flipped: {String(flipped)} · taps: {tapCount}
-        </Text>
-      </View>
       <RAnimated.View
         style={[
           {
             position: "absolute",
-            top: 32,
+            top: 0,
             left: 0,
             right: 0,
             bottom: 0,
