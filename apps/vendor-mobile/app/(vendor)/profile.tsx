@@ -33,7 +33,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useFocusEffect, useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
-import { ResizeMode, Video } from "expo-av";
+import { useVideoPlayer, VideoView } from "expo-video";
 import Svg, {
   Defs,
   LinearGradient as SvgLinearGradient,
@@ -150,6 +150,16 @@ export default function ProfileScreen() {
     | { kind: "reel"; video_url: string; caption: string | null; created_at: string }
     | null
   >(null);
+
+  // expo-video player for the reel lightbox. Hook must be called every
+  // render at top level — pass null when no reel is open and the player
+  // is idle. Config callback only runs on initial create; subsequent
+  // source changes are handled by passing the new url to the hook.
+  const reelSource = openMedia?.kind === "reel" ? openMedia.video_url : null;
+  const videoPlayer = useVideoPlayer(reelSource, (player) => {
+    player.loop = true;
+    player.play();
+  });
 
   const loadProfile = useCallback(async () => {
     if (!user) return;
@@ -845,13 +855,11 @@ export default function ProfileScreen() {
                 resizeMode="contain"
               />
             ) : openMedia?.kind === "reel" ? (
-              <Video
-                source={{ uri: openMedia.video_url }}
+              <VideoView
+                player={videoPlayer}
                 style={{ width: "100%", height: "100%", borderRadius: 12 }}
-                resizeMode={ResizeMode.CONTAIN}
-                useNativeControls
-                shouldPlay
-                isLooping
+                contentFit="contain"
+                nativeControls
               />
             ) : null}
           </View>
