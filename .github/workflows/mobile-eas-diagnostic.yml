@@ -47,33 +47,34 @@ jobs:
           APP="${{ matrix.app }}"
           SINK="https://pahpjjubhbcbwqjpamwv.supabase.co/functions/v1/mobile-debug-log"
 
-          post() {
+          post_raw() {
             local kind="$1"
-            local payload="$2"
+            local raw="$2"
+            # Embed as a string so jq parsing doesn't drop it.
             curl -s -X POST "$SINK" \
               -H "content-type: application/json" \
-              -d "{\"app\":\"$APP\",\"kind\":\"$kind\",\"payload\":$payload}" \
+              -d "$(jq -n --arg app "$APP" --arg kind "$kind" --arg raw "$raw" '{app:$app,kind:$kind,raw:$raw}')" \
               --max-time 10 || true
           }
 
           echo "==> channel:view production"
-          CHAN=$(eas channel:view production --non-interactive --json 2>&1 || echo '{"error":"channel:view failed"}')
-          echo "$CHAN" | head -c 2000
-          post "channel-view" "$(echo "$CHAN" | jq -c . 2>/dev/null || echo '"parse-error"')"
+          CHAN_RAW=$(eas channel:view production --non-interactive 2>&1 || true)
+          echo "$CHAN_RAW"
+          post_raw "channel-view-raw" "$CHAN_RAW"
 
-          echo "==> update:list (last 5 on production branch)"
-          UPDATES=$(eas update:list --branch production --limit 5 --non-interactive --json 2>&1 || echo '{"error":"update:list failed"}')
-          echo "$UPDATES" | head -c 4000
-          post "updates-list" "$(echo "$UPDATES" | jq -c . 2>/dev/null || echo '"parse-error"')"
+          echo "==> channel:list"
+          CHAN_LIST=$(eas channel:list --non-interactive 2>&1 || true)
+          echo "$CHAN_LIST"
+          post_raw "channel-list-raw" "$CHAN_LIST"
 
           echo "==> branch:list"
-          BRANCHES=$(eas branch:list --non-interactive --json 2>&1 || echo '{"error":"branch:list failed"}')
-          echo "$BRANCHES" | head -c 3000
-          post "branches" "$(echo "$BRANCHES" | jq -c . 2>/dev/null || echo '"parse-error"')"
+          BRANCHES=$(eas branch:list --non-interactive 2>&1 || true)
+          echo "$BRANCHES"
+          post_raw "branch-list-raw" "$BRANCHES"
 
-          echo "==> app version + runtime"
-          VERSION=$(jq -r '.expo.version' app.json)
-          RUNTIME=$(jq -r '.expo.runtimeVersion' app.json)
-          post "app-config" "{\"version\":\"$VERSION\",\"runtimeVersion\":$RUNTIME}"
+          echo "==> build:list (last 3)"
+          BUILDS=$(eas build:list --non-interactive --limit 3 2>&1 || true)
+          echo "$BUILDS"
+          post_raw "build-list-raw" "$BUILDS"
 
           echo "Done."
