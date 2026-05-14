@@ -39,6 +39,12 @@ import Svg, {
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
 import { InquiryComposer } from "@/components/InquiryComposer";
+import RAnimated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withTiming,
+  Easing,
+} from "react-native-reanimated";
 import {
   getCategorySchema,
   type AttributeField,
@@ -2258,48 +2264,40 @@ function CreamOceanCard({
   // transform-style: preserve-3d. Only one animation interpolation
   // instead of two — simpler, fewer surfaces for iOS hit-testing to
   // misbehave through.
-  const flipAnim = useRef(new Animated.Value(0)).current;
+  // Reanimated flip — runs on the UI thread so it's smooth even
+  // under JS-thread load. UI-thread rotateY interpolation is way
+  // more reliable than RN's built-in Animated for iOS 3D transforms.
+  const flipProgress = useSharedValue(0);
   const [flipped, setFlipped] = useState(false);
-  const [tapCount, setTapCount] = useState(0);
-  // Ref-based source of truth for flipped state — closure-safe under
-  // rapid taps. Without this, toggleFlip captures stale `flipped` and
-  // computes the wrong `next` when taps fire faster than re-renders,
-  // which leaves the state and animation out of sync.
   const flippedRef = useRef(false);
-  // Block re-tap while animation is running so we don't stack
-  // interrupted animations on top of each other (felt "uncontrolled").
   const isAnimatingRef = useRef(false);
   const toggleFlip = () => {
     if (isAnimatingRef.current) return;
     isAnimatingRef.current = true;
-    setTapCount((c) => c + 1);
     const next = !flippedRef.current;
     flippedRef.current = next;
     setFlipped(next);
-    Animated.timing(flipAnim, {
-      toValue: next ? 1 : 0,
+    flipProgress.value = withTiming(next ? 1 : 0, {
       duration: 600,
-      useNativeDriver: true,
-    }).start(() => {
-      isAnimatingRef.current = false;
+      easing: Easing.bezier(0.4, 0, 0.2, 1),
     });
+    setTimeout(() => {
+      isAnimatingRef.current = false;
+    }, 620);
   };
 
-  const rotateY = flipAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: ["0deg", "180deg"],
-  });
-  // Opacity gates so only one face is visible at a time — iOS's
-  // backfaceVisibility isn't reliably hiding the away-facing side, so
-  // we swap visibility at the halfway point of the rotation.
-  const frontOpacity = flipAnim.interpolate({
-    inputRange: [0, 0.5, 0.5001, 1],
-    outputRange: [1, 1, 0, 0],
-  });
-  const backOpacity = flipAnim.interpolate({
-    inputRange: [0, 0.4999, 0.5, 1],
-    outputRange: [0, 0, 1, 1],
-  });
+  const cardAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [
+      { perspective: 1600 },
+      { rotateY: `${flipProgress.value * 180}deg` },
+    ],
+  }));
+  const frontAnimatedStyle = useAnimatedStyle(() => ({
+    opacity: flipProgress.value < 0.5 ? 1 : 0,
+  }));
+  const backAnimatedStyle = useAnimatedStyle(() => ({
+    opacity: flipProgress.value < 0.5 ? 0 : 1,
+  }));
 
   return (
     <Pressable
@@ -2307,68 +2305,46 @@ function CreamOceanCard({
       style={{
         marginHorizontal: 18,
         marginTop: 12,
-        height: CARD_H + 32,
-        paddingTop: 32,
+        height: CARD_H,
       }}
     >
-      {/* TEMP DEBUG BANNER. If you can read this, the new bundle is
-          running. Tells us flipped state + tap counter live. */}
-      <View
-        style={{
-          position: "absolute",
-          top: 0,
-          left: 0,
-          right: 0,
-          height: 28,
-          backgroundColor: "#ff0000",
-          paddingHorizontal: 12,
-          flexDirection: "row",
-          alignItems: "center",
-          justifyContent: "space-between",
-          zIndex: 100,
-          borderRadius: 6,
-        }}
-      >
-        <Text style={{ color: "#fff", fontSize: 12, fontWeight: "700" }}>
-          DEBUG v2 · host
-        </Text>
-        <Text style={{ color: "#fff", fontSize: 12 }}>
-          flipped: {String(flipped)} · taps: {tapCount}
-        </Text>
-      </View>
-      <Animated.View
-        style={{
-          position: "absolute",
-          top: 32,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          transform: [{ perspective: 1600 }, { rotateY }],
-        }}
-      >
-        {/* Front face. Opacity gate swaps visible face at the halfway
-            point of the rotation (RN's backfaceVisibility isn't
-            reliably hiding the away side). */}
-        <Animated.View
-          pointerEvents={flipped ? "none" : "auto"}
-          style={{
+      <RAnimated.View
+        style={[
+          {
             position: "absolute",
             top: 0,
             left: 0,
             right: 0,
             bottom: 0,
-            borderRadius: 22,
-            backgroundColor: "#fffbf2",
-            borderWidth: 1,
-            borderColor: "#ebe1ce",
-            overflow: "hidden",
-            shadowColor: INK,
-            shadowOpacity: 0.1,
-            shadowRadius: 24,
-            shadowOffset: { width: 0, height: 12 },
-            elevation: 4,
-            opacity: frontOpacity,
-          }}
+          },
+          cardAnimatedStyle,
+        ]}
+      >
+        {/* Front face. Opacity-gated via Reanimated worklet — hard cut
+            at the halfway point of rotation since iOS backfaceVisibility
+            on RN is unreliable. */}
+        <RAnimated.View
+          pointerEvents={flipped ? "none" : "auto"}
+          style={[
+            {
+              position: "absolute",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              borderRadius: 22,
+              backgroundColor: "#fffbf2",
+              borderWidth: 1,
+              borderColor: "#ebe1ce",
+              overflow: "hidden",
+              shadowColor: INK,
+              shadowOpacity: 0.1,
+              shadowRadius: 24,
+              shadowOffset: { width: 0, height: 12 },
+              elevation: 4,
+            },
+            frontAnimatedStyle,
+          ]}
         >
           <CreamOceanFront
             vendor={vendor}
@@ -2378,31 +2354,33 @@ function CreamOceanCard({
             height={CARD_H}
             onFlip={toggleFlip}
           />
-        </Animated.View>
+        </RAnimated.View>
 
         {/* Back face — static rotateY(180deg) so its content is upright
             once the parent reaches 180deg. */}
-        <Animated.View
+        <RAnimated.View
           pointerEvents={flipped ? "auto" : "none"}
-          style={{
-            position: "absolute",
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            borderRadius: 22,
-            backgroundColor: "#fffbf2",
-            borderWidth: 1,
-            borderColor: "#ebe1ce",
-            overflow: "hidden",
-            shadowColor: INK,
-            shadowOpacity: 0.1,
-            shadowRadius: 24,
-            shadowOffset: { width: 0, height: 12 },
-            elevation: 4,
-            opacity: backOpacity,
-            transform: [{ rotateY: "180deg" }],
-          }}
+          style={[
+            {
+              position: "absolute",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              borderRadius: 22,
+              backgroundColor: "#fffbf2",
+              borderWidth: 1,
+              borderColor: "#ebe1ce",
+              overflow: "hidden",
+              shadowColor: INK,
+              shadowOpacity: 0.1,
+              shadowRadius: 24,
+              shadowOffset: { width: 0, height: 12 },
+              elevation: 4,
+              transform: [{ rotateY: "180deg" }],
+            },
+            backAnimatedStyle,
+          ]}
         >
           <CreamOceanBack
             vendor={vendor}
@@ -2410,8 +2388,8 @@ function CreamOceanCard({
             height={CARD_H}
             onFlip={toggleFlip}
           />
-        </Animated.View>
-      </Animated.View>
+        </RAnimated.View>
+      </RAnimated.View>
     </Pressable>
   );
 }
