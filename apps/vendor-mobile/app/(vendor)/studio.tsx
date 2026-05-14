@@ -3,7 +3,7 @@
 // Three tiles for now: AI Superagents (featured w/ peach gradient
 // background), Vendora Pay (coming soon, dimmed), Gallery.
 
-import { Linking, Pressable, ScrollView, Text, View } from "react-native";
+import { Dimensions, Linking, Pressable, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
@@ -61,29 +61,37 @@ function FeaturedTile({
   subtitle: string;
   onPress: () => void;
 }) {
-  // 100% width minus the screen padding (px-5 = 20pt each side).
-  // Tile is fixed-height with internal padding so SVG gradient can
-  // fill behind plain text content.
+  // Compute exact pixel width: screen width minus screen padding
+  // (px-5 = 20pt each side). react-native-svg needs concrete pixel
+  // dimensions — "100%" silently fails to render on iOS.
+  const WIDTH = Dimensions.get("window").width - 40;
   const HEIGHT = 130;
   return (
     <Pressable
       onPress={onPress}
-      className="overflow-hidden rounded-2xl active:opacity-80"
-      style={{ height: HEIGHT }}
+      style={{
+        width: WIDTH,
+        height: HEIGHT,
+        borderRadius: 20,
+        overflow: "hidden",
+        // Solid peach base color in case the svg gradient fails to
+        // render — at least the tile still looks featured.
+        backgroundColor: "#fbc88a",
+      }}
     >
       <Svg
-        width="100%"
+        width={WIDTH}
         height={HEIGHT}
         style={{ position: "absolute", top: 0, left: 0 }}
       >
         <Defs>
           <SvgLinearGradient id="aiBg" x1="0" y1="0" x2="1" y2="1">
-            <Stop offset="0" stopColor="#fcd9b0" stopOpacity="1" />
-            <Stop offset="0.6" stopColor="#fbe6c8" stopOpacity="1" />
-            <Stop offset="1" stopColor="#f8efe1" stopOpacity="1" />
+            <Stop offset="0" stopColor="#fbc88a" stopOpacity="1" />
+            <Stop offset="0.5" stopColor="#fcd9a3" stopOpacity="1" />
+            <Stop offset="1" stopColor="#fce6c4" stopOpacity="1" />
           </SvgLinearGradient>
         </Defs>
-        <Rect x={0} y={0} width="100%" height={HEIGHT} fill="url(#aiBg)" />
+        <Rect x={0} y={0} width={WIDTH} height={HEIGHT} fill="url(#aiBg)" />
       </Svg>
       <View
         style={{
@@ -97,13 +105,18 @@ function FeaturedTile({
       >
         <View style={{ flex: 1, paddingRight: 14 }}>
           <Text
-            className="text-2xl font-bold text-foreground"
+            style={{ fontSize: 26, fontWeight: "700", color: "#1a1a1a" }}
             numberOfLines={1}
           >
             {title}
           </Text>
           <Text
-            className="mt-1.5 text-[15px] leading-5 text-foreground/70"
+            style={{
+              marginTop: 6,
+              fontSize: 15,
+              lineHeight: 21,
+              color: "rgba(26,26,26,0.7)",
+            }}
             numberOfLines={2}
           >
             {subtitle}
@@ -123,16 +136,48 @@ function ComingSoonTile({
   subtitle: string;
 }) {
   return (
-    <View className="rounded-2xl border border-border bg-background/60 px-5 py-5 opacity-60">
-      <View className="flex-row items-center gap-2.5">
-        <Text className="text-2xl font-bold text-foreground">{title}</Text>
-        <View className="rounded-full bg-muted px-2.5 py-1">
-          <Text className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-            Coming soon
+    <View
+      style={{
+        borderRadius: 20,
+        borderWidth: 1,
+        borderColor: "rgba(0,0,0,0.08)",
+        paddingHorizontal: 20,
+        paddingVertical: 20,
+        opacity: 0.55,
+      }}
+    >
+      <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+        <Text style={{ fontSize: 24, fontWeight: "700", color: "#1a1a1a" }}>
+          {title}
+        </Text>
+        <View
+          style={{
+            borderRadius: 999,
+            backgroundColor: "rgba(0,0,0,0.08)",
+            paddingHorizontal: 10,
+            paddingVertical: 4,
+          }}
+        >
+          <Text
+            style={{
+              fontSize: 10,
+              fontWeight: "700",
+              color: "rgba(0,0,0,0.5)",
+              letterSpacing: 1.5,
+            }}
+          >
+            COMING SOON
           </Text>
         </View>
       </View>
-      <Text className="mt-1.5 text-[15px] leading-5 text-muted-foreground">
+      <Text
+        style={{
+          marginTop: 6,
+          fontSize: 15,
+          lineHeight: 21,
+          color: "rgba(0,0,0,0.45)",
+        }}
+      >
         {subtitle}
       </Text>
     </View>
@@ -151,12 +196,34 @@ function PlainTile({
   return (
     <Pressable
       onPress={onPress}
-      className="rounded-2xl border border-border bg-background px-5 py-5 active:opacity-70"
+      style={({ pressed }) => ({
+        borderRadius: 20,
+        borderWidth: 1,
+        borderColor: "rgba(0,0,0,0.08)",
+        paddingHorizontal: 20,
+        paddingVertical: 20,
+        opacity: pressed ? 0.7 : 1,
+      })}
     >
-      <View className="flex-row items-center justify-between">
-        <View className="flex-1 pr-3">
-          <Text className="text-2xl font-bold text-foreground">{title}</Text>
-          <Text className="mt-1.5 text-[15px] leading-5 text-muted-foreground">
+      <View
+        style={{
+          flexDirection: "row",
+          alignItems: "center",
+          justifyContent: "space-between",
+        }}
+      >
+        <View style={{ flex: 1, paddingRight: 12 }}>
+          <Text style={{ fontSize: 24, fontWeight: "700", color: "#1a1a1a" }}>
+            {title}
+          </Text>
+          <Text
+            style={{
+              marginTop: 6,
+              fontSize: 15,
+              lineHeight: 21,
+              color: "rgba(0,0,0,0.55)",
+            }}
+          >
             {subtitle}
           </Text>
         </View>
