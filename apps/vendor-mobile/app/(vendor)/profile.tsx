@@ -2476,14 +2476,25 @@ function CreamOceanCard({
   // off plain state too.
   const flipAnim = useRef(new Animated.Value(0)).current;
   const [flipped, setFlipped] = useState(false);
+  // TEMP debug: fire-and-forget logs so I can see which step is failing
+  // when the card refuses to flip. Remove once diagnosed.
+  const flipDebug = (event: string, data?: Record<string, unknown>) => {
+    supabase.functions
+      .invoke("mobile-debug-log", {
+        body: { app: "vendor-mobile", screen: "profile", event, flipped, ...(data ?? {}) },
+      })
+      .catch(() => {});
+  };
   const toggleFlip = () => {
+    flipDebug("toggle-called");
     const next = !flipped;
     setFlipped(next);
+    flipDebug("anim-start", { next });
     Animated.timing(flipAnim, {
       toValue: next ? 1 : 0,
       duration: 500,
       useNativeDriver: true,
-    }).start();
+    }).start(({ finished }) => flipDebug("anim-done", { finished, next }));
   };
 
   const frontRotate = flipAnim.interpolate({
@@ -2578,7 +2589,10 @@ function CreamOceanCard({
           tap unreliably and the card sometimes refused to flip.
           Single button now, with the icon swapping based on state. */}
       <Pressable
-        onPress={toggleFlip}
+        onPress={() => {
+          flipDebug("pressable-onpress");
+          toggleFlip();
+        }}
         hitSlop={12}
         style={{
           position: "absolute",

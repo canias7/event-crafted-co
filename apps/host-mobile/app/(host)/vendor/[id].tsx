@@ -2258,14 +2258,25 @@ function CreamOceanCard({
   // captures touches, which is what was breaking the flip button.
   const flipAnim = useRef(new Animated.Value(0)).current;
   const [flipped, setFlipped] = useState(false);
+  // TEMP debug: fire-and-forget logs so I can see which step is failing
+  // when the card refuses to flip. Remove once diagnosed.
+  const flipDebug = (event: string, data?: Record<string, unknown>) => {
+    supabase.functions
+      .invoke("mobile-debug-log", {
+        body: { app: "host-mobile", screen: "vendor-detail", event, flipped, ...(data ?? {}) },
+      })
+      .catch(() => {});
+  };
   const toggleFlip = () => {
+    flipDebug("toggle-called");
     const next = !flipped;
     setFlipped(next);
+    flipDebug("anim-start", { next });
     Animated.timing(flipAnim, {
       toValue: next ? 1 : 0,
       duration: 500,
       useNativeDriver: true,
-    }).start();
+    }).start(({ finished }) => flipDebug("anim-done", { finished, next }));
   };
 
   const frontRotate = flipAnim.interpolate({
@@ -2360,7 +2371,10 @@ function CreamOceanCard({
           useNativeDriver was routing the tap unreliably; pulling the
           button out fixes that. One button, icon swaps with state. */}
       <Pressable
-        onPress={toggleFlip}
+        onPress={() => {
+          flipDebug("pressable-onpress");
+          toggleFlip();
+        }}
         hitSlop={12}
         style={{
           position: "absolute",
