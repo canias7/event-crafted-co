@@ -2496,16 +2496,23 @@ function CreamOceanCard({
   // computes the wrong `next` when taps fire faster than re-renders,
   // which leaves the state and animation out of sync.
   const flippedRef = useRef(false);
+  // Block re-tap while animation is running so we don't stack
+  // interrupted animations on top of each other (felt "uncontrolled").
+  const isAnimatingRef = useRef(false);
   const toggleFlip = () => {
+    if (isAnimatingRef.current) return;
+    isAnimatingRef.current = true;
     setTapCount((c) => c + 1);
     const next = !flippedRef.current;
     flippedRef.current = next;
     setFlipped(next);
     Animated.timing(flipAnim, {
       toValue: next ? 1 : 0,
-      duration: 800,
+      duration: 600,
       useNativeDriver: true,
-    }).start();
+    }).start(() => {
+      isAnimatingRef.current = false;
+    });
   };
 
   const rotateY = flipAnim.interpolate({
@@ -2514,8 +2521,7 @@ function CreamOceanCard({
   });
   // Opacity gates so only one face is visible at a time — iOS's
   // backfaceVisibility isn't reliably hiding the away-facing side, so
-  // we swap visibility at the halfway point of the rotation. Front
-  // visible 0→0.5, back visible 0.5→1.
+  // we swap visibility at the halfway point of the rotation.
   const frontOpacity = flipAnim.interpolate({
     inputRange: [0, 0.5, 0.5001, 1],
     outputRange: [1, 1, 0, 0],
