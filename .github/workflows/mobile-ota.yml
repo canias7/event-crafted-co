@@ -96,3 +96,7 @@ jobs:
             --branch production \
             --clear-cache \
             --message "${{ needs.setup.outputs.message }}"
+          # Rebind the production channel back to the production branch
+          # in case it was pointed at rollback-stop (from the rollback
+          # workflow). Idempotent — no-op if already pointing right.
+          eas channel:edit production --branch production --non-interactive || true
