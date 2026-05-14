@@ -15,6 +15,7 @@ import {
   Dimensions,
   Image,
   Pressable,
+  RefreshControl,
   ScrollView,
   Text,
   View,
@@ -207,6 +208,18 @@ export default function ExploreScreen() {
     loadFeeds();
   }, [loadFeeds]);
 
+  // Pull-to-refresh state. onRefresh re-runs loadFeeds so all four
+  // sub-tabs (posts / reels / buzz / listings) get fresh data.
+  const [refreshing, setRefreshing] = useState(false);
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await loadFeeds();
+    } finally {
+      setRefreshing(false);
+    }
+  }, [loadFeeds]);
+
   useEffect(() => {
     loadSaved();
   }, [loadSaved]);
@@ -243,7 +256,12 @@ export default function ExploreScreen() {
         />
       </View>
 
-      <ScrollView contentContainerClassName="pb-32 pt-4">
+      <ScrollView
+        contentContainerClassName="pb-32 pt-4"
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
+      >
         {view === "grid" ? (
           posts.length === 0 ? (
             <EmptyMessage body="No vendor posts yet." />
