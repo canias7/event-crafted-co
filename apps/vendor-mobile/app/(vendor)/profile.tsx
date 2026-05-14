@@ -2482,7 +2482,9 @@ function CreamOceanCard({
   // misbehave through.
   const flipAnim = useRef(new Animated.Value(0)).current;
   const [flipped, setFlipped] = useState(false);
+  const [tapCount, setTapCount] = useState(0);
   const toggleFlip = () => {
+    setTapCount((c) => c + 1);
     const next = !flipped;
     setFlipped(next);
     Animated.timing(flipAnim, {
@@ -2503,13 +2505,39 @@ function CreamOceanCard({
       style={{
         marginHorizontal: 18,
         marginTop: 12,
-        height: CARD_H,
+        height: CARD_H + 32,
+        paddingTop: 32,
       }}
     >
-      <Animated.View
+      {/* TEMP DEBUG BANNER. If you can read this, the new bundle is
+          running. Tells us flipped state + tap counter live. */}
+      <View
         style={{
           position: "absolute",
           top: 0,
+          left: 0,
+          right: 0,
+          height: 28,
+          backgroundColor: "#ff0000",
+          paddingHorizontal: 12,
+          flexDirection: "row",
+          alignItems: "center",
+          justifyContent: "space-between",
+          zIndex: 100,
+          borderRadius: 6,
+        }}
+      >
+        <Text style={{ color: "#fff", fontSize: 12, fontWeight: "700" }}>
+          DEBUG v2 · vendor
+        </Text>
+        <Text style={{ color: "#fff", fontSize: 12 }}>
+          flipped: {String(flipped)} · taps: {tapCount}
+        </Text>
+      </View>
+      <Animated.View
+        style={{
+          position: "absolute",
+          top: 32,
           left: 0,
           right: 0,
           bottom: 0,
@@ -2761,7 +2789,7 @@ function CreamOceanFront({
           justifyContent: "center",
         }}
       >
-        <Feather name="rotate-cw" size={14} color="#5a4f44" />
+        <Feather name="rotate-cw" size={18} color="#ff0000" />
       </Pressable>
     </>
   );
