@@ -2266,16 +2266,23 @@ function CreamOceanCard({
   // computes the wrong `next` when taps fire faster than re-renders,
   // which leaves the state and animation out of sync.
   const flippedRef = useRef(false);
+  // Block re-tap while animation is running so we don't stack
+  // interrupted animations on top of each other (felt "uncontrolled").
+  const isAnimatingRef = useRef(false);
   const toggleFlip = () => {
+    if (isAnimatingRef.current) return;
+    isAnimatingRef.current = true;
     setTapCount((c) => c + 1);
     const next = !flippedRef.current;
     flippedRef.current = next;
     setFlipped(next);
     Animated.timing(flipAnim, {
       toValue: next ? 1 : 0,
-      duration: 800,
+      duration: 600,
       useNativeDriver: true,
-    }).start();
+    }).start(() => {
+      isAnimatingRef.current = false;
+    });
   };
 
   const rotateY = flipAnim.interpolate({
