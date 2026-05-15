@@ -98,7 +98,7 @@ export function VendorServiceAreaMap({
         <Compass className="w-3 h-3" />
         Service area
       </p>
-      <h2 className="font-display text-2xl mb-2">Where {category.toLowerCase()}s travel</h2>
+      <h2 className="font-editorial text-3xl mb-2">Where {category.toLowerCase()}s travel</h2>
       <p className="text-sm text-muted-foreground mb-4 leading-relaxed">
         {data.location ? (
           <>

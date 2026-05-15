@@ -59,7 +59,7 @@ export function CategoryAttributesDisplay({
 
   return (
     <div className="space-y-6">
-      <h2 className="font-display text-2xl">About this {category.toLowerCase()}</h2>
+      <h2 className="font-editorial text-3xl">About this {category.toLowerCase()}</h2>
       <div className="grid sm:grid-cols-2 gap-x-8 gap-y-6">
         {populatedSections.map((section) => (
           <SectionDisplay key={section.name} section={section} attrs={attrs} />

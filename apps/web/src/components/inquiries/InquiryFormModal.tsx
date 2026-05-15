@@ -318,7 +318,7 @@ export function InquiryFormModal({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-lg max-h-[92vh] overflow-y-auto rounded-sm">
         <DialogHeader>
-          <DialogTitle className="font-display text-2xl">Send an inquiry</DialogTitle>
+          <DialogTitle className="font-editorial text-3xl">Send an inquiry</DialogTitle>
           <DialogDescription className="flex items-center gap-1.5 text-xs leading-relaxed pt-1">
             <Sparkles className="w-3.5 h-3.5 text-accent" />
             Vendors typically reply within 3 hours via AI-assisted drafts.

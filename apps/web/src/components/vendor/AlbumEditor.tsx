@@ -226,7 +226,7 @@ export function AlbumEditor({ album, vendorId, onClose, onSaved }: Props) {
     <Dialog open onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto rounded-sm">
         <DialogHeader>
-          <DialogTitle className="font-display text-2xl">
+          <DialogTitle className="font-editorial text-3xl">
             {isLive ? "Edit live album" : "Edit album"}
           </DialogTitle>
           <DialogDescription>

@@ -296,7 +296,7 @@ function SaveDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md rounded-sm">
         <DialogHeader>
-          <DialogTitle className="font-display text-2xl">
+          <DialogTitle className="font-editorial text-3xl">
             {editing ? "Edit template" : "Save proposal template"}
           </DialogTitle>
           <DialogDescription className="text-sm leading-relaxed">
