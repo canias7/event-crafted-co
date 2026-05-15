@@ -3,8 +3,8 @@
 //
 // Three data streams render onto the month grid:
 //   • inquiries (status = 'won')      → BOOKED   (ink fill, cream digit)
-//   • inquiries (new/replied/drafted) → PENDING  (soft amber fill)
-//   • calendar_synced_busy + manual   → BLOCKED  (diagonal hatch)
+//   • inquiries (new/replied)         → PENDING  (soft amber fill)
+//   • vendor_unavailable_dates        → BLOCKED  (diagonal hatch)
 //
 // Stats row at the top counts won / pending / estimated earnings for
 // the currently-viewed month. Earnings = sum of budget_min_cents.
@@ -48,14 +48,6 @@ interface InquiryRow {
   budget_max_cents: number | null;
   host_id: string;
   host: { display_name: string | null } | null;
-}
-
-interface BusyRow {
-  id: string;
-  starts_at: string;
-  ends_at: string;
-  summary: string | null;
-  is_all_day: boolean;
 }
 
 function ymdKey(d: Date): string {
@@ -115,7 +107,6 @@ export default function VendorAppointmentsPage() {
   // + pending inquiries across all of them.
   const [vendorIds, setVendorIds] = useState<string[]>([]);
   const [inquiries, setInquiries] = useState<InquiryRow[]>([]);
-  const [busy, setBusy] = useState<BusyRow[]>([]);
   const [manualBlocks, setManualBlocks] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [blocking, setBlocking] = useState(false);
@@ -163,7 +154,7 @@ export default function VendorAppointmentsPage() {
     setLoading(true);
     const startYmd = ymdKey(monthBounds.start);
     const endYmd = ymdKey(monthBounds.end);
-    const [inqRes, busyRes, blockRes] = await Promise.all([
+    const [inqRes, blockRes] = await Promise.all([
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (supabase as any)
         .from("inquiries")
@@ -174,12 +165,6 @@ export default function VendorAppointmentsPage() {
         .gte("event_date", startYmd)
         .lt("event_date", endYmd),
       supabase
-        .from("calendar_synced_busy")
-        .select("id, starts_at, ends_at, summary, is_all_day")
-        .eq("user_id", user.id)
-        .gte("starts_at", monthBounds.start.toISOString())
-        .lt("starts_at", monthBounds.end.toISOString()),
-      supabase
         .from("vendor_unavailable_dates")
         .select("date")
         .in("vendor_id", vendorIds)
@@ -187,7 +172,6 @@ export default function VendorAppointmentsPage() {
         .lt("date", endYmd),
     ]);
     setInquiries((inqRes.data ?? []) as InquiryRow[]);
-    setBusy((busyRes.data ?? []) as BusyRow[]);
     setManualBlocks(
       ((blockRes.data ?? []) as { date: string }[]).map((r) => r.date),
     );
@@ -252,18 +236,12 @@ export default function VendorAppointmentsPage() {
         m.set(key, "pending");
       }
     }
-    for (const b of busy) {
-      const d = new Date(b.starts_at);
-      const key = ymdKey(d);
-      const prev = m.get(key);
-      if (prev !== "booked" && prev !== "pending") m.set(key, "blocked");
-    }
     for (const key of manualBlocks) {
       const prev = m.get(key);
       if (prev !== "booked" && prev !== "pending") m.set(key, "blocked");
     }
     return m;
-  }, [inquiries, busy, manualBlocks]);
+  }, [inquiries, manualBlocks]);
 
   const stats = useMemo(() => {
     let booked = 0;
@@ -311,25 +289,6 @@ export default function VendorAppointmentsPage() {
         timeLabel: null,
       });
     }
-    for (const b of busy) {
-      const d = new Date(b.starts_at);
-      if (ymdKey(d) !== selectedYmd) continue;
-      const time = b.is_all_day
-        ? "All day"
-        : d.toLocaleTimeString(undefined, {
-            hour: "numeric",
-            minute: "2-digit",
-          });
-      out.push({
-        kind: "busy",
-        inquiryId: null,
-        title: b.summary ?? "Blocked",
-        subtitle: "Calendar sync",
-        amountCents: null,
-        accent: "muted",
-        timeLabel: time,
-      });
-    }
     if (manualBlocks.includes(selectedYmd)) {
       out.push({
         kind: "busy",
@@ -342,7 +301,7 @@ export default function VendorAppointmentsPage() {
       });
     }
     return out;
-  }, [selectedYmd, inquiries, busy, manualBlocks]);
+  }, [selectedYmd, inquiries, manualBlocks]);
 
   const isSelectedBlocked =
     !!selectedYmd && manualBlocks.includes(selectedYmd);

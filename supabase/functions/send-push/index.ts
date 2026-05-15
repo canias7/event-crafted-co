@@ -1,31 +1,25 @@
 // send-push: POST { user_id, title, body, link, tag } and we deliver
-// the notification to every channel registered for that user — web
-// push (VAPID) AND mobile push (Expo).
+// the notification to every mobile device registered for that user.
 //
-// Fired automatically by the notifications_fanout_push trigger
-// (see migration 20260503430000_push_subscriptions.sql) on every
-// insert into public.notifications.
+// Fired automatically by the fanout_notification_to_push() trigger on
+// every insert into public.notifications.
+//
+// Web push (VAPID) used to be delivered here too, but the web app was
+// mirrored to mobile and the subscription UI was removed — so we only
+// fan out to Expo now. push_subscriptions table is dropped.
 //
 // Required env (Supabase project secrets):
-//   VAPID_PUBLIC_KEY / VAPID_PRIVATE_KEY / VAPID_SUBJECT
-//     — for browsers (apps/web service worker). If missing, web push
-//       is skipped silently.
 //   SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY — auto-injected
 //
-// Mobile delivery uses Expo's public Push API; no credentials needed.
 // Tokens come from public.device_push_tokens, populated by the
 // vendor-mobile / host-mobile apps after sign-in.
 
 // deno-lint-ignore-file no-explicit-any
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.7";
-import webpush from "npm:web-push@3.6.7";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-const VAPID_PUBLIC_KEY = Deno.env.get("VAPID_PUBLIC_KEY");
-const VAPID_PRIVATE_KEY = Deno.env.get("VAPID_PRIVATE_KEY");
-const VAPID_SUBJECT = Deno.env.get("VAPID_SUBJECT") ?? "mailto:hello@vendora.app";
 
 const EXPO_PUSH_URL = "https://exp.host/--/api/v2/push/send";
 
@@ -56,25 +50,22 @@ interface PushEventRow {
   notification_id: string | null;
   user_id: string;
   token_preview: string;
-  token_kind: "expo" | "web";
+  token_kind: "expo";
   status: PushEventStatus;
   expo_ticket_id?: string | null;
   error?: string | null;
 }
 
-// Best-effort batch insert into push_events. Failures here MUST NOT
-// break delivery — wrap and swallow.
 async function logEvents(sb: any, rows: PushEventRow[]) {
   if (rows.length === 0) return;
   try {
     await sb.from("push_events").insert(rows);
   } catch {
-    // swallow
+    // swallow — delivery must not break on logging errors
   }
 }
 
 function previewToken(t: string): string {
-  // Tokens are sensitive; keep only the trailing 8 chars for forensics.
   if (!t) return "";
   return t.length > 12 ? "…" + t.slice(-8) : t;
 }
@@ -100,105 +91,9 @@ serve(async (req) => {
     auth: { persistSession: false },
   });
 
-  const [webResult, mobileResult] = await Promise.all([
-    deliverWeb(sb, payload),
-    deliverMobile(sb, payload),
-  ]);
-
-  return json(
-    {
-      web: webResult,
-      mobile: mobileResult,
-    },
-    200,
-  );
+  const result = await deliverMobile(sb, payload);
+  return json({ mobile: result }, 200);
 });
-
-async function deliverWeb(sb: any, payload: Payload) {
-  if (!VAPID_PUBLIC_KEY || !VAPID_PRIVATE_KEY) {
-    return { skipped: "VAPID keys not configured" };
-  }
-
-  webpush.setVapidDetails(VAPID_SUBJECT, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY);
-
-  const { data: subs, error } = await sb
-    .from("push_subscriptions")
-    .select("id, endpoint, p256dh, auth")
-    .eq("user_id", payload.user_id);
-  if (error) return { error: error.message };
-  if (!subs || subs.length === 0) return { delivered: 0 };
-
-  const body = JSON.stringify({
-    title: payload.title,
-    body: payload.body ?? "",
-    link: payload.link ?? "/",
-    tag: payload.tag ?? undefined,
-  });
-
-  let delivered = 0;
-  const dead: string[] = [];
-  const events: PushEventRow[] = [];
-
-  await Promise.all(
-    subs.map(async (s: any) => {
-      try {
-        await webpush.sendNotification(
-          {
-            endpoint: s.endpoint,
-            keys: { p256dh: s.p256dh, auth: s.auth },
-          },
-          body,
-        );
-        delivered++;
-        events.push({
-          notification_id: payload.notification_id ?? null,
-          user_id: payload.user_id,
-          token_preview: previewToken(s.endpoint),
-          token_kind: "web",
-          status: "sent",
-        });
-      } catch (err: any) {
-        const code = err?.statusCode;
-        const isDead = code === 404 || code === 410;
-        const isRate = code === 429;
-        if (isDead) dead.push(s.id);
-        events.push({
-          notification_id: payload.notification_id ?? null,
-          user_id: payload.user_id,
-          token_preview: previewToken(s.endpoint),
-          token_kind: "web",
-          status: isDead
-            ? "invalid_token"
-            : isRate
-              ? "rate_limited"
-              : "failed",
-          error: err?.body ?? err?.message ?? String(code ?? "unknown"),
-        });
-      }
-    }),
-  );
-
-  if (dead.length > 0) {
-    await sb.from("push_subscriptions").delete().in("id", dead);
-  }
-  await logEvents(sb, events);
-
-  if (delivered > 0) {
-    // Only touch last_used_at on subscriptions that didn't just get
-    // purged. PostgREST's .not("id","in",...) handles arrays directly;
-    // building a string with `(${join(",")})` works in the happy path
-    // but the prior `"''"` fallback for empty dead arrays produced
-    // invalid SQL. Skip the filter entirely when nothing was purged.
-    let q = sb
-      .from("push_subscriptions")
-      .update({ last_used_at: new Date().toISOString() })
-      .eq("user_id", payload.user_id);
-    if (dead.length > 0) q = q.not("id", "in", `(${dead.join(",")})`);
-    await q;
-  }
-
-  return { delivered, purged: dead.length };
-}
 
 async function deliverMobile(sb: any, payload: Payload) {
   const { data: tokens, error } = await sb
@@ -210,9 +105,7 @@ async function deliverMobile(sb: any, payload: Payload) {
 
   // Expo accepts batches of up to 100 messages per request.
   // priority "high" tells APNs/FCM to deliver immediately even when the
-  // device is in Low Power Mode / Doze. Without it iOS may batch the
-  // notification for several minutes, and Focus filters can suppress
-  // it entirely while the app is closed.
+  // device is in Low Power Mode / Doze.
   const messages = tokens.map((t: any) => ({
     to: t.token,
     sound: "default",
@@ -230,8 +123,6 @@ async function deliverMobile(sb: any, payload: Payload) {
   const dead: string[] = [];
   const events: PushEventRow[] = [];
 
-  // Chunk just in case — practically tokens.length is tiny but the
-  // ceiling is real.
   for (let i = 0; i < messages.length; i += 100) {
     const chunk = messages.slice(i, i + 100);
     try {
@@ -247,8 +138,6 @@ async function deliverMobile(sb: any, payload: Payload) {
       const isRate = res.status === 429;
       const json = await res.json().catch(() => null);
       const tickets: any[] = json?.data ?? [];
-      // If Expo returned no tickets (e.g. global 429), still log one
-      // event per token so we don't lose the trail.
       if (tickets.length === 0) {
         chunk.forEach((m: any) => {
           events.push({
@@ -294,7 +183,7 @@ async function deliverMobile(sb: any, payload: Payload) {
         });
       });
     } catch (e) {
-      // Network blip — leave tokens in place, the next notification
+      // Network blip — leave tokens in place; the next notification
       // will retry. Log a per-token "failed" event so the admin
       // dashboard still sees the attempt.
       chunk.forEach((m: any) => {
