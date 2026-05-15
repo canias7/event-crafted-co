@@ -292,7 +292,7 @@ function NewTicketDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md rounded-sm">
+      <DialogContent className="sm:max-w-md rounded-2xl">
         <DialogHeader>
           <DialogTitle className="font-editorial text-3xl">New ticket</DialogTitle>
           <DialogDescription>

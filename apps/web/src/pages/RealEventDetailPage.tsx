@@ -154,7 +154,7 @@ export default function RealEventDetailPage() {
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ ...spring }}
-            className="bg-background rounded-sm p-8 md:p-12 border border-border"
+            className="bg-background rounded-2xl p-8 md:p-12 border border-border"
           >
             <p className="font-label text-accent tracking-[0.4em] mb-4 capitalize">
               — {event.event_type?.replace("_", " ") ?? "Event"}

@@ -241,7 +241,7 @@ export default function RsvpPage() {
                           key={opt.value}
                           type="button"
                           onClick={() => setStatus(opt.value)}
-                          className={`flex items-center justify-center gap-2 rounded-sm border p-4 transition-colors ${
+                          className={`flex items-center justify-center gap-2 rounded-2xl border p-4 transition-colors ${
                             selected
                               ? "border-foreground bg-foreground/5"
                               : "border-border hover:border-foreground/30"

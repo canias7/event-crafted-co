@@ -50,7 +50,7 @@ export default function ComingSoonPage({
         </div>
 
         <div className="p-6 md:p-12 max-w-2xl">
-          <div className="rounded-sm border border-border bg-card p-8 md:p-10 text-center">
+          <div className="card-soft p-8 md:p-10 text-center">
             <div className="w-12 h-12 mx-auto rounded-full bg-accent/10 flex items-center justify-center mb-5">
               <Sparkles className="w-5 h-5 text-accent" />
             </div>
