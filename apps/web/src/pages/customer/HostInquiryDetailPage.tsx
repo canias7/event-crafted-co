@@ -69,9 +69,6 @@ interface Message {
   id: string;
   body: string;
   sender_role: "host" | "vendor" | "agent";
-  is_draft: boolean;
-  draft_status: string | null;
-  sent_at: string | null;
   created_at: string;
   attachments?: MessageAttachment[];
 }
@@ -115,6 +112,9 @@ export default function HostInquiryDetailPage() {
   const [appointmentModalOpen, setAppointmentModalOpen] = useState(false);
   const [proposals, setProposals] = useState<Proposal[]>([]);
   const [acting, setActing] = useState<"accept" | "reject" | null>(null);
+  // Thread id is the direct_threads row for this inquiry; mobile uses
+  // the same model — see ensure_inquiry_thread RPC. Resolved on load.
+  const [threadId, setThreadId] = useState<string | null>(null);
 
   async function load() {
     if (!inquiryId || !user) return;
@@ -135,16 +135,23 @@ export default function HostInquiryDetailPage() {
     }
     setInquiry(i as unknown as Inquiry);
 
-    const { data: msgs } = await supabase
-      .from("messages")
-      .select(
-        "id, body, sender_role, is_draft, draft_status, sent_at, created_at, attachments",
-      )
-      .eq("inquiry_id", inquiryId)
-      .eq("is_draft", false)
-      .order("created_at", { ascending: true });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: tid } = await (supabase as any).rpc("ensure_inquiry_thread", {
+      p_inquiry_id: inquiryId,
+    });
+    const thread = (tid as string | null) ?? null;
+    setThreadId(thread);
 
-    setMessages((msgs as unknown as Message[]) ?? []);
+    if (thread) {
+      const { data: msgs } = await supabase
+        .from("direct_messages")
+        .select("id, body, sender_role, created_at, attachments")
+        .eq("thread_id", thread)
+        .order("created_at", { ascending: true });
+      setMessages((msgs as unknown as Message[]) ?? []);
+    } else {
+      setMessages([]);
+    }
 
     // Existing review (if any)
     const { data: r } = await supabase
@@ -209,14 +216,14 @@ export default function HostInquiryDetailPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [inquiryId, user]);
 
-  // Live updates: re-fetch when this inquiry's messages or status change.
-  // Routed through the shared user-scoped channel via useRealtime.
+  // Live updates: re-fetch when this thread's messages or this inquiry's
+  // status change. Routed through the shared user-scoped channel.
   const messagesConfig = useMemo(
     () =>
-      inquiryId
-        ? { table: "messages", filter: `inquiry_id=eq.${inquiryId}` }
+      threadId
+        ? { table: "direct_messages", filter: `thread_id=eq.${threadId}` }
         : null,
-    [inquiryId],
+    [threadId],
   );
   useRealtime(messagesConfig, () => load());
 
@@ -247,7 +254,12 @@ export default function HostInquiryDetailPage() {
   }
 
   async function sendMessage() {
-    if ((!composer.trim() && pendingFiles.length === 0) || !inquiryId || !user)
+    if (
+      (!composer.trim() && pendingFiles.length === 0) ||
+      !inquiryId ||
+      !user ||
+      !threadId
+    )
       return;
     setSending(true);
     const uploaded =
@@ -256,12 +268,11 @@ export default function HostInquiryDetailPage() {
             toast.error(`${n}: ${m}`),
           )
         : [];
-    const { error } = await supabase.from("messages").insert({
-      inquiry_id: inquiryId,
+    const { error } = await supabase.from("direct_messages").insert({
+      thread_id: threadId,
       sender_id: user.id,
       sender_role: "host",
       body: composer.trim() || "(attachment)",
-      sent_at: new Date().toISOString(),
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       attachments: uploaded,
     } as any);
@@ -502,7 +513,7 @@ export default function HostInquiryDetailPage() {
                       {groupMessages(messages, {
                         isMe: (m) => m.sender_role === "host",
                         senderKey: (m) => m.sender_role,
-                        createdAt: (m) => m.sent_at ?? m.created_at,
+                        createdAt: (m) => m.created_at,
                         id: (m) => m.id,
                       }).map((it) => {
                         if (it.kind === "sep") {

@@ -114,17 +114,40 @@ export default function VendorAnalyticsPage() {
 
       const inqRows = (inqRes.data as InquiryRow[] | null) ?? [];
 
-      // Vendor-side messages on those inquiries (to compute response time).
+      // Vendor-side messages on those inquiries (to compute response
+      // time). Mobile + web share direct_messages now; the inquiry
+      // link is via direct_threads. Two-step query so PostgREST
+      // doesn't have to filter on a joined-table column.
       let msgs: MessageRow[] = [];
       if (inqRows.length > 0) {
         const ids = inqRows.map((i) => i.id);
-        const msgRes = await supabase
-          .from("messages")
-          .select("inquiry_id, created_at")
-          .eq("sender_role", "vendor")
-          .in("inquiry_id", ids)
-          .order("created_at", { ascending: true });
-        msgs = (msgRes.data as MessageRow[] | null) ?? [];
+        const threadRes = await supabase
+          .from("direct_threads")
+          .select("id, inquiry_id")
+          .in("inquiry_id", ids);
+        const threadRows =
+          (threadRes.data as { id: string; inquiry_id: string }[] | null) ?? [];
+        const threadIdToInquiry = new Map(threadRows.map((t) => [t.id, t.inquiry_id]));
+        if (threadRows.length > 0) {
+          const msgRes = await supabase
+            .from("direct_messages")
+            .select("thread_id, created_at")
+            .eq("sender_role", "vendor")
+            .in(
+              "thread_id",
+              threadRows.map((t) => t.id),
+            )
+            .order("created_at", { ascending: true });
+          const raw =
+            (msgRes.data as { thread_id: string; created_at: string }[] | null) ??
+            [];
+          msgs = raw
+            .map((m) => {
+              const inquiry_id = threadIdToInquiry.get(m.thread_id);
+              return inquiry_id ? { inquiry_id, created_at: m.created_at } : null;
+            })
+            .filter((x): x is MessageRow => x !== null);
+        }
       }
 
       // Reviews (all time).
