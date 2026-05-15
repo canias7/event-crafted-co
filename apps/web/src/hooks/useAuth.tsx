@@ -11,32 +11,16 @@ export type VendorApplicationStatus =
   | "needs_changes"
   | "submitted";
 
-export interface ActiveEvent {
-  id: string;
-  name: string | null;
-  event_type: EventType;
-  event_date: string | null;
-  event_location: string | null;
-  budget_min_cents: number | null;
-  budget_max_cents: number | null;
-  event_notes: string | null;
-  archived_at: string | null;
-}
+// ActiveEvent / multi-event planner workspace removed when the web host
+// portal was trimmed to mirror mobile. Keep the type alias so callers
+// that import it still compile; it just resolves to never on use.
+export type ActiveEvent = never;
 
 interface Profile {
   id: string;
   role: AppRole;
   display_name: string | null;
   onboarded_at: string | null;
-  active_event_id: string | null;
-  // Legacy event_* fields kept for backward compat with code paths still
-  // reading them; the new source of truth is `activeEvent` below.
-  event_type: EventType | null;
-  event_date: string | null;
-  event_location: string | null;
-  budget_min_cents: number | null;
-  budget_max_cents: number | null;
-  event_notes: string | null;
 }
 
 // The user's own vendor profile (when they've applied). Multi-role:
@@ -119,9 +103,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const loadProfile = useCallback(async (userId: string) => {
     const { data } = await supabase
       .from("profiles")
-      .select(
-        "id, role, display_name, onboarded_at, active_event_id, event_type, event_date, event_location, budget_min_cents, budget_max_cents, event_notes",
-      )
+      .select("id, role, display_name, onboarded_at")
       .eq("id", userId)
       .maybeSingle();
     if (!data) {
@@ -133,19 +115,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     const p = data as unknown as Profile;
     setProfile(p);
-
-    if (p.active_event_id) {
-      const { data: ev } = await supabase
-        .from("host_events")
-        .select(
-          "id, name, event_type, event_date, event_location, budget_min_cents, budget_max_cents, event_notes, archived_at",
-        )
-        .eq("id", p.active_event_id)
-        .maybeSingle();
-      setActiveEvent((ev as ActiveEvent | null) ?? null);
-    } else {
-      setActiveEvent(null);
-    }
+    // host_events removed — multi-event planner workspace is no
+    // longer in the host portal. ActiveEvent always null.
+    setActiveEvent(null);
 
     // The user's own vendor application (if any). Multi-role: presence of
     // this row means they're either an approved vendor or a pending
@@ -169,18 +141,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       (memberRows as VendorMembership[] | null) ?? [],
     );
 
-    // Planning collaborator memberships — when this user is a partner /
-    // MOH / planner on someone else's event workspace. The user is also
-    // implicitly an "owner" of their own host_id, but we don't insert a
-    // row for that — the helper functions (is_planning_collaborator,
-    // is_planning_editor) treat _host_id = auth.uid() as automatic owner.
-    const { data: planningRows } = await supabase
-      .from("planning_collaborators")
-      .select("host_id, role")
-      .eq("user_id", userId);
-    setPlanningMemberships(
-      (planningRows as PlanningMembership[] | null) ?? [],
-    );
+    // planning_collaborators dropped along with the planner workspace
+    // — multi-host event planning is no longer in the portal.
+    setPlanningMemberships([]);
   }, []);
 
   useEffect(() => {
@@ -250,14 +213,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     profile?.role === "vendor";
   const hasVendorAccess =
     isApprovedVendor || vendorMemberships.length > 0;
-  // Real host = went through onboarding, has an active event, or is a
-  // planning collaborator. Pure vendor signups get a default profile row
-  // but none of these markers, so they don't appear as hosts.
-  const hasHostAccess =
-    profile != null &&
-    (profile.onboarded_at !== null ||
-      profile.active_event_id !== null ||
-      planningMemberships.length > 0);
+  // Real host = went through onboarding. Pure vendor signups get a
+  // default profile row but onboarded_at stays null until they
+  // explicitly finish the host onboarding wizard.
+  const hasHostAccess = profile != null && profile.onboarded_at !== null;
 
   return (
     <Ctx.Provider
