@@ -96,7 +96,7 @@ export default function PressPage() {
           <p className="font-label text-accent tracking-[0.4em] mb-4">
             — PRESS KIT
           </p>
-          <h1 className="font-display text-4xl md:text-6xl leading-[1.0] mb-5">
+          <h1 className="font-editorial text-5xl md:text-6xl leading-[1.0] mb-5">
             Everything you need to{" "}
             <span className="italic font-light text-accent">write about us.</span>
           </h1>
@@ -143,7 +143,7 @@ export default function PressPage() {
                 transition={{ ...spring, delay: i * 0.08 }}
                 className="text-center md:text-left"
               >
-                <p className="font-display text-3xl md:text-5xl tnum mb-1">
+                <p className="font-editorial text-4xl md:text-5xl tnum mb-1">
                   {s.value}
                 </p>
                 <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
@@ -161,7 +161,7 @@ export default function PressPage() {
           <p className="font-label text-accent mb-3 tracking-[0.4em]">
             — QUICK FACTS
           </p>
-          <h2 className="font-display text-3xl md:text-4xl mb-10">
+          <h2 className="font-editorial text-4xl md:text-4xl mb-10">
             The 60-second version
           </h2>
           <dl className="space-y-6">
@@ -185,18 +185,18 @@ export default function PressPage() {
           <p className="font-label text-accent mb-3 tracking-[0.4em]">
             — BRAND
           </p>
-          <h2 className="font-display text-3xl md:text-4xl mb-8">
+          <h2 className="font-editorial text-4xl md:text-4xl mb-8">
             Logos and palette
           </h2>
 
           <div className="grid sm:grid-cols-2 gap-3 mb-8">
             <div className="rounded-sm border border-border bg-foreground p-10 flex items-center justify-center">
-              <span className="font-display text-4xl text-background">
+              <span className="font-editorial text-5xl text-background">
                 Vendora
               </span>
             </div>
             <div className="rounded-sm border border-border bg-background p-10 flex items-center justify-center">
-              <span className="font-display text-4xl text-foreground">
+              <span className="font-editorial text-5xl text-foreground">
                 Vendora
               </span>
             </div>
@@ -228,7 +228,7 @@ export default function PressPage() {
             </a>
           </div>
 
-          <h3 className="font-display text-xl mb-4">Color palette</h3>
+          <h3 className="font-editorial text-2xl mb-4">Color palette</h3>
           <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
             {[
               { name: "Ink", hex: "#0A0A0A", swatch: "bg-foreground" },
@@ -252,7 +252,7 @@ export default function PressPage() {
           <p className="font-label text-accent mb-3 tracking-[0.4em]">
             — SCREENSHOTS
           </p>
-          <h2 className="font-display text-3xl md:text-4xl mb-8">
+          <h2 className="font-editorial text-4xl md:text-4xl mb-8">
             Use these for editorial
           </h2>
           <p className="text-sm text-muted-foreground max-w-2xl mb-8 leading-relaxed">
@@ -289,7 +289,7 @@ export default function PressPage() {
           <p className="font-label text-accent mb-3 tracking-[0.4em]">
             — CONTACT
           </p>
-          <h2 className="font-display text-3xl md:text-4xl mb-3">
+          <h2 className="font-editorial text-4xl md:text-4xl mb-3">
             Let's talk
           </h2>
           <p className="text-base text-foreground/75 mb-8 leading-relaxed max-w-xl mx-auto">

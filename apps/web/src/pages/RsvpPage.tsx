@@ -162,7 +162,7 @@ export default function RsvpPage() {
             </div>
           ) : notFound ? (
             <div className="text-center py-16">
-              <p className="font-display text-2xl mb-2">
+              <p className="font-editorial text-3xl mb-2">
                 Invitation not found
               </p>
               <p className="text-sm text-muted-foreground">
@@ -174,7 +174,7 @@ export default function RsvpPage() {
               <div className="w-12 h-12 mx-auto rounded-full bg-accent text-accent-foreground flex items-center justify-center mb-5">
                 <Check className="w-5 h-5" />
               </div>
-              <p className="font-display text-2xl mb-2">Got it.</p>
+              <p className="font-editorial text-3xl mb-2">Got it.</p>
               <p className="text-sm text-muted-foreground max-w-md mx-auto leading-relaxed">
                 Your response has been sent to{" "}
                 {guest?.host_name ?? "your host"}. They'll be thrilled.
@@ -188,7 +188,7 @@ export default function RsvpPage() {
                 <p className="font-label text-accent mb-2">
                   {guest.host_name ?? "Your host"} invites you to a
                 </p>
-                <p className="font-display text-2xl mb-4 capitalize">
+                <p className="font-editorial text-3xl mb-4 capitalize">
                   {eventTypeLabel[guest.event_type ?? "other"] ?? "event"}
                 </p>
                 <div className="grid sm:grid-cols-2 gap-3 text-sm">
@@ -216,7 +216,7 @@ export default function RsvpPage() {
 
               <form onSubmit={handleSubmit} className="space-y-6">
                 <div>
-                  <p className="font-display text-xl mb-3">Will you be there?</p>
+                  <p className="font-editorial text-2xl mb-3">Will you be there?</p>
                   <div className="grid sm:grid-cols-3 gap-2">
                     {[
                       {

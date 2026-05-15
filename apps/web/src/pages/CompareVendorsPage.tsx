@@ -53,7 +53,7 @@ export default function CompareVendorsPage() {
             <GitCompare className="w-3 h-3" />
             Side-by-side
           </p>
-          <h1 className="font-display text-4xl md:text-5xl mb-3 leading-tight">
+          <h1 className="font-editorial text-5xl md:text-5xl mb-3 leading-tight">
             Compare vendors
           </h1>
           <p className="text-muted-foreground max-w-xl leading-relaxed">
@@ -96,7 +96,7 @@ export default function CompareVendorsPage() {
                   >
                     <div className="flex items-start justify-between gap-3 mb-3">
                       <div>
-                        <h2 className="font-display text-xl">{v.name}</h2>
+                        <h2 className="font-editorial text-2xl">{v.name}</h2>
                         <p className="text-xs text-muted-foreground capitalize mt-0.5">
                           {v.category}
                         </p>
@@ -167,7 +167,7 @@ export default function CompareVendorsPage() {
                         >
                           <div className="flex items-start justify-between gap-2">
                             <div>
-                              <h2 className="font-display text-xl leading-tight">
+                              <h2 className="font-editorial text-2xl leading-tight">
                                 {v.name}
                               </h2>
                               <p className="text-xs text-muted-foreground capitalize mt-0.5">
@@ -321,7 +321,7 @@ function EmptyState() {
   return (
     <div className="text-center py-16">
       <GitCompare className="w-10 h-10 text-muted-foreground mx-auto mb-4" />
-      <h2 className="font-display text-2xl mb-2">Nothing to compare yet</h2>
+      <h2 className="font-editorial text-3xl mb-2">Nothing to compare yet</h2>
       <p className="text-sm text-muted-foreground max-w-sm mx-auto mb-6 leading-relaxed">
         Browse vendors and tap the compare icon on a card to add it to
         your shortlist. Up to 4 at a time.

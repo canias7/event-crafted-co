@@ -231,7 +231,7 @@ export default function SettingsPage() {
 
       <main id="main-content" className="flex-1 pb-20 lg:pb-0">
         <div className="border-b border-border bg-card px-4 md:px-8 py-4 sticky top-0 z-40">
-          <h1 className="font-display text-xl">Settings</h1>
+          <h1 className="font-editorial text-2xl">Settings</h1>
           <p className="text-sm text-muted-foreground">
             Manage your account and preferences
           </p>
@@ -537,7 +537,7 @@ export default function SettingsPage() {
                     </AlertDialogTrigger>
                     <AlertDialogContent className="rounded-sm">
                       <AlertDialogHeader>
-                        <AlertDialogTitle className="font-display text-2xl">
+                        <AlertDialogTitle className="font-editorial text-3xl">
                           Close your account?
                         </AlertDialogTitle>
                         <AlertDialogDescription className="text-sm leading-relaxed">

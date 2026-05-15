@@ -101,7 +101,7 @@ export default function PublicReviewPage() {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center">
         <AlertCircle className="w-10 h-10 text-muted-foreground mb-3" />
-        <h1 className="font-display text-2xl mb-2">Link not found</h1>
+        <h1 className="font-editorial text-3xl mb-2">Link not found</h1>
         <p className="text-sm text-muted-foreground max-w-sm">
           This review link is invalid or has been removed. If you
           received it from a vendor, ask them to send a new one.
@@ -122,7 +122,7 @@ export default function PublicReviewPage() {
       <div className="min-h-screen flex flex-col">
         <main className="flex-1 flex flex-col items-center justify-center p-6 text-center">
           <CheckCircle2 className="w-12 h-12 text-accent mb-4" />
-          <h1 className="font-display text-3xl mb-2">Thanks for the review</h1>
+          <h1 className="font-editorial text-4xl mb-2">Thanks for the review</h1>
           <p className="text-sm text-muted-foreground max-w-sm leading-relaxed mb-6">
             Your review of {ctx.vendor_name} is live. It helps other
             hosts find vendors they can trust.
@@ -145,7 +145,7 @@ export default function PublicReviewPage() {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center">
         <AlertCircle className="w-10 h-10 text-muted-foreground mb-3" />
-        <h1 className="font-display text-2xl mb-2">Link no longer active</h1>
+        <h1 className="font-editorial text-3xl mb-2">Link no longer active</h1>
         <p className="text-sm text-muted-foreground max-w-sm">
           The vendor has revoked this review link.
         </p>
@@ -162,7 +162,7 @@ export default function PublicReviewPage() {
               <Star className="w-3 h-3" />
               Leave a review
             </p>
-            <h1 className="font-display text-3xl mb-2">
+            <h1 className="font-editorial text-4xl mb-2">
               How was {ctx.vendor_name}?
             </h1>
             <p className="text-sm text-muted-foreground capitalize">

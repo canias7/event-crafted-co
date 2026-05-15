@@ -45,7 +45,7 @@ export default function ComingSoonPage({
 
       <main id="main-content" className="flex-1 pb-20 lg:pb-0">
         <div className="border-b border-border bg-card px-4 md:px-8 py-4 sticky top-0 z-40">
-          <h1 className="font-display text-xl">{heading}</h1>
+          <h1 className="font-editorial text-2xl">{heading}</h1>
           <p className="text-sm text-muted-foreground">Coming soon</p>
         </div>
 
@@ -54,7 +54,7 @@ export default function ComingSoonPage({
             <div className="w-12 h-12 mx-auto rounded-full bg-accent/10 flex items-center justify-center mb-5">
               <Sparkles className="w-5 h-5 text-accent" />
             </div>
-            <h2 className="font-display text-2xl mb-3">
+            <h2 className="font-editorial text-3xl mb-3">
               {heading} is coming soon
             </h2>
             <p className="text-sm text-muted-foreground leading-relaxed mb-8 max-w-md mx-auto">

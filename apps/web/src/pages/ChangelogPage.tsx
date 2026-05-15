@@ -72,7 +72,7 @@ export default function ChangelogPage() {
           <p className="font-label text-accent tracking-[0.4em] mb-4">
             — CHANGELOG
           </p>
-          <h1 className="font-display text-4xl md:text-6xl leading-[1.0] mb-5">
+          <h1 className="font-editorial text-5xl md:text-6xl leading-[1.0] mb-5">
             What we've been{" "}
             <span className="italic font-light text-accent">shipping.</span>
           </h1>
@@ -95,7 +95,7 @@ export default function ChangelogPage() {
                 viewport={{ once: true }}
                 transition={{ ...spring, delay: Math.min(gi * 0.05, 0.3) }}
               >
-                <h2 className="font-display text-2xl mb-6">{month}</h2>
+                <h2 className="font-editorial text-3xl mb-6">{month}</h2>
                 <ol className="space-y-6 border-l border-border pl-6 ml-1 relative">
                   {entries.map((entry, i) => {
                     const meta = CATEGORY_META[entry.category];

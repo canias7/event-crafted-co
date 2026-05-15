@@ -16,7 +16,7 @@ export default function TermsPage() {
 
       <article className="pt-32 pb-24 container mx-auto px-6 md:px-8 max-w-2xl">
         <p className="font-label text-accent mb-3">— LEGAL</p>
-        <h1 className="font-display text-4xl md:text-5xl mb-3 leading-tight">
+        <h1 className="font-editorial text-5xl md:text-5xl mb-3 leading-tight">
           Terms of service
         </h1>
         <p className="text-sm text-muted-foreground mb-12">
@@ -177,7 +177,7 @@ function Section({
 }) {
   return (
     <section>
-      <h2 className="font-display text-xl mb-3">{title}</h2>
+      <h2 className="font-editorial text-2xl mb-3">{title}</h2>
       <div className="text-sm leading-relaxed text-foreground/80 space-y-2">
         {children}
       </div>

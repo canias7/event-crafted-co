@@ -131,7 +131,7 @@ export default function SupportPage() {
       <main id="main-content" className="flex-1 pb-20 lg:pb-0">
         <div className="border-b border-border bg-card px-4 md:px-8 py-4 sticky top-0 z-40 flex items-center justify-between gap-3 flex-wrap">
           <div>
-            <h1 className="font-display text-xl">Support</h1>
+            <h1 className="font-editorial text-2xl">Support</h1>
             <p className="text-sm text-muted-foreground">
               Tickets to the Vendora team — bugs, billing, account help
             </p>
@@ -164,7 +164,7 @@ export default function SupportPage() {
           ) : tickets.length === 0 ? (
             <div className="text-center py-20 max-w-md mx-auto">
               <LifeBuoy className="w-10 h-10 text-muted-foreground/40 mx-auto mb-4" />
-              <p className="font-display text-xl mb-2">No tickets yet</p>
+              <p className="font-editorial text-2xl mb-2">No tickets yet</p>
               <p className="text-sm text-muted-foreground mb-6">
                 When you need help, this is where you talk to us. We
                 typically reply within a business day.
@@ -294,7 +294,7 @@ function NewTicketDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md rounded-sm">
         <DialogHeader>
-          <DialogTitle className="font-display text-2xl">New ticket</DialogTitle>
+          <DialogTitle className="font-editorial text-3xl">New ticket</DialogTitle>
           <DialogDescription>
             Tell us what's going on. We typically reply within a business day.
           </DialogDescription>
@@ -476,7 +476,7 @@ function TicketThread({
       <div className="rounded-sm border border-border bg-card p-5">
         <div className="flex items-start justify-between gap-3 flex-wrap mb-3">
           <div>
-            <h2 className="font-display text-2xl leading-tight mb-1">
+            <h2 className="font-editorial text-3xl leading-tight mb-1">
               {ticket.subject}
             </h2>
             <p className="text-xs text-muted-foreground capitalize">

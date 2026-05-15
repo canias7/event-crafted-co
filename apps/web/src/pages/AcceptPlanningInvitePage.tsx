@@ -99,7 +99,7 @@ export default function AcceptPlanningInvitePage() {
           <div className="w-12 h-12 mx-auto rounded-full bg-secondary flex items-center justify-center mb-4">
             <AlertCircle className="w-5 h-5 text-muted-foreground" />
           </div>
-          <h1 className="font-display text-2xl mb-3">Invite not found</h1>
+          <h1 className="font-editorial text-3xl mb-3">Invite not found</h1>
           <p className="text-sm text-muted-foreground mb-6">
             This link is invalid or has been revoked.
           </p>
@@ -122,7 +122,7 @@ export default function AcceptPlanningInvitePage() {
           <div className="w-12 h-12 mx-auto rounded-full bg-secondary flex items-center justify-center mb-4">
             <Check className="w-5 h-5 text-muted-foreground" />
           </div>
-          <h1 className="font-display text-2xl mb-3">Already accepted</h1>
+          <h1 className="font-editorial text-3xl mb-3">Already accepted</h1>
           <p className="text-sm text-muted-foreground mb-6">
             This invite was already used. Sign in to access the workspace.
           </p>
@@ -151,7 +151,7 @@ export default function AcceptPlanningInvitePage() {
           <p className="font-label text-accent tracking-[0.3em] mb-3">
             — PLANNING INVITE
           </p>
-          <h1 className="font-display text-3xl md:text-4xl leading-tight mb-3">
+          <h1 className="font-editorial text-4xl md:text-4xl leading-tight mb-3">
             Help {invite.host_name ?? "a host"} plan their event
           </h1>
           <p className="text-sm text-muted-foreground mb-8 leading-relaxed">
