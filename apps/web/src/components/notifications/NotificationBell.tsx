@@ -14,6 +14,24 @@ import { Button } from "@/components/ui/button";
 
 const notifTable = () => supabase.from("notifications");
 
+function isToday(iso: string): boolean {
+  const d = new Date(iso);
+  const now = new Date();
+  return (
+    d.getFullYear() === now.getFullYear() &&
+    d.getMonth() === now.getMonth() &&
+    d.getDate() === now.getDate()
+  );
+}
+
+function SectionLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <p className="px-4 pt-3 pb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+      {children}
+    </p>
+  );
+}
+
 interface Notification {
   id: string;
   type: string;
@@ -180,81 +198,106 @@ export function NotificationBell({ variant = "dark" }: Props) {
               </p>
             </div>
           ) : (
-            items.map((n) => {
-              const Icon = typeIcons[n.type] ?? Bell;
-              const isUnread = !n.read_at;
-              const inner = (
-                <div
-                  className={`flex gap-3 px-4 py-3 hover:bg-secondary/50 transition-colors ${
-                    isUnread ? "bg-accent/5" : ""
-                  }`}
-                >
-                  {n.actor_image_url ? (
-                    <img
-                      src={n.actor_image_url}
-                      alt=""
-                      className="w-8 h-8 rounded-full object-cover flex-shrink-0"
-                      loading="lazy"
-                    />
-                  ) : (
-                    <div
-                      className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
-                        isUnread
-                          ? "bg-accent text-accent-foreground"
-                          : "bg-secondary text-muted-foreground"
-                      }`}
-                    >
-                      <Icon className="w-3.5 h-3.5" />
-                    </div>
-                  )}
-                  <div className="flex-1 min-w-0">
-                    <p
-                      className={`text-sm truncate ${
-                        isUnread ? "font-medium" : ""
-                      }`}
-                    >
-                      {n.title}
-                    </p>
-                    {n.body && (
-                      <p className="text-xs text-muted-foreground line-clamp-2 mt-0.5">
-                        {n.body}
-                      </p>
+            (() => {
+              // TODAY / EARLIER buckets to match mobile NotificationsBell.
+              const today: typeof items = [];
+              const earlier: typeof items = [];
+              for (const n of items) {
+                if (isToday(n.created_at)) today.push(n);
+                else earlier.push(n);
+              }
+              const renderItem = (n: Notification) => {
+                const Icon = typeIcons[n.type] ?? Bell;
+                const isUnread = !n.read_at;
+                const inner = (
+                  <div
+                    className={`flex gap-3 px-4 py-3 hover:bg-secondary/50 transition-colors ${
+                      isUnread ? "bg-accent/5" : ""
+                    }`}
+                  >
+                    {n.actor_image_url ? (
+                      <img
+                        src={n.actor_image_url}
+                        alt=""
+                        className="w-8 h-8 rounded-full object-cover flex-shrink-0"
+                        loading="lazy"
+                      />
+                    ) : (
+                      <div
+                        className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
+                          isUnread
+                            ? "bg-accent text-accent-foreground"
+                            : "bg-secondary text-muted-foreground"
+                        }`}
+                      >
+                        <Icon className="w-3.5 h-3.5" />
+                      </div>
                     )}
-                    <p className="text-[10px] text-muted-foreground mt-1 tnum">
-                      {formatDistanceToNow(new Date(n.created_at), {
-                        addSuffix: true,
-                      })}
-                    </p>
+                    <div className="flex-1 min-w-0">
+                      <p
+                        className={`text-sm truncate ${
+                          isUnread ? "font-medium" : ""
+                        }`}
+                      >
+                        {n.title}
+                      </p>
+                      {n.body && (
+                        <p className="text-xs text-muted-foreground line-clamp-2 mt-0.5">
+                          {n.body}
+                        </p>
+                      )}
+                      <p className="text-[10px] text-muted-foreground mt-1 tnum">
+                        {formatDistanceToNow(new Date(n.created_at), {
+                          addSuffix: true,
+                        })}
+                      </p>
+                    </div>
+                    {isUnread && (
+                      <span className="w-1.5 h-1.5 rounded-full bg-accent flex-shrink-0 mt-2" />
+                    )}
                   </div>
-                  {isUnread && (
-                    <span className="w-1.5 h-1.5 rounded-full bg-accent flex-shrink-0 mt-2" />
-                  )}
-                </div>
+                );
+                return n.link ? (
+                  <Link
+                    key={n.id}
+                    to={n.link}
+                    onClick={() => {
+                      if (isUnread) markRead(n.id);
+                      setOpen(false);
+                    }}
+                    className="block"
+                  >
+                    {inner}
+                  </Link>
+                ) : (
+                  <button
+                    key={n.id}
+                    onClick={() => {
+                      if (isUnread) markRead(n.id);
+                    }}
+                    className="block w-full text-left"
+                  >
+                    {inner}
+                  </button>
+                );
+              };
+              return (
+                <>
+                  {today.length > 0 ? (
+                    <>
+                      <SectionLabel>Today</SectionLabel>
+                      {today.map(renderItem)}
+                    </>
+                  ) : null}
+                  {earlier.length > 0 ? (
+                    <>
+                      <SectionLabel>Earlier</SectionLabel>
+                      {earlier.map(renderItem)}
+                    </>
+                  ) : null}
+                </>
               );
-              return n.link ? (
-                <Link
-                  key={n.id}
-                  to={n.link}
-                  onClick={() => {
-                    if (isUnread) markRead(n.id);
-                    setOpen(false);
-                  }}
-                  className="block"
-                >
-                  {inner}
-                </Link>
-              ) : (
-                <button
-                  key={n.id}
-                  onClick={() => {
-                    if (isUnread) markRead(n.id);
-                  }}
-                  className="block w-full text-left"
-                >
-                  {inner}
-                </button>
-              );
-            })
+            })()
           )}
         </div>
       </PopoverContent>

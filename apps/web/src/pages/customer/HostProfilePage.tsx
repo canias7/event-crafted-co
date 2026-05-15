@@ -22,6 +22,7 @@ import {
 import { toast } from "sonner";
 import { DashboardSidebar } from "@/components/shared/DashboardSidebar";
 import { MobileNav } from "@/components/shared/MobileNav";
+import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { Skeleton } from "@/components/ui/skeleton";
 import { customerNavItems } from "@/data/navItems";
 import { useAuth } from "@/hooks/useAuth";
@@ -177,11 +178,14 @@ export default function HostProfilePage() {
         backPath="/customer/dashboard"
       />
       <main className="flex-1 pb-20 lg:pb-0">
-        <div className="border-b border-border bg-card px-4 md:px-8 py-4">
-          <h1 className="font-display text-2xl">Profile</h1>
-          <p className="text-sm text-muted-foreground">
-            Your account at a glance.
-          </p>
+        <div className="border-b border-border bg-card px-4 md:px-8 py-4 flex items-start justify-between gap-3">
+          <div>
+            <h1 className="font-display text-2xl">Profile</h1>
+            <p className="text-sm text-muted-foreground">
+              Your account at a glance.
+            </p>
+          </div>
+          <NotificationBell variant="light" />
         </div>
 
         <div className="p-4 md:p-8 max-w-3xl mx-auto space-y-4">

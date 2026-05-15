@@ -28,6 +28,7 @@ const VendorPerformanceCharts = lazy(() =>
 import { Skeleton } from "@/components/ui/skeleton";
 import { DashboardSidebar } from "@/components/shared/DashboardSidebar";
 import { MobileNav } from "@/components/shared/MobileNav";
+import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { vendorNavItems as navItems } from "@/data/navItems";
 
 interface VendorProfile {
@@ -226,6 +227,7 @@ export default function VendorDashboard() {
                 {t("vendor_dashboard.header.verified")}
               </Badge>
             )}
+            <NotificationBell variant="light" />
           </div>
         </div>
 
