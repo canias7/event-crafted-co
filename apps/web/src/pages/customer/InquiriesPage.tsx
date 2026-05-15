@@ -207,7 +207,7 @@ export default function InquiriesPage() {
         <div className="border-b border-border bg-card px-4 md:px-8 py-4 sticky top-0 z-40 space-y-3">
           <div className="flex items-center justify-between gap-3 flex-wrap">
             <div>
-              <h1 className="font-display text-xl">Inquiries</h1>
+              <h1 className="font-editorial text-3xl">Inquiries</h1>
               <p className="text-sm text-muted-foreground">
                 Conversations with vendors you've contacted
               </p>
@@ -262,7 +262,7 @@ export default function InquiriesPage() {
           </div>
 
           {/* List */}
-          <div className="bg-card rounded-sm border border-border overflow-hidden">
+          <div className="bg-card rounded-3xl border border-border/60 shadow-[0_8px_24px_-16px_rgba(26,20,16,0.16)] overflow-hidden">
             {loading ? (
               <div className="p-6 space-y-4">
                 {[0, 1, 2].map((i) => (
@@ -272,7 +272,7 @@ export default function InquiriesPage() {
             ) : filteredRows.length === 0 ? (
               <div className="text-center py-20 px-6">
                 <Inbox className="w-10 h-10 mx-auto text-muted-foreground/40 mb-4" />
-                <h3 className="font-display text-xl mb-2">
+                <h3 className="font-editorial text-2xl mb-2">
                   {rows.length === 0
                     ? "No inquiries yet"
                     : search
