@@ -33,6 +33,7 @@ import { Lightbox } from "@/components/shared/Lightbox";
 import { VideoEmbed } from "@/components/vendor/VideoEmbed";
 import { ShowcaseStrip } from "@/components/vendor/ShowcaseStrip";
 import { VendorSocialFeed } from "@/components/vendor/VendorSocialFeed";
+import { VendorOtherListings } from "@/components/vendor/VendorOtherListings";
 import { VerificationBadges } from "@/components/vendor/VerificationBadges";
 import { CoBookedRail } from "@/components/vendor/CoBookedRail";
 import {
@@ -955,6 +956,15 @@ export default function VendorDetailPage() {
               {vendor.isReal && (
                 <SilentErrorBoundary label="VendorSocialFeed">
                   <VendorSocialFeed vendorId={vendor.id} />
+                </SilentErrorBoundary>
+              )}
+
+              {/* "More from this vendor" — every approved listing owned
+                  by the same user_id, excluding this one. Mirrors the
+                  Other Listings section in the mobile VendorProfileSheet. */}
+              {vendor.isReal && (
+                <SilentErrorBoundary label="VendorOtherListings">
+                  <VendorOtherListings vendorId={vendor.id} />
                 </SilentErrorBoundary>
               )}
 
