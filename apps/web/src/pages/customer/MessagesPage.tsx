@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRealtime } from "@/lib/realtime";
 import { Link, useSearchParams } from "react-router-dom";
-import { Send, Loader2, MessageSquare, ArrowRight } from "lucide-react";
+import { Send, Loader2, MessageSquare, ArrowRight, Smile } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -10,6 +10,11 @@ import { MobileNav } from "@/components/shared/MobileNav";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { ContactInfoWarning } from "@/components/messages/ContactInfoWarning";
 import { MessageAttachments } from "@/components/messages/MessageAttachments";
 import { AttachmentPickerButton } from "@/components/messages/AttachmentPickerButton";
@@ -21,12 +26,33 @@ import {
 import { customerNavItems as navItems } from "@/data/navItems";
 import { formatDate } from "@/lib/format";
 
+const QUICK_EMOJIS = [
+  "👍",
+  "❤️",
+  "🎉",
+  "🙏",
+  "😂",
+  "🔥",
+  "😍",
+  "😅",
+  "👋",
+  "🤝",
+  "✨",
+  "💯",
+];
+
+const ACTIVE_WINDOW_MS = 5 * 60 * 1000;
+
 interface ThreadRow {
   id: string;
   vendor_id: string;
   last_message_at: string;
   inquiry_id: string | null;
-  vendor: { business_name: string; category: string } | null;
+  vendor: {
+    business_name: string;
+    category: string;
+    user_id?: string | null;
+  } | null;
 }
 
 interface DirectMessage {
@@ -35,6 +61,40 @@ interface DirectMessage {
   body: string;
   attachments?: MessageAttachment[];
   created_at: string;
+}
+
+function isSameDay(a: string, b: string): boolean {
+  const da = new Date(a);
+  const db = new Date(b);
+  return (
+    da.getFullYear() === db.getFullYear() &&
+    da.getMonth() === db.getMonth() &&
+    da.getDate() === db.getDate()
+  );
+}
+
+function daySeparator(iso: string): string {
+  const d = new Date(iso);
+  const today = new Date();
+  const yesterday = new Date(today);
+  yesterday.setDate(today.getDate() - 1);
+  if (
+    d.getFullYear() === today.getFullYear() &&
+    d.getMonth() === today.getMonth() &&
+    d.getDate() === today.getDate()
+  )
+    return "Today";
+  if (
+    d.getFullYear() === yesterday.getFullYear() &&
+    d.getMonth() === yesterday.getMonth() &&
+    d.getDate() === yesterday.getDate()
+  )
+    return "Yesterday";
+  return d.toLocaleDateString(undefined, {
+    weekday: "long",
+    month: "short",
+    day: "numeric",
+  });
 }
 
 const threadsTable = () => supabase.from("direct_threads");
@@ -51,6 +111,8 @@ export default function MessagesPage() {
   const [composer, setComposer] = useState("");
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
   const [sending, setSending] = useState(false);
+  const [activeNow, setActiveNow] = useState(false);
+  const [emojiOpen, setEmojiOpen] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Tracks whether the component is still mounted. Realtime callbacks
@@ -69,7 +131,7 @@ export default function MessagesPage() {
     setLoading(true);
     const { data } = await threadsTable()
       .select(
-        "id, vendor_id, last_message_at, inquiry_id, vendor:vendor_profiles!direct_threads_vendor_id_fkey(business_name, category)",
+        "id, vendor_id, last_message_at, inquiry_id, vendor:vendor_profiles!direct_threads_vendor_id_fkey(business_name, category, user_id)",
       )
       .eq("host_id", user.id)
       .order("last_message_at", { ascending: false });
@@ -124,6 +186,86 @@ export default function MessagesPage() {
     () => threads.find((t) => t.id === activeThreadId) ?? null,
     [threads, activeThreadId],
   );
+
+  // Poll the other party's last-seen timestamp for the "Active now"
+  // dot. Lightweight: just the open thread, every 30s, no realtime
+  // subscription. Mirrors host-mobile/(host)/thread/[id].tsx.
+  useEffect(() => {
+    if (!activeThread?.vendor?.user_id) {
+      setActiveNow(false);
+      return;
+    }
+    let cancelled = false;
+    async function tick() {
+      const otherUserId = activeThread?.vendor?.user_id;
+      if (!otherUserId) return;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data } = await (supabase as any).rpc("get_user_last_seen", {
+        p_user_id: otherUserId,
+      });
+      if (cancelled) return;
+      const lastSeen = data as string | null;
+      setActiveNow(
+        !!lastSeen &&
+          Date.now() - new Date(lastSeen).getTime() < ACTIVE_WINDOW_MS,
+      );
+    }
+    tick();
+    const interval = setInterval(tick, 30_000);
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
+  }, [activeThread?.vendor?.user_id]);
+
+  // Group consecutive same-sender messages within the same day and
+  // insert "Today / Yesterday / Mar 5" separators between days.
+  type RenderItem =
+    | { kind: "sep"; label: string; key: string }
+    | {
+        kind: "msg";
+        message: DirectMessage;
+        isMe: boolean;
+        showTail: boolean;
+        firstInGroup: boolean;
+      };
+
+  const renderItems = useMemo<RenderItem[]>(() => {
+    const items: RenderItem[] = [];
+    let lastIso: string | null = null;
+    let lastSender: string | null = null;
+    messages.forEach((m, i) => {
+      const isMe = m.sender_role === "host";
+      if (!lastIso || !isSameDay(lastIso, m.created_at)) {
+        items.push({
+          kind: "sep",
+          label: daySeparator(m.created_at),
+          key: `sep-${m.id}`,
+        });
+        lastSender = null;
+      }
+      const next = messages[i + 1];
+      const sameSenderNext =
+        next &&
+        next.sender_role === m.sender_role &&
+        isSameDay(m.created_at, next.created_at);
+      items.push({
+        kind: "msg",
+        message: m,
+        isMe,
+        showTail: !sameSenderNext,
+        firstInGroup: lastSender !== m.sender_role,
+      });
+      lastIso = m.created_at;
+      lastSender = m.sender_role;
+    });
+    return items;
+  }, [messages]);
+
+  function insertEmoji(e: string) {
+    setComposer((v) => v + e);
+    setEmojiOpen(false);
+  }
 
   async function send() {
     if ((!composer.trim() && pendingFiles.length === 0) || !activeThreadId || !user)
@@ -247,33 +389,58 @@ export default function MessagesPage() {
               </div>
             ) : (
               <>
-                <div className="border-b border-border px-6 py-3 bg-card">
-                  <Link
-                    to={`/vendors/${activeThread.vendor_id}`}
-                    className="font-display text-base hover:text-accent transition-colors"
-                  >
-                    {activeThread.vendor?.business_name ?? "Vendor"}
-                  </Link>
-                  <p className="text-xs text-muted-foreground">
-                    {activeThread.vendor?.category}
-                  </p>
+                <div className="border-b border-border px-6 py-3 bg-card flex items-center gap-3">
+                  <div className="min-w-0 flex-1">
+                    <Link
+                      to={`/vendors/${activeThread.vendor_id}`}
+                      className="font-display text-base hover:text-accent transition-colors"
+                    >
+                      {activeThread.vendor?.business_name ?? "Vendor"}
+                    </Link>
+                    <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+                      {activeNow ? (
+                        <>
+                          <span className="inline-block w-2 h-2 rounded-full bg-emerald-500" />
+                          <span className="text-emerald-600">Active now</span>
+                          <span className="opacity-60">·</span>
+                        </>
+                      ) : null}
+                      {activeThread.vendor?.category}
+                    </p>
+                  </div>
                 </div>
 
-                <div className="flex-1 overflow-y-auto p-6 space-y-3">
+                <div className="flex-1 overflow-y-auto p-6 space-y-1.5">
                   {messages.length === 0 ? (
                     <p className="text-xs text-muted-foreground text-center py-12">
                       Say hi — vendors typically reply within a few hours.
                     </p>
                   ) : (
-                    messages.map((m) => {
-                      const isMe = m.sender_role === "host";
+                    renderItems.map((it) => {
+                      if (it.kind === "sep") {
+                        return (
+                          <div
+                            key={it.key}
+                            className="flex items-center justify-center py-3"
+                          >
+                            <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                              — {it.label} —
+                            </span>
+                          </div>
+                        );
+                      }
+                      const m = it.message;
                       return (
                         <div
                           key={m.id}
-                          className={`max-w-[80%] p-3 rounded-sm text-sm leading-relaxed whitespace-pre-wrap ${
-                            isMe
+                          className={`max-w-[80%] px-3.5 py-2 text-sm leading-relaxed whitespace-pre-wrap ${
+                            it.isMe
                               ? "bg-foreground text-background ml-auto"
                               : "bg-secondary"
+                          } ${it.firstInGroup ? "mt-2" : "mt-0.5"} ${
+                            it.isMe
+                              ? `rounded-2xl ${it.showTail ? "rounded-br-sm" : ""}`
+                              : `rounded-2xl ${it.showTail ? "rounded-bl-sm" : ""}`
                           }`}
                         >
                           {m.body}
@@ -295,6 +462,37 @@ export default function MessagesPage() {
                       onChange={setPendingFiles}
                       disabled={sending}
                     />
+                    <Popover open={emojiOpen} onOpenChange={setEmojiOpen}>
+                      <PopoverTrigger asChild>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="rounded-full shrink-0"
+                          disabled={sending}
+                          aria-label="Quick reactions"
+                        >
+                          <Smile className="w-4 h-4" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent
+                        side="top"
+                        align="start"
+                        className="w-56 p-2"
+                      >
+                        <div className="grid grid-cols-6 gap-1">
+                          {QUICK_EMOJIS.map((e) => (
+                            <button
+                              key={e}
+                              onClick={() => insertEmoji(e)}
+                              className="text-xl rounded-md p-1.5 hover:bg-secondary transition-colors"
+                            >
+                              {e}
+                            </button>
+                          ))}
+                        </div>
+                      </PopoverContent>
+                    </Popover>
                     <Textarea
                       value={composer}
                       onChange={(e) => setComposer(e.target.value)}
