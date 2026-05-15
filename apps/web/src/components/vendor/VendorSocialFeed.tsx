@@ -108,10 +108,7 @@ export function VendorSocialFeed({ vendorId }: { vendorId: string }) {
           </h2>
           <div className="space-y-3 max-w-2xl">
             {buzz.map((b) => (
-              <div
-                key={b.id}
-                className="rounded-xl border border-border bg-card p-4"
-              >
+              <div key={b.id} className="card-soft p-4">
                 <p className="text-sm text-foreground whitespace-pre-wrap">
                   {b.body}
                 </p>

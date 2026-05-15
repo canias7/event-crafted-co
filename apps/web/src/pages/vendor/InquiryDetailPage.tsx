@@ -413,7 +413,7 @@ export default function InquiryDetailPage() {
                 <p className="font-label text-muted-foreground mb-2">
                   Intake form answers
                 </p>
-                <ul className="space-y-1.5 bg-secondary/40 rounded-sm p-3 text-sm">
+                <ul className="space-y-1.5 bg-secondary/40 rounded-2xl p-3 text-sm">
                   {Object.entries(inquiry.intake_answers).map(([qid, val]) => (
                     <li key={qid} className="leading-relaxed">
                       <span className="text-muted-foreground text-xs uppercase tracking-wide">
@@ -442,7 +442,7 @@ export default function InquiryDetailPage() {
           )}
 
           {inquiry.recommended_verification && (
-            <div className="mt-4 p-3 rounded-sm bg-secondary/60 text-sm">
+            <div className="mt-4 p-3 rounded-2xl bg-secondary/60 text-sm">
               <span className="font-medium">Recommended verification: </span>
               {inquiry.recommended_verification}
             </div>
@@ -608,14 +608,14 @@ export default function InquiryDetailPage() {
         </div>
 
         {/* AI Draft Panel */}
-        <div className="bg-card border border-accent/40 rounded-sm p-6">
+        <div className="rounded-2xl bg-card border border-accent/40 p-6">
           <div className="flex items-center gap-2 mb-3">
             <Sparkles className="w-4 h-4 text-accent" />
             <p className="font-label text-accent">AI Draft</p>
           </div>
           {aiDraft ? (
             <>
-              <div className="p-4 rounded-sm bg-accent/5 border border-accent/20 text-sm leading-relaxed whitespace-pre-wrap">
+              <div className="p-4 rounded-2xl bg-accent/5 border border-accent/20 text-sm leading-relaxed whitespace-pre-wrap">
                 {aiDraft.body}
               </div>
               <div className="flex flex-wrap gap-2 mt-4">
@@ -823,7 +823,7 @@ function AlbumCta({
   if (loading) return null;
 
   return (
-    <div className="bg-card border border-accent/30 rounded-sm p-5">
+    <div className="rounded-2xl bg-card border border-accent/30 p-5">
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div>
           <p className="font-label text-accent">Photo album</p>
