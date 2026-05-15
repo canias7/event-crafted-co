@@ -24,7 +24,7 @@ export default function VendorAiAgentPage() {
         </div>
 
         <div className="p-4 md:p-8 max-w-3xl">
-          <div className="rounded-sm border border-border bg-card p-8 text-center">
+          <div className="card-soft p-8 text-center">
             <div className="mx-auto w-12 h-12 rounded-full bg-secondary/60 flex items-center justify-center mb-4">
               <Bot className="w-5 h-5 text-muted-foreground" />
             </div>

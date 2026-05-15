@@ -254,7 +254,7 @@ export default function VendorOnboardingPage() {
               </p>
             </div>
 
-            <div className="bg-card border border-border rounded-sm p-5">
+            <div className="card-soft p-5">
               <PackageManager vendorId={profile.id} canEdit={true} />
             </div>
 
@@ -291,7 +291,7 @@ export default function VendorOnboardingPage() {
               </p>
             </div>
 
-            <div className="bg-card border border-border rounded-sm p-5">
+            <div className="card-soft p-5">
               <PortfolioUploader vendorId={profile.id} />
             </div>
 

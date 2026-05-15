@@ -395,7 +395,7 @@ export default function VendorAnalyticsPage() {
                   page stops at the bottom of the screen. */}
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-2 min-h-0">
                 {/* Daily views sparkline — wide */}
-                <section className="lg:col-span-7 bg-card border border-border rounded-sm p-3 flex flex-col min-h-0">
+                <section className="lg:col-span-7 card-soft p-3 flex flex-col min-h-0">
                   <div className="flex items-center justify-between mb-2 gap-2 flex-wrap">
                     <div className="flex items-center gap-2 text-muted-foreground">
                       <Eye className="w-3.5 h-3.5" />
@@ -442,7 +442,7 @@ export default function VendorAnalyticsPage() {
                 </section>
 
                 {/* Weekly inquiries — narrow */}
-                <section className="lg:col-span-5 bg-card border border-border rounded-sm p-3 flex flex-col min-h-0">
+                <section className="lg:col-span-5 card-soft p-3 flex flex-col min-h-0">
                   <div className="flex items-center justify-between mb-2 gap-2 flex-wrap">
                     <div className="flex items-center gap-2 text-muted-foreground">
                       <TrendingUp className="w-3.5 h-3.5" />
@@ -509,7 +509,7 @@ function BenchmarkCard({
     responseHours > Number(benchmark.median_response_hours) * 2;
 
   return (
-    <section className="bg-card border border-border rounded-sm p-5">
+    <section className="card-soft p-5">
       <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
         <div className="flex items-center gap-2 text-muted-foreground">
           <Users className="w-3.5 h-3.5" />
@@ -626,7 +626,7 @@ function CompactFunnelCard({
   sub: string;
 }) {
   return (
-    <div className="bg-card border border-border rounded-sm px-3 py-2.5 flex items-center gap-3">
+    <div className="card-soft px-3 py-2.5 flex items-center gap-3">
       <div className="w-8 h-8 rounded-md bg-secondary/60 flex items-center justify-center shrink-0">
         <Icon className="w-3.5 h-3.5 text-muted-foreground" />
       </div>
@@ -655,7 +655,7 @@ function InsightTile({
   hint: string;
 }) {
   return (
-    <div className="bg-card border border-border rounded-sm px-3 py-2.5 flex items-center gap-3">
+    <div className="card-soft px-3 py-2.5 flex items-center gap-3">
       <div className="w-8 h-8 rounded-md bg-accent/10 text-accent flex items-center justify-center shrink-0">
         <Icon className="w-3.5 h-3.5" />
       </div>

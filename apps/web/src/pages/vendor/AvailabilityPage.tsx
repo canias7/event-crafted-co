@@ -145,7 +145,7 @@ export default function AvailabilityPage() {
           {loading ? (
             <Skeleton className="h-[420px] w-full rounded-sm" />
           ) : !vendorId ? (
-            <div className="rounded-sm border border-border bg-card p-8 text-center">
+            <div className="card-soft p-8 text-center">
               <CalendarIcon className="w-10 h-10 mx-auto text-muted-foreground/40 mb-3" />
               <p className="font-display text-xl mb-2">
                 Set up your business profile first
@@ -162,7 +162,7 @@ export default function AvailabilityPage() {
                   first, then exception-block specific dates below. */}
               <RecurringAvailabilityCard vendorId={vendorId} />
 
-              <div className="rounded-sm border border-border bg-card p-4 sm:p-6">
+              <div className="card-soft p-4 sm:p-6">
                 <Calendar
                   mode="multiple"
                   selected={Array.from(unavailable).map(parseDate)}
@@ -197,7 +197,7 @@ export default function AvailabilityPage() {
                 </p>
               </div>
 
-              <div className="rounded-sm border border-border bg-card p-5">
+              <div className="card-soft p-5">
                 <p className="font-label text-muted-foreground mb-3">
                   Blocked dates ({upcoming.length})
                 </p>

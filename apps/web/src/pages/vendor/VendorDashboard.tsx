@@ -279,7 +279,7 @@ export default function VendorDashboard() {
               divided by hairlines. Took the place of the 4-up tile
               grid that was wasting vertical space when the values
               were all "0". */}
-          <div className="rounded-sm border border-border bg-card grid grid-cols-2 sm:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x divide-border">
+          <div className="card-soft grid grid-cols-2 sm:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x divide-border">
             <KpiCell
               label={t("dashboard.vendor.stat_new_requests")}
               value={stats.newRequests}
