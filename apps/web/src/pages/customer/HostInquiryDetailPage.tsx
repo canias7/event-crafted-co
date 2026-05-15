@@ -397,7 +397,7 @@ export default function HostInquiryDetailPage() {
 
                 {/* Review CTA (only on booked inquiries) */}
                 {inquiry.status === "won" && (
-                  <div className="bg-card border border-accent/30 bg-accent/5 rounded-sm p-6">
+                  <div className="rounded-2xl bg-card border border-accent/30 bg-accent/5 p-6">
                     <div className="flex items-start gap-4 flex-wrap">
                       <div className="w-9 h-9 rounded-full bg-accent text-accent-foreground flex items-center justify-center flex-shrink-0">
                         <Sparkles className="w-4 h-4" />
