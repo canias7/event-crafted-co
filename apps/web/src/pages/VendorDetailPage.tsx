@@ -599,7 +599,7 @@ export default function VendorDetailPage() {
         <PublicNav />
         <div className="pt-32 pb-24 container mx-auto px-6 text-center">
           <p className="font-label text-muted-foreground mb-4">404</p>
-          <h1 className="font-display text-3xl mb-3">Vendor not found</h1>
+          <h1 className="font-editorial text-4xl mb-3">Vendor not found</h1>
           <p className="text-sm text-muted-foreground mb-8">
             We couldn't find the vendor you're looking for.
           </p>
@@ -758,7 +758,7 @@ export default function VendorDetailPage() {
               {/* About */}
               <div>
                 <p className="font-label text-accent mb-4">About</p>
-                <h2 className="font-display text-3xl mb-6 leading-tight">
+                <h2 className="font-editorial text-4xl mb-6 leading-tight">
                   {vendor.description}
                 </h2>
                 <div className="space-y-4 text-foreground/75 leading-relaxed">
@@ -782,7 +782,7 @@ export default function VendorDetailPage() {
                   pricing UI. */}
               <div>
                 <p className="font-label text-accent mb-4">Packages</p>
-                <h2 className="font-display text-3xl mb-8">
+                <h2 className="font-editorial text-4xl mb-8">
                   {packages.length > 0
                     ? packages.length === 1
                       ? "Available package"
@@ -815,7 +815,7 @@ export default function VendorDetailPage() {
                           <p className="font-label text-muted-foreground mb-2">
                             {pkg.name}
                           </p>
-                          <p className="font-display text-2xl mb-3 tnum">
+                          <p className="font-editorial text-3xl mb-3 tnum">
                             ${(pkg.price_cents / 100).toLocaleString()}
                           </p>
                           {pkg.description && (
@@ -854,7 +854,7 @@ export default function VendorDetailPage() {
                           </Badge>
                         )}
                         <p className="font-label text-muted-foreground mb-2">{pkg.name}</p>
-                        <p className="font-display text-2xl mb-3 tnum">{pkg.price}</p>
+                        <p className="font-editorial text-3xl mb-3 tnum">{pkg.price}</p>
                         <p className="text-sm text-muted-foreground mb-5 leading-relaxed">
                           {pkg.description}
                         </p>
@@ -876,7 +876,7 @@ export default function VendorDetailPage() {
               {vendor.introVideoUrl && (
                 <div>
                   <p className="font-label text-accent mb-4">Meet the team</p>
-                  <h2 className="font-display text-3xl mb-8">In their own words</h2>
+                  <h2 className="font-editorial text-4xl mb-8">In their own words</h2>
                   <div className="aspect-video w-full overflow-hidden rounded-sm bg-muted">
                     <VideoEmbed
                       url={vendor.introVideoUrl}
@@ -893,7 +893,7 @@ export default function VendorDetailPage() {
               {portfolioItems.length > 0 && (
               <div>
                 <p className="font-label text-accent mb-4">Portfolio</p>
-                <h2 className="font-display text-3xl mb-8">Recent work</h2>
+                <h2 className="font-editorial text-4xl mb-8">Recent work</h2>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                   {portfolioItems.map((item, i) => {
                     const altText =
@@ -1032,7 +1032,7 @@ export default function VendorDetailPage() {
               {recommendations.length > 0 && (
                 <div>
                   <p className="font-label text-accent mb-4">Recommendations</p>
-                  <h2 className="font-display text-3xl mb-6">
+                  <h2 className="font-editorial text-4xl mb-6">
                     Vendors {vendor.name} loves
                   </h2>
                   <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -1079,7 +1079,7 @@ export default function VendorDetailPage() {
               <div className="lg:sticky lg:top-24 space-y-4">
                 <div className="bg-card border border-border rounded-sm p-6 card-shadow">
                   <p className="font-label text-muted-foreground mb-2">Starting at</p>
-                  <p className="font-display text-3xl mb-1 tnum">
+                  <p className="font-editorial text-4xl mb-1 tnum">
                     ${vendor.startingPrice.toLocaleString()}
                   </p>
                   <p className="text-xs text-muted-foreground mb-6">
@@ -1195,7 +1195,7 @@ export default function VendorDetailPage() {
             <div className="flex items-end justify-between mb-12 flex-wrap gap-4">
               <div>
                 <p className="font-label text-accent mb-4">More to explore</p>
-                <h2 className="font-display text-3xl md:text-4xl">
+                <h2 className="font-editorial text-4xl md:text-4xl">
                   You might also love
                 </h2>
               </div>
@@ -1240,7 +1240,7 @@ export default function VendorDetailPage() {
       <Dialog open={signinPromptOpen} onOpenChange={setSigninPromptOpen}>
         <DialogContent className="sm:max-w-md rounded-sm">
           <DialogHeader>
-            <DialogTitle className="font-display text-2xl">
+            <DialogTitle className="font-editorial text-3xl">
               Send an inquiry to {vendor.name}
             </DialogTitle>
             <DialogDescription className="text-sm leading-relaxed pt-2">

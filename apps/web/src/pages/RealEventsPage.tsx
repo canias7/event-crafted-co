@@ -65,7 +65,7 @@ export default function RealEventsPage() {
           <p className="font-label text-accent tracking-[0.4em] mb-4">
             — REAL EVENTS
           </p>
-          <h1 className="font-display text-4xl md:text-6xl leading-[1.0] mb-5">
+          <h1 className="font-editorial text-5xl md:text-6xl leading-[1.0] mb-5">
             Every detail,{" "}
             <span className="italic font-light text-accent">perfectly composed.</span>
           </h1>
@@ -92,7 +92,7 @@ export default function RealEventsPage() {
           ) : events.length === 0 ? (
             <div className="text-center py-24 max-w-md mx-auto">
               <Sparkles className="w-10 h-10 text-muted-foreground/40 mx-auto mb-4" />
-              <p className="font-display text-xl mb-2">
+              <p className="font-editorial text-2xl mb-2">
                 No published events yet
               </p>
               <p className="text-sm text-muted-foreground">
@@ -125,7 +125,7 @@ export default function RealEventsPage() {
                       {e.event_type?.replace("_", " ") ?? "Event"}
                       {e.location ? ` · ${e.location}` : ""}
                     </p>
-                    <h2 className="font-display text-xl leading-tight mb-2 transition-colors group-hover:text-accent">
+                    <h2 className="font-editorial text-2xl leading-tight mb-2 transition-colors group-hover:text-accent">
                       {e.title}
                     </h2>
                     {e.intro && (

@@ -9,7 +9,7 @@ export function Footer() {
       <div className="container mx-auto px-4 md:px-8">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-12">
           <div className="col-span-2 md:col-span-1">
-            <h3 className="font-display text-xl mb-4">Vendora</h3>
+            <h3 className="font-editorial text-2xl mb-4">Vendora</h3>
             <p className="text-sm opacity-70 leading-relaxed max-w-xs">
               {t("footer.tagline")}
             </p>

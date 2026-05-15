@@ -449,7 +449,7 @@ export default function VendorBrowsePage() {
           ) : (
             <div className="text-center py-24">
               <Store className="w-10 h-10 text-muted-foreground/40 mx-auto mb-4" />
-              <h3 className="font-display text-xl mb-2">No vendors found</h3>
+              <h3 className="font-editorial text-2xl mb-2">No vendors found</h3>
               <p className="text-sm text-muted-foreground max-w-sm mx-auto">
                 Try a different search term or category. We're adding new vendors weekly.
               </p>

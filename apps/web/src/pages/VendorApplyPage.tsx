@@ -232,7 +232,7 @@ export default function VendorApplyPage() {
               >
                 <div>
                   <p className="font-label text-accent mb-2">Step 1 of 2</p>
-                  <h2 className="font-display text-2xl mb-1">
+                  <h2 className="font-editorial text-3xl mb-1">
                     Set up your account
                   </h2>
                   <p className="text-sm text-muted-foreground">
@@ -297,7 +297,7 @@ export default function VendorApplyPage() {
               >
                 <div>
                   <p className="font-label text-accent mb-2">Step 2 of 2</p>
-                  <h2 className="font-display text-2xl mb-1">
+                  <h2 className="font-editorial text-3xl mb-1">
                     Tell us about your business
                   </h2>
                   <p className="text-sm text-muted-foreground">
@@ -411,7 +411,7 @@ function ApprovedVendorPanel({
             You're live
           </span>
         </div>
-        <h2 className="font-display text-3xl mb-2">
+        <h2 className="font-editorial text-4xl mb-2">
           Welcome back, {businessName}
         </h2>
         <p className="text-sm text-muted-foreground max-w-md mx-auto leading-relaxed">
@@ -447,7 +447,7 @@ function ApprovedVendorPanel({
           </div>
           <div className="flex-1 min-w-0">
             <p className="font-label text-accent mb-1">— Refer & earn</p>
-            <h3 className="font-display text-xl mb-2">
+            <h3 className="font-editorial text-2xl mb-2">
               Know another vendor who'd be a good fit?
             </h3>
             <p className="text-sm text-muted-foreground leading-relaxed mb-4">
@@ -526,7 +526,7 @@ function ExistingApplicationCard({
   return (
     <div className="rounded-lg border border-border bg-card p-8 max-w-xl mx-auto text-center">
       <p className="font-label text-accent mb-3">— Application status</p>
-      <h2 className="font-display text-2xl mb-3">{heading}</h2>
+      <h2 className="font-editorial text-3xl mb-3">{heading}</h2>
       <p className="text-sm text-muted-foreground mb-6 leading-relaxed">
         {body}
       </p>
