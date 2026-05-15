@@ -147,7 +147,7 @@ export default function VendorCategoryPage() {
             <p className="font-label text-accent tracking-[0.4em] mb-4 inline-flex items-center gap-2">
               {config.display.toUpperCase()}
             </p>
-            <h1 className="font-display text-4xl md:text-6xl leading-[1.0] mb-6">
+            <h1 className="font-editorial text-5xl md:text-6xl leading-[1.0] mb-6">
               {config.display} — coming soon
             </h1>
             <p className="text-base md:text-lg text-muted-foreground leading-relaxed mb-10">
@@ -304,7 +304,7 @@ export default function VendorCategoryPage() {
             </div>
           ) : filtered.length === 0 ? (
             <div className="text-center py-20">
-              <p className="font-display text-xl mb-2">
+              <p className="font-editorial text-2xl mb-2">
                 No {config.display.toLowerCase()} on Vendora yet
               </p>
               <p className="text-sm text-muted-foreground max-w-md mx-auto leading-relaxed">
@@ -334,7 +334,7 @@ export default function VendorCategoryPage() {
             <p className="font-label text-accent mb-3 tracking-[0.4em]">
               — BY CITY
             </p>
-            <h2 className="font-display text-3xl mb-8">
+            <h2 className="font-editorial text-4xl mb-8">
               {config.display} by city
             </h2>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
@@ -373,7 +373,7 @@ export default function VendorCategoryPage() {
             <p className="font-label text-accent mb-3 tracking-[0.4em]">
               — KEEP BROWSING
             </p>
-            <h2 className="font-display text-3xl mb-8">Other categories</h2>
+            <h2 className="font-editorial text-4xl mb-8">Other categories</h2>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
               {otherCategories.map(([s, c]) => (
                 <Link

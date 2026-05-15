@@ -89,7 +89,7 @@ export default function VendorCityPage() {
             <div className="w-12 h-12 mx-auto rounded-full bg-secondary flex items-center justify-center mb-4">
               <MapPin className="w-5 h-5 text-muted-foreground" />
             </div>
-            <h1 className="font-display text-3xl mb-3">
+            <h1 className="font-editorial text-4xl mb-3">
               No vendors in {cityLabel} yet
             </h1>
             <p className="text-muted-foreground mb-8">
@@ -134,7 +134,7 @@ export default function VendorCityPage() {
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ ...spring, delay: 0.1, duration: 0.9 }}
-            className="font-display text-4xl md:text-6xl leading-[1.0] mb-6"
+            className="font-editorial text-5xl md:text-6xl leading-[1.0] mb-6"
           >
             The {cityLabel} list,{" "}
             <span className="italic font-light text-accent">
@@ -218,7 +218,7 @@ export default function VendorCityPage() {
             <p className="font-label text-accent mb-3 tracking-[0.4em]">
               — OTHER CITIES
             </p>
-            <h2 className="font-display text-3xl mb-8">
+            <h2 className="font-editorial text-4xl mb-8">
               Vendors in nearby markets
             </h2>
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">

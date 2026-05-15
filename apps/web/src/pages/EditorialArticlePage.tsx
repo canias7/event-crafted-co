@@ -126,7 +126,7 @@ export default function EditorialArticlePage() {
                 initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={spring}
-                className="font-display text-4xl md:text-6xl leading-[1.0] mb-3"
+                className="font-editorial text-5xl md:text-6xl leading-[1.0] mb-3"
               >
                 {article.title}
               </motion.h1>

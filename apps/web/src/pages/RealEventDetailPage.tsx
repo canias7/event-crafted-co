@@ -159,7 +159,7 @@ export default function RealEventDetailPage() {
             <p className="font-label text-accent tracking-[0.4em] mb-4 capitalize">
               — {event.event_type?.replace("_", " ") ?? "Event"}
             </p>
-            <h1 className="font-display text-4xl md:text-5xl leading-[1.05] mb-5">
+            <h1 className="font-editorial text-5xl md:text-5xl leading-[1.05] mb-5">
               {event.title}
             </h1>
             <div className="flex items-center gap-5 text-sm text-muted-foreground mb-8 flex-wrap">
@@ -238,7 +238,7 @@ export default function RealEventDetailPage() {
             <p className="font-label text-muted-foreground mb-3 tracking-[0.4em]">
               — CURATED BY
             </p>
-            <h2 className="font-display text-3xl mb-2">
+            <h2 className="font-editorial text-4xl mb-2">
               {event.vendor.business_name}
             </h2>
             {event.vendor.category && (

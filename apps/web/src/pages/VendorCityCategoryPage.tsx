@@ -147,7 +147,7 @@ export default function VendorCityCategoryPage() {
             <MapPin className="w-3 h-3" />
             {cityLabel.toUpperCase()}
           </p>
-          <h1 className="font-display text-4xl md:text-6xl leading-[1.0] mb-5">
+          <h1 className="font-editorial text-5xl md:text-6xl leading-[1.0] mb-5">
             {config.display} in{" "}
             <span className="italic font-light text-accent">{cityLabel}</span>
           </h1>
@@ -174,7 +174,7 @@ export default function VendorCityCategoryPage() {
           ) : matched.length === 0 ? (
             <div className="text-center py-16 max-w-md mx-auto">
               <Sparkles className="w-8 h-8 mx-auto text-muted-foreground/40 mb-4" />
-              <h2 className="font-display text-2xl mb-3">
+              <h2 className="font-editorial text-3xl mb-3">
                 No {config.display.toLowerCase()} in {cityLabel} yet
               </h2>
               <p className="text-sm text-muted-foreground leading-relaxed mb-6">
@@ -223,7 +223,7 @@ export default function VendorCityCategoryPage() {
             {otherCities.length > 0 && (
               <div>
                 <p className="font-label text-accent mb-4">Also serving</p>
-                <h2 className="font-display text-2xl md:text-3xl mb-6">
+                <h2 className="font-editorial text-3xl md:text-3xl mb-6">
                   {config.display} in other cities
                 </h2>
                 <div className="flex flex-wrap gap-2">
@@ -248,7 +248,7 @@ export default function VendorCityCategoryPage() {
                 <p className="font-label text-accent mb-4">
                   More in {cityLabel}
                 </p>
-                <h2 className="font-display text-2xl md:text-3xl mb-6">
+                <h2 className="font-editorial text-3xl md:text-3xl mb-6">
                   Other vendors in {cityLabel}
                 </h2>
                 <div className="flex flex-wrap gap-2">

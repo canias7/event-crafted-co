@@ -75,7 +75,7 @@ export default function VendorLocationsPage() {
           <p className="font-label text-accent tracking-[0.4em] mb-4">
             — VENDORS BY LOCATION
           </p>
-          <h1 className="font-display text-4xl md:text-5xl leading-[1.05] mb-4">
+          <h1 className="font-editorial text-5xl md:text-5xl leading-[1.05] mb-4">
             Find your team{" "}
             <span className="italic font-light text-accent">near you.</span>
           </h1>
@@ -99,7 +99,7 @@ export default function VendorLocationsPage() {
               <div className="w-12 h-12 mx-auto rounded-full bg-secondary flex items-center justify-center mb-4">
                 <MapPin className="w-5 h-5 text-muted-foreground" />
               </div>
-              <p className="font-display text-xl mb-2">
+              <p className="font-editorial text-2xl mb-2">
                 No location data yet
               </p>
               <p className="text-sm text-muted-foreground">

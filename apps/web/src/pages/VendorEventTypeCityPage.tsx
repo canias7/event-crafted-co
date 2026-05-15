@@ -162,7 +162,7 @@ export default function VendorEventTypeCityPage() {
             <MapPin className="w-3 h-3" />
             {cityLabel.toUpperCase()}
           </p>
-          <h1 className="font-display text-4xl md:text-6xl leading-[1.0] mb-5">
+          <h1 className="font-editorial text-5xl md:text-6xl leading-[1.0] mb-5">
             {config.display.replace(" Vendors", "")} in{" "}
             <span className="italic font-light text-accent">{cityLabel}</span>
           </h1>
@@ -188,7 +188,7 @@ export default function VendorEventTypeCityPage() {
           ) : display.length === 0 ? (
             <div className="text-center py-16 max-w-md mx-auto">
               <Sparkles className="w-8 h-8 mx-auto text-muted-foreground/40 mb-4" />
-              <h2 className="font-display text-2xl mb-3">
+              <h2 className="font-editorial text-3xl mb-3">
                 No vendors in {cityLabel} yet for {config.noun}
               </h2>
               <p className="text-sm text-muted-foreground leading-relaxed mb-6">
@@ -231,7 +231,7 @@ export default function VendorEventTypeCityPage() {
       <section className="py-12 md:py-16 border-t border-border bg-secondary/20">
         <div className="container mx-auto px-6 md:px-8 max-w-6xl">
           <p className="font-label text-accent mb-4">Browse by category</p>
-          <h2 className="font-display text-2xl md:text-3xl mb-6">
+          <h2 className="font-editorial text-3xl md:text-3xl mb-6">
             What you might need for {config.noun}
           </h2>
           <div className="flex flex-wrap gap-2">

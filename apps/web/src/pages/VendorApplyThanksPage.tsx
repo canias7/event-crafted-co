@@ -27,7 +27,7 @@ export default function VendorApplyThanksPage() {
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ ...spring, delay: 0.1 }}
-            className="font-display text-4xl md:text-5xl leading-tight mb-4"
+            className="font-editorial text-5xl md:text-5xl leading-tight mb-4"
           >
             Thank you for applying.
           </motion.h1>

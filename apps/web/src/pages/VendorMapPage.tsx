@@ -142,7 +142,7 @@ export default function VendorMapPage() {
           <p className="font-label text-accent tracking-[0.4em] mb-4">
             — VENDOR MAP
           </p>
-          <h1 className="font-display text-4xl md:text-5xl leading-[1.05] mb-3">
+          <h1 className="font-editorial text-5xl md:text-5xl leading-[1.05] mb-3">
             Find your team{" "}
             <span className="italic font-light text-accent">on the map.</span>
           </h1>

@@ -64,7 +64,7 @@ export function PublicNav() {
       aria-label="Public"
     >
       <div className="container mx-auto flex items-center justify-between h-16 px-4 md:px-8">
-        <Link to="/" className="font-display text-xl tracking-tight text-foreground">
+        <Link to="/" className="font-editorial text-2xl text-foreground">
           Vendora
         </Link>
 
