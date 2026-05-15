@@ -2,16 +2,8 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   CalendarDays,
-  CheckSquare,
-  CreditCard,
-  FileText,
-  Heart,
-  Image,
+  Compass,
   Inbox,
-  Gift,
-  LayoutDashboard,
-  ListTodo,
-  Mail,
   MessageSquare,
   Search,
   Settings,
@@ -58,35 +50,18 @@ const PUBLIC_NAV: NavTarget[] = [
   },
 ];
 
+// Mirrors mobile host bottom nav (Explore / Inbox / Events / Profile).
+// All the planning-workspace surfaces (Guests / Seating / Mood boards /
+// Registry / Tasks / Checklist / Payments / Planning team / etc.) are
+// gone — keep the palette in sync.
 const HOST_NAV: NavTarget[] = [
-  {
-    label: "Customer dashboard",
-    path: "/customer/dashboard",
-    icon: LayoutDashboard,
-  },
-  { label: "My inquiries", path: "/customer/inquiries", icon: MessageSquare },
-  { label: "Guests", path: "/customer/guests", icon: User },
-  { label: "Seating chart", path: "/customer/seating", icon: Users },
-  { label: "Appointments", path: "/customer/appointments", icon: CalendarDays },
-  { label: "Event details", path: "/customer/event", icon: FileText },
-  { label: "Day-of timeline", path: "/customer/timeline", icon: CalendarDays },
-  { label: "Invitations", path: "/customer/invitations", icon: Mail },
-  { label: "Checklist", path: "/customer/checklist", icon: CheckSquare },
-  { label: "Tasks", path: "/customer/tasks", icon: ListTodo },
-  { label: "Payments", path: "/customer/payments", icon: CreditCard },
-  { label: "Saved vendors", path: "/customer/favorites", icon: Heart },
-  { label: "Saved searches", path: "/customer/saved-searches", icon: Store },
-  { label: "Mood boards", path: "/customer/moodboards", icon: Image },
-  { label: "Registry", path: "/customer/registry", icon: Gift },
-  { label: "Planning team", path: "/customer/planning-team", icon: Users },
+  { label: "Explore", path: "/customer/explore", icon: Compass },
+  { label: "Inbox", path: "/customer/inquiries", icon: MessageSquare },
+  { label: "Events", path: "/customer/events", icon: CalendarDays },
+  { label: "Profile", path: "/customer/profile", icon: User },
 ];
 
 const VENDOR_NAV: NavTarget[] = [
-  {
-    label: "Vendor dashboard",
-    path: "/vendor/dashboard",
-    icon: LayoutDashboard,
-  },
   { label: "Inquiry inbox", path: "/vendor/inbox", icon: Inbox },
   { label: "Listing", path: "/vendor/listing", icon: Store },
   { label: "Team", path: "/vendor/team", icon: Users },

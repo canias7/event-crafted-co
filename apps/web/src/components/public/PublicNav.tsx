@@ -56,7 +56,7 @@ export function PublicNav() {
   // (their inbox lives there); otherwise the host dashboard. Either side
   // exposes a switcher to flip between them.
   const dashLabel = dashboardLabel(t);
-  const dashPath = hasVendorAccess ? "/vendor/dashboard" : "/customer/dashboard";
+  const dashPath = hasVendorAccess ? "/vendor/dashboard" : "/customer/explore";
 
   return (
     <nav

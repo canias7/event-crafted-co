@@ -56,7 +56,7 @@ export function DashboardSidebar({
     !onVendorSide &&
     !ownVendorProfile &&
     hasHostAccess;
-  const switcherTo = onVendorSide ? "/customer/dashboard" : "/vendor/dashboard";
+  const switcherTo = onVendorSide ? "/customer/explore" : "/vendor/dashboard";
   const switcherLabel = onVendorSide ? "Switch to host" : "Switch to vendor";
   const switcherIcon = onVendorSide ? Sparkles : Briefcase;
   const pendingBadge =

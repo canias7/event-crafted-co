@@ -175,18 +175,9 @@
   },
   "sidebar": {
     "customer": {
-      "dashboard": "Panel",
-      "vendors": "Proveedores",
-      "inquiries": "Bandeja",
       "explore": "Explorar",
-      "messages": "Mensajes",
+      "inquiries": "Bandeja",
       "events": "Eventos",
-      "appointments": "Citas",
-      "event": "Evento",
-      "guests": "Invitados",
-      "planning": "Planificación",
-      "inspiration": "Inspiración",
-      "gifts": "Regalos",
       "profile": "Perfil"
     },
     "vendor": {

@@ -67,7 +67,7 @@ export function SocialAuthButtons({ redirectTo }: Props) {
         redirectTo:
           redirectTo ??
           (typeof window !== "undefined"
-            ? `${window.location.origin}/customer/dashboard`
+            ? `${window.location.origin}/customer/explore`
             : undefined),
       },
     });
