@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Calendar as CalendarIcon, Loader2, X } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -12,14 +12,6 @@ import { Calendar } from "@/components/ui/calendar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { vendorNavItems as navItems } from "@/data/navItems";
-
-interface BusyEvent {
-  external_event_id: string;
-  summary: string | null;
-  starts_at: string;
-  ends_at: string;
-  is_all_day: boolean;
-}
 
 const unavailableTable = () => supabase.from("vendor_unavailable_dates");
 
@@ -38,7 +30,6 @@ export default function AvailabilityPage() {
   const { user, vendorMemberships } = useAuth();
   const vendorId = vendorMemberships[0]?.vendor_id ?? null;
   const [unavailable, setUnavailable] = useState<Set<string>>(new Set());
-  const [busyEvents, setBusyEvents] = useState<BusyEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [pendingKey, setPendingKey] = useState<string | null>(null);
 
@@ -47,19 +38,10 @@ export default function AvailabilityPage() {
       setLoading(false);
       return;
     }
-    const [{ data: rows }, { data: busy }] = await Promise.all([
-      unavailableTable().select("date").eq("vendor_id", vendorId),
-      // calendar_synced_busy isn't yet in the generated types.
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (supabase as any)
-        .from("calendar_synced_busy")
-        .select("external_event_id, summary, starts_at, ends_at, is_all_day")
-        .eq("user_id", user.id)
-        .gte("starts_at", new Date().toISOString())
-        .order("starts_at", { ascending: true }),
-    ]);
+    const { data: rows } = await unavailableTable()
+      .select("date")
+      .eq("vendor_id", vendorId);
     setUnavailable(new Set((rows ?? []).map((r) => r.date)));
-    setBusyEvents((busy as BusyEvent[]) ?? []);
     setLoading(false);
   }
 
@@ -67,23 +49,6 @@ export default function AvailabilityPage() {
     loadDates();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, vendorId]);
-
-  // Days that have at least one synced busy event — render them on the
-  // calendar with a subtle dot so vendors see what's blocking what.
-  const busyDays = useMemo(() => {
-    const set = new Set<string>();
-    for (const e of busyEvents) {
-      const start = new Date(e.starts_at);
-      const end = new Date(e.ends_at);
-      // Walk each day in the range.
-      const cursor = new Date(start.getFullYear(), start.getMonth(), start.getDate());
-      while (cursor <= end) {
-        set.add(dateKey(cursor));
-        cursor.setDate(cursor.getDate() + 1);
-      }
-    }
-    return set;
-  }, [busyEvents]);
 
   async function toggleDate(date: Date) {
     if (!vendorId) return;
@@ -170,13 +135,6 @@ export default function AvailabilityPage() {
                   disabled={{ before: today }}
                   numberOfMonths={1}
                   className="mx-auto"
-                  modifiers={{
-                    busy: Array.from(busyDays).map(parseDate),
-                  }}
-                  modifiersClassNames={{
-                    busy:
-                      "after:content-[''] after:absolute after:bottom-1 after:left-1/2 after:-translate-x-1/2 after:w-1 after:h-1 after:rounded-full after:bg-accent relative",
-                  }}
                   classNames={{
                     day_selected:
                       "bg-foreground text-background hover:bg-foreground/90 focus:bg-foreground",
@@ -184,16 +142,7 @@ export default function AvailabilityPage() {
                 />
                 <p className="text-xs text-muted-foreground text-center mt-4">
                   Click a date to toggle. Selected dates are{" "}
-                  <span className="font-medium text-foreground">
-                    blocked
-                  </span>
-                  {busyDays.size > 0 && (
-                    <>
-                      ; dots are{" "}
-                      <span className="text-accent">synced from your connected calendar</span>
-                    </>
-                  )}
-                  .
+                  <span className="font-medium text-foreground">blocked</span>.
                 </p>
               </div>
 
