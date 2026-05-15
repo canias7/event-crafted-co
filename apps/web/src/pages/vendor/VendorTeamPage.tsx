@@ -365,7 +365,7 @@ export default function VendorTeamPage() {
                 <p className="font-label text-muted-foreground mb-3">
                   Members
                 </p>
-                <div className="rounded-sm border border-border bg-card divide-y divide-border">
+                <div className="card-soft divide-y divide-border">
                   {members.map((m) => {
                     const role = roleBadge[m.role];
                     const Icon = role.icon;
@@ -449,7 +449,7 @@ export default function VendorTeamPage() {
                   <p className="font-label text-muted-foreground mb-3">
                     Pending invites
                   </p>
-                  <div className="rounded-sm border border-border bg-card divide-y divide-border">
+                  <div className="card-soft divide-y divide-border">
                     {invites.map((i) => (
                       <div
                         key={i.id}

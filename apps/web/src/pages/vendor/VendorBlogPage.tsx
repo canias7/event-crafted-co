@@ -164,7 +164,7 @@ export default function VendorBlogPage() {
             rows.map((r) => (
               <div
                 key={r.id}
-                className="rounded-sm border border-border bg-card p-4 flex items-start gap-4"
+                className="card-soft p-4 flex items-start gap-4"
               >
                 {r.hero_path ? (
                   <img

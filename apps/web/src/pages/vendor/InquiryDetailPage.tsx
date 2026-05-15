@@ -365,7 +365,7 @@ export default function InquiryDetailPage() {
 
       <div className="max-w-4xl mx-auto p-4 md:p-8 space-y-6">
         {/* Summary */}
-        <div className="bg-card border border-border rounded-sm p-6">
+        <div className="card-soft p-6">
           <div className="flex items-start justify-between gap-4 flex-wrap">
             <div>
               <p className="font-label text-muted-foreground">From</p>
@@ -547,7 +547,7 @@ export default function InquiryDetailPage() {
         )}
 
         {/* Thread */}
-        <div className="bg-card border border-border rounded-sm p-6 space-y-4">
+        <div className="card-soft p-6 space-y-4">
           <p className="font-label text-muted-foreground">Conversation</p>
           {messages.length === 0 ? (
             <p className="text-sm text-muted-foreground py-6 text-center">
@@ -647,7 +647,7 @@ export default function InquiryDetailPage() {
         </div>
 
         {/* Composer */}
-        <div className="bg-card border border-border rounded-sm p-6">
+        <div className="card-soft p-6">
           <p className="font-label text-muted-foreground mb-3">
             {editingDraftId ? "Edit AI draft & send" : "Reply"}
           </p>
