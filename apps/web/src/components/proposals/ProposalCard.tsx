@@ -126,7 +126,7 @@ export function ProposalCard({
   }
 
   return (
-    <div className="bg-card border border-accent/30 rounded-sm p-6">
+    <div className="rounded-2xl bg-card border border-accent/30 p-6">
       <div className="flex items-start justify-between gap-4 flex-wrap mb-4">
         <div className="flex items-center gap-2.5">
           <div className="w-8 h-8 rounded-full bg-accent/10 text-accent flex items-center justify-center">
@@ -314,7 +314,7 @@ function SignatureDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md rounded-sm">
+      <DialogContent className="sm:max-w-md rounded-2xl">
         <DialogHeader>
           <DialogTitle className="font-display text-2xl">
             Sign and accept
