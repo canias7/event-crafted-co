@@ -177,6 +177,9 @@ export const HostEventsPage = lazyWithReload(importHostEvents);
 const importCustomerExplore = () => import("@/pages/customer/CustomerExplorePage");
 export const CustomerExplorePage = lazyWithReload(importCustomerExplore);
 
+const importHostProfile = () => import("@/pages/customer/HostProfilePage");
+export const HostProfilePage = lazyWithReload(importHostProfile);
+
 const importGuests = () => import("@/pages/customer/GuestsPage");
 export const GuestsPage = lazyWithReload(importGuests);
 
@@ -330,6 +333,7 @@ const ROUTE_IMPORTERS: Array<{ pattern: string; importer: () => Promise<unknown>
   { pattern: "/accept-planning-invite/:token", importer: importAcceptPlanningInvite },
   // Customer
   { pattern: "/customer/dashboard", importer: importCustomerDashboard },
+  { pattern: "/customer/profile", importer: importHostProfile },
   { pattern: "/customer/vendors", importer: importCustomerVendorsBrowse },
   { pattern: "/customer/onboarding", importer: importOnboarding },
   { pattern: "/customer/inquiries", importer: importInquiries },

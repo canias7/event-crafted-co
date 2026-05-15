@@ -57,6 +57,7 @@ export const customerNavItems: NavItem[] = [
 ];
 
 export const customerNavBottomItems: NavItem[] = [
+  { labelKey: "sidebar.customer.profile", path: "/customer/profile", icon: User },
   { labelKey: "sidebar.bottom.payments", path: "/customer/payments", icon: CreditCard },
   { labelKey: "sidebar.bottom.support", path: "/support", icon: LifeBuoy },
   { labelKey: "sidebar.bottom.settings", path: "/settings", icon: Settings },
