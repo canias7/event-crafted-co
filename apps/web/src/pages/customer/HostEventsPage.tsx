@@ -172,6 +172,8 @@ export default function HostEventsPage() {
     };
   }, [user?.id]);
 
+  const [selectedDayKey, setSelectedDayKey] = useState<string | null>(null);
+
   // Split into upcoming + past based on eventDate.
   const { upcoming, past, nextUp } = useMemo(() => {
     const up: HostEvent[] = [];
@@ -199,6 +201,39 @@ export default function HostEventsPage() {
     }
     return [...groups.entries()];
   }, [rest]);
+
+  // 14-day pill strip starting today. Mirrors mobile (host)/events.tsx
+  // dayStrip — lets the host glance at "what's coming this fortnight"
+  // and tap a day to filter the list to just that date.
+  const dayStrip = useMemo(() => {
+    const arr: Date[] = [];
+    const start = new Date();
+    start.setHours(0, 0, 0, 0);
+    for (let i = 0; i < 14; i++) {
+      const d = new Date(start);
+      d.setDate(start.getDate() + i);
+      arr.push(d);
+    }
+    return arr;
+  }, []);
+
+  // Map day-key → events for the dot indicator on each pill.
+  const eventsByDayKey = useMemo(() => {
+    const m = new Map<string, HostEvent[]>();
+    for (const ev of upcoming) {
+      if (!ev.eventDate) continue;
+      const k = ev.eventDate.toDateString();
+      const arr = m.get(k) ?? [];
+      arr.push(ev);
+      m.set(k, arr);
+    }
+    return m;
+  }, [upcoming]);
+
+  const filteredByDay = useMemo(() => {
+    if (!selectedDayKey) return null;
+    return eventsByDayKey.get(selectedDayKey) ?? [];
+  }, [selectedDayKey, eventsByDayKey]);
 
   return (
     <div className="flex min-h-screen bg-background">
@@ -236,7 +271,42 @@ export default function HostEventsPage() {
             <div className="mt-8 space-y-10">
               {nextUp ? <UpNextHero event={nextUp} onOpen={() => openEvent(nextUp)} /> : null}
 
-              {byMonth.length > 0 ? (
+              {/* 14-day pill strip — tap a day to filter the list. */}
+              <div className="flex gap-2 overflow-x-auto scrollbar-hide -mx-1 px-1">
+                {dayStrip.map((d) => {
+                  const k = d.toDateString();
+                  const isSelected = selectedDayKey === k;
+                  const has = (eventsByDayKey.get(k) ?? []).length > 0;
+                  return (
+                    <DayPill
+                      key={k}
+                      date={d}
+                      isSelected={isSelected}
+                      hasEvent={has}
+                      onClick={() => setSelectedDayKey(isSelected ? null : k)}
+                    />
+                  );
+                })}
+              </div>
+
+              {filteredByDay !== null ? (
+                <section>
+                  <h2 className="font-editorial text-xl mb-3">
+                    {filteredByDay.length === 0 ? "Nothing on this day" : "On this day"}
+                  </h2>
+                  <div className="space-y-2">
+                    {filteredByDay.map((ev) => (
+                      <EventRow
+                        key={ev.key}
+                        event={ev}
+                        onOpen={() => openEvent(ev)}
+                      />
+                    ))}
+                  </div>
+                </section>
+              ) : null}
+
+              {byMonth.length > 0 && filteredByDay === null ? (
                 <div className="space-y-8">
                   {byMonth.map(([label, evs]) => (
                     <section key={label}>
@@ -418,6 +488,51 @@ function initialsOf(name: string): string {
   if (parts.length === 0) return "?";
   if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+}
+
+function DayPill({
+  date,
+  isSelected,
+  hasEvent,
+  onClick,
+}: {
+  date: Date;
+  isSelected: boolean;
+  hasEvent: boolean;
+  onClick: () => void;
+}) {
+  const dow = date
+    .toLocaleDateString(undefined, { weekday: "short" })
+    .slice(0, 3)
+    .toUpperCase();
+  return (
+    <button
+      onClick={onClick}
+      className={`shrink-0 w-16 py-3 px-2 rounded-2xl flex flex-col items-center transition ${
+        isSelected
+          ? "bg-foreground text-background"
+          : "bg-secondary/60 text-foreground hover:bg-secondary"
+      }`}
+    >
+      <span
+        className={`text-[10px] font-semibold tracking-wider ${
+          isSelected ? "text-background/70" : "text-muted-foreground"
+        }`}
+      >
+        {dow}
+      </span>
+      <span className="mt-0.5 font-editorial text-xl">{date.getDate()}</span>
+      <span
+        className={`mt-1.5 w-1 h-1 rounded-full ${
+          hasEvent
+            ? isSelected
+              ? "bg-background"
+              : "bg-foreground"
+            : "bg-transparent"
+        }`}
+      />
+    </button>
+  );
 }
 
 function VendorBubbles({ vendors }: { vendors: EventVendor[] }) {
