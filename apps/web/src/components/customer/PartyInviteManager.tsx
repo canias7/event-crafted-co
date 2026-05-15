@@ -180,7 +180,7 @@ export function PartyInviteManager({
             return (
               <li
                 key={inv.id}
-                className="rounded-sm border border-border bg-card p-3 flex items-start justify-between gap-3 flex-wrap"
+                className="card-soft p-3 flex items-start justify-between gap-3 flex-wrap"
               >
                 <div className="min-w-0">
                   <p className="text-sm font-medium leading-tight">

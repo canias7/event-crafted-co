@@ -57,7 +57,7 @@ export function BudgetBreakdownChart({ rows }: { rows: Row[] }) {
   if (data.length < 2) return null;
 
   return (
-    <div className="rounded-sm border border-border bg-card p-5">
+    <div className="card-soft p-5">
       <div className="flex items-center gap-2 text-muted-foreground mb-4">
         <PieIcon className="w-3.5 h-3.5" />
         <p className="font-label">Planned spend by category</p>

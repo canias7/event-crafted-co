@@ -104,7 +104,7 @@ export function LeadRulesCard({ vendorId }: Props) {
       </div>
 
       <div className="space-y-4">
-        <div className="rounded-sm border border-border bg-card p-4">
+        <div className="card-soft p-4">
           <div className="flex items-start justify-between gap-3 mb-3">
             <div>
               <p className="text-sm font-medium">Auto-reply</p>
@@ -124,7 +124,7 @@ export function LeadRulesCard({ vendorId }: Props) {
           )}
         </div>
 
-        <div className="rounded-sm border border-border bg-card p-4 space-y-2">
+        <div className="card-soft p-4 space-y-2">
           <div>
             <Label htmlFor="lr-floor">Auto-decline below budget ($)</Label>
             <p className="text-xs text-muted-foreground leading-relaxed mb-2">

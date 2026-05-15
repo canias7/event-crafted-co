@@ -272,7 +272,7 @@ export function PublishRealEventCard({ event }: Props) {
   const publicUrl = isLive ? `/real-events/${existing.slug}` : null;
 
   return (
-    <div className="bg-card border border-border rounded-sm p-5 md:p-6">
+    <div className="card-soft p-5 md:p-6">
       <div className="flex items-start gap-3 mb-4">
         <div className="w-9 h-9 rounded-full bg-accent/15 text-accent flex items-center justify-center flex-shrink-0">
           <Globe className="w-4 h-4" />

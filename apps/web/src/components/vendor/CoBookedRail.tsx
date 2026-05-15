@@ -85,7 +85,7 @@ export function CoBookedRail(props: Props) {
           <li key={v.vendor_id}>
             <Link
               to={`/vendors/${v.vendor_id}`}
-              className="group block rounded-sm border border-border bg-card p-4 hover:border-foreground/40 transition-colors"
+              className="group block card-soft p-4 hover:border-foreground/40 transition-colors"
             >
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
