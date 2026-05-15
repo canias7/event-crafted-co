@@ -98,7 +98,7 @@ export function VendorCard({ vendor, eager = false }: VendorCardProps) {
         whileHover={{ y: -3 }}
         transition={{ type: "spring", duration: 0.4, bounce: 0 }}
       >
-        <div className="relative aspect-[4/3] overflow-hidden rounded-sm mb-3 bg-muted">
+        <div className="relative aspect-[4/3] overflow-hidden rounded-2xl mb-3 bg-muted">
           {vendor.heroImageUrl ? (
             <img
               src={vendor.heroImageUrl}
@@ -179,7 +179,7 @@ export function VendorCard({ vendor, eager = false }: VendorCardProps) {
 
         <div className="space-y-1">
           <div className="flex items-center gap-1.5 flex-wrap">
-            <h3 className="font-display text-base leading-tight transition-colors group-hover:text-accent">
+            <h3 className="font-editorial text-lg leading-tight transition-colors group-hover:text-accent">
               {vendor.name}
             </h3>
             {vendor.verifiedKinds && vendor.verifiedKinds.length > 0 && (
