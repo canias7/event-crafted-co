@@ -97,7 +97,7 @@ export class ErrorBoundary extends Component<Props, State> {
               reports from production users; full dev-mode trace is
               still below. */}
           {this.state.error && (
-            <details className="text-left bg-secondary/40 rounded-sm p-3 max-h-72 overflow-auto mb-3">
+            <details className="text-left bg-secondary/40 rounded-2xl p-3 max-h-72 overflow-auto mb-3">
               <summary className="text-xs uppercase tracking-wide text-muted-foreground cursor-pointer">
                 Stack trace (dev only)
               </summary>

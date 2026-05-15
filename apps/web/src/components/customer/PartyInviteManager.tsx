@@ -130,7 +130,7 @@ export function PartyInviteManager({
 
   if (!eventId) {
     return (
-      <div className="rounded-sm border border-dashed border-border p-8 text-center">
+      <div className="rounded-2xl border border-dashed border-border p-8 text-center">
         <Sparkles className="w-7 h-7 mx-auto text-muted-foreground/40 mb-2" />
         <p className="text-sm font-medium mb-1">No active event</p>
         <p className="text-xs text-muted-foreground max-w-md mx-auto leading-relaxed">
@@ -170,7 +170,7 @@ export function PartyInviteManager({
           Loading…
         </div>
       ) : invites.length === 0 ? (
-        <div className="border border-dashed border-border rounded-sm p-6 text-center text-sm text-muted-foreground">
+        <div className="border border-dashed border-border rounded-2xl p-6 text-center text-sm text-muted-foreground">
           No party members yet
         </div>
       ) : (
@@ -303,7 +303,7 @@ function AddDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md rounded-sm">
+      <DialogContent className="sm:max-w-md rounded-2xl">
         <DialogHeader>
           <DialogTitle className="font-display text-2xl">
             Add an inner-circle VIP

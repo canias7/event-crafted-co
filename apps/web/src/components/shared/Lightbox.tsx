@@ -105,7 +105,7 @@ export function Lightbox({ images, index, onClose, onIndexChange }: Props) {
         <img
           src={current.src}
           alt={current.alt ?? current.caption ?? "Image"}
-          className="max-w-full max-h-[80vh] object-contain rounded-sm"
+          className="max-w-full max-h-[80vh] object-contain rounded-2xl"
         />
         {(current.caption || current.href) && (
           <div className="mt-4 text-center max-w-xl">
