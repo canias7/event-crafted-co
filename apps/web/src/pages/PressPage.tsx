@@ -10,7 +10,6 @@ import { useDocumentMeta } from "@/hooks/useDocumentMeta";
 import heroDinner from "@/assets/vendora-hero-dinner.jpg?as=picture";
 import heroGala from "@/assets/vendora-hero-gala.jpg?as=picture";
 import featureFlorals from "@/assets/vendora-feature-1.jpg?as=picture";
-import featureVenue from "@/assets/vendora-feature-2.jpg?as=picture";
 
 const spring = { type: "spring" as const, duration: 0.6, bounce: 0 };
 
@@ -30,11 +29,6 @@ const SCREENSHOTS = [
     src: featureFlorals,
     alt: "Vendora vendor profile with portfolio + packages",
     caption: "Vendor profile",
-  },
-  {
-    src: featureVenue,
-    alt: "Vendora event microsite — countdown + schedule + RSVP",
-    caption: "Guest microsite",
   },
   {
     src: heroGala,
