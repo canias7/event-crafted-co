@@ -158,7 +158,7 @@ export default function MoodBoardSharePage() {
               {board.items.map((pin, idx) => (
                 <div
                   key={pin.id}
-                  className="relative group mb-4 break-inside-avoid rounded-sm overflow-hidden bg-muted"
+                  className="relative group mb-4 break-inside-avoid rounded-2xl overflow-hidden bg-muted"
                 >
                   <button
                     type="button"
@@ -221,7 +221,7 @@ export default function MoodBoardSharePage() {
               {comments.map((c) => (
                 <li
                   key={c.id}
-                  className="rounded-sm bg-background border border-border p-4"
+                  className="rounded-2xl bg-background border border-border p-4"
                 >
                   <div className="flex items-baseline justify-between gap-2 mb-1.5">
                     <p className="text-sm font-medium">{c.author_name}</p>

@@ -128,7 +128,7 @@ export default function PublicProposalPage() {
             </p>
           </header>
 
-          <section className="rounded-sm border border-border bg-card p-5 mb-6">
+          <section className="card-soft p-5 mb-6">
             <h2 className="text-xs uppercase tracking-[0.2em] mb-3 text-muted-foreground">
               Line items
             </h2>
@@ -187,7 +187,7 @@ export default function PublicProposalPage() {
           </section>
 
           {data.terms && (
-            <section className="rounded-sm border border-border bg-card p-5 mb-6">
+            <section className="card-soft p-5 mb-6">
               <h2 className="text-xs uppercase tracking-[0.2em] mb-3 text-muted-foreground">
                 Terms
               </h2>
@@ -198,7 +198,7 @@ export default function PublicProposalPage() {
           )}
 
           {data.contract_body && (
-            <section className="rounded-sm border border-border bg-card p-5 mb-6">
+            <section className="card-soft p-5 mb-6">
               <h2 className="text-xs uppercase tracking-[0.2em] mb-3 text-muted-foreground">
                 Contract
               </h2>

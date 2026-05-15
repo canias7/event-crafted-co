@@ -211,7 +211,7 @@ export default function RealEventDetailPage() {
                   viewport={{ once: true }}
                   transition={{ ...spring, delay: Math.min(i * 0.04, 0.4) }}
                   onClick={() => setLightboxIndex(i)}
-                  className={`group overflow-hidden rounded-sm bg-muted block ${
+                  className={`group overflow-hidden rounded-2xl bg-muted block ${
                     i % 6 === 0 ? "col-span-2 row-span-2 aspect-[4/3]" : "aspect-square"
                   }`}
                   aria-label={`Open photo ${i + 1}`}
