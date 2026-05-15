@@ -235,7 +235,7 @@ export default function GuestsPage() {
             ].map((s) => (
               <div
                 key={s.label}
-                className="bg-card border border-border rounded-sm px-5 py-4"
+                className="card-soft px-5 py-4"
               >
                 <p className="font-label text-muted-foreground">{s.label}</p>
                 <p className="font-display text-2xl tnum mt-1">{s.value}</p>

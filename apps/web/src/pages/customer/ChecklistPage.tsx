@@ -258,7 +258,7 @@ export default function ChecklistPage() {
 
               {/* Empty state with template suggestions */}
               {items.length === 0 && (
-                <div className="bg-card border border-border rounded-sm p-8 text-center">
+                <div className="card-soft p-8 text-center">
                   <Sparkles className="w-8 h-8 mx-auto text-accent mb-3" />
                   <p className="font-editorial text-3xl mb-2">
                     Start with a template

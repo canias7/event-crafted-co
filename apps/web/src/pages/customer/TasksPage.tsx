@@ -336,7 +336,7 @@ export default function TasksPage() {
               ))}
             </div>
           ) : visibleTasks.length === 0 ? (
-            <div className="text-center py-16 px-6 bg-card border border-border rounded-sm">
+            <div className="text-center py-16 px-6 card-soft">
               <Calendar className="w-10 h-10 mx-auto text-muted-foreground/40 mb-4" />
               <p className="font-editorial text-3xl mb-2">
                 {tasks.length === 0

@@ -225,7 +225,7 @@ export default function CustomerDashboard() {
 
         <div className="p-4 md:p-8 space-y-8">
           {showOnboardingBanner && (
-            <div className="rounded-sm border border-accent/30 bg-accent/5 p-5 flex items-start gap-4">
+            <div className="rounded-3xl border border-accent/30 bg-accent/5 p-5 flex items-start gap-4">
               <div className="w-9 h-9 rounded-full bg-accent text-accent-foreground flex items-center justify-center flex-shrink-0">
                 <Sparkles className="w-4 h-4" />
               </div>
