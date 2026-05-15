@@ -155,7 +155,7 @@ function PartyIndex() {
           <p className="font-label text-accent tracking-[0.4em] mb-3">
             — INNER CIRCLE
           </p>
-          <h1 className="font-display text-3xl md:text-4xl leading-tight mb-3">
+          <h1 className="font-editorial text-4xl md:text-4xl leading-tight mb-3">
             Events you're a VIP for
           </h1>
           <p className="text-sm text-muted-foreground leading-relaxed mb-10">
@@ -173,7 +173,7 @@ function PartyIndex() {
           ) : events.length === 0 ? (
             <div className="text-center py-12 max-w-md mx-auto">
               <Sparkles className="w-10 h-10 text-muted-foreground/40 mx-auto mb-4" />
-              <p className="font-display text-xl mb-2">No invitations yet</p>
+              <p className="font-editorial text-2xl mb-2">No invitations yet</p>
               <p className="text-sm text-muted-foreground leading-relaxed">
                 When a host adds you to their inner circle for an event,
                 you'll see it here. They'll send a magic-link invitation by
@@ -202,7 +202,7 @@ function PartyIndex() {
                           <p className="font-label text-accent mb-1">
                             {e.role_label}
                           </p>
-                          <h2 className="font-display text-xl leading-tight mb-1">
+                          <h2 className="font-editorial text-2xl leading-tight mb-1">
                             {e.event_name ??
                               `${e.host_name}'s ${EVENT_LABEL[e.event_type] ?? "event"}`}
                           </h2>
@@ -360,7 +360,7 @@ function PartyEventView({ eventId }: { eventId: string }) {
           <p className="font-label text-accent tracking-[0.4em] mb-3">
             — {data.role_label.toUpperCase()}
           </p>
-          <h1 className="font-display text-3xl md:text-5xl leading-[1.05] mb-3">
+          <h1 className="font-editorial text-4xl md:text-5xl leading-[1.05] mb-3">
             {ev.name ??
               `${ev.host_name}'s ${EVENT_LABEL[ev.event_type] ?? "event"}`}
           </h1>
@@ -621,7 +621,7 @@ function Section({
     <section>
       <div className="flex items-baseline gap-2 mb-4">
         <Icon className="w-4 h-4 text-accent" />
-        <h2 className="font-display text-2xl">{title}</h2>
+        <h2 className="font-editorial text-3xl">{title}</h2>
       </div>
       {sub && (
         <p className="text-xs text-muted-foreground mb-4 -mt-2">{sub}</p>

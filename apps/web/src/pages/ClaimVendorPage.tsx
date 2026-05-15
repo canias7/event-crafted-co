@@ -102,7 +102,7 @@ export default function ClaimVendorPage() {
       <div className="min-h-screen flex items-center justify-center px-6 py-12 bg-background">
         <div className="max-w-md w-full text-center">
           <AlertCircle className="w-10 h-10 mx-auto text-muted-foreground mb-4" />
-          <h1 className="font-display text-3xl mb-3">Link not found</h1>
+          <h1 className="font-editorial text-4xl mb-3">Link not found</h1>
           <p className="text-sm text-muted-foreground leading-relaxed mb-6">
             This claim link is invalid or has been used. If you think this is
             a mistake, reach out to support@vendora.events with the URL.
@@ -141,7 +141,7 @@ export default function ClaimVendorPage() {
             — CLAIM YOUR LISTING
           </p>
         </div>
-        <h1 className="font-display text-4xl md:text-5xl leading-tight mb-3">
+        <h1 className="font-editorial text-5xl md:text-5xl leading-tight mb-3">
           {data.vendor.business_name}
         </h1>
         <p className="text-sm text-muted-foreground mb-6">

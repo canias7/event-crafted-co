@@ -189,7 +189,7 @@ export default function PlanInFivePage() {
                   — PLAN IN 5
                 </p>
               </div>
-              <h1 className="font-display text-4xl md:text-5xl leading-tight mb-3">
+              <h1 className="font-editorial text-5xl md:text-5xl leading-tight mb-3">
                 Six questions, one plan.
               </h1>
               <p className="text-base text-foreground/75 leading-relaxed mb-10">
@@ -295,7 +295,7 @@ export default function PlanInFivePage() {
               <p className="font-label text-accent tracking-[0.4em] mb-4">
                 — YOUR PLAN
               </p>
-              <h1 className="font-display text-4xl md:text-5xl leading-tight mb-3">
+              <h1 className="font-editorial text-5xl md:text-5xl leading-tight mb-3">
                 Here's where to start.
               </h1>
               <p className="text-base text-foreground/75 leading-relaxed mb-10">

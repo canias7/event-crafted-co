@@ -231,7 +231,7 @@ export default function StatusPage() {
           <p className="font-label text-accent tracking-[0.4em] mb-4">
             — STATUS
           </p>
-          <h1 className="font-display text-4xl md:text-6xl leading-[1.0] mb-6">
+          <h1 className="font-editorial text-5xl md:text-6xl leading-[1.0] mb-6">
             How the system is{" "}
             <span className="italic font-light text-accent">behaving.</span>
           </h1>
@@ -244,7 +244,7 @@ export default function StatusPage() {
               }`}
             />
             <div className="flex-1 min-w-0">
-              <p className="font-display text-xl leading-tight">
+              <p className="font-editorial text-2xl leading-tight">
                 {overall === "operational"
                   ? "All systems operational"
                   : overall === "degraded"

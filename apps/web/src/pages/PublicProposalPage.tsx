@@ -83,7 +83,7 @@ export default function PublicProposalPage() {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center">
         <AlertCircle className="w-10 h-10 text-muted-foreground mb-3" />
-        <h1 className="font-display text-2xl mb-2">Proposal not found</h1>
+        <h1 className="font-editorial text-3xl mb-2">Proposal not found</h1>
         <p className="text-sm text-muted-foreground max-w-sm">
           The vendor may have turned off sharing on this proposal.
           Reach out to them for an updated link.
@@ -109,7 +109,7 @@ export default function PublicProposalPage() {
               <FileText className="w-3 h-3" />
               Proposal · read-only
             </p>
-            <h1 className="font-display text-3xl mb-2 leading-tight">
+            <h1 className="font-editorial text-4xl mb-2 leading-tight">
               {data.title}
             </h1>
             <p className="text-sm text-muted-foreground">

@@ -103,7 +103,7 @@ export default function MoodBoardSharePage() {
           <div className="w-12 h-12 mx-auto rounded-full bg-secondary flex items-center justify-center mb-4">
             <ImageIcon className="w-5 h-5 text-muted-foreground" />
           </div>
-          <h1 className="font-display text-2xl mb-3">Board not found</h1>
+          <h1 className="font-editorial text-3xl mb-3">Board not found</h1>
           <p className="text-sm text-muted-foreground mb-6">
             This share link may have been removed or is incorrect.
           </p>
@@ -127,7 +127,7 @@ export default function MoodBoardSharePage() {
           <p className="font-label text-accent tracking-[0.3em] mb-4">
             — A SHARED MOOD BOARD
           </p>
-          <h1 className="font-display text-4xl md:text-5xl leading-[1.05] mb-6">
+          <h1 className="font-editorial text-5xl md:text-5xl leading-[1.05] mb-6">
             {board.name}
           </h1>
           {board.description && (
@@ -148,7 +148,7 @@ export default function MoodBoardSharePage() {
               <div className="w-12 h-12 mx-auto rounded-full bg-secondary flex items-center justify-center mb-4">
                 <ImageIcon className="w-5 h-5 text-muted-foreground" />
               </div>
-              <h3 className="font-display text-xl mb-2">No pins yet</h3>
+              <h3 className="font-editorial text-2xl mb-2">No pins yet</h3>
               <p className="text-sm text-muted-foreground">
                 The host hasn't added any inspiration to this board yet.
               </p>
@@ -242,7 +242,7 @@ export default function MoodBoardSharePage() {
       <section className="py-16 border-t border-border">
         <div className="container mx-auto px-6 md:px-8 text-center max-w-xl">
           <p className="font-label text-accent mb-4">Vendora</p>
-          <h2 className="font-display text-3xl mb-4 leading-tight">
+          <h2 className="font-editorial text-4xl mb-4 leading-tight">
             Plan your event with vendors who get it
           </h2>
           <p className="text-muted-foreground mb-6 leading-relaxed">

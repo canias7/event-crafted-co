@@ -160,7 +160,7 @@ export default function EventAlbumPage() {
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7 }}
-            className="font-display text-4xl md:text-6xl text-background leading-[1.05] mb-3 max-w-3xl"
+            className="font-editorial text-5xl md:text-6xl text-background leading-[1.05] mb-3 max-w-3xl"
           >
             {data.album.title}
           </motion.h1>

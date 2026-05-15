@@ -358,7 +358,7 @@ export default function EventMicrositePage() {
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.1 }}
-            className="font-display text-5xl md:text-7xl leading-[1.0] mb-4"
+            className="font-editorial text-6xl md:text-7xl leading-[1.0] mb-4"
             style={{ color: `hsl(${theme.bg})` }}
           >
             {title}
@@ -380,11 +380,11 @@ export default function EventMicrositePage() {
               className="mt-12 inline-flex items-baseline gap-3 text-sm uppercase tracking-[0.3em]"
               style={{ color: `hsl(${theme.bg} / 0.85)` }}
             >
-              <span className="font-display text-4xl tnum">
+              <span className="font-editorial text-5xl tnum">
                 {countdown.days}
               </span>
               <span>days</span>
-              <span className="font-display text-4xl tnum ml-3">
+              <span className="font-editorial text-5xl tnum ml-3">
                 {countdown.hours}
               </span>
               <span>hours</span>
@@ -756,7 +756,7 @@ function Section({
           >
             — {eyebrow}
           </p>
-          <h2 className="font-display text-3xl md:text-4xl">{title}</h2>
+          <h2 className="font-editorial text-4xl md:text-4xl">{title}</h2>
         </div>
         {children}
       </div>

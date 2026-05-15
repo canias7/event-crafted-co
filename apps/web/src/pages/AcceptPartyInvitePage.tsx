@@ -93,7 +93,7 @@ export default function AcceptPartyInvitePage() {
       <div className="min-h-screen flex items-center justify-center px-6">
         <div className="max-w-md text-center">
           <AlertCircle className="w-10 h-10 text-destructive mx-auto mb-3" />
-          <h1 className="font-display text-2xl mb-2">
+          <h1 className="font-editorial text-3xl mb-2">
             Invitation not found
           </h1>
           <p className="text-sm text-muted-foreground mb-6">
@@ -118,7 +118,7 @@ export default function AcceptPartyInvitePage() {
         <p className="text-xs uppercase tracking-[0.4em] text-accent mb-3">
           You're invited
         </p>
-        <h1 className="font-display text-3xl md:text-4xl leading-tight mb-3">
+        <h1 className="font-editorial text-4xl md:text-4xl leading-tight mb-3">
           {data.event.host_name} added you to their inner circle
         </h1>
         <p className="text-sm text-muted-foreground mb-1">

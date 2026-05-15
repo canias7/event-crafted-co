@@ -73,7 +73,7 @@ export default function ProposalPrintPage() {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center">
         <AlertCircle className="w-10 h-10 text-muted-foreground mb-3" />
-        <h1 className="font-display text-2xl mb-2">Couldn't load proposal</h1>
+        <h1 className="font-editorial text-3xl mb-2">Couldn't load proposal</h1>
         <p className="text-sm text-muted-foreground max-w-sm">{error}</p>
       </div>
     );

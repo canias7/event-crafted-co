@@ -113,7 +113,7 @@ export default function GiftSharePage() {
           <div className="w-12 h-12 mx-auto rounded-full bg-secondary flex items-center justify-center mb-4">
             <Gift className="w-5 h-5 text-muted-foreground" />
           </div>
-          <h1 className="font-display text-2xl mb-3">Gift not found</h1>
+          <h1 className="font-editorial text-3xl mb-3">Gift not found</h1>
           <p className="text-sm text-muted-foreground mb-6">
             This share link may have been removed or is incorrect.
           </p>
@@ -141,7 +141,7 @@ export default function GiftSharePage() {
           <p className="font-label text-accent tracking-[0.4em] mb-4">
             — A GROUP GIFT
           </p>
-          <h1 className="font-display text-4xl md:text-5xl leading-[1.05] mb-4">
+          <h1 className="font-editorial text-5xl md:text-5xl leading-[1.05] mb-4">
             {wish.title}
           </h1>
           {wish.description && (
@@ -160,7 +160,7 @@ export default function GiftSharePage() {
 
           <div className="rounded-sm bg-card border border-border p-5 max-w-md">
             <div className="flex items-baseline gap-3 mb-2">
-              <p className="font-display text-3xl tnum">
+              <p className="font-editorial text-4xl tnum">
                 ${Math.round(wish.pledged_cents / 100).toLocaleString()}
               </p>
               {wish.target_cents && (
