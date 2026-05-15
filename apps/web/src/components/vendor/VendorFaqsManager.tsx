@@ -309,7 +309,7 @@ export function VendorFaqsPublic({ vendorId }: { vendorId: string }) {
   return (
     <div>
       <p className="font-label text-accent mb-4">FAQ</p>
-      <h2 className="font-display text-3xl mb-6">Common questions</h2>
+      <h2 className="font-editorial text-4xl mb-6">Common questions</h2>
       <div>
         {faqs.map((f) => (
           <details key={f.q} className="group border-b border-border">

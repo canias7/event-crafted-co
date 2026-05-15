@@ -65,7 +65,7 @@ export class ErrorBoundary extends Component<Props, State> {
           <p className="text-xs uppercase tracking-[0.4em] text-destructive mb-3">
             — Something went wrong
           </p>
-          <h1 className="font-display text-3xl md:text-4xl leading-tight mb-3">
+          <h1 className="font-editorial text-4xl md:text-4xl leading-tight mb-3">
             That page hit a snag.
           </h1>
           <p className="text-sm text-muted-foreground mb-8 leading-relaxed">
