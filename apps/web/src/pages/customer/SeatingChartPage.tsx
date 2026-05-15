@@ -305,7 +305,7 @@ export default function SeatingChartPage() {
             >
               <div className="grid lg:grid-cols-[260px_1fr] gap-6">
                 {/* Unassigned panel */}
-                <aside className="bg-card border border-border rounded-sm p-4 max-h-[calc(100vh-180px)] overflow-y-auto sticky top-24">
+                <aside className="card-soft p-4 max-h-[calc(100vh-180px)] overflow-y-auto sticky top-24">
                   <div className="flex items-center justify-between mb-3">
                     <p className="font-label text-muted-foreground">
                       Unassigned

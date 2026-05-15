@@ -292,7 +292,7 @@ export default function EventDetailsPage() {
           {loading ? (
             <Skeleton className="h-96 w-full rounded-sm" />
           ) : showOnboardingPrompt ? (
-            <div className="rounded-sm border border-accent/30 bg-accent/5 p-8 text-center">
+            <div className="rounded-3xl border border-accent/30 bg-accent/5 p-8 text-center">
               <Sparkles className="w-8 h-8 mx-auto text-accent mb-3" />
               <p className="font-editorial text-3xl mb-2">
                 No events yet
@@ -407,7 +407,7 @@ export default function EventDetailsPage() {
                 <>
                   {/* Summary tiles */}
                   <div className="grid grid-cols-3 gap-3">
-                    <div className="bg-card border border-border rounded-sm p-4">
+                    <div className="card-soft p-4">
                       <div className="flex items-center gap-2 text-muted-foreground mb-2">
                         <Sparkles className="w-3.5 h-3.5" />
                         <p className="font-label">Type</p>
@@ -416,7 +416,7 @@ export default function EventDetailsPage() {
                         {eventTypeLabel[eventType]}
                       </p>
                     </div>
-                    <div className="bg-card border border-border rounded-sm p-4">
+                    <div className="card-soft p-4">
                       <div className="flex items-center gap-2 text-muted-foreground mb-2">
                         <Calendar className="w-3.5 h-3.5" />
                         <p className="font-label">Date</p>
@@ -425,7 +425,7 @@ export default function EventDetailsPage() {
                         {formatDate(eventDate, "short")}
                       </p>
                     </div>
-                    <div className="bg-card border border-border rounded-sm p-4">
+                    <div className="card-soft p-4">
                       <div className="flex items-center gap-2 text-muted-foreground mb-2">
                         <Clock className="w-3.5 h-3.5" />
                         <p className="font-label">Days out</p>

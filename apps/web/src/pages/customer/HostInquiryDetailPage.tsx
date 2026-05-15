@@ -325,7 +325,7 @@ export default function HostInquiryDetailPage() {
             inquiry && (
               <>
                 {/* Inquiry summary */}
-                <div className="bg-card border border-border rounded-sm p-6">
+                <div className="card-soft p-6">
                   <div className="flex items-start justify-between gap-4 flex-wrap mb-4">
                     <div>
                       <p className="font-label text-muted-foreground">To</p>
@@ -477,7 +477,7 @@ export default function HostInquiryDetailPage() {
                 )}
 
                 {/* Thread */}
-                <div className="bg-card border border-border rounded-sm p-6 space-y-4">
+                <div className="card-soft p-6 space-y-4">
                   <div className="flex items-center justify-between gap-2 flex-wrap">
                     <p className="font-label text-muted-foreground">
                       Conversation
@@ -545,7 +545,7 @@ export default function HostInquiryDetailPage() {
                 </div>
 
                 {/* Composer */}
-                <div className="bg-card border border-border rounded-sm p-6">
+                <div className="card-soft p-6">
                   <p className="font-label text-muted-foreground mb-3">Reply</p>
                   <Textarea
                     value={composer}
