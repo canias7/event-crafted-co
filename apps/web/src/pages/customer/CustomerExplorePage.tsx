@@ -10,11 +10,13 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { Film, Grid3x3, MessageCircle, Store } from "lucide-react";
+import { Film, Grid3x3, Heart, MessageCircle, Store } from "lucide-react";
 import { DashboardSidebar } from "@/components/shared/DashboardSidebar";
 import { MobileNav } from "@/components/shared/MobileNav";
 import { Skeleton } from "@/components/ui/skeleton";
 import { customerNavItems } from "@/data/navItems";
+import { CATEGORY_GROUPS, groupOfSub } from "@/data/categoryTaxonomy";
+import { useSavedVendors } from "@/hooks/useSavedVendors";
 import { supabase } from "@/integrations/supabase/client";
 
 type Tab = "listing" | "grid" | "reels" | "buzz";
@@ -69,6 +71,8 @@ export default function CustomerExplorePage() {
   const [reels, setReels] = useState<ReelRow[]>([]);
   const [buzz, setBuzz] = useState<BuzzRow[]>([]);
   const [listings, setListings] = useState<ListingRow[]>([]);
+  const [category, setCategory] = useState<string | null>(null);
+  const { savedIds, toggle: toggleSave } = useSavedVendors();
 
   const loadFeeds = useCallback(async () => {
     setLoading(true);
@@ -187,7 +191,13 @@ export default function CustomerExplorePage() {
           {loading ? (
             <LoadingGrid />
           ) : tab === "listing" ? (
-            <ListingsFeed listings={listings} />
+            <ListingsFeed
+              listings={listings}
+              category={category}
+              onCategoryChange={setCategory}
+              savedIds={savedIds}
+              onToggleSave={(id) => toggleSave(id, { isReal: true })}
+            />
           ) : tab === "grid" ? (
             <PostsFeed posts={posts} />
           ) : tab === "reels" ? (
@@ -212,47 +222,195 @@ function LoadingGrid() {
   );
 }
 
-function ListingsFeed({ listings }: { listings: ListingRow[] }) {
+function ListingsFeed({
+  listings,
+  category,
+  onCategoryChange,
+  savedIds,
+  onToggleSave,
+}: {
+  listings: ListingRow[];
+  category: string | null;
+  onCategoryChange: (c: string | null) => void;
+  savedIds: Set<string>;
+  onToggleSave: (vendorId: string) => void;
+}) {
   if (listings.length === 0) {
     return <EmptyMsg msg="No listings yet — check back soon." />;
   }
+
+  // Bucket listings by top-level category group, then by sub-category.
+  // Mirrors host-mobile/(host)/explore.tsx ListingFeed.
+  const byGroup = new Map<string, Map<string, ListingRow[]>>();
+  for (const l of listings) {
+    const sub =
+      l.category && l.category.trim().length > 0 ? l.category : "Other";
+    const group = groupOfSub(sub) ?? "Other";
+    let subs = byGroup.get(group);
+    if (!subs) {
+      subs = new Map<string, ListingRow[]>();
+      byGroup.set(group, subs);
+    }
+    const arr = subs.get(sub);
+    if (arr) arr.push(l);
+    else subs.set(sub, [l]);
+  }
+  const taxonomyOrder = CATEGORY_GROUPS.map((g) => g.name);
+  const knownGroups = taxonomyOrder.filter((n) => byGroup.has(n));
+  const otherGroups = Array.from(byGroup.keys())
+    .filter((n) => !taxonomyOrder.includes(n))
+    .sort();
+  const orderedGroups = [...knownGroups, ...otherGroups];
+  const visibleGroups =
+    category == null
+      ? orderedGroups
+      : orderedGroups.filter((g) => g === category);
+
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
-      {listings.map((l) => (
-        <Link
-          key={l.id}
-          to={l.slug ? `/vendors/${l.slug}` : `/vendors/${l.id}`}
-          className="group overflow-hidden rounded-xl border border-border bg-card transition hover:shadow-md"
-        >
-          <div className="aspect-[4/3] bg-secondary/40 overflow-hidden">
-            {l.hero_url ? (
-              <img
-                src={l.hero_url}
-                alt={l.business_name ?? "Vendor"}
-                className="w-full h-full object-cover transition group-hover:scale-[1.02]"
-              />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center text-3xl font-serif italic text-muted-foreground">
-                {(l.business_name ?? "V")[0]?.toUpperCase()}
-              </div>
-            )}
+    <div className="space-y-10">
+      {/* Top chip row narrows the feed to a single group. Horizontally
+          scrollable on mobile so all groups stay reachable in one row. */}
+      <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide -mx-1 px-1">
+        <CategoryChip
+          label="All"
+          active={category == null}
+          onPress={() => onCategoryChange(null)}
+        />
+        {orderedGroups.map((g) => (
+          <CategoryChip
+            key={g}
+            label={g}
+            active={category === g}
+            onPress={() => onCategoryChange(g)}
+          />
+        ))}
+      </div>
+
+      {visibleGroups.map((groupName) => {
+        const subs = byGroup.get(groupName);
+        if (!subs) return null;
+        const knownSubsForGroup =
+          CATEGORY_GROUPS.find((g) => g.name === groupName)?.subs ?? [];
+        const orderedSubs = [
+          ...knownSubsForGroup.filter((s) => subs.has(s)),
+          ...Array.from(subs.keys())
+            .filter((s) => !knownSubsForGroup.includes(s))
+            .sort(),
+        ];
+        return (
+          <div key={groupName}>
+            <h2 className="font-display text-2xl mb-4">{groupName}</h2>
+            <div className="space-y-6">
+              {orderedSubs.map((subName) => {
+                const rows = subs.get(subName) ?? [];
+                if (rows.length === 0) return null;
+                return (
+                  <div key={subName}>
+                    <h3 className="text-sm font-semibold text-muted-foreground mb-2">
+                      {subName}
+                    </h3>
+                    <div className="flex gap-3 overflow-x-auto pb-2 -mx-1 px-1 scrollbar-hide">
+                      {rows.map((l) => (
+                        <ListingCard
+                          key={l.id}
+                          listing={l}
+                          saved={savedIds.has(l.id)}
+                          onToggleSave={() => onToggleSave(l.id)}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
-          <div className="p-3">
-            <p className="text-xs uppercase tracking-widest text-muted-foreground">
-              {l.category ?? "Vendor"}
-            </p>
-            <h3 className="mt-1 font-medium text-foreground truncate">
-              {l.business_name ?? "Vendor"}
-            </h3>
-            <p className="text-xs text-muted-foreground truncate">
-              {l.location ?? ""}
-              {l.base_price_cents
-                ? ` · from $${(l.base_price_cents / 100).toLocaleString()}`
-                : ""}
-            </p>
-          </div>
-        </Link>
-      ))}
+        );
+      })}
+    </div>
+  );
+}
+
+function CategoryChip({
+  label,
+  active,
+  onPress,
+}: {
+  label: string;
+  active: boolean;
+  onPress: () => void;
+}) {
+  return (
+    <button
+      onClick={onPress}
+      className={`whitespace-nowrap rounded-full px-3.5 py-1.5 text-xs font-semibold transition ${
+        active
+          ? "bg-foreground text-background"
+          : "bg-secondary/60 text-muted-foreground hover:text-foreground"
+      }`}
+    >
+      {label}
+    </button>
+  );
+}
+
+function ListingCard({
+  listing: l,
+  saved,
+  onToggleSave,
+}: {
+  listing: ListingRow;
+  saved: boolean;
+  onToggleSave: () => void;
+}) {
+  return (
+    <div className="relative w-64 shrink-0">
+      <Link
+        to={l.slug ? `/vendors/${l.slug}` : `/vendors/${l.id}`}
+        className="group block overflow-hidden rounded-xl border border-border bg-card transition hover:shadow-md"
+      >
+        <div className="aspect-[4/3] bg-secondary/40 overflow-hidden">
+          {l.hero_url ? (
+            <img
+              src={l.hero_url}
+              alt={l.business_name ?? "Vendor"}
+              className="w-full h-full object-cover transition group-hover:scale-[1.02]"
+              loading="lazy"
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center text-3xl font-serif italic text-muted-foreground">
+              {(l.business_name ?? "V")[0]?.toUpperCase()}
+            </div>
+          )}
+        </div>
+        <div className="p-3">
+          <p className="text-xs uppercase tracking-widest text-muted-foreground truncate">
+            {l.category ?? "Vendor"}
+          </p>
+          <h3 className="mt-1 font-medium text-foreground truncate">
+            {l.business_name ?? "Vendor"}
+          </h3>
+          <p className="text-xs text-muted-foreground truncate">
+            {l.location ?? ""}
+            {l.base_price_cents
+              ? ` · from $${(l.base_price_cents / 100).toLocaleString()}`
+              : ""}
+          </p>
+        </div>
+      </Link>
+      <button
+        type="button"
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          onToggleSave();
+        }}
+        aria-label={saved ? "Remove from favorites" : "Save vendor"}
+        className="absolute top-2 right-2 rounded-full bg-background/90 backdrop-blur p-1.5 shadow-sm hover:bg-background"
+      >
+        <Heart
+          className={`h-4 w-4 ${saved ? "fill-rose-500 text-rose-500" : "text-foreground"}`}
+        />
+      </button>
     </div>
   );
 }
