@@ -9,7 +9,7 @@
 // tab has its own composer for publishing new content.
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import {
   CheckCircle2,
   Edit3,
@@ -81,6 +81,8 @@ export default function VendorMyProfilePage() {
   const [composer, setComposer] = useState<"post" | "reel" | "buzz" | null>(
     null,
   );
+  const [addingListing, setAddingListing] = useState(false);
+  const navigate = useNavigate();
 
   const load = useCallback(async () => {
     if (!user?.id) return;
@@ -142,6 +144,28 @@ export default function VendorMyProfilePage() {
     if (!primary?.created_at) return "—";
     return String(new Date(primary.created_at).getFullYear());
   }, [primary?.created_at]);
+
+  // Insert a fresh draft and jump to its editor. Mirrors mobile
+  // createNewListing in (vendor)/profile.tsx — lets a vendor with
+  // an existing listing spin up additional marketplace listings
+  // without leaving the page.
+  async function addListing() {
+    if (!user?.id || addingListing) return;
+    setAddingListing(true);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data, error } = await (supabase as any)
+      .from("vendor_profiles")
+      .insert({ user_id: user.id, application_status: "draft" })
+      .select("id")
+      .single();
+    setAddingListing(false);
+    if (error || !data?.id) {
+      const msg = error?.message ?? "Unknown error";
+      toast.error(`Couldn't create listing: ${msg}`);
+      return;
+    }
+    navigate(`/vendor/listing?id=${data.id}`);
+  }
 
   // Share the vendor's public listing URL. Falls back to clipboard
   // when the browser doesn't expose navigator.share (desktop Chrome).
@@ -277,7 +301,11 @@ export default function VendorMyProfilePage() {
             ) : tab === "buzz" ? (
               <BuzzList buzz={buzz} />
             ) : (
-              <ListingsList listings={listings} />
+              <ListingsList
+                listings={listings}
+                onAddListing={() => addListing()}
+                adding={addingListing}
+              />
             )}
           </div>
         </div>
@@ -502,18 +530,39 @@ function BuzzList({ buzz }: { buzz: BuzzRow[] }) {
   );
 }
 
-function ListingsList({ listings }: { listings: VendorRow[] }) {
+function ListingsList({
+  listings,
+  onAddListing,
+  adding,
+}: {
+  listings: VendorRow[];
+  onAddListing: () => void;
+  adding: boolean;
+}) {
   if (listings.length === 0) {
     return (
       <div className="rounded-2xl border border-dashed border-border bg-card/40 p-10 text-center">
         <p className="text-sm text-muted-foreground mb-3">No listing yet.</p>
-        <Link to="/vendor/listing">
-          <Button>Create your listing</Button>
-        </Link>
+        <Button onClick={onAddListing} disabled={adding}>
+          {adding ? "Creating…" : "Create your listing"}
+        </Button>
       </div>
     );
   }
   return (
+    <div>
+    <div className="mb-3 flex justify-end">
+      <Button
+        onClick={onAddListing}
+        disabled={adding}
+        variant="outline"
+        size="sm"
+        className="rounded-full"
+      >
+        <Plus className="h-3.5 w-3.5 mr-1" />
+        {adding ? "Creating…" : "New listing"}
+      </Button>
+    </div>
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
       {listings.map((l) => (
         <div
@@ -563,6 +612,7 @@ function ListingsList({ listings }: { listings: VendorRow[] }) {
           </div>
         </div>
       ))}
+    </div>
     </div>
   );
 }
