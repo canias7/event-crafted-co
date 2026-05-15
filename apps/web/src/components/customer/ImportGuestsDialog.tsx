@@ -91,7 +91,7 @@ export function ImportGuestsDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-lg rounded-2xl">
         <DialogHeader>
-          <DialogTitle className="font-display text-2xl">
+          <DialogTitle className="font-editorial text-3xl">
             Import guests
           </DialogTitle>
         </DialogHeader>
