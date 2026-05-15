@@ -11,6 +11,7 @@ import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { DashboardSidebar } from "@/components/shared/DashboardSidebar";
 import { MobileNav } from "@/components/shared/MobileNav";
+import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { StatCard } from "@/components/shared/StatCard";
 import { customerNavItems as navItems } from "@/data/navItems";
 import { formatDate, formatCents } from "@/lib/format";
@@ -206,8 +207,8 @@ export default function CustomerDashboard() {
               )}
             </p>
           </div>
-          {eventDateStr && (
-            <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
+            {eventDateStr && (
               <Badge
                 variant="outline"
                 className="hidden sm:flex items-center gap-1.5 py-1.5 px-3"
@@ -217,8 +218,9 @@ export default function CustomerDashboard() {
                   {formatDate(eventDateStr, "short")}
                 </span>
               </Badge>
-            </div>
-          )}
+            )}
+            <NotificationBell variant="light" />
+          </div>
         </div>
 
         <div className="p-4 md:p-8 space-y-8">
