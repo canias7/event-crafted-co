@@ -190,6 +190,7 @@
     },
     "vendor": {
       "dashboard": "Panel",
+      "home": "Inicio",
       "inbox": "Bandeja",
       "messages": "Mensajes",
       "analytics": "Analíticas",
