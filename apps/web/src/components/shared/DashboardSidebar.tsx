@@ -140,7 +140,7 @@ export function DashboardSidebar({
       ) : (
         <div className="p-6 border-b border-border flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <Link to={backPath} className="font-display text-lg">
+            <Link to={backPath} className="font-editorial text-2xl">
               Vendora
             </Link>
             <p className="font-label text-muted-foreground mt-1 truncate">
