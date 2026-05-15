@@ -39,6 +39,7 @@ export const customerNavItems: NavItem[] = [
   // Inquiries hub — sub-tabs: Single, Multi-vendor blast
   { labelKey: "sidebar.customer.inquiries", path: "/customer/inquiries", icon: MessageSquare },
   { labelKey: "sidebar.customer.messages", path: "/customer/messages", icon: Mail },
+  { labelKey: "sidebar.customer.events", path: "/customer/events", icon: CalendarDays },
   { labelKey: "sidebar.customer.appointments", path: "/customer/appointments", icon: CalendarDays },
   // Event hub — sub-tabs: Details, Day-of Timeline, Microsite
   { labelKey: "sidebar.customer.event", path: "/customer/event", icon: FileText },
