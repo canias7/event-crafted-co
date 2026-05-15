@@ -127,7 +127,7 @@ export function VendorAvailabilityPublic({ vendorId }: { vendorId: string }) {
   return (
     <div>
       <p className="font-label text-accent mb-4">Availability</p>
-      <h2 className="font-display text-3xl mb-3">When they're free</h2>
+      <h2 className="font-editorial text-4xl mb-3">When they're free</h2>
       <p className="text-sm text-muted-foreground mb-6 max-w-xl leading-relaxed">
         Crossed-out dates are already booked or blocked. Open dates are
         still available — send an inquiry to confirm and lock in.

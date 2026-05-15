@@ -23,7 +23,7 @@ export function VendorFaqList({
   return (
     <div>
       <p className="font-label text-accent mb-4">{eyebrow}</p>
-      <h2 className="font-display text-3xl mb-6">{title}</h2>
+      <h2 className="font-editorial text-4xl mb-6">{title}</h2>
       <div>
         {items.map((f) => (
           <details key={f.q} className="group border-b border-border">

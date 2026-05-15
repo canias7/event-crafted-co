@@ -54,7 +54,7 @@ export function VendorOtherListings({ vendorId }: { vendorId: string }) {
   return (
     <div>
       <p className="font-label text-accent mb-4">More from this vendor</p>
-      <h2 className="font-display text-3xl mb-6">Their other listings</h2>
+      <h2 className="font-editorial text-4xl mb-6">Their other listings</h2>
       <div className="flex gap-3 overflow-x-auto pb-2 -mx-1 px-1 scrollbar-hide">
         {items.map((l) => (
           <Link
