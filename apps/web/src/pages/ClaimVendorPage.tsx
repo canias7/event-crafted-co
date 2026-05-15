@@ -149,7 +149,7 @@ export default function ClaimVendorPage() {
           {data.vendor.location ? ` · ${data.vendor.location}` : null}
         </p>
 
-        <div className="rounded-sm border border-border bg-card p-5 mb-6">
+        <div className="card-soft p-5 mb-6">
           <p className="text-sm leading-relaxed mb-3">
             We pre-listed{" "}
             <span className="font-medium">{data.vendor.business_name}</span>{" "}
@@ -166,7 +166,7 @@ export default function ClaimVendorPage() {
         </div>
 
         {alreadyClaimed ? (
-          <div className="rounded-sm border border-accent/30 bg-accent/5 p-4 mb-4 flex items-start gap-2.5">
+          <div className="rounded-2xl border border-accent/30 bg-accent/5 p-4 mb-4 flex items-start gap-2.5">
             <CheckCircle2 className="w-4 h-4 text-accent mt-0.5 flex-shrink-0" />
             <p className="text-sm leading-relaxed">
               This listing has already been claimed.{" "}

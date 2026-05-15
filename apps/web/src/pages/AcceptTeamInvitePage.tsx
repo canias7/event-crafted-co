@@ -162,7 +162,7 @@ export default function AcceptTeamInvitePage() {
           </p>
 
           {isExpired ? (
-            <div className="rounded-sm border border-destructive/30 bg-destructive/5 p-4 mb-6 text-sm text-destructive">
+            <div className="rounded-2xl border border-destructive/30 bg-destructive/5 p-4 mb-6 text-sm text-destructive">
               This invite has expired. Ask your teammate to send a new one.
             </div>
           ) : !session ? (
@@ -192,7 +192,7 @@ export default function AcceptTeamInvitePage() {
           ) : (
             <div className="space-y-3">
               {errorMsg && (
-                <div className="rounded-sm border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
+                <div className="rounded-2xl border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
                   {errorMsg}
                 </div>
               )}
