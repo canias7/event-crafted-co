@@ -174,6 +174,9 @@ export const EventDetailsPage = lazyWithReload(importEventDetails);
 const importHostEvents = () => import("@/pages/customer/HostEventsPage");
 export const HostEventsPage = lazyWithReload(importHostEvents);
 
+const importCustomerExplore = () => import("@/pages/customer/CustomerExplorePage");
+export const CustomerExplorePage = lazyWithReload(importCustomerExplore);
+
 const importGuests = () => import("@/pages/customer/GuestsPage");
 export const GuestsPage = lazyWithReload(importGuests);
 

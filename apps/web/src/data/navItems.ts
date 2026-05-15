@@ -1,6 +1,7 @@
 import {
   LayoutDashboard,
   Store,
+  Compass,
   CalendarDays,
   FileText,
   Mail,
@@ -34,6 +35,7 @@ export interface NavItem {
 
 export const customerNavItems: NavItem[] = [
   { labelKey: "sidebar.customer.dashboard", path: "/customer/dashboard", icon: LayoutDashboard },
+  { labelKey: "sidebar.customer.explore", path: "/customer/explore", icon: Compass },
   // Vendors hub — sub-tabs: Browse, Favorites, Saved searches
   { labelKey: "sidebar.customer.vendors", path: "/customer/vendors", icon: Store },
   // Inquiries hub — sub-tabs: Single, Multi-vendor blast

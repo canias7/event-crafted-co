@@ -60,6 +60,7 @@ import {
   FavoritesPage,
   EventDetailsPage,
   HostEventsPage,
+  CustomerExplorePage,
   GuestsPage,
   RsvpPage,
   ChecklistPage,
@@ -184,6 +185,7 @@ const App = () => (
               <Route path="/customer/inquiries/:inquiryId" element={<RequireRole role="host"><HostInquiryDetailPage /></RequireRole>} />
               <Route path="/customer/event" element={<RequireRole role="host"><EventDetailsPage /></RequireRole>} />
               <Route path="/customer/events" element={<RequireRole role="host"><HostEventsPage /></RequireRole>} />
+              <Route path="/customer/explore" element={<RequireRole role="host"><CustomerExplorePage /></RequireRole>} />
               <Route path="/customer/guests" element={<RequireRole role="host"><GuestsPage /></RequireRole>} />
               <Route path="/customer/seating" element={<RequireRole role="host"><SeatingChartPage /></RequireRole>} />
               <Route path="/customer/timeline" element={<RequireRole role="host"><EventTimelinePage /></RequireRole>} />
