@@ -11,19 +11,14 @@
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://vendora.events/inspiration</loc>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://vendora.events/how-it-works</loc>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
     <loc>https://vendora.events/vendor-apply</loc>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://vendora.events/real-events</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
   </url>
   <url>
     <loc>https://vendora.events/privacy</loc>
@@ -47,12 +42,4 @@
   <url><loc>https://vendora.events/vendors/category/bakers</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
   <url><loc>https://vendora.events/vendors/category/event-planners</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
   <url><loc>https://vendora.events/vendors/category/decorators</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
-
-  <!-- Inspiration entries -->
-  <url><loc>https://vendora.events/inspiration/hudson-valley-garden-wedding</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
-  <url><loc>https://vendora.events/inspiration/brooklyn-rooftop-40th</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
-  <url><loc>https://vendora.events/inspiration/manhattan-anniversary-dinner</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
-  <url><loc>https://vendora.events/inspiration/chelsea-christmas-table</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
-  <url><loc>https://vendora.events/inspiration/tribeca-baby-shower</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
-  <url><loc>https://vendora.events/inspiration/soho-engagement</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
 </urlset>

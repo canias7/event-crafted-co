@@ -69,18 +69,15 @@ import {
   VendorTeamPage,
   VendorAppointmentsPage,
   VendorOnboardingPage,
-  VendorMessagesPage,
   VendorPartnersPage,
   VendorAiAgentPage,
   VendorStudioPage,
   InquiryDetailPage,
   AcceptTeamInvitePage,
-  EditorialArticlePage,
   ClaimVendorPage,
   PublicReviewPage,
   ProposalPrintPage,
   PublicProposalPage,
-  VendorBlogPage,
 } from "@/router/lazyRoutes";
 
 const App = () => (
@@ -117,7 +114,9 @@ const App = () => (
               <Route path="/vendors/:id" element={<VendorDetailPage />} />
               <Route path="/v/:slug" element={<VendorDetailPage />} />
               {/* Editorial article reader (long-form CMS guides). */}
-              <Route path="/guides/:slug" element={<EditorialArticlePage />} />
+              {/* /guides/:slug removed — editorial_articles table dropped
+                  with VendorBlogPage. Outstanding indexed URLs bounce to /. */}
+              <Route path="/guides/:slug" element={<Navigate to="/" replace />} />
               {/* Vendor claim-listing flow — public, auth-gated to claim. */}
               <Route path="/claim/:token" element={<ClaimVendorPage />} />
               <Route path="/real-events" element={<RealEventsPage />} />
@@ -223,8 +222,11 @@ const App = () => (
               <Route path="/vendor/appointments" element={<RequireRole role="vendor"><VendorAppointmentsPage /></RequireRole>} />
               <Route path="/vendor/availability" element={<RequireRole role="vendor"><VendorAppointmentsPage /></RequireRole>} />
               <Route path="/vendor/payments" element={<RequireRole role="vendor"><ComingSoonPage side="vendor" description="Connect a Stripe account, see payouts, and track the 3% commission on confirmed bookings." /></RequireRole>} />
-              <Route path="/vendor/blog" element={<RequireRole role="vendor"><VendorBlogPage /></RequireRole>} />
-              <Route path="/vendor/messages" element={<RequireRole role="vendor"><VendorMessagesPage /></RequireRole>} />
+              {/* /vendor/blog removed — editorial_articles table dropped. */}
+              <Route path="/vendor/blog" element={<Navigate to="/vendor/dashboard" replace />} />
+              {/* /vendor/messages removed — mobile vendor inbox has just
+                  Inquiries + Partners (no separate "Hosts" DM tab). */}
+              <Route path="/vendor/messages" element={<Navigate to="/vendor/inbox" replace />} />
               <Route path="/vendor/partners" element={<RequireRole role="vendor"><VendorPartnersPage /></RequireRole>} />
               <Route path="/vendor/ai-agent" element={<RequireRole role="vendor"><VendorAiAgentPage /></RequireRole>} />
               <Route path="/vendor/studio" element={<RequireRole role="vendor"><VendorStudioPage /></RequireRole>} />
