@@ -517,9 +517,9 @@ function ExistingApplicationCard({
       ? `We weren't able to approve ${businessName}. Reach out to support if you'd like another look — we keep the door open.`
       : `${businessName} is in our review queue. We hand-review every application within 2–3 business days, then email you the decision.`;
   const cta = (
-    <Link to="/customer/dashboard">
+    <Link to="/customer/explore">
       <Button variant="outline" className="rounded-full">
-        Back to my dashboard
+        Back to Explore
       </Button>
     </Link>
   );

@@ -599,7 +599,7 @@ function EmptyState() {
         Send an inquiry to a vendor and your event will show up here.
       </p>
       <Link
-        to="/customer/vendors"
+        to="/customer/explore"
         className="mt-6 inline-block rounded-full bg-foreground px-5 py-2 text-sm font-medium text-background hover:opacity-90"
       >
         Browse vendors

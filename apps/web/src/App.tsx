@@ -52,7 +52,6 @@ import {
   VendorApplyThanksPage,
   NotFound,
   ComingSoonPage,
-  OnboardingPage,
   InquiriesPage,
   HostInquiryDetailPage,
   HostEventsPage,
@@ -62,7 +61,6 @@ import {
   SupportPage,
   RealEventsPage,
   RealEventDetailPage,
-  AcceptPlanningInvitePage,
   VendorDashboard,
   VendorHomePage,
   VendorMyProfilePage,
@@ -129,7 +127,9 @@ const App = () => (
               <Route path="/proposals/:id/print" element={<ProposalPrintPage />} />
               <Route path="/p/:token" element={<PublicProposalPage />} />
               <Route path="/accept-team-invite/:token" element={<AcceptTeamInvitePage />} />
-              <Route path="/accept-planning-invite/:token" element={<AcceptPlanningInvitePage />} />
+              {/* Planning-team feature removed when host portal mirrored
+                  to mobile; outstanding invite links bounce to /. */}
+              <Route path="/accept-planning-invite/:token" element={<Navigate to="/" replace />} />
               <Route path="/privacy" element={<PrivacyPage />} />
               <Route path="/terms" element={<TermsPage />} />
               <Route path="/changelog" element={<ChangelogPage />} />
@@ -154,7 +154,9 @@ const App = () => (
                   redirects to /customer/explore so old emails don't 404.
                   Settings is the existing /settings route (mobile reaches
                   it via the Profile tab's "Account settings" card). */}
-              <Route path="/customer/onboarding" element={<RequireRole role="host"><OnboardingPage /></RequireRole>} />
+              {/* Onboarding flow removed: signup auto-stamps onboarded_at
+                  via the handle_new_user trigger, mirroring mobile. */}
+              <Route path="/customer/onboarding" element={<Navigate to="/customer/explore" replace />} />
               <Route path="/customer/explore" element={<RequireRole role="host"><CustomerExplorePage /></RequireRole>} />
               <Route path="/customer/inquiries" element={<RequireRole role="host"><InquiriesPage /></RequireRole>} />
               <Route path="/customer/inquiries/:inquiryId" element={<RequireRole role="host"><HostInquiryDetailPage /></RequireRole>} />
