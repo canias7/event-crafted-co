@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { Inbox } from "lucide-react";
+import { Inbox, Search } from "lucide-react";
 import { toast } from "sonner";
 import { useRealtime } from "@/lib/realtime";
 import { supabase } from "@/integrations/supabase/client";
@@ -9,6 +9,7 @@ import { DashboardSidebar } from "@/components/shared/DashboardSidebar";
 import { MobileNav } from "@/components/shared/MobileNav";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
   Dialog,
@@ -46,6 +47,23 @@ function fmtMoney(cents: number | null) {
   return `$${(cents / 100).toLocaleString()}`;
 }
 
+function relativeTime(iso: string | null): string {
+  if (!iso) return "";
+  const ms = Date.now() - new Date(iso).getTime();
+  const m = Math.floor(ms / 60_000);
+  if (m < 1) return "now";
+  if (m < 60) return `${m}m`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h}h`;
+  const d = Math.floor(h / 24);
+  if (d === 1) return "Yesterday";
+  if (d < 7) return `${d}d`;
+  return new Date(iso).toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+  });
+}
+
 const statusVariant: Record<string, string> = {
   new: "bg-accent text-accent-foreground",
   drafted: "bg-secondary text-secondary-foreground",
@@ -69,6 +87,7 @@ export default function VendorInboxPage() {
   const [rows, setRows] = useState<InquiryRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<string>("all");
+  const [search, setSearch] = useState("");
   const [labels, setLabels] = useState<VendorLabel[]>([]);
   const [labelFilter, setLabelFilter] = useState<string | null>(null);
   const [labelsOpen, setLabelsOpen] = useState(false);
@@ -149,8 +168,17 @@ export default function VendorInboxPage() {
         (r.labels ?? []).some((l) => l.id === labelFilter),
       );
     }
+    const q = search.trim().toLowerCase();
+    if (q) {
+      result = result.filter(
+        (r) =>
+          r.host?.display_name?.toLowerCase().includes(q) ||
+          r.event_type?.toLowerCase().includes(q) ||
+          r.event_date?.toLowerCase().includes(q),
+      );
+    }
     return result;
-  }, [rows, filter, labelFilter]);
+  }, [rows, filter, labelFilter, search]);
 
   // Realtime: refetch when any inquiry for this vendor changes.
   // Realtime via the shared user-scoped channel — no per-page websocket
@@ -181,6 +209,16 @@ export default function VendorInboxPage() {
         </div>
 
         <div className="p-4 md:p-8">
+          <div className="relative max-w-xl mb-4">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search by host, event type, or date"
+              className="pl-9 rounded-full bg-secondary/50 border-transparent focus-visible:ring-1"
+            />
+          </div>
+
           <div className="flex gap-2 mb-4 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-hide">
             {filterOptions.map((opt) => {
               const count =
@@ -309,7 +347,7 @@ export default function VendorInboxPage() {
                         </td>
                         <td className="p-4 tnum">{r.quality_score ?? "—"}</td>
                         <td className="p-4 tnum text-muted-foreground">
-                          {new Date(r.created_at).toLocaleDateString()}
+                          {relativeTime(r.created_at)}
                         </td>
                       </tr>
                     ))}

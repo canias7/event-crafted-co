@@ -1,6 +1,6 @@
 import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { Plus, Sparkles, Inbox } from "lucide-react";
+import { Plus, Sparkles, Inbox, Search } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useRealtime } from "@/lib/realtime";
 import { useAuth } from "@/hooks/useAuth";
@@ -10,6 +10,7 @@ import { SubNavTabs } from "@/components/shared/SubNavTabs";
 import { INQUIRIES_HUB_TABS } from "@/data/hubTabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 // Lazy: heavy modal only loads when the host opens the inquiry form.
 const InquiryFormModal = lazy(() =>
@@ -57,11 +58,54 @@ function fmtMoney(c: number | null) {
   return c == null ? "—" : `$${(c / 100).toLocaleString()}`;
 }
 
+const AVATAR_COLORS = [
+  "bg-violet-400",
+  "bg-pink-400",
+  "bg-orange-400",
+  "bg-amber-400",
+  "bg-emerald-400",
+  "bg-blue-400",
+  "bg-cyan-400",
+  "bg-rose-400",
+];
+
+function avatarColor(seed: string): string {
+  let hash = 0;
+  for (let i = 0; i < seed.length; i++)
+    hash = (hash * 31 + seed.charCodeAt(i)) | 0;
+  return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
+}
+
+function initialsOf(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "?";
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+}
+
+function relativeTime(iso: string | null): string {
+  if (!iso) return "";
+  const ms = Date.now() - new Date(iso).getTime();
+  const m = Math.floor(ms / 60_000);
+  if (m < 1) return "now";
+  if (m < 60) return `${m}m`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h}h`;
+  const d = Math.floor(h / 24);
+  if (d === 1) return "Yesterday";
+  if (d < 7) return `${d}d`;
+  return new Date(iso).toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+  });
+}
+
 export default function InquiriesPage() {
   const { user } = useAuth();
   const [params, setParams] = useSearchParams();
   const [rows, setRows] = useState<InquiryRow[]>([]);
   const [statusFilter, setStatusFilter] = useState("all");
+  const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(params.get("new") === "1");
 
@@ -133,12 +177,27 @@ export default function InquiriesPage() {
     },
   ];
 
-  const filteredRows =
-    statusFilter === "all"
-      ? rows
-      : rows.filter((r) =>
-          filterOptions.find((o) => o.value === statusFilter)?.matches(r.status),
-        );
+  const filteredRows = useMemo(() => {
+    let out = rows;
+    if (statusFilter !== "all") {
+      out = out.filter((r) =>
+        filterOptions.find((o) => o.value === statusFilter)?.matches(r.status),
+      );
+    }
+    const q = search.trim().toLowerCase();
+    if (q) {
+      out = out.filter(
+        (r) =>
+          r.vendor?.business_name?.toLowerCase().includes(q) ||
+          r.vendor?.category?.toLowerCase().includes(q) ||
+          r.event_type?.toLowerCase().includes(q) ||
+          r.event_date?.toLowerCase().includes(q) ||
+          r.location?.toLowerCase().includes(q),
+      );
+    }
+    return out;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rows, statusFilter, search]);
 
   return (
     <div className="flex min-h-screen bg-background">
@@ -165,6 +224,17 @@ export default function InquiriesPage() {
         </div>
 
         <div className="p-4 md:p-8 space-y-6">
+          {/* Search box — vendor name, event, date, or location */}
+          <div className="relative max-w-xl">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search by vendor, event, or message"
+              className="pl-9 rounded-full bg-secondary/50 border-transparent focus-visible:ring-1"
+            />
+          </div>
+
           {/* Status filter chips */}
           <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-hide">
             {filterOptions.map((opt) => {
@@ -205,12 +275,16 @@ export default function InquiriesPage() {
                 <h3 className="font-display text-xl mb-2">
                   {rows.length === 0
                     ? "No inquiries yet"
-                    : "Nothing matches that filter"}
+                    : search
+                      ? "Nothing matches that search"
+                      : "Nothing matches that filter"}
                 </h3>
                 <p className="text-sm text-muted-foreground max-w-sm mx-auto mb-6 leading-relaxed">
                   {rows.length === 0
                     ? "Browse the directory and send your first inquiry — vendors reply with AI-assisted drafts, usually within a few hours."
-                    : "Try a different status filter above."}
+                    : search
+                      ? "Try a different search term."
+                      : "Try a different status filter above."}
                 </p>
                 <div className="flex gap-2 justify-center">
                   {rows.length === 0 && (
@@ -242,66 +316,79 @@ export default function InquiriesPage() {
               </div>
             ) : (
               <div className="divide-y divide-border">
-                {filteredRows.map((r) => (
-                  <Link
-                    key={r.id}
-                    to={`/customer/inquiries/${r.id}`}
-                    className="p-5 md:p-6 flex flex-col md:flex-row md:items-center gap-4 md:gap-6 hover:bg-secondary/40 transition-colors"
-                  >
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-3 mb-1.5 flex-wrap">
-                        <h3 className="font-display text-base">
-                          {r.vendor?.business_name ?? "Vendor"}
-                        </h3>
-                        {r.vendor?.category && (
-                          <span className="font-label text-muted-foreground">
-                            {r.vendor.category}
+                {filteredRows.map((r) => {
+                  const vendorName = r.vendor?.business_name ?? "Vendor";
+                  const seed = r.vendor?.business_name ?? r.id;
+                  return (
+                    <Link
+                      key={r.id}
+                      to={`/customer/inquiries/${r.id}`}
+                      className="p-5 md:p-6 flex flex-col md:flex-row md:items-center gap-4 md:gap-6 hover:bg-secondary/40 transition-colors"
+                    >
+                      <div className="flex items-start gap-3 min-w-0 flex-1">
+                        <div
+                          className={`shrink-0 w-12 h-12 rounded-full text-white flex items-center justify-center text-sm font-semibold ${avatarColor(seed)}`}
+                        >
+                          {initialsOf(vendorName)}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-3 mb-1.5 flex-wrap">
+                            <h3 className="font-display text-base truncate">
+                              {vendorName}
+                            </h3>
+                            {r.vendor?.category && (
+                              <span className="font-label text-muted-foreground">
+                                {r.vendor.category}
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-sm text-muted-foreground capitalize">
+                            {r.event_type.replace("_", " ")}
+                            {r.event_date && (
+                              <>
+                                {" "}
+                                · <span className="tnum">{r.event_date}</span>
+                              </>
+                            )}
+                            {r.guest_count != null && (
+                              <>
+                                {" "}
+                                · <span className="tnum">{r.guest_count}</span>{" "}
+                                guests
+                              </>
+                            )}
+                            {r.location && <> · {r.location}</>}
+                          </p>
+                          {(r.budget_min_cents != null ||
+                            r.budget_max_cents != null) && (
+                            <p className="text-xs text-muted-foreground tnum mt-1">
+                              Budget: {fmtMoney(r.budget_min_cents)} –{" "}
+                              {fmtMoney(r.budget_max_cents)}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-between md:justify-end gap-4 md:gap-6 md:flex-shrink-0">
+                        {r.status === "drafted" && (
+                          <span className="hidden sm:flex items-center gap-1.5 text-xs text-accent">
+                            <Sparkles className="w-3 h-3" />
+                            AI drafting reply…
                           </span>
                         )}
-                      </div>
-                      <p className="text-sm text-muted-foreground capitalize">
-                        {r.event_type.replace("_", " ")}
-                        {r.event_date && (
-                          <>
-                            {" "}
-                            · <span className="tnum">{r.event_date}</span>
-                          </>
-                        )}
-                        {r.guest_count != null && (
-                          <>
-                            {" "}
-                            · <span className="tnum">{r.guest_count}</span> guests
-                          </>
-                        )}
-                        {r.location && <> · {r.location}</>}
-                      </p>
-                      {(r.budget_min_cents != null || r.budget_max_cents != null) && (
-                        <p className="text-xs text-muted-foreground tnum mt-1">
-                          Budget: {fmtMoney(r.budget_min_cents)} –{" "}
-                          {fmtMoney(r.budget_max_cents)}
-                        </p>
-                      )}
-                    </div>
-
-                    <div className="flex items-center justify-between md:justify-end gap-4 md:gap-6 md:flex-shrink-0">
-                      {r.status === "drafted" && (
-                        <span className="hidden sm:flex items-center gap-1.5 text-xs text-accent">
-                          <Sparkles className="w-3 h-3" />
-                          AI drafting reply…
+                        <Badge
+                          variant="outline"
+                          className={`${statusStyles[r.status] ?? ""} font-medium`}
+                        >
+                          {statusLabel[r.status] ?? r.status}
+                        </Badge>
+                        <span className="text-xs text-muted-foreground tnum hidden sm:block">
+                          {relativeTime(r.created_at)}
                         </span>
-                      )}
-                      <Badge
-                        variant="outline"
-                        className={`${statusStyles[r.status] ?? ""} font-medium`}
-                      >
-                        {statusLabel[r.status] ?? r.status}
-                      </Badge>
-                      <span className="text-xs text-muted-foreground tnum hidden sm:block">
-                        {new Date(r.created_at).toLocaleDateString()}
-                      </span>
-                    </div>
-                  </Link>
-                ))}
+                      </div>
+                    </Link>
+                  );
+                })}
               </div>
             )}
           </div>
