@@ -253,6 +253,9 @@ export const SupportPage = lazyWithReload(importSupport);
 const importVendorDashboard = () => import("@/pages/vendor/VendorDashboard");
 export const VendorDashboard = lazyWithReload(importVendorDashboard);
 
+const importVendorHome = () => import("@/pages/vendor/VendorHomePage");
+export const VendorHomePage = lazyWithReload(importVendorHome);
+
 const importVendorProfile = () => import("@/pages/vendor/VendorProfilePage");
 export const VendorProfilePage = lazyWithReload(importVendorProfile);
 
@@ -360,6 +363,7 @@ const ROUTE_IMPORTERS: Array<{ pattern: string; importer: () => Promise<unknown>
   { pattern: "/customer/moodboards/:id", importer: importMoodBoardDetail },
   // Vendor
   { pattern: "/vendor/dashboard", importer: importVendorDashboard },
+  { pattern: "/vendor/home", importer: importVendorHome },
   { pattern: "/vendor/profile", importer: importVendorProfile },
   { pattern: "/vendor/listing", importer: importVendorProfile },
   { pattern: "/vendor/inbox", importer: importVendorInbox },

@@ -15,6 +15,7 @@ import {
   Settings,
   LifeBuoy,
   Wand2,
+  Home,
   type LucideIcon,
 } from "lucide-react";
 
@@ -63,6 +64,9 @@ export const customerNavBottomItems: NavItem[] = [
 
 export const vendorNavItems: NavItem[] = [
   { labelKey: "sidebar.vendor.dashboard", path: "/vendor/dashboard", icon: LayoutDashboard },
+  // Home hub — global feed (posts/reels/buzz) + composers, mirroring
+  // the vendor mobile Home tab.
+  { labelKey: "sidebar.vendor.home", path: "/vendor/home", icon: Home },
   // Inbox hub — sub-tabs: Inquiries (default), Hosts (DMs), Partners
   // (vendor-to-vendor). The standalone Messages entry merged in here.
   { labelKey: "sidebar.vendor.inbox", path: "/vendor/inbox", icon: Inbox },

@@ -92,6 +92,7 @@ import {
   RealEventDetailPage,
   AcceptPlanningInvitePage,
   VendorDashboard,
+  VendorHomePage,
   VendorProfilePage,
   VendorInboxPage,
   VendorTeamPage,
@@ -216,6 +217,7 @@ const App = () => (
 
               {/* Vendor */}
               <Route path="/vendor/dashboard" element={<RequireRole role="vendor"><VendorDashboard /></RequireRole>} />
+              <Route path="/vendor/home" element={<RequireRole role="vendor"><VendorHomePage /></RequireRole>} />
               <Route path="/vendor/profile" element={<Navigate to="/vendor/listing" replace />} />
               <Route path="/vendor/listing" element={<RequireRole role="vendor"><VendorProfilePage /></RequireRole>} />
               <Route path="/vendor/inbox" element={<RequireRole role="vendor"><VendorInboxPage /></RequireRole>} />
