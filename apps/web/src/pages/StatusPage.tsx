@@ -237,7 +237,7 @@ export default function StatusPage() {
           </h1>
 
           {/* Top-line overall */}
-          <div className="rounded-sm border border-border bg-card p-5 flex items-center gap-4 mb-3">
+          <div className="card-soft p-5 flex items-center gap-4 mb-3">
             <OverallIcon
               className={`w-6 h-6 shrink-0 ${overallMeta.tone} ${
                 overall === "checking" ? "animate-spin" : ""
@@ -286,7 +286,7 @@ export default function StatusPage() {
               return (
                 <li
                   key={s.id}
-                  className="rounded-sm border border-border bg-card p-4 flex items-center gap-4"
+                  className="card-soft p-4 flex items-center gap-4"
                 >
                   <Icon
                     className={`w-5 h-5 shrink-0 ${meta.tone} ${
