@@ -67,16 +67,16 @@ export function VendorBundlesPublic({ vendorId }: { vendorId: string }) {
         <Layers className="w-3 h-3" />
         Bundles
       </p>
-      <h2 className="font-display text-3xl mb-6">Multi-vendor packages</h2>
+      <h2 className="font-editorial text-4xl mb-6">Multi-vendor packages</h2>
       <div className="space-y-4">
         {bundles.map((b) => (
           <div
             key={b.id}
-            className="rounded-sm border border-border bg-card p-5"
+            className="card-soft p-5"
           >
             <div className="flex items-start justify-between gap-4 flex-wrap mb-3">
               <div>
-                <h3 className="font-display text-xl">{b.name}</h3>
+                <h3 className="font-editorial text-2xl">{b.name}</h3>
                 {b.description && (
                   <p className="text-sm text-muted-foreground leading-relaxed mt-1">
                     {b.description}

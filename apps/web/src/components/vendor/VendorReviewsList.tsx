@@ -60,7 +60,7 @@ export function VendorReviewsList({
       <div className="flex items-end justify-between mb-8 flex-wrap gap-4">
         <div>
           <p className="font-label text-accent mb-4">Reviews</p>
-          <h2 className="font-display text-3xl">
+          <h2 className="font-editorial text-4xl">
             <span className="tnum">{averageRating.toFixed(1)}</span>{" "}
             <span className="text-muted-foreground font-light">·</span>{" "}
             <span className="text-muted-foreground font-light tnum">

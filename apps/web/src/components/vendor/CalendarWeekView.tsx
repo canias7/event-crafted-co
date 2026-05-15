@@ -122,7 +122,7 @@ export function CalendarWeekView({ appointments, onSelectAppointment }: Props) {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-3">
-        <h2 className="font-display text-3xl tracking-tight">{rangeLabel}</h2>
+        <h2 className="font-editorial text-4xl tracking-tight">{rangeLabel}</h2>
         <div className="flex items-center gap-2">
           <Button
             variant="outline"

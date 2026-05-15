@@ -25,7 +25,7 @@ export function ImportedReviewsList({ reviews, vendorName }: Props) {
   return (
     <div>
       <p className="font-label text-accent mb-4">From around the web</p>
-      <h2 className="font-display text-3xl mb-2">Reviews from elsewhere</h2>
+      <h2 className="font-editorial text-4xl mb-2">Reviews from elsewhere</h2>
       <p className="text-sm text-muted-foreground mb-6 leading-relaxed max-w-xl">
         Imported by {vendorName} from other platforms. Not booked through
         Vendora — but still part of their track record.

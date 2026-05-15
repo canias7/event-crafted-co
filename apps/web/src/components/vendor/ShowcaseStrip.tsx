@@ -47,7 +47,7 @@ export function ShowcaseStrip({ vendorId }: { vendorId: string }) {
       <div className="flex items-center justify-between mb-4">
         <div>
           <p className="font-label text-accent mb-1">Showcase</p>
-          <h2 className="font-display text-3xl">In motion</h2>
+          <h2 className="font-editorial text-4xl">In motion</h2>
         </div>
         <button
           type="button"
