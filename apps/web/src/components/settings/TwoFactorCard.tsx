@@ -220,7 +220,7 @@ function EnrollDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md rounded-sm">
         <DialogHeader>
-          <DialogTitle className="font-display text-2xl">
+          <DialogTitle className="font-editorial text-3xl">
             Enable 2FA
           </DialogTitle>
           <DialogDescription>

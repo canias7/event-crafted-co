@@ -119,7 +119,7 @@ export function MicrositeRsvpForm({
           className="w-10 h-10 mx-auto mb-4"
           style={{ color: `hsl(${theme.accent})` }}
         />
-        <p className="font-display text-2xl mb-2">Thank you</p>
+        <p className="font-editorial text-3xl mb-2">Thank you</p>
         <p className="text-sm leading-relaxed opacity-75">
           Your RSVP has been recorded. {hostName.split(" ")[0]} can see it
           now. You can come back to this page anytime to update your
