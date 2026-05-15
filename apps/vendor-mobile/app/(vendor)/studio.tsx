@@ -65,7 +65,7 @@ function FeaturedTile({
   // (px-5 = 20pt each side). react-native-svg needs concrete pixel
   // dimensions — "100%" silently fails to render on iOS.
   const WIDTH = Dimensions.get("window").width - 40;
-  const HEIGHT = 100;
+  const HEIGHT = 82;
   return (
     <Pressable
       onPress={onPress}
@@ -96,25 +96,25 @@ function FeaturedTile({
       <View
         style={{
           flex: 1,
-          paddingHorizontal: 18,
-          paddingVertical: 14,
+          paddingHorizontal: 16,
+          paddingVertical: 10,
           flexDirection: "row",
           alignItems: "center",
           justifyContent: "space-between",
         }}
       >
-        <View style={{ flex: 1, paddingRight: 12 }}>
+        <View style={{ flex: 1, paddingRight: 10 }}>
           <Text
-            style={{ fontSize: 22, fontWeight: "700", color: "#1a1a1a" }}
+            style={{ fontSize: 18, fontWeight: "700", color: "#1a1a1a" }}
             numberOfLines={1}
           >
             {title}
           </Text>
           <Text
             style={{
-              marginTop: 4,
-              fontSize: 14,
-              lineHeight: 19,
+              marginTop: 2,
+              fontSize: 13,
+              lineHeight: 17,
               color: "rgba(26,26,26,0.7)",
             }}
             numberOfLines={2}
@@ -122,7 +122,7 @@ function FeaturedTile({
             {subtitle}
           </Text>
         </View>
-        <Feather name="chevron-right" size={20} color="#1a1a1a" />
+        <Feather name="chevron-right" size={18} color="#1a1a1a" />
       </View>
     </Pressable>
   );
@@ -138,24 +138,24 @@ function ComingSoonTile({
   return (
     <View
       style={{
-        borderRadius: 20,
+        borderRadius: 16,
         borderWidth: 1,
         borderColor: "rgba(0,0,0,0.08)",
-        paddingHorizontal: 18,
-        paddingVertical: 14,
+        paddingHorizontal: 16,
+        paddingVertical: 10,
         opacity: 0.55,
       }}
     >
       <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-        <Text style={{ fontSize: 22, fontWeight: "700", color: "#1a1a1a" }}>
+        <Text style={{ fontSize: 18, fontWeight: "700", color: "#1a1a1a" }}>
           {title}
         </Text>
         <View
           style={{
             borderRadius: 999,
             backgroundColor: "rgba(0,0,0,0.08)",
-            paddingHorizontal: 9,
-            paddingVertical: 3,
+            paddingHorizontal: 8,
+            paddingVertical: 2,
           }}
         >
           <Text
@@ -163,7 +163,7 @@ function ComingSoonTile({
               fontSize: 9,
               fontWeight: "700",
               color: "rgba(0,0,0,0.5)",
-              letterSpacing: 1.3,
+              letterSpacing: 1.2,
             }}
           >
             COMING SOON
@@ -172,9 +172,9 @@ function ComingSoonTile({
       </View>
       <Text
         style={{
-          marginTop: 4,
-          fontSize: 14,
-          lineHeight: 19,
+          marginTop: 2,
+          fontSize: 13,
+          lineHeight: 17,
           color: "rgba(0,0,0,0.45)",
         }}
       >
@@ -197,11 +197,11 @@ function PlainTile({
     <Pressable
       onPress={onPress}
       style={({ pressed }) => ({
-        borderRadius: 20,
+        borderRadius: 16,
         borderWidth: 1,
         borderColor: "rgba(0,0,0,0.08)",
-        paddingHorizontal: 18,
-        paddingVertical: 14,
+        paddingHorizontal: 16,
+        paddingVertical: 10,
         opacity: pressed ? 0.7 : 1,
       })}
     >
@@ -213,21 +213,21 @@ function PlainTile({
         }}
       >
         <View style={{ flex: 1, paddingRight: 10 }}>
-          <Text style={{ fontSize: 22, fontWeight: "700", color: "#1a1a1a" }}>
+          <Text style={{ fontSize: 18, fontWeight: "700", color: "#1a1a1a" }}>
             {title}
           </Text>
           <Text
             style={{
-              marginTop: 4,
-              fontSize: 14,
-              lineHeight: 19,
+              marginTop: 2,
+              fontSize: 13,
+              lineHeight: 17,
               color: "rgba(0,0,0,0.55)",
             }}
           >
             {subtitle}
           </Text>
         </View>
-        <Feather name="chevron-right" size={20} color="#1a1a1a" />
+        <Feather name="chevron-right" size={18} color="#1a1a1a" />
       </View>
     </Pressable>
   );
