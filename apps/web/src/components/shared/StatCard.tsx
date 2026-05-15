@@ -10,7 +10,7 @@ interface StatCardProps {
 
 export function StatCard({ label, value, icon: Icon, trend, accent }: StatCardProps) {
   return (
-    <div className="bg-card rounded-2xl p-5 card-shadow">
+    <div className="card-soft p-5">
       <div className="flex items-center justify-between mb-3">
         <p className="font-label text-muted-foreground">{label}</p>
         <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${accent ? "bg-accent/10" : "bg-secondary"}`}>

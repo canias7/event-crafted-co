@@ -280,7 +280,7 @@ export default function CustomerDashboard() {
               {widgets.guestsTotal > 0 && (
                 <Link
                   to="/customer/guests"
-                  className="block bg-card rounded-2xl p-5 card-shadow hover:bg-secondary/30 transition-colors"
+                  className="block card-soft p-5 hover:bg-secondary/30 transition-colors"
                 >
                   <div className="flex items-center gap-2 text-muted-foreground mb-3">
                     <Mail className="w-3.5 h-3.5" />
@@ -305,7 +305,7 @@ export default function CustomerDashboard() {
               {widgets.budgetTotal > 0 && (
                 <Link
                   to="/customer/payments"
-                  className="block bg-card rounded-2xl p-5 card-shadow hover:bg-secondary/30 transition-colors"
+                  className="block card-soft p-5 hover:bg-secondary/30 transition-colors"
                 >
                   <div className="flex items-center gap-2 text-muted-foreground mb-3">
                     <CreditCard className="w-3.5 h-3.5" />
@@ -326,7 +326,7 @@ export default function CustomerDashboard() {
               {widgets.checklistTotal > 0 && (
                 <Link
                   to="/customer/checklist"
-                  className="block bg-card rounded-2xl p-5 card-shadow hover:bg-secondary/30 transition-colors"
+                  className="block card-soft p-5 hover:bg-secondary/30 transition-colors"
                 >
                   <div className="flex items-center gap-2 text-muted-foreground mb-3">
                     <CheckSquare className="w-3.5 h-3.5" />
@@ -351,7 +351,7 @@ export default function CustomerDashboard() {
               {widgets.tasksOpen > 0 && (
                 <Link
                   to="/customer/tasks"
-                  className="block bg-card rounded-2xl p-5 card-shadow hover:bg-secondary/30 transition-colors"
+                  className="block card-soft p-5 hover:bg-secondary/30 transition-colors"
                 >
                   <div className="flex items-center gap-2 text-muted-foreground mb-3">
                     <ListTodo className="w-3.5 h-3.5" />
@@ -382,7 +382,7 @@ export default function CustomerDashboard() {
 
           {/* Recommended for you (collaborative-filtering signal) */}
           {user && (
-            <div className="bg-card rounded-2xl p-5 card-shadow">
+            <div className="card-soft p-5">
               <CoBookedRail
                 recommendedFor={user.id}
                 eyebrow="Vendora suggests"
@@ -393,7 +393,7 @@ export default function CustomerDashboard() {
           )}
 
           {/* Quick actions */}
-          <div className="bg-card rounded-2xl p-5 card-shadow">
+          <div className="card-soft p-5">
             <p className="font-label text-muted-foreground mb-3">
               {t("dashboard.common.quick_actions")}
             </p>
@@ -420,7 +420,7 @@ export default function CustomerDashboard() {
 
           <div className="grid lg:grid-cols-2 gap-6">
             {/* Checklist progress */}
-            <div className="bg-card rounded-2xl p-5 card-shadow">
+            <div className="card-soft p-5">
               <div className="flex items-center justify-between mb-4">
                 <p className="font-label text-muted-foreground">
                   {t("dashboard.customer.section_checklist")}
@@ -452,7 +452,7 @@ export default function CustomerDashboard() {
             </div>
 
             {/* Tasks due soon */}
-            <div className="bg-card rounded-2xl p-5 card-shadow">
+            <div className="card-soft p-5">
               <div className="flex items-center justify-between mb-4">
                 <p className="font-label text-muted-foreground">
                   {t("dashboard.customer.section_tasks")}
@@ -492,7 +492,7 @@ export default function CustomerDashboard() {
           </div>
 
           {/* Payment summary */}
-          <div className="bg-card rounded-2xl p-5 card-shadow">
+          <div className="card-soft p-5">
             <div className="flex items-center justify-between mb-4">
               <p className="font-label text-muted-foreground">Recent Payments</p>
               <Link to="/customer/payments" className="text-xs text-accent font-medium">View all</Link>
