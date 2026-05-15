@@ -275,10 +275,18 @@ function HeroCard({
   verified: boolean;
 }) {
   return (
-    <div className="rounded-3xl bg-card border border-border/60 shadow-[0_8px_24px_-12px_rgba(26,20,16,0.18)] p-8 flex flex-col items-center">
+    <div className="relative overflow-hidden rounded-3xl border border-border/60 shadow-[0_8px_24px_-12px_rgba(26,20,16,0.18)] p-8 flex flex-col items-center bg-[linear-gradient(135deg,#fffbf2_0%,#faecd0_100%)]">
+      <div
+        className="pointer-events-none absolute inset-0"
+        aria-hidden
+        style={{
+          background:
+            "radial-gradient(circle at 18% 22%, rgba(255,230,180,0.55), transparent 55%)",
+        }}
+      />
       <div className="relative">
         <div className="w-28 h-28 rounded-full bg-foreground text-background flex items-center justify-center">
-          <span className="font-display italic text-5xl">{initial}</span>
+          <span className="font-editorial text-5xl">{initial}</span>
         </div>
         {verified ? (
           <div className="absolute -right-1 bottom-1 w-8 h-8 rounded-full bg-card border-2 border-background flex items-center justify-center">
@@ -286,18 +294,18 @@ function HeroCard({
           </div>
         ) : null}
       </div>
-      <h2 className="mt-3 font-editorial text-2xl text-foreground text-center">
+      <h2 className="relative mt-3 font-editorial text-2xl text-foreground text-center">
         {name}
       </h2>
-      <p className="mt-1 text-sm text-muted-foreground">
+      <p className="relative mt-1 text-sm text-muted-foreground">
         {verified ? "Verified Host  ·  " : ""}Member since {memberSince}
       </p>
-      <div className="my-5 h-px w-full bg-border" />
-      <div className="flex w-full items-center">
+      <div className="relative my-5 h-px w-full bg-border/60" />
+      <div className="relative flex w-full items-center">
         <StatCol label="Inquiries" value={String(stats.inquiries)} />
-        <div className="h-10 w-px bg-border" />
+        <div className="h-10 w-px bg-border/60" />
         <StatCol label="Booked" value={String(stats.booked)} />
-        <div className="h-10 w-px bg-border" />
+        <div className="h-10 w-px bg-border/60" />
         <StatCol
           label="Vendors"
           value={String(stats.vendors)}
