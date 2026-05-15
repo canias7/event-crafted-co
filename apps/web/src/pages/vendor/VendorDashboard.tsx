@@ -238,7 +238,7 @@ export default function VendorDashboard() {
               surfaced on the Profile / listing tab. Rejected still
               gets a banner below since that's actionable. */}
           {vendorProfile?.application_status === "rejected" && (
-            <div className="rounded-sm border border-destructive/30 bg-destructive/5 p-4 flex items-start gap-3">
+            <div className="rounded-2xl border border-destructive/30 bg-destructive/5 p-4 flex items-start gap-3">
               <AlertCircle className="w-4 h-4 text-destructive mt-0.5 shrink-0" />
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium">
@@ -254,7 +254,7 @@ export default function VendorDashboard() {
 
           {/* Profile-not-yet-created state */}
           {!loading && !vendorProfile && (
-            <div className="rounded-sm border border-accent/30 bg-accent/5 p-6 flex items-start gap-4">
+            <div className="rounded-2xl border border-accent/30 bg-accent/5 p-6 flex items-start gap-4">
               <div className="w-9 h-9 rounded-full bg-accent text-accent-foreground flex items-center justify-center flex-shrink-0">
                 <Sparkles className="w-4 h-4" />
               </div>
