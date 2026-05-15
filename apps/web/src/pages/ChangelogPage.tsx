@@ -117,7 +117,7 @@ export default function ChangelogPage() {
                             {dayLabel(entry.date)}
                           </p>
                         </div>
-                        <h3 className="font-display text-lg leading-tight mb-1.5">
+                        <h3 className="font-editorial text-xl leading-tight mb-1.5">
                           {entry.title}
                         </h3>
                         <p className="text-sm text-foreground/75 leading-relaxed max-w-2xl">
