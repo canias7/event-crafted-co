@@ -290,7 +290,7 @@ export function PublishRealEventCard({ event }: Props) {
       </div>
 
       {isLive && !editing && (
-        <div className="rounded-sm border border-accent/30 bg-accent/5 p-3 mb-4 flex items-start gap-2.5">
+        <div className="rounded-2xl border border-accent/30 bg-accent/5 p-3 mb-4 flex items-start gap-2.5">
           <CheckCircle2 className="w-4 h-4 text-accent mt-0.5 flex-shrink-0" />
           <div className="min-w-0 flex-1">
             <p className="text-sm font-medium leading-tight mb-1">
@@ -380,7 +380,7 @@ export function PublishRealEventCard({ event }: Props) {
           <div className="space-y-2">
             <Label>Cover image</Label>
             {coverPath ? (
-              <div className="relative aspect-[3/2] rounded-sm overflow-hidden bg-muted">
+              <div className="relative aspect-[3/2] rounded-2xl overflow-hidden bg-muted">
                 <img
                   src={transformedImageUrl(BUCKET, coverPath, { width: 1200 })}
                   alt=""
@@ -400,7 +400,7 @@ export function PublishRealEventCard({ event }: Props) {
               <button
                 type="button"
                 onClick={() => coverInputRef.current?.click()}
-                className="w-full aspect-[3/2] border border-dashed border-border rounded-sm flex flex-col items-center justify-center text-muted-foreground hover:border-foreground/30 transition-colors"
+                className="w-full aspect-[3/2] border border-dashed border-border rounded-2xl flex flex-col items-center justify-center text-muted-foreground hover:border-foreground/30 transition-colors"
                 disabled={coverUploading}
               >
                 {coverUploading ? (
@@ -466,7 +466,7 @@ export function PublishRealEventCard({ event }: Props) {
                 {galleryPaths.map((path) => (
                   <div
                     key={path}
-                    className="relative aspect-square rounded-sm overflow-hidden bg-muted group"
+                    className="relative aspect-square rounded-2xl overflow-hidden bg-muted group"
                   >
                     <img
                       src={transformedImageUrl(BUCKET, path, { width: 400 })}
