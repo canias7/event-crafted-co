@@ -174,7 +174,7 @@ export function AppointmentsList({ appointments, side, onMutate }: Props) {
         <div className="w-12 h-12 mx-auto rounded-full bg-secondary flex items-center justify-center mb-4">
           <CalendarDays className="w-5 h-5 text-muted-foreground" />
         </div>
-        <h3 className="font-display text-xl mb-2">No appointments yet</h3>
+        <h3 className="font-editorial text-2xl mb-2">No appointments yet</h3>
         <p className="text-sm text-muted-foreground leading-relaxed">
           {side === "host"
             ? "Vendors can propose meetings — tastings, walkthroughs, consultations — and they'll show up here."
@@ -230,7 +230,7 @@ export function AppointmentsList({ appointments, side, onMutate }: Props) {
             return (
               <div
                 key={appt.id}
-                className="rounded-sm border border-border bg-card p-5"
+                className="card-soft p-5"
               >
                 <div className="flex items-start justify-between gap-3 mb-3 flex-wrap">
                   <div className="min-w-0">
