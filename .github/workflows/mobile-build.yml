@@ -59,9 +59,9 @@ jobs:
           # iteration builds don't auto-submit to TestFlight. For the
           # actual release build, use workflow_dispatch with profile
           # set to "production".
-          APPS_INPUT="${INPUT_APPS:-both}"
+          APPS_INPUT="${INPUT_APPS:-vendor}"
           PLATFORM_INPUT="${INPUT_PLATFORM:-ios}"
-          PROFILE_INPUT="${INPUT_PROFILE:-preview}"
+          PROFILE_INPUT="${INPUT_PROFILE:-production}"
           case "$APPS_INPUT" in
             both)   echo 'list=["vendor-mobile","host-mobile"]' >> "$GITHUB_OUTPUT" ;;
             vendor) echo 'list=["vendor-mobile"]' >> "$GITHUB_OUTPUT" ;;
