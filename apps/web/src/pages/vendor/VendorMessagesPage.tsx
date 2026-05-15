@@ -556,23 +556,41 @@ export default function VendorMessagesPage() {
                         );
                       }
                       const m = it.message;
+                      const otherInitial =
+                        activeThread.host?.display_name?.[0]?.toUpperCase() ??
+                        "H";
                       return (
                         <div
                           key={m.id}
-                          className={`max-w-[80%] px-3.5 py-2 text-sm leading-relaxed whitespace-pre-wrap ${
-                            it.isMe
-                              ? "bg-foreground text-background ml-auto"
-                              : "bg-secondary"
-                          } ${it.firstInGroup ? "mt-2" : "mt-0.5"} ${
-                            it.isMe
-                              ? `rounded-2xl ${it.showTail ? "rounded-br-sm" : ""}`
-                              : `rounded-2xl ${it.showTail ? "rounded-bl-sm" : ""}`
-                          }`}
+                          className={`flex items-end gap-2 ${
+                            it.isMe ? "justify-end" : "justify-start"
+                          } ${it.firstInGroup ? "mt-2" : "mt-0.5"}`}
                         >
-                          {m.body}
-                          {m.attachments && m.attachments.length > 0 && (
-                            <MessageAttachments attachments={m.attachments} />
-                          )}
+                          {!it.isMe ? (
+                            <div className="w-7 h-7 shrink-0">
+                              {it.firstInGroup ? (
+                                <div className="w-7 h-7 rounded-full bg-foreground text-background flex items-center justify-center font-editorial text-xs">
+                                  {otherInitial}
+                                </div>
+                              ) : null}
+                            </div>
+                          ) : null}
+                          <div
+                            className={`max-w-[78%] px-3.5 py-2 text-sm leading-relaxed whitespace-pre-wrap ${
+                              it.isMe
+                                ? "bg-foreground text-background"
+                                : "bg-secondary"
+                            } ${
+                              it.isMe
+                                ? `rounded-2xl ${it.showTail ? "rounded-br-sm" : ""}`
+                                : `rounded-2xl ${it.showTail ? "rounded-bl-sm" : ""}`
+                            }`}
+                          >
+                            {m.body}
+                            {m.attachments && m.attachments.length > 0 && (
+                              <MessageAttachments attachments={m.attachments} />
+                            )}
+                          </div>
                         </div>
                       );
                     })
