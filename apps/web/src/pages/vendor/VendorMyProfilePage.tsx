@@ -381,7 +381,17 @@ function HeaderCard({
   onShare: () => void;
 }) {
   return (
-    <div className="rounded-2xl bg-card border border-border shadow-sm p-6 flex flex-col sm:flex-row gap-5 items-start">
+    <div className="relative overflow-hidden rounded-3xl border border-border/60 shadow-[0_8px_24px_-12px_rgba(26,20,16,0.18)] p-6 flex flex-col sm:flex-row gap-5 items-start bg-[linear-gradient(135deg,#fffbf2_0%,#faecd0_100%)]">
+      {/* Soft radial sun + horizontal ripple lines echoing the mobile
+          CreamOcean hero. Decorative, behind the avatar/copy. */}
+      <div
+        className="pointer-events-none absolute inset-0"
+        aria-hidden
+        style={{
+          background:
+            "radial-gradient(circle at 18% 22%, rgba(255,230,180,0.55), transparent 55%)",
+        }}
+      />
       <div className="relative shrink-0">
         {logoUrl ? (
           <img
@@ -390,7 +400,7 @@ function HeaderCard({
             className="w-24 h-24 rounded-full object-cover bg-secondary"
           />
         ) : (
-          <div className="w-24 h-24 rounded-full bg-foreground text-background flex items-center justify-center font-display italic text-4xl">
+          <div className="w-24 h-24 rounded-full bg-foreground text-background flex items-center justify-center font-editorial text-4xl">
             {initials}
           </div>
         )}
@@ -400,8 +410,8 @@ function HeaderCard({
           </div>
         ) : null}
       </div>
-      <div className="flex-1 min-w-0">
-        <h2 className="font-display italic text-2xl text-foreground truncate">
+      <div className="relative flex-1 min-w-0">
+        <h2 className="font-editorial text-2xl text-foreground truncate">
           {businessName}
         </h2>
         <p className="text-sm text-muted-foreground mt-0.5">
@@ -424,10 +434,10 @@ function HeaderCard({
           <Stat label="Listings" value={String(stats.listings)} />
         </div>
       </div>
-      <div className="shrink-0 flex flex-col gap-2">
+      <div className="relative shrink-0 flex flex-col gap-2">
         {listingHref ? (
           <Link to={listingHref}>
-            <Button variant="outline" className="rounded-full" size="sm">
+            <Button variant="outline" className="rounded-full bg-white/70" size="sm">
               View public page
             </Button>
           </Link>
