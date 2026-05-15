@@ -82,9 +82,6 @@ export const ProposalPrintPage = lazyWithReload(importProposalPrint);
 const importPublicProposal = () => import("@/pages/PublicProposalPage");
 export const PublicProposalPage = lazyWithReload(importPublicProposal);
 
-const importPlanInFive = () => import("@/pages/PlanInFivePage");
-export const PlanInFivePage = lazyWithReload(importPlanInFive);
-
 const importVendorBlog = () => import("@/pages/vendor/VendorBlogPage");
 export const VendorBlogPage = lazyWithReload(importVendorBlog);
 
@@ -128,15 +125,6 @@ export const NotFound = lazyWithReload(importNotFound);
 const importComingSoon = () => import("@/pages/ComingSoonPage");
 export const ComingSoonPage = lazyWithReload(importComingSoon);
 
-const importRsvp = () => import("@/pages/RsvpPage");
-export const RsvpPage = lazyWithReload(importRsvp);
-
-const importMoodBoardShare = () => import("@/pages/MoodBoardSharePage");
-export const MoodBoardSharePage = lazyWithReload(importMoodBoardShare);
-
-const importGiftShare = () => import("@/pages/GiftSharePage");
-export const GiftSharePage = lazyWithReload(importGiftShare);
-
 const importRealEvents = () => import("@/pages/RealEventsPage");
 export const RealEventsPage = lazyWithReload(importRealEvents);
 
@@ -170,12 +158,6 @@ export const HostProfilePage = lazyWithReload(importHostProfile);
 
 const importMessages = () => import("@/pages/customer/MessagesPage");
 export const MessagesPage = lazyWithReload(importMessages);
-
-const importEventMicrosite = () => import("@/pages/EventMicrositePage");
-export const EventMicrositePage = lazyWithReload(importEventMicrosite);
-
-const importEventAlbum = () => import("@/pages/EventAlbumPage");
-export const EventAlbumPage = lazyWithReload(importEventAlbum);
 
 const importSupport = () => import("@/pages/SupportPage");
 export const SupportPage = lazyWithReload(importSupport);
@@ -258,9 +240,6 @@ const ROUTE_IMPORTERS: Array<{ pattern: string; importer: () => Promise<unknown>
   },
   { pattern: "/vendors/:id", importer: importVendorDetail },
   { pattern: "/v/:slug", importer: importVendorDetail },
-  { pattern: "/rsvp/:token", importer: importRsvp },
-  { pattern: "/board/:token", importer: importMoodBoardShare },
-  { pattern: "/gift/:token", importer: importGiftShare },
   { pattern: "/real-events", importer: importRealEvents },
   { pattern: "/real-events/:slug", importer: importRealEventDetail },
   { pattern: "/accept-team-invite/:token", importer: importAcceptTeamInvite },
@@ -273,9 +252,6 @@ const ROUTE_IMPORTERS: Array<{ pattern: string; importer: () => Promise<unknown>
   { pattern: "/customer/messages", importer: importMessages },
   { pattern: "/customer/events", importer: importHostEvents },
   { pattern: "/customer/profile", importer: importHostProfile },
-  // Shared/public token-gated event surfaces
-  { pattern: "/e/:token", importer: importEventMicrosite },
-  { pattern: "/album/:token", importer: importEventAlbum },
   { pattern: "/support", importer: importSupport },
   // Vendor
   { pattern: "/vendor/dashboard", importer: importVendorDashboard },

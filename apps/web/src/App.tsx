@@ -58,12 +58,7 @@ import {
   HostEventsPage,
   CustomerExplorePage,
   HostProfilePage,
-  RsvpPage,
-  MoodBoardSharePage,
   MessagesPage,
-  GiftSharePage,
-  EventMicrositePage,
-  EventAlbumPage,
   SupportPage,
   RealEventsPage,
   RealEventDetailPage,
@@ -88,7 +83,6 @@ import {
   PublicReviewPage,
   ProposalPrintPage,
   PublicProposalPage,
-  PlanInFivePage,
   VendorBlogPage,
 } from "@/router/lazyRoutes";
 
@@ -129,15 +123,11 @@ const App = () => (
               <Route path="/guides/:slug" element={<EditorialArticlePage />} />
               {/* Vendor claim-listing flow — public, auth-gated to claim. */}
               <Route path="/claim/:token" element={<ClaimVendorPage />} />
-              {/* Plan-in-5 wizard — 6-question conversion lever. */}
-              <Route path="/plan-in-5" element={<PlanInFivePage />} />
               <Route path="/real-events" element={<RealEventsPage />} />
               <Route path="/real-events/:slug" element={<RealEventDetailPage />} />
-              <Route path="/rsvp/:token" element={<RsvpPage />} />
               <Route path="/review/:token" element={<PublicReviewPage />} />
               <Route path="/proposals/:id/print" element={<ProposalPrintPage />} />
               <Route path="/p/:token" element={<PublicProposalPage />} />
-              <Route path="/board/:token" element={<MoodBoardSharePage />} />
               <Route path="/accept-team-invite/:token" element={<AcceptTeamInvitePage />} />
               <Route path="/accept-planning-invite/:token" element={<AcceptPlanningInvitePage />} />
               <Route path="/privacy" element={<PrivacyPage />} />
@@ -201,9 +191,16 @@ const App = () => (
               <Route path="/planner" element={<Navigate to="/customer/events" replace />} />
               <Route path="/party" element={<Navigate to="/customer/events" replace />} />
               <Route path="/party/:eventId" element={<Navigate to="/customer/events" replace />} />
-              <Route path="/gift/:token" element={<GiftSharePage />} />
-              <Route path="/e/:token" element={<EventMicrositePage />} />
-              <Route path="/album/:token" element={<EventAlbumPage />} />
+              {/* Public token-gated host share links (Gift / Rsvp /
+                  Microsite / Album / Mood board) were dropped along
+                  with the host editors. Bounce to / so old links
+                  don't 404 outright. */}
+              <Route path="/gift/:token" element={<Navigate to="/" replace />} />
+              <Route path="/rsvp/:token" element={<Navigate to="/" replace />} />
+              <Route path="/e/:token" element={<Navigate to="/" replace />} />
+              <Route path="/album/:token" element={<Navigate to="/" replace />} />
+              <Route path="/board/:token" element={<Navigate to="/" replace />} />
+              <Route path="/plan-in-5" element={<Navigate to="/customer/explore" replace />} />
               <Route path="/support" element={<RequireRole role={["host", "vendor"]}><SupportPage /></RequireRole>} />
 
               {/* Vendor */}

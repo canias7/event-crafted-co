@@ -19,7 +19,6 @@ import { Footer } from "@/components/public/Footer";
 import { VendorCard } from "@/components/shared/VendorCard";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useVendors, type Vendor } from "@/hooks/useVendors";
-import { SaveSearchButton } from "@/components/savedSearches/SaveSearchButton";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { categoryConfig } from "@/pages/VendorCategoryPage";
@@ -120,15 +119,9 @@ export default function VendorBrowsePage() {
     else setActiveCategories(new Set([cat]));
   }
 
-  // Pre-fill the date filter from the host's onboarding event_date once.
-  const [datePrefilled, setDatePrefilled] = useState(false);
-  useEffect(() => {
-    const seed = activeEvent?.event_date ?? profile?.event_date ?? null;
-    if (!datePrefilled && seed) {
-      setDateFilter(seed);
-      setDatePrefilled(true);
-    }
-  }, [profile, activeEvent, datePrefilled]);
+  // Date filter prefill removed when host_events was dropped — the
+  // legacy multi-event hint isn't queried anymore. Filter defaults to
+  // empty.
 
   // Fetch the set of vendor_ids unavailable on the chosen date.
   // Two sources: one-off blocks (vendor_unavailable_dates) AND
@@ -419,7 +412,6 @@ export default function VendorBrowsePage() {
                   <ArrowRight className="w-3 h-3" />
                 </Link>
               )}
-              <SaveSearchButton filters={{ q: search, category }} />
             </div>
           </div>
 
