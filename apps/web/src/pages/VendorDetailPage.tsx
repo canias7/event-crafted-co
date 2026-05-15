@@ -548,8 +548,10 @@ export default function VendorDetailPage() {
       setSigninPromptOpen(true);
       return;
     }
-    // Approved vendors talk to other vendors through the partner thread;
-    // hosts (everyone else non-admin) get the regular host-vendor DM.
+    // Approved vendors talk to other vendors through the partner thread.
+    // Host → vendor messaging happens exclusively via the inquiry form
+    // (mirrors mobile, where there's no separate DM-without-inquiry
+    // path); the "Message vendor" button is hidden for hosts below.
     if (isApprovedVendor) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data, error } = await (supabase as any).rpc(
@@ -563,20 +565,9 @@ export default function VendorDetailPage() {
       navigate(`/vendor/partners?thread=${data}`);
       return;
     }
-    if (profile.role === "admin") {
-      toast.info("Messages are sent from host or vendor accounts, not admin.");
-      return;
-    }
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data, error } = await (supabase as any).rpc(
-      "find_or_create_direct_thread",
-      { p_vendor_id: vendor.id },
-    );
-    if (error) {
-      toast.error(error.message);
-      return;
-    }
-    navigate(`/customer/messages?thread=${data}`);
+    // Host fallback (button shouldn't render for hosts, but guard anyway):
+    // funnel them into the inquiry form.
+    setInquiryFormOpen(true);
   }
 
   const related = useMemo(() => {
@@ -1116,14 +1107,20 @@ export default function VendorDetailPage() {
                     Send Inquiry
                   </Button>
 
-                  <Button
-                    onClick={handleMessageClick}
-                    disabled={authLoading}
-                    variant="outline"
-                    className="w-full h-10 rounded-full mt-2"
-                  >
-                    Message vendor
-                  </Button>
+                  {/* "Message vendor" button is shown only to approved
+                      vendors (so they can open a partner-thread with
+                      another vendor). Hosts route through "Send
+                      Inquiry" above — same as mobile. */}
+                  {isApprovedVendor && (
+                    <Button
+                      onClick={handleMessageClick}
+                      disabled={authLoading}
+                      variant="outline"
+                      className="w-full h-10 rounded-full mt-2"
+                    >
+                      Message vendor
+                    </Button>
+                  )}
 
                   <div className="grid grid-cols-2 gap-2 mt-3">
                     <Button

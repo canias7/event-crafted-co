@@ -3393,10 +3393,6 @@ export type Database = {
           vendor_name: string
         }[]
       }
-      find_or_create_direct_thread: {
-        Args: { p_vendor_id: string }
-        Returns: string
-      }
       find_or_create_partner_thread: {
         Args: { p_my_vendor_id?: string; p_other_vendor_id: string }
         Returns: string

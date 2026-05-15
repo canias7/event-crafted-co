@@ -126,20 +126,14 @@ export default function HostEventsPage() {
   const [showPast, setShowPast] = useState(false);
 
   const openEvent = useCallback(
-    async (event: HostEvent) => {
+    (event: HostEvent) => {
       if (event.vendors.length === 0) return;
       if (event.vendors.length === 1) {
-        const inquiryId = event.vendors[0].inquiry_id;
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const { data, error } = await (supabase as any).rpc(
-          "ensure_inquiry_thread",
-          { p_inquiry_id: inquiryId },
-        );
-        if (error || !data) {
-          toast.error(`Couldn't open thread: ${error?.message ?? "try again from the inbox"}`);
-          return;
-        }
-        navigate(`/customer/messages?thread=${data as string}`);
+        // Single-vendor event → jump straight into that inquiry's
+        // detail page (which calls ensure_inquiry_thread on load to
+        // surface the chat). Mirrors mobile, which routes to
+        // /(host)/thread/[id] for the same case.
+        navigate(`/customer/inquiries/${event.vendors[0].inquiry_id}`);
         return;
       }
       // Multi-vendor event: bounce to inquiries hub so the host can
