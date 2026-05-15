@@ -688,7 +688,7 @@ export default function VendorProfilePage() {
             the mobile app's hamburger). Below: avatar (click to upload
             a logo) + business name. Dashboard chip removed per
             request. */}
-        <div className="border-b border-border bg-card px-4 md:px-8 py-4">
+        <div className="border-b border-border/40 bg-card/60 backdrop-blur px-4 md:px-8 py-5">
           <div className="grid grid-cols-3 items-center max-w-3xl mx-auto">
             <div className="justify-self-start">
             <DropdownMenu open={createMenuOpen} onOpenChange={setCreateMenuOpen}>

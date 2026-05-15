@@ -225,7 +225,7 @@ export default function VendorMyProfilePage() {
         backPath="/vendor/dashboard"
       />
       <main className="flex-1 pb-20 lg:pb-0">
-        <div className="border-b border-border bg-card px-4 md:px-8 py-4">
+        <div className="border-b border-border/40 bg-card/60 backdrop-blur px-4 md:px-8 py-5">
           <h1 className="font-editorial text-3xl">My Profile</h1>
           <p className="text-sm text-muted-foreground">
             Your posts, reels, buzz, and listings — only yours.

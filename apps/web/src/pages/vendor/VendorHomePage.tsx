@@ -197,7 +197,7 @@ export default function VendorHomePage() {
         backPath="/vendor/dashboard"
       />
       <main className="flex-1 pb-20 lg:pb-0">
-        <div className="sticky top-0 z-40 border-b border-border bg-card px-4 md:px-8 py-4 space-y-3">
+        <div className="sticky top-0 z-40 border-b border-border/40 bg-card/60 backdrop-blur px-4 md:px-8 py-5 space-y-3">
           <div className="flex items-start justify-between gap-3 flex-wrap">
             <div>
               <h1 className="font-editorial text-3xl">Home</h1>

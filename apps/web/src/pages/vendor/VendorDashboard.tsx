@@ -205,7 +205,7 @@ export default function VendorDashboard() {
       <DashboardSidebar items={navItems} title={t("dashboard.vendor.title")} backPath="/" />
 
       <main id="main-content" className="flex-1 pb-20 lg:pb-0">
-        <div className="border-b border-border bg-card px-4 md:px-8 py-4 flex items-center justify-between sticky top-0 z-40">
+        <div className="border-b border-border/40 bg-card/60 backdrop-blur px-4 md:px-8 py-5 flex items-center justify-between sticky top-0 z-40">
           <div>
             {loading ? (
               <Skeleton className="h-6 w-44 mb-1" />

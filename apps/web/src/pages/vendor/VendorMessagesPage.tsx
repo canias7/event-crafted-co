@@ -378,7 +378,7 @@ export default function VendorMessagesPage() {
       <DashboardSidebar items={navItems} title="Vendor Portal" backPath="/" />
 
       <main id="main-content" className="flex-1 pb-20 lg:pb-0">
-        <div className="border-b border-border bg-card px-4 md:px-8 py-4 sticky top-0 z-40 space-y-3">
+        <div className="border-b border-border/40 bg-card/60 backdrop-blur px-4 md:px-8 py-5 sticky top-0 z-40 space-y-3">
           <div>
             <h1 className="font-editorial text-3xl">Messages</h1>
             <p className="text-sm text-muted-foreground">
