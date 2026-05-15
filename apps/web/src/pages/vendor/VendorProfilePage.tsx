@@ -1257,7 +1257,7 @@ export default function VendorProfilePage() {
               )}
 
               {isListing && !category && (
-                <div className="rounded-sm border border-dashed border-border bg-card/40 p-8 text-center">
+                <div className="rounded-2xl border border-dashed border-border bg-card/40 p-8 text-center">
                   <p className="text-sm text-muted-foreground max-w-sm mx-auto leading-relaxed">
                     {t("vendor_listing.category_nudge")}
                   </p>
@@ -1571,7 +1571,7 @@ function ListingPreviewCard({
 }) {
   const { t } = useTranslation();
   return (
-    <div className="rounded-sm border border-accent/40 bg-accent/5 p-5 max-w-md">
+    <div className="rounded-2xl border border-accent/40 bg-accent/5 p-5 max-w-md">
       <p className="font-label text-accent mb-3 inline-flex items-center gap-1.5">
         <Sparkles className="w-3 h-3" />
         {t("vendor_listing.preview.live")}
