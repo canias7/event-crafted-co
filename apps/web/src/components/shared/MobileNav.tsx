@@ -56,10 +56,10 @@ export function MobileNav({ items }: MobileNavProps) {
 
   return (
     <nav
-      className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-card border-t border-border px-2 pb-[env(safe-area-inset-bottom)]"
+      className="lg:hidden fixed bottom-0 left-0 right-0 z-50 px-4 pb-[max(env(safe-area-inset-bottom),12px)] pt-3 pointer-events-none"
       aria-label="Mobile primary"
     >
-      <div className="flex items-center justify-around h-16">
+      <div className="pointer-events-auto mx-auto max-w-md flex items-center justify-between h-16 px-2 rounded-full bg-card/95 backdrop-blur shadow-[0_8px_24px_-8px_rgba(26,20,16,0.25)] border border-border/40">
         {primaryItems.map((item) => {
           const isActive =
             location.pathname === item.path ||
@@ -68,13 +68,15 @@ export function MobileNav({ items }: MobileNavProps) {
             <Link
               key={item.path}
               to={item.path}
-              className={`flex flex-col items-center gap-1 px-2 py-1 text-xs transition-colors ${
-                isActive ? "text-foreground" : "text-muted-foreground"
+              className={`flex items-center justify-center rounded-full w-12 h-12 transition-colors ${
+                isActive
+                  ? "bg-foreground text-background"
+                  : "text-muted-foreground hover:text-foreground"
               }`}
               aria-current={isActive ? "page" : undefined}
+              aria-label={t(item.labelKey)}
             >
               <item.icon className="w-5 h-5" aria-hidden="true" />
-              <span className="font-medium">{t(item.labelKey)}</span>
             </Link>
           );
         })}
@@ -83,11 +85,10 @@ export function MobileNav({ items }: MobileNavProps) {
           <SheetTrigger asChild>
             <button
               type="button"
-              className="flex flex-col items-center gap-1 px-2 py-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+              className="flex items-center justify-center rounded-full w-12 h-12 text-muted-foreground hover:text-foreground transition-colors"
               aria-label="More navigation"
             >
               <MoreHorizontal className="w-5 h-5" aria-hidden="true" />
-              <span className="font-medium">More</span>
             </button>
           </SheetTrigger>
           <SheetContent
