@@ -195,7 +195,7 @@ export default function PaymentsPage() {
       <main id="main-content" className="flex-1 pb-20 lg:pb-0">
         <div className="border-b border-border bg-card px-4 md:px-8 py-4 flex items-center justify-between sticky top-0 z-40">
           <div>
-            <h1 className="font-display text-xl">Budget</h1>
+            <h1 className="font-editorial text-3xl">Budget</h1>
             <p className="text-sm text-muted-foreground">
               Track every line item across your event
             </p>
@@ -251,7 +251,7 @@ export default function PaymentsPage() {
             </div>
           )}
 
-          <div className="bg-card rounded-sm border border-border overflow-hidden">
+          <div className="card-soft overflow-hidden">
             {loading ? (
               <div className="p-6 space-y-3">
                 {[0, 1, 2].map((i) => (
@@ -261,7 +261,7 @@ export default function PaymentsPage() {
             ) : items.length === 0 ? (
               <div className="text-center py-16 px-6">
                 <CreditCard className="w-10 h-10 mx-auto text-muted-foreground/40 mb-4" />
-                <p className="font-display text-xl mb-2">
+                <p className="font-editorial text-3xl mb-2">
                   No line items yet
                 </p>
                 <p className="text-sm text-muted-foreground max-w-sm mx-auto mb-6 leading-relaxed">
@@ -440,7 +440,7 @@ function AddBudgetItemDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md rounded-sm">
         <DialogHeader>
-          <DialogTitle className="font-display text-2xl">
+          <DialogTitle className="font-editorial text-3xl">
             New line item
           </DialogTitle>
           <DialogDescription className="text-sm">

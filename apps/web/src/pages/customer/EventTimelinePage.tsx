@@ -190,7 +190,7 @@ export default function EventTimelinePage() {
         <div className="border-b border-border bg-card px-4 md:px-8 py-4 sticky top-0 z-40 space-y-3">
           <div className="flex items-center justify-between flex-wrap gap-3">
             <div>
-              <h1 className="font-display text-xl">Event-day timeline</h1>
+              <h1 className="font-editorial text-3xl">Event-day timeline</h1>
               <p className="text-sm text-muted-foreground">
                 {items.length === 0
                   ? "Map out the run of show — vendor arrivals, ceremony, dinner, dance"
@@ -271,7 +271,7 @@ export default function EventTimelinePage() {
               <div className="w-12 h-12 mx-auto rounded-full bg-secondary flex items-center justify-center mb-4">
                 <Clock className="w-5 h-5 text-muted-foreground" />
               </div>
-              <h3 className="font-display text-xl mb-2">
+              <h3 className="font-editorial text-3xl mb-2">
                 No timeline items yet
               </h3>
               <p className="text-sm text-muted-foreground mb-6 leading-relaxed">
@@ -305,7 +305,7 @@ export default function EventTimelinePage() {
                     className="absolute left-[64px] top-3 w-2 h-2 rounded-full bg-accent ring-4 ring-background"
                     aria-hidden="true"
                   />
-                  <div className="rounded-sm border border-border bg-card p-4">
+                  <div className="card-soft p-4">
                     <div className="flex items-start justify-between gap-3 mb-2">
                       <div className="min-w-0">
                         <p className="font-display text-base">{it.title}</p>
@@ -377,7 +377,7 @@ export default function EventTimelinePage() {
         <Dialog open={templatePickerOpen} onOpenChange={setTemplatePickerOpen}>
           <DialogContent className="sm:max-w-md rounded-sm">
             <DialogHeader>
-              <DialogTitle className="font-display text-2xl">
+              <DialogTitle className="font-editorial text-3xl">
                 Pick a starter timeline
               </DialogTitle>
             </DialogHeader>
@@ -389,7 +389,7 @@ export default function EventTimelinePage() {
                     type="button"
                     onClick={() => applyTemplate(tpl)}
                     disabled={applyingTemplate}
-                    className="w-full text-left rounded-sm border border-border bg-card p-4 hover:border-foreground/30 transition-colors disabled:opacity-50"
+                    className="w-full text-left card-soft p-4 hover:border-foreground/30 transition-colors disabled:opacity-50"
                   >
                     <p className="font-display text-base mb-1">{tpl.label}</p>
                     <p className="text-xs text-muted-foreground leading-relaxed">
@@ -499,7 +499,7 @@ function ItemEditor({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md rounded-sm">
         <DialogHeader>
-          <DialogTitle className="font-display text-2xl">
+          <DialogTitle className="font-editorial text-3xl">
             {editing ? "Edit timeline item" : "New timeline item"}
           </DialogTitle>
           <DialogDescription>

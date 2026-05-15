@@ -273,7 +273,7 @@ export default function TasksPage() {
         <div className="border-b border-border bg-card px-4 md:px-8 py-4 sticky top-0 z-40 space-y-3">
           <div className="flex items-center justify-between gap-3 flex-wrap">
             <div>
-              <h1 className="font-display text-xl">Tasks</h1>
+              <h1 className="font-editorial text-3xl">Tasks</h1>
               <p className="text-sm text-muted-foreground">
                 {pendingCount} pending {pendingCount === 1 ? "task" : "tasks"}
               </p>
@@ -338,7 +338,7 @@ export default function TasksPage() {
           ) : visibleTasks.length === 0 ? (
             <div className="text-center py-16 px-6 bg-card border border-border rounded-sm">
               <Calendar className="w-10 h-10 mx-auto text-muted-foreground/40 mb-4" />
-              <p className="font-display text-xl mb-2">
+              <p className="font-editorial text-3xl mb-2">
                 {tasks.length === 0
                   ? "No tasks yet"
                   : "Nothing matches that filter"}
@@ -399,7 +399,7 @@ export default function TasksPage() {
               {visibleTasks.map((t) => (
                 <div
                   key={t.id}
-                  className="flex items-center gap-3 p-4 rounded-sm border border-border bg-card group"
+                  className="flex items-center gap-3 p-4 card-soft group"
                 >
                   <button
                     onClick={() => toggleComplete(t)}

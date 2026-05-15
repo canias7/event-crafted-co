@@ -262,7 +262,7 @@ export default function PlanningTeamPage() {
         <div className="border-b border-border bg-card px-4 md:px-8 py-4 sticky top-0 z-40 space-y-3">
           <div className="flex items-center justify-between flex-wrap gap-4">
           <div>
-            <h1 className="font-display text-xl">Planning team</h1>
+            <h1 className="font-editorial text-3xl">Planning team</h1>
             <p className="text-sm text-muted-foreground">
               Share your event workspace with your partner, MOH, planner, or family
             </p>
@@ -373,7 +373,7 @@ export default function PlanningTeamPage() {
                 <p className="font-label text-muted-foreground mb-3">
                   Your team
                 </p>
-                <div className="rounded-sm border border-border bg-card divide-y divide-border">
+                <div className="card-soft divide-y divide-border">
                   {collaborators.map((c) => {
                     const role = roleBadge[c.role];
                     const Icon = role.Icon;
@@ -458,7 +458,7 @@ export default function PlanningTeamPage() {
                   <p className="font-label text-muted-foreground mb-3">
                     Pending invites
                   </p>
-                  <div className="rounded-sm border border-border bg-card divide-y divide-border">
+                  <div className="card-soft divide-y divide-border">
                     {invites.map((i) => (
                       <div
                         key={i.id}

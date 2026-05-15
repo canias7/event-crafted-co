@@ -253,7 +253,7 @@ export default function MoodBoardDetailPage() {
       <div className="flex min-h-screen bg-background">
         <DashboardSidebar items={navItems} title="Customer" backPath="/" />
         <main className="flex-1 p-12 text-center">
-          <p className="font-display text-xl mb-2">Board not found</p>
+          <p className="font-editorial text-3xl mb-2">Board not found</p>
           <Link to="/customer/moodboards" className="text-sm text-accent">
             Back to mood boards
           </Link>
@@ -277,7 +277,7 @@ export default function MoodBoardDetailPage() {
           </Link>
           <div className="flex items-start justify-between gap-4 flex-wrap">
             <div>
-              <h1 className="font-display text-xl">{board.name}</h1>
+              <h1 className="font-editorial text-3xl">{board.name}</h1>
               {board.description && (
                 <p className="text-sm text-muted-foreground mt-1">
                   {board.description}
@@ -429,7 +429,7 @@ export default function MoodBoardDetailPage() {
               <div className="w-12 h-12 mx-auto rounded-full bg-secondary flex items-center justify-center mb-4">
                 <ImageIcon className="w-5 h-5 text-muted-foreground" />
               </div>
-              <h3 className="font-display text-xl mb-2">No pins yet</h3>
+              <h3 className="font-editorial text-3xl mb-2">No pins yet</h3>
               <p className="text-sm text-muted-foreground leading-relaxed">
                 Upload images from your device or paste URLs from Pinterest,
                 Instagram, or anywhere else on the web.

@@ -38,7 +38,7 @@ export default function InvitationBuilder() {
         <div className="border-b border-border bg-card px-4 md:px-8 py-4 sticky top-0 z-40 space-y-3">
           <div className="flex items-center justify-between gap-3 flex-wrap">
             <div>
-              <h1 className="font-display text-xl">Invitation Builder</h1>
+              <h1 className="font-editorial text-3xl">Invitation Builder</h1>
               <p className="text-sm text-muted-foreground">Design your perfect invitation</p>
             </div>
             <div className="flex items-center gap-2">
