@@ -156,7 +156,7 @@ export default function CustomerExplorePage() {
       <DashboardSidebar
         items={customerNavItems}
         title="Explore"
-        backPath="/customer/dashboard"
+        backPath="/customer/explore"
       />
       <main id="main-content" className="flex-1 pb-20 lg:pb-0">
         <div className="sticky top-0 z-40 border-b border-border/40 bg-card/60 backdrop-blur px-4 md:px-8 py-5 space-y-3">

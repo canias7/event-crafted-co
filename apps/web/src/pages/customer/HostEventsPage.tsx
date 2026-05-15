@@ -238,7 +238,7 @@ export default function HostEventsPage() {
 
   return (
     <div className="flex min-h-screen bg-background">
-      <DashboardSidebar items={navItems} title="Events" backPath="/customer/dashboard" />
+      <DashboardSidebar items={navItems} title="Events" backPath="/customer/explore" />
       <main className="flex-1 pb-24 md:pb-0">
         <div className="px-5 pt-8 pb-12 md:px-12 md:pt-12 max-w-4xl mx-auto md:mx-0">
           <div className="flex items-center justify-between gap-3 flex-wrap">

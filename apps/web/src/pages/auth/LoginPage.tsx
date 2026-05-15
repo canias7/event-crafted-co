@@ -13,7 +13,7 @@ interface LoginPageProps {
   // When set, the form is themed for that role and the success redirect
   // prefers that role's dashboard. We still cross-check the actual role
   // on the profile so a host who lands on the vendor form gets routed
-  // to /customer/dashboard, not into a vendor view they can't use.
+  // to /customer/explore, not into a vendor view they can't use.
   role?: "host" | "vendor";
 }
 
@@ -149,11 +149,11 @@ export default function LoginPage({ role }: LoginPageProps = {}) {
     if (role === "vendor" && hasVendorAccess) {
       navigate("/vendor/dashboard");
     } else if (role === "host") {
-      navigate("/customer/dashboard");
+      navigate("/customer/explore");
     } else {
       // No explicit intent — auto-detect: send vendors to vendor portal,
       // everyone else to the host dashboard.
-      navigate(hasVendorAccess ? "/vendor/dashboard" : "/customer/dashboard");
+      navigate(hasVendorAccess ? "/vendor/dashboard" : "/customer/explore");
     }
   }
 

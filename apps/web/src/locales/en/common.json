@@ -175,18 +175,9 @@
   },
   "sidebar": {
     "customer": {
-      "dashboard": "Dashboard",
-      "vendors": "Vendors",
-      "inquiries": "Inbox",
       "explore": "Explore",
-      "messages": "Messages",
+      "inquiries": "Inbox",
       "events": "Events",
-      "appointments": "Appointments",
-      "event": "Event",
-      "guests": "Guests",
-      "planning": "Planning",
-      "inspiration": "Inspiration",
-      "gifts": "Gifts",
       "profile": "Profile"
     },
     "vendor": {

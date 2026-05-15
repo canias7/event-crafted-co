@@ -37,7 +37,7 @@ export default function ComingSoonPage({
     title ?? (matched ? t(matched.labelKey) : "Coming soon");
   const sidebarTitle = side === "customer" ? "Customer" : "Vendor Portal";
   const fallbackCtaPath =
-    side === "customer" ? "/customer/dashboard" : "/vendor/dashboard";
+    side === "customer" ? "/customer/explore" : "/vendor/dashboard";
 
   return (
     <div className="flex min-h-screen bg-background">
