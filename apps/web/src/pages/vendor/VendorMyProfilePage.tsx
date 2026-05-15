@@ -351,6 +351,12 @@ function HeaderCard({
             </Button>
           </Link>
         ) : null}
+        <Link to="/vendor/edit-profile">
+          <Button variant="outline" className="rounded-full" size="sm">
+            <Edit3 className="h-3.5 w-3.5 mr-1" />
+            Edit identity
+          </Button>
+        </Link>
         <Link to="/vendor/listing">
           <Button className="rounded-full" size="sm">
             <Edit3 className="h-3.5 w-3.5 mr-1" />
