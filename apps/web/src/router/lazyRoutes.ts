@@ -131,16 +131,10 @@ export const RealEventsPage = lazyWithReload(importRealEvents);
 const importRealEventDetail = () => import("@/pages/RealEventDetailPage");
 export const RealEventDetailPage = lazyWithReload(importRealEventDetail);
 
-const importAcceptPlanningInvite = () => import("@/pages/AcceptPlanningInvitePage");
-export const AcceptPlanningInvitePage = lazyWithReload(importAcceptPlanningInvite);
-
 const importAcceptTeamInvite = () => import("@/pages/AcceptTeamInvitePage");
 export const AcceptTeamInvitePage = lazyWithReload(importAcceptTeamInvite);
 
 // ---------------- Customer (host) — mirrors mobile host tabs ----------------
-const importOnboarding = () => import("@/pages/customer/OnboardingPage");
-export const OnboardingPage = lazyWithReload(importOnboarding);
-
 const importInquiries = () => import("@/pages/customer/InquiriesPage");
 export const InquiriesPage = lazyWithReload(importInquiries);
 
@@ -243,9 +237,7 @@ const ROUTE_IMPORTERS: Array<{ pattern: string; importer: () => Promise<unknown>
   { pattern: "/real-events", importer: importRealEvents },
   { pattern: "/real-events/:slug", importer: importRealEventDetail },
   { pattern: "/accept-team-invite/:token", importer: importAcceptTeamInvite },
-  { pattern: "/accept-planning-invite/:token", importer: importAcceptPlanningInvite },
   // Customer — mirrors mobile host tabs (Explore / Inbox / Events / Profile + Settings)
-  { pattern: "/customer/onboarding", importer: importOnboarding },
   { pattern: "/customer/explore", importer: importCustomerExplore },
   { pattern: "/customer/inquiries", importer: importInquiries },
   { pattern: "/customer/inquiries/:inquiryId", importer: importHostInquiryDetail },
