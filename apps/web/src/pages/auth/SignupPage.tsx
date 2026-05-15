@@ -78,7 +78,7 @@ export default function SignupPage() {
         />
 
         <div className="relative z-10 flex flex-col justify-between p-10 lg:p-14 text-background w-full">
-          <Link to="/" className="font-display text-2xl">
+          <Link to="/" className="font-editorial text-3xl">
             Vendora
           </Link>
 
@@ -109,11 +109,11 @@ export default function SignupPage() {
       {/* Form */}
       <div className="flex-1 flex flex-col md:items-center md:justify-center px-6 pt-12 pb-12 md:p-12 bg-background">
         <div className="w-full max-w-sm">
-          <Link to="/" className="md:hidden font-display text-2xl block mb-8">
+          <Link to="/" className="md:hidden font-editorial text-3xl block mb-8">
             Vendora
           </Link>
 
-          <h1 className="font-display text-3xl md:text-4xl mb-2 leading-tight">
+          <h1 className="font-editorial text-4xl md:text-4xl mb-2 leading-tight">
             {t("auth.signup.title")}
           </h1>
           <p className="text-sm text-muted-foreground mb-10">
