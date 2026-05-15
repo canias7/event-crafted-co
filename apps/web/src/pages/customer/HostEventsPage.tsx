@@ -207,7 +207,7 @@ export default function HostEventsPage() {
         <div className="px-5 pt-8 pb-12 md:px-12 md:pt-12 max-w-4xl mx-auto md:mx-0">
           <div className="flex items-center justify-between gap-3 flex-wrap">
             <div>
-              <h1 className="text-4xl font-bold tracking-tight text-foreground">
+              <h1 className="font-editorial text-4xl text-foreground">
                 Events
               </h1>
               <p className="mt-2 text-base text-muted-foreground">
@@ -475,7 +475,7 @@ function EmptyState() {
       <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-secondary/60">
         <Inbox className="h-5 w-5 text-foreground" />
       </div>
-      <h2 className="font-display text-xl">No events yet</h2>
+      <h2 className="font-editorial text-2xl">No events yet</h2>
       <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">
         Send an inquiry to a vendor and your event will show up here.
       </p>

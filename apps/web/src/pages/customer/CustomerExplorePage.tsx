@@ -160,7 +160,7 @@ export default function CustomerExplorePage() {
       <main id="main-content" className="flex-1 pb-20 lg:pb-0">
         <div className="sticky top-0 z-40 border-b border-border bg-card px-4 md:px-8 py-4 space-y-3">
           <div>
-            <h1 className="font-display text-2xl">Explore</h1>
+            <h1 className="font-editorial text-3xl">Explore</h1>
             <p className="text-sm text-muted-foreground">
               Browse approved vendors, posts, reels, and buzz.
             </p>
@@ -299,7 +299,7 @@ function ListingsFeed({
         ];
         return (
           <div key={groupName}>
-            <h2 className="font-display text-2xl mb-4">{groupName}</h2>
+            <h2 className="font-editorial text-2xl mb-4">{groupName}</h2>
             <div className="space-y-6">
               {orderedSubs.map((subName) => {
                 const rows = subs.get(subName) ?? [];

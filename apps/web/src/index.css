@@ -196,6 +196,19 @@
     line-height: 1.1;
   }
 
+  /* Editorial italic serif — used for headlines across the host
+     portal to mirror the mobile design (Times New Roman italic on
+     iOS, system serif italic elsewhere). The mobile apps build their
+     entire identity around this typeface; web pages that talk
+     directly to hosts should match. */
+  .font-editorial {
+    font-family: 'Times New Roman', 'Times', Georgia, ui-serif, serif;
+    font-style: italic;
+    font-weight: 500;
+    letter-spacing: -0.01em;
+    line-height: 1.05;
+  }
+
   .font-body {
     font-family: 'Satoshi', system-ui, sans-serif;
     font-weight: 400;

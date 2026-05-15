@@ -189,7 +189,7 @@ export default function CustomerDashboard() {
         {/* Header */}
         <div className="border-b border-border bg-card px-4 md:px-8 py-4 flex items-center justify-between sticky top-0 z-40">
           <div>
-            <h1 className="font-display text-xl">
+            <h1 className="font-editorial text-3xl">
               {t("dashboard.common.welcome_back")}, {greeting}
             </h1>
             <p className="text-sm text-muted-foreground">

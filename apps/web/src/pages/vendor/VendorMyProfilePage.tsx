@@ -18,8 +18,10 @@ import {
   MapPin,
   MessageCircle,
   Plus,
+  Share2,
   Store,
 } from "lucide-react";
+import { toast } from "sonner";
 import { DashboardSidebar } from "@/components/shared/DashboardSidebar";
 import { MobileNav } from "@/components/shared/MobileNav";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -141,6 +143,37 @@ export default function VendorMyProfilePage() {
     return String(new Date(primary.created_at).getFullYear());
   }, [primary?.created_at]);
 
+  // Share the vendor's public listing URL. Falls back to clipboard
+  // when the browser doesn't expose navigator.share (desktop Chrome).
+  async function onShare() {
+    if (!primary) return;
+    const slugOrId = primary.slug ?? primary.id;
+    const url = `${window.location.origin}/vendors/${slugOrId}`;
+    const text = `${primary.business_name ?? "Check out my listing"} on Vendora`;
+    // Web Share API (mobile browsers + Safari)
+    if (
+      typeof navigator !== "undefined" &&
+      typeof (navigator as Navigator & { share?: unknown }).share === "function"
+    ) {
+      try {
+        await (
+          navigator as Navigator & {
+            share: (data: { title?: string; text?: string; url?: string }) => Promise<void>;
+          }
+        ).share({ title: text, text, url });
+        return;
+      } catch {
+        // user-cancelled — fall through to clipboard
+      }
+    }
+    try {
+      await navigator.clipboard.writeText(url);
+      toast.success("Link copied to clipboard.");
+    } catch {
+      toast.info(url);
+    }
+  }
+
   const initials = useMemo(() => {
     const n = primary?.business_name ?? user?.email ?? "V";
     return n.trim()[0]?.toUpperCase() ?? "V";
@@ -189,6 +222,7 @@ export default function VendorMyProfilePage() {
               category={primary?.category ?? null}
               listingHref={primary?.slug ? `/vendors/${primary.slug}` : null}
               stats={stats}
+              onShare={onShare}
             />
           )}
 
@@ -288,6 +322,7 @@ function HeaderCard({
   category,
   listingHref,
   stats,
+  onShare,
 }: {
   initials: string;
   logoUrl: string | null;
@@ -298,6 +333,7 @@ function HeaderCard({
   category: string | null;
   listingHref: string | null;
   stats: { posts: number; reels: number; buzz: number; listings: number };
+  onShare: () => void;
 }) {
   return (
     <div className="rounded-2xl bg-card border border-border shadow-sm p-6 flex flex-col sm:flex-row gap-5 items-start">
@@ -351,6 +387,15 @@ function HeaderCard({
             </Button>
           </Link>
         ) : null}
+        <Button
+          variant="outline"
+          className="rounded-full"
+          size="sm"
+          onClick={onShare}
+        >
+          <Share2 className="h-3.5 w-3.5 mr-1" />
+          Share profile
+        </Button>
         <Link to="/vendor/edit-profile">
           <Button variant="outline" className="rounded-full" size="sm">
             <Edit3 className="h-3.5 w-3.5 mr-1" />

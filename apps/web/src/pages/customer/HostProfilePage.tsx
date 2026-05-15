@@ -180,7 +180,7 @@ export default function HostProfilePage() {
       <main className="flex-1 pb-20 lg:pb-0">
         <div className="border-b border-border bg-card px-4 md:px-8 py-4 flex items-start justify-between gap-3">
           <div>
-            <h1 className="font-display text-2xl">Profile</h1>
+            <h1 className="font-editorial text-3xl">Profile</h1>
             <p className="text-sm text-muted-foreground">
               Your account at a glance.
             </p>
@@ -275,7 +275,7 @@ function HeroCard({
   verified: boolean;
 }) {
   return (
-    <div className="rounded-2xl bg-card border border-border shadow-sm p-8 flex flex-col items-center">
+    <div className="rounded-3xl bg-card border border-border/60 shadow-[0_8px_24px_-12px_rgba(26,20,16,0.18)] p-8 flex flex-col items-center">
       <div className="relative">
         <div className="w-28 h-28 rounded-full bg-foreground text-background flex items-center justify-center">
           <span className="font-display italic text-5xl">{initial}</span>
@@ -286,7 +286,7 @@ function HeroCard({
           </div>
         ) : null}
       </div>
-      <h2 className="mt-3 font-display italic text-2xl text-foreground text-center">
+      <h2 className="mt-3 font-editorial text-2xl text-foreground text-center">
         {name}
       </h2>
       <p className="mt-1 text-sm text-muted-foreground">
@@ -346,7 +346,7 @@ function ShortcutTile({
   return (
     <Link
       to={to}
-      className="block rounded-2xl bg-card border border-border p-4 hover:bg-secondary/40 transition"
+      className="block rounded-3xl bg-card border border-border/60 shadow-[0_8px_24px_-16px_rgba(26,20,16,0.16)] p-4 hover:bg-secondary/40 transition"
     >
       <div className="flex items-start justify-between">
         <div className="w-10 h-10 rounded-xl bg-secondary flex items-center justify-center">
@@ -358,7 +358,7 @@ function ShortcutTile({
           </span>
         ) : null}
       </div>
-      <p className="mt-3 font-display italic text-lg">{title}</p>
+      <p className="mt-3 font-editorial text-lg">{title}</p>
       <p className="text-sm text-muted-foreground">{subtitle}</p>
     </Link>
   );
@@ -433,7 +433,7 @@ function ActionCard({
   subtitle?: string;
 }) {
   const inner = (
-    <div className="rounded-2xl bg-card border border-border p-4 flex items-center gap-3 hover:bg-secondary/40 transition">
+    <div className="rounded-3xl bg-card border border-border/60 shadow-[0_8px_24px_-16px_rgba(26,20,16,0.16)] p-4 flex items-center gap-3 hover:bg-secondary/40 transition">
       <div
         className={`w-10 h-10 rounded-xl flex items-center justify-center ${iconBg}`}
       >
