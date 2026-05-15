@@ -195,13 +195,13 @@ export default function LoginPage({ role }: LoginPageProps = {}) {
       {/* Form */}
       <div className="flex-1 flex flex-col md:items-center md:justify-center px-6 pt-12 pb-12 md:p-12 bg-[#faf5ec]">
         <div className="w-full max-w-sm">
-          <Link to="/" className="md:hidden font-display text-2xl block mb-8">
+          <Link to="/" className="md:hidden font-editorial text-3xl block mb-8">
             Vendora
           </Link>
 
           {step === "credentials" ? (
             <>
-              <h1 className="font-display text-3xl md:text-4xl mb-2 leading-tight">
+              <h1 className="font-editorial text-4xl md:text-4xl mb-2 leading-tight">
                 {heading}
               </h1>
               <p className="text-sm text-muted-foreground mb-10">{subheading}</p>
@@ -279,7 +279,7 @@ export default function LoginPage({ role }: LoginPageProps = {}) {
             </>
           ) : (
             <>
-              <h1 className="font-display text-3xl md:text-4xl mb-2 leading-tight">
+              <h1 className="font-editorial text-4xl md:text-4xl mb-2 leading-tight">
                 Check your email
               </h1>
               <p className="text-sm text-muted-foreground mb-10">

@@ -47,7 +47,7 @@ export default function CheckEmailPage() {
         </div>
         <div className="absolute inset-0 bg-gradient-to-br from-foreground/85 via-foreground/60 to-foreground/35" />
         <div className="relative z-10 flex flex-col justify-between p-10 lg:p-14 text-background w-full">
-          <Link to="/" className="font-display text-2xl">
+          <Link to="/" className="font-editorial text-3xl">
             Vendora
           </Link>
           <div>
@@ -67,7 +67,7 @@ export default function CheckEmailPage() {
 
       <div className="flex-1 flex flex-col md:items-center md:justify-center px-6 pt-12 pb-12 md:p-12 bg-background">
         <div className="w-full max-w-sm">
-          <Link to="/" className="md:hidden font-display text-2xl block mb-8">
+          <Link to="/" className="md:hidden font-editorial text-3xl block mb-8">
             Vendora
           </Link>
 
@@ -75,7 +75,7 @@ export default function CheckEmailPage() {
             <Mail className="w-5 h-5" />
           </div>
 
-          <h1 className="font-display text-3xl md:text-4xl mb-2 leading-tight">
+          <h1 className="font-editorial text-4xl md:text-4xl mb-2 leading-tight">
             Check your email
           </h1>
           <p className="text-sm text-muted-foreground mb-8 leading-relaxed">

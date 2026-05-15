@@ -26,11 +26,11 @@ export default function LoginRoleChooserPage() {
 
       <div className="flex-1 flex flex-col md:items-center md:justify-center px-6 pt-12 pb-12 md:p-12 bg-[#faf5ec]">
         <div className="w-full max-w-sm">
-          <Link to="/" className="md:hidden font-display text-2xl block mb-8">
+          <Link to="/" className="md:hidden font-editorial text-3xl block mb-8">
             Vendora
           </Link>
 
-          <h1 className="font-display text-3xl md:text-4xl mb-2 leading-tight">
+          <h1 className="font-editorial text-4xl md:text-5xl mb-2 leading-tight">
             How are you signing in?
           </h1>
           <p className="text-sm text-muted-foreground mb-10">
@@ -46,7 +46,7 @@ export default function LoginRoleChooserPage() {
                 <CalendarHeart className="h-5 w-5" />
               </div>
               <div className="flex-1">
-                <p className="font-display text-lg leading-tight">Host sign in</p>
+                <p className="font-editorial text-xl leading-tight">Host sign in</p>
                 <p className="text-xs text-muted-foreground">
                   Plan events, message vendors, manage bookings.
                 </p>
@@ -62,7 +62,7 @@ export default function LoginRoleChooserPage() {
                 <Briefcase className="h-5 w-5" />
               </div>
               <div className="flex-1">
-                <p className="font-display text-lg leading-tight">Vendor sign in</p>
+                <p className="font-editorial text-xl leading-tight">Vendor sign in</p>
                 <p className="text-xs text-muted-foreground">
                   Manage inquiries, your listing, packages, and calendar.
                 </p>
