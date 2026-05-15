@@ -1,6 +1,22 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { Send, Loader2, MessageSquare, FileText, Smile } from "lucide-react";
+import {
+  Send,
+  Loader2,
+  MessageSquare,
+  FileText,
+  Smile,
+  MoreHorizontal,
+  BellOff,
+  Bell,
+  Flag,
+} from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useRealtime } from "@/lib/realtime";
@@ -115,6 +131,7 @@ export default function VendorMessagesPage() {
   const [sending, setSending] = useState(false);
   const [activeNow, setActiveNow] = useState(false);
   const [emojiOpen, setEmojiOpen] = useState(false);
+  const [muted, setMuted] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   async function loadThreads() {
@@ -176,6 +193,75 @@ export default function VendorMessagesPage() {
     () => threads.find((t) => t.id === activeThreadId) ?? null,
     [threads, activeThreadId],
   );
+
+  // Seed mute state from thread_mutes so the menu reflects reality
+  // on open. Mirrors vendor-mobile/(vendor)/thread/[id].tsx.
+  // Cast as any: thread_mutes/thread_reports not in generated types yet.
+  useEffect(() => {
+    if (!user?.id || !activeThreadId) {
+      setMuted(false);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data } = await (supabase as any)
+        .from("thread_mutes")
+        .select("thread_id")
+        .eq("user_id", user.id)
+        .eq("thread_id", activeThreadId)
+        .maybeSingle();
+      if (!cancelled) setMuted(data != null);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.id, activeThreadId]);
+
+  async function toggleMute() {
+    if (!user?.id || !activeThreadId) return;
+    const next = !muted;
+    setMuted(next);
+    if (next) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error } = await (supabase as any)
+        .from("thread_mutes")
+        .insert({ user_id: user.id, thread_id: activeThreadId });
+      if (error) {
+        setMuted(false);
+        toast.error(error.message);
+      } else toast.success("Notifications muted for this thread.");
+    } else {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error } = await (supabase as any)
+        .from("thread_mutes")
+        .delete()
+        .eq("user_id", user.id)
+        .eq("thread_id", activeThreadId);
+      if (error) {
+        setMuted(true);
+        toast.error(error.message);
+      } else toast.success("Notifications re-enabled.");
+    }
+  }
+
+  async function reportThread() {
+    if (!user?.id || !activeThreadId) return;
+    const reason = window.prompt(
+      "Report this conversation — what's wrong?\n\n(Sent to our team; the other party isn't notified.)",
+    );
+    if (reason === null) return;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error } = await (supabase as any)
+      .from("thread_reports")
+      .insert({
+        thread_id: activeThreadId,
+        reporter_id: user.id,
+        reason: reason.trim() || null,
+      });
+    if (error) toast.error(`Couldn't send report: ${error.message}`);
+    else toast.success("Reported. We'll review and follow up if needed.");
+  }
 
   // Active-now polling — uses get_user_last_seen RPC, polls every 30s
   // while a thread is open. Mirror of customer/MessagesPage.tsx.
@@ -384,20 +470,66 @@ export default function VendorMessagesPage() {
                       {activeThread.inquiry_id
                         ? "Has a structured inquiry"
                         : "DM only — no inquiry yet"}
+                      {muted ? (
+                        <>
+                          <span className="opacity-60">·</span>
+                          <span className="inline-flex items-center gap-1">
+                            <BellOff className="w-3 h-3" />
+                            Muted
+                          </span>
+                        </>
+                      ) : null}
                     </p>
                   </div>
-                  {activeThread.inquiry_id && (
-                    <Link to={`/vendor/inbox/${activeThread.inquiry_id}`}>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="rounded-full h-8 text-xs"
-                      >
-                        <FileText className="w-3 h-3 mr-1" />
-                        Open inquiry
-                      </Button>
-                    </Link>
-                  )}
+                  <div className="flex items-center gap-2">
+                    {activeThread.inquiry_id && (
+                      <Link to={`/vendor/inbox/${activeThread.inquiry_id}`}>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="rounded-full h-8 text-xs"
+                        >
+                          <FileText className="w-3 h-3 mr-1" />
+                          Open inquiry
+                        </Button>
+                      </Link>
+                    )}
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="rounded-full"
+                          aria-label="Thread options"
+                        >
+                          <MoreHorizontal className="w-4 h-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={toggleMute}>
+                          {muted ? (
+                            <>
+                              <Bell className="w-3.5 h-3.5 mr-2" />
+                              Unmute notifications
+                            </>
+                          ) : (
+                            <>
+                              <BellOff className="w-3.5 h-3.5 mr-2" />
+                              Mute notifications
+                            </>
+                          )}
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={reportThread}
+                          className="text-destructive"
+                        >
+                          <Flag className="w-3.5 h-3.5 mr-2" />
+                          Report
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
                 </div>
 
                 <div className="flex-1 overflow-y-auto p-6 space-y-1.5">
