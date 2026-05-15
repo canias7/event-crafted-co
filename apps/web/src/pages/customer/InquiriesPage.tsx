@@ -1,13 +1,11 @@
 import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { Plus, Sparkles, Inbox, Search } from "lucide-react";
+import { Plus, Inbox, Search } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useRealtime } from "@/lib/realtime";
 import { useAuth } from "@/hooks/useAuth";
 import { DashboardSidebar } from "@/components/shared/DashboardSidebar";
 import { MobileNav } from "@/components/shared/MobileNav";
-import { SubNavTabs } from "@/components/shared/SubNavTabs";
-import { INQUIRIES_HUB_TABS } from "@/data/hubTabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -39,7 +37,6 @@ interface InquiryRow {
 
 const statusStyles: Record<string, string> = {
   new: "bg-accent/15 text-accent border-accent/30",
-  drafted: "bg-secondary text-secondary-foreground border-border",
   replied: "bg-foreground text-background border-foreground",
   won: "bg-accent text-accent-foreground border-accent",
   lost: "bg-muted text-muted-foreground border-border",
@@ -48,7 +45,6 @@ const statusStyles: Record<string, string> = {
 
 const statusLabel: Record<string, string> = {
   new: "Awaiting reply",
-  drafted: "AI drafting",
   replied: "Replied",
   won: "Booked",
   lost: "Closed",
@@ -154,12 +150,15 @@ export default function InquiriesPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Filter chips mirror mobile inbox (apps/host-mobile/app/(host)/inbox.tsx):
+  //   All / Awaiting / Replied / Booked. No "Closed" — lost/expired
+  //   inquiries are rare and hosts almost never filter for them.
   const filterOptions = [
     { value: "all", label: "All", matches: () => true },
     {
       value: "awaiting",
       label: "Awaiting",
-      matches: (s: string) => s === "new" || s === "drafted",
+      matches: (s: string) => s === "new",
     },
     {
       value: "replied",
@@ -170,11 +169,6 @@ export default function InquiriesPage() {
       value: "booked",
       label: "Booked",
       matches: (s: string) => s === "won",
-    },
-    {
-      value: "closed",
-      label: "Closed",
-      matches: (s: string) => s === "lost" || s === "expired",
     },
   ];
 
@@ -205,12 +199,12 @@ export default function InquiriesPage() {
       <DashboardSidebar items={navItems} title="Customer" backPath="/" />
 
       <main id="main-content" className="flex-1 pb-20 lg:pb-0">
-        <div className="border-b border-border/40 bg-card/60 backdrop-blur px-4 md:px-8 py-5 sticky top-0 z-40 space-y-3">
+        <div className="border-b border-border/40 bg-card/60 backdrop-blur px-4 md:px-8 py-5 sticky top-0 z-40">
           <div className="flex items-center justify-between gap-3 flex-wrap">
             <div>
-              <h1 className="font-editorial text-3xl">Inquiries</h1>
+              <h1 className="font-editorial text-3xl">Inbox</h1>
               <p className="text-sm text-muted-foreground">
-                Conversations with vendors you've contacted
+                Your inquiries to vendors — all in one place
               </p>
             </div>
             <div className="flex items-center gap-2">
@@ -224,7 +218,6 @@ export default function InquiriesPage() {
               </Button>
             </div>
           </div>
-          <SubNavTabs tabs={INQUIRIES_HUB_TABS} />
         </div>
 
         <div className="p-4 md:p-8 space-y-6">
@@ -278,14 +271,14 @@ export default function InquiriesPage() {
                 <Inbox className="w-10 h-10 mx-auto text-muted-foreground/40 mb-4" />
                 <h3 className="font-editorial text-2xl mb-2">
                   {rows.length === 0
-                    ? "No inquiries yet"
+                    ? "No conversations yet"
                     : search
                       ? "Nothing matches that search"
                       : "Nothing matches that filter"}
                 </h3>
                 <p className="text-sm text-muted-foreground max-w-sm mx-auto mb-6 leading-relaxed">
                   {rows.length === 0
-                    ? "Browse the directory and send your first inquiry — vendors reply with AI-assisted drafts, usually within a few hours."
+                    ? "Reach out to a vendor from Explore — every reply lands here so the conversation stays in one place."
                     : search
                       ? "Try a different search term."
                       : "Try a different status filter above."}
@@ -293,7 +286,7 @@ export default function InquiriesPage() {
                 <div className="flex gap-2 justify-center">
                   {rows.length === 0 && (
                     <>
-                      <Link to="/vendors">
+                      <Link to="/customer/explore">
                         <Button variant="outline" className="rounded-full">
                           Browse vendors
                         </Button>
@@ -374,12 +367,6 @@ export default function InquiriesPage() {
                       </div>
 
                       <div className="flex items-center justify-between md:justify-end gap-4 md:gap-6 md:flex-shrink-0">
-                        {r.status === "drafted" && (
-                          <span className="hidden sm:flex items-center gap-1.5 text-xs text-accent">
-                            <Sparkles className="w-3 h-3" />
-                            AI drafting reply…
-                          </span>
-                        )}
                         <Badge
                           variant="outline"
                           className={`${statusStyles[r.status] ?? ""} font-medium`}
