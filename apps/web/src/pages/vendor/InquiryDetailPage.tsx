@@ -10,6 +10,7 @@ import {
   Send,
   Loader2,
 } from "lucide-react";
+import { groupMessages } from "@/lib/threadFormatting";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -553,31 +554,56 @@ export default function InquiryDetailPage() {
               No messages yet.
             </p>
           ) : (
-            messages.map((m) => (
-              <div
-                key={m.id}
-                className={`p-4 rounded-sm ${
-                  m.sender_role === "vendor" || m.sender_role === "agent"
-                    ? "bg-accent/10 ml-8"
-                    : "bg-secondary/60 mr-8"
-                }`}
-              >
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-xs font-medium capitalize">
-                    {m.sender_role === "agent" ? "you (AI)" : m.sender_role}
-                  </span>
-                  <span className="text-xs text-muted-foreground tnum">
-                    {new Date(m.sent_at ?? m.created_at).toLocaleString()}
-                  </span>
-                </div>
-                <p className="text-sm leading-relaxed whitespace-pre-wrap">
-                  {m.body}
-                </p>
-                {m.attachments && m.attachments.length > 0 && (
-                  <MessageAttachments attachments={m.attachments} />
-                )}
-              </div>
-            ))
+            <div className="space-y-1.5">
+              {groupMessages(messages, {
+                isMe: (m) =>
+                  m.sender_role === "vendor" || m.sender_role === "agent",
+                senderKey: (m) =>
+                  m.sender_role === "agent" ? "vendor" : m.sender_role,
+                createdAt: (m) => m.sent_at ?? m.created_at,
+                id: (m) => m.id,
+              }).map((it) => {
+                if (it.kind === "sep") {
+                  return (
+                    <div
+                      key={it.key}
+                      className="flex items-center justify-center py-3"
+                    >
+                      <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                        — {it.label} —
+                      </span>
+                    </div>
+                  );
+                }
+                const m = it.message;
+                const isAi = m.sender_role === "agent";
+                return (
+                  <div
+                    key={m.id}
+                    className={`max-w-[80%] px-3.5 py-2 text-sm leading-relaxed whitespace-pre-wrap ${
+                      it.isMe
+                        ? "bg-foreground text-background ml-auto"
+                        : "bg-secondary"
+                    } ${it.firstInGroup ? "mt-2" : "mt-0.5"} ${
+                      it.isMe
+                        ? `rounded-2xl ${it.showTail ? "rounded-br-sm" : ""}`
+                        : `rounded-2xl ${it.showTail ? "rounded-bl-sm" : ""}`
+                    }`}
+                  >
+                    {isAi ? (
+                      <span className="inline-flex items-center gap-1 text-[10px] uppercase tracking-wider opacity-80 mb-1">
+                        <Sparkles className="w-3 h-3" />
+                        Sent by AI
+                      </span>
+                    ) : null}
+                    <p>{m.body}</p>
+                    {m.attachments && m.attachments.length > 0 && (
+                      <MessageAttachments attachments={m.attachments} />
+                    )}
+                  </div>
+                );
+              })}
+            </div>
           )}
         </div>
 

@@ -1,7 +1,13 @@
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useRealtime } from "@/lib/realtime";
 import { Link, useParams } from "react-router-dom";
-import { ArrowLeft, Send, Loader2, Star, Sparkles, Paperclip, X, CalendarDays } from "lucide-react";
+import { ArrowLeft, Send, Loader2, Star, Sparkles, Paperclip, X, CalendarDays, Smile } from "lucide-react";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { QUICK_EMOJIS, groupMessages } from "@/lib/threadFormatting";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -492,39 +498,49 @@ export default function HostInquiryDetailPage() {
                       vendor will reply soon.
                     </p>
                   ) : (
-                    messages.map((m) => {
-                      const isHost = m.sender_role === "host";
-                      const senderLabel = isHost
-                        ? "You"
-                        : (inquiry.vendor?.business_name ?? "Vendor");
-                      return (
-                        <div
-                          key={m.id}
-                          className={`p-4 rounded-sm ${
-                            isHost
-                              ? "bg-accent/10 ml-8 sm:ml-16"
-                              : "bg-secondary/60 mr-8 sm:mr-16"
-                          }`}
-                        >
-                          <div className="flex items-center justify-between mb-1.5">
-                            <span className="text-xs font-medium">
-                              {senderLabel}
-                            </span>
-                            <span className="text-xs text-muted-foreground tnum">
-                              {new Date(
-                                m.sent_at ?? m.created_at,
-                              ).toLocaleString()}
-                            </span>
-                          </div>
-                          <p className="text-sm leading-relaxed whitespace-pre-wrap">
+                    <div className="space-y-1.5">
+                      {groupMessages(messages, {
+                        isMe: (m) => m.sender_role === "host",
+                        senderKey: (m) => m.sender_role,
+                        createdAt: (m) => m.sent_at ?? m.created_at,
+                        id: (m) => m.id,
+                      }).map((it) => {
+                        if (it.kind === "sep") {
+                          return (
+                            <div
+                              key={it.key}
+                              className="flex items-center justify-center py-3"
+                            >
+                              <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                                — {it.label} —
+                              </span>
+                            </div>
+                          );
+                        }
+                        const m = it.message;
+                        return (
+                          <div
+                            key={m.id}
+                            className={`max-w-[80%] px-3.5 py-2 text-sm leading-relaxed whitespace-pre-wrap ${
+                              it.isMe
+                                ? "bg-foreground text-background ml-auto"
+                                : "bg-secondary"
+                            } ${it.firstInGroup ? "mt-2" : "mt-0.5"} ${
+                              it.isMe
+                                ? `rounded-2xl ${it.showTail ? "rounded-br-sm" : ""}`
+                                : `rounded-2xl ${it.showTail ? "rounded-bl-sm" : ""}`
+                            }`}
+                          >
                             {m.body}
-                          </p>
-                          {m.attachments && m.attachments.length > 0 && (
-                            <MessageAttachments attachments={m.attachments} />
-                          )}
-                        </div>
-                      );
-                    })
+                            {m.attachments && m.attachments.length > 0 && (
+                              <MessageAttachments
+                                attachments={m.attachments}
+                              />
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
                   )}
                 </div>
 
@@ -562,17 +578,50 @@ export default function HostInquiryDetailPage() {
                     </div>
                   )}
                   <div className="flex items-center justify-between gap-2 mt-3">
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => fileInputRef.current?.click()}
-                      disabled={sending || pendingFiles.length >= MAX_FILES}
-                      className="rounded-full text-muted-foreground"
-                    >
-                      <Paperclip className="w-3.5 h-3.5 mr-1.5" />
-                      Attach
-                    </Button>
+                    <div className="flex items-center gap-1">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={sending || pendingFiles.length >= MAX_FILES}
+                        className="rounded-full text-muted-foreground"
+                      >
+                        <Paperclip className="w-3.5 h-3.5 mr-1.5" />
+                        Attach
+                      </Button>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="rounded-full"
+                            disabled={sending}
+                            aria-label="Quick reactions"
+                          >
+                            <Smile className="w-4 h-4" />
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent
+                          side="top"
+                          align="start"
+                          className="w-56 p-2"
+                        >
+                          <div className="grid grid-cols-6 gap-1">
+                            {QUICK_EMOJIS.map((e) => (
+                              <button
+                                key={e}
+                                onClick={() => setComposer((v) => v + e)}
+                                className="text-xl rounded-md p-1.5 hover:bg-secondary transition-colors"
+                              >
+                                {e}
+                              </button>
+                            ))}
+                          </div>
+                        </PopoverContent>
+                      </Popover>
+                    </div>
                     <input
                       ref={fileInputRef}
                       type="file"
