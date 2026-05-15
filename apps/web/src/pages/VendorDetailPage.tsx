@@ -34,6 +34,7 @@ import { VideoEmbed } from "@/components/vendor/VideoEmbed";
 import { ShowcaseStrip } from "@/components/vendor/ShowcaseStrip";
 import { VendorSocialFeed } from "@/components/vendor/VendorSocialFeed";
 import { VendorOtherListings } from "@/components/vendor/VendorOtherListings";
+import { VendorBrandCard } from "@/components/vendor/VendorBrandCard";
 import { VerificationBadges } from "@/components/vendor/VerificationBadges";
 import { CoBookedRail } from "@/components/vendor/CoBookedRail";
 import {
@@ -749,6 +750,11 @@ export default function VendorDetailPage() {
           <div className="grid lg:grid-cols-3 gap-12 lg:gap-16">
             {/* Main content */}
             <div className="lg:col-span-2 space-y-16">
+              {/* Cream-Ocean brand card — peach gradient + radial sun
+                  + italic-serif name + stat strip. Mirrors the mobile
+                  vendor profile sheet identity hero. */}
+              {vendor.isReal && <VendorBrandCard vendorId={vendor.id} />}
+
               {/* About */}
               <div>
                 <p className="font-label text-accent mb-4">About</p>

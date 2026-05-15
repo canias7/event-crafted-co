@@ -1,0 +1,167 @@
+// Cream-Ocean brand identity card for the public vendor detail page.
+// Mirrors apps/host-mobile/app/(host)/vendor/[id].tsx CreamOceanCard
+// front — peach gradient + radial sun + horizontal ripple lines +
+// italic-serif business name + avatar tile.
+//
+// Fetches its own data (logo_url, verified_at, business_name,
+// location, created_at, rating from public reviews) so callers
+// don't have to plumb fields through the Vendor type.
+
+import { useEffect, useState } from "react";
+import { CheckCircle2 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+
+interface VendorRow {
+  business_name: string | null;
+  location: string | null;
+  logo_url: string | null;
+  verified_at: string | null;
+  created_at: string | null;
+}
+
+export function VendorBrandCard({ vendorId }: { vendorId: string }) {
+  const [row, setRow] = useState<VendorRow | null>(null);
+  const [bookings, setBookings] = useState<number | null>(null);
+  const [ratingAvg, setRatingAvg] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (!vendorId) return;
+    let cancelled = false;
+    (async () => {
+      const [vp, rev, bk] = await Promise.all([
+        supabase
+          .from("vendor_profiles")
+          .select("business_name, location, logo_url, verified_at, created_at")
+          .eq("id", vendorId)
+          .maybeSingle(),
+        supabase
+          .from("reviews")
+          .select("rating")
+          .eq("vendor_id", vendorId),
+        supabase
+          .from("inquiries")
+          .select("id", { count: "exact", head: true })
+          .eq("vendor_id", vendorId)
+          .eq("status", "won"),
+      ]);
+      if (cancelled) return;
+      setRow((vp.data as VendorRow | null) ?? null);
+      const ratings = (rev.data as Array<{ rating: number }> | null) ?? [];
+      setRatingAvg(
+        ratings.length === 0
+          ? null
+          : ratings.reduce((s, r) => s + r.rating, 0) / ratings.length,
+      );
+      setBookings(bk.count ?? 0);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [vendorId]);
+
+  if (!row) return null;
+
+  const businessName = row.business_name ?? "Vendor";
+  const initial = businessName[0]?.toUpperCase() ?? "V";
+  const memberSinceYear = row.created_at
+    ? String(new Date(row.created_at).getFullYear())
+    : null;
+  const verified = !!row.verified_at;
+
+  return (
+    <div className="relative overflow-hidden rounded-3xl border border-[#e8dfcf] shadow-[0_8px_24px_-12px_rgba(26,20,16,0.18)] bg-[linear-gradient(135deg,#fffbf2_0%,#faecd0_100%)] px-6 py-7 sm:px-8 sm:py-8">
+      <div
+        className="pointer-events-none absolute inset-0"
+        aria-hidden
+        style={{
+          background:
+            "radial-gradient(circle at 18% 22%, rgba(255,230,180,0.55), transparent 55%)",
+        }}
+      />
+      {[32, 48, 62, 76].map((top, i) => (
+        <div
+          key={top}
+          className="pointer-events-none absolute inset-x-0"
+          aria-hidden
+          style={{
+            top: `${top}%`,
+            height: "1.5px",
+            background: `linear-gradient(90deg, rgba(168,137,63,0) 0%, rgba(255,240,200,${0.55 - i * 0.05}) 50%, rgba(168,137,63,0) 100%)`,
+          }}
+        />
+      ))}
+
+      <div className="relative flex items-center gap-5">
+        <div className="relative shrink-0">
+          {row.logo_url ? (
+            <img
+              src={row.logo_url}
+              alt={businessName}
+              className="w-[110px] h-[110px] rounded-[20px] object-cover bg-[#1a1410]"
+              style={{ boxShadow: "0 6px 18px -6px rgba(26,20,16,0.3)" }}
+            />
+          ) : (
+            <div
+              className="w-[110px] h-[110px] rounded-[20px] bg-[#1a1410] flex items-center justify-center"
+              style={{ boxShadow: "0 6px 18px -6px rgba(26,20,16,0.3)" }}
+            >
+              <span className="font-editorial text-[#fffbf2] text-6xl leading-none">
+                {initial}
+              </span>
+            </div>
+          )}
+          {verified ? (
+            <div className="absolute -right-1 -bottom-1 w-7 h-7 rounded-full bg-[#b8472f] border-[3px] border-[#fffbf2] flex items-center justify-center">
+              <CheckCircle2 className="w-3 h-3 text-white" />
+            </div>
+          ) : null}
+        </div>
+
+        <div className="min-w-0 flex-1">
+          <h3 className="font-editorial text-3xl text-[#1a1410] leading-[1.05] tracking-tight">
+            {businessName}
+          </h3>
+          {row.location ? (
+            <p className="mt-1 text-sm text-[#776c5f]">{row.location}</p>
+          ) : null}
+        </div>
+      </div>
+
+      <div className="relative mt-6 grid grid-cols-3 rounded-2xl bg-white/55 backdrop-blur-sm border border-white/40 px-3 py-3 divide-x divide-[#e8dfcf]">
+        <StatCell
+          label="Bookings"
+          value={bookings != null ? String(bookings) : "0"}
+        />
+        <StatCell
+          label="Rating"
+          value={ratingAvg != null ? ratingAvg.toFixed(1) : "—"}
+          italic
+        />
+        <StatCell label="Joined" value={memberSinceYear ?? "—"} />
+      </div>
+    </div>
+  );
+}
+
+function StatCell({
+  label,
+  value,
+  italic,
+}: {
+  label: string;
+  value: string;
+  italic?: boolean;
+}) {
+  return (
+    <div className="flex flex-col items-center justify-center px-2">
+      <span
+        className={`text-xl text-[#1a1410] tnum ${italic ? "font-editorial" : "font-semibold"}`}
+      >
+        {value}
+      </span>
+      <span className="mt-0.5 text-[10px] uppercase tracking-wider text-[#776c5f]">
+        {label}
+      </span>
+    </div>
+  );
+}
