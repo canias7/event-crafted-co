@@ -47,7 +47,7 @@ export default function CustomerVendorsBrowsePage() {
       <main id="main-content" className="flex-1 pb-20 lg:pb-0">
         <div className="border-b border-border bg-card px-4 md:px-8 py-4 sticky top-0 z-40 space-y-3">
           <div>
-            <h1 className="font-display text-xl">Vendors</h1>
+            <h1 className="font-editorial text-3xl">Vendors</h1>
             <p className="text-sm text-muted-foreground">
               Browse our curated network without leaving your dashboard
             </p>

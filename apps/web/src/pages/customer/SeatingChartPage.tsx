@@ -238,7 +238,7 @@ export default function SeatingChartPage() {
         <div className="border-b border-border bg-card px-4 md:px-8 py-4 sticky top-0 z-40 space-y-3">
           <div className="flex items-center justify-between flex-wrap gap-3">
             <div>
-              <h1 className="font-display text-xl">Seating chart</h1>
+              <h1 className="font-editorial text-3xl">Seating chart</h1>
               <p className="text-sm text-muted-foreground">
                 Drag guests onto tables · {totalAttending} attending,{" "}
                 {unassigned.length} unassigned
@@ -291,7 +291,7 @@ export default function SeatingChartPage() {
               <div className="w-12 h-12 mx-auto rounded-full bg-secondary flex items-center justify-center mb-4">
                 <Users className="w-5 h-5 text-muted-foreground" />
               </div>
-              <h3 className="font-display text-xl mb-2">No guests yet</h3>
+              <h3 className="font-editorial text-3xl mb-2">No guests yet</h3>
               <p className="text-sm text-muted-foreground leading-relaxed">
                 Add guests on the Guests page first — they'll show up here so
                 you can drag them onto tables.
@@ -351,7 +351,7 @@ export default function SeatingChartPage() {
                 <section>
                   {tables.length === 0 ? (
                     <div className="border border-dashed border-border rounded-sm p-12 text-center">
-                      <p className="font-display text-xl mb-2">
+                      <p className="font-editorial text-3xl mb-2">
                         No tables yet
                       </p>
                       <p className="text-sm text-muted-foreground mb-5 max-w-sm mx-auto leading-relaxed">

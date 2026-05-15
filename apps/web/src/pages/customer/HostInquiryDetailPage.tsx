@@ -289,7 +289,7 @@ export default function HostInquiryDetailPage() {
           </Link>
           <div className="text-center py-24">
             <p className="font-label text-muted-foreground mb-3">404</p>
-            <h1 className="font-display text-2xl mb-2">Inquiry not found</h1>
+            <h1 className="font-editorial text-3xl mb-2">Inquiry not found</h1>
             <p className="text-sm text-muted-foreground">
               This inquiry doesn't exist or you don't have access.
             </p>
@@ -329,7 +329,7 @@ export default function HostInquiryDetailPage() {
                   <div className="flex items-start justify-between gap-4 flex-wrap mb-4">
                     <div>
                       <p className="font-label text-muted-foreground">To</p>
-                      <h1 className="font-display text-2xl">
+                      <h1 className="font-editorial text-3xl">
                         {inquiry.vendor?.business_name ?? "Vendor"}
                       </h1>
                       {inquiry.vendor?.category && (

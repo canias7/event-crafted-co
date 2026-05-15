@@ -121,7 +121,7 @@ export default function SavedSearchesPage() {
       <main id="main-content" className="flex-1 pb-20 lg:pb-0">
         <div className="border-b border-border bg-card px-4 md:px-8 py-4 sticky top-0 z-40 space-y-3">
           <div>
-            <h1 className="font-display text-xl">Saved searches</h1>
+            <h1 className="font-editorial text-3xl">Saved searches</h1>
             <p className="text-sm text-muted-foreground">
               Re-run vendor filters in one click; we'll ping you when new
               vendors match
@@ -140,7 +140,7 @@ export default function SavedSearchesPage() {
               <div className="w-12 h-12 mx-auto rounded-full bg-secondary flex items-center justify-center mb-4">
                 <Bookmark className="w-5 h-5 text-muted-foreground" />
               </div>
-              <h3 className="font-display text-xl mb-2">No saved searches</h3>
+              <h3 className="font-editorial text-3xl mb-2">No saved searches</h3>
               <p className="text-sm text-muted-foreground mb-6 leading-relaxed">
                 Browse vendors with a filter active (category, keyword), then
                 tap "Save search" to pin the query here.
@@ -157,7 +157,7 @@ export default function SavedSearchesPage() {
               {searches.map((s) => (
                 <div
                   key={s.id}
-                  className="rounded-sm border border-border bg-card p-5"
+                  className="card-soft p-5"
                 >
                   <div className="flex items-start justify-between gap-3 flex-wrap mb-3">
                     <div className="min-w-0">

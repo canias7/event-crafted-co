@@ -271,7 +271,7 @@ export default function EventDetailsPage() {
         <div className="border-b border-border bg-card px-4 md:px-8 py-4 sticky top-0 z-40 space-y-3">
           <div className="flex items-center justify-between gap-4 flex-wrap">
             <div>
-              <h1 className="font-display text-xl">Event details</h1>
+              <h1 className="font-editorial text-3xl">Event details</h1>
               <p className="text-sm text-muted-foreground">
                 Edit the events you're planning
               </p>
@@ -294,7 +294,7 @@ export default function EventDetailsPage() {
           ) : showOnboardingPrompt ? (
             <div className="rounded-sm border border-accent/30 bg-accent/5 p-8 text-center">
               <Sparkles className="w-8 h-8 mx-auto text-accent mb-3" />
-              <p className="font-display text-xl mb-2">
+              <p className="font-editorial text-3xl mb-2">
                 No events yet
               </p>
               <p className="text-sm text-muted-foreground max-w-md mx-auto mb-5 leading-relaxed">
@@ -610,8 +610,8 @@ export default function EventDetailsPage() {
                   </div>
                 </>
               ) : (
-                <div className="rounded-sm border border-border bg-card p-8 text-center">
-                  <p className="font-display text-xl mb-2">
+                <div className="card-soft p-8 text-center">
+                  <p className="font-editorial text-3xl mb-2">
                     No active event
                   </p>
                   <p className="text-sm text-muted-foreground mb-4">

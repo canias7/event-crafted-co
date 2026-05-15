@@ -305,7 +305,7 @@ export default function MicrositeEditorPage() {
         <DashboardSidebar items={navItems} title="Customer" backPath="/" />
         <main className="flex-1 p-8 text-center max-w-md mx-auto pt-20">
           <Sparkles className="w-10 h-10 text-muted-foreground/40 mx-auto mb-4" />
-          <h1 className="font-display text-2xl mb-2">No active event yet</h1>
+          <h1 className="font-editorial text-3xl mb-2">No active event yet</h1>
           <p className="text-muted-foreground mb-6">
             Set up an event from your dashboard, then come back to build a
             microsite for your guests.
@@ -331,7 +331,7 @@ export default function MicrositeEditorPage() {
         <div className="border-b border-border bg-card px-4 md:px-8 py-4 sticky top-0 z-40 space-y-3">
           <div className="flex items-center justify-between gap-3 flex-wrap">
             <div>
-              <h1 className="font-display text-xl">Event microsite</h1>
+              <h1 className="font-editorial text-3xl">Event microsite</h1>
               <p className="text-sm text-muted-foreground">
                 One link for your guests — countdown, story, schedule, RSVP, registry.
               </p>
@@ -554,7 +554,7 @@ export default function MicrositeEditorPage() {
               Hide what you don't want guests to see. Hidden sections aren't
               fetched at all on the public page.
             </p>
-            <div className="space-y-3 rounded-sm border border-border bg-card p-4">
+            <div className="space-y-3 card-soft p-4">
               {[
                 { key: "microsite_show_schedule", label: "Schedule / run-of-show" },
                 { key: "microsite_show_rsvp", label: "RSVP form" },

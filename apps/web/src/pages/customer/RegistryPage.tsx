@@ -131,7 +131,7 @@ export default function RegistryPage() {
         <div className="border-b border-border bg-card px-4 md:px-8 py-4 sticky top-0 z-40 space-y-3">
           <div className="flex items-center justify-between flex-wrap gap-3">
             <div>
-              <h1 className="font-display text-xl">Registry</h1>
+              <h1 className="font-editorial text-3xl">Registry</h1>
               <p className="text-sm text-muted-foreground">
                 One hub for every place guests can find what you'd love
               </p>
@@ -174,7 +174,7 @@ export default function RegistryPage() {
               <div className="w-12 h-12 mx-auto rounded-full bg-secondary flex items-center justify-center mb-4">
                 <Gift className="w-5 h-5 text-muted-foreground" />
               </div>
-              <h3 className="font-display text-xl mb-2">Build your registry hub</h3>
+              <h3 className="font-editorial text-3xl mb-2">Build your registry hub</h3>
               <p className="text-sm text-muted-foreground mb-6 leading-relaxed">
                 Vendora doesn't host registries — but it can be the one place
                 guests find them all. Add Amazon, Crate &amp; Barrel, Zola,
@@ -208,7 +208,7 @@ export default function RegistryPage() {
                 return (
                   <div
                     key={l.id}
-                    className="rounded-sm border border-border bg-card p-5 flex flex-col"
+                    className="card-soft p-5 flex flex-col"
                   >
                     <div className="flex items-start justify-between gap-3 mb-3">
                       <div className="min-w-0">
@@ -367,7 +367,7 @@ function RegistryEditor({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md rounded-sm">
         <DialogHeader>
-          <DialogTitle className="font-display text-2xl">
+          <DialogTitle className="font-editorial text-3xl">
             {editing ? "Edit registry" : "Add a registry"}
           </DialogTitle>
           <DialogDescription>

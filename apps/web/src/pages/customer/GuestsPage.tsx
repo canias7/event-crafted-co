@@ -179,7 +179,7 @@ export default function GuestsPage() {
         <div className="border-b border-border bg-card px-4 md:px-8 py-4 sticky top-0 z-40 space-y-3">
           <div className="flex items-center justify-between gap-3 flex-wrap">
           <div>
-            <h1 className="font-display text-xl">Guests</h1>
+            <h1 className="font-editorial text-3xl">Guests</h1>
             <p className="text-sm text-muted-foreground">
               Manage your guest list and RSVPs
             </p>
@@ -275,7 +275,7 @@ export default function GuestsPage() {
           </div>
 
           {/* List */}
-          <div className="bg-card rounded-sm border border-border overflow-hidden">
+          <div className="card-soft overflow-hidden">
             {loading ? (
               <div className="p-6 space-y-3">
                 {[0, 1, 2, 3].map((i) => (
@@ -285,7 +285,7 @@ export default function GuestsPage() {
             ) : filtered.length === 0 ? (
               <div className="text-center py-16 px-6">
                 <Users className="w-10 h-10 mx-auto text-muted-foreground/40 mb-4" />
-                <p className="font-display text-xl mb-2">
+                <p className="font-editorial text-3xl mb-2">
                   {rows.length === 0
                     ? "No guests yet"
                     : "Nothing matches that filter"}

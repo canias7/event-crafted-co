@@ -228,7 +228,7 @@ export default function ChecklistPage() {
       <main id="main-content" className="flex-1 pb-20 lg:pb-0">
         <div className="border-b border-border bg-card px-4 md:px-8 py-4 sticky top-0 z-40 space-y-3">
           <div>
-            <h1 className="font-display text-xl">Event checklist</h1>
+            <h1 className="font-editorial text-3xl">Event checklist</h1>
             <p className="text-sm text-muted-foreground">
               {items.length === 0
                 ? "Track everything you need for the big day"
@@ -245,7 +245,7 @@ export default function ChecklistPage() {
             <>
               {/* Progress */}
               {items.length > 0 && (
-                <div className="bg-card rounded-sm border border-border p-5">
+                <div className="card-soft p-5">
                   <div className="flex items-baseline justify-between mb-2">
                     <span className="text-2xl font-display tnum">{pct}%</span>
                     <span className="text-sm text-muted-foreground">
@@ -260,7 +260,7 @@ export default function ChecklistPage() {
               {items.length === 0 && (
                 <div className="bg-card border border-border rounded-sm p-8 text-center">
                   <Sparkles className="w-8 h-8 mx-auto text-accent mb-3" />
-                  <p className="font-display text-xl mb-2">
+                  <p className="font-editorial text-3xl mb-2">
                     Start with a template
                   </p>
                   <p className="text-sm text-muted-foreground max-w-md mx-auto mb-6 leading-relaxed">
@@ -330,7 +330,7 @@ export default function ChecklistPage() {
                   {items.map((item) => (
                     <div
                       key={item.id}
-                      className="flex items-center gap-3 p-3 rounded-sm border border-border bg-card group"
+                      className="flex items-center gap-3 p-3 card-soft group"
                     >
                       <button
                         onClick={() => toggleItem(item)}

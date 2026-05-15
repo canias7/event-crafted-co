@@ -105,7 +105,7 @@ export default function PlannerWorkspacePage() {
       <main id="main-content" className="flex-1 pb-20 lg:pb-0">
         <div className="border-b border-border bg-card px-4 md:px-8 py-4 sticky top-0 z-40 space-y-3">
           <div>
-            <h1 className="font-display text-xl">Planner workspace</h1>
+            <h1 className="font-editorial text-3xl">Planner workspace</h1>
             <p className="text-sm text-muted-foreground">
               All client events you're collaborating on, in one place
             </p>
@@ -123,7 +123,7 @@ export default function PlannerWorkspacePage() {
           ) : !data || data.hosts.length === 0 ? (
             <div className="text-center py-20 max-w-md mx-auto">
               <Briefcase className="w-10 h-10 text-muted-foreground/40 mx-auto mb-4" />
-              <p className="font-display text-xl mb-2">No client events yet</p>
+              <p className="font-editorial text-3xl mb-2">No client events yet</p>
               <p className="text-sm text-muted-foreground leading-relaxed">
                 You'll see this view once a host invites you as a planning
                 collaborator. Hosts add you from their{" "}

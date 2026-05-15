@@ -245,6 +245,16 @@
       0 8px 15px hsl(var(--shadow-md));
   }
 
+  /* Soft drop shadow tuned to the cream + ink palette. Mirrors the
+     shadowColor/Opacity/Radius the mobile apps use on rounded cards
+     (host-mobile profile.tsx, events.tsx). Pair with rounded-3xl. */
+  .card-soft {
+    background-color: hsl(var(--card));
+    border: 1px solid hsl(var(--border) / 0.6);
+    border-radius: 1.5rem;
+    box-shadow: 0 8px 24px -12px rgba(26, 20, 16, 0.18);
+  }
+
   .tnum {
     font-feature-settings: 'tnum';
   }

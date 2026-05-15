@@ -99,7 +99,7 @@ export default function FavoritesPage() {
       <main id="main-content" className="flex-1 pb-20 lg:pb-0">
         <div className="border-b border-border bg-card px-4 md:px-8 py-4 sticky top-0 z-40 space-y-3">
           <div>
-            <h1 className="font-display text-xl">Saved vendors</h1>
+            <h1 className="font-editorial text-3xl">Saved vendors</h1>
             <p className="text-sm text-muted-foreground">
               {savedIds.size === 0
                 ? "Vendors you've saved while browsing will appear here"
@@ -125,7 +125,7 @@ export default function FavoritesPage() {
               <div className="w-12 h-12 mx-auto rounded-full bg-secondary flex items-center justify-center mb-4">
                 <Heart className="w-5 h-5 text-muted-foreground" />
               </div>
-              <h3 className="font-display text-xl mb-2">
+              <h3 className="font-editorial text-3xl mb-2">
                 No saved vendors yet
               </h3>
               <p className="text-sm text-muted-foreground mb-6 leading-relaxed">

@@ -170,7 +170,7 @@ export default function OnboardingPage() {
     <div className="min-h-screen bg-background flex flex-col">
       {/* Top bar */}
       <header className="px-6 md:px-8 py-5 flex items-center justify-between">
-        <Link to="/" className="font-display text-xl">
+        <Link to="/" className="font-editorial text-3xl">
           Vendora
         </Link>
         <button

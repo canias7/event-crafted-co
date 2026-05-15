@@ -215,7 +215,7 @@ export default function InquiryBlastPage() {
       <main id="main-content" className="flex-1 pb-20 lg:pb-0">
         <div className="border-b border-border bg-card px-4 md:px-8 py-4 sticky top-0 z-40 space-y-3">
           <div>
-            <h1 className="font-display text-xl flex items-center gap-2">
+            <h1 className="font-editorial text-3xl flex items-center gap-2">
               Inquiry blast
               <Sparkles className="w-4 h-4 text-accent" />
             </h1>
@@ -254,7 +254,7 @@ export default function InquiryBlastPage() {
               </Select>
             </div>
 
-            <div className="rounded-sm border border-border bg-card divide-y divide-border max-h-[60vh] overflow-y-auto">
+            <div className="card-soft divide-y divide-border max-h-[60vh] overflow-y-auto">
               {vendorsLoading ? (
                 <div className="p-4 space-y-2">
                   {[0, 1, 2].map((i) => (
@@ -306,7 +306,7 @@ export default function InquiryBlastPage() {
 
           {/* Right: inquiry form */}
           <aside className="space-y-4 lg:sticky lg:top-24 lg:self-start">
-            <div className="rounded-sm border border-border bg-card p-4">
+            <div className="card-soft p-4">
               <div className="flex items-center gap-2 mb-3">
                 <Users className="w-4 h-4 text-accent" />
                 <p className="font-label text-muted-foreground">
@@ -328,7 +328,7 @@ export default function InquiryBlastPage() {
               )}
             </div>
 
-            <div className="space-y-3 rounded-sm border border-border bg-card p-4">
+            <div className="space-y-3 card-soft p-4">
               <div className="space-y-2">
                 <Label htmlFor="b-event">Event type</Label>
                 <Select
