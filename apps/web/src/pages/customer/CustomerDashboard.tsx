@@ -187,7 +187,7 @@ export default function CustomerDashboard() {
 
       <main id="main-content" className="flex-1 pb-20 lg:pb-0">
         {/* Header */}
-        <div className="border-b border-border bg-card px-4 md:px-8 py-4 flex items-center justify-between sticky top-0 z-40">
+        <div className="border-b border-border/40 bg-card/60 backdrop-blur px-4 md:px-8 py-5 flex items-center justify-between sticky top-0 z-40">
           <div>
             <h1 className="font-editorial text-3xl">
               {t("dashboard.common.welcome_back")}, {greeting}

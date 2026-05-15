@@ -204,7 +204,7 @@ export default function InquiriesPage() {
       <DashboardSidebar items={navItems} title="Customer" backPath="/" />
 
       <main id="main-content" className="flex-1 pb-20 lg:pb-0">
-        <div className="border-b border-border bg-card px-4 md:px-8 py-4 sticky top-0 z-40 space-y-3">
+        <div className="border-b border-border/40 bg-card/60 backdrop-blur px-4 md:px-8 py-5 sticky top-0 z-40 space-y-3">
           <div className="flex items-center justify-between gap-3 flex-wrap">
             <div>
               <h1 className="font-editorial text-3xl">Inquiries</h1>
