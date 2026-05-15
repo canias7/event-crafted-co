@@ -190,12 +190,12 @@ export default function PressPage() {
           </h2>
 
           <div className="grid sm:grid-cols-2 gap-3 mb-8">
-            <div className="rounded-sm border border-border bg-foreground p-10 flex items-center justify-center">
+            <div className="rounded-2xl border border-border bg-foreground p-10 flex items-center justify-center">
               <span className="font-editorial text-5xl text-background">
                 Vendora
               </span>
             </div>
-            <div className="rounded-sm border border-border bg-background p-10 flex items-center justify-center">
+            <div className="rounded-2xl border border-border bg-background p-10 flex items-center justify-center">
               <span className="font-editorial text-5xl text-foreground">
                 Vendora
               </span>

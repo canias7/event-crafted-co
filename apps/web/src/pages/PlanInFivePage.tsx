@@ -304,7 +304,7 @@ export default function PlanInFivePage() {
                 {form.budget ? `${formatCents(Number(form.budget) * 100)} budget` : ""}
               </p>
 
-              <div className="rounded-sm border border-border bg-card p-5 mb-6">
+              <div className="card-soft p-5 mb-6">
                 <p className="font-label text-muted-foreground mb-3">
                   Starter checklist
                 </p>

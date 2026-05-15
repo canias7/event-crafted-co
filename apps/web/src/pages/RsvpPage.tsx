@@ -184,7 +184,7 @@ export default function RsvpPage() {
           ) : guest ? (
             <>
               {/* Event card */}
-              <div className="bg-card border border-border rounded-sm p-6 mb-8">
+              <div className="card-soft p-6 mb-8">
                 <p className="font-label text-accent mb-2">
                   {guest.host_name ?? "Your host"} invites you to a
                 </p>
@@ -258,7 +258,7 @@ export default function RsvpPage() {
                 </div>
 
                 {status === "attending" && guest.plus_one_allowed && (
-                  <label className="flex items-center gap-3 p-4 rounded-sm border border-border cursor-pointer hover:border-foreground/30 transition-colors">
+                  <label className="flex items-center gap-3 p-4 rounded-2xl border border-border cursor-pointer hover:border-foreground/30 transition-colors">
                     <Input
                       type="checkbox"
                       checked={plusOne}

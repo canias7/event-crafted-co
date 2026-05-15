@@ -188,7 +188,7 @@ export default function SupportPage() {
                     <button
                       type="button"
                       onClick={() => openTicket(t.id)}
-                      className="w-full text-left rounded-sm border border-border bg-card p-4 hover:border-foreground/30 transition-colors"
+                      className="w-full text-left card-soft p-4 hover:border-foreground/30 transition-colors"
                     >
                       <div className="flex items-start justify-between gap-3 flex-wrap">
                         <div className="min-w-0">
@@ -473,7 +473,7 @@ function TicketThread({
         <ArrowLeft className="w-3.5 h-3.5" />
         All tickets
       </button>
-      <div className="rounded-sm border border-border bg-card p-5">
+      <div className="card-soft p-5">
         <div className="flex items-start justify-between gap-3 flex-wrap mb-3">
           <div>
             <h2 className="font-editorial text-3xl leading-tight mb-1">

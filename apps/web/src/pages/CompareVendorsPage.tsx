@@ -92,7 +92,7 @@ export default function CompareVendorsPage() {
                 {selected.map((v) => (
                   <article
                     key={v.id}
-                    className="rounded-sm border border-border bg-card p-5"
+                    className="card-soft p-5"
                   >
                     <div className="flex items-start justify-between gap-3 mb-3">
                       <div>

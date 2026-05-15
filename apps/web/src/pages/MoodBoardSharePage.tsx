@@ -293,7 +293,7 @@ function CommentComposer({
 
   if (!user) {
     return (
-      <div className="rounded-sm border border-border bg-background p-4 text-center">
+      <div className="rounded-2xl border border-border bg-background p-4 text-center">
         <p className="text-sm text-muted-foreground mb-3 leading-relaxed">
           Sign in to leave a note for the host on this board.
         </p>
@@ -351,7 +351,7 @@ function CommentComposer({
   return (
     <form
       onSubmit={submit}
-      className="rounded-sm border border-border bg-background p-4 space-y-3"
+      className="rounded-2xl border border-border bg-background p-4 space-y-3"
     >
       <Textarea
         value={body}
