@@ -202,7 +202,7 @@ export default function VendorMyProfilePage() {
       />
       <main className="flex-1 pb-20 lg:pb-0">
         <div className="border-b border-border bg-card px-4 md:px-8 py-4">
-          <h1 className="font-display text-2xl">My Profile</h1>
+          <h1 className="font-editorial text-3xl">My Profile</h1>
           <p className="text-sm text-muted-foreground">
             Your posts, reels, buzz, and listings — only yours.
           </p>

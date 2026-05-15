@@ -17,7 +17,7 @@ export default function VendorAiAgentPage() {
 
       <main id="main-content" className="flex-1 pb-20 lg:pb-0">
         <div className="border-b border-border bg-card px-4 md:px-8 py-4 sticky top-0 z-40">
-          <h1 className="font-display text-xl">{t("ai_agent.title")}</h1>
+          <h1 className="font-editorial text-3xl">{t("ai_agent.title")}</h1>
           <p className="text-sm text-muted-foreground">
             {t("ai_agent.subtitle")}
           </p>

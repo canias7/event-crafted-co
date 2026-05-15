@@ -380,7 +380,7 @@ export default function VendorMessagesPage() {
       <main id="main-content" className="flex-1 pb-20 lg:pb-0">
         <div className="border-b border-border bg-card px-4 md:px-8 py-4 sticky top-0 z-40 space-y-3">
           <div>
-            <h1 className="font-display text-xl">Messages</h1>
+            <h1 className="font-editorial text-3xl">Messages</h1>
             <p className="text-sm text-muted-foreground">
               Casual conversations · low-friction starting point before a formal inquiry
             </p>

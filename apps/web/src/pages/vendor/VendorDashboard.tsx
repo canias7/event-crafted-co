@@ -210,7 +210,7 @@ export default function VendorDashboard() {
             {loading ? (
               <Skeleton className="h-6 w-44 mb-1" />
             ) : (
-              <h1 className="font-display text-xl">
+              <h1 className="font-editorial text-3xl">
                 {vendorProfile?.business_name ??
                   t("vendor_dashboard.header.welcome", { name: greeting })}
               </h1>

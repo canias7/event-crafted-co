@@ -369,7 +369,7 @@ export default function InquiryDetailPage() {
           <div className="flex items-start justify-between gap-4 flex-wrap">
             <div>
               <p className="font-label text-muted-foreground">From</p>
-              <h1 className="font-display text-2xl">
+              <h1 className="font-editorial text-3xl">
                 {inquiry.host?.display_name ?? "Host"}
               </h1>
               <p className="text-sm text-muted-foreground capitalize mt-1">
