@@ -459,7 +459,7 @@ export default function VendorAppointmentsPage() {
               </div>
             </div>
 
-            <div className="rounded-2xl bg-card border border-border shadow-sm p-4">
+            <div className="card-soft p-4">
               {loading ? (
                 <Skeleton className="h-72 w-full rounded-md" />
               ) : (
@@ -499,7 +499,7 @@ export default function VendorAppointmentsPage() {
               </div>
 
               {selectedItems.length === 0 ? (
-                <div className="rounded-2xl bg-card border border-border p-6 text-center text-sm text-muted-foreground">
+                <div className="card-soft p-6 text-center text-sm text-muted-foreground">
                   Nothing on the books for this day.
                 </div>
               ) : (
@@ -790,12 +790,12 @@ function BookingRow({
     item.kind === "inquiry" && item.inquiryId ? (
       <a
         href={`/vendor/inbox/${item.inquiryId}`}
-        className="block rounded-2xl bg-card border border-border p-4 hover:bg-secondary/40 transition"
+        className="block card-soft p-4 hover:bg-secondary/40 transition"
       >
         {children}
       </a>
     ) : (
-      <div className="rounded-2xl bg-card border border-border p-4">
+      <div className="card-soft p-4">
         {children}
       </div>
     );
