@@ -200,7 +200,7 @@ export default function VendorHomePage() {
         <div className="sticky top-0 z-40 border-b border-border bg-card px-4 md:px-8 py-4 space-y-3">
           <div className="flex items-start justify-between gap-3 flex-wrap">
             <div>
-              <h1 className="font-display text-2xl">Home</h1>
+              <h1 className="font-editorial text-3xl">Home</h1>
               <p className="text-sm text-muted-foreground">
                 Your feed of posts, reels, buzz, and listings.
               </p>

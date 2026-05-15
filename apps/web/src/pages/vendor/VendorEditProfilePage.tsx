@@ -154,7 +154,7 @@ export default function VendorEditProfilePage() {
               <ChevronLeft className="h-4 w-4" />
             </button>
             <div>
-              <h1 className="font-display text-2xl">Edit profile</h1>
+              <h1 className="font-editorial text-3xl">Edit profile</h1>
               <p className="text-sm text-muted-foreground">
                 Your brand identity — name, bio, and logo.
               </p>
