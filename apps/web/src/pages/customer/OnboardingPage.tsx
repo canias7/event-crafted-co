@@ -202,7 +202,7 @@ export default function OnboardingPage() {
               >
                 <div>
                   <p className="font-label text-accent mb-3">Step 1 of 2</p>
-                  <h1 className="font-display text-3xl md:text-4xl mb-3 leading-tight">
+                  <h1 className="font-editorial text-4xl md:text-4xl mb-3 leading-tight">
                     What are you planning?
                   </h1>
                   <p className="text-muted-foreground leading-relaxed">
@@ -218,7 +218,7 @@ export default function OnboardingPage() {
                         key={opt.value}
                         type="button"
                         onClick={() => setEventType(opt.value)}
-                        className={`text-left rounded-sm border p-5 transition-all ${
+                        className={`text-left rounded-2xl border p-5 transition-all ${
                           selected
                             ? "border-foreground bg-foreground/5"
                             : "border-border hover:border-foreground/30"
@@ -269,7 +269,7 @@ export default function OnboardingPage() {
               >
                 <div>
                   <p className="font-label text-accent mb-3">Step 2 of 2</p>
-                  <h1 className="font-display text-3xl md:text-4xl mb-3 leading-tight">
+                  <h1 className="font-editorial text-4xl md:text-4xl mb-3 leading-tight">
                     A few details
                   </h1>
                   <p className="text-muted-foreground leading-relaxed">
