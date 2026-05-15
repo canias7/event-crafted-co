@@ -409,7 +409,7 @@ export default function SettingsPage() {
                         role="radio"
                         aria-checked={active}
                         onClick={() => setThemePref(opt.value)}
-                        className={`flex flex-col items-center gap-2 p-4 rounded-sm border transition-colors ${
+                        className={`flex flex-col items-center gap-2 p-4 rounded-2xl border transition-colors ${
                           active
                             ? "border-foreground bg-secondary text-foreground"
                             : "border-border bg-card text-muted-foreground hover:text-foreground hover:border-foreground/30"
@@ -516,7 +516,7 @@ export default function SettingsPage() {
                 subtitle="Permanent actions"
                 tone="destructive"
               >
-                <div className="rounded-sm border border-destructive/30 bg-destructive/5 p-5">
+                <div className="rounded-2xl border border-destructive/30 bg-destructive/5 p-5">
                   <p className="text-sm font-medium mb-2">
                     Close your account
                   </p>
@@ -535,7 +535,7 @@ export default function SettingsPage() {
                         Close my account
                       </Button>
                     </AlertDialogTrigger>
-                    <AlertDialogContent className="rounded-sm">
+                    <AlertDialogContent className="rounded-2xl">
                       <AlertDialogHeader>
                         <AlertDialogTitle className="font-editorial text-3xl">
                           Close your account?
