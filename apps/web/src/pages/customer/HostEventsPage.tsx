@@ -13,6 +13,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { ChevronRight, Inbox, Sparkles } from "lucide-react";
 import { DashboardSidebar } from "@/components/shared/DashboardSidebar";
 import { MobileNav } from "@/components/shared/MobileNav";
+import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { customerNavItems as navItems } from "@/data/navItems";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -249,14 +250,17 @@ export default function HostEventsPage() {
                 Every event you have an inquiry against, grouped by date.
               </p>
             </div>
-            {past.length > 0 ? (
-              <button
-                onClick={() => setShowPast((s) => !s)}
-                className="text-sm font-medium text-muted-foreground hover:text-foreground"
-              >
-                {showPast ? "Hide past" : `Show past (${past.length})`}
-              </button>
-            ) : null}
+            <div className="flex items-center gap-3">
+              {past.length > 0 ? (
+                <button
+                  onClick={() => setShowPast((s) => !s)}
+                  className="text-sm font-medium text-muted-foreground hover:text-foreground"
+                >
+                  {showPast ? "Hide past" : `Show past (${past.length})`}
+                </button>
+              ) : null}
+              <NotificationBell variant="light" />
+            </div>
           </div>
 
           {loading ? (

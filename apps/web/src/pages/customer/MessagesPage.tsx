@@ -41,6 +41,7 @@ import {
 } from "@/lib/messageAttachments";
 import { customerNavItems as navItems } from "@/data/navItems";
 import { formatDate } from "@/lib/format";
+import { NotificationBell } from "@/components/notifications/NotificationBell";
 
 const QUICK_EMOJIS = [
   "👍",
@@ -400,11 +401,14 @@ export default function MessagesPage() {
       <DashboardSidebar items={navItems} title="Customer" backPath="/" />
 
       <main id="main-content" className="flex-1 pb-20 lg:pb-0">
-        <div className="border-b border-border/40 bg-card/60 backdrop-blur px-4 md:px-8 py-5 sticky top-0 z-40">
-          <h1 className="font-editorial text-3xl">Messages</h1>
-          <p className="text-sm text-muted-foreground">
-            Casual chat with vendors before sending a formal inquiry
-          </p>
+        <div className="border-b border-border/40 bg-card/60 backdrop-blur px-4 md:px-8 py-5 sticky top-0 z-40 flex items-start justify-between gap-3">
+          <div>
+            <h1 className="font-editorial text-3xl">Messages</h1>
+            <p className="text-sm text-muted-foreground">
+              Casual chat with vendors before sending a formal inquiry
+            </p>
+          </div>
+          <NotificationBell variant="light" />
         </div>
 
         <div className="grid lg:grid-cols-[280px_1fr] h-[calc(100vh-65px)]">

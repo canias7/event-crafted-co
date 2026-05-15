@@ -24,6 +24,7 @@ import {
   BuzzComposerModal,
   MediaComposerModal,
 } from "@/components/vendor/Composers";
+import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { vendorNavItems } from "@/data/navItems";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -205,6 +206,8 @@ export default function VendorHomePage() {
                 Your feed of posts, reels, buzz, and listings.
               </p>
             </div>
+            <div className="flex items-center gap-2">
+              <NotificationBell variant="light" />
             {tab !== "listing" ? (
               <Button
                 onClick={() =>
@@ -223,6 +226,7 @@ export default function VendorHomePage() {
                   : "New buzz"}
               </Button>
             ) : null}
+            </div>
           </div>
           <div className="flex gap-1 overflow-x-auto">
             {TABS.map((t) => {

@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
+import { NotificationBell } from "@/components/notifications/NotificationBell";
 // Lazy: heavy modal only loads when the host opens the inquiry form.
 const InquiryFormModal = lazy(() =>
   import("@/components/inquiries/InquiryFormModal").then((m) => ({
@@ -212,13 +213,16 @@ export default function InquiriesPage() {
                 Conversations with vendors you've contacted
               </p>
             </div>
-            <Button
-              onClick={() => setModalOpen(true)}
-              className="rounded-full bg-foreground text-background hover:bg-foreground/90"
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              New inquiry
-            </Button>
+            <div className="flex items-center gap-2">
+              <NotificationBell variant="light" />
+              <Button
+                onClick={() => setModalOpen(true)}
+                className="rounded-full bg-foreground text-background hover:bg-foreground/90"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                New inquiry
+              </Button>
+            </div>
           </div>
           <SubNavTabs tabs={INQUIRIES_HUB_TABS} />
         </div>
