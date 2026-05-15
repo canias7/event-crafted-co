@@ -30,6 +30,21 @@ import {
   BuzzComposerModal,
   MediaComposerModal,
 } from "@/components/vendor/Composers";
+import { MediaLightbox } from "@/components/vendor/MediaLightbox";
+
+type LightboxMedia =
+  | {
+      kind: "post";
+      image_url: string;
+      caption: string | null;
+      created_at: string;
+    }
+  | {
+      kind: "reel";
+      video_url: string;
+      caption: string | null;
+      created_at: string;
+    };
 import { vendorNavItems } from "@/data/navItems";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -82,6 +97,7 @@ export default function VendorMyProfilePage() {
     null,
   );
   const [addingListing, setAddingListing] = useState(false);
+  const [lightbox, setLightbox] = useState<LightboxMedia | null>(null);
   const navigate = useNavigate();
 
   const load = useCallback(async () => {
@@ -295,9 +311,9 @@ export default function VendorMyProfilePage() {
             {loading ? (
               <Skeleton className="h-72 w-full rounded-md" />
             ) : tab === "grid" ? (
-              <PostsGrid posts={posts} />
+              <PostsGrid posts={posts} onOpen={setLightbox} />
             ) : tab === "reels" ? (
-              <ReelsGrid reels={reels} />
+              <ReelsGrid reels={reels} onOpen={setLightbox} />
             ) : tab === "buzz" ? (
               <BuzzList buzz={buzz} />
             ) : (
@@ -335,6 +351,7 @@ export default function VendorMyProfilePage() {
           }}
         />
       ) : null}
+      <MediaLightbox item={lightbox} onClose={() => setLightbox(null)} />
       {void vendorIds /* silence unused */}
     </div>
   );
@@ -452,41 +469,66 @@ function Stat({ label, value }: { label: string; value: string }) {
   );
 }
 
-function PostsGrid({ posts }: { posts: PostRow[] }) {
+function PostsGrid({
+  posts,
+  onOpen,
+}: {
+  posts: PostRow[];
+  onOpen: (m: LightboxMedia) => void;
+}) {
   if (posts.length === 0) {
     return <Empty msg="No posts yet — tap New post to create one." />;
   }
   return (
     <div className="grid grid-cols-3 sm:grid-cols-4 gap-1">
       {posts.map((p) => (
-        <div
+        <button
           key={p.id}
-          className="relative aspect-square overflow-hidden rounded-md bg-secondary/40"
+          onClick={() =>
+            onOpen({
+              kind: "post",
+              image_url: p.image_url,
+              caption: p.caption,
+              created_at: p.created_at,
+            })
+          }
+          className="relative aspect-square overflow-hidden rounded-md bg-secondary/40 group"
         >
           <img
             src={p.image_url}
             alt={p.caption ?? "Post"}
-            className="w-full h-full object-cover"
+            className="w-full h-full object-cover transition group-hover:scale-[1.02]"
             loading="lazy"
           />
-        </div>
+        </button>
       ))}
     </div>
   );
 }
 
-function ReelsGrid({ reels }: { reels: ReelRow[] }) {
+function ReelsGrid({
+  reels,
+  onOpen,
+}: {
+  reels: ReelRow[];
+  onOpen: (m: LightboxMedia) => void;
+}) {
   if (reels.length === 0) {
     return <Empty msg="No reels yet — tap New reel to upload a video." />;
   }
   return (
     <div className="grid grid-cols-3 sm:grid-cols-4 gap-1">
       {reels.map((r) => (
-        <a
+        <button
           key={r.id}
-          href={r.video_url}
-          target="_blank"
-          rel="noopener noreferrer"
+          onClick={() =>
+            onOpen({
+              kind: "reel",
+              video_url: r.video_url,
+              caption: r.caption,
+              created_at: r.created_at,
+            })
+          }
           className="relative aspect-[9/16] overflow-hidden rounded-md bg-black"
         >
           {r.thumbnail_url ? (
@@ -506,7 +548,7 @@ function ReelsGrid({ reels }: { reels: ReelRow[] }) {
               {r.caption}
             </div>
           ) : null}
-        </a>
+        </button>
       ))}
     </div>
   );
