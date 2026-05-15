@@ -440,7 +440,7 @@ export default function VendorAppointmentsPage() {
 
           <div>
             <div className="flex items-center justify-between mb-3">
-              <h2 className="font-display italic text-xl">{monthLabel}</h2>
+              <h2 className="font-editorial text-2xl">{monthLabel}</h2>
               <div className="flex gap-2">
                 <button
                   onClick={() => shiftMonth(-1)}
@@ -481,7 +481,7 @@ export default function VendorAppointmentsPage() {
           {selectedYmd ? (
             <div>
               <div className="flex items-center justify-between mb-3">
-                <h3 className="font-display italic text-lg">
+                <h3 className="font-editorial text-xl">
                   {prettyDay(selectedYmd)}
                 </h3>
                 <button

@@ -187,7 +187,7 @@ export default function VendorEditProfilePage() {
                       className="w-24 h-24 rounded-full object-cover bg-secondary"
                     />
                   ) : (
-                    <div className="w-24 h-24 rounded-full bg-foreground text-background flex items-center justify-center font-display italic text-4xl">
+                    <div className="w-24 h-24 rounded-full bg-foreground text-background flex items-center justify-center font-editorial text-4xl">
                       {initialChar}
                     </div>
                   )}
