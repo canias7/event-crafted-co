@@ -150,9 +150,6 @@ export const CustomerExplorePage = lazyWithReload(importCustomerExplore);
 const importHostProfile = () => import("@/pages/customer/HostProfilePage");
 export const HostProfilePage = lazyWithReload(importHostProfile);
 
-const importMessages = () => import("@/pages/customer/MessagesPage");
-export const MessagesPage = lazyWithReload(importMessages);
-
 const importSupport = () => import("@/pages/SupportPage");
 export const SupportPage = lazyWithReload(importSupport);
 
@@ -241,7 +238,6 @@ const ROUTE_IMPORTERS: Array<{ pattern: string; importer: () => Promise<unknown>
   { pattern: "/customer/explore", importer: importCustomerExplore },
   { pattern: "/customer/inquiries", importer: importInquiries },
   { pattern: "/customer/inquiries/:inquiryId", importer: importHostInquiryDetail },
-  { pattern: "/customer/messages", importer: importMessages },
   { pattern: "/customer/events", importer: importHostEvents },
   { pattern: "/customer/profile", importer: importHostProfile },
   { pattern: "/support", importer: importSupport },

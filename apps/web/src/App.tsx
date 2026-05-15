@@ -57,7 +57,6 @@ import {
   HostEventsPage,
   CustomerExplorePage,
   HostProfilePage,
-  MessagesPage,
   SupportPage,
   RealEventsPage,
   RealEventDetailPage,
@@ -160,7 +159,9 @@ const App = () => (
               <Route path="/customer/explore" element={<RequireRole role="host"><CustomerExplorePage /></RequireRole>} />
               <Route path="/customer/inquiries" element={<RequireRole role="host"><InquiriesPage /></RequireRole>} />
               <Route path="/customer/inquiries/:inquiryId" element={<RequireRole role="host"><HostInquiryDetailPage /></RequireRole>} />
-              <Route path="/customer/messages" element={<RequireRole role="host"><MessagesPage /></RequireRole>} />
+              {/* /customer/messages removed: mobile has no DM list view.
+                  Threads open via /customer/inquiries/:inquiryId. */}
+              <Route path="/customer/messages" element={<Navigate to="/customer/inquiries" replace />} />
               <Route path="/customer/events" element={<RequireRole role="host"><HostEventsPage /></RequireRole>} />
               <Route path="/customer/profile" element={<RequireRole role="host"><HostProfilePage /></RequireRole>} />
               {/* Legacy host routes — bounce to /customer/explore so
