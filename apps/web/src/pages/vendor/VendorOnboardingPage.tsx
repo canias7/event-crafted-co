@@ -113,7 +113,7 @@ export default function VendorOnboardingPage() {
   if (!profile) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center px-6 text-center">
-        <p className="font-display text-2xl mb-3">No vendor profile yet</p>
+        <p className="font-editorial text-3xl mb-3">No vendor profile yet</p>
         <p className="text-sm text-muted-foreground mb-6 max-w-sm">
           Apply to join the directory first — onboarding starts after your
           basic profile is created.
@@ -131,7 +131,7 @@ export default function VendorOnboardingPage() {
     <div className="min-h-screen bg-background">
       <div className="border-b border-border bg-card px-6 py-4">
         <div className="container mx-auto flex items-center justify-between max-w-3xl">
-          <p className="font-display text-lg">Vendora</p>
+          <p className="font-editorial text-xl">Vendora</p>
           <Link
             to="/vendor/dashboard"
             className="text-xs text-muted-foreground hover:text-foreground"
@@ -171,7 +171,7 @@ export default function VendorOnboardingPage() {
           <div className="space-y-6">
             <div>
               <p className="font-label text-accent mb-2">Step 1 of 4</p>
-              <h1 className="font-display text-3xl mb-2">
+              <h1 className="font-editorial text-4xl mb-2">
                 Polish your profile
               </h1>
               <p className="text-sm text-muted-foreground leading-relaxed">
@@ -245,7 +245,7 @@ export default function VendorOnboardingPage() {
           <div className="space-y-6">
             <div>
               <p className="font-label text-accent mb-2">Step 2 of 4</p>
-              <h1 className="font-display text-3xl mb-2">
+              <h1 className="font-editorial text-4xl mb-2">
                 Add a few packages
               </h1>
               <p className="text-sm text-muted-foreground leading-relaxed">
@@ -282,7 +282,7 @@ export default function VendorOnboardingPage() {
           <div className="space-y-6">
             <div>
               <p className="font-label text-accent mb-2">Step 3 of 4</p>
-              <h1 className="font-display text-3xl mb-2">
+              <h1 className="font-editorial text-4xl mb-2">
                 Upload portfolio images
               </h1>
               <p className="text-sm text-muted-foreground leading-relaxed">
@@ -324,7 +324,7 @@ export default function VendorOnboardingPage() {
               <p className="font-label text-accent mb-3 tracking-[0.3em]">
                 — YOU'RE READY
               </p>
-              <h1 className="font-display text-3xl md:text-4xl mb-3 leading-tight">
+              <h1 className="font-editorial text-4xl md:text-4xl mb-3 leading-tight">
                 Profile is live
               </h1>
               <p className="text-sm text-muted-foreground leading-relaxed max-w-md mx-auto">
