@@ -67,9 +67,6 @@ const importVendorEventTypeCity = () =>
   import("@/pages/VendorEventTypeCityPage");
 export const VendorEventTypeCityPage = lazyWithReload(importVendorEventTypeCity);
 
-const importEditorialArticle = () => import("@/pages/EditorialArticlePage");
-export const EditorialArticlePage = lazyWithReload(importEditorialArticle);
-
 const importClaimVendor = () => import("@/pages/ClaimVendorPage");
 export const ClaimVendorPage = lazyWithReload(importClaimVendor);
 
@@ -81,9 +78,6 @@ export const ProposalPrintPage = lazyWithReload(importProposalPrint);
 
 const importPublicProposal = () => import("@/pages/PublicProposalPage");
 export const PublicProposalPage = lazyWithReload(importPublicProposal);
-
-const importVendorBlog = () => import("@/pages/vendor/VendorBlogPage");
-export const VendorBlogPage = lazyWithReload(importVendorBlog);
 
 const importVendorMap = () => import("@/pages/VendorMapPage");
 export const VendorMapPage = lazyWithReload(importVendorMap);
@@ -184,9 +178,6 @@ export const VendorOnboardingPage = lazyWithReload(importVendorOnboarding);
 const importVendorAnalytics = () => import("@/pages/vendor/VendorAnalyticsPage");
 export const VendorAnalyticsPage = lazyWithReload(importVendorAnalytics);
 
-const importVendorMessages = () => import("@/pages/vendor/VendorMessagesPage");
-export const VendorMessagesPage = lazyWithReload(importVendorMessages);
-
 const importVendorPartners = () => import("@/pages/vendor/VendorPartnersPage");
 export const VendorPartnersPage = lazyWithReload(importVendorPartners);
 
@@ -257,7 +248,6 @@ const ROUTE_IMPORTERS: Array<{ pattern: string; importer: () => Promise<unknown>
   // Calendar dashboard); both URLs resolve to the same chunk.
   { pattern: "/vendor/availability", importer: importVendorAppointments },
   { pattern: "/vendor/payments", importer: importComingSoon },
-  { pattern: "/vendor/messages", importer: importVendorMessages },
   { pattern: "/vendor/partners", importer: importVendorPartners },
   { pattern: "/vendor/ai-agent", importer: importVendorAiAgent },
   { pattern: "/vendor/studio", importer: importVendorStudio },

@@ -9,21 +9,18 @@ import type { SubNavTab } from "@/components/shared/SubNavTabs";
 // (Customer hubs were removed when the host portal was mirrored to
 // mobile — mobile inbox / events / profile have no sub-tabs.)
 
-// Inbox hub — three surfaces sharing one tab strip:
-//   - Inquiries: structured leads (the table view at /vendor/inbox)
-//   - Hosts: casual host DMs at /vendor/messages
-//   - Partners: vendor-to-vendor coordination at /vendor/partners
-// Inquiries comes first because it's the highest-signal surface and
-// the sidebar entry now lands the user there by default.
+// Inbox hub — two surfaces sharing one tab strip, mirroring vendor
+// mobile inbox (inquiries / partners). The "Hosts" tab (no-inquiry
+// host DMs) was dropped along with VendorMessagesPage and the
+// find_or_create_direct_thread RPC — host → vendor messaging always
+// goes through an inquiry now.
 export const VENDOR_INBOX_HUB_TABS: SubNavTab[] = [
   { label: "Inquiries", to: "/vendor/inbox" },
-  { label: "Hosts", to: "/vendor/messages", exact: true },
   { label: "Partners", to: "/vendor/partners" },
 ];
 
-// Old name kept as an alias so any in-flight imports don't break
-// during the merge — both existing callers (VendorMessagesPage,
-// VendorPartnersPage) get the new three-tab strip automatically.
+// Old name kept as an alias so VendorPartnersPage's existing import
+// keeps working without a churn-y rename.
 export const VENDOR_MESSAGES_HUB_TABS = VENDOR_INBOX_HUB_TABS;
 
 export const VENDOR_CALENDAR_HUB_TABS: SubNavTab[] = [
