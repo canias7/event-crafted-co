@@ -1,9 +1,14 @@
-// Vendora service worker — handles web push notifications + a minimal
-// offline shell. Lives at /sw.js so it can claim the whole origin scope.
+// Vendora service worker — minimal PWA shell. Lives at /sw.js so it
+// can claim the whole origin scope.
+//
+// Web push handlers were removed when web push was killed in favor of
+// native push on mobile (see device_push_tokens). The install +
+// activate handlers below stay so the PWA install banner / "Add to
+// Home Screen" still works.
 //
 // Updates: bump CACHE_VERSION any time the shell strategy changes.
 
-const CACHE_VERSION = "vendora-v1";
+const CACHE_VERSION = "vendora-v2";
 
 self.addEventListener("install", (event) => {
   // Activate as soon as the new SW finishes installing — old SW stops
@@ -20,44 +25,4 @@ self.addEventListener("activate", (event) => {
     ),
   );
   self.clients.claim();
-});
-
-// Web Push — server posts to the subscription endpoint, push event fires
-// here. We render a notification with the payload's title/body/link.
-self.addEventListener("push", (event) => {
-  let data = {};
-  try {
-    data = event.data ? event.data.json() : {};
-  } catch {
-    data = { title: "Vendora", body: event.data ? event.data.text() : "" };
-  }
-  const title = data.title || "Vendora";
-  const options = {
-    body: data.body || "",
-    icon: "/pwa-192.png",
-    badge: "/pwa-192.png",
-    tag: data.tag,
-    data: { link: data.link || "/" },
-    requireInteraction: false,
-  };
-  event.waitUntil(self.registration.showNotification(title, options));
-});
-
-// Click on a push notification — focus an existing tab if possible,
-// otherwise open the link.
-self.addEventListener("notificationclick", (event) => {
-  event.notification.close();
-  const targetUrl = event.notification.data?.link || "/";
-  event.waitUntil(
-    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clients) => {
-      for (const client of clients) {
-        // Same-origin tab? Navigate it and focus.
-        if (client.url && "focus" in client) {
-          client.navigate?.(targetUrl);
-          return client.focus();
-        }
-      }
-      return self.clients.openWindow(targetUrl);
-    }),
-  );
 });
