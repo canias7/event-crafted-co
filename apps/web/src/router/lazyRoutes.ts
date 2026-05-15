@@ -259,6 +259,9 @@ export const VendorDashboard = lazyWithReload(importVendorDashboard);
 const importVendorHome = () => import("@/pages/vendor/VendorHomePage");
 export const VendorHomePage = lazyWithReload(importVendorHome);
 
+const importVendorMyProfile = () => import("@/pages/vendor/VendorMyProfilePage");
+export const VendorMyProfilePage = lazyWithReload(importVendorMyProfile);
+
 const importVendorProfile = () => import("@/pages/vendor/VendorProfilePage");
 export const VendorProfilePage = lazyWithReload(importVendorProfile);
 
@@ -368,6 +371,7 @@ const ROUTE_IMPORTERS: Array<{ pattern: string; importer: () => Promise<unknown>
   // Vendor
   { pattern: "/vendor/dashboard", importer: importVendorDashboard },
   { pattern: "/vendor/home", importer: importVendorHome },
+  { pattern: "/vendor/me", importer: importVendorMyProfile },
   { pattern: "/vendor/profile", importer: importVendorProfile },
   { pattern: "/vendor/listing", importer: importVendorProfile },
   { pattern: "/vendor/inbox", importer: importVendorInbox },

@@ -79,6 +79,7 @@ export const vendorNavItems: NavItem[] = [
 ];
 
 export const vendorNavBottomItems: NavItem[] = [
+  { labelKey: "sidebar.vendor.my_profile", path: "/vendor/me", icon: User },
   { labelKey: "sidebar.bottom.support", path: "/support", icon: LifeBuoy },
   { labelKey: "sidebar.bottom.settings", path: "/settings", icon: Settings },
 ];

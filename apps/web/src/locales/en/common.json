@@ -200,7 +200,8 @@
       "team": "Team",
       "payments": "Payments",
       "ai_agent": "AI Agent",
-      "studio": "Studio"
+      "studio": "Studio",
+      "my_profile": "My Profile"
     },
     "bottom": {
       "payments": "Payments",
