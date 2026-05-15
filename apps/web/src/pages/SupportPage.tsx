@@ -502,7 +502,7 @@ function TicketThread({
           return (
             <li
               key={m.id}
-              className={`rounded-sm p-4 ${
+              className={`rounded-2xl p-4 ${
                 isAdmin
                   ? "bg-accent/10 border border-accent/20"
                   : "bg-card border border-border"

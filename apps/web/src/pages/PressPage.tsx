@@ -237,7 +237,7 @@ export default function PressPage() {
               { name: "Muted", hex: "#8B8580", swatch: "bg-muted-foreground" },
             ].map((c) => (
               <div key={c.name}>
-                <div className={`h-16 rounded-sm ${c.swatch}`} />
+                <div className={`h-16 rounded-2xl ${c.swatch}`} />
                 <p className="font-display text-sm mt-2">{c.name}</p>
                 <p className="text-[11px] text-muted-foreground tnum">{c.hex}</p>
               </div>
@@ -263,7 +263,7 @@ export default function PressPage() {
             {SCREENSHOTS.map((s) => (
               <figure
                 key={s.caption}
-                className="rounded-sm overflow-hidden border border-border bg-card"
+                className="rounded-2xl overflow-hidden border border-border bg-card"
               >
                 <div className="aspect-[4/3] bg-muted overflow-hidden">
                   <Picture
