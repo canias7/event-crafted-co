@@ -3,15 +3,8 @@ import {
   Store,
   Compass,
   CalendarDays,
-  FileText,
-  Mail,
-  MessageSquare,
-  ListTodo,
-  CreditCard,
-  Image,
   Inbox,
   User,
-  Gift,
   Settings,
   LifeBuoy,
   Wand2,
@@ -34,31 +27,18 @@ export interface NavItem {
 // Direct URLs to the "hidden" pages (e.g. /customer/seating) still
 // resolve — we just don't repeat them in the sidebar.
 
+// Host portal nav — strict mirror of apps/host-mobile/app/(host)/_layout.tsx.
+// Mobile exposes exactly four primary tabs (Explore / Inbox / Events /
+// Profile) plus Settings reached from the Profile screen. The web
+// sidebar matches.
 export const customerNavItems: NavItem[] = [
-  { labelKey: "sidebar.customer.dashboard", path: "/customer/dashboard", icon: LayoutDashboard },
   { labelKey: "sidebar.customer.explore", path: "/customer/explore", icon: Compass },
-  // Vendors hub — sub-tabs: Browse, Favorites, Saved searches
-  { labelKey: "sidebar.customer.vendors", path: "/customer/vendors", icon: Store },
-  // Inquiries hub — sub-tabs: Single, Multi-vendor blast
-  { labelKey: "sidebar.customer.inquiries", path: "/customer/inquiries", icon: MessageSquare },
-  { labelKey: "sidebar.customer.messages", path: "/customer/messages", icon: Mail },
+  { labelKey: "sidebar.customer.inquiries", path: "/customer/inquiries", icon: Inbox },
   { labelKey: "sidebar.customer.events", path: "/customer/events", icon: CalendarDays },
-  { labelKey: "sidebar.customer.appointments", path: "/customer/appointments", icon: CalendarDays },
-  // Event hub — sub-tabs: Details, Day-of Timeline, Microsite
-  { labelKey: "sidebar.customer.event", path: "/customer/event", icon: FileText },
-  // Guests hub — sub-tabs: Guests, Seating
-  { labelKey: "sidebar.customer.guests", path: "/customer/guests", icon: User },
-  // Planning hub — sub-tabs: Tasks, Checklist, Planning Team, Planner workspace
-  { labelKey: "sidebar.customer.planning", path: "/customer/tasks", icon: ListTodo },
-  // Inspiration hub — sub-tabs: Mood Boards, Invitations
-  { labelKey: "sidebar.customer.inspiration", path: "/customer/moodboards", icon: Image },
-  // Gifts hub — sub-tabs: Registry, Group gifts
-  { labelKey: "sidebar.customer.gifts", path: "/customer/registry", icon: Gift },
+  { labelKey: "sidebar.customer.profile", path: "/customer/profile", icon: User },
 ];
 
 export const customerNavBottomItems: NavItem[] = [
-  { labelKey: "sidebar.customer.profile", path: "/customer/profile", icon: User },
-  { labelKey: "sidebar.bottom.payments", path: "/customer/payments", icon: CreditCard },
   { labelKey: "sidebar.bottom.support", path: "/support", icon: LifeBuoy },
   { labelKey: "sidebar.bottom.settings", path: "/settings", icon: Settings },
 ];
