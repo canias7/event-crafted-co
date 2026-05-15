@@ -46,7 +46,7 @@ export function VendorTeamPublic({ vendorId }: { vendorId: string }) {
   return (
     <div>
       <p className="font-label text-accent mb-4">Team</p>
-      <h2 className="font-display text-3xl mb-8">Meet the team</h2>
+      <h2 className="font-editorial text-4xl mb-8">Meet the team</h2>
       <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-8">
         {members.map((m) => (
           <div key={m.id} className="space-y-3">

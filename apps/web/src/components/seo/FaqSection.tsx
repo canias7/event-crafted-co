@@ -24,7 +24,7 @@ export function FaqSection({
         <p className="font-label text-accent mb-3 tracking-[0.4em]">
           — {eyebrow}
         </p>
-        <h2 className="font-display text-3xl md:text-4xl mb-10 leading-tight">
+        <h2 className="font-editorial text-4xl md:text-4xl mb-10 leading-tight">
           {title}
         </h2>
         <div className="space-y-2">

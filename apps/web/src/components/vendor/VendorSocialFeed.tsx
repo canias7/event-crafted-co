@@ -75,7 +75,7 @@ export function VendorSocialFeed({ vendorId }: { vendorId: string }) {
       {posts.length > 0 ? (
         <div>
           <p className="font-label text-accent mb-4">Latest</p>
-          <h2 className="font-display text-3xl mb-6">From their feed</h2>
+          <h2 className="font-editorial text-4xl mb-6">From their feed</h2>
           <div className="grid grid-cols-3 gap-1.5">
             {posts.map((p) => (
               <div
@@ -102,7 +102,7 @@ export function VendorSocialFeed({ vendorId }: { vendorId: string }) {
       {buzz.length > 0 ? (
         <div>
           <p className="font-label text-accent mb-4">Buzz</p>
-          <h2 className="font-display text-3xl mb-6 flex items-center gap-2">
+          <h2 className="font-editorial text-4xl mb-6 flex items-center gap-2">
             <MessageCircle className="h-7 w-7" />
             Recent updates
           </h2>
