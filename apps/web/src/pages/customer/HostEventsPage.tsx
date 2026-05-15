@@ -353,19 +353,27 @@ function EventRow({
 }) {
   const rel = event.eventDate ? relativeLabel(event.eventDate) : "TBD";
   const full = event.eventDate ? fmtFullDate(event.eventDate) : null;
+  const status = statusOf(event.vendors);
   return (
     <button
       onClick={onOpen}
-      className={`group flex w-full items-center justify-between rounded-xl border border-black/10 px-4 py-3 text-left transition hover:bg-foreground/5 ${
+      className={`group flex w-full items-center justify-between gap-3 rounded-xl border border-black/10 px-4 py-3 text-left transition hover:bg-foreground/5 ${
         muted ? "opacity-60" : ""
       }`}
     >
       <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <h3 className="text-base font-semibold text-foreground truncate">
             {event.title}
           </h3>
           <span className="text-xs text-muted-foreground">{rel}</span>
+          {status ? (
+            <span
+              className={`rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider ${status.cls}`}
+            >
+              {status.text}
+            </span>
+          ) : null}
         </div>
         <div className="mt-0.5 flex items-center gap-2 text-xs text-muted-foreground">
           {full ? <span>{full}</span> : null}
@@ -382,9 +390,83 @@ function EventRow({
           </span>
         </div>
       </div>
+      <VendorBubbles vendors={event.vendors} />
       <ChevronRight className="h-4 w-4 text-muted-foreground transition group-hover:translate-x-0.5" />
     </button>
   );
+}
+
+const AVATAR_HUES = [
+  "bg-violet-400",
+  "bg-pink-400",
+  "bg-orange-400",
+  "bg-amber-400",
+  "bg-emerald-400",
+  "bg-blue-400",
+  "bg-cyan-400",
+  "bg-rose-400",
+];
+
+function hueFor(seed: string): string {
+  let h = 0;
+  for (let i = 0; i < seed.length; i++) h = (h * 31 + seed.charCodeAt(i)) | 0;
+  return AVATAR_HUES[Math.abs(h) % AVATAR_HUES.length];
+}
+
+function initialsOf(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "?";
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+}
+
+function VendorBubbles({ vendors }: { vendors: EventVendor[] }) {
+  const visible = vendors.slice(0, 3);
+  const overflow = vendors.length - visible.length;
+  return (
+    <div className="hidden sm:flex items-center">
+      {visible.map((v, i) => (
+        <div
+          key={v.inquiry_id}
+          className={`w-7 h-7 rounded-full text-white text-[10px] font-bold flex items-center justify-center border-2 border-background ${hueFor(
+            v.vendor_id ?? v.inquiry_id,
+          )}`}
+          style={{ marginLeft: i === 0 ? 0 : -8 }}
+        >
+          {initialsOf(v.name)}
+        </div>
+      ))}
+      {overflow > 0 ? (
+        <div
+          className="px-2 h-7 rounded-full bg-secondary text-[10px] font-bold flex items-center justify-center border-2 border-background text-foreground"
+          style={{ marginLeft: -8, minWidth: "1.75rem" }}
+        >
+          +{overflow}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function statusOf(
+  vendors: EventVendor[],
+): { text: string; cls: string } | null {
+  if (vendors.length === 0) return null;
+  const won = vendors.filter((v) => v.status === "won").length;
+  const pending = vendors.filter(
+    (v) =>
+      v.status === "new" || v.status === "replied" || v.status === "drafted",
+  ).length;
+  if (won === vendors.length) {
+    return { text: "Confirmed", cls: "bg-emerald-100 text-emerald-700" };
+  }
+  if (pending > 0) {
+    return {
+      text: `Awaiting ${pending}`,
+      cls: "bg-amber-100 text-amber-700",
+    };
+  }
+  return null;
 }
 
 function EmptyState() {
