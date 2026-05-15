@@ -168,7 +168,7 @@ export function RecurringAvailabilityCard({ vendorId }: Props) {
 
   if (loading) {
     return (
-      <div className="rounded-sm border border-border bg-card p-6 text-center text-sm text-muted-foreground">
+      <div className="card-soft p-6 text-center text-sm text-muted-foreground">
         <Loader2 className="w-4 h-4 mx-auto animate-spin" />
       </div>
     );
@@ -177,7 +177,7 @@ export function RecurringAvailabilityCard({ vendorId }: Props) {
   return (
     <div className="space-y-6">
       {/* Weekly recurring rules */}
-      <div className="rounded-sm border border-border bg-card p-5 md:p-6">
+      <div className="card-soft p-5 md:p-6">
         <div className="mb-4">
           <h3 className="font-display text-lg leading-tight mb-1">
             Weekly availability
@@ -256,7 +256,7 @@ export function RecurringAvailabilityCard({ vendorId }: Props) {
       </div>
 
       {/* Buffer time */}
-      <div className="rounded-sm border border-border bg-card p-5 md:p-6">
+      <div className="card-soft p-5 md:p-6">
         <div className="mb-4">
           <h3 className="font-display text-lg leading-tight mb-1">
             Buffer between appointments

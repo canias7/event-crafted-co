@@ -117,7 +117,7 @@ export function NotificationPreferencesCard() {
         </p>
       </div>
 
-      <ul className="rounded-sm border border-border bg-card divide-y divide-border">
+      <ul className="card-soft divide-y divide-border">
         {ROWS.map((row) => (
           <li
             key={row.key}

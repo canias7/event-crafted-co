@@ -84,19 +84,19 @@ export function MicrositeRsvpResponsesCard({ eventId }: { eventId: string }) {
       ) : (
         <>
           <div className="grid grid-cols-3 gap-3 mb-3">
-            <div className="rounded-sm border border-border bg-card p-3 text-center">
+            <div className="card-soft p-3 text-center">
               <p className="font-display text-2xl tnum">{yes.length}</p>
               <p className="text-[11px] text-muted-foreground uppercase tracking-wide">
                 Yes
               </p>
             </div>
-            <div className="rounded-sm border border-border bg-card p-3 text-center">
+            <div className="card-soft p-3 text-center">
               <p className="font-display text-2xl tnum">{no.length}</p>
               <p className="text-[11px] text-muted-foreground uppercase tracking-wide">
                 No
               </p>
             </div>
-            <div className="rounded-sm border border-border bg-card p-3 text-center">
+            <div className="card-soft p-3 text-center">
               <p className="font-display text-2xl tnum">{totalAttending}</p>
               <p className="text-[11px] text-muted-foreground uppercase tracking-wide">
                 Total
@@ -108,7 +108,7 @@ export function MicrositeRsvpResponsesCard({ eventId }: { eventId: string }) {
             {rows.map((r) => (
               <li
                 key={r.id}
-                className="rounded-sm border border-border bg-card p-3 flex items-start gap-3"
+                className="card-soft p-3 flex items-start gap-3"
               >
                 <div
                   className={`mt-0.5 w-6 h-6 rounded-full flex items-center justify-center shrink-0 ${

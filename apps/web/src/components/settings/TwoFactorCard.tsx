@@ -100,7 +100,7 @@ export function TwoFactorCard() {
           {verified.map((f) => (
             <div
               key={f.id}
-              className="flex items-center justify-between gap-3 rounded-sm border border-border bg-card p-3"
+              className="flex items-center justify-between gap-3 card-soft p-3"
             >
               <div className="flex items-center gap-2 min-w-0">
                 <Smartphone className="w-4 h-4 text-accent shrink-0" />

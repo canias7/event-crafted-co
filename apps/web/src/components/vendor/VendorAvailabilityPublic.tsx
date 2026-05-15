@@ -133,7 +133,7 @@ export function VendorAvailabilityPublic({ vendorId }: { vendorId: string }) {
         still available — send an inquiry to confirm and lock in.
       </p>
 
-      <div className="rounded-sm border border-border bg-card p-4 sm:p-6 inline-block">
+      <div className="card-soft p-4 sm:p-6 inline-block">
         <Calendar
           mode="single"
           selected={undefined}

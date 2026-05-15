@@ -132,7 +132,7 @@ export function PlanningChannelCard({ hostId }: { hostId: string }) {
 
   if (!channelId) {
     return (
-      <div className="rounded-sm border border-border bg-card p-5 text-sm text-muted-foreground text-center">
+      <div className="card-soft p-5 text-sm text-muted-foreground text-center">
         <MessageSquare className="w-6 h-6 mx-auto mb-2 text-muted-foreground/40" />
         Group channel will appear here when the host opens it.
       </div>
@@ -140,7 +140,7 @@ export function PlanningChannelCard({ hostId }: { hostId: string }) {
   }
 
   return (
-    <div className="rounded-sm border border-border bg-card flex flex-col h-[500px]">
+    <div className="card-soft flex flex-col h-[500px]">
       <div className="px-4 py-3 border-b border-border flex items-center gap-2">
         <MessageSquare className="w-4 h-4 text-accent" />
         <p className="font-display text-base">Planning channel</p>

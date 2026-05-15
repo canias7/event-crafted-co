@@ -105,7 +105,7 @@ export function OnboardingTour() {
 
   return (
     <div
-      className="fixed bottom-4 right-4 z-50 w-[340px] max-w-[calc(100vw-2rem)] rounded-sm border border-border bg-card shadow-lg p-5 animate-in fade-in slide-in-from-bottom-2"
+      className="fixed bottom-4 right-4 z-50 w-[340px] max-w-[calc(100vw-2rem)] card-soft shadow-lg p-5 animate-in fade-in slide-in-from-bottom-2"
       role="dialog"
       aria-label="Onboarding tour"
     >

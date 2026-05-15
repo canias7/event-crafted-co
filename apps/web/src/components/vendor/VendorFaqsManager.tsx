@@ -180,7 +180,7 @@ export function VendorFaqsManager({
           {faqs.map((f) => (
             <li
               key={f.id}
-              className="rounded-sm border border-border bg-card p-3 space-y-2"
+              className="card-soft p-3 space-y-2"
             >
               <Input
                 value={f.question}

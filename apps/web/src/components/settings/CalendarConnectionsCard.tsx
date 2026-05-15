@@ -143,7 +143,7 @@ export function CalendarConnectionsCard() {
       </div>
 
       {google ? (
-        <div className="rounded-sm border border-border bg-card p-4 space-y-3">
+        <div className="card-soft p-4 space-y-3">
           <div className="flex items-center justify-between gap-3 flex-wrap">
             <div>
               <p className="text-sm font-medium">
