@@ -78,7 +78,7 @@ export function CoBookedRail(props: Props) {
     <section>
       <p className="font-label text-accent mb-3">{eyebrowLabel}</p>
       <div className="flex items-end justify-between mb-4 flex-wrap gap-2">
-        <h2 className="font-display text-2xl md:text-3xl">{heading}</h2>
+        <h2 className="font-editorial text-3xl md:text-4xl">{heading}</h2>
       </div>
       <ul className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
         {items.map((v) => (

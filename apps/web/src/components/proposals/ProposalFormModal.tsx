@@ -177,7 +177,7 @@ export function ProposalFormModal({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-2xl max-h-[92vh] overflow-y-auto rounded-sm">
         <DialogHeader>
-          <DialogTitle className="font-display text-2xl">Send a proposal</DialogTitle>
+          <DialogTitle className="font-editorial text-3xl">Send a proposal</DialogTitle>
           <DialogDescription className="text-sm">
             Builds a structured quote with line items, subtotal, and terms.
             The host will see Accept / Decline buttons.
@@ -310,7 +310,7 @@ export function ProposalFormModal({
 
           <div className="rounded-sm border border-border bg-secondary/40 p-4 flex items-center justify-between">
             <p className="font-label text-muted-foreground">Subtotal</p>
-            <p className="font-display text-2xl tnum">
+            <p className="font-editorial text-3xl tnum">
               {formatCents(subtotalCents)}
             </p>
           </div>

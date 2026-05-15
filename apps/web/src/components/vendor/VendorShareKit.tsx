@@ -108,7 +108,7 @@ function ShareKitDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md rounded-sm max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="font-display text-2xl inline-flex items-center gap-2">
+          <DialogTitle className="font-editorial text-3xl inline-flex items-center gap-2">
             <QrCode className="w-5 h-5" />
             Share kit
           </DialogTitle>
