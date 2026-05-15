@@ -40,6 +40,7 @@ import {
 } from "@/lib/messageAttachments";
 import { SubNavTabs } from "@/components/shared/SubNavTabs";
 import { detectContactInfo } from "@/lib/contactInfoSignals";
+import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { vendorNavItems as navItems } from "@/data/navItems";
 import { VENDOR_MESSAGES_HUB_TABS } from "@/data/hubTabs";
 
@@ -379,11 +380,14 @@ export default function VendorMessagesPage() {
 
       <main id="main-content" className="flex-1 pb-20 lg:pb-0">
         <div className="border-b border-border/40 bg-card/60 backdrop-blur px-4 md:px-8 py-5 sticky top-0 z-40 space-y-3">
-          <div>
-            <h1 className="font-editorial text-3xl">Messages</h1>
-            <p className="text-sm text-muted-foreground">
-              Casual conversations · low-friction starting point before a formal inquiry
-            </p>
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <h1 className="font-editorial text-3xl">Messages</h1>
+              <p className="text-sm text-muted-foreground">
+                Casual conversations · low-friction starting point before a formal inquiry
+              </p>
+            </div>
+            <NotificationBell variant="light" />
           </div>
           <SubNavTabs tabs={VENDOR_MESSAGES_HUB_TABS} />
         </div>

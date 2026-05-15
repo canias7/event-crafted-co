@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { NotificationBell } from "@/components/notifications/NotificationBell";
 import {
   Dialog,
   DialogContent,
@@ -199,11 +200,14 @@ export default function VendorInboxPage() {
       <DashboardSidebar items={navItems} title="Vendor Portal" backPath="/" />
       <main id="main-content" className="flex-1 pb-20 lg:pb-0">
         <div className="border-b border-border/40 bg-card/60 backdrop-blur px-4 md:px-8 py-5 sticky top-0 z-40 space-y-3">
-          <div>
-            <h1 className="font-editorial text-3xl">Inbox</h1>
-            <p className="text-sm text-muted-foreground">
-              Inquiries, host DMs, and partner threads — all in one place
-            </p>
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <h1 className="font-editorial text-3xl">Inbox</h1>
+              <p className="text-sm text-muted-foreground">
+                Inquiries, host DMs, and partner threads — all in one place
+              </p>
+            </div>
+            <NotificationBell variant="light" />
           </div>
           <SubNavTabs tabs={VENDOR_INBOX_HUB_TABS} />
         </div>

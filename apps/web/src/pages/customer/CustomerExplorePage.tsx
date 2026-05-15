@@ -13,6 +13,7 @@ import { Link } from "react-router-dom";
 import { Film, Grid3x3, Heart, MessageCircle, Store } from "lucide-react";
 import { DashboardSidebar } from "@/components/shared/DashboardSidebar";
 import { MobileNav } from "@/components/shared/MobileNav";
+import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { Skeleton } from "@/components/ui/skeleton";
 import { customerNavItems } from "@/data/navItems";
 import { CATEGORY_GROUPS, groupOfSub } from "@/data/categoryTaxonomy";
@@ -159,11 +160,14 @@ export default function CustomerExplorePage() {
       />
       <main id="main-content" className="flex-1 pb-20 lg:pb-0">
         <div className="sticky top-0 z-40 border-b border-border/40 bg-card/60 backdrop-blur px-4 md:px-8 py-5 space-y-3">
-          <div>
-            <h1 className="font-editorial text-3xl">Explore</h1>
-            <p className="text-sm text-muted-foreground">
-              Browse approved vendors, posts, reels, and buzz.
-            </p>
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <h1 className="font-editorial text-3xl">Explore</h1>
+              <p className="text-sm text-muted-foreground">
+                Browse approved vendors, posts, reels, and buzz.
+              </p>
+            </div>
+            <NotificationBell variant="light" />
           </div>
           <div className="flex gap-1 overflow-x-auto">
             {TABS.map((t) => {

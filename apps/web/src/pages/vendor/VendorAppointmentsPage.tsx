@@ -31,6 +31,7 @@ import {
   AppointmentsList,
   type Appointment,
 } from "@/components/appointments/AppointmentsList";
+import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { Skeleton } from "@/components/ui/skeleton";
 import { vendorNavItems as navItems } from "@/data/navItems";
 
@@ -418,13 +419,16 @@ export default function VendorAppointmentsPage() {
               Manage your bookings &amp; availability
             </p>
           </div>
-          <button
-            onClick={jumpToToday}
-            className="rounded-full w-10 h-10 flex items-center justify-center bg-secondary hover:bg-secondary/80 transition"
-            aria-label="Today"
-          >
-            <CalendarIcon className="h-4 w-4" />
-          </button>
+          <div className="flex items-center gap-2">
+            <NotificationBell variant="light" />
+            <button
+              onClick={jumpToToday}
+              className="rounded-full w-10 h-10 flex items-center justify-center bg-secondary hover:bg-secondary/80 transition"
+              aria-label="Today"
+            >
+              <CalendarIcon className="h-4 w-4" />
+            </button>
+          </div>
         </div>
 
         <div className="p-4 md:p-8 max-w-4xl space-y-6">
