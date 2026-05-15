@@ -68,9 +68,6 @@ interface Message {
   id: string;
   body: string;
   sender_role: "host" | "vendor" | "agent";
-  is_draft: boolean;
-  draft_status: string | null;
-  sent_at: string | null;
   created_at: string;
   attachments?: MessageAttachment[];
 }
@@ -102,9 +99,8 @@ export default function InquiryDetailPage() {
   const { user } = useAuth();
   const [inquiry, setInquiry] = useState<Inquiry | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
-  const [aiDraft, setAiDraft] = useState<Message | null>(null);
+  const [threadId, setThreadId] = useState<string | null>(null);
   const [composer, setComposer] = useState("");
-  const [editingDraftId, setEditingDraftId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [statusUpdating, setStatusUpdating] = useState(false);
@@ -124,22 +120,22 @@ export default function InquiryDetailPage() {
       .maybeSingle();
     setInquiry(i as unknown as Inquiry);
 
-    const { data: msgs } = await supabase
-      .from("messages")
-      .select("*")
-      .eq("inquiry_id", inquiryId)
-      .order("created_at", { ascending: true });
-    const all = ((msgs as unknown) as Message[]) ?? [];
-    setMessages(all.filter((m) => !m.is_draft));
-    const draft = all
-      .filter(
-        (m) =>
-          m.is_draft &&
-          m.draft_status === "pending_approval" &&
-          m.sender_role === "agent",
-      )
-      .pop();
-    setAiDraft(draft ?? null);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: tid } = await (supabase as any).rpc("ensure_inquiry_thread", {
+      p_inquiry_id: inquiryId,
+    });
+    const thread = (tid as string | null) ?? null;
+    setThreadId(thread);
+    if (thread) {
+      const { data: msgs } = await supabase
+        .from("direct_messages")
+        .select("id, body, sender_role, created_at, attachments")
+        .eq("thread_id", thread)
+        .order("created_at", { ascending: true });
+      setMessages((msgs as unknown as Message[]) ?? []);
+    } else {
+      setMessages([]);
+    }
 
     // Review (if host left one) + vendor response
     const { data: reviewRow } = await supabase
@@ -184,15 +180,14 @@ export default function InquiryDetailPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [inquiryId]);
 
-  // Realtime: re-fetch on messages or inquiry status change. Two
-  // listeners on the shared user-scoped channel — the provider de-dupes
-  // by table+event so this stays cheap.
+  // Realtime: re-fetch on direct_messages for this thread + inquiry
+  // status changes. Mobile uses the same model — see ensure_inquiry_thread.
   const messagesConfig = useMemo(
     () =>
-      inquiryId
-        ? { table: "messages", filter: `inquiry_id=eq.${inquiryId}` }
+      threadId
+        ? { table: "direct_messages", filter: `thread_id=eq.${threadId}` }
         : null,
-    [inquiryId],
+    [threadId],
   );
   useRealtime(messagesConfig, () => load());
 
@@ -243,39 +238,6 @@ export default function InquiryDetailPage() {
     load();
   }
 
-  async function approveDraft() {
-    if (!aiDraft) return;
-    const { error } = await supabase
-      .from("messages")
-      .update({
-        is_draft: false,
-        draft_status: "approved",
-        sent_at: new Date().toISOString(),
-      })
-      .eq("id", aiDraft.id);
-    if (error) return toast.error(error.message);
-    await transitionToReplied();
-    toast.success("Reply sent");
-    load();
-  }
-
-  async function discardDraft() {
-    if (!aiDraft) return;
-    const { error } = await supabase
-      .from("messages")
-      .update({ draft_status: "discarded" })
-      .eq("id", aiDraft.id);
-    if (error) return toast.error(error.message);
-    setAiDraft(null);
-    toast.success("Draft discarded");
-  }
-
-  function editDraft() {
-    if (!aiDraft) return;
-    setComposer(aiDraft.body);
-    setEditingDraftId(aiDraft.id);
-  }
-
   function pickFiles(list: FileList) {
     const accepted: File[] = [];
     for (const f of Array.from(list)) {
@@ -294,7 +256,12 @@ export default function InquiryDetailPage() {
   }
 
   async function sendMessage() {
-    if ((!composer.trim() && pendingFiles.length === 0) || !inquiryId || !user)
+    if (
+      (!composer.trim() && pendingFiles.length === 0) ||
+      !inquiryId ||
+      !user ||
+      !threadId
+    )
       return;
     setSending(true);
     const uploaded =
@@ -303,30 +270,17 @@ export default function InquiryDetailPage() {
             toast.error(`${n}: ${m}`),
           )
         : [];
-    const { error } = await supabase.from("messages").insert({
-      inquiry_id: inquiryId,
+    const { error } = await supabase.from("direct_messages").insert({
+      thread_id: threadId,
       sender_id: user.id,
       sender_role: "vendor",
       body: composer.trim() || "(attachment)",
-      sent_at: new Date().toISOString(),
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       attachments: uploaded,
     } as any);
     if (error) {
       setSending(false);
       return toast.error(error.message);
-    }
-    if (editingDraftId) {
-      const { error: draftErr } = await supabase
-        .from("messages")
-        .update({ draft_status: "edited" })
-        .eq("id", editingDraftId);
-      if (draftErr) {
-        // Soft failure — the new message went through, this just flips
-        // the prior draft to "edited" so the timeline can hide it.
-        console.error("[InquiryDetail] draft flip failed", draftErr.message);
-      }
-      setEditingDraftId(null);
     }
     await transitionToReplied();
     setComposer("");
@@ -560,7 +514,7 @@ export default function InquiryDetailPage() {
                   m.sender_role === "vendor" || m.sender_role === "agent",
                 senderKey: (m) =>
                   m.sender_role === "agent" ? "vendor" : m.sender_role,
-                createdAt: (m) => m.sent_at ?? m.created_at,
+                createdAt: (m) => m.created_at,
                 id: (m) => m.id,
               }).map((it) => {
                 if (it.kind === "sep") {
@@ -607,50 +561,9 @@ export default function InquiryDetailPage() {
           )}
         </div>
 
-        {/* AI Draft Panel */}
-        <div className="rounded-2xl bg-card border border-accent/40 p-6">
-          <div className="flex items-center gap-2 mb-3">
-            <Sparkles className="w-4 h-4 text-accent" />
-            <p className="font-label text-accent">AI Draft</p>
-          </div>
-          {aiDraft ? (
-            <>
-              <div className="p-4 rounded-2xl bg-accent/5 border border-accent/20 text-sm leading-relaxed whitespace-pre-wrap">
-                {aiDraft.body}
-              </div>
-              <div className="flex flex-wrap gap-2 mt-4">
-                <Button
-                  onClick={approveDraft}
-                  className="rounded-full bg-accent text-accent-foreground hover:bg-accent/90"
-                >
-                  Approve & Send
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={editDraft}
-                  className="rounded-full"
-                >
-                  Edit
-                </Button>
-                <Button
-                  variant="ghost"
-                  onClick={discardDraft}
-                  className="rounded-full"
-                >
-                  Discard
-                </Button>
-              </div>
-            </>
-          ) : (
-            <p className="text-sm text-muted-foreground">No AI draft yet</p>
-          )}
-        </div>
-
         {/* Composer */}
         <div className="card-soft p-6">
-          <p className="font-label text-muted-foreground mb-3">
-            {editingDraftId ? "Edit AI draft & send" : "Reply"}
-          </p>
+          <p className="font-label text-muted-foreground mb-3">Reply</p>
           <Textarea
             value={composer}
             onChange={(e) => setComposer(e.target.value)}

@@ -178,7 +178,7 @@ export default function SettingsPage() {
       { key: "profile", query: () => sb.from("profiles").select("*").eq("id", user.id).maybeSingle() },
       { key: "vendor_profile", query: () => sb.from("vendor_profiles").select("*").eq("user_id", user.id).maybeSingle() },
       { key: "inquiries_as_host", query: () => sb.from("inquiries").select("*").eq("host_id", user.id) },
-      { key: "messages_authored", query: () => sb.from("messages").select("*").eq("sender_id", user.id) },
+      { key: "messages_authored", query: () => sb.from("direct_messages").select("*").eq("sender_id", user.id) },
       { key: "reviews_authored", query: () => sb.from("reviews").select("*").eq("host_id", user.id) },
       { key: "saved_vendors", query: () => sb.from("saved_vendors").select("*").eq("host_id", user.id) },
       { key: "notifications", query: () => sb.from("notifications").select("*").eq("user_id", user.id) },
