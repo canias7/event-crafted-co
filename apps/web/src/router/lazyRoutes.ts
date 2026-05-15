@@ -149,13 +149,7 @@ export const AcceptPlanningInvitePage = lazyWithReload(importAcceptPlanningInvit
 const importAcceptTeamInvite = () => import("@/pages/AcceptTeamInvitePage");
 export const AcceptTeamInvitePage = lazyWithReload(importAcceptTeamInvite);
 
-// ---------------- Customer (host) ----------------
-const importCustomerDashboard = () => import("@/pages/customer/CustomerDashboard");
-export const CustomerDashboard = lazyWithReload(importCustomerDashboard);
-
-const importCustomerVendorsBrowse = () => import("@/pages/customer/VendorsBrowsePage");
-export const CustomerVendorsBrowsePage = lazyWithReload(importCustomerVendorsBrowse);
-
+// ---------------- Customer (host) — mirrors mobile host tabs ----------------
 const importOnboarding = () => import("@/pages/customer/OnboardingPage");
 export const OnboardingPage = lazyWithReload(importOnboarding);
 
@@ -164,12 +158,6 @@ export const InquiriesPage = lazyWithReload(importInquiries);
 
 const importHostInquiryDetail = () => import("@/pages/customer/HostInquiryDetailPage");
 export const HostInquiryDetailPage = lazyWithReload(importHostInquiryDetail);
-
-const importFavorites = () => import("@/pages/customer/FavoritesPage");
-export const FavoritesPage = lazyWithReload(importFavorites);
-
-const importEventDetails = () => import("@/pages/customer/EventDetailsPage");
-export const EventDetailsPage = lazyWithReload(importEventDetails);
 
 const importHostEvents = () => import("@/pages/customer/HostEventsPage");
 export const HostEventsPage = lazyWithReload(importHostEvents);
@@ -180,71 +168,11 @@ export const CustomerExplorePage = lazyWithReload(importCustomerExplore);
 const importHostProfile = () => import("@/pages/customer/HostProfilePage");
 export const HostProfilePage = lazyWithReload(importHostProfile);
 
-const importGuests = () => import("@/pages/customer/GuestsPage");
-export const GuestsPage = lazyWithReload(importGuests);
-
-const importChecklist = () => import("@/pages/customer/ChecklistPage");
-export const ChecklistPage = lazyWithReload(importChecklist);
-
-const importTasks = () => import("@/pages/customer/TasksPage");
-export const TasksPage = lazyWithReload(importTasks);
-
-const importPayments = () => import("@/pages/customer/PaymentsPage");
-export const PaymentsPage = lazyWithReload(importPayments);
-
-const importInvitationBuilder = () => import("@/pages/customer/InvitationBuilder");
-export const InvitationBuilder = lazyWithReload(importInvitationBuilder);
-
-const importMoodBoards = () => import("@/pages/customer/MoodBoardsPage");
-export const MoodBoardsPage = lazyWithReload(importMoodBoards);
-
-const importMoodBoardDetail = () => import("@/pages/customer/MoodBoardDetailPage");
-export const MoodBoardDetailPage = lazyWithReload(importMoodBoardDetail);
-
-const importAppointments = () => import("@/pages/customer/AppointmentsPage");
-export const AppointmentsPage = lazyWithReload(importAppointments);
-
-const importSavedSearches = () => import("@/pages/customer/SavedSearchesPage");
-export const SavedSearchesPage = lazyWithReload(importSavedSearches);
-
-const importSeatingChart = () => import("@/pages/customer/SeatingChartPage");
-export const SeatingChartPage = lazyWithReload(importSeatingChart);
-
-const importEventTimeline = () => import("@/pages/customer/EventTimelinePage");
-export const EventTimelinePage = lazyWithReload(importEventTimeline);
-
-const importPlanningTeam = () => import("@/pages/customer/PlanningTeamPage");
-export const PlanningTeamPage = lazyWithReload(importPlanningTeam);
-
-const importRegistry = () => import("@/pages/customer/RegistryPage");
-export const RegistryPage = lazyWithReload(importRegistry);
-
 const importMessages = () => import("@/pages/customer/MessagesPage");
 export const MessagesPage = lazyWithReload(importMessages);
 
-const importInquiryBlast = () => import("@/pages/customer/InquiryBlastPage");
-export const InquiryBlastPage = lazyWithReload(importInquiryBlast);
-
-const importLiveDay = () => import("@/pages/customer/LiveDayPage");
-export const LiveDayPage = lazyWithReload(importLiveDay);
-
-const importGiftWishes = () => import("@/pages/customer/GiftWishesPage");
-export const GiftWishesPage = lazyWithReload(importGiftWishes);
-
-const importMicrositeEditor = () => import("@/pages/customer/MicrositeEditorPage");
-export const MicrositeEditorPage = lazyWithReload(importMicrositeEditor);
-
 const importEventMicrosite = () => import("@/pages/EventMicrositePage");
 export const EventMicrositePage = lazyWithReload(importEventMicrosite);
-
-const importPlannerWorkspace = () => import("@/pages/customer/PlannerWorkspacePage");
-export const PlannerWorkspacePage = lazyWithReload(importPlannerWorkspace);
-
-const importPartyHub = () => import("@/pages/PartyHubPage");
-export const PartyHubPage = lazyWithReload(importPartyHub);
-
-const importAcceptPartyInvite = () => import("@/pages/AcceptPartyInvitePage");
-export const AcceptPartyInvitePage = lazyWithReload(importAcceptPartyInvite);
 
 const importEventAlbum = () => import("@/pages/EventAlbumPage");
 export const EventAlbumPage = lazyWithReload(importEventAlbum);
@@ -337,40 +265,18 @@ const ROUTE_IMPORTERS: Array<{ pattern: string; importer: () => Promise<unknown>
   { pattern: "/real-events/:slug", importer: importRealEventDetail },
   { pattern: "/accept-team-invite/:token", importer: importAcceptTeamInvite },
   { pattern: "/accept-planning-invite/:token", importer: importAcceptPlanningInvite },
-  // Customer
-  { pattern: "/customer/dashboard", importer: importCustomerDashboard },
-  { pattern: "/customer/profile", importer: importHostProfile },
-  { pattern: "/customer/vendors", importer: importCustomerVendorsBrowse },
+  // Customer — mirrors mobile host tabs (Explore / Inbox / Events / Profile + Settings)
   { pattern: "/customer/onboarding", importer: importOnboarding },
+  { pattern: "/customer/explore", importer: importCustomerExplore },
   { pattern: "/customer/inquiries", importer: importInquiries },
   { pattern: "/customer/inquiries/:inquiryId", importer: importHostInquiryDetail },
-  { pattern: "/customer/event", importer: importEventDetails },
-  { pattern: "/customer/guests", importer: importGuests },
-  { pattern: "/customer/seating", importer: importSeatingChart },
-  { pattern: "/customer/timeline", importer: importEventTimeline },
-  { pattern: "/customer/planning-team", importer: importPlanningTeam },
-  { pattern: "/customer/registry", importer: importRegistry },
   { pattern: "/customer/messages", importer: importMessages },
-  { pattern: "/customer/inquiry-blast", importer: importInquiryBlast },
-  { pattern: "/customer/live", importer: importLiveDay },
-  { pattern: "/customer/gifts", importer: importGiftWishes },
-  { pattern: "/customer/microsite", importer: importMicrositeEditor },
-  { pattern: "/planner", importer: importPlannerWorkspace },
-  { pattern: "/party", importer: importPartyHub },
-  { pattern: "/party/:eventId", importer: importPartyHub },
-  { pattern: "/accept-party-invite/:token", importer: importAcceptPartyInvite },
+  { pattern: "/customer/events", importer: importHostEvents },
+  { pattern: "/customer/profile", importer: importHostProfile },
+  // Shared/public token-gated event surfaces
   { pattern: "/e/:token", importer: importEventMicrosite },
   { pattern: "/album/:token", importer: importEventAlbum },
   { pattern: "/support", importer: importSupport },
-  { pattern: "/customer/appointments", importer: importAppointments },
-  { pattern: "/customer/favorites", importer: importFavorites },
-  { pattern: "/customer/saved-searches", importer: importSavedSearches },
-  { pattern: "/customer/checklist", importer: importChecklist },
-  { pattern: "/customer/tasks", importer: importTasks },
-  { pattern: "/customer/payments", importer: importPayments },
-  { pattern: "/customer/invitations", importer: importInvitationBuilder },
-  { pattern: "/customer/moodboards", importer: importMoodBoards },
-  { pattern: "/customer/moodboards/:id", importer: importMoodBoardDetail },
   // Vendor
   { pattern: "/vendor/dashboard", importer: importVendorDashboard },
   { pattern: "/vendor/home", importer: importVendorHome },

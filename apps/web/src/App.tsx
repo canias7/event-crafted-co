@@ -52,41 +52,17 @@ import {
   VendorApplyThanksPage,
   NotFound,
   ComingSoonPage,
-  CustomerDashboard,
-  CustomerVendorsBrowsePage,
   OnboardingPage,
   InquiriesPage,
   HostInquiryDetailPage,
-  FavoritesPage,
-  EventDetailsPage,
   HostEventsPage,
   CustomerExplorePage,
   HostProfilePage,
-  GuestsPage,
   RsvpPage,
-  ChecklistPage,
-  TasksPage,
-  PaymentsPage,
-  InvitationBuilder,
-  MoodBoardsPage,
-  MoodBoardDetailPage,
   MoodBoardSharePage,
-  AppointmentsPage,
-  SavedSearchesPage,
-  SeatingChartPage,
-  EventTimelinePage,
-  PlanningTeamPage,
-  RegistryPage,
   MessagesPage,
-  InquiryBlastPage,
-  LiveDayPage,
-  GiftWishesPage,
   GiftSharePage,
-  MicrositeEditorPage,
   EventMicrositePage,
-  PlannerWorkspacePage,
-  PartyHubPage,
-  AcceptPartyInvitePage,
   EventAlbumPage,
   SupportPage,
   RealEventsPage,
@@ -181,43 +157,54 @@ const App = () => (
               <Route path="/reset-password" element={<ResetPasswordPage />} />
               <Route path="/settings" element={<RequireRole role={["host", "vendor"]}><SettingsPage /></RequireRole>} />
 
-              {/* Customer */}
-              <Route path="/customer/dashboard" element={<RequireRole role="host"><CustomerDashboard /></RequireRole>} />
-              <Route path="/customer/profile" element={<RequireRole role="host"><HostProfilePage /></RequireRole>} />
-              <Route path="/customer/vendors" element={<RequireRole role="host"><CustomerVendorsBrowsePage /></RequireRole>} />
+              {/* Customer — mirrors mobile host app (4 tabs + settings).
+                  Mobile only exposes Explore / Inbox / Events / Profile,
+                  so the web does the same. Every legacy /customer/* URL
+                  (events-microsite planner, registry, seating, etc) now
+                  redirects to /customer/explore so old emails don't 404.
+                  Settings is the existing /settings route (mobile reaches
+                  it via the Profile tab's "Account settings" card). */}
               <Route path="/customer/onboarding" element={<RequireRole role="host"><OnboardingPage /></RequireRole>} />
+              <Route path="/customer/explore" element={<RequireRole role="host"><CustomerExplorePage /></RequireRole>} />
               <Route path="/customer/inquiries" element={<RequireRole role="host"><InquiriesPage /></RequireRole>} />
               <Route path="/customer/inquiries/:inquiryId" element={<RequireRole role="host"><HostInquiryDetailPage /></RequireRole>} />
-              <Route path="/customer/event" element={<RequireRole role="host"><EventDetailsPage /></RequireRole>} />
-              <Route path="/customer/events" element={<RequireRole role="host"><HostEventsPage /></RequireRole>} />
-              <Route path="/customer/explore" element={<RequireRole role="host"><CustomerExplorePage /></RequireRole>} />
-              <Route path="/customer/guests" element={<RequireRole role="host"><GuestsPage /></RequireRole>} />
-              <Route path="/customer/seating" element={<RequireRole role="host"><SeatingChartPage /></RequireRole>} />
-              <Route path="/customer/timeline" element={<RequireRole role="host"><EventTimelinePage /></RequireRole>} />
-              <Route path="/customer/planning-team" element={<RequireRole role="host"><PlanningTeamPage /></RequireRole>} />
-              <Route path="/customer/registry" element={<RequireRole role="host"><RegistryPage /></RequireRole>} />
               <Route path="/customer/messages" element={<RequireRole role="host"><MessagesPage /></RequireRole>} />
-              <Route path="/customer/inquiry-blast" element={<RequireRole role="host"><InquiryBlastPage /></RequireRole>} />
-              <Route path="/customer/live" element={<RequireRole role="host"><LiveDayPage /></RequireRole>} />
-              <Route path="/customer/gifts" element={<RequireRole role="host"><GiftWishesPage /></RequireRole>} />
-              <Route path="/customer/microsite" element={<RequireRole role="host"><MicrositeEditorPage /></RequireRole>} />
-              <Route path="/planner" element={<RequireRole role={["host", "vendor"]}><PlannerWorkspacePage /></RequireRole>} />
-              <Route path="/party" element={<RequireRole role={["host", "vendor"]}><PartyHubPage /></RequireRole>} />
-              <Route path="/party/:eventId" element={<RequireRole role={["host", "vendor"]}><PartyHubPage /></RequireRole>} />
-              <Route path="/accept-party-invite/:token" element={<AcceptPartyInvitePage />} />
+              <Route path="/customer/events" element={<RequireRole role="host"><HostEventsPage /></RequireRole>} />
+              <Route path="/customer/profile" element={<RequireRole role="host"><HostProfilePage /></RequireRole>} />
+              {/* Legacy host routes — bounce to /customer/explore so
+                  bookmarks, old emails, and external deep-links don't
+                  hit a 404. */}
+              <Route path="/customer/dashboard" element={<Navigate to="/customer/explore" replace />} />
+              <Route path="/customer/vendors" element={<Navigate to="/customer/explore" replace />} />
+              <Route path="/customer/event" element={<Navigate to="/customer/events" replace />} />
+              <Route path="/customer/guests" element={<Navigate to="/customer/events" replace />} />
+              <Route path="/customer/seating" element={<Navigate to="/customer/events" replace />} />
+              <Route path="/customer/timeline" element={<Navigate to="/customer/events" replace />} />
+              <Route path="/customer/planning-team" element={<Navigate to="/customer/events" replace />} />
+              <Route path="/customer/registry" element={<Navigate to="/customer/events" replace />} />
+              <Route path="/customer/inquiry-blast" element={<Navigate to="/customer/inquiries" replace />} />
+              <Route path="/customer/live" element={<Navigate to="/customer/events" replace />} />
+              <Route path="/customer/gifts" element={<Navigate to="/customer/events" replace />} />
+              <Route path="/customer/microsite" element={<Navigate to="/customer/events" replace />} />
+              <Route path="/customer/appointments" element={<Navigate to="/customer/events" replace />} />
+              <Route path="/customer/favorites" element={<Navigate to="/customer/explore" replace />} />
+              <Route path="/customer/saved-searches" element={<Navigate to="/customer/explore" replace />} />
+              <Route path="/customer/checklist" element={<Navigate to="/customer/events" replace />} />
+              <Route path="/customer/tasks" element={<Navigate to="/customer/events" replace />} />
+              <Route path="/customer/payments" element={<Navigate to="/customer/events" replace />} />
+              <Route path="/customer/invitations" element={<Navigate to="/customer/events" replace />} />
+              <Route path="/customer/moodboards" element={<Navigate to="/customer/explore" replace />} />
+              <Route path="/customer/moodboards/:id" element={<Navigate to="/customer/explore" replace />} />
+              {/* /planner and /party are cross-role surfaces (planner workspace + party host hub).
+                  Mobile has neither — bounce to /customer/events for hosts. RequireRole still
+                  blocks vendors from these. */}
+              <Route path="/planner" element={<Navigate to="/customer/events" replace />} />
+              <Route path="/party" element={<Navigate to="/customer/events" replace />} />
+              <Route path="/party/:eventId" element={<Navigate to="/customer/events" replace />} />
               <Route path="/gift/:token" element={<GiftSharePage />} />
               <Route path="/e/:token" element={<EventMicrositePage />} />
               <Route path="/album/:token" element={<EventAlbumPage />} />
               <Route path="/support" element={<RequireRole role={["host", "vendor"]}><SupportPage /></RequireRole>} />
-              <Route path="/customer/appointments" element={<RequireRole role="host"><AppointmentsPage /></RequireRole>} />
-              <Route path="/customer/favorites" element={<RequireRole role="host"><FavoritesPage /></RequireRole>} />
-              <Route path="/customer/saved-searches" element={<RequireRole role="host"><SavedSearchesPage /></RequireRole>} />
-              <Route path="/customer/checklist" element={<RequireRole role="host"><ChecklistPage /></RequireRole>} />
-              <Route path="/customer/tasks" element={<RequireRole role="host"><TasksPage /></RequireRole>} />
-              <Route path="/customer/payments" element={<RequireRole role="host"><PaymentsPage /></RequireRole>} />
-              <Route path="/customer/invitations" element={<RequireRole role="host"><InvitationBuilder /></RequireRole>} />
-              <Route path="/customer/moodboards" element={<RequireRole role="host"><MoodBoardsPage /></RequireRole>} />
-              <Route path="/customer/moodboards/:id" element={<RequireRole role="host"><MoodBoardDetailPage /></RequireRole>} />
 
               {/* Vendor */}
               <Route path="/vendor/dashboard" element={<RequireRole role="vendor"><VendorDashboard /></RequireRole>} />
