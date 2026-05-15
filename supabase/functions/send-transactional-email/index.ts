@@ -69,20 +69,6 @@ interface VendorDecisionPayload {
   reviewNotes?: string | null;
 }
 
-interface PlanningInvitePayload {
-  email: string;
-  token: string;
-  hostName?: string | null;
-  role: "editor" | "viewer";
-}
-
-interface GuestBlastPayload {
-  hostId: string;
-  subject: string;
-  body: string;
-  audience: { rsvp_status?: "attending" | "all"; vip_only?: boolean };
-}
-
 interface ReengagementPayload {
   to: string;
   vendorBusinessName: string;
@@ -91,18 +77,6 @@ interface ReengagementPayload {
   eventType: string;
   upcomingDate: string;
   inquiryId: string;
-}
-
-interface SavedSearchMatchPayload {
-  to: string;
-  searchName: string;
-  matchCount: number;
-  searchId: string;
-}
-
-interface PartyInvitePayload {
-  email: string;
-  roleLabel: string;
 }
 
 serve(async (req) => {
@@ -141,21 +115,10 @@ serve(async (req) => {
     if (kind === "team_invite") {
       const e = teamInviteEmail(body as TeamInvitePayload);
       if (e) emails = [e];
-    } else if (kind === "planning_invite") {
-      const e = planningInviteEmail(body as PlanningInvitePayload);
-      if (e) emails = [e];
     } else if (kind === "new_inquiry") {
       emails = await newInquiryEmails(body as NewInquiryPayload);
-    } else if (kind === "guest_blast") {
-      emails = await guestBlastEmails(body as GuestBlastPayload);
     } else if (kind === "reengagement_opportunity") {
       const e = reengagementEmail(body as ReengagementPayload);
-      if (e) emails = [e];
-    } else if (kind === "saved_search_match") {
-      const e = savedSearchMatchEmail(body as SavedSearchMatchPayload);
-      if (e) emails = [e];
-    } else if (kind === "party_invite") {
-      const e = await partyInviteEmail(body as PartyInvitePayload);
       if (e) emails = [e];
     } else if (
       kind === "vendor_approved" ||
@@ -288,79 +251,6 @@ function teamInviteEmail(p: TeamInvitePayload) {
     to: p.email,
     subject: `${businessName} invited you to their Vendora team`,
     html: shellHtml(`You've been invited to join ${escape(businessName)}`, body),
-  };
-}
-
-async function partyInviteEmail(p: PartyInvitePayload) {
-  // Look up the most recent party invite for this email (the row was
-  // just inserted by the host's UI). Use service-role client so RLS
-  // doesn't hide it.
-  const sb = adminClient();
-  const { data } = await sb
-    .from("event_party_invites")
-    .select(
-      "token, role_label, host_id, event:host_events!event_party_invites_event_id_fkey(name, event_type, event_date)",
-    )
-    .eq("email", p.email.toLowerCase())
-    .order("created_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
-  const row = data as
-    | {
-        token: string;
-        role_label: string;
-        host_id: string;
-        event: { name: string | null; event_type: string; event_date: string | null } | null;
-      }
-    | null;
-  if (!row) return null;
-
-  const { data: hostProf } = await sb
-    .from("profiles")
-    .select("display_name")
-    .eq("id", row.host_id)
-    .maybeSingle();
-  const hostName =
-    (hostProf as { display_name: string | null } | null)?.display_name ??
-    "Your friend";
-
-  const link = `${APP_URL}/accept-party-invite/${row.token}`;
-  const dateStr = row.event?.event_date
-    ? new Date(`${row.event.event_date}T00:00:00`).toLocaleDateString(undefined, {
-        weekday: "long",
-        month: "long",
-        day: "numeric",
-        year: "numeric",
-      })
-    : null;
-
-  const body = `
-    <p style="margin:0 0 16px;">${escape(hostName)} added you to their inner circle as <strong>${escape(p.roleLabel)}</strong>.</p>
-    ${dateStr ? `<p style="margin:0 0 16px;font-size:14px;color:#3a3a3a;">${escape(dateStr)}</p>` : ""}
-    <p style="margin:0 0 24px;">You'll get a private VIP portal with the schedule, vendor names, group gifts, registry, and any tasks they assign — no inquiries, no finances.</p>
-    <p style="margin:0 0 24px;">${button(link, "Accept invitation")}</p>
-    <p style="margin:0;font-size:13px;color:#777;">If the button doesn't work, paste this URL into your browser: <a href="${link}" style="color:#a08259;">${escape(link)}</a></p>`;
-
-  return {
-    to: p.email,
-    subject: `${hostName} invited you to their event's inner circle`,
-    html: shellHtml("You're invited", body),
-  };
-}
-
-function savedSearchMatchEmail(p: SavedSearchMatchPayload) {
-  const link = `${APP_URL}/customer/saved-searches`;
-  const browseLink = `${APP_URL}/vendors`;
-  const noun = p.matchCount === 1 ? "vendor matches" : "vendors match";
-  const body = `
-    <p style="margin:0 0 16px;">${p.matchCount} new ${noun} <strong>"${escape(p.searchName)}"</strong> on Vendora.</p>
-    <p style="margin:0 0 24px;">Tap through to see who joined the directory since your last check.</p>
-    <p style="margin:0 0 24px;">${button(browseLink, "View matches")}</p>
-    <p style="margin:0;font-size:13px;color:#777;">Manage which saved searches send email at <a href="${link}" style="color:#a08259;">your saved searches page</a>.</p>`;
-  return {
-    to: p.to,
-    subject: `New on Vendora: ${p.matchCount} ${noun} "${p.searchName}"`,
-    html: shellHtml(`New matches for "${escape(p.searchName)}"`, body),
   };
 }
 
@@ -558,27 +448,6 @@ function reengagementEmail(p: ReengagementPayload) {
     to: p.to,
     subject: `${p.hostDisplayName}'s ${p.occasion} is in 30 days`,
     html: shellHtml(`Reach out to ${escape(p.hostDisplayName)}`, body),
-  };
-}
-
-function planningInviteEmail(p: PlanningInvitePayload) {
-  const hostName = p.hostName ?? "A Vendora host";
-  const link = `${APP_URL}/accept-planning-invite/${p.token}`;
-  const roleCopy =
-    p.role === "editor"
-      ? "edit the guest list, checklist, budget, mood boards, and timeline"
-      : "see the guest list, checklist, budget, mood boards, and timeline";
-  const body = `
-    <p style="margin:0 0 16px;">${escape(hostName)} invited you to help plan their event as a <strong>${p.role}</strong>.</p>
-    <p style="margin:0 0 24px;">As a ${p.role}, you'll be able to ${roleCopy}.</p>
-    <p style="margin:0 0 24px;">${button(link, "Accept and join the team")}</p>
-    <p style="margin:0;font-size:13px;color:#777;">Or paste this link into your browser:<br/>
-      <span style="word-break:break-all;">${link}</span></p>
-    <p style="margin:24px 0 0;font-size:13px;color:#777;">This invite expires in 14 days.</p>`;
-  return {
-    to: p.email,
-    subject: `${hostName} invited you to help plan their event`,
-    html: shellHtml(`Help ${escape(hostName)} plan their event`, body),
   };
 }
 
@@ -855,54 +724,3 @@ function applyVars(input: string, vars: Record<string, string>) {
   });
 }
 
-async function guestBlastEmails(p: GuestBlastPayload) {
-  const admin = adminClient();
-
-  // Caller authenticates via the function's verify_jwt; we still
-  // double-check ownership via the host_id passed in (the SELECT below
-  // is server-side and the writes log to guest_message_blasts under
-  // that host_id, not the caller's auth.uid). Acceptable for v1.
-  let q = admin
-    .from("event_guests")
-    .select("id, name, email, rsvp_status, is_vip")
-    .eq("host_id", p.hostId);
-
-  if (p.audience.rsvp_status === "attending") {
-    q = q.eq("rsvp_status", "attending");
-  }
-  if (p.audience.vip_only) {
-    q = q.eq("is_vip", true);
-  }
-
-  const { data: guests, error } = await q;
-  if (error) throw new Error(error.message);
-  const recipients = ((guests as any[] | null) ?? []).filter((g) => g.email);
-  if (recipients.length === 0) return [];
-
-  const { data: hostProfile } = await admin
-    .from("profiles")
-    .select("display_name")
-    .eq("id", p.hostId)
-    .maybeSingle();
-  const hostName = (hostProfile as any)?.display_name ?? "Your host";
-
-  // Log the blast (regardless of how many emails actually go out below).
-  await admin.from("guest_message_blasts").insert({
-    host_id: p.hostId,
-    subject: p.subject,
-    body: p.body,
-    sent_to_count: recipients.length,
-    audience: p.audience,
-  });
-
-  return recipients.map((g) => ({
-    to: g.email,
-    subject: p.subject,
-    html: shellHtml(
-      escape(p.subject),
-      `<p style="margin:0 0 12px;font-size:15px;color:#3a3a3a;">Hi ${escape(g.name ?? "there")},</p>
-      <div style="font-size:15px;line-height:1.6;color:#3a3a3a;white-space:pre-wrap;">${escape(p.body)}</div>
-      <p style="margin:24px 0 0;font-size:13px;color:#777;">— ${escape(hostName)}</p>`,
-    ),
-  }));
-}
