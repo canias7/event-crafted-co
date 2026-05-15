@@ -354,7 +354,7 @@ export default function InquiryDetailPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="border-b border-border bg-card px-4 md:px-8 py-4 sticky top-0 z-40">
+      <div className="border-b border-border/40 bg-card/60 backdrop-blur px-4 md:px-8 py-5 sticky top-0 z-40">
         <Link
           to="/vendor/inbox"
           className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
