@@ -32,6 +32,7 @@ import { VendorCard } from "@/components/shared/VendorCard";
 import { Lightbox } from "@/components/shared/Lightbox";
 import { VideoEmbed } from "@/components/vendor/VideoEmbed";
 import { ShowcaseStrip } from "@/components/vendor/ShowcaseStrip";
+import { VendorSocialFeed } from "@/components/vendor/VendorSocialFeed";
 import { VerificationBadges } from "@/components/vendor/VerificationBadges";
 import { CoBookedRail } from "@/components/vendor/CoBookedRail";
 import {
@@ -945,6 +946,15 @@ export default function VendorDetailPage() {
               {vendor.isReal && (
                 <SilentErrorBoundary label="ShowcaseStrip">
                   <ShowcaseStrip vendorId={vendor.id} />
+                </SilentErrorBoundary>
+              )}
+
+              {/* Social feed — vendor_posts grid + vendor_buzz cards.
+                  Surfaces the same content the mobile host vendor page
+                  shows. Renders nothing if both are empty. */}
+              {vendor.isReal && (
+                <SilentErrorBoundary label="VendorSocialFeed">
+                  <VendorSocialFeed vendorId={vendor.id} />
                 </SilentErrorBoundary>
               )}
 
