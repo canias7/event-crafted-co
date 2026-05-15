@@ -415,29 +415,60 @@ function ListingCard({
   );
 }
 
+function FeedAuthorHeader({ vendor }: { vendor: Author | null }) {
+  return (
+    <div className="flex items-center gap-3 px-4 py-3">
+      <div className="h-9 w-9 overflow-hidden rounded-full bg-secondary/60 flex items-center justify-center text-sm font-semibold text-muted-foreground shrink-0">
+        {vendor?.logo_url ? (
+          <img
+            src={vendor.logo_url}
+            alt=""
+            className="h-full w-full object-cover"
+          />
+        ) : (
+          (vendor?.business_name ?? "V")[0]?.toUpperCase()
+        )}
+      </div>
+      <p className="flex-1 text-sm font-semibold text-foreground truncate">
+        {vendor?.business_name ?? "Vendor"}
+      </p>
+    </div>
+  );
+}
+
 function PostsFeed({ posts }: { posts: PostRow[] }) {
   if (posts.length === 0) {
     return <EmptyMsg msg="No posts yet." />;
   }
+  // Instagram-style card column. Mirrors host-mobile/(host)/explore.tsx
+  // PostGrid: author header, 4:5 image, caption + timestamp below.
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+    <div className="space-y-5 max-w-xl mx-auto">
       {posts.map((p) => (
-        <div
+        <article
           key={p.id}
-          className="relative aspect-square overflow-hidden rounded-md bg-secondary/40"
+          className="overflow-hidden rounded-xl bg-card border border-border shadow-sm"
         >
-          <img
-            src={p.image_url}
-            alt={p.caption ?? "Post"}
-            className="w-full h-full object-cover"
-            loading="lazy"
-          />
-          {p.vendor?.business_name ? (
-            <div className="absolute bottom-0 left-0 right-0 bg-black/45 px-2 py-1 text-xs text-white truncate">
-              {p.vendor.business_name}
+          <FeedAuthorHeader vendor={p.vendor} />
+          <div className="aspect-[4/5] bg-secondary/40">
+            <img
+              src={p.image_url}
+              alt={p.caption ?? "Post"}
+              className="w-full h-full object-cover"
+              loading="lazy"
+            />
+          </div>
+          {p.caption ? (
+            <div className="px-4 py-3">
+              <p className="text-sm text-foreground whitespace-pre-wrap">
+                {p.caption}
+              </p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                {timeAgo(p.created_at)}
+              </p>
             </div>
           ) : null}
-        </div>
+        </article>
       ))}
     </div>
   );
@@ -448,39 +479,38 @@ function ReelsFeed({ reels }: { reels: ReelRow[] }) {
     return <EmptyMsg msg="No reels yet." />;
   }
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+    <div className="space-y-5 max-w-xl mx-auto">
       {reels.map((r) => (
         <a
           key={r.id}
           href={r.video_url}
           target="_blank"
           rel="noopener noreferrer"
-          className="relative aspect-[9/16] overflow-hidden rounded-md bg-black"
+          className="block overflow-hidden rounded-xl bg-card border border-border shadow-sm"
         >
-          {r.thumbnail_url ? (
-            <img
-              src={r.thumbnail_url}
-              alt={r.caption ?? "Reel"}
-              className="w-full h-full object-cover"
-              loading="lazy"
-            />
-          ) : (
-            <div className="w-full h-full flex items-center justify-center text-white">
-              <Film className="h-8 w-8" />
-            </div>
-          )}
-          <div className="absolute inset-0 flex items-end justify-start p-2 bg-gradient-to-t from-black/60 to-transparent">
-            <div className="text-white text-xs">
-              <p className="font-medium truncate">
-                {r.vendor?.business_name ?? "Vendor"}
-              </p>
-              {r.caption ? (
-                <p className="text-white/80 line-clamp-2 mt-0.5">
-                  {r.caption}
-                </p>
-              ) : null}
+          <FeedAuthorHeader vendor={r.vendor} />
+          <div className="relative aspect-[4/5] bg-black">
+            {r.thumbnail_url ? (
+              <img
+                src={r.thumbnail_url}
+                alt={r.caption ?? "Reel"}
+                className="w-full h-full object-cover"
+                loading="lazy"
+              />
+            ) : null}
+            <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+              <div className="w-14 h-14 rounded-full bg-white/85 flex items-center justify-center">
+                <Film className="h-7 w-7 text-foreground" />
+              </div>
             </div>
           </div>
+          {r.caption ? (
+            <div className="px-4 py-3">
+              <p className="text-sm text-foreground whitespace-pre-wrap">
+                {r.caption}
+              </p>
+            </div>
+          ) : null}
         </a>
       ))}
     </div>
