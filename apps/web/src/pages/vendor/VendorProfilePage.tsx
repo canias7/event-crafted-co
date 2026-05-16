@@ -1,10 +1,15 @@
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import {
+  Check,
+  ChevronLeft,
+  ChevronRight,
   Clock,
   DollarSign,
+  Edit2,
   Eye,
+  EyeOff,
   Heart,
   Image as ImageIcon,
   Layers,
@@ -93,6 +98,12 @@ const VENDOR_PROFILE_COLS =
 export default function VendorProfilePage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  // Mirror mobile profile.tsx: /vendor/listing shows a card grid of
+  // all the vendor's listings; /vendor/listing?id=X opens the editor
+  // for THAT listing. Without ?id the page is browse-mode (grid +
+  // "Add another listing" CTA).
+  const editingId = searchParams.get("id");
   const { user, vendorMemberships, signOut } = useAuth();
   const membership = vendorMemberships[0] ?? null;
   const canEdit = membership?.role === "owner" || membership?.role === "admin";
@@ -108,6 +119,9 @@ export default function VendorProfilePage() {
   const [saving, setSaving] = useState(false);
   const [creating, setCreating] = useState(false);
   const [profile, setProfile] = useState<VendorProfile | null>(null);
+  // All listings owned by the user — drives the card grid when no
+  // ?id query param is present. Loaded in the same effect as profile.
+  const [allListings, setAllListings] = useState<VendorProfile[]>([]);
   // True for the rest of the session after the vendor clicks Publish
   // — shows the post-publish preview card on the Listing tab so they
   // can confirm what just went live + edit / delete in-place.
@@ -238,172 +252,64 @@ export default function VendorProfilePage() {
     if (!user) return;
     let cancelled = false;
     setLoading(true);
-    // Always try user_id first — covers the common case where the
-    // signed-in user owns their own vendor row. Membership state can
-    // go stale (e.g. cached vendor_id pointing at a deleted profile),
-    // so falling back to membership.vendor_id only when user_id
-    // returns nothing keeps team-member access working without
-    // triggering a phantom "create profile" path that would later
-    // collide with the real row on insert.
+    // Mirror mobile profile.tsx loadProfile: fetch ALL vendor_profiles
+    // rows for this user. The card grid renders them all; the editor
+    // picks one via ?id query param.
+    //
+    // We don't auto-create a stub anymore — that path was racy and
+    // produced duplicate empty rows. Vendors create explicitly via
+    // the "Add another listing" CTA on the grid.
     (async () => {
       const own = await supabase
         .from("vendor_profiles")
         .select(VENDOR_PROFILE_COLS)
         .eq("user_id", user.id)
-        .maybeSingle();
+        .order("created_at", { ascending: true });
       if (cancelled) return;
-      let data = own.data as VendorProfile | null;
+      let rows = ((own.data ?? []) as VendorProfile[]).filter(
+        // Hide soft-deleted rows — the listing's Delete button flips
+        // status to 'rejected' with this sentinel until the hard-delete
+        // RPC is deployed.
+        (r) => r.application_review_notes !== "__deleted_by_owner__",
+      );
       let error = own.error;
-      if (!data && !error && membership?.vendor_id) {
+      // Team-member fallback: if the user owns nothing but is a member
+      // on someone else's vendor, load that team vendor as a single
+      // editable row.
+      if (rows.length === 0 && !error && membership?.vendor_id) {
         const team = await supabase
           .from("vendor_profiles")
           .select(VENDOR_PROFILE_COLS)
           .eq("id", membership.vendor_id)
           .maybeSingle();
         if (cancelled) return;
-        data = team.data as VendorProfile | null;
+        if (team.data) rows = [team.data as VendorProfile];
         error = team.error;
       }
-      // Soft-deleted rows (the listing's Delete button flipped status to
-      // 'rejected' with this sentinel because the hard-delete RPC isn't
-      // deployed yet) should look gone to the dashboard — show the
-      // create-profile flow instead of the rejection banner.
-      if (data?.application_review_notes === "__deleted_by_owner__") {
-        data = null;
-      }
       if (error) {
-        toast.error(`Couldn't load your profile: ${error.message}`);
+        toast.error(`Couldn't load your listings: ${error.message}`);
       }
-      // Profile = exists from the moment the vendor signs in. If the
-      // row doesn't exist yet (or was soft-deleted), insert a stub now
-      // — business_name and category default to null until the vendor
-      // fills them in via the Listing tab. This unlocks posts / reels /
-      // buzz immediately since vendor_posts.vendor_id needs a real
-      // vendor_profiles.id to FK against.
-      if (!data && !error) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const stub = await (supabase as any)
-          .from("vendor_profiles")
-          .insert({ user_id: user.id, application_status: "draft" })
-          .select(VENDOR_PROFILE_COLS)
-          .single();
-        if (cancelled) return;
-        if (stub.data) {
-          data = stub.data as VendorProfile;
-        } else if (stub.error?.code === "23505") {
-          // Race / soft-deleted row collision: fetch the existing row
-          // and clear the deletion sentinel so it looks live again.
-          const existing = await supabase
-            .from("vendor_profiles")
-            .select(VENDOR_PROFILE_COLS)
-            .eq("user_id", user.id)
-            .maybeSingle();
-          if (cancelled) return;
-          if (existing.data) {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            await (supabase as any)
-              .from("vendor_profiles")
-              .update({
-                application_status: "draft",
-                application_review_notes: null,
-              })
-              .eq("id", (existing.data as VendorProfile).id);
-            data = {
-              ...(existing.data as VendorProfile),
-              application_status: "draft",
-              application_review_notes: null,
-            };
-          }
-        } else if (stub.error) {
-          toast.error(`Couldn't set up your profile: ${stub.error.message}`);
-        }
-      }
-      setProfile(data);
-      applyToForm(data);
-      // Persist the post-publish view across reloads + tab switches.
-      // approved → live preview card. pending → "submitted for review"
-      // message (vendor can't edit while admin is reviewing). Edit
-      // flips this back to false so the form re-mounts.
-      const status = data?.application_status;
+      setAllListings(rows);
+      // If ?id is set, pick that one as the editor target. Otherwise
+      // editor stays null (grid view).
+      const current = editingId
+        ? rows.find((r) => r.id === editingId) ?? null
+        : null;
+      setProfile(current);
+      applyToForm(current);
+      const status = current?.application_status;
       setPublishedRecently(status === "approved" || status === "pending");
       setLoading(false);
     })();
     return () => {
       cancelled = true;
     };
-  }, [user, membership?.vendor_id]);
+  }, [user, membership?.vendor_id, editingId]);
 
-  // Auto-create a draft listing the moment the vendor picks a
-  // category on the Listing tab, so the section managers (packages,
-  // photos, team, availability, reviews, recommendations, and the
-  // category-specific Details editor) become available immediately
-  // instead of after a separate Save click. Also recovers any
-  // soft-deleted row tied to this user_id by clearing the deletion
-  // sentinel and resetting the row to draft state.
-  useEffect(() => {
-    if (!user || !isListing || !category || profile) return;
-    if (loading || saving || creating) return;
-    let cancelled = false;
-    (async () => {
-      setCreating(true);
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const ins = await (supabase as any)
-        .from("vendor_profiles")
-        .insert({
-          user_id: user.id,
-          business_name: businessName.trim() || "",
-          category,
-          application_status: "draft",
-        })
-        .select(VENDOR_PROFILE_COLS)
-        .single();
-      if (cancelled) {
-        setCreating(false);
-        return;
-      }
-      if (ins.data) {
-        const created = ins.data as VendorProfile;
-        setProfile(created);
-        applyToForm(created);
-      } else if (ins.error?.code === "23505") {
-        // Existing row (likely soft-deleted earlier) — fetch + revive.
-        const existing = await supabase
-          .from("vendor_profiles")
-          .select(VENDOR_PROFILE_COLS)
-          .eq("user_id", user.id)
-          .maybeSingle();
-        if (cancelled) {
-          setCreating(false);
-          return;
-        }
-        if (existing.data) {
-          const row = existing.data as VendorProfile;
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          await (supabase as any)
-            .from("vendor_profiles")
-            .update({
-              category,
-              application_status: "draft",
-              application_review_notes: null,
-            })
-            .eq("id", row.id);
-          const revived: VendorProfile = {
-            ...row,
-            category,
-            application_status: "draft",
-            application_review_notes: null,
-          };
-          setProfile(revived);
-          applyToForm(revived);
-        }
-      }
-      setCreating(false);
-    })();
-    return () => {
-      cancelled = true;
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, isListing, category, profile?.id]);
+  // Note: the legacy "auto-create draft listing on category pick"
+  // effect was removed when we added multi-listing support. New
+  // listings are created explicitly via createNewListing() from the
+  // card grid, so the editor always renders against a real row.
 
   // Pull posts / reels / buzz once the profile is known. Public
   // SELECT RLS lets us read these — same data that populates the
@@ -450,16 +356,40 @@ export default function VendorProfilePage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profile?.id]);
 
+  // Mirror mobile profile.tsx createNewListing — insert a fresh
+  // vendor_profiles row, then navigate to its editor. Mobile caps at
+  // 5 listings per vendor; we honor the same limit.
+  const LISTING_LIMIT = 5;
+  async function createNewListing() {
+    if (!user?.id) return;
+    if (allListings.length >= LISTING_LIMIT) {
+      toast.error(`You can have up to ${LISTING_LIMIT} listings.`);
+      return;
+    }
+    setCreating(true);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data, error } = await (supabase as any)
+      .from("vendor_profiles")
+      .insert({ user_id: user.id, application_status: "draft" })
+      .select("id")
+      .single();
+    setCreating(false);
+    if (error || !data?.id) {
+      toast.error(`Couldn't create listing: ${error?.message ?? "unknown error"}`);
+      return;
+    }
+    setSearchParams({ id: data.id }, { replace: false });
+  }
+
   async function handleSave(
     e: React.FormEvent,
     opts?: { publish?: boolean },
   ) {
     e.preventDefault();
     if (!user) return;
-    if (!businessName.trim() || !category) {
-      toast.error("Business name and category are required");
-      return;
-    }
+    // Mirror mobile listing.tsx: draft save has no required fields.
+    // business_name comes from the identity profile (/vendor/me) via
+    // tg_profiles_sync_solo_listing, so we don't enforce it here.
 
     // Publish-readiness: a listing in the public directory needs the
     // four basics filled in or hosts will hit a half-built shell. We
@@ -990,9 +920,43 @@ export default function VendorProfilePage() {
           </OuterTabContent>
         )}
 
-        {showListingTab && (
+        {showListingTab && !editingId && (
+          /* Grid view — mirrors mobile profile.tsx → ListingTab.
+             Shows all the vendor's listings as cards + an "Add
+             another listing" CTA. Tapping a card sets ?id and the
+             editor takes over on next render. */
+          <div className="p-4 md:p-8 max-w-3xl mx-auto">
+            <VendorListingCardGrid
+              loading={loading}
+              listings={allListings}
+              limit={LISTING_LIMIT}
+              creating={creating}
+              onEdit={(id) => setSearchParams({ id }, { replace: false })}
+              onCreate={createNewListing}
+              onChanged={() => {
+                // Force the loader to re-run by toggling a sentinel —
+                // simplest way is to navigate to the same URL.
+                navigate(0);
+              }}
+            />
+          </div>
+        )}
+
+        {showListingTab && editingId && (
           <>
-            <div className="border-b border-border bg-card px-4 md:px-8 py-3 flex items-center justify-end gap-2">
+            <div className="border-b border-border bg-card px-4 md:px-8 py-3 flex items-center justify-between gap-2">
+              {/* Back-to-grid chevron mirrors mobile's back button
+                  on /(vendor)/listing — leaves the editor and pops
+                  back to the card grid on the profile screen. */}
+              <button
+                type="button"
+                onClick={() => setSearchParams({}, { replace: false })}
+                className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <ChevronLeft className="h-4 w-4" />
+                All listings
+              </button>
+              <div className="flex items-center gap-2">
               {/* Save + Publish — Listing tab only. Save persists the
                   basics without flipping application_status; Publish
                   flips the listing live in the directory. */}
@@ -1033,6 +997,7 @@ export default function VendorProfilePage() {
                   </Button>
                 </>
               )}
+              </div>
             </div>
 
         {/* Secondary sidebar + main content — only on the listing
@@ -1758,6 +1723,279 @@ function ShoppingBagIcon({ className = "w-5 h-5" }: { className?: string }) {
       <line x1="3" y1="6" x2="21" y2="6" />
       <path d="M16 10a4 4 0 0 1-8 0" />
     </svg>
+  );
+}
+
+// Card grid that mirrors mobile profile.tsx → ListingTab. Empty state
+// for vendors with zero listings, otherwise one VendorListingCard per
+// row + an "Add another listing" dashed pill at the bottom (disabled
+// once they hit LISTING_LIMIT).
+function VendorListingCardGrid({
+  loading,
+  listings,
+  limit,
+  creating,
+  onEdit,
+  onCreate,
+  onChanged,
+}: {
+  loading: boolean;
+  listings: VendorProfile[];
+  limit: number;
+  creating: boolean;
+  onEdit: (id: string) => void;
+  onCreate: () => void;
+  onChanged: () => void;
+}) {
+  if (loading) {
+    return <p className="text-sm text-muted-foreground">Loading…</p>;
+  }
+  if (listings.length === 0) {
+    return (
+      <div className="card-soft p-10 text-center">
+        <div className="mx-auto mb-4 inline-flex h-12 w-12 items-center justify-center rounded-full bg-muted">
+          <ShoppingBagIcon className="w-5 h-5" />
+        </div>
+        <h3 className="font-editorial text-2xl mb-2">No listings yet</h3>
+        <p className="text-sm text-muted-foreground max-w-md mx-auto leading-relaxed mb-5">
+          Add your category, location, and a starting price to publish
+          your first listing to the marketplace.
+        </p>
+        <Button
+          onClick={onCreate}
+          disabled={creating}
+          className="rounded-full bg-foreground text-background hover:bg-foreground/90"
+        >
+          {creating ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+          Create listing
+        </Button>
+      </div>
+    );
+  }
+  const atLimit = listings.length >= limit;
+  return (
+    <div className="space-y-4">
+      {listings.map((l) => (
+        <VendorListingCard
+          key={l.id}
+          listing={l}
+          onEdit={() => onEdit(l.id)}
+          onChanged={onChanged}
+        />
+      ))}
+      <button
+        type="button"
+        onClick={onCreate}
+        disabled={creating || atLimit}
+        className={`mt-2 w-full flex items-center justify-center gap-2 py-4 rounded-2xl border border-dashed border-border text-sm font-medium transition-colors ${
+          atLimit
+            ? "opacity-50 cursor-not-allowed"
+            : "hover:border-foreground/40 hover:bg-secondary/40"
+        }`}
+      >
+        {creating ? (
+          <Loader2 className="w-4 h-4 animate-spin" />
+        ) : (
+          <Plus className="w-4 h-4" />
+        )}
+        {atLimit ? `Maximum ${limit} listings` : "Add another listing"}
+      </button>
+    </div>
+  );
+}
+
+// Single listing card. Mirrors mobile profile.tsx → ListingCard:
+// - draft / rejected → full-width row with icon + name + status + chevron
+// - approved → glass card with hero photo + edit/unpublish/delete actions
+// - pending → same approved layout but with "Under review" overlay
+function VendorListingCard({
+  listing,
+  onEdit,
+  onChanged,
+}: {
+  listing: VendorProfile;
+  onEdit: () => void;
+  onChanged: () => void;
+}) {
+  const [heroUrl, setHeroUrl] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  const isApproved = listing.application_status === "approved";
+  const isPending = listing.application_status === "pending";
+  const isComplete = isApproved && !!listing.location && listing.base_price_cents != null;
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from("vendor_portfolio_images")
+        .select("storage_path")
+        .eq("vendor_id", listing.id)
+        .order("display_order", { ascending: true })
+        .order("created_at", { ascending: true })
+        .limit(1);
+      if (cancelled) return;
+      const row = (data ?? [])[0] as { storage_path: string } | undefined;
+      if (!row) {
+        setHeroUrl(null);
+        return;
+      }
+      const { data: pub } = supabase.storage
+        .from("vendor-portfolios")
+        .getPublicUrl(row.storage_path);
+      setHeroUrl(pub.publicUrl ?? null);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [listing.id]);
+
+  async function unpublish() {
+    if (!window.confirm(
+      "Remove from marketplace? Your photos, packages, and other data stay. You can re-publish anytime.",
+    )) return;
+    setBusy(true);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error } = await (supabase as any)
+      .from("vendor_profiles")
+      .update({ application_status: "draft" })
+      .eq("id", listing.id);
+    setBusy(false);
+    if (error) {
+      toast.error(`Couldn't remove listing: ${error.message}`);
+    } else {
+      onChanged();
+    }
+  }
+
+  async function destroy() {
+    if (!window.confirm(
+      "Delete this listing? All photos, packages, FAQs, and inquiries tied to this listing will be permanently removed.",
+    )) return;
+    setBusy(true);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error } = await (supabase as any).rpc(
+      "delete_my_vendor_profile",
+      { p_vendor_id: listing.id },
+    );
+    setBusy(false);
+    if (error) {
+      toast.error(`Couldn't delete listing: ${error.message}`);
+    } else {
+      onChanged();
+    }
+  }
+
+  // Draft / rejected — full-width row "tap to finish setup"
+  if (!isComplete && !isPending) {
+    return (
+      <button
+        type="button"
+        onClick={onEdit}
+        className="card-soft w-full text-left flex items-center gap-3 p-4 transition hover:shadow-md"
+      >
+        <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-secondary shrink-0">
+          <ShoppingBagIcon className="w-5 h-5" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="font-medium truncate">
+            {listing.business_name ?? "Untitled listing"}
+          </p>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            {listing.application_status === "rejected"
+              ? "Rejected — tap to revise"
+              : "Draft — tap to finish setup"}
+          </p>
+        </div>
+        <ChevronRight className="w-5 h-5 text-muted-foreground shrink-0" />
+      </button>
+    );
+  }
+
+  // Approved / pending — glass card with hero photo + action chips
+  return (
+    <button
+      type="button"
+      onClick={onEdit}
+      className="card-soft block w-full text-left overflow-hidden p-0 transition hover:shadow-md"
+    >
+      <div className="relative aspect-[16/10] bg-secondary">
+        {heroUrl ? (
+          <img
+            src={heroUrl}
+            alt={listing.business_name ?? ""}
+            className={`w-full h-full object-cover ${isPending ? "opacity-40 blur-sm" : ""}`}
+          />
+        ) : (
+          <div className="w-full h-full flex flex-col items-center justify-center gap-1.5 text-muted-foreground">
+            <ImageIcon className="w-7 h-7" />
+            <span className="text-xs">No listing photos yet</span>
+          </div>
+        )}
+        {isPending && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-foreground/40">
+            <Clock className="w-7 h-7 text-background" />
+            <span className="text-xs font-semibold text-background">
+              Under review
+            </span>
+          </div>
+        )}
+        {!isPending && (
+          <div className="absolute top-3 right-3 flex items-center gap-2">
+            <span
+              role="button"
+              aria-label="Edit listing"
+              onClick={(e) => {
+                e.stopPropagation();
+                onEdit();
+              }}
+              className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-background/90 hover:bg-background backdrop-blur cursor-pointer"
+            >
+              <Edit2 className="w-4 h-4" />
+            </span>
+            <span
+              role="button"
+              aria-label="Unpublish"
+              onClick={(e) => {
+                e.stopPropagation();
+                void unpublish();
+              }}
+              aria-disabled={busy}
+              className={`inline-flex h-9 w-9 items-center justify-center rounded-full bg-background/90 hover:bg-background backdrop-blur cursor-pointer ${
+                busy ? "opacity-50 pointer-events-none" : ""
+              }`}
+            >
+              <EyeOff className="w-4 h-4" />
+            </span>
+            <span
+              role="button"
+              aria-label="Delete"
+              onClick={(e) => {
+                e.stopPropagation();
+                void destroy();
+              }}
+              aria-disabled={busy}
+              className={`inline-flex h-9 w-9 items-center justify-center rounded-full bg-background/90 hover:bg-background backdrop-blur cursor-pointer ${
+                busy ? "opacity-50 pointer-events-none" : ""
+              }`}
+            >
+              <Trash2 className="w-4 h-4" />
+            </span>
+          </div>
+        )}
+      </div>
+      <div className="px-4 py-3 flex items-center justify-between gap-3">
+        <p className="font-medium truncate">
+          {listing.business_name ?? "Untitled listing"}
+        </p>
+        {isApproved && (
+          <span className="inline-flex items-center gap-1 text-xs text-accent">
+            <Check className="w-3.5 h-3.5" />
+            Live
+          </span>
+        )}
+      </div>
+    </button>
   );
 }
 
