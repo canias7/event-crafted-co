@@ -12,9 +12,19 @@ import { Link } from "react-router-dom";
 // don't collide with anything else in the bundle.
 export default function LandingPage() {
   return (
-    <div className="min-h-screen bg-[#fafafa] text-black">
+    <div
+      className="min-h-screen text-black"
+      style={{
+        // Continuous shade — soft off-white at top, gently warming into
+        // a peach tint at the bottom so the footer sits inside the same
+        // canvas as the hero (the amber glow). Eliminates the hard line
+        // where the hero wash used to stop and the footer started.
+        background:
+          "linear-gradient(180deg, #fafafa 0%, #fafafa 40%, #fbf3e8 75%, #f9eedc 100%)",
+      }}
+    >
       {/* NAV */}
-      <header className="relative z-30 flex items-center justify-between bg-[#fafafa] px-6 py-5 md:px-10 md:py-6">
+      <header className="relative z-30 flex items-center justify-between px-6 py-5 md:px-10 md:py-6">
         <Link to="/" className="font-editorial text-[22px] italic text-black">
           Vendora
         </Link>
@@ -50,7 +60,7 @@ export default function LandingPage() {
 
       {/* HERO + VENDORS share one canvas so the glow + grid sit
           continuously underneath both sections. */}
-      <div className="relative bg-[#fafafa] overflow-hidden">
+      <div className="relative overflow-hidden">
         {/* Ambient amber glow centered behind the hero */}
         <div
           aria-hidden
@@ -223,7 +233,7 @@ export default function LandingPage() {
       </div>
 
       {/* FOOTER */}
-      <footer className="px-6 md:px-10 pt-16 pb-8 bg-[#fafafa]">
+      <footer className="px-6 md:px-10 pt-16 pb-8">
         <div className="grid grid-cols-1 md:grid-cols-[2fr_1fr_1fr_1fr] gap-10 mb-12 max-w-6xl mx-auto">
           {/* Brand column */}
           <div>
