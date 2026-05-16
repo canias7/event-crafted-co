@@ -105,7 +105,7 @@ export default function VendorProfilePage() {
   const editingId = searchParams.get("id");
   const { user, vendorMemberships, signOut } = useAuth();
   const membership = vendorMemberships[0] ?? null;
-  const canEdit = membership?.role === "owner" || membership?.role === "admin";
+  const baseCanEdit = membership?.role === "owner" || membership?.role === "admin";
   const logoInputRef = useRef<HTMLInputElement | null>(null);
   const [logoUploading, setLogoUploading] = useState(false);
   const [createMenuOpen, setCreateMenuOpen] = useState(false);
@@ -591,6 +591,14 @@ export default function VendorProfilePage() {
       }
     }
   }
+
+  // No-editing-after-publish rule: only draft listings (or a brand-
+  // new listing with no row yet) are editable. Pending / approved /
+  // rejected listings are read-only — vendors create a new listing
+  // and delete the old one to make changes.
+  const isReadOnly =
+    !!profile && profile.application_status !== "draft";
+  const canEdit = baseCanEdit && !isReadOnly;
 
   // Helpers for the Instagram-style outer chrome. We surface the
   // vendor's identity (logo + business name) from whichever listing
@@ -1191,6 +1199,18 @@ export default function VendorProfilePage() {
             </div>
           ) : (
             <form onSubmit={handleSave} className="space-y-10">
+              {isReadOnly && (
+                <div className="card-soft p-4 flex items-start gap-3 text-sm">
+                  <ShieldCheck className="w-5 h-5 text-accent shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-medium">This listing is published and locked.</p>
+                    <p className="text-muted-foreground mt-1">
+                      To make changes, create a new listing and delete this one.
+                    </p>
+                  </div>
+                </div>
+              )}
+              <fieldset disabled={isReadOnly} className="space-y-10 contents disabled:opacity-100">
               {/* STEP 1 · IDENTITY */}
               <ListingStepBlock
                 step="STEP 1 · IDENTITY"
@@ -1309,11 +1329,12 @@ export default function VendorProfilePage() {
                   </Button>
                 </div>
               )}
-              {!canEdit && profile && (
+              {!canEdit && profile && !isReadOnly && (
                 <p className="text-xs text-muted-foreground text-right pt-2">
                   {t("vendor_listing.view_only")}
                 </p>
               )}
+              </fieldset>
             </form>
           )}
 
