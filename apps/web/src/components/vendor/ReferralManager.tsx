@@ -101,7 +101,7 @@ export function ReferralManager({
       return;
     }
     const code = (data as { referral_code: string }).referral_code;
-    const link = `${window.location.origin}/vendor-apply?ref=${code}`;
+    const link = `${window.location.origin}/signup?ref=${code}`;
     await navigator.clipboard.writeText(link).catch(() => {});
     toast.success("Referral link copied — send it to your contact");
     setOpen(false);
@@ -110,7 +110,7 @@ export function ReferralManager({
   }
 
   function copyLink(code: string) {
-    const link = `${window.location.origin}/vendor-apply?ref=${code}`;
+    const link = `${window.location.origin}/signup?ref=${code}`;
     navigator.clipboard.writeText(link).then(
       () => toast.success("Link copied"),
       () => toast.error("Couldn't copy"),

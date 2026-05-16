@@ -78,11 +78,7 @@ export default function LoginRoleChooserPage() {
             </Link>
           </p>
           <p className="text-xs text-muted-foreground mt-3 text-center">
-            Vendor?{" "}
-            <Link to="/vendor-apply" className="text-accent">
-              Apply to list
-            </Link>{" "}
-            — every listing is hand-reviewed before going live.
+            Every vendor listing is hand-reviewed before going live.
           </p>
         </div>
       </div>

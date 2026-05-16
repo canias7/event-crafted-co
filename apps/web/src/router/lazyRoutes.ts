@@ -107,12 +107,6 @@ export const PressPage = lazyWithReload(importPress);
 const importSettings = () => import("@/pages/SettingsPage");
 export const SettingsPage = lazyWithReload(importSettings);
 
-const importVendorApply = () => import("@/pages/VendorApplyPage");
-export const VendorApplyPage = lazyWithReload(importVendorApply);
-
-const importVendorApplyThanks = () => import("@/pages/VendorApplyThanksPage");
-export const VendorApplyThanksPage = lazyWithReload(importVendorApplyThanks);
-
 const importNotFound = () => import("@/pages/NotFound");
 export const NotFound = lazyWithReload(importNotFound);
 
@@ -206,7 +200,6 @@ const ROUTE_IMPORTERS: Array<{ pattern: string; importer: () => Promise<unknown>
   { pattern: "/status", importer: importStatus },
   { pattern: "/press", importer: importPress },
   { pattern: "/settings", importer: importSettings },
-  { pattern: "/vendor-apply", importer: importVendorApply },
   // Dynamic public
   { pattern: "/vendors/in/:citySlug", importer: importVendorCity },
   { pattern: "/vendors/category/:slug", importer: importVendorCategory },

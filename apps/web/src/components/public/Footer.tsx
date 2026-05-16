@@ -19,7 +19,6 @@ export function Footer() {
             <div className="space-y-3">
               <Link to="/vendors" className="block text-sm opacity-70 hover:opacity-100 transition-opacity">{t("footer.browse")}</Link>
               <Link to="/vendors/locations" className="block text-sm opacity-70 hover:opacity-100 transition-opacity">{t("footer.by_location")}</Link>
-              <Link to="/vendor-apply" className="block text-sm opacity-70 hover:opacity-100 transition-opacity">{t("footer.for_vendors")}</Link>
             </div>
           </div>
           <div>
