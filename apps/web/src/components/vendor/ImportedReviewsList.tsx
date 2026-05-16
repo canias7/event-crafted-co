@@ -34,7 +34,7 @@ export function ImportedReviewsList({ reviews, vendorName }: Props) {
         {reviews.map((r) => (
           <div
             key={r.id}
-            className="rounded-sm border border-border bg-card p-4"
+            className="card-soft p-4"
           >
             <div className="flex items-center gap-2 mb-2 flex-wrap">
               <div className="flex items-center gap-0.5">

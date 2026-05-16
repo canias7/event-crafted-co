@@ -175,7 +175,7 @@ export function RealEventsManager({
           {events.map((e) => (
             <li
               key={e.id}
-              className="rounded-sm border border-border bg-card overflow-hidden flex flex-col"
+              className="card-soft overflow-hidden flex flex-col"
             >
               <div className="aspect-[16/10] bg-muted relative">
                 {e.cover_path ? (

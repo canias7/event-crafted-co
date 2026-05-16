@@ -15,7 +15,7 @@ export function SocialEmbedCard({ instagramHandle, tiktokHandle }: Props) {
   const ig = instagramHandle?.replace(/^@/, "").trim();
   const tt = tiktokHandle?.replace(/^@/, "").trim();
   return (
-    <div className="rounded-sm border border-border bg-card p-5">
+    <div className="card-soft p-5">
       <p className="font-label text-muted-foreground mb-3">Latest on social</p>
       <div className="flex flex-wrap gap-3">
         {ig && (

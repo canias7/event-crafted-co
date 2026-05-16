@@ -293,7 +293,7 @@ export function VendorPerformanceCharts({
       {/* Row 1 — funnel, views, conversion gauge */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
         {/* Inquiry funnel donut */}
-        <div className="rounded-sm border border-border bg-card p-3 md:p-4">
+        <div className="card-soft p-3 md:p-4">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2 text-muted-foreground">
               <Inbox className="w-3.5 h-3.5" />
@@ -366,7 +366,7 @@ export function VendorPerformanceCharts({
         </div>
 
         {/* 30-day views trend */}
-        <div className="rounded-sm border border-border bg-card p-3 md:p-4">
+        <div className="card-soft p-3 md:p-4">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2 text-muted-foreground">
               <TrendingUp className="w-3.5 h-3.5" />
@@ -422,7 +422,7 @@ export function VendorPerformanceCharts({
         </div>
 
         {/* Conversion radial gauge */}
-        <div className="rounded-sm border border-border bg-card p-3 md:p-4">
+        <div className="card-soft p-3 md:p-4">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2 text-muted-foreground">
               <Zap className="w-3.5 h-3.5" />
@@ -470,7 +470,7 @@ export function VendorPerformanceCharts({
       {/* Row 2 — day-of-week + rating distribution */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         {/* Day-of-week activity */}
-        <div className="rounded-sm border border-border bg-card p-3 md:p-4">
+        <div className="card-soft p-3 md:p-4">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2 text-muted-foreground">
               <CalendarRange className="w-3.5 h-3.5" />
@@ -537,7 +537,7 @@ export function VendorPerformanceCharts({
         </div>
 
         {/* Rating distribution */}
-        <div className="rounded-sm border border-border bg-card p-3 md:p-4">
+        <div className="card-soft p-3 md:p-4">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2 text-muted-foreground">
               <Star className="w-3.5 h-3.5" />
@@ -587,7 +587,7 @@ export function VendorPerformanceCharts({
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
         {/* Event type mix — horizontal bars so the labels stay
             readable even when sub-types get long. */}
-        <div className="rounded-sm border border-border bg-card p-3 md:p-4">
+        <div className="card-soft p-3 md:p-4">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2 text-muted-foreground">
               <PartyPopper className="w-3.5 h-3.5" />
@@ -630,7 +630,7 @@ export function VendorPerformanceCharts({
         </div>
 
         {/* Lead time histogram — how far ahead are hosts inquiring? */}
-        <div className="rounded-sm border border-border bg-card p-3 md:p-4">
+        <div className="card-soft p-3 md:p-4">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2 text-muted-foreground">
               <Timer className="w-3.5 h-3.5" />
@@ -699,7 +699,7 @@ export function VendorPerformanceCharts({
         {/* Inquiry budget — average + median + sample size, no chart,
             just numbers. Big bold value tile on purpose: this is the
             single most-asked-about number after total inquiries. */}
-        <div className="rounded-sm border border-border bg-card p-3 md:p-4 flex flex-col justify-between">
+        <div className="card-soft p-3 md:p-4 flex flex-col justify-between">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2 text-muted-foreground">
               <DollarSign className="w-3.5 h-3.5" />

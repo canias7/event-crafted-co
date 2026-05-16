@@ -440,7 +440,7 @@ function ApprovedVendorPanel({
       </div>
 
       {/* Referral nudge */}
-      <div className="rounded-lg border border-border bg-card p-6 sm:p-8">
+      <div className="card-soft p-6 sm:p-8">
         <div className="flex items-start gap-4">
           <div className="w-10 h-10 rounded-full bg-secondary/60 flex items-center justify-center shrink-0">
             <Gift className="w-4 h-4 text-foreground" />
@@ -524,7 +524,7 @@ function ExistingApplicationCard({
     </Link>
   );
   return (
-    <div className="rounded-lg border border-border bg-card p-8 max-w-xl mx-auto text-center">
+    <div className="card-soft p-8 max-w-xl mx-auto text-center">
       <p className="font-label text-accent mb-3">— Application status</p>
       <h2 className="font-editorial text-3xl mb-3">{heading}</h2>
       <p className="text-sm text-muted-foreground mb-6 leading-relaxed">

@@ -212,7 +212,7 @@ export function ReferralManager({
           </p>
         </div>
       ) : (
-        <div className="rounded-sm border border-border bg-card divide-y divide-border">
+        <div className="card-soft divide-y divide-border">
           {refs.map((r) => {
             const badge = statusBadge[r.status] ?? statusBadge.pending;
             return (

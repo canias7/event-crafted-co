@@ -370,7 +370,7 @@ function ListingCard({
     <div className="relative w-64 shrink-0">
       <Link
         to={l.slug ? `/vendors/${l.slug}` : `/vendors/${l.id}`}
-        className="group block overflow-hidden rounded-xl border border-border bg-card transition hover:shadow-md"
+        className="group block overflow-hidden card-soft transition hover:shadow-md"
       >
         <div className="aspect-[4/3] bg-secondary/40 overflow-hidden">
           {l.hero_url ? (
@@ -530,7 +530,7 @@ function BuzzFeed({ buzz }: { buzz: BuzzRow[] }) {
       {buzz.map((b) => (
         <div
           key={b.id}
-          className="rounded-xl border border-border bg-card p-4"
+          className="card-soft p-4"
         >
           <div className="flex items-center gap-2 mb-2">
             {b.vendor?.logo_url ? (

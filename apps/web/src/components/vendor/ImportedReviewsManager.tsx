@@ -134,7 +134,7 @@ export function ImportedReviewsManager({
           {reviews.map((r) => (
             <li
               key={r.id}
-              className="rounded-sm border border-border bg-card p-4"
+              className="card-soft p-4"
             >
               <div className="flex items-start justify-between gap-3 mb-2 flex-wrap">
                 <div className="flex items-center gap-2">

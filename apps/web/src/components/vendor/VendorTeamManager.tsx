@@ -271,7 +271,7 @@ function MemberCard({
   onDelete: () => void;
 }) {
   return (
-    <div className="flex items-start gap-3 rounded-sm border border-border bg-card p-3">
+    <div className="flex items-start gap-3 card-soft p-3">
       <PhotoThumb path={member.photo_storage_path} />
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 flex-wrap">

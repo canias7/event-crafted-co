@@ -335,7 +335,7 @@ export default function VendorDashboard() {
               on mobile (no card border, full-bleed rows separated
               by hairlines). On md+ goes back to the bordered card
               treatment. */}
-          <div className="md:bg-card md:rounded-sm md:border md:border-border md:p-4 -mx-3 md:mx-0">
+          <div className="md:card-soft md:p-4 -mx-3 md:mx-0">
             <div className="flex items-center justify-between mb-2 md:mb-3 px-3 md:px-0">
               <p className="font-label text-muted-foreground">
                 {t("vendor_dashboard.recent.title")}

@@ -60,7 +60,7 @@ export function VendorOtherListings({ vendorId }: { vendorId: string }) {
           <Link
             key={l.id}
             to={l.slug ? `/vendors/${l.slug}` : `/vendors/${l.id}`}
-            className="group w-64 shrink-0 overflow-hidden rounded-xl border border-border bg-card transition hover:shadow-md"
+            className="group w-64 shrink-0 overflow-hidden card-soft transition hover:shadow-md"
           >
             <div className="aspect-[4/3] bg-secondary/40 overflow-hidden flex items-center justify-center">
               {l.logo_url ? (

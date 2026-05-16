@@ -171,7 +171,7 @@ function RequestRow({
   }
 
   return (
-    <li className="rounded-sm border border-border bg-card p-3">
+    <li className="card-soft p-3">
       <div className="flex items-start justify-between gap-3 mb-2 flex-wrap">
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2 mb-1 flex-wrap">

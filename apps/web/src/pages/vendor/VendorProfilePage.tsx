@@ -977,7 +977,7 @@ export default function VendorProfilePage() {
                 {buzz.map((b) => (
                   <div
                     key={b.id}
-                    className="rounded-xl border border-border bg-card p-4"
+                    className="card-soft p-4"
                   >
                     <p className="text-sm text-foreground">{b.body}</p>
                     <p className="mt-2 text-xs text-muted-foreground">

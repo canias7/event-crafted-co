@@ -41,7 +41,7 @@ export function VendorPolicyBadges({
   if (!has) return null;
 
   return (
-    <div className="rounded-sm border border-border bg-card p-4 space-y-2">
+    <div className="card-soft p-4 space-y-2">
       <p className="font-label text-muted-foreground inline-flex items-center gap-1.5 mb-1">
         <ShieldOff className="w-3 h-3" />
         Booking terms
