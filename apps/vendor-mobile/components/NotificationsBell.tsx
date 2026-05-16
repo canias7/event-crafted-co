@@ -251,7 +251,7 @@ export function NotificationsBell({
                       >
                         <Text
                           style={{
-                            color: "#faf5ec",
+                            color: "#fdfbf7",
                             fontSize: 16,
                             fontWeight: "700",
                           }}

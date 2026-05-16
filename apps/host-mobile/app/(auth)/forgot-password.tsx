@@ -20,7 +20,7 @@ import * as Linking from "expo-linking";
 import { Feather } from "@expo/vector-icons";
 import { supabase } from "@/lib/supabase";
 
-const CREAM = "#faf5ec";
+const CREAM = "#fdfbf7";
 const INK = "#1a1410";
 const INK_DIM = "rgba(26,20,16,0.6)";
 const INK_BORDER = "rgba(26,20,16,0.18)";

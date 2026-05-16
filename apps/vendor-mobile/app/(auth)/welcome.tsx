@@ -19,8 +19,8 @@ import {
 import { useRouter } from "expo-router";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 
-const CREAM = "#faf5ec";
-const CREAM_DEEP = "#f5efe5";
+const CREAM = "#fdfbf7";
+const CREAM_DEEP = "#f7f3ec";
 const INK = "#1a1410";
 const INK_DIM = "rgba(26,20,16,0.6)";
 const INK_BORDER = "rgba(26,20,16,0.18)";

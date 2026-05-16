@@ -24,11 +24,11 @@ import { useRouter } from "expo-router";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
 
-const CREAM = "#faf5ec";
-const CREAM_DEEP = "#f5efe5";
+const CREAM = "#fdfbf7";
+const CREAM_DEEP = "#f7f3ec";
 const INK = "#1a1410";
 const INK_DIM = "#776c5f";
-const BORDER = "#e8dfcf";
+const BORDER = "#ebe3d3";
 const GREEN = "#22c55e";
 const AMBER = "#d99e2b";
 const GREEN_BG = "#e3f5e8";
