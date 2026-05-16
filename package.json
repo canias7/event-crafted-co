@@ -29,7 +29,13 @@
     "dev:admin": "npm run dev --workspace=apps/admin",
     "build:admin": "npm run build --workspace=apps/admin",
     "mobile:vendor": "npm run start --workspace=apps/vendor-mobile",
+    "mobile:vendor:tunnel": "npm run start --workspace=apps/vendor-mobile -- --tunnel",
+    "mobile:vendor:android": "npm run start --workspace=apps/vendor-mobile -- --android",
+    "mobile:vendor:ios": "npm run start --workspace=apps/vendor-mobile -- --ios",
     "mobile:host": "npm run start --workspace=apps/host-mobile",
+    "mobile:host:tunnel": "npm run start --workspace=apps/host-mobile -- --tunnel",
+    "mobile:host:android": "npm run start --workspace=apps/host-mobile -- --android",
+    "mobile:host:ios": "npm run start --workspace=apps/host-mobile -- --ios",
     "test": "npm run test --workspace=apps/web",
     "test:watch": "npm run test:watch --workspace=apps/web",
     "test:e2e": "npm run test:e2e --workspace=apps/web"

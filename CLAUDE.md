@@ -29,10 +29,38 @@ What Claude does NOT have direct shell access to:
 
 **Cross-platform by default**: any mobile change applies to BOTH iOS and Android unless explicitly stated otherwise. JS code (components, styles, business logic) runs identically on both via React Native, so the same edit covers both platforms. For full rebuilds, run iOS *and* Android.
 
+### Run locally
+
+From repo root:
+
+```bash
+# Pick one — opens Metro bundler + shows a QR code
+bun mobile:host       # host-mobile, LAN mode
+bun mobile:vendor     # vendor-mobile, LAN mode
+
+# If your phone is on a different network than your laptop:
+bun mobile:host:tunnel
+bun mobile:vendor:tunnel
+
+# Direct to simulator (need Xcode for iOS, Android Studio for android):
+bun mobile:host:android   # opens Android emulator
+bun mobile:host:ios       # opens iOS simulator (macOS only)
+```
+
+First-time setup (already done on this machine):
+- `apps/host-mobile/.env.local` and `apps/vendor-mobile/.env.local` contain `EXPO_PUBLIC_SUPABASE_URL` + `EXPO_PUBLIC_SUPABASE_ANON_KEY` (gitignored)
+- Install **Expo Go** on your phone from the App Store / Play Store, scan the terminal QR
+
+Some packages need a **dev client** instead of Expo Go (react-native-reanimated 4, react-native-worklets, expo-notifications native push). If Expo Go shows a "this app requires expo-dev-client" error, run `eas build --profile development --platform ios --simulator` to get a dev-client build, then `bun mobile:host` against that build.
+
+### OTA + builds
+
 Both apps have `expo-updates` wired up, so JS-only changes ship via OTA instead of a full rebuild:
 
-- **JS-only change** (components, styling, copy, business logic) → `cd apps/<app>-mobile && eas update --branch production --message "..."`. By default this pushes to iOS + Android together. Installed builds with the same `runtimeVersion` (tied to app version) pick it up on next launch.
-- **Native change** (new package with native code, `Info.plist`, app icon, splash, version bump) → break the runtime version → rebuild via `eas build --platform all --profile production --auto-submit` (or `--platform ios` / `--platform android` separately if you only need one).
+- **JS-only change** (components, styling, copy, business logic) → `cd apps/<app>-mobile && eas update --branch production --message "..."`. Picks up on next launch.
+- **Native change** (new package with native code, `Info.plist`, app icon, splash) → bump `runtimeVersion` in `app.json` and rebuild via `eas build --platform all --profile production --auto-submit`.
+
+`runtimeVersion` is a **fixed string** (`"1"`) — NOT `{ policy: "appVersion" }`. The appVersion policy caused OTAs to silently target a runtimeVersion that no installed app was running, since bumping `version` to cut a new build also bumped the runtime. With a fixed string, OTA reaches every install until you intentionally bump the string.
 
 ### OTA from a cloud / sandbox session (no `eas login`)
 
