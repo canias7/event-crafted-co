@@ -226,7 +226,7 @@ export default function VendorCityPage() {
                 <Link
                   key={c.slug}
                   to={`/vendors/in/${c.slug}`}
-                  className="group rounded-2xl border border-border bg-card p-4 hover:border-foreground/30 transition-colors"
+                  className="group card-soft p-4 hover:border-foreground/30 transition-colors"
                 >
                   <p className="font-display text-base group-hover:text-accent transition-colors">
                     {c.label}

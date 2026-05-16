@@ -345,7 +345,7 @@ export default function VendorCategoryPage() {
                   // text matches the destination — better SEO signal
                   // than linking to the generic city page.
                   to={`/vendors/${slug}/in/${c.slug}`}
-                  className="group rounded-sm border border-border bg-card p-4 hover:border-foreground/30 transition-colors"
+                  className="group card-soft p-4 hover:border-foreground/30 transition-colors"
                 >
                   <p className="font-display text-base group-hover:text-accent transition-colors">
                     {config.display} in {c.label}
@@ -379,7 +379,7 @@ export default function VendorCategoryPage() {
                 <Link
                   key={s}
                   to={`/vendors/category/${s}`}
-                  className="group rounded-sm border border-border bg-card p-4 hover:border-foreground/30 transition-colors"
+                  className="group card-soft p-4 hover:border-foreground/30 transition-colors"
                 >
                   <p className="font-display text-base group-hover:text-accent transition-colors">
                     {c.display}

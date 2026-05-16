@@ -411,7 +411,7 @@ function BuzzFeed({ buzz }: { buzz: BuzzRow[] }) {
   return (
     <div className="space-y-3 max-w-2xl mx-auto">
       {buzz.map((b) => (
-        <div key={b.id} className="rounded-xl border border-border bg-card p-4">
+        <div key={b.id} className="card-soft p-4">
           <div className="flex items-center gap-2 mb-2">
             {b.vendor?.logo_url ? (
               <img
@@ -450,7 +450,7 @@ function ListingsFeed({ listings }: { listings: ListingRow[] }) {
         <Link
           key={l.id}
           to={l.slug ? `/vendors/${l.slug}` : `/vendors/${l.id}`}
-          className="group overflow-hidden rounded-xl border border-border bg-card transition hover:shadow-md"
+          className="group overflow-hidden card-soft transition hover:shadow-md"
         >
           <div className="aspect-[4/3] bg-secondary/40 overflow-hidden">
             {l.hero_url ? (

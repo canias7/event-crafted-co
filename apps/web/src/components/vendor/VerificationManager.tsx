@@ -216,7 +216,7 @@ function KindRow({
   }
 
   return (
-    <div className="rounded-sm border border-border bg-card p-4">
+    <div className="card-soft p-4">
       <div className="flex items-start justify-between gap-3 flex-wrap mb-2">
         <div className="flex items-start gap-2.5">
           <Icon

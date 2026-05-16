@@ -127,7 +127,7 @@ export function VendorRecommendationManager({
           {recs.map((r) => (
             <div
               key={r.id}
-              className="rounded-sm border border-border bg-card p-4 flex flex-col"
+              className="card-soft p-4 flex flex-col"
             >
               <div className="flex items-start justify-between gap-2 mb-1">
                 <div className="min-w-0">

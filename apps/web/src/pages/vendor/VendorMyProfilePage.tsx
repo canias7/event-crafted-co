@@ -571,7 +571,7 @@ function BuzzList({ buzz }: { buzz: BuzzRow[] }) {
   return (
     <div className="space-y-3 max-w-2xl">
       {buzz.map((b) => (
-        <div key={b.id} className="rounded-xl border border-border bg-card p-4">
+        <div key={b.id} className="card-soft p-4">
           <p className="text-sm text-foreground whitespace-pre-wrap">{b.body}</p>
           <p className="mt-2 text-xs text-muted-foreground">
             {new Date(b.created_at).toLocaleDateString()}
@@ -619,7 +619,7 @@ function ListingsList({
       {listings.map((l) => (
         <div
           key={l.id}
-          className="rounded-2xl border border-border bg-card p-4 flex gap-3"
+          className="card-soft p-4 flex gap-3"
         >
           {l.logo_url ? (
             <img

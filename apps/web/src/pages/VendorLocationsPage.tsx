@@ -120,7 +120,7 @@ export default function VendorLocationsPage() {
                   >
                     <Link
                       to={`/vendors/in/${citySlugify(g.label)}`}
-                      className="group block rounded-sm border border-border bg-card p-5 hover:border-foreground/30 transition-colors h-full"
+                      className="group block card-soft p-5 hover:border-foreground/30 transition-colors h-full"
                     >
                       <div className="flex items-start justify-between gap-3 mb-1">
                         <p className="font-display text-lg leading-tight transition-colors group-hover:text-accent">

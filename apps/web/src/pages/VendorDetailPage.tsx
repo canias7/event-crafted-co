@@ -1031,7 +1031,7 @@ export default function VendorDetailPage() {
                       <Link
                         key={r.id}
                         to={`/vendors/${r.recommended_id}`}
-                        className="group block rounded-sm border border-border bg-card p-4 hover:border-foreground/30 transition-colors"
+                        className="group block card-soft p-4 hover:border-foreground/30 transition-colors"
                       >
                         <p className="font-display text-base group-hover:text-accent transition-colors">
                           {r.recommended?.business_name ?? "Vendor"}
