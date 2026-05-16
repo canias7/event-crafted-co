@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { DashboardSidebar } from "@/components/shared/DashboardSidebar";
 import { MobileNav } from "@/components/shared/MobileNav";
-import { customerNavItems, vendorNavItems } from "@/data/navItems";
+import { customerNavItems, getLastDashboardSide, vendorNavItems } from "@/data/navItems";
 
 // Account settings — mirrors mobile's three-section layout (Profile /
 // Session / Danger zone). The big web-only feature blocks (password
@@ -42,8 +42,16 @@ export default function SettingsPage() {
     if (profile) setDisplayName(profile.display_name ?? "");
   }, [profile]);
 
-  const navItems = isApprovedVendor ? vendorNavItems : customerNavItems;
-  const sidebarTitle = isApprovedVendor ? "Vendor Portal" : "Customer";
+  // Respect whichever dashboard the user was last on. /settings is a
+  // cross-cutting page, so a multi-role user clicking Settings from
+  // /customer/* should stay on host nav; same from /vendor/*.
+  // Falls back to vendor nav for approved vendors who landed here
+  // directly (e.g. opened the URL in a new tab).
+  const lastSide = getLastDashboardSide();
+  const useVendorNav =
+    lastSide === "vendor" || (lastSide === null && isApprovedVendor);
+  const navItems = useVendorNav ? vendorNavItems : customerNavItems;
+  const sidebarTitle = useVendorNav ? "Vendor Portal" : "Customer";
 
   async function saveProfile(e: React.FormEvent) {
     e.preventDefault();
