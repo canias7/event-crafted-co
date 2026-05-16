@@ -205,12 +205,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setSession(null);
   }
 
-  // Derived flags. Multi-role: an "approved vendor" is anyone with their
-  // own approved application, OR a legacy profile.role==='vendor' user
-  // (set by the old promotion trigger before the multi_role migration).
+  // Derived flags. A vendor is "approved" ONLY when an admin has
+  // reviewed + approved their application — application_status flips
+  // from 'pending' to 'approved' and tg_vendor_profiles_role_promote
+  // sets email_confirmed_at so they can sign in. We don't fall back
+  // on profile.role==='vendor' here (the way old code did) because
+  // the role is set to 'vendor' at signup time, before approval, so
+  // that fallback let pending vendors into the portal.
   const isApprovedVendor =
-    ownVendorProfile?.application_status === "approved" ||
-    profile?.role === "vendor";
+    ownVendorProfile?.application_status === "approved";
   const hasVendorAccess =
     isApprovedVendor || vendorMemberships.length > 0;
   // Real host = went through onboarding. Pure vendor signups get a

@@ -31,16 +31,20 @@ export default function CheckEmailPage() {
     toast.success("Confirmation email sent");
   }
 
+  const isVendor = role === "vendor";
+
   return (
     <GlassyAuthShell
-      title="Check your"
-      titleAccent="email."
+      title={isVendor ? "Application" : "Check your"}
+      titleAccent={isVendor ? "received." : "email."}
       subtitle={
-        email
-          ? `We sent a confirmation link to ${email}. Click it to finish signing up.`
-          : "We sent you a confirmation link. Click it to finish signing up."
+        isVendor
+          ? `Thanks for applying. Our team hand-reviews every application — we'll email ${email || "you"} within 2–3 business days. If approved, that email will include your sign-in details.`
+          : email
+            ? `We sent a confirmation link to ${email}. Click it to finish signing up.`
+            : "We sent you a confirmation link. Click it to finish signing up."
       }
-      pillLabel={role === "vendor" ? "VENDOR SIGN UP" : "HOST SIGN UP"}
+      pillLabel={isVendor ? "UNDER REVIEW" : "HOST SIGN UP"}
       topRight={
         <Link
           to="/login"
@@ -65,41 +69,61 @@ export default function CheckEmailPage() {
           <Mail className="w-6 h-6" />
         </div>
 
-        <button
-          type="button"
-          onClick={resend}
-          disabled={resending || resent || !email}
-          className="auth-submit w-full"
-        >
-          {resending ? (
-            <>
-              <Loader2 className="w-4 h-4 animate-spin" />
-              Sending…
-            </>
-          ) : resent ? (
-            "Sent — check your inbox"
-          ) : (
-            <>
-              Resend email
-              <ArrowRight className="w-3.5 h-3.5" />
-            </>
-          )}
-        </button>
+        {/* Vendors don't get a resend button — the email is informational
+            only (no confirm link). They wait for admin approval. */}
+        {!isVendor && (
+          <button
+            type="button"
+            onClick={resend}
+            disabled={resending || resent || !email}
+            className="auth-submit w-full"
+          >
+            {resending ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Sending…
+              </>
+            ) : resent ? (
+              "Sent — check your inbox"
+            ) : (
+              <>
+                Resend email
+                <ArrowRight className="w-3.5 h-3.5" />
+              </>
+            )}
+          </button>
+        )}
 
         <p
           className="text-center font-editorial italic"
           style={{ fontSize: "12.5px", opacity: 0.7, lineHeight: 1.5 }}
         >
-          Didn't get it? Check your spam folder. If it still doesn't arrive,
-          email{" "}
-          <a
-            href="mailto:hello@vendora.events"
-            className="font-medium pb-px"
-            style={{ borderBottom: "0.5px solid currentColor" }}
-          >
-            hello@vendora.events
-          </a>
-          .
+          {isVendor ? (
+            <>
+              Questions? Email{" "}
+              <a
+                href="mailto:hello@vendora.events"
+                className="font-medium pb-px"
+                style={{ borderBottom: "0.5px solid currentColor" }}
+              >
+                hello@vendora.events
+              </a>
+              .
+            </>
+          ) : (
+            <>
+              Didn't get it? Check your spam folder. If it still doesn't arrive,
+              email{" "}
+              <a
+                href="mailto:hello@vendora.events"
+                className="font-medium pb-px"
+                style={{ borderBottom: "0.5px solid currentColor" }}
+              >
+                hello@vendora.events
+              </a>
+              .
+            </>
+          )}
         </p>
       </div>
     </GlassyAuthShell>

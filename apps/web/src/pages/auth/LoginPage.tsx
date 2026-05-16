@@ -112,16 +112,13 @@ export default function LoginPage({ role }: LoginPageProps = {}) {
       return;
     }
 
-    // Multi-role redirect: the entry point (`role` prop, set by route)
-    // is the user's stated intent. Honour it when the user actually has
-    // access to that side; otherwise fall back to whichever side they
-    // do have, preferring host (the always-available default).
-    const [{ data: prof }, { data: vp }, { data: members }] = await Promise.all([
-      supabase
-        .from("profiles")
-        .select("role")
-        .eq("id", signInData.user.id)
-        .maybeSingle(),
+    // Post-signin gate + redirect. Vendor accounts need admin approval
+    // before they can access the portal — mirrors the mobile vendor
+    // app's client-side gate in apps/vendor-mobile/app/(auth)/login.tsx.
+    // The auth-level check (email_confirmed_at) catches the common
+    // case, but we re-check application_status here to defend against
+    // any stale sessions whose email was confirmed before the gate.
+    const [{ data: vp }, { data: members }] = await Promise.all([
       supabase
         .from("vendor_profiles")
         .select("application_status")
@@ -133,23 +130,38 @@ export default function LoginPage({ role }: LoginPageProps = {}) {
         .eq("user_id", signInData.user.id)
         .limit(1),
     ]);
-    const profileRole = prof?.role as "host" | "vendor" | "admin" | undefined;
-    const isLegacyVendorRole = profileRole === "vendor";
     const ownStatus = (vp as { application_status?: string } | null)
       ?.application_status;
-    const hasVendorAccess =
-      isLegacyVendorRole ||
-      ownStatus === "approved" ||
-      ownStatus === "pending" ||
+    const hasOwnVendor = !!ownStatus;
+    const isApprovedVendor = ownStatus === "approved";
+    const isTeamMember =
       ((members as { vendor_id: string }[] | null) ?? []).length > 0;
+    const hasVendorAccess = isApprovedVendor || isTeamMember;
 
+    // If the user signed in via the vendor login page but their
+    // application isn't approved, sign them back out and explain.
+    if (role === "vendor" && hasOwnVendor && !hasVendorAccess) {
+      await supabase.auth.signOut();
+      if (ownStatus === "rejected") {
+        toast.error(
+          "Your vendor application wasn't approved. Reach out to support if you think this is a mistake.",
+        );
+      } else {
+        toast.error(
+          "Your vendor application is still under review. We'll email you the moment it's approved.",
+        );
+      }
+      setLoading(false);
+      return;
+    }
+
+    setLoading(false);
     if (role === "vendor" && hasVendorAccess) {
       navigate("/vendor/dashboard");
     } else if (role === "host") {
       navigate("/customer/explore");
     } else {
-      // No explicit intent — auto-detect: send vendors to vendor portal,
-      // everyone else to the host dashboard.
+      // No explicit intent (came from /login directly?) — auto-detect.
       navigate(hasVendorAccess ? "/vendor/dashboard" : "/customer/explore");
     }
   }

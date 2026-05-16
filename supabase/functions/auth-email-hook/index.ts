@@ -56,6 +56,21 @@ function vendorBusinessName(p: HookPayload): string | null {
   return typeof v === "string" && v.trim().length > 0 ? v : null;
 }
 
+// Detect vendor signups that didn't include vendor_business_name in
+// metadata (the web SignupPage just sends intended_role: 'vendor').
+// Without this, those signups slip through and get the host-style
+// confirm-link email — which would let them bypass admin approval
+// by clicking the link.
+function isVendorSignup(p: HookPayload): boolean {
+  if (vendorBusinessName(p)) return true;
+  const m =
+    (p.user.user_metadata ?? p.user.raw_user_meta_data ?? {}) as Record<
+      string,
+      unknown
+    >;
+  return m.intended_role === "vendor";
+}
+
 const cors = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
@@ -207,17 +222,19 @@ function renderEmail(p: HookPayload): { subject: string; html: string } | null {
 
   if (action === "signup") {
     // Vendor applicants don't see a "confirm your email" CTA — admin
-    // review is the real gate and we auto-confirm them in
-    // handle_new_user. They get a pure thank-you email; the welcome
-    // email after approval will both prove email ownership and hand
-    // them the sign-in link.
-    const business = vendorBusinessName(p);
-    if (business) {
+    // review is the real gate. The welcome email after approval
+    // doubles as proof of email ownership + hands them the sign-in
+    // link. Detect via vendor_business_name OR intended_role.
+    if (isVendorSignup(p)) {
+      const business = vendorBusinessName(p);
+      const opener = business
+        ? `Thanks for applying to list <strong>${escape(business)}</strong> on Vendora.`
+        : `Thanks for applying to list your business on Vendora.`;
       return {
         subject: "Thanks for applying to Vendora",
         html: shell(
           "Application received",
-          `<p style="margin:0 0 16px;">Thanks for applying to list <strong>${escape(business)}</strong> on Vendora.</p>
+          `<p style="margin:0 0 16px;">${opener}</p>
            <p style="margin:0 0 16px;">Our team hand-reviews every application. We'll email you within 2–3 business days with the decision — if approved, that email will include your sign-in details.</p>
            <p style="margin:0;font-size:13px;color:#777;">If you didn't submit this application, you can safely ignore this message.</p>`,
         ),
