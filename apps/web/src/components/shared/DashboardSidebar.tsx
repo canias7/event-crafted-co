@@ -10,7 +10,7 @@ import {
   PanelLeftOpen,
   Sparkles,
 } from "lucide-react";
-import { getBottomNav } from "@/data/navItems";
+import { customerNavItems, getBottomNav, setLastDashboardSide, vendorNavItems } from "@/data/navItems";
 import { useAuth } from "@/hooks/useAuth";
 
 interface NavItem {
@@ -42,6 +42,15 @@ export function DashboardSidebar({
   const { t } = useTranslation();
   const { signOut, hasVendorAccess, hasHostAccess, ownVendorProfile, profile } =
     useAuth();
+
+  // Stash the active side so cross-cutting pages (/settings, /support)
+  // know which sidebar to render when the user clicks over. Without
+  // this they default to vendor nav whenever the user has vendor
+  // access, even from the host side.
+  useEffect(() => {
+    if (items === vendorNavItems) setLastDashboardSide("vendor");
+    else if (items === customerNavItems) setLastDashboardSide("host");
+  }, [items]);
 
   // The vendor / host switcher was removed — vendors and hosts are
   // separate worlds now. The only side-jumping CTA we still surface is

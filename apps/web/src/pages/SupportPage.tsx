@@ -37,7 +37,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
-import { customerNavItems, vendorNavItems } from "@/data/navItems";
+import { customerNavItems, getLastDashboardSide, vendorNavItems } from "@/data/navItems";
 
 export interface SupportTicket {
   id: string;
@@ -89,7 +89,13 @@ export default function SupportPage() {
   const [tickets, setTickets] = useState<SupportTicket[]>([]);
   const [loading, setLoading] = useState(true);
   const [newOpen, setNewOpen] = useState(false);
-  const navItems = isApprovedVendor ? vendorNavItems : customerNavItems;
+  // Respect whichever dashboard the user was last on — see
+  // SettingsPage for the rationale. Falls back to vendor nav for
+  // approved vendors who landed here directly.
+  const lastSide = getLastDashboardSide();
+  const useVendorNav =
+    lastSide === "vendor" || (lastSide === null && isApprovedVendor);
+  const navItems = useVendorNav ? vendorNavItems : customerNavItems;
 
   const activeTicketId = params.get("ticket");
   const activeTicket = useMemo(
