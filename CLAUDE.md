@@ -29,30 +29,6 @@ What Claude does NOT have direct shell access to:
 
 **Cross-platform by default**: any mobile change applies to BOTH iOS and Android unless explicitly stated otherwise. JS code (components, styles, business logic) runs identically on both via React Native, so the same edit covers both platforms. For full rebuilds, run iOS *and* Android.
 
-### Run locally
-
-From repo root:
-
-```bash
-# Pick one — opens Metro bundler + shows a QR code
-bun mobile:host       # host-mobile, LAN mode
-bun mobile:vendor     # vendor-mobile, LAN mode
-
-# If your phone is on a different network than your laptop:
-bun mobile:host:tunnel
-bun mobile:vendor:tunnel
-
-# Direct to simulator (need Xcode for iOS, Android Studio for android):
-bun mobile:host:android   # opens Android emulator
-bun mobile:host:ios       # opens iOS simulator (macOS only)
-```
-
-First-time setup (already done on this machine):
-- `apps/host-mobile/.env.local` and `apps/vendor-mobile/.env.local` contain `EXPO_PUBLIC_SUPABASE_URL` + `EXPO_PUBLIC_SUPABASE_ANON_KEY` (gitignored)
-- Install **Expo Go** on your phone from the App Store / Play Store, scan the terminal QR
-
-Some packages need a **dev client** instead of Expo Go (react-native-reanimated 4, react-native-worklets, expo-notifications native push). If Expo Go shows a "this app requires expo-dev-client" error, run `eas build --profile development --platform ios --simulator` to get a dev-client build, then `bun mobile:host` against that build.
-
 ### OTA + builds
 
 Both apps have `expo-updates` wired up, so JS-only changes ship via OTA instead of a full rebuild:
