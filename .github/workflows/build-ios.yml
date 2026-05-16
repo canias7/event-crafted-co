@@ -153,7 +153,7 @@ jobs:
           <plist version="1.0">
           <dict>
             <key>method</key>
-            <string>app-store</string>
+            <string>app-store-connect</string>
             <key>teamID</key>
             <string>MY8LTVJQ82</string>
             <key>provisioningProfiles</key>
@@ -216,11 +216,23 @@ jobs:
       - name: Export .ipa
         working-directory: ${{ env.APP_DIR }}/ios
         run: |
-          xcodebuild \
-            -exportArchive \
-            -archivePath build/app.xcarchive \
-            -exportPath build/ipa \
-            -exportOptionsPlist ExportOptions.plist | xcpretty || (echo "export failed"; exit 1)
+          set -o pipefail
+          # Capture distribution logs path so we can dump them if export fails
+          if ! xcodebuild \
+                -exportArchive \
+                -archivePath build/app.xcarchive \
+                -exportPath build/ipa \
+                -exportOptionsPlist ExportOptions.plist; then
+            echo "::group::xcdistributionlogs"
+            # The actual error message lives in these logs
+            find /var/folders -name "*.xcdistributionlogs" -type d 2>/dev/null \
+              | head -1 \
+              | xargs -I {} find {} -type f \
+              | head -20 \
+              | xargs -I {} sh -c 'echo "=== {} ==="; cat "{}"' || true
+            echo "::endgroup::"
+            exit 1
+          fi
           ls -la build/ipa/
 
       - name: Upload .ipa as workflow artifact (audit trail)
