@@ -67,7 +67,7 @@ function FloatingTabBar({ state, navigation }: BottomTabBarProps) {
           width: "100%",
           maxWidth: 420,
           shadowColor: "#000",
-          shadowOpacity: 0.08,
+          shadowOpacity: 0.10,
           shadowRadius: 18,
           shadowOffset: { width: 0, height: 6 },
           elevation: 8,

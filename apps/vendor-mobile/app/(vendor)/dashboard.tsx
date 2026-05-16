@@ -170,13 +170,35 @@ export default function DashboardScreen() {
           Recent inquiries
         </Text>
         {recent.length === 0 ? (
-          <View className="rounded-xl border border-border bg-background p-4">
+          <View
+            style={{
+              borderRadius: 24,
+              backgroundColor: "#ffffff",
+              padding: 16,
+              shadowColor: "#1a1410",
+              shadowOpacity: 0.10,
+              shadowRadius: 20,
+              shadowOffset: { width: 0, height: 8 },
+              elevation: 1,
+            }}
+          >
             <Text className="text-sm text-muted-foreground">
               {loading ? "Loading…" : "No inquiries yet."}
             </Text>
           </View>
         ) : (
-          <View className="overflow-hidden rounded-xl border border-border bg-background">
+          <View
+            style={{
+              overflow: "hidden",
+              borderRadius: 24,
+              backgroundColor: "#ffffff",
+              shadowColor: "#1a1410",
+              shadowOpacity: 0.10,
+              shadowRadius: 20,
+              shadowOffset: { width: 0, height: 8 },
+              elevation: 1,
+            }}
+          >
             {recent.map((row, i) => (
               <View
                 key={row.id}

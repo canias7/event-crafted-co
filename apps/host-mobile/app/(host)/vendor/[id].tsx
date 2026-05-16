@@ -79,8 +79,8 @@ const statValueStyle = {
 // Shared shadow style for white cards floating on the cream backdrop.
 const CARD_SHADOW = {
   shadowColor: "#1a1410",
-  shadowOpacity: 0.06,
-  shadowRadius: 14,
+  shadowOpacity: 0.10,
+  shadowRadius: 20,
   shadowOffset: { width: 0, height: 6 },
   elevation: 2,
 } as const;
@@ -642,7 +642,7 @@ export default function VendorDetailScreen() {
                   flexDirection: "row",
                   alignItems: "center",
                   shadowColor: "#1a1410",
-                  shadowOpacity: 0.05,
+                  shadowOpacity: 0.10,
                   shadowRadius: 12,
                   shadowOffset: { width: 0, height: 4 },
                   elevation: 2,
@@ -1546,7 +1546,7 @@ function VendorBusinessCard({
           flexDirection: "row",
           alignItems: "center",
           shadowColor: INK,
-          shadowOpacity: 0.06,
+          shadowOpacity: 0.10,
           shadowRadius: 12,
           shadowOffset: { width: 0, height: 4 },
           elevation: 2,
@@ -2561,8 +2561,8 @@ function CreamOceanFront({
             borderRadius: 14,
             paddingVertical: 12,
             shadowColor: INK,
-            shadowOpacity: 0.05,
-            shadowRadius: 10,
+            shadowOpacity: 0.10,
+            shadowRadius: 18,
             shadowOffset: { width: 0, height: 2 },
             elevation: 1,
           }}

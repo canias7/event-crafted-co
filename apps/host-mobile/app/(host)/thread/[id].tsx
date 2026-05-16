@@ -799,7 +799,7 @@ function Composer({
           paddingRight: 6,
           paddingVertical: 6,
           shadowColor: INK,
-          shadowOpacity: 0.06,
+          shadowOpacity: 0.10,
           shadowRadius: 12,
           shadowOffset: { width: 0, height: 4 },
           elevation: 2,

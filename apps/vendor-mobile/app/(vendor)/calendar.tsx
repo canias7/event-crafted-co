@@ -540,8 +540,8 @@ export default function CalendarScreen() {
               paddingTop: 12,
               paddingBottom: 14,
               shadowColor: INK,
-              shadowOpacity: 0.04,
-              shadowRadius: 14,
+              shadowOpacity: 0.10,
+              shadowRadius: 20,
               shadowOffset: { width: 0, height: 6 },
               elevation: 2,
             }}
@@ -726,7 +726,7 @@ function StatCard({
         paddingBottom: 12,
         shadowColor: INK,
         shadowOpacity: isInk ? 0 : 0.04,
-        shadowRadius: 10,
+        shadowRadius: 18,
         shadowOffset: { width: 0, height: 4 },
       }}
     >
@@ -1017,8 +1017,8 @@ function BookingRow({
             marginBottom: 10,
             overflow: "hidden",
             shadowColor: INK,
-            shadowOpacity: 0.04,
-            shadowRadius: 10,
+            shadowOpacity: 0.10,
+            shadowRadius: 18,
             shadowOffset: { width: 0, height: 4 },
             opacity: pressed && tappable ? 0.85 : 1,
           }}

@@ -793,7 +793,7 @@ function CircleButton({
         justifyContent: "center",
         opacity: pressed ? 0.7 : 1,
         shadowColor: INK,
-        shadowOpacity: 0.06,
+        shadowOpacity: 0.10,
         shadowRadius: 6,
         shadowOffset: { width: 0, height: 2 },
         elevation: 1,

@@ -319,7 +319,7 @@ function ViewTab({
         ...(active
           ? {
               shadowColor: "#000",
-              shadowOpacity: 0.06,
+              shadowOpacity: 0.10,
               shadowRadius: 8,
               shadowOffset: { width: 0, height: 2 },
               elevation: 2,
@@ -376,7 +376,7 @@ function PostGrid({ posts }: { posts: PostRow[] }) {
               overflow: "hidden",
               backgroundColor: "#ffffff",
               shadowColor: "#000",
-              shadowOpacity: 0.08,
+              shadowOpacity: 0.10,
               shadowRadius: 8,
               shadowOffset: { width: 0, height: 3 },
               elevation: 3,
