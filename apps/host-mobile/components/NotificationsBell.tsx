@@ -32,8 +32,8 @@ const RED = "#dc2626";
 
 const CARD_SHADOW = {
   shadowColor: "#1a1410",
-  shadowOpacity: 0.06,
-  shadowRadius: 14,
+  shadowOpacity: 0.10,
+  shadowRadius: 20,
   shadowOffset: { width: 0, height: 6 },
   elevation: 2,
 } as const;
