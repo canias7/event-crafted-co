@@ -752,9 +752,14 @@ export default function VendorProfilePage() {
             <button
               type="button"
               onClick={() => logoInputRef.current?.click()}
-              disabled={logoUploading}
+              // Honor the no-edit-published rule. The logo lives on
+              // vendor_profiles, so swapping it on a published listing
+              // would effectively edit a locked listing. Disable when
+              // viewing a non-draft listing (and on plain upload-in-
+              // flight too).
+              disabled={logoUploading || isReadOnly}
               aria-label="Change logo"
-              className="h-24 w-24 rounded-full overflow-hidden bg-secondary/60 flex items-center justify-center relative group hover:opacity-90 transition-opacity"
+              className="h-24 w-24 rounded-full overflow-hidden bg-secondary/60 flex items-center justify-center relative group hover:opacity-90 transition-opacity disabled:cursor-not-allowed"
             >
               {identityLogoUrl ? (
                 <img
@@ -769,13 +774,15 @@ export default function VendorProfilePage() {
               ) : (
                 <span className="font-display text-3xl text-foreground">V</span>
               )}
-              <span className="absolute inset-0 flex items-center justify-center bg-foreground/0 group-hover:bg-foreground/40 transition-colors">
-                {logoUploading ? (
-                  <Loader2 className="w-5 h-5 text-background animate-spin" />
-                ) : (
-                  <Plus className="w-5 h-5 text-background opacity-0 group-hover:opacity-100" />
-                )}
-              </span>
+              {!isReadOnly && (
+                <span className="absolute inset-0 flex items-center justify-center bg-foreground/0 group-hover:bg-foreground/40 transition-colors">
+                  {logoUploading ? (
+                    <Loader2 className="w-5 h-5 text-background animate-spin" />
+                  ) : (
+                    <Plus className="w-5 h-5 text-background opacity-0 group-hover:opacity-100" />
+                  )}
+                </span>
+              )}
             </button>
             {identityBusinessName && (
               <h1 className="font-display text-2xl mt-4 inline-flex items-center gap-2">
