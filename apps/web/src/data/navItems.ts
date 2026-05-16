@@ -53,13 +53,16 @@ export const vendorNavItems: NavItem[] = [
   { labelKey: "sidebar.vendor.inbox", path: "/vendor/inbox", icon: Inbox },
   // Calendar hub — sub-tabs: Appointments, Availability
   { labelKey: "sidebar.vendor.calendar", path: "/vendor/appointments", icon: CalendarDays },
-  { labelKey: "sidebar.vendor.listing", path: "/vendor/listing", icon: Store },
+  // Profile — the vendor's IG-style identity surface (posts, reels,
+  // buzz, listings, edit identity). Replaces the old separate
+  // "Profile (listing builder)" entry under Calendar — that page is
+  // now reached from the Edit listing CTA on this profile.
+  { labelKey: "sidebar.vendor.my_profile", path: "/vendor/me", icon: User },
   // Studio hub — image editor + AI agent (auto-reply, lead qualifying).
   { labelKey: "sidebar.vendor.studio", path: "/vendor/studio", icon: Wand2 },
 ];
 
 export const vendorNavBottomItems: NavItem[] = [
-  { labelKey: "sidebar.vendor.my_profile", path: "/vendor/me", icon: User },
   { labelKey: "sidebar.bottom.support", path: "/support", icon: LifeBuoy },
   { labelKey: "sidebar.bottom.settings", path: "/settings", icon: Settings },
 ];
