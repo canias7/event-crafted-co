@@ -21,6 +21,10 @@ interface Profile {
   role: AppRole;
   display_name: string | null;
   onboarded_at: string | null;
+  // Application status — drives vendor approval gating. For hosts
+  // this is 'approved' from signup time; for vendors it's 'pending'
+  // until admin reviews.
+  application_status: "pending" | "approved" | "rejected" | null;
 }
 
 // The user's own vendor profile (when they've applied). Multi-role:
@@ -103,7 +107,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const loadProfile = useCallback(async (userId: string) => {
     const { data } = await supabase
       .from("profiles")
-      .select("id, role, display_name, onboarded_at")
+      .select("id, role, display_name, onboarded_at, application_status")
       .eq("id", userId)
       .maybeSingle();
     if (!data) {
@@ -205,14 +209,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setSession(null);
   }
 
-  // Derived flags. A vendor is "approved" ONLY when an admin has
-  // reviewed + approved their application — application_status flips
-  // from 'pending' to 'approved' and tg_vendor_profiles_role_promote
-  // sets email_confirmed_at so they can sign in. We don't fall back
-  // on profile.role==='vendor' here (the way old code did) because
-  // the role is set to 'vendor' at signup time, before approval, so
-  // that fallback let pending vendors into the portal.
+  // Derived flags. A vendor is "approved" when:
+  //   1. profile.role === 'vendor' AND profile.application_status ===
+  //      'approved' — the admin-approval signal. Source-of-truth for
+  //      fresh accounts that don't have a vendor_profiles row yet.
+  //   OR
+  //   2. ownVendorProfile.application_status === 'approved' — used
+  //      to be the primary signal under the old per-listing approval
+  //      model. Kept as a fallback for vendors who pre-existed before
+  //      profile-level approval was added.
+  // Either path is sufficient.
   const isApprovedVendor =
+    (profile?.role === "vendor" && profile?.application_status === "approved") ||
     ownVendorProfile?.application_status === "approved";
   const hasVendorAccess =
     isApprovedVendor || vendorMemberships.length > 0;
