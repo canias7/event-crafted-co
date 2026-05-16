@@ -98,6 +98,54 @@ jobs:
           ruby-version: "3.2"
           bundler-cache: false
 
+      # Mirrors EAS's `autoIncrement: true`: query App Store Connect
+      # for the max build number under the current app version and add
+      # 1. Without this the build number resets to 1 on each fresh
+      # pipeline, and TestFlight sorts builds by number descending —
+      # so the previous EAS build (#27 / #41) keeps showing as
+      # "latest" even though our build is newer chronologically.
+      - name: Compute next build number
+        env:
+          ASC_API_KEY_ID:          ${{ secrets.ASC_API_KEY_ID }}
+          ASC_API_KEY_ISSUER_ID:   ${{ secrets.ASC_API_KEY_ISSUER_ID }}
+          ASC_API_KEY_BASE64:      ${{ secrets.ASC_API_KEY_BASE64 }}
+          ASC_APP_ID:              ${{ inputs.app == 'host' && '6767471797' || '6767470298' }}
+        run: |
+          # Decode the .p8 key once for this step.
+          mkdir -p ~/private_keys
+          P8="$HOME/private_keys/AuthKey_${ASC_API_KEY_ID}.p8"
+          echo -n "$ASC_API_KEY_BASE64" | base64 --decode > "$P8"
+          # Use Python (preinstalled) + pip-install pyjwt to mint a JWT.
+          pip3 install --quiet pyjwt cryptography
+          NEXT=$(python3 <<'PY'
+          import os, time, json, urllib.request, jwt
+          from pathlib import Path
+          kid    = os.environ["ASC_API_KEY_ID"]
+          issuer = os.environ["ASC_API_KEY_ISSUER_ID"]
+          app_id = os.environ["ASC_APP_ID"]
+          pk = Path(os.path.expanduser(f"~/private_keys/AuthKey_{kid}.p8")).read_text()
+          now = int(time.time())
+          tok = jwt.encode(
+              {"iss": issuer, "iat": now, "exp": now + 600, "aud": "appstoreconnect-v1"},
+              pk, algorithm="ES256", headers={"kid": kid, "typ": "JWT"},
+          )
+          req = urllib.request.Request(
+              f"https://api.appstoreconnect.apple.com/v1/builds?filter[app]={app_id}&sort=-version&limit=10",
+              headers={"Authorization": f"Bearer {tok}"},
+          )
+          data = json.loads(urllib.request.urlopen(req).read())
+          nums = []
+          for b in data.get("data", []):
+              try:
+                  nums.append(int(b["attributes"]["version"]))
+              except (TypeError, ValueError):
+                  pass
+          print(max(nums) + 1 if nums else 1)
+          PY
+          )
+          echo "Next build number: $NEXT"
+          echo "BUILD_NUMBER=$NEXT" >> $GITHUB_ENV
+
       # CNG: Expo regenerates the native ios/ project from app.json
       # every build. Don't commit the generated ios/ directory — it's
       # ephemeral. --clean nukes any stale generated files first.
@@ -211,6 +259,7 @@ jobs:
             CODE_SIGN_IDENTITY="Apple Distribution" \
             DEVELOPMENT_TEAM=MY8LTVJQ82 \
             PROVISIONING_PROFILE_SPECIFIER="$PROVISIONING_PROFILE_UUID" \
+            CURRENT_PROJECT_VERSION="$BUILD_NUMBER" \
             archive
 
       - name: Export .ipa
