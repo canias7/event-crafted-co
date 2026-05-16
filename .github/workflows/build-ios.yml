@@ -197,6 +197,7 @@ jobs:
             -sdk iphoneos \
             -destination "generic/platform=iOS" \
             CODE_SIGN_STYLE=Manual \
+            DEVELOPMENT_TEAM=MY8LTVJQ82 \
             PROVISIONING_PROFILE_SPECIFIER="$PROVISIONING_PROFILE_UUID" \
             archive
 
