@@ -70,7 +70,7 @@ const SETTINGS_NAV: NavTarget[] = [
 export function CommandPalette({ initialOpen = false }: { initialOpen?: boolean } = {}) {
   const [open, setOpen] = useState(initialOpen);
   const navigate = useNavigate();
-  const { profile, hasVendorAccess } = useAuth();
+  const { profile, hasVendorAccess, hasHostAccess } = useAuth();
   const { vendors } = useVendors();
 
   // Cmd/Ctrl + K toggles the palette globally.
@@ -90,10 +90,10 @@ export function CommandPalette({ initialOpen = false }: { initialOpen?: boolean 
     navigate(path);
   }
 
-  // Multi-role: every authenticated non-admin user can host. Vendor
-  // capability comes from `hasVendorAccess` (covers owners + team
-  // members + the legacy role='vendor' flag).
-  const isHost = profile != null && profile.role !== "admin";
+  // Use the source-of-truth flags from useAuth. With the one-role-
+  // per-email rule, host access requires onboarded_at to be set; a
+  // pure vendor signup doesn't get host nav (and vice versa).
+  const isHost = hasHostAccess;
   const isVendor = hasVendorAccess;
 
   return (
