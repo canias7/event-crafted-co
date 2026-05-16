@@ -37,7 +37,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -124,12 +123,6 @@ export default function VendorProfilePage() {
   const [slug, setSlug] = useState("");
   const [instagramHandle, setInstagramHandle] = useState("");
   const [tiktokHandle, setTiktokHandle] = useState("");
-
-  // Listing builder is a 3-step wizard now: About → Pricing → More.
-  // Default to "about" so a fresh vendor lands on the basics first.
-  const [listingTab, setListingTab] = useState<
-    "about" | "pricing" | "more"
-  >("about");
 
   // Outer IG-style tabs that wrap the entire page. The existing
   // editor (form + about/pricing/media/more) only renders under the
@@ -461,15 +454,13 @@ export default function VendorProfilePage() {
       return;
     }
 
-    // Publish-readiness: a listing in the public directory needs the
-    // four basics filled in or hosts will hit a half-built shell. We
-    // gate Publish on category, short bio, location, and a starting
-    // price — everything else (team bios, portfolio photos, packages,
-    // etc.) is optional. Plain Save / draft is unaffected.
+    // Publish-readiness mirrors mobile listing.tsx: a listing needs
+    // category + location + starting price. Bio + business_name live
+    // on the identity profile (/vendor/me) and are validated there,
+    // not here. Plain Save / draft is unaffected.
     if (opts?.publish && profile) {
       const missing: string[] = [];
       if (!category) missing.push("Category");
-      if (!bio.trim()) missing.push("Short bio");
       if (!location.trim()) missing.push("Location");
       if (!basePrice.trim() || Number.parseFloat(basePrice) <= 0)
         missing.push("Starting price");
@@ -1041,16 +1032,11 @@ export default function VendorProfilePage() {
             column so the category dropdown gets full attention. */}
         <div>
         <div className="p-4 md:p-8 max-w-3xl mx-auto">
-          {/* Step indicator — replaces the old 4-tab sidebar.
-              Listing builder is a 4-step wizard: About → Pricing →
-              Media → More. Vendors move through it with the Previous /
-              Next buttons at the bottom of the form. */}
-          {profile && !publishedRecently && (
-            <ListingStepHeader
-              current={LISTING_STEPS.indexOf(listingTab)}
-              steps={LISTING_STEPS.map((s) => t(`vendor_listing.tabs.${s}`))}
-            />
-          )}
+          {/* Listing builder mirrors mobile vendor-mobile/app/(vendor)/listing.tsx:
+              one long vertical scroll with STEP 1/2/3/4 editorial
+              section headers. No wizard, no tab gating — every section
+              is visible at once. Bio + business name come from the
+              identity profile (/vendor/me), not this form. */}
           {loading ? (
             <div className="space-y-4">
               <Skeleton className="h-10 w-full" />
@@ -1218,14 +1204,14 @@ export default function VendorProfilePage() {
               )}
             </div>
           ) : (
-            <form onSubmit={handleSave} className="space-y-6">
-              {/* Category sits at the top of the About tab only —
-                  on the other listing tabs it's hidden because once
-                  a draft exists the dropdown is locked anyway and
-                  re-displaying it on every tab is just visual noise.
-                  The dropdown is grouped by main group, same shape
-                  as the public Vendors nav on the landing page. */}
-              {(!profile || listingTab === "about") && (
+            <form onSubmit={handleSave} className="space-y-10">
+              {/* STEP 1 · IDENTITY */}
+              <ListingStepBlock
+                step="STEP 1 · IDENTITY"
+                title="Introduce yourself."
+                body="Photos and the basics — category, where you work, where pricing starts. A few well-shot photos make a host stop scrolling."
+              />
+
               <div className="space-y-2">
                 <Label htmlFor="category" className="inline-flex items-center gap-1.5">
                   {t("vendor_listing.category_label")}
@@ -1254,27 +1240,19 @@ export default function VendorProfilePage() {
                   {t("vendor_listing.category_hint")}
                 </p>
               </div>
-              )}
 
               {isListing && !category && (
-                <div className="rounded-2xl border border-dashed border-border bg-card/40 p-8 text-center">
+                <div className="card-soft p-8 text-center">
                   <p className="text-sm text-muted-foreground max-w-sm mx-auto leading-relaxed">
                     {t("vendor_listing.category_nudge")}
                   </p>
                 </div>
               )}
 
-              {/* Business name lives on the chrome (set at signup,
-                  edited via the avatar / settings later); the listing
-                  form doesn't re-ask for it. */}
-
-              {/* Photos sit at the top of the About step — they're
-                  the first impression on the marketplace card and
-                  the public listing page, so prompt for them before
-                  bio / location / price. The same uploader writes to
-                  vendor_portfolio_images, which is what the mobile
-                  Home → Listings tab pulls for the card hero. */}
-              {category && profile && listingTab === "about" && (
+              {/* Photos — first impression on the marketplace card.
+                  Same uploader writes to vendor_portfolio_images,
+                  which mobile Home → Listings reads for the hero. */}
+              {category && profile && (
                 <div className="space-y-2">
                   <Label className="inline-flex items-center gap-1.5">
                     Listing photos
@@ -1287,54 +1265,40 @@ export default function VendorProfilePage() {
                 </div>
               )}
 
-              {category && listingTab === "about" && (
-                <div className="space-y-2">
-                  <Label htmlFor="bio" className="inline-flex items-center gap-1.5">
-                    {t("vendor_listing.short_bio")}
-                    <RequiredDot />
-                  </Label>
-                  <Textarea
-                    id="bio"
-                    value={bio}
-                    onChange={(e) => setBio(e.target.value)}
-                    rows={3}
-                    placeholder={t("vendor_listing.short_bio_placeholder")}
-                  />
-                </div>
-              )}
-
-              {category && listingTab === "pricing" && (
-                <div className="space-y-2">
-                  <Label htmlFor="base-price" className="inline-flex items-center gap-1.5">
-                    {t("vendor_listing.starting_price")}
-                    <RequiredDot />
-                  </Label>
-                  <Input
-                    id="base-price"
-                    type="number"
-                    inputMode="decimal"
-                    min="0"
-                    step="100"
-                    value={basePrice}
-                    onChange={(e) => setBasePrice(e.target.value)}
-                    className="h-11"
-                  />
-                </div>
-              )}
-
-              {category && listingTab === "about" && (
-                <div className="space-y-2">
-                  <Label htmlFor="location" className="inline-flex items-center gap-1.5">
-                    {t("vendor_listing.location")}
-                    <RequiredDot />
-                  </Label>
-                  <Input
-                    id="location"
-                    value={location}
-                    onChange={(e) => setLocation(e.target.value)}
-                    placeholder={t("vendor_listing.location_placeholder")}
-                    className="h-11"
-                  />
+              {/* Location + starting price side by side, mirroring
+                  mobile listing.tsx's two-column "where you work,
+                  where you start" row. */}
+              {category && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="location" className="inline-flex items-center gap-1.5">
+                      {t("vendor_listing.location")}
+                      <RequiredDot />
+                    </Label>
+                    <Input
+                      id="location"
+                      value={location}
+                      onChange={(e) => setLocation(e.target.value)}
+                      placeholder={t("vendor_listing.location_placeholder")}
+                      className="h-11"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="base-price" className="inline-flex items-center gap-1.5">
+                      {t("vendor_listing.starting_price")}
+                      <RequiredDot />
+                    </Label>
+                    <Input
+                      id="base-price"
+                      type="number"
+                      inputMode="decimal"
+                      min="0"
+                      step="100"
+                      value={basePrice}
+                      onChange={(e) => setBasePrice(e.target.value)}
+                      className="h-11"
+                    />
+                  </div>
                 </div>
               )}
 
@@ -1368,76 +1332,66 @@ export default function VendorProfilePage() {
           )}
 
           {profile && isListing && !publishedRecently && category && (
-            <>
-              {/* About tab — category-specific Details editor sits
-                  with the basics so everything tied to "what is this
-                  business" lives in one place. */}
-              {listingTab === "about" && (
-                <div className="mt-12 pt-10 border-t border-border">
-                  <CategoryAttributesEditor
-                    vendorId={profile.id}
-                    category={profile.category}
-                    canEdit={canEdit}
-                  />
-                </div>
-              )}
+            <div className="space-y-10">
+              {/* STEP 2 · DETAILS — category-specific structured fields */}
+              <ListingStepBlock
+                step="STEP 2 · DETAILS"
+                title="The fine print."
+                body="Structured fields hosts filter on. The more specific, the better."
+              />
+              <CategoryAttributesEditor
+                vendorId={profile.id}
+                category={profile.category}
+                canEdit={canEdit}
+              />
 
-              {/* Pricing tab — Packages live here next to the
-                  Starting price field above. */}
-              {listingTab === "pricing" && (
-                <div className="mt-12 pt-10 border-t border-border">
-                  <PackageManager vendorId={profile.id} canEdit={canEdit} />
-                </div>
-              )}
+              {/* STEP 3 · FAQs */}
+              <ListingStepBlock
+                step="STEP 3 · FAQs"
+                title="Common questions."
+                body="Answer the first three or four hosts will ask — saves you typing later."
+              />
+              <VendorFaqsManager vendorId={profile.id} canEdit={canEdit} />
 
-              {/* More tab — team, social proof (reviews +
-                  recommendations), and the optional intake-form /
-                  FAQs / policy editors. */}
-              {listingTab === "more" && (
+              {/* STEP 4 · TEAM */}
+              {canEdit && (
                 <>
-                  {canEdit && (
-                    <div className="mt-12 pt-10 border-t border-border">
-                      <VendorTeamManager vendorId={profile.id} />
-                    </div>
-                  )}
-                  <div className="mt-12 pt-10 border-t border-border">
-                    <VendorRecommendationManager
-                      vendorId={profile.id}
-                      canEdit={canEdit}
-                    />
-                  </div>
-                  <div className="mt-12 pt-10 border-t border-border">
-                    <VendorFaqsManager
-                      vendorId={profile.id}
-                      canEdit={canEdit}
-                    />
-                  </div>
-                  <div className="mt-12 pt-10 border-t border-border">
-                    <VendorPolicyEditor
-                      vendorId={profile.id}
-                      canEdit={canEdit}
-                    />
-                  </div>
+                  <ListingStepBlock
+                    step="STEP 4 · TEAM"
+                    title="Who you are."
+                    body="Names, roles, short bios. Public on your page."
+                  />
+                  <VendorTeamManager vendorId={profile.id} />
                 </>
               )}
-            </>
-          )}
 
-          {profile && !publishedRecently && category && (
-            <ListingStepNav
-              current={LISTING_STEPS.indexOf(listingTab)}
-              total={LISTING_STEPS.length}
-              onPrev={() => {
-                const idx = LISTING_STEPS.indexOf(listingTab);
-                if (idx > 0) setListingTab(LISTING_STEPS[idx - 1]);
-              }}
-              onNext={() => {
-                const idx = LISTING_STEPS.indexOf(listingTab);
-                if (idx < LISTING_STEPS.length - 1) {
-                  setListingTab(LISTING_STEPS[idx + 1]);
-                }
-              }}
-            />
+              {/* STEP 5 · PACKAGES — web-only, lives below mobile-parity steps */}
+              <ListingStepBlock
+                step="STEP 5 · PACKAGES"
+                title="What you sell."
+                body="Bundle services with pricing so hosts know what to expect when they reach out."
+              />
+              <PackageManager vendorId={profile.id} canEdit={canEdit} />
+
+              {/* STEP 6 · RECOMMENDATIONS — web-only */}
+              <ListingStepBlock
+                step="STEP 6 · RECOMMENDATIONS"
+                title="Vendors you trust."
+                body="Cross-promote with other vendors you've worked with."
+              />
+              <VendorRecommendationManager
+                vendorId={profile.id}
+                canEdit={canEdit}
+              />
+
+              {/* STEP 7 · POLICY — web-only */}
+              <ListingStepBlock
+                step="STEP 7 · POLICY"
+                title="Cancellation + retainer."
+                body="Set expectations up front so there's no friction later."
+              />
+              <VendorPolicyEditor vendorId={profile.id} canEdit={canEdit} />
+            </div>
           )}
         </div>
         </div>
@@ -1480,74 +1434,32 @@ export default function VendorProfilePage() {
 // recurring rules + one-off blocks). Mounted inline on the profile
 // editor so the "Availability" section on the public profile has a
 // clear hand-off from this single dashboard view.
-// 3-step wizard order. Indexed by listingTab. Adding/removing steps
-// here flows through the StepHeader + StepNav automatically.
-const LISTING_STEPS = ["about", "pricing", "more"] as const;
-
-function ListingStepHeader({
-  current,
-  steps,
+// Editorial step block — mirrors the mobile listing.tsx StepHeader.
+// Small uppercase letter-spaced label ("STEP 1 · IDENTITY"), then
+// large italic serif title, then a calm body paragraph. Pure
+// presentational, no logic. Used between every form section group on
+// the listing builder so the page reads as one editorial flow rather
+// than a wizard.
+function ListingStepBlock({
+  step,
+  title,
+  body,
 }: {
-  current: number;
-  steps: string[];
+  step: string;
+  title: string;
+  body: string;
 }) {
   return (
-    <div className="mb-6">
-      <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground mb-2">
-        Step {current + 1} of {steps.length}
+    <div className="pt-6">
+      <p className="font-label text-muted-foreground tracking-[0.18em] text-[11px] mb-3">
+        {step}
       </p>
-      <div className="flex items-center gap-2">
-        {steps.map((label, i) => (
-          <div key={label} className="flex-1 flex items-center gap-2">
-            <div
-              className={`h-1 flex-1 rounded-full ${i <= current ? "bg-foreground" : "bg-secondary/60"}`}
-            />
-            <span
-              className={`text-xs font-medium whitespace-nowrap ${
-                i === current ? "text-foreground" : "text-muted-foreground"
-              }`}
-            >
-              {label}
-            </span>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function ListingStepNav({
-  current,
-  total,
-  onPrev,
-  onNext,
-}: {
-  current: number;
-  total: number;
-  onPrev: () => void;
-  onNext: () => void;
-}) {
-  const isFirst = current === 0;
-  const isLast = current === total - 1;
-  return (
-    <div className="mt-12 pt-6 border-t border-border flex items-center justify-between">
-      <Button
-        type="button"
-        variant="outline"
-        onClick={onPrev}
-        disabled={isFirst}
-        className="rounded-full"
-      >
-        Previous
-      </Button>
-      <Button
-        type="button"
-        onClick={onNext}
-        disabled={isLast}
-        className="rounded-full bg-foreground text-background hover:bg-foreground/90"
-      >
-        Next
-      </Button>
+      <h2 className="font-editorial text-3xl md:text-4xl leading-tight mb-3">
+        {title}
+      </h2>
+      <p className="text-sm text-muted-foreground max-w-prose leading-relaxed">
+        {body}
+      </p>
     </div>
   );
 }
