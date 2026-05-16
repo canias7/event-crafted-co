@@ -1,16 +1,10 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Loader2 } from "lucide-react";
+import { Loader2, ArrowRight, Check } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
-import { PasswordInput } from "@/components/auth/PasswordInput";
-import { Picture } from "@/components/shared/Picture";
-import heroImg from "@/assets/vendora-hero-dinner.jpg?as=picture";
+import { GlassyAuthShell } from "@/components/auth/GlassyAuthShell";
 
 // `role` decides what the user is signing up as. Default "host" keeps
 // the existing behavior (post-signup → /customer/onboarding). When
@@ -40,11 +34,6 @@ export default function SignupPage({ role = "host" }: { role?: "host" | "vendor"
       password,
       options: {
         emailRedirectTo: `${window.location.origin}/`,
-        // intended_role is consumed by the handle_new_user() trigger
-        // and decides whether the new profile gets onboarded_at
-        // stamped (host) or left null (vendor — so the later
-        // vendor_profiles INSERT isn't blocked by the
-        // one-role-per-email guard).
         data: { display_name: name, intended_role: role },
       },
     });
@@ -53,172 +42,181 @@ export default function SignupPage({ role = "host" }: { role?: "host" | "vendor"
       toast.error(error.message);
       return;
     }
-    // If Supabase has email confirmation enabled, signUp returns no session.
-    // Route to the check-email page instead of bouncing into a protected route.
     if (!data.session) {
       navigate(`/check-email?email=${encodeURIComponent(email)}&role=${role}`);
       return;
     }
     toast.success("Account created");
-    // Vendors go straight to their profile to create a first listing;
-    // hosts land in the onboarding wizard that sets onboarded_at.
     navigate(role === "vendor" ? "/vendor/me" : "/customer/onboarding");
   }
 
+  const isVendor = role === "vendor";
+  const pillLabel = isVendor ? "VENDOR SIGN UP" : "HOST SIGN UP";
+  const accentWord = isVendor ? "vendor." : "host.";
+  const otherSidePath = isVendor ? "/signup/host" : "/signup/vendor";
+  const otherSideLabel = isVendor ? "Sign up as a host" : "Sign up as a vendor";
+
   return (
-    <div className="min-h-screen flex">
-      {/* Brand panel */}
-      <div className="hidden md:flex md:w-1/2 relative overflow-hidden">
-        <div className="absolute inset-0">
-          <Picture
-            source={heroImg}
-            alt=""
-            loading="eager"
-            fetchPriority="high"
-            sizes="50vw"
-            className="w-full h-full object-cover"
-          />
-        </div>
-        <div className="absolute inset-0 bg-gradient-to-br from-foreground/85 via-foreground/60 to-foreground/35" />
-        <div
-          className="absolute inset-0 opacity-[0.07] mix-blend-overlay pointer-events-none"
-          style={{
-            backgroundImage:
-              "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)' opacity='0.6'/></svg>\")",
-          }}
-        />
-
-        <div className="relative z-10 flex flex-col justify-between p-10 lg:p-14 text-background w-full">
-          <Link to="/" className="font-editorial text-3xl">
-            Vendora
+    <GlassyAuthShell
+      title={isVendor ? "List with Vendora," : "Plan with Vendora,"}
+      titleAccent={accentWord}
+      subtitle={
+        isVendor
+          ? "Create a vendor account. Your first listing is hand-reviewed before going live."
+          : "Create a host account. Free, takes a minute."
+      }
+      pillLabel={pillLabel}
+      topRight={
+        <>
+          <Link to="/support" className="opacity-60">
+            Need help?
           </Link>
-
-          <div>
-            <div className="flex items-center gap-3 mb-5">
-              <p className="font-label text-accent tracking-[0.4em]">
-                {t("auth.signup.eyebrow")}
-              </p>
-              <span className="h-px w-8 bg-accent/40" />
-            </div>
-            <p className="text-3xl lg:text-4xl font-display leading-[1.1] max-w-sm">
-              {t("auth.signup.tagline_lead")}{" "}
-              <span className="italic font-light text-accent">
-                {t("auth.signup.tagline_accent")}
-              </span>
-            </p>
-            <p className="text-sm text-background/70 mt-5 max-w-sm leading-relaxed">
-              {t("auth.signup.tagline_subtitle")}
-            </p>
-          </div>
-
-          <p className="text-xs text-background/50 tracking-wide">
-            {t("auth.signup.footer_brand")}
-          </p>
-        </div>
-      </div>
-
-      {/* Form */}
-      <div className="flex-1 flex flex-col md:items-center md:justify-center px-6 pt-12 pb-12 md:p-12 bg-background">
-        <div className="w-full max-w-sm">
-          <Link to="/" className="md:hidden font-editorial text-3xl block mb-8">
-            Vendora
-          </Link>
-
-          <h1 className="font-editorial text-4xl md:text-4xl mb-2 leading-tight">
-            {t("auth.signup.title")}
-          </h1>
-          <p className="text-sm text-muted-foreground mb-10">
-            {t("auth.signup.subtitle")}
-          </p>
-
-          <form onSubmit={onSubmit} className="space-y-5">
-            <p className="text-xs text-muted-foreground leading-relaxed">
-              Every vendor listing is hand-reviewed before going live.
-            </p>
-            <div className="space-y-2">
-              <Label htmlFor="name">{t("auth.signup.name_label")}</Label>
-              <Input
-                id="name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                required
-                className="h-11"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="email">{t("auth.common.email")}</Label>
-              <Input
-                id="email"
-                type="email"
-                inputMode="email"
-                autoCapitalize="off"
-                autoCorrect="off"
-                spellCheck={false}
-                autoComplete="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                className="h-11"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="password">{t("auth.common.password")}</Label>
-              <PasswordInput
-                id="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                minLength={8}
-                placeholder={t("auth.signup.password_hint")}
-                className="h-11"
-              />
-            </div>
-            <label className="flex items-start gap-2.5 cursor-pointer pt-1">
-              <Checkbox
-                checked={adult}
-                onCheckedChange={(v) => setAdult(v === true)}
-                className="mt-0.5"
-              />
-              <span className="text-xs text-muted-foreground leading-relaxed">
-                {t("auth.signup.adult_lead")}{" "}
-                <Link to="/terms" className="text-accent" target="_blank">
-                  {t("auth.signup.adult_terms")}
-                </Link>{" "}
-                {t("auth.signup.adult_and")}{" "}
-                <Link to="/privacy" className="text-accent" target="_blank">
-                  {t("auth.signup.adult_privacy")}
-                </Link>
-                .
-              </span>
-            </label>
-            <Button
-              type="submit"
-              disabled={loading || !adult}
-              className="w-full h-11 rounded-full bg-foreground text-background hover:bg-foreground/90 mt-2"
+          <span>
+            <span style={{ opacity: 0.6 }}>Already have an account? </span>
+            <Link
+              to="/login"
+              className="pb-px font-medium"
+              style={{ borderBottom: "0.5px solid #000" }}
             >
-              {loading ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  {t("auth.common.creating")}
-                </>
-              ) : (
-                t("auth.signup.submit")
-              )}
-            </Button>
-            <p className="text-[11px] text-muted-foreground text-center leading-relaxed">
-              We use your email to send account + booking notifications
-              and to verify it's you. We don't sell your data, ever.
-            </p>
-          </form>
-
-          <p className="text-sm text-muted-foreground mt-8 text-center">
-            {t("auth.signup.already_have_account")}{" "}
-            <Link to="/login" className="text-accent font-medium">
               {t("auth.signup.sign_in")}
             </Link>
-          </p>
+          </span>
+        </>
+      }
+      belowCardLink={
+        <div>
+          <span style={{ opacity: 0.6 }}>On the other side? </span>
+          <Link
+            to={otherSidePath}
+            className="font-medium pb-px"
+            style={{ borderBottom: "0.5px solid #000", color: "#000" }}
+          >
+            {otherSideLabel}
+          </Link>
         </div>
-      </div>
-    </div>
+      }
+    >
+      <form onSubmit={onSubmit} className="flex flex-col gap-3.5">
+        <div>
+          <div
+            className="uppercase mb-1.5"
+            style={{ fontSize: "11px", letterSpacing: "1.5px", opacity: 0.65, fontWeight: 500 }}
+          >
+            {t("auth.signup.name_label")}
+          </div>
+          <input
+            className="auth-input"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            required
+            placeholder="Your name"
+          />
+        </div>
+        <div>
+          <div
+            className="uppercase mb-1.5"
+            style={{ fontSize: "11px", letterSpacing: "1.5px", opacity: 0.65, fontWeight: 500 }}
+          >
+            {t("auth.common.email")}
+          </div>
+          <input
+            className="auth-input"
+            type="email"
+            inputMode="email"
+            autoCapitalize="off"
+            autoCorrect="off"
+            spellCheck={false}
+            autoComplete="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+            placeholder="you@example.com"
+          />
+        </div>
+        <div>
+          <div
+            className="uppercase mb-1.5"
+            style={{ fontSize: "11px", letterSpacing: "1.5px", opacity: 0.65, fontWeight: 500 }}
+          >
+            {t("auth.common.password")}
+          </div>
+          <input
+            className="auth-input"
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+            minLength={8}
+            placeholder={t("auth.signup.password_hint")}
+            autoComplete="new-password"
+          />
+        </div>
+        <label
+          className="flex items-start cursor-pointer pt-1"
+          style={{ gap: "8px", fontSize: "12px", opacity: 0.8 }}
+        >
+          <span
+            className="shrink-0 inline-flex items-center justify-center"
+            style={{
+              width: 16,
+              height: 16,
+              border: "0.5px solid rgba(0,0,0,0.3)",
+              borderRadius: "3px",
+              background: adult ? "#000" : "rgba(255,255,255,0.6)",
+              marginTop: "1px",
+            }}
+            onClick={() => setAdult((v) => !v)}
+          >
+            {adult && <Check className="w-3 h-3 text-white" />}
+          </span>
+          <input
+            type="checkbox"
+            checked={adult}
+            onChange={(e) => setAdult(e.target.checked)}
+            className="sr-only"
+          />
+          <span className="leading-relaxed">
+            {t("auth.signup.adult_lead")}{" "}
+            <Link
+              to="/terms"
+              className="pb-px font-medium"
+              style={{ borderBottom: "0.5px solid currentColor" }}
+              target="_blank"
+            >
+              {t("auth.signup.adult_terms")}
+            </Link>{" "}
+            {t("auth.signup.adult_and")}{" "}
+            <Link
+              to="/privacy"
+              className="pb-px font-medium"
+              style={{ borderBottom: "0.5px solid currentColor" }}
+              target="_blank"
+            >
+              {t("auth.signup.adult_privacy")}
+            </Link>
+            .
+          </span>
+        </label>
+        <button type="submit" disabled={loading || !adult} className="auth-submit mt-2">
+          {loading ? (
+            <>
+              <Loader2 className="w-4 h-4 animate-spin" />
+              {t("auth.common.creating")}
+            </>
+          ) : (
+            <>
+              {t("auth.signup.submit")}
+              <ArrowRight className="w-3.5 h-3.5" />
+            </>
+          )}
+        </button>
+        <p
+          className="text-center font-editorial italic"
+          style={{ fontSize: "12.5px", opacity: 0.55, marginTop: "6px", lineHeight: 1.5 }}
+        >
+          We don't sell your data, ever.
+        </p>
+      </form>
+    </GlassyAuthShell>
   );
 }
