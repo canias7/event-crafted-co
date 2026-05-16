@@ -1,0 +1,164 @@
+name: Higgsfield Generate
+
+# Manual-only workflow: runs the Higgsfield CLI to generate images via one of
+# three modes (product-photoshoot, marketplace-cards, or raw `generate create`).
+# Output JSON is uploaded as a workflow artifact so the result URLs are easy to
+# pull out of the run.
+#
+# Required repo secret: HIGGSFIELD_CREDENTIALS — full contents of the local
+# credentials file produced by `higgsfield auth login`. To populate:
+#   1. On your machine: `npm install -g @higgsfield/cli && higgsfield auth login`
+#   2. Find the credentials file (default: ~/.config/higgsfield/credentials.json)
+#   3. Paste the entire file contents into the HIGGSFIELD_CREDENTIALS secret
+#
+# Trigger from the GitHub UI: Actions → "Higgsfield Generate" → Run workflow.
+
+on:
+  workflow_dispatch:
+    inputs:
+      kind:
+        description: "Which CLI surface to invoke"
+        type: choice
+        options: [product-photoshoot, marketplace-cards, generate]
+        default: product-photoshoot
+      prompt:
+        description: "User intent / prompt (required)"
+        type: string
+        required: true
+      mode:
+        description: "Mode (product-photoshoot) / scope (marketplace-cards) / job_set_type model (generate)"
+        type: string
+        required: true
+      image_url:
+        description: "Optional reference image URL (http/https). Auto-downloaded and passed as --image."
+        type: string
+      count:
+        description: "Variant count (product-photoshoot / marketplace-cards only). 1-10."
+        type: string
+        default: "1"
+      extra_args:
+        description: "Extra flags appended verbatim to the CLI command (advanced)."
+        type: string
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install Higgsfield CLI
+        run: npm install -g @higgsfield/cli
+
+      - name: Write credentials
+        env:
+          HIGGSFIELD_CREDENTIALS: ${{ secrets.HIGGSFIELD_CREDENTIALS }}
+        run: |
+          if [ -z "$HIGGSFIELD_CREDENTIALS" ]; then
+            echo "::error::HIGGSFIELD_CREDENTIALS secret is empty. See workflow header for how to populate it."
+            exit 1
+          fi
+          mkdir -p "$RUNNER_TEMP/hf"
+          printf '%s' "$HIGGSFIELD_CREDENTIALS" > "$RUNNER_TEMP/hf/credentials.json"
+          chmod 600 "$RUNNER_TEMP/hf/credentials.json"
+
+      - name: Download reference image
+        id: ref
+        if: inputs.image_url != ''
+        run: |
+          set -euo pipefail
+          url='${{ inputs.image_url }}'
+          ext="${url##*.}"
+          case "$ext" in
+            jpg|jpeg|png|webp|gif) ;;
+            *) ext="png" ;;
+          esac
+          out="$RUNNER_TEMP/ref.$ext"
+          curl -fsSL "$url" -o "$out"
+          echo "path=$out" >> "$GITHUB_OUTPUT"
+
+      - name: Run Higgsfield CLI
+        env:
+          HIGGSFIELD_CREDENTIALS_PATH: ${{ runner.temp }}/hf/credentials.json
+          HIGGSFIELD_DISABLE_TELEMETRY: "1"
+          HIGGSFIELD_NO_UPDATE_CHECK: "1"
+          KIND: ${{ inputs.kind }}
+          PROMPT: ${{ inputs.prompt }}
+          MODE: ${{ inputs.mode }}
+          COUNT: ${{ inputs.count }}
+          EXTRA: ${{ inputs.extra_args }}
+          REF_PATH: ${{ steps.ref.outputs.path }}
+        run: |
+          set -euo pipefail
+          mkdir -p out
+          IMG_ARGS=()
+          if [ -n "${REF_PATH:-}" ]; then
+            IMG_ARGS=(--image "$REF_PATH")
+          fi
+
+          case "$KIND" in
+            product-photoshoot)
+              # shellcheck disable=SC2086
+              higgsfield --json product-photoshoot create \
+                --mode "$MODE" \
+                --prompt "$PROMPT" \
+                --count "$COUNT" \
+                "${IMG_ARGS[@]}" \
+                $EXTRA | tee out/result.json
+              ;;
+            marketplace-cards)
+              # shellcheck disable=SC2086
+              higgsfield --json marketplace-cards create \
+                --scope "$MODE" \
+                --prompt "$PROMPT" \
+                --count "$COUNT" \
+                "${IMG_ARGS[@]}" \
+                $EXTRA | tee out/result.json
+              ;;
+            generate)
+              # For raw generate, MODE is the job_set_type (e.g. nano_banana_2).
+              # --wait blocks until the job finishes and the JSON includes result URLs.
+              # shellcheck disable=SC2086
+              higgsfield --json generate create "$MODE" \
+                --prompt "$PROMPT" \
+                --wait \
+                "${IMG_ARGS[@]}" \
+                $EXTRA | tee out/result.json
+              ;;
+            *)
+              echo "::error::Unknown kind: $KIND"
+              exit 1
+              ;;
+          esac
+
+      - name: Summarize result URLs
+        if: always()
+        run: |
+          set -euo pipefail
+          if [ ! -s out/result.json ]; then
+            echo "No result.json produced." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          echo "## Higgsfield result" >> "$GITHUB_STEP_SUMMARY"
+          echo '```json' >> "$GITHUB_STEP_SUMMARY"
+          head -c 4000 out/result.json >> "$GITHUB_STEP_SUMMARY"
+          echo '' >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          # Pull any obvious result URLs out for quick clicking.
+          urls=$(grep -oE 'https?://[A-Za-z0-9._~:/?#@!$&+,;=%-]+\.(png|jpg|jpeg|webp|mp4|mov)' out/result.json | sort -u || true)
+          if [ -n "$urls" ]; then
+            echo "" >> "$GITHUB_STEP_SUMMARY"
+            echo "### URLs" >> "$GITHUB_STEP_SUMMARY"
+            printf -- '- %s\n' $urls >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: higgsfield-result
+          path: out/
+          retention-days: 14
