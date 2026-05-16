@@ -1,0 +1,222 @@
+name: Build iOS (native)
+
+# Native iOS build pipeline. Replaces `eas build --platform ios`.
+# Runs on GitHub Actions macos-latest runners — FREE for public repos,
+# $0.16/min for private. Builds ~20-30 min.
+#
+# Flow:
+#   1. Checkout + install deps
+#   2. Run `npx expo prebuild --platform ios` to generate the ios/
+#      directory from app.json (Expo's CNG / continuous native generation).
+#   3. Install CocoaPods.
+#   4. Import Apple Developer cert from secrets into the runner keychain.
+#   5. Install provisioning profile.
+#   6. `xcodebuild archive` → .xcarchive
+#   7. `xcodebuild -exportArchive` → .ipa
+#   8. Upload to TestFlight via App Store Connect API.
+#
+# Required GitHub secrets (configure once at
+# github.com/canias7/event-crafted-co/settings/secrets/actions):
+#
+#   IOS_CERT_P12_BASE64         — base64-encoded .p12 cert export
+#                                 (export from Mac Keychain → Login →
+#                                  your Developer cert → right-click →
+#                                  Export → .p12 with password → then
+#                                  `base64 -i cert.p12 | pbcopy`)
+#   IOS_CERT_PASSWORD           — password used when exporting the .p12
+#   IOS_PROVISIONING_PROFILE_BASE64 — base64-encoded .mobileprovision
+#                                     (download from developer.apple.com)
+#   IOS_KEYCHAIN_PASSWORD       — any random string; runner-local keychain pass
+#   ASC_API_KEY_ID              — App Store Connect API key ID (10 chars)
+#   ASC_API_KEY_ISSUER_ID       — App Store Connect issuer UUID
+#   ASC_API_KEY_BASE64          — base64-encoded .p8 private key
+#                                 (from appstoreconnect.apple.com →
+#                                  Users and Access → Integrations → Team Keys)
+#
+# Already-shared with the existing mobile-build workflow:
+#   SUPABASE_URL, SUPABASE_ANON_KEY
+
+on:
+  workflow_dispatch:
+    inputs:
+      app:
+        description: "Which app?"
+        type: choice
+        options: [host, vendor]
+        default: host
+      submit:
+        description: "Upload to TestFlight after build?"
+        type: boolean
+        default: true
+
+# Cancel any older in-flight run when a new one starts.
+concurrency:
+  group: build-ios-${{ github.event.inputs.app }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build iOS for ${{ inputs.app }}-mobile
+    runs-on: macos-latest
+    timeout-minutes: 60
+    env:
+      APP_DIR: apps/${{ inputs.app }}-mobile
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      # --linker=hoisted: Metro's babel plugin can't resolve preset-expo
+      # through Bun's default isolated symlink layout. Same workaround as
+      # mobile-ota.yml uses.
+      - name: Install JS deps
+        run: bun install --frozen-lockfile --linker=hoisted
+
+      - name: Setup Ruby (for CocoaPods)
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.2"
+          bundler-cache: false
+
+      # CNG: Expo regenerates the native ios/ project from app.json
+      # every build. Don't commit the generated ios/ directory — it's
+      # ephemeral. --clean nukes any stale generated files first.
+      - name: Expo prebuild (generate ios/)
+        working-directory: ${{ env.APP_DIR }}
+        run: |
+          npx expo prebuild --platform ios --clean --no-install
+        env:
+          EXPO_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          EXPO_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+
+      - name: Install CocoaPods
+        working-directory: ${{ env.APP_DIR }}/ios
+        run: |
+          gem install cocoapods --no-document
+          pod install --repo-update
+
+      # Imports cert into a runner-only keychain. Auto-cleans on job
+      # finish. Cleaner than doing it ourselves via `security` commands.
+      - name: Import Apple Developer cert
+        uses: apple-actions/import-codesign-certs@v3
+        with:
+          p12-file-base64: ${{ secrets.IOS_CERT_P12_BASE64 }}
+          p12-password: ${{ secrets.IOS_CERT_PASSWORD }}
+          keychain-password: ${{ secrets.IOS_KEYCHAIN_PASSWORD }}
+
+      - name: Install provisioning profile
+        run: |
+          mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
+          echo -n "${{ secrets.IOS_PROVISIONING_PROFILE_BASE64 }}" \
+            | base64 --decode \
+            > ~/Library/MobileDevice/Provisioning\ Profiles/profile.mobileprovision
+          # Extract UUID so xcodebuild can find it by reference if needed
+          uuid=$(security cms -D -i ~/Library/MobileDevice/Provisioning\ Profiles/profile.mobileprovision \
+            | plutil -extract UUID raw -)
+          echo "PROVISIONING_PROFILE_UUID=$uuid" >> $GITHUB_ENV
+          echo "Profile UUID: $uuid"
+
+      # ExportOptions.plist tells xcodebuild how to package the .ipa.
+      # method=app-store → produces a TestFlight-ready binary.
+      - name: Write ExportOptions.plist
+        working-directory: ${{ env.APP_DIR }}/ios
+        run: |
+          # Find the bundle id from app.json
+          BUNDLE_ID=$(node -e "console.log(require('../app.json').expo.ios.bundleIdentifier)")
+          cat > ExportOptions.plist <<EOF
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+            <key>method</key>
+            <string>app-store</string>
+            <key>teamID</key>
+            <string>MY8LTVJQ82</string>
+            <key>provisioningProfiles</key>
+            <dict>
+              <key>$BUNDLE_ID</key>
+              <string>$PROVISIONING_PROFILE_UUID</string>
+            </dict>
+            <key>signingStyle</key>
+            <string>manual</string>
+            <key>stripSwiftSymbols</key>
+            <true/>
+            <key>uploadBitcode</key>
+            <false/>
+            <key>uploadSymbols</key>
+            <true/>
+          </dict>
+          </plist>
+          EOF
+          cat ExportOptions.plist
+
+      - name: Discover workspace + scheme
+        working-directory: ${{ env.APP_DIR }}/ios
+        run: |
+          WORKSPACE=$(ls *.xcworkspace | head -1)
+          SCHEME=$(xcodebuild -workspace "$WORKSPACE" -list -json \
+            | node -e "console.log(JSON.parse(require('fs').readFileSync(0,'utf8')).workspace.schemes[0])")
+          echo "WORKSPACE=$WORKSPACE" >> $GITHUB_ENV
+          echo "SCHEME=$SCHEME" >> $GITHUB_ENV
+          echo "Workspace: $WORKSPACE"
+          echo "Scheme: $SCHEME"
+
+      - name: Archive
+        working-directory: ${{ env.APP_DIR }}/ios
+        run: |
+          xcodebuild \
+            -workspace "$WORKSPACE" \
+            -scheme "$SCHEME" \
+            -configuration Release \
+            -archivePath build/app.xcarchive \
+            -sdk iphoneos \
+            -destination "generic/platform=iOS" \
+            CODE_SIGN_STYLE=Manual \
+            PROVISIONING_PROFILE_SPECIFIER="$PROVISIONING_PROFILE_UUID" \
+            archive | xcpretty || (echo "archive failed"; exit 1)
+
+      - name: Export .ipa
+        working-directory: ${{ env.APP_DIR }}/ios
+        run: |
+          xcodebuild \
+            -exportArchive \
+            -archivePath build/app.xcarchive \
+            -exportPath build/ipa \
+            -exportOptionsPlist ExportOptions.plist | xcpretty || (echo "export failed"; exit 1)
+          ls -la build/ipa/
+
+      - name: Upload .ipa as workflow artifact (audit trail)
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-${{ inputs.app }}-ipa-${{ github.run_id }}
+          path: ${{ env.APP_DIR }}/ios/build/ipa/*.ipa
+          retention-days: 14
+
+      - name: Decode App Store Connect API key
+        if: ${{ inputs.submit }}
+        run: |
+          mkdir -p ~/private_keys
+          echo -n "${{ secrets.ASC_API_KEY_BASE64 }}" \
+            | base64 --decode \
+            > ~/private_keys/AuthKey_${{ secrets.ASC_API_KEY_ID }}.p8
+
+      - name: Upload to TestFlight
+        if: ${{ inputs.submit }}
+        working-directory: ${{ env.APP_DIR }}/ios/build/ipa
+        run: |
+          IPA=$(ls *.ipa | head -1)
+          xcrun altool --upload-app \
+            -f "$IPA" \
+            -t ios \
+            --apiKey "${{ secrets.ASC_API_KEY_ID }}" \
+            --apiIssuer "${{ secrets.ASC_API_KEY_ISSUER_ID }}"
