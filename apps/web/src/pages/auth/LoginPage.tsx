@@ -1,13 +1,10 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Loader2 } from "lucide-react";
+import { Loader2, ArrowRight } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { PasswordInput } from "@/components/auth/PasswordInput";
+import { GlassyAuthShell } from "@/components/auth/GlassyAuthShell";
 
 interface LoginPageProps {
   // When set, the form is themed for that role and the success redirect
@@ -179,169 +176,189 @@ export default function LoginPage({ role }: LoginPageProps = {}) {
     toast.success("We sent a new code.");
   }
 
+  const isHost = role === "host";
+  const pillLabel = isHost ? "HOST SIGN IN" : role === "vendor" ? "VENDOR SIGN IN" : "SIGN IN";
+  const accentWord = isHost ? "host." : role === "vendor" ? "vendor." : "Vendora.";
+
+  if (step === "code") {
+    return (
+      <GlassyAuthShell
+        title="Check your"
+        titleAccent="email."
+        subtitle={`We sent a 6-digit code to ${email}. It expires in 10 minutes.`}
+        pillLabel={pillLabel}
+        topRight={
+          <span className="opacity-60">2-step verification</span>
+        }
+      >
+        <form onSubmit={onSubmitCode} className="flex flex-col gap-4">
+          <div>
+            <div
+              className="uppercase mb-1.5"
+              style={{ fontSize: "11px", letterSpacing: "1.5px", opacity: 0.65, fontWeight: 500 }}
+            >
+              6-digit code
+            </div>
+            <input
+              className="auth-input text-center font-mono"
+              style={{ height: "52px", fontSize: "22px", letterSpacing: "0.4em" }}
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              value={code}
+              onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+              required
+              maxLength={6}
+              placeholder="••••••"
+              autoFocus
+            />
+          </div>
+          <button type="submit" disabled={loading || code.length !== 6} className="auth-submit">
+            {loading ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Verifying…
+              </>
+            ) : (
+              <>
+                Sign in
+                <ArrowRight className="w-3.5 h-3.5" />
+              </>
+            )}
+          </button>
+          <div
+            className="flex items-center justify-between"
+            style={{ fontSize: "12px", opacity: 0.7 }}
+          >
+            <button
+              type="button"
+              disabled={loading}
+              onClick={() => setStep("credentials")}
+              className="pb-0.5 font-medium disabled:opacity-50"
+              style={{ borderBottom: "0.5px solid currentColor" }}
+            >
+              ← Use a different account
+            </button>
+            <button
+              type="button"
+              disabled={loading || resendCooldown > 0}
+              onClick={resendCode}
+              className="pb-0.5 font-medium disabled:opacity-50"
+              style={{ borderBottom: "0.5px solid currentColor" }}
+            >
+              {resendCooldown > 0 ? `Resend (${resendCooldown}s)` : "Resend code"}
+            </button>
+          </div>
+        </form>
+      </GlassyAuthShell>
+    );
+  }
+
   return (
-    <div className="min-h-screen flex">
-      {/* Brand panel — Vendora animated intro served from /public so
-          the choreographed CSS/vanilla-JS animation runs untouched. */}
-      <div className="hidden md:block md:w-1/2 relative overflow-hidden bg-background">
-        <iframe
-          src="/vendora-intro.html"
-          title="Vendora"
-          className="absolute inset-0 w-full h-full border-0"
-          loading="eager"
-        />
-      </div>
-
-      {/* Form */}
-      <div className="flex-1 flex flex-col md:items-center md:justify-center px-6 pt-12 pb-12 md:p-12 bg-background">
-        <div className="w-full max-w-sm">
-          <Link to="/" className="md:hidden font-editorial text-3xl block mb-8">
-            Vendora
+    <GlassyAuthShell
+      title="Welcome back,"
+      titleAccent={accentWord}
+      subtitle="Sign in to manage your events with Vendora."
+      pillLabel={pillLabel}
+      topRight={
+        <>
+          <Link to="/support" className="opacity-60">
+            Need help?
           </Link>
-
-          {step === "credentials" ? (
+          <span>
+            <span style={{ opacity: 0.6 }}>New here? </span>
+            <Link
+              to="/signup"
+              className="pb-px font-medium"
+              style={{ borderBottom: "0.5px solid #000" }}
+            >
+              Create an account
+            </Link>
+          </span>
+        </>
+      }
+      belowCardLink={
+        role ? (
+          <div>
+            <span style={{ opacity: 0.6 }}>On the other side? </span>
+            <Link
+              to={otherSideHref}
+              className="font-medium pb-px"
+              style={{ borderBottom: "0.5px solid #000", color: "#000" }}
+            >
+              {otherSideLabel}
+            </Link>
+          </div>
+        ) : undefined
+      }
+    >
+      <form onSubmit={onSubmitCredentials} className="flex flex-col gap-3.5">
+        <div>
+          <div
+            className="uppercase mb-1.5"
+            style={{ fontSize: "11px", letterSpacing: "1.5px", opacity: 0.65, fontWeight: 500 }}
+          >
+            {t("auth.common.email")}
+          </div>
+          <input
+            className="auth-input"
+            type="email"
+            inputMode="email"
+            autoCapitalize="off"
+            autoCorrect="off"
+            spellCheck={false}
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+            autoComplete="email"
+            placeholder="you@example.com"
+          />
+        </div>
+        <div>
+          <div className="flex items-center justify-between mb-1.5">
+            <div
+              className="uppercase"
+              style={{ fontSize: "11px", letterSpacing: "1.5px", opacity: 0.65, fontWeight: 500 }}
+            >
+              {t("auth.common.password")}
+            </div>
+            <Link
+              to="/forgot-password"
+              className="pb-0.5"
+              style={{ fontSize: "11px", opacity: 0.7, borderBottom: "0.5px solid currentColor" }}
+            >
+              {t("auth.login.forgot")}
+            </Link>
+          </div>
+          <input
+            className="auth-input"
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+            autoComplete="current-password"
+            placeholder="••••••••"
+          />
+        </div>
+        <button type="submit" disabled={loading} className="auth-submit mt-2">
+          {loading ? (
             <>
-              <h1 className="font-editorial text-4xl md:text-4xl mb-2 leading-tight">
-                {heading}
-              </h1>
-              <p className="text-sm text-muted-foreground mb-10">{subheading}</p>
-
-              <form onSubmit={onSubmitCredentials} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="email">{t("auth.common.email")}</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    inputMode="email"
-                    autoCapitalize="off"
-                    autoCorrect="off"
-                    spellCheck={false}
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                    autoComplete="email"
-                    className="h-11"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="password">{t("auth.common.password")}</Label>
-                    <Link
-                      to="/forgot-password"
-                      className="text-xs text-accent font-medium"
-                    >
-                      {t("auth.login.forgot")}
-                    </Link>
-                  </div>
-                  <PasswordInput
-                    id="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                    autoComplete="current-password"
-                    className="h-11"
-                  />
-                </div>
-                <Button
-                  type="submit"
-                  disabled={loading}
-                  className="w-full h-11 rounded-full bg-foreground text-background hover:bg-foreground/90 mt-2"
-                >
-                  {loading ? (
-                    <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Sending code…
-                    </>
-                  ) : (
-                    "Continue"
-                  )}
-                </Button>
-                <p className="text-xs text-muted-foreground text-center mt-1">
-                  We'll email you a 6-digit code to confirm it's you.
-                </p>
-              </form>
-
-              <p className="text-sm text-muted-foreground mt-8 text-center">
-                {t("auth.login.new_here")}{" "}
-                <Link to="/signup" className="text-accent font-medium">
-                  {t("auth.login.create_account")}
-                </Link>
-              </p>
-
-              {role ? (
-                <p className="text-xs text-muted-foreground mt-3 text-center">
-                  On the other side?{" "}
-                  <Link to={otherSideHref} className="text-accent font-medium">
-                    {otherSideLabel}
-                  </Link>
-                </p>
-              ) : null}
+              <Loader2 className="w-4 h-4 animate-spin" />
+              Sending code…
             </>
           ) : (
             <>
-              <h1 className="font-editorial text-4xl md:text-4xl mb-2 leading-tight">
-                Check your email
-              </h1>
-              <p className="text-sm text-muted-foreground mb-10">
-                We sent a 6-digit code to <strong>{email}</strong>. It expires in 10 minutes.
-              </p>
-
-              <form onSubmit={onSubmitCode} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="code">6-digit code</Label>
-                  <Input
-                    id="code"
-                    inputMode="numeric"
-                    autoComplete="one-time-code"
-                    value={code}
-                    onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                    required
-                    maxLength={6}
-                    placeholder="••••••"
-                    className="h-12 text-center font-mono text-xl tracking-[0.4em]"
-                    autoFocus
-                  />
-                </div>
-                <Button
-                  type="submit"
-                  disabled={loading || code.length !== 6}
-                  className="w-full h-11 rounded-full bg-foreground text-background hover:bg-foreground/90 mt-2"
-                >
-                  {loading ? (
-                    <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Verifying…
-                    </>
-                  ) : (
-                    "Sign in"
-                  )}
-                </Button>
-              </form>
-
-              <div className="mt-6 flex items-center justify-between text-xs text-muted-foreground">
-                <button
-                  type="button"
-                  disabled={loading}
-                  onClick={() => setStep("credentials")}
-                  className="text-accent font-medium hover:underline disabled:opacity-50"
-                >
-                  ← Use a different account
-                </button>
-                <button
-                  type="button"
-                  disabled={loading || resendCooldown > 0}
-                  onClick={resendCode}
-                  className="text-accent font-medium hover:underline disabled:opacity-50"
-                >
-                  {resendCooldown > 0
-                    ? `Resend code (${resendCooldown}s)`
-                    : "Resend code"}
-                </button>
-              </div>
+              Continue
+              <ArrowRight className="w-3.5 h-3.5" />
             </>
           )}
-        </div>
-      </div>
-    </div>
+        </button>
+        <p
+          className="text-center font-editorial italic"
+          style={{ fontSize: "12.5px", opacity: 0.55, marginTop: "6px", lineHeight: 1.5 }}
+        >
+          We'll email you a 6-digit code to confirm it's you.
+        </p>
+      </form>
+    </GlassyAuthShell>
   );
 }
