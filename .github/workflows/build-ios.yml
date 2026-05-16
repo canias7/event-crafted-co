@@ -116,7 +116,10 @@ jobs:
           P8="$HOME/private_keys/AuthKey_${ASC_API_KEY_ID}.p8"
           echo -n "$ASC_API_KEY_BASE64" | base64 --decode > "$P8"
           # Use Python (preinstalled) + pip-install pyjwt to mint a JWT.
-          pip3 install --quiet pyjwt cryptography
+          # --break-system-packages: macOS-26 runner has PEP 668
+          # externally-managed Python; bypass is safe for an ephemeral
+          # CI runner.
+          pip3 install --quiet --break-system-packages pyjwt cryptography
           NEXT=$(python3 <<'PY'
           import os, time, json, urllib.request, jwt
           from pathlib import Path
