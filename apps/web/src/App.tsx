@@ -47,8 +47,6 @@ import {
   StatusPage,
   PressPage,
   SettingsPage,
-  VendorApplyPage,
-  VendorApplyThanksPage,
   NotFound,
   ComingSoonPage,
   InquiriesPage,
@@ -132,8 +130,11 @@ const App = () => (
               <Route path="/changelog" element={<ChangelogPage />} />
               <Route path="/status" element={<StatusPage />} />
               <Route path="/press" element={<PressPage />} />
-              <Route path="/vendor-apply" element={<VendorApplyPage />} />
-              <Route path="/vendor-apply/thanks" element={<VendorApplyThanksPage />} />
+              {/* /vendor-apply removed — vendors now sign up through
+                  the regular Sign up button. Old bookmarks redirect
+                  to the signup chooser so the URL doesn't 404. */}
+              <Route path="/vendor-apply" element={<Navigate to="/signup" replace />} />
+              <Route path="/vendor-apply/thanks" element={<Navigate to="/signup" replace />} />
               <Route path="/login" element={<LoginRoleChooserPage />} />
               <Route path="/login/host" element={<LoginPage role="host" />} />
               <Route path="/login/vendor" element={<LoginPage role="vendor" />} />

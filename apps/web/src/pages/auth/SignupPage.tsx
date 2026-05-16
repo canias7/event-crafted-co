@@ -122,11 +122,7 @@ export default function SignupPage() {
 
           <form onSubmit={onSubmit} className="space-y-5">
             <p className="text-xs text-muted-foreground leading-relaxed">
-              Hosts only. Vendors apply via{" "}
-              <Link to="/vendor-apply" className="text-accent hover:underline">
-                vendor-apply
-              </Link>{" "}
-              — every listing is hand-reviewed before going live.
+              Every vendor listing is hand-reviewed before going live.
             </p>
             <div className="space-y-2">
               <Label htmlFor="name">{t("auth.signup.name_label")}</Label>

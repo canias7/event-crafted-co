@@ -3,12 +3,10 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { PrefetchLink as Link } from "@/components/shared/PrefetchLink";
 import {
-  Briefcase,
   LogOut,
   LucideIcon,
   PanelLeftClose,
   PanelLeftOpen,
-  Sparkles,
 } from "lucide-react";
 import { customerNavItems, getBottomNav, setLastDashboardSide, vendorNavItems } from "@/data/navItems";
 import { useAuth } from "@/hooks/useAuth";
@@ -40,8 +38,7 @@ export function DashboardSidebar({
   const location = useLocation();
   const navigate = useNavigate();
   const { t } = useTranslation();
-  const { signOut, hasVendorAccess, hasHostAccess, ownVendorProfile, profile } =
-    useAuth();
+  const { signOut } = useAuth();
 
   // Stash the active side so cross-cutting pages (/settings, /support)
   // know which sidebar to render when the user clicks over. Without
@@ -51,17 +48,6 @@ export function DashboardSidebar({
     if (items === vendorNavItems) setLastDashboardSide("vendor");
     else if (items === customerNavItems) setLastDashboardSide("host");
   }, [items]);
-
-  // The vendor / host switcher was removed — vendors and hosts are
-  // separate worlds now. The only side-jumping CTA we still surface is
-  // "Become a vendor" on the host side for users who haven't applied
-  // yet, since that's an onboarding path, not a context switch.
-  const onVendorSide = location.pathname.startsWith("/vendor");
-  const showApplyCta =
-    profile?.role !== "admin" &&
-    !onVendorSide &&
-    !ownVendorProfile &&
-    hasHostAccess;
 
   async function handleLogout() {
     await signOut();
@@ -158,20 +144,9 @@ export function DashboardSidebar({
           </button>
         </div>
       )}
-      {showApplyCta && (
-        <div className={`${collapsed ? "px-2 pt-3" : "px-3 pt-4"}`}>
-          <Link
-            to="/vendor-apply"
-            className={`flex items-center gap-2 rounded-lg border border-dashed border-accent/40 text-accent hover:bg-accent/5 transition-colors text-xs font-medium ${
-              collapsed ? "justify-center p-2" : "px-3 py-2"
-            }`}
-            title={collapsed ? "Become a vendor" : undefined}
-          >
-            <Briefcase className="w-3.5 h-3.5 shrink-0" aria-hidden />
-            {!collapsed && <span className="truncate">Become a vendor</span>}
-          </Link>
-        </div>
-      )}
+      {/* "Become a vendor" CTA removed — vendors sign up through the
+          regular Sign up button on the public nav now. The dedicated
+          apply page is gone. */}
       <nav
         className={`flex-1 ${collapsed ? "p-2 pt-3" : "p-3 pt-4"}`}
         aria-label="Primary"

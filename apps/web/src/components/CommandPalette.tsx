@@ -42,12 +42,6 @@ const PUBLIC_NAV: NavTarget[] = [
     path: "/real-events",
     icon: Sparkles,
   },
-  {
-    label: "Become a vendor",
-    hint: "Apply",
-    path: "/vendor-apply",
-    icon: Store,
-  },
 ];
 
 // Mirrors mobile host bottom nav (Explore / Inbox / Events / Profile).

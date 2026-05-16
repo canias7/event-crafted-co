@@ -20,10 +20,11 @@ import { categoryConfig } from "@/pages/VendorCategoryPage";
 
 // Top-level public-nav links. The "Vendors" entry is rendered as a
 // dropdown menu (not just a single link) — see VendorsDropdown below.
+// "For vendors" entry was removed: vendor signup happens through the
+// regular Sign up button now, not a separate apply flow.
 function buildSecondaryLinks(t: (key: string) => string) {
   return [
     { label: t("nav.real_events"), path: "/real-events" },
-    { label: t("nav.for_vendors"), path: "/vendor-apply" },
   ];
 }
 
