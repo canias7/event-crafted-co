@@ -69,7 +69,7 @@ export function VendorBrandCard({ vendorId }: { vendorId: string }) {
   const verified = !!row.verified_at;
 
   return (
-    <div className="relative overflow-hidden rounded-3xl border border-[#e8dfcf] shadow-[0_8px_24px_-12px_rgba(26,20,16,0.18)] bg-[linear-gradient(135deg,#fffbf2_0%,#faecd0_100%)] px-6 py-7 sm:px-8 sm:py-8">
+    <div className="relative overflow-hidden rounded-3xl border border-[#e8dfcf] shadow-[0_8px_24px_-12px_rgba(26,20,16,0.18)] bg-[linear-gradient(135deg,#ffffff_0%,#f3f4f6_100%)] px-6 py-7 sm:px-8 sm:py-8">
       <div
         className="pointer-events-none absolute inset-0"
         aria-hidden
@@ -97,32 +97,32 @@ export function VendorBrandCard({ vendorId }: { vendorId: string }) {
             <img
               src={row.logo_url}
               alt={businessName}
-              className="w-[110px] h-[110px] rounded-[20px] object-cover bg-[#1a1410]"
+              className="w-[110px] h-[110px] rounded-[20px] object-cover bg-[#0a0a0a]"
               style={{ boxShadow: "0 6px 18px -6px rgba(26,20,16,0.3)" }}
             />
           ) : (
             <div
-              className="w-[110px] h-[110px] rounded-[20px] bg-[#1a1410] flex items-center justify-center"
+              className="w-[110px] h-[110px] rounded-[20px] bg-[#0a0a0a] flex items-center justify-center"
               style={{ boxShadow: "0 6px 18px -6px rgba(26,20,16,0.3)" }}
             >
-              <span className="font-editorial text-[#fffbf2] text-6xl leading-none">
+              <span className="font-editorial text-[#ffffff] text-6xl leading-none">
                 {initial}
               </span>
             </div>
           )}
           {verified ? (
-            <div className="absolute -right-1 -bottom-1 w-7 h-7 rounded-full bg-[#b8472f] border-[3px] border-[#fffbf2] flex items-center justify-center">
+            <div className="absolute -right-1 -bottom-1 w-7 h-7 rounded-full bg-[#b8472f] border-[3px] border-[#ffffff] flex items-center justify-center">
               <CheckCircle2 className="w-3 h-3 text-white" />
             </div>
           ) : null}
         </div>
 
         <div className="min-w-0 flex-1">
-          <h3 className="font-editorial text-3xl text-[#1a1410] leading-[1.05] tracking-tight">
+          <h3 className="font-editorial text-3xl text-[#0a0a0a] leading-[1.05] tracking-tight">
             {businessName}
           </h3>
           {row.location ? (
-            <p className="mt-1 text-sm text-[#776c5f]">{row.location}</p>
+            <p className="mt-1 text-sm text-[#6b7280]">{row.location}</p>
           ) : null}
         </div>
       </div>
@@ -155,11 +155,11 @@ function StatCell({
   return (
     <div className="flex flex-col items-center justify-center px-2">
       <span
-        className={`text-xl text-[#1a1410] tnum ${italic ? "font-editorial" : "font-semibold"}`}
+        className={`text-xl text-[#0a0a0a] tnum ${italic ? "font-editorial" : "font-semibold"}`}
       >
         {value}
       </span>
-      <span className="mt-0.5 text-[10px] uppercase tracking-wider text-[#776c5f]">
+      <span className="mt-0.5 text-[10px] uppercase tracking-wider text-[#6b7280]">
         {label}
       </span>
     </div>

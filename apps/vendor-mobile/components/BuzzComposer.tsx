@@ -147,7 +147,7 @@ export function BuzzComposer({
                   trimmed.length > MAX_LEN - 20
                     ? trimmed.length >= MAX_LEN
                       ? "#b42318"
-                      : "#a08259"
+                      : "#1B3654"
                     : "#737373",
               }}
             >

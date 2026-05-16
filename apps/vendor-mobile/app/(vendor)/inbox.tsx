@@ -207,7 +207,7 @@ export default function InboxScreen() {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={() => load(true)}
-            tintColor="#1a1410"
+            tintColor="#0a0a0a"
           />
         }
       >
@@ -322,7 +322,7 @@ export default function InboxScreen() {
         <View className="mt-2">
           {loading ? (
             <View className="px-5 py-12 items-center">
-              <ActivityIndicator color="#1a1410" />
+              <ActivityIndicator color="#0a0a0a" />
             </View>
           ) : tab === "inquiries" ? (
             filteredInquiries.length === 0 ? (

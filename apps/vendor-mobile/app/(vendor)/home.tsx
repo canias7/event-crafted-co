@@ -391,7 +391,7 @@ export default function HomeScreen() {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={() => loadFeeds(true)}
-            tintColor="#1a1410"
+            tintColor="#0a0a0a"
           />
         }
       >
@@ -412,7 +412,7 @@ export default function HomeScreen() {
         ) : null}
         {loadingFeeds ? (
           <View className="items-center py-8">
-            <ActivityIndicator color="#1a1410" />
+            <ActivityIndicator color="#0a0a0a" />
           </View>
         ) : null}
         {view === "grid" ? (

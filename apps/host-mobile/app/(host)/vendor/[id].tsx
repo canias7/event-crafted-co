@@ -54,11 +54,11 @@ import {
 
 // Editorial type + tone palette — bold serif title, muted ink for
 // supporting copy. Matches the listing-detail design (cream cards on
-// white, with deep ink #1a1410 as the foreground anchor).
+// white, with deep ink #0a0a0a as the foreground anchor).
 const SERIF = Platform.OS === "ios" ? "Times New Roman" : "serif";
-const INK = "#1a1410";
-const INK_DIM = "#776c5f";
-const CREAM = "#f7f3ec";
+const INK = "#0a0a0a";
+const INK_DIM = "#6b7280";
+const CREAM = "#f5f5f5";
 
 const sectionHeaderStyle = {
   paddingHorizontal: 20,
@@ -78,7 +78,7 @@ const statValueStyle = {
 
 // Shared shadow style for white cards floating on the cream backdrop.
 const CARD_SHADOW = {
-  shadowColor: "#1a1410",
+  shadowColor: "#0a0a0a",
   shadowOpacity: 0.10,
   shadowRadius: 20,
   shadowOffset: { width: 0, height: 6 },
@@ -515,7 +515,7 @@ export default function VendorDetailScreen() {
           >
             <View
               style={{
-                backgroundColor: "#1a1410",
+                backgroundColor: "#0a0a0a",
                 borderRadius: 999,
                 paddingHorizontal: 12,
                 paddingVertical: 5,
@@ -523,7 +523,7 @@ export default function VendorDetailScreen() {
             >
               <Text
                 style={{
-                  color: "#fdfbf7",
+                  color: "#ffffff",
                   fontSize: 11,
                   fontWeight: "800",
                   letterSpacing: 0.6,
@@ -641,7 +641,7 @@ export default function VendorDetailScreen() {
                   paddingHorizontal: 14,
                   flexDirection: "row",
                   alignItems: "center",
-                  shadowColor: "#1a1410",
+                  shadowColor: "#0a0a0a",
                   shadowOpacity: 0.10,
                   shadowRadius: 12,
                   shadowOffset: { width: 0, height: 4 },
@@ -653,14 +653,14 @@ export default function VendorDetailScreen() {
                     width: 44,
                     height: 44,
                     borderRadius: 999,
-                    backgroundColor: "#1a1410",
+                    backgroundColor: "#0a0a0a",
                     alignItems: "center",
                     justifyContent: "center",
                   }}
                 >
                   <Text
                     style={{
-                      color: "#fdfbf7",
+                      color: "#ffffff",
                       fontFamily: SERIF,
                       fontWeight: "600",
                       fontSize: 18,
@@ -672,7 +672,7 @@ export default function VendorDetailScreen() {
                 <View style={{ flex: 1, marginLeft: 12 }}>
                   <Text
                     style={{
-                      color: "#1a1410",
+                      color: "#0a0a0a",
                       fontSize: 15,
                       fontWeight: "700",
                     }}
@@ -745,7 +745,7 @@ export default function VendorDetailScreen() {
                         style={{
                           flex: 1,
                           paddingRight: 12,
-                          color: "#1a1410",
+                          color: "#0a0a0a",
                           fontSize: 17,
                           fontWeight: "700",
                         }}
@@ -754,7 +754,7 @@ export default function VendorDetailScreen() {
                       </Text>
                       <Text
                         style={{
-                          color: "#1a1410",
+                          color: "#0a0a0a",
                           fontSize: 17,
                           fontWeight: "700",
                         }}
@@ -822,14 +822,14 @@ export default function VendorDetailScreen() {
                           width: 44,
                           height: 44,
                           borderRadius: 999,
-                          backgroundColor: "#1a1410",
+                          backgroundColor: "#0a0a0a",
                           alignItems: "center",
                           justifyContent: "center",
                         }}
                       >
                         <Text
                           style={{
-                            color: "#fdfbf7",
+                            color: "#ffffff",
                             fontFamily: SERIF,
                             fontWeight: "600",
                             fontSize: 18,
@@ -852,7 +852,7 @@ export default function VendorDetailScreen() {
                         >
                           <Text
                             style={{
-                              color: "#1a1410",
+                              color: "#0a0a0a",
                               fontSize: 16,
                               fontWeight: "700",
                             }}
@@ -863,7 +863,7 @@ export default function VendorDetailScreen() {
                             <View
                               style={{
                                 marginLeft: 8,
-                                backgroundColor: "#e9dfc8",
+                                backgroundColor: "#e5e7eb",
                                 paddingHorizontal: 8,
                                 paddingVertical: 2,
                                 borderRadius: 6,
@@ -871,7 +871,7 @@ export default function VendorDetailScreen() {
                             >
                               <Text
                                 style={{
-                                  color: "#1a1410",
+                                  color: "#0a0a0a",
                                   fontSize: 10,
                                   fontWeight: "800",
                                   letterSpacing: 0.8,
@@ -971,7 +971,7 @@ export default function VendorDetailScreen() {
                   >
                     <Text
                       style={{
-                        color: "#1a1410",
+                        color: "#0a0a0a",
                         fontSize: 14,
                         lineHeight: 20,
                       }}
@@ -996,7 +996,7 @@ export default function VendorDetailScreen() {
           bottom: 0,
           backgroundColor: "#ffffff",
           borderTopWidth: 1,
-          borderTopColor: "#ebe3d3",
+          borderTopColor: "#e5e7eb",
         }}
       >
         <View
@@ -1047,7 +1047,7 @@ export default function VendorDetailScreen() {
             ) : (
               <Text
                 style={{
-                  color: "#1a1410",
+                  color: "#0a0a0a",
                   fontSize: 18,
                   fontWeight: "700",
                 }}
@@ -1065,7 +1065,7 @@ export default function VendorDetailScreen() {
             {({ pressed }) => (
               <View
                 style={{
-                  backgroundColor: "#1a1410",
+                  backgroundColor: "#0a0a0a",
                   paddingHorizontal: 22,
                   paddingVertical: 14,
                   borderRadius: 999,
@@ -1076,7 +1076,7 @@ export default function VendorDetailScreen() {
               >
                 <Text
                   style={{
-                    color: "#fdfbf7",
+                    color: "#ffffff",
                     fontSize: 15,
                     fontWeight: "700",
                     marginRight: 6,
@@ -1084,7 +1084,7 @@ export default function VendorDetailScreen() {
                 >
                   Inquire
                 </Text>
-                <Feather name="chevron-right" size={16} color="#fdfbf7" />
+                <Feather name="chevron-right" size={16} color="#ffffff" />
               </View>
             )}
           </Pressable>
@@ -1411,7 +1411,7 @@ function CategoryDetailValue({
   if (field.type === "boolean" && value === true) {
     return (
       <View style={{ flexDirection: "row", alignItems: "center" }}>
-        <Feather name="check" size={16} color="#1a1410" />
+        <Feather name="check" size={16} color="#0a0a0a" />
         <Text
           style={{
             marginLeft: 8,
@@ -1602,7 +1602,7 @@ function CreamOceanAvatar({
         height: size,
         borderRadius: radius,
         overflow: "hidden",
-        backgroundColor: "#1a1410",
+        backgroundColor: "#0a0a0a",
       }}
     >
       {/* Always paint the gradient + initial first. When a logo URL is
@@ -1635,7 +1635,7 @@ function CreamOceanAvatar({
       >
         <Text
           style={{
-            color: "#fdfbf7",
+            color: "#ffffff",
             fontFamily: SERIF,
             fontStyle: "italic",
             fontWeight: "700",
@@ -1957,7 +1957,7 @@ function SheetTabPill({
       >
         <Text
           style={{
-            color: active ? "#fdfbf7" : INK,
+            color: active ? "#ffffff" : INK,
             fontSize: 13,
             fontWeight: "700",
           }}
@@ -1966,7 +1966,7 @@ function SheetTabPill({
         </Text>
         <Text
           style={{
-            color: active ? "#fdfbf7" : INK_DIM,
+            color: active ? "#ffffff" : INK_DIM,
             fontSize: 13,
             fontWeight: "600",
           }}
@@ -2038,7 +2038,7 @@ function SheetReelGrid({ reels }: { reels: SheetReelRow[] }) {
               flex: 1,
               borderRadius: 12,
               overflow: "hidden",
-              backgroundColor: "#1a1410",
+              backgroundColor: "#0a0a0a",
             }}
           >
             {item.thumbnail_url ? (
@@ -2162,7 +2162,7 @@ function SheetListingsList({
                 >
                   <Text
                     style={{
-                      color: "#fdfbf7",
+                      color: "#ffffff",
                       fontFamily: SERIF,
                       fontSize: 18,
                       fontWeight: "600",
@@ -2197,7 +2197,7 @@ function SheetListingsList({
                     >
                       <Text
                         style={{
-                          color: "#fdfbf7",
+                          color: "#ffffff",
                           fontSize: 9,
                           fontWeight: "800",
                           letterSpacing: 0.6,
@@ -2350,7 +2350,7 @@ function CreamOceanCard({
               right: 0,
               bottom: 0,
               borderRadius: 22,
-              backgroundColor: "#fffbf2",
+              backgroundColor: "#ffffff",
               borderWidth: 1,
               borderColor: "#ebe1ce",
               overflow: "hidden",
@@ -2385,7 +2385,7 @@ function CreamOceanCard({
               right: 0,
               bottom: 0,
               borderRadius: 22,
-              backgroundColor: "#fffbf2",
+              backgroundColor: "#ffffff",
               borderWidth: 1,
               borderColor: "#ebe1ce",
               overflow: "hidden",
@@ -2439,8 +2439,8 @@ function CreamOceanFront({
       >
         <Defs>
           <SvgLinearGradient id="bgF" x1="0" y1="0" x2="0" y2="1">
-            <Stop offset="0" stopColor="#fffbf2" />
-            <Stop offset="1" stopColor="#faecd0" />
+            <Stop offset="0" stopColor="#ffffff" />
+            <Stop offset="1" stopColor="#f3f4f6" />
           </SvgLinearGradient>
           <RadialGradient id="sunF" cx="0.18" cy="0.18" rx="0.55" ry="0.55">
             <Stop offset="0" stopColor="#ffe6b4" stopOpacity="0.55" />
@@ -2505,7 +2505,7 @@ function CreamOceanFront({
                   borderRadius: 13,
                   backgroundColor: "#b8472f",
                   borderWidth: 3,
-                  borderColor: "#fffbf2",
+                  borderColor: "#ffffff",
                   alignItems: "center",
                   justifyContent: "center",
                 }}
@@ -2636,8 +2636,8 @@ function CreamOceanBack({
       >
         <Defs>
           <SvgLinearGradient id="bgB" x1="0" y1="0" x2="0" y2="1">
-            <Stop offset="0" stopColor="#fffbf2" />
-            <Stop offset="1" stopColor="#faecd0" />
+            <Stop offset="0" stopColor="#ffffff" />
+            <Stop offset="1" stopColor="#f3f4f6" />
           </SvgLinearGradient>
           <RadialGradient id="sunB" cx="0.82" cy="0.18" rx="0.55" ry="0.55">
             <Stop offset="0" stopColor="#ffe6b4" stopOpacity="0.5" />

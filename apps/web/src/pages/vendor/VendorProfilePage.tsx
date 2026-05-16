@@ -265,6 +265,11 @@ export default function VendorProfilePage() {
         // RPC is deployed.
         (r) => r.application_review_notes !== "__deleted_by_owner__",
       );
+      // New policy: no draft listings shown in the grid. Vendors
+      // either have listings under review / approved / rejected, or
+      // they have none. Any leftover draft rows (from the old
+      // auto-create flow) stay in the DB but don't surface in UI.
+      rows = rows.filter((r) => r.application_status !== "draft");
       let error = own.error;
       // Team-member fallback: if the user owns nothing but is a member
       // on someone else's vendor, load that team vendor as a single
@@ -580,9 +585,18 @@ export default function VendorProfilePage() {
     }
   }
 
-  // Helpers for the Instagram-style outer chrome.
+  // Helpers for the Instagram-style outer chrome. We surface the
+  // vendor's identity (logo + business name) from whichever listing
+  // they have — falling back to the edited one (when ?id is set) or
+  // the first listing in their grid. Without this, the avatar was
+  // blank on every outer tab except Listings, because `profile` is
+  // only set when editing a specific listing.
+  const identityListing = profile ?? allListings[0] ?? null;
+  const identityBusinessName = identityListing?.business_name ?? null;
+  const identityLogoUrl = identityListing?.logo_url ?? null;
+  const identityVerifiedAt = identityListing?.verified_at ?? null;
   const initials = (() => {
-    const src = profile?.business_name ?? user?.email ?? "V";
+    const src = identityBusinessName ?? user?.email ?? "V";
     return src
       .split(/\s+/)
       .map((w) => w[0])
@@ -727,13 +741,13 @@ export default function VendorProfilePage() {
               aria-label="Change logo"
               className="h-24 w-24 rounded-full overflow-hidden bg-secondary/60 flex items-center justify-center relative group hover:opacity-90 transition-opacity"
             >
-              {profile?.logo_url ? (
+              {identityLogoUrl ? (
                 <img
-                  src={profile.logo_url}
-                  alt={profile.business_name ?? "Vendor logo"}
+                  src={identityLogoUrl}
+                  alt={identityBusinessName ?? "Vendor logo"}
                   className="h-full w-full object-cover"
                 />
-              ) : profile?.business_name ? (
+              ) : identityBusinessName ? (
                 <span className="font-display text-3xl text-foreground">
                   {initials}
                 </span>
@@ -748,10 +762,10 @@ export default function VendorProfilePage() {
                 )}
               </span>
             </button>
-            {profile?.business_name && (
+            {identityBusinessName && (
               <h1 className="font-display text-2xl mt-4 inline-flex items-center gap-2">
-                {profile.business_name}
-                {profile.verified_at && (
+                {identityBusinessName}
+                {identityVerifiedAt && (
                   <ShieldCheck
                     className="w-5 h-5 text-accent"
                     aria-label={t("vendor_listing.verified")}

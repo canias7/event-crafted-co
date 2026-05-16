@@ -31,10 +31,10 @@ import * as ImagePicker from "expo-image-picker";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
 
-const CREAM = "#fdfbf7";
-const INK = "#1a1410";
-const INK_DIM = "#776c5f";
-const BORDER = "#e9dfc8";
+const CREAM = "#ffffff";
+const INK = "#0a0a0a";
+const INK_DIM = "#6b7280";
+const BORDER = "#e5e7eb";
 const SERIF = Platform.OS === "ios" ? "Times New Roman" : "serif";
 
 interface ProfileForm {

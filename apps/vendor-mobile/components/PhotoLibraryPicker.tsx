@@ -32,7 +32,7 @@ import * as MediaLibrary from "expo-media-library";
 import * as ImagePicker from "expo-image-picker";
 
 const COLS = 4;
-const ACCENT = "#a08259";
+const ACCENT = "#1B3654";
 const INK = "#0a0a0a";
 const MUTED = "#737373";
 

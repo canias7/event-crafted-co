@@ -394,12 +394,12 @@ function ManageLabelsDialog({
   onChanged: () => void;
 }) {
   const [name, setName] = useState("");
-  const [color, setColor] = useState("#a08259");
+  const [color, setColor] = useState("#1B3654");
   const [submitting, setSubmitting] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const PALETTE = [
-    "#a08259",
+    "#1B3654",
     "#10b981",
     "#3b82f6",
     "#f59e0b",
