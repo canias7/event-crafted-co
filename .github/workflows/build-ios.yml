@@ -167,20 +167,28 @@ jobs:
       - name: Discover workspace + scheme
         working-directory: ${{ env.APP_DIR }}/ios
         run: |
-          # `ls *.xcworkspace` lists the CONTENTS of the .xcworkspace
-          # bundle (contents.xcworkspacedata, etc.). Use `ls -d` so we
-          # get the directory name back.
+          # `ls *.xcworkspace` lists the CONTENTS of the bundle dir.
+          # Use `ls -d` to get the directory name itself.
           WORKSPACE=$(ls -d *.xcworkspace | head -1)
-          SCHEME=$(xcodebuild -workspace "$WORKSPACE" -list -json \
-            | node -e "console.log(JSON.parse(require('fs').readFileSync(0,'utf8')).workspace.schemes[0])")
+          # The app's scheme matches the .xcworkspace name (e.g.
+          # `Vendora.xcworkspace` → `Vendora`). Picking the first
+          # scheme alphabetically returned `EASClient` (an Expo pod
+          # helper, not the app target) which fails to archive.
+          SCHEME=$(basename "$WORKSPACE" .xcworkspace)
           echo "WORKSPACE=$WORKSPACE" >> $GITHUB_ENV
           echo "SCHEME=$SCHEME" >> $GITHUB_ENV
           echo "Workspace: $WORKSPACE"
           echo "Scheme: $SCHEME"
+          echo "--- available schemes (for reference) ---"
+          xcodebuild -workspace "$WORKSPACE" -list 2>&1 | head -40
 
       - name: Archive
         working-directory: ${{ env.APP_DIR }}/ios
         run: |
+          # xcpretty is no longer preinstalled on macos-latest. Without
+          # it, the raw xcodebuild output goes straight through — uglier
+          # but you can actually see compile errors.
+          set -o pipefail
           xcodebuild \
             -workspace "$WORKSPACE" \
             -scheme "$SCHEME" \
@@ -190,7 +198,7 @@ jobs:
             -destination "generic/platform=iOS" \
             CODE_SIGN_STYLE=Manual \
             PROVISIONING_PROFILE_SPECIFIER="$PROVISIONING_PROFILE_UUID" \
-            archive | xcpretty || (echo "archive failed"; exit 1)
+            archive
 
       - name: Export .ipa
         working-directory: ${{ env.APP_DIR }}/ios
