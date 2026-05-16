@@ -105,31 +105,32 @@ github.com/canias7/event-crafted-co → Settings → Secrets and variables
                                     → Actions → New repository secret
 ```
 
-**iOS** (one set, shared by host + vendor builds — assumes same Apple Team):
-- `IOS_CERT_P12_BASE64`
-- `IOS_CERT_PASSWORD`
-- `IOS_PROVISIONING_PROFILE_BASE64`
-- `IOS_KEYCHAIN_PASSWORD` (any random string — used for the
-  ephemeral keychain on the runner; I suggest `openssl rand -base64 16`)
-- `ASC_API_KEY_ID` (10-character string)
-- `ASC_API_KEY_ISSUER_ID` (UUID)
-- `ASC_API_KEY_BASE64`
+**iOS — shared between both apps (one set):**
+- `IOS_CERT_P12_BASE64` — base64'd .p12 distribution cert (shared, same Apple Team)
+- `IOS_CERT_PASSWORD` — the password set when exporting the .p12
+- `IOS_KEYCHAIN_PASSWORD` — any random string. Generate with `openssl rand -base64 16`
+- `ASC_API_KEY_ID` — 10-character ID from App Store Connect
+- `ASC_API_KEY_ISSUER_ID` — UUID from App Store Connect
+- `ASC_API_KEY_BASE64` — base64'd .p8 file from App Store Connect
 
-⚠️ **If host-mobile and vendor-mobile have different provisioning profiles** (likely — each app has its own bundle ID + profile), you'll need to add per-app variants:
+**iOS — per-app (one each):**
 - `IOS_PROVISIONING_PROFILE_HOST_BASE64`
 - `IOS_PROVISIONING_PROFILE_VENDOR_BASE64`
 
-And update `build-ios.yml` to pick the right one based on `inputs.app`. Tell me and I'll patch.
+**Android — shared:**
+- `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON` — full JSON contents of the service account key
 
-**Android** (per-app):
+**Android — per-app:**
 - `ANDROID_KEYSTORE_HOST_BASE64`
+- `ANDROID_KEYSTORE_HOST_PASSWORD`
+- `ANDROID_KEY_HOST_ALIAS`
+- `ANDROID_KEY_HOST_PASSWORD`
 - `ANDROID_KEYSTORE_VENDOR_BASE64`
-- `ANDROID_KEYSTORE_PASSWORD` (same across both, usually)
-- `ANDROID_KEY_ALIAS`
-- `ANDROID_KEY_PASSWORD`
-- `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON`
+- `ANDROID_KEYSTORE_VENDOR_PASSWORD`
+- `ANDROID_KEY_VENDOR_ALIAS`
+- `ANDROID_KEY_VENDOR_PASSWORD`
 
-⚠️ Same caveat — if the keystores actually differ between apps, the workflow needs a per-app selector. Tell me which version you have once you've pulled from EAS.
+**Total: 16 secrets** (8 shared + 8 per-app).
 
 ### 3. Test once per platform
 

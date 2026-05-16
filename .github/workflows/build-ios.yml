@@ -114,10 +114,14 @@ jobs:
           p12-password: ${{ secrets.IOS_CERT_PASSWORD }}
           keychain-password: ${{ secrets.IOS_KEYCHAIN_PASSWORD }}
 
+      # Per-app provisioning profile — host and vendor have different
+      # bundle IDs so each gets its own profile. Cert is shared.
       - name: Install provisioning profile
+        env:
+          PROFILE_BASE64: ${{ inputs.app == 'host' && secrets.IOS_PROVISIONING_PROFILE_HOST_BASE64 || secrets.IOS_PROVISIONING_PROFILE_VENDOR_BASE64 }}
         run: |
           mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
-          echo -n "${{ secrets.IOS_PROVISIONING_PROFILE_BASE64 }}" \
+          echo -n "$PROFILE_BASE64" \
             | base64 --decode \
             > ~/Library/MobileDevice/Provisioning\ Profiles/profile.mobileprovision
           # Extract UUID so xcodebuild can find it by reference if needed
