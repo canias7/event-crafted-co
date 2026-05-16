@@ -262,6 +262,16 @@ jobs:
 
       - name: Archive
         working-directory: ${{ env.APP_DIR }}/ios
+        env:
+          # CRITICAL: The JS bundle is generated DURING `xcodebuild
+          # archive` (via the "Bundle React Native code and images"
+          # build phase, which spawns Metro). EXPO_PUBLIC_* env vars
+          # get inlined into the bundle at THIS step. Setting them
+          # only on `expo prebuild` (which just generates the native
+          # project) is too early — the bundle gets undefined values
+          # and Supabase client crashes on init.
+          EXPO_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          EXPO_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
         run: |
           # xcpretty is no longer preinstalled on macos-latest. Without
           # it, the raw xcodebuild output goes straight through — uglier
