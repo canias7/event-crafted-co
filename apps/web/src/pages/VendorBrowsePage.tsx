@@ -193,8 +193,9 @@ export default function VendorBrowsePage() {
     <div className="min-h-screen bg-background">
       <PublicNav />
 
-      {/* Hero — cream surface, text-only. Matches the rest of the
-          public site after the dark-photo treatment was retired. */}
+      {/* Hero — white surface, text-only. Matches the rest of the
+          public site (the cream/dark-photo treatments were retired
+          when the palette went white + navy). */}
       <section className="pt-28 md:pt-36 pb-12 md:pb-16">
         <div className="container mx-auto px-6 md:px-8">
           <motion.div

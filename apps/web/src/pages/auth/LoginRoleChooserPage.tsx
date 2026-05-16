@@ -3,10 +3,19 @@
 // new glassy-amber-grid design — same canvas as the landing page so
 // the auth surface reads as one continuous brand world.
 
-import { Link } from "react-router-dom";
+import { Link, Navigate } from "react-router-dom";
 import { CalendarHeart, Briefcase, ArrowRight } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
 
 export default function LoginRoleChooserPage() {
+  // Already authenticated? Skip the chooser and drop them in the
+  // portal they belong to. (Catches users who hit /login from an
+  // old tab while already signed in elsewhere.)
+  const { session, hasVendorAccess, hasHostAccess, loading } = useAuth();
+  if (!loading && session) {
+    if (hasVendorAccess) return <Navigate to="/vendor/me" replace />;
+    if (hasHostAccess) return <Navigate to="/customer/explore" replace />;
+  }
   return (
     <div
       className="relative min-h-screen overflow-hidden"

@@ -13,10 +13,19 @@
 // login chooser — soft #fafafa, amber radial glows, perspective
 // grid, floating particles, glassy role cards.
 
-import { Link } from "react-router-dom";
+import { Link, Navigate } from "react-router-dom";
 import { CalendarHeart, Briefcase, ArrowRight } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
 
 export default function SignupRoleChooserPage() {
+  // Already authenticated? Skip the chooser and drop them in the
+  // portal they belong to. (Mostly catches users who land on /signup
+  // from an old bookmark after they've already created an account.)
+  const { session, hasVendorAccess, hasHostAccess, loading } = useAuth();
+  if (!loading && session) {
+    if (hasVendorAccess) return <Navigate to="/vendor/me" replace />;
+    if (hasHostAccess) return <Navigate to="/customer/explore" replace />;
+  }
   return (
     <div
       className="relative min-h-screen overflow-hidden"
