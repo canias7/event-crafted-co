@@ -1,6 +1,4 @@
 import {
-  LayoutDashboard,
-  Store,
   Compass,
   CalendarDays,
   Inbox,
@@ -44,9 +42,10 @@ export const customerNavBottomItems: NavItem[] = [
 ];
 
 export const vendorNavItems: NavItem[] = [
-  { labelKey: "sidebar.vendor.dashboard", path: "/vendor/dashboard", icon: LayoutDashboard },
   // Home hub — global feed (posts/reels/buzz) + composers, mirroring
-  // the vendor mobile Home tab.
+  // the vendor mobile Home tab. Acts as the vendor's primary landing
+  // (the old separate Dashboard entry was removed — its KPIs live in
+  // the Profile page now).
   { labelKey: "sidebar.vendor.home", path: "/vendor/home", icon: Home },
   // Inbox hub — sub-tabs: Inquiries (default), Hosts (DMs), Partners
   // (vendor-to-vendor). The standalone Messages entry merged in here.

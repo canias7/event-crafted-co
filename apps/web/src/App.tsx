@@ -57,7 +57,6 @@ import {
   SupportPage,
   RealEventsPage,
   RealEventDetailPage,
-  VendorDashboard,
   VendorHomePage,
   VendorMyProfilePage,
   VendorEditProfilePage,
@@ -206,8 +205,9 @@ const App = () => (
               <Route path="/plan-in-5" element={<Navigate to="/customer/explore" replace />} />
               <Route path="/support" element={<RequireRole role={["host", "vendor"]}><SupportPage /></RequireRole>} />
 
-              {/* Vendor */}
-              <Route path="/vendor/dashboard" element={<RequireRole role="vendor"><VendorDashboard /></RequireRole>} />
+              {/* Vendor — /vendor/dashboard was retired (KPIs surface
+                  on the Profile page now). Old links redirect to home. */}
+              <Route path="/vendor/dashboard" element={<Navigate to="/vendor/home" replace />} />
               <Route path="/vendor/home" element={<RequireRole role="vendor"><VendorHomePage /></RequireRole>} />
               <Route path="/vendor/me" element={<RequireRole role="vendor"><VendorMyProfilePage /></RequireRole>} />
               <Route path="/vendor/edit-profile" element={<RequireRole role="vendor"><VendorEditProfilePage /></RequireRole>} />
@@ -219,12 +219,12 @@ const App = () => (
               {/* Analytics tab merged into Dashboard — keep the URL
                   alive as a redirect so any old bookmarks / emails
                   still work. */}
-              <Route path="/vendor/analytics" element={<Navigate to="/vendor/dashboard" replace />} />
+              <Route path="/vendor/analytics" element={<Navigate to="/vendor/home" replace />} />
               <Route path="/vendor/appointments" element={<RequireRole role="vendor"><VendorAppointmentsPage /></RequireRole>} />
               <Route path="/vendor/availability" element={<RequireRole role="vendor"><VendorAppointmentsPage /></RequireRole>} />
               <Route path="/vendor/payments" element={<RequireRole role="vendor"><ComingSoonPage side="vendor" description="Connect a Stripe account, see payouts, and track the 3% commission on confirmed bookings." /></RequireRole>} />
               {/* /vendor/blog removed — editorial_articles table dropped. */}
-              <Route path="/vendor/blog" element={<Navigate to="/vendor/dashboard" replace />} />
+              <Route path="/vendor/blog" element={<Navigate to="/vendor/home" replace />} />
               {/* /vendor/messages removed — mobile vendor inbox has just
                   Inquiries + Partners (no separate "Hosts" DM tab). */}
               <Route path="/vendor/messages" element={<Navigate to="/vendor/inbox" replace />} />

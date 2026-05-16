@@ -23,7 +23,7 @@ export default function SignupRoleChooserPage() {
   // from an old bookmark after they've already created an account.)
   const { session, hasVendorAccess, hasHostAccess, loading } = useAuth();
   if (!loading && session) {
-    if (hasVendorAccess) return <Navigate to="/vendor/me" replace />;
+    if (hasVendorAccess) return <Navigate to="/vendor/home" replace />;
     if (hasHostAccess) return <Navigate to="/customer/explore" replace />;
   }
   return (
