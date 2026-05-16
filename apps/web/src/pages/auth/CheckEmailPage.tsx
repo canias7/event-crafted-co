@@ -1,15 +1,14 @@
 import { useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { Loader2, Mail } from "lucide-react";
+import { Loader2, Mail, ArrowRight } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { Button } from "@/components/ui/button";
-import { Picture } from "@/components/shared/Picture";
-import heroImg from "@/assets/vendora-hero-cinematic.jpg?as=picture";
+import { GlassyAuthShell } from "@/components/auth/GlassyAuthShell";
 
 export default function CheckEmailPage() {
   const [params] = useSearchParams();
   const email = params.get("email") ?? "";
+  const role = params.get("role") === "vendor" ? "vendor" : "host";
   const [resending, setResending] = useState(false);
   const [resent, setResent] = useState(false);
 
@@ -33,101 +32,76 @@ export default function CheckEmailPage() {
   }
 
   return (
-    <div className="min-h-screen flex">
-      <div className="hidden md:flex md:w-1/2 relative overflow-hidden">
-        <div className="absolute inset-0">
-          <Picture
-            source={heroImg}
-            alt=""
-            loading="eager"
-            fetchPriority="high"
-            sizes="50vw"
-            className="w-full h-full object-cover"
-          />
+    <GlassyAuthShell
+      title="Check your"
+      titleAccent="email."
+      subtitle={
+        email
+          ? `We sent a confirmation link to ${email}. Click it to finish signing up.`
+          : "We sent you a confirmation link. Click it to finish signing up."
+      }
+      pillLabel={role === "vendor" ? "VENDOR SIGN UP" : "HOST SIGN UP"}
+      topRight={
+        <Link
+          to="/login"
+          className="pb-px font-medium"
+          style={{ borderBottom: "0.5px solid #000" }}
+        >
+          Back to sign in
+        </Link>
+      }
+    >
+      <div className="flex flex-col items-center gap-5">
+        <div
+          className="flex items-center justify-center"
+          style={{
+            width: 56,
+            height: 56,
+            borderRadius: "50%",
+            background: "rgba(255,138,76,0.15)",
+            color: "#c4541e",
+          }}
+        >
+          <Mail className="w-6 h-6" />
         </div>
-        <div className="absolute inset-0 bg-gradient-to-br from-foreground/85 via-foreground/60 to-foreground/35" />
-        <div className="relative z-10 flex flex-col justify-between p-10 lg:p-14 text-background w-full">
-          <Link to="/" className="font-editorial text-3xl">
-            Vendora
-          </Link>
-          <div>
-            <p className="font-label text-accent tracking-[0.4em] mb-5">
-              — ALMOST THERE
-            </p>
-            <p className="text-3xl lg:text-4xl font-display leading-[1.1] max-w-sm">
-              One last{" "}
-              <span className="italic font-light text-accent">step.</span>
-            </p>
-          </div>
-          <p className="text-xs text-background/50 tracking-wide">
-            © 2026 Vendora
-          </p>
-        </div>
+
+        <button
+          type="button"
+          onClick={resend}
+          disabled={resending || resent || !email}
+          className="auth-submit w-full"
+        >
+          {resending ? (
+            <>
+              <Loader2 className="w-4 h-4 animate-spin" />
+              Sending…
+            </>
+          ) : resent ? (
+            "Sent — check your inbox"
+          ) : (
+            <>
+              Resend email
+              <ArrowRight className="w-3.5 h-3.5" />
+            </>
+          )}
+        </button>
+
+        <p
+          className="text-center font-editorial italic"
+          style={{ fontSize: "12.5px", opacity: 0.7, lineHeight: 1.5 }}
+        >
+          Didn't get it? Check your spam folder. If it still doesn't arrive,
+          email{" "}
+          <a
+            href="mailto:hello@vendora.events"
+            className="font-medium pb-px"
+            style={{ borderBottom: "0.5px solid currentColor" }}
+          >
+            hello@vendora.events
+          </a>
+          .
+        </p>
       </div>
-
-      <div className="flex-1 flex flex-col md:items-center md:justify-center px-6 pt-12 pb-12 md:p-12 bg-background">
-        <div className="w-full max-w-sm">
-          <Link to="/" className="md:hidden font-editorial text-3xl block mb-8">
-            Vendora
-          </Link>
-
-          <div className="w-12 h-12 rounded-full bg-accent/15 text-accent flex items-center justify-center mb-6">
-            <Mail className="w-5 h-5" />
-          </div>
-
-          <h1 className="font-editorial text-4xl md:text-4xl mb-2 leading-tight">
-            Check your email
-          </h1>
-          <p className="text-sm text-muted-foreground mb-8 leading-relaxed">
-            {email ? (
-              <>
-                We sent a confirmation link to{" "}
-                <span className="font-medium text-foreground">{email}</span>.
-                Click it to finish signing up.
-              </>
-            ) : (
-              "We sent you a confirmation link. Click it to finish signing up."
-            )}
-          </p>
-
-          <div className="space-y-3">
-            <Button
-              onClick={resend}
-              disabled={resending || resent || !email}
-              variant="outline"
-              className="w-full h-11 rounded-full"
-            >
-              {resending ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Sending…
-                </>
-              ) : resent ? (
-                "Sent — check your inbox"
-              ) : (
-                "Resend email"
-              )}
-            </Button>
-            <Link to="/login" className="block">
-              <Button variant="ghost" className="w-full h-11 rounded-full">
-                Back to sign in
-              </Button>
-            </Link>
-          </div>
-
-          <p className="text-xs text-muted-foreground mt-8 leading-relaxed">
-            Didn't get it? Check your spam folder. If it still doesn't arrive,
-            email{" "}
-            <a
-              href="mailto:hello@vendora.events"
-              className="text-accent font-medium"
-            >
-              hello@vendora.events
-            </a>
-            .
-          </p>
-        </div>
-      </div>
-    </div>
+    </GlassyAuthShell>
   );
 }

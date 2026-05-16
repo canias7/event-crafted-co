@@ -114,9 +114,7 @@ export default function HostProfilePage() {
       ? new Date(createdAt).getFullYear()
       : new Date().getFullYear();
     const fallback =
-      (profile as { display_name?: string } | null)?.display_name ??
-      user.email?.split("@")[0] ??
-      "Host";
+      profile?.display_name ?? user.email?.split("@")[0] ?? "Host";
     const titleCase = fallback
       .split(/[ _-]+/)
       .map((w) => (w ? w[0].toUpperCase() + w.slice(1) : ""))

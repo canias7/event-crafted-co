@@ -49,13 +49,15 @@ export function VendorPolicyEditor({
   async function load() {
     setLoading(true);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    // .maybeSingle() so a missing vendor row doesn't throw — the
+    // editor renders empty defaults in that case.
     const { data } = await (supabase as any)
       .from("vendor_profiles")
       .select(
         "deposit_pct, cancellation_policy, reschedule_window_days, policy_notes",
       )
       .eq("id", vendorId)
-      .single();
+      .maybeSingle();
     const row = (data as PolicyRow | null) ?? null;
     setDepositPct(row?.deposit_pct != null ? String(row.deposit_pct) : "");
     setCancellation(row?.cancellation_policy ?? NONE);
