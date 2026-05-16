@@ -118,9 +118,9 @@ export default function VendorOnboardingPage() {
           Apply to join the directory first — onboarding starts after your
           basic profile is created.
         </p>
-        <Link to="/vendor-apply">
+        <Link to="/signup/vendor">
           <Button className="rounded-full bg-foreground text-background hover:bg-foreground/90">
-            Apply to join
+            Sign up as a vendor
           </Button>
         </Link>
       </div>
