@@ -224,60 +224,6 @@ export default function LandingPage() {
           <div className="mx-auto" style={{ width: 48, height: "0.5px", background: "#000" }} />
         </section>
 
-        {/* FEATURED VENDORS */}
-        <section className="relative z-[2] px-6 md:px-10 pt-20 pb-14 max-w-6xl mx-auto">
-          <div className="flex items-baseline justify-between mb-7">
-            <h2
-              className="text-black m-0"
-              style={{ fontSize: "28px", fontWeight: 500, letterSpacing: "-0.5px" }}
-            >
-              Featured{" "}
-              <em className="font-editorial italic" style={{ fontWeight: 400 }}>
-                vendors
-              </em>
-            </h2>
-            <Link
-              to="/vendors"
-              className="text-[12px] text-black pb-0.5"
-              style={{ borderBottom: "0.5px solid #000" }}
-            >
-              View all →
-            </Link>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5">
-            {FEATURED.map((v) => (
-              <article key={v.initials}>
-                <div
-                  className="relative flex items-center justify-center mb-3"
-                  style={{
-                    aspectRatio: "4 / 5",
-                    background: "rgba(255,255,255,0.85)",
-                    backdropFilter: "blur(8px)",
-                    WebkitBackdropFilter: "blur(8px)",
-                    border: "0.5px solid #000",
-                  }}
-                >
-                  <div
-                    className="font-editorial italic text-black"
-                    style={{ fontSize: "56px", opacity: 0.12 }}
-                  >
-                    {v.initials}
-                  </div>
-                  <div
-                    className="absolute top-3 right-3 text-[10px] text-black tracking-widest"
-                  >
-                    ★ {v.rating}
-                  </div>
-                </div>
-                <div className="font-editorial italic text-[17px] text-black">{v.name}</div>
-                <div className="text-[12px] text-black mt-0.5">
-                  {v.category} · {v.city}
-                </div>
-              </article>
-            ))}
-          </div>
-        </section>
       </div>
 
       {/* FOOTER */}
@@ -468,13 +414,3 @@ export default function LandingPage() {
     </div>
   );
 }
-
-// Featured vendors are placeholder mock until the directory wires
-// up — same shape as the design mockup. Swap to a real Supabase
-// query (vendor_profiles where application_status = 'approved'
-// limit 3) when we want this to be data-driven.
-const FEATURED = [
-  { initials: "AS", name: "Atelier Saskia", category: "Florals", city: "Charlotte", rating: "4.9" },
-  { initials: "NP", name: "North & Pine", category: "Photography", city: "Asheville", rating: "5.0" },
-  { initials: "MV", name: "Maison Verde", category: "Catering", city: "Raleigh", rating: "4.8" },
-] as const;
