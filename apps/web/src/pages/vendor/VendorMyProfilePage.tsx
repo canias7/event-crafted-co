@@ -381,7 +381,7 @@ function HeaderCard({
   onShare: () => void;
 }) {
   return (
-    <div className="relative overflow-hidden rounded-3xl border border-border/60 shadow-[0_8px_24px_-12px_rgba(26,20,16,0.18)] p-6 flex flex-col sm:flex-row gap-5 items-start bg-[linear-gradient(135deg,#fffbf2_0%,#faecd0_100%)]">
+    <div className="relative overflow-hidden rounded-3xl border border-border/60 shadow-[0_8px_24px_-12px_rgba(26,20,16,0.18)] p-6 flex flex-col sm:flex-row gap-5 items-start bg-[linear-gradient(135deg,#ffffff_0%,#f3f4f6_100%)]">
       {/* Soft radial sun + horizontal ripple lines echoing the mobile
           CreamOcean hero. Decorative, behind the avatar/copy. */}
       <div

@@ -30,11 +30,11 @@ import { useRouter } from "expo-router";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
 
-const CREAM = "#fdfbf7";
-const CREAM_DEEP = "#f7f3ec";
-const INK = "#1a1410";
-const INK_DIM = "#776c5f";
-const BORDER = "#ebe3d3";
+const CREAM = "#ffffff";
+const CREAM_DEEP = "#f5f5f5";
+const INK = "#0a0a0a";
+const INK_DIM = "#6b7280";
+const BORDER = "#e5e7eb";
 const PENDING_BG = "#fbeed1";
 const PENDING_FG = "#9c6a1a";
 const HATCH = "#cbbfac";

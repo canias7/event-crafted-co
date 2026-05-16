@@ -122,7 +122,7 @@ export default function DashboardScreen() {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={() => load(true)}
-            tintColor="#1a1410"
+            tintColor="#0a0a0a"
           />
         }
       >
@@ -140,7 +140,7 @@ export default function DashboardScreen() {
         ) : null}
         {loading ? (
           <View className="items-center py-8">
-            <ActivityIndicator color="#1a1410" />
+            <ActivityIndicator color="#0a0a0a" />
           </View>
         ) : null}
 
@@ -175,7 +175,7 @@ export default function DashboardScreen() {
               borderRadius: 24,
               backgroundColor: "#ffffff",
               padding: 16,
-              shadowColor: "#1a1410",
+              shadowColor: "#0a0a0a",
               shadowOpacity: 0.10,
               shadowRadius: 20,
               shadowOffset: { width: 0, height: 8 },
@@ -192,7 +192,7 @@ export default function DashboardScreen() {
               overflow: "hidden",
               borderRadius: 24,
               backgroundColor: "#ffffff",
-              shadowColor: "#1a1410",
+              shadowColor: "#0a0a0a",
               shadowOpacity: 0.10,
               shadowRadius: 20,
               shadowOffset: { width: 0, height: 8 },

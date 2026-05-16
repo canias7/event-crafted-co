@@ -275,7 +275,7 @@ function HeroCard({
   verified: boolean;
 }) {
   return (
-    <div className="relative overflow-hidden rounded-3xl border border-border/60 shadow-[0_8px_24px_-12px_rgba(26,20,16,0.18)] p-8 flex flex-col items-center bg-[linear-gradient(135deg,#fffbf2_0%,#faecd0_100%)]">
+    <div className="relative overflow-hidden rounded-3xl border border-border/60 shadow-[0_8px_24px_-12px_rgba(26,20,16,0.18)] p-8 flex flex-col items-center bg-[linear-gradient(135deg,#ffffff_0%,#f3f4f6_100%)]">
       <div
         className="pointer-events-none absolute inset-0"
         aria-hidden

@@ -59,10 +59,10 @@ import { PhotoLibraryPicker } from "@/components/PhotoLibraryPicker";
 // Editorial palette + helpers — match the Profile redesign mockup
 // (cream + ink + soft peach gradient, italic serif for personal
 // details, sans for chrome).
-const CREAM = "#fdfbf7";
-const CREAM_DEEP = "#f7f3ec";
-const INK = "#1a1410";
-const INK_DIM = "#776c5f";
+const CREAM = "#ffffff";
+const CREAM_DEEP = "#f5f5f5";
+const INK = "#0a0a0a";
+const INK_DIM = "#6b7280";
 const SERIF = Platform.OS === "ios" ? "Times New Roman" : "serif";
 
 function joinedLabel(createdAt: string | null): string {
@@ -603,7 +603,7 @@ export default function ProfileScreen() {
             paddingVertical: 16,
             borderTopWidth: 1,
             borderBottomWidth: 1,
-            borderColor: "#e9dfc8",
+            borderColor: "#e5e7eb",
             flexDirection: "row",
             alignItems: "center",
           }}
@@ -613,7 +613,7 @@ export default function ProfileScreen() {
             style={{
               width: 1,
               alignSelf: "stretch",
-              backgroundColor: "#e9dfc8",
+              backgroundColor: "#e5e7eb",
             }}
           />
           <StatCell
@@ -624,7 +624,7 @@ export default function ProfileScreen() {
             style={{
               width: 1,
               alignSelf: "stretch",
-              backgroundColor: "#e9dfc8",
+              backgroundColor: "#e5e7eb",
             }}
           />
           <StatCell value={String(stats.reviews)} label="REVIEWS" />
@@ -1184,14 +1184,14 @@ function ListingTab({
               borderRadius: 18,
               borderWidth: 1,
               borderStyle: "dashed",
-              borderColor: "#dfd6c4",
+              borderColor: "#e5e7eb",
               alignItems: "center",
               justifyContent: "center",
               flexDirection: "row",
               opacity: pressed ? 0.7 : 1,
             }}
           >
-            <Feather name="plus" size={16} color="#1a1410" />
+            <Feather name="plus" size={16} color="#0a0a0a" />
             <Text className="ml-2 text-sm font-semibold text-foreground">
               Add another listing
             </Text>
@@ -1315,7 +1315,7 @@ function ListingCard({
               borderRadius: 18,
               padding: 14,
               opacity: pressed ? 0.85 : 1,
-              shadowColor: "#1a1410",
+              shadowColor: "#0a0a0a",
               shadowOpacity: 0.10,
               shadowRadius: 12,
               shadowOffset: { width: 0, height: 4 },
@@ -1327,12 +1327,12 @@ function ListingCard({
                 width: 56,
                 height: 56,
                 borderRadius: 14,
-                backgroundColor: "#f7f3ec",
+                backgroundColor: "#f5f5f5",
                 alignItems: "center",
                 justifyContent: "center",
               }}
             >
-              <Feather name="shopping-bag" size={22} color="#1a1410" />
+              <Feather name="shopping-bag" size={22} color="#0a0a0a" />
             </View>
             <View style={{ flex: 1, marginLeft: 12 }}>
               <Text
@@ -1347,7 +1347,7 @@ function ListingCard({
                   : "Draft — tap to finish setup"}
               </Text>
             </View>
-            <Feather name="chevron-right" size={20} color="#776c5f" />
+            <Feather name="chevron-right" size={20} color="#6b7280" />
           </View>
         )}
       </Pressable>
@@ -1430,7 +1430,7 @@ function ListingCard({
                 justifyContent: "center",
               }}
             >
-              <Feather name="edit-2" size={16} color="#1a1410" />
+              <Feather name="edit-2" size={16} color="#0a0a0a" />
             </Pressable>
             <Pressable
               onPress={unpublish}
@@ -1445,7 +1445,7 @@ function ListingCard({
                 justifyContent: "center",
               }}
             >
-              <Feather name="eye-off" size={16} color="#1a1410" />
+              <Feather name="eye-off" size={16} color="#0a0a0a" />
             </Pressable>
             <Pressable
               onPress={destroy}
@@ -1532,12 +1532,12 @@ function CreateSheet({
     onPress: () => void;
   };
   const SHEET_BG = "#0e0c0a";
-  const SHEET_TEXT = "#fdfbf7";
+  const SHEET_TEXT = "#ffffff";
   const SHEET_TEXT_DIM = "rgba(250,245,236,0.55)";
   const SHEET_DIVIDER = "rgba(250,245,236,0.10)";
   const SHEET_X_BG = "rgba(250,245,236,0.10)";
-  const BADGE_BG = "#f7f3ec";
-  const BADGE_FG = "#1a1410";
+  const BADGE_BG = "#f5f5f5";
+  const BADGE_FG = "#0a0a0a";
   const SERIF =
     Platform.OS === "ios" ? "Times New Roman" : "serif";
 
@@ -2270,7 +2270,7 @@ function SettingsSheet({
                   backgroundColor: "#fbf4e6",
                   borderRadius: 14,
                   borderWidth: 1,
-                  borderColor: "#e9dfc8",
+                  borderColor: "#e5e7eb",
                   paddingHorizontal: 14,
                   paddingVertical: 12,
                   color: INK,
@@ -2300,7 +2300,7 @@ function SettingsSheet({
                   backgroundColor: "#fbf4e6",
                   borderRadius: 14,
                   borderWidth: 1,
-                  borderColor: "#e9dfc8",
+                  borderColor: "#e5e7eb",
                   paddingHorizontal: 14,
                   paddingVertical: 12,
                   color: INK,
@@ -2567,7 +2567,7 @@ function CreamOceanCard({
               right: 0,
               bottom: 0,
               borderRadius: 22,
-              backgroundColor: "#fffbf2",
+              backgroundColor: "#ffffff",
               borderWidth: 1,
               borderColor: "#ebe1ce",
               overflow: "hidden",
@@ -2604,7 +2604,7 @@ function CreamOceanCard({
               right: 0,
               bottom: 0,
               borderRadius: 22,
-              backgroundColor: "#fffbf2",
+              backgroundColor: "#ffffff",
               borderWidth: 1,
               borderColor: "#ebe1ce",
               overflow: "hidden",
@@ -2660,8 +2660,8 @@ function CreamOceanFront({
       >
         <Defs>
           <SvgLinearGradient id="bgFv" x1="0" y1="0" x2="0" y2="1">
-            <Stop offset="0" stopColor="#fffbf2" />
-            <Stop offset="1" stopColor="#faecd0" />
+            <Stop offset="0" stopColor="#ffffff" />
+            <Stop offset="1" stopColor="#f3f4f6" />
           </SvgLinearGradient>
           <RadialGradient id="sunFv" cx="0.18" cy="0.18" rx="0.55" ry="0.55">
             <Stop offset="0" stopColor="#ffe6b4" stopOpacity="0.55" />
@@ -2726,7 +2726,7 @@ function CreamOceanFront({
                   borderRadius: 13,
                   backgroundColor: "#b8472f",
                   borderWidth: 3,
-                  borderColor: "#fffbf2",
+                  borderColor: "#ffffff",
                   alignItems: "center",
                   justifyContent: "center",
                 }}
@@ -2832,8 +2832,8 @@ function CreamOceanBack({
       >
         <Defs>
           <SvgLinearGradient id="bgBv" x1="0" y1="0" x2="0" y2="1">
-            <Stop offset="0" stopColor="#fffbf2" />
-            <Stop offset="1" stopColor="#faecd0" />
+            <Stop offset="0" stopColor="#ffffff" />
+            <Stop offset="1" stopColor="#f3f4f6" />
           </SvgLinearGradient>
           <RadialGradient id="sunBv" cx="0.82" cy="0.18" rx="0.55" ry="0.55">
             <Stop offset="0" stopColor="#ffe6b4" stopOpacity="0.5" />
@@ -2896,7 +2896,7 @@ function CreamOceanAvatar({
         height: size,
         borderRadius: radius,
         overflow: "hidden",
-        backgroundColor: "#1a1410",
+        backgroundColor: "#0a0a0a",
       }}
     >
       <Svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
@@ -2926,7 +2926,7 @@ function CreamOceanAvatar({
       >
         <Text
           style={{
-            color: "#fdfbf7",
+            color: "#ffffff",
             fontFamily: SERIF,
             fontStyle: "italic",
             fontWeight: "700",

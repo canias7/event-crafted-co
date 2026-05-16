@@ -31,10 +31,10 @@ type AttachmentRef = { url: string; kind?: string };
 
 const QUICK_EMOJIS = ["👍", "❤️", "🎉", "🙏", "😂", "🔥", "😍", "😅", "👋", "🤝", "✨", "💯"];
 
-const CREAM = "#fdfbf7";
-const CREAM_DEEP = "#f7f3ec";
-const INK = "#1a1410";
-const INK_DIM = "#776c5f";
+const CREAM = "#ffffff";
+const CREAM_DEEP = "#f5f5f5";
+const INK = "#0a0a0a";
+const INK_DIM = "#6b7280";
 const ACTIVE_GREEN = "#22c55e";
 const SERIF = Platform.OS === "ios" ? "Times New Roman" : "serif";
 
@@ -524,7 +524,7 @@ function EmojiPickerModal({
               width: 48,
               height: 4,
               borderRadius: 2,
-              backgroundColor: "#dfd6c4",
+              backgroundColor: "#e5e7eb",
               alignSelf: "center",
               marginBottom: 12,
             }}
@@ -590,7 +590,7 @@ function Header({
         paddingHorizontal: 16,
         paddingBottom: 12,
         borderBottomWidth: 1,
-        borderBottomColor: "#ebe3d3",
+        borderBottomColor: "#e5e7eb",
       }}
     >
       <Pressable onPress={onBack} hitSlop={10} style={{ paddingRight: 8 }}>
@@ -880,7 +880,7 @@ function Composer({
             width: 38,
             height: 38,
             borderRadius: 999,
-            backgroundColor: enabled ? INK : "#dfd6c4",
+            backgroundColor: enabled ? INK : "#e5e7eb",
             alignItems: "center",
             justifyContent: "center",
             marginLeft: 4,

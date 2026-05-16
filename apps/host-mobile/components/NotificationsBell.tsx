@@ -25,13 +25,13 @@ import { useAuth } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
 
 const SERIF = Platform.OS === "ios" ? "Times New Roman" : "serif";
-const INK = "#1a1410";
-const INK_DIM = "#776c5f";
-const CREAM = "#fdfbf7";
+const INK = "#0a0a0a";
+const INK_DIM = "#6b7280";
+const CREAM = "#ffffff";
 const RED = "#dc2626";
 
 const CARD_SHADOW = {
-  shadowColor: "#1a1410",
+  shadowColor: "#0a0a0a",
   shadowOpacity: 0.10,
   shadowRadius: 20,
   shadowOffset: { width: 0, height: 6 },
@@ -318,7 +318,7 @@ function Section({
 }
 
 export function NotificationsBell({
-  iconColor = "#1a1410",
+  iconColor = "#0a0a0a",
 }: { iconColor?: string }) {
   const { user } = useAuth();
   const router = useRouter();

@@ -42,7 +42,7 @@ const SOURCES: Array<{ value: string; label: string }> = [
 ];
 
 const sourceColor: Record<string, string> = {
-  knot: "bg-[#a08259]/15 text-[#a08259] border-[#a08259]/30",
+  knot: "bg-[#1B3654]/15 text-[#1B3654] border-[#1B3654]/30",
   yelp: "bg-[#d32323]/10 text-[#d32323] border-[#d32323]/30",
   google: "bg-[#4285F4]/10 text-[#4285F4] border-[#4285F4]/30",
   wedding_wire: "bg-[#5d3754]/10 text-[#5d3754] border-[#5d3754]/30",

@@ -16,7 +16,7 @@ if (!SUPABASE_URL || !SUPABASE_KEY) {
   root.innerHTML = `
     <div style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;background:#f7f5f2;color:#1a1a1a;">
       <div style="max-width:480px;background:#ffffff;border-radius:8px;padding:32px;border:1px solid #ececec;">
-        <p style="font-size:12px;letter-spacing:0.18em;color:#a08259;text-transform:uppercase;margin:0 0 16px;">Vendora · Configuration error</p>
+        <p style="font-size:12px;letter-spacing:0.18em;color:#1B3654;text-transform:uppercase;margin:0 0 16px;">Vendora · Configuration error</p>
         <h1 style="font-size:22px;line-height:1.3;font-weight:600;margin:0 0 12px;">Missing Supabase environment variables</h1>
         <p style="font-size:14px;line-height:1.6;color:#3a3a3a;margin:0 0 16px;">
           The app can't start because <code style="background:#f5f5f5;padding:1px 6px;border-radius:3px;font-size:13px;">VITE_SUPABASE_URL</code>

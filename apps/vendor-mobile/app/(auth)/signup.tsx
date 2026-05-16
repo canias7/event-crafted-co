@@ -29,14 +29,14 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { CATEGORY_GROUPS } from "@vendora/core";
 import { supabase } from "@/lib/supabase";
 
-const CREAM = "#fdfbf7";
-const CREAM_DEEP = "#f7f3ec";
-const INK = "#1a1410";
+const CREAM = "#ffffff";
+const CREAM_DEEP = "#f5f5f5";
+const INK = "#0a0a0a";
 const INK_DIM = "rgba(26,20,16,0.6)";
 const INK_BORDER = "rgba(26,20,16,0.18)";
 const INPUT_BG = "#ffffff";
 const ERROR = "#b42318";
-const ACCENT = "#a08259";
+const ACCENT = "#1B3654";
 
 const SERIF = Platform.OS === "ios" ? "Times New Roman" : "serif";
 

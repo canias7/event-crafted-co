@@ -40,12 +40,12 @@ import { DetailsSection } from "@/components/listing/DetailsSection";
 // Editorial palette — kept in lockstep with edit-profile.tsx and the
 // vendor profile screen so the listing builder doesn't feel like a
 // different app section.
-const CREAM = "#fdfbf7";
-const CREAM_DEEP = "#f7f3ec";
-const INK = "#1a1410";
-const INK_DIM = "#776c5f";
-const BORDER = "#e9dfc8";
-const ACCENT = "#a08259";
+const CREAM = "#ffffff";
+const CREAM_DEEP = "#f5f5f5";
+const INK = "#0a0a0a";
+const INK_DIM = "#6b7280";
+const BORDER = "#e5e7eb";
+const ACCENT = "#1B3654";
 const SERIF = Platform.OS === "ios" ? "Times New Roman" : "serif";
 
 // Vendor cap is 5 listings — the "1 of 5" indicator at the top right.
