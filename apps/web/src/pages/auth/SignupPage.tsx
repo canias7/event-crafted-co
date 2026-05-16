@@ -151,12 +151,16 @@ export default function SignupPage({ role = "host" }: { role?: "host" | "vendor"
             autoComplete="new-password"
           />
         </div>
-        <label
-          className="flex items-start cursor-pointer pt-1"
+        <div
+          className="flex items-start pt-1"
           style={{ gap: "8px", fontSize: "12px", opacity: 0.8 }}
         >
-          <span
-            className="shrink-0 inline-flex items-center justify-center"
+          <button
+            type="button"
+            role="checkbox"
+            aria-checked={adult}
+            onClick={() => setAdult((v) => !v)}
+            className="shrink-0 inline-flex items-center justify-center cursor-pointer"
             style={{
               width: 16,
               height: 16,
@@ -164,18 +168,19 @@ export default function SignupPage({ role = "host" }: { role?: "host" | "vendor"
               borderRadius: "3px",
               background: adult ? "#000" : "rgba(255,255,255,0.6)",
               marginTop: "1px",
+              padding: 0,
             }}
-            onClick={() => setAdult((v) => !v)}
           >
             {adult && <Check className="w-3 h-3 text-white" />}
-          </span>
-          <input
-            type="checkbox"
-            checked={adult}
-            onChange={(e) => setAdult(e.target.checked)}
-            className="sr-only"
-          />
-          <span className="leading-relaxed">
+          </button>
+          <span
+            className="leading-relaxed cursor-pointer select-none"
+            onClick={(e) => {
+              // Toggle on text click — but let inner links navigate normally.
+              if ((e.target as HTMLElement).closest("a")) return;
+              setAdult((v) => !v);
+            }}
+          >
             {t("auth.signup.adult_lead")}{" "}
             <Link
               to="/terms"
@@ -196,7 +201,7 @@ export default function SignupPage({ role = "host" }: { role?: "host" | "vendor"
             </Link>
             .
           </span>
-        </label>
+        </div>
         <button type="submit" disabled={loading || !adult} className="auth-submit mt-2">
           {loading ? (
             <>
