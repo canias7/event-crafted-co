@@ -149,6 +149,23 @@ jobs:
           echo "Next build number: $NEXT"
           echo "BUILD_NUMBER=$NEXT" >> $GITHUB_ENV
 
+      # Inject the computed build number into app.json BEFORE prebuild
+      # so it ends up in Info.plist as CFBundleVersion. Passing
+      # CURRENT_PROJECT_VERSION to xcodebuild later doesn't update the
+      # embedded plist — Apple rejects "bundle version must be higher
+      # than 27" otherwise.
+      - name: Set buildNumber in app.json
+        working-directory: ${{ env.APP_DIR }}
+        run: |
+          node -e "
+            const fs = require('fs');
+            const p = require('./app.json');
+            p.expo.ios = p.expo.ios || {};
+            p.expo.ios.buildNumber = process.env.BUILD_NUMBER;
+            fs.writeFileSync('./app.json', JSON.stringify(p, null, 2));
+            console.log('Set ios.buildNumber to', p.expo.ios.buildNumber);
+          "
+
       # CNG: Expo regenerates the native ios/ project from app.json
       # every build. Don't commit the generated ios/ directory — it's
       # ephemeral. --clean nukes any stale generated files first.
