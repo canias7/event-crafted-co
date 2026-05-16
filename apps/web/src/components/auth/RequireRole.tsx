@@ -7,7 +7,14 @@ export function RequireRole({ role, children }: { role: AppRole | AppRole[]; chi
     useAuth();
   const location = useLocation();
 
-  if (loading) {
+  // Still-loading covers two cases:
+  //  1. Initial AuthProvider mount before getSession() resolves.
+  //  2. Session is set but profile is still being fetched (the
+  //     auth listener defers loadProfile() to setTimeout(0)).
+  // Without case 2 we'd briefly compute matches=false on a fresh
+  // post-signup session and bounce the user back to "/" — which
+  // looks like "nothing happened after signing up."
+  if (loading || (session && !profile)) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="font-label text-muted-foreground">Loading…</div>
