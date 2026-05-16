@@ -112,20 +112,18 @@ export default function LoginPage({ role }: LoginPageProps = {}) {
       return;
     }
 
-    // Post-signin gate. Enforces the one-role-per-email rule on the
-    // login side — without this, a vendor could open /login/host,
-    // sign in with the same email, and slip into the host portal
-    // (and vice versa).
-    const [{ data: prof }, { data: vp }, { data: members }] = await Promise.all([
+    // Post-signin gate. Enforces the one-role-per-email rule. Identity
+    // lives on profiles.role — a vendor is profiles.role === 'vendor',
+    // a host is profiles.role === 'host'. The vendor_profiles row only
+    // exists once they create their first listing, so we can't use it
+    // to detect vendor identity for fresh-approved-but-no-listing-yet
+    // accounts. Approval status lives on profiles.application_status
+    // (the admin panel writes there directly).
+    const [{ data: prof }, { data: members }] = await Promise.all([
       supabase
         .from("profiles")
-        .select("role, onboarded_at")
+        .select("role, application_status, onboarded_at")
         .eq("id", signInData.user.id)
-        .maybeSingle(),
-      supabase
-        .from("vendor_profiles")
-        .select("application_status")
-        .eq("user_id", signInData.user.id)
         .maybeSingle(),
       supabase
         .from("vendor_team_members")
@@ -133,30 +131,22 @@ export default function LoginPage({ role }: LoginPageProps = {}) {
         .eq("user_id", signInData.user.id)
         .limit(1),
     ]);
-    const profileRole = (prof as { role?: string } | null)?.role;
+    const p = (prof as { role?: string; application_status?: string; onboarded_at?: string | null } | null) ?? {};
+    const profileRole = p.role;
+    const profileStatus = p.application_status;
     const isAdmin = profileRole === "admin";
-    const ownStatus = (vp as { application_status?: string } | null)
-      ?.application_status;
-    const hasOwnVendor = !!ownStatus;
-    const isApprovedVendor = ownStatus === "approved";
+    const isVendorProfile = profileRole === "vendor";
+    const isHostProfile = profileRole === "host";
+    const isApprovedVendor =
+      isVendorProfile && profileStatus === "approved";
     const isTeamMember =
       ((members as { vendor_id: string }[] | null) ?? []).length > 0;
     const hasVendorAccess = isApprovedVendor || isTeamMember;
 
-    // Vendor side: must be approved, or a team member of another vendor.
+    // /login/vendor: must be a vendor profile (approved) or a team
+    // member on someone else's vendor.
     if (role === "vendor" && !isAdmin) {
-      if (hasOwnVendor && !hasVendorAccess) {
-        await supabase.auth.signOut();
-        toast.error(
-          ownStatus === "rejected"
-            ? "Your vendor application wasn't approved. Reach out to support if you think this is a mistake."
-            : "Your vendor application is still under review. We'll email you the moment it's approved.",
-        );
-        setLoading(false);
-        return;
-      }
-      if (!hasOwnVendor && !isTeamMember) {
-        // No vendor identity at all — this email is registered as a host.
+      if (isHostProfile && !isTeamMember) {
         await supabase.auth.signOut();
         toast.error(
           "This email is registered as a host. Sign in on the host side instead.",
@@ -164,12 +154,21 @@ export default function LoginPage({ role }: LoginPageProps = {}) {
         setLoading(false);
         return;
       }
+      if (isVendorProfile && !isApprovedVendor) {
+        await supabase.auth.signOut();
+        toast.error(
+          profileStatus === "rejected"
+            ? "Your vendor application wasn't approved. Reach out to support if you think this is a mistake."
+            : "Your vendor application is still under review. We'll email you the moment it's approved.",
+        );
+        setLoading(false);
+        return;
+      }
     }
 
-    // Host side: the email can't belong to a vendor account.
-    // One-role-per-email means a vendor's email shouldn't have host
-    // access, even if Supabase's email_confirmed_at lets the user in.
-    if (role === "host" && !isAdmin && hasOwnVendor) {
+    // /login/host: must be a host profile. A vendor (even unapproved)
+    // can't slip in via the host side.
+    if (role === "host" && !isAdmin && isVendorProfile) {
       await supabase.auth.signOut();
       toast.error(
         "This email is registered as a vendor. Sign in on the vendor side instead.",
@@ -180,8 +179,8 @@ export default function LoginPage({ role }: LoginPageProps = {}) {
 
     setLoading(false);
     // Admin accounts (rare on the public web app — the admin panel
-    // lives at admin.eventvendora.com) just fall through to the
-    // host-side dashboard so they have somewhere to land.
+    // lives at admin.eventvendora.com) fall through to the host-side
+    // dashboard so they have somewhere to land.
     if (role === "vendor" && hasVendorAccess) {
       navigate("/vendor/home");
     } else if (role === "host") {
