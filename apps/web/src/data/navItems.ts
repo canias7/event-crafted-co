@@ -79,3 +79,34 @@ export function getBottomNav(main: NavItem[]): NavItem[] | undefined {
 
 NAV_BOTTOMS.set(customerNavItems, customerNavBottomItems);
 NAV_BOTTOMS.set(vendorNavItems, vendorNavBottomItems);
+
+// Cross-cutting pages like /settings and /support don't know which
+// dashboard the user came from — without this, they default to the
+// vendor sidebar whenever the user has vendor access, even if they
+// were just browsing /customer/*. Side-stable sessionStorage flag
+// flipped by DashboardSidebar lets these pages stay on the right rail.
+type Side = "host" | "vendor";
+const SIDE_KEY = "vendora.lastDashboardSide";
+
+export function setLastDashboardSide(side: Side) {
+  if (typeof window === "undefined") return;
+  try {
+    window.sessionStorage.setItem(SIDE_KEY, side);
+  } catch {
+    /* private mode / quota — ignore */
+  }
+}
+
+export function getLastDashboardSide(): Side | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const v = window.sessionStorage.getItem(SIDE_KEY);
+    return v === "host" || v === "vendor" ? v : null;
+  } catch {
+    return null;
+  }
+}
+
+export function pickNavForSide(side: Side): NavItem[] {
+  return side === "vendor" ? vendorNavItems : customerNavItems;
+}
