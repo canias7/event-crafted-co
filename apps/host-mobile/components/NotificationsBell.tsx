@@ -27,7 +27,7 @@ import { supabase } from "@/lib/supabase";
 const SERIF = Platform.OS === "ios" ? "Times New Roman" : "serif";
 const INK = "#1a1410";
 const INK_DIM = "#776c5f";
-const CREAM = "#faf5ec";
+const CREAM = "#fdfbf7";
 const RED = "#dc2626";
 
 const CARD_SHADOW = {

@@ -27,8 +27,8 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
 
-const CREAM = "#faf5ec";
-const CREAM_DEEP = "#f5efe5";
+const CREAM = "#fdfbf7";
+const CREAM_DEEP = "#f7f3ec";
 const INK = "#1a1410";
 const INK_DIM = "#776c5f";
 const SERIF = Platform.OS === "ios" ? "Times New Roman" : "serif";

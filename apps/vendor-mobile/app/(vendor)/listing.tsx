@@ -40,8 +40,8 @@ import { DetailsSection } from "@/components/listing/DetailsSection";
 // Editorial palette — kept in lockstep with edit-profile.tsx and the
 // vendor profile screen so the listing builder doesn't feel like a
 // different app section.
-const CREAM = "#faf5ec";
-const CREAM_DEEP = "#f5efe5";
+const CREAM = "#fdfbf7";
+const CREAM_DEEP = "#f7f3ec";
 const INK = "#1a1410";
 const INK_DIM = "#776c5f";
 const BORDER = "#e9dfc8";

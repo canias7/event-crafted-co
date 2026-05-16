@@ -36,8 +36,8 @@ import { supabase } from "@/lib/supabase";
 // shorthand, not full conversation — pick a real keyboard for that.
 const QUICK_EMOJIS = ["👍", "❤️", "🎉", "🙏", "😂", "🔥", "😍", "😅", "👋", "🤝", "✨", "💯"];
 
-const CREAM = "#faf5ec";
-const CREAM_DEEP = "#f5efe5";
+const CREAM = "#fdfbf7";
+const CREAM_DEEP = "#f7f3ec";
 const INK = "#1a1410";
 const INK_DIM = "#776c5f";
 const ACTIVE_GREEN = "#22c55e";
@@ -471,7 +471,7 @@ function EmojiPickerModal({
               width: 48,
               height: 4,
               borderRadius: 2,
-              backgroundColor: "#dcd1c1",
+              backgroundColor: "#dfd6c4",
               alignSelf: "center",
               marginBottom: 12,
             }}
@@ -542,7 +542,7 @@ function Header({
         paddingHorizontal: 16,
         paddingBottom: 12,
         borderBottomWidth: 1,
-        borderBottomColor: "#e8dfcf",
+        borderBottomColor: "#ebe3d3",
       }}
     >
       <Pressable onPress={onBack} hitSlop={10} style={{ paddingRight: 8 }}>
@@ -832,7 +832,7 @@ function Composer({
             width: 38,
             height: 38,
             borderRadius: 999,
-            backgroundColor: enabled ? INK : "#dcd1c1",
+            backgroundColor: enabled ? INK : "#dfd6c4",
             alignItems: "center",
             justifyContent: "center",
             marginLeft: 4,

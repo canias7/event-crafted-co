@@ -6,13 +6,16 @@
 
 @layer base {
   :root {
-    /* Vendora — charcoal, champagne gold, cream. The cream matches the
-       login intro stage (#faf5ec), so every page that uses
-       bg-background reads as one continuous cream surface with the
-       login experience. */
-    --background: 39 58% 95%;
+    /* Vendora — whisper cream background, near-white glassy cards.
+       Background is #fdfbf7 (HSL ~40 50% 98%): barely a warmth, reads
+       white on most screens but has just enough cream to feel
+       intentional. Cards use semi-transparent white + backdrop-blur
+       for an iPhone-style glass surface. */
+    --background: 40 50% 98%;
     --foreground: 220 14% 11%;
 
+    /* Card uses RGBA at compose time (.card-soft below) — this token
+       stays opaque white so plain bg-card classes still work. */
     --card: 0 0% 100%;
     --card-foreground: 220 14% 11%;
 
@@ -43,7 +46,7 @@
     --shadow-sm: 220 14% 11% / 0.03;
     --shadow-md: 220 14% 11% / 0.06;
 
-    --sidebar-background: 39 58% 95%;
+    --sidebar-background: 40 50% 98%;
     --sidebar-foreground: 220 14% 11%;
     --sidebar-primary: 220 14% 11%;
     --sidebar-primary-foreground: 36 30% 97%;
@@ -248,11 +251,39 @@
   /* Soft drop shadow tuned to the cream + ink palette. Mirrors the
      shadowColor/Opacity/Radius the mobile apps use on rounded cards
      (host-mobile profile.tsx, events.tsx). Pair with rounded-3xl. */
+  /* Glass card — iPhone-style. Semi-transparent white + heavy
+     backdrop-blur + saturation bump so anything behind the card
+     (page bg, gradients) reads through as soft frost. The top-edge
+     inset highlight (the `inset 0 1px 0 ...` line) is what gives
+     iOS glass that subtle "lifted off the surface" feeling. */
   .card-soft {
-    background-color: hsl(var(--card));
-    border: 1px solid hsl(var(--border) / 0.6);
-    border-radius: 1.5rem;
-    box-shadow: 0 8px 24px -12px rgba(26, 20, 16, 0.18);
+    background-color: rgba(255, 255, 255, 0.72);
+    backdrop-filter: blur(24px) saturate(180%);
+    -webkit-backdrop-filter: blur(24px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.8);
+    border-radius: 1.75rem;
+    box-shadow:
+      0 1px 0 0 rgba(255, 255, 255, 0.9) inset,
+      0 12px 32px -16px rgba(26, 20, 16, 0.12),
+      0 2px 6px -2px rgba(26, 20, 16, 0.06);
+  }
+
+  /* Browsers that don't support backdrop-filter (older Firefox etc.):
+     fall back to a near-opaque white so contrast is preserved. */
+  @supports not (backdrop-filter: blur(1px)) {
+    .card-soft {
+      background-color: rgba(255, 255, 255, 0.96);
+    }
+  }
+
+  /* Dark mode glass — invert the layering. */
+  .dark .card-soft {
+    background-color: rgba(30, 27, 24, 0.65);
+    border-color: rgba(255, 255, 255, 0.08);
+    box-shadow:
+      0 1px 0 0 rgba(255, 255, 255, 0.06) inset,
+      0 12px 32px -16px rgba(0, 0, 0, 0.55),
+      0 2px 6px -2px rgba(0, 0, 0, 0.3);
   }
 
   .tnum {

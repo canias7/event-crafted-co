@@ -16,16 +16,16 @@ module.exports = {
     extend: {
       colors: {
         // CREAM — main canvas
-        background: "#faf5ec",
+        background: "#fdfbf7",
         // INK — body text + solid CTAs
         foreground: "#1a1410",
         // CREAM_DEEP — secondary surfaces (sign-in button, message
         // bubbles received, filter chips inactive, "muted" backgrounds)
-        muted: "#f5efe5",
+        muted: "#f7f3ec",
         // INK at 60% over CREAM, rendered as solid for stability
         "muted-foreground": "#776c5f",
         // INK at ~18% over CREAM, solid
-        border: "#dcd1c1",
+        border: "#dfd6c4",
         // Brand accent kept for "approved / available" affordances.
         accent: "#16a34a",
         "accent-foreground": "#ffffff",

@@ -59,8 +59,8 @@ import { PhotoLibraryPicker } from "@/components/PhotoLibraryPicker";
 // Editorial palette + helpers — match the Profile redesign mockup
 // (cream + ink + soft peach gradient, italic serif for personal
 // details, sans for chrome).
-const CREAM = "#faf5ec";
-const CREAM_DEEP = "#f5efe5";
+const CREAM = "#fdfbf7";
+const CREAM_DEEP = "#f7f3ec";
 const INK = "#1a1410";
 const INK_DIM = "#776c5f";
 const SERIF = Platform.OS === "ios" ? "Times New Roman" : "serif";
@@ -1184,7 +1184,7 @@ function ListingTab({
               borderRadius: 18,
               borderWidth: 1,
               borderStyle: "dashed",
-              borderColor: "#dcd1c1",
+              borderColor: "#dfd6c4",
               alignItems: "center",
               justifyContent: "center",
               flexDirection: "row",
@@ -1327,7 +1327,7 @@ function ListingCard({
                 width: 56,
                 height: 56,
                 borderRadius: 14,
-                backgroundColor: "#f5efe5",
+                backgroundColor: "#f7f3ec",
                 alignItems: "center",
                 justifyContent: "center",
               }}
@@ -1532,11 +1532,11 @@ function CreateSheet({
     onPress: () => void;
   };
   const SHEET_BG = "#0e0c0a";
-  const SHEET_TEXT = "#faf5ec";
+  const SHEET_TEXT = "#fdfbf7";
   const SHEET_TEXT_DIM = "rgba(250,245,236,0.55)";
   const SHEET_DIVIDER = "rgba(250,245,236,0.10)";
   const SHEET_X_BG = "rgba(250,245,236,0.10)";
-  const BADGE_BG = "#f5efe5";
+  const BADGE_BG = "#f7f3ec";
   const BADGE_FG = "#1a1410";
   const SERIF =
     Platform.OS === "ios" ? "Times New Roman" : "serif";
@@ -2926,7 +2926,7 @@ function CreamOceanAvatar({
       >
         <Text
           style={{
-            color: "#faf5ec",
+            color: "#fdfbf7",
             fontFamily: SERIF,
             fontStyle: "italic",
             fontWeight: "700",

@@ -31,7 +31,7 @@ import * as ImagePicker from "expo-image-picker";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
 
-const CREAM = "#faf5ec";
+const CREAM = "#fdfbf7";
 const INK = "#1a1410";
 const INK_DIM = "#776c5f";
 const BORDER = "#e9dfc8";

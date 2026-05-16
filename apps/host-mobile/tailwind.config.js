@@ -12,11 +12,11 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        background: "#faf5ec",
+        background: "#fdfbf7",
         foreground: "#1a1410",
-        muted: "#f5efe5",
+        muted: "#f7f3ec",
         "muted-foreground": "#776c5f",
-        border: "#dcd1c1",
+        border: "#dfd6c4",
         accent: "#16a34a",
         "accent-foreground": "#ffffff",
       },

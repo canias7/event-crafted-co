@@ -58,7 +58,7 @@ import {
 const SERIF = Platform.OS === "ios" ? "Times New Roman" : "serif";
 const INK = "#1a1410";
 const INK_DIM = "#776c5f";
-const CREAM = "#f5efe5";
+const CREAM = "#f7f3ec";
 
 const sectionHeaderStyle = {
   paddingHorizontal: 20,
@@ -523,7 +523,7 @@ export default function VendorDetailScreen() {
             >
               <Text
                 style={{
-                  color: "#faf5ec",
+                  color: "#fdfbf7",
                   fontSize: 11,
                   fontWeight: "800",
                   letterSpacing: 0.6,
@@ -660,7 +660,7 @@ export default function VendorDetailScreen() {
                 >
                   <Text
                     style={{
-                      color: "#faf5ec",
+                      color: "#fdfbf7",
                       fontFamily: SERIF,
                       fontWeight: "600",
                       fontSize: 18,
@@ -829,7 +829,7 @@ export default function VendorDetailScreen() {
                       >
                         <Text
                           style={{
-                            color: "#faf5ec",
+                            color: "#fdfbf7",
                             fontFamily: SERIF,
                             fontWeight: "600",
                             fontSize: 18,
@@ -996,7 +996,7 @@ export default function VendorDetailScreen() {
           bottom: 0,
           backgroundColor: "#ffffff",
           borderTopWidth: 1,
-          borderTopColor: "#e8dfcf",
+          borderTopColor: "#ebe3d3",
         }}
       >
         <View
@@ -1076,7 +1076,7 @@ export default function VendorDetailScreen() {
               >
                 <Text
                   style={{
-                    color: "#faf5ec",
+                    color: "#fdfbf7",
                     fontSize: 15,
                     fontWeight: "700",
                     marginRight: 6,
@@ -1084,7 +1084,7 @@ export default function VendorDetailScreen() {
                 >
                   Inquire
                 </Text>
-                <Feather name="chevron-right" size={16} color="#faf5ec" />
+                <Feather name="chevron-right" size={16} color="#fdfbf7" />
               </View>
             )}
           </Pressable>
@@ -1635,7 +1635,7 @@ function CreamOceanAvatar({
       >
         <Text
           style={{
-            color: "#faf5ec",
+            color: "#fdfbf7",
             fontFamily: SERIF,
             fontStyle: "italic",
             fontWeight: "700",
@@ -1957,7 +1957,7 @@ function SheetTabPill({
       >
         <Text
           style={{
-            color: active ? "#faf5ec" : INK,
+            color: active ? "#fdfbf7" : INK,
             fontSize: 13,
             fontWeight: "700",
           }}
@@ -1966,7 +1966,7 @@ function SheetTabPill({
         </Text>
         <Text
           style={{
-            color: active ? "#faf5ec" : INK_DIM,
+            color: active ? "#fdfbf7" : INK_DIM,
             fontSize: 13,
             fontWeight: "600",
           }}
@@ -2162,7 +2162,7 @@ function SheetListingsList({
                 >
                   <Text
                     style={{
-                      color: "#faf5ec",
+                      color: "#fdfbf7",
                       fontFamily: SERIF,
                       fontSize: 18,
                       fontWeight: "600",
@@ -2197,7 +2197,7 @@ function SheetListingsList({
                     >
                       <Text
                         style={{
-                          color: "#faf5ec",
+                          color: "#fdfbf7",
                           fontSize: 9,
                           fontWeight: "800",
                           letterSpacing: 0.6,
