@@ -15,7 +15,6 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
-  Calendar as CalendarIcon,
   ChevronLeft,
   ChevronRight,
   Plus,
@@ -243,24 +242,8 @@ export default function VendorAppointmentsPage() {
     return m;
   }, [inquiries, manualBlocks]);
 
-  const stats = useMemo(() => {
-    let booked = 0;
-    let pending = 0;
-    let earningsCents = 0;
-    for (const i of inquiries) {
-      if (i.status === "won") {
-        booked++;
-        earningsCents += i.budget_min_cents ?? i.budget_max_cents ?? 0;
-      } else if (
-        i.status === "new" ||
-        i.status === "replied" ||
-        i.status === "drafted"
-      ) {
-        pending++;
-      }
-    }
-    return { booked, pending, earningsCents };
-  }, [inquiries]);
+  // Header stats (booked/pending/earnings) were removed — vendors
+  // don't transact through the app, so the dollar value is misleading.
 
   const selectedItems = useMemo(() => {
     if (!selectedYmd) return [];
@@ -380,23 +363,10 @@ export default function VendorAppointmentsPage() {
           </div>
           <div className="flex items-center gap-2">
             <NotificationBell variant="light" />
-            <button
-              onClick={jumpToToday}
-              className="rounded-full w-10 h-10 flex items-center justify-center bg-secondary hover:bg-secondary/80 transition"
-              aria-label="Today"
-            >
-              <CalendarIcon className="h-4 w-4" />
-            </button>
           </div>
         </div>
 
         <div className="p-4 md:p-8 max-w-4xl space-y-6">
-          <StatsRow
-            booked={stats.booked}
-            pending={stats.pending}
-            earningsCents={stats.earningsCents}
-          />
-
           <div>
             <div className="flex items-center justify-between mb-3">
               <h2 className="font-editorial text-2xl">{monthLabel}</h2>
@@ -519,81 +489,10 @@ export default function VendorAppointmentsPage() {
   );
 }
 
-function StatsRow({
-  booked,
-  pending,
-  earningsCents,
-}: {
-  booked: number;
-  pending: number;
-  earningsCents: number;
-}) {
-  return (
-    <div className="grid grid-cols-3 gap-3">
-      <StatCard
-        dark
-        value={String(booked)}
-        label="Booked"
-        footer="this month"
-        footerColor="text-emerald-300"
-      />
-      <StatCard
-        value={String(pending)}
-        label="Pending"
-        footer={
-          pending === 0
-            ? "all clear"
-            : `${pending} ${pending === 1 ? "inquiry" : "inquiries"}`
-        }
-        footerColor="text-amber-600"
-      />
-      <StatCard
-        value={earningsCents > 0 ? fmtMoneyShort(earningsCents) : "$0"}
-        label="Earnings"
-        footer="est."
-        footerColor="text-emerald-600"
-      />
-    </div>
-  );
-}
-
-function StatCard({
-  value,
-  label,
-  footer,
-  footerColor,
-  dark,
-}: {
-  value: string;
-  label: string;
-  footer: string;
-  footerColor: string;
-  dark?: boolean;
-}) {
-  return (
-    <div
-      className={`rounded-2xl px-4 py-3 ${
-        dark ? "bg-foreground" : "bg-card border border-border shadow-sm"
-      }`}
-    >
-      <p
-        className={`font-display text-2xl font-bold tnum truncate ${
-          dark ? "text-background" : "text-foreground"
-        }`}
-      >
-        {value}
-      </p>
-      <p
-        className={`mt-1 text-[10px] font-semibold uppercase tracking-wider ${
-          dark ? "text-background/70" : "text-muted-foreground"
-        }`}
-      >
-        {label}
-      </p>
-      <p className={`mt-1 text-xs font-semibold ${footerColor}`}>{footer}</p>
-    </div>
-  );
-}
+// StatsRow + StatCard removed — bookings/pending/earnings tiles were
+// dropped from the calendar header because transactions are handled
+// outside the app. The calendar grid is the only signal vendors need
+// here (booked / pending / blocked dots).
 
 function MonthGrid({
   month,
