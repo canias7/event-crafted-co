@@ -8,115 +8,360 @@
 //
 // Note: one email = one role. The DB enforces this with triggers
 // (block_vendor_insert_if_host / block_host_onboard_if_vendor).
-// A user who's already a host can't also become a vendor on the
-// same email and vice versa.
+//
+// Visual: same glassy amber-glow canvas as the landing page and the
+// login chooser — soft #fafafa, amber radial glows, perspective
+// grid, floating particles, glassy role cards.
 
 import { Link } from "react-router-dom";
 import { CalendarHeart, Briefcase, ArrowRight } from "lucide-react";
-import { Picture } from "@/components/shared/Picture";
-import heroImg from "@/assets/vendora-hero-dinner.jpg?as=picture";
 
 export default function SignupRoleChooserPage() {
   return (
-    <div className="min-h-screen flex">
-      <div className="hidden md:flex md:w-1/2 relative overflow-hidden">
-        <div className="absolute inset-0">
-          <Picture
-            source={heroImg}
-            alt=""
-            loading="eager"
-            fetchPriority="high"
-            sizes="50vw"
-            className="w-full h-full object-cover"
+    <div
+      className="relative min-h-screen overflow-hidden"
+      style={{ background: "#fafafa", color: "#000" }}
+    >
+      {/* Ambient amber glow — primary upper-left blob */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute z-0"
+        style={{
+          top: "30%",
+          left: "35%",
+          transform: "translate(-50%, -50%)",
+          width: "900px",
+          height: "700px",
+          background:
+            "radial-gradient(ellipse at center, rgba(255,138,76,0.32) 0%, rgba(255,138,76,0.12) 30%, rgba(255,138,76,0.04) 55%, transparent 75%)",
+        }}
+      />
+
+      {/* Secondary glow — bottom-right warmth */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute z-0"
+        style={{
+          bottom: 0,
+          right: "-10%",
+          width: "700px",
+          height: "600px",
+          background:
+            "radial-gradient(ellipse at center, rgba(255,138,76,0.18) 0%, rgba(255,138,76,0.05) 40%, transparent 70%)",
+        }}
+      />
+
+      {/* Perspective grid */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute z-0 inset-x-0"
+        style={{
+          bottom: 0,
+          height: "500px",
+          perspective: "800px",
+          overflow: "hidden",
+          WebkitMaskImage:
+            "linear-gradient(to bottom, transparent 0%, #000 35%, #000 100%)",
+          maskImage:
+            "linear-gradient(to bottom, transparent 0%, #000 35%, #000 100%)",
+        }}
+      >
+        <div
+          className="signup-grid-scroll"
+          style={{
+            position: "absolute",
+            bottom: 0,
+            left: "-25%",
+            width: "150%",
+            height: "800px",
+            backgroundImage:
+              "linear-gradient(rgba(255,138,76,0.30) 1px, transparent 1px), linear-gradient(90deg, rgba(255,138,76,0.30) 1px, transparent 1px)",
+            backgroundSize: "60px 60px",
+            transform: "rotateX(75deg)",
+            transformOrigin: "center bottom",
+          }}
+        />
+      </div>
+
+      {/* Floating particles */}
+      {PARTICLES.map((p, i) => (
+        <span
+          key={i}
+          aria-hidden
+          className={p.variant === "a" ? "signup-float-a" : "signup-float-b"}
+          style={{
+            position: "absolute",
+            top: p.top,
+            left: p.left,
+            right: p.right,
+            width: p.size,
+            height: p.size,
+            background: p.color,
+            boxShadow: `0 0 ${p.glow}px ${p.color}`,
+            borderRadius: "50%",
+            zIndex: 1,
+            animationDelay: p.delay,
+          }}
+        />
+      ))}
+
+      {/* Top-left wordmark */}
+      <Link
+        to="/"
+        className="absolute z-[3] font-editorial italic"
+        style={{ top: "32px", left: "40px", fontSize: "26px", color: "#000" }}
+      >
+        Vendora
+      </Link>
+
+      {/* Top-right sign-in CTA */}
+      <div
+        className="absolute z-[3] text-[13px]"
+        style={{ top: "36px", right: "40px", color: "#000" }}
+      >
+        Already have an account?{" "}
+        <Link
+          to="/login"
+          className="font-medium pb-px"
+          style={{ borderBottom: "0.5px solid #000" }}
+        >
+          Sign in
+        </Link>
+      </div>
+
+      {/* Centered chooser */}
+      <div
+        className="relative z-[2] flex flex-col items-center justify-center px-6 md:px-10"
+        style={{ minHeight: "720px", padding: "130px 40px 100px" }}
+      >
+        {/* Pulse pill */}
+        <div
+          className="inline-flex items-center gap-2.5 rounded-full px-4 py-1.5 mb-7"
+          style={{
+            border: "0.5px solid rgba(255,138,76,0.7)",
+            background: "rgba(255,255,255,0.55)",
+            backdropFilter: "blur(8px)",
+            WebkitBackdropFilter: "blur(8px)",
+          }}
+        >
+          <span
+            className="signup-pulse rounded-full"
+            style={{
+              width: 6,
+              height: 6,
+              background: "#ff8a4c",
+              boxShadow: "0 0 8px #ff8a4c",
+            }}
+          />
+          <span
+            className="uppercase font-semibold text-black"
+            style={{ fontSize: "11px", letterSpacing: "2.5px" }}
+          >
+            Join Vendora
+          </span>
+        </div>
+
+        <h1
+          className="text-black m-0 text-center"
+          style={{
+            fontSize: "48px",
+            fontWeight: 700,
+            lineHeight: 1.1,
+            letterSpacing: "-1.2px",
+          }}
+        >
+          Create an account
+        </h1>
+        <h1
+          className="font-editorial italic text-black mt-2 mb-4 text-center"
+          style={{
+            fontSize: "48px",
+            fontWeight: 500,
+            lineHeight: 1.1,
+            letterSpacing: "-0.8px",
+          }}
+        >
+          with Vendora.
+        </h1>
+        <p
+          className="text-center mb-11"
+          style={{
+            fontSize: "14px",
+            color: "#000",
+            opacity: 0.7,
+            maxWidth: "460px",
+            lineHeight: 1.6,
+          }}
+        >
+          Are you planning an event, or do you run a service?
+        </p>
+
+        {/* Role cards */}
+        <div
+          className="w-full flex flex-col gap-3.5"
+          style={{ maxWidth: "520px" }}
+        >
+          <RoleCard
+            to="/signup/host"
+            icon={<CalendarHeart className="w-5 h-5" />}
+            title="I'm planning an event"
+            subtitle="Sign up as a host. Free, takes a minute."
+          />
+          <RoleCard
+            to="/signup/vendor"
+            icon={<Briefcase className="w-5 h-5" />}
+            title="I'm a vendor"
+            subtitle="Sign up free. Your first listing is hand-reviewed before going live."
           />
         </div>
-        <div className="absolute inset-0 bg-gradient-to-br from-foreground/85 via-foreground/60 to-foreground/35" />
-        <div className="relative z-10 flex flex-col justify-between p-10 lg:p-14 text-background w-full">
-          <Link to="/" className="font-editorial text-3xl">
-            Vendora
-          </Link>
-          <div>
-            <div className="flex items-center gap-3 mb-5">
-              <p className="font-label text-accent tracking-[0.4em]">
-                JOIN VENDORA
-              </p>
-              <span className="h-px w-8 bg-accent/40" />
-            </div>
-            <p className="text-3xl lg:text-4xl font-display leading-[1.1] max-w-sm">
-              Curated vendors,{" "}
-              <span className="italic font-light text-accent">
-                carefully matched
-              </span>
-            </p>
-            <p className="text-sm text-background/70 mt-5 max-w-sm leading-relaxed">
-              Hosts join in seconds. Vendors are hand-reviewed before listing.
-            </p>
-          </div>
-          <p className="text-xs text-background/50 tracking-wide">
-            Curated event vendors. Verified hosts. Privately matched.
-          </p>
+
+        {/* Bottom tagline */}
+        <div
+          className="mt-12 inline-flex items-center gap-2"
+          style={{
+            fontSize: "10px",
+            letterSpacing: "1.5px",
+            color: "#000",
+            opacity: 0.7,
+          }}
+        >
+          <span
+            className="rounded-full"
+            style={{
+              width: 5,
+              height: 5,
+              background: "#ff8a4c",
+              boxShadow: "0 0 6px #ff8a4c",
+            }}
+          />
+          <span>CURATED EVENT VENDORS · VERIFIED HOSTS · PRIVATELY MATCHED</span>
         </div>
       </div>
 
-      <div className="flex-1 flex flex-col md:items-center md:justify-center px-6 pt-12 pb-12 md:p-12 bg-background">
-        <div className="w-full max-w-sm">
-          <Link to="/" className="md:hidden font-editorial text-3xl block mb-8">
-            Vendora
-          </Link>
-
-          <h1 className="font-editorial text-4xl md:text-4xl mb-2 leading-tight">
-            Create an account
-          </h1>
-          <p className="text-sm text-muted-foreground mb-10">
-            Are you planning an event, or do you run a service?
-          </p>
-
-          <div className="space-y-3">
-            <Link
-              to="/signup/host"
-              className="group flex items-center gap-4 rounded-2xl border border-border bg-background p-5 transition hover:border-foreground hover:shadow-sm"
-            >
-              <div className="grid h-11 w-11 place-items-center rounded-full bg-muted text-foreground">
-                <CalendarHeart className="h-5 w-5" />
-              </div>
-              <div className="flex-1">
-                <p className="font-editorial text-xl leading-tight">
-                  I'm planning an event
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  Sign up as a host. Free, takes a minute.
-                </p>
-              </div>
-              <ArrowRight className="h-4 w-4 text-muted-foreground transition group-hover:translate-x-0.5 group-hover:text-foreground" />
-            </Link>
-
-            <Link
-              to="/signup/vendor"
-              className="group flex items-center gap-4 rounded-2xl border border-border bg-background p-5 transition hover:border-foreground hover:shadow-sm"
-            >
-              <div className="grid h-11 w-11 place-items-center rounded-full bg-muted text-foreground">
-                <Briefcase className="h-5 w-5" />
-              </div>
-              <div className="flex-1">
-                <p className="font-editorial text-xl leading-tight">
-                  I'm a vendor
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  Sign up free. Your first listing is hand-reviewed before going live.
-                </p>
-              </div>
-              <ArrowRight className="h-4 w-4 text-muted-foreground transition group-hover:translate-x-0.5 group-hover:text-foreground" />
-            </Link>
-          </div>
-
-          <p className="text-sm text-muted-foreground mt-10 text-center">
-            Already have an account?{" "}
-            <Link to="/login" className="text-accent font-medium">
-              Sign in
-            </Link>
-          </p>
-        </div>
-      </div>
+      {/* Keyframes — namespaced to this surface */}
+      <style>{`
+        @keyframes signupGridScroll {
+          0% { background-position: 0 0; }
+          100% { background-position: 0 60px; }
+        }
+        .signup-grid-scroll {
+          animation: signupGridScroll 5s linear infinite;
+        }
+        @keyframes signupFloatA {
+          0%, 100% { transform: translateY(0); opacity: 0.4; }
+          50% { transform: translateY(-30px); opacity: 1; }
+        }
+        .signup-float-a {
+          animation: signupFloatA 6s ease-in-out infinite;
+        }
+        @keyframes signupFloatB {
+          0%, 100% { transform: translateY(0); opacity: 0.5; }
+          50% { transform: translateY(-24px); opacity: 1; }
+        }
+        .signup-float-b {
+          animation: signupFloatB 7s ease-in-out infinite;
+        }
+        @keyframes signupPulse {
+          0%, 100% { transform: scale(1); opacity: 1; }
+          50% { transform: scale(1.4); opacity: 0.6; }
+        }
+        .signup-pulse {
+          animation: signupPulse 1.6s ease-in-out infinite;
+        }
+        .signup-card {
+          transition: all 0.3s ease;
+        }
+        .signup-card:hover {
+          background: rgba(255,255,255,0.55) !important;
+          border-color: rgba(255,138,76,0.6) !important;
+          transform: translateY(-2px);
+          box-shadow: 0 8px 30px rgba(255,138,76,0.12);
+        }
+      `}</style>
     </div>
   );
 }
+
+function RoleCard({
+  to,
+  icon,
+  title,
+  subtitle,
+}: {
+  to: string;
+  icon: React.ReactNode;
+  title: string;
+  subtitle: string;
+}) {
+  return (
+    <Link
+      to={to}
+      className="signup-card group flex items-center cursor-pointer"
+      style={{
+        padding: "22px 24px",
+        background: "rgba(255,255,255,0.35)",
+        backdropFilter: "blur(14px)",
+        WebkitBackdropFilter: "blur(14px)",
+        border: "0.5px solid rgba(0,0,0,0.18)",
+        borderRadius: "14px",
+        gap: "18px",
+      }}
+    >
+      <div
+        className="flex items-center justify-center shrink-0"
+        style={{
+          width: 44,
+          height: 44,
+          borderRadius: "50%",
+          background: "rgba(255,255,255,0.5)",
+          border: "0.5px solid rgba(0,0,0,0.15)",
+        }}
+      >
+        {icon}
+      </div>
+      <div className="flex-1">
+        <div
+          className="font-editorial italic"
+          style={{ fontSize: "20px", color: "#000", marginBottom: "3px" }}
+        >
+          {title}
+        </div>
+        <div style={{ fontSize: "12px", color: "#000", opacity: 0.65 }}>
+          {subtitle}
+        </div>
+      </div>
+      <div
+        className="flex items-center justify-center shrink-0 transition-transform group-hover:translate-x-0.5"
+        style={{
+          width: 32,
+          height: 32,
+          borderRadius: "50%",
+          border: "0.5px solid rgba(0,0,0,0.25)",
+        }}
+      >
+        <ArrowRight className="w-3.5 h-3.5" />
+      </div>
+    </Link>
+  );
+}
+
+type Particle = {
+  variant: "a" | "b";
+  top?: string;
+  left?: string;
+  right?: string;
+  size: number;
+  color: string;
+  glow: number;
+  delay: string;
+};
+
+const PARTICLES: Particle[] = [
+  { variant: "a", top: "20%", left: "10%", size: 3, color: "#ff8a4c", glow: 10, delay: "0s" },
+  { variant: "b", top: "35%", left: "28%", size: 2, color: "#ffb27a", glow: 6, delay: "1s" },
+  { variant: "a", top: "60%", left: "18%", size: 2, color: "#ff8a4c", glow: 6, delay: "2s" },
+  { variant: "b", top: "25%", right: "30%", size: 3, color: "#ffb27a", glow: 8, delay: "0.5s" },
+  { variant: "a", top: "50%", left: "8%", size: 2, color: "#ff8a4c", glow: 6, delay: "1.5s" },
+  { variant: "b", top: "75%", right: "20%", size: 2, color: "#ffb27a", glow: 6, delay: "2.5s" },
+  { variant: "a", top: "15%", right: "12%", size: 3, color: "#ff8a4c", glow: 10, delay: "1s" },
+];
