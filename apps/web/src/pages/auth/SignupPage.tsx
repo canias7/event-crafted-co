@@ -12,7 +12,14 @@ import { PasswordInput } from "@/components/auth/PasswordInput";
 import { Picture } from "@/components/shared/Picture";
 import heroImg from "@/assets/vendora-hero-dinner.jpg?as=picture";
 
-export default function SignupPage() {
+// `role` decides what the user is signing up as. Default "host" keeps
+// the existing behavior (post-signup → /customer/onboarding). When
+// passed "vendor", we route the user to /vendor/me after signup so
+// they can build their first listing. The auth.users row is the
+// same either way — role differentiation happens at the next step
+// (onboarded_at vs. inserting a vendor_profiles row), with DB
+// triggers enforcing the one-role-per-email rule.
+export default function SignupPage({ role = "host" }: { role?: "host" | "vendor" } = {}) {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [name, setName] = useState("");
@@ -33,10 +40,12 @@ export default function SignupPage() {
       password,
       options: {
         emailRedirectTo: `${window.location.origin}/`,
-        // Role is set server-side by handle_new_user() — every fresh
-        // signup is a host. Vendors get bumped to role='vendor' only
-        // when they insert a vendor_profiles row via /vendor-apply.
-        data: { display_name: name },
+        // intended_role is consumed by the handle_new_user() trigger
+        // and decides whether the new profile gets onboarded_at
+        // stamped (host) or left null (vendor — so the later
+        // vendor_profiles INSERT isn't blocked by the
+        // one-role-per-email guard).
+        data: { display_name: name, intended_role: role },
       },
     });
     setLoading(false);
@@ -47,11 +56,13 @@ export default function SignupPage() {
     // If Supabase has email confirmation enabled, signUp returns no session.
     // Route to the check-email page instead of bouncing into a protected route.
     if (!data.session) {
-      navigate(`/check-email?email=${encodeURIComponent(email)}`);
+      navigate(`/check-email?email=${encodeURIComponent(email)}&role=${role}`);
       return;
     }
     toast.success("Account created");
-    navigate("/customer/onboarding");
+    // Vendors go straight to their profile to create a first listing;
+    // hosts land in the onboarding wizard that sets onboarded_at.
+    navigate(role === "vendor" ? "/vendor/me" : "/customer/onboarding");
   }
 
   return (
