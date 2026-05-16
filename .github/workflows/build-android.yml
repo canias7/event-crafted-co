@@ -1,0 +1,167 @@
+name: Build Android (native)
+
+# Native Android build pipeline. Replaces `eas build --platform android`.
+# Runs on ubuntu-latest — FREE for public repos, very cheap for private
+# (1x multiplier). Builds ~10-15 min.
+#
+# Flow:
+#   1. Checkout + install deps
+#   2. Run `npx expo prebuild --platform android` to generate android/
+#      directory from app.json (CNG).
+#   3. Decode keystore from secret + write gradle.properties.
+#   4. ./gradlew bundleRelease → AAB.
+#   5. Upload to Play Console internal track via Service Account.
+#
+# Required GitHub secrets:
+#
+#   ANDROID_KEYSTORE_BASE64       — base64-encoded .jks file
+#                                   (download from EAS: `eas credentials`
+#                                    → android → "Download keystore")
+#   ANDROID_KEYSTORE_PASSWORD     — keystore password (EAS calls it "keystore password")
+#   ANDROID_KEY_ALIAS             — typically "vendora" or whatever EAS named it
+#   ANDROID_KEY_PASSWORD          — key password (same as keystore for EAS-generated)
+#   GOOGLE_PLAY_SERVICE_ACCOUNT_JSON — JSON service account from Google Cloud
+#                                      that has Play Console publish permission
+#                                      (Play Console → API access → service accounts)
+#
+# Already-shared with the existing mobile-build workflow:
+#   SUPABASE_URL, SUPABASE_ANON_KEY
+
+on:
+  workflow_dispatch:
+    inputs:
+      app:
+        description: "Which app?"
+        type: choice
+        options: [host, vendor]
+        default: host
+      submit:
+        description: "Upload to Play Internal track after build?"
+        type: boolean
+        default: true
+
+concurrency:
+  group: build-android-${{ github.event.inputs.app }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build Android for ${{ inputs.app }}-mobile
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      APP_DIR: apps/${{ inputs.app }}-mobile
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Setup JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: "temurin"
+          java-version: "17"
+
+      - name: Install JS deps
+        run: bun install --frozen-lockfile --linker=hoisted
+
+      - name: Expo prebuild (generate android/)
+        working-directory: ${{ env.APP_DIR }}
+        run: |
+          npx expo prebuild --platform android --clean --no-install
+        env:
+          EXPO_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          EXPO_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+
+      - name: Decode keystore
+        working-directory: ${{ env.APP_DIR }}/android/app
+        run: |
+          echo -n "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" \
+            | base64 --decode \
+            > release.keystore
+          ls -la release.keystore
+
+      # Inject signing config so ./gradlew bundleRelease produces a
+      # signed AAB. Without these lines Gradle defaults to debug signing.
+      - name: Configure gradle signing
+        working-directory: ${{ env.APP_DIR }}/android
+        run: |
+          cat >> gradle.properties <<EOF
+
+          # Injected by build-android.yml at CI time
+          VENDORA_RELEASE_STORE_FILE=release.keystore
+          VENDORA_RELEASE_STORE_PASSWORD=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          VENDORA_RELEASE_KEY_ALIAS=${{ secrets.ANDROID_KEY_ALIAS }}
+          VENDORA_RELEASE_KEY_PASSWORD=${{ secrets.ANDROID_KEY_PASSWORD }}
+          EOF
+
+      # Patch app/build.gradle to use the injected signing config if it
+      # doesn't already have one. Idempotent — bails if already present.
+      - name: Patch build.gradle with signing config
+        working-directory: ${{ env.APP_DIR }}/android/app
+        run: |
+          if ! grep -q "VENDORA_RELEASE_STORE_FILE" build.gradle; then
+            # Insert signingConfigs.release block above buildTypes
+            node <<'JS'
+            const fs = require('fs');
+            const path = 'build.gradle';
+            let content = fs.readFileSync(path, 'utf8');
+            const signingBlock = `
+                signingConfigs {
+                    release {
+                        if (project.hasProperty('VENDORA_RELEASE_STORE_FILE')) {
+                            storeFile file(VENDORA_RELEASE_STORE_FILE)
+                            storePassword VENDORA_RELEASE_STORE_PASSWORD
+                            keyAlias VENDORA_RELEASE_KEY_ALIAS
+                            keyPassword VENDORA_RELEASE_KEY_PASSWORD
+                        }
+                    }
+                }`;
+            // Insert before buildTypes
+            content = content.replace(/(\s+buildTypes\s*\{)/, signingBlock + '$1');
+            // Switch release buildType from debug signing to release signing
+            content = content.replace(/signingConfig\s+signingConfigs\.debug/g, 'signingConfig signingConfigs.release');
+            fs.writeFileSync(path, content);
+            console.log('Patched build.gradle');
+            JS
+          fi
+
+      - name: Build AAB
+        working-directory: ${{ env.APP_DIR }}/android
+        run: |
+          chmod +x ./gradlew
+          ./gradlew bundleRelease --no-daemon
+
+      - name: Locate AAB
+        working-directory: ${{ env.APP_DIR }}/android
+        run: |
+          AAB=$(find app/build/outputs/bundle -name "*.aab" | head -1)
+          echo "AAB_PATH=${{ env.APP_DIR }}/android/$AAB" >> $GITHUB_ENV
+          echo "Found: $AAB"
+
+      - name: Upload AAB as workflow artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-${{ inputs.app }}-aab-${{ github.run_id }}
+          path: ${{ env.AAB_PATH }}
+          retention-days: 14
+
+      - name: Upload to Google Play (Internal track)
+        if: ${{ inputs.submit }}
+        uses: r0adkll/upload-google-play@v1
+        with:
+          serviceAccountJsonPlainText: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
+          packageName: ${{ inputs.app == 'host' && 'co.eventcrafted.host' || 'co.eventcrafted.vendor' }}
+          releaseFiles: ${{ env.AAB_PATH }}
+          track: internal
+          status: completed
