@@ -196,7 +196,9 @@ jobs:
             -archivePath build/app.xcarchive \
             -sdk iphoneos \
             -destination "generic/platform=iOS" \
+            -allowProvisioningUpdates \
             CODE_SIGN_STYLE=Manual \
+            CODE_SIGN_IDENTITY="Apple Distribution" \
             DEVELOPMENT_TEAM=MY8LTVJQ82 \
             PROVISIONING_PROFILE_SPECIFIER="$PROVISIONING_PROFILE_UUID" \
             archive
