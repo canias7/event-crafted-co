@@ -373,7 +373,14 @@ export default function VendorProfilePage() {
       .single();
     setCreating(false);
     if (error || !data?.id) {
-      toast.error(`Couldn't create listing: ${error?.message ?? "unknown error"}`);
+      // The block_vendor_insert_if_host trigger raises check_violation
+      // when the user is already a host. Surface that as a friendly
+      // explanation instead of the raw "P0001"-style Postgres error.
+      const msg =
+        error?.message?.includes("already registered as a host")
+          ? "This email is already registered as a host. One email can only be one role — sign up with a different email to become a vendor."
+          : `Couldn't create listing: ${error?.message ?? "unknown error"}`;
+      toast.error(msg);
       return;
     }
     setSearchParams({ id: data.id }, { replace: false });

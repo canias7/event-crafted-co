@@ -1,10 +1,15 @@
 // Sign-up role chooser. /signup lands here; the user picks Host or
 // Vendor and we forward them to the right intake.
 //
-// Hosts: /signup/host (the existing self-serve form, unchanged).
-// Vendors: /vendor-apply (a hand-reviewed application — every listing
-// is approved before going live, so this is a different flow with
-// portfolio + business detail steps, not a quick signup).
+// Hosts: /signup/host — self-serve, routes to /customer/onboarding.
+// Vendors: /signup/vendor — same form, routes to /vendor/me where
+// they can create their first listing. The old /vendor-apply
+// hand-reviewed flow was retired.
+//
+// Note: one email = one role. The DB enforces this with triggers
+// (block_vendor_insert_if_host / block_host_onboard_if_vendor).
+// A user who's already a host can't also become a vendor on the
+// same email and vice versa.
 
 import { Link } from "react-router-dom";
 import { CalendarHeart, Briefcase, ArrowRight } from "lucide-react";
@@ -86,7 +91,7 @@ export default function SignupRoleChooserPage() {
             </Link>
 
             <Link
-              to="/vendor-apply"
+              to="/signup/vendor"
               className="group flex items-center gap-4 rounded-2xl border border-border bg-background p-5 transition hover:border-foreground hover:shadow-sm"
             >
               <div className="grid h-11 w-11 place-items-center rounded-full bg-muted text-foreground">
@@ -97,7 +102,7 @@ export default function SignupRoleChooserPage() {
                   I'm a vendor
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  Apply to list your service. Hand-reviewed before going live.
+                  Sign up free. Your first listing is hand-reviewed before going live.
                 </p>
               </div>
               <ArrowRight className="h-4 w-4 text-muted-foreground transition group-hover:translate-x-0.5 group-hover:text-foreground" />

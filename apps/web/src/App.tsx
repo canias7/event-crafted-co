@@ -139,7 +139,8 @@ const App = () => (
               <Route path="/login/host" element={<LoginPage role="host" />} />
               <Route path="/login/vendor" element={<LoginPage role="vendor" />} />
               <Route path="/signup" element={<SignupRoleChooserPage />} />
-              <Route path="/signup/host" element={<SignupPage />} />
+              <Route path="/signup/host" element={<SignupPage role="host" />} />
+              <Route path="/signup/vendor" element={<SignupPage role="vendor" />} />
               <Route path="/check-email" element={<CheckEmailPage />} />
               <Route path="/forgot-password" element={<ForgotPasswordPage />} />
               <Route path="/reset-password" element={<ResetPasswordPage />} />
