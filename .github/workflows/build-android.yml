@@ -83,10 +83,13 @@ jobs:
           EXPO_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           EXPO_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
 
+      # Per-app keystore — host and vendor have separate signing keys.
       - name: Decode keystore
         working-directory: ${{ env.APP_DIR }}/android/app
+        env:
+          KEYSTORE_BASE64: ${{ inputs.app == 'host' && secrets.ANDROID_KEYSTORE_HOST_BASE64 || secrets.ANDROID_KEYSTORE_VENDOR_BASE64 }}
         run: |
-          echo -n "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" \
+          echo -n "$KEYSTORE_BASE64" \
             | base64 --decode \
             > release.keystore
           ls -la release.keystore
@@ -95,14 +98,18 @@ jobs:
       # signed AAB. Without these lines Gradle defaults to debug signing.
       - name: Configure gradle signing
         working-directory: ${{ env.APP_DIR }}/android
+        env:
+          KEYSTORE_PASSWORD: ${{ inputs.app == 'host' && secrets.ANDROID_KEYSTORE_HOST_PASSWORD || secrets.ANDROID_KEYSTORE_VENDOR_PASSWORD }}
+          KEY_ALIAS:        ${{ inputs.app == 'host' && secrets.ANDROID_KEY_HOST_ALIAS        || secrets.ANDROID_KEY_VENDOR_ALIAS }}
+          KEY_PASSWORD:     ${{ inputs.app == 'host' && secrets.ANDROID_KEY_HOST_PASSWORD     || secrets.ANDROID_KEY_VENDOR_PASSWORD }}
         run: |
           cat >> gradle.properties <<EOF
 
           # Injected by build-android.yml at CI time
           VENDORA_RELEASE_STORE_FILE=release.keystore
-          VENDORA_RELEASE_STORE_PASSWORD=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-          VENDORA_RELEASE_KEY_ALIAS=${{ secrets.ANDROID_KEY_ALIAS }}
-          VENDORA_RELEASE_KEY_PASSWORD=${{ secrets.ANDROID_KEY_PASSWORD }}
+          VENDORA_RELEASE_STORE_PASSWORD=$KEYSTORE_PASSWORD
+          VENDORA_RELEASE_KEY_ALIAS=$KEY_ALIAS
+          VENDORA_RELEASE_KEY_PASSWORD=$KEY_PASSWORD
           EOF
 
       # Patch app/build.gradle to use the injected signing config if it
