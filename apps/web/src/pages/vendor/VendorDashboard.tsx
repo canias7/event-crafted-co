@@ -16,10 +16,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-// Recharts is heavy (~150kB parsed) — defer the chart panel into its
-// own chunk so the dashboard's first paint (header + KPI strip +
-// recent inquiries) doesn't have to wait for the visualisation
-// library to download or parse. Mobile feels noticeably snappier.
 const VendorPerformanceCharts = lazy(() =>
   import("@/components/vendor/VendorPerformanceCharts").then((m) => ({
     default: m.VendorPerformanceCharts,
@@ -75,29 +71,36 @@ const statusLabel: Record<string, string> = {
   expired: "Expired",
 };
 
-function KpiCell({
+function StatCard({
   label,
   value,
   icon: Icon,
   accent,
+  subtitle,
 }: {
   label: string;
   value: number;
   icon: LucideIcon;
   accent?: boolean;
+  subtitle?: string;
 }) {
   return (
-    <div className="px-4 py-3 flex items-center justify-between gap-3">
-      <div className="min-w-0">
-        <p className="font-label text-muted-foreground truncate">{label}</p>
-        <p className="font-display text-2xl tnum mt-0.5">{value}</p>
+    <div className="card-soft p-6 md:p-8 flex flex-col justify-between min-h-[140px]">
+      <div className="flex items-start justify-between">
+        <p className="font-label text-muted-foreground tracking-wider">{label}</p>
+        <div
+          className={`w-10 h-10 rounded-2xl flex items-center justify-center ${
+            accent ? "bg-accent/15 text-accent" : "bg-secondary/80 text-muted-foreground"
+          }`}
+        >
+          <Icon className="w-4.5 h-4.5" />
+        </div>
       </div>
-      <div
-        className={`w-7 h-7 rounded-md flex items-center justify-center shrink-0 ${
-          accent ? "bg-accent/10 text-accent" : "bg-secondary text-muted-foreground"
-        }`}
-      >
-        <Icon className="w-3.5 h-3.5" />
+      <div>
+        <p className="font-editorial text-5xl md:text-6xl tnum tracking-tight">{value}</p>
+        {subtitle && (
+          <p className="text-xs text-muted-foreground mt-2">{subtitle}</p>
+        )}
       </div>
     </div>
   );
@@ -164,10 +167,6 @@ export default function VendorDashboard() {
           booked: rows.filter((r) => r.status === "won").length,
         });
 
-        // Raw rows that the chart panel turns into a 30-day area
-        // chart, a rating distribution, and the funnel donut. We
-        // pull rows (not just counts) so the visualisations can
-        // bucket by day / star without an extra round-trip.
         const since = new Date();
         since.setDate(since.getDate() - 30);
         const [{ data: viewData }, { data: reviewData }] = await Promise.all([
@@ -199,52 +198,64 @@ export default function VendorDashboard() {
   }, [user, membershipVendorId]);
 
   const greeting = profile?.display_name?.split(" ")[0] ?? "there";
+  const currentHour = new Date().getHours();
+  const timeGreeting = currentHour < 12 ? "Good morning" : currentHour < 18 ? "Good afternoon" : "Good evening";
 
   return (
     <div className="flex min-h-screen bg-background">
       <DashboardSidebar items={navItems} title={t("dashboard.vendor.title")} backPath="/" />
 
-      <main id="main-content" className="flex-1 pb-20 lg:pb-0">
-        <div className="border-b border-border/40 bg-card/60 backdrop-blur px-4 md:px-8 py-5 flex items-center justify-between sticky top-0 z-40">
-          <div>
-            {loading ? (
-              <Skeleton className="h-6 w-44 mb-1" />
-            ) : (
-              <h1 className="font-editorial text-3xl">
-                {vendorProfile?.business_name ??
-                  t("vendor_dashboard.header.welcome", { name: greeting })}
-              </h1>
-            )}
-            <p className="text-sm text-muted-foreground">
-              {vendorProfile?.category ??
-                t("vendor_dashboard.header.subtitle")}
-            </p>
+      <main id="main-content" className="flex-1 pb-24 lg:pb-0">
+        {/* Premium editorial header */}
+        <header className="px-6 md:px-10 lg:px-14 pt-10 md:pt-14 pb-8 md:pb-12">
+          <div className="flex items-start justify-between gap-4">
+            <div className="space-y-3">
+              {loading ? (
+                <>
+                  <Skeleton className="h-8 w-32" />
+                  <Skeleton className="h-14 w-80" />
+                </>
+              ) : (
+                <>
+                  <p className="font-label text-muted-foreground tracking-widest">
+                    {timeGreeting}
+                  </p>
+                  <h1 className="font-editorial text-4xl md:text-5xl lg:text-6xl text-foreground leading-none">
+                    {vendorProfile?.business_name ?? `Welcome, ${greeting}`}
+                  </h1>
+                  {vendorProfile?.category && (
+                    <p className="text-base text-muted-foreground max-w-lg">
+                      {vendorProfile.category}
+                      {vendorProfile.location && ` · ${vendorProfile.location}`}
+                    </p>
+                  )}
+                </>
+              )}
+            </div>
+            <div className="flex items-center gap-3 pt-2">
+              {vendorProfile?.verified_at && (
+                <Badge className="bg-accent/15 text-accent border border-accent/30 hidden sm:flex rounded-full px-4 py-1.5">
+                  <ShieldCheck className="w-3.5 h-3.5 mr-2" />
+                  Verified
+                </Badge>
+              )}
+              <NotificationBell variant="light" />
+            </div>
           </div>
-          <div className="flex items-center gap-2">
-            {vendorProfile?.verified_at && (
-              <Badge className="bg-accent/15 text-accent border border-accent/30 hidden sm:flex">
-                <ShieldCheck className="w-3.5 h-3.5 mr-1.5" />
-                {t("vendor_dashboard.header.verified")}
-              </Badge>
-            )}
-            <NotificationBell variant="light" />
-          </div>
-        </div>
+        </header>
 
-        <div className="p-3 md:p-6 space-y-3 md:space-y-4">
-          {/* The pending-application banner used to live here; dropped
-              per request because the dashboard reads as a working
-              vendor surface and the under-review state is already
-              surfaced on the Profile / listing tab. Rejected still
-              gets a banner below since that's actionable. */}
+        <div className="px-6 md:px-10 lg:px-14 space-y-8 md:space-y-12">
+          {/* Rejection banner */}
           {vendorProfile?.application_status === "rejected" && (
-            <div className="rounded-2xl border border-destructive/30 bg-destructive/5 p-4 flex items-start gap-3">
-              <AlertCircle className="w-4 h-4 text-destructive mt-0.5 shrink-0" />
+            <div className="card-soft p-6 flex items-start gap-4 border-destructive/20">
+              <div className="w-10 h-10 rounded-2xl bg-destructive/10 text-destructive flex items-center justify-center shrink-0">
+                <AlertCircle className="w-5 h-5" />
+              </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium">
+                <p className="text-base font-medium text-foreground">
                   {t("vendor_dashboard.header.application_rejected_title")}
                 </p>
-                <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">
+                <p className="text-sm text-muted-foreground mt-1 leading-relaxed">
                   {vendorProfile.application_review_notes ??
                     t("vendor_dashboard.header.application_rejected_default")}
                 </p>
@@ -252,135 +263,142 @@ export default function VendorDashboard() {
             </div>
           )}
 
-          {/* Profile-not-yet-created state */}
+          {/* Profile setup CTA */}
           {!loading && !vendorProfile && (
-            <div className="rounded-2xl border border-accent/30 bg-accent/5 p-6 flex items-start gap-4">
-              <div className="w-9 h-9 rounded-full bg-accent text-accent-foreground flex items-center justify-center flex-shrink-0">
-                <Sparkles className="w-4 h-4" />
+            <div className="card-soft p-8 md:p-10 flex flex-col md:flex-row items-start md:items-center gap-6">
+              <div className="w-14 h-14 rounded-2xl bg-accent/15 text-accent flex items-center justify-center flex-shrink-0">
+                <Sparkles className="w-6 h-6" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="font-display text-base mb-1">
+                <h2 className="font-editorial text-2xl md:text-3xl mb-2">
                   {t("vendor_dashboard.header.setup_title")}
-                </p>
-                <p className="text-sm text-muted-foreground leading-relaxed">
+                </h2>
+                <p className="text-muted-foreground leading-relaxed max-w-xl">
                   {t("vendor_dashboard.header.setup_body")}
                 </p>
               </div>
-              <Link to="/vendor/listing">
-                <Button size="sm" className="rounded-full whitespace-nowrap">
+              <Link to="/vendor/listing" className="shrink-0">
+                <Button size="lg" className="rounded-full px-8 gap-2">
                   {t("vendor_dashboard.header.complete_profile")}
-                  <ArrowRight className="w-3.5 h-3.5 ml-1.5" />
+                  <ArrowRight className="w-4 h-4" />
                 </Button>
               </Link>
             </div>
           )}
 
-          {/* Compact KPI strip — single bordered card, four cells
-              divided by hairlines. Took the place of the 4-up tile
-              grid that was wasting vertical space when the values
-              were all "0". */}
-          <div className="card-soft grid grid-cols-2 sm:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x divide-border">
-            <KpiCell
-              label={t("dashboard.vendor.stat_new_requests")}
-              value={stats.newRequests}
-              icon={Bell}
-              accent
-            />
-            <KpiCell
-              label={t("dashboard.customer.stat_awaiting")}
-              value={stats.awaiting}
-              icon={Clock}
-            />
-            <KpiCell
-              label={t("dashboard.vendor.stat_won")}
-              value={stats.booked}
-              icon={CheckCircle2}
-            />
-            <KpiCell
-              label={t("dashboard.customer.stat_inquiries")}
-              value={stats.total}
-              icon={Inbox}
-            />
-          </div>
-
-          {/* Performance overview — funnel donut, 30-day views
-              area chart, and per-star rating distribution. Replaces
-              the older flat tile grid; same numbers, way more
-              scannable at a glance. */}
-          {vendorProfile && (
-            <Suspense
-              fallback={
-                <div className="space-y-2 md:space-y-3">
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                    <Skeleton className="h-[140px] md:h-[180px] rounded-sm" />
-                    <Skeleton className="h-[140px] md:h-[180px] rounded-sm" />
-                    <Skeleton className="h-[140px] md:h-[180px] rounded-sm" />
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    <Skeleton className="h-[140px] md:h-[180px] rounded-sm" />
-                    <Skeleton className="h-[140px] md:h-[180px] rounded-sm" />
-                  </div>
-                </div>
-              }
-            >
-              <VendorPerformanceCharts
-                inquiries={allInquiries}
-                ratings={ratings}
-                views={viewRows}
+          {/* KPI cards - generous 4-up grid */}
+          <section>
+            <h2 className="font-editorial text-2xl md:text-3xl mb-6 md:mb-8">
+              At a glance
+            </h2>
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+              <StatCard
+                label={t("dashboard.vendor.stat_new_requests")}
+                value={stats.newRequests}
+                icon={Bell}
+                accent
+                subtitle="Awaiting your response"
               />
-            </Suspense>
+              <StatCard
+                label={t("dashboard.customer.stat_awaiting")}
+                value={stats.awaiting}
+                icon={Clock}
+                subtitle="In progress"
+              />
+              <StatCard
+                label={t("dashboard.vendor.stat_won")}
+                value={stats.booked}
+                icon={CheckCircle2}
+                subtitle="Confirmed bookings"
+              />
+              <StatCard
+                label={t("dashboard.customer.stat_inquiries")}
+                value={stats.total}
+                icon={Inbox}
+                subtitle="All time"
+              />
+            </div>
+          </section>
+
+          {/* Performance charts - breathable layout */}
+          {vendorProfile && (
+            <section>
+              <h2 className="font-editorial text-2xl md:text-3xl mb-6 md:mb-8">
+                Performance
+              </h2>
+              <Suspense
+                fallback={
+                  <div className="space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                      <Skeleton className="h-[200px] rounded-3xl" />
+                      <Skeleton className="h-[200px] rounded-3xl" />
+                      <Skeleton className="h-[200px] rounded-3xl" />
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <Skeleton className="h-[200px] rounded-3xl" />
+                      <Skeleton className="h-[200px] rounded-3xl" />
+                    </div>
+                  </div>
+                }
+              >
+                <VendorPerformanceCharts
+                  inquiries={allInquiries}
+                  ratings={ratings}
+                  views={viewRows}
+                />
+              </Suspense>
+            </section>
           )}
 
-          {/* Recent inquiries — Instagram-style edge-to-edge feed
-              on mobile (no card border, full-bleed rows separated
-              by hairlines). On md+ goes back to the bordered card
-              treatment. */}
-          <div className="md:card-soft md:p-4 -mx-3 md:mx-0">
-            <div className="flex items-center justify-between mb-2 md:mb-3 px-3 md:px-0">
-              <p className="font-label text-muted-foreground">
+          {/* Recent inquiries - editorial list */}
+          <section className="pb-8">
+            <div className="flex items-end justify-between mb-6 md:mb-8">
+              <h2 className="font-editorial text-2xl md:text-3xl">
                 {t("vendor_dashboard.recent.title")}
-              </p>
+              </h2>
               <Link
                 to="/vendor/inbox"
-                className="text-xs text-accent font-medium"
+                className="text-sm text-accent font-medium hover:underline underline-offset-4"
               >
                 {t("vendor_dashboard.recent.view_all")}
               </Link>
             </div>
+            
             {loading ? (
-              <div className="space-y-2 px-3 md:px-0">
+              <div className="space-y-4">
                 {[0, 1, 2].map((i) => (
-                  <Skeleton key={i} className="h-10 w-full" />
+                  <Skeleton key={i} className="h-20 rounded-3xl" />
                 ))}
               </div>
             ) : allInquiries.length === 0 ? (
-              <p className="text-xs text-muted-foreground py-4 text-center">
-                {t("vendor_dashboard.recent.empty")}
-              </p>
+              <div className="card-soft p-12 text-center">
+                <p className="text-muted-foreground">
+                  {t("vendor_dashboard.recent.empty")}
+                </p>
+              </div>
             ) : (
-              <div className="md:space-y-1.5 divide-y divide-border md:divide-y-0">
+              <div className="space-y-3 md:space-y-4">
                 {allInquiries.slice(0, 5).map((r) => (
                   <Link
                     key={r.id}
                     to={`/vendor/inbox/${r.id}`}
-                    className="flex items-center gap-3 px-3 py-3 md:py-2 md:rounded-sm bg-card md:bg-secondary/40 hover:bg-secondary/70 transition-colors active:bg-secondary"
+                    className="card-soft p-5 md:p-6 flex items-center gap-4 md:gap-6 hover:scale-[1.01] transition-transform duration-200"
                   >
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm md:text-xs font-medium truncate">
-                        {r.host?.display_name ??
-                          t("vendor_dashboard.recent.host")}
+                      <p className="text-base md:text-lg font-medium text-foreground truncate">
+                        {r.host?.display_name ?? t("vendor_dashboard.recent.host")}
                       </p>
-                      <p className="text-[11px] text-muted-foreground capitalize">
+                      <p className="text-sm text-muted-foreground mt-1 capitalize">
                         {r.event_type.replace("_", " ")}
                         {r.event_date && (
                           <>
-                            {" · "}
+                            <span className="mx-2 opacity-40">·</span>
                             <span className="tnum">{r.event_date}</span>
                           </>
                         )}
                         {r.guest_count != null && (
                           <>
-                            {" · "}
+                            <span className="mx-2 opacity-40">·</span>
                             {t("vendor_dashboard.recent.guests", {
                               count: r.guest_count,
                             })}
@@ -390,7 +408,7 @@ export default function VendorDashboard() {
                     </div>
                     <Badge
                       variant="outline"
-                      className={`text-[10px] ${statusStyles[r.status] ?? ""}`}
+                      className={`text-xs px-4 py-1.5 rounded-full shrink-0 ${statusStyles[r.status] ?? ""}`}
                     >
                       {statusLabel[r.status] ?? r.status}
                     </Badge>
@@ -398,7 +416,7 @@ export default function VendorDashboard() {
                 ))}
               </div>
             )}
-          </div>
+          </section>
         </div>
       </main>
 

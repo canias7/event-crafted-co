@@ -1,4 +1,5 @@
 @import url('https://api.fontshare.com/v2/css?f[]=satoshi@300,400,500,700,900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@1,9..144,400;1,9..144,500;1,9..144,600&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -214,16 +215,15 @@
     line-height: 1.1;
   }
 
-  /* Editorial italic serif — used for headlines across the host
-     portal to mirror the mobile design (Times New Roman italic on
-     iOS, system serif italic elsewhere). The mobile apps build their
-     entire identity around this typeface; web pages that talk
-     directly to hosts should match. */
+  /* Editorial italic serif — Fraunces is used for headlines across
+     the vendor portal to create that luxury fashion editorial feel.
+     Falls back to Times New Roman for consistency with iOS native. */
   .font-editorial {
-    font-family: 'Times New Roman', 'Times', Georgia, ui-serif, serif;
+    font-family: 'Fraunces', 'Times New Roman', 'Times', Georgia, ui-serif, serif;
     font-style: italic;
+    font-optical-sizing: auto;
     font-weight: 500;
-    letter-spacing: -0.01em;
+    letter-spacing: -0.02em;
     line-height: 1.05;
   }
 

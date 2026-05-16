@@ -289,15 +289,15 @@ export function VendorPerformanceCharts({
   };
 
   return (
-    <div className="space-y-2 md:space-y-3">
+    <div className="space-y-6 md:space-y-8">
       {/* Row 1 — funnel, views, conversion gauge */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
         {/* Inquiry funnel donut */}
-        <div className="card-soft p-3 md:p-4">
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2 text-muted-foreground">
-              <Inbox className="w-3.5 h-3.5" />
-              <p className="font-label">Inquiry funnel</p>
+        <div className="card-soft p-5 md:p-6">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2.5 text-muted-foreground">
+              <Inbox className="w-4 h-4" />
+              <p className="font-label tracking-wider">Inquiry funnel</p>
             </div>
             {totalInquiries > 0 && (
               <p className="text-xs text-muted-foreground tnum">
@@ -313,16 +313,16 @@ export function VendorPerformanceCharts({
               No inquiries yet
             </p>
           ) : (
-            <div className="grid grid-cols-[120px_1fr] gap-3 items-center">
-              <div className="relative h-[90px] md:h-[120px]">
+            <div className="grid grid-cols-[130px_1fr] gap-4 items-center">
+              <div className="relative h-[100px] md:h-[140px]">
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Pie
                       data={funnel}
                       dataKey="value"
                       nameKey="name"
-                      innerRadius={36}
-                      outerRadius={56}
+                      innerRadius={40}
+                      outerRadius={62}
                       paddingAngle={2}
                       stroke="none"
                       isAnimationActive={false}
@@ -335,21 +335,21 @@ export function VendorPerformanceCharts({
                   </PieChart>
                 </ResponsiveContainer>
                 <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                  <p className="font-display text-base tnum leading-none">
+                  <p className="font-editorial text-xl tnum leading-none">
                     {totalInquiries}
                   </p>
                 </div>
               </div>
-              <ul className="space-y-1">
+              <ul className="space-y-1.5">
                 {funnel.map((d) => {
                   const pct = Math.round((d.value / totalInquiries) * 100);
                   return (
                     <li
                       key={d.key}
-                      className="flex items-center gap-2 text-[11px]"
+                      className="flex items-center gap-2.5 text-xs"
                     >
                       <span
-                        className="w-2.5 h-2.5 rounded-sm shrink-0"
+                        className="w-3 h-3 rounded-md shrink-0"
                         style={{ background: d.color }}
                         aria-hidden
                       />
@@ -366,15 +366,15 @@ export function VendorPerformanceCharts({
         </div>
 
         {/* 30-day views trend */}
-        <div className="card-soft p-3 md:p-4">
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2 text-muted-foreground">
-              <TrendingUp className="w-3.5 h-3.5" />
-              <p className="font-label">Views · 30d</p>
+        <div className="card-soft p-5 md:p-6">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2.5 text-muted-foreground">
+              <TrendingUp className="w-4 h-4" />
+              <p className="font-label tracking-wider">Views · 30d</p>
             </div>
-            <p className="font-display text-base tnum">{totalViews}</p>
+            <p className="font-editorial text-xl tnum">{totalViews}</p>
           </div>
-          <div className="h-[90px] md:h-[120px] -mx-1">
+          <div className="h-[100px] md:h-[140px] -mx-1">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart
                 data={viewSeries}
@@ -422,17 +422,17 @@ export function VendorPerformanceCharts({
         </div>
 
         {/* Conversion radial gauge */}
-        <div className="card-soft p-3 md:p-4">
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2 text-muted-foreground">
-              <Zap className="w-3.5 h-3.5" />
-              <p className="font-label">Conversion</p>
+        <div className="card-soft p-5 md:p-6">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2.5 text-muted-foreground">
+              <Zap className="w-4 h-4" />
+              <p className="font-label tracking-wider">Conversion</p>
             </div>
             <p className="text-[10px] uppercase tracking-wide text-muted-foreground">
               Booked / total
             </p>
           </div>
-          <div className="relative h-[90px] md:h-[120px]">
+          <div className="relative h-[100px] md:h-[140px]">
             <ResponsiveContainer width="100%" height="100%">
               <RadialBarChart
                 data={conversionData}
@@ -456,10 +456,10 @@ export function VendorPerformanceCharts({
               </RadialBarChart>
             </ResponsiveContainer>
             <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-              <p className="font-display text-2xl tnum leading-none">
+              <p className="font-editorial text-3xl tnum leading-none">
                 {totalInquiries > 0 ? `${conversionPct}%` : "—"}
               </p>
-              <p className="text-[10px] uppercase tracking-wide text-muted-foreground mt-1">
+              <p className="text-xs uppercase tracking-wide text-muted-foreground mt-2">
                 {bookedRow?.value ?? 0} booked
               </p>
             </div>
@@ -468,13 +468,13 @@ export function VendorPerformanceCharts({
       </div>
 
       {/* Row 2 — day-of-week + rating distribution */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
         {/* Day-of-week activity */}
-        <div className="card-soft p-3 md:p-4">
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2 text-muted-foreground">
-              <CalendarRange className="w-3.5 h-3.5" />
-              <p className="font-label">Inquiries by weekday</p>
+        <div className="card-soft p-5 md:p-6">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2.5 text-muted-foreground">
+              <CalendarRange className="w-4 h-4" />
+              <p className="font-label tracking-wider">Inquiries by weekday</p>
             </div>
             <p className="text-[10px] uppercase tracking-wide text-muted-foreground">
               All time
@@ -485,7 +485,7 @@ export function VendorPerformanceCharts({
               No inquiries yet
             </p>
           ) : (
-            <div className="h-[90px] md:h-[120px]">
+            <div className="h-[100px] md:h-[140px]">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart
                   data={dowSeries}
@@ -537,17 +537,17 @@ export function VendorPerformanceCharts({
         </div>
 
         {/* Rating distribution */}
-        <div className="card-soft p-3 md:p-4">
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2 text-muted-foreground">
-              <Star className="w-3.5 h-3.5" />
-              <p className="font-label">Reviews</p>
+        <div className="card-soft p-5 md:p-6">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2.5 text-muted-foreground">
+              <Star className="w-4 h-4" />
+              <p className="font-label tracking-wider">Reviews</p>
             </div>
-            <div className="flex items-baseline gap-2">
-              <p className="font-display text-base tnum">
+            <div className="flex items-baseline gap-2.5">
+              <p className="font-editorial text-xl tnum">
                 {totalRatings > 0 ? avgRating.toFixed(1) : "—"}
               </p>
-              <p className="text-[10px] text-muted-foreground">
+              <p className="text-xs text-muted-foreground">
                 {totalRatings} review{totalRatings === 1 ? "" : "s"}
               </p>
             </div>
@@ -557,16 +557,16 @@ export function VendorPerformanceCharts({
               No reviews yet
             </p>
           ) : (
-            <ul className="space-y-1.5">
+            <ul className="space-y-2">
               {ratingDist.map(({ stars, count }) => {
                 const pct = totalRatings > 0 ? (count / totalRatings) * 100 : 0;
                 return (
-                  <li key={stars} className="flex items-center gap-2 text-[11px]">
+                  <li key={stars} className="flex items-center gap-2.5 text-xs">
                     <span className="w-8 text-muted-foreground tnum inline-flex items-center gap-1">
                       {stars}
-                      <Star className="w-2.5 h-2.5 fill-current" />
+                      <Star className="w-3 h-3 fill-current" />
                     </span>
-                    <div className="flex-1 h-1.5 rounded-full bg-secondary/60 overflow-hidden">
+                    <div className="flex-1 h-2 rounded-full bg-secondary/60 overflow-hidden">
                       <div
                         className="h-full bg-accent transition-all"
                         style={{ width: `${pct}%` }}
@@ -584,14 +584,14 @@ export function VendorPerformanceCharts({
       </div>
 
       {/* Row 3 — event-type mix, lead time histogram, inquiry budget */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
         {/* Event type mix — horizontal bars so the labels stay
             readable even when sub-types get long. */}
-        <div className="card-soft p-3 md:p-4">
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2 text-muted-foreground">
-              <PartyPopper className="w-3.5 h-3.5" />
-              <p className="font-label">Top event types</p>
+        <div className="card-soft p-5 md:p-6">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2.5 text-muted-foreground">
+              <PartyPopper className="w-4 h-4" />
+              <p className="font-label tracking-wider">Top event types</p>
             </div>
             <p className="text-[10px] uppercase tracking-wide text-muted-foreground">
               All time
@@ -602,18 +602,18 @@ export function VendorPerformanceCharts({
               No inquiries yet
             </p>
           ) : (
-            <ul className="space-y-2">
+            <ul className="space-y-2.5">
               {eventTypeSeries.map((d) => {
                 const pct = (d.value / eventTypeMax) * 100;
                 return (
                   <li
                     key={d.name}
-                    className="flex items-center gap-3 text-[11px]"
+                    className="flex items-center gap-3 text-xs"
                   >
-                    <span className="w-20 capitalize truncate text-muted-foreground">
+                    <span className="w-24 capitalize truncate text-muted-foreground">
                       {d.name}
                     </span>
-                    <div className="flex-1 h-1.5 rounded-full bg-secondary/60 overflow-hidden">
+                    <div className="flex-1 h-2 rounded-full bg-secondary/60 overflow-hidden">
                       <div
                         className="h-full bg-accent transition-all"
                         style={{ width: `${pct}%` }}
@@ -630,11 +630,11 @@ export function VendorPerformanceCharts({
         </div>
 
         {/* Lead time histogram — how far ahead are hosts inquiring? */}
-        <div className="card-soft p-3 md:p-4">
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2 text-muted-foreground">
-              <Timer className="w-3.5 h-3.5" />
-              <p className="font-label">Booking lead time</p>
+        <div className="card-soft p-5 md:p-6">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2.5 text-muted-foreground">
+              <Timer className="w-4 h-4" />
+              <p className="font-label tracking-wider">Booking lead time</p>
             </div>
             <p className="text-[10px] uppercase tracking-wide text-muted-foreground">
               {leadTimeTotal} dated
@@ -645,7 +645,7 @@ export function VendorPerformanceCharts({
               No dated inquiries yet
             </p>
           ) : (
-            <div className="h-[90px] md:h-[120px]">
+            <div className="h-[100px] md:h-[140px]">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart
                   data={leadTimeSeries}
@@ -699,11 +699,11 @@ export function VendorPerformanceCharts({
         {/* Inquiry budget — average + median + sample size, no chart,
             just numbers. Big bold value tile on purpose: this is the
             single most-asked-about number after total inquiries. */}
-        <div className="card-soft p-3 md:p-4 flex flex-col justify-between">
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2 text-muted-foreground">
-              <DollarSign className="w-3.5 h-3.5" />
-              <p className="font-label">Avg inquiry budget</p>
+        <div className="card-soft p-5 md:p-6 flex flex-col justify-between">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2.5 text-muted-foreground">
+              <DollarSign className="w-4 h-4" />
+              <p className="font-label tracking-wider">Avg inquiry budget</p>
             </div>
             {budgetSeries.count > 0 && (
               <p className="text-[10px] uppercase tracking-wide text-muted-foreground">
@@ -717,16 +717,16 @@ export function VendorPerformanceCharts({
             </p>
           ) : (
             <div>
-              <p className="font-display text-3xl tnum leading-none">
+              <p className="font-editorial text-4xl tnum leading-none">
                 {fmtBudget(budgetSeries.avg)}
               </p>
-              <p className="text-[11px] text-muted-foreground mt-2">
+              <p className="text-xs text-muted-foreground mt-3">
                 Median{" "}
                 <span className="font-medium tnum text-foreground">
                   {fmtBudget(budgetSeries.median)}
                 </span>
               </p>
-              <p className="text-[10px] text-muted-foreground mt-1">
+              <p className="text-xs text-muted-foreground mt-2">
                 Average of (min+max)/2 across inquiries that supplied a
                 range.
               </p>
