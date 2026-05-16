@@ -12,9 +12,9 @@ import { Link } from "react-router-dom";
 // don't collide with anything else in the bundle.
 export default function LandingPage() {
   return (
-    <div className="min-h-screen bg-white text-black">
+    <div className="min-h-screen bg-[#fafafa] text-black">
       {/* NAV */}
-      <header className="relative z-30 flex items-center justify-between bg-white px-6 py-5 md:px-10 md:py-6">
+      <header className="relative z-30 flex items-center justify-between bg-[#fafafa] px-6 py-5 md:px-10 md:py-6">
         <Link to="/" className="font-editorial text-[22px] italic text-black">
           Vendora
         </Link>
@@ -28,11 +28,8 @@ export default function LandingPage() {
           <span className="inline-flex items-center gap-1.5">
             Super agents
             <span
-              className="text-[9px] tracking-widest rounded-full px-1.5 py-px"
-              style={{
-                color: "#ff8a4c",
-                border: "0.5px solid #ff8a4c",
-              }}
+              className="text-[9px] tracking-widest rounded-full px-1.5 py-px text-black"
+              style={{ border: "0.5px solid #000" }}
             >
               NEW
             </span>
@@ -53,7 +50,7 @@ export default function LandingPage() {
 
       {/* HERO + VENDORS share one canvas so the glow + grid sit
           continuously underneath both sections. */}
-      <div className="relative bg-white overflow-hidden">
+      <div className="relative bg-[#fafafa] overflow-hidden">
         {/* Ambient amber glow centered behind the hero */}
         <div
           aria-hidden
@@ -188,11 +185,10 @@ export default function LandingPage() {
               }}
             />
             <span
-              className="uppercase font-medium"
+              className="uppercase font-semibold text-black"
               style={{
                 fontSize: "11px",
                 letterSpacing: "2.5px",
-                color: "#c4541e",
               }}
             >
               Now with Super Agents powered by Opus 4.7
@@ -203,7 +199,7 @@ export default function LandingPage() {
             className="text-black m-0"
             style={{
               fontSize: "60px",
-              fontWeight: 500,
+              fontWeight: 700,
               lineHeight: 1.05,
               letterSpacing: "-1.5px",
             }}
@@ -214,7 +210,7 @@ export default function LandingPage() {
             className="font-editorial italic text-black mt-2.5 mb-9"
             style={{
               fontSize: "60px",
-              fontWeight: 400,
+              fontWeight: 500,
               lineHeight: 1.05,
               letterSpacing: "-1px",
             }}
@@ -227,7 +223,7 @@ export default function LandingPage() {
       </div>
 
       {/* FOOTER */}
-      <footer className="px-6 md:px-10 pt-16 pb-8 bg-white">
+      <footer className="px-6 md:px-10 pt-16 pb-8 bg-[#fafafa]">
         <div className="grid grid-cols-1 md:grid-cols-[2fr_1fr_1fr_1fr] gap-10 mb-12 max-w-6xl mx-auto">
           {/* Brand column */}
           <div>
