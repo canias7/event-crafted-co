@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
 
 // Landing page. Pure white canvas, italic-serif wordmark, amber-glow
 // hero with an animated perspective grid + floating particles, then
@@ -11,6 +12,16 @@ import { Link } from "react-router-dom";
 // component. Keyframe names are namespaced (`landing-...`) so they
 // don't collide with anything else in the bundle.
 export default function LandingPage() {
+  const { session, hasVendorAccess, hasHostAccess } = useAuth();
+  // Authenticated users land on / after email confirmation. Surface a
+  // single CTA that bounces them into the right portal. Pure
+  // vendor-only accounts can't access host pages and vice versa, so
+  // we route per the role flag set by handle_new_user.
+  const portalPath = hasVendorAccess
+    ? "/vendor/me"
+    : hasHostAccess
+      ? "/customer/explore"
+      : null;
   return (
     <div
       className="min-h-screen text-black"
@@ -46,15 +57,26 @@ export default function LandingPage() {
           </span>
         </nav>
         <div className="flex items-center gap-5 text-[13px]">
-          <Link to="/login" className="text-black hover:opacity-70 transition-opacity">
-            Log in
-          </Link>
-          <Link
-            to="/signup"
-            className="bg-black text-white rounded-full px-5 py-2.5 hover:bg-black/90 transition-colors"
-          >
-            Sign up
-          </Link>
+          {session && portalPath ? (
+            <Link
+              to={portalPath}
+              className="bg-black text-white rounded-full px-5 py-2.5 hover:bg-black/90 transition-colors"
+            >
+              Open dashboard
+            </Link>
+          ) : (
+            <>
+              <Link to="/login" className="text-black hover:opacity-70 transition-opacity">
+                Log in
+              </Link>
+              <Link
+                to="/signup"
+                className="bg-black text-white rounded-full px-5 py-2.5 hover:bg-black/90 transition-colors"
+              >
+                Sign up
+              </Link>
+            </>
+          )}
         </div>
       </header>
 
