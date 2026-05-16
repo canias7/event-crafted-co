@@ -19,7 +19,6 @@ import { RequireRole } from "./components/auth/RequireRole";
 import { CommandPaletteLauncher } from "./components/CommandPaletteLauncher";
 import { SkipLink } from "./components/SkipLink";
 import { EmailVerificationBanner } from "./components/auth/EmailVerificationBanner";
-import { MobilePortalBell } from "./components/notifications/MobilePortalBell";
 
 // Lazy ship-on-mount component. CookieBanner only renders once for
 // users who haven't accepted, so deferring the chunk shaves the
@@ -237,7 +236,6 @@ const App = () => (
             </Routes>
           </Suspense>
           </ErrorBoundary>
-          <MobilePortalBell />
           {/* OnboardingTour disabled — the existing 4-step wizard
               wasn't pulling its weight. We'll bring back a leaner
               walkthrough later. */}

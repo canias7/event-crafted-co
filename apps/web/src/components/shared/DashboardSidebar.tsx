@@ -43,24 +43,16 @@ export function DashboardSidebar({
   const { signOut, hasVendorAccess, hasHostAccess, ownVendorProfile, profile } =
     useAuth();
 
-  // Multi-role chrome. The switcher only appears when the user actually
-  // has BOTH sides — pure vendors (no host onboarding/events) never see
-  // "Switch to host", and pure hosts (no vendor profile/membership) never
-  // see "Switch to vendor". The "Become a vendor" CTA is the entry point
-  // for hosts who haven't applied yet.
+  // The vendor / host switcher was removed — vendors and hosts are
+  // separate worlds now. The only side-jumping CTA we still surface is
+  // "Become a vendor" on the host side for users who haven't applied
+  // yet, since that's an onboarding path, not a context switch.
   const onVendorSide = location.pathname.startsWith("/vendor");
-  const showSwitcher =
-    profile?.role !== "admin" && hasVendorAccess && hasHostAccess;
   const showApplyCta =
     profile?.role !== "admin" &&
     !onVendorSide &&
     !ownVendorProfile &&
     hasHostAccess;
-  const switcherTo = onVendorSide ? "/customer/explore" : "/vendor/dashboard";
-  const switcherLabel = onVendorSide ? "Switch to host" : "Switch to vendor";
-  const switcherIcon = onVendorSide ? Sparkles : Briefcase;
-  const pendingBadge =
-    !onVendorSide && ownVendorProfile?.application_status === "pending";
 
   async function handleLogout() {
     await signOut();
@@ -157,39 +149,18 @@ export function DashboardSidebar({
           </button>
         </div>
       )}
-      {(showSwitcher || showApplyCta) && (
+      {showApplyCta && (
         <div className={`${collapsed ? "px-2 pt-3" : "px-3 pt-4"}`}>
-          {showSwitcher ? (
-            <Link
-              to={switcherTo}
-              className={`flex items-center gap-2 rounded-lg border border-accent/30 bg-accent/5 text-accent hover:bg-accent/10 transition-colors text-xs font-medium ${
-                collapsed ? "justify-center p-2" : "px-3 py-2"
-              }`}
-              title={collapsed ? switcherLabel : undefined}
-            >
-              {(() => {
-                const Icon = switcherIcon;
-                return <Icon className="w-3.5 h-3.5 shrink-0" aria-hidden />;
-              })()}
-              {!collapsed && (
-                <span className="truncate">
-                  {switcherLabel}
-                  {pendingBadge ? " (pending)" : ""}
-                </span>
-              )}
-            </Link>
-          ) : showApplyCta ? (
-            <Link
-              to="/vendor-apply"
-              className={`flex items-center gap-2 rounded-lg border border-dashed border-accent/40 text-accent hover:bg-accent/5 transition-colors text-xs font-medium ${
-                collapsed ? "justify-center p-2" : "px-3 py-2"
-              }`}
-              title={collapsed ? "Become a vendor" : undefined}
-            >
-              <Briefcase className="w-3.5 h-3.5 shrink-0" aria-hidden />
-              {!collapsed && <span className="truncate">Become a vendor</span>}
-            </Link>
-          ) : null}
+          <Link
+            to="/vendor-apply"
+            className={`flex items-center gap-2 rounded-lg border border-dashed border-accent/40 text-accent hover:bg-accent/5 transition-colors text-xs font-medium ${
+              collapsed ? "justify-center p-2" : "px-3 py-2"
+            }`}
+            title={collapsed ? "Become a vendor" : undefined}
+          >
+            <Briefcase className="w-3.5 h-3.5 shrink-0" aria-hidden />
+            {!collapsed && <span className="truncate">Become a vendor</span>}
+          </Link>
         </div>
       )}
       <nav
