@@ -12,7 +12,7 @@ import { CalendarHeart, Briefcase, ArrowRight } from "lucide-react";
 export default function LoginRoleChooserPage() {
   return (
     <div className="min-h-screen flex">
-      <div className="hidden md:block md:w-1/2 relative overflow-hidden bg-[#faf5ec]">
+      <div className="hidden md:block md:w-1/2 relative overflow-hidden bg-background">
         {/* Vendora animated brand intro — hosted as a static HTML doc
             in /public so the choreographed CSS / vanilla JS animation
             doesn't have to be re-implemented in React. */}
@@ -24,7 +24,7 @@ export default function LoginRoleChooserPage() {
         />
       </div>
 
-      <div className="flex-1 flex flex-col md:items-center md:justify-center px-6 pt-12 pb-12 md:p-12 bg-[#faf5ec]">
+      <div className="flex-1 flex flex-col md:items-center md:justify-center px-6 pt-12 pb-12 md:p-12 bg-background">
         <div className="w-full max-w-sm">
           <Link to="/" className="md:hidden font-editorial text-3xl block mb-8">
             Vendora
@@ -40,7 +40,7 @@ export default function LoginRoleChooserPage() {
           <div className="space-y-3">
             <Link
               to="/login/host"
-              className="group flex items-center gap-4 rounded-2xl border border-border bg-background p-5 transition hover:border-foreground hover:shadow-sm"
+              className="card-soft group flex items-center gap-4 p-5 transition hover:shadow-md"
             >
               <div className="grid h-11 w-11 place-items-center rounded-full bg-muted text-foreground">
                 <CalendarHeart className="h-5 w-5" />
@@ -56,7 +56,7 @@ export default function LoginRoleChooserPage() {
 
             <Link
               to="/login/vendor"
-              className="group flex items-center gap-4 rounded-2xl border border-border bg-background p-5 transition hover:border-foreground hover:shadow-sm"
+              className="card-soft group flex items-center gap-4 p-5 transition hover:shadow-md"
             >
               <div className="grid h-11 w-11 place-items-center rounded-full bg-muted text-foreground">
                 <Briefcase className="h-5 w-5" />

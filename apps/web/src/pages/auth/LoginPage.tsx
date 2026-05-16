@@ -183,7 +183,7 @@ export default function LoginPage({ role }: LoginPageProps = {}) {
     <div className="min-h-screen flex">
       {/* Brand panel — Vendora animated intro served from /public so
           the choreographed CSS/vanilla-JS animation runs untouched. */}
-      <div className="hidden md:block md:w-1/2 relative overflow-hidden bg-[#faf5ec]">
+      <div className="hidden md:block md:w-1/2 relative overflow-hidden bg-background">
         <iframe
           src="/vendora-intro.html"
           title="Vendora"
@@ -193,7 +193,7 @@ export default function LoginPage({ role }: LoginPageProps = {}) {
       </div>
 
       {/* Form */}
-      <div className="flex-1 flex flex-col md:items-center md:justify-center px-6 pt-12 pb-12 md:p-12 bg-[#faf5ec]">
+      <div className="flex-1 flex flex-col md:items-center md:justify-center px-6 pt-12 pb-12 md:p-12 bg-background">
         <div className="w-full max-w-sm">
           <Link to="/" className="md:hidden font-editorial text-3xl block mb-8">
             Vendora
