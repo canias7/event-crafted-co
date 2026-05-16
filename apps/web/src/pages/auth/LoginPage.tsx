@@ -112,13 +112,16 @@ export default function LoginPage({ role }: LoginPageProps = {}) {
       return;
     }
 
-    // Post-signin gate + redirect. Vendor accounts need admin approval
-    // before they can access the portal — mirrors the mobile vendor
-    // app's client-side gate in apps/vendor-mobile/app/(auth)/login.tsx.
-    // The auth-level check (email_confirmed_at) catches the common
-    // case, but we re-check application_status here to defend against
-    // any stale sessions whose email was confirmed before the gate.
-    const [{ data: vp }, { data: members }] = await Promise.all([
+    // Post-signin gate. Enforces the one-role-per-email rule on the
+    // login side — without this, a vendor could open /login/host,
+    // sign in with the same email, and slip into the host portal
+    // (and vice versa).
+    const [{ data: prof }, { data: vp }, { data: members }] = await Promise.all([
+      supabase
+        .from("profiles")
+        .select("role, onboarded_at")
+        .eq("id", signInData.user.id)
+        .maybeSingle(),
       supabase
         .from("vendor_profiles")
         .select("application_status")
@@ -130,6 +133,8 @@ export default function LoginPage({ role }: LoginPageProps = {}) {
         .eq("user_id", signInData.user.id)
         .limit(1),
     ]);
+    const profileRole = (prof as { role?: string } | null)?.role;
+    const isAdmin = profileRole === "admin";
     const ownStatus = (vp as { application_status?: string } | null)
       ?.application_status;
     const hasOwnVendor = !!ownStatus;
@@ -138,31 +143,51 @@ export default function LoginPage({ role }: LoginPageProps = {}) {
       ((members as { vendor_id: string }[] | null) ?? []).length > 0;
     const hasVendorAccess = isApprovedVendor || isTeamMember;
 
-    // If the user signed in via the vendor login page but their
-    // application isn't approved, sign them back out and explain.
-    if (role === "vendor" && hasOwnVendor && !hasVendorAccess) {
-      await supabase.auth.signOut();
-      if (ownStatus === "rejected") {
+    // Vendor side: must be approved, or a team member of another vendor.
+    if (role === "vendor" && !isAdmin) {
+      if (hasOwnVendor && !hasVendorAccess) {
+        await supabase.auth.signOut();
         toast.error(
-          "Your vendor application wasn't approved. Reach out to support if you think this is a mistake.",
+          ownStatus === "rejected"
+            ? "Your vendor application wasn't approved. Reach out to support if you think this is a mistake."
+            : "Your vendor application is still under review. We'll email you the moment it's approved.",
         );
-      } else {
-        toast.error(
-          "Your vendor application is still under review. We'll email you the moment it's approved.",
-        );
+        setLoading(false);
+        return;
       }
+      if (!hasOwnVendor && !isTeamMember) {
+        // No vendor identity at all — this email is registered as a host.
+        await supabase.auth.signOut();
+        toast.error(
+          "This email is registered as a host. Sign in on the host side instead.",
+        );
+        setLoading(false);
+        return;
+      }
+    }
+
+    // Host side: the email can't belong to a vendor account.
+    // One-role-per-email means a vendor's email shouldn't have host
+    // access, even if Supabase's email_confirmed_at lets the user in.
+    if (role === "host" && !isAdmin && hasOwnVendor) {
+      await supabase.auth.signOut();
+      toast.error(
+        "This email is registered as a vendor. Sign in on the vendor side instead.",
+      );
       setLoading(false);
       return;
     }
 
     setLoading(false);
+    // Admin accounts (rare on the public web app — the admin panel
+    // lives at admin.eventvendora.com) just fall through to the
+    // host-side dashboard so they have somewhere to land.
     if (role === "vendor" && hasVendorAccess) {
-      navigate("/vendor/dashboard");
+      navigate("/vendor/home");
     } else if (role === "host") {
       navigate("/customer/explore");
     } else {
-      // No explicit intent (came from /login directly?) — auto-detect.
-      navigate(hasVendorAccess ? "/vendor/dashboard" : "/customer/explore");
+      navigate(hasVendorAccess ? "/vendor/home" : "/customer/explore");
     }
   }
 

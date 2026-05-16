@@ -18,7 +18,7 @@ export default function LandingPage() {
   // vendor-only accounts can't access host pages and vice versa, so
   // we route per the role flag set by handle_new_user.
   const portalPath = hasVendorAccess
-    ? "/vendor/me"
+    ? "/vendor/home"
     : hasHostAccess
       ? "/customer/explore"
       : null;
