@@ -13,9 +13,7 @@
       "backgroundColor": "#000000"
     },
     "newArchEnabled": true,
-    "runtimeVersion": {
-      "policy": "appVersion"
-    },
+    "runtimeVersion": "1",
     "updates": {
       "url": "https://u.expo.dev/8a56059c-321e-4de3-938e-3e82904803c1",
       "checkAutomatically": "ON_LOAD",
