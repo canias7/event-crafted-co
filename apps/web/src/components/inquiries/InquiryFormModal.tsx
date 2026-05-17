@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Sparkles, Loader2 } from "lucide-react";
+import { Sparkles, Loader2, Calendar as CalendarIcon } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -8,6 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   Dialog,
   DialogContent,
@@ -24,6 +26,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
+import { cn } from "@/lib/utils";
 
 type EventType = "wedding" | "birthday" | "holiday_dinner" | "other";
 
@@ -62,6 +65,12 @@ export function InquiryFormModal({
   const [vendorsLoading, setVendorsLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [unavailableIds, setUnavailableIds] = useState<Set<string>>(new Set());
+  // Dates the picked vendor has marked unavailable or already booked.
+  // Drives the disabled days on the event-date picker.
+  const [vendorBlockedDays, setVendorBlockedDays] = useState<Set<string>>(
+    new Set(),
+  );
+  const [datePickerOpen, setDatePickerOpen] = useState(false);
 
   const [vendorId, setVendorId] = useState<string>("");
   const [eventType, setEventType] = useState<EventType>("wedding");
@@ -140,6 +149,8 @@ export function InquiryFormModal({
     setBudgetMin("");
     setBudgetMax("");
     setSpecialRequests("");
+    setVendorBlockedDays(new Set());
+    setDatePickerOpen(false);
   }
 
   // active_event / per-profile prefill removed when host_events was
@@ -200,6 +211,79 @@ export function InquiryFormModal({
       cancelled = true;
     };
   }, [open, eventDate]);
+
+  // Fetch the picked vendor's blocked + booked dates so the event-date
+  // picker can grey them out (and so the host can't pick one of them).
+  useEffect(() => {
+    if (!vendorId) {
+      setVendorBlockedDays(new Set());
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const horizon = new Date(today);
+      horizon.setMonth(horizon.getMonth() + 12);
+      const isoDay = (d: Date) =>
+        `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+      const [{ data: blocks }, { data: booked }] = await Promise.all([
+        supabase
+          .from("vendor_unavailable_dates")
+          .select("date")
+          .eq("vendor_id", vendorId)
+          .gte("date", isoDay(today))
+          .lte("date", isoDay(horizon)),
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (supabase as any).rpc("vendor_booked_dates", { p_vendor_id: vendorId }),
+      ]);
+      if (cancelled) return;
+      const all = new Set<string>();
+      for (const r of (blocks as Array<{ date: string }> | null) ?? []) {
+        all.add(r.date);
+      }
+      const bookedRaw = (booked as unknown) ?? [];
+      if (Array.isArray(bookedRaw)) {
+        for (const row of bookedRaw) {
+          const d =
+            typeof row === "string"
+              ? row
+              : (row as { vendor_booked_dates?: string }).vendor_booked_dates;
+          if (typeof d === "string") all.add(d);
+        }
+      }
+      setVendorBlockedDays(all);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [vendorId]);
+
+  const blockedDateObjects = useMemo(() => {
+    return Array.from(vendorBlockedDays).map((s) => {
+      const [y, m, d] = s.split("-").map(Number);
+      return new Date(y, m - 1, d);
+    });
+  }, [vendorBlockedDays]);
+
+  const todayStart = useMemo(() => {
+    const t = new Date();
+    t.setHours(0, 0, 0, 0);
+    return t;
+  }, []);
+
+  const formattedEventDate = useMemo(() => {
+    if (!eventDate) return "";
+    const [y, m, d] = eventDate.split("-").map(Number);
+    if (!y || !m || !d) return eventDate;
+    const dt = new Date(y, m - 1, d);
+    return dt.toLocaleDateString(undefined, {
+      weekday: "short",
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
+  }, [eventDate]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -374,13 +458,56 @@ export function InquiryFormModal({
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
               <Label htmlFor="event-date">Event date</Label>
-              <Input
-                id="event-date"
-                type="date"
-                value={eventDate}
-                onChange={(e) => setEventDate(e.target.value)}
-                className="h-10"
-              />
+              <Popover open={datePickerOpen} onOpenChange={setDatePickerOpen}>
+                <PopoverTrigger asChild>
+                  <button
+                    id="event-date"
+                    type="button"
+                    className={cn(
+                      "h-10 w-full inline-flex items-center justify-between gap-2 px-3 rounded-md border border-input bg-background text-sm font-normal text-left",
+                      !eventDate && "text-muted-foreground",
+                    )}
+                    disabled={!vendorId}
+                  >
+                    <span className="truncate">
+                      {eventDate
+                        ? formattedEventDate
+                        : vendorId
+                          ? "Pick a date"
+                          : "Pick a vendor first"}
+                    </span>
+                    <CalendarIcon className="w-4 h-4 text-muted-foreground shrink-0" />
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={
+                      eventDate
+                        ? (() => {
+                            const [y, m, d] = eventDate.split("-").map(Number);
+                            return new Date(y, m - 1, d);
+                          })()
+                        : undefined
+                    }
+                    onSelect={(d) => {
+                      if (!d) return;
+                      const iso = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+                      setEventDate(iso);
+                      setDatePickerOpen(false);
+                    }}
+                    disabled={[{ before: todayStart }, ...blockedDateObjects]}
+                    modifiers={{ blocked: blockedDateObjects }}
+                    modifiersClassNames={{
+                      blocked:
+                        "line-through text-muted-foreground/70 bg-muted/40",
+                    }}
+                  />
+                  <div className="px-3 pb-3 pt-1 text-[11px] text-muted-foreground border-t border-border">
+                    Struck-through dates are blocked by this vendor.
+                  </div>
+                </PopoverContent>
+              </Popover>
             </div>
             <div className="space-y-2">
               <Label htmlFor="guest-count">Guest count</Label>
