@@ -148,7 +148,7 @@ export default function VendorEditProfilePage() {
         backPath="/vendor/me"
       />
       <main className="flex-1 pb-20 lg:pb-0">
-        <div className="border-b border-border/40 bg-card/60 backdrop-blur px-4 md:px-8 py-5 flex items-center justify-between gap-3">
+        <div className="backdrop-blur-sm px-4 md:px-8 py-5 flex items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             <button
               onClick={() => navigate(-1)}
