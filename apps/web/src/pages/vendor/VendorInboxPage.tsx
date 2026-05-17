@@ -30,6 +30,7 @@ interface InquiryRow {
   special_requests: string | null;
   status: string;
   created_at: string;
+  vendor_read_at: string | null;
   host: { display_name: string | null } | null;
 }
 
@@ -50,44 +51,6 @@ function relativeTime(iso: string | null): string {
   });
 }
 
-// Status → dot colour. The dot replaces the verbose status badge so
-// each row can be scanned at a glance: amber = needs attention,
-// blue = handled, green = booked, muted = closed.
-function statusDotClass(status: string): string {
-  switch (status) {
-    case "new":
-    case "drafted":
-      return "bg-accent";
-    case "replied":
-      return "bg-blue-500";
-    case "won":
-      return "bg-emerald-500";
-    case "lost":
-    case "expired":
-      return "bg-muted-foreground/30";
-    default:
-      return "bg-muted-foreground/30";
-  }
-}
-
-function statusLabel(status: string): string {
-  switch (status) {
-    case "new":
-      return "New";
-    case "drafted":
-      return "Drafting";
-    case "replied":
-      return "Replied";
-    case "won":
-      return "Booked";
-    case "lost":
-      return "Closed";
-    case "expired":
-      return "Expired";
-    default:
-      return status;
-  }
-}
 
 function previewFor(r: InquiryRow): string {
   if (r.special_requests && r.special_requests.trim().length > 0) {
@@ -122,7 +85,7 @@ export default function VendorInboxPage() {
     const { data } = await supabase
       .from("inquiries")
       .select(
-        "id, event_type, event_date, guest_count, location, budget_min_cents, budget_max_cents, special_requests, status, created_at, host:profiles!inquiries_host_id_fkey(display_name)",
+        "id, event_type, event_date, guest_count, location, budget_min_cents, budget_max_cents, special_requests, status, created_at, vendor_read_at, host:profiles!inquiries_host_id_fkey(display_name)",
       )
       .in("vendor_id", vids)
       .order("created_at", { ascending: false });
@@ -252,7 +215,10 @@ function ConversationRow({
   const name = row.host?.display_name?.trim() || "Host";
   const initial = name.charAt(0).toUpperCase();
   const eventLabel = row.event_type.replace(/_/g, " ");
-  const isUnread = row.status === "new" || row.status === "drafted";
+  // iMessage convention: a single blue dot only when the vendor
+  // hasn't opened this thread yet. Once they tap in (which writes
+  // vendor_read_at server-side), the dot goes away.
+  const isUnread = row.vendor_read_at == null;
   return (
     <li>
       <Link
@@ -261,15 +227,16 @@ function ConversationRow({
           isFirst ? "" : "border-t border-foreground/[0.06]"
         }`}
       >
-        {/* Status dot */}
+        {/* Unread indicator — blue dot only when unread, otherwise a
+            transparent spacer so rows stay aligned. */}
         <span
           className="self-center shrink-0 w-2 h-2 rounded-full"
-          aria-label={statusLabel(row.status)}
-          title={statusLabel(row.status)}
+          aria-label={isUnread ? "Unread" : undefined}
+          title={isUnread ? "Unread" : undefined}
         >
-          <span
-            className={`block w-2 h-2 rounded-full ${statusDotClass(row.status)}`}
-          />
+          {isUnread ? (
+            <span className="block w-2 h-2 rounded-full bg-blue-500" />
+          ) : null}
         </span>
 
         {/* Avatar */}
