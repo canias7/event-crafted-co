@@ -28,16 +28,11 @@ import { supabase } from "@/integrations/supabase/client";
 // = 5 with cover. 6th photo slot fills the bottom-right corner that
 // was previously empty white space).
 const MAX_PHOTOS = 6;
+const MIN_PHOTOS = 3;
 
 interface FAQDraft {
   question: string;
   answer: string;
-}
-interface TeamDraft {
-  display_name: string;
-  role: string;
-  bio: string;
-  is_owner: boolean;
 }
 type AttrValue = string | number | boolean | string[] | null | undefined;
 type Attrs = Record<string, AttrValue>;
@@ -57,7 +52,6 @@ export function ListingWizardModal({
   const [priceUsd, setPriceUsd] = useState<string>("");
   const [attrs, setAttrs] = useState<Attrs>({});
   const [faqs, setFaqs] = useState<FAQDraft[]>([]);
-  const [team, setTeam] = useState<TeamDraft[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const fileRef = useRef<HTMLInputElement | null>(null);
 
@@ -70,22 +64,24 @@ export function ListingWizardModal({
   const priceNum = Number(priceUsd);
   const priceCents = Number.isFinite(priceNum) ? Math.round(priceNum * 100) : 0;
 
-  // Mobile parity (listing.tsx lines 288–301): only category + location +
-  // price > 0 hard-block publish. Photo count and category_attributes
-  // are guidance only — admin reviews and rejects anything incomplete.
-  // FAQs/team rows must be filled in if added (otherwise we'd INSERT
-  // empty rows).
+  // Hard-block publish: ≥3 photos, category, location, price > 0.
+  // FAQs are optional but any added row must be filled (otherwise we'd
+  // INSERT empty rows).
   const validation = useMemo(() => {
     const errs: string[] = [];
+    if (photos.length < MIN_PHOTOS)
+      errs.push(
+        `Add ${MIN_PHOTOS - photos.length} more photo${
+          MIN_PHOTOS - photos.length === 1 ? "" : "s"
+        } (${MIN_PHOTOS}–${MAX_PHOTOS} total).`,
+      );
     if (!category) errs.push("Pick a category.");
     if (!trimmedLocation) errs.push("Add a city + state.");
-    if (priceCents <= 0) errs.push("Set a starting price.");
+    if (priceCents <= 0) errs.push("Set a price.");
     if (faqs.some((f) => !f.question.trim() || !f.answer.trim()))
       errs.push("Every FAQ needs both a question and an answer.");
-    if (team.some((m) => !m.display_name.trim()))
-      errs.push("Every team member needs a name.");
     return errs;
-  }, [category, trimmedLocation, priceCents, faqs, team]);
+  }, [photos.length, category, trimmedLocation, priceCents, faqs]);
 
   const canSubmit = validation.length === 0 && !submitting;
 
@@ -155,23 +151,7 @@ export function ListingWizardModal({
         if (error) throw error;
       }
 
-      // 4. Optional team bios.
-      if (team.length > 0) {
-        const { error } = await supabase.from("vendor_team_bios").insert(
-          team.map((m, i) => ({
-            vendor_id: vendorId,
-            display_name: m.display_name.trim(),
-            role: m.role.trim() || null,
-            bio: m.bio.trim() || null,
-            photo_storage_path: null,
-            is_owner: m.is_owner,
-            display_order: i,
-          })),
-        );
-        if (error) throw error;
-      }
-
-      // 5. Notify admin (fire-and-forget — the listing exists either way).
+      // 4. Notify admin (fire-and-forget — the listing exists either way).
       void supabase.functions
         .invoke("send-transactional-email", {
           body: { kind: "listing_submitted", vendorProfileId: vendorId },
@@ -304,7 +284,7 @@ export function ListingWizardModal({
                 </div>
                 <div>
                   <Label htmlFor="price" className="font-semibold">
-                    Starting price <span className="text-red-500">•</span>
+                    Price <span className="text-red-500">•</span>
                   </Label>
                   <div className="relative mt-1">
                     <span className="absolute inset-y-0 left-3 flex items-center text-muted-foreground">
@@ -424,107 +404,6 @@ export function ListingWizardModal({
               >
                 <Plus className="h-3.5 w-3.5 mr-1" />
                 Add FAQ
-              </Button>
-            </div>
-          </section>
-
-          {/* STEP 4 — TEAM */}
-          <section>
-            <StepLabel n={4} kind="TEAM" />
-            <h3 className="font-editorial text-4xl mt-3">Who you are.</h3>
-            <p className="mt-2 text-muted-foreground italic">
-              Names, roles, short bios. Public on your page.
-            </p>
-
-            <div className="mt-4 space-y-3">
-              {team.map((m, i) => (
-                <div
-                  key={i}
-                  className="rounded-md border border-border bg-card/40 p-4 space-y-3"
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                      Team member {i + 1}
-                    </p>
-                    <button
-                      onClick={() =>
-                        setTeam((prev) => prev.filter((_, j) => j !== i))
-                      }
-                      className="text-muted-foreground hover:text-foreground"
-                      aria-label="Remove team member"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
-                  </div>
-                  <Input
-                    value={m.display_name}
-                    onChange={(e) =>
-                      setTeam((prev) =>
-                        prev.map((x, j) =>
-                          j === i ? { ...x, display_name: e.target.value } : x,
-                        ),
-                      )
-                    }
-                    placeholder="Name"
-                  />
-                  <Input
-                    value={m.role}
-                    onChange={(e) =>
-                      setTeam((prev) =>
-                        prev.map((x, j) =>
-                          j === i ? { ...x, role: e.target.value } : x,
-                        ),
-                      )
-                    }
-                    placeholder="Role (e.g. Lead Photographer)"
-                  />
-                  <Textarea
-                    value={m.bio}
-                    onChange={(e) =>
-                      setTeam((prev) =>
-                        prev.map((x, j) =>
-                          j === i ? { ...x, bio: e.target.value } : x,
-                        ),
-                      )
-                    }
-                    placeholder="Short bio (optional)"
-                    rows={2}
-                    className="resize-none"
-                  />
-                  <label className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <input
-                      type="checkbox"
-                      checked={m.is_owner}
-                      onChange={(e) =>
-                        setTeam((prev) =>
-                          prev.map((x, j) =>
-                            j === i ? { ...x, is_owner: e.target.checked } : x,
-                          ),
-                        )
-                      }
-                    />
-                    This is the owner / lead
-                  </label>
-                </div>
-              ))}
-              <Button
-                variant="outline"
-                size="sm"
-                className="rounded-full"
-                onClick={() =>
-                  setTeam((prev) => [
-                    ...prev,
-                    {
-                      display_name: "",
-                      role: "",
-                      bio: "",
-                      is_owner: prev.length === 0,
-                    },
-                  ])
-                }
-              >
-                <Plus className="h-3.5 w-3.5 mr-1" />
-                Add team member
               </Button>
             </div>
           </section>
