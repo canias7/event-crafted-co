@@ -1,12 +1,16 @@
-// Vendor "Edit identity" page — `public.profiles` fields:
+// Vendor "Edit profile" page — edits the account-level brand identity
+// (one per user), stored on `public.profiles`:
 //   - business_name (required)
 //   - bio
 //   - logo_url
 //
-// Mirrors apps/vendor-mobile/app/(vendor)/edit-profile.tsx. Category +
-// city + price are per-listing — they live on /vendor/listing. This
-// page only owns the vendor's BRAND identity which a trigger mirrors
-// onto every listing.
+// Mirrors apps/vendor-mobile/app/(vendor)/edit-profile.tsx.
+//
+// Terminology: "profile" = account (one per user, the brand). The
+// per-listing fields (category, city, base price) live on rows in
+// vendor_profiles (each row is a LISTING — vendors can have up to 5).
+// A DB trigger mirrors business_name/bio/logo_url from profiles onto
+// every listing the vendor owns so they stay in sync.
 //
 // Logo uploads go to the vendor-posts bucket at
 // `<user_id>/profile-logo-<ts>.<ext>` so we don't need new storage

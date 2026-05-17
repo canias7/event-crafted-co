@@ -2,14 +2,17 @@
 // signed-in vendor's OWN posts / reels / buzz / listings.
 //
 // Mirrors apps/vendor-mobile/app/(vendor)/profile.tsx (the personal
-// profile tab, distinct from /vendor/listing which is the public
-// listing builder). Header shows avatar / business name / location /
+// profile tab). Header shows avatar / business name / location /
 // member-since / verified badge plus 4 mini-stats (posts, reels,
 // buzz, listings). Tabs swap the gallery underneath; each non-listing
 // tab has its own composer for publishing new content.
+//
+// Terminology: this is the vendor's ACCOUNT profile (one per user). The
+// rows in the vendor_profiles table are LISTINGS — up to 5 per account.
+// "Profile" = account; "listing" = marketplace listing row.
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import {
   CheckCircle2,
   Edit3,
@@ -30,6 +33,7 @@ import {
   BuzzComposerModal,
   MediaComposerModal,
 } from "@/components/vendor/Composers";
+import { ListingWizardModal } from "@/components/vendor/ListingWizardModal";
 import { MediaLightbox } from "@/components/vendor/MediaLightbox";
 
 type LightboxMedia =
@@ -96,9 +100,8 @@ export default function VendorMyProfilePage() {
   const [composer, setComposer] = useState<"post" | "reel" | "buzz" | null>(
     null,
   );
-  const [addingListing, setAddingListing] = useState(false);
+  const [listingWizardOpen, setListingWizardOpen] = useState(false);
   const [lightbox, setLightbox] = useState<LightboxMedia | null>(null);
-  const navigate = useNavigate();
 
   const load = useCallback(async () => {
     if (!user?.id) return;
@@ -156,26 +159,15 @@ export default function VendorMyProfilePage() {
     return String(new Date(primary.created_at).getFullYear());
   }, [primary?.created_at]);
 
-  // Insert a fresh draft and jump to its editor. Mirrors mobile
-  // createNewListing in (vendor)/profile.tsx — lets a vendor with
-  // an existing listing spin up additional marketplace listings
-  // without leaving the page.
-  async function addListing() {
-    if (!user?.id || addingListing) return;
-    setAddingListing(true);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data, error } = await (supabase as any)
-      .from("vendor_profiles")
-      .insert({ user_id: user.id, application_status: "draft" })
-      .select("id")
-      .single();
-    setAddingListing(false);
-    if (error || !data?.id) {
-      const msg = error?.message ?? "Unknown error";
-      toast.error(`Couldn't create listing: ${msg}`);
-      return;
-    }
-    navigate(`/vendor/listing?id=${data.id}`);
+  // Open the listing wizard modal. Used to insert an empty draft row
+  // and navigate to /vendor/listing?id=X — but /vendor/listing was
+  // eliminated in the route cleanup, and "no drafts" means we never
+  // want a half-empty vendor_profiles row sitting in the DB. The wizard
+  // (fields TBD by product) will collect everything up front and INSERT
+  // once with application_status='pending'.
+  function openListingWizard() {
+    if (!user?.id) return;
+    setListingWizardOpen(true);
   }
 
   // Share the vendor's public listing URL. Falls back to clipboard
@@ -233,7 +225,7 @@ export default function VendorMyProfilePage() {
       <DashboardSidebar
         items={vendorNavItems}
         title="My Profile"
-        backPath="/vendor/dashboard"
+        backPath="/vendor/home"
       />
       <main className="flex-1 pb-20 lg:pb-0">
         <div className="border-b border-border/40 bg-card/60 backdrop-blur px-4 md:px-8 py-5">
@@ -313,8 +305,7 @@ export default function VendorMyProfilePage() {
             ) : (
               <ListingsList
                 listings={listings}
-                onAddListing={() => addListing()}
-                adding={addingListing}
+                onAddListing={openListingWizard}
               />
             )}
           </div>
@@ -339,6 +330,16 @@ export default function VendorMyProfilePage() {
           onClose={() => setComposer(null)}
           onPosted={() => {
             setComposer(null);
+            load();
+          }}
+        />
+      ) : null}
+      {listingWizardOpen && user ? (
+        <ListingWizardModal
+          userId={user.id}
+          onClose={() => setListingWizardOpen(false)}
+          onPublished={() => {
+            setListingWizardOpen(false);
             load();
           }}
         />
@@ -571,19 +572,15 @@ function BuzzList({ buzz }: { buzz: BuzzRow[] }) {
 function ListingsList({
   listings,
   onAddListing,
-  adding,
 }: {
   listings: VendorRow[];
   onAddListing: () => void;
-  adding: boolean;
 }) {
   if (listings.length === 0) {
     return (
       <div className="rounded-2xl border border-dashed border-border bg-card/40 p-10 text-center">
         <p className="text-sm text-muted-foreground mb-3">No listing yet.</p>
-        <Button onClick={onAddListing} disabled={adding}>
-          {adding ? "Creating…" : "Create your listing"}
-        </Button>
+        <Button onClick={onAddListing}>Create your listing</Button>
       </div>
     );
   }
@@ -592,13 +589,12 @@ function ListingsList({
     <div className="mb-3 flex justify-end">
       <Button
         onClick={onAddListing}
-        disabled={adding}
         variant="outline"
         size="sm"
         className="rounded-full"
       >
         <Plus className="h-3.5 w-3.5 mr-1" />
-        {adding ? "Creating…" : "New listing"}
+        New listing
       </Button>
     </div>
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -632,22 +628,17 @@ function ListingsList({
                   : l.application_status ?? "Draft"}
             </p>
           </div>
-          <div className="flex flex-col gap-1">
-            {l.slug ? (
-              <Link
-                to={`/vendors/${l.slug}`}
-                className="text-xs text-muted-foreground hover:text-foreground"
-              >
-                View
-              </Link>
-            ) : null}
+          {/* No edit affordance per the "no editing in listings, only new
+              ones" product rule. View link only shows when the listing
+              is approved and has a slug. */}
+          {l.slug ? (
             <Link
-              to="/vendor/listing"
-              className="text-xs font-semibold text-foreground"
+              to={`/vendors/${l.slug}`}
+              className="self-start text-xs font-semibold text-foreground hover:text-muted-foreground"
             >
-              Edit
+              View
             </Link>
-          </div>
+          ) : null}
         </div>
       ))}
     </div>

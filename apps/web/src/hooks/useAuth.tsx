@@ -27,11 +27,13 @@ interface Profile {
   application_status: "pending" | "approved" | "rejected" | null;
 }
 
-// The user's own vendor profile (when they've applied). Multi-role:
+// The user's own listing (when they've created one). Multi-role:
 // every authenticated user is a host by default, and additionally has a
-// vendor identity iff this row exists. application_status drives the
-// approved-vendor checks in the UI.
-export interface OwnVendorProfile {
+// vendor identity iff this row exists in vendor_profiles (the table is
+// historically named "vendor_profiles" but each row is a LISTING — up to
+// 5 per vendor account). application_status drives the approved-vendor
+// checks in the UI.
+export interface OwnListing {
   id: string;
   business_name: string | null;
   category: string | null;
@@ -54,7 +56,7 @@ interface AuthCtx {
   user: User | null;
   profile: Profile | null;
   activeEvent: ActiveEvent | null;
-  ownVendorProfile: OwnVendorProfile | null;
+  ownListing: OwnListing | null;
   vendorMemberships: VendorMembership[];
   planningMemberships: PlanningMembership[];
   // True when the user has an approved vendor application in their own
@@ -79,7 +81,7 @@ const Ctx = createContext<AuthCtx>({
   user: null,
   profile: null,
   activeEvent: null,
-  ownVendorProfile: null,
+  ownListing: null,
   vendorMemberships: [],
   planningMemberships: [],
   isApprovedVendor: false,
@@ -94,8 +96,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [activeEvent, setActiveEvent] = useState<ActiveEvent | null>(null);
-  const [ownVendorProfile, setOwnVendorProfile] =
-    useState<OwnVendorProfile | null>(null);
+  const [ownListing, setOwnListing] =
+    useState<OwnListing | null>(null);
   const [vendorMemberships, setVendorMemberships] = useState<VendorMembership[]>(
     [],
   );
@@ -113,7 +115,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!data) {
       setProfile(null);
       setActiveEvent(null);
-      setOwnVendorProfile(null);
+      setOwnListing(null);
       setVendorMemberships([]);
       return;
     }
@@ -123,16 +125,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // longer in the host portal. ActiveEvent always null.
     setActiveEvent(null);
 
-    // The user's own vendor application (if any). Multi-role: presence of
-    // this row means they're either an approved vendor or a pending
-    // applicant. Both states grant vendor portal access; only 'approved'
-    // makes the listing publicly visible (gated by RLS on the table).
+    // The user's own listing (if any). Multi-role: presence of this row
+    // means they're either an approved vendor or a pending applicant.
+    // Both states grant vendor portal access; only 'approved' makes the
+    // listing publicly visible (gated by RLS on the table).
     const { data: vp } = await supabase
       .from("vendor_profiles")
       .select("id, business_name, category, application_status, logo_url")
       .eq("user_id", userId)
       .maybeSingle();
-    setOwnVendorProfile((vp as OwnVendorProfile | null) ?? null);
+    setOwnListing((vp as OwnListing | null) ?? null);
 
     // Vendor team memberships — drives vendor portal access for non-owner
     // staff. Empty for hosts, populated for vendor owners (auto-backfilled
@@ -203,7 +205,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await supabase.auth.signOut();
     setProfile(null);
     setActiveEvent(null);
-    setOwnVendorProfile(null);
+    setOwnListing(null);
     setVendorMemberships([]);
     setPlanningMemberships([]);
     setSession(null);
@@ -214,14 +216,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   //      'approved' — the admin-approval signal. Source-of-truth for
   //      fresh accounts that don't have a vendor_profiles row yet.
   //   OR
-  //   2. ownVendorProfile.application_status === 'approved' — used
+  //   2. ownListing.application_status === 'approved' — used
   //      to be the primary signal under the old per-listing approval
   //      model. Kept as a fallback for vendors who pre-existed before
   //      profile-level approval was added.
   // Either path is sufficient.
   const isApprovedVendor =
     (profile?.role === "vendor" && profile?.application_status === "approved") ||
-    ownVendorProfile?.application_status === "approved";
+    ownListing?.application_status === "approved";
   const hasVendorAccess =
     isApprovedVendor || vendorMemberships.length > 0;
   // Real host = went through onboarding. Pure vendor signups get a
@@ -236,7 +238,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         user: session?.user ?? null,
         profile,
         activeEvent,
-        ownVendorProfile,
+        ownListing,
         vendorMemberships,
         planningMemberships,
         isApprovedVendor,

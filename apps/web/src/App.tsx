@@ -200,8 +200,8 @@ const App = () => (
 
               {/* Vendor. /vendor/listing, /vendor/dashboard, /vendor/team,
                   /vendor/ai-agent, /vendor/payments, /vendor/analytics,
-                  /vendor/blog all removed per the route-cleanup pass —
-                  legacy URLs redirect into the live ones. */}
+                  /vendor/blog all removed in the route-cleanup pass —
+                  hitting them now lands on NotFound (no redirects). */}
               <Route path="/vendor/home" element={<RequireRole role="vendor"><VendorHomePage /></RequireRole>} />
               <Route path="/vendor/me" element={<RequireRole role="vendor"><VendorMyProfilePage /></RequireRole>} />
               <Route path="/vendor/edit-profile" element={<RequireRole role="vendor"><VendorEditProfilePage /></RequireRole>} />
