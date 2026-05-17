@@ -8,25 +8,22 @@ import { CheckCircle2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { BrandCardShell } from "@/components/vendor/BrandCardShell";
 
-// Listing-level fields (location, verified_at, created_at) come from
-// vendor_profiles. Brand identity (business_name, logo_url, bio) is
-// read STRAIGHT from the owner's profiles row — account-level source
-// of truth, bypasses any sync-trigger lag.
+// Brand identity (business_name, logo_url, bio) is mirrored from the
+// owner's profiles row onto vendor_profiles via a trigger, so the
+// public listing page reads them straight off vendor_profiles. profiles
+// RLS doesn't let anonymous viewers read account rows, which is why
+// the public listing has to source identity from the listing row.
 interface VendorRow {
-  location: string | null;
-  verified_at: string | null;
-  created_at: string | null;
-  user_id: string | null;
-}
-interface AccountRow {
   business_name: string | null;
   logo_url: string | null;
   bio: string | null;
+  location: string | null;
+  verified_at: string | null;
+  created_at: string | null;
 }
 
 export function VendorBrandCard({ vendorId }: { vendorId: string }) {
   const [row, setRow] = useState<VendorRow | null>(null);
-  const [account, setAccount] = useState<AccountRow | null>(null);
   const [ratingAvg, setRatingAvg] = useState<number | null>(null);
 
   useEffect(() => {
@@ -39,7 +36,9 @@ export function VendorBrandCard({ vendorId }: { vendorId: string }) {
       const [vp, rev] = await Promise.all([
         supabase
           .from("vendor_profiles")
-          .select("location, verified_at, created_at, user_id")
+          .select(
+            "business_name, logo_url, bio, location, verified_at, created_at",
+          )
           .eq("id", vendorId)
           .maybeSingle(),
         supabase
@@ -48,28 +47,13 @@ export function VendorBrandCard({ vendorId }: { vendorId: string }) {
           .eq("vendor_id", vendorId),
       ]);
       if (cancelled) return;
-      const listing = (vp.data as VendorRow | null) ?? null;
-      setRow(listing);
+      setRow((vp.data as VendorRow | null) ?? null);
       const ratings = (rev.data as Array<{ rating: number }> | null) ?? [];
       setRatingAvg(
         ratings.length === 0
           ? null
           : ratings.reduce((s, r) => s + r.rating, 0) / ratings.length,
       );
-
-      // Brand identity read straight from the owner's profile so
-      // business_name + logo + bio always reflect what the vendor
-      // last saved on /vendor/edit-profile.
-      if (listing?.user_id) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const { data: acc } = await (supabase as any)
-          .from("profiles")
-          .select("business_name, logo_url, bio")
-          .eq("id", listing.user_id)
-          .maybeSingle();
-        if (cancelled) return;
-        setAccount((acc as AccountRow | null) ?? null);
-      }
     })();
     return () => {
       cancelled = true;
@@ -78,16 +62,16 @@ export function VendorBrandCard({ vendorId }: { vendorId: string }) {
 
   if (!row) return null;
 
-  const businessName = account?.business_name ?? "Vendor";
+  const businessName = row.business_name ?? "Vendor";
   const initial = businessName[0]?.toUpperCase() ?? "V";
   const memberSinceYear = row.created_at
     ? String(new Date(row.created_at).getFullYear())
     : null;
   const verified = !!row.verified_at;
-  const logoUrl = account?.logo_url ?? null;
+  const logoUrl = row.logo_url ?? null;
 
   return (
-    <BrandCardShell businessName={businessName} bio={account?.bio ?? null}>
+    <BrandCardShell businessName={businessName} bio={row.bio}>
       <div className="flex items-center gap-5 pl-14 sm:pl-16">
         <div className="relative shrink-0">
           {logoUrl ? (
