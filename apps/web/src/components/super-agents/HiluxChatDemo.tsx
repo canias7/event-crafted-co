@@ -1,26 +1,15 @@
-// Live HILUX demo embedded under the HILUX agent section on
-// /super-agents. Shows a vendor inbox (North & Pine Studio) with
-// Hilux replying on behalf of the vendor — first auto-plays a
-// scripted conversation, then lets the visitor type and get
-// keyword-aware replies live.
+// Live HILUX demo embedded in the left column of the HILUX agent
+// section on /super-agents.
 //
-// Ported from a standalone HTML mockup (apps/web/public/agents/
-// hilux_chat_vendor.html if checked in). Visual treatment matches
-// the page's amber palette and the Cormorant Garamond italic
-// vendor name treatment via the existing font-editorial class.
+// Floating conversation style — no card, no bubbles. Avatars + plain
+// text floating directly on the page wash, host (left, dark text) vs
+// vendor-replying-via-HILUX (right, amber text). Day divider with
+// hairlines. Sheer input pill below so visitors can still type and
+// hijack the loop with their own message. Auto-script loops forever
+// until the visitor sends a real message.
 
 import { useEffect, useRef, useState } from "react";
-import {
-  ArrowUp,
-  Bolt,
-  MapPin,
-  Minus,
-  Paperclip,
-  Smile,
-  Star,
-  Tag,
-  X,
-} from "lucide-react";
+import { ArrowUp, Paperclip, Smile } from "lucide-react";
 
 type Side = "user" | "agent";
 
@@ -37,39 +26,30 @@ const DEMO_SCRIPT: Array<{ side: Side; text: string }> = [
   {
     side: "agent",
     text:
-      "Hi! Yes, Sept 12 is currently open on my calendar. Where is the wedding taking place?",
+      "Hi! Yes, Sept 12 is open on my calendar. Where is the wedding taking place?",
   },
-  { side: "user", text: "Charlotte, NC. Around 80 guests, ceremony at 4 PM" },
+  { side: "user", text: "Charlotte, NC. Around 80 guests, ceremony at 4 PM." },
   {
     side: "agent",
     text:
-      "Lovely — I shoot regularly in the Charlotte area. For 80 guests with a 4 PM ceremony, I'd recommend my 8-hour package: getting-ready coverage through the first dances.",
+      "Lovely — I shoot in Charlotte often. I'd recommend my 8-hour package for that size.",
   },
-  { side: "user", text: "What does that include? And how much?" },
+  { side: "user", text: "What does that include?" },
   {
     side: "agent",
     text:
-      "The 8-hour package is $3,400. It includes two photographers, 600+ edited high-res images delivered in 4 weeks, an online gallery, and a 30-min engagement session beforehand.",
+      "Two photographers, 600+ edited images delivered in 4 weeks, and an engagement session.",
   },
-  { side: "user", text: "Sounds great! Can I see some samples from past weddings?" },
+  { side: "user", text: "Sounds perfect. Can I see some samples?" },
   {
     side: "agent",
     text:
-      "Of course — I'll send over three full galleries: one Tuscan-style, one outdoor garden, one sunset ceremony. Want me to put a soft hold on Sept 12 while you review?",
+      "Of course — three full galleries are on their way to your inbox. Shall I hold Sept 12?",
   },
-  { side: "user", text: "Yes please, that would be perfect" },
-  {
-    side: "agent",
-    text:
-      "Done — Sept 12 is now on soft hold for 7 days. Galleries are on their way to your inbox. Talk soon!",
-  },
-  { side: "user", text: "Thank you so much!" },
-  { side: "agent", text: "Anytime — looking forward to it. ✦" },
+  { side: "user", text: "Yes please!" },
+  { side: "agent", text: "Done. Soft hold placed. Looking forward to it. ✦" },
 ];
 
-// Keyword-aware fallback replies for manual chatting after the demo
-// finishes. Each pattern returns one canned response in the vendor's
-// voice. Order matters — earlier patterns win.
 function getReply(text: string): string {
   const t = text.toLowerCase().trim();
   if (/^(hi|hello|hey|yo|sup|hola)\b/.test(t))
@@ -126,20 +106,17 @@ export function HiluxChatDemo() {
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
 
-  // Auto-scroll on every new message.
   useEffect(() => {
     if (!scrollRef.current) return;
     scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
   }, [msgs]);
 
-  // Auto-demo. Plays continuously — when the scripted conversation
-  // finishes, pauses ~3.5s, clears the thread, and starts over from
-  // the top. Canceled permanently the moment the user sends a real
-  // message (demoRef.current = false).
+  // Auto-script loops forever. Visitor typing a real message flips
+  // demoRef.current = false and the loop exits permanently.
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      await sleep(800);
+      await sleep(700);
       while (!cancelled && demoRef.current) {
         for (const step of DEMO_SCRIPT) {
           if (cancelled || !demoRef.current) return;
@@ -163,8 +140,6 @@ export function HiluxChatDemo() {
           );
           await sleep(900);
         }
-        // End of one pass — hold the finished thread for a moment so
-        // the viewer can read the final line, then wipe and loop.
         await sleep(3500);
         if (cancelled || !demoRef.current) return;
         setMsgs([]);
@@ -218,162 +193,28 @@ export function HiluxChatDemo() {
   return (
     <div
       className="mx-auto flex flex-col"
-      style={{
-        width: "100%",
-        maxWidth: 460,
-        height: 660,
-        // Glassy translucent surface — really sheer (28% white) so the
-        // amber wash behind shows through. Backdrop blur keeps text
-        // legible even at low opacity.
-        background: "rgba(255,253,250,0.28)",
-        backdropFilter: "blur(26px) saturate(1.4)",
-        WebkitBackdropFilter: "blur(26px) saturate(1.4)",
-        border: "0.5px solid rgba(255,138,76,0.18)",
-        borderRadius: 20,
-        boxShadow:
-          "0 28px 64px rgba(255,138,76,0.12), 0 6px 18px rgba(196,84,30,0.05), inset 0 1px 0 rgba(255,255,255,0.4)",
-        overflow: "hidden",
-      }}
+      style={{ width: "100%", maxWidth: 560, minHeight: 480 }}
     >
-      {/* HEADER — the vendor is identified, Hilux is the reply engine */}
-      <div
-        className="flex items-center justify-between px-4 py-3"
-        style={{ borderBottom: "0.5px solid rgba(255,138,76,0.14)" }}
-      >
-        <div className="flex items-center gap-3">
-          <div className="relative w-[42px] h-[42px] flex items-center justify-center">
-            <div
-              className="w-full h-full rounded-full flex items-center justify-center text-white font-editorial italic text-[17px]"
-              style={{
-                background:
-                  "linear-gradient(135deg, #ff8a4c 0%, #c4541e 100%)",
-                letterSpacing: "0.5px",
-              }}
-            >
-              NP
-            </div>
-            <span
-              className="absolute bottom-0 right-0 rounded-full"
-              style={{
-                width: 11,
-                height: 11,
-                background: "#34d058",
-                border: "2px solid #fff",
-              }}
-            />
-          </div>
-          <div>
-            <div className="flex items-center gap-2 font-editorial italic text-[17px] text-[#1a1612]">
-              North &amp; Pine Studio
-              <span
-                className="text-[9px] uppercase font-medium rounded-[4px] px-1.5 py-px not-italic"
-                style={{
-                  letterSpacing: 1,
-                  color: "#c4541e",
-                  background: "rgba(255,138,76,0.1)",
-                  border: "0.5px solid rgba(255,138,76,0.3)",
-                  fontFamily: "inherit",
-                }}
-              >
-                PHOTOGRAPHY
-              </span>
-            </div>
-            <div className="mt-0.5 flex items-center gap-1.5 text-[11px] text-[rgba(26,22,18,0.55)]">
-              <span
-                className="rounded-full"
-                style={{
-                  width: 6,
-                  height: 6,
-                  background: "#ff8a4c",
-                  boxShadow: "0 0 6px #ff8a4c",
-                }}
-              />
-              Replying via{" "}
-              <span className="font-editorial italic text-[#c4541e] font-medium">
-                Hilux
-              </span>
-            </div>
-          </div>
-        </div>
-        <div className="flex gap-1">
-          <button
-            type="button"
-            className="w-8 h-8 rounded-lg flex items-center justify-center text-[rgba(26,22,18,0.5)] hover:bg-black/[0.04] hover:text-[#1a1612] transition-colors"
-            aria-label="Minimize"
-          >
-            <Minus className="w-[17px] h-[17px]" />
-          </button>
-          <button
-            type="button"
-            className="w-8 h-8 rounded-lg flex items-center justify-center text-[rgba(26,22,18,0.5)] hover:bg-black/[0.04] hover:text-[#1a1612] transition-colors"
-            aria-label="Close"
-          >
-            <X className="w-[17px] h-[17px]" />
-          </button>
-        </div>
-      </div>
-
-      {/* Vendor meta strip */}
-      <div
-        className="flex items-center justify-between px-4 py-2.5 text-[11.5px] text-[rgba(26,22,18,0.7)]"
-        style={{
-          background: "rgba(255,138,76,0.07)",
-          borderBottom: "0.5px solid rgba(255,138,76,0.12)",
-        }}
-      >
-        <div className="flex items-center gap-3.5">
-          <span className="flex items-center gap-1">
-            <MapPin className="w-[13px] h-[13px] text-[#c4541e]" />
-            Asheville, NC
-          </span>
-          <span className="flex items-center gap-1">
-            <Star className="w-[13px] h-[13px] fill-[#c4541e] text-[#c4541e]" />
-            <span className="text-[#c4541e] font-medium">5.0</span>
-          </span>
-          <span className="flex items-center gap-1">
-            <Tag className="w-[13px] h-[13px] text-[#c4541e]" />
-            From $2,800
-          </span>
-        </div>
-        <span className="flex items-center gap-1">
-          <Bolt className="w-[13px] h-[13px] text-[#c4541e]" />
-          Replies in ~1 min
-        </span>
-      </div>
-
-      {/* Messages */}
+      {/* Floating conversation — no card, no bubbles */}
       <div
         ref={scrollRef}
-        className="flex-1 overflow-y-auto px-4 py-5 flex flex-col gap-3"
+        className="flex flex-col gap-5 overflow-y-auto"
+        style={{ minHeight: 380, maxHeight: 520, paddingRight: 4 }}
       >
-        <div className="text-center text-[11px] text-[rgba(26,22,18,0.4)] mb-2">
-          Today
-        </div>
+        <DayDivider label="TODAY" />
         {msgs.map((m) => (
-          <MsgRow key={m.id} msg={m} />
+          <FloatingMsg key={m.id} msg={m} />
         ))}
       </div>
 
-      {/* Input bar */}
-      <div
-        className="px-4 pt-3.5 pb-4"
-        style={{ borderTop: "0.5px solid rgba(255,138,76,0.14)" }}
-      >
+      {/* Sheer input pill — still here so visitors can hijack the loop */}
+      <div className="mt-6">
         <div
           className="flex items-center gap-2 pl-4 pr-1 py-1 rounded-full transition-colors"
           style={{
             background: "rgba(255,255,255,0.32)",
-            border: "0.5px solid rgba(255,138,76,0.18)",
+            border: "0.5px solid rgba(255,138,76,0.22)",
             backdropFilter: "blur(8px)",
-          }}
-          onFocus={(e) => {
-            (e.currentTarget as HTMLDivElement).style.borderColor = "#ff8a4c";
-            (e.currentTarget as HTMLDivElement).style.background = "#fff";
-          }}
-          onBlur={(e) => {
-            (e.currentTarget as HTMLDivElement).style.borderColor =
-              "transparent";
-            (e.currentTarget as HTMLDivElement).style.background = "#f7f5f1";
           }}
         >
           <button
@@ -419,54 +260,98 @@ export function HiluxChatDemo() {
           </button>
         </div>
       </div>
+
+      <style>{`
+        @keyframes hiluxMsgIn {
+          from { opacity: 0; transform: translateY(12px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes hiluxTypingBounce {
+          0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+          30% { transform: translateY(-5px); opacity: 1; }
+        }
+      `}</style>
     </div>
   );
 }
 
-function MsgRow({ msg }: { msg: ChatMsg }) {
-  const isAgent = msg.side === "agent";
-  const avatar = isAgent ? "NP" : "H123";
+function DayDivider({ label }: { label: string }) {
   return (
     <div
-      className={`flex gap-2.5 max-w-[85%] ${
+      className="flex items-center gap-4 justify-center text-[10px] uppercase font-medium"
+      style={{
+        letterSpacing: "2px",
+        color: "rgba(26,22,18,0.35)",
+        margin: "4px 0 4px",
+      }}
+    >
+      <span
+        style={{
+          width: 60,
+          height: "0.5px",
+          background: "rgba(0,0,0,0.15)",
+        }}
+      />
+      <span>{label}</span>
+      <span
+        style={{
+          width: 60,
+          height: "0.5px",
+          background: "rgba(0,0,0,0.15)",
+        }}
+      />
+    </div>
+  );
+}
+
+function FloatingMsg({ msg }: { msg: ChatMsg }) {
+  const isAgent = msg.side === "agent";
+  return (
+    <div
+      className={`flex gap-3 max-w-[90%] ${
         isAgent ? "self-end flex-row-reverse" : "self-start"
       }`}
-      style={{ animation: "msgIn 0.3s ease-out" }}
+      style={{ animation: "hiluxMsgIn 0.5s ease-out" }}
     >
       <div
-        className="w-7 h-7 rounded-full flex-shrink-0 flex items-center justify-center mt-0.5"
+        className="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center mt-1"
         style={
           isAgent
             ? {
                 background: "linear-gradient(135deg, #ff8a4c 0%, #c4541e 100%)",
                 color: "#fff",
                 fontSize: 14,
+                boxShadow: "0 4px 16px rgba(255,138,76,0.35)",
               }
             : {
-                background: "rgba(26,22,18,0.06)",
-                backdropFilter: "blur(6px)",
+                background: "rgba(0,0,0,0.06)",
                 color: "#1a1612",
                 fontSize: 9.5,
                 fontWeight: 500,
                 letterSpacing: "0.3px",
+                border: "0.5px solid rgba(0,0,0,0.08)",
               }
         }
       >
-        <span className={isAgent ? "font-editorial italic" : ""}>{avatar}</span>
+        <span className={isAgent ? "font-editorial italic" : ""}>
+          {isAgent ? "NP" : "H123"}
+        </span>
       </div>
-      <div className={`flex flex-col gap-1 ${isAgent ? "items-end" : ""}`}>
+      <div className={`flex flex-col gap-1.5 ${isAgent ? "items-end" : ""}`}>
         <div
-          className={`text-[11px] font-medium inline-flex items-center gap-1.5 px-1.5 ${
-            isAgent ? "text-[#c4541e]" : "text-[rgba(26,22,18,0.55)]"
-          }`}
+          className="text-[11px] font-medium inline-flex items-center gap-1.5 px-1"
+          style={{
+            color: isAgent ? "#c4541e" : "rgba(26,22,18,0.5)",
+          }}
         >
           {isAgent ? "North & Pine Studio" : "Host 123"}
           {isAgent && (
             <span
-              className="text-[8.5px] uppercase font-medium rounded-[3px] px-1.5 py-px"
+              className="uppercase font-medium rounded-[3px] px-1.5 py-px"
               style={{
+                fontSize: "8.5px",
                 letterSpacing: "0.8px",
-                background: "rgba(255,138,76,0.12)",
+                background: "rgba(255,138,76,0.1)",
                 color: "#c4541e",
                 border: "0.5px solid rgba(255,138,76,0.3)",
               }}
@@ -477,67 +362,39 @@ function MsgRow({ msg }: { msg: ChatMsg }) {
         </div>
         {msg.typing ? (
           <div
-            className="flex items-center gap-1 px-4 py-3.5 rounded-[16px]"
-            style={
-              isAgent
-                ? {
-                    background:
-                      "linear-gradient(135deg, #ff8a4c 0%, #c4541e 100%)",
-                    borderBottomRightRadius: 4,
-                  }
-                : {
-                    background: "rgba(26,22,18,0.07)",
-                    backdropFilter: "blur(6px)",
-                    borderBottomLeftRadius: 4,
-                  }
-            }
+            className="flex items-center gap-1.5 px-1 py-2"
           >
             <Dot agent={isAgent} delay="0s" />
             <Dot agent={isAgent} delay="0.15s" />
             <Dot agent={isAgent} delay="0.3s" />
           </div>
         ) : (
-          <div
-            className="px-3.5 py-2.5 text-[14px] leading-[1.5] break-words"
-            style={
-              isAgent
-                ? {
-                    background:
-                      "linear-gradient(135deg, #ff8a4c 0%, #c4541e 100%)",
-                    color: "#fff",
-                    borderRadius: 16,
-                    borderBottomRightRadius: 4,
-                  }
-                : {
-                    background: "rgba(26,22,18,0.07)",
-                    backdropFilter: "blur(6px)",
-                    color: "#1a1612",
-                    borderRadius: 16,
-                    borderBottomLeftRadius: 4,
-                  }
-            }
+          <p
+            className="px-1"
+            style={{
+              fontSize: 15,
+              lineHeight: 1.55,
+              maxWidth: 420,
+              color: isAgent ? "#c4541e" : "#1a1612",
+              textAlign: isAgent ? "right" : "left",
+              margin: 0,
+            }}
           >
             {msg.text}
-          </div>
+          </p>
         )}
         {msg.time && (
-          <div className="text-[10.5px] text-[rgba(26,22,18,0.4)] px-1.5">
+          <div
+            className="text-[10.5px] px-1"
+            style={{
+              color: "rgba(26,22,18,0.35)",
+              letterSpacing: "0.5px",
+            }}
+          >
             {msg.time}
           </div>
         )}
       </div>
-
-      {/* Keyframes — scoped, defined once per row mount (cheap) */}
-      <style>{`
-        @keyframes msgIn {
-          from { opacity: 0; transform: translateY(6px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes typingBounce {
-          0%, 60%, 100% { transform: translateY(0); opacity: 0.5; }
-          30% { transform: translateY(-4px); opacity: 1; }
-        }
-      `}</style>
     </div>
   );
 }
@@ -547,10 +404,10 @@ function Dot({ agent, delay }: { agent: boolean; delay: string }) {
     <span
       className="rounded-full"
       style={{
-        width: 7,
-        height: 7,
-        background: agent ? "rgba(255,255,255,0.9)" : "rgba(26,22,18,0.45)",
-        animation: "typingBounce 1.2s ease-in-out infinite",
+        width: 8,
+        height: 8,
+        background: agent ? "#c4541e" : "rgba(26,22,18,0.4)",
+        animation: "hiluxTypingBounce 1.2s ease-in-out infinite",
         animationDelay: delay,
       }}
     />
