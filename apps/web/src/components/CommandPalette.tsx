@@ -34,12 +34,6 @@ interface NavTarget {
 const PUBLIC_NAV: NavTarget[] = [
   { label: "Browse vendors", hint: "Directory", path: "/vendors", icon: Store },
   { label: "Browse by location", hint: "Cities", path: "/vendors/locations", icon: Store },
-  {
-    label: "Real events",
-    hint: "Past weddings",
-    path: "/real-events",
-    icon: Sparkles,
-  },
 ];
 
 // Mirrors mobile host bottom nav (Explore / Inbox / Events / Profile).

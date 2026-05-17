@@ -54,8 +54,6 @@ import {
   CustomerExplorePage,
   HostProfilePage,
   SupportPage,
-  RealEventsPage,
-  RealEventDetailPage,
   VendorHomePage,
   VendorMyProfilePage,
   VendorEditProfilePage,
@@ -109,8 +107,8 @@ const App = () => (
               <Route path="/guides/:slug" element={<Navigate to="/" replace />} />
               {/* Vendor claim-listing flow — public, auth-gated to claim. */}
               <Route path="/claim/:token" element={<ClaimVendorPage />} />
-              <Route path="/real-events" element={<RealEventsPage />} />
-              <Route path="/real-events/:slug" element={<RealEventDetailPage />} />
+              {/* /real-events + /real-events/:slug routes pulled
+                  temporarily — page is hidden until we re-enable. */}
               <Route path="/review/:token" element={<PublicReviewPage />} />
               <Route path="/proposals/:id/print" element={<ProposalPrintPage />} />
               <Route path="/p/:token" element={<PublicProposalPage />} />

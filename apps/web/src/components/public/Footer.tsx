@@ -34,7 +34,6 @@ export function Footer() {
           <div>
             <p className="font-label mb-4 opacity-50">{t("footer.company")}</p>
             <div className="space-y-3">
-              <Link to="/real-events" className="block text-sm opacity-70 hover:opacity-100 transition-opacity">{t("footer.real_events")}</Link>
               <Link to="/changelog" className="block text-sm opacity-70 hover:opacity-100 transition-opacity">{t("footer.changelog")}</Link>
               <Link to="/press" className="block text-sm opacity-70 hover:opacity-100 transition-opacity">{t("footer.press")}</Link>
               <Link to="/status" className="block text-sm opacity-70 hover:opacity-100 transition-opacity">{t("footer.status")}</Link>

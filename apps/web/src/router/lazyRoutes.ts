@@ -110,12 +110,6 @@ export const SettingsPage = lazyWithReload(importSettings);
 const importNotFound = () => import("@/pages/NotFound");
 export const NotFound = lazyWithReload(importNotFound);
 
-const importRealEvents = () => import("@/pages/RealEventsPage");
-export const RealEventsPage = lazyWithReload(importRealEvents);
-
-const importRealEventDetail = () => import("@/pages/RealEventDetailPage");
-export const RealEventDetailPage = lazyWithReload(importRealEventDetail);
-
 const importAcceptTeamInvite = () => import("@/pages/AcceptTeamInvitePage");
 export const AcceptTeamInvitePage = lazyWithReload(importAcceptTeamInvite);
 
@@ -195,8 +189,6 @@ const ROUTE_IMPORTERS: Array<{ pattern: string; importer: () => Promise<unknown>
   },
   { pattern: "/vendors/:id", importer: importVendorDetail },
   { pattern: "/v/:slug", importer: importVendorDetail },
-  { pattern: "/real-events", importer: importRealEvents },
-  { pattern: "/real-events/:slug", importer: importRealEventDetail },
   { pattern: "/accept-team-invite/:token", importer: importAcceptTeamInvite },
   // Customer — mirrors mobile host tabs (Explore / Inbox / Events / Profile + Settings)
   { pattern: "/customer/explore", importer: importCustomerExplore },
