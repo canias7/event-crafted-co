@@ -400,41 +400,7 @@ export default function InquiryDetailPage() {
                 View inquiry
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              {!isClosed ? (
-                <>
-                  <DropdownMenuItem
-                    onClick={() => setProposalModalOpen(true)}
-                    className="cursor-pointer"
-                  >
-                    <FileText className="w-4 h-4 mr-2" />
-                    Send proposal
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={() => setAppointmentModalOpen(true)}
-                    className="cursor-pointer"
-                  >
-                    <CalendarDays className="w-4 h-4 mr-2" />
-                    Propose meeting
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem
-                    disabled={statusUpdating}
-                    onClick={() => setStatus("won")}
-                    className="cursor-pointer"
-                  >
-                    <Check className="w-4 h-4 mr-2 text-emerald-600" />
-                    Mark as booked
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    disabled={statusUpdating}
-                    onClick={() => setStatus("lost")}
-                    className="cursor-pointer text-destructive focus:text-destructive"
-                  >
-                    <X className="w-4 h-4 mr-2" />
-                    Close inquiry
-                  </DropdownMenuItem>
-                </>
-              ) : (
+              {isClosed ? (
                 <DropdownMenuItem
                   disabled={statusUpdating}
                   onClick={() => setStatus("replied")}
@@ -442,6 +408,15 @@ export default function InquiryDetailPage() {
                 >
                   <RotateCcw className="w-4 h-4 mr-2" />
                   Reopen inquiry
+                </DropdownMenuItem>
+              ) : (
+                <DropdownMenuItem
+                  disabled={statusUpdating}
+                  onClick={() => setStatus("lost")}
+                  className="cursor-pointer text-destructive focus:text-destructive"
+                >
+                  <X className="w-4 h-4 mr-2" />
+                  Close inquiry
                 </DropdownMenuItem>
               )}
             </DropdownMenuContent>
