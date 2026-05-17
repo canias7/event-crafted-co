@@ -13,15 +13,12 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { motion } from "framer-motion";
 import {
   CheckCircle2,
   Edit3,
   Film,
   Grid3x3,
-  Info,
   MessageCircle,
-  RotateCcw,
   Plus,
   Share2,
   Store,
@@ -35,6 +32,7 @@ import {
   BuzzComposerModal,
   MediaComposerModal,
 } from "@/components/vendor/Composers";
+import { BrandCardShell } from "@/components/vendor/BrandCardShell";
 import { ListingWizardModal } from "@/components/vendor/ListingWizardModal";
 import { MediaLightbox } from "@/components/vendor/MediaLightbox";
 
@@ -398,9 +396,8 @@ function HeaderCard({
   initials: string;
   logoUrl: string | null;
   businessName: string;
-  /** Vendor's account-level bio (profiles.bio). Surfaces on the
-   *  back of the flippable card; click the info pill in the top-left
-   *  to reveal it. */
+  /** Account-level bio (profiles.bio). Surfaces on the back of the
+   *  shared BrandCardShell flip. */
   bio: string | null;
   memberSince: string;
   verified: boolean;
@@ -409,146 +406,58 @@ function HeaderCard({
   ratingAvg: number | null;
   onShare: () => void;
 }) {
-  const [flipped, setFlipped] = useState(false);
   return (
-    <div className="relative" style={{ perspective: 1400 }}>
-      {/* Flip toggle — stays put in the top-left corner across both
-          faces so the user always has a clear way back. */}
-      <button
-        type="button"
-        onClick={() => setFlipped((f) => !f)}
-        aria-label={flipped ? "Show profile front" : "Show bio on back"}
-        className="absolute top-3 left-3 z-20 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] uppercase tracking-[0.18em] font-semibold text-foreground/80 hover:text-foreground transition-colors"
-        style={{
-          background: "rgba(255,255,255,0.7)",
-          border: "0.5px solid rgba(255,138,76,0.28)",
-          backdropFilter: "blur(8px)",
-        }}
-      >
-        {flipped ? (
-          <>
-            <RotateCcw className="h-3 w-3" />
-            Back
-          </>
-        ) : (
-          <>
-            <Info className="h-3 w-3" />
-            Bio
-          </>
-        )}
-      </button>
-
-      <motion.div
-        animate={{ rotateY: flipped ? 180 : 0 }}
-        transition={{ duration: 0.75, ease: [0.16, 1, 0.3, 1] }}
-        className="relative w-full"
-        style={{ transformStyle: "preserve-3d" }}
-      >
-        {/* FRONT — sets the card's natural height */}
-        <div
-          className="relative overflow-hidden rounded-3xl border border-border/60 shadow-[0_8px_24px_-12px_rgba(26,20,16,0.18)] p-6 flex flex-col sm:flex-row gap-5 items-start bg-[linear-gradient(135deg,#ffffff_0%,#f3f4f6_100%)]"
-          style={{ backfaceVisibility: "hidden", WebkitBackfaceVisibility: "hidden" }}
-        >
-          <div
-            className="pointer-events-none absolute inset-0"
-            aria-hidden
-            style={{
-              background:
-                "radial-gradient(circle at 18% 22%, rgba(255,230,180,0.55), transparent 55%)",
-            }}
-          />
-          <div className="relative shrink-0">
-            {logoUrl ? (
-              <img
-                src={logoUrl}
-                alt={businessName}
-                className="w-24 h-24 rounded-full object-cover bg-secondary"
-              />
-            ) : (
-              <div className="w-24 h-24 rounded-full bg-foreground text-background flex items-center justify-center font-editorial text-4xl">
-                {initials}
-              </div>
-            )}
-            {verified ? (
-              <div className="absolute -right-1 bottom-1 w-7 h-7 rounded-full bg-card border-2 border-background flex items-center justify-center">
-                <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-              </div>
-            ) : null}
-          </div>
-          <div className="relative flex-1 min-w-0 pl-16 sm:pl-0">
-            <h2 className="font-editorial text-2xl text-foreground truncate">
-              {businessName}
-            </h2>
-            <div className="mt-4 grid grid-cols-2 gap-2 max-w-xs">
-              <Stat
-                label="Rating"
-                value={ratingAvg != null ? ratingAvg.toFixed(1) : "—"}
-              />
-              <Stat label="Joined" value={memberSince} />
+    <BrandCardShell businessName={businessName} bio={bio}>
+      <div className="flex flex-col sm:flex-row gap-5 items-start">
+        <div className="relative shrink-0">
+          {logoUrl ? (
+            <img
+              src={logoUrl}
+              alt={businessName}
+              className="w-24 h-24 rounded-full object-cover bg-secondary"
+            />
+          ) : (
+            <div className="w-24 h-24 rounded-full bg-foreground text-background flex items-center justify-center font-editorial text-4xl">
+              {initials}
             </div>
+          )}
+          {verified ? (
+            <div className="absolute -right-1 bottom-1 w-7 h-7 rounded-full bg-card border-2 border-background flex items-center justify-center">
+              <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+            </div>
+          ) : null}
+        </div>
+        <div className="flex-1 min-w-0 pl-16 sm:pl-0">
+          <h2 className="font-editorial text-2xl text-foreground truncate">
+            {businessName}
+          </h2>
+          <div className="mt-4 grid grid-cols-2 gap-2 max-w-xs">
+            <Stat
+              label="Rating"
+              value={ratingAvg != null ? ratingAvg.toFixed(1) : "—"}
+            />
+            <Stat label="Joined" value={memberSince} />
           </div>
-          <div className="relative shrink-0 flex flex-col gap-2">
-            <Button
-              variant="outline"
-              className="rounded-full"
-              size="sm"
-              onClick={onShare}
-            >
-              <Share2 className="h-3.5 w-3.5 mr-1" />
-              Share profile
+        </div>
+        <div className="shrink-0 flex flex-col gap-2">
+          <Button
+            variant="outline"
+            className="rounded-full"
+            size="sm"
+            onClick={onShare}
+          >
+            <Share2 className="h-3.5 w-3.5 mr-1" />
+            Share profile
+          </Button>
+          <Link to="/vendor/edit-profile">
+            <Button variant="outline" className="rounded-full" size="sm">
+              <Edit3 className="h-3.5 w-3.5 mr-1" />
+              Edit identity
             </Button>
-            <Link to="/vendor/edit-profile">
-              <Button variant="outline" className="rounded-full" size="sm">
-                <Edit3 className="h-3.5 w-3.5 mr-1" />
-                Edit identity
-              </Button>
-            </Link>
-          </div>
+          </Link>
         </div>
-
-        {/* BACK — bio displayed prominently. Absolutely positioned
-            over the front so the height of the card matches the front. */}
-        <div
-          className="absolute inset-0 rounded-3xl border border-border/60 shadow-[0_8px_24px_-12px_rgba(26,20,16,0.18)] p-6 sm:p-8 flex flex-col bg-[linear-gradient(135deg,#fff5e8_0%,#f6e3d2_100%)]"
-          style={{
-            backfaceVisibility: "hidden",
-            WebkitBackfaceVisibility: "hidden",
-            transform: "rotateY(180deg)",
-            overflow: "hidden",
-          }}
-        >
-          <div
-            className="pointer-events-none absolute inset-0"
-            aria-hidden
-            style={{
-              background:
-                "radial-gradient(circle at 80% 20%, rgba(255,138,76,0.18), transparent 60%)",
-            }}
-          />
-          <p className="relative font-label text-[10px] uppercase tracking-[0.22em] text-muted-foreground mt-2">
-            About {businessName}
-          </p>
-          <div className="relative flex-1 mt-4 overflow-y-auto pr-2">
-            {bio ? (
-              <p className="font-editorial italic text-foreground/85 text-[17px] sm:text-[19px] leading-[1.5] whitespace-pre-line">
-                {bio}
-              </p>
-            ) : (
-              <p className="text-sm text-muted-foreground italic">
-                No bio yet — set one on{" "}
-                <Link
-                  to="/vendor/edit-profile"
-                  className="underline underline-offset-4 hover:text-foreground"
-                >
-                  Edit identity
-                </Link>
-                {" "}so hosts know who's behind {businessName}.
-              </p>
-            )}
-          </div>
-        </div>
-      </motion.div>
-    </div>
+      </div>
+    </BrandCardShell>
   );
 }
 
