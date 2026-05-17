@@ -297,9 +297,6 @@ export default function LoginPage({ role }: LoginPageProps = {}) {
       pillLabel={pillLabel}
       topRight={
         <>
-          <Link to="/support" className="opacity-60">
-            Need help?
-          </Link>
           <span>
             <span style={{ opacity: 0.6 }}>New here? </span>
             <Link

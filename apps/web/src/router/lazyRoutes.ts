@@ -129,9 +129,6 @@ export const CustomerExplorePage = lazyWithReload(importCustomerExplore);
 const importHostProfile = () => import("@/pages/customer/HostProfilePage");
 export const HostProfilePage = lazyWithReload(importHostProfile);
 
-const importSupport = () => import("@/pages/SupportPage");
-export const SupportPage = lazyWithReload(importSupport);
-
 // ---------------- Vendor ----------------
 // VendorDashboard page deleted — its route now redirects to
 // /vendor/home (see App.tsx). KPIs surface on the Profile page.
@@ -196,7 +193,6 @@ const ROUTE_IMPORTERS: Array<{ pattern: string; importer: () => Promise<unknown>
   { pattern: "/customer/inquiries/:inquiryId", importer: importHostInquiryDetail },
   { pattern: "/customer/events", importer: importHostEvents },
   { pattern: "/customer/profile", importer: importHostProfile },
-  { pattern: "/support", importer: importSupport },
   // Vendor
   { pattern: "/vendor/home", importer: importVendorHome },
   { pattern: "/vendor/me", importer: importVendorMyProfile },
