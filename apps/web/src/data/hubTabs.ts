@@ -16,7 +16,7 @@ import type { SubNavTab } from "@/components/shared/SubNavTabs";
 // goes through an inquiry now.
 export const VENDOR_INBOX_HUB_TABS: SubNavTab[] = [
   { label: "Inquiries", to: "/vendor/inbox" },
-  { label: "Partners", to: "/vendor/partners" },
+  { label: "Vendors", to: "/vendor/partners" },
 ];
 
 // Old name kept as an alias so VendorPartnersPage's existing import

@@ -158,12 +158,18 @@ export default function VendorDetailPage() {
   const navigate = useNavigate();
   // Route is either /vendors/:id or /v/:slug — accept both.
   const { id, slug } = useParams();
-  const { session, profile, isApprovedVendor, ownListing, loading: authLoading } = useAuth();
+  const { session, profile, isApprovedVendor, loading: authLoading } = useAuth();
   const { vendors, loading: vendorsLoading } = useVendors();
   const { isSaved, toggle: toggleSave } = useSavedVendors();
   const [signinPromptOpen, setSigninPromptOpen] = useState(false);
   const [inquiryFormOpen, setInquiryFormOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+  // Owner of THIS listing (profiles.id). Needed so the "Message vendor"
+  // button can call find_or_create_partner_thread with the right
+  // recipient. Looked up on demand once the listing resolves.
+  const [listingOwnerUserId, setListingOwnerUserId] = useState<string | null>(
+    null,
+  );
 
   const vendor = id
     ? vendors.find((v) => v.id === id)
@@ -171,6 +177,28 @@ export default function VendorDetailPage() {
       ? vendors.find((v) => v.slug === slug)
       : undefined;
   const saved = vendor ? isSaved(vendor.id) : false;
+
+  useEffect(() => {
+    if (!vendor?.id || !vendor.isReal) {
+      setListingOwnerUserId(null);
+      return;
+    }
+    let cancelled = false;
+    supabase
+      .from("vendor_profiles")
+      .select("user_id")
+      .eq("id", vendor.id)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (cancelled) return;
+        setListingOwnerUserId(
+          (data as { user_id?: string | null } | null)?.user_id ?? null,
+        );
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [vendor?.id, vendor?.isReal]);
 
   // Real portfolio images (only if this is a DB-backed vendor).
   interface RealPortfolioItem {
@@ -496,25 +524,20 @@ export default function VendorDetailPage() {
       setSigninPromptOpen(true);
       return;
     }
-    // Approved vendors talk to other vendors through the partner thread.
-    // Host → vendor messaging happens exclusively via the inquiry form
-    // (mirrors mobile, where there's no separate DM-without-inquiry
-    // path); the "Message vendor" button is hidden for hosts below.
+    // Approved vendors talk to other vendors through the partner
+    // thread. Partner threads are keyed on profiles.id (user accounts),
+    // not vendor_profiles.id — so a vendor with zero listings can
+    // still initiate. Host → vendor messaging happens through the
+    // inquiry form; the "Message vendor" button is hidden for hosts.
     if (isApprovedVendor) {
-      // A vendor account with zero listings of its own can't open a
-      // partner thread — there's no calling identity. The button is
-      // hidden when ownListing is null, but check here too as a guard
-      // against stale auth state.
-      if (!ownListing?.id) {
-        toast.error(
-          "Create your first listing before messaging other vendors.",
-        );
+      if (!listingOwnerUserId) {
+        toast.error("Couldn't find the owner of this listing.");
         return;
       }
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data, error } = await (supabase as any).rpc(
         "find_or_create_partner_thread",
-        { p_other_vendor_id: vendor.id, p_my_vendor_id: ownListing.id },
+        { p_other_user_id: listingOwnerUserId },
       );
       if (error) {
         toast.error(error.message);
@@ -860,12 +883,15 @@ export default function VendorDetailPage() {
                     Send Inquiry
                   </Button>
 
-                  {/* "Message vendor" button is shown only to approved
-                      vendors who own at least one listing of their own
-                      (the partner-thread RPC needs a calling vendor
-                      identity). Hosts and listing-less vendor accounts
-                      route through "Send Inquiry" above. */}
-                  {isApprovedVendor && ownListing?.id && ownListing.id !== vendor.id && (
+                  {/* "Message vendor" button is shown to every approved
+                      vendor (listing or not — partner threads are keyed
+                      on profiles.id, not vendor_profiles.id). Hidden
+                      when the viewer owns this listing themselves
+                      (can't DM yourself) or while the owner lookup is
+                      still in flight. Hosts route through "Send Inquiry". */}
+                  {isApprovedVendor &&
+                    listingOwnerUserId &&
+                    listingOwnerUserId !== session?.user?.id && (
                     <Button
                       onClick={handleMessageClick}
                       disabled={authLoading}
