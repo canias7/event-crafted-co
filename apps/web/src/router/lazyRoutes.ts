@@ -163,8 +163,6 @@ export const VendorStudioPage = lazyWithReload(importVendorStudio);
 const importInquiryDetail = () => import("@/pages/vendor/InquiryDetailPage");
 export const InquiryDetailPage = lazyWithReload(importInquiryDetail);
 
-const importAvailability = () => import("@/pages/vendor/AvailabilityPage");
-export const AvailabilityPage = lazyWithReload(importAvailability);
 // ---------------- path → importer registry ----------------
 // Order matters for matchPath — more specific patterns first. Static
 // strings are tried before dynamic ones via Map insertion order.
@@ -209,9 +207,6 @@ const ROUTE_IMPORTERS: Array<{ pattern: string; importer: () => Promise<unknown>
   { pattern: "/vendor/edit-profile", importer: importVendorEditProfile },
   { pattern: "/vendor/inbox", importer: importVendorInbox },
   { pattern: "/vendor/appointments", importer: importVendorAppointments },
-  // Availability lives on the same page as Appointments now (merged
-  // Calendar dashboard); both URLs resolve to the same chunk.
-  { pattern: "/vendor/availability", importer: importVendorAppointments },
   { pattern: "/vendor/partners", importer: importVendorPartners },
   { pattern: "/vendor/studio", importer: importVendorStudio },
   { pattern: "/vendor/inbox/:inquiryId", importer: importInquiryDetail },

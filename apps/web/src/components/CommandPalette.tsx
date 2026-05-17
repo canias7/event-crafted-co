@@ -10,7 +10,6 @@ import {
   Sparkles,
   Store,
   User,
-  Users,
   type LucideIcon,
 } from "lucide-react";
 import {
@@ -35,7 +34,6 @@ interface NavTarget {
 const PUBLIC_NAV: NavTarget[] = [
   { label: "Browse vendors", hint: "Directory", path: "/vendors", icon: Store },
   { label: "Browse by location", hint: "Cities", path: "/vendors/locations", icon: Store },
-  { label: "Map view", hint: "Pins", path: "/vendors/map", icon: Store },
   {
     label: "Real events",
     hint: "Past weddings",
@@ -55,12 +53,17 @@ const HOST_NAV: NavTarget[] = [
   { label: "Profile", path: "/customer/profile", icon: User },
 ];
 
+// Mirrors live vendor portal routes — only surfaces that still resolve.
+// Availability is a tab inside /vendor/appointments now, not a top-level
+// route. /vendor/listing, /vendor/team, /vendor/availability were all
+// eliminated; don't list them here or the palette routes the user to NotFound.
 const VENDOR_NAV: NavTarget[] = [
+  { label: "Home", path: "/vendor/home", icon: Sparkles },
+  { label: "Profile", path: "/vendor/me", icon: User },
   { label: "Inquiry inbox", path: "/vendor/inbox", icon: Inbox },
-  { label: "Listing", path: "/vendor/listing", icon: Store },
-  { label: "Team", path: "/vendor/team", icon: Users },
   { label: "Appointments", path: "/vendor/appointments", icon: CalendarDays },
-  { label: "Availability", path: "/vendor/availability", icon: CalendarDays },
+  { label: "Partners", path: "/vendor/partners", icon: MessageSquare },
+  { label: "Studio", path: "/vendor/studio", icon: Store },
 ];
 
 const SETTINGS_NAV: NavTarget[] = [

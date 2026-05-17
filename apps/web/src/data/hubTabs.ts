@@ -22,8 +22,3 @@ export const VENDOR_INBOX_HUB_TABS: SubNavTab[] = [
 // Old name kept as an alias so VendorPartnersPage's existing import
 // keeps working without a churn-y rename.
 export const VENDOR_MESSAGES_HUB_TABS = VENDOR_INBOX_HUB_TABS;
-
-export const VENDOR_CALENDAR_HUB_TABS: SubNavTab[] = [
-  { label: "Appointments", to: "/vendor/appointments" },
-  { label: "Availability", to: "/vendor/availability" },
-];
