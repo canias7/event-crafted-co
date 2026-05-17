@@ -855,21 +855,9 @@ export default function VendorDetailPage() {
 
                   <div className="space-y-3 mb-6">
                     <div className="flex items-center gap-2.5 text-sm">
-                      <Sparkles className="w-4 h-4 text-accent flex-shrink-0" />
-                      <span className="text-foreground/80">
-                        AI-drafted reply within 3 hours
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2.5 text-sm">
                       <Calendar className="w-4 h-4 text-accent flex-shrink-0" />
                       <span className="text-foreground/80">
                         Live availability calendar
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2.5 text-sm">
-                      <Check className="w-4 h-4 text-accent flex-shrink-0" />
-                      <span className="text-foreground/80">
-                        No platform fee for hosts
                       </span>
                     </div>
                   </div>
