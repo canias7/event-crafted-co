@@ -141,8 +141,6 @@ export default function SuperAgentsPage() {
         <div className="w-[120px]" aria-hidden />
       </header>
 
-      <Hero />
-
       <AgentsSection />
 
       <CapabilitiesGrid />
@@ -366,49 +364,29 @@ const PARTICLES: Particle[] = [
   { variant: "b", top: "78%", left: "32%", size: 2, color: "#ffb27a", glow: 6, delay: "3s" },
 ];
 
-// ─── Hero ──────────────────────────────────────────────────────────────
-function Hero() {
+// ─── Agents section ────────────────────────────────────────────────────
+function AgentsSection() {
   return (
-    <section className="relative z-10 px-6 md:px-10 pt-16 pb-24 md:pt-24 md:pb-32 text-center">
-      {/* Pre-headline pill */}
-      <motion.div
-        initial={{ opacity: 0, y: 16 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-        className="inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-[10px] uppercase tracking-[0.2em] text-black/75"
-        style={{
-          border: "0.5px solid rgba(0,0,0,0.18)",
-          background: "rgba(255,255,255,0.55)",
-          backdropFilter: "blur(8px)",
-        }}
-      >
-        <span
-          className="rounded-full"
-          style={{
-            width: 6,
-            height: 6,
-            background: "#ff8a4c",
-            boxShadow: "0 0 8px #ff8a4c",
-          }}
-        />
-        Three agents now live
-      </motion.div>
-
+    <section
+      id="meet"
+      className="relative z-10 px-6 md:px-10 pt-20 md:pt-28 pb-24 md:pb-32 mx-auto"
+      style={{ maxWidth: 1200 }}
+    >
+      {/* First headline on the page — the ex-hero is gone. */}
       <motion.h1
-        initial={{ opacity: 0, y: 24 }}
+        initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.7, delay: 0.05, ease: [0.16, 1, 0.3, 1] }}
-        className="mt-7 font-editorial mx-auto"
+        transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
+        className="text-center font-editorial mx-auto mb-20"
         style={{
-          fontSize: "clamp(56px, 9vw, 124px)",
+          fontSize: "clamp(48px, 7vw, 92px)",
           fontWeight: 500,
-          lineHeight: 0.95,
-          letterSpacing: "-2px",
-          maxWidth: 1100,
+          lineHeight: 1,
+          letterSpacing: "-1.5px",
+          maxWidth: 1000,
         }}
       >
-        Three agents.
-        <br />
+        Three minds.{" "}
         <span
           style={{
             background:
@@ -422,142 +400,6 @@ function Hero() {
           One vendor.
         </span>
       </motion.h1>
-
-      <motion.p
-        initial={{ opacity: 0, y: 16 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
-        className="mx-auto mt-7 text-[18px] md:text-[20px] text-black/70"
-        style={{ maxWidth: 620, lineHeight: 1.55 }}
-      >
-        Super Agents reply to hosts at 3 a.m., write your listings in your
-        voice, and turn one phone photo into a portfolio. You stay the
-        artist. They handle the rest.
-      </motion.p>
-
-      <motion.div
-        initial={{ opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6, delay: 0.35 }}
-        className="mt-10 flex items-center justify-center text-[13px]"
-      >
-        <a
-          href="#meet"
-          className="rounded-full px-6 py-3 text-black/85 hover:text-black transition-colors"
-          style={{ border: "0.5px solid rgba(0,0,0,0.25)" }}
-        >
-          Meet them →
-        </a>
-      </motion.div>
-
-      {/* Central holographic core — faux-3D layered orb */}
-      <div className="mt-20 flex items-center justify-center">
-        <HolographicCore />
-      </div>
-    </section>
-  );
-}
-
-function HolographicCore() {
-  const reduceMotion = useReducedMotion();
-  return (
-    <div
-      className="relative"
-      style={{ width: 320, height: 320, perspective: 1200 }}
-    >
-      {/* Outermost slow-rotating ring */}
-      <motion.div
-        animate={reduceMotion ? undefined : { rotate: 360 }}
-        transition={
-          reduceMotion
-            ? undefined
-            : { duration: 24, repeat: Infinity, ease: "linear" }
-        }
-        className="absolute inset-0 rounded-full"
-        style={{
-          border: "1px dashed rgba(0,0,0,0.18)",
-        }}
-      />
-      {/* Middle ring */}
-      <motion.div
-        animate={reduceMotion ? undefined : { rotate: -360 }}
-        transition={
-          reduceMotion
-            ? undefined
-            : { duration: 18, repeat: Infinity, ease: "linear" }
-        }
-        className="absolute inset-8 rounded-full"
-        style={{
-          border: "0.5px solid rgba(0,0,0,0.22)",
-          background:
-            "conic-gradient(from 90deg, transparent 0%, rgba(208,102,255,0.32) 25%, transparent 50%, rgba(255,138,76,0.32) 75%, transparent 100%)",
-          maskImage: "radial-gradient(circle, transparent 60%, #000 62%)",
-          WebkitMaskImage:
-            "radial-gradient(circle, transparent 60%, #000 62%)",
-        }}
-      />
-      {/* Inner core sphere */}
-      <motion.div
-        animate={
-          reduceMotion
-            ? undefined
-            : { scale: [1, 1.05, 1], opacity: [0.85, 1, 0.85] }
-        }
-        transition={
-          reduceMotion
-            ? undefined
-            : { duration: 4, repeat: Infinity, ease: "easeInOut" }
-        }
-        className="absolute inset-20 rounded-full"
-        style={{
-          background:
-            "radial-gradient(circle at 35% 30%, #ffffff 0%, #ffd9b8 18%, #ff8a4c 45%, #d066ff 75%, #15183b 100%)",
-          boxShadow:
-            "0 0 80px rgba(208,102,255,0.5), 0 0 140px rgba(255,138,76,0.3), inset -20px -30px 60px rgba(0,0,0,0.4)",
-        }}
-      />
-      {/* Glint highlight */}
-      <div
-        aria-hidden
-        className="absolute"
-        style={{
-          top: 80,
-          left: 100,
-          width: 36,
-          height: 18,
-          borderRadius: "50%",
-          background: "rgba(255,255,255,0.5)",
-          filter: "blur(6px)",
-        }}
-      />
-    </div>
-  );
-}
-
-// ─── Agents section ────────────────────────────────────────────────────
-function AgentsSection() {
-  return (
-    <section
-      id="meet"
-      className="relative z-10 px-6 md:px-10 py-24 md:py-32 mx-auto"
-      style={{ maxWidth: 1200 }}
-    >
-      <div className="mb-20 text-center">
-        <p className="font-label text-[10px] uppercase tracking-[0.25em] text-black/55">
-          Meet the agents
-        </p>
-        <h2
-          className="mt-4 font-editorial italic"
-          style={{
-            fontSize: "clamp(40px, 6vw, 72px)",
-            fontWeight: 500,
-            lineHeight: 1,
-            letterSpacing: "-1px",
-          }}
-        >
-          Three minds. One vendor.
-        </h2>
-      </div>
 
       <div className="space-y-24 md:space-y-40">
         {AGENTS.map((agent, i) => (
