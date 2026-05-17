@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { GlassyAuthShell } from "@/components/auth/GlassyAuthShell";
+import { TurnstileWidget } from "@/components/auth/TurnstileWidget";
 
 interface LoginPageProps {
   // When set, the form is themed for that role and the success redirect
@@ -24,6 +25,13 @@ export default function LoginPage({ role }: LoginPageProps = {}) {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [code, setCode] = useState("");
+  // Turnstile token for the final signInWithPassword call. Required
+  // because Supabase Auth has Captcha protection enabled, which gates
+  // every GoTrue endpoint server-side (signUp, signIn, reset, etc.).
+  // Step 1 + the OTP verify hit our `signin-2fa` edge function with
+  // service-role auth (bypasses captcha); Step 2's final signIn does
+  // not, so the token gets attached there.
+  const [captchaToken, setCaptchaToken] = useState("");
   const [loading, setLoading] = useState(false);
   // Client-side cooldown for Resend code so a rapid-fire button-mash
   // doesn't burn through Resend quota / annoy the user with duplicates.
@@ -77,11 +85,16 @@ export default function LoginPage({ role }: LoginPageProps = {}) {
     }
     toast.success("We emailed you a 6-digit code.");
     setCode("");
+    setCaptchaToken("");
     setStep("code");
   }
 
   async function onSubmitCode(e: React.FormEvent) {
     e.preventDefault();
+    if (!captchaToken) {
+      toast.error("Please complete the bot-check below.");
+      return;
+    }
     setLoading(true);
     // Step 2: verify the code, then call signInWithPassword to actually
     // establish the session.
@@ -106,9 +119,16 @@ export default function LoginPage({ role }: LoginPageProps = {}) {
     }
     // Code verified — now actually sign in with password.
     const { data: signInData, error: signInError } =
-      await supabase.auth.signInWithPassword({ email: email.trim(), password });
+      await supabase.auth.signInWithPassword({
+        email: email.trim(),
+        password,
+        options: { captchaToken },
+      });
     setLoading(false);
     if (signInError) {
+      // Captcha tokens are single-use; on any failure clear the token
+      // so the widget can re-issue a fresh one without a manual reset.
+      setCaptchaToken("");
       toast.error(signInError.message);
       return;
     }
@@ -210,6 +230,9 @@ export default function LoginPage({ role }: LoginPageProps = {}) {
       return;
     }
     setResendCooldown(30);
+    // Discard any previously-verified token; the user will solve the
+    // widget once before clicking Sign in with the new code.
+    setCaptchaToken("");
     toast.success("We sent a new code.");
   }
 
@@ -249,7 +272,17 @@ export default function LoginPage({ role }: LoginPageProps = {}) {
               autoFocus
             />
           </div>
-          <button type="submit" disabled={loading || code.length !== 6} className="auth-submit">
+          <div className="flex justify-center">
+            <TurnstileWidget
+              onVerify={setCaptchaToken}
+              onExpire={() => setCaptchaToken("")}
+            />
+          </div>
+          <button
+            type="submit"
+            disabled={loading || code.length !== 6 || !captchaToken}
+            className="auth-submit"
+          >
             {loading ? (
               <>
                 <Loader2 className="w-4 h-4 animate-spin" />
