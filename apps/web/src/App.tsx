@@ -38,7 +38,6 @@ import {
   VendorCityPage,
   VendorCityCategoryPage,
   VendorEventTypeCityPage,
-  VendorMapPage,
   VendorDetailPage,
   VendorCategoryPage,
   PrivacyPage,
@@ -48,7 +47,6 @@ import {
   PressPage,
   SettingsPage,
   NotFound,
-  ComingSoonPage,
   InquiriesPage,
   HostInquiryDetailPage,
   HostEventsPage,
@@ -60,13 +58,10 @@ import {
   VendorHomePage,
   VendorMyProfilePage,
   VendorEditProfilePage,
-  VendorProfilePage,
   VendorInboxPage,
-  VendorTeamPage,
   VendorAppointmentsPage,
   VendorOnboardingPage,
   VendorPartnersPage,
-  VendorAiAgentPage,
   VendorStudioPage,
   InquiryDetailPage,
   AcceptTeamInvitePage,
@@ -95,7 +90,6 @@ const App = () => (
               <Route path="/compare" element={<CompareVendorsPage />} />
               <Route path="/vendors/locations" element={<VendorLocationsPage />} />
               <Route path="/vendors/in/:citySlug" element={<VendorCityPage />} />
-              <Route path="/vendors/map" element={<VendorMapPage />} />
               <Route path="/vendors/category/:slug" element={<VendorCategoryPage />} />
               {/* Programmatic SEO: city × category cross-product. */}
               <Route
@@ -205,31 +199,23 @@ const App = () => (
               <Route path="/plan-in-5" element={<Navigate to="/customer/explore" replace />} />
               <Route path="/support" element={<RequireRole role={["host", "vendor"]}><SupportPage /></RequireRole>} />
 
-              {/* Vendor — /vendor/dashboard was retired (KPIs surface
-                  on the Profile page now). Old links redirect to home. */}
-              <Route path="/vendor/dashboard" element={<Navigate to="/vendor/home" replace />} />
+              {/* Vendor. /vendor/listing, /vendor/dashboard, /vendor/team,
+                  /vendor/ai-agent, /vendor/payments, /vendor/analytics,
+                  /vendor/blog all removed per the route-cleanup pass —
+                  legacy URLs redirect into the live ones. */}
               <Route path="/vendor/home" element={<RequireRole role="vendor"><VendorHomePage /></RequireRole>} />
               <Route path="/vendor/me" element={<RequireRole role="vendor"><VendorMyProfilePage /></RequireRole>} />
               <Route path="/vendor/edit-profile" element={<RequireRole role="vendor"><VendorEditProfilePage /></RequireRole>} />
-              <Route path="/vendor/profile" element={<Navigate to="/vendor/listing" replace />} />
-              <Route path="/vendor/listing" element={<RequireRole role="vendor"><VendorProfilePage /></RequireRole>} />
+              <Route path="/vendor/listing" element={<Navigate to="/vendor/me" replace />} />
+              <Route path="/vendor/profile" element={<Navigate to="/vendor/me" replace />} />
               <Route path="/vendor/inbox" element={<RequireRole role="vendor"><VendorInboxPage /></RequireRole>} />
-              <Route path="/vendor/team" element={<RequireRole role="vendor"><VendorTeamPage /></RequireRole>} />
               <Route path="/vendor/onboarding" element={<RequireRole role="vendor"><VendorOnboardingPage /></RequireRole>} />
-              {/* Analytics tab merged into Dashboard — keep the URL
-                  alive as a redirect so any old bookmarks / emails
-                  still work. */}
-              <Route path="/vendor/analytics" element={<Navigate to="/vendor/home" replace />} />
               <Route path="/vendor/appointments" element={<RequireRole role="vendor"><VendorAppointmentsPage /></RequireRole>} />
               <Route path="/vendor/availability" element={<RequireRole role="vendor"><VendorAppointmentsPage /></RequireRole>} />
-              <Route path="/vendor/payments" element={<RequireRole role="vendor"><ComingSoonPage side="vendor" description="Connect a Stripe account, see payouts, and track the 3% commission on confirmed bookings." /></RequireRole>} />
-              {/* /vendor/blog removed — editorial_articles table dropped. */}
-              <Route path="/vendor/blog" element={<Navigate to="/vendor/home" replace />} />
               {/* /vendor/messages removed — mobile vendor inbox has just
                   Inquiries + Partners (no separate "Hosts" DM tab). */}
               <Route path="/vendor/messages" element={<Navigate to="/vendor/inbox" replace />} />
               <Route path="/vendor/partners" element={<RequireRole role="vendor"><VendorPartnersPage /></RequireRole>} />
-              <Route path="/vendor/ai-agent" element={<RequireRole role="vendor"><VendorAiAgentPage /></RequireRole>} />
               <Route path="/vendor/studio" element={<RequireRole role="vendor"><VendorStudioPage /></RequireRole>} />
               <Route path="/vendor/inbox/:inquiryId" element={<RequireRole role="vendor"><InquiryDetailPage /></RequireRole>} />
 

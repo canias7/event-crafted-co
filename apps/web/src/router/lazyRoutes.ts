@@ -79,9 +79,6 @@ export const ProposalPrintPage = lazyWithReload(importProposalPrint);
 const importPublicProposal = () => import("@/pages/PublicProposalPage");
 export const PublicProposalPage = lazyWithReload(importPublicProposal);
 
-const importVendorMap = () => import("@/pages/VendorMapPage");
-export const VendorMapPage = lazyWithReload(importVendorMap);
-
 
 const importVendorDetail = () => import("@/pages/VendorDetailPage");
 export const VendorDetailPage = lazyWithReload(importVendorDetail);
@@ -109,9 +106,6 @@ export const SettingsPage = lazyWithReload(importSettings);
 
 const importNotFound = () => import("@/pages/NotFound");
 export const NotFound = lazyWithReload(importNotFound);
-
-const importComingSoon = () => import("@/pages/ComingSoonPage");
-export const ComingSoonPage = lazyWithReload(importComingSoon);
 
 const importRealEvents = () => import("@/pages/RealEventsPage");
 export const RealEventsPage = lazyWithReload(importRealEvents);
@@ -154,14 +148,8 @@ export const VendorMyProfilePage = lazyWithReload(importVendorMyProfile);
 const importVendorEditProfile = () => import("@/pages/vendor/VendorEditProfilePage");
 export const VendorEditProfilePage = lazyWithReload(importVendorEditProfile);
 
-const importVendorProfile = () => import("@/pages/vendor/VendorProfilePage");
-export const VendorProfilePage = lazyWithReload(importVendorProfile);
-
 const importVendorInbox = () => import("@/pages/vendor/VendorInboxPage");
 export const VendorInboxPage = lazyWithReload(importVendorInbox);
-
-const importVendorTeam = () => import("@/pages/vendor/VendorTeamPage");
-export const VendorTeamPage = lazyWithReload(importVendorTeam);
 
 const importVendorAppointments = () => import("@/pages/vendor/VendorAppointmentsPage");
 export const VendorAppointmentsPage = lazyWithReload(importVendorAppointments);
@@ -169,14 +157,8 @@ export const VendorAppointmentsPage = lazyWithReload(importVendorAppointments);
 const importVendorOnboarding = () => import("@/pages/vendor/VendorOnboardingPage");
 export const VendorOnboardingPage = lazyWithReload(importVendorOnboarding);
 
-const importVendorAnalytics = () => import("@/pages/vendor/VendorAnalyticsPage");
-export const VendorAnalyticsPage = lazyWithReload(importVendorAnalytics);
-
 const importVendorPartners = () => import("@/pages/vendor/VendorPartnersPage");
 export const VendorPartnersPage = lazyWithReload(importVendorPartners);
-
-const importVendorAiAgent = () => import("@/pages/vendor/VendorAiAgentPage");
-export const VendorAiAgentPage = lazyWithReload(importVendorAiAgent);
 
 const importVendorStudio = () => import("@/pages/vendor/VendorStudioPage");
 export const VendorStudioPage = lazyWithReload(importVendorStudio);
@@ -193,7 +175,6 @@ const ROUTE_IMPORTERS: Array<{ pattern: string; importer: () => Promise<unknown>
   // Static public
   { pattern: "/vendors", importer: importVendorBrowse },
   { pattern: "/vendors/locations", importer: importVendorLocations },
-  { pattern: "/vendors/map", importer: importVendorMap },
   { pattern: "/privacy", importer: importPrivacy },
   { pattern: "/terms", importer: importTerms },
   { pattern: "/changelog", importer: importChangelog },
@@ -229,19 +210,13 @@ const ROUTE_IMPORTERS: Array<{ pattern: string; importer: () => Promise<unknown>
   { pattern: "/vendor/home", importer: importVendorHome },
   { pattern: "/vendor/me", importer: importVendorMyProfile },
   { pattern: "/vendor/edit-profile", importer: importVendorEditProfile },
-  { pattern: "/vendor/profile", importer: importVendorProfile },
-  { pattern: "/vendor/listing", importer: importVendorProfile },
   { pattern: "/vendor/inbox", importer: importVendorInbox },
-  { pattern: "/vendor/team", importer: importVendorTeam },
   { pattern: "/vendor/onboarding", importer: importVendorOnboarding },
-  { pattern: "/vendor/analytics", importer: importVendorAnalytics },
   { pattern: "/vendor/appointments", importer: importVendorAppointments },
   // Availability lives on the same page as Appointments now (merged
   // Calendar dashboard); both URLs resolve to the same chunk.
   { pattern: "/vendor/availability", importer: importVendorAppointments },
-  { pattern: "/vendor/payments", importer: importComingSoon },
   { pattern: "/vendor/partners", importer: importVendorPartners },
-  { pattern: "/vendor/ai-agent", importer: importVendorAiAgent },
   { pattern: "/vendor/studio", importer: importVendorStudio },
   { pattern: "/vendor/inbox/:inquiryId", importer: importInquiryDetail },
 ];
