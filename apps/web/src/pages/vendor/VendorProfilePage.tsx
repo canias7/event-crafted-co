@@ -1443,11 +1443,6 @@ export default function VendorProfilePage() {
   );
 }
 
-// Small callout that points vendors to the dedicated availability
-// editor (lives at /vendor/availability — full Calendar with
-// recurring rules + one-off blocks). Mounted inline on the profile
-// editor so the "Availability" section on the public profile has a
-// clear hand-off from this single dashboard view.
 // Editorial step block — mirrors the mobile listing.tsx StepHeader.
 // Small uppercase letter-spaced label ("STEP 1 · IDENTITY"), then
 // large italic serif title, then a calm body paragraph. Pure
