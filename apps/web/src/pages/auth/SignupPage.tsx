@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { GlassyAuthShell } from "@/components/auth/GlassyAuthShell";
+import { TurnstileWidget } from "@/components/auth/TurnstileWidget";
 
 // `role` decides what the user is signing up as. Default "host" keeps
 // the existing behavior (post-signup → /customer/onboarding). When
@@ -21,6 +22,7 @@ export default function SignupPage({ role = "host" }: { role?: "host" | "vendor"
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [adult, setAdult] = useState(false);
+  const [captchaToken, setCaptchaToken] = useState("");
   const [loading, setLoading] = useState(false);
 
   async function onSubmit(e: React.FormEvent) {
@@ -29,12 +31,17 @@ export default function SignupPage({ role = "host" }: { role?: "host" | "vendor"
       toast.error("You must confirm you're 18 or older to sign up.");
       return;
     }
+    if (!captchaToken) {
+      toast.error("Please complete the bot-check below.");
+      return;
+    }
     setLoading(true);
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
         emailRedirectTo: `${window.location.origin}/`,
+        captchaToken,
         // For vendors the "name" field IS their business name — pass it
         // through as vendor_business_name so handle_new_user can seed
         // profiles.business_name on the spot. display_name still gets
@@ -223,7 +230,17 @@ export default function SignupPage({ role = "host" }: { role?: "host" | "vendor"
             .
           </span>
         </div>
-        <button type="submit" disabled={loading || !adult} className="auth-submit mt-2">
+        <div className="flex justify-center pt-1">
+          <TurnstileWidget
+            onVerify={setCaptchaToken}
+            onExpire={() => setCaptchaToken("")}
+          />
+        </div>
+        <button
+          type="submit"
+          disabled={loading || !adult || !captchaToken}
+          className="auth-submit mt-2"
+        >
           {loading ? (
             <>
               <Loader2 className="w-4 h-4 animate-spin" />

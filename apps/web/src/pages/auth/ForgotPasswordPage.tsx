@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Picture } from "@/components/shared/Picture";
+import { TurnstileWidget } from "@/components/auth/TurnstileWidget";
 import heroImg from "@/assets/vendora-hero-cinematic.jpg?as=picture";
 
 export default function ForgotPasswordPage() {
@@ -15,12 +16,18 @@ export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [sent, setSent] = useState(false);
+  const [captchaToken, setCaptchaToken] = useState("");
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (!captchaToken) {
+      toast.error("Please complete the bot-check below.");
+      return;
+    }
     setSubmitting(true);
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: `${window.location.origin}/reset-password`,
+      captchaToken,
     });
     setSubmitting(false);
     if (error) {
@@ -108,9 +115,15 @@ export default function ForgotPasswordPage() {
                   className="h-11"
                 />
               </div>
+              <div className="flex justify-center pt-1">
+                <TurnstileWidget
+                  onVerify={setCaptchaToken}
+                  onExpire={() => setCaptchaToken("")}
+                />
+              </div>
               <Button
                 type="submit"
-                disabled={submitting}
+                disabled={submitting || !captchaToken}
                 className="w-full h-11 rounded-full bg-foreground text-background hover:bg-foreground/90"
               >
                 {submitting && (
