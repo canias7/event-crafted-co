@@ -281,28 +281,6 @@ export function GlassyAuthShell({
           </div>
         )}
 
-        {/* Trust footer row */}
-        <div
-          className="flex items-center flex-wrap justify-center"
-          style={{
-            marginTop: "36px",
-            gap: "24px",
-            fontSize: "11px",
-            opacity: 0.6,
-          }}
-        >
-          <span className="inline-flex items-center gap-1.5">
-            <ShieldIcon /> SOC 2 secured
-          </span>
-          <FooterDot />
-          <span className="inline-flex items-center gap-1.5">
-            <LockIcon /> End-to-end encrypted
-          </span>
-          <FooterDot />
-          <span className="inline-flex items-center gap-1.5">
-            <KeyIcon /> 2FA available
-          </span>
-        </div>
       </div>
 
       {/* KEYFRAMES — namespaced to the auth shell */}
@@ -436,47 +414,6 @@ function Star({
         />
       </svg>
     </div>
-  );
-}
-
-function FooterDot() {
-  return (
-    <span
-      style={{
-        width: "4px",
-        height: "4px",
-        borderRadius: "50%",
-        background: "rgba(0,0,0,0.3)",
-      }}
-    />
-  );
-}
-
-function ShieldIcon() {
-  return (
-    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-      <path d="m9 12 2 2 4-4" />
-    </svg>
-  );
-}
-
-function LockIcon() {
-  return (
-    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="3" y="11" width="18" height="11" rx="2" />
-      <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-    </svg>
-  );
-}
-
-function KeyIcon() {
-  return (
-    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="7.5" cy="15.5" r="5.5" />
-      <path d="m21 2-9.6 9.6" />
-      <path d="m15.5 7.5 3 3L22 7l-3-3" />
-    </svg>
   );
 }
 
