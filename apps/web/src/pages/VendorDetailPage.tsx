@@ -5,7 +5,6 @@ import {
   Star,
   MapPin,
   Heart,
-  Clock,
   Sparkles,
   Check,
   ArrowLeft,
@@ -119,39 +118,6 @@ const imageMap: Record<string, PictureSource> = {
   "hero-wedding": heroWedding,
   "hero-engagement": heroEngagement,
 };
-
-const samplePackages = [
-  {
-    name: "Essentials",
-    price: "From $1,800",
-    description: "Core coverage for intimate events up to 50 guests.",
-    features: ["4 hours on-site", "Edited gallery within 2 weeks", "Online proof viewer"],
-  },
-  {
-    name: "Signature",
-    price: "From $3,200",
-    description: "Most popular — full event coverage for weddings and milestones.",
-    features: [
-      "8 hours on-site",
-      "Two-photographer team",
-      "Edited gallery within 2 weeks",
-      "Sneak-peek within 48 hours",
-      "Print release included",
-    ],
-    featured: true,
-  },
-  {
-    name: "Atelier",
-    price: "Custom",
-    description: "Bespoke multi-day or destination engagements.",
-    features: [
-      "Tailored to your event",
-      "Travel & lodging arranged",
-      "Custom album design",
-      "White-glove production",
-    ],
-  },
-];
 
 const sampleReviews = [
   {
@@ -709,11 +675,6 @@ export default function VendorDetailPage() {
                   <MapPin className="w-3.5 h-3.5" />
                   <span>{vendor.location ?? vendor.distance}</span>
                 </div>
-                <span className="hidden md:inline text-background/30">·</span>
-                <div className="flex items-center gap-1.5">
-                  <Clock className="w-3.5 h-3.5" />
-                  <span>Replies in &lt; 3 hours via AI-assisted drafts</span>
-                </div>
               </motion.div>
             </div>
           </div>
@@ -753,24 +714,17 @@ export default function VendorDetailPage() {
                 </div>
               </div>
 
-              {/* Packages — real DB packages take priority; fall back to
-                  the sample tiers so demo vendors still show meaningful
-                  pricing UI. */}
-              <div>
-                <p className="font-label text-accent mb-4">Packages</p>
-                <h2 className="font-editorial text-4xl mb-8">
-                  {packages.length > 0
-                    ? packages.length === 1
+              {/* Packages — only rendered when the vendor has actually
+                  published at least one. No empty-state copy; absence
+                  of packages just hides the section. */}
+              {packages.length > 0 && (
+                <div>
+                  <p className="font-label text-accent mb-4">Packages</p>
+                  <h2 className="font-editorial text-4xl mb-8">
+                    {packages.length === 1
                       ? "Available package"
-                      : `${packages.length} ways to work together`
-                    : "Three ways to work together"}
-                </h2>
-                {packages.length === 0 && vendor.isReal ? (
-                  <p className="text-sm text-muted-foreground italic max-w-lg">
-                    Packages aren't published yet — message {vendor.name} for
-                    a tailored quote.
-                  </p>
-                ) : packages.length > 0 ? (
+                      : `${packages.length} ways to work together`}
+                  </h2>
                   <div className={`grid gap-4 ${packages.length >= 3 ? "md:grid-cols-3" : packages.length === 2 ? "md:grid-cols-2" : "md:grid-cols-1 max-w-md"}`}>
                     {packages.map((pkg, i) => {
                       const featured = packages.length >= 2 && i === Math.floor(packages.length / 2);
@@ -813,40 +767,8 @@ export default function VendorDetailPage() {
                       );
                     })}
                   </div>
-                ) : (
-                  <div className="grid md:grid-cols-3 gap-4">
-                    {samplePackages.map((pkg) => (
-                      <div
-                        key={pkg.name}
-                        className={`relative rounded-sm p-6 border transition-colors ${
-                          pkg.featured
-                            ? "border-accent bg-accent/5"
-                            : "border-border bg-card"
-                        }`}
-                      >
-                        {pkg.featured && (
-                          <Badge className="absolute -top-2.5 left-6 bg-accent text-accent-foreground">
-                            Most popular
-                          </Badge>
-                        )}
-                        <p className="font-label text-muted-foreground mb-2">{pkg.name}</p>
-                        <p className="font-editorial text-3xl mb-3 tnum">{pkg.price}</p>
-                        <p className="text-sm text-muted-foreground mb-5 leading-relaxed">
-                          {pkg.description}
-                        </p>
-                        <ul className="space-y-2.5">
-                          {pkg.features.map((f) => (
-                            <li key={f} className="flex items-start gap-2 text-sm">
-                              <Check className="w-3.5 h-3.5 text-accent mt-0.5 flex-shrink-0" />
-                              <span className="text-foreground/85">{f}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
+                </div>
+              )}
 
               {/* Intro video — optional, only when vendor sets one */}
               {vendor.introVideoUrl && (
