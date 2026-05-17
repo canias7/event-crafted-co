@@ -45,6 +45,7 @@ import {
   ChangelogPage,
   StatusPage,
   PressPage,
+  SuperAgentsPage,
   SettingsPage,
   NotFound,
   InquiriesPage,
@@ -122,6 +123,7 @@ const App = () => (
               <Route path="/changelog" element={<ChangelogPage />} />
               <Route path="/status" element={<StatusPage />} />
               <Route path="/press" element={<PressPage />} />
+              <Route path="/super-agents" element={<SuperAgentsPage />} />
               {/* /vendor-apply removed — vendors now sign up through
                   the regular Sign up button. Old bookmarks redirect
                   to the signup chooser so the URL doesn't 404. */}

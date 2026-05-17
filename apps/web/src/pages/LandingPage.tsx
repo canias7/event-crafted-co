@@ -45,7 +45,10 @@ export default function LandingPage() {
           <Link to="/real-events" className="hover:opacity-70 transition-opacity">
             Real events
           </Link>
-          <span className="inline-flex items-center gap-1.5">
+          <Link
+            to="/super-agents"
+            className="inline-flex items-center gap-1.5 hover:opacity-70 transition-opacity"
+          >
             Super agents
             <span
               className="text-[9px] tracking-widest rounded-full px-1.5 py-px text-black"
@@ -53,7 +56,7 @@ export default function LandingPage() {
             >
               NEW
             </span>
-          </span>
+          </Link>
         </nav>
         <div className="flex items-center gap-5 text-[13px]">
           {session && portalPath ? (
