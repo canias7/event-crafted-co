@@ -192,7 +192,10 @@
       "payments": "Pagos",
       "ai_agent": "Agente IA",
       "studio": "Estudio",
-      "my_profile": "Mi Perfil"
+      "my_profile": "Mi Perfil",
+      "ai_superagents": "Superagentes IA",
+      "pay": "Vendora Pay",
+      "gallery": "Galería"
     },
     "bottom": {
       "payments": "Pagos",
