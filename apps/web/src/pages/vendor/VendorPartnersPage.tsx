@@ -20,9 +20,10 @@ import { vendorNavItems as navItems } from "@/data/navItems";
 import { VENDOR_MESSAGES_HUB_TABS } from "@/data/hubTabs";
 
 // Vendor-to-vendor partner messaging — separate from host conversations.
-// Mirrors VendorMessagesPage structure but reads from
-// vendor_partner_threads / vendor_partner_messages and attributes
-// messages to the team's vendor_profile (not the individual user).
+// Threads are keyed on profiles.id (the user account) so a vendor with
+// zero listings can still participate. Other-side identity (business
+// name, logo) is read from the partner's profiles row, mirroring how
+// the public nav already renders the brand.
 
 const QUICK_EMOJIS = [
   "👍",
@@ -41,26 +42,23 @@ const QUICK_EMOJIS = [
 
 const ACTIVE_WINDOW_MS = 5 * 60 * 1000;
 
+interface ProfileBrand {
+  business_name: string | null;
+  logo_url: string | null;
+}
+
 interface ThreadRow {
   id: string;
-  vendor_a_id: string;
-  vendor_b_id: string;
+  user_a_id: string;
+  user_b_id: string;
   last_message_at: string;
-  vendor_a: {
-    business_name: string | null;
-    category: string | null;
-    user_id: string | null;
-  } | null;
-  vendor_b: {
-    business_name: string | null;
-    category: string | null;
-    user_id: string | null;
-  } | null;
+  user_a: ProfileBrand | null;
+  user_b: ProfileBrand | null;
 }
 
 interface PartnerMessage {
   id: string;
-  sender_vendor_id: string;
+  sender_user_id: string;
   body: string;
   created_at: string;
 }
@@ -105,8 +103,8 @@ const threadsTable = () => (supabase as any).from("vendor_partner_threads");
 const msgsTable = () => (supabase as any).from("vendor_partner_messages");
 
 export default function VendorPartnersPage() {
-  const { user, vendorMemberships } = useAuth();
-  const myVendorId = vendorMemberships[0]?.vendor_id ?? null;
+  const { user } = useAuth();
+  const myUserId = user?.id ?? null;
   const [searchParams, setSearchParams] = useSearchParams();
   const activeThreadId = searchParams.get("thread");
 
@@ -120,16 +118,16 @@ export default function VendorPartnersPage() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   async function loadThreads() {
-    if (!myVendorId) {
+    if (!myUserId) {
       setLoadingThreads(false);
       return;
     }
     setLoadingThreads(true);
     const { data } = await threadsTable()
       .select(
-        "id, vendor_a_id, vendor_b_id, last_message_at, vendor_a:vendor_profiles!vendor_partner_threads_vendor_a_id_fkey(business_name, category, user_id), vendor_b:vendor_profiles!vendor_partner_threads_vendor_b_id_fkey(business_name, category, user_id)",
+        "id, user_a_id, user_b_id, last_message_at, user_a:profiles!vendor_partner_threads_user_a_id_fkey(business_name, logo_url), user_b:profiles!vendor_partner_threads_user_b_id_fkey(business_name, logo_url)",
       )
-      .or(`vendor_a_id.eq.${myVendorId},vendor_b_id.eq.${myVendorId}`)
+      .or(`user_a_id.eq.${myUserId},user_b_id.eq.${myUserId}`)
       .order("last_message_at", { ascending: false });
     setThreads((data as ThreadRow[]) ?? []);
     setLoadingThreads(false);
@@ -137,7 +135,7 @@ export default function VendorPartnersPage() {
 
   async function loadMessages(threadId: string) {
     const { data } = await msgsTable()
-      .select("id, sender_vendor_id, body, created_at")
+      .select("id, sender_user_id, body, created_at")
       .eq("thread_id", threadId)
       .order("created_at", { ascending: true });
     setMessages((data as PartnerMessage[]) ?? []);
@@ -147,9 +145,9 @@ export default function VendorPartnersPage() {
   }
 
   useEffect(() => {
-    if (user && myVendorId) loadThreads();
+    if (user && myUserId) loadThreads();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, myVendorId]);
+  }, [user, myUserId]);
 
   useEffect(() => {
     if (!activeThreadId) {
@@ -177,11 +175,11 @@ export default function VendorPartnersPage() {
   });
 
   async function send() {
-    if (!activeThreadId || !composer.trim() || !myVendorId) return;
+    if (!activeThreadId || !composer.trim() || !myUserId) return;
     setSending(true);
     const { error } = await msgsTable().insert({
       thread_id: activeThreadId,
-      sender_vendor_id: myVendorId,
+      sender_user_id: myUserId,
       body: composer.trim(),
     });
     setSending(false);
@@ -201,17 +199,17 @@ export default function VendorPartnersPage() {
 
   const otherVendorName = useMemo(() => {
     if (!activeThread) return null;
-    return activeThread.vendor_a_id === myVendorId
-      ? activeThread.vendor_b?.business_name
-      : activeThread.vendor_a?.business_name;
-  }, [activeThread, myVendorId]);
+    return activeThread.user_a_id === myUserId
+      ? activeThread.user_b?.business_name
+      : activeThread.user_a?.business_name;
+  }, [activeThread, myUserId]);
 
   const otherVendorUserId = useMemo(() => {
     if (!activeThread) return null;
-    return activeThread.vendor_a_id === myVendorId
-      ? activeThread.vendor_b?.user_id ?? null
-      : activeThread.vendor_a?.user_id ?? null;
-  }, [activeThread, myVendorId]);
+    return activeThread.user_a_id === myUserId
+      ? activeThread.user_b_id
+      : activeThread.user_a_id;
+  }, [activeThread, myUserId]);
 
   // Active-now polling — get_user_last_seen RPC every 30s, same as
   // the host / vendor messages pages.
@@ -256,7 +254,7 @@ export default function VendorPartnersPage() {
     let lastIso: string | null = null;
     let lastSender: string | null = null;
     messages.forEach((m, i) => {
-      const isMe = m.sender_vendor_id === myVendorId;
+      const isMe = m.sender_user_id === myUserId;
       if (!lastIso || !isSameDay(lastIso, m.created_at)) {
         items.push({
           kind: "sep",
@@ -268,20 +266,20 @@ export default function VendorPartnersPage() {
       const next = messages[i + 1];
       const sameSenderNext =
         next &&
-        next.sender_vendor_id === m.sender_vendor_id &&
+        next.sender_user_id === m.sender_user_id &&
         isSameDay(m.created_at, next.created_at);
       items.push({
         kind: "msg",
         message: m,
         isMe,
         showTail: !sameSenderNext,
-        firstInGroup: lastSender !== m.sender_vendor_id,
+        firstInGroup: lastSender !== m.sender_user_id,
       });
       lastIso = m.created_at;
-      lastSender = m.sender_vendor_id;
+      lastSender = m.sender_user_id;
     });
     return items;
-  }, [messages, myVendorId]);
+  }, [messages, myUserId]);
 
   function insertEmoji(e: string) {
     setComposer((v) => v + e);
@@ -295,24 +293,17 @@ export default function VendorPartnersPage() {
       <main id="main-content" className="flex-1 pb-20 lg:pb-0">
         <div className="backdrop-blur-sm px-4 md:px-8 py-5 sticky top-0 z-40 space-y-3">
           <div>
-            <h1 className="font-editorial text-3xl">Partner messages</h1>
+            <h1 className="font-editorial text-3xl">Vendor messages</h1>
             <p className="text-sm text-muted-foreground">
-              Coordinate directly with other vendors on shared events — no
-              host needed in the loop.
+              Chat with other vendors directly — no host in the loop.
             </p>
           </div>
           <SubNavTabs tabs={VENDOR_MESSAGES_HUB_TABS} />
         </div>
 
-        {!myVendorId ? (
+        {!myUserId ? (
           <div className="p-12 text-center max-w-md mx-auto">
-            <p className="font-display text-xl mb-2">
-              Set up your business profile first
-            </p>
-            <p className="text-sm text-muted-foreground">
-              Partner messages come from your vendor profile — finish that
-              first and partners can reach you here.
-            </p>
+            <p className="font-display text-xl mb-2">Sign in to continue</p>
           </div>
         ) : (
           <div className="grid lg:grid-cols-[280px_1fr] h-[calc(100vh-65px)]">
@@ -337,7 +328,8 @@ export default function VendorPartnersPage() {
                   {threads.map((t) => {
                     const isActive = t.id === activeThreadId;
                     const other =
-                      t.vendor_a_id === myVendorId ? t.vendor_b : t.vendor_a;
+                      t.user_a_id === myUserId ? t.user_b : t.user_a;
+                    const name = other?.business_name?.trim() || "Vendor";
                     return (
                       <li key={t.id}>
                         <button
@@ -345,19 +337,39 @@ export default function VendorPartnersPage() {
                           onClick={() =>
                             setSearchParams({ thread: t.id }, { replace: true })
                           }
-                          className={`w-full text-left px-4 py-3 border-b border-border/50 transition-colors ${
+                          className={`w-full text-left px-4 py-3 border-b border-border/50 transition-colors flex items-center gap-3 ${
                             isActive ? "bg-secondary" : "hover:bg-secondary/40"
                           }`}
                         >
-                          <p className="text-sm font-medium truncate">
-                            {other?.business_name ?? "Vendor"}
-                          </p>
-                          <p className="text-[11px] text-muted-foreground capitalize mt-0.5">
-                            {other?.category ?? ""} · last activity{" "}
-                            <span className="tnum">
-                              {new Date(t.last_message_at).toLocaleDateString()}
+                          {other?.logo_url ? (
+                            <img
+                              src={other.logo_url}
+                              alt=""
+                              className="w-9 h-9 rounded-full object-cover shrink-0"
+                            />
+                          ) : (
+                            <span
+                              className="w-9 h-9 rounded-full inline-flex items-center justify-center font-semibold shrink-0 text-sm"
+                              style={{
+                                background: "rgba(255,138,76,0.18)",
+                                color: "#c4541e",
+                              }}
+                              aria-hidden
+                            >
+                              {name.charAt(0).toUpperCase()}
                             </span>
-                          </p>
+                          )}
+                          <div className="min-w-0 flex-1">
+                            <p className="text-sm font-medium truncate">
+                              {name}
+                            </p>
+                            <p className="text-[11px] text-muted-foreground mt-0.5">
+                              last activity{" "}
+                              <span className="tnum">
+                                {new Date(t.last_message_at).toLocaleDateString()}
+                              </span>
+                            </p>
+                          </div>
                         </button>
                       </li>
                     );
