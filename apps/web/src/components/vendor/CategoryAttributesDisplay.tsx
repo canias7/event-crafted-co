@@ -58,9 +58,11 @@ export function CategoryAttributesDisplay({
   if (populatedSections.length === 0) return null;
 
   return (
-    <div className="space-y-6">
-      <h2 className="font-editorial text-3xl">About this {category.toLowerCase()}</h2>
-      <div className="grid sm:grid-cols-2 gap-x-8 gap-y-6">
+    <div className="space-y-7">
+      <h2 className="font-editorial italic text-3xl sm:text-4xl text-foreground">
+        About this {category.toLowerCase()}
+      </h2>
+      <div className="grid sm:grid-cols-2 gap-x-10 gap-y-7">
         {populatedSections.map((section) => (
           <SectionDisplay key={section.name} section={section} attrs={attrs} />
         ))}
@@ -81,8 +83,10 @@ function SectionDisplay({
 
   return (
     <div>
-      <p className="font-label text-muted-foreground mb-3">{section.name}</p>
-      <dl className="space-y-2 text-sm">
+      <p className="text-[11px] uppercase tracking-[0.18em] font-medium text-muted-foreground mb-3">
+        {section.name}
+      </p>
+      <dl className="space-y-2.5 text-sm">
         {populated.map((field) => (
           <FieldDisplay key={field.key} field={field} value={attrs[field.key]} />
         ))}
@@ -133,12 +137,17 @@ function FieldDisplay({
     if (tags.length === 0) return null;
     return (
       <div>
-        <dt className="text-muted-foreground mb-1.5">{field.label}</dt>
-        <dd className="flex flex-wrap gap-1.5">
+        <dt className="text-foreground/85 mb-2">{field.label}</dt>
+        <dd className="flex flex-wrap gap-2">
           {tags.map((t) => (
             <span
               key={t}
-              className="inline-flex text-xs bg-secondary text-secondary-foreground rounded-full px-2.5 py-0.5"
+              className="inline-flex text-[13px] rounded-full px-3.5 py-1.5"
+              style={{
+                background: "rgba(255,138,76,0.12)",
+                color: "#c4541e",
+                border: "0.5px solid rgba(255,138,76,0.3)",
+              }}
             >
               {t}
             </span>
