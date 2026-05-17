@@ -132,32 +132,42 @@ export function HiluxChatDemo() {
     scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
   }, [msgs]);
 
-  // Auto-demo. Plays once on mount; canceled the moment the user
-  // sends a real message.
+  // Auto-demo. Plays continuously — when the scripted conversation
+  // finishes, pauses ~3.5s, clears the thread, and starts over from
+  // the top. Canceled permanently the moment the user sends a real
+  // message (demoRef.current = false).
   useEffect(() => {
     let cancelled = false;
     (async () => {
       await sleep(800);
-      for (const step of DEMO_SCRIPT) {
+      while (!cancelled && demoRef.current) {
+        for (const step of DEMO_SCRIPT) {
+          if (cancelled || !demoRef.current) return;
+          const typingId = uid();
+          setMsgs((m) => [
+            ...m,
+            { id: typingId, side: step.side, text: "", time: "", typing: true },
+          ]);
+          const typingTime = Math.min(2200, 700 + step.text.length * 18);
+          await sleep(typingTime);
+          if (cancelled || !demoRef.current) return;
+          setMsgs((m) =>
+            m
+              .filter((x) => x.id !== typingId)
+              .concat({
+                id: uid(),
+                side: step.side,
+                text: step.text,
+                time: formatTime(),
+              }),
+          );
+          await sleep(900);
+        }
+        // End of one pass — hold the finished thread for a moment so
+        // the viewer can read the final line, then wipe and loop.
+        await sleep(3500);
         if (cancelled || !demoRef.current) return;
-        const typingId = uid();
-        setMsgs((m) => [
-          ...m,
-          { id: typingId, side: step.side, text: "", time: "", typing: true },
-        ]);
-        const typingTime = Math.min(2200, 700 + step.text.length * 18);
-        await sleep(typingTime);
-        if (cancelled || !demoRef.current) return;
-        setMsgs((m) =>
-          m
-            .filter((x) => x.id !== typingId)
-            .concat({
-              id: uid(),
-              side: step.side,
-              text: step.text,
-              time: formatTime(),
-            }),
-        );
+        setMsgs([]);
         await sleep(900);
       }
     })();
@@ -207,20 +217,28 @@ export function HiluxChatDemo() {
 
   return (
     <div
-      className="mx-auto flex flex-col bg-white"
+      className="mx-auto flex flex-col"
       style={{
         width: "100%",
         maxWidth: 460,
         height: 660,
-        border: "1px solid rgba(0,0,0,0.08)",
+        // Glassy translucent surface so the chat sits inside the page
+        // wash instead of as a hard white card pasted on top.
+        background: "rgba(255,253,250,0.55)",
+        backdropFilter: "blur(22px)",
+        WebkitBackdropFilter: "blur(22px)",
+        border: "0.5px solid rgba(255,138,76,0.22)",
         borderRadius: 20,
         boxShadow:
-          "0 16px 48px rgba(255,138,76,0.18), 0 4px 12px rgba(0,0,0,0.06)",
+          "0 24px 56px rgba(255,138,76,0.14), 0 6px 18px rgba(196,84,30,0.06), inset 0 1px 0 rgba(255,255,255,0.5)",
         overflow: "hidden",
       }}
     >
       {/* HEADER — the vendor is identified, Hilux is the reply engine */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-black/[0.06]">
+      <div
+        className="flex items-center justify-between px-4 py-3"
+        style={{ borderBottom: "0.5px solid rgba(255,138,76,0.14)" }}
+      >
         <div className="flex items-center gap-3">
           <div className="relative w-[42px] h-[42px] flex items-center justify-center">
             <div
@@ -296,8 +314,11 @@ export function HiluxChatDemo() {
 
       {/* Vendor meta strip */}
       <div
-        className="flex items-center justify-between px-4 py-2.5 text-[11.5px] text-[rgba(26,22,18,0.7)] border-b border-black/[0.04]"
-        style={{ background: "rgba(255,138,76,0.05)" }}
+        className="flex items-center justify-between px-4 py-2.5 text-[11.5px] text-[rgba(26,22,18,0.7)]"
+        style={{
+          background: "rgba(255,138,76,0.07)",
+          borderBottom: "0.5px solid rgba(255,138,76,0.12)",
+        }}
       >
         <div className="flex items-center gap-3.5">
           <span className="flex items-center gap-1">
@@ -333,12 +354,16 @@ export function HiluxChatDemo() {
       </div>
 
       {/* Input bar */}
-      <div className="px-4 pt-3.5 pb-4 border-t border-black/[0.06]">
+      <div
+        className="px-4 pt-3.5 pb-4"
+        style={{ borderTop: "0.5px solid rgba(255,138,76,0.14)" }}
+      >
         <div
           className="flex items-center gap-2 pl-4 pr-1 py-1 rounded-full transition-colors"
           style={{
-            background: "#f7f5f1",
-            border: "1px solid transparent",
+            background: "rgba(255,255,255,0.55)",
+            border: "0.5px solid rgba(255,138,76,0.18)",
+            backdropFilter: "blur(8px)",
           }}
           onFocus={(e) => {
             (e.currentTarget as HTMLDivElement).style.borderColor = "#ff8a4c";
