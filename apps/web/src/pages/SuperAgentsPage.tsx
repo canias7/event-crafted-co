@@ -18,7 +18,7 @@ import {
   useTransform,
   type MotionValue,
 } from "framer-motion";
-import { ArrowRight, Bot, ImagePlus, Sparkles } from "lucide-react";
+import { Bot, ImagePlus, Sparkles } from "lucide-react";
 
 interface Agent {
   codename: string;
@@ -121,13 +121,7 @@ export default function SuperAgentsPage() {
             </span>
           </span>
         </nav>
-        <Link
-          to="/signup"
-          className="rounded-full px-5 py-2.5 text-[13px] font-medium text-black"
-          style={{ background: "linear-gradient(135deg, #fff 0%, #ffd9b8 100%)" }}
-        >
-          Activate agents
-        </Link>
+        <div className="w-[120px]" aria-hidden />
       </header>
 
       <Hero />
@@ -330,17 +324,8 @@ function Hero() {
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, delay: 0.35 }}
-        className="mt-10 flex items-center justify-center gap-3 text-[13px]"
+        className="mt-10 flex items-center justify-center text-[13px]"
       >
-        <Link
-          to="/signup"
-          className="rounded-full px-6 py-3 font-medium text-black"
-          style={{
-            background: "linear-gradient(135deg, #fff 0%, #ffd9b8 100%)",
-          }}
-        >
-          Activate your agents
-        </Link>
         <a
           href="#meet"
           className="rounded-full px-6 py-3 text-white/90 hover:text-white transition-colors"
@@ -788,24 +773,6 @@ function CTA() {
           Wake up to a booked event.
         </span>
       </motion.h2>
-      <motion.div
-        initial={{ opacity: 0, y: 12 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true }}
-        transition={{ duration: 0.6, delay: 0.15 }}
-        className="mt-10 flex items-center justify-center gap-3"
-      >
-        <Link
-          to="/signup"
-          className="inline-flex items-center gap-2 rounded-full px-7 py-3.5 text-[14px] font-medium text-black"
-          style={{
-            background: "linear-gradient(135deg, #fff 0%, #ffd9b8 100%)",
-          }}
-        >
-          Activate your agents
-          <ArrowRight className="h-4 w-4" />
-        </Link>
-      </motion.div>
     </section>
   );
 }
