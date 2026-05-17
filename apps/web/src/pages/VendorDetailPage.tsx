@@ -737,15 +737,6 @@ export default function VendorDetailPage() {
                 </SilentErrorBoundary>
               )}
 
-              {/* "More from this vendor" — every approved listing owned
-                  by the same user_id, excluding this one. Mirrors the
-                  Other Listings section in the mobile VendorProfileSheet. */}
-              {vendor.isReal && (
-                <SilentErrorBoundary label="VendorOtherListings">
-                  <VendorOtherListings vendorId={vendor.id} />
-                </SilentErrorBoundary>
-              )}
-
               {/* Team section dropped from the listing — the wizard no
                   longer collects team bios. Re-enable along with the
                   wizard step when product wants it back. */}
@@ -828,6 +819,15 @@ export default function VendorDetailPage() {
                 </>
               ) : (
                 <VendorFaqList items={sampleFaqs} />
+              )}
+
+              {/* "More from this vendor" — moved to the bottom so it's
+                  the last thing a host reads before scrolling away.
+                  Renders for every category. */}
+              {vendor.isReal && (
+                <SilentErrorBoundary label="VendorOtherListings">
+                  <VendorOtherListings vendorId={vendor.id} />
+                </SilentErrorBoundary>
               )}
             </div>
 
