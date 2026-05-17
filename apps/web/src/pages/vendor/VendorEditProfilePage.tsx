@@ -30,6 +30,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { vendorNavItems } from "@/data/navItems";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
+import { LogoCropperModal } from "@/components/vendor/LogoCropperModal";
 
 interface ProfileForm {
   business_name: string;
@@ -47,6 +48,7 @@ export default function VendorEditProfilePage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [logoUploading, setLogoUploading] = useState(false);
+  const [pendingLogo, setPendingLogo] = useState<File | null>(null);
   const fileRef = useRef<HTMLInputElement | null>(null);
 
   const load = useCallback(async () => {
@@ -209,7 +211,12 @@ export default function VendorEditProfilePage() {
                     className="hidden"
                     onChange={(e) => {
                       const f = e.target.files?.[0];
-                      if (f) onPickLogo(f);
+                      // Open the cropper first; we only upload after
+                      // the user clicks Apply on the cropped output.
+                      if (f) setPendingLogo(f);
+                      // Reset the input value so picking the same file
+                      // twice in a row still triggers onChange.
+                      e.target.value = "";
                     }}
                   />
                   <Button
@@ -263,6 +270,16 @@ export default function VendorEditProfilePage() {
         </div>
       </main>
       <MobileNav items={vendorNavItems} />
+      {pendingLogo ? (
+        <LogoCropperModal
+          file={pendingLogo}
+          onCancel={() => setPendingLogo(null)}
+          onApply={async (cropped) => {
+            setPendingLogo(null);
+            await onPickLogo(cropped);
+          }}
+        />
+      ) : null}
     </div>
   );
 }
