@@ -9,10 +9,11 @@
 // its own sticky-style section so the page scrolls like a Framer
 // product launch.
 
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   motion,
+  useMotionTemplate,
   useMotionValue,
   useReducedMotion,
   useScroll,
@@ -664,30 +665,53 @@ function AgentCard({ agent, index }: { agent: Agent; index: number }) {
 function FloatingCharacter({ agent }: { agent: Agent }) {
   const reduceMotion = useReducedMotion();
   const wrapRef = useRef<HTMLDivElement | null>(null);
+  const [hovered, setHovered] = useState(false);
+  // Tilt amplitude doubles when hovered — character actively turns
+  // toward the cursor instead of a passive subtle lean.
   const tiltX = useMotionValue(0);
   const tiltY = useMotionValue(0);
-  const smoothX = useSpring(tiltX, { stiffness: 80, damping: 14 });
-  const smoothY = useSpring(tiltY, { stiffness: 80, damping: 14 });
+  const smoothX = useSpring(tiltX, { stiffness: 90, damping: 12 });
+  const smoothY = useSpring(tiltY, { stiffness: 90, damping: 12 });
+  // Cursor position in pixels relative to the card — drives the
+  // spotlight overlay that "lights up" whatever the cursor is on.
+  const cursorX = useMotionValue(230);
+  const cursorY = useMotionValue(300);
+  const spotlight = useMotionTemplate`radial-gradient(circle 180px at ${cursorX}px ${cursorY}px, ${agent.accent}55 0%, ${agent.accent}1a 30%, transparent 65%)`;
 
   function handleMouseMove(e: React.MouseEvent<HTMLDivElement>) {
     if (reduceMotion || !wrapRef.current) return;
     const rect = wrapRef.current.getBoundingClientRect();
-    const px = (e.clientX - rect.left) / rect.width - 0.5;
-    const py = (e.clientY - rect.top) / rect.height - 0.5;
-    tiltX.set(-py * 6);
-    tiltY.set(px * 6);
+    const localX = e.clientX - rect.left;
+    const localY = e.clientY - rect.top;
+    const px = localX / rect.width - 0.5;
+    const py = localY / rect.height - 0.5;
+    const amp = hovered ? 12 : 6;
+    tiltX.set(-py * amp);
+    tiltY.set(px * amp);
+    cursorX.set(localX);
+    cursorY.set(localY);
+  }
+
+  function handleMouseEnter() {
+    setHovered(true);
   }
 
   function handleMouseLeave() {
+    setHovered(false);
     tiltX.set(0);
     tiltY.set(0);
   }
 
   return (
-    <div
+    <motion.div
       ref={wrapRef}
       onMouseMove={handleMouseMove}
+      onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
+      animate={
+        reduceMotion ? undefined : { y: hovered ? -12 : 0 }
+      }
+      transition={{ type: "spring", stiffness: 120, damping: 18 }}
       className="relative mx-auto"
       style={{
         width: "min(100%, 460px)",
@@ -695,20 +719,26 @@ function FloatingCharacter({ agent }: { agent: Agent }) {
         perspective: 1200,
       }}
     >
-      {/* Breathing halo behind the character */}
+      {/* Breathing halo behind the character — intensifies on hover */}
       <motion.div
         aria-hidden
         animate={
-          reduceMotion ? undefined : { scale: [1, 1.06, 1], opacity: [0.85, 1, 0.85] }
+          reduceMotion
+            ? undefined
+            : hovered
+              ? { scale: [1.08, 1.16, 1.08], opacity: [1, 1, 1] }
+              : { scale: [1, 1.06, 1], opacity: [0.85, 1, 0.85] }
         }
         transition={
           reduceMotion
             ? undefined
-            : { duration: 4.2, repeat: Infinity, ease: "easeInOut" }
+            : { duration: hovered ? 2 : 4.2, repeat: Infinity, ease: "easeInOut" }
         }
         className="absolute inset-0 -z-10"
         style={{
-          background: `radial-gradient(ellipse 70% 65% at 50% 45%, ${agent.accent}45 0%, ${agent.accent}18 35%, transparent 72%)`,
+          background: hovered
+            ? `radial-gradient(ellipse 75% 70% at 50% 45%, ${agent.accent}70 0%, ${agent.accent}28 35%, transparent 72%)`
+            : `radial-gradient(ellipse 70% 65% at 50% 45%, ${agent.accent}45 0%, ${agent.accent}18 35%, transparent 72%)`,
           filter: "blur(22px)",
         }}
       />
@@ -762,23 +792,38 @@ function FloatingCharacter({ agent }: { agent: Agent }) {
         />
 
         {/* Scanning light beam — vertical sweep, screen-blended so it
-            adds light without darkening. Loops every ~3.5s. */}
+            adds light without darkening. Faster when hovered. */}
         {!reduceMotion && (
           <motion.div
             aria-hidden
             initial={{ y: "-30%" }}
             animate={{ y: "130%" }}
             transition={{
-              duration: 3.6,
+              duration: hovered ? 1.5 : 3.6,
               repeat: Infinity,
               ease: "linear",
-              repeatDelay: 1.4,
+              repeatDelay: hovered ? 0.2 : 1.4,
             }}
             className="pointer-events-none absolute inset-x-0 h-[18%]"
             style={{
-              background: `linear-gradient(180deg, transparent 0%, ${agent.accent}66 50%, transparent 100%)`,
+              background: `linear-gradient(180deg, transparent 0%, ${agent.accent}${hovered ? "99" : "66"} 50%, transparent 100%)`,
               mixBlendMode: "screen",
               filter: "blur(6px)",
+            }}
+          />
+        )}
+
+        {/* Cursor-following spotlight overlay — soft accent radial
+            tracking the mouse. Reveals only on hover. */}
+        {!reduceMotion && (
+          <motion.div
+            aria-hidden
+            animate={{ opacity: hovered ? 1 : 0 }}
+            transition={{ duration: 0.4, ease: "easeOut" }}
+            className="pointer-events-none absolute inset-0"
+            style={{
+              background: spotlight,
+              mixBlendMode: "screen",
             }}
           />
         )}
@@ -829,9 +874,10 @@ function FloatingCharacter({ agent }: { agent: Agent }) {
           />
         ))}
 
-      {/* Status chip — floats next to the character */}
+      {/* Status chip — flips to "Listening" while hovered so the
+          character feels responsive */}
       <div
-        className="absolute right-2 top-4 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[9px] uppercase tracking-[0.2em] font-semibold"
+        className="absolute right-2 top-4 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[9px] uppercase tracking-[0.2em] font-semibold transition-colors"
         style={{
           color: agent.accent,
           background: "rgba(255,255,255,0.75)",
@@ -848,7 +894,7 @@ function FloatingCharacter({ agent }: { agent: Agent }) {
           transition={
             reduceMotion
               ? undefined
-              : { duration: 1.6, repeat: Infinity, ease: "easeInOut" }
+              : { duration: hovered ? 0.9 : 1.6, repeat: Infinity, ease: "easeInOut" }
           }
           className="h-1.5 w-1.5 rounded-full"
           style={{
@@ -856,9 +902,23 @@ function FloatingCharacter({ agent }: { agent: Agent }) {
             boxShadow: `0 0 6px ${agent.accent}`,
           }}
         />
-        Live
+        {hovered ? "Listening" : "Live"}
       </div>
-    </div>
+
+      {/* Ripple ring on hover — radiates from center continuously */}
+      {!reduceMotion && hovered && (
+        <motion.span
+          aria-hidden
+          initial={{ scale: 0.45, opacity: 0.55 }}
+          animate={{ scale: 1.7, opacity: 0 }}
+          transition={{ duration: 1.4, ease: "easeOut", repeat: Infinity }}
+          className="pointer-events-none absolute left-1/2 top-1/2 h-56 w-56 -translate-x-1/2 -translate-y-1/2 rounded-full"
+          style={{
+            border: `1px solid ${agent.accent}`,
+          }}
+        />
+      )}
+    </motion.div>
   );
 }
 
