@@ -1,16 +1,14 @@
 import { useEffect, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { PrefetchLink as Link } from "@/components/shared/PrefetchLink";
 import {
-  LogOut,
   LucideIcon,
   PanelLeftClose,
   PanelLeftOpen,
   Sparkles,
 } from "lucide-react";
 import { customerNavItems, getBottomNav, setLastDashboardSide, vendorNavItems } from "@/data/navItems";
-import { useAuth } from "@/hooks/useAuth";
 
 interface NavItem {
   labelKey: string;
@@ -37,9 +35,7 @@ export function DashboardSidebar({
 }: DashboardSidebarProps) {
   const resolvedBottom = bottomItems ?? getBottomNav(items);
   const location = useLocation();
-  const navigate = useNavigate();
   const { t } = useTranslation();
-  const { signOut } = useAuth();
 
   // Stash the active side so cross-cutting pages (/settings, /support)
   // know which sidebar to render when the user clicks over. Without
@@ -49,11 +45,6 @@ export function DashboardSidebar({
     if (items === vendorNavItems) setLastDashboardSide("vendor");
     else if (items === customerNavItems) setLastDashboardSide("host");
   }, [items]);
-
-  async function handleLogout() {
-    await signOut();
-    navigate("/", { replace: true });
-  }
 
   // Collapse state persists across pages so flipping the toggle on
   // one route stays flipped when the vendor navigates to another.
@@ -252,24 +243,9 @@ export function DashboardSidebar({
           {resolvedBottom.map(renderItem)}
         </nav>
       )}
-      {/* Logout pinned to the very bottom — destructive-tinted hover
-          so it reads as the exit door, not just another link. Signs
-          out via useAuth, then bounces to the landing page. */}
-      <div
-        className={`border-t border-[rgba(255,138,76,0.14)] ${collapsed ? "p-2" : "p-3"}`}
-      >
-        <button
-          type="button"
-          onClick={handleLogout}
-          title={collapsed ? t("nav.logout") : undefined}
-          className={`w-full flex items-center gap-3 rounded-lg text-sm font-medium text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors ${
-            collapsed ? "justify-center px-0 py-2.5" : "px-3 py-2.5"
-          }`}
-        >
-          <LogOut className="w-4 h-4 shrink-0" aria-hidden />
-          {!collapsed && <span className="truncate">{t("nav.logout")}</span>}
-        </button>
-      </div>
+      {/* Dedicated Log out row removed — the Sign out action lives on
+          /settings now. signOut + handleLogout helpers stay so other
+          surfaces (mobile nav) can keep using them. */}
     </aside>
   );
 }
