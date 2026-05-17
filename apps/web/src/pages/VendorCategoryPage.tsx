@@ -171,65 +171,42 @@ export default function VendorCategoryPage() {
     <div className="min-h-screen bg-background">
       <PublicNav />
 
-      {/* Cinematic category hero */}
-      <section className="relative h-[55svh] min-h-[400px] w-full overflow-hidden">
-        <Picture
-          source={config.hero}
-          alt={config.display}
-          loading="eager"
-          fetchPriority="high"
-          sizes="100vw"
-          className="absolute inset-0 w-full h-full object-cover"
-        />
-        <div className="absolute inset-0 bg-gradient-to-b from-foreground/75 via-foreground/45 to-background" />
-        <div className="absolute inset-0 bg-gradient-to-r from-foreground/55 via-transparent to-foreground/20" />
-        <div
-          className="absolute inset-0 opacity-[0.07] mix-blend-overlay pointer-events-none"
-          style={{
-            backgroundImage:
-              "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)' opacity='0.6'/></svg>\")",
-          }}
-        />
-
-        <div className="relative z-10 h-full flex flex-col">
-          <div className="container mx-auto px-6 md:px-8 pt-24">
-            <Link
-              to="/vendors"
-              className="inline-flex items-center gap-2 text-xs uppercase tracking-[0.3em] text-background/70 hover:text-background transition-colors"
-            >
-              <ArrowLeft className="w-3.5 h-3.5" />
-              All vendors
-            </Link>
-          </div>
-
-          <div className="flex-1 flex items-end pb-12 md:pb-16">
-            <div className="container mx-auto px-6 md:px-8">
-              <motion.p
-                initial={{ opacity: 0, y: 16 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ ...spring, delay: 0.15 }}
-                className="font-label text-accent tracking-[0.4em] mb-5"
-              >
-                — CATEGORY
-              </motion.p>
-              <motion.h1
-                initial={{ opacity: 0, y: 24 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ ...spring, delay: 0.3, duration: 0.9 }}
-                className="text-hero font-display text-background leading-[1.0] max-w-3xl"
-              >
-                {config.display}
-              </motion.h1>
-              <motion.p
-                initial={{ opacity: 0, y: 16 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ ...spring, delay: 0.55 }}
-                className="text-base md:text-lg text-background/80 mt-5 max-w-xl leading-relaxed font-light"
-              >
-                {config.description}
-              </motion.p>
-            </div>
-          </div>
+      {/* Category hero pulled — page opens with a small back link,
+          the category headline + description, then the grid. */}
+      <section className="pt-28 md:pt-32 pb-8">
+        <div className="container mx-auto px-6 md:px-8">
+          <Link
+            to="/vendors"
+            className="inline-flex items-center gap-2 text-xs uppercase tracking-[0.3em] text-muted-foreground hover:text-foreground transition-colors mb-8"
+          >
+            <ArrowLeft className="w-3.5 h-3.5" />
+            All vendors
+          </Link>
+          <motion.p
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ ...spring, delay: 0.05 }}
+            className="font-label text-accent tracking-[0.4em] mb-4"
+          >
+            — CATEGORY
+          </motion.p>
+          <motion.h1
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ ...spring, delay: 0.1, duration: 0.7 }}
+            className="font-display leading-[1.0] max-w-3xl"
+            style={{ fontSize: "clamp(48px, 7vw, 92px)", letterSpacing: "-1.5px" }}
+          >
+            {config.display}
+          </motion.h1>
+          <motion.p
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ ...spring, delay: 0.2 }}
+            className="text-base md:text-lg text-muted-foreground mt-5 max-w-xl leading-relaxed font-light"
+          >
+            {config.description}
+          </motion.p>
         </div>
       </section>
 
