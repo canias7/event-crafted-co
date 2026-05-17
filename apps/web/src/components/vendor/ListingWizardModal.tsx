@@ -23,7 +23,11 @@ import { CATEGORY_GROUPS } from "@/data/categoryTaxonomy";
 import { getCategorySchema } from "@/data/categoryAttributes";
 import { supabase } from "@/integrations/supabase/client";
 
-const MAX_PHOTOS = 5;
+// 6 photos = perfect fill on the public listing's 3-col Recent
+// work grid (cover spans 2×2, leaving exactly 4 thumb slots; total
+// = 5 with cover. 6th photo slot fills the bottom-right corner that
+// was previously empty white space).
+const MAX_PHOTOS = 6;
 
 interface FAQDraft {
   question: string;
@@ -213,7 +217,7 @@ export function ListingWizardModal({
             <div className="mt-6">
               <Label className="font-semibold">Listing photos</Label>
               <p className="text-sm text-muted-foreground italic mb-3">
-                3–5 photos. Your first becomes the cover.
+                3–6 photos. Your first becomes the cover.
               </p>
 
               <input
