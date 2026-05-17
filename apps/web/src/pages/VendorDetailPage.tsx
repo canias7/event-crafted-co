@@ -156,7 +156,11 @@ const spring = { type: "spring" as const, duration: 0.6, bounce: 0 };
 
 export default function VendorDetailPage() {
   const navigate = useNavigate();
-  // Route is either /vendors/:id or /v/:slug — accept both.
+  // Route is either /vendors/:id or /v/:slug — accept both. The
+  // :id segment may actually contain a slug (some callers build
+  // /vendors/<slug> URLs), so fall back to slug-match when id-match
+  // misses. UUIDs and slugs don't share a character set, so no
+  // collision risk.
   const { id, slug } = useParams();
   const { session, profile, isApprovedVendor, loading: authLoading } = useAuth();
   const { vendors, loading: vendorsLoading } = useVendors();
@@ -166,7 +170,7 @@ export default function VendorDetailPage() {
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
 
   const vendor = id
-    ? vendors.find((v) => v.id === id)
+    ? vendors.find((v) => v.id === id) ?? vendors.find((v) => v.slug === id)
     : slug
       ? vendors.find((v) => v.slug === slug)
       : undefined;
