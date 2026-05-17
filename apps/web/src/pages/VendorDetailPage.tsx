@@ -158,7 +158,7 @@ export default function VendorDetailPage() {
   const navigate = useNavigate();
   // Route is either /vendors/:id or /v/:slug — accept both.
   const { id, slug } = useParams();
-  const { session, profile, isApprovedVendor, loading: authLoading } = useAuth();
+  const { session, profile, isApprovedVendor, ownListing, loading: authLoading } = useAuth();
   const { vendors, loading: vendorsLoading } = useVendors();
   const { isSaved, toggle: toggleSave } = useSavedVendors();
   const [signinPromptOpen, setSigninPromptOpen] = useState(false);
@@ -501,10 +501,20 @@ export default function VendorDetailPage() {
     // (mirrors mobile, where there's no separate DM-without-inquiry
     // path); the "Message vendor" button is hidden for hosts below.
     if (isApprovedVendor) {
+      // A vendor account with zero listings of its own can't open a
+      // partner thread — there's no calling identity. The button is
+      // hidden when ownListing is null, but check here too as a guard
+      // against stale auth state.
+      if (!ownListing?.id) {
+        toast.error(
+          "Create your first listing before messaging other vendors.",
+        );
+        return;
+      }
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data, error } = await (supabase as any).rpc(
         "find_or_create_partner_thread",
-        { p_other_vendor_id: vendor.id },
+        { p_other_vendor_id: vendor.id, p_my_vendor_id: ownListing.id },
       );
       if (error) {
         toast.error(error.message);
@@ -851,10 +861,11 @@ export default function VendorDetailPage() {
                   </Button>
 
                   {/* "Message vendor" button is shown only to approved
-                      vendors (so they can open a partner-thread with
-                      another vendor). Hosts route through "Send
-                      Inquiry" above — same as mobile. */}
-                  {isApprovedVendor && (
+                      vendors who own at least one listing of their own
+                      (the partner-thread RPC needs a calling vendor
+                      identity). Hosts and listing-less vendor accounts
+                      route through "Send Inquiry" above. */}
+                  {isApprovedVendor && ownListing?.id && ownListing.id !== vendor.id && (
                     <Button
                       onClick={handleMessageClick}
                       disabled={authLoading}
