@@ -103,6 +103,7 @@ const AGENTS: Agent[] = [
     accentSoft: "rgba(208, 102, 255, 0.18)",
     status: "Vision · Generative",
     Icon: ImagePlus,
+    imageSrc: "/agents/axion.png",
   },
 ];
 
