@@ -16,7 +16,6 @@ import {
   useReducedMotion,
   useScroll,
   useTransform,
-  type MotionValue,
 } from "framer-motion";
 import { Bot, ImagePlus, Sparkles } from "lucide-react";
 
@@ -93,29 +92,31 @@ const AGENTS: Agent[] = [
 ];
 
 export default function SuperAgentsPage() {
-  const { scrollYProgress } = useScroll();
   const reduceMotion = useReducedMotion();
 
   return (
-    <div className="relative min-h-screen overflow-x-hidden bg-[#06080f] text-white">
-      <CosmicBackdrop scrollYProgress={scrollYProgress} disabled={!!reduceMotion} />
+    <div
+      className="relative min-h-screen overflow-x-hidden text-black"
+      style={{ background: "#fafafa" }}
+    >
+      <AmbientBackdrop disabled={!!reduceMotion} />
 
       <header className="relative z-20 flex items-center justify-between px-6 py-5 md:px-10 md:py-6">
-        <Link to="/" className="font-editorial text-[22px] italic text-white/95">
+        <Link to="/" className="font-editorial text-[22px] italic text-black">
           Vendora
         </Link>
-        <nav className="hidden md:flex items-center gap-8 text-[13px] text-white/80">
-          <Link to="/vendors" className="hover:text-white transition-colors">
+        <nav className="hidden md:flex items-center gap-8 text-[13px] text-black/80">
+          <Link to="/vendors" className="hover:text-black transition-colors">
             Vendors
           </Link>
-          <Link to="/real-events" className="hover:text-white transition-colors">
+          <Link to="/real-events" className="hover:text-black transition-colors">
             Real events
           </Link>
-          <span className="inline-flex items-center gap-1.5 text-white">
+          <span className="inline-flex items-center gap-1.5 text-black">
             Super agents
             <span
               className="text-[9px] tracking-widest rounded-full px-1.5 py-px"
-              style={{ border: "0.5px solid rgba(255,255,255,0.4)" }}
+              style={{ border: "0.5px solid rgba(0,0,0,0.35)" }}
             >
               NEW
             </span>
@@ -132,124 +133,222 @@ export default function SuperAgentsPage() {
 
       <CTA />
 
-      <footer className="relative z-10 border-t border-white/5 px-6 md:px-10 py-10 text-center text-[12px] text-white/40">
+      <footer className="relative z-10 border-t border-black/5 px-6 md:px-10 py-10 text-center text-[12px] text-black/45">
         Vendora · Super Agents · Powered by Opus 4.7
       </footer>
     </div>
   );
 }
 
-// ─── Cosmic backdrop ───────────────────────────────────────────────────
-// Layered gradients + animated particles + a wide aurora ellipse that
-// drifts as the user scrolls, giving the page a sense of depth.
-function CosmicBackdrop({
-  scrollYProgress,
-  disabled,
-}: {
-  scrollYProgress: MotionValue<number>;
-  disabled: boolean;
-}) {
-  const auroraY = useTransform(scrollYProgress, [0, 1], [0, -260]);
-  const auroraRotate = useTransform(scrollYProgress, [0, 1], [0, 35]);
-
+// ─── Ambient backdrop ──────────────────────────────────────────────────
+// Matches the auth-shell visual treatment 1:1 (GlassyAuthShell.tsx) so
+// Super Agents reads as part of the same site: solid #fafafa base,
+// triple amber radial glow, perspective amber grid floor, slowly
+// rotating dashed orbital ring, scattered orange particles + stars.
+// Fixed position so the canvas stays under content as the user scrolls.
+function AmbientBackdrop({ disabled }: { disabled: boolean }) {
   return (
     <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
-      {/* Base radial — deep navy → near-black corners */}
+      {/* Big center amber glow — anchor of the canvas */}
       <div
-        className="absolute inset-0"
+        aria-hidden
+        className="absolute"
         style={{
+          top: "28%",
+          left: "50%",
+          transform: "translate(-50%, -50%)",
+          width: "1100px",
+          height: "850px",
           background:
-            "radial-gradient(ellipse at 50% 20%, #15183b 0%, #0a0c1e 40%, #06080f 75%)",
+            "radial-gradient(ellipse at center, rgba(255,138,76,0.32) 0%, rgba(255,138,76,0.11) 32%, rgba(255,138,76,0.03) 58%, transparent 78%)",
+        }}
+      />
+      {/* Bottom-right secondary glow */}
+      <div
+        aria-hidden
+        className="absolute"
+        style={{
+          bottom: "-120px",
+          right: "-8%",
+          width: "680px",
+          height: "580px",
+          background:
+            "radial-gradient(ellipse at center, rgba(255,138,76,0.16) 0%, rgba(255,138,76,0.04) 42%, transparent 72%)",
+        }}
+      />
+      {/* Left-side soft glow */}
+      <div
+        aria-hidden
+        className="absolute"
+        style={{
+          top: "62%",
+          left: "-8%",
+          width: "480px",
+          height: "480px",
+          background:
+            "radial-gradient(ellipse at center, rgba(255,178,122,0.10) 0%, transparent 65%)",
         }}
       />
 
-      {/* Aurora — amber + violet ellipse drifting up as user scrolls */}
-      <motion.div
+      {/* Perspective amber grid floor — same animation as the auth shell */}
+      <div
         aria-hidden
-        style={
-          disabled
-            ? undefined
-            : { y: auroraY, rotate: auroraRotate }
-        }
-        className="absolute -left-[10%] top-[18%] h-[700px] w-[140%]"
+        className="absolute inset-x-0"
+        style={{
+          bottom: 0,
+          height: "500px",
+          perspective: "800px",
+          overflow: "hidden",
+          WebkitMaskImage:
+            "linear-gradient(to bottom, transparent 0%, #000 38%, #000 100%)",
+          maskImage:
+            "linear-gradient(to bottom, transparent 0%, #000 38%, #000 100%)",
+        }}
       >
         <div
-          className="h-full w-full opacity-70"
+          className={disabled ? "super-grid-static" : "super-grid-scroll"}
           style={{
-            background:
-              "radial-gradient(ellipse at center, rgba(208,102,255,0.30) 0%, rgba(255,138,76,0.18) 35%, rgba(122,168,255,0.12) 60%, transparent 80%)",
-            filter: "blur(40px)",
+            position: "absolute",
+            bottom: 0,
+            left: "-25%",
+            width: "150%",
+            height: "800px",
+            backgroundImage:
+              "linear-gradient(rgba(255,138,76,0.28) 1px, transparent 1px), linear-gradient(90deg, rgba(255,138,76,0.28) 1px, transparent 1px)",
+            backgroundSize: "60px 60px",
+            transform: "rotateX(75deg)",
+            transformOrigin: "center bottom",
           }}
         />
-      </motion.div>
+      </div>
 
-      {/* Faint dot grid — gives the void a measurable scale */}
+      {/* Slowly-rotating orbital dashed ring */}
       <div
         aria-hidden
-        className="absolute inset-0 opacity-[0.18]"
+        className={disabled ? "" : "super-ring"}
         style={{
-          backgroundImage:
-            "radial-gradient(rgba(255,255,255,0.4) 1px, transparent 1px)",
-          backgroundSize: "32px 32px",
-          maskImage:
-            "linear-gradient(to bottom, transparent 0%, #000 12%, #000 80%, transparent 100%)",
-          WebkitMaskImage:
-            "linear-gradient(to bottom, transparent 0%, #000 12%, #000 80%, transparent 100%)",
+          position: "absolute",
+          top: "50%",
+          left: "50%",
+          width: "720px",
+          height: "720px",
+          border: "0.5px dashed rgba(255,138,76,0.18)",
+          borderRadius: "50%",
+          transform: "translate(-50%, -50%)",
         }}
       />
 
-      {/* Three faint floating orbs — far back, slow parallax via CSS */}
-      <FloatingOrb top="20%" left="8%" size={140} color="#7aa8ff" delay={0} />
-      <FloatingOrb top="55%" left="82%" size={180} color="#d066ff" delay={2} />
-      <FloatingOrb top="78%" left="22%" size={120} color="#ff8a4c" delay={4} />
+      {/* Star decorations */}
+      <Star top="120px" left="80px" size={20} opacity={0.35} />
+      <Star bottom="100px" right="90px" size={16} opacity={0.3} />
+      <Star top="42%" right="10%" size={14} opacity={0.28} />
+
+      {/* Floating peach + amber particles */}
+      {PARTICLES.map((p, i) => (
+        <span
+          key={i}
+          aria-hidden
+          className={
+            disabled
+              ? ""
+              : p.variant === "a"
+                ? "super-float-a"
+                : "super-float-b"
+          }
+          style={{
+            position: "absolute",
+            top: p.top,
+            left: p.left,
+            right: p.right,
+            width: p.size,
+            height: p.size,
+            background: p.color,
+            boxShadow: `0 0 ${p.glow}px ${p.color}`,
+            borderRadius: "50%",
+            animationDelay: p.delay,
+          }}
+        />
+      ))}
+
+      {/* Keyframes — scoped to this page */}
+      <style>{`
+        @keyframes superGridScroll {
+          0% { background-position: 0 0; }
+          100% { background-position: 0 60px; }
+        }
+        .super-grid-scroll { animation: superGridScroll 5s linear infinite; }
+        @keyframes superRotSlow {
+          from { transform: translate(-50%, -50%) rotate(0deg); }
+          to { transform: translate(-50%, -50%) rotate(360deg); }
+        }
+        .super-ring { animation: superRotSlow 80s linear infinite; }
+        @keyframes superFloatA {
+          0%, 100% { transform: translateY(0); opacity: 0.4; }
+          50% { transform: translateY(-30px); opacity: 1; }
+        }
+        .super-float-a { animation: superFloatA 6s ease-in-out infinite; }
+        @keyframes superFloatB {
+          0%, 100% { transform: translateY(0); opacity: 0.5; }
+          50% { transform: translateY(-24px); opacity: 1; }
+        }
+        .super-float-b { animation: superFloatB 7s ease-in-out infinite; }
+      `}</style>
     </div>
   );
 }
 
-function FloatingOrb({
+function Star({
   top,
   left,
+  right,
+  bottom,
   size,
-  color,
-  delay,
+  opacity,
 }: {
-  top: string;
-  left: string;
+  top?: string;
+  left?: string;
+  right?: string;
+  bottom?: string;
   size: number;
-  color: string;
-  delay: number;
+  opacity: number;
 }) {
-  const reduceMotion = useReducedMotion();
   return (
-    <motion.div
+    <div
       aria-hidden
-      animate={
-        reduceMotion
-          ? undefined
-          : { y: [0, -22, 0], x: [0, 12, 0] }
-      }
-      transition={
-        reduceMotion
-          ? undefined
-          : {
-              duration: 14,
-              repeat: Infinity,
-              ease: "easeInOut",
-              delay,
-            }
-      }
-      className="absolute rounded-full"
-      style={{
-        top,
-        left,
-        width: size,
-        height: size,
-        background: `radial-gradient(circle, ${color}55 0%, ${color}10 50%, transparent 70%)`,
-        filter: "blur(20px)",
-      }}
-    />
+      className="absolute"
+      style={{ top, left, right, bottom, opacity }}
+    >
+      <svg width={size} height={size} viewBox="0 0 24 24">
+        <path
+          d="M12 2 L13 11 L22 12 L13 13 L12 22 L11 13 L2 12 L11 11 Z"
+          fill="#ff8a4c"
+        />
+      </svg>
+    </div>
   );
 }
+
+type Particle = {
+  variant: "a" | "b";
+  top?: string;
+  left?: string;
+  right?: string;
+  size: number;
+  color: string;
+  glow: number;
+  delay: string;
+};
+
+const PARTICLES: Particle[] = [
+  { variant: "a", top: "20%", left: "12%", size: 3, color: "#ff8a4c", glow: 10, delay: "0s" },
+  { variant: "b", top: "38%", left: "26%", size: 2, color: "#ffb27a", glow: 6, delay: "1s" },
+  { variant: "a", top: "62%", left: "16%", size: 2, color: "#ff8a4c", glow: 6, delay: "2s" },
+  { variant: "b", top: "30%", right: "22%", size: 3, color: "#ffb27a", glow: 8, delay: "0.5s" },
+  { variant: "a", top: "52%", left: "8%", size: 2, color: "#ff8a4c", glow: 6, delay: "1.5s" },
+  { variant: "b", top: "72%", right: "16%", size: 2, color: "#ffb27a", glow: 6, delay: "2.5s" },
+  { variant: "a", top: "14%", right: "30%", size: 3, color: "#ff8a4c", glow: 10, delay: "1s" },
+  { variant: "b", top: "78%", left: "32%", size: 2, color: "#ffb27a", glow: 6, delay: "3s" },
+];
 
 // ─── Hero ──────────────────────────────────────────────────────────────
 function Hero() {
@@ -260,10 +359,10 @@ function Hero() {
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-        className="inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-[10px] uppercase tracking-[0.2em] text-white/80"
+        className="inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-[10px] uppercase tracking-[0.2em] text-black/75"
         style={{
-          border: "0.5px solid rgba(255,255,255,0.25)",
-          background: "rgba(255,255,255,0.04)",
+          border: "0.5px solid rgba(0,0,0,0.18)",
+          background: "rgba(255,255,255,0.55)",
           backdropFilter: "blur(8px)",
         }}
       >
@@ -312,7 +411,7 @@ function Hero() {
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
-        className="mx-auto mt-7 text-[18px] md:text-[20px] text-white/70"
+        className="mx-auto mt-7 text-[18px] md:text-[20px] text-black/70"
         style={{ maxWidth: 620, lineHeight: 1.55 }}
       >
         Super Agents reply to hosts at 3 a.m., write your listings in your
@@ -328,8 +427,8 @@ function Hero() {
       >
         <a
           href="#meet"
-          className="rounded-full px-6 py-3 text-white/90 hover:text-white transition-colors"
-          style={{ border: "0.5px solid rgba(255,255,255,0.25)" }}
+          className="rounded-full px-6 py-3 text-black/85 hover:text-black transition-colors"
+          style={{ border: "0.5px solid rgba(0,0,0,0.25)" }}
         >
           Meet them →
         </a>
@@ -360,7 +459,7 @@ function HolographicCore() {
         }
         className="absolute inset-0 rounded-full"
         style={{
-          border: "1px dashed rgba(255,255,255,0.18)",
+          border: "1px dashed rgba(0,0,0,0.18)",
         }}
       />
       {/* Middle ring */}
@@ -373,9 +472,9 @@ function HolographicCore() {
         }
         className="absolute inset-8 rounded-full"
         style={{
-          border: "0.5px solid rgba(255,255,255,0.25)",
+          border: "0.5px solid rgba(0,0,0,0.22)",
           background:
-            "conic-gradient(from 90deg, transparent 0%, rgba(208,102,255,0.25) 25%, transparent 50%, rgba(255,138,76,0.25) 75%, transparent 100%)",
+            "conic-gradient(from 90deg, transparent 0%, rgba(208,102,255,0.32) 25%, transparent 50%, rgba(255,138,76,0.32) 75%, transparent 100%)",
           maskImage: "radial-gradient(circle, transparent 60%, #000 62%)",
           WebkitMaskImage:
             "radial-gradient(circle, transparent 60%, #000 62%)",
@@ -428,7 +527,7 @@ function AgentsSection() {
       style={{ maxWidth: 1200 }}
     >
       <div className="mb-20 text-center">
-        <p className="font-label text-[10px] uppercase tracking-[0.25em] text-white/50">
+        <p className="font-label text-[10px] uppercase tracking-[0.25em] text-black/55">
           Meet the agents
         </p>
         <h2
@@ -509,19 +608,19 @@ function AgentCard({ agent, index }: { agent: Agent; index: number }) {
           </span>
         </div>
         <p
-          className="mt-3 font-editorial italic text-white/80"
+          className="mt-3 font-editorial italic text-black/85"
           style={{ fontSize: "clamp(20px, 2.5vw, 28px)", lineHeight: 1.2 }}
         >
           {agent.tagline}
         </p>
-        <p className="mt-6 text-[15px] leading-relaxed text-white/65 max-w-md">
+        <p className="mt-6 text-[15px] leading-relaxed text-black/65 max-w-md">
           {agent.about}
         </p>
         <ul className="mt-7 space-y-3">
           {agent.capabilities.map((c) => (
             <li
               key={c}
-              className="flex items-start gap-3 text-[14px] text-white/85"
+              className="flex items-start gap-3 text-[14px] text-black/85"
             >
               <span
                 className="mt-2 h-1.5 w-1.5 rounded-full flex-shrink-0"
@@ -571,7 +670,7 @@ function AgentVisual({ agent }: { agent: Agent }) {
         }}
       />
 
-      {/* Main glass card */}
+      {/* Main glass card — sits on the cream canvas, light glass + amber tint */}
       <motion.div
         animate={
           reduceMotion ? undefined : { rotateY: [-6, 6, -6] }
@@ -584,20 +683,20 @@ function AgentVisual({ agent }: { agent: Agent }) {
         className="relative h-full w-full rounded-[28px] overflow-hidden"
         style={{
           background:
-            "linear-gradient(145deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.02) 60%)",
-          border: "0.5px solid rgba(255,255,255,0.12)",
+            "linear-gradient(145deg, rgba(255,255,255,0.65) 0%, rgba(255,255,255,0.35) 60%)",
+          border: "0.5px solid rgba(0,0,0,0.12)",
           backdropFilter: "blur(20px)",
           boxShadow:
-            "0 30px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.08)",
+            "0 30px 80px rgba(255,138,76,0.18), 0 8px 30px rgba(0,0,0,0.08), inset 0 1px 0 rgba(255,255,255,0.6)",
           transformStyle: "preserve-3d",
         }}
       >
         {/* Top header strip with codename + version */}
         <div
           className="flex items-center justify-between px-5 py-4"
-          style={{ borderBottom: "0.5px solid rgba(255,255,255,0.08)" }}
+          style={{ borderBottom: "0.5px solid rgba(0,0,0,0.08)" }}
         >
-          <span className="text-[10px] uppercase tracking-[0.2em] text-white/50">
+          <span className="text-[10px] uppercase tracking-[0.2em] text-black/55">
             {agent.codename} · {agent.version}
           </span>
           <span
@@ -616,7 +715,7 @@ function AgentVisual({ agent }: { agent: Agent }) {
             animate={
               reduceMotion
                 ? undefined
-                : { scale: [1, 1.18, 1], opacity: [0.6, 0.2, 0.6] }
+                : { scale: [1, 1.18, 1], opacity: [0.55, 0.15, 0.55] }
             }
             transition={
               reduceMotion
@@ -632,8 +731,8 @@ function AgentVisual({ agent }: { agent: Agent }) {
           <div
             className="relative h-32 w-32 rounded-full flex items-center justify-center"
             style={{
-              background: `radial-gradient(circle at 35% 30%, #ffffff 0%, ${agent.accent} 55%, #0a0c1e 100%)`,
-              boxShadow: `0 0 60px ${agent.accent}88, inset -10px -16px 30px rgba(0,0,0,0.4)`,
+              background: `radial-gradient(circle at 35% 30%, #ffffff 0%, ${agent.accent} 60%, ${agent.accent} 100%)`,
+              boxShadow: `0 0 60px ${agent.accent}66, inset -8px -12px 24px rgba(0,0,0,0.18)`,
             }}
           >
             <Icon className="h-9 w-9 text-white" strokeWidth={1.5} />
@@ -642,7 +741,7 @@ function AgentVisual({ agent }: { agent: Agent }) {
 
         {/* Footer status row */}
         <div className="absolute bottom-0 left-0 right-0 px-5 py-4 flex items-center justify-between text-[11px]">
-          <span className="text-white/55">{agent.role}</span>
+          <span className="text-black/60">{agent.role}</span>
           <span
             className="inline-flex items-center gap-1.5"
             style={{ color: agent.accent }}
@@ -665,7 +764,7 @@ function AgentVisual({ agent }: { agent: Agent }) {
         className="absolute -top-4 -right-4 rounded-2xl h-24 w-32 -z-10"
         style={{
           background: agent.accentSoft,
-          border: `0.5px solid ${agent.accent}66`,
+          border: `0.5px solid ${agent.accent}55`,
           transform: "rotate(8deg)",
           backdropFilter: "blur(4px)",
         }}
@@ -674,8 +773,8 @@ function AgentVisual({ agent }: { agent: Agent }) {
         aria-hidden
         className="absolute -bottom-3 -left-5 rounded-2xl h-20 w-24 -z-10"
         style={{
-          background: "rgba(255,255,255,0.04)",
-          border: "0.5px solid rgba(255,255,255,0.08)",
+          background: "rgba(255,255,255,0.55)",
+          border: "0.5px solid rgba(0,0,0,0.08)",
           transform: "rotate(-6deg)",
         }}
       />
@@ -697,7 +796,7 @@ function CapabilitiesGrid() {
   ];
   return (
     <section className="relative z-10 px-6 md:px-10 py-20 mx-auto" style={{ maxWidth: 1100 }}>
-      <p className="font-label text-[10px] uppercase tracking-[0.25em] text-white/50 text-center">
+      <p className="font-label text-[10px] uppercase tracking-[0.25em] text-black/55 text-center">
         Under the hood
       </p>
       <h2
@@ -725,13 +824,13 @@ function CapabilitiesGrid() {
             }}
             className="rounded-2xl p-5"
             style={{
-              background: "rgba(255,255,255,0.03)",
-              border: "0.5px solid rgba(255,255,255,0.08)",
+              background: "rgba(255,255,255,0.55)",
+              border: "0.5px solid rgba(0,0,0,0.08)",
               backdropFilter: "blur(8px)",
             }}
           >
-            <p className="text-[14px] font-medium text-white">{it.label}</p>
-            <p className="mt-1 text-[12px] text-white/55 leading-relaxed">
+            <p className="text-[14px] font-medium text-black">{it.label}</p>
+            <p className="mt-1 text-[12px] text-black/60 leading-relaxed">
               {it.help}
             </p>
           </motion.div>
