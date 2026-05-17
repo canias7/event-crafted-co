@@ -66,6 +66,7 @@ interface Inquiry {
   quality_score: number | null;
   intent_score: number | null;
   recommended_verification: string | null;
+  vendor_read_at: string | null;
   host: { display_name: string | null } | null;
 }
 
@@ -114,6 +115,21 @@ export default function InquiryDetailPage() {
       .eq("id", inquiryId)
       .maybeSingle();
     setInquiry(i as unknown as Inquiry);
+
+    // First-time-open: stamp vendor_read_at so the inbox unread dot
+    // turns off. Fire-and-forget so the page renders even if the
+    // write is slow / fails; the next visit will retry.
+    const inq = i as unknown as Inquiry | null;
+    if (inq && inq.vendor_read_at == null) {
+      supabase
+        .from("inquiries")
+        .update({ vendor_read_at: new Date().toISOString() })
+        .eq("id", inquiryId)
+        .then(({ error: readErr }) => {
+          if (readErr)
+            console.error("[InquiryDetail] mark-read failed", readErr.message);
+        });
+    }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: tid } = await (supabase as any).rpc("ensure_inquiry_thread", {
