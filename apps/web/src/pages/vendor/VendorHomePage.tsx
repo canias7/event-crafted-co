@@ -386,8 +386,23 @@ function ReelsFeed({ reels }: { reels: ReelRow[] }) {
                 className="w-full h-full object-cover"
                 loading="lazy"
               />
-            ) : null}
-            <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+            ) : (
+              // No stored thumbnail — render the source video with
+              // preload="metadata" + #t=0.1 so browsers seek to the
+              // first frame as a still. muted/playsInline so it never
+              // auto-plays audio.
+              <video
+                src={`${r.video_url}#t=0.1`}
+                className="w-full h-full object-cover pointer-events-none"
+                preload="metadata"
+                muted
+                playsInline
+                aria-label={r.caption ?? "Reel"}
+              />
+            )}
+            {/* Play overlay — circular chip in the center so the row
+                reads as a tappable video. */}
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
               <div className="w-14 h-14 rounded-full bg-white/85 flex items-center justify-center">
                 <Film className="h-7 w-7 text-foreground" />
               </div>
