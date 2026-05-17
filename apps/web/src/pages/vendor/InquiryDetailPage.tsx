@@ -41,7 +41,6 @@ import {
 import { ProposalShareToggle } from "@/components/proposals/ProposalShareToggle";
 import { ProposeAppointmentModal } from "@/components/appointments/ProposeAppointmentModal";
 import { MessageAttachments } from "@/components/messages/MessageAttachments";
-import { TemplatePicker } from "@/components/messages/TemplatePicker";
 import {
   uploadAttachments,
   validateAttachment,
@@ -49,7 +48,7 @@ import {
   MAX_FILES,
   type MessageAttachment,
 } from "@/lib/messageAttachments";
-import { FileText, Paperclip, CalendarDays } from "lucide-react";
+import { FileText, Paperclip, CalendarDays, Eye } from "lucide-react";
 import { toast } from "sonner";
 
 interface Inquiry {
@@ -115,6 +114,10 @@ export default function InquiryDetailPage() {
   const [proposals, setProposals] = useState<Proposal[]>([]);
   const [proposalModalOpen, setProposalModalOpen] = useState(false);
   const [appointmentModalOpen, setAppointmentModalOpen] = useState(false);
+  // Inquiry preview sheet — opened from the "..." menu, shows the
+  // full original inquiry on a blurred backdrop. Tap the close arrow
+  // to return to the chat.
+  const [inquiryPreviewOpen, setInquiryPreviewOpen] = useState(false);
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -389,6 +392,14 @@ export default function InquiryDetailPage() {
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuItem
+                onClick={() => setInquiryPreviewOpen(true)}
+                className="cursor-pointer"
+              >
+                <Eye className="w-4 h-4 mr-2" />
+                View inquiry
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
               {!isClosed ? (
                 <>
                   <DropdownMenuItem
@@ -584,14 +595,6 @@ export default function InquiryDetailPage() {
             >
               <Paperclip className="w-4 h-4" />
             </button>
-            <TemplatePicker
-              vendorId={inquiry?.vendor_id ?? null}
-              onPick={(body) =>
-                setComposer((prev) =>
-                  prev.trim() ? `${prev}\n\n${body}` : body,
-                )
-              }
-            />
             <Textarea
               value={composer}
               onChange={(e) => setComposer(e.target.value)}
@@ -651,8 +654,178 @@ export default function InquiryDetailPage() {
             hostId={inquiry.host_id}
             proposedBy="vendor"
           />
+          {inquiryPreviewOpen && (
+            <InquiryPreviewSheet
+              inquiry={inquiry}
+              hostName={hostName}
+              onClose={() => setInquiryPreviewOpen(false)}
+            />
+          )}
         </>
       )}
+    </div>
+  );
+}
+
+// Full-inquiry preview rendered on a blurred backdrop. Opened from
+// the "..." menu on the chat header. The chat stays alive underneath
+// (visible but softened); the back arrow in the top-left dismisses.
+function InquiryPreviewSheet({
+  inquiry,
+  hostName,
+  onClose,
+}: {
+  inquiry: Inquiry;
+  hostName: string;
+  onClose: () => void;
+}) {
+  // Escape closes the sheet — mirrors the MediaLightbox pattern.
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") onClose();
+    }
+    window.addEventListener("keydown", onKey);
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      document.body.style.overflow = prev;
+    };
+  }, [onClose]);
+
+  const eventLabel = inquiry.event_type.replace(/_/g, " ");
+  const dateStr = inquiry.event_date
+    ? (() => {
+        const [y, m, d] = inquiry.event_date.split("T")[0].split("-").map(Number);
+        if (!y || !m || !d) return inquiry.event_date;
+        return new Date(y, m - 1, d).toLocaleDateString(undefined, {
+          weekday: "long",
+          month: "long",
+          day: "numeric",
+          year: "numeric",
+        });
+      })()
+    : null;
+  const budgetStr =
+    inquiry.budget_min_cents != null || inquiry.budget_max_cents != null
+      ? `${fmtMoney(inquiry.budget_min_cents)} – ${fmtMoney(inquiry.budget_max_cents)}`
+      : null;
+  const intakeEntries = inquiry.intake_answers
+    ? Object.entries(inquiry.intake_answers)
+    : [];
+
+  return (
+    <div
+      className="fixed inset-0 z-[60] flex items-start justify-center p-4 pt-12 overflow-y-auto"
+      onClick={onClose}
+      style={{
+        background: "rgba(20,16,12,0.55)",
+        backdropFilter: "blur(28px) saturate(140%)",
+        WebkitBackdropFilter: "blur(28px) saturate(140%)",
+      }}
+    >
+      <button
+        onClick={onClose}
+        aria-label="Back to chat"
+        className="fixed top-4 left-4 z-10 w-10 h-10 rounded-full bg-white/15 backdrop-blur text-white flex items-center justify-center hover:bg-white/25"
+      >
+        <ArrowLeft className="h-5 w-5" />
+      </button>
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="w-full max-w-xl rounded-2xl p-7 md:p-9 shadow-2xl"
+        style={{
+          background: "rgba(255,253,250,0.97)",
+          border: "0.5px solid rgba(255,138,76,0.22)",
+        }}
+      >
+        <p className="text-[10px] uppercase tracking-[0.22em] font-medium text-accent mb-2">
+          Inquiry preview
+        </p>
+        <h2 className="font-editorial italic text-3xl mb-1">{hostName}</h2>
+        <p className="text-sm text-muted-foreground capitalize mb-6">
+          {eventLabel}
+        </p>
+
+        <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-5">
+          {dateStr ? (
+            <div>
+              <dt className="text-[11px] uppercase tracking-[0.18em] font-medium text-muted-foreground mb-1">
+                Event date
+              </dt>
+              <dd className="text-sm font-medium text-foreground">{dateStr}</dd>
+            </div>
+          ) : null}
+          {inquiry.guest_count != null ? (
+            <div>
+              <dt className="text-[11px] uppercase tracking-[0.18em] font-medium text-muted-foreground mb-1">
+                Guests
+              </dt>
+              <dd className="text-sm font-medium text-foreground">
+                {inquiry.guest_count}
+              </dd>
+            </div>
+          ) : null}
+          {inquiry.location ? (
+            <div>
+              <dt className="text-[11px] uppercase tracking-[0.18em] font-medium text-muted-foreground mb-1">
+                Location
+              </dt>
+              <dd className="text-sm font-medium text-foreground">
+                {inquiry.location}
+              </dd>
+            </div>
+          ) : null}
+          {budgetStr ? (
+            <div>
+              <dt className="text-[11px] uppercase tracking-[0.18em] font-medium text-muted-foreground mb-1">
+                Budget
+              </dt>
+              <dd className="text-sm font-medium text-foreground tnum">
+                {budgetStr}
+              </dd>
+            </div>
+          ) : null}
+        </dl>
+
+        {inquiry.special_requests ? (
+          <div className="mt-7">
+            <p className="text-[11px] uppercase tracking-[0.18em] font-medium text-muted-foreground mb-2">
+              Special requests
+            </p>
+            <p className="text-sm leading-relaxed text-foreground whitespace-pre-wrap">
+              {inquiry.special_requests}
+            </p>
+          </div>
+        ) : null}
+
+        {intakeEntries.length > 0 ? (
+          <div className="mt-7">
+            <p className="text-[11px] uppercase tracking-[0.18em] font-medium text-muted-foreground mb-3">
+              Intake form answers
+            </p>
+            <dl className="space-y-3">
+              {intakeEntries.map(([qid, val]) => (
+                <div key={qid}>
+                  <dt className="text-xs text-muted-foreground">
+                    {qid.slice(0, 8)}…
+                  </dt>
+                  <dd className="text-sm text-foreground">
+                    {Array.isArray(val) ? val.join(", ") : String(val)}
+                  </dd>
+                </div>
+              ))}
+            </dl>
+          </div>
+        ) : null}
+
+        {inquiry.recommended_verification ? (
+          <div className="mt-7 p-3 rounded-xl bg-accent/10 text-sm text-foreground">
+            <span className="font-medium">Recommended verification: </span>
+            {inquiry.recommended_verification}
+          </div>
+        ) : null}
+      </div>
     </div>
   );
 }
