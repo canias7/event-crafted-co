@@ -21,6 +21,7 @@ import {
   useTransform,
 } from "framer-motion";
 import { Bot, ImagePlus, Sparkles } from "lucide-react";
+import { HiluxChatDemo } from "@/components/super-agents/HiluxChatDemo";
 
 interface Agent {
   codename: string;
@@ -39,6 +40,10 @@ interface Agent {
    *  a free-floating character with a halo + contact shadow; otherwise
    *  it falls back to the orb-in-glass-card visual. */
   imageSrc?: string;
+  /** Optional live demo component shown in the copy column instead of
+   *  the about-text + capability bullets. Lets us swap the marketing
+   *  copy for an actual working preview (e.g. the HILUX inbox demo). */
+  Demo?: React.ComponentType;
 }
 
 const AGENTS: Agent[] = [
@@ -60,6 +65,7 @@ const AGENTS: Agent[] = [
     status: "24/7 · Live chat",
     Icon: Bot,
     imageSrc: "/agents/hilux.png",
+    Demo: HiluxChatDemo,
   },
   {
     codename: "RAPTOR",
@@ -582,7 +588,8 @@ function AgentCard({ agent, index }: { agent: Agent; index: number }) {
         reverseRow ? "md:grid-cols-[1fr_1.1fr]" : "md:grid-cols-[1.1fr_1fr]"
       }`}
     >
-      {/* Copy column */}
+      {/* Copy column — replaced by the agent's live Demo if one is
+          set (HILUX). Otherwise full marketing copy + capabilities. */}
       <div className={reverseRow ? "md:order-2" : ""}>
         <div className="flex items-center gap-3 mb-5">
           <span
@@ -621,26 +628,35 @@ function AgentCard({ agent, index }: { agent: Agent; index: number }) {
         >
           {agent.tagline}
         </p>
-        <p className="mt-6 text-[15px] leading-relaxed text-black/65 max-w-md">
-          {agent.about}
-        </p>
-        <ul className="mt-7 space-y-3">
-          {agent.capabilities.map((c) => (
-            <li
-              key={c}
-              className="flex items-start gap-3 text-[14px] text-black/85"
-            >
-              <span
-                className="mt-2 h-1.5 w-1.5 rounded-full flex-shrink-0"
-                style={{
-                  background: agent.accent,
-                  boxShadow: `0 0 8px ${agent.accent}`,
-                }}
-              />
-              {c}
-            </li>
-          ))}
-        </ul>
+
+        {agent.Demo ? (
+          <div className="mt-7">
+            <agent.Demo />
+          </div>
+        ) : (
+          <>
+            <p className="mt-6 text-[15px] leading-relaxed text-black/65 max-w-md">
+              {agent.about}
+            </p>
+            <ul className="mt-7 space-y-3">
+              {agent.capabilities.map((c) => (
+                <li
+                  key={c}
+                  className="flex items-start gap-3 text-[14px] text-black/85"
+                >
+                  <span
+                    className="mt-2 h-1.5 w-1.5 rounded-full flex-shrink-0"
+                    style={{
+                      background: agent.accent,
+                      boxShadow: `0 0 8px ${agent.accent}`,
+                    }}
+                  />
+                  {c}
+                </li>
+              ))}
+            </ul>
+          </>
+        )}
       </div>
 
       {/* Visual column — floating 3D-feel card */}
