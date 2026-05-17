@@ -60,7 +60,7 @@ export function BrandCardShell({ children, bio, businessName }: Props) {
       >
         {/* FRONT — sets the card's natural height */}
         <div
-          className={`${SHELL_OUTER_CLASSES} bg-[linear-gradient(135deg,#ffffff_0%,#f3f4f6_100%)]`}
+          className={`relative ${SHELL_OUTER_CLASSES} bg-[linear-gradient(135deg,#ffffff_0%,#f3f4f6_100%)]`}
           style={{
             backfaceVisibility: "hidden",
             WebkitBackfaceVisibility: "hidden",
@@ -70,10 +70,12 @@ export function BrandCardShell({ children, bio, businessName }: Props) {
           <div className="relative">{children}</div>
         </div>
 
-        {/* BACK — bio. Absolutely positioned over the front. */}
+        {/* BACK — bio. Overlay the front so card height matches. */}
         <div
-          className={`absolute inset-0 ${SHELL_OUTER_CLASSES} bg-[linear-gradient(135deg,#fff5e8_0%,#f6e3d2_100%)] flex flex-col`}
+          className={`${SHELL_OUTER_CLASSES} bg-[linear-gradient(135deg,#fff5e8_0%,#f6e3d2_100%)] flex flex-col`}
           style={{
+            position: "absolute",
+            inset: 0,
             backfaceVisibility: "hidden",
             WebkitBackfaceVisibility: "hidden",
             transform: "rotateY(180deg)",
@@ -110,8 +112,11 @@ export function BrandCardShell({ children, bio, businessName }: Props) {
 
 // One source of truth for the warm shell — border, shadow, rounding,
 // padding. Both faces share it so any tweak applies symmetrically.
+// `relative` deliberately omitted: the back face needs `position:
+// absolute` to overlay the front and Tailwind's `relative` utility
+// would otherwise win the cascade and stack the back below.
 const SHELL_OUTER_CLASSES =
-  "relative overflow-hidden rounded-3xl border border-[#e8dfcf] shadow-[0_8px_24px_-12px_rgba(26,20,16,0.18)] px-6 py-7 sm:px-8 sm:py-8";
+  "overflow-hidden rounded-3xl border border-[#e8dfcf] shadow-[0_8px_24px_-12px_rgba(26,20,16,0.18)] px-6 py-7 sm:px-8 sm:py-8";
 
 // Radial sun + four horizontal cream ripple lines used on the front
 // face. Decorative; sits behind every other content.
