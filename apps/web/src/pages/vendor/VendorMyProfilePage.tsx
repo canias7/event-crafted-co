@@ -558,7 +558,7 @@ function ReelsGrid({
               created_at: r.created_at,
             })
           }
-          className="relative aspect-[9/16] overflow-hidden rounded-md bg-black"
+          className="relative aspect-square overflow-hidden rounded-md bg-black group"
         >
           {r.thumbnail_url ? (
             <img
@@ -568,10 +568,24 @@ function ReelsGrid({
               loading="lazy"
             />
           ) : (
-            <div className="w-full h-full flex items-center justify-center text-white">
-              <Film className="h-8 w-8" />
-            </div>
+            // No stored thumbnail — render the source video with
+            // preload="metadata" and a #t=0.1 hash so browsers seek to
+            // the first frame as a still. muted + playsInline so it
+            // never auto-plays audio.
+            <video
+              src={`${r.video_url}#t=0.1`}
+              className="w-full h-full object-cover pointer-events-none"
+              preload="metadata"
+              muted
+              playsInline
+              aria-label={r.caption ?? "Reel"}
+            />
           )}
+          {/* Play indicator — small filled triangle in the corner so the
+              video tile is distinguishable from a Post tile at a glance. */}
+          <span className="absolute top-2 right-2 inline-flex items-center justify-center w-6 h-6 rounded-full bg-black/55 text-white">
+            <Film className="w-3 h-3" aria-hidden />
+          </span>
           {r.caption ? (
             <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/60 to-transparent p-2 text-xs text-white line-clamp-2">
               {r.caption}
@@ -634,7 +648,7 @@ function ListingsList({
           New listing
         </Button>
       </div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-x-4 gap-y-8">
         {listings.map((l) => (
           <ListingDirectoryCard
             key={l.id}
@@ -679,7 +693,7 @@ function ListingDirectoryCard({
         : "bg-foreground/10 text-foreground/70 border-foreground/15";
   const inner = (
     <>
-      <div className="relative aspect-[4/3] overflow-hidden rounded-2xl mb-3 bg-muted">
+      <div className="relative aspect-[4/3] overflow-hidden rounded-sm mb-3 bg-muted">
         {heroUrl ? (
           <img
             src={heroUrl}
@@ -690,17 +704,17 @@ function ListingDirectoryCard({
         ) : (
           <div className="w-full h-full flex flex-col items-center justify-center gap-1 bg-muted text-muted-foreground">
             <Store className="w-6 h-6" aria-hidden />
-            <span className="text-xs">No listing photos yet</span>
+            <span className="text-[11px]">No listing photos yet</span>
           </div>
         )}
         <span
-          className={`absolute top-2 left-2 inline-flex items-center rounded-full px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider border ${statusTone} backdrop-blur-sm`}
+          className={`absolute top-2 left-2 inline-flex items-center rounded-full px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wider border ${statusTone} backdrop-blur-sm`}
         >
           {statusLabel}
         </span>
       </div>
-      <div className="space-y-1">
-        <h3 className="font-editorial text-lg leading-tight truncate">
+      <div className="space-y-0.5">
+        <h3 className="font-editorial text-base leading-tight truncate">
           {name}
         </h3>
         <p className="text-xs text-muted-foreground truncate">
