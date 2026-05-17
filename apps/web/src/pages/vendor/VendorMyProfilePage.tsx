@@ -32,8 +32,8 @@ import { Button } from "@/components/ui/button";
 import {
   BuzzComposerModal,
   MediaComposerModal,
-  ModalShell,
 } from "@/components/vendor/Composers";
+import { ListingWizardModal } from "@/components/vendor/ListingWizardModal";
 import { MediaLightbox } from "@/components/vendor/MediaLightbox";
 
 type LightboxMedia =
@@ -334,8 +334,15 @@ export default function VendorMyProfilePage() {
           }}
         />
       ) : null}
-      {listingWizardOpen ? (
-        <ListingWizardPlaceholder onClose={() => setListingWizardOpen(false)} />
+      {listingWizardOpen && user ? (
+        <ListingWizardModal
+          userId={user.id}
+          onClose={() => setListingWizardOpen(false)}
+          onPublished={() => {
+            setListingWizardOpen(false);
+            load();
+          }}
+        />
       ) : null}
       <MediaLightbox item={lightbox} onClose={() => setLightbox(null)} />
       {void vendorIds /* silence unused */}
@@ -642,30 +649,5 @@ function ListingsList({
 function Empty({ msg }: { msg: string }) {
   return (
     <p className="text-sm text-muted-foreground py-12 text-center">{msg}</p>
-  );
-}
-
-// Stub for the listing creation wizard. The previous "+ New listing"
-// click path inserted an empty draft row into vendor_profiles then
-// navigated to /vendor/listing?id=X — but /vendor/listing was deleted
-// in the route cleanup, AND "no drafts" means we never want a half-
-// written listing in the DB. The wizard's field spec is still being
-// defined; once it's set this modal will collect everything up front
-// and INSERT once with application_status='pending'.
-function ListingWizardPlaceholder({ onClose }: { onClose: () => void }) {
-  return (
-    <ModalShell title="New listing" onClose={onClose}>
-      <p className="text-sm text-muted-foreground">
-        The listing wizard is being built. It'll collect all the fields
-        the marketplace needs (business name, category, city, base price,
-        bio, logo, etc.) in a single step and submit straight to review
-        — no drafts.
-      </p>
-      <div className="mt-4 flex justify-end">
-        <Button variant="ghost" onClick={onClose}>
-          Close
-        </Button>
-      </div>
-    </ModalShell>
   );
 }

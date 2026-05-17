@@ -1,0 +1,563 @@
+// "New listing" wizard. Mirrors the mobile flow in
+// apps/vendor-mobile/app/(vendor)/listing.tsx — but without drafts.
+// The mobile version creates a draft row first and updates it as the
+// user types; the web version keeps every field in memory and INSERTs
+// once on submit with application_status='pending'. The admin
+// reviews the result and approves it to go public — there's no
+// in-between draft state on web.
+//
+// STEP 2 ("structured details") from mobile isn't implemented yet —
+// it's category-dependent (30+ schemas across 8 groups) and the
+// scaffolding is sizeable; tracked separately. The current submit
+// writes category_attributes = {}.
+
+import { useMemo, useRef, useState } from "react";
+import { Loader2, Plus, Trash2, Upload, X } from "lucide-react";
+import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { CATEGORY_GROUPS } from "@/data/categoryTaxonomy";
+import { supabase } from "@/integrations/supabase/client";
+
+const MIN_PHOTOS = 3;
+const MAX_PHOTOS = 5;
+
+interface FAQDraft {
+  question: string;
+  answer: string;
+}
+interface TeamDraft {
+  display_name: string;
+  role: string;
+  bio: string;
+  is_owner: boolean;
+}
+
+export function ListingWizardModal({
+  userId,
+  onClose,
+  onPublished,
+}: {
+  userId: string;
+  onClose: () => void;
+  onPublished: () => void;
+}) {
+  const [photos, setPhotos] = useState<File[]>([]);
+  const [category, setCategory] = useState<string>("");
+  const [location, setLocation] = useState<string>("");
+  const [priceUsd, setPriceUsd] = useState<string>("");
+  const [faqs, setFaqs] = useState<FAQDraft[]>([]);
+  const [team, setTeam] = useState<TeamDraft[]>([]);
+  const [submitting, setSubmitting] = useState(false);
+  const fileRef = useRef<HTMLInputElement | null>(null);
+
+  const trimmedLocation = location.trim();
+  const priceNum = Number(priceUsd);
+  const priceCents = Number.isFinite(priceNum) ? Math.round(priceNum * 100) : 0;
+
+  const validation = useMemo(() => {
+    const errs: string[] = [];
+    if (photos.length < MIN_PHOTOS)
+      errs.push(`Add ${MIN_PHOTOS - photos.length} more photo${MIN_PHOTOS - photos.length === 1 ? "" : "s"} (3–5 total).`);
+    if (!category) errs.push("Pick a category.");
+    if (!trimmedLocation) errs.push("Add a city + state.");
+    if (priceCents <= 0) errs.push("Set a starting price.");
+    if (faqs.some((f) => !f.question.trim() || !f.answer.trim()))
+      errs.push("Every FAQ needs both a question and an answer.");
+    if (team.some((m) => !m.display_name.trim()))
+      errs.push("Every team member needs a name.");
+    return errs;
+  }, [photos.length, category, trimmedLocation, priceCents, faqs, team]);
+
+  const canSubmit = validation.length === 0 && !submitting;
+
+  function onPickFiles(files: FileList | null) {
+    if (!files) return;
+    const incoming = Array.from(files).filter((f) => f.type.startsWith("image/"));
+    setPhotos((prev) => [...prev, ...incoming].slice(0, MAX_PHOTOS));
+  }
+
+  async function handleSubmit() {
+    if (!canSubmit) return;
+    setSubmitting(true);
+    try {
+      // 1. Insert the listing row. The vendor_profiles_add_owner trigger
+      //    backfills vendor_team_members so subsequent uploads pass
+      //    the is_vendor_member() storage check.
+      const { data: vp, error: vpErr } = await supabase
+        .from("vendor_profiles")
+        .insert({
+          user_id: userId,
+          category,
+          location: trimmedLocation,
+          base_price_cents: priceCents,
+          application_status: "pending",
+        })
+        .select("id")
+        .single();
+      if (vpErr || !vp?.id) {
+        throw vpErr ?? new Error("Couldn't create listing");
+      }
+      const vendorId = vp.id as string;
+
+      // 2. Upload portfolio photos to the {vendor_id}/... path the
+      //    storage policy requires.
+      const portfolio: Array<{ vendor_id: string; storage_path: string; display_order: number }> = [];
+      for (let i = 0; i < photos.length; i++) {
+        const f = photos[i];
+        const ext =
+          f.name.split(".").pop()?.toLowerCase().replace(/[^a-z0-9]/g, "") ||
+          "jpg";
+        const storagePath = `${vendorId}/${Date.now()}-${i}.${ext}`;
+        const { error: upErr } = await supabase.storage
+          .from("vendor-portfolios")
+          .upload(storagePath, f, {
+            contentType: f.type || "image/jpeg",
+            upsert: false,
+          });
+        if (upErr) throw upErr;
+        portfolio.push({ vendor_id: vendorId, storage_path: storagePath, display_order: i });
+      }
+      const { error: imgErr } = await supabase
+        .from("vendor_portfolio_images")
+        .insert(portfolio);
+      if (imgErr) throw imgErr;
+
+      // 3. Optional FAQs.
+      if (faqs.length > 0) {
+        const { error } = await supabase.from("vendor_faqs").insert(
+          faqs.map((f, i) => ({
+            vendor_id: vendorId,
+            question: f.question.trim(),
+            answer: f.answer.trim(),
+            display_order: i,
+          })),
+        );
+        if (error) throw error;
+      }
+
+      // 4. Optional team bios.
+      if (team.length > 0) {
+        const { error } = await supabase.from("vendor_team_bios").insert(
+          team.map((m, i) => ({
+            vendor_id: vendorId,
+            display_name: m.display_name.trim(),
+            role: m.role.trim() || null,
+            bio: m.bio.trim() || null,
+            photo_storage_path: null,
+            is_owner: m.is_owner,
+            display_order: i,
+          })),
+        );
+        if (error) throw error;
+      }
+
+      // 5. Notify admin (fire-and-forget — the listing exists either way).
+      void supabase.functions
+        .invoke("send-transactional-email", {
+          body: { kind: "listing_submitted", vendorProfileId: vendorId },
+        })
+        .catch(() => undefined);
+
+      toast.success("Listing submitted for review.");
+      onPublished();
+    } catch (err) {
+      const msg = (err as { message?: string })?.message ?? "Try again.";
+      toast.error(`Submit failed: ${msg}`);
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex flex-col bg-background">
+      <header className="flex items-center justify-between border-b border-border/60 px-5 py-4">
+        <button
+          onClick={onClose}
+          className="rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
+          aria-label="Close"
+        >
+          <X className="h-5 w-5" />
+        </button>
+        <div className="text-center">
+          <h2 className="font-editorial text-xl italic">New listing</h2>
+        </div>
+        <div className="w-7" />
+      </header>
+
+      <main className="flex-1 overflow-y-auto">
+        <div className="mx-auto max-w-2xl px-5 py-8 space-y-12">
+          {/* STEP 1 — IDENTITY */}
+          <section>
+            <StepLabel n={1} kind="IDENTITY" />
+            <h3 className="font-editorial text-4xl mt-3">Introduce yourself.</h3>
+            <p className="mt-2 text-muted-foreground italic">
+              Photos and a few sentences are usually enough to make a host
+              stop scrolling.
+            </p>
+
+            <div className="mt-6">
+              <Label className="font-semibold">Listing photos</Label>
+              <p className="text-sm text-muted-foreground italic mb-3">
+                3–5 photos. Your first becomes the cover.
+              </p>
+
+              <input
+                ref={fileRef}
+                type="file"
+                accept="image/*"
+                multiple
+                hidden
+                onChange={(e) => {
+                  onPickFiles(e.target.files);
+                  e.target.value = "";
+                }}
+              />
+
+              <div className="grid grid-cols-3 gap-2">
+                {photos.map((f, i) => (
+                  <PhotoTile
+                    key={i}
+                    file={f}
+                    isCover={i === 0}
+                    onRemove={() =>
+                      setPhotos((prev) => prev.filter((_, j) => j !== i))
+                    }
+                  />
+                ))}
+                {photos.length < MAX_PHOTOS ? (
+                  <button
+                    onClick={() => fileRef.current?.click()}
+                    className="flex aspect-square flex-col items-center justify-center gap-1 rounded-md border-2 border-dashed border-border bg-card/40 text-muted-foreground hover:bg-card hover:text-foreground"
+                  >
+                    <Upload className="h-5 w-5" />
+                    <span className="text-xs">
+                      {photos.length === 0 ? "Add cover" : "Add photo"}
+                    </span>
+                  </button>
+                ) : null}
+              </div>
+              <p className="mt-2 text-xs text-muted-foreground">
+                Bright, recent photos work best.
+              </p>
+            </div>
+
+            <h4 className="mt-8 font-editorial text-2xl">The basics</h4>
+            <p className="text-sm text-muted-foreground italic">
+              Where you work and where you start.
+            </p>
+
+            <div className="mt-4 space-y-4">
+              <div>
+                <Label htmlFor="category" className="font-semibold">
+                  Category <span className="text-red-500">•</span>
+                </Label>
+                <select
+                  id="category"
+                  value={category}
+                  onChange={(e) => setCategory(e.target.value)}
+                  className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                >
+                  <option value="">Pick a category</option>
+                  {CATEGORY_GROUPS.map((g) => (
+                    <optgroup key={g.slug} label={g.name}>
+                      {g.subs.map((s) => (
+                        <option key={s} value={s}>
+                          {s}
+                        </option>
+                      ))}
+                    </optgroup>
+                  ))}
+                </select>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="location" className="font-semibold">
+                    Location <span className="text-red-500">•</span>
+                  </Label>
+                  <Input
+                    id="location"
+                    value={location}
+                    onChange={(e) => setLocation(e.target.value)}
+                    placeholder="City, State"
+                    className="mt-1"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="price" className="font-semibold">
+                    Starting price <span className="text-red-500">•</span>
+                  </Label>
+                  <div className="relative mt-1">
+                    <span className="absolute inset-y-0 left-3 flex items-center text-muted-foreground">
+                      $
+                    </span>
+                    <Input
+                      id="price"
+                      value={priceUsd}
+                      onChange={(e) =>
+                        setPriceUsd(e.target.value.replace(/[^0-9.]/g, ""))
+                      }
+                      placeholder="0"
+                      inputMode="decimal"
+                      className="pl-7"
+                    />
+                  </div>
+                </div>
+              </div>
+              <p className="text-sm text-muted-foreground italic">
+                Set your business name + bio once from your profile — they
+                sync to every listing automatically.
+              </p>
+            </div>
+          </section>
+
+          {/* STEP 2 — DETAILS (placeholder; see header comment) */}
+          <section>
+            <StepLabel n={2} kind="DETAILS" />
+            <h3 className="font-editorial text-4xl mt-3">The fine print.</h3>
+            <div className="mt-4 rounded-md border border-dashed border-border bg-card/30 p-6 text-center text-sm text-muted-foreground italic">
+              Category-specific details (hours, capacity, deliverables, etc.)
+              are being wired up next pass. You'll be able to fill them in
+              after the listing is approved.
+            </div>
+          </section>
+
+          {/* STEP 3 — FAQs */}
+          <section>
+            <StepLabel n={3} kind="FAQs" />
+            <h3 className="font-editorial text-4xl mt-3">Common questions.</h3>
+            <p className="mt-2 text-muted-foreground italic">
+              Answer the first three or four hosts will ask — saves you
+              typing later.
+            </p>
+
+            <div className="mt-4 space-y-3">
+              {faqs.map((f, i) => (
+                <div
+                  key={i}
+                  className="rounded-md border border-border bg-card/40 p-4"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                      FAQ {i + 1}
+                    </p>
+                    <button
+                      onClick={() =>
+                        setFaqs((prev) => prev.filter((_, j) => j !== i))
+                      }
+                      className="text-muted-foreground hover:text-foreground"
+                      aria-label="Remove FAQ"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
+                  <Input
+                    value={f.question}
+                    onChange={(e) =>
+                      setFaqs((prev) =>
+                        prev.map((x, j) =>
+                          j === i ? { ...x, question: e.target.value } : x,
+                        ),
+                      )
+                    }
+                    placeholder="Question"
+                    className="mt-3"
+                  />
+                  <Textarea
+                    value={f.answer}
+                    onChange={(e) =>
+                      setFaqs((prev) =>
+                        prev.map((x, j) =>
+                          j === i ? { ...x, answer: e.target.value } : x,
+                        ),
+                      )
+                    }
+                    placeholder="Answer"
+                    rows={2}
+                    className="mt-2 resize-none"
+                  />
+                </div>
+              ))}
+              <Button
+                variant="outline"
+                size="sm"
+                className="rounded-full"
+                onClick={() =>
+                  setFaqs((prev) => [...prev, { question: "", answer: "" }])
+                }
+              >
+                <Plus className="h-3.5 w-3.5 mr-1" />
+                Add FAQ
+              </Button>
+            </div>
+          </section>
+
+          {/* STEP 4 — TEAM */}
+          <section>
+            <StepLabel n={4} kind="TEAM" />
+            <h3 className="font-editorial text-4xl mt-3">Who you are.</h3>
+            <p className="mt-2 text-muted-foreground italic">
+              Names, roles, short bios. Public on your page.
+            </p>
+
+            <div className="mt-4 space-y-3">
+              {team.map((m, i) => (
+                <div
+                  key={i}
+                  className="rounded-md border border-border bg-card/40 p-4 space-y-3"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                      Team member {i + 1}
+                    </p>
+                    <button
+                      onClick={() =>
+                        setTeam((prev) => prev.filter((_, j) => j !== i))
+                      }
+                      className="text-muted-foreground hover:text-foreground"
+                      aria-label="Remove team member"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
+                  <Input
+                    value={m.display_name}
+                    onChange={(e) =>
+                      setTeam((prev) =>
+                        prev.map((x, j) =>
+                          j === i ? { ...x, display_name: e.target.value } : x,
+                        ),
+                      )
+                    }
+                    placeholder="Name"
+                  />
+                  <Input
+                    value={m.role}
+                    onChange={(e) =>
+                      setTeam((prev) =>
+                        prev.map((x, j) =>
+                          j === i ? { ...x, role: e.target.value } : x,
+                        ),
+                      )
+                    }
+                    placeholder="Role (e.g. Lead Photographer)"
+                  />
+                  <Textarea
+                    value={m.bio}
+                    onChange={(e) =>
+                      setTeam((prev) =>
+                        prev.map((x, j) =>
+                          j === i ? { ...x, bio: e.target.value } : x,
+                        ),
+                      )
+                    }
+                    placeholder="Short bio (optional)"
+                    rows={2}
+                    className="resize-none"
+                  />
+                  <label className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <input
+                      type="checkbox"
+                      checked={m.is_owner}
+                      onChange={(e) =>
+                        setTeam((prev) =>
+                          prev.map((x, j) =>
+                            j === i ? { ...x, is_owner: e.target.checked } : x,
+                          ),
+                        )
+                      }
+                    />
+                    This is the owner / lead
+                  </label>
+                </div>
+              ))}
+              <Button
+                variant="outline"
+                size="sm"
+                className="rounded-full"
+                onClick={() =>
+                  setTeam((prev) => [
+                    ...prev,
+                    {
+                      display_name: "",
+                      role: "",
+                      bio: "",
+                      is_owner: prev.length === 0,
+                    },
+                  ])
+                }
+              >
+                <Plus className="h-3.5 w-3.5 mr-1" />
+                Add team member
+              </Button>
+            </div>
+          </section>
+        </div>
+      </main>
+
+      <footer className="border-t border-border/60 bg-background/95 backdrop-blur">
+        <div className="mx-auto max-w-2xl flex items-center justify-between gap-3 px-5 py-4">
+          <div className="flex-1 text-xs text-muted-foreground">
+            {validation.length > 0 ? (
+              <span>{validation[0]}</span>
+            ) : (
+              <span>
+                Submitting sends this to review. Once approved, it goes
+                public — no further edits.
+              </span>
+            )}
+          </div>
+          <Button onClick={handleSubmit} disabled={!canSubmit}>
+            {submitting ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
+                Submitting…
+              </>
+            ) : (
+              "Submit for review"
+            )}
+          </Button>
+        </div>
+      </footer>
+    </div>
+  );
+}
+
+function StepLabel({ n, kind }: { n: number; kind: string }) {
+  return (
+    <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
+      Step {n} · {kind}
+    </p>
+  );
+}
+
+function PhotoTile({
+  file,
+  isCover,
+  onRemove,
+}: {
+  file: File;
+  isCover: boolean;
+  onRemove: () => void;
+}) {
+  const url = useMemo(() => URL.createObjectURL(file), [file]);
+  return (
+    <div className="relative aspect-square overflow-hidden rounded-md bg-secondary/40">
+      <img src={url} alt="" className="h-full w-full object-cover" />
+      {isCover ? (
+        <span className="absolute left-1 top-1 rounded-full bg-foreground/90 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-background">
+          Cover
+        </span>
+      ) : null}
+      <button
+        onClick={onRemove}
+        className="absolute right-1 top-1 rounded-full bg-black/60 p-1 text-white hover:bg-black/80"
+        aria-label="Remove photo"
+      >
+        <X className="h-3 w-3" />
+      </button>
+    </div>
+  );
+}
