@@ -193,40 +193,7 @@ export default function VendorBrowsePage() {
     <div className="min-h-screen bg-background">
       <PublicNav />
 
-      {/* Hero — white surface, text-only. Matches the rest of the
-          public site (the cream/dark-photo treatments were retired
-          when the palette went white + navy). */}
-      <section className="pt-28 md:pt-36 pb-12 md:pb-16">
-        <div className="container mx-auto px-6 md:px-8">
-          <motion.div
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ ...spring, delay: 0.15 }}
-            className="flex items-center gap-4 mb-6"
-          >
-            <p className="font-label text-accent tracking-[0.4em]">— THE DIRECTORY</p>
-            <span className="h-px w-8 bg-accent/40" />
-          </motion.div>
-          <motion.h1
-            initial={{ opacity: 0, y: 24 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ ...spring, delay: 0.3, duration: 0.9 }}
-            className="text-hero font-display leading-[1.0] max-w-3xl"
-          >
-            Find your{" "}
-            <span className="italic font-light text-accent">people.</span>
-          </motion.h1>
-          <motion.p
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ ...spring, delay: 0.55 }}
-            className="text-base md:text-lg text-muted-foreground mt-6 max-w-md leading-relaxed font-light"
-          >
-            A curated network of photographers, florists, venues, caterers, and
-            planners — hand-selected by our editorial team.
-          </motion.p>
-        </div>
-      </section>
+      {/* Hero removed — page opens straight into filters + vendor grid. */}
 
       {/* Filters */}
       <section className="bg-background sticky top-16 z-30 backdrop-blur-sm bg-background/90">
