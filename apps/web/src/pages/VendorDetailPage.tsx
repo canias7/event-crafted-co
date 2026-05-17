@@ -562,108 +562,19 @@ export default function VendorDetailPage() {
     <div className="min-h-screen bg-background pb-24 lg:pb-0">
       <PublicNav />
 
-      {/* Cinematic vendor hero */}
-      <section className="relative h-[80svh] min-h-[560px] w-full overflow-hidden">
-        <div className="absolute inset-0">
-          {vendor.heroImageUrl ? (
-            <img
-              src={vendor.heroImageUrl}
-              alt={vendor.name}
-              loading="eager"
-              fetchPriority="high"
-              className="w-full h-full object-cover"
-            />
-          ) : (
-            <Picture
-              source={heroPicture}
-              alt={vendor.name}
-              loading="eager"
-              fetchPriority="high"
-              sizes="100vw"
-              className="w-full h-full object-cover"
-            />
-          )}
-        </div>
-        <div className="absolute inset-0 bg-gradient-to-b from-foreground/55 via-foreground/30 to-foreground/85" />
-        <div className="absolute inset-0 bg-gradient-to-r from-foreground/55 via-transparent to-transparent" />
-        <div
-          className="absolute inset-0 opacity-[0.07] mix-blend-overlay pointer-events-none"
-          style={{
-            backgroundImage:
-              "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)' opacity='0.6'/></svg>\")",
-          }}
-        />
 
-        <div className="relative z-10 h-full flex flex-col">
-          <div className="container mx-auto px-6 md:px-8 pt-24">
-            <Link
-              to="/vendors"
-              className="inline-flex items-center gap-2 text-xs uppercase tracking-[0.3em] text-background/70 hover:text-background transition-colors"
-            >
-              <ArrowLeft className="w-3.5 h-3.5" />
-              Back to directory
-            </Link>
-          </div>
-
-          <div className="flex-1 flex items-end pb-12 md:pb-16">
-            <div className="container mx-auto px-6 md:px-8">
-              {/* Category caption + responder / availability pills were
-                  removed from the hero overlay — they're noise on top
-                  of the photo. Category surfaces in the URL + share
-                  card; availability is implicit (the vendor is
-                  showing up in search at all). */}
-              <motion.h1
-                initial={{ opacity: 0, y: 24 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ ...spring, delay: 0.3, duration: 0.9 }}
-                className="text-hero font-display text-background leading-[1.0] mb-4 max-w-3xl"
-              >
-                {vendor.name}
-              </motion.h1>
-              {verifiedKinds.length > 0 && (
-                <motion.div
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ ...spring, delay: 0.4 }}
-                  className="mb-5"
-                >
-                  <VerificationBadges kinds={verifiedKinds} />
-                </motion.div>
-              )}
-
-              <motion.div
-                initial={{ opacity: 0, y: 16 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ ...spring, delay: 0.5 }}
-                className="flex flex-wrap items-center gap-x-6 gap-y-3 text-background/85 text-sm"
-              >
-                {reviewsCount > 0 && (
-                  <>
-                    <div className="flex items-center gap-1.5">
-                      <Star className="w-4 h-4 fill-accent text-accent" />
-                      <span className="font-medium tnum">
-                        {reviewsAvg.toFixed(1)}
-                      </span>
-                      <span className="text-background/60 tnum">
-                        ({reviewsCount} reviews)
-                      </span>
-                    </div>
-                    <span className="hidden md:inline text-background/30">·</span>
-                  </>
-                )}
-                <div className="flex items-center gap-1.5">
-                  <MapPin className="w-3.5 h-3.5" />
-                  <span>{vendor.location ?? vendor.distance}</span>
-                </div>
-              </motion.div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Body */}
-      <section className="py-16 md:py-24">
+      {/* Body — the cinematic hero was removed, so the page opens
+          straight into the brand card. Small back-to-directory link
+          above the body keeps the escape one tap away. */}
+      <section className="pt-28 pb-16 md:pt-32 md:pb-24">
         <div className="container mx-auto px-6 md:px-8">
+          <Link
+            to="/vendors"
+            className="inline-flex items-center gap-2 text-xs uppercase tracking-[0.3em] text-muted-foreground hover:text-foreground transition-colors mb-8"
+          >
+            <ArrowLeft className="w-3.5 h-3.5" />
+            Back to directory
+          </Link>
           <div className="grid lg:grid-cols-3 gap-12 lg:gap-16">
             {/* Main content */}
             <div className="lg:col-span-2 space-y-16">
