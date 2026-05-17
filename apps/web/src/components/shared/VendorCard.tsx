@@ -1,13 +1,10 @@
 import { motion } from "framer-motion";
 import {
-  Star,
   MapPin,
   Heart,
-  Zap,
   GitCompare,
   ImageIcon,
 } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
 import { useSavedVendors } from "@/hooks/useSavedVendors";
 import { useCompareVendors } from "@/hooks/useCompareVendors";
 import { PrefetchLink as Link } from "@/components/shared/PrefetchLink";
@@ -117,8 +114,6 @@ export function VendorCard({ vendor, eager = false }: VendorCardProps) {
               <span className="text-xs">No listing photos yet</span>
             </div>
           )}
-          <div className="absolute inset-0 bg-gradient-to-t from-foreground/55 via-transparent to-transparent" />
-
           <div className="absolute top-2 right-2 flex flex-col gap-1.5">
             <button
               aria-label={saved ? "Remove from saved" : "Save vendor"}
@@ -151,30 +146,10 @@ export function VendorCard({ vendor, eager = false }: VendorCardProps) {
             </button>
           </div>
 
-          {vendor.responderTier === "fast" ? (
-            <Badge className="absolute top-3 left-3 bg-accent text-accent-foreground backdrop-blur-sm border-none gap-1">
-              <Zap className="w-3 h-3 fill-accent-foreground" />
-              Fast responder
-            </Badge>
-          ) : vendor.availability !== "available" ? (
-            <Badge className="absolute top-3 left-3 bg-background/85 text-foreground backdrop-blur-sm border-none">
-              Limited availability
-            </Badge>
-          ) : null}
-
-          <div className="absolute bottom-2 left-3 right-3 flex items-end justify-between text-background">
-            <p className="font-label tracking-[0.2em] text-[10px]">{vendor.category}</p>
-            {/* Hide the star block when there are no reviews — showing
-                "0 (0)" looked like a bad rating instead of "no data
-                yet". Vendors with reviews still get the live count. */}
-            {vendor.reviews > 0 && (
-              <div className="flex items-center gap-1 text-[11px]">
-                <Star className="w-3 h-3 fill-accent text-accent" />
-                <span className="tnum font-medium">{vendor.rating}</span>
-                <span className="text-background/70 tnum">({vendor.reviews})</span>
-              </div>
-            )}
-          </div>
+          {/* Nothing overlays the photo on purpose — only the save /
+              compare buttons in the top-right corner sit on top of the
+              image. Category, rating, and availability surface in the
+              text block below instead. */}
         </div>
 
         <div className="space-y-1">
