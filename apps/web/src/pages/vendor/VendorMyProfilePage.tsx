@@ -509,7 +509,7 @@ function PostsGrid({
     return <Empty msg="No posts yet — tap New post to create one." />;
   }
   return (
-    <div className="grid grid-cols-3 sm:grid-cols-4 gap-1">
+    <div className="grid grid-cols-3 sm:grid-cols-4 gap-x-2 gap-y-4">
       {posts.map((p) => (
         <button
           key={p.id}
@@ -521,14 +521,21 @@ function PostsGrid({
               created_at: p.created_at,
             })
           }
-          className="relative aspect-square overflow-hidden rounded-md bg-secondary/40 group"
+          className="text-left group"
         >
-          <img
-            src={p.image_url}
-            alt={p.caption ?? "Post"}
-            className="w-full h-full object-cover transition group-hover:scale-[1.02]"
-            loading="lazy"
-          />
+          <div className="relative aspect-square overflow-hidden rounded-md bg-secondary/40">
+            <img
+              src={p.image_url}
+              alt={p.caption ?? "Post"}
+              className="w-full h-full object-cover transition group-hover:scale-[1.02]"
+              loading="lazy"
+            />
+          </div>
+          {p.caption ? (
+            <p className="mt-2 text-xs text-foreground/80 leading-snug line-clamp-2">
+              {p.caption}
+            </p>
+          ) : null}
         </button>
       ))}
     </div>
@@ -546,7 +553,7 @@ function ReelsGrid({
     return <Empty msg="No reels yet — tap New reel to upload a video." />;
   }
   return (
-    <div className="grid grid-cols-3 sm:grid-cols-4 gap-1">
+    <div className="grid grid-cols-3 sm:grid-cols-4 gap-x-2 gap-y-4">
       {reels.map((r) => (
         <button
           key={r.id}
@@ -558,38 +565,40 @@ function ReelsGrid({
               created_at: r.created_at,
             })
           }
-          className="relative aspect-square overflow-hidden rounded-md bg-black group"
+          className="text-left group"
         >
-          {r.thumbnail_url ? (
-            <img
-              src={r.thumbnail_url}
-              alt={r.caption ?? "Reel"}
-              className="w-full h-full object-cover"
-              loading="lazy"
-            />
-          ) : (
-            // No stored thumbnail — render the source video with
-            // preload="metadata" and a #t=0.1 hash so browsers seek to
-            // the first frame as a still. muted + playsInline so it
-            // never auto-plays audio.
-            <video
-              src={`${r.video_url}#t=0.1`}
-              className="w-full h-full object-cover pointer-events-none"
-              preload="metadata"
-              muted
-              playsInline
-              aria-label={r.caption ?? "Reel"}
-            />
-          )}
-          {/* Play indicator — small filled triangle in the corner so the
-              video tile is distinguishable from a Post tile at a glance. */}
-          <span className="absolute top-2 right-2 inline-flex items-center justify-center w-6 h-6 rounded-full bg-black/55 text-white">
-            <Film className="w-3 h-3" aria-hidden />
-          </span>
+          <div className="relative aspect-square overflow-hidden rounded-md bg-black">
+            {r.thumbnail_url ? (
+              <img
+                src={r.thumbnail_url}
+                alt={r.caption ?? "Reel"}
+                className="w-full h-full object-cover"
+                loading="lazy"
+              />
+            ) : (
+              // No stored thumbnail — render the source video with
+              // preload="metadata" and a #t=0.1 hash so browsers seek
+              // to the first frame as a still. muted + playsInline so
+              // it never auto-plays audio.
+              <video
+                src={`${r.video_url}#t=0.1`}
+                className="w-full h-full object-cover pointer-events-none"
+                preload="metadata"
+                muted
+                playsInline
+                aria-label={r.caption ?? "Reel"}
+              />
+            )}
+            {/* Play indicator — small chip in the corner so the video
+                tile is distinguishable from a Post tile at a glance. */}
+            <span className="absolute top-2 right-2 inline-flex items-center justify-center w-6 h-6 rounded-full bg-black/55 text-white">
+              <Film className="w-3 h-3" aria-hidden />
+            </span>
+          </div>
           {r.caption ? (
-            <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/60 to-transparent p-2 text-xs text-white line-clamp-2">
+            <p className="mt-2 text-xs text-foreground/80 leading-snug line-clamp-2">
               {r.caption}
-            </div>
+            </p>
           ) : null}
         </button>
       ))}
