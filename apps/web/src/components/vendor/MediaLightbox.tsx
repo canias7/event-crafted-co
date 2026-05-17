@@ -74,11 +74,23 @@ export function MediaLightbox({
           />
         )}
         {item.caption ? (
-          <p className="mt-3 text-sm text-foreground max-w-xl text-center px-4 whitespace-pre-wrap">
+          <p
+            className="mt-5 text-[15px] max-w-xl text-center px-4 whitespace-pre-wrap font-medium"
+            style={{
+              color: "#fff",
+              textShadow: "0 1px 8px rgba(0,0,0,0.55)",
+            }}
+          >
             {item.caption}
           </p>
         ) : null}
-        <p className="mt-1 text-xs text-muted-foreground">
+        <p
+          className="mt-2 text-xs uppercase tracking-[0.16em] font-medium"
+          style={{
+            color: "rgba(255,255,255,0.78)",
+            textShadow: "0 1px 6px rgba(0,0,0,0.5)",
+          }}
+        >
           {new Date(item.created_at).toLocaleString()}
         </p>
       </div>
