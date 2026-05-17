@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRealtime } from "@/lib/realtime";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import {
@@ -111,7 +111,11 @@ export default function InquiryDetailPage() {
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  async function load() {
+  // useCallback so the realtime hook below sees a stable reference
+  // across renders; without this, every render replaces the realtime
+  // subscription's callback and the previous binding's cleanup path
+  // can drift on rapid open/close cycles, slowly leaking listeners.
+  const load = useCallback(async () => {
     if (!inquiryId) return;
     const { data: i } = await supabase
       .from("inquiries")
@@ -173,12 +177,11 @@ export default function InquiryDetailPage() {
     setProposals((props as unknown as Proposal[]) ?? []);
 
     setLoading(false);
-  }
+  }, [inquiryId]);
 
   useEffect(() => {
     load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [inquiryId]);
+  }, [load]);
 
   // Realtime: re-fetch on direct_messages for this thread + inquiry
   // status changes. Mobile uses the same model — see ensure_inquiry_thread.
@@ -189,7 +192,7 @@ export default function InquiryDetailPage() {
         : null,
     [threadId],
   );
-  useRealtime(messagesConfig, () => load());
+  useRealtime(messagesConfig, load);
 
   const inquiryConfig = useMemo(
     () =>
@@ -198,7 +201,7 @@ export default function InquiryDetailPage() {
         : null,
     [inquiryId],
   );
-  useRealtime(inquiryConfig, () => load());
+  useRealtime(inquiryConfig, load);
 
   async function transitionToReplied() {
     if (!inquiry || !inquiryId) return;

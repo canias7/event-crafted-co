@@ -196,6 +196,21 @@ export default function VendorAppointmentsPage() {
       setLoading(false);
       return;
     }
+    // Belt-and-braces: only query a listing the user actually owns.
+    // RLS would silently return zero rows for someone else's id (URL
+    // injection, stale state from logging in as a different account),
+    // which reads as "no bookings" — indistinguishable from genuinely
+    // free dates. Bail out fast with an empty calendar instead.
+    if (
+      !listingsLoading &&
+      listings.length > 0 &&
+      !listings.some((l) => l.id === selectedListingId)
+    ) {
+      setInquiries([]);
+      setManualBlocks([]);
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     const startYmd = ymdKey(monthBounds.start);
     const endYmd = ymdKey(monthBounds.end);
@@ -221,7 +236,7 @@ export default function VendorAppointmentsPage() {
       ((blockRes.data ?? []) as { date: string }[]).map((r) => r.date),
     );
     setLoading(false);
-  }, [selectedListingId, user?.id, monthBounds]);
+  }, [selectedListingId, user?.id, monthBounds, listings, listingsLoading]);
 
   useEffect(() => {
     loadCalendar();
