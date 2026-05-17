@@ -171,54 +171,11 @@ export default function VendorCategoryPage() {
     <div className="min-h-screen bg-background">
       <PublicNav />
 
-      {/* Category hero pulled — page opens with a small back link,
-          the category headline + description, then the grid. */}
-      <section className="pt-28 md:pt-32 pb-8">
+      {/* Category hero + headline + intro paragraph all pulled —
+          every /vendors/category/:slug page opens straight at the
+          sub-category filter chips and grid. */}
+      <section className="pt-28 md:pt-32 pb-16 md:pb-24">
         <div className="container mx-auto px-6 md:px-8">
-          <Link
-            to="/vendors"
-            className="inline-flex items-center gap-2 text-xs uppercase tracking-[0.3em] text-muted-foreground hover:text-foreground transition-colors mb-8"
-          >
-            <ArrowLeft className="w-3.5 h-3.5" />
-            All vendors
-          </Link>
-          <motion.p
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ ...spring, delay: 0.05 }}
-            className="font-label text-accent tracking-[0.4em] mb-4"
-          >
-            — CATEGORY
-          </motion.p>
-          <motion.h1
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ ...spring, delay: 0.1, duration: 0.7 }}
-            className="font-display leading-[1.0] max-w-3xl"
-            style={{ fontSize: "clamp(48px, 7vw, 92px)", letterSpacing: "-1.5px" }}
-          >
-            {config.display}
-          </motion.h1>
-          <motion.p
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ ...spring, delay: 0.2 }}
-            className="text-base md:text-lg text-muted-foreground mt-5 max-w-xl leading-relaxed font-light"
-          >
-            {config.description}
-          </motion.p>
-        </div>
-      </section>
-
-      {/* Long copy + grid */}
-      <section className="py-16 md:py-24">
-        <div className="container mx-auto px-6 md:px-8">
-          <div className="max-w-2xl mb-10">
-            <p className="text-foreground/70 leading-relaxed">
-              {config.longCopy}
-            </p>
-          </div>
-
           {/* Sub-category filter chips. Empty selection = show every
               vendor in the group; toggling chips narrows to the
               selected subs. */}
