@@ -5,7 +5,17 @@ import { LanguageSwitcher } from "@/components/shared/LanguageSwitcher";
 export function Footer() {
   const { t } = useTranslation();
   return (
-    <footer className="bg-background text-foreground py-16 md:py-24 border-t border-foreground/10">
+    <footer
+      className="text-foreground py-16 md:py-24"
+      style={{
+        // Transparent so the page's warm wash bleeds through; soft
+        // amber-tinted hairline instead of the hard grey border so
+        // the footer feels like a continuation of the canvas instead
+        // of a fenced-off white block.
+        background: "transparent",
+        borderTop: "0.5px solid rgba(255,138,76,0.16)",
+      }}
+    >
       <div className="container mx-auto px-4 md:px-8">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-12">
           <div className="col-span-2 md:col-span-1">
