@@ -32,6 +32,10 @@ interface Agent {
   /** Sub-line under the codename, e.g. "ALWAYS ON" */
   status: string;
   Icon: typeof Bot;
+  /** Optional character portrait URL. When set, the agent renders as
+   *  a free-floating character with a halo + contact shadow; otherwise
+   *  it falls back to the orb-in-glass-card visual. */
+  imageSrc?: string;
 }
 
 const AGENTS: Agent[] = [
@@ -52,6 +56,8 @@ const AGENTS: Agent[] = [
     accentSoft: "rgba(255, 138, 76, 0.18)",
     status: "24/7 · Live chat",
     Icon: Bot,
+    imageSrc:
+      "https://i.postimg.cc/x1rvZzqD/00573634-4D95-464B-AD52-DCEF05353DDB.png",
   },
   {
     codename: "RAPTOR",
@@ -648,9 +654,127 @@ function AgentCard({ agent, index }: { agent: Agent; index: number }) {
   );
 }
 
+// Free-floating character portrait. Used when an agent has an
+// imageSrc — the character hovers (vertical bob + tiny rotation),
+// sits on top of a colored halo, and casts a soft contact shadow on
+// the ground beneath. No glass card around it.
+function FloatingCharacter({ agent }: { agent: Agent }) {
+  const reduceMotion = useReducedMotion();
+  return (
+    <div
+      className="relative mx-auto"
+      style={{ width: "min(100%, 460px)", aspectRatio: "3 / 4" }}
+    >
+      {/* Halo behind the character — accent-colored radial bloom */}
+      <div
+        aria-hidden
+        className="absolute inset-0 -z-10"
+        style={{
+          background: `radial-gradient(ellipse 70% 65% at 50% 45%, ${agent.accent}38 0%, ${agent.accent}14 35%, transparent 70%)`,
+          filter: "blur(18px)",
+        }}
+      />
+
+      {/* Codename watermark — large, ghosted, behind the character */}
+      <div
+        aria-hidden
+        className="absolute inset-x-0 top-[6%] flex justify-center -z-10 select-none"
+      >
+        <span
+          className="font-editorial italic"
+          style={{
+            fontSize: "clamp(80px, 14vw, 180px)",
+            fontWeight: 500,
+            letterSpacing: "-4px",
+            color: "rgba(0,0,0,0.04)",
+            lineHeight: 1,
+          }}
+        >
+          {agent.codename}
+        </span>
+      </div>
+
+      {/* The character itself — gentle vertical bob + slight Y tilt */}
+      <motion.img
+        src={agent.imageSrc}
+        alt={`${agent.codename} ${agent.version}`}
+        draggable={false}
+        loading="lazy"
+        animate={
+          reduceMotion ? undefined : { y: [0, -14, 0], rotate: [-0.6, 0.6, -0.6] }
+        }
+        transition={
+          reduceMotion
+            ? undefined
+            : { duration: 6, repeat: Infinity, ease: "easeInOut" }
+        }
+        className="relative h-full w-full select-none"
+        style={{
+          objectFit: "contain",
+          filter: `drop-shadow(0 30px 28px ${agent.accent}33) drop-shadow(0 12px 18px rgba(0,0,0,0.08))`,
+        }}
+      />
+
+      {/* Soft contact shadow on the ground — pulses lightly in sync */}
+      <motion.div
+        aria-hidden
+        animate={
+          reduceMotion ? undefined : { scaleX: [1, 0.92, 1], opacity: [0.42, 0.32, 0.42] }
+        }
+        transition={
+          reduceMotion
+            ? undefined
+            : { duration: 6, repeat: Infinity, ease: "easeInOut" }
+        }
+        className="absolute left-1/2 bottom-[2%] -translate-x-1/2"
+        style={{
+          width: "60%",
+          height: "22px",
+          background: `radial-gradient(ellipse at center, ${agent.accent}66 0%, transparent 70%)`,
+          filter: "blur(12px)",
+          borderRadius: "50%",
+        }}
+      />
+
+      {/* Status chip — floats next to the character */}
+      <div
+        className="absolute right-2 top-4 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[9px] uppercase tracking-[0.2em] font-semibold"
+        style={{
+          color: agent.accent,
+          background: "rgba(255,255,255,0.7)",
+          border: `0.5px solid ${agent.accent}55`,
+          backdropFilter: "blur(8px)",
+        }}
+      >
+        <motion.span
+          animate={
+            reduceMotion
+              ? undefined
+              : { scale: [1, 1.4, 1], opacity: [1, 0.55, 1] }
+          }
+          transition={
+            reduceMotion
+              ? undefined
+              : { duration: 1.6, repeat: Infinity, ease: "easeInOut" }
+          }
+          className="h-1.5 w-1.5 rounded-full"
+          style={{
+            background: agent.accent,
+            boxShadow: `0 0 6px ${agent.accent}`,
+          }}
+        />
+        Live
+      </div>
+    </div>
+  );
+}
+
 function AgentVisual({ agent }: { agent: Agent }) {
   const reduceMotion = useReducedMotion();
   const Icon = agent.Icon;
+  if (agent.imageSrc) {
+    return <FloatingCharacter agent={agent} />;
+  }
   return (
     <div
       className="relative mx-auto"
