@@ -34,7 +34,15 @@ export default function SignupPage({ role = "host" }: { role?: "host" | "vendor"
       password,
       options: {
         emailRedirectTo: `${window.location.origin}/`,
-        data: { display_name: name, intended_role: role },
+        // For vendors the "name" field IS their business name — pass it
+        // through as vendor_business_name so handle_new_user can seed
+        // profiles.business_name on the spot. display_name still gets
+        // the same value so other surfaces that key off it don't break.
+        data: {
+          display_name: name,
+          intended_role: role,
+          ...(role === "vendor" ? { vendor_business_name: name } : {}),
+        },
       },
     });
     setLoading(false);
@@ -102,14 +110,14 @@ export default function SignupPage({ role = "host" }: { role?: "host" | "vendor"
             className="uppercase mb-1.5"
             style={{ fontSize: "11px", letterSpacing: "1.5px", opacity: 0.65, fontWeight: 500 }}
           >
-            {t("auth.signup.name_label")}
+            {isVendor ? "Business name" : t("auth.signup.name_label")}
           </div>
           <input
             className="auth-input"
             value={name}
             onChange={(e) => setName(e.target.value)}
             required
-            placeholder="Your name"
+            placeholder={isVendor ? "Your business name" : "Your name"}
           />
         </div>
         <div>
