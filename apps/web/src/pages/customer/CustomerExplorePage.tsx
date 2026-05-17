@@ -113,7 +113,6 @@ export default function CustomerExplorePage() {
           )
           .eq("application_status", "approved")
           .not("location", "is", null)
-          .not("bio", "is", null)
           .not("category", "is", null)
           .gt("base_price_cents", 0)
           .order("created_at", { ascending: false })
