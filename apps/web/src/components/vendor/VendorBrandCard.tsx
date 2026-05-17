@@ -8,17 +8,25 @@ import { CheckCircle2, Info, RotateCcw } from "lucide-react";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 
+// Listing-level fields (location, verified_at, created_at) come from
+// vendor_profiles. Brand identity (business_name, logo_url, bio) is
+// read STRAIGHT from the owner's profiles row — that's the account-
+// level source of truth and bypasses any sync-trigger lag.
 interface VendorRow {
-  business_name: string | null;
   location: string | null;
-  logo_url: string | null;
   verified_at: string | null;
   created_at: string | null;
+  user_id: string | null;
+}
+interface AccountRow {
+  business_name: string | null;
+  logo_url: string | null;
   bio: string | null;
 }
 
 export function VendorBrandCard({ vendorId }: { vendorId: string }) {
   const [row, setRow] = useState<VendorRow | null>(null);
+  const [account, setAccount] = useState<AccountRow | null>(null);
   const [bookings, setBookings] = useState<number | null>(null);
   const [ratingAvg, setRatingAvg] = useState<number | null>(null);
   const [flipped, setFlipped] = useState(false);
@@ -30,9 +38,7 @@ export function VendorBrandCard({ vendorId }: { vendorId: string }) {
       const [vp, rev, bk] = await Promise.all([
         supabase
           .from("vendor_profiles")
-          .select(
-            "business_name, location, logo_url, verified_at, created_at, bio",
-          )
+          .select("location, verified_at, created_at, user_id")
           .eq("id", vendorId)
           .maybeSingle(),
         supabase
@@ -46,7 +52,8 @@ export function VendorBrandCard({ vendorId }: { vendorId: string }) {
           .eq("status", "won"),
       ]);
       if (cancelled) return;
-      setRow((vp.data as VendorRow | null) ?? null);
+      const listing = (vp.data as VendorRow | null) ?? null;
+      setRow(listing);
       const ratings = (rev.data as Array<{ rating: number }> | null) ?? [];
       setRatingAvg(
         ratings.length === 0
@@ -54,6 +61,21 @@ export function VendorBrandCard({ vendorId }: { vendorId: string }) {
           : ratings.reduce((s, r) => s + r.rating, 0) / ratings.length,
       );
       setBookings(bk.count ?? 0);
+
+      // Brand identity read straight from the owner's profile —
+      // business_name + logo + bio always reflect what the vendor
+      // last saved on /vendor/edit-profile, regardless of whether
+      // the listing row's mirrored copy has updated yet.
+      if (listing?.user_id) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { data: acc } = await (supabase as any)
+          .from("profiles")
+          .select("business_name, logo_url, bio")
+          .eq("id", listing.user_id)
+          .maybeSingle();
+        if (cancelled) return;
+        setAccount((acc as AccountRow | null) ?? null);
+      }
     })();
     return () => {
       cancelled = true;
@@ -62,13 +84,14 @@ export function VendorBrandCard({ vendorId }: { vendorId: string }) {
 
   if (!row) return null;
 
-  const businessName = row.business_name ?? "Vendor";
+  const businessName = account?.business_name ?? "Vendor";
   const initial = businessName[0]?.toUpperCase() ?? "V";
   const memberSinceYear = row.created_at
     ? String(new Date(row.created_at).getFullYear())
     : null;
   const verified = !!row.verified_at;
-  const bio = row.bio?.trim() ?? null;
+  const bio = account?.bio?.trim() ?? null;
+  const logoUrl = account?.logo_url ?? null;
 
   return (
     <div className="relative" style={{ perspective: 1400 }}>
@@ -134,9 +157,9 @@ export function VendorBrandCard({ vendorId }: { vendorId: string }) {
 
           <div className="relative flex items-center gap-5 pl-14 sm:pl-16">
             <div className="relative shrink-0">
-              {row.logo_url ? (
+              {logoUrl ? (
                 <img
-                  src={row.logo_url}
+                  src={logoUrl}
                   alt={businessName}
                   className="w-[110px] h-[110px] rounded-[20px] object-cover bg-[#0a0a0a]"
                   style={{
