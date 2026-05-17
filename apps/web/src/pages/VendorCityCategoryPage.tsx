@@ -122,7 +122,7 @@ export default function VendorCityCategoryPage() {
   });
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen public-canvas">
       <PublicNav />
 
       {/* Hero */}

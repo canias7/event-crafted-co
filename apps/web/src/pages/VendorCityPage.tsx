@@ -82,7 +82,7 @@ export default function VendorCityPage() {
   if (!citySlug) return <Navigate to="/vendors/locations" replace />;
   if (!loading && inCity.length === 0) {
     return (
-      <div className="min-h-screen bg-background">
+      <div className="min-h-screen public-canvas">
         <PublicNav />
         <section className="pt-32 pb-20">
           <div className="container mx-auto px-6 md:px-8 max-w-2xl text-center">
@@ -109,7 +109,7 @@ export default function VendorCityPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen public-canvas">
       <PublicNav />
 
       {/* Editorial hero */}

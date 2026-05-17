@@ -146,7 +146,7 @@ export default function VendorEventTypeCityPage() {
   });
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen public-canvas">
       <PublicNav />
 
       <section className="pt-32 pb-12 md:pt-36 md:pb-16 border-b border-border">
