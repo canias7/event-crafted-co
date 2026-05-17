@@ -271,7 +271,6 @@ export default function VendorMyProfilePage() {
               bio={account?.bio ?? null}
               memberSince={memberSince}
               verified={!!primary?.verified_at}
-              listingHref={primary?.slug ? `/vendors/${primary.slug}` : null}
               stats={stats}
               onShare={onShare}
             />
@@ -381,7 +380,6 @@ function HeaderCard({
   bio,
   memberSince,
   verified,
-  listingHref,
   stats,
   onShare,
 }: {
@@ -394,7 +392,6 @@ function HeaderCard({
   bio: string | null;
   memberSince: string;
   verified: boolean;
-  listingHref: string | null;
   stats: { posts: number; reels: number; buzz: number; listings: number };
   onShare: () => void;
 }) {
@@ -479,17 +476,6 @@ function HeaderCard({
             </div>
           </div>
           <div className="relative shrink-0 flex flex-col gap-2">
-            {listingHref ? (
-              <Link to={listingHref}>
-                <Button
-                  variant="outline"
-                  className="rounded-full bg-white/70"
-                  size="sm"
-                >
-                  View public page
-                </Button>
-              </Link>
-            ) : null}
             <Button
               variant="outline"
               className="rounded-full"
