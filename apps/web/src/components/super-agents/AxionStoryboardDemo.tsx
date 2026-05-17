@@ -119,7 +119,7 @@ export function AxionStoryboardDemo() {
   const showResult = stage === "revealing" || stage === "done";
 
   return (
-    <div className="mx-auto flex flex-col gap-2.5" style={{ maxWidth: 480 }}>
+    <div className="mx-auto flex flex-col gap-2" style={{ maxWidth: 410 }}>
       {/* PANEL 1 — ORIGINAL */}
       <StoryboardPanel
         num="01"
@@ -147,7 +147,7 @@ export function AxionStoryboardDemo() {
         active={stage !== "idle"}
       >
         <div
-          className="relative font-mono text-[12.5px] leading-[1.55] text-foreground/85 rounded-xl p-3 min-h-[90px] max-h-[100px] overflow-y-auto"
+          className="relative font-mono text-[11.5px] leading-[1.5] text-foreground/85 rounded-xl p-2.5 min-h-[80px] max-h-[90px] overflow-y-auto"
           style={{
             background: "rgba(255,255,255,0.35)",
             border: "0.5px solid rgba(255,138,76,0.18)",
@@ -312,7 +312,7 @@ function StoryboardPanel({
 }) {
   return (
     <div
-      className="relative rounded-2xl p-3"
+      className="relative rounded-2xl p-2.5"
       style={{
         background: "rgba(255,255,255,0.32)",
         border: "0.5px solid rgba(255,138,76,0.18)",
@@ -339,7 +339,7 @@ function StoryboardPanel({
       />
 
       <div
-        className="flex items-center justify-between pb-2 mb-2"
+        className="flex items-center justify-between pb-1.5 mb-2"
         style={{ borderBottom: "0.5px solid rgba(255,138,76,0.14)" }}
       >
         <div className="inline-flex items-center gap-2 text-[11px] uppercase tracking-[0.16em] font-medium text-foreground/75">
@@ -403,13 +403,13 @@ function DownArrow() {
   return (
     <div className="flex justify-center -my-1">
       <span
-        className="inline-flex items-center justify-center w-7 h-7 rounded-full"
+        className="inline-flex items-center justify-center w-6 h-6 rounded-full"
         style={{
           background: "rgba(255,138,76,0.16)",
           border: "0.5px solid rgba(255,138,76,0.3)",
         }}
       >
-        <ArrowDown className="h-3.5 w-3.5 text-[#c4541e]" />
+        <ArrowDown className="h-3 w-3 text-[#c4541e]" />
       </span>
     </div>
   );
