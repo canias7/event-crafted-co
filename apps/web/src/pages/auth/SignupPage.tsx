@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Loader2, ArrowRight, Check } from "lucide-react";
+import { Loader2, ArrowRight, Check, Eye, EyeOff } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -19,6 +19,7 @@ export default function SignupPage({ role = "host" }: { role?: "host" | "vendor"
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [adult, setAdult] = useState(false);
   const [loading, setLoading] = useState(false);
 
@@ -145,16 +146,31 @@ export default function SignupPage({ role = "host" }: { role?: "host" | "vendor"
           >
             {t("auth.common.password")}
           </div>
-          <input
-            className="auth-input"
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            minLength={8}
-            placeholder={t("auth.signup.password_hint")}
-            autoComplete="new-password"
-          />
+          <div className="relative">
+            <input
+              className="auth-input pr-10"
+              type={showPassword ? "text" : "password"}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              minLength={8}
+              placeholder={t("auth.signup.password_hint")}
+              autoComplete="new-password"
+            />
+            <button
+              type="button"
+              aria-label={showPassword ? "Hide password" : "Show password"}
+              onClick={() => setShowPassword((v) => !v)}
+              tabIndex={-1}
+              className="absolute inset-y-0 right-3 inline-flex items-center justify-center text-foreground/55 hover:text-foreground transition-colors"
+            >
+              {showPassword ? (
+                <EyeOff className="w-4 h-4" />
+              ) : (
+                <Eye className="w-4 h-4" />
+              )}
+            </button>
+          </div>
         </div>
         <div
           className="flex items-start pt-1"
