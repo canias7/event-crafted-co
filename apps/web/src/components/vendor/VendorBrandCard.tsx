@@ -27,7 +27,6 @@ interface AccountRow {
 export function VendorBrandCard({ vendorId }: { vendorId: string }) {
   const [row, setRow] = useState<VendorRow | null>(null);
   const [account, setAccount] = useState<AccountRow | null>(null);
-  const [bookings, setBookings] = useState<number | null>(null);
   const [ratingAvg, setRatingAvg] = useState<number | null>(null);
   const [flipped, setFlipped] = useState(false);
 
@@ -35,7 +34,10 @@ export function VendorBrandCard({ vendorId }: { vendorId: string }) {
     if (!vendorId) return;
     let cancelled = false;
     (async () => {
-      const [vp, rev, bk] = await Promise.all([
+      // Bookings stat removed — Vendora is intro / matchmaking only,
+      // the actual booking happens outside the app, so a "Bookings"
+      // counter would always be 0 and misleading.
+      const [vp, rev] = await Promise.all([
         supabase
           .from("vendor_profiles")
           .select("location, verified_at, created_at, user_id")
@@ -45,11 +47,6 @@ export function VendorBrandCard({ vendorId }: { vendorId: string }) {
           .from("reviews")
           .select("rating")
           .eq("vendor_id", vendorId),
-        supabase
-          .from("inquiries")
-          .select("id", { count: "exact", head: true })
-          .eq("vendor_id", vendorId)
-          .eq("status", "won"),
       ]);
       if (cancelled) return;
       const listing = (vp.data as VendorRow | null) ?? null;
@@ -60,7 +57,6 @@ export function VendorBrandCard({ vendorId }: { vendorId: string }) {
           ? null
           : ratings.reduce((s, r) => s + r.rating, 0) / ratings.length,
       );
-      setBookings(bk.count ?? 0);
 
       // Brand identity read straight from the owner's profile —
       // business_name + logo + bio always reflect what the vendor
@@ -195,11 +191,7 @@ export function VendorBrandCard({ vendorId }: { vendorId: string }) {
             </div>
           </div>
 
-          <div className="relative mt-6 grid grid-cols-3 rounded-2xl bg-white/55 backdrop-blur-sm border border-white/40 px-3 py-3 divide-x divide-[#e8dfcf]">
-            <StatCell
-              label="Bookings"
-              value={bookings != null ? String(bookings) : "0"}
-            />
+          <div className="relative mt-6 grid grid-cols-2 rounded-2xl bg-white/55 backdrop-blur-sm border border-white/40 px-3 py-3 divide-x divide-[#e8dfcf]">
             <StatCell
               label="Rating"
               value={ratingAvg != null ? ratingAvg.toFixed(1) : "—"}
