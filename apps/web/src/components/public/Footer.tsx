@@ -17,7 +17,7 @@ export function Footer() {
       }}
     >
       <div className="container mx-auto px-4 md:px-8">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-12">
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-8 md:gap-12">
           <div className="col-span-2 md:col-span-1">
             <h3 className="font-editorial text-2xl mb-4">Vendora</h3>
             <p className="text-sm opacity-70 leading-relaxed max-w-xs">
@@ -29,14 +29,6 @@ export function Footer() {
             <div className="space-y-3">
               <Link to="/vendors" className="block text-sm opacity-70 hover:opacity-100 transition-opacity">{t("footer.browse")}</Link>
               <Link to="/vendors/locations" className="block text-sm opacity-70 hover:opacity-100 transition-opacity">{t("footer.by_location")}</Link>
-            </div>
-          </div>
-          <div>
-            <p className="font-label mb-4 opacity-50">{t("footer.company")}</p>
-            <div className="space-y-3">
-              <Link to="/changelog" className="block text-sm opacity-70 hover:opacity-100 transition-opacity">{t("footer.changelog")}</Link>
-              <Link to="/press" className="block text-sm opacity-70 hover:opacity-100 transition-opacity">{t("footer.press")}</Link>
-              <Link to="/status" className="block text-sm opacity-70 hover:opacity-100 transition-opacity">{t("footer.status")}</Link>
             </div>
           </div>
           <div>
