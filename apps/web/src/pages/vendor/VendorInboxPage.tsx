@@ -33,24 +33,6 @@ interface InquiryRow {
   host: { display_name: string | null } | null;
 }
 
-function fmtBudget(min: number | null, max: number | null): string | null {
-  if (min == null && max == null) return null;
-  const short = (c: number) =>
-    c >= 100_000_00
-      ? `$${Math.round(c / 1_000_00)}k`
-      : `$${Math.round(c / 100).toLocaleString()}`;
-  if (min != null && max != null) return `${short(min)}–${short(max)}`;
-  return short((min ?? max)!);
-}
-
-function fmtEventDate(iso: string | null): string | null {
-  if (!iso) return null;
-  const [y, m, d] = iso.split("T")[0].split("-").map(Number);
-  if (!y || !m || !d) return iso;
-  const dt = new Date(y, m - 1, d);
-  return dt.toLocaleDateString(undefined, { month: "short", day: "numeric" });
-}
-
 function relativeTime(iso: string | null): string {
   if (!iso) return "";
   const ms = Date.now() - new Date(iso).getTime();
@@ -270,9 +252,6 @@ function ConversationRow({
   const name = row.host?.display_name?.trim() || "Host";
   const initial = name.charAt(0).toUpperCase();
   const eventLabel = row.event_type.replace(/_/g, " ");
-  const dateChip = fmtEventDate(row.event_date);
-  const budgetChip = fmtBudget(row.budget_min_cents, row.budget_max_cents);
-  const guestChip = row.guest_count != null ? `${row.guest_count} guests` : null;
   const isUnread = row.status === "new" || row.status === "drafted";
   return (
     <li>
@@ -320,16 +299,8 @@ function ConversationRow({
             </span>
           </div>
 
-          {/* Inline metadata chips */}
-          <div className="mt-1 flex items-center gap-1.5 flex-wrap text-[11px]">
-            {dateChip ? <Chip>📅 {dateChip}</Chip> : null}
-            {guestChip ? <Chip>👥 {guestChip}</Chip> : null}
-            {budgetChip ? <Chip>💵 {budgetChip}</Chip> : null}
-            {row.location ? <Chip>📍 {row.location}</Chip> : null}
-          </div>
-
           {/* Last message / inquiry preview */}
-          <p className="mt-1 text-[13px] text-muted-foreground leading-snug truncate">
+          <p className="mt-0.5 text-[13px] text-muted-foreground leading-snug truncate">
             {previewFor(row)}
           </p>
         </div>
@@ -343,16 +314,3 @@ function ConversationRow({
   );
 }
 
-function Chip({ children }: { children: React.ReactNode }) {
-  return (
-    <span
-      className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-foreground/75"
-      style={{
-        background: "rgba(255,138,76,0.10)",
-        border: "0.5px solid rgba(255,138,76,0.22)",
-      }}
-    >
-      {children}
-    </span>
-  );
-}
