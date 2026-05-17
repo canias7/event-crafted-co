@@ -115,34 +115,29 @@ export default function VendorMyProfilePage() {
     setListings(vendors);
     const primaryRow = vendors[0] ?? null;
     setPrimary(primaryRow);
-    const ids = vendors.map((v) => v.id);
-    setVendorIds(ids);
+    setVendorIds(vendors.map((v) => v.id));
 
-    if (ids.length === 0) {
-      setPosts([]);
-      setReels([]);
-      setBuzz([]);
-      setLoading(false);
-      return;
-    }
-
+    // Posts / reels / buzz belong to the vendor (user_id), not a
+    // specific listing. Query by user_id so the feed shows every
+    // piece of social content the vendor's ever published,
+    // regardless of which (or zero) listings they have.
     const [postsRes, reelsRes, buzzRes] = await Promise.all([
       supabase
         .from("vendor_posts")
         .select("id, image_url, caption, created_at")
-        .in("vendor_id", ids)
+        .eq("user_id", user.id)
         .order("created_at", { ascending: false })
         .limit(60),
       supabase
         .from("vendor_reels")
         .select("id, video_url, thumbnail_url, caption, created_at")
-        .in("vendor_id", ids)
+        .eq("user_id", user.id)
         .order("created_at", { ascending: false })
         .limit(40),
       supabase
         .from("vendor_buzz")
         .select("id, body, created_at")
-        .in("vendor_id", ids)
+        .eq("user_id", user.id)
         .order("created_at", { ascending: false })
         .limit(40),
     ]);
@@ -289,42 +284,11 @@ export default function VendorMyProfilePage() {
             </div>
             {tab !== "listing" ? (
               <Button
-                onClick={async () => {
-                  // Posts/reels/buzz FK to vendor_profiles.id. If the
-                  // vendor has no listing yet, silently insert a draft
-                  // vendor_profile in the background so we have a
-                  // vendor_id to attach the post to. The draft stays
-                  // hidden from the listings grid (drafts are filtered
-                  // out) — it's just the social-content container.
-                  // Vendor can promote it to a real listing later.
-                  let vendorRow = primary;
-                  if (!vendorRow) {
-                    if (addingListing) return;
-                    setAddingListing(true);
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    const { data, error } = await (supabase as any)
-                      .from("vendor_profiles")
-                      .insert({ user_id: user?.id, application_status: "draft" })
-                      .select(
-                        "id, business_name, category, location, base_price_cents, verified_at, application_status, application_review_notes, slug, logo_url, created_at",
-                      )
-                      .single();
-                    setAddingListing(false);
-                    if (error || !data?.id) {
-                      toast.error(
-                        `Couldn't open composer: ${error?.message ?? "unknown error"}`,
-                      );
-                      return;
-                    }
-                    vendorRow = data as VendorRow;
-                    setPrimary(vendorRow);
-                    setListings((prev) => [vendorRow as VendorRow, ...prev]);
-                  }
+                onClick={() =>
                   setComposer(
                     tab === "grid" ? "post" : tab === "reels" ? "reel" : "buzz",
-                  );
-                }}
-                disabled={addingListing}
+                  )
+                }
                 className="rounded-full"
               >
                 <Plus className="h-4 w-4 mr-1" />
@@ -358,10 +322,9 @@ export default function VendorMyProfilePage() {
       </main>
       <MobileNav items={vendorNavItems} />
 
-      {composer === "buzz" && user && primary ? (
+      {composer === "buzz" && user ? (
         <BuzzComposerModal
           userId={user.id}
-          vendorId={primary.id}
           onClose={() => setComposer(null)}
           onPosted={() => {
             setComposer(null);
@@ -369,11 +332,10 @@ export default function VendorMyProfilePage() {
           }}
         />
       ) : null}
-      {(composer === "post" || composer === "reel") && user && primary ? (
+      {(composer === "post" || composer === "reel") && user ? (
         <MediaComposerModal
           kind={composer}
           userId={user.id}
-          vendorId={primary.id}
           onClose={() => setComposer(null)}
           onPosted={() => {
             setComposer(null);

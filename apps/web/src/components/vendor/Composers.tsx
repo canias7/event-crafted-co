@@ -45,12 +45,12 @@ export function ModalShell({
 
 export function BuzzComposerModal({
   userId,
-  vendorId,
   onClose,
   onPosted,
 }: {
   userId: string;
-  vendorId: string;
+  /** Optional. Pass to associate the buzz with a specific listing. */
+  vendorId?: string | null;
   onClose: () => void;
   onPosted: () => void;
 }) {
@@ -64,7 +64,6 @@ export function BuzzComposerModal({
     if (!canPost) return;
     setPosting(true);
     const { error } = await supabase.from("vendor_buzz").insert({
-      vendor_id: vendorId,
       user_id: userId,
       body: trimmed,
     });
@@ -114,7 +113,8 @@ export function MediaComposerModal({
 }: {
   kind: "post" | "reel";
   userId: string;
-  vendorId: string;
+  /** Optional. Pass to associate the media with a specific listing. */
+  vendorId?: string | null;
   onClose: () => void;
   onPosted: () => void;
 }) {
@@ -155,7 +155,6 @@ export function MediaComposerModal({
 
       if (kind === "post") {
         const { error: insErr } = await supabase.from("vendor_posts").insert({
-          vendor_id: vendorId,
           user_id: userId,
           image_url: pub.publicUrl,
           caption: caption.trim() || null,
@@ -163,7 +162,6 @@ export function MediaComposerModal({
         if (insErr) throw insErr;
       } else {
         const { error: insErr } = await supabase.from("vendor_reels").insert({
-          vendor_id: vendorId,
           user_id: userId,
           video_url: pub.publicUrl,
           thumbnail_url: null,
