@@ -6,10 +6,10 @@
 // reviews the result and approves it to go public — there's no
 // in-between draft state on web.
 //
-// STEP 2 ("structured details") from mobile isn't implemented yet —
-// it's category-dependent (30+ schemas across 8 groups) and the
-// scaffolding is sizeable; tracked separately. The current submit
-// writes category_attributes = {}.
+// STEP 2 ("structured details") renders the category schema from
+// @vendora/core via the shared CategoryAttributesFields component, so
+// the field set and JSONB shape on vendor_profiles.category_attributes
+// stay byte-identical to the mobile listing builder.
 
 import { useMemo, useRef, useState } from "react";
 import { Loader2, Plus, Trash2, Upload, X } from "lucide-react";
@@ -18,10 +18,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { CategoryAttributesFields } from "@/components/vendor/CategoryAttributesEditor";
 import { CATEGORY_GROUPS } from "@/data/categoryTaxonomy";
+import { getCategorySchema } from "@/data/categoryAttributes";
 import { supabase } from "@/integrations/supabase/client";
 
-const MIN_PHOTOS = 3;
 const MAX_PHOTOS = 5;
 
 interface FAQDraft {
@@ -34,6 +35,8 @@ interface TeamDraft {
   bio: string;
   is_owner: boolean;
 }
+type AttrValue = string | number | boolean | string[] | null | undefined;
+type Attrs = Record<string, AttrValue>;
 
 export function ListingWizardModal({
   userId,
@@ -48,19 +51,28 @@ export function ListingWizardModal({
   const [category, setCategory] = useState<string>("");
   const [location, setLocation] = useState<string>("");
   const [priceUsd, setPriceUsd] = useState<string>("");
+  const [attrs, setAttrs] = useState<Attrs>({});
   const [faqs, setFaqs] = useState<FAQDraft[]>([]);
   const [team, setTeam] = useState<TeamDraft[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const fileRef = useRef<HTMLInputElement | null>(null);
 
+  const hasDetailsSchema = useMemo(
+    () => (category ? getCategorySchema(category) !== null : false),
+    [category],
+  );
+
   const trimmedLocation = location.trim();
   const priceNum = Number(priceUsd);
   const priceCents = Number.isFinite(priceNum) ? Math.round(priceNum * 100) : 0;
 
+  // Mobile parity (listing.tsx lines 288–301): only category + location +
+  // price > 0 hard-block publish. Photo count and category_attributes
+  // are guidance only — admin reviews and rejects anything incomplete.
+  // FAQs/team rows must be filled in if added (otherwise we'd INSERT
+  // empty rows).
   const validation = useMemo(() => {
     const errs: string[] = [];
-    if (photos.length < MIN_PHOTOS)
-      errs.push(`Add ${MIN_PHOTOS - photos.length} more photo${MIN_PHOTOS - photos.length === 1 ? "" : "s"} (3–5 total).`);
     if (!category) errs.push("Pick a category.");
     if (!trimmedLocation) errs.push("Add a city + state.");
     if (priceCents <= 0) errs.push("Set a starting price.");
@@ -69,7 +81,7 @@ export function ListingWizardModal({
     if (team.some((m) => !m.display_name.trim()))
       errs.push("Every team member needs a name.");
     return errs;
-  }, [photos.length, category, trimmedLocation, priceCents, faqs, team]);
+  }, [category, trimmedLocation, priceCents, faqs, team]);
 
   const canSubmit = validation.length === 0 && !submitting;
 
@@ -93,6 +105,7 @@ export function ListingWizardModal({
           category,
           location: trimmedLocation,
           base_price_cents: priceCents,
+          category_attributes: attrs,
           application_status: "pending",
         })
         .select("id")
@@ -313,15 +326,32 @@ export function ListingWizardModal({
             </div>
           </section>
 
-          {/* STEP 2 — DETAILS (placeholder; see header comment) */}
+          {/* STEP 2 — DETAILS */}
           <section>
             <StepLabel n={2} kind="DETAILS" />
             <h3 className="font-editorial text-4xl mt-3">The fine print.</h3>
-            <div className="mt-4 rounded-md border border-dashed border-border bg-card/30 p-6 text-center text-sm text-muted-foreground italic">
-              Category-specific details (hours, capacity, deliverables, etc.)
-              are being wired up next pass. You'll be able to fill them in
-              after the listing is approved.
-            </div>
+            <p className="mt-2 text-muted-foreground italic">
+              {category
+                ? `Structured fields hosts use to filter and compare. Specific to ${category}.`
+                : "Pick a category above to unlock structured details."}
+            </p>
+            {category && hasDetailsSchema ? (
+              <div className="mt-6 space-y-6">
+                <CategoryAttributesFields
+                  category={category}
+                  attrs={attrs}
+                  onChange={setAttrs}
+                />
+              </div>
+            ) : category && !hasDetailsSchema ? (
+              <div className="mt-4 rounded-md border border-dashed border-border bg-card/30 p-6 text-center text-sm text-muted-foreground italic">
+                No structured details for {category} yet.
+              </div>
+            ) : (
+              <div className="mt-4 rounded-md border border-dashed border-border bg-card/30 p-6 text-center text-sm text-muted-foreground italic">
+                Pick a category above to unlock structured details.
+              </div>
+            )}
           </section>
 
           {/* STEP 3 — FAQs */}

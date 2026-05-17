@@ -96,12 +96,6 @@ export function CategoryAttributesEditor({
     return <p className="text-xs text-muted-foreground py-3">Loading…</p>;
   }
 
-  // Sections without `onlySubs` apply to every sub in the group;
-  // sub-specific sections only render for the matching sub.
-  const visibleSections = schema.sections.filter(
-    (s) => !s.onlySubs || s.onlySubs.includes(category),
-  );
-
   return (
     <div>
       <div className="mb-6">
@@ -118,31 +112,11 @@ export function CategoryAttributesEditor({
 
       {canEdit ? (
         <form onSubmit={save} className="space-y-10">
-          {visibleSections.map((section, idx) => (
-            <fieldset
-              key={section.name}
-              className={
-                idx === 0
-                  ? "space-y-5"
-                  : "space-y-5 pt-8 border-t border-border"
-              }
-            >
-              <legend className="font-display text-base">
-                {section.name}
-              </legend>
-              <div className="space-y-6">
-                {section.fields.map((field) => (
-                  <FieldEditor
-                    key={field.key}
-                    field={field}
-                    value={attrs[field.key]}
-                    onChange={(v) => setField(field.key, v)}
-                    onToggleTag={(opt) => toggleTag(field.key, opt)}
-                  />
-                ))}
-              </div>
-            </fieldset>
-          ))}
+          <CategoryAttributesFields
+            category={category}
+            attrs={attrs}
+            onChange={setAttrs}
+          />
           <div className="flex justify-end pt-4 border-t border-border">
             <Button
               type="submit"
@@ -160,6 +134,69 @@ export function CategoryAttributesEditor({
         </div>
       )}
     </div>
+  );
+}
+
+// Stateless renderer for the category-specific structured fields.
+// Used both by CategoryAttributesEditor (DB-backed editor on the
+// profile page) and ListingWizardModal (in-memory state during
+// listing creation). Sections without `onlySubs` apply to every sub
+// in the group; sub-specific sections only render for the matching
+// sub.
+export function CategoryAttributesFields({
+  category,
+  attrs,
+  onChange,
+}: {
+  category: string;
+  attrs: Attrs;
+  onChange: (next: Attrs) => void;
+}) {
+  const schema = getCategorySchema(category);
+  if (!schema) return null;
+
+  const visibleSections = schema.sections.filter(
+    (s) => !s.onlySubs || s.onlySubs.includes(category),
+  );
+
+  function setField(key: string, value: AttrValue) {
+    onChange({ ...attrs, [key]: value });
+  }
+
+  function toggleTag(key: string, option: string) {
+    const current = (attrs[key] as string[] | undefined) ?? [];
+    const next = current.includes(option)
+      ? current.filter((x) => x !== option)
+      : [...current, option];
+    onChange({ ...attrs, [key]: next });
+  }
+
+  return (
+    <>
+      {visibleSections.map((section, idx) => (
+        <fieldset
+          key={section.name}
+          className={
+            idx === 0
+              ? "space-y-5"
+              : "space-y-5 pt-8 border-t border-border"
+          }
+        >
+          <legend className="font-display text-base">{section.name}</legend>
+          <div className="space-y-6">
+            {section.fields.map((field) => (
+              <FieldEditor
+                key={field.key}
+                field={field}
+                value={attrs[field.key]}
+                onChange={(v) => setField(field.key, v)}
+                onToggleTag={(opt) => toggleTag(field.key, opt)}
+              />
+            ))}
+          </div>
+        </fieldset>
+      ))}
+    </>
   );
 }
 
