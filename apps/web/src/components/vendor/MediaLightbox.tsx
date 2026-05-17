@@ -40,13 +40,18 @@ export function MediaLightbox({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4"
       onClick={onClose}
+      style={{
+        background: "rgba(20,16,12,0.55)",
+        backdropFilter: "blur(28px) saturate(140%)",
+        WebkitBackdropFilter: "blur(28px) saturate(140%)",
+      }}
     >
       <button
         onClick={onClose}
         aria-label="Close"
-        className="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/15 backdrop-blur text-white flex items-center justify-center hover:bg-white/25"
+        className="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/15 backdrop-blur text-foreground flex items-center justify-center hover:bg-white/25"
       >
         <X className="h-5 w-5" />
       </button>
@@ -58,22 +63,22 @@ export function MediaLightbox({
           <img
             src={item.image_url}
             alt={item.caption ?? "Post"}
-            className="max-h-[80vh] w-auto object-contain rounded-2xl"
+            className="max-h-[80vh] w-auto object-contain rounded-2xl shadow-2xl"
           />
         ) : (
           <video
             src={item.video_url}
             controls
             autoPlay
-            className="max-h-[80vh] w-auto object-contain rounded-2xl"
+            className="max-h-[80vh] w-auto object-contain rounded-2xl shadow-2xl"
           />
         )}
         {item.caption ? (
-          <p className="mt-3 text-sm text-white/90 max-w-xl text-center px-4 whitespace-pre-wrap">
+          <p className="mt-3 text-sm text-foreground max-w-xl text-center px-4 whitespace-pre-wrap">
             {item.caption}
           </p>
         ) : null}
-        <p className="mt-1 text-xs text-white/60">
+        <p className="mt-1 text-xs text-muted-foreground">
           {new Date(item.created_at).toLocaleString()}
         </p>
       </div>
