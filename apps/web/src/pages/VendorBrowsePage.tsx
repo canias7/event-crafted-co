@@ -190,13 +190,30 @@ export default function VendorBrowsePage() {
       : 0;
 
   return (
-    <div className="min-h-screen bg-background">
+    <div
+      className="min-h-screen"
+      style={{
+        // Same warm cream → peach wash as the landing page + auth
+        // shell + vendor portal. Keeps the directory in the same
+        // visual family.
+        background:
+          "linear-gradient(180deg, #fafafa 0%, #fcf6ec 35%, #fbf0df 60%, #faecd6 80%, #f8e7cd 100%)",
+      }}
+    >
       <PublicNav />
 
       {/* Hero removed — page opens straight into filters + vendor grid. */}
 
-      {/* Filters */}
-      <section className="bg-background sticky top-16 z-30 backdrop-blur-sm bg-background/90">
+      {/* Filters — glassy translucent surface so the warm wash shows
+          through; backdrop blur keeps the controls legible when content
+          scrolls underneath the sticky bar. */}
+      <section
+        className="sticky top-16 z-30 backdrop-blur-md"
+        style={{
+          background: "rgba(255,255,255,0.45)",
+          borderBottom: "0.5px solid rgba(255,138,76,0.18)",
+        }}
+      >
         <div className="container mx-auto px-6 md:px-8 py-4">
           <div className="flex flex-col md:flex-row gap-3 items-stretch md:items-center">
             <div className="relative flex-1">
