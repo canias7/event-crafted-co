@@ -113,13 +113,9 @@ export function VendorAvailabilityPublic({ vendorId }: { vendorId: string }) {
   }, [oneOffBlocks, weeklyRules, bookedDates]);
 
   if (!loaded) return null;
-  if (
-    blockedDateObjects.length === 0 &&
-    weeklyRules.length === 0 &&
-    bookedDates.length === 0
-  ) {
-    return null;
-  }
+  // Always render the availability section, even when the vendor has
+  // never blocked anything — the calendar exists on every listing so
+  // hosts learn to look here before sending an inquiry.
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
