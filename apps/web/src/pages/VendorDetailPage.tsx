@@ -775,22 +775,10 @@ export default function VendorDetailPage() {
                 </SilentErrorBoundary>
               )}
 
-              {/* Reviews — real vendors only show their own reviews;
-                  demo vendors fall back to sampleReviews so the
-                  marketing pages still feel populated. */}
-              <VendorReviewsList
-                realReviews={realReviews}
-                samples={vendor.isReal ? [] : sampleReviews}
-                averageRating={reviewsAvg}
-                totalCount={reviewsCount}
-                vendorName={vendor.name}
-              />
-
-              {/* Imported reviews from other platforms */}
-              <ImportedReviewsList
-                reviews={importedReviews}
-                vendorName={vendor.name}
-              />
+              {/* Reviews + ImportedReviews sections pulled — empty
+                  "0.0 · 0 reviews" header read as noise on fresh
+                  listings. Re-enable once review collection is wired
+                  end-to-end. */}
 
               {/* Often booked with (cross-sell from booking signal + curated) */}
               {vendor.isReal && (
