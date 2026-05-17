@@ -80,7 +80,6 @@ import heroDinner from "@/assets/vendora-hero-dinner.jpg?as=picture";
 import heroGala from "@/assets/vendora-hero-gala.jpg?as=picture";
 import heroBirthday from "@/assets/vendora-hero-birthday.jpg?as=picture";
 import heroCinematic from "@/assets/vendora-hero-cinematic.jpg?as=picture";
-import heroKids from "@/assets/vendora-hero-kids.jpg?as=picture";
 import heroCorporate from "@/assets/hero/corporate.jpg?as=picture";
 import heroNye from "@/assets/hero/nye.jpg?as=picture";
 import heroFiesta from "@/assets/hero/fiesta.jpg?as=picture";
@@ -120,15 +119,6 @@ const imageMap: Record<string, PictureSource> = {
   "hero-wedding": heroWedding,
   "hero-engagement": heroEngagement,
 };
-
-const portfolioPool: PictureSource[] = [
-  featureFlorals,
-  featureLounge,
-  heroDinner,
-  heroGala,
-  heroBirthday,
-  heroKids,
-];
 
 const samplePackages = [
   {
@@ -252,14 +242,9 @@ export default function VendorDetailPage() {
     };
   }, [vendor]);
 
-  // Real vendors only show their own uploaded portfolio. Demo /
-  // sampleData vendors fall back to the bundled portfolioPool art so
-  // the marketing-facing showcase pages stay populated.
-  const portfolioItems: RealPortfolioItem[] = vendor?.isReal
-    ? realPortfolio
-    : realPortfolio.length > 0
-      ? realPortfolio
-      : portfolioPool.map((p) => ({ src: p.img.src, caption: null }));
+  // Vendors only show their own uploaded portfolio. Zero photos →
+  // realPortfolio = [] → the "Recent work" section is hidden below.
+  const portfolioItems: RealPortfolioItem[] = realPortfolio;
   // Backwards-compat: many call sites still expect a string[] of URLs.
   const portfolioImages = portfolioItems.map((p) => p.src);
 
