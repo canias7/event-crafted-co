@@ -272,4 +272,23 @@
   .tnum {
     font-feature-settings: 'tnum';
   }
+
+  /*
+   * Vendor portal canvas — the same warm cream → peach wash that
+   * the landing page and auth shell use, so /vendor/* reads as
+   * part of the same site instead of a plain white app surface.
+   * Swap `bg-background` for `vendor-canvas` on the outer wrapper
+   * of any vendor page (VendorHomePage, VendorMyProfilePage,
+   * VendorInboxPage, etc.).
+   */
+  .vendor-canvas {
+    background: linear-gradient(
+      180deg,
+      #fafafa 0%,
+      #fcf6ec 35%,
+      #fbf0df 60%,
+      #faecd6 80%,
+      #f8e7cd 100%
+    );
+  }
 }

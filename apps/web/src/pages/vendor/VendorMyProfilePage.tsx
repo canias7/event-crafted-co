@@ -221,7 +221,7 @@ export default function VendorMyProfilePage() {
   ];
 
   return (
-    <div className="flex min-h-screen bg-background">
+    <div className="flex min-h-screen vendor-canvas">
       <DashboardSidebar
         items={vendorNavItems}
         title="My Profile"
