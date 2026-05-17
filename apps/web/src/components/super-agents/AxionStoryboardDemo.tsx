@@ -119,14 +119,14 @@ export function AxionStoryboardDemo() {
   const showResult = stage === "revealing" || stage === "done";
 
   return (
-    <div className="mx-auto flex flex-col gap-4" style={{ maxWidth: 480 }}>
+    <div className="mx-auto flex flex-col gap-2.5" style={{ maxWidth: 480 }}>
       {/* PANEL 1 — ORIGINAL */}
       <StoryboardPanel
         num="01"
         label="Original"
         badge="UPLOADED"
       >
-        <div className="relative aspect-[4/3] overflow-hidden rounded-xl bg-[#f5f3ef]">
+        <div className="relative aspect-[16/9] overflow-hidden rounded-xl bg-[#f5f3ef]">
           <img
             src="/agents/axion/original.png"
             alt="Original blurry photo"
@@ -147,7 +147,7 @@ export function AxionStoryboardDemo() {
         active={stage !== "idle"}
       >
         <div
-          className="relative font-mono text-[12.5px] leading-[1.55] text-foreground/85 rounded-xl p-4 min-h-[150px] max-h-[160px] overflow-y-auto"
+          className="relative font-mono text-[12.5px] leading-[1.55] text-foreground/85 rounded-xl p-3 min-h-[90px] max-h-[100px] overflow-y-auto"
           style={{
             background: "rgba(255,255,255,0.35)",
             border: "0.5px solid rgba(255,138,76,0.18)",
@@ -215,7 +215,7 @@ export function AxionStoryboardDemo() {
         badge={isDone ? "HD READY" : isProcessing ? "PROCESSING" : "PENDING"}
         accentBadge={isDone || isProcessing}
       >
-        <div className="relative aspect-[4/3] overflow-hidden rounded-xl bg-[#f5f3ef]">
+        <div className="relative aspect-[16/9] overflow-hidden rounded-xl bg-[#f5f3ef]">
           <img
             src="/agents/axion/enhanced.png"
             alt="Enhanced AI-generated photo"
@@ -312,7 +312,7 @@ function StoryboardPanel({
 }) {
   return (
     <div
-      className="relative rounded-2xl p-4"
+      className="relative rounded-2xl p-3"
       style={{
         background: "rgba(255,255,255,0.32)",
         border: "0.5px solid rgba(255,138,76,0.18)",
@@ -339,7 +339,7 @@ function StoryboardPanel({
       />
 
       <div
-        className="flex items-center justify-between pb-3 mb-3"
+        className="flex items-center justify-between pb-2 mb-2"
         style={{ borderBottom: "0.5px solid rgba(255,138,76,0.14)" }}
       >
         <div className="inline-flex items-center gap-2 text-[11px] uppercase tracking-[0.16em] font-medium text-foreground/75">
@@ -392,7 +392,7 @@ function StoryboardPanel({
 
 function PanelMeta({ name, stat }: { name: string; stat: string }) {
   return (
-    <div className="flex items-center justify-between mt-3 text-[11px]">
+    <div className="flex items-center justify-between mt-2 text-[11px]">
       <span className="text-muted-foreground font-mono">{name}</span>
       <span className="font-mono text-[#c4541e] font-medium">{stat}</span>
     </div>
