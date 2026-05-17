@@ -154,9 +154,6 @@ export const VendorInboxPage = lazyWithReload(importVendorInbox);
 const importVendorAppointments = () => import("@/pages/vendor/VendorAppointmentsPage");
 export const VendorAppointmentsPage = lazyWithReload(importVendorAppointments);
 
-const importVendorOnboarding = () => import("@/pages/vendor/VendorOnboardingPage");
-export const VendorOnboardingPage = lazyWithReload(importVendorOnboarding);
-
 const importVendorPartners = () => import("@/pages/vendor/VendorPartnersPage");
 export const VendorPartnersPage = lazyWithReload(importVendorPartners);
 
@@ -211,7 +208,6 @@ const ROUTE_IMPORTERS: Array<{ pattern: string; importer: () => Promise<unknown>
   { pattern: "/vendor/me", importer: importVendorMyProfile },
   { pattern: "/vendor/edit-profile", importer: importVendorEditProfile },
   { pattern: "/vendor/inbox", importer: importVendorInbox },
-  { pattern: "/vendor/onboarding", importer: importVendorOnboarding },
   { pattern: "/vendor/appointments", importer: importVendorAppointments },
   // Availability lives on the same page as Appointments now (merged
   // Calendar dashboard); both URLs resolve to the same chunk.
