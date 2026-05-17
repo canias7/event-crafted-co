@@ -174,29 +174,34 @@ export function PublicNav() {
           {session && profile ? (
             <>
               <NotificationBell variant="light" />
+              {(() => {
+                // Vendor identity lives on `profiles` (business_name +
+                // logo_url) — it survives whether the listing is
+                // approved, pending, or doesn't exist yet. Fall back
+                // to the listing-level fields only if the account row
+                // is missing them, then to display_name.
+                const navLogo = profile.logo_url ?? ownListing?.logo_url ?? null;
+                const navName =
+                  profile.business_name ??
+                  ownListing?.business_name ??
+                  profile.display_name ??
+                  "Account";
+                return (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <button className="ml-2 flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
-                    {ownListing?.logo_url ? (
+                    {navLogo ? (
                       <img
-                        src={ownListing.logo_url}
-                        alt={
-                          ownListing.business_name ??
-                          profile.display_name ??
-                          "Account"
-                        }
+                        src={navLogo}
+                        alt={navName}
                         className="w-7 h-7 rounded-full object-cover"
                       />
                     ) : (
                       <span className="w-7 h-7 rounded-full bg-accent text-accent-foreground flex items-center justify-center text-xs font-medium">
-                        {(profile.display_name ?? "U").charAt(0).toUpperCase()}
+                        {navName.charAt(0).toUpperCase()}
                       </span>
                     )}
-                    <span className="hidden lg:inline">
-                      {ownListing?.business_name ??
-                        profile.display_name ??
-                        "Account"}
-                    </span>
+                    <span className="hidden lg:inline">{navName}</span>
                     <ChevronDown className="w-3.5 h-3.5" />
                   </button>
                 </DropdownMenuTrigger>
@@ -220,6 +225,8 @@ export function PublicNav() {
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
+                );
+              })()}
             </>
           ) : (
             <>

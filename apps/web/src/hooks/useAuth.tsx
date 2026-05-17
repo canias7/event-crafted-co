@@ -20,6 +20,12 @@ interface Profile {
   id: string;
   role: AppRole;
   display_name: string | null;
+  // Vendor account identity — these are the source of truth for the
+  // business-facing brand. They're populated at signup for vendors
+  // (handle_new_user seeds business_name from raw_user_meta_data) and
+  // rewritten via /vendor/me Edit identity. Hosts leave them null.
+  business_name: string | null;
+  logo_url: string | null;
   onboarded_at: string | null;
   // Application status — drives vendor approval gating. For hosts
   // this is 'approved' from signup time; for vendors it's 'pending'
@@ -109,7 +115,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const loadProfile = useCallback(async (userId: string) => {
     const { data } = await supabase
       .from("profiles")
-      .select("id, role, display_name, onboarded_at, application_status")
+      .select(
+        "id, role, display_name, business_name, logo_url, onboarded_at, application_status",
+      )
       .eq("id", userId)
       .maybeSingle();
     if (!data) {
