@@ -13,8 +13,10 @@ import { useRef } from "react";
 import { Link } from "react-router-dom";
 import {
   motion,
+  useMotionValue,
   useReducedMotion,
   useScroll,
+  useSpring,
   useTransform,
 } from "framer-motion";
 import { Bot, ImagePlus, Sparkles } from "lucide-react";
@@ -56,8 +58,7 @@ const AGENTS: Agent[] = [
     accentSoft: "rgba(255, 138, 76, 0.18)",
     status: "24/7 · Live chat",
     Icon: Bot,
-    imageSrc:
-      "https://i.postimg.cc/x1rvZzqD/00573634-4D95-464B-AD52-DCEF05353DDB.png",
+    imageSrc: "/agents/hilux.png",
   },
   {
     codename: "RAPTOR",
@@ -656,22 +657,59 @@ function AgentCard({ agent, index }: { agent: Agent; index: number }) {
 
 // Free-floating character portrait. Used when an agent has an
 // imageSrc — the character hovers (vertical bob + tiny rotation),
-// sits on top of a colored halo, and casts a soft contact shadow on
-// the ground beneath. No glass card around it.
+// gets a scanning light beam sweep, breathing halo, drifting data
+// particles, a pulsing contact shadow, and a cursor-tracked parallax
+// tilt. No glass card around it. Tuned for transparent-PNG portraits;
+// a non-transparent grey bg will look boxed.
 function FloatingCharacter({ agent }: { agent: Agent }) {
   const reduceMotion = useReducedMotion();
+  const wrapRef = useRef<HTMLDivElement | null>(null);
+  const tiltX = useMotionValue(0);
+  const tiltY = useMotionValue(0);
+  const smoothX = useSpring(tiltX, { stiffness: 80, damping: 14 });
+  const smoothY = useSpring(tiltY, { stiffness: 80, damping: 14 });
+
+  function handleMouseMove(e: React.MouseEvent<HTMLDivElement>) {
+    if (reduceMotion || !wrapRef.current) return;
+    const rect = wrapRef.current.getBoundingClientRect();
+    const px = (e.clientX - rect.left) / rect.width - 0.5;
+    const py = (e.clientY - rect.top) / rect.height - 0.5;
+    tiltX.set(-py * 6);
+    tiltY.set(px * 6);
+  }
+
+  function handleMouseLeave() {
+    tiltX.set(0);
+    tiltY.set(0);
+  }
+
   return (
     <div
+      ref={wrapRef}
+      onMouseMove={handleMouseMove}
+      onMouseLeave={handleMouseLeave}
       className="relative mx-auto"
-      style={{ width: "min(100%, 460px)", aspectRatio: "3 / 4" }}
+      style={{
+        width: "min(100%, 460px)",
+        aspectRatio: "3 / 4",
+        perspective: 1200,
+      }}
     >
-      {/* Halo behind the character — accent-colored radial bloom */}
-      <div
+      {/* Breathing halo behind the character */}
+      <motion.div
         aria-hidden
+        animate={
+          reduceMotion ? undefined : { scale: [1, 1.06, 1], opacity: [0.85, 1, 0.85] }
+        }
+        transition={
+          reduceMotion
+            ? undefined
+            : { duration: 4.2, repeat: Infinity, ease: "easeInOut" }
+        }
         className="absolute inset-0 -z-10"
         style={{
-          background: `radial-gradient(ellipse 70% 65% at 50% 45%, ${agent.accent}38 0%, ${agent.accent}14 35%, transparent 70%)`,
-          filter: "blur(18px)",
+          background: `radial-gradient(ellipse 70% 65% at 50% 45%, ${agent.accent}45 0%, ${agent.accent}18 35%, transparent 72%)`,
+          filter: "blur(22px)",
         }}
       />
 
@@ -694,32 +732,63 @@ function FloatingCharacter({ agent }: { agent: Agent }) {
         </span>
       </div>
 
-      {/* The character itself — gentle vertical bob + slight Y tilt */}
-      <motion.img
-        src={agent.imageSrc}
-        alt={`${agent.codename} ${agent.version}`}
-        draggable={false}
-        loading="lazy"
+      {/* Character — vertical bob + ±0.6° base tilt + cursor parallax */}
+      <motion.div
         animate={
-          reduceMotion ? undefined : { y: [0, -14, 0], rotate: [-0.6, 0.6, -0.6] }
+          reduceMotion ? undefined : { y: [0, -16, 0] }
         }
         transition={
           reduceMotion
             ? undefined
             : { duration: 6, repeat: Infinity, ease: "easeInOut" }
         }
-        className="relative h-full w-full select-none"
         style={{
-          objectFit: "contain",
-          filter: `drop-shadow(0 30px 28px ${agent.accent}33) drop-shadow(0 12px 18px rgba(0,0,0,0.08))`,
+          rotateX: smoothX,
+          rotateY: smoothY,
+          transformStyle: "preserve-3d",
         }}
-      />
+        className="relative h-full w-full"
+      >
+        <img
+          src={agent.imageSrc}
+          alt={`${agent.codename} ${agent.version}`}
+          draggable={false}
+          loading="lazy"
+          className="relative h-full w-full select-none"
+          style={{
+            objectFit: "contain",
+            filter: `drop-shadow(0 32px 32px ${agent.accent}3d) drop-shadow(0 14px 20px rgba(0,0,0,0.09))`,
+          }}
+        />
 
-      {/* Soft contact shadow on the ground — pulses lightly in sync */}
+        {/* Scanning light beam — vertical sweep, screen-blended so it
+            adds light without darkening. Loops every ~3.5s. */}
+        {!reduceMotion && (
+          <motion.div
+            aria-hidden
+            initial={{ y: "-30%" }}
+            animate={{ y: "130%" }}
+            transition={{
+              duration: 3.6,
+              repeat: Infinity,
+              ease: "linear",
+              repeatDelay: 1.4,
+            }}
+            className="pointer-events-none absolute inset-x-0 h-[18%]"
+            style={{
+              background: `linear-gradient(180deg, transparent 0%, ${agent.accent}66 50%, transparent 100%)`,
+              mixBlendMode: "screen",
+              filter: "blur(6px)",
+            }}
+          />
+        )}
+      </motion.div>
+
+      {/* Soft contact shadow on the ground — pulses with the bob */}
       <motion.div
         aria-hidden
         animate={
-          reduceMotion ? undefined : { scaleX: [1, 0.92, 1], opacity: [0.42, 0.32, 0.42] }
+          reduceMotion ? undefined : { scaleX: [1, 0.88, 1], opacity: [0.5, 0.32, 0.5] }
         }
         transition={
           reduceMotion
@@ -728,20 +797,44 @@ function FloatingCharacter({ agent }: { agent: Agent }) {
         }
         className="absolute left-1/2 bottom-[2%] -translate-x-1/2"
         style={{
-          width: "60%",
-          height: "22px",
-          background: `radial-gradient(ellipse at center, ${agent.accent}66 0%, transparent 70%)`,
-          filter: "blur(12px)",
+          width: "62%",
+          height: "24px",
+          background: `radial-gradient(ellipse at center, ${agent.accent}77 0%, transparent 70%)`,
+          filter: "blur(14px)",
           borderRadius: "50%",
         }}
       />
+
+      {/* Drifting "data" particles around the character */}
+      {!reduceMotion &&
+        DATA_PARTICLES.map((p, i) => (
+          <motion.span
+            key={i}
+            aria-hidden
+            initial={{ y: 0, opacity: 0 }}
+            animate={{ y: -80, opacity: [0, 1, 0] }}
+            transition={{
+              duration: p.duration,
+              repeat: Infinity,
+              ease: "easeOut",
+              delay: p.delay,
+            }}
+            className="absolute h-1 w-1 rounded-full"
+            style={{
+              top: p.top,
+              left: p.left,
+              background: agent.accent,
+              boxShadow: `0 0 6px ${agent.accent}`,
+            }}
+          />
+        ))}
 
       {/* Status chip — floats next to the character */}
       <div
         className="absolute right-2 top-4 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[9px] uppercase tracking-[0.2em] font-semibold"
         style={{
           color: agent.accent,
-          background: "rgba(255,255,255,0.7)",
+          background: "rgba(255,255,255,0.75)",
           border: `0.5px solid ${agent.accent}55`,
           backdropFilter: "blur(8px)",
         }}
@@ -768,6 +861,15 @@ function FloatingCharacter({ agent }: { agent: Agent }) {
     </div>
   );
 }
+
+const DATA_PARTICLES = [
+  { top: "78%", left: "18%", duration: 4.2, delay: 0 },
+  { top: "82%", left: "76%", duration: 4.8, delay: 1.1 },
+  { top: "70%", left: "12%", duration: 5.2, delay: 2.2 },
+  { top: "74%", left: "82%", duration: 4.6, delay: 0.6 },
+  { top: "86%", left: "48%", duration: 5.0, delay: 1.8 },
+  { top: "68%", left: "62%", duration: 4.4, delay: 2.8 },
+];
 
 function AgentVisual({ agent }: { agent: Agent }) {
   const reduceMotion = useReducedMotion();
