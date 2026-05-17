@@ -300,33 +300,8 @@ export default function VendorCategoryPage() {
         title={`Booking ${config.display.toLowerCase()} on Vendora`}
       />
 
-      {/* Cross-link to other categories */}
-      {otherCategories.length > 0 && (
-        <section className="py-16 border-t border-border">
-          <div className="container mx-auto px-6 md:px-8 max-w-5xl">
-            <p className="font-label text-accent mb-3 tracking-[0.4em]">
-              — KEEP BROWSING
-            </p>
-            <h2 className="font-editorial text-4xl mb-8">Other categories</h2>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-              {otherCategories.map(([s, c]) => (
-                <Link
-                  key={s}
-                  to={`/vendors/category/${s}`}
-                  className="group card-soft p-4 hover:border-foreground/30 transition-colors"
-                >
-                  <p className="font-display text-base group-hover:text-accent transition-colors">
-                    {c.display}
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
-                    {c.description}
-                  </p>
-                </Link>
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
+      {/* "Other categories" cross-link section pulled — page ends
+          at the vendor grid. */}
 
       {/* JSON-LD: ItemList of vendors + FAQPage */}
       <JsonLd
