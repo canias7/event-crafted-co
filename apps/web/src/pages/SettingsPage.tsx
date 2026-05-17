@@ -1,12 +1,10 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Loader2, AlertTriangle, User, LogOut } from "lucide-react";
+import { Loader2, LogOut, Mail, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   AlertDialog,
@@ -23,24 +21,16 @@ import { DashboardSidebar } from "@/components/shared/DashboardSidebar";
 import { MobileNav } from "@/components/shared/MobileNav";
 import { customerNavItems, getLastDashboardSide, vendorNavItems } from "@/data/navItems";
 
-// Account settings — mirrors mobile's three-section layout (Profile /
-// Session / Danger zone). The big web-only feature blocks (password
-// change, 2FA, theme picker, push notifications, email digest toggles,
-// data export, cookie reset) were stripped when the host portal was
-// mirrored to mobile. If a user needs to reset their password they
-// can use the forgot-password flow; email is hello@vendora.events for
-// anything else.
+// Account settings — rowed-card layout. Each row is icon + title +
+// subtitle on the left, value or action pill on the right, divided by
+// hairlines. Identity edits live on /vendor/edit-profile; this surface
+// is intentionally minimal (email on file + sign out + delete account).
 export default function SettingsPage() {
   const { user, profile, isApprovedVendor, signOut } = useAuth();
   const navigate = useNavigate();
 
   const [deleting, setDeleting] = useState(false);
 
-  // Respect whichever dashboard the user was last on. /settings is a
-  // cross-cutting page, so a multi-role user clicking Settings from
-  // /customer/* should stay on host nav; same from /vendor/*.
-  // Falls back to vendor nav for approved vendors who landed here
-  // directly (e.g. opened the URL in a new tab).
   const lastSide = getLastDashboardSide();
   const useVendorNav =
     lastSide === "vendor" || (lastSide === null && isApprovedVendor);
@@ -68,84 +58,76 @@ export default function SettingsPage() {
       <main id="main-content" className="flex-1 pb-20 lg:pb-0">
         <div className="backdrop-blur-sm px-4 md:px-8 py-5 sticky top-0 z-40">
           <h1 className="font-editorial text-3xl">Settings</h1>
-          <p className="text-sm text-muted-foreground">
-            Manage your account
-          </p>
+          <p className="text-sm text-muted-foreground">Manage your account</p>
         </div>
 
-        <div className="p-4 md:p-8 max-w-2xl space-y-10">
+        <div className="p-4 md:p-8 max-w-2xl">
           {!profile ? (
-            <Skeleton className="h-64 w-full" />
+            <Skeleton className="h-48 w-full rounded-2xl" />
           ) : (
-            <>
-              <Section
-                icon={User}
-                title="Account"
+            <div
+              className="rounded-2xl overflow-hidden"
+              style={{
+                background: "rgba(255,253,250,0.6)",
+                border: "0.5px solid rgba(255,138,76,0.22)",
+                backdropFilter: "blur(10px)",
+                WebkitBackdropFilter: "blur(10px)",
+              }}
+            >
+              <SettingRow
+                Icon={Mail}
+                title="Email"
                 subtitle="Email on file for this account"
-              >
-                <div className="space-y-2">
-                  <Label>Email</Label>
-                  <Input
-                    value={user?.email ?? ""}
-                    disabled
-                    className="h-11 bg-secondary/50"
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Contact{" "}
-                    <a
-                      href="mailto:hello@vendora.events"
-                      className="text-accent"
-                    >
-                      hello@vendora.events
-                    </a>{" "}
-                    to change your email.
-                  </p>
-                </div>
-              </Section>
-
-              <Section
-                icon={LogOut}
-                title="Session"
+                right={
+                  <a
+                    href="mailto:hello@vendora.events"
+                    className="text-sm font-medium text-foreground/80 hover:text-foreground transition-colors truncate"
+                    title="Contact hello@vendora.events to change your email"
+                  >
+                    {user?.email ?? ""}
+                  </a>
+                }
+              />
+              <RowDivider />
+              <SettingRow
+                Icon={LogOut}
+                title="Sign out"
                 subtitle="Sign out of this device"
-              >
-                <Button
-                  variant="outline"
-                  className="rounded-full"
-                  onClick={async () => {
-                    await signOut();
-                    navigate("/");
-                  }}
-                >
-                  <LogOut className="w-4 h-4 mr-2" />
-                  Sign out
-                </Button>
-              </Section>
-
-              <Section
-                icon={AlertTriangle}
-                title="Danger zone"
-                subtitle="Permanent actions"
+                right={
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="rounded-full"
+                    onClick={async () => {
+                      await signOut();
+                      navigate("/");
+                    }}
+                  >
+                    <LogOut className="w-3.5 h-3.5 mr-1.5" />
+                    Sign out
+                  </Button>
+                }
+              />
+              <RowDivider />
+              <SettingRow
+                Icon={Trash2}
                 tone="destructive"
-              >
-                <div className="rounded-2xl border border-destructive/30 bg-destructive/5 p-5">
-                  <p className="text-sm font-medium mb-2">
-                    Delete your account
-                  </p>
-                  <p className="text-xs text-muted-foreground leading-relaxed mb-4">
-                    Permanently removes your profile and everything tied
-                    to it: inquiries, messages, reviews, saved vendors
-                    {isApprovedVendor
-                      ? ", and your business profile, portfolio, and availability calendar"
-                      : ""}
-                    . This can't be undone.
-                  </p>
+                title="Delete account"
+                subtitle={`Permanently removes your profile and everything tied to it${
+                  isApprovedVendor
+                    ? " — listings, portfolio, availability"
+                    : ""
+                }`}
+                right={
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
                       <Button
                         variant="outline"
+                        size="sm"
                         className="rounded-full text-destructive border-destructive/50 hover:bg-destructive/10 hover:text-destructive"
                       >
-                        Delete account
+                        <Trash2 className="w-3.5 h-3.5 mr-1.5" />
+                        Delete
                       </Button>
                     </AlertDialogTrigger>
                     <AlertDialogContent className="rounded-2xl">
@@ -182,9 +164,9 @@ export default function SettingsPage() {
                       </AlertDialogFooter>
                     </AlertDialogContent>
                   </AlertDialog>
-                </div>
-              </Section>
-            </>
+                }
+              />
+            </div>
           )}
         </div>
       </main>
@@ -194,39 +176,63 @@ export default function SettingsPage() {
   );
 }
 
-function Section({
-  icon: Icon,
+function SettingRow({
+  Icon,
   title,
   subtitle,
+  right,
   tone,
-  children,
 }: {
-  icon: typeof User;
+  Icon: typeof Mail;
   title: string;
-  subtitle?: string;
+  subtitle: string;
+  right: React.ReactNode;
   tone?: "destructive";
-  children: React.ReactNode;
 }) {
+  const destructive = tone === "destructive";
   return (
-    <section>
-      <div className="flex items-center gap-3 mb-4">
-        <div
-          className={`w-8 h-8 rounded-full flex items-center justify-center ${
-            tone === "destructive"
-              ? "bg-destructive/15 text-destructive"
-              : "bg-secondary text-foreground"
+    <div className="flex items-center gap-4 px-5 py-4">
+      <span
+        className="shrink-0 w-10 h-10 rounded-xl inline-flex items-center justify-center"
+        style={{
+          background: destructive
+            ? "rgba(220,38,38,0.10)"
+            : "rgba(255,138,76,0.14)",
+          color: destructive ? "#a3160d" : "#c4541e",
+        }}
+        aria-hidden
+      >
+        <Icon className="w-4 h-4" />
+      </span>
+      <div className="flex-1 min-w-0">
+        <p
+          className={`text-[15px] font-semibold leading-tight ${
+            destructive ? "text-destructive" : "text-foreground"
           }`}
         >
-          <Icon className="w-4 h-4" />
-        </div>
-        <div>
-          <h2 className="font-display text-lg leading-tight">{title}</h2>
-          {subtitle && (
-            <p className="text-xs text-muted-foreground">{subtitle}</p>
-          )}
-        </div>
+          {title}
+        </p>
+        <p className="text-xs text-muted-foreground mt-0.5 leading-snug truncate">
+          {subtitle}
+        </p>
       </div>
-      <div className="ml-11">{children}</div>
-    </section>
+      <div className="shrink-0 max-w-[55%] flex items-center justify-end overflow-hidden">
+        {right}
+      </div>
+    </div>
+  );
+}
+
+function RowDivider() {
+  return (
+    <div
+      aria-hidden
+      style={{
+        height: "0.5px",
+        background: "rgba(0,0,0,0.06)",
+        marginLeft: "1.25rem",
+        marginRight: "1.25rem",
+      }}
+    />
   );
 }
