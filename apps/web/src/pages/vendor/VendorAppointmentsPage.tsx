@@ -934,12 +934,12 @@ function BookingRow({
         : "bg-muted-foreground/40";
   const wrap = (children: React.ReactNode) =>
     item.kind === "inquiry" && item.inquiryId ? (
-      <a
-        href={`/vendor/inbox/${item.inquiryId}`}
+      <Link
+        to={`/vendor/inbox/${item.inquiryId}`}
         className="block card-soft p-4 hover:bg-secondary/40 transition"
       >
         {children}
-      </a>
+      </Link>
     ) : (
       <div className="card-soft p-4">
         {children}
