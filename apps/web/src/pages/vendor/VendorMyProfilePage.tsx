@@ -103,6 +103,7 @@ export default function VendorMyProfilePage() {
   const [vendorIds, setVendorIds] = useState<string[]>([]);
   const [primary, setPrimary] = useState<VendorRow | null>(null);
   const [account, setAccount] = useState<AccountProfile | null>(null);
+  const [ratingAvg, setRatingAvg] = useState<number | null>(null);
   const [listings, setListings] = useState<VendorRow[]>([]);
   const [posts, setPosts] = useState<PostRow[]>([]);
   const [reels, setReels] = useState<ReelRow[]>([]);
@@ -140,7 +141,25 @@ export default function VendorMyProfilePage() {
     setListings(vendors);
     const primaryRow = vendors[0] ?? null;
     setPrimary(primaryRow);
-    setVendorIds(vendors.map((v) => v.id));
+    const ids = vendors.map((v) => v.id);
+    setVendorIds(ids);
+
+    // Average review rating across all the vendor's listings. Header
+    // shows "—" if there's nothing to average yet.
+    if (ids.length > 0) {
+      const { data: revs } = await supabase
+        .from("reviews")
+        .select("rating")
+        .in("vendor_id", ids);
+      const ratings = (revs as Array<{ rating: number }> | null) ?? [];
+      setRatingAvg(
+        ratings.length === 0
+          ? null
+          : ratings.reduce((s, r) => s + r.rating, 0) / ratings.length,
+      );
+    } else {
+      setRatingAvg(null);
+    }
 
     // Posts / reels / buzz belong to the vendor (user_id), not a
     // specific listing. Query by user_id so the feed shows every
@@ -229,18 +248,11 @@ export default function VendorMyProfilePage() {
     return n.trim()[0]?.toUpperCase() ?? "V";
   }, [account?.business_name, user?.email]);
 
-  const stats = {
-    posts: posts.length,
-    reels: reels.length,
-    buzz: buzz.length,
-    listings: listings.length,
-  };
-
   const TABS: Array<{ id: Tab; label: string; icon: typeof Grid3x3 }> = [
-    { id: "grid", label: `Posts · ${stats.posts}`, icon: Grid3x3 },
-    { id: "reels", label: `Reels · ${stats.reels}`, icon: Film },
-    { id: "buzz", label: `Buzz · ${stats.buzz}`, icon: MessageCircle },
-    { id: "listing", label: `Listings · ${stats.listings}`, icon: Store },
+    { id: "grid", label: `Posts · ${posts.length}`, icon: Grid3x3 },
+    { id: "reels", label: `Reels · ${reels.length}`, icon: Film },
+    { id: "buzz", label: `Buzz · ${buzz.length}`, icon: MessageCircle },
+    { id: "listing", label: `Listings · ${listings.length}`, icon: Store },
   ];
 
   return (
@@ -271,7 +283,7 @@ export default function VendorMyProfilePage() {
               bio={account?.bio ?? null}
               memberSince={memberSince}
               verified={!!primary?.verified_at}
-              stats={stats}
+              ratingAvg={ratingAvg}
               onShare={onShare}
             />
           )}
@@ -380,7 +392,7 @@ function HeaderCard({
   bio,
   memberSince,
   verified,
-  stats,
+  ratingAvg,
   onShare,
 }: {
   initials: string;
@@ -392,7 +404,9 @@ function HeaderCard({
   bio: string | null;
   memberSince: string;
   verified: boolean;
-  stats: { posts: number; reels: number; buzz: number; listings: number };
+  /** Average review rating across all the vendor's listings, or
+   *  null when there are no reviews yet (renders as "—"). */
+  ratingAvg: number | null;
   onShare: () => void;
 }) {
   const [flipped, setFlipped] = useState(false);
@@ -465,14 +479,12 @@ function HeaderCard({
             <h2 className="font-editorial text-2xl text-foreground truncate">
               {businessName}
             </h2>
-            <p className="text-xs text-muted-foreground mt-1">
-              Member since {memberSince}
-            </p>
-            <div className="mt-4 grid grid-cols-4 gap-2 max-w-sm">
-              <Stat label="Posts" value={String(stats.posts)} />
-              <Stat label="Reels" value={String(stats.reels)} />
-              <Stat label="Buzz" value={String(stats.buzz)} />
-              <Stat label="Listings" value={String(stats.listings)} />
+            <div className="mt-4 grid grid-cols-2 gap-2 max-w-xs">
+              <Stat
+                label="Rating"
+                value={ratingAvg != null ? ratingAvg.toFixed(1) : "—"}
+              />
+              <Stat label="Joined" value={memberSince} />
             </div>
           </div>
           <div className="relative shrink-0 flex flex-col gap-2">
