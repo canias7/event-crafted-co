@@ -16,7 +16,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -77,24 +76,6 @@ interface Message {
   created_at: string;
   attachments?: MessageAttachment[];
 }
-
-const statusStyles: Record<string, string> = {
-  new: "bg-accent/15 text-accent border-accent/30",
-  drafted: "bg-secondary text-secondary-foreground border-border",
-  replied: "bg-foreground text-background border-foreground",
-  won: "bg-accent text-accent-foreground border-accent",
-  lost: "bg-muted text-muted-foreground border-border",
-  expired: "bg-muted text-muted-foreground border-border",
-};
-
-const statusLabel: Record<string, string> = {
-  new: "New",
-  drafted: "AI drafting",
-  replied: "Replied",
-  won: "Booked",
-  lost: "Closed",
-  expired: "Expired",
-};
 
 function fmtMoney(c: number | null) {
   return c == null ? "—" : `$${(c / 100).toLocaleString()}`;
@@ -320,24 +301,6 @@ export default function InquiryDetailPage() {
   const isClosed = inquiry.status === "won" || inquiry.status === "lost";
   const hostName = inquiry.host?.display_name?.trim() || "Host";
   const initial = hostName.charAt(0).toUpperCase();
-  const eventLabel = inquiry.event_type.replace(/_/g, " ");
-  const dateChip = inquiry.event_date
-    ? (() => {
-        const [y, m, d] = inquiry.event_date.split("T")[0].split("-").map(Number);
-        if (!y || !m || !d) return inquiry.event_date;
-        return new Date(y, m - 1, d).toLocaleDateString(undefined, {
-          month: "short",
-          day: "numeric",
-          year: "numeric",
-        });
-      })()
-    : null;
-  const budgetChip =
-    inquiry.budget_min_cents != null || inquiry.budget_max_cents != null
-      ? `${fmtMoney(inquiry.budget_min_cents)} – ${fmtMoney(inquiry.budget_max_cents)}`
-      : null;
-  const guestChip =
-    inquiry.guest_count != null ? `${inquiry.guest_count} guests` : null;
 
   return (
     <div className="min-h-screen vendor-canvas flex flex-col">
@@ -372,16 +335,7 @@ export default function InquiryDetailPage() {
             <p className="font-medium text-foreground truncate leading-tight">
               {hostName}
             </p>
-            <p className="text-[12px] text-muted-foreground capitalize truncate leading-tight">
-              {eventLabel}
-            </p>
           </div>
-          <Badge
-            variant="outline"
-            className={`${statusStyles[inquiry.status] ?? ""} shrink-0`}
-          >
-            {statusLabel[inquiry.status] ?? inquiry.status}
-          </Badge>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button
@@ -422,16 +376,6 @@ export default function InquiryDetailPage() {
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
-
-        {/* Chip strip — date / guests / budget / location at a glance */}
-        {(dateChip || guestChip || budgetChip || inquiry.location) && (
-          <div className="flex items-center gap-1.5 flex-wrap mt-2 max-w-3xl mx-auto pl-12">
-            {dateChip ? <Chip>📅 {dateChip}</Chip> : null}
-            {guestChip ? <Chip>👥 {guestChip}</Chip> : null}
-            {budgetChip ? <Chip>💵 {budgetChip}</Chip> : null}
-            {inquiry.location ? <Chip>📍 {inquiry.location}</Chip> : null}
-          </div>
-        )}
       </div>
 
       {/* ─── Chat thread (scrolling area) ────────────────────────────── */}
@@ -805,17 +749,4 @@ function InquiryPreviewSheet({
   );
 }
 
-function Chip({ children }: { children: React.ReactNode }) {
-  return (
-    <span
-      className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] text-foreground/75"
-      style={{
-        background: "rgba(255,138,76,0.10)",
-        border: "0.5px solid rgba(255,138,76,0.22)",
-      }}
-    >
-      {children}
-    </span>
-  );
-}
 
