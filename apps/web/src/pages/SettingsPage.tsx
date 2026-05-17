@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Loader2, AlertTriangle, User, LogOut } from "lucide-react";
 import { toast } from "sonner";
@@ -34,13 +34,7 @@ export default function SettingsPage() {
   const { user, profile, isApprovedVendor, signOut } = useAuth();
   const navigate = useNavigate();
 
-  const [displayName, setDisplayName] = useState("");
-  const [savingProfile, setSavingProfile] = useState(false);
   const [deleting, setDeleting] = useState(false);
-
-  useEffect(() => {
-    if (profile) setDisplayName(profile.display_name ?? "");
-  }, [profile]);
 
   // Respect whichever dashboard the user was last on. /settings is a
   // cross-cutting page, so a multi-role user clicking Settings from
@@ -52,22 +46,6 @@ export default function SettingsPage() {
     lastSide === "vendor" || (lastSide === null && isApprovedVendor);
   const navItems = useVendorNav ? vendorNavItems : customerNavItems;
   const sidebarTitle = useVendorNav ? "Vendor Portal" : "Customer";
-
-  async function saveProfile(e: React.FormEvent) {
-    e.preventDefault();
-    if (!user) return;
-    setSavingProfile(true);
-    const { error } = await supabase
-      .from("profiles")
-      .update({ display_name: displayName.trim() || null })
-      .eq("id", user.id);
-    setSavingProfile(false);
-    if (error) {
-      toast.error(error.message);
-      return;
-    }
-    toast.success("Profile saved");
-  }
 
   async function deleteAccount() {
     setDeleting(true);
@@ -84,12 +62,12 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="flex min-h-screen bg-background">
+    <div className="flex min-h-screen vendor-canvas">
       <DashboardSidebar items={navItems} title={sidebarTitle} backPath="/" />
 
       <main id="main-content" className="flex-1 pb-20 lg:pb-0">
-        <div className="border-b border-border bg-card px-4 md:px-8 py-4 sticky top-0 z-40">
-          <h1 className="font-editorial text-2xl">Settings</h1>
+        <div className="backdrop-blur-sm px-4 md:px-8 py-5 sticky top-0 z-40">
+          <h1 className="font-editorial text-3xl">Settings</h1>
           <p className="text-sm text-muted-foreground">
             Manage your account
           </p>
@@ -102,50 +80,27 @@ export default function SettingsPage() {
             <>
               <Section
                 icon={User}
-                title="Profile"
-                subtitle="How you appear across Vendora"
+                title="Account"
+                subtitle="Email on file for this account"
               >
-                <form onSubmit={saveProfile} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="display-name">Display name</Label>
-                    <Input
-                      id="display-name"
-                      value={displayName}
-                      onChange={(e) => setDisplayName(e.target.value)}
-                      className="h-11"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Email</Label>
-                    <Input
-                      value={user?.email ?? ""}
-                      disabled
-                      className="h-11 bg-secondary/50"
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      Contact{" "}
-                      <a
-                        href="mailto:hello@vendora.events"
-                        className="text-accent"
-                      >
-                        hello@vendora.events
-                      </a>{" "}
-                      to change your email.
-                    </p>
-                  </div>
-                  <div className="flex justify-end">
-                    <Button
-                      type="submit"
-                      disabled={savingProfile}
-                      className="rounded-full bg-foreground text-background hover:bg-foreground/90"
+                <div className="space-y-2">
+                  <Label>Email</Label>
+                  <Input
+                    value={user?.email ?? ""}
+                    disabled
+                    className="h-11 bg-secondary/50"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Contact{" "}
+                    <a
+                      href="mailto:hello@vendora.events"
+                      className="text-accent"
                     >
-                      {savingProfile && (
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      )}
-                      Save
-                    </Button>
-                  </div>
-                </form>
+                      hello@vendora.events
+                    </a>{" "}
+                    to change your email.
+                  </p>
+                </div>
               </Section>
 
               <Section
