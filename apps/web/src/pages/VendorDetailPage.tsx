@@ -26,7 +26,6 @@ import {
 } from "@/components/ui/dialog";
 import { PublicNav } from "@/components/public/PublicNav";
 import { Footer } from "@/components/public/Footer";
-import { VendorCard } from "@/components/shared/VendorCard";
 import { Lightbox } from "@/components/shared/Lightbox";
 import { VideoEmbed } from "@/components/vendor/VideoEmbed";
 import { ShowcaseStrip } from "@/components/vendor/ShowcaseStrip";
@@ -519,16 +518,6 @@ export default function VendorDetailPage() {
     setInquiryFormOpen(true);
   }
 
-  const related = useMemo(() => {
-    if (!vendor) return [];
-    const sameCat = vendors.filter(
-      (v) => v.id !== vendor.id && v.category === vendor.category,
-    );
-    if (sameCat.length >= 3) return sameCat.slice(0, 3);
-    const others = vendors.filter((v) => v.id !== vendor.id && v.category !== vendor.category);
-    return [...sameCat, ...others].slice(0, 3);
-  }, [vendor]);
-
   if (!vendor && vendorsLoading) {
     return <VendorDetailSkeleton />;
   }
@@ -939,31 +928,9 @@ export default function VendorDetailPage() {
         </div>
       </section>
 
-      {/* Related vendors */}
-      {related.length > 0 && (
-        <section className="py-16 md:py-24 border-t border-border">
-          <div className="container mx-auto px-6 md:px-8">
-            <div className="flex items-end justify-between mb-12 flex-wrap gap-4">
-              <div>
-                <p className="font-label text-accent mb-4">More to explore</p>
-                <h2 className="font-editorial text-4xl md:text-4xl">
-                  You might also love
-                </h2>
-              </div>
-              <Link to="/vendors">
-                <Button variant="ghost" className="rounded-full">
-                  Browse all vendors
-                </Button>
-              </Link>
-            </div>
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-x-4 gap-y-8">
-              {related.map((v) => (
-                <VendorCard key={v.id} vendor={v} />
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
+      {/* Related-vendors rail ("You might also love") removed — the
+          listing page already ends with FAQ + "More from this vendor".
+          A second cross-sell strip was reading as noise. */}
 
       <Footer />
 
