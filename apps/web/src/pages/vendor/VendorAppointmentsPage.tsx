@@ -1,22 +1,24 @@
 // Vendor calendar — month-grid primary view + actionable upcoming
 // appointments list. Mirrors apps/vendor-mobile/app/(vendor)/calendar.tsx.
 //
-// Three data streams render onto the month grid:
+// Three data streams render onto the month grid, scoped to ONE listing
+// at a time (picked via the listing dropdown above the grid):
 //   • inquiries (status = 'won')      → BOOKED   (ink fill, cream digit)
 //   • inquiries (new/replied)         → PENDING  (soft amber fill)
 //   • vendor_unavailable_dates        → BLOCKED  (diagonal hatch)
 //
-// Stats row at the top counts won / pending / estimated earnings for
-// the currently-viewed month. Earnings = sum of budget_min_cents.
-//
-// Tapping a day filters the selected-day list at the bottom and
-// reveals Block / Unblock — writing to vendor_unavailable_dates across
-// every listing this user owns.
+// Blocking a day writes a vendor_unavailable_dates row for the selected
+// listing only — its public listing page reflects the block immediately
+// via VendorAvailabilityPublic. Other listings stay open.
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import {
+  Check,
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
+  ImagePlus,
   Plus,
   X as XIcon,
 } from "lucide-react";
@@ -33,6 +35,20 @@ import {
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { Skeleton } from "@/components/ui/skeleton";
 import { vendorNavItems as navItems } from "@/data/navItems";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import { cn } from "@/lib/utils";
 
 const DAY_HEADERS = ["S", "M", "T", "W", "T", "F", "S"];
 
@@ -47,6 +63,15 @@ interface InquiryRow {
   budget_max_cents: number | null;
   host_id: string;
   host: { display_name: string | null } | null;
+}
+
+interface ListingOpt {
+  id: string;
+  business_name: string | null;
+  category: string | null;
+  location: string | null;
+  application_status: "pending" | "approved" | "rejected" | null;
+  logo_url: string | null;
 }
 
 function ymdKey(d: Date): string {
@@ -99,12 +124,17 @@ function prettyDay(ymd: string): string {
 }
 
 export default function VendorAppointmentsPage() {
-  const { user, vendorMemberships } = useAuth();
-  const primaryVendorId = vendorMemberships[0]?.vendor_id ?? null;
+  const { user } = useAuth();
 
-  // Every vendor_profile this user owns — calendar aggregates bookings
-  // + pending inquiries across all of them.
-  const [vendorIds, setVendorIds] = useState<string[]>([]);
+  // All listings this vendor owns (up to 5). The calendar scopes to ONE
+  // listing at a time — selectedListingId drives every query + write.
+  const [listings, setListings] = useState<ListingOpt[]>([]);
+  const [listingsLoading, setListingsLoading] = useState(true);
+  const [selectedListingId, setSelectedListingId] = useState<string | null>(
+    null,
+  );
+  const [listingPickerOpen, setListingPickerOpen] = useState(false);
+
   const [inquiries, setInquiries] = useState<InquiryRow[]>([]);
   const [manualBlocks, setManualBlocks] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
@@ -118,7 +148,7 @@ export default function VendorAppointmentsPage() {
   );
 
   // Appointments (separate row in DB; surfaces in the actionable list
-  // below the calendar).
+  // below the calendar — scoped to the selected listing).
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [appointmentsLoading, setAppointmentsLoading] = useState(true);
 
@@ -126,17 +156,31 @@ export default function VendorAppointmentsPage() {
     if (!user?.id) return;
     let cancelled = false;
     (async () => {
+      setListingsLoading(true);
       const { data } = await supabase
         .from("vendor_profiles")
-        .select("id")
-        .eq("user_id", user.id);
+        .select(
+          "id, business_name, category, location, application_status, logo_url",
+        )
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: true });
       if (cancelled) return;
-      setVendorIds(((data ?? []) as { id: string }[]).map((r) => r.id));
+      const rows = (data ?? []) as ListingOpt[];
+      setListings(rows);
+      // Preselect the first listing on load. Once the user picks one,
+      // we don't override their choice.
+      setSelectedListingId((prev) => prev ?? rows[0]?.id ?? null);
+      setListingsLoading(false);
     })();
     return () => {
       cancelled = true;
     };
   }, [user?.id]);
+
+  const selectedListing = useMemo(
+    () => listings.find((l) => l.id === selectedListingId) ?? null,
+    [listings, selectedListingId],
+  );
 
   const monthBounds = useMemo(() => {
     const start = new Date(viewMonth);
@@ -146,7 +190,9 @@ export default function VendorAppointmentsPage() {
   }, [viewMonth]);
 
   const loadCalendar = useCallback(async () => {
-    if (vendorIds.length === 0 || !user?.id) {
+    if (!selectedListingId || !user?.id) {
+      setInquiries([]);
+      setManualBlocks([]);
       setLoading(false);
       return;
     }
@@ -160,13 +206,13 @@ export default function VendorAppointmentsPage() {
         .select(
           "id, status, event_date, event_type, budget_min_cents, budget_max_cents, host_id, host:profiles!inquiries_host_id_fkey(display_name)",
         )
-        .in("vendor_id", vendorIds)
+        .eq("vendor_id", selectedListingId)
         .gte("event_date", startYmd)
         .lt("event_date", endYmd),
       supabase
         .from("vendor_unavailable_dates")
         .select("date")
-        .in("vendor_id", vendorIds)
+        .eq("vendor_id", selectedListingId)
         .gte("date", startYmd)
         .lt("date", endYmd),
     ]);
@@ -175,14 +221,14 @@ export default function VendorAppointmentsPage() {
       ((blockRes.data ?? []) as { date: string }[]).map((r) => r.date),
     );
     setLoading(false);
-  }, [vendorIds, user?.id, monthBounds]);
+  }, [selectedListingId, user?.id, monthBounds]);
 
   useEffect(() => {
     loadCalendar();
   }, [loadCalendar]);
 
   const loadAppointments = useCallback(async () => {
-    if (!user || !primaryVendorId) {
+    if (!user || !selectedListingId) {
       setAppointments([]);
       setAppointmentsLoading(false);
       return;
@@ -194,7 +240,7 @@ export default function VendorAppointmentsPage() {
       .select(
         "id, inquiry_id, vendor_id, host_id, kind, title, location, scheduled_at, duration_minutes, status, proposed_by, notes, meeting_url, meeting_provider, host:profiles!appointments_host_id_fkey(display_name)",
       )
-      .eq("vendor_id", primaryVendorId)
+      .eq("vendor_id", selectedListingId)
       .order("scheduled_at", { ascending: true });
     const rows = (
       (data as Array<
@@ -203,7 +249,7 @@ export default function VendorAppointmentsPage() {
     ).map((r) => ({ ...r, host_name: r.host?.display_name ?? null }));
     setAppointments(rows);
     setAppointmentsLoading(false);
-  }, [user, primaryVendorId]);
+  }, [user, selectedListingId]);
 
   useEffect(() => {
     loadAppointments();
@@ -211,10 +257,10 @@ export default function VendorAppointmentsPage() {
 
   const realtimeAppointments = useMemo(
     () =>
-      primaryVendorId
-        ? { table: "appointments", filter: `vendor_id=eq.${primaryVendorId}` }
+      selectedListingId
+        ? { table: "appointments", filter: `vendor_id=eq.${selectedListingId}` }
         : null,
-    [primaryVendorId],
+    [selectedListingId],
   );
   useRealtime(realtimeAppointments, () => loadAppointments());
 
@@ -290,28 +336,32 @@ export default function VendorAppointmentsPage() {
     !!selectedYmd && manualBlocks.includes(selectedYmd);
 
   async function toggleSelectedDayBlock() {
-    if (!selectedYmd || vendorIds.length === 0 || blocking) return;
+    if (!selectedYmd || !selectedListingId || blocking) return;
     const willBlock = !isSelectedBlocked;
     const verb = willBlock ? "Block" : "Unblock";
-    const listingNoun =
-      vendorIds.length === 1 ? "your listing" : `your ${vendorIds.length} listings`;
+    const listingLabel =
+      selectedListing?.business_name?.trim() || "this listing";
     const ok = window.confirm(
       willBlock
-        ? `Mark ${prettyDay(selectedYmd)} unavailable across ${listingNoun}. Hosts won't see you as bookable for that date.`
-        : `Re-open ${prettyDay(selectedYmd)} across ${listingNoun}.`,
+        ? `Mark ${prettyDay(selectedYmd)} unavailable on ${listingLabel}. Hosts won't see this listing as bookable for that date.`
+        : `Re-open ${prettyDay(selectedYmd)} on ${listingLabel}.`,
     );
     if (!ok) return;
     setBlocking(true);
     if (willBlock) {
-      const rows = vendorIds.map((vid) => ({
-        vendor_id: vid,
-        date: selectedYmd,
-        reason: "Blocked manually",
-      }));
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { error } = await (supabase as any)
         .from("vendor_unavailable_dates")
-        .upsert(rows, { onConflict: "vendor_id,date" });
+        .upsert(
+          [
+            {
+              vendor_id: selectedListingId,
+              date: selectedYmd,
+              reason: "Blocked manually",
+            },
+          ],
+          { onConflict: "vendor_id,date" },
+        );
       setBlocking(false);
       if (error) {
         toast.error(`Couldn't ${verb.toLowerCase()}: ${error.message}`);
@@ -321,7 +371,7 @@ export default function VendorAppointmentsPage() {
       const { error } = await supabase
         .from("vendor_unavailable_dates")
         .delete()
-        .in("vendor_id", vendorIds)
+        .eq("vendor_id", selectedListingId)
         .eq("date", selectedYmd);
       setBlocking(false);
       if (error) {
@@ -367,6 +417,26 @@ export default function VendorAppointmentsPage() {
         </div>
 
         <div className="p-4 md:p-8 max-w-4xl space-y-6">
+          {/* Listing picker — every block / inquiry on the grid is
+              scoped to whichever listing the vendor picks here. */}
+          {!listingsLoading && listings.length === 0 ? (
+            <NoListingsEmptyState />
+          ) : (
+            <ListingPicker
+              listings={listings}
+              loading={listingsLoading}
+              selectedId={selectedListingId}
+              onSelect={(id) => {
+                setSelectedListingId(id);
+                setListingPickerOpen(false);
+              }}
+              open={listingPickerOpen}
+              onOpenChange={setListingPickerOpen}
+            />
+          )}
+
+          {listings.length > 0 && (
+            <>
           <div>
             <div className="flex items-center justify-between mb-3">
               <h2 className="font-editorial text-2xl">{monthLabel}</h2>
@@ -415,7 +485,7 @@ export default function VendorAppointmentsPage() {
                 </h3>
                 <button
                   onClick={toggleSelectedDayBlock}
-                  disabled={blocking || vendorIds.length === 0}
+                  disabled={blocking || !selectedListingId}
                   className="inline-flex items-center gap-1 rounded-full bg-foreground text-background px-3.5 py-2 text-xs font-bold disabled:opacity-60"
                 >
                   {isSelectedBlocked ? (
@@ -457,6 +527,8 @@ export default function VendorAppointmentsPage() {
               )}
             </section>
           ) : null}
+            </>
+          )}
         </div>
       </main>
 
@@ -493,6 +565,207 @@ export default function VendorAppointmentsPage() {
 // dropped from the calendar header because transactions are handled
 // outside the app. The calendar grid is the only signal vendors need
 // here (booked / pending / blocked dots).
+
+function statusBadge(s: ListingOpt["application_status"]) {
+  if (s === "approved")
+    return { label: "Live", bg: "rgba(34,197,94,0.14)", color: "#0a7c4a" };
+  if (s === "rejected")
+    return { label: "Rejected", bg: "rgba(220,38,38,0.14)", color: "#a3160d" };
+  return { label: "Pending", bg: "rgba(255,138,76,0.18)", color: "#c4541e" };
+}
+
+function ListingPicker({
+  listings,
+  loading,
+  selectedId,
+  onSelect,
+  open,
+  onOpenChange,
+}: {
+  listings: ListingOpt[];
+  loading: boolean;
+  selectedId: string | null;
+  onSelect: (id: string) => void;
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+}) {
+  const selected = listings.find((l) => l.id === selectedId) ?? null;
+  const selLabel =
+    selected?.business_name?.trim() ||
+    selected?.category?.toString() ||
+    "Pick a listing";
+  const selSub = selected
+    ? [selected.category, selected.location].filter(Boolean).join(" · ")
+    : null;
+  const selBadge = selected ? statusBadge(selected.application_status) : null;
+
+  if (loading) {
+    return <Skeleton className="h-16 w-full rounded-2xl" />;
+  }
+
+  return (
+    <div>
+      <p className="text-[11px] uppercase tracking-[0.18em] font-medium text-muted-foreground mb-2">
+        Listing
+      </p>
+      <Popover open={open} onOpenChange={onOpenChange}>
+        <PopoverTrigger asChild>
+          <button
+            type="button"
+            className="w-full flex items-center justify-between gap-3 rounded-2xl px-4 py-3 text-left transition-colors"
+            style={{
+              background: "rgba(255,253,250,0.7)",
+              border: "0.5px solid rgba(255,138,76,0.22)",
+              backdropFilter: "blur(10px)",
+              WebkitBackdropFilter: "blur(10px)",
+              boxShadow: "0 8px 24px -16px rgba(196,84,30,0.18)",
+            }}
+          >
+            <span className="flex items-center gap-3 min-w-0 flex-1">
+              <span
+                className="w-9 h-9 rounded-full shrink-0 overflow-hidden inline-flex items-center justify-center text-xs font-medium"
+                style={{
+                  background: "rgba(255,138,76,0.18)",
+                  color: "#c4541e",
+                }}
+              >
+                {selected?.logo_url ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={selected.logo_url}
+                    alt=""
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  (selLabel.charAt(0) || "L").toUpperCase()
+                )}
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block font-medium text-foreground truncate">
+                  {selLabel}
+                </span>
+                {selSub ? (
+                  <span className="block text-xs text-muted-foreground truncate">
+                    {selSub}
+                  </span>
+                ) : null}
+              </span>
+              {selBadge ? (
+                <span
+                  className="text-[10px] uppercase tracking-wider font-medium rounded-full px-2 py-0.5 shrink-0"
+                  style={{ background: selBadge.bg, color: selBadge.color }}
+                >
+                  {selBadge.label}
+                </span>
+              ) : null}
+            </span>
+            <ChevronDown
+              className={cn(
+                "w-4 h-4 text-muted-foreground shrink-0 transition-transform",
+                open && "rotate-180",
+              )}
+            />
+          </button>
+        </PopoverTrigger>
+        <PopoverContent
+          className="w-[--radix-popover-trigger-width] p-0 overflow-hidden"
+          align="start"
+          style={{
+            background: "rgba(255,253,250,0.97)",
+            border: "0.5px solid rgba(255,138,76,0.22)",
+            backdropFilter: "blur(14px)",
+            WebkitBackdropFilter: "blur(14px)",
+          }}
+        >
+          <Command>
+            <CommandInput placeholder="Search your listings…" className="h-11" />
+            <CommandList>
+              <CommandEmpty>No matching listings.</CommandEmpty>
+              <CommandGroup>
+                {listings.map((l) => {
+                  const label =
+                    l.business_name?.trim() || l.category || "Untitled listing";
+                  const sub = [l.category, l.location]
+                    .filter(Boolean)
+                    .join(" · ");
+                  const badge = statusBadge(l.application_status);
+                  return (
+                    <CommandItem
+                      key={l.id}
+                      value={`${label} ${sub}`}
+                      onSelect={() => onSelect(l.id)}
+                    >
+                      <Check
+                        className={cn(
+                          "mr-2 h-4 w-4 shrink-0",
+                          selectedId === l.id
+                            ? "opacity-100 text-accent"
+                            : "opacity-0",
+                        )}
+                      />
+                      <span className="min-w-0 flex-1">
+                        <span className="block font-medium text-foreground truncate">
+                          {label}
+                        </span>
+                        {sub ? (
+                          <span className="block text-xs text-muted-foreground truncate">
+                            {sub}
+                          </span>
+                        ) : null}
+                      </span>
+                      <span
+                        className="text-[10px] uppercase tracking-wider font-medium rounded-full px-2 py-0.5 shrink-0 ml-2"
+                        style={{ background: badge.bg, color: badge.color }}
+                      >
+                        {badge.label}
+                      </span>
+                    </CommandItem>
+                  );
+                })}
+              </CommandGroup>
+            </CommandList>
+          </Command>
+        </PopoverContent>
+      </Popover>
+    </div>
+  );
+}
+
+function NoListingsEmptyState() {
+  return (
+    <div
+      className="rounded-2xl p-10 md:p-14 text-center"
+      style={{
+        background: "rgba(255,253,250,0.6)",
+        border: "0.5px solid rgba(255,138,76,0.22)",
+        backdropFilter: "blur(10px)",
+        WebkitBackdropFilter: "blur(10px)",
+      }}
+    >
+      <div
+        className="w-14 h-14 mx-auto rounded-full inline-flex items-center justify-center mb-5"
+        style={{ background: "rgba(255,138,76,0.18)", color: "#c4541e" }}
+      >
+        <ImagePlus className="w-6 h-6" />
+      </div>
+      <h2 className="font-editorial italic text-3xl mb-2">
+        Upload your first listing
+      </h2>
+      <p className="text-sm text-muted-foreground max-w-md mx-auto mb-6 leading-relaxed">
+        The calendar lives per listing. Once you publish your first
+        listing, you'll be able to block dates, see incoming inquiries,
+        and manage availability right here.
+      </p>
+      <Link
+        to="/vendor/me"
+        className="inline-flex items-center gap-2 rounded-full bg-foreground text-background px-5 py-2.5 text-sm font-medium hover:opacity-90 transition-opacity"
+      >
+        <Plus className="w-4 h-4" />
+        Create a listing
+      </Link>
+    </div>
+  );
+}
 
 function MonthGrid({
   month,
