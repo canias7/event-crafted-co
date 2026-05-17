@@ -138,20 +138,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Both states grant vendor portal access; only 'approved' makes the
     // listing publicly visible (gated by RLS on the table).
     //
-    // Multi-listing accounts: order + limit 1 picks the oldest listing
-    // deterministically. business_name / logo_url sync from profiles
-    // via trigger, so any one listing is a fine representative of the
-    // brand for the nav avatar + partner-thread caller identity.
+    // Multi-listing accounts: prefer an APPROVED listing first (the
+    // canonical public brand representative), and only fall back to
+    // the oldest pending / rejected row if there isn't one yet. Keeps
+    // ownListing.id pointing at a publicly reachable row whenever
+    // possible, so anywhere downstream that resolves the id to a
+    // public URL doesn't 404.
+    //
+    // business_name / logo_url sync from profiles via trigger, so
+    // either result renders the same brand on the nav avatar; the
+    // approved preference only matters for id-based consumers.
+    //
     // (Plain .maybeSingle() throws "matched many" for accounts with
     // 2+ listings and returns null — which used to silently hide the
     // "Message vendor" button for every multi-listing vendor.)
-    const { data: vp } = await supabase
+    let { data: vp } = await supabase
       .from("vendor_profiles")
       .select("id, business_name, category, application_status, logo_url")
       .eq("user_id", userId)
+      .eq("application_status", "approved")
       .order("created_at", { ascending: true })
       .limit(1)
       .maybeSingle();
+    if (!vp) {
+      ({ data: vp } = await supabase
+        .from("vendor_profiles")
+        .select("id, business_name, category, application_status, logo_url")
+        .eq("user_id", userId)
+        .order("created_at", { ascending: true })
+        .limit(1)
+        .maybeSingle());
+    }
     setOwnListing((vp as OwnListing | null) ?? null);
 
     // Vendor team memberships — drives vendor portal access for non-owner
