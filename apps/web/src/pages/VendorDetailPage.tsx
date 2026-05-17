@@ -164,12 +164,6 @@ export default function VendorDetailPage() {
   const [signinPromptOpen, setSigninPromptOpen] = useState(false);
   const [inquiryFormOpen, setInquiryFormOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
-  // Owner of THIS listing (profiles.id). Needed so the "Message vendor"
-  // button can call find_or_create_partner_thread with the right
-  // recipient. Looked up on demand once the listing resolves.
-  const [listingOwnerUserId, setListingOwnerUserId] = useState<string | null>(
-    null,
-  );
 
   const vendor = id
     ? vendors.find((v) => v.id === id)
@@ -177,28 +171,11 @@ export default function VendorDetailPage() {
       ? vendors.find((v) => v.slug === slug)
       : undefined;
   const saved = vendor ? isSaved(vendor.id) : false;
-
-  useEffect(() => {
-    if (!vendor?.id || !vendor.isReal) {
-      setListingOwnerUserId(null);
-      return;
-    }
-    let cancelled = false;
-    supabase
-      .from("vendor_profiles")
-      .select("user_id")
-      .eq("id", vendor.id)
-      .maybeSingle()
-      .then(({ data }) => {
-        if (cancelled) return;
-        setListingOwnerUserId(
-          (data as { user_id?: string | null } | null)?.user_id ?? null,
-        );
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [vendor?.id, vendor?.isReal]);
+  // Owner's profiles.id for THIS listing. Pre-baked into the vendor
+  // cache (useVendors) so the Message-vendor button + RPC call don't
+  // need a separate roundtrip — eliminates the load-race where the
+  // button briefly didn't render after the listing did.
+  const listingOwnerUserId = vendor?.ownerUserId ?? null;
 
   // Real portfolio images (only if this is a DB-backed vendor).
   interface RealPortfolioItem {

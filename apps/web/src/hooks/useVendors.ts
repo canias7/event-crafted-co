@@ -36,6 +36,10 @@ export interface Vendor {
   cancellationPolicy?: string | null;
   rescheduleWindowDays?: number | null;
   policyNotes?: string | null;
+  /** Owner's profiles.id — used by the partner-thread RPC and any
+   *  surface that needs to know "who runs this listing." Pre-baked
+   *  into the cache so consumers don't need a second roundtrip. */
+  ownerUserId?: string | null;
 }
 
 // Sub-category → bundled image key. Maps every sub in
@@ -88,6 +92,7 @@ export const categoryImageFallback: Record<string, string> = {
 
 interface VendorProfileRow {
   id: string;
+  user_id: string;
   business_name: string;
   category: string;
   bio: string | null;
@@ -134,6 +139,7 @@ function normalizeDb(row: VendorProfileRow): Vendor {
     cancellationPolicy: row.cancellation_policy ?? null,
     rescheduleWindowDays: row.reschedule_window_days ?? null,
     policyNotes: row.policy_notes ?? null,
+    ownerUserId: row.user_id,
     isReal: true,
   };
 }
@@ -168,7 +174,7 @@ async function fetchVendors(): Promise<Vendor[]> {
       const { data, error } = await (supabase as any)
         .from("vendor_profiles")
         .select(
-          "id, business_name, category, bio, base_price_cents, location, service_radius_miles, portfolio_summary, verified_at, responder_tier, intro_video_url, slug, instagram_handle, tiktok_handle, deposit_pct, cancellation_policy, reschedule_window_days, policy_notes",
+          "id, user_id, business_name, category, bio, base_price_cents, location, service_radius_miles, portfolio_summary, verified_at, responder_tier, intro_video_url, slug, instagram_handle, tiktok_handle, deposit_pct, cancellation_policy, reschedule_window_days, policy_notes",
         )
         .eq("application_status", "approved")
         .order("verified_at", { ascending: false, nullsFirst: false });
