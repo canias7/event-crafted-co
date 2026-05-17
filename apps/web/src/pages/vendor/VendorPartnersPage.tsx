@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 import { Send, Loader2, MessageSquare, Smile } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -501,10 +501,6 @@ export default function VendorPartnersPage() {
       </main>
 
       <MobileNav items={navItems} />
-
-      <p className="hidden">
-        <Link to="/vendor/messages">Back to host messages</Link>
-      </p>
     </div>
   );
 }
