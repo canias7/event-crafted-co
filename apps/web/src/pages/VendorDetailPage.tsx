@@ -11,7 +11,6 @@ import {
   Calendar,
   Share2,
   Mail,
-  Zap,
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -608,30 +607,11 @@ export default function VendorDetailPage() {
 
           <div className="flex-1 flex items-end pb-12 md:pb-16">
             <div className="container mx-auto px-6 md:px-8">
-              <motion.div
-                initial={{ opacity: 0, y: 16 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ ...spring, delay: 0.15 }}
-                className="flex items-center gap-4 mb-5"
-              >
-                <p className="font-label text-accent tracking-[0.4em]">— {vendor.category.toUpperCase()}</p>
-                {vendor.responderTier === "fast" && (
-                  <Badge className="bg-accent text-accent-foreground backdrop-blur-sm border-none gap-1">
-                    <Zap className="w-3 h-3 fill-accent-foreground" />
-                    Fast responder
-                  </Badge>
-                )}
-                {vendor.availability === "available" ? (
-                  <Badge className="bg-accent/15 text-accent border border-accent/30 backdrop-blur-sm">
-                    Available
-                  </Badge>
-                ) : (
-                  <Badge className="bg-background/15 text-background border border-background/30 backdrop-blur-sm">
-                    Limited availability
-                  </Badge>
-                )}
-              </motion.div>
-
+              {/* Category caption + responder / availability pills were
+                  removed from the hero overlay — they're noise on top
+                  of the photo. Category surfaces in the URL + share
+                  card; availability is implicit (the vendor is
+                  showing up in search at all). */}
               <motion.h1
                 initial={{ opacity: 0, y: 24 }}
                 animate={{ opacity: 1, y: 0 }}
