@@ -58,8 +58,7 @@ const AGENTS: Agent[] = [
     accentSoft: "rgba(255, 138, 76, 0.18)",
     status: "24/7 · Live chat",
     Icon: Bot,
-    imageSrc:
-      "https://i.postimg.cc/x1rvZzqD/00573634-4D95-464B-AD52-DCEF05353DDB.png",
+    imageSrc: "/agents/hilux.png",
   },
   {
     codename: "RAPTOR",
