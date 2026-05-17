@@ -724,37 +724,6 @@ function FloatingCharacter({ agent }: { agent: Agent }) {
           />
         ))}
 
-      {/* Status chip — flips to "Listening" while hovered so the
-          character feels responsive */}
-      <div
-        className="absolute right-2 top-4 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[9px] uppercase tracking-[0.2em] font-semibold transition-colors"
-        style={{
-          color: agent.accent,
-          background: "rgba(255,255,255,0.75)",
-          border: `0.5px solid ${agent.accent}55`,
-          backdropFilter: "blur(8px)",
-        }}
-      >
-        <motion.span
-          animate={
-            reduceMotion
-              ? undefined
-              : { scale: [1, 1.4, 1], opacity: [1, 0.55, 1] }
-          }
-          transition={
-            reduceMotion
-              ? undefined
-              : { duration: hovered ? 0.9 : 1.6, repeat: Infinity, ease: "easeInOut" }
-          }
-          className="h-1.5 w-1.5 rounded-full"
-          style={{
-            background: agent.accent,
-            boxShadow: `0 0 6px ${agent.accent}`,
-          }}
-        />
-        {hovered ? "Listening" : "Live"}
-      </div>
-
       {/* Ripple ring on hover — radiates from center continuously */}
       {!reduceMotion && hovered && (
         <motion.span
