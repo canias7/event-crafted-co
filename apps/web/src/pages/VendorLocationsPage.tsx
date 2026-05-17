@@ -1,27 +1,32 @@
-import { useMemo } from "react";
-import { Link } from "react-router-dom";
-import { motion } from "framer-motion";
-import { MapPin, ArrowRight } from "lucide-react";
+import { useMemo, useState } from "react";
+import { Check, ChevronDown, MapPin } from "lucide-react";
 import { PublicNav } from "@/components/public/PublicNav";
 import { Footer } from "@/components/public/Footer";
 import { Skeleton } from "@/components/ui/skeleton";
+import { VendorCard } from "@/components/shared/VendorCard";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
 import { useVendors, type Vendor } from "@/hooks/useVendors";
 import { useDocumentMeta } from "@/hooks/useDocumentMeta";
-import { citySlugify } from "@/lib/citySlug";
+import { cn } from "@/lib/utils";
 
-const spring = { type: "spring" as const, duration: 0.6, bounce: 0 };
+const ALL_CITIES = "__all__";
 
-interface LocationGroup {
-  label: string;
-  vendors: Vendor[];
-}
-
-// Splits a location string like "Brooklyn, NY" into a normalized label.
-// Falls back to the whole string when the comma split doesn't help.
+// Title-case "brooklyn, ny" → "Brooklyn, NY". Tolerant of mixed case.
 function normalizeLocation(loc: string): string {
   const trimmed = loc.trim();
   if (!trimmed) return "";
-  // Title-case "brooklyn, ny" → "Brooklyn, NY". Tolerant of mixed case.
   const parts = trimmed.split(",").map((p) => p.trim()).filter(Boolean);
   if (parts.length === 0) return "";
   if (parts.length === 1) {
@@ -30,7 +35,6 @@ function normalizeLocation(loc: string): string {
       .map((w) => (w.length > 0 ? w[0].toUpperCase() + w.slice(1).toLowerCase() : w))
       .join(" ");
   }
-  // City + state: title-case city, uppercase 2-letter state
   const city = parts[0]
     .split(" ")
     .map((w) => (w.length > 0 ? w[0].toUpperCase() + w.slice(1).toLowerCase() : w))
@@ -41,6 +45,8 @@ function normalizeLocation(loc: string): string {
 
 export default function VendorLocationsPage() {
   const { vendors, loading } = useVendors();
+  const [open, setOpen] = useState(false);
+  const [selected, setSelected] = useState<string>(ALL_CITIES);
 
   useDocumentMeta({
     title: "Vendors by location — Vendora",
@@ -48,29 +54,44 @@ export default function VendorLocationsPage() {
       "Browse Vendora vendors by city. Photographers, florists, venues, caterers, planners — find the team near your event.",
   });
 
-  const groups = useMemo<LocationGroup[]>(() => {
-    const map = new Map<string, Vendor[]>();
+  // Map vendors to their normalized city label so we can group, count,
+  // and filter from a single derivation.
+  const labelByVendor = useMemo(() => {
+    const m = new Map<string, string>();
     for (const v of vendors) {
-      const key = normalizeLocation(v.location ?? v.distance ?? "");
-      if (!key) continue;
-      if (!map.has(key)) map.set(key, []);
-      map.get(key)!.push(v);
+      m.set(v.id, normalizeLocation(v.location ?? v.distance ?? ""));
     }
-    return Array.from(map.entries())
-      .map(([label, list]) => ({ label, vendors: list }))
-      .sort((a, b) => b.vendors.length - a.vendors.length);
+    return m;
   }, [vendors]);
 
-  const totalLocations = groups.length;
-  const uncategorized = vendors.filter(
-    (v) => !normalizeLocation(v.location ?? v.distance ?? ""),
-  ).length;
+  const cities = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const v of vendors) {
+      const k = labelByVendor.get(v.id) ?? "";
+      if (!k) continue;
+      counts.set(k, (counts.get(k) ?? 0) + 1);
+    }
+    return Array.from(counts.entries())
+      .map(([label, count]) => ({ label, count }))
+      .sort((a, b) => a.label.localeCompare(b.label));
+  }, [vendors, labelByVendor]);
+
+  const filtered: Vendor[] = useMemo(() => {
+    if (selected === ALL_CITIES) return vendors;
+    return vendors.filter((v) => labelByVendor.get(v.id) === selected);
+  }, [vendors, labelByVendor, selected]);
+
+  const totalLocations = cities.length;
+  const triggerLabel =
+    selected === ALL_CITIES
+      ? `All cities · ${vendors.length} ${vendors.length === 1 ? "vendor" : "vendors"}`
+      : selected;
 
   return (
     <div className="min-h-screen public-canvas">
       <PublicNav />
 
-      <section className="border-b border-border pt-32 pb-12">
+      <section className="pt-32 pb-10">
         <div className="container mx-auto px-6 md:px-8 max-w-5xl">
           <p className="font-label text-accent tracking-[0.4em] mb-4">
             — VENDORS BY LOCATION
@@ -81,84 +102,140 @@ export default function VendorLocationsPage() {
           </h1>
           <p className="text-base md:text-lg text-muted-foreground max-w-2xl leading-relaxed">
             {totalLocations} {totalLocations === 1 ? "city" : "cities"} on Vendora
-            today. Tap any city to filter the directory.
+            today. Pick one to filter the directory.
           </p>
+
+          {/* City picker — searchable combobox */}
+          <div className="mt-8 max-w-md">
+            <Popover open={open} onOpenChange={setOpen}>
+              <PopoverTrigger asChild>
+                <button
+                  type="button"
+                  className="w-full flex items-center justify-between gap-3 rounded-full px-5 py-3 text-left transition-colors"
+                  style={{
+                    background: "rgba(255,253,250,0.7)",
+                    border: "0.5px solid rgba(255,138,76,0.22)",
+                    backdropFilter: "blur(10px)",
+                    WebkitBackdropFilter: "blur(10px)",
+                    boxShadow: "0 8px 24px -16px rgba(196,84,30,0.18)",
+                  }}
+                >
+                  <span className="flex items-center gap-2.5 min-w-0">
+                    <MapPin className="w-4 h-4 text-accent shrink-0" />
+                    <span className="font-medium text-foreground truncate">
+                      {triggerLabel}
+                    </span>
+                  </span>
+                  <ChevronDown
+                    className={cn(
+                      "w-4 h-4 text-muted-foreground shrink-0 transition-transform",
+                      open && "rotate-180",
+                    )}
+                  />
+                </button>
+              </PopoverTrigger>
+              <PopoverContent
+                className="w-[--radix-popover-trigger-width] p-0 overflow-hidden"
+                align="start"
+                style={{
+                  background: "rgba(255,253,250,0.95)",
+                  border: "0.5px solid rgba(255,138,76,0.22)",
+                  backdropFilter: "blur(14px)",
+                  WebkitBackdropFilter: "blur(14px)",
+                }}
+              >
+                <Command>
+                  <CommandInput placeholder="Search a city…" className="h-11" />
+                  <CommandList>
+                    <CommandEmpty>No cities yet.</CommandEmpty>
+                    <CommandGroup>
+                      <CommandItem
+                        value="All cities"
+                        onSelect={() => {
+                          setSelected(ALL_CITIES);
+                          setOpen(false);
+                        }}
+                      >
+                        <Check
+                          className={cn(
+                            "mr-2 h-4 w-4",
+                            selected === ALL_CITIES ? "opacity-100 text-accent" : "opacity-0",
+                          )}
+                        />
+                        <span className="flex-1">All cities</span>
+                        <span className="text-xs text-muted-foreground tnum">
+                          {vendors.length}
+                        </span>
+                      </CommandItem>
+                      {cities.map((c) => (
+                        <CommandItem
+                          key={c.label}
+                          value={c.label}
+                          onSelect={() => {
+                            setSelected(c.label);
+                            setOpen(false);
+                          }}
+                        >
+                          <Check
+                            className={cn(
+                              "mr-2 h-4 w-4",
+                              selected === c.label ? "opacity-100 text-accent" : "opacity-0",
+                            )}
+                          />
+                          <span className="flex-1">{c.label}</span>
+                          <span className="text-xs text-muted-foreground tnum">
+                            {c.count}
+                          </span>
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
+          </div>
         </div>
       </section>
 
       <section className="py-12 md:py-16">
-        <div className="container mx-auto px-6 md:px-8 max-w-5xl">
-          {loading && groups.length === 0 ? (
-            <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-4">
-              {[0, 1, 2, 3, 4, 5].map((i) => (
-                <Skeleton key={i} className="h-32 rounded-sm" />
+        <div className="container mx-auto px-6 md:px-8">
+          {loading && vendors.length === 0 ? (
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-x-4 gap-y-8">
+              {[0, 1, 2, 3, 4].map((i) => (
+                <div key={i}>
+                  <Skeleton className="aspect-[4/3] w-full rounded-sm mb-3" />
+                  <Skeleton className="h-5 w-2/3 mb-2" />
+                  <Skeleton className="h-4 w-full" />
+                </div>
               ))}
             </div>
-          ) : groups.length === 0 ? (
+          ) : filtered.length === 0 ? (
             <div className="text-center py-20 max-w-md mx-auto">
               <div className="w-12 h-12 mx-auto rounded-full bg-secondary flex items-center justify-center mb-4">
                 <MapPin className="w-5 h-5 text-muted-foreground" />
               </div>
               <p className="font-editorial text-2xl mb-2">
-                No location data yet
+                {selected === ALL_CITIES ? "No vendors yet" : `No vendors in ${selected}`}
               </p>
               <p className="text-sm text-muted-foreground">
-                Vendors haven't filled in their location field yet — check
-                back as the directory grows.
+                Check back as the directory grows — vendors are joining
+                every week.
               </p>
             </div>
           ) : (
             <>
-              <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-4">
-                {groups.map((g, i) => (
-                  <motion.div
-                    key={g.label}
-                    initial={{ opacity: 0, y: 16 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ ...spring, delay: Math.min(i * 0.04, 0.3) }}
-                  >
-                    <Link
-                      to={`/vendors/in/${citySlugify(g.label)}`}
-                      className="group block card-soft p-5 hover:border-foreground/30 transition-colors h-full"
-                    >
-                      <div className="flex items-start justify-between gap-3 mb-1">
-                        <p className="font-display text-lg leading-tight transition-colors group-hover:text-accent">
-                          {g.label}
-                        </p>
-                        <ArrowRight className="w-4 h-4 text-muted-foreground shrink-0 mt-1 group-hover:text-accent transition-colors" />
-                      </div>
-                      <p className="text-xs text-muted-foreground tnum mb-3">
-                        {g.vendors.length}{" "}
-                        {g.vendors.length === 1 ? "vendor" : "vendors"}
-                      </p>
-                      <div className="flex flex-wrap gap-1.5">
-                        {Array.from(new Set(g.vendors.map((v) => v.category)))
-                          .slice(0, 4)
-                          .map((cat) => (
-                            <span
-                              key={cat}
-                              className="text-[10px] tracking-wide uppercase font-medium text-muted-foreground bg-secondary/60 px-2 py-0.5 rounded-full"
-                            >
-                              {cat}
-                            </span>
-                          ))}
-                      </div>
-                    </Link>
-                  </motion.div>
+              <div className="max-w-5xl mx-auto mb-6 px-1">
+                <p className="font-label text-muted-foreground">
+                  {filtered.length}{" "}
+                  {filtered.length === 1 ? "vendor" : "vendors"}
+                  {selected === ALL_CITIES ? "" : ` in ${selected}`}
+                </p>
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-x-4 gap-y-8">
+                {filtered.map((v, i) => (
+                  <VendorCard key={v.id} vendor={v} eager={i < 6} />
                 ))}
               </div>
-              {uncategorized > 0 && (
-                <p className="text-xs text-muted-foreground text-center mt-8">
-                  {uncategorized}{" "}
-                  {uncategorized === 1 ? "vendor hasn't" : "vendors haven't"}{" "}
-                  set a location yet.{" "}
-                  <Link to="/vendors" className="text-accent">
-                    Browse all
-                  </Link>
-                  .
-                </p>
-              )}
             </>
           )}
         </div>
