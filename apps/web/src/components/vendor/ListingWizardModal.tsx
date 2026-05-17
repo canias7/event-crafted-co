@@ -188,7 +188,7 @@ export function ListingWizardModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col bg-background">
+    <div className="fixed inset-0 z-50 flex flex-col vendor-canvas">
       <header className="flex items-center justify-between border-b border-border/60 px-5 py-4">
         <button
           onClick={onClose}
