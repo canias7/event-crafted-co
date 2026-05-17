@@ -370,43 +370,25 @@ function ReelsFeed({ reels }: { reels: ReelRow[] }) {
   return (
     <div className="space-y-5 max-w-xl mx-auto">
       {reels.map((r) => (
-        <a
+        <div
           key={r.id}
-          href={r.video_url}
-          target="_blank"
-          rel="noopener noreferrer"
           className="block overflow-hidden rounded-xl bg-card border border-border shadow-sm"
         >
           <FeedAuthorHeader vendor={r.vendor} />
           <div className="relative aspect-[4/5] bg-black">
-            {r.thumbnail_url ? (
-              <img
-                src={r.thumbnail_url}
-                alt={r.caption ?? "Reel"}
-                className="w-full h-full object-cover"
-                loading="lazy"
-              />
-            ) : (
-              // No stored thumbnail — render the source video with
-              // preload="metadata" + #t=0.1 so browsers seek to the
-              // first frame as a still. muted/playsInline so it never
-              // auto-plays audio.
-              <video
-                src={`${r.video_url}#t=0.1`}
-                className="w-full h-full object-cover pointer-events-none"
-                preload="metadata"
-                muted
-                playsInline
-                aria-label={r.caption ?? "Reel"}
-              />
-            )}
-            {/* Play overlay — circular chip in the center so the row
-                reads as a tappable video. */}
-            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-              <div className="w-14 h-14 rounded-full bg-white/85 flex items-center justify-center">
-                <Film className="h-7 w-7 text-foreground" />
-              </div>
-            </div>
+            {/* Inline player — native controls so the host can pause /
+                scrub / mute without leaving the feed. Poster falls
+                back to the stored thumbnail when one exists; without
+                one the browser uses the first frame via #t=0.1. */}
+            <video
+              src={`${r.video_url}#t=0.1`}
+              poster={r.thumbnail_url ?? undefined}
+              className="w-full h-full object-cover bg-black"
+              controls
+              preload="metadata"
+              playsInline
+              aria-label={r.caption ?? "Reel"}
+            />
           </div>
           {r.caption ? (
             <div className="px-4 py-3">
@@ -415,7 +397,7 @@ function ReelsFeed({ reels }: { reels: ReelRow[] }) {
               </p>
             </div>
           ) : null}
-        </a>
+        </div>
       ))}
     </div>
   );
