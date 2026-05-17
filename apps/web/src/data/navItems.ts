@@ -35,9 +35,8 @@ export const customerNavItems: NavItem[] = [
   { labelKey: "sidebar.customer.inquiries", path: "/customer/inquiries", icon: Inbox },
   { labelKey: "sidebar.customer.events", path: "/customer/events", icon: CalendarDays },
   { labelKey: "sidebar.customer.profile", path: "/customer/profile", icon: User },
-];
-
-export const customerNavBottomItems: NavItem[] = [
+  // Settings used to live in a separate "bottom" group; pulled into
+  // the main nav so the sidebar has one continuous list.
   { labelKey: "sidebar.bottom.settings", path: "/settings", icon: Settings },
 ];
 
@@ -63,24 +62,18 @@ export const vendorNavItems: NavItem[] = [
   { labelKey: "sidebar.vendor.ai_superagents", path: "/vendor/ai-superagents", icon: Sparkles },
   { labelKey: "sidebar.vendor.pay", path: "/vendor/pay", icon: CreditCard },
   { labelKey: "sidebar.vendor.gallery", path: "/vendor/gallery", icon: Images },
-];
-
-export const vendorNavBottomItems: NavItem[] = [
+  // Settings — pulled out of the separate bottom group so the rail
+  // reads as one continuous list. Log out lives on /settings now.
   { labelKey: "sidebar.bottom.settings", path: "/settings", icon: Settings },
 ];
 
-// Lookup map so DashboardSidebar can find the bottom items without
-// every page having to pass them explicitly. Keyed by reference on
-// the main nav array, so importing customerNavItems automatically
-// gives you the bottom group too.
-const NAV_BOTTOMS = new WeakMap<NavItem[], NavItem[]>();
-
-export function getBottomNav(main: NavItem[]): NavItem[] | undefined {
-  return NAV_BOTTOMS.get(main);
+// Bottom-group nav retired — Settings was the only entry left after
+// Support was deleted, so it now lives inline in each main array.
+// getBottomNav still exists as a no-op so DashboardSidebar callers
+// don't break, and the WeakMap registry is gone.
+export function getBottomNav(_main: NavItem[]): NavItem[] | undefined {
+  return undefined;
 }
-
-NAV_BOTTOMS.set(customerNavItems, customerNavBottomItems);
-NAV_BOTTOMS.set(vendorNavItems, vendorNavBottomItems);
 
 // Cross-cutting pages like /settings and /support don't know which
 // dashboard the user came from — without this, they default to the
