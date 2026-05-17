@@ -22,6 +22,7 @@ import {
 } from "framer-motion";
 import { Bot, ImagePlus, Sparkles } from "lucide-react";
 import { HiluxChatDemo } from "@/components/super-agents/HiluxChatDemo";
+import { AxionStoryboardDemo } from "@/components/super-agents/AxionStoryboardDemo";
 
 interface Agent {
   codename: string;
@@ -104,6 +105,7 @@ const AGENTS: Agent[] = [
     status: "Vision · Generative",
     Icon: ImagePlus,
     imageSrc: "/agents/axion.png",
+    Demo: AxionStoryboardDemo,
   },
 ];
 
