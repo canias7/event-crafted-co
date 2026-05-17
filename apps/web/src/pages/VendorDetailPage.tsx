@@ -692,28 +692,6 @@ export default function VendorDetailPage() {
                   vendor profile sheet identity hero. */}
               {vendor.isReal && <VendorBrandCard vendorId={vendor.id} />}
 
-              {/* About */}
-              <div>
-                <p className="font-label text-accent mb-4">About</p>
-                <h2 className="font-editorial text-4xl mb-6 leading-tight">
-                  {vendor.description}
-                </h2>
-                <div className="space-y-4 text-foreground/75 leading-relaxed">
-                  <p>
-                    Based in {vendor.location ?? "the city"}, {vendor.name} brings a
-                    distinctive editorial sensibility to every event — small enough
-                    to be personal, experienced enough to disappear into the
-                    background when you need them to.
-                  </p>
-                  <p>
-                    Every booking includes an in-person or video consultation, a
-                    detailed run-of-show, and direct access on the day of your
-                    event. We don't believe in upsells or fine print. What you see
-                    here is what you get.
-                  </p>
-                </div>
-              </div>
-
               {/* Packages — only rendered when the vendor has actually
                   published at least one. No empty-state copy; absence
                   of packages just hides the section. */}
