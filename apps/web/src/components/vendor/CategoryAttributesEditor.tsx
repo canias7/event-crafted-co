@@ -319,11 +319,21 @@ function FieldEditor({
                 key={opt}
                 type="button"
                 onClick={() => onToggleTag(opt)}
-                className={`text-xs rounded-full px-3 py-1.5 border transition-all inline-flex items-center gap-1.5 ${
+                className="text-[13px] rounded-full px-3.5 py-1.5 transition-colors inline-flex items-center gap-1.5"
+                style={
                   active
-                    ? "bg-accent/15 text-accent border-accent/40 hover:border-accent/60"
-                    : "bg-card text-muted-foreground border-border hover:border-foreground/40 hover:text-foreground"
-                }`}
+                    ? {
+                        background: "rgba(255,138,76,0.18)",
+                        color: "#c4541e",
+                        border: "0.5px solid rgba(255,138,76,0.45)",
+                      }
+                    : {
+                        background: "rgba(255,255,255,0.55)",
+                        color: "rgba(26,22,18,0.65)",
+                        border: "0.5px solid rgba(0,0,0,0.1)",
+                        backdropFilter: "blur(6px)",
+                      }
+                }
                 aria-pressed={active}
               >
                 {active && <Check className="w-3 h-3" />}
@@ -336,7 +346,12 @@ function FieldEditor({
               key={opt}
               type="button"
               onClick={() => onToggleTag(opt)}
-              className="text-xs rounded-full px-3 py-1.5 border bg-accent/15 text-accent border-accent/40 hover:bg-accent/25 transition-colors inline-flex items-center gap-1.5"
+              className="text-[13px] rounded-full px-3.5 py-1.5 transition-colors inline-flex items-center gap-1.5"
+              style={{
+                background: "rgba(255,138,76,0.18)",
+                color: "#c4541e",
+                border: "0.5px solid rgba(255,138,76,0.45)",
+              }}
               title="Custom entry — click to remove"
             >
               <Check className="w-3 h-3" />
@@ -414,7 +429,12 @@ function CustomTagButton({ onAdd }: { onAdd: (value: string) => void }) {
           setEditing(true);
           setTimeout(() => inputRef.current?.focus(), 0);
         }}
-        className="text-xs rounded-full px-3 py-1.5 border border-dashed border-border bg-transparent text-muted-foreground hover:border-foreground/40 hover:text-foreground transition-colors inline-flex items-center gap-1.5"
+        className="text-[13px] rounded-full px-3.5 py-1.5 transition-colors inline-flex items-center gap-1.5"
+        style={{
+          background: "transparent",
+          color: "rgba(26,22,18,0.55)",
+          border: "0.5px dashed rgba(255,138,76,0.4)",
+        }}
         aria-label="Add a custom option"
       >
         <Plus className="w-3 h-3" />
