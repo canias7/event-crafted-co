@@ -388,19 +388,7 @@ function AgentsSection() {
           maxWidth: 1000,
         }}
       >
-        Three minds.{" "}
-        <span
-          style={{
-            background:
-              "linear-gradient(135deg, #ff8a4c 0%, #d066ff 50%, #7aa8ff 100%)",
-            WebkitBackgroundClip: "text",
-            backgroundClip: "text",
-            color: "transparent",
-            fontStyle: "italic",
-          }}
-        >
-          One vendor.
-        </span>
+        Three minds. <span className="italic">One vendor.</span>
       </motion.h1>
 
       <div className="space-y-24 md:space-y-40">
