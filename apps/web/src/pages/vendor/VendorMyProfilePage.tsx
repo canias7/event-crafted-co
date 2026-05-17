@@ -290,31 +290,35 @@ export default function VendorMyProfilePage() {
             {tab !== "listing" ? (
               <Button
                 onClick={async () => {
-                  // Posts, reels, and buzz FK to vendor_profiles.id —
-                  // social content is tied to a listing. If the vendor
-                  // has no listing yet, drop them straight into the
-                  // listing builder for a fresh draft instead of
-                  // bouncing them to the grid empty-state (extra click,
-                  // worse UX).
-                  if (!primary) {
+                  // Posts/reels/buzz FK to vendor_profiles.id. If the
+                  // vendor has no listing yet, silently insert a draft
+                  // vendor_profile in the background so we have a
+                  // vendor_id to attach the post to. The draft stays
+                  // hidden from the listings grid (drafts are filtered
+                  // out) — it's just the social-content container.
+                  // Vendor can promote it to a real listing later.
+                  let vendorRow = primary;
+                  if (!vendorRow) {
                     if (addingListing) return;
                     setAddingListing(true);
                     // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     const { data, error } = await (supabase as any)
                       .from("vendor_profiles")
                       .insert({ user_id: user?.id, application_status: "draft" })
-                      .select("id")
+                      .select(
+                        "id, business_name, category, location, base_price_cents, verified_at, application_status, application_review_notes, slug, logo_url, created_at",
+                      )
                       .single();
                     setAddingListing(false);
                     if (error || !data?.id) {
                       toast.error(
-                        `Couldn't start listing: ${error?.message ?? "unknown error"}`,
+                        `Couldn't open composer: ${error?.message ?? "unknown error"}`,
                       );
                       return;
                     }
-                    toast.message("Fill in your listing first to start posting.");
-                    navigate(`/vendor/listing?id=${data.id}`);
-                    return;
+                    vendorRow = data as VendorRow;
+                    setPrimary(vendorRow);
+                    setListings((prev) => [vendorRow as VendorRow, ...prev]);
                   }
                   setComposer(
                     tab === "grid" ? "post" : tab === "reels" ? "reel" : "buzz",
