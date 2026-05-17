@@ -53,7 +53,6 @@ import {
   HostEventsPage,
   CustomerExplorePage,
   HostProfilePage,
-  SupportPage,
   VendorHomePage,
   VendorMyProfilePage,
   VendorEditProfilePage,
@@ -196,7 +195,6 @@ const App = () => (
               <Route path="/album/:token" element={<Navigate to="/" replace />} />
               <Route path="/board/:token" element={<Navigate to="/" replace />} />
               <Route path="/plan-in-5" element={<Navigate to="/customer/explore" replace />} />
-              <Route path="/support" element={<RequireRole role={["host", "vendor"]}><SupportPage /></RequireRole>} />
 
               {/* Vendor. /vendor/listing, /vendor/dashboard, /vendor/team,
                   /vendor/ai-agent, /vendor/payments, /vendor/analytics,

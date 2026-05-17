@@ -4,7 +4,6 @@ import {
   Inbox,
   User,
   Settings,
-  LifeBuoy,
   Wand2,
   Home,
   type LucideIcon,
@@ -37,7 +36,6 @@ export const customerNavItems: NavItem[] = [
 ];
 
 export const customerNavBottomItems: NavItem[] = [
-  { labelKey: "sidebar.bottom.support", path: "/support", icon: LifeBuoy },
   { labelKey: "sidebar.bottom.settings", path: "/settings", icon: Settings },
 ];
 
@@ -62,7 +60,6 @@ export const vendorNavItems: NavItem[] = [
 ];
 
 export const vendorNavBottomItems: NavItem[] = [
-  { labelKey: "sidebar.bottom.support", path: "/support", icon: LifeBuoy },
   { labelKey: "sidebar.bottom.settings", path: "/settings", icon: Settings },
 ];
 

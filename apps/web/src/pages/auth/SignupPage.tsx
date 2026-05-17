@@ -76,9 +76,6 @@ export default function SignupPage({ role = "host" }: { role?: "host" | "vendor"
       pillLabel={pillLabel}
       topRight={
         <>
-          <Link to="/support" className="opacity-60">
-            Need help?
-          </Link>
           <span>
             <span style={{ opacity: 0.6 }}>Already have an account? </span>
             <Link
