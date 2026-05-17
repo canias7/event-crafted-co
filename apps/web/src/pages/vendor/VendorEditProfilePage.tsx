@@ -39,6 +39,10 @@ interface ProfileForm {
 }
 
 const EMPTY: ProfileForm = { business_name: "", bio: "", logo_url: null };
+// Bio length cap — fits a short paragraph + caption rail use cases
+// (brand card flip, listing detail, host explore card). Anything
+// longer truncates oddly in those surfaces.
+const BIO_MAX = 500;
 
 export default function VendorEditProfilePage() {
   const { user } = useAuth();
@@ -256,14 +260,26 @@ export default function VendorEditProfilePage() {
                 <Textarea
                   id="bio"
                   value={form.bio}
-                  onChange={(e) => set("bio", e.target.value)}
+                  onChange={(e) =>
+                    set("bio", e.target.value.slice(0, BIO_MAX))
+                  }
                   rows={6}
+                  maxLength={BIO_MAX}
                   placeholder="A short italic paragraph that introduces your brand."
                   className="resize-none"
                 />
-                <p className="text-xs text-muted-foreground">
-                  Shows beneath your business name across the marketplace.
-                </p>
+                <div className="flex items-center justify-between text-xs text-muted-foreground">
+                  <p>Shows beneath your business name across the marketplace.</p>
+                  <p
+                    className={
+                      form.bio.length > BIO_MAX - 40
+                        ? "text-foreground"
+                        : undefined
+                    }
+                  >
+                    {form.bio.length}/{BIO_MAX}
+                  </p>
+                </div>
               </div>
             </>
           )}

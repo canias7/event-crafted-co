@@ -150,25 +150,49 @@ export function MediaComposerModal({
           upsert: false,
         });
       if (upErr) throw upErr;
+      // Track the uploaded path so we can remove it if the metadata
+      // INSERT fails. Without this, every DB-side failure leaves an
+      // orphan file in the bucket.
+      const uploadedPath = path;
 
       const { data: pub } = supabase.storage.from(bucket).getPublicUrl(path);
 
-      if (kind === "post") {
-        const { error: insErr } = await supabase.from("vendor_posts").insert({
-          user_id: userId,
-          image_url: pub.publicUrl,
-          caption: caption.trim() || null,
-        });
-        if (insErr) throw insErr;
-      } else {
-        const { error: insErr } = await supabase.from("vendor_reels").insert({
-          user_id: userId,
-          video_url: pub.publicUrl,
-          thumbnail_url: null,
-          caption: caption.trim() || null,
-        });
-        if (insErr) throw insErr;
+      try {
+        if (kind === "post") {
+          const { error: insErr } = await supabase.from("vendor_posts").insert({
+            user_id: userId,
+            image_url: pub.publicUrl,
+            caption: caption.trim() || null,
+          });
+          if (insErr) throw insErr;
+        } else {
+          const { error: insErr } = await supabase.from("vendor_reels").insert({
+            user_id: userId,
+            video_url: pub.publicUrl,
+            thumbnail_url: null,
+            caption: caption.trim() || null,
+          });
+          if (insErr) throw insErr;
+        }
+      } catch (dbErr) {
+        // DB write failed — undo the storage upload so we don't leak
+        // files. Fire-and-forget the removal so the user still sees the
+        // original error toast; if removal fails too, log and move on.
+        supabase.storage
+          .from(bucket)
+          .remove([uploadedPath])
+          .then(({ error: rmErr }) => {
+            if (rmErr) {
+              console.error(
+                "[MediaComposer] failed to clean up orphan upload",
+                uploadedPath,
+                rmErr,
+              );
+            }
+          });
+        throw dbErr;
       }
+
       setCaption("");
       setFile(null);
       onPosted();
