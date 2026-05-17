@@ -289,12 +289,22 @@ export default function VendorMyProfilePage() {
             </div>
             {tab !== "listing" ? (
               <Button
-                onClick={() =>
+                onClick={() => {
+                  // Posts, reels, and buzz are tied to a vendor_profile
+                  // (vendor_posts.vendor_id FK). A vendor without a
+                  // listing can't post — guide them to create one
+                  // first instead of letting the button silently fail.
+                  if (!primary) {
+                    toast.message(
+                      "Create your first listing to start posting.",
+                    );
+                    navigate("/vendor/listing");
+                    return;
+                  }
                   setComposer(
                     tab === "grid" ? "post" : tab === "reels" ? "reel" : "buzz",
-                  )
-                }
-                disabled={!primary}
+                  );
+                }}
                 className="rounded-full"
               >
                 <Plus className="h-4 w-4 mr-1" />
