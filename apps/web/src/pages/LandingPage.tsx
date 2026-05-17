@@ -42,9 +42,6 @@ export default function LandingPage() {
           <Link to="/vendors" className="hover:opacity-70 transition-opacity">
             Vendors
           </Link>
-          <Link to="/real-events" className="hover:opacity-70 transition-opacity">
-            Real events
-          </Link>
           <Link
             to="/super-agents"
             className="inline-flex items-center gap-1.5 hover:opacity-70 transition-opacity"
@@ -327,11 +324,6 @@ export default function LandingPage() {
               Company
             </div>
             <ul className="text-[13px] text-black space-y-2.5">
-              <li>
-                <Link to="/real-events" className="hover:opacity-70 transition-opacity">
-                  Real events
-                </Link>
-              </li>
               <li>
                 <Link to="/changelog" className="hover:opacity-70 transition-opacity">
                   Changelog

@@ -24,7 +24,6 @@ import { categoryConfig } from "@/pages/VendorCategoryPage";
 // regular Sign up button now, not a separate apply flow.
 function buildSecondaryLinks(t: (key: string) => string) {
   return [
-    { label: t("nav.real_events"), path: "/real-events" },
   ];
 }
 
