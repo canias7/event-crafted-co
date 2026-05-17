@@ -37,7 +37,7 @@ export function PublicNav() {
   const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [mobileVendorsOpen, setMobileVendorsOpen] = useState(false);
-  const { session, profile, ownVendorProfile, hasVendorAccess, signOut } = useAuth();
+  const { session, profile, ownListing, hasVendorAccess, signOut } = useAuth();
   const { t } = useTranslation();
   const secondaryLinks = buildSecondaryLinks(t);
 
@@ -53,11 +53,10 @@ export function PublicNav() {
   }, []);
 
   // Multi-role: send the user to whichever portal they're more likely to
-  // want. If they have vendor access, default to the vendor dashboard
-  // (their inbox lives there); otherwise the host dashboard. Either side
-  // exposes a switcher to flip between them.
+  // want. Vendor access → /vendor/home (the live root after the route
+  // cleanup; /vendor/dashboard is gone). Otherwise → /customer/explore.
   const dashLabel = dashboardLabel(t);
-  const dashPath = hasVendorAccess ? "/vendor/dashboard" : "/customer/explore";
+  const dashPath = hasVendorAccess ? "/vendor/home" : "/customer/explore";
 
   return (
     <nav
@@ -155,11 +154,11 @@ export function PublicNav() {
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <button className="ml-2 flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
-                    {ownVendorProfile?.logo_url ? (
+                    {ownListing?.logo_url ? (
                       <img
-                        src={ownVendorProfile.logo_url}
+                        src={ownListing.logo_url}
                         alt={
-                          ownVendorProfile.business_name ??
+                          ownListing.business_name ??
                           profile.display_name ??
                           "Account"
                         }
@@ -171,7 +170,7 @@ export function PublicNav() {
                       </span>
                     )}
                     <span className="hidden lg:inline">
-                      {ownVendorProfile?.business_name ??
+                      {ownListing?.business_name ??
                         profile.display_name ??
                         "Account"}
                     </span>
