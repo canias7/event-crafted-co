@@ -190,16 +190,7 @@ export default function VendorBrowsePage() {
       : 0;
 
   return (
-    <div
-      className="min-h-screen"
-      style={{
-        // Same warm cream → peach wash as the landing page + auth
-        // shell + vendor portal. Keeps the directory in the same
-        // visual family.
-        background:
-          "linear-gradient(180deg, #fafafa 0%, #fcf6ec 35%, #fbf0df 60%, #faecd6 80%, #f8e7cd 100%)",
-      }}
-    >
+    <div className="min-h-screen public-canvas">
       <PublicNav />
 
       {/* Hero removed — page opens straight into filters + vendor grid. */}
