@@ -674,8 +674,14 @@ export default function VendorDetailPage() {
                       viewport={{ once: true }}
                       transition={{ ...spring, delay: i * 0.05 }}
                       onClick={() => setLightboxIndex(i)}
-                      className={`group overflow-hidden rounded-sm bg-muted block ${
-                        i === 0 ? "col-span-2 row-span-2 aspect-square md:aspect-[4/3]" : "aspect-square"
+                      // Cover spans 2 cols × 2 rows; thumbs are squares.
+                      // Cover stays aspect-square (not 4:3) on desktop
+                      // too so 2*col_width tall matches the two stacked
+                      // thumbs to its right exactly — eliminates the
+                      // empty block under the cover the 4:3 ratio
+                      // produced.
+                      className={`group overflow-hidden rounded-sm bg-muted block aspect-square ${
+                        i === 0 ? "col-span-2 row-span-2" : ""
                       }`}
                       aria-label={`Open ${altText}`}
                     >
