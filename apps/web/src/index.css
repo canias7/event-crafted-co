@@ -291,4 +291,23 @@
       #f8e7cd 100%
     );
   }
+
+  /*
+   * Same wash as .vendor-canvas, but reused on PUBLIC pages so the
+   * directory / category / city / city-category / event-type-city
+   * surfaces stay in the same family as the landing page and the
+   * vendor portal. Kept as a separate class so we can theme the
+   * public side independently later (e.g. add an ambient amber
+   * glow) without disturbing the logged-in vendor app.
+   */
+  .public-canvas {
+    background: linear-gradient(
+      180deg,
+      #fafafa 0%,
+      #fcf6ec 35%,
+      #fbf0df 60%,
+      #faecd6 80%,
+      #f8e7cd 100%
+    );
+  }
 }

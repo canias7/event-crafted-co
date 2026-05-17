@@ -168,7 +168,9 @@ export default function VendorCategoryPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    // Warm cream → peach wash (.public-canvas). PublicNav + Footer
+    // are both transparent so the wash bleeds from top to bottom.
+    <div className="min-h-screen public-canvas">
       <PublicNav />
 
       {/* Category hero + headline + intro paragraph all pulled —

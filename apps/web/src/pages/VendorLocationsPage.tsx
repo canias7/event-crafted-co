@@ -67,7 +67,7 @@ export default function VendorLocationsPage() {
   ).length;
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen public-canvas">
       <PublicNav />
 
       <section className="border-b border-border pt-32 pb-12">
