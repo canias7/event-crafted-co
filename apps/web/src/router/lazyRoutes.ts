@@ -101,6 +101,9 @@ export const StatusPage = lazyWithReload(importStatus);
 const importPress = () => import("@/pages/PressPage");
 export const PressPage = lazyWithReload(importPress);
 
+const importSuperAgents = () => import("@/pages/SuperAgentsPage");
+export const SuperAgentsPage = lazyWithReload(importSuperAgents);
+
 const importSettings = () => import("@/pages/SettingsPage");
 export const SettingsPage = lazyWithReload(importSettings);
 
@@ -175,6 +178,7 @@ const ROUTE_IMPORTERS: Array<{ pattern: string; importer: () => Promise<unknown>
   { pattern: "/changelog", importer: importChangelog },
   { pattern: "/status", importer: importStatus },
   { pattern: "/press", importer: importPress },
+  { pattern: "/super-agents", importer: importSuperAgents },
   { pattern: "/settings", importer: importSettings },
   // Dynamic public
   { pattern: "/vendors/in/:citySlug", importer: importVendorCity },
