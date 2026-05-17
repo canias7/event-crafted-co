@@ -18,7 +18,6 @@ import {
   Edit3,
   Film,
   Grid3x3,
-  MapPin,
   MessageCircle,
   Plus,
   Share2,
@@ -87,12 +86,20 @@ interface VendorRow {
   created_at: string | null;
 }
 
+interface AccountProfile {
+  business_name: string | null;
+  bio: string | null;
+  logo_url: string | null;
+  created_at: string | null;
+}
+
 export default function VendorMyProfilePage() {
   const { user } = useAuth();
   const [tab, setTab] = useState<Tab>("grid");
   const [loading, setLoading] = useState(true);
   const [vendorIds, setVendorIds] = useState<string[]>([]);
   const [primary, setPrimary] = useState<VendorRow | null>(null);
+  const [account, setAccount] = useState<AccountProfile | null>(null);
   const [listings, setListings] = useState<VendorRow[]>([]);
   const [posts, setPosts] = useState<PostRow[]>([]);
   const [reels, setReels] = useState<ReelRow[]>([]);
@@ -106,6 +113,18 @@ export default function VendorMyProfilePage() {
   const load = useCallback(async () => {
     if (!user?.id) return;
     setLoading(true);
+    // Account-level identity — business_name + bio + logo + member-since
+    // all live on `profiles` (one per user). The listing rows in
+    // vendor_profiles carry per-listing fields like category / location
+    // / price and do NOT participate in the header card here.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: accountRow } = await (supabase as any)
+      .from("profiles")
+      .select("business_name, bio, logo_url, created_at")
+      .eq("id", user.id)
+      .maybeSingle();
+    setAccount((accountRow as AccountProfile | null) ?? null);
+
     const { data: vps } = await supabase
       .from("vendor_profiles")
       .select(
@@ -155,9 +174,10 @@ export default function VendorMyProfilePage() {
   }, [load]);
 
   const memberSince = useMemo(() => {
-    if (!primary?.created_at) return "—";
-    return String(new Date(primary.created_at).getFullYear());
-  }, [primary?.created_at]);
+    const stamp = account?.created_at ?? primary?.created_at ?? null;
+    if (!stamp) return "—";
+    return String(new Date(stamp).getFullYear());
+  }, [account?.created_at, primary?.created_at]);
 
   // Open the listing wizard modal. Used to insert an empty draft row
   // and navigate to /vendor/listing?id=X — but /vendor/listing was
@@ -202,9 +222,9 @@ export default function VendorMyProfilePage() {
   }
 
   const initials = useMemo(() => {
-    const n = primary?.business_name ?? user?.email ?? "V";
+    const n = account?.business_name ?? user?.email ?? "V";
     return n.trim()[0]?.toUpperCase() ?? "V";
-  }, [primary?.business_name, user?.email]);
+  }, [account?.business_name, user?.email]);
 
   const stats = {
     posts: posts.length,
@@ -241,12 +261,13 @@ export default function VendorMyProfilePage() {
           ) : (
             <HeaderCard
               initials={initials}
-              logoUrl={primary?.logo_url ?? null}
-              businessName={primary?.business_name ?? user?.email ?? "Vendor"}
-              location={primary?.location ?? null}
+              logoUrl={account?.logo_url ?? null}
+              businessName={
+                account?.business_name ?? user?.email ?? "Vendor"
+              }
+              bio={account?.bio ?? null}
               memberSince={memberSince}
               verified={!!primary?.verified_at}
-              category={primary?.category ?? null}
               listingHref={primary?.slug ? `/vendors/${primary.slug}` : null}
               stats={stats}
               onShare={onShare}
@@ -354,10 +375,9 @@ function HeaderCard({
   initials,
   logoUrl,
   businessName,
-  location,
+  bio,
   memberSince,
   verified,
-  category,
   listingHref,
   stats,
   onShare,
@@ -365,10 +385,12 @@ function HeaderCard({
   initials: string;
   logoUrl: string | null;
   businessName: string;
-  location: string | null;
+  /** Vendor's account-level bio (profiles.bio). Category + city
+   *  belong on listings, not on the account profile, so they never
+   *  surface here. */
+  bio: string | null;
   memberSince: string;
   verified: boolean;
-  category: string | null;
   listingHref: string | null;
   stats: { posts: number; reels: number; buzz: number; listings: number };
   onShare: () => void;
@@ -407,16 +429,11 @@ function HeaderCard({
         <h2 className="font-editorial text-2xl text-foreground truncate">
           {businessName}
         </h2>
-        <p className="text-sm text-muted-foreground mt-0.5">
-          {category ? <>{category}</> : null}
-          {category && location ? " · " : null}
-          {location ? (
-            <span className="inline-flex items-center gap-1">
-              <MapPin className="h-3.5 w-3.5" />
-              {location}
-            </span>
-          ) : null}
-        </p>
+        {bio ? (
+          <p className="text-sm text-muted-foreground mt-1 italic leading-relaxed">
+            {bio}
+          </p>
+        ) : null}
         <p className="text-xs text-muted-foreground mt-1">
           Member since {memberSince}
         </p>
