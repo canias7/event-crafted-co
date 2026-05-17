@@ -59,7 +59,9 @@ import {
   VendorInboxPage,
   VendorAppointmentsPage,
   VendorPartnersPage,
-  VendorStudioPage,
+  VendorAiSuperagentsPage,
+  VendorPayPage,
+  VendorGalleryPage,
   InquiryDetailPage,
   AcceptTeamInvitePage,
   ClaimVendorPage,
@@ -207,7 +209,13 @@ const App = () => (
               <Route path="/vendor/inbox/:inquiryId" element={<RequireRole role="vendor"><InquiryDetailPage /></RequireRole>} />
               <Route path="/vendor/appointments" element={<RequireRole role="vendor"><VendorAppointmentsPage /></RequireRole>} />
               <Route path="/vendor/partners" element={<RequireRole role="vendor"><VendorPartnersPage /></RequireRole>} />
-              <Route path="/vendor/studio" element={<RequireRole role="vendor"><VendorStudioPage /></RequireRole>} />
+              <Route path="/vendor/ai-superagents" element={<RequireRole role="vendor"><VendorAiSuperagentsPage /></RequireRole>} />
+              <Route path="/vendor/pay" element={<RequireRole role="vendor"><VendorPayPage /></RequireRole>} />
+              <Route path="/vendor/gallery" element={<RequireRole role="vendor"><VendorGalleryPage /></RequireRole>} />
+              {/* /vendor/studio retired — the three tools that lived under
+                  it (AI Superagents, Vendora Pay, Gallery) now have their
+                  own sidebar entries + routes above. */}
+              <Route path="/vendor/studio" element={<Navigate to="/vendor/ai-superagents" replace />} />
 
 
               <Route path="*" element={<NotFound />} />

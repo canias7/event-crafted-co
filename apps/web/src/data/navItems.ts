@@ -4,7 +4,9 @@ import {
   Inbox,
   User,
   Settings,
-  Wand2,
+  Sparkles,
+  CreditCard,
+  Images,
   Home,
   type LucideIcon,
 } from "lucide-react";
@@ -55,8 +57,12 @@ export const vendorNavItems: NavItem[] = [
   // "Profile (listing builder)" entry under Calendar — that page is
   // now reached from the Edit listing CTA on this profile.
   { labelKey: "sidebar.vendor.my_profile", path: "/vendor/me", icon: User },
-  // Studio hub — image editor + AI agent (auto-reply, lead qualifying).
-  { labelKey: "sidebar.vendor.studio", path: "/vendor/studio", icon: Wand2 },
+  // Three forward-looking tools that used to live under a single
+  // "Studio" tab. Each ships as a Coming Soon placeholder for now;
+  // sidebar entries exist so the future work has stable URLs.
+  { labelKey: "sidebar.vendor.ai_superagents", path: "/vendor/ai-superagents", icon: Sparkles },
+  { labelKey: "sidebar.vendor.pay", path: "/vendor/pay", icon: CreditCard },
+  { labelKey: "sidebar.vendor.gallery", path: "/vendor/gallery", icon: Images },
 ];
 
 export const vendorNavBottomItems: NavItem[] = [

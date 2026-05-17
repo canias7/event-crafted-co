@@ -151,8 +151,15 @@ export const VendorAppointmentsPage = lazyWithReload(importVendorAppointments);
 const importVendorPartners = () => import("@/pages/vendor/VendorPartnersPage");
 export const VendorPartnersPage = lazyWithReload(importVendorPartners);
 
-const importVendorStudio = () => import("@/pages/vendor/VendorStudioPage");
-export const VendorStudioPage = lazyWithReload(importVendorStudio);
+const importVendorAiSuperagents = () =>
+  import("@/pages/vendor/VendorAiSuperagentsPage");
+export const VendorAiSuperagentsPage = lazyWithReload(importVendorAiSuperagents);
+
+const importVendorPay = () => import("@/pages/vendor/VendorPayPage");
+export const VendorPayPage = lazyWithReload(importVendorPay);
+
+const importVendorGallery = () => import("@/pages/vendor/VendorGalleryPage");
+export const VendorGalleryPage = lazyWithReload(importVendorGallery);
 
 const importInquiryDetail = () => import("@/pages/vendor/InquiryDetailPage");
 export const InquiryDetailPage = lazyWithReload(importInquiryDetail);
@@ -200,7 +207,9 @@ const ROUTE_IMPORTERS: Array<{ pattern: string; importer: () => Promise<unknown>
   { pattern: "/vendor/inbox", importer: importVendorInbox },
   { pattern: "/vendor/appointments", importer: importVendorAppointments },
   { pattern: "/vendor/partners", importer: importVendorPartners },
-  { pattern: "/vendor/studio", importer: importVendorStudio },
+  { pattern: "/vendor/ai-superagents", importer: importVendorAiSuperagents },
+  { pattern: "/vendor/pay", importer: importVendorPay },
+  { pattern: "/vendor/gallery", importer: importVendorGallery },
   { pattern: "/vendor/inbox/:inquiryId", importer: importInquiryDetail },
 ];
 
