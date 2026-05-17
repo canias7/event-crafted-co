@@ -12,7 +12,7 @@ import { vendorNavItems as navItems } from "@/data/navItems";
 
 export default function VendorStudioPage() {
   return (
-    <div className="min-h-screen bg-background flex">
+    <div className="min-h-screen vendor-canvas flex">
       <DashboardSidebar items={navItems} title="Studio" backPath="/vendor/home" />
       <main className="flex-1 pb-24 md:pb-0">
         <div className="px-5 pt-8 pb-12 md:px-12 md:pt-12 max-w-3xl mx-auto md:mx-0">

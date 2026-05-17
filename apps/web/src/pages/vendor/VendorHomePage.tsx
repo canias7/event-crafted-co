@@ -191,7 +191,7 @@ export default function VendorHomePage() {
       : null;
 
   return (
-    <div className="flex min-h-screen bg-background">
+    <div className="flex min-h-screen vendor-canvas">
       <DashboardSidebar
         items={vendorNavItems}
         title="Home"

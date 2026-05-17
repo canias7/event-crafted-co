@@ -141,7 +141,7 @@ export default function VendorEditProfilePage() {
     "V";
 
   return (
-    <div className="flex min-h-screen bg-background">
+    <div className="flex min-h-screen vendor-canvas">
       <DashboardSidebar
         items={vendorNavItems}
         title="Edit profile"

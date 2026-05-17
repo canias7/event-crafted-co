@@ -350,7 +350,7 @@ export default function VendorAppointmentsPage() {
   });
 
   return (
-    <div className="flex min-h-screen bg-background">
+    <div className="flex min-h-screen vendor-canvas">
       <DashboardSidebar items={navItems} title="Vendor Portal" backPath="/" />
 
       <main id="main-content" className="flex-1 pb-20 lg:pb-0">

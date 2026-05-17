@@ -307,7 +307,7 @@ export default function InquiryDetailPage() {
   const isClosed = inquiry.status === "won" || inquiry.status === "lost";
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen vendor-canvas">
       <div className="border-b border-border/40 bg-card/60 backdrop-blur px-4 md:px-8 py-5 sticky top-0 z-40">
         <Link
           to="/vendor/inbox"
