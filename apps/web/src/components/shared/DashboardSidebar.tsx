@@ -101,13 +101,21 @@ export function DashboardSidebar({
 
   return (
     <aside
-      className={`hidden lg:flex flex-col border-r border-border bg-card h-screen sticky top-0 overflow-y-auto transition-[width] duration-200 ${
+      className={`hidden lg:flex flex-col h-screen sticky top-0 overflow-y-auto transition-[width] duration-200 ${
         collapsed ? "w-16" : "w-64"
       }`}
+      style={{
+        // Transparent so the page canvas (vendor-canvas wash on
+        // /vendor/*, plain white on customer/settings) shows
+        // through. Hairline right border tinted amber so it blends
+        // into the warm gradient instead of cutting a hard grey line.
+        background: "transparent",
+        borderRight: "0.5px solid rgba(255,138,76,0.18)",
+      }}
       aria-label={`${title} navigation`}
     >
       {collapsed ? (
-        <div className="px-2 py-4 border-b border-border flex flex-col items-center gap-3">
+        <div className="px-2 py-4 border-b border-[rgba(255,138,76,0.14)] flex flex-col items-center gap-3">
           <Link
             to={backPath}
             className="font-display text-lg leading-none"
@@ -125,7 +133,7 @@ export function DashboardSidebar({
           </button>
         </div>
       ) : (
-        <div className="p-6 border-b border-border flex items-start justify-between gap-3">
+        <div className="p-6 border-b border-[rgba(255,138,76,0.14)] flex items-start justify-between gap-3">
           <div className="min-w-0">
             <Link to={backPath} className="font-editorial text-2xl">
               Vendora
@@ -155,7 +163,7 @@ export function DashboardSidebar({
       </nav>
       {resolvedBottom && resolvedBottom.length > 0 && (
         <nav
-          className={`border-t border-border ${collapsed ? "p-2" : "p-3"}`}
+          className={`border-t border-[rgba(255,138,76,0.14)] ${collapsed ? "p-2" : "p-3"}`}
           aria-label="Secondary"
         >
           {resolvedBottom.map(renderItem)}
@@ -165,7 +173,7 @@ export function DashboardSidebar({
           so it reads as the exit door, not just another link. Signs
           out via useAuth, then bounces to the landing page. */}
       <div
-        className={`border-t border-border ${collapsed ? "p-2" : "p-3"}`}
+        className={`border-t border-[rgba(255,138,76,0.14)] ${collapsed ? "p-2" : "p-3"}`}
       >
         <button
           type="button"
