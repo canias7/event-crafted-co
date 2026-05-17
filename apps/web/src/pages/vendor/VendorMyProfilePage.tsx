@@ -103,6 +103,9 @@ export default function VendorMyProfilePage() {
   const [account, setAccount] = useState<AccountProfile | null>(null);
   const [ratingAvg, setRatingAvg] = useState<number | null>(null);
   const [listings, setListings] = useState<VendorRow[]>([]);
+  // First portfolio image per listing → used as the listing card cover
+  // so the profile's Listings tab matches the public /vendors directory.
+  const [heroByListing, setHeroByListing] = useState<Record<string, string>>({});
   const [posts, setPosts] = useState<PostRow[]>([]);
   const [reels, setReels] = useState<ReelRow[]>([]);
   const [buzz, setBuzz] = useState<BuzzRow[]>([]);
@@ -145,18 +148,40 @@ export default function VendorMyProfilePage() {
     // Average review rating across all the vendor's listings. Header
     // shows "—" if there's nothing to average yet.
     if (ids.length > 0) {
-      const { data: revs } = await supabase
-        .from("reviews")
-        .select("rating")
-        .in("vendor_id", ids);
+      const [{ data: revs }, { data: photos }] = await Promise.all([
+        supabase.from("reviews").select("rating").in("vendor_id", ids),
+        supabase
+          .from("vendor_portfolio_images")
+          .select("vendor_id, storage_path, display_order, created_at")
+          .in("vendor_id", ids)
+          .order("display_order", { ascending: true })
+          .order("created_at", { ascending: true }),
+      ]);
       const ratings = (revs as Array<{ rating: number }> | null) ?? [];
       setRatingAvg(
         ratings.length === 0
           ? null
           : ratings.reduce((s, r) => s + r.rating, 0) / ratings.length,
       );
+      // First photo per listing wins (lowest display_order, then earliest
+      // created_at). Same logic as useVendors so the profile + directory
+      // show the same cover.
+      const heroes: Record<string, string> = {};
+      for (const row of (photos as Array<{
+        vendor_id: string;
+        storage_path: string;
+      }> | null) ?? []) {
+        if (!heroes[row.vendor_id]) {
+          const { data: pub } = supabase.storage
+            .from("vendor-portfolios")
+            .getPublicUrl(row.storage_path);
+          heroes[row.vendor_id] = pub.publicUrl;
+        }
+      }
+      setHeroByListing(heroes);
     } else {
       setRatingAvg(null);
+      setHeroByListing({});
     }
 
     // Posts / reels / buzz belong to the vendor (user_id), not a
@@ -338,6 +363,7 @@ export default function VendorMyProfilePage() {
             ) : (
               <ListingsList
                 listings={listings}
+                heroByListing={heroByListing}
                 onAddListing={openListingWizard}
               />
             )}
@@ -577,9 +603,14 @@ function BuzzList({ buzz }: { buzz: BuzzRow[] }) {
 
 function ListingsList({
   listings,
+  heroByListing,
   onAddListing,
 }: {
   listings: VendorRow[];
+  /** Map of listing id → first portfolio image public URL. Listings
+   *  with no portfolio uploads fall back to the "No listing photos
+   *  yet" placeholder (same as the public /vendors directory). */
+  heroByListing: Record<string, string>;
   onAddListing: () => void;
 }) {
   if (listings.length === 0) {
@@ -592,64 +623,107 @@ function ListingsList({
   }
   return (
     <div>
-    <div className="mb-3 flex justify-end">
-      <Button
-        onClick={onAddListing}
-        variant="outline"
-        size="sm"
-        className="rounded-full"
-      >
-        <Plus className="h-3.5 w-3.5 mr-1" />
-        New listing
-      </Button>
-    </div>
-    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-      {listings.map((l) => (
-        <div
-          key={l.id}
-          className="card-soft p-4 flex gap-3"
+      <div className="mb-3 flex justify-end">
+        <Button
+          onClick={onAddListing}
+          variant="outline"
+          size="sm"
+          className="rounded-full"
         >
-          {l.logo_url ? (
-            <img
-              src={l.logo_url}
-              alt=""
-              className="w-14 h-14 rounded-md object-cover"
-            />
-          ) : (
-            <div className="w-14 h-14 rounded-md bg-secondary flex items-center justify-center text-foreground">
-              <Store className="h-5 w-5" />
-            </div>
-          )}
-          <div className="flex-1 min-w-0">
-            <p className="font-medium truncate">{l.business_name ?? "Listing"}</p>
-            <p className="text-xs text-muted-foreground truncate">
-              {l.category ?? "Vendor"}
-              {l.location ? ` · ${l.location}` : ""}
-            </p>
-            <p className="text-xs text-muted-foreground mt-1">
-              {l.application_status === "approved"
-                ? "Live"
-                : l.application_status === "pending"
-                  ? "Pending review"
-                  : l.application_status ?? "Draft"}
-            </p>
-          </div>
-          {/* No edit affordance per the "no editing in listings, only new
-              ones" product rule. View link only shows when the listing
-              is approved and has a slug. */}
-          {l.slug ? (
-            <Link
-              to={`/vendors/${l.slug}`}
-              className="self-start text-xs font-semibold text-foreground hover:text-muted-foreground"
-            >
-              View
-            </Link>
-          ) : null}
-        </div>
-      ))}
-    </div>
+          <Plus className="h-3.5 w-3.5 mr-1" />
+          New listing
+        </Button>
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {listings.map((l) => (
+          <ListingDirectoryCard
+            key={l.id}
+            listing={l}
+            heroUrl={heroByListing[l.id] ?? null}
+          />
+        ))}
+      </div>
     </div>
   );
+}
+
+// Listing card as it appears on the public /vendors directory:
+// cover photo on top (4:3), name + category · location + price
+// below. Status pill in the top-left so the vendor sees whether
+// the listing is Live / Pending / Rejected at a glance.
+function ListingDirectoryCard({
+  listing,
+  heroUrl,
+}: {
+  listing: VendorRow;
+  heroUrl: string | null;
+}) {
+  const name = listing.business_name ?? "Listing";
+  const price =
+    listing.base_price_cents != null && listing.base_price_cents > 0
+      ? `From $${Math.round(listing.base_price_cents / 100).toLocaleString()}`
+      : null;
+  const statusLabel =
+    listing.application_status === "approved"
+      ? "Live"
+      : listing.application_status === "pending"
+        ? "Pending review"
+        : listing.application_status === "rejected"
+          ? "Rejected"
+          : "Draft";
+  const statusTone =
+    listing.application_status === "approved"
+      ? "bg-emerald-500/15 text-emerald-700 border-emerald-500/30"
+      : listing.application_status === "rejected"
+        ? "bg-red-500/15 text-red-700 border-red-500/30"
+        : "bg-foreground/10 text-foreground/70 border-foreground/15";
+  const inner = (
+    <>
+      <div className="relative aspect-[4/3] overflow-hidden rounded-2xl mb-3 bg-muted">
+        {heroUrl ? (
+          <img
+            src={heroUrl}
+            alt={name}
+            loading="lazy"
+            className="w-full h-full object-cover"
+          />
+        ) : (
+          <div className="w-full h-full flex flex-col items-center justify-center gap-1 bg-muted text-muted-foreground">
+            <Store className="w-6 h-6" aria-hidden />
+            <span className="text-xs">No listing photos yet</span>
+          </div>
+        )}
+        <span
+          className={`absolute top-2 left-2 inline-flex items-center rounded-full px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider border ${statusTone} backdrop-blur-sm`}
+        >
+          {statusLabel}
+        </span>
+      </div>
+      <div className="space-y-1">
+        <h3 className="font-editorial text-lg leading-tight truncate">
+          {name}
+        </h3>
+        <p className="text-xs text-muted-foreground truncate">
+          {listing.category ?? "Vendor"}
+          {listing.location ? ` · ${listing.location}` : ""}
+        </p>
+        {price ? (
+          <p className="text-xs text-muted-foreground">{price}</p>
+        ) : null}
+      </div>
+    </>
+  );
+  if (listing.slug && listing.application_status === "approved") {
+    return (
+      <Link
+        to={`/vendors/${listing.slug}`}
+        className="group block"
+      >
+        {inner}
+      </Link>
+    );
+  }
+  return <div className="block">{inner}</div>;
 }
 
 function Empty({ msg }: { msg: string }) {
