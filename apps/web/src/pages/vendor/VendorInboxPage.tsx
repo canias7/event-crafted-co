@@ -117,14 +117,22 @@ function previewFor(r: InquiryRow): string {
 
 export default function VendorInboxPage() {
   const { user, vendorMemberships } = useAuth();
-  const vendorId = vendorMemberships[0]?.vendor_id ?? null;
+  // Cover EVERY listing the vendor owns, not just the first one. A
+  // vendor with multiple listings should see inquiries for all of them
+  // in the same inbox. vendorMemberships is hydrated by useAuth from
+  // vendor_team_members.
+  const vendorIds = useMemo(
+    () => vendorMemberships.map((m) => m.vendor_id),
+    [vendorMemberships],
+  );
+  const vendorIdsKey = vendorIds.join(",");
   const [rows, setRows] = useState<InquiryRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
 
-  async function load(forVendorId?: string | null) {
-    const vid = forVendorId ?? vendorId;
-    if (!vid) {
+  async function load(forVendorIds?: string[]) {
+    const vids = forVendorIds ?? vendorIds;
+    if (vids.length === 0) {
       setRows([]);
       setLoading(false);
       return;
@@ -134,7 +142,7 @@ export default function VendorInboxPage() {
       .select(
         "id, event_type, event_date, guest_count, location, budget_min_cents, budget_max_cents, special_requests, status, created_at, host:profiles!inquiries_host_id_fkey(display_name)",
       )
-      .eq("vendor_id", vid)
+      .in("vendor_id", vids)
       .order("created_at", { ascending: false });
     setRows((data as unknown as InquiryRow[]) ?? []);
     setLoading(false);
@@ -142,14 +150,14 @@ export default function VendorInboxPage() {
 
   useEffect(() => {
     if (!user) return;
-    if (!vendorId) {
+    if (vendorIds.length === 0) {
       setRows([]);
       setLoading(false);
       return;
     }
-    load(vendorId);
+    load(vendorIds);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, vendorId]);
+  }, [user, vendorIdsKey]);
 
   const filteredRows = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -163,15 +171,18 @@ export default function VendorInboxPage() {
     );
   }, [rows, search]);
 
+  // Realtime: subscribe to the user-scoped channel and refetch when
+  // ANY inquiry changes. The shared user channel only delivers events
+  // the caller is allowed to see (RLS-filtered), so this catches
+  // inquiries across every listing without needing a per-listing
+  // subscription.
   const realtimeConfig = useMemo(
-    () =>
-      vendorId
-        ? { table: "inquiries", filter: `vendor_id=eq.${vendorId}` }
-        : null,
-    [vendorId],
+    () => (vendorIds.length > 0 ? { table: "inquiries" } : null),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [vendorIdsKey],
   );
   useRealtime(realtimeConfig, () => {
-    if (vendorId) load(vendorId);
+    if (vendorIds.length > 0) load(vendorIds);
   });
 
   return (
