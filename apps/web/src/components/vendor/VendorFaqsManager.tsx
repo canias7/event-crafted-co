@@ -308,20 +308,96 @@ export function VendorFaqsPublic({ vendorId }: { vendorId: string }) {
   if (faqs.length === 0) return null;
   return (
     <div>
-      <p className="font-label text-accent mb-4">FAQ</p>
-      <h2 className="font-editorial text-4xl mb-6">Common questions</h2>
-      <div>
-        {faqs.map((f) => (
-          <details key={f.q} className="group border-b border-border">
-            <summary className="flex items-center justify-between py-5 cursor-pointer text-base font-medium list-none">
+      <p
+        className="font-label mb-3"
+        style={{ color: "#c4541e", letterSpacing: "0.22em" }}
+      >
+        FAQ
+      </p>
+      <h2 className="font-editorial italic text-4xl mb-7 text-foreground">
+        Common questions
+      </h2>
+      <FaqCardList items={faqs.map((f) => ({ q: f.q, a: f.a }))} />
+    </div>
+  );
+}
+
+// Shared editorial-card FAQ disclosure. Soft amber border, glassy
+// cream wash, italic answer body, dashed amber hairline separating
+// question from answer when open. First item starts expanded so the
+// disclosure pattern reads at a glance.
+export function FaqCardList({
+  items,
+}: {
+  items: Array<{ q: string; a: string }>;
+}) {
+  if (items.length === 0) return null;
+  return (
+    <div className="space-y-3">
+      {items.map((f, i) => (
+        <details
+          key={f.q}
+          open={i === 0 ? true : undefined}
+          className="group rounded-lg transition-colors"
+          style={{
+            background: "rgba(255,253,250,0.55)",
+            border: "0.5px solid rgba(255,138,76,0.18)",
+            backdropFilter: "blur(8px)",
+            WebkitBackdropFilter: "blur(8px)",
+          }}
+        >
+          <summary
+            className="flex items-center justify-between gap-4 px-6 py-4 cursor-pointer list-none select-none"
+            style={{ outline: "none" }}
+          >
+            <span className="text-[15px] font-medium text-foreground">
               {f.q}
-            </summary>
-            <p className="pb-5 text-sm text-muted-foreground leading-relaxed max-w-lg whitespace-pre-wrap">
-              {f.a}
-            </p>
-          </details>
-        ))}
-      </div>
+            </span>
+            {/* Closed: ghost outline diamond */}
+            <span
+              className="shrink-0 grid place-items-center w-7 h-7 rounded-md group-open:hidden"
+              style={{
+                background: "rgba(255,138,76,0.06)",
+                border: "0.5px solid rgba(255,138,76,0.22)",
+              }}
+              aria-hidden
+            >
+              <span
+                className="block w-1.5 h-1.5 rotate-45"
+                style={{
+                  background: "rgba(255,138,76,0.4)",
+                  borderRadius: 1,
+                }}
+              />
+            </span>
+            {/* Open: amber filled circle with white diamond */}
+            <span
+              className="shrink-0 hidden group-open:grid place-items-center w-7 h-7 rounded-full"
+              style={{
+                background: "#c4541e",
+                boxShadow: "0 6px 18px -8px rgba(196,84,30,0.6)",
+              }}
+              aria-hidden
+            >
+              <span
+                className="block w-2 h-2 rotate-45"
+                style={{
+                  border: "1.5px solid #fff",
+                  borderRadius: 1,
+                }}
+              />
+            </span>
+          </summary>
+          <div
+            className="mx-6"
+            style={{ borderTop: "0.75px dashed rgba(255,138,76,0.4)" }}
+            aria-hidden
+          />
+          <p className="px-6 pt-4 pb-5 italic text-[15px] text-muted-foreground leading-relaxed whitespace-pre-wrap">
+            {f.a}
+          </p>
+        </details>
+      ))}
     </div>
   );
 }

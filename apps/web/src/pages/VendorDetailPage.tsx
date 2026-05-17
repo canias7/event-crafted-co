@@ -91,7 +91,6 @@ import { CategoryAttributesDisplay } from "@/components/vendor/CategoryAttribute
 import { SilentErrorBoundary } from "@/components/shared/SilentErrorBoundary";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Picture, type PictureSource } from "@/components/shared/Picture";
-import { VendorTeamPublic } from "@/components/vendor/VendorTeamPublic";
 import { VendorAvailabilityPublic } from "@/components/vendor/VendorAvailabilityPublic";
 
 // Keep this in lockstep with VendorCard's imageMap — every key the
@@ -747,12 +746,9 @@ export default function VendorDetailPage() {
                 </SilentErrorBoundary>
               )}
 
-              {/* Team — owner + staff cards. Renders nothing when empty. */}
-              {vendor.isReal && (
-                <SilentErrorBoundary label="VendorTeamPublic">
-                  <VendorTeamPublic vendorId={vendor.id} />
-                </SilentErrorBoundary>
-              )}
+              {/* Team section dropped from the listing — the wizard no
+                  longer collects team bios. Re-enable along with the
+                  wizard step when product wants it back. */}
 
               {/* Availability — Turo/Airbnb-style calendar with
                   blocked dates struck through. */}

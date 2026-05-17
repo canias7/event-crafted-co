@@ -1,7 +1,8 @@
-// Static FAQ block on the vendor detail page. Uses native <details>
-// for keyboard-accessible disclosure without bringing in radix. Items
-// come from a small per-vendor list — passed as a prop so individual
-// vendors can override later if we lift this into the schema.
+import { FaqCardList } from "@/components/vendor/VendorFaqsManager";
+
+// Static FAQ block on the vendor detail page. Renders the same
+// editorial-card disclosure as the dynamic public list — the only
+// difference is where the items come from.
 
 interface FaqItem {
   q: string;
@@ -22,20 +23,16 @@ export function VendorFaqList({
   if (items.length === 0) return null;
   return (
     <div>
-      <p className="font-label text-accent mb-4">{eyebrow}</p>
-      <h2 className="font-editorial text-4xl mb-6">{title}</h2>
-      <div>
-        {items.map((f) => (
-          <details key={f.q} className="group border-b border-border">
-            <summary className="flex items-center justify-between py-5 cursor-pointer text-base font-medium list-none">
-              {f.q}
-            </summary>
-            <p className="pb-5 text-sm text-muted-foreground leading-relaxed max-w-lg">
-              {f.a}
-            </p>
-          </details>
-        ))}
-      </div>
+      <p
+        className="font-label mb-3"
+        style={{ color: "#c4541e", letterSpacing: "0.22em" }}
+      >
+        {eyebrow}
+      </p>
+      <h2 className="font-editorial italic text-4xl mb-7 text-foreground">
+        {title}
+      </h2>
+      <FaqCardList items={items} />
     </div>
   );
 }
