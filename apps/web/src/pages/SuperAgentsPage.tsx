@@ -84,6 +84,7 @@ const AGENTS: Agent[] = [
     accentSoft: "rgba(122, 168, 255, 0.18)",
     status: "Prompt · Drafting",
     Icon: Sparkles,
+    imageSrc: "/agents/raptor.png",
   },
   {
     codename: "AXION",
