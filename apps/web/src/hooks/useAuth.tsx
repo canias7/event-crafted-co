@@ -137,10 +137,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // means they're either an approved vendor or a pending applicant.
     // Both states grant vendor portal access; only 'approved' makes the
     // listing publicly visible (gated by RLS on the table).
+    //
+    // Multi-listing accounts: order + limit 1 picks the oldest listing
+    // deterministically. business_name / logo_url sync from profiles
+    // via trigger, so any one listing is a fine representative of the
+    // brand for the nav avatar + partner-thread caller identity.
+    // (Plain .maybeSingle() throws "matched many" for accounts with
+    // 2+ listings and returns null — which used to silently hide the
+    // "Message vendor" button for every multi-listing vendor.)
     const { data: vp } = await supabase
       .from("vendor_profiles")
       .select("id, business_name, category, application_status, logo_url")
       .eq("user_id", userId)
+      .order("created_at", { ascending: true })
+      .limit(1)
       .maybeSingle();
     setOwnListing((vp as OwnListing | null) ?? null);
 
