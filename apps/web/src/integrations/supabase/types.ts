@@ -1923,23 +1923,30 @@ export type Database = {
           created_at: string
           id: string
           user_id: string
-          vendor_id: string
+          vendor_id: string | null
         }
         Insert: {
           body: string
           created_at?: string
           id?: string
           user_id: string
-          vendor_id: string
+          vendor_id?: string | null
         }
         Update: {
           body?: string
           created_at?: string
           id?: string
           user_id?: string
-          vendor_id?: string
+          vendor_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "vendor_buzz_user_id_profiles_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "vendor_buzz_vendor_id_fkey"
             columns: ["vendor_id"]
@@ -2423,7 +2430,7 @@ export type Database = {
           id: string
           image_url: string
           user_id: string
-          vendor_id: string
+          vendor_id: string | null
         }
         Insert: {
           caption?: string | null
@@ -2431,7 +2438,7 @@ export type Database = {
           id?: string
           image_url: string
           user_id: string
-          vendor_id: string
+          vendor_id?: string | null
         }
         Update: {
           caption?: string | null
@@ -2439,9 +2446,16 @@ export type Database = {
           id?: string
           image_url?: string
           user_id?: string
-          vendor_id?: string
+          vendor_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "vendor_posts_user_id_profiles_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "vendor_posts_vendor_id_fkey"
             columns: ["vendor_id"]
@@ -2665,7 +2679,7 @@ export type Database = {
           id: string
           thumbnail_url: string | null
           user_id: string
-          vendor_id: string
+          vendor_id: string | null
           video_url: string
         }
         Insert: {
@@ -2675,7 +2689,7 @@ export type Database = {
           id?: string
           thumbnail_url?: string | null
           user_id: string
-          vendor_id: string
+          vendor_id?: string | null
           video_url: string
         }
         Update: {
@@ -2685,10 +2699,17 @@ export type Database = {
           id?: string
           thumbnail_url?: string | null
           user_id?: string
-          vendor_id?: string
+          vendor_id?: string | null
           video_url?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "vendor_reels_user_id_profiles_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "vendor_reels_vendor_id_fkey"
             columns: ["vendor_id"]
@@ -2880,50 +2901,6 @@ export type Database = {
           used_at?: string | null
         }
         Relationships: []
-      }
-      vendor_team_bios: {
-        Row: {
-          bio: string | null
-          created_at: string
-          display_name: string
-          display_order: number
-          id: string
-          is_owner: boolean
-          photo_storage_path: string | null
-          role: string | null
-          vendor_id: string
-        }
-        Insert: {
-          bio?: string | null
-          created_at?: string
-          display_name: string
-          display_order?: number
-          id?: string
-          is_owner?: boolean
-          photo_storage_path?: string | null
-          role?: string | null
-          vendor_id: string
-        }
-        Update: {
-          bio?: string | null
-          created_at?: string
-          display_name?: string
-          display_order?: number
-          id?: string
-          is_owner?: boolean
-          photo_storage_path?: string | null
-          role?: string | null
-          vendor_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "vendor_team_bios_vendor_id_fkey"
-            columns: ["vendor_id"]
-            isOneToOne: false
-            referencedRelation: "vendor_profiles"
-            referencedColumns: ["id"]
-          },
-        ]
       }
       vendor_team_invites: {
         Row: {
@@ -3660,3 +3637,4 @@ export const Constants = {
     Enums: {},
   },
 } as const
+
