@@ -713,12 +713,14 @@ function ListingDirectoryCard({
       </div>
     </>
   );
-  if (listing.slug && listing.application_status === "approved") {
+  // Public VendorCard uses /vendors/{id} (UUID, looked up against the
+  // approved-vendor cache); same route here so the click takes the
+  // vendor to their listing's actual public page. Pending / rejected
+  // listings aren't in the public cache yet, so leave them
+  // non-interactive.
+  if (listing.application_status === "approved") {
     return (
-      <Link
-        to={`/vendors/${listing.slug}`}
-        className="group block"
-      >
+      <Link to={`/vendors/${listing.id}`} className="group block">
         {inner}
       </Link>
     );
