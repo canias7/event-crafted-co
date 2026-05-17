@@ -536,7 +536,7 @@ export default function VendorDetailPage() {
 
   if (!vendor) {
     return (
-      <div className="min-h-screen bg-background">
+      <div className="min-h-screen public-canvas">
         <PublicNav />
         <div className="pt-32 pb-24 container mx-auto px-6 text-center">
           <p className="font-label text-muted-foreground mb-4">404</p>
@@ -559,7 +559,7 @@ export default function VendorDetailPage() {
   const heroPicture = imageMap[vendor.image] ?? featureFlorals;
 
   return (
-    <div className="min-h-screen bg-background pb-24 lg:pb-0">
+    <div className="min-h-screen public-canvas pb-24 lg:pb-0">
       <PublicNav />
 
 
@@ -1050,7 +1050,7 @@ export default function VendorDetailPage() {
 // cache hits skip this entirely and render the real page immediately.
 function VendorDetailSkeleton() {
   return (
-    <div className="min-h-screen bg-background pb-24 lg:pb-0">
+    <div className="min-h-screen public-canvas pb-24 lg:pb-0">
       <PublicNav />
 
       <section className="relative h-[80svh] min-h-[560px] w-full overflow-hidden bg-muted/40">
