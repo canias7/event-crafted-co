@@ -27,11 +27,10 @@ export default function LandingPage() {
       className="min-h-screen text-black"
       style={{
         // Continuous shade — soft off-white at top, gently warming into
-        // a peach tint at the bottom so the footer sits inside the same
-        // canvas as the hero (the amber glow). Eliminates the hard line
-        // where the hero wash used to stop and the footer started.
+        // a peach tint that the amber-glow ellipse blends into, so
+        // hero and footer sit on one canvas with no visible seam.
         background:
-          "linear-gradient(180deg, #fafafa 0%, #fafafa 40%, #fbf3e8 75%, #f9eedc 100%)",
+          "linear-gradient(180deg, #fafafa 0%, #fcf6ec 35%, #fbf0df 60%, #faecd6 80%, #f8e7cd 100%)",
       }}
     >
       {/* NAV */}
@@ -81,9 +80,16 @@ export default function LandingPage() {
       </header>
 
       {/* HERO + VENDORS share one canvas so the glow + grid sit
-          continuously underneath both sections. */}
-      <div className="relative overflow-hidden">
-        {/* Ambient amber glow centered behind the hero */}
+          continuously underneath both sections. overflow-x-hidden
+          (instead of overflow-hidden) lets the amber glow + grid
+          bleed past the bottom edge into the footer area so the
+          page reads as one shade — no hard seam between hero and
+          footer. */}
+      <div className="relative overflow-x-hidden">
+        {/* Ambient amber glow centered behind the hero. Soft tail
+            (transparent at 100% instead of 75%) so the glow blends
+            into the page gradient instead of ending at a hard edge
+            visible as a seam. */}
         <div
           aria-hidden
           className="pointer-events-none absolute z-0"
@@ -91,10 +97,10 @@ export default function LandingPage() {
             top: "200px",
             left: "50%",
             transform: "translateX(-50%)",
-            width: "1100px",
-            height: "700px",
+            width: "1200px",
+            height: "900px",
             background:
-              "radial-gradient(ellipse at center, rgba(255,138,76,0.30) 0%, rgba(255,138,76,0.10) 30%, rgba(255,138,76,0.03) 55%, transparent 75%)",
+              "radial-gradient(ellipse at center, rgba(255,138,76,0.30) 0%, rgba(255,138,76,0.10) 35%, rgba(255,138,76,0.04) 65%, transparent 100%)",
           }}
         />
 
