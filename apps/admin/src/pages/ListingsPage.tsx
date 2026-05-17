@@ -38,26 +38,18 @@ export function ListingsPage() {
       toast.error(error.message);
       return;
     }
-    // Listings tab is the canonical surface for publish-ready
-    // submissions: vendors who completed all four required fields
-    // (category, bio, location, starting price) and hit Publish.
-    // Incomplete pending rows belong on the Vendor applications tab.
-    // Approved rows always appear here regardless of completeness so
-    // an admin can still revoke / verify / delete them.
-    const isPublishReady = (r: Listing) =>
-      !!r.category &&
-      !!r.bio &&
-      !!r.location &&
-      r.base_price_cents != null &&
-      r.base_price_cents > 0;
+    // Listings tab surfaces every actionable listing for the admin:
+    //   - pending: needs an approve / reject decision (regardless of
+    //     whether bio is filled — bio lives on profiles, not on the
+    //     listing row, and the listing wizard relies on the vendor
+    //     setting business name + bio separately on /vendor/edit-profile)
+    //   - approved: already live; admin can still verify / unverify / delete
+    //   - rejected: kept here so admin can re-approve once the vendor fixes it
+    // Drafts are noise — they're intermediate state from the legacy
+    // mobile flow and never surface to the admin.
     setRows(
       ((data ?? []) as Listing[]).filter(
-        (r) =>
-          r.application_status === "approved" ||
-          (r.application_status === "pending" && isPublishReady(r)) ||
-          // Rejected rows can sit in either bucket; show them here so
-          // the admin can re-approve once the listing is fixed.
-          r.application_status === "rejected",
+        (r) => r.application_status !== "draft",
       ),
     );
   }, []);
