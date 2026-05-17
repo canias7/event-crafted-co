@@ -289,22 +289,38 @@ export default function VendorMyProfilePage() {
             </div>
             {tab !== "listing" ? (
               <Button
-                onClick={() => {
-                  // Posts, reels, and buzz are tied to a vendor_profile
-                  // (vendor_posts.vendor_id FK). A vendor without a
-                  // listing can't post — guide them to create one
-                  // first instead of letting the button silently fail.
+                onClick={async () => {
+                  // Posts, reels, and buzz FK to vendor_profiles.id —
+                  // social content is tied to a listing. If the vendor
+                  // has no listing yet, drop them straight into the
+                  // listing builder for a fresh draft instead of
+                  // bouncing them to the grid empty-state (extra click,
+                  // worse UX).
                   if (!primary) {
-                    toast.message(
-                      "Create your first listing to start posting.",
-                    );
-                    navigate("/vendor/listing");
+                    if (addingListing) return;
+                    setAddingListing(true);
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    const { data, error } = await (supabase as any)
+                      .from("vendor_profiles")
+                      .insert({ user_id: user?.id, application_status: "draft" })
+                      .select("id")
+                      .single();
+                    setAddingListing(false);
+                    if (error || !data?.id) {
+                      toast.error(
+                        `Couldn't start listing: ${error?.message ?? "unknown error"}`,
+                      );
+                      return;
+                    }
+                    toast.message("Fill in your listing first to start posting.");
+                    navigate(`/vendor/listing?id=${data.id}`);
                     return;
                   }
                   setComposer(
                     tab === "grid" ? "post" : tab === "reels" ? "reel" : "buzz",
                   );
                 }}
+                disabled={addingListing}
                 className="rounded-full"
               >
                 <Plus className="h-4 w-4 mr-1" />
