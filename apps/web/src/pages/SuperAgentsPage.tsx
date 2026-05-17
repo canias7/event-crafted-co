@@ -142,10 +142,6 @@ export default function SuperAgentsPage() {
 
       <AgentsSection />
 
-      <CapabilitiesGrid />
-
-      <CTA />
-
       <footer className="relative z-10 border-t border-black/5 px-6 md:px-10 py-10 text-center text-[12px] text-black/45">
         Vendora · Super Agents · Powered by Opus 4.7
       </footer>
@@ -884,96 +880,7 @@ function AgentVisual({ agent }: { agent: Agent }) {
   );
 }
 
-// ─── Capabilities grid ─────────────────────────────────────────────────
-function CapabilitiesGrid() {
-  const items = [
-    { label: "Calendar-aware", help: "Reads your real availability before booking." },
-    { label: "Tone-matched", help: "Trains on your replies + reviews." },
-    { label: "Bilingual+", help: "English, Spanish, French, more." },
-    { label: "Editorial photos", help: "Phone snapshot → publish-ready hero." },
-    { label: "Auto follow-ups", help: "Nudges leads back 48 hours later." },
-    { label: "Smart routing", help: "Hot leads ping your phone." },
-    { label: "Brand-safe", help: "Never invents prices or promises." },
-    { label: "On standby", help: "Pause any agent in one tap." },
-  ];
-  return (
-    <section className="relative z-10 px-6 md:px-10 py-20 mx-auto" style={{ maxWidth: 1100 }}>
-      <p className="font-label text-[10px] uppercase tracking-[0.25em] text-black/55 text-center">
-        Under the hood
-      </p>
-      <h2
-        className="mt-4 text-center font-editorial italic"
-        style={{
-          fontSize: "clamp(34px, 4.5vw, 52px)",
-          fontWeight: 500,
-          letterSpacing: "-1px",
-          lineHeight: 1.05,
-        }}
-      >
-        Capabilities you'd hire a team for.
-      </h2>
-      <div className="mt-12 grid grid-cols-2 md:grid-cols-4 gap-3">
-        {items.map((it, i) => (
-          <motion.div
-            key={it.label}
-            initial={{ opacity: 0, y: 16 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-40px" }}
-            transition={{
-              duration: 0.5,
-              delay: (i % 4) * 0.06,
-              ease: [0.16, 1, 0.3, 1],
-            }}
-            className="rounded-2xl p-5"
-            style={{
-              background: "rgba(255,255,255,0.55)",
-              border: "0.5px solid rgba(0,0,0,0.08)",
-              backdropFilter: "blur(8px)",
-            }}
-          >
-            <p className="text-[14px] font-medium text-black">{it.label}</p>
-            <p className="mt-1 text-[12px] text-black/60 leading-relaxed">
-              {it.help}
-            </p>
-          </motion.div>
-        ))}
-      </div>
-    </section>
-  );
-}
-
-// ─── CTA ───────────────────────────────────────────────────────────────
-function CTA() {
-  return (
-    <section className="relative z-10 px-6 md:px-10 py-28 text-center">
-      <motion.h2
-        initial={{ opacity: 0, y: 20 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true }}
-        transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
-        className="font-editorial mx-auto"
-        style={{
-          fontSize: "clamp(40px, 6vw, 72px)",
-          fontWeight: 500,
-          letterSpacing: "-1.5px",
-          lineHeight: 1.02,
-          maxWidth: 900,
-        }}
-      >
-        Sleep through the inquiry.{" "}
-        <span
-          style={{
-            background:
-              "linear-gradient(135deg, #ff8a4c 0%, #d066ff 50%, #7aa8ff 100%)",
-            WebkitBackgroundClip: "text",
-            backgroundClip: "text",
-            color: "transparent",
-            fontStyle: "italic",
-          }}
-        >
-          Wake up to a booked event.
-        </span>
-      </motion.h2>
-    </section>
-  );
-}
+// CapabilitiesGrid + CTA sections retired — kept the file lean for now.
+// Re-add from git history if product wants the "Under the hood" tiles
+// or the "Sleep through the inquiry / Wake up to a booked event" beat
+// back later.
