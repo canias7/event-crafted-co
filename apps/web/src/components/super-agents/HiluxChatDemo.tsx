@@ -222,15 +222,16 @@ export function HiluxChatDemo() {
         width: "100%",
         maxWidth: 460,
         height: 660,
-        // Glassy translucent surface so the chat sits inside the page
-        // wash instead of as a hard white card pasted on top.
-        background: "rgba(255,253,250,0.55)",
-        backdropFilter: "blur(22px)",
-        WebkitBackdropFilter: "blur(22px)",
-        border: "0.5px solid rgba(255,138,76,0.22)",
+        // Glassy translucent surface — really sheer (28% white) so the
+        // amber wash behind shows through. Backdrop blur keeps text
+        // legible even at low opacity.
+        background: "rgba(255,253,250,0.28)",
+        backdropFilter: "blur(26px) saturate(1.4)",
+        WebkitBackdropFilter: "blur(26px) saturate(1.4)",
+        border: "0.5px solid rgba(255,138,76,0.18)",
         borderRadius: 20,
         boxShadow:
-          "0 24px 56px rgba(255,138,76,0.14), 0 6px 18px rgba(196,84,30,0.06), inset 0 1px 0 rgba(255,255,255,0.5)",
+          "0 28px 64px rgba(255,138,76,0.12), 0 6px 18px rgba(196,84,30,0.05), inset 0 1px 0 rgba(255,255,255,0.4)",
         overflow: "hidden",
       }}
     >
@@ -361,7 +362,7 @@ export function HiluxChatDemo() {
         <div
           className="flex items-center gap-2 pl-4 pr-1 py-1 rounded-full transition-colors"
           style={{
-            background: "rgba(255,255,255,0.55)",
+            background: "rgba(255,255,255,0.32)",
             border: "0.5px solid rgba(255,138,76,0.18)",
             backdropFilter: "blur(8px)",
           }}
@@ -442,7 +443,8 @@ function MsgRow({ msg }: { msg: ChatMsg }) {
                 fontSize: 14,
               }
             : {
-                background: "#f0eee9",
+                background: "rgba(26,22,18,0.06)",
+                backdropFilter: "blur(6px)",
                 color: "#1a1612",
                 fontSize: 9.5,
                 fontWeight: 500,
@@ -484,7 +486,8 @@ function MsgRow({ msg }: { msg: ChatMsg }) {
                     borderBottomRightRadius: 4,
                   }
                 : {
-                    background: "#f0eee9",
+                    background: "rgba(26,22,18,0.07)",
+                    backdropFilter: "blur(6px)",
                     borderBottomLeftRadius: 4,
                   }
             }
@@ -506,7 +509,8 @@ function MsgRow({ msg }: { msg: ChatMsg }) {
                     borderBottomRightRadius: 4,
                   }
                 : {
-                    background: "#f0eee9",
+                    background: "rgba(26,22,18,0.07)",
+                    backdropFilter: "blur(6px)",
                     color: "#1a1612",
                     borderRadius: 16,
                     borderBottomLeftRadius: 4,
