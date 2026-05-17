@@ -206,18 +206,13 @@ const App = () => (
               <Route path="/vendor/home" element={<RequireRole role="vendor"><VendorHomePage /></RequireRole>} />
               <Route path="/vendor/me" element={<RequireRole role="vendor"><VendorMyProfilePage /></RequireRole>} />
               <Route path="/vendor/edit-profile" element={<RequireRole role="vendor"><VendorEditProfilePage /></RequireRole>} />
-              <Route path="/vendor/listing" element={<Navigate to="/vendor/me" replace />} />
-              <Route path="/vendor/profile" element={<Navigate to="/vendor/me" replace />} />
               <Route path="/vendor/inbox" element={<RequireRole role="vendor"><VendorInboxPage /></RequireRole>} />
+              <Route path="/vendor/inbox/:inquiryId" element={<RequireRole role="vendor"><InquiryDetailPage /></RequireRole>} />
               <Route path="/vendor/onboarding" element={<RequireRole role="vendor"><VendorOnboardingPage /></RequireRole>} />
               <Route path="/vendor/appointments" element={<RequireRole role="vendor"><VendorAppointmentsPage /></RequireRole>} />
               <Route path="/vendor/availability" element={<RequireRole role="vendor"><VendorAppointmentsPage /></RequireRole>} />
-              {/* /vendor/messages removed — mobile vendor inbox has just
-                  Inquiries + Partners (no separate "Hosts" DM tab). */}
-              <Route path="/vendor/messages" element={<Navigate to="/vendor/inbox" replace />} />
               <Route path="/vendor/partners" element={<RequireRole role="vendor"><VendorPartnersPage /></RequireRole>} />
               <Route path="/vendor/studio" element={<RequireRole role="vendor"><VendorStudioPage /></RequireRole>} />
-              <Route path="/vendor/inbox/:inquiryId" element={<RequireRole role="vendor"><InquiryDetailPage /></RequireRole>} />
 
 
               <Route path="*" element={<NotFound />} />
