@@ -10,30 +10,22 @@ interface ImageOpts {
 }
 
 /**
- * Generic Supabase image URL builder. Use this for any bucket where you'd
- * like the storage layer to resize/recompress on read instead of serving
- * the full-res original.
+ * Generic Supabase image URL builder.
  *
- * Image transformations require a Pro Supabase plan; on free tier the params
- * are silently ignored and the original is returned. Adopting the helper
- * everywhere is forward-compatible — turning it on later is a project-
- * settings flip, no code change.
+ * Image transformations require a paid Supabase plan — passing
+ * `transform` to `getPublicUrl` generates a `/storage/v1/render/image/`
+ * URL that returns HTTP 403 on this project's tier. So `opts` is
+ * accepted (callers stay compatible / forward-compat) but ignored —
+ * we always return the plain `/storage/v1/object/public/` URL and
+ * let the browser scale via CSS. Flip the implementation back to
+ * transform-on-read once we're on a Pro plan.
  */
 export function transformedImageUrl(
   bucket: string,
   path: string,
-  opts?: ImageOpts,
+  _opts?: ImageOpts,
 ): string {
-  const { data } = supabase.storage.from(bucket).getPublicUrl(path, {
-    transform: opts
-      ? {
-          width: opts.width,
-          height: opts.height,
-          quality: opts.quality ?? 75,
-          resize: opts.resize ?? "cover",
-        }
-      : undefined,
-  });
+  const { data } = supabase.storage.from(bucket).getPublicUrl(path);
   return data.publicUrl;
 }
 
@@ -42,7 +34,12 @@ export function vendorImageUrl(path: string, opts?: ImageOpts): string {
   return transformedImageUrl(VENDOR_BUCKET, path, opts);
 }
 
-/** Build a srcset string for a vendor portfolio image at multiple widths. */
+/**
+ * Build a srcset string for a vendor portfolio image at multiple widths.
+ * No-op while transforms are off (every entry resolves to the same URL),
+ * but kept so the call sites' `srcSet={vendorImageSrcset(...)}` markup
+ * still works and starts paying off once the Pro plan is on.
+ */
 export function vendorImageSrcset(path: string, widths: number[]): string {
   return widths
     .map((w) => `${vendorImageUrl(path, { width: w })} ${w}w`)
