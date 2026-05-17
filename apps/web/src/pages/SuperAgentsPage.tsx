@@ -127,9 +127,6 @@ export default function SuperAgentsPage() {
           <Link to="/vendors" className="hover:text-black transition-colors">
             Vendors
           </Link>
-          <Link to="/real-events" className="hover:text-black transition-colors">
-            Real events
-          </Link>
           <span className="inline-flex items-center gap-1.5 text-black">
             Super agents
             <span
