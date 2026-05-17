@@ -261,38 +261,8 @@ export default function VendorCategoryPage() {
         </div>
       </section>
 
-      {/* Cities the category is available in — strong internal linking */}
-      {citiesServed.length > 0 && (
-        <section className="py-16 border-t border-border">
-          <div className="container mx-auto px-6 md:px-8 max-w-5xl">
-            <p className="font-label text-accent mb-3 tracking-[0.4em]">
-              — BY CITY
-            </p>
-            <h2 className="font-editorial text-4xl mb-8">
-              {config.display} by city
-            </h2>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-              {citiesServed.map((c) => (
-                <Link
-                  key={c.slug}
-                  // Use the combined city+category route so the anchor
-                  // text matches the destination — better SEO signal
-                  // than linking to the generic city page.
-                  to={`/vendors/${slug}/in/${c.slug}`}
-                  className="group card-soft p-4 hover:border-foreground/30 transition-colors"
-                >
-                  <p className="font-display text-base group-hover:text-accent transition-colors">
-                    {config.display} in {c.label}
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-1 tnum">
-                    {c.count} vendor{c.count === 1 ? "" : "s"}
-                  </p>
-                </Link>
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
+      {/* "{Category} by city" cross-link section pulled — page
+          ends at the vendor grid. */}
 
       {/* FAQ — also serialized as FAQPage JSON-LD below */}
       <FaqSection
