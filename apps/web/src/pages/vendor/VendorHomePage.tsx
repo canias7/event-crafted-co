@@ -198,7 +198,7 @@ export default function VendorHomePage() {
         backPath="/vendor/home"
       />
       <main className="flex-1 pb-20 lg:pb-0">
-        <div className="sticky top-0 z-40 border-b border-border/40 bg-card/60 backdrop-blur px-4 md:px-8 py-5 space-y-3">
+        <div className="sticky top-0 z-40 backdrop-blur-sm px-4 md:px-8 py-5 space-y-3">
           <div className="flex items-start justify-between gap-3 flex-wrap">
             <div>
               <h1 className="font-editorial text-3xl">Home</h1>
@@ -239,7 +239,7 @@ export default function VendorHomePage() {
                   className={`flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition ${
                     active
                       ? "bg-foreground text-background"
-                      : "bg-secondary/60 text-muted-foreground hover:text-foreground"
+                      : "bg-white/40 border border-white/55 text-muted-foreground hover:bg-white/70 hover:text-foreground"
                   }`}
                 >
                   <Icon className="h-4 w-4" />

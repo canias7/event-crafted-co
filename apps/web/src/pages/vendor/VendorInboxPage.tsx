@@ -199,7 +199,7 @@ export default function VendorInboxPage() {
     <div className="flex min-h-screen vendor-canvas">
       <DashboardSidebar items={navItems} title="Vendor Portal" backPath="/" />
       <main id="main-content" className="flex-1 pb-20 lg:pb-0">
-        <div className="border-b border-border/40 bg-card/60 backdrop-blur px-4 md:px-8 py-5 sticky top-0 z-40 space-y-3">
+        <div className="backdrop-blur-sm px-4 md:px-8 py-5 sticky top-0 z-40 space-y-3">
           <div className="flex items-start justify-between gap-3">
             <div>
               <h1 className="font-editorial text-3xl">Inbox</h1>
@@ -238,7 +238,7 @@ export default function VendorInboxPage() {
                   className={`rounded-full whitespace-nowrap h-8 text-xs ${
                     filter === opt.value
                       ? "bg-foreground text-background hover:bg-foreground/90"
-                      : "bg-secondary/60 text-muted-foreground hover:text-foreground"
+                      : "bg-white/40 border border-white/55 text-muted-foreground hover:bg-white/70 hover:text-foreground"
                   }`}
                 >
                   {opt.label}
