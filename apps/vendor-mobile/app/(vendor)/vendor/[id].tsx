@@ -2,8 +2,8 @@
 // vendor's marketplace listing. Reached from Home → Listings card
 // tap. Mirrors the web /vendors/<id-or-slug> page with the bits
 // hosts actually look at (photos, headline, bio, price, packages,
-// FAQs, policies, team). Inquiries / appointments are still web-
-// only for now.
+// FAQs, policies). Inquiries / appointments are still web-only
+// for now.
 //
 // Layout: full-bleed photo gallery at the top with circular
 // back / share / heart overlays, page indicator pill (1 / N) at the
@@ -56,14 +56,6 @@ type FaqRow = {
   answer: string;
 };
 
-type TeamRow = {
-  id: string;
-  display_name: string;
-  role: string | null;
-  bio: string | null;
-  is_owner: boolean;
-};
-
 type PolicyRow = {
   deposit_pct: number | null;
   cancellation_policy: string | null;
@@ -85,7 +77,6 @@ export default function VendorDetailScreen() {
   const [photos, setPhotos] = useState<string[]>([]);
   const [packages, setPackages] = useState<PackageRow[]>([]);
   const [faqs, setFaqs] = useState<FaqRow[]>([]);
-  const [team, setTeam] = useState<TeamRow[]>([]);
   const [policy, setPolicy] = useState<PolicyRow | null>(null);
   const [loading, setLoading] = useState(true);
   const [photoIndex, setPhotoIndex] = useState(0);
@@ -133,7 +124,7 @@ export default function VendorDetailScreen() {
         policy_notes: row.policy_notes,
       });
 
-      const [imgsRes, packRes, faqRes, teamRes] = await Promise.all([
+      const [imgsRes, packRes, faqRes] = await Promise.all([
         supabase
           .from("vendor_portfolio_images")
           .select("storage_path")
@@ -152,13 +143,6 @@ export default function VendorDetailScreen() {
           .select("id, question, answer")
           .eq("vendor_id", row.id)
           .order("display_order", { ascending: true }),
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (supabase as any)
-          .from("vendor_team_bios")
-          .select("id, display_name, role, bio, is_owner, display_order")
-          .eq("vendor_id", row.id)
-          .order("is_owner", { ascending: false })
-          .order("display_order", { ascending: true }),
       ]);
       if (cancelled) return;
 
@@ -170,8 +154,6 @@ export default function VendorDetailScreen() {
       setPhotos(urls);
       setPackages((packRes.data ?? []) as unknown as PackageRow[]);
       setFaqs((faqRes.data ?? []) as unknown as FaqRow[]);
-      setTeam(((teamRes as { data?: TeamRow[] }).data ?? []) as TeamRow[]);
-
       // Seed the heart from saved_vendors. saved_vendors.host_id points
       // at the profiles row (any role), so a vendor can save another
       // vendor — RLS only enforces auth.uid() = host_id.
@@ -254,7 +236,6 @@ export default function VendorDetailScreen() {
     vendor.base_price_cents != null
       ? `$${Math.round(vendor.base_price_cents / 100).toLocaleString()}`
       : null;
-  const owner = team.find((m) => m.is_owner) ?? team[0];
 
   async function shareListing() {
     if (!vendor) return;
@@ -424,35 +405,7 @@ export default function VendorDetailScreen() {
             </View>
           </View>
 
-          {/* Host / owner */}
-          {owner ? (
-            <View className="mt-6 px-5 pt-5 border-t border-border">
-              <View className="flex-row items-center gap-3">
-                <View
-                  style={{
-                    width: 44,
-                    height: 44,
-                    borderRadius: 999,
-                    backgroundColor: "#0a0a0a",
-                    alignItems: "center",
-                    justifyContent: "center",
-                  }}
-                >
-                  <Text className="text-base font-bold text-white">
-                    {(owner.display_name?.[0] ?? "V").toUpperCase()}
-                  </Text>
-                </View>
-                <View className="flex-1">
-                  <Text className="text-base font-semibold text-foreground">
-                    Hosted by {owner.display_name}
-                  </Text>
-                  <Text className="text-sm text-muted-foreground">
-                    {owner.role ?? "Lead"}
-                  </Text>
-                </View>
-              </View>
-            </View>
-          ) : null}
+          {/* Host / owner section removed — vendor_team_bios retired. */}
 
           {/* Bio */}
           {vendor.bio ? (
@@ -501,32 +454,7 @@ export default function VendorDetailScreen() {
             </Section>
           ) : null}
 
-          {/* Team */}
-          {team.length > 0 ? (
-            <Section title="Team">
-              {team.map((m) => (
-                <View
-                  key={m.id}
-                  className="rounded-xl border border-border bg-background p-4 mb-3"
-                >
-                  <Text className="text-base font-semibold text-foreground">
-                    {m.display_name}
-                    {m.is_owner ? " · Owner" : ""}
-                  </Text>
-                  {m.role ? (
-                    <Text className="text-sm text-muted-foreground">
-                      {m.role}
-                    </Text>
-                  ) : null}
-                  {m.bio ? (
-                    <Text className="mt-2 text-sm text-foreground/80">
-                      {m.bio}
-                    </Text>
-                  ) : null}
-                </View>
-              ))}
-            </Section>
-          ) : null}
+          {/* Team section removed — vendor_team_bios retired. */}
 
           {/* FAQ */}
           {faqs.length > 0 ? (

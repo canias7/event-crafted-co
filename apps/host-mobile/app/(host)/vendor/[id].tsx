@@ -221,7 +221,7 @@ export default function VendorDetailScreen() {
       });
       setCategoryAttrs((row.category_attributes as AttrMap | null) ?? null);
 
-      const [imgsRes, packRes, faqRes, teamRes] = await Promise.all([
+      const [imgsRes, packRes, faqRes] = await Promise.all([
         supabase
           .from("vendor_portfolio_images")
           .select("storage_path")
@@ -240,13 +240,6 @@ export default function VendorDetailScreen() {
           .select("id, question, answer")
           .eq("vendor_id", row.id)
           .order("display_order", { ascending: true }),
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (supabase as any)
-          .from("vendor_team_bios")
-          .select("id, display_name, role, bio, is_owner, display_order")
-          .eq("vendor_id", row.id)
-          .order("is_owner", { ascending: false })
-          .order("display_order", { ascending: true }),
       ]);
       if (cancelled) return;
 
@@ -258,7 +251,10 @@ export default function VendorDetailScreen() {
       setPhotos(urls);
       setPackages((packRes.data ?? []) as unknown as PackageRow[]);
       setFaqs((faqRes.data ?? []) as unknown as FaqRow[]);
-      setTeam(((teamRes as { data?: TeamRow[] }).data ?? []) as TeamRow[]);
+      // Team bios fetch removed — vendor_team_bios retired. The
+      // `team` state stays initialized to [] so every consumer
+      // (`team.length`, `team.find(...)`, `team[0]`) safely renders
+      // nothing without needing surgery at the render sites.
 
       // Resolve the vendor account's identity logo as the avatar
       // fallback. We need user_id from vendor_profiles to look it up.
@@ -1816,7 +1812,7 @@ function VendorProfileSheet({
           {/* Bio lives on the back of the Cream Ocean card above —
               tap the rotate button on the card to flip it over. */}
 
-          {/* Owner bio (from vendor_team_bios) */}
+          {/* Owner bio (was sourced from vendor_team_bios; table dropped, render guarded by empty `team` state). */}
           {owner?.bio ? (
             <View style={{ marginTop: 22, paddingHorizontal: 22 }}>
               <Text

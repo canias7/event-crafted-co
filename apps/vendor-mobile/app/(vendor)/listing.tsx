@@ -31,10 +31,7 @@ import * as ImagePicker from "expo-image-picker";
 import { CATEGORY_GROUPS } from "@vendora/core";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
-import {
-  FaqsSection,
-  TeamSection,
-} from "@/components/listing/Sections";
+import { FaqsSection } from "@/components/listing/Sections";
 import { DetailsSection } from "@/components/listing/DetailsSection";
 
 // Editorial palette — kept in lockstep with edit-profile.tsx and the
@@ -595,17 +592,7 @@ export default function ListingScreen() {
             </View>
           ) : null}
 
-          {/* STEP 4 · TEAM */}
-          <StepHeader
-            step="STEP 4 · TEAM"
-            title="Who you are."
-            body="Names, roles, short bios. Public on your page."
-          />
-          {profile?.id ? (
-            <View style={{ paddingHorizontal: 16, paddingTop: 4, paddingBottom: 8 }}>
-              <TeamSection vendorId={profile.id} />
-            </View>
-          ) : null}
+          {/* STEP 4 (Team) removed along with vendor_team_bios. */}
         </ScrollView>
 
         {/* Sticky action bar — Save draft (text pill) + Publish (filled).
