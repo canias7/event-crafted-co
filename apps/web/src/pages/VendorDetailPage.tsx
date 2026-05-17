@@ -989,6 +989,7 @@ export default function VendorDetailPage() {
             open={inquiryFormOpen}
             onOpenChange={setInquiryFormOpen}
             preferredVendorName={vendor.name}
+            preferredVendorId={vendor.id}
           />
         </Suspense>
       )}

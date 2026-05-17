@@ -41,6 +41,11 @@ interface InquiryFormModalProps {
   onOpenChange: (open: boolean) => void;
   /** Pre-select a vendor by business_name match (case-insensitive). */
   preferredVendorName?: string;
+  /** When set, the vendor is fixed to this listing id — the dropdown is
+   *  hidden entirely and the form opens already-targeted. Used from
+   *  the public listing detail page so a host arriving from a specific
+   *  vendor's page doesn't have to re-pick. */
+  preferredVendorId?: string;
   /** Called after a successful insert with the new inquiry id. */
   onSuccess?: (inquiryId: string) => void;
 }
@@ -56,6 +61,7 @@ export function InquiryFormModal({
   open,
   onOpenChange,
   preferredVendorName,
+  preferredVendorId,
   onSuccess,
 }: InquiryFormModalProps) {
   const { user, activeEvent, profile } = useAuth();
@@ -174,7 +180,11 @@ export function InquiryFormModal({
         } else {
           const list = (data ?? []) as VendorOption[];
           setVendors(list);
-          if (preferredVendorName && !vendorId) {
+          // Pinned listing wins — when the host opened the modal from
+          // a specific listing page, force that one.
+          if (preferredVendorId && !vendorId) {
+            setVendorId(preferredVendorId);
+          } else if (preferredVendorName && !vendorId) {
             const match = list.find(
               (v) =>
                 v.business_name.toLowerCase() ===
@@ -189,7 +199,7 @@ export function InquiryFormModal({
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, preferredVendorName]);
+  }, [open, preferredVendorName, preferredVendorId]);
 
   // Refresh the unavailable-vendor set whenever the chosen event date changes
   // so we can disable booked vendors in the dropdown.
@@ -389,48 +399,74 @@ export function InquiryFormModal({
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-5 pt-2">
-          {/* Vendor */}
-          <div className="space-y-2">
-            <Label htmlFor="vendor">
-              Vendor <span className="text-destructive">*</span>
-            </Label>
-            {vendorsLoading ? (
-              <Skeleton className="h-10 w-full" />
-            ) : vendors.length === 0 ? (
-              <div className="text-sm text-muted-foreground border border-border rounded-md p-3 bg-secondary/40">
-                No vendors are accepting inquiries yet. We're onboarding new
-                vendors weekly — check back soon.
-              </div>
-            ) : (
-              <Select value={vendorId} onValueChange={setVendorId}>
-                <SelectTrigger id="vendor" className="h-10">
-                  <SelectValue placeholder="Choose a vendor" />
-                </SelectTrigger>
-                <SelectContent>
-                  {vendors.map((v) => {
-                    const blocked = unavailableIds.has(v.id);
-                    return (
-                      <SelectItem
-                        key={v.id}
-                        value={v.id}
-                        disabled={blocked}
-                      >
-                        {v.business_name}{" "}
-                        <span className="text-muted-foreground">
-                          · {v.category}
-                        </span>
-                        {blocked && (
-                          <span className="ml-2 text-xs text-destructive">
-                            (booked that day)
+          {/* Vendor — hidden when the modal was opened from a specific
+              listing page. In that case the host doesn't need to pick;
+              we show a small read-only confirmation row instead. */}
+          {preferredVendorId ? (
+            (() => {
+              const pinned = vendors.find((v) => v.id === preferredVendorId);
+              if (!pinned) return null;
+              return (
+                <div
+                  className="flex items-center gap-3 rounded-md border border-accent/30 bg-accent/5 px-3 py-2.5"
+                  aria-live="polite"
+                >
+                  <span className="text-[10px] uppercase tracking-wider font-medium text-accent">
+                    Sending to
+                  </span>
+                  <span className="text-sm font-medium text-foreground truncate flex-1">
+                    {pinned.business_name}
+                    <span className="text-muted-foreground font-normal">
+                      {" "}
+                      · {pinned.category}
+                    </span>
+                  </span>
+                </div>
+              );
+            })()
+          ) : (
+            <div className="space-y-2">
+              <Label htmlFor="vendor">
+                Vendor <span className="text-destructive">*</span>
+              </Label>
+              {vendorsLoading ? (
+                <Skeleton className="h-10 w-full" />
+              ) : vendors.length === 0 ? (
+                <div className="text-sm text-muted-foreground border border-border rounded-md p-3 bg-secondary/40">
+                  No vendors are accepting inquiries yet. We're onboarding new
+                  vendors weekly — check back soon.
+                </div>
+              ) : (
+                <Select value={vendorId} onValueChange={setVendorId}>
+                  <SelectTrigger id="vendor" className="h-10">
+                    <SelectValue placeholder="Choose a vendor" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {vendors.map((v) => {
+                      const blocked = unavailableIds.has(v.id);
+                      return (
+                        <SelectItem
+                          key={v.id}
+                          value={v.id}
+                          disabled={blocked}
+                        >
+                          {v.business_name}{" "}
+                          <span className="text-muted-foreground">
+                            · {v.category}
                           </span>
-                        )}
-                      </SelectItem>
-                    );
-                  })}
-                </SelectContent>
-              </Select>
-            )}
-          </div>
+                          {blocked && (
+                            <span className="ml-2 text-xs text-destructive">
+                              (booked that day)
+                            </span>
+                          )}
+                        </SelectItem>
+                      );
+                    })}
+                  </SelectContent>
+                </Select>
+              )}
+            </div>
+          )}
 
           {/* Event type */}
           <div className="space-y-2">
