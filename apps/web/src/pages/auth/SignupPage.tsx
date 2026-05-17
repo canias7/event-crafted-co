@@ -220,12 +220,6 @@ export default function SignupPage({ role = "host" }: { role?: "host" | "vendor"
             </>
           )}
         </button>
-        <p
-          className="text-center font-editorial italic"
-          style={{ fontSize: "12.5px", opacity: 0.55, marginTop: "6px", lineHeight: 1.5 }}
-        >
-          We don't sell your data, ever.
-        </p>
       </form>
     </GlassyAuthShell>
   );

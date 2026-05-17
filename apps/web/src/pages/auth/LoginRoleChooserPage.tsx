@@ -182,18 +182,6 @@ export default function LoginRoleChooserPage() {
         >
           to Vendora.
         </h1>
-        <p
-          className="text-center mb-11"
-          style={{
-            fontSize: "14px",
-            color: "#000",
-            opacity: 0.7,
-            maxWidth: "460px",
-            lineHeight: 1.6,
-          }}
-        >
-          Pick the side you're on — we'll route you to the right dashboard.
-        </p>
 
         {/* Role cards */}
         <div
@@ -214,27 +202,6 @@ export default function LoginRoleChooserPage() {
           />
         </div>
 
-        {/* Bottom tagline */}
-        <div
-          className="mt-12 inline-flex items-center gap-2"
-          style={{
-            fontSize: "10px",
-            letterSpacing: "1.5px",
-            color: "#000",
-            opacity: 0.7,
-          }}
-        >
-          <span
-            className="rounded-full"
-            style={{
-              width: 5,
-              height: 5,
-              background: "#ff8a4c",
-              boxShadow: "0 0 6px #ff8a4c",
-            }}
-          />
-          <span>CURATED EVENT VENDORS · VERIFIED HOSTS · PRIVATELY MATCHED</span>
-        </div>
       </div>
 
       {/* Keyframes — namespaced to this surface */}
