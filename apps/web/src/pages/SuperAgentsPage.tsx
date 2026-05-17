@@ -32,6 +32,11 @@ interface Agent {
   /** Sub-line under the codename, e.g. "ALWAYS ON" */
   status: string;
   Icon: typeof Bot;
+  /** Optional character portrait. Drop into apps/web/public/agents/.
+   *  When set, the agent renders as a free-floating character with a
+   *  contact shadow + halo (no glass card). Falls back to the
+   *  orb-in-glass-card otherwise. */
+  imageSrc?: string;
 }
 
 const AGENTS: Agent[] = [
