@@ -94,6 +94,12 @@ export function ListingWizardModal({
   async function handleSubmit() {
     if (!canSubmit) return;
     setSubmitting(true);
+    // Track resources allocated mid-flight so we can roll back if a
+    // later step fails. Without this, a network blip after the listing
+    // row + some photos went in left orphan rows + orphan storage
+    // files behind, and retry would just stack more duplicates.
+    let createdVendorId: string | null = null;
+    const uploadedPaths: string[] = [];
     try {
       // 1. Insert the listing row. The vendor_profiles_add_owner trigger
       //    backfills vendor_team_members so subsequent uploads pass
@@ -114,6 +120,7 @@ export function ListingWizardModal({
         throw vpErr ?? new Error("Couldn't create listing");
       }
       const vendorId = vp.id as string;
+      createdVendorId = vendorId;
 
       // 2. Upload portfolio photos to the {vendor_id}/... path the
       //    storage policy requires.
@@ -131,6 +138,7 @@ export function ListingWizardModal({
             upsert: false,
           });
         if (upErr) throw upErr;
+        uploadedPaths.push(storagePath);
         portfolio.push({ vendor_id: vendorId, storage_path: storagePath, display_order: i });
       }
       const { error: imgErr } = await supabase
@@ -162,6 +170,37 @@ export function ListingWizardModal({
       onPublished();
     } catch (err) {
       const msg = (err as { message?: string })?.message ?? "Try again.";
+      // Rollback any partial state so retry starts from a clean slate
+      // instead of stacking duplicates. Deleting the vendor_profile
+      // cascades vendor_portfolio_images + vendor_faqs (verified in DB
+      // schema); storage doesn't cascade so we remove paths explicitly.
+      // Failures here are non-fatal — log so they'd surface in Sentry
+      // but don't drown the original "submit failed" toast.
+      if (createdVendorId) {
+        const { error: delErr } = await supabase
+          .from("vendor_profiles")
+          .delete()
+          .eq("id", createdVendorId);
+        if (delErr) {
+          console.error(
+            "[ListingWizard] rollback delete vendor_profile failed",
+            createdVendorId,
+            delErr.message,
+          );
+        }
+      }
+      if (uploadedPaths.length > 0) {
+        const { error: rmErr } = await supabase.storage
+          .from("vendor-portfolios")
+          .remove(uploadedPaths);
+        if (rmErr) {
+          console.error(
+            "[ListingWizard] rollback remove storage paths failed",
+            uploadedPaths,
+            rmErr.message,
+          );
+        }
+      }
       toast.error(`Submit failed: ${msg}`);
       setSubmitting(false);
     }
