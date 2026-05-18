@@ -287,6 +287,19 @@ export default function InquiryDetailPage() {
             toast.error(`${n}: ${m}`),
           )
         : [];
+    // Attachment-only message where every upload failed: don't post a
+    // "(attachment)" body with no actual files. The per-file errors
+    // were already toasted by the upload callback; keep the composer
+    // intact so the vendor can retry or remove the failed files.
+    if (
+      pendingFiles.length > 0 &&
+      uploaded.length === 0 &&
+      !composer.trim()
+    ) {
+      setSending(false);
+      toast.error("Couldn't upload your attachments — message not sent.");
+      return;
+    }
     const { error } = await supabase.from("direct_messages").insert({
       thread_id: threadId,
       sender_id: user.id,

@@ -31,7 +31,9 @@ export function ModalShell({
         <div className="flex items-center justify-between border-b border-border px-5 py-4">
           <h3 className="font-medium">{title}</h3>
           <button
+            type="button"
             onClick={onClose}
+            aria-label="Close"
             className="rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
           >
             <X className="h-4 w-4" />
@@ -227,7 +229,9 @@ export function MediaComposerModal({
             <video src={previewUrl} controls className="w-full max-h-80" />
           )}
           <button
+            type="button"
             onClick={() => setFile(null)}
+            aria-label={`Remove ${noun}`}
             className="absolute top-2 right-2 rounded-full bg-black/60 p-1.5 text-white hover:bg-black/80"
           >
             <X className="h-4 w-4" />
