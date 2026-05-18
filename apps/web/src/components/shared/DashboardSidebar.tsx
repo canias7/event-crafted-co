@@ -8,7 +8,7 @@ import {
   PanelLeftOpen,
   Sparkles,
 } from "lucide-react";
-import { customerNavItems, getBottomNav, setLastDashboardSide, vendorNavItems } from "@/data/navItems";
+import { customerNavItems, setLastDashboardSide, vendorNavItems } from "@/data/navItems";
 
 interface NavItem {
   labelKey: string;
@@ -18,9 +18,6 @@ interface NavItem {
 
 interface DashboardSidebarProps {
   items: NavItem[];
-  /** Optional override; otherwise we look up the bottom group via the
-   *  WeakMap registry in navItems.ts (one map entry per side). */
-  bottomItems?: NavItem[];
   title: string;
   backPath?: string;
 }
@@ -29,11 +26,9 @@ const COLLAPSE_KEY = "vendora.dashboard-sidebar.collapsed";
 
 export function DashboardSidebar({
   items,
-  bottomItems,
   title,
   backPath = "/",
 }: DashboardSidebarProps) {
-  const resolvedBottom = bottomItems ?? getBottomNav(items);
   const location = useLocation();
   const { t } = useTranslation();
 
@@ -235,14 +230,6 @@ export function DashboardSidebar({
       >
         {items.map(renderItem)}
       </nav>
-      {resolvedBottom && resolvedBottom.length > 0 && (
-        <nav
-          className={`border-t border-[rgba(255,138,76,0.14)] ${collapsed ? "p-2" : "p-3"}`}
-          aria-label="Secondary"
-        >
-          {resolvedBottom.map(renderItem)}
-        </nav>
-      )}
       {/* Dedicated Log out row removed — the Sign out action lives on
           /settings now. signOut + handleLogout helpers stay so other
           surfaces (mobile nav) can keep using them. */}

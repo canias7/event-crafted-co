@@ -26,10 +26,8 @@ export function VendorComingSoonShell({
       />
       <main className="flex-1 pb-24 md:pb-0">
         <div className="px-5 pt-8 pb-12 md:px-12 md:pt-12 max-w-3xl mx-auto md:mx-0">
-          <h1 className="text-4xl font-bold tracking-tight text-foreground">
-            {title}
-          </h1>
-          <p className="mt-2 mb-10 text-base text-muted-foreground">
+          <h1 className="font-editorial text-3xl">{title}</h1>
+          <p className="mt-1 mb-10 text-sm text-muted-foreground">
             {subtitle}
           </p>
 

@@ -18,7 +18,3 @@ export const VENDOR_INBOX_HUB_TABS: SubNavTab[] = [
   { label: "Inquiries", to: "/vendor/inbox" },
   { label: "Vendors", to: "/vendor/partners" },
 ];
-
-// Old name kept as an alias so VendorPartnersPage's existing import
-// keeps working without a churn-y rename.
-export const VENDOR_MESSAGES_HUB_TABS = VENDOR_INBOX_HUB_TABS;
