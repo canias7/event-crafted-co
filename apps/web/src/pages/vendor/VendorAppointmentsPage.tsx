@@ -178,9 +178,16 @@ export default function VendorAppointmentsPage() {
       if (cancelled) return;
       const rows = (data ?? []) as ListingOpt[];
       setListings(rows);
-      // Preselect the first listing on load. Once the user picks one,
-      // we don't override their choice.
-      setSelectedListingId((prev) => prev ?? rows[0]?.id ?? null);
+      // Preselect the first APPROVED listing on load — pending /
+      // rejected listings can't be managed here (hosts can't book them
+      // yet), so anchoring on them by default would leave the vendor
+      // staring at a calendar that doesn't accept changes. If no
+      // listings are approved we leave selection null and render an
+      // empty state below.
+      const firstApproved = rows.find(
+        (l) => l.application_status === "approved",
+      );
+      setSelectedListingId((prev) => prev ?? firstApproved?.id ?? null);
       setListingsLoading(false);
     })();
     return () => {
@@ -437,9 +444,14 @@ export default function VendorAppointmentsPage() {
 
         <div className="p-4 md:p-8 max-w-4xl space-y-6">
           {/* Listing picker — every block / inquiry on the grid is
-              scoped to whichever listing the vendor picks here. */}
+              scoped to whichever listing the vendor picks here. Only
+              approved listings are selectable; pending / rejected ones
+              render in the picker for visibility but can't be chosen. */}
           {!listingsLoading && listings.length === 0 ? (
             <NoListingsEmptyState />
+          ) : !listingsLoading &&
+            !listings.some((l) => l.application_status === "approved") ? (
+            <PendingApprovalEmptyState />
           ) : (
             <ListingPicker
               listings={listings}
@@ -454,7 +466,7 @@ export default function VendorAppointmentsPage() {
             />
           )}
 
-          {listings.length > 0 && (
+          {selectedListingId && (
             <>
           <div>
             <div className="flex items-center justify-between mb-3">
@@ -749,11 +761,17 @@ function ListingPicker({
                     .filter(Boolean)
                     .join(" · ");
                   const badge = statusBadge(l.application_status);
+                  // Only approved listings can be selected — pending /
+                  // rejected listings render here so the vendor sees
+                  // them, but they aren't actionable.
+                  const isApproved = l.application_status === "approved";
                   return (
                     <CommandItem
                       key={l.id}
                       value={`${label} ${sub}`}
-                      onSelect={() => onSelect(l.id)}
+                      disabled={!isApproved}
+                      onSelect={isApproved ? () => onSelect(l.id) : undefined}
+                      className={!isApproved ? "opacity-60" : undefined}
                     >
                       <Check
                         className={cn(
@@ -822,6 +840,41 @@ function NoListingsEmptyState() {
       >
         <Plus className="w-4 h-4" />
         Create a listing
+      </Link>
+    </div>
+  );
+}
+
+function PendingApprovalEmptyState() {
+  return (
+    <div
+      className="rounded-2xl p-10 md:p-14 text-center"
+      style={{
+        background: "rgba(255,253,250,0.6)",
+        border: "0.5px solid rgba(255,138,76,0.22)",
+        backdropFilter: "blur(10px)",
+        WebkitBackdropFilter: "blur(10px)",
+      }}
+    >
+      <div
+        className="w-14 h-14 mx-auto rounded-full inline-flex items-center justify-center mb-5"
+        style={{ background: "rgba(255,138,76,0.18)", color: "#c4541e" }}
+      >
+        <ImagePlus className="w-6 h-6" />
+      </div>
+      <h2 className="font-editorial italic text-3xl mb-2">
+        Your listings are under review
+      </h2>
+      <p className="text-sm text-muted-foreground max-w-md mx-auto mb-6 leading-relaxed">
+        The calendar lives per listing. Once one of your listings is
+        approved you'll be able to block dates and manage availability
+        here.
+      </p>
+      <Link
+        to="/vendor/me"
+        className="inline-flex items-center gap-2 rounded-full bg-foreground text-background px-5 py-2.5 text-sm font-medium hover:opacity-90 transition-opacity"
+      >
+        Review my listings
       </Link>
     </div>
   );
