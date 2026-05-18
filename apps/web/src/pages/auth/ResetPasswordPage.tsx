@@ -1,21 +1,16 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Loader2, KeyRound } from "lucide-react";
+import { Loader2, Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { PasswordInput } from "@/components/auth/PasswordInput";
-import { FieldError } from "@/components/ui/field-error";
-import { Picture } from "@/components/shared/Picture";
-import heroImg from "@/assets/vendora-hero-cinematic.jpg?as=picture";
+import { GlassyAuthShell } from "@/components/auth/GlassyAuthShell";
 
 export default function ResetPasswordPage() {
   const navigate = useNavigate();
   const [hasSession, setHasSession] = useState<boolean | null>(null);
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
   // Supabase parses the recovery token from the URL fragment automatically;
@@ -57,121 +52,142 @@ export default function ResetPasswordPage() {
   }
 
   return (
-    <div className="min-h-screen flex">
-      <div className="hidden md:flex md:w-1/2 relative overflow-hidden">
-        <div className="absolute inset-0">
-          <Picture
-            source={heroImg}
-            alt=""
-            loading="eager"
-            fetchPriority="high"
-            sizes="50vw"
-            className="w-full h-full object-cover"
-          />
-        </div>
-        <div className="absolute inset-0 bg-gradient-to-br from-foreground/85 via-foreground/60 to-foreground/35" />
-        <div className="relative z-10 flex flex-col justify-between p-10 lg:p-14 text-background w-full">
-          <Link to="/" className="font-editorial text-3xl">
-            Vendora
+    <GlassyAuthShell
+      title="Pick something"
+      titleAccent="memorable."
+      subtitle="Choose a new password for your Vendora account."
+      pillLabel="NEW PASSWORD"
+      topRight={
+        <Link
+          to="/login"
+          className="pb-px font-medium"
+          style={{ borderBottom: "0.5px solid #000", color: "#000" }}
+        >
+          Back to sign in
+        </Link>
+      }
+    >
+      {hasSession === false ? (
+        <div className="flex flex-col gap-4">
+          <div
+            className="rounded-xl"
+            style={{
+              background: "rgba(220,38,38,0.06)",
+              border: "0.5px solid rgba(220,38,38,0.3)",
+              padding: "16px 18px",
+            }}
+          >
+            <p
+              className="leading-relaxed"
+              style={{ fontSize: "14px", color: "#000" }}
+            >
+              Your reset link is invalid or has expired.
+            </p>
+          </div>
+          <Link to="/forgot-password" className="block">
+            <button type="button" className="auth-submit">
+              Request a new link
+            </button>
           </Link>
+        </div>
+      ) : (
+        <form onSubmit={onSubmit} className="flex flex-col gap-3.5">
           <div>
-            <p className="font-label text-accent tracking-[0.4em] mb-5">
-              — NEW PASSWORD
-            </p>
-            <p className="text-3xl lg:text-4xl font-display leading-[1.1] max-w-sm">
-              Pick something{" "}
-              <span className="italic font-light text-accent">
-                memorable.
-              </span>
-            </p>
-          </div>
-          <p className="text-xs text-background/50 tracking-wide">
-            © 2026 Vendora
-          </p>
-        </div>
-      </div>
-
-      <div className="flex-1 flex flex-col md:items-center md:justify-center px-6 pt-12 pb-12 md:p-12 bg-background">
-        <div className="w-full max-w-sm">
-          <Link to="/" className="md:hidden font-editorial text-3xl block mb-8">
-            Vendora
-          </Link>
-
-          <div className="w-12 h-12 rounded-full bg-accent/15 text-accent flex items-center justify-center mb-6">
-            <KeyRound className="w-5 h-5" />
-          </div>
-
-          <h1 className="font-editorial text-4xl md:text-4xl mb-2 leading-tight">
-            Reset password
-          </h1>
-          <p className="text-sm text-muted-foreground mb-8 leading-relaxed">
-            Choose a new password for your Vendora account.
-          </p>
-
-          {hasSession === false ? (
-            <div className="rounded-sm border border-destructive/30 bg-destructive/5 p-4 mb-4">
-              <p className="text-sm leading-relaxed">
-                Your reset link is invalid or has expired.
-              </p>
-              <Link to="/forgot-password" className="block mt-3">
-                <Button variant="outline" className="w-full rounded-full">
-                  Request a new link
-                </Button>
-              </Link>
+            <div
+              className="uppercase mb-1.5"
+              style={{
+                fontSize: "11px",
+                letterSpacing: "1.5px",
+                opacity: 0.65,
+                fontWeight: 500,
+              }}
+            >
+              New password
             </div>
-          ) : (
-            <form onSubmit={onSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="new-password">New password</Label>
-                <PasswordInput
-                  id="new-password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  minLength={8}
-                  placeholder="At least 8 characters"
-                  className="h-11"
-                  required
-                  aria-invalid={passwordTooShort || undefined}
-                  aria-describedby={passwordTooShort ? "pw-error" : undefined}
-                />
-                {passwordTooShort && (
-                  <FieldError id="pw-error">
-                    Password must be at least 8 characters.
-                  </FieldError>
-                )}
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="confirm">Confirm</Label>
-                <PasswordInput
-                  id="confirm"
-                  value={confirm}
-                  onChange={(e) => setConfirm(e.target.value)}
-                  minLength={8}
-                  className="h-11"
-                  required
-                  aria-invalid={passwordMismatch || undefined}
-                  aria-describedby={passwordMismatch ? "confirm-error" : undefined}
-                />
-                {passwordMismatch && (
-                  <FieldError id="confirm-error">
-                    Passwords don't match.
-                  </FieldError>
-                )}
-              </div>
-              <Button
-                type="submit"
-                disabled={submitting || hasSession !== true || !formValid}
-                className="w-full h-11 rounded-full bg-foreground text-background hover:bg-foreground/90"
+            <div className="relative">
+              <input
+                id="new-password"
+                className="auth-input pr-10"
+                type={showPassword ? "text" : "password"}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                minLength={8}
+                placeholder="At least 8 characters"
+                required
+                autoComplete="new-password"
+                aria-invalid={passwordTooShort || undefined}
+                aria-describedby={passwordTooShort ? "pw-error" : undefined}
+              />
+              <button
+                type="button"
+                aria-label={showPassword ? "Hide password" : "Show password"}
+                onClick={() => setShowPassword((v) => !v)}
+                tabIndex={-1}
+                className="absolute inset-y-0 right-3 inline-flex items-center justify-center text-foreground/55 hover:text-foreground transition-colors"
               >
-                {submitting && (
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                {showPassword ? (
+                  <EyeOff className="w-4 h-4" />
+                ) : (
+                  <Eye className="w-4 h-4" />
                 )}
-                Update password
-              </Button>
-            </form>
-          )}
-        </div>
-      </div>
-    </div>
+              </button>
+            </div>
+            {passwordTooShort && (
+              <p
+                id="pw-error"
+                className="mt-1.5"
+                style={{ fontSize: "12px", color: "rgb(220,38,38)" }}
+              >
+                Password must be at least 8 characters.
+              </p>
+            )}
+          </div>
+          <div>
+            <div
+              className="uppercase mb-1.5"
+              style={{
+                fontSize: "11px",
+                letterSpacing: "1.5px",
+                opacity: 0.65,
+                fontWeight: 500,
+              }}
+            >
+              Confirm
+            </div>
+            <input
+              id="confirm"
+              className="auth-input"
+              type={showPassword ? "text" : "password"}
+              value={confirm}
+              onChange={(e) => setConfirm(e.target.value)}
+              minLength={8}
+              required
+              autoComplete="new-password"
+              aria-invalid={passwordMismatch || undefined}
+              aria-describedby={
+                passwordMismatch ? "confirm-error" : undefined
+              }
+            />
+            {passwordMismatch && (
+              <p
+                id="confirm-error"
+                className="mt-1.5"
+                style={{ fontSize: "12px", color: "rgb(220,38,38)" }}
+              >
+                Passwords don't match.
+              </p>
+            )}
+          </div>
+          <button
+            type="submit"
+            disabled={submitting || hasSession !== true || !formValid}
+            className="auth-submit mt-2"
+          >
+            {submitting && <Loader2 className="w-4 h-4 animate-spin" />}
+            Update password
+          </button>
+        </form>
+      )}
+    </GlassyAuthShell>
   );
 }
