@@ -82,13 +82,18 @@ export default function VendorInboxPage() {
       setLoading(false);
       return;
     }
+    // Cap at 100 so a busy vendor with hundreds of historical
+    // inquiries doesn't re-download all of them on each page load /
+    // realtime refetch. Sorted newest-first so the cap drops oldest.
+    // If a vendor needs older inquiries we can add "Load more" later.
     const { data } = await supabase
       .from("inquiries")
       .select(
         "id, event_type, event_date, guest_count, location, budget_min_cents, budget_max_cents, special_requests, status, created_at, vendor_read_at, host:profiles!inquiries_host_id_fkey(display_name, avatar_url)",
       )
       .in("vendor_id", vids)
-      .order("created_at", { ascending: false });
+      .order("created_at", { ascending: false })
+      .limit(100);
     setRows((data as unknown as InquiryRow[]) ?? []);
     setLoading(false);
   }
