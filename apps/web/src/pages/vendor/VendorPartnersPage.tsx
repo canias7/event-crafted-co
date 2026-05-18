@@ -11,6 +11,7 @@ import { SubNavTabs } from "@/components/shared/SubNavTabs";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
+import { NotificationBell } from "@/components/notifications/NotificationBell";
 import {
   Popover,
   PopoverContent,
@@ -383,11 +384,14 @@ export default function VendorPartnersPage() {
 
       <main id="main-content" className="flex-1 pb-20 lg:pb-0">
         <div className="backdrop-blur-sm px-4 md:px-8 py-5 sticky top-0 z-40 space-y-3">
-          <div>
-            <h1 className="font-editorial text-3xl">Inbox</h1>
-            <p className="text-sm text-muted-foreground">
-              Chat with other vendors directly — no host in the loop.
-            </p>
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <h1 className="font-editorial text-3xl">Inbox</h1>
+              <p className="text-sm text-muted-foreground">
+                Chat with other vendors directly — no host in the loop.
+              </p>
+            </div>
+            <NotificationBell variant="light" />
           </div>
           <SubNavTabs tabs={VENDOR_INBOX_HUB_TABS} />
         </div>

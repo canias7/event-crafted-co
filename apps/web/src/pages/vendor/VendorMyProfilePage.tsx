@@ -27,6 +27,7 @@ import { toast } from "sonner";
 import { DashboardSidebar } from "@/components/shared/DashboardSidebar";
 import { MobileNav } from "@/components/shared/MobileNav";
 import { Skeleton } from "@/components/ui/skeleton";
+import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { Button } from "@/components/ui/button";
 import {
   BuzzComposerModal,
@@ -287,10 +288,15 @@ export default function VendorMyProfilePage() {
       />
       <main className="flex-1 pb-20 lg:pb-0">
         <div className="backdrop-blur-sm px-4 md:px-8 py-5">
-          <h1 className="font-editorial text-3xl">My Profile</h1>
-          <p className="text-sm text-muted-foreground">
-            Your posts, reels, buzz, and listings — only yours.
-          </p>
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <h1 className="font-editorial text-3xl">My Profile</h1>
+              <p className="text-sm text-muted-foreground">
+                Your posts, reels, buzz, and listings — only yours.
+              </p>
+            </div>
+            <NotificationBell variant="light" />
+          </div>
         </div>
 
         <div className="p-4 md:p-8 max-w-4xl mx-auto space-y-6">
