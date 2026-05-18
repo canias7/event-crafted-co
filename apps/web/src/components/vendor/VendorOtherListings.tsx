@@ -15,6 +15,7 @@ interface OtherListing {
   category: string | null;
   location: string | null;
   logo_url: string | null;
+  brand: { business_name: string | null } | null;
 }
 
 export function VendorOtherListings({ vendorId }: { vendorId: string }) {
@@ -36,7 +37,9 @@ export function VendorOtherListings({ vendorId }: { vendorId: string }) {
       }
       const { data } = await supabase
         .from("vendor_profiles")
-        .select("id, slug, business_name, category, location, logo_url")
+        .select(
+          "id, slug, business_name, category, location, logo_url, brand:vendor_brands!vendor_profiles_user_id_fkey(business_name)",
+        )
         .eq("user_id", ownerId)
         .eq("application_status", "approved")
         .neq("id", vendorId)
@@ -56,7 +59,12 @@ export function VendorOtherListings({ vendorId }: { vendorId: string }) {
       <p className="font-label text-accent mb-4">More from this vendor</p>
       <h2 className="font-editorial text-4xl mb-6">Their other listings</h2>
       <div className="flex gap-3 overflow-x-auto pb-2 -mx-1 px-1 scrollbar-hide">
-        {items.map((l) => (
+        {items.map((l) => {
+          const displayName =
+            l.business_name?.trim() ||
+            l.brand?.business_name?.trim() ||
+            "Listing";
+          return (
           <Link
             key={l.id}
             to={l.slug ? `/vendors/${l.slug}` : `/vendors/${l.id}`}
@@ -66,13 +74,13 @@ export function VendorOtherListings({ vendorId }: { vendorId: string }) {
               {l.logo_url ? (
                 <img
                   src={l.logo_url}
-                  alt={l.business_name ?? "Listing"}
+                  alt={displayName}
                   className="w-full h-full object-cover transition group-hover:scale-[1.02]"
                   loading="lazy"
                 />
               ) : (
                 <span className="font-serif italic text-4xl text-muted-foreground">
-                  {(l.business_name ?? "V")[0]?.toUpperCase()}
+                  {displayName[0]?.toUpperCase()}
                 </span>
               )}
             </div>
@@ -81,7 +89,7 @@ export function VendorOtherListings({ vendorId }: { vendorId: string }) {
                 {l.category ?? "Vendor"}
               </p>
               <h3 className="mt-1 font-medium text-foreground truncate">
-                {l.business_name ?? "Listing"}
+                {displayName}
               </h3>
               {l.location ? (
                 <p className="text-xs text-muted-foreground truncate">
@@ -90,7 +98,8 @@ export function VendorOtherListings({ vendorId }: { vendorId: string }) {
               ) : null}
             </div>
           </Link>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

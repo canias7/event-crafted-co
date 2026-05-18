@@ -93,7 +93,7 @@ export const categoryImageFallback: Record<string, string> = {
 interface VendorProfileRow {
   id: string;
   user_id: string;
-  business_name: string;
+  business_name: string | null;
   category: string;
   bio: string | null;
   base_price_cents: number | null;
@@ -110,16 +110,27 @@ interface VendorProfileRow {
   cancellation_policy: string | null;
   reschedule_window_days: number | null;
   policy_notes: string | null;
+  // Owner's brand identity, embedded via vendor_brands (the public-safe
+  // view over profiles). Listings created via the wizard ship with
+  // business_name + bio null, so display falls back to the brand here.
+  // Multi-listing vendors who set per-listing values still win.
+  brand: {
+    business_name: string | null;
+    bio: string | null;
+  } | null;
 }
 
 function normalizeDb(row: VendorProfileRow): Vendor {
+  const effectiveName =
+    row.business_name?.trim() || row.brand?.business_name?.trim() || "";
+  const effectiveBio = row.bio?.trim() || row.brand?.bio?.trim() || null;
   const description =
-    row.bio?.trim() ||
+    effectiveBio ||
     row.portfolio_summary?.slice(0, 140).trim() ||
     `${row.category} on Vendora.`;
   return {
     id: row.id,
-    name: row.business_name,
+    name: effectiveName,
     category: row.category,
     description,
     rating: 0,
@@ -174,7 +185,7 @@ async function fetchVendors(): Promise<Vendor[]> {
       const { data, error } = await (supabase as any)
         .from("vendor_profiles")
         .select(
-          "id, user_id, business_name, category, bio, base_price_cents, location, service_radius_miles, portfolio_summary, verified_at, responder_tier, intro_video_url, slug, instagram_handle, tiktok_handle, deposit_pct, cancellation_policy, reschedule_window_days, policy_notes",
+          "id, user_id, business_name, category, bio, base_price_cents, location, service_radius_miles, portfolio_summary, verified_at, responder_tier, intro_video_url, slug, instagram_handle, tiktok_handle, deposit_pct, cancellation_policy, reschedule_window_days, policy_notes, brand:vendor_brands!vendor_profiles_user_id_fkey(business_name, bio)",
         )
         .eq("application_status", "approved")
         .order("verified_at", { ascending: false, nullsFirst: false });
