@@ -82,28 +82,22 @@ export default function CustomerExplorePage() {
         supabase
           .from("vendor_posts")
           .select(
-            "id, image_url, caption, created_at, vendor_id, vendor:profiles!vendor_posts_user_id_profiles_fkey!inner(business_name, logo_url, role, application_status)",
+            "id, image_url, caption, created_at, vendor_id, vendor:vendor_brands!vendor_posts_user_id_profiles_fkey!inner(business_name, logo_url)",
           )
-          .eq("vendor.role", "vendor")
-          .eq("vendor.application_status", "approved")
           .order("created_at", { ascending: false })
           .limit(60),
         supabase
           .from("vendor_reels")
           .select(
-            "id, video_url, thumbnail_url, caption, created_at, vendor:profiles!vendor_reels_user_id_profiles_fkey!inner(business_name, logo_url, role, application_status)",
+            "id, video_url, thumbnail_url, caption, created_at, vendor:vendor_brands!vendor_reels_user_id_profiles_fkey!inner(business_name, logo_url)",
           )
-          .eq("vendor.role", "vendor")
-          .eq("vendor.application_status", "approved")
           .order("created_at", { ascending: false })
           .limit(40),
         supabase
           .from("vendor_buzz")
           .select(
-            "id, body, created_at, vendor:profiles!vendor_buzz_user_id_profiles_fkey!inner(business_name, logo_url, role, application_status)",
+            "id, body, created_at, vendor:vendor_brands!vendor_buzz_user_id_profiles_fkey!inner(business_name, logo_url)",
           )
-          .eq("vendor.role", "vendor")
-          .eq("vendor.application_status", "approved")
           .order("created_at", { ascending: false })
           .limit(40),
         supabase
