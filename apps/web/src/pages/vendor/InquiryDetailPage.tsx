@@ -109,11 +109,38 @@ export default function InquiryDetailPage() {
   // can drift on rapid open/close cycles, slowly leaking listeners.
   const load = useCallback(async () => {
     if (!inquiryId) return;
-    const { data: i } = await supabase
-      .from("inquiries")
-      .select("*, host:profiles!inquiries_host_id_fkey(display_name)")
-      .eq("id", inquiryId)
-      .maybeSingle();
+    // Four queries up front — all keyed only on inquiryId — fire in
+    // parallel. messages still has to wait on the RPC's thread id, so
+    // it goes in a second hop. Cuts page-open latency roughly in half
+    // versus the previous fully-sequential chain.
+    const [inqRes, threadRes, reviewRes, propsRes] = await Promise.all([
+      supabase
+        .from("inquiries")
+        .select("*, host:profiles!inquiries_host_id_fkey(display_name)")
+        .eq("id", inquiryId)
+        .maybeSingle(),
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (supabase as any).rpc("ensure_inquiry_thread", {
+        p_inquiry_id: inquiryId,
+      }),
+      supabase
+        .from("reviews")
+        .select(
+          "id, vendor_id, rating, body, created_at, response:review_responses(body, updated_at)",
+        )
+        .eq("inquiry_id", inquiryId)
+        .maybeSingle(),
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (supabase as any)
+        .from("proposals")
+        .select(
+          "id, title, line_items, subtotal_cents, deposit_cents, terms, contract_body, status, sent_at, signed_at, signed_name, first_viewed_at, last_viewed_at, view_count, share_token",
+        )
+        .eq("inquiry_id", inquiryId)
+        .order("created_at", { ascending: false }),
+    ]);
+
+    const i = inqRes.data;
     setInquiry(i as unknown as Inquiry);
 
     // First-time-open: stamp vendor_read_at so the inbox unread dot
@@ -131,11 +158,7 @@ export default function InquiryDetailPage() {
         });
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: tid } = await (supabase as any).rpc("ensure_inquiry_thread", {
-      p_inquiry_id: inquiryId,
-    });
-    const thread = (tid as string | null) ?? null;
+    const thread = (threadRes.data as string | null) ?? null;
     setThreadId(thread);
     if (thread) {
       const { data: msgs } = await supabase
@@ -148,14 +171,7 @@ export default function InquiryDetailPage() {
       setMessages([]);
     }
 
-    // Review (if host left one) + vendor response
-    const { data: reviewRow } = await supabase
-      .from("reviews")
-      .select(
-        "id, vendor_id, rating, body, created_at, response:review_responses(body, updated_at)",
-      )
-      .eq("inquiry_id", inquiryId)
-      .maybeSingle();
+    const reviewRow = reviewRes.data;
     if (reviewRow) {
       const normalized: ReviewWithResponse = {
         id: reviewRow.id,
@@ -172,16 +188,7 @@ export default function InquiryDetailPage() {
       setReview(null);
     }
 
-    // Proposals on this inquiry
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: props } = await (supabase as any)
-      .from("proposals")
-      .select(
-        "id, title, line_items, subtotal_cents, deposit_cents, terms, contract_body, status, sent_at, signed_at, signed_name, first_viewed_at, last_viewed_at, view_count, share_token",
-      )
-      .eq("inquiry_id", inquiryId)
-      .order("created_at", { ascending: false });
-    setProposals((props as unknown as Proposal[]) ?? []);
+    setProposals((propsRes.data as unknown as Proposal[]) ?? []);
 
     setLoading(false);
   }, [inquiryId]);
