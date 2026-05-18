@@ -8,11 +8,11 @@ import { CheckCircle2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { BrandCardShell } from "@/components/vendor/BrandCardShell";
 
-// Brand identity (business_name, logo_url, bio) is mirrored from the
-// owner's profiles row onto vendor_profiles via a trigger, so the
-// public listing page reads them straight off vendor_profiles. profiles
-// RLS doesn't let anonymous viewers read account rows, which is why
-// the public listing has to source identity from the listing row.
+// Brand identity for the public listing card. logo_url is mirrored
+// from profiles to vendor_profiles via a trigger, but business_name
+// and bio are NOT — the listing wizard ships them as null, so we
+// embed the owner's brand via vendor_brands (the public-safe view
+// over profiles) and fall back when the per-listing fields are null.
 interface VendorRow {
   business_name: string | null;
   logo_url: string | null;
@@ -20,6 +20,10 @@ interface VendorRow {
   location: string | null;
   verified_at: string | null;
   created_at: string | null;
+  brand: {
+    business_name: string | null;
+    bio: string | null;
+  } | null;
 }
 
 export function VendorBrandCard({ vendorId }: { vendorId: string }) {
@@ -37,7 +41,7 @@ export function VendorBrandCard({ vendorId }: { vendorId: string }) {
         supabase
           .from("vendor_profiles")
           .select(
-            "business_name, logo_url, bio, location, verified_at, created_at",
+            "business_name, logo_url, bio, location, verified_at, created_at, brand:vendor_brands!vendor_profiles_user_id_fkey(business_name, bio)",
           )
           .eq("id", vendorId)
           .maybeSingle(),
@@ -62,7 +66,11 @@ export function VendorBrandCard({ vendorId }: { vendorId: string }) {
 
   if (!row) return null;
 
-  const businessName = row.business_name ?? "Vendor";
+  const businessName =
+    row.business_name?.trim() ||
+    row.brand?.business_name?.trim() ||
+    "Vendor";
+  const bio = row.bio?.trim() || row.brand?.bio?.trim() || null;
   const initial = businessName[0]?.toUpperCase() ?? "V";
   const memberSinceYear = row.created_at
     ? String(new Date(row.created_at).getFullYear())
@@ -71,7 +79,7 @@ export function VendorBrandCard({ vendorId }: { vendorId: string }) {
   const logoUrl = row.logo_url ?? null;
 
   return (
-    <BrandCardShell businessName={businessName} bio={row.bio}>
+    <BrandCardShell businessName={businessName} bio={bio}>
       <div className="flex items-center gap-5 pl-14 sm:pl-16">
         <div className="relative shrink-0">
           {logoUrl ? (
