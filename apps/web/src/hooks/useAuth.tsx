@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useState, ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useRef, useState, ReactNode } from "react";
 import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -112,7 +112,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   >([]);
   const [loading, setLoading] = useState(true);
 
+  // Tracks the latest in-flight loadProfile invocation. Each call
+  // captures a generation number and bails out (without setState)
+  // if a newer load has started since — prevents stale results from
+  // a previous user/session from clobbering the current one during
+  // rapid sign-out → sign-in or token-refresh races.
+  const loadGenRef = useRef(0);
+
   const loadProfile = useCallback(async (userId: string) => {
+    const myGen = ++loadGenRef.current;
+    const isStale = () => loadGenRef.current !== myGen;
+
     const { data } = await supabase
       .from("profiles")
       .select(
@@ -120,6 +130,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       )
       .eq("id", userId)
       .maybeSingle();
+    if (isStale()) return;
     if (!data) {
       setProfile(null);
       setActiveEvent(null);
@@ -169,6 +180,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         .limit(1)
         .maybeSingle());
     }
+    if (isStale()) return;
     setOwnListing((vp as OwnListing | null) ?? null);
 
     // Vendor team memberships — drives vendor portal access for non-owner
@@ -178,6 +190,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .from("vendor_team_members")
       .select("vendor_id, role")
       .eq("user_id", userId);
+    if (isStale()) return;
     setVendorMemberships(
       (memberRows as VendorMembership[] | null) ?? [],
     );
@@ -193,8 +206,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (s?.user) {
         setTimeout(() => loadProfile(s.user.id), 0);
       } else {
+        // Bumping the generation invalidates any in-flight loadProfile
+        // — otherwise a slow profile fetch from the previous session
+        // could resolve and rewrite the just-cleared state.
+        loadGenRef.current++;
         setProfile(null);
         setActiveEvent(null);
+        setOwnListing(null);
         setVendorMemberships([]);
         setPlanningMemberships([]);
       }
@@ -238,6 +256,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   async function signOut() {
     await supabase.auth.signOut();
+    loadGenRef.current++;
     setProfile(null);
     setActiveEvent(null);
     setOwnListing(null);
