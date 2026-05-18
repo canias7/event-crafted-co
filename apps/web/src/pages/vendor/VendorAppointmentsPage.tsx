@@ -34,6 +34,16 @@ import {
 } from "@/components/appointments/AppointmentsList";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { vendorNavItems as navItems } from "@/data/navItems";
 import {
   Popover,
@@ -139,6 +149,7 @@ export default function VendorAppointmentsPage() {
   const [manualBlocks, setManualBlocks] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [blocking, setBlocking] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
   const [viewMonth, setViewMonth] = useState(() => {
     const d = new Date();
     return new Date(d.getFullYear(), d.getMonth(), 1);
@@ -350,18 +361,11 @@ export default function VendorAppointmentsPage() {
   const isSelectedBlocked =
     !!selectedYmd && manualBlocks.includes(selectedYmd);
 
-  async function toggleSelectedDayBlock() {
+  async function commitSelectedDayBlock() {
     if (!selectedYmd || !selectedListingId || blocking) return;
     const willBlock = !isSelectedBlocked;
     const verb = willBlock ? "Block" : "Unblock";
-    const listingLabel =
-      selectedListing?.business_name?.trim() || "this listing";
-    const ok = window.confirm(
-      willBlock
-        ? `Mark ${prettyDay(selectedYmd)} unavailable on ${listingLabel}. Hosts won't see this listing as bookable for that date.`
-        : `Re-open ${prettyDay(selectedYmd)} on ${listingLabel}.`,
-    );
-    if (!ok) return;
+    setConfirmOpen(false);
     setBlocking(true);
     if (willBlock) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -499,7 +503,7 @@ export default function VendorAppointmentsPage() {
                   {prettyDay(selectedYmd)}
                 </h3>
                 <button
-                  onClick={toggleSelectedDayBlock}
+                  onClick={() => setConfirmOpen(true)}
                   disabled={blocking || !selectedListingId}
                   className="inline-flex items-center gap-1 rounded-full bg-foreground text-background px-3.5 py-2 text-xs font-bold disabled:opacity-60"
                 >
@@ -548,6 +552,47 @@ export default function VendorAppointmentsPage() {
       </main>
 
       <MobileNav items={navItems} />
+
+      <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <AlertDialogContent className="rounded-2xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="font-editorial text-3xl">
+              {isSelectedBlocked ? "Re-open this date?" : "Block this date?"}
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-sm leading-relaxed">
+              {selectedYmd ? (
+                isSelectedBlocked ? (
+                  <>
+                    {prettyDay(selectedYmd)} will be bookable again on{" "}
+                    {selectedListing?.business_name?.trim() || "this listing"}.
+                  </>
+                ) : (
+                  <>
+                    Hosts won't see{" "}
+                    {selectedListing?.business_name?.trim() || "this listing"}{" "}
+                    as bookable on {prettyDay(selectedYmd)}.
+                  </>
+                )
+              ) : null}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="gap-2 sm:gap-0">
+            <AlertDialogCancel disabled={blocking} className="rounded-full">
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                commitSelectedDayBlock();
+              }}
+              disabled={blocking}
+              className="rounded-full bg-foreground text-background hover:bg-foreground/90"
+            >
+              {isSelectedBlocked ? "Unblock" : "Block"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Diagonal-hatch swatch for the legend uses an SVG pattern. */}
       <svg width="0" height="0" className="absolute" aria-hidden>
