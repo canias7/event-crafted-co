@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { Send, Loader2, MessageSquare, Smile } from "lucide-react";
+import { Search, Send, Loader2, MessageSquare, Smile } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useRealtime } from "@/lib/realtime";
@@ -9,6 +9,7 @@ import { DashboardSidebar } from "@/components/shared/DashboardSidebar";
 import { MobileNav } from "@/components/shared/MobileNav";
 import { SubNavTabs } from "@/components/shared/SubNavTabs";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -115,6 +116,7 @@ export default function VendorPartnersPage() {
   const [sending, setSending] = useState(false);
   const [activeNow, setActiveNow] = useState(false);
   const [emojiOpen, setEmojiOpen] = useState(false);
+  const [search, setSearch] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   async function loadThreads() {
@@ -196,6 +198,19 @@ export default function VendorPartnersPage() {
     () => threads.find((x) => x.id === activeThreadId) ?? null,
     [threads, activeThreadId],
   );
+
+  // Filter threads by the partner's business name. Mirrors the
+  // Inquiries inbox: case-insensitive substring match, empty query
+  // shows everything.
+  const filteredThreads = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (q.length === 0) return threads;
+    return threads.filter((t) => {
+      const other = t.user_a_id === myUserId ? t.user_b : t.user_a;
+      const name = (other?.business_name ?? "").toLowerCase();
+      return name.includes(q);
+    });
+  }, [threads, search, myUserId]);
 
   const otherVendorName = useMemo(() => {
     if (!activeThread) return null;
@@ -308,6 +323,17 @@ export default function VendorPartnersPage() {
         ) : (
           <div className="grid lg:grid-cols-[280px_1fr] h-[calc(100vh-65px)]">
             <aside className="border-r border-border overflow-y-auto bg-card/30">
+              <div className="p-3 border-b border-border/50">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    placeholder="Search vendors"
+                    className="pl-9 rounded-full bg-secondary/50 border-transparent focus-visible:ring-1"
+                  />
+                </div>
+              </div>
               {loadingThreads ? (
                 <div className="p-3 space-y-2">
                   {[0, 1, 2].map((i) => (
@@ -323,9 +349,15 @@ export default function VendorPartnersPage() {
                     start coordinating directly.
                   </p>
                 </div>
+              ) : filteredThreads.length === 0 ? (
+                <div className="p-6 text-center">
+                  <p className="text-sm text-muted-foreground">
+                    Nothing matches that search.
+                  </p>
+                </div>
               ) : (
                 <ul>
-                  {threads.map((t) => {
+                  {filteredThreads.map((t) => {
                     const isActive = t.id === activeThreadId;
                     const other =
                       t.user_a_id === myUserId ? t.user_b : t.user_a;
