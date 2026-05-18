@@ -169,14 +169,14 @@ export default function HostProfilePage() {
   }
 
   return (
-    <div className="flex min-h-screen bg-background">
+    <div className="flex min-h-screen vendor-canvas">
       <DashboardSidebar
         items={customerNavItems}
         title="Profile"
         backPath="/customer/explore"
       />
       <main className="flex-1 pb-20 lg:pb-0">
-        <div className="border-b border-border/40 bg-card/60 backdrop-blur px-4 md:px-8 py-5 flex items-start justify-between gap-3">
+        <div className="backdrop-blur-sm px-4 md:px-8 py-5 sticky top-0 z-40 flex items-start justify-between gap-3">
           <div>
             <h1 className="font-editorial text-3xl">Profile</h1>
             <p className="text-sm text-muted-foreground">

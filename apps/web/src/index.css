@@ -274,11 +274,13 @@
   }
 
   /*
-   * Vendor portal canvas — the same warm cream → peach wash that
-   * the landing page and auth shell use, so /vendor/* reads as
-   * part of the same site instead of a plain white app surface.
-   * Swap `bg-background` for `vendor-canvas` on the outer wrapper
-   * of any vendor page (VendorMyProfilePage, VendorInboxPage, etc.).
+   * Dashboard canvas — the same warm cream → peach wash that the
+   * landing page and auth shell use, applied to every authenticated
+   * app surface (vendor portal, host portal, settings) so the whole
+   * thing reads as one continuous experience. The name says "vendor"
+   * for historical reasons (it shipped with the vendor portal first);
+   * host pages and /settings hook into it too. Swap `bg-background`
+   * for `vendor-canvas` on the outer wrapper of any dashboard page.
    */
   .vendor-canvas {
     background:

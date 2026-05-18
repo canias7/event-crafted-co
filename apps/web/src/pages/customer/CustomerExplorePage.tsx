@@ -148,14 +148,14 @@ export default function CustomerExplorePage() {
   }, [loadFeeds]);
 
   return (
-    <div className="flex min-h-screen bg-background">
+    <div className="flex min-h-screen vendor-canvas">
       <DashboardSidebar
         items={customerNavItems}
         title="Explore"
         backPath="/customer/explore"
       />
       <main id="main-content" className="flex-1 pb-20 lg:pb-0">
-        <div className="sticky top-0 z-40 border-b border-border/40 bg-card/60 backdrop-blur px-4 md:px-8 py-5 space-y-3">
+        <div className="backdrop-blur-sm px-4 md:px-8 py-5 sticky top-0 z-40 space-y-3">
           <div className="flex items-start justify-between gap-3">
             <div>
               <h1 className="font-editorial text-3xl">Explore</h1>
