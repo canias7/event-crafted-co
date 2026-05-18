@@ -22,7 +22,7 @@ export function VendorComingSoonShell({
       <DashboardSidebar
         items={navItems}
         title="Vendor Portal"
-        backPath="/vendor/home"
+        backPath="/vendor/me"
       />
       <main className="flex-1 pb-24 md:pb-0">
         <div className="px-5 pt-8 pb-12 md:px-12 md:pt-12 max-w-3xl mx-auto md:mx-0">

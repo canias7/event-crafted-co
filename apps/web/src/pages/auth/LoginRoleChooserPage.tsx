@@ -13,7 +13,7 @@ export default function LoginRoleChooserPage() {
   // old tab while already signed in elsewhere.)
   const { session, hasVendorAccess, hasHostAccess, loading } = useAuth();
   if (!loading && session) {
-    if (hasVendorAccess) return <Navigate to="/vendor/home" replace />;
+    if (hasVendorAccess) return <Navigate to="/vendor/me" replace />;
     if (hasHostAccess) return <Navigate to="/customer/explore" replace />;
   }
   return (

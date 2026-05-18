@@ -278,8 +278,7 @@
    * the landing page and auth shell use, so /vendor/* reads as
    * part of the same site instead of a plain white app surface.
    * Swap `bg-background` for `vendor-canvas` on the outer wrapper
-   * of any vendor page (VendorHomePage, VendorMyProfilePage,
-   * VendorInboxPage, etc.).
+   * of any vendor page (VendorMyProfilePage, VendorInboxPage, etc.).
    */
   .vendor-canvas {
     background:

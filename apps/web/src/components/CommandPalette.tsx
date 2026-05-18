@@ -52,7 +52,6 @@ const HOST_NAV: NavTarget[] = [
 // route. /vendor/listing, /vendor/team, /vendor/availability were all
 // eliminated; don't list them here or the palette routes the user to NotFound.
 const VENDOR_NAV: NavTarget[] = [
-  { label: "Home", path: "/vendor/home", icon: Sparkles },
   { label: "Profile", path: "/vendor/me", icon: User },
   { label: "Inquiry inbox", path: "/vendor/inbox", icon: Inbox },
   { label: "Appointments", path: "/vendor/appointments", icon: CalendarDays },

@@ -203,11 +203,11 @@ export default function LoginPage({ role }: LoginPageProps = {}) {
     // lives at admin.eventvendora.com) fall through to the host-side
     // dashboard so they have somewhere to land.
     if (role === "vendor" && hasVendorAccess) {
-      navigate("/vendor/home");
+      navigate("/vendor/me");
     } else if (role === "host") {
       navigate("/customer/explore");
     } else {
-      navigate(hasVendorAccess ? "/vendor/home" : "/customer/explore");
+      navigate(hasVendorAccess ? "/vendor/me" : "/customer/explore");
     }
   }
 

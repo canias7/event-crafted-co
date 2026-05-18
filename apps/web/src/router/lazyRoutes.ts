@@ -130,11 +130,9 @@ const importHostProfile = () => import("@/pages/customer/HostProfilePage");
 export const HostProfilePage = lazyWithReload(importHostProfile);
 
 // ---------------- Vendor ----------------
-// VendorDashboard page deleted — its route now redirects to
-// /vendor/home (see App.tsx). KPIs surface on the Profile page.
-
-const importVendorHome = () => import("@/pages/vendor/VendorHomePage");
-export const VendorHomePage = lazyWithReload(importVendorHome);
+// VendorHomePage deleted — /vendor/me is the landing surface for
+// vendors. /vendor/home redirects to /vendor/me in App.tsx so any
+// stale bookmarks still resolve.
 
 const importVendorMyProfile = () => import("@/pages/vendor/VendorMyProfilePage");
 export const VendorMyProfilePage = lazyWithReload(importVendorMyProfile);
@@ -201,7 +199,6 @@ const ROUTE_IMPORTERS: Array<{ pattern: string; importer: () => Promise<unknown>
   { pattern: "/customer/events", importer: importHostEvents },
   { pattern: "/customer/profile", importer: importHostProfile },
   // Vendor
-  { pattern: "/vendor/home", importer: importVendorHome },
   { pattern: "/vendor/me", importer: importVendorMyProfile },
   { pattern: "/vendor/edit-profile", importer: importVendorEditProfile },
   { pattern: "/vendor/inbox", importer: importVendorInbox },

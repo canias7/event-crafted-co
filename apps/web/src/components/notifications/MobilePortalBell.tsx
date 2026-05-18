@@ -8,7 +8,7 @@ import { useAuth } from "@/hooks/useAuth";
 // On every other page (Calendar, Listing, Studio, etc.) this is
 // hidden so it doesn't compete with page chrome.
 const DASHBOARD_PATHS = new Set([
-  "/vendor/home",
+  "/vendor/me",
   "/customer/explore",
 ]);
 
@@ -20,7 +20,7 @@ export function MobilePortalBell() {
   if (!DASHBOARD_PATHS.has(location.pathname)) return null;
 
   // The dashboard URL itself tells us which side we're on (multi-role
-  // users can be on either /vendor/home or /customer/explore, so we
+  // users can be on either /vendor/me or /customer/explore, so we
   // no longer infer it from the profile.role).
   const inboxPath = location.pathname.startsWith("/vendor")
     ? "/vendor/inbox"

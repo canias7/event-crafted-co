@@ -283,7 +283,7 @@ export default function VendorMyProfilePage() {
       <DashboardSidebar
         items={vendorNavItems}
         title="My Profile"
-        backPath="/vendor/home"
+        backPath="/vendor/me"
       />
       <main className="flex-1 pb-20 lg:pb-0">
         <div className="backdrop-blur-sm px-4 md:px-8 py-5">
