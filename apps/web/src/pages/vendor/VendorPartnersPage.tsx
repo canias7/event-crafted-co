@@ -54,6 +54,7 @@ interface ThreadRow {
   last_message_at: string;
   user_a: ProfileBrand | null;
   user_b: ProfileBrand | null;
+  last_preview: { body: string; sender_user_id: string } | null;
 }
 
 interface PartnerMessage {
@@ -61,6 +62,23 @@ interface PartnerMessage {
   sender_user_id: string;
   body: string;
   created_at: string;
+}
+
+function relativeTime(iso: string | null): string {
+  if (!iso) return "";
+  const ms = Date.now() - new Date(iso).getTime();
+  const m = Math.floor(ms / 60_000);
+  if (m < 1) return "now";
+  if (m < 60) return `${m}m`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h}h`;
+  const d = Math.floor(h / 24);
+  if (d === 1) return "Yesterday";
+  if (d < 7) return `${d}d`;
+  return new Date(iso).toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+  });
 }
 
 function isSameDay(a: string, b: string): boolean {
@@ -129,7 +147,36 @@ export default function VendorPartnersPage() {
       )
       .or(`user_a_id.eq.${myUserId},user_b_id.eq.${myUserId}`)
       .order("last_message_at", { ascending: false });
-    setThreads((data as ThreadRow[]) ?? []);
+    const rows = (data as ThreadRow[]) ?? [];
+    // Fetch the latest message body for each thread so the row can
+    // show an iMessage-style preview. One query, ordered desc, then
+    // pick the first row we see per thread_id.
+    const lastBy = new Map<
+      string,
+      { body: string; sender_user_id: string }
+    >();
+    if (rows.length > 0) {
+      const ids = rows.map((t) => t.id);
+      const { data: msgs } = await msgsTable()
+        .select("thread_id, body, sender_user_id, created_at")
+        .in("thread_id", ids)
+        .order("created_at", { ascending: false });
+      for (const m of (msgs as Array<{
+        thread_id: string;
+        body: string;
+        sender_user_id: string;
+      }>) ?? []) {
+        if (!lastBy.has(m.thread_id)) {
+          lastBy.set(m.thread_id, {
+            body: m.body,
+            sender_user_id: m.sender_user_id,
+          });
+        }
+      }
+    }
+    setThreads(
+      rows.map((t) => ({ ...t, last_preview: lastBy.get(t.id) ?? null })),
+    );
     setLoadingThreads(false);
   }
 
@@ -306,30 +353,49 @@ export default function VendorPartnersPage() {
             <p className="font-display text-xl mb-2">Sign in to continue</p>
           </div>
         ) : (
-          <div className="grid lg:grid-cols-[280px_1fr] h-[calc(100vh-65px)]">
-            <aside className="border-r border-border overflow-y-auto bg-card/30">
+          <div className="grid lg:grid-cols-[360px_1fr] h-[calc(100vh-65px)]">
+            <aside className="border-r border-border overflow-y-auto p-3">
               {loadingThreads ? (
-                <div className="p-3 space-y-2">
+                <div className="space-y-2">
                   {[0, 1, 2].map((i) => (
-                    <Skeleton key={i} className="h-16 rounded-sm" />
+                    <Skeleton key={i} className="h-16 rounded-2xl" />
                   ))}
                 </div>
               ) : threads.length === 0 ? (
-                <div className="p-6 text-center">
-                  <MessageSquare className="w-8 h-8 mx-auto text-muted-foreground/40 mb-3" />
-                  <p className="text-sm font-medium mb-2">No partner threads yet</p>
-                  <p className="text-xs text-muted-foreground leading-relaxed">
+                <div className="bg-card rounded-2xl card-shadow py-12 px-6 text-center">
+                  <div className="mx-auto w-12 h-12 rounded-full bg-secondary/60 flex items-center justify-center mb-4">
+                    <MessageSquare className="w-5 h-5 text-muted-foreground" />
+                  </div>
+                  <p className="font-display text-lg">No partner threads yet</p>
+                  <p className="text-sm text-muted-foreground mt-2 leading-relaxed">
                     Open a vendor's profile and tap "Message vendor" to
                     start coordinating directly.
                   </p>
                 </div>
               ) : (
-                <ul>
-                  {threads.map((t) => {
+                <ul
+                  className="rounded-2xl overflow-hidden"
+                  style={{
+                    background: "rgba(255,253,250,0.6)",
+                    border: "0.5px solid rgba(255,138,76,0.18)",
+                    backdropFilter: "blur(10px)",
+                    WebkitBackdropFilter: "blur(10px)",
+                  }}
+                >
+                  {threads.map((t, i) => {
                     const isActive = t.id === activeThreadId;
+                    const isFirst = i === 0;
                     const other =
                       t.user_a_id === myUserId ? t.user_b : t.user_a;
                     const name = other?.business_name?.trim() || "Vendor";
+                    const initial = name.charAt(0).toUpperCase();
+                    const preview = t.last_preview
+                      ? `${
+                          t.last_preview.sender_user_id === myUserId
+                            ? "You: "
+                            : ""
+                        }${t.last_preview.body}`
+                      : "No messages yet";
                     return (
                       <li key={t.id}>
                         <button
@@ -337,39 +403,41 @@ export default function VendorPartnersPage() {
                           onClick={() =>
                             setSearchParams({ thread: t.id }, { replace: true })
                           }
-                          className={`w-full text-left px-4 py-3 border-b border-border/50 transition-colors flex items-center gap-3 ${
-                            isActive ? "bg-secondary" : "hover:bg-secondary/40"
-                          }`}
+                          className={`w-full text-left flex items-stretch gap-3 px-4 py-3 transition-colors ${
+                            isActive ? "bg-white/70" : "hover:bg-white/40"
+                          } ${isFirst ? "" : "border-t border-foreground/[0.06]"}`}
                         >
                           {other?.logo_url ? (
                             <img
                               src={other.logo_url}
                               alt=""
-                              className="w-9 h-9 rounded-full object-cover shrink-0"
+                              className="shrink-0 w-11 h-11 rounded-full object-cover self-center"
                             />
                           ) : (
                             <span
-                              className="w-9 h-9 rounded-full inline-flex items-center justify-center font-semibold shrink-0 text-sm"
+                              className="shrink-0 w-11 h-11 rounded-full inline-flex items-center justify-center font-semibold self-center"
                               style={{
                                 background: "rgba(255,138,76,0.18)",
                                 color: "#c4541e",
                               }}
                               aria-hidden
                             >
-                              {name.charAt(0).toUpperCase()}
+                              {initial}
                             </span>
                           )}
+
                           <div className="min-w-0 flex-1">
-                            <p className="text-sm font-medium truncate">
+                            <span className="block truncate text-[15px] font-medium text-foreground">
                               {name}
-                            </p>
-                            <p className="text-[11px] text-muted-foreground mt-0.5">
-                              last activity{" "}
-                              <span className="tnum">
-                                {new Date(t.last_message_at).toLocaleDateString()}
-                              </span>
+                            </span>
+                            <p className="mt-0.5 text-[13px] text-muted-foreground leading-snug truncate">
+                              {preview}
                             </p>
                           </div>
+
+                          <span className="shrink-0 text-[11px] text-muted-foreground self-start tnum">
+                            {relativeTime(t.last_message_at)}
+                          </span>
                         </button>
                       </li>
                     );
