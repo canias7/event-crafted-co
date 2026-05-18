@@ -288,7 +288,7 @@ export default function HostInquiryDetailPage() {
 
   if (notFound) {
     return (
-      <div className="flex min-h-screen bg-background">
+      <div className="flex min-h-screen vendor-canvas">
         <DashboardSidebar items={navItems} title="Customer" backPath="/" />
         <main className="flex-1 pb-20 lg:pb-0 p-8">
           <Link
@@ -312,11 +312,11 @@ export default function HostInquiryDetailPage() {
   }
 
   return (
-    <div className="flex min-h-screen bg-background">
+    <div className="flex min-h-screen vendor-canvas">
       <DashboardSidebar items={navItems} title="Customer" backPath="/" />
 
       <main id="main-content" className="flex-1 pb-20 lg:pb-0">
-        <div className="border-b border-border bg-card px-4 md:px-8 py-4 sticky top-0 z-40">
+        <div className="backdrop-blur-sm px-4 md:px-8 py-4 sticky top-0 z-40">
           <Link
             to="/customer/inquiries"
             className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
