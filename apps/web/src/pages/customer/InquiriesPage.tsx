@@ -109,13 +109,18 @@ export default function InquiriesPage() {
   async function load() {
     if (!user) return;
     setLoading(true);
+    // Cap at 100 so an active host doesn't download every historical
+    // inquiry on each page load / realtime refetch. The list is sorted
+    // newest-first so the cap drops oldest. If a host needs older
+    // inquiries we can add "Load more" later.
     const { data, error } = await supabase
       .from("inquiries")
       .select(
         "id, event_type, event_date, guest_count, location, budget_min_cents, budget_max_cents, status, created_at, vendor:vendor_profiles!inquiries_vendor_id_fkey(business_name, category)",
       )
       .eq("host_id", user.id)
-      .order("created_at", { ascending: false });
+      .order("created_at", { ascending: false })
+      .limit(100);
     if (error) {
       console.error(error);
       setRows([]);
