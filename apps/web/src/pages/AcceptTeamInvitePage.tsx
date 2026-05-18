@@ -79,7 +79,7 @@ export default function AcceptTeamInvitePage() {
     }
     toast.success("You're on the team");
     await refreshProfile();
-    navigate("/vendor/home");
+    navigate("/vendor/me");
   }
 
   if (loading) {

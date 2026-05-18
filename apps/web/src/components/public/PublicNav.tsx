@@ -52,10 +52,10 @@ export function PublicNav() {
   }, []);
 
   // Multi-role: send the user to whichever portal they're more likely to
-  // want. Vendor access → /vendor/home (the live root after the route
-  // cleanup; /vendor/dashboard is gone). Otherwise → /customer/explore.
+  // want. Vendor access → /vendor/me (the vendor landing surface; the
+  // separate Home page was removed). Otherwise → /customer/explore.
   const dashLabel = dashboardLabel(t);
-  const dashPath = hasVendorAccess ? "/vendor/home" : "/customer/explore";
+  const dashPath = hasVendorAccess ? "/vendor/me" : "/customer/explore";
 
   return (
     <nav

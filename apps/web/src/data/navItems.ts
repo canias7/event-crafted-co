@@ -7,7 +7,6 @@ import {
   Sparkles,
   CreditCard,
   Images,
-  Home,
   type LucideIcon,
 } from "lucide-react";
 
@@ -41,13 +40,10 @@ export const customerNavItems: NavItem[] = [
 ];
 
 export const vendorNavItems: NavItem[] = [
-  // Home hub — global feed (posts/reels/buzz) + composers, mirroring
-  // the vendor mobile Home tab. Acts as the vendor's primary landing
-  // (the old separate Dashboard entry was removed — its KPIs live in
-  // the Profile page now).
-  { labelKey: "sidebar.vendor.home", path: "/vendor/home", icon: Home },
   // Inbox hub — sub-tabs: Inquiries (default), Hosts (DMs), Partners
   // (vendor-to-vendor). The standalone Messages entry merged in here.
+  // (Vendor Home — global feed + composers — removed: vendors land on
+  // /vendor/me now, and the global feed lives only on the host side.)
   { labelKey: "sidebar.vendor.inbox", path: "/vendor/inbox", icon: Inbox },
   // Calendar hub — sub-tabs: Appointments, Availability
   { labelKey: "sidebar.vendor.calendar", path: "/vendor/appointments", icon: CalendarDays },

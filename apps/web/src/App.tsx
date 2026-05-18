@@ -53,7 +53,6 @@ import {
   HostEventsPage,
   CustomerExplorePage,
   HostProfilePage,
-  VendorHomePage,
   VendorMyProfilePage,
   VendorEditProfilePage,
   VendorInboxPage,
@@ -198,11 +197,14 @@ const App = () => (
               <Route path="/board/:token" element={<Navigate to="/" replace />} />
               <Route path="/plan-in-5" element={<Navigate to="/customer/explore" replace />} />
 
-              {/* Vendor. /vendor/listing, /vendor/dashboard, /vendor/team,
-                  /vendor/ai-agent, /vendor/payments, /vendor/analytics,
-                  /vendor/blog all removed in the route-cleanup pass —
-                  hitting them now lands on NotFound (no redirects). */}
-              <Route path="/vendor/home" element={<RequireRole role="vendor"><VendorHomePage /></RequireRole>} />
+              {/* Vendor. /vendor/home dropped — /vendor/me is the
+                  landing surface for vendors. The redirect catches
+                  any stale bookmarks. /vendor/listing, /vendor/dashboard,
+                  /vendor/team, /vendor/ai-agent, /vendor/payments,
+                  /vendor/analytics, /vendor/blog all removed in the
+                  route-cleanup pass — hitting them now lands on
+                  NotFound (no redirects). */}
+              <Route path="/vendor/home" element={<Navigate to="/vendor/me" replace />} />
               <Route path="/vendor/me" element={<RequireRole role="vendor"><VendorMyProfilePage /></RequireRole>} />
               <Route path="/vendor/edit-profile" element={<RequireRole role="vendor"><VendorEditProfilePage /></RequireRole>} />
               <Route path="/vendor/inbox" element={<RequireRole role="vendor"><VendorInboxPage /></RequireRole>} />
