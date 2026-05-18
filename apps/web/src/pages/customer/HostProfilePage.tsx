@@ -6,15 +6,15 @@
 // into public.host_verification_requests; admins follow up via
 // support to collect ID.
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   Award,
-  Calendar,
+  Camera,
   CheckCircle2,
   ChevronRight,
   Clock,
-  Inbox,
+  Loader2,
   LogOut,
   Settings as SettingsIcon,
   Star,
@@ -31,10 +31,7 @@ import { supabase } from "@/integrations/supabase/client";
 type VerifStatus = "none" | "pending" | "approved" | "rejected";
 
 interface Stats {
-  inquiries: number;
-  booked: number;
-  vendors: number;
-  events: number;
+  ratings: number;
 }
 
 interface ProfileState {
@@ -42,6 +39,7 @@ interface ProfileState {
   email: string;
   memberSince: string;
   unread: number;
+  avatarUrl: string | null;
   stats: Stats;
   verifStatus: VerifStatus;
 }
@@ -55,6 +53,8 @@ export default function HostProfilePage() {
   const [state, setState] = useState<ProfileState | null>(null);
   const [loading, setLoading] = useState(true);
   const [requesting, setRequesting] = useState(false);
+  const [avatarUploading, setAvatarUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const load = useCallback(async () => {
     if (!user?.id) return;
@@ -62,25 +62,25 @@ export default function HostProfilePage() {
 
     const [
       { data: profile },
-      { data: inquiries },
       { count: unread },
+      { count: ratings },
       authUser,
       { data: verifRow },
     ] = await Promise.all([
       supabase
         .from("profiles")
-        .select("display_name")
+        .select("display_name, avatar_url")
         .eq("id", user.id)
         .maybeSingle(),
-      supabase
-        .from("inquiries")
-        .select("status, vendor_id, event_type, event_date")
-        .eq("host_id", user.id),
       supabase
         .from("notifications")
         .select("*", { count: "exact", head: true })
         .eq("user_id", user.id)
         .is("read_at", null),
+      supabase
+        .from("reviews")
+        .select("*", { count: "exact", head: true })
+        .eq("host_id", user.id),
       supabase.auth.getUser(),
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (supabase as any)
@@ -91,23 +91,6 @@ export default function HostProfilePage() {
         .limit(1)
         .maybeSingle(),
     ]);
-
-    const rows = (inquiries ?? []) as Array<{
-      status: string;
-      vendor_id: string;
-      event_type: string | null;
-      event_date: string | null;
-    }>;
-    const vendors = new Set(rows.map((r) => r.vendor_id));
-    const events = new Set(
-      rows
-        .map((r) =>
-          r.event_type || r.event_date
-            ? `${r.event_type ?? ""}|${r.event_date ?? ""}`
-            : null,
-        )
-        .filter(Boolean) as string[],
-    );
 
     const createdAt = authUser?.data?.user?.created_at;
     const year = createdAt
@@ -128,21 +111,62 @@ export default function HostProfilePage() {
         ? rawStatus
         : "none";
 
+    const profileRow = profile as
+      | { display_name?: string | null; avatar_url?: string | null }
+      | null;
+
     setState({
       name: titleCase,
       email: user.email ?? "",
       memberSince: String(year),
       unread: unread ?? 0,
+      avatarUrl: profileRow?.avatar_url ?? null,
       stats: {
-        inquiries: rows.length,
-        booked: rows.filter((r) => r.status === "won").length,
-        vendors: vendors.size,
-        events: events.size,
+        ratings: ratings ?? 0,
       },
       verifStatus: status,
     });
     setLoading(false);
   }, [user?.id, user?.email]);
+
+  async function onPickAvatar(file: File) {
+    if (!user?.id || avatarUploading) return;
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error("Photo too large — pick a photo under 10 MB.");
+      return;
+    }
+    setAvatarUploading(true);
+    try {
+      const ext = (file.name.split(".").pop() ?? "jpg")
+        .toLowerCase()
+        .replace(/[^a-z0-9]/g, "");
+      const path = `${user.id}/profile-avatar-${Date.now()}.${ext}`;
+      const { error: upErr } = await supabase.storage
+        .from("vendor-posts")
+        .upload(path, file, {
+          contentType: file.type || "image/jpeg",
+          upsert: false,
+        });
+      if (upErr) throw upErr;
+      const { data: pub } = supabase.storage
+        .from("vendor-posts")
+        .getPublicUrl(path);
+      const { error: updErr } = await supabase
+        .from("profiles")
+        .update({ avatar_url: pub.publicUrl })
+        .eq("id", user.id);
+      if (updErr) throw updErr;
+      setState((prev) =>
+        prev ? { ...prev, avatarUrl: pub.publicUrl } : prev,
+      );
+      toast.success("Photo updated.");
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Please try again.";
+      toast.error(`Couldn't update photo: ${msg}`);
+    } finally {
+      setAvatarUploading(false);
+    }
+  }
 
   useEffect(() => {
     load();
@@ -201,32 +225,11 @@ export default function HostProfilePage() {
                 memberSince={state.memberSince}
                 verified={state.verifStatus === "approved"}
                 stats={state.stats}
+                avatarUrl={state.avatarUrl}
+                uploading={avatarUploading}
+                onPickFile={(file) => onPickAvatar(file)}
+                fileInputRef={fileInputRef}
               />
-
-              <div className="grid grid-cols-2 gap-3">
-                <ShortcutTile
-                  to="/customer/inquiries"
-                  icon={Inbox}
-                  title="Inbox"
-                  subtitle={
-                    state.unread
-                      ? `${state.unread} unread`
-                      : "All caught up"
-                  }
-                  badge={state.unread ? String(state.unread) : null}
-                />
-                <ShortcutTile
-                  to="/customer/events"
-                  icon={Calendar}
-                  title="My Events"
-                  subtitle={
-                    state.stats.events
-                      ? `${state.stats.events} planned`
-                      : "Plan your first"
-                  }
-                  badge={null}
-                />
-              </div>
 
               <VerificationCard
                 status={state.verifStatus}
@@ -265,12 +268,20 @@ function HeroCard({
   memberSince,
   stats,
   verified,
+  avatarUrl,
+  uploading,
+  onPickFile,
+  fileInputRef,
 }: {
   initial: string;
   name: string;
   memberSince: string;
   stats: Stats;
   verified: boolean;
+  avatarUrl: string | null;
+  uploading: boolean;
+  onPickFile: (file: File) => void;
+  fileInputRef: React.RefObject<HTMLInputElement>;
 }) {
   return (
     <div className="relative overflow-hidden rounded-3xl border border-border/60 shadow-[0_8px_24px_-12px_rgba(26,20,16,0.18)] p-8 flex flex-col items-center bg-[linear-gradient(135deg,#ffffff_0%,#f3f4f6_100%)]">
@@ -283,9 +294,41 @@ function HeroCard({
         }}
       />
       <div className="relative">
-        <div className="w-28 h-28 rounded-full bg-foreground text-background flex items-center justify-center">
-          <span className="font-editorial text-5xl">{initial}</span>
-        </div>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={(e) => {
+            const f = e.target.files?.[0];
+            if (f) onPickFile(f);
+            e.target.value = "";
+          }}
+        />
+        <button
+          type="button"
+          onClick={() => fileInputRef.current?.click()}
+          disabled={uploading}
+          aria-label="Change profile photo"
+          className="group relative w-28 h-28 rounded-full overflow-hidden bg-foreground text-background flex items-center justify-center transition disabled:opacity-70"
+        >
+          {avatarUrl ? (
+            <img
+              src={avatarUrl}
+              alt=""
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            <span className="font-editorial text-5xl">{initial}</span>
+          )}
+          <span className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity">
+            {uploading ? (
+              <Loader2 className="h-6 w-6 text-white animate-spin" />
+            ) : (
+              <Camera className="h-6 w-6 text-white" />
+            )}
+          </span>
+        </button>
         {verified ? (
           <div className="absolute -right-1 bottom-1 w-8 h-8 rounded-full bg-card border-2 border-background flex items-center justify-center">
             <CheckCircle2 className="h-5 w-5 text-emerald-500" />
@@ -299,14 +342,10 @@ function HeroCard({
         {verified ? "Verified Host  ·  " : ""}Member since {memberSince}
       </p>
       <div className="relative my-5 h-px w-full bg-border/60" />
-      <div className="relative flex w-full items-center">
-        <StatCol label="Inquiries" value={String(stats.inquiries)} />
-        <div className="h-10 w-px bg-border/60" />
-        <StatCol label="Booked" value={String(stats.booked)} />
-        <div className="h-10 w-px bg-border/60" />
+      <div className="relative flex w-full items-center justify-center">
         <StatCol
-          label="Vendors"
-          value={String(stats.vendors)}
+          label="Ratings"
+          value={String(stats.ratings)}
           trailing={<Star className="h-4 w-4 text-amber-500" />}
         />
       </div>
@@ -333,40 +372,6 @@ function StatCol({
         {label}
       </span>
     </div>
-  );
-}
-
-function ShortcutTile({
-  to,
-  icon: Icon,
-  title,
-  subtitle,
-  badge,
-}: {
-  to: string;
-  icon: typeof Inbox;
-  title: string;
-  subtitle: string;
-  badge: string | null;
-}) {
-  return (
-    <Link
-      to={to}
-      className="block rounded-3xl bg-card border border-border/60 shadow-[0_8px_24px_-16px_rgba(26,20,16,0.16)] p-4 hover:bg-secondary/40 transition"
-    >
-      <div className="flex items-start justify-between">
-        <div className="w-10 h-10 rounded-xl bg-secondary flex items-center justify-center">
-          <Icon className="h-5 w-5 text-foreground" />
-        </div>
-        {badge ? (
-          <span className="rounded-full bg-foreground text-background text-xs font-bold px-2.5 py-1">
-            {badge}
-          </span>
-        ) : null}
-      </div>
-      <p className="mt-3 font-editorial text-lg">{title}</p>
-      <p className="text-sm text-muted-foreground">{subtitle}</p>
-    </Link>
   );
 }
 
