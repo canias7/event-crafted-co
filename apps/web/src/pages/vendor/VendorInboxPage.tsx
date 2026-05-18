@@ -31,7 +31,7 @@ interface InquiryRow {
   status: string;
   created_at: string;
   vendor_read_at: string | null;
-  host: { display_name: string | null } | null;
+  host: { display_name: string | null; avatar_url: string | null } | null;
 }
 
 function relativeTime(iso: string | null): string {
@@ -85,7 +85,7 @@ export default function VendorInboxPage() {
     const { data } = await supabase
       .from("inquiries")
       .select(
-        "id, event_type, event_date, guest_count, location, budget_min_cents, budget_max_cents, special_requests, status, created_at, vendor_read_at, host:profiles!inquiries_host_id_fkey(display_name)",
+        "id, event_type, event_date, guest_count, location, budget_min_cents, budget_max_cents, special_requests, status, created_at, vendor_read_at, host:profiles!inquiries_host_id_fkey(display_name, avatar_url)",
       )
       .in("vendor_id", vids)
       .order("created_at", { ascending: false });
@@ -239,17 +239,26 @@ function ConversationRow({
           ) : null}
         </span>
 
-        {/* Avatar */}
-        <span
-          className="shrink-0 w-11 h-11 rounded-full inline-flex items-center justify-center font-semibold"
-          style={{
-            background: "rgba(255,138,76,0.18)",
-            color: "#c4541e",
-          }}
-          aria-hidden
-        >
-          {initial}
-        </span>
+        {/* Avatar — host's profile photo if uploaded, else colored initial */}
+        {row.host?.avatar_url ? (
+          <img
+            src={row.host.avatar_url}
+            alt=""
+            className="shrink-0 w-11 h-11 rounded-full object-cover"
+            aria-hidden
+          />
+        ) : (
+          <span
+            className="shrink-0 w-11 h-11 rounded-full inline-flex items-center justify-center font-semibold"
+            style={{
+              background: "rgba(255,138,76,0.18)",
+              color: "#c4541e",
+            }}
+            aria-hidden
+          >
+            {initial}
+          </span>
+        )}
 
         {/* Name + preview */}
         <div className="min-w-0 flex-1">

@@ -67,7 +67,7 @@ interface Inquiry {
   intent_score: number | null;
   recommended_verification: string | null;
   vendor_read_at: string | null;
-  host: { display_name: string | null } | null;
+  host: { display_name: string | null; avatar_url: string | null } | null;
 }
 
 interface Message {
@@ -116,7 +116,7 @@ export default function InquiryDetailPage() {
     const [inqRes, threadRes, reviewRes, propsRes] = await Promise.all([
       supabase
         .from("inquiries")
-        .select("*, host:profiles!inquiries_host_id_fkey(display_name)")
+        .select("*, host:profiles!inquiries_host_id_fkey(display_name, avatar_url)")
         .eq("id", inquiryId)
         .maybeSingle(),
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -347,13 +347,22 @@ export default function InquiryDetailPage() {
           >
             <ArrowLeft className="w-4 h-4" />
           </Link>
-          <span
-            className="shrink-0 w-10 h-10 rounded-full inline-flex items-center justify-center font-semibold"
-            style={{ background: "rgba(255,138,76,0.18)", color: "#c4541e" }}
-            aria-hidden
-          >
-            {initial}
-          </span>
+          {inquiry.host?.avatar_url ? (
+            <img
+              src={inquiry.host.avatar_url}
+              alt=""
+              className="shrink-0 w-10 h-10 rounded-full object-cover"
+              aria-hidden
+            />
+          ) : (
+            <span
+              className="shrink-0 w-10 h-10 rounded-full inline-flex items-center justify-center font-semibold"
+              style={{ background: "rgba(255,138,76,0.18)", color: "#c4541e" }}
+              aria-hidden
+            >
+              {initial}
+            </span>
+          )}
           <div className="min-w-0 flex-1">
             <p className="font-medium text-foreground truncate leading-tight">
               {hostName}
@@ -462,26 +471,61 @@ export default function InquiryDetailPage() {
               return (
                 <div
                   key={m.id}
-                  className={`max-w-[80%] px-3.5 py-2 text-sm leading-relaxed whitespace-pre-wrap ${
-                    it.isMe
-                      ? "bg-foreground text-background ml-auto"
-                      : "bg-secondary"
-                  } ${it.firstInGroup ? "mt-2" : "mt-0.5"} ${
-                    it.isMe
-                      ? `rounded-2xl ${it.showTail ? "rounded-br-sm" : ""}`
-                      : `rounded-2xl ${it.showTail ? "rounded-bl-sm" : ""}`
-                  }`}
+                  className={`flex items-end gap-2 ${
+                    it.firstInGroup ? "mt-2" : "mt-0.5"
+                  } ${it.isMe ? "justify-end" : ""}`}
                 >
-                  {isAi ? (
-                    <span className="inline-flex items-center gap-1 text-[10px] uppercase tracking-wider opacity-80 mb-1">
-                      <Sparkles className="w-3 h-3" />
-                      Sent by AI
-                    </span>
+                  {/* Incoming-side avatar: render on the tail bubble of
+                      each host run so each speech "burst" gets one
+                      portrait, like iMessage. Non-tail incoming messages
+                      leave a spacer so bubbles in the same run line up. */}
+                  {!it.isMe ? (
+                    it.showTail ? (
+                      inquiry.host?.avatar_url ? (
+                        <img
+                          src={inquiry.host.avatar_url}
+                          alt=""
+                          className="shrink-0 w-6 h-6 rounded-full object-cover"
+                          aria-hidden
+                        />
+                      ) : (
+                        <span
+                          className="shrink-0 w-6 h-6 rounded-full inline-flex items-center justify-center text-[10px] font-semibold"
+                          style={{
+                            background: "rgba(255,138,76,0.18)",
+                            color: "#c4541e",
+                          }}
+                          aria-hidden
+                        >
+                          {initial}
+                        </span>
+                      )
+                    ) : (
+                      <span className="shrink-0 w-6" aria-hidden />
+                    )
                   ) : null}
-                  <p>{m.body}</p>
-                  {m.attachments && m.attachments.length > 0 && (
-                    <MessageAttachments attachments={m.attachments} />
-                  )}
+                  <div
+                    className={`max-w-[80%] px-3.5 py-2 text-sm leading-relaxed whitespace-pre-wrap rounded-2xl ${
+                      it.isMe
+                        ? `bg-foreground text-background ${
+                            it.showTail ? "rounded-br-sm" : ""
+                          }`
+                        : `bg-secondary ${
+                            it.showTail ? "rounded-bl-sm" : ""
+                          }`
+                    }`}
+                  >
+                    {isAi ? (
+                      <span className="inline-flex items-center gap-1 text-[10px] uppercase tracking-wider opacity-80 mb-1">
+                        <Sparkles className="w-3 h-3" />
+                        Sent by AI
+                      </span>
+                    ) : null}
+                    <p>{m.body}</p>
+                    {m.attachments && m.attachments.length > 0 && (
+                      <MessageAttachments attachments={m.attachments} />
+                    )}
+                  </div>
                 </div>
               );
             })

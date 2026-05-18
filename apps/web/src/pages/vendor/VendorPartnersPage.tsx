@@ -296,6 +296,13 @@ export default function VendorPartnersPage() {
       : activeThread.user_a?.business_name;
   }, [activeThread, myUserId]);
 
+  const otherVendorLogo = useMemo(() => {
+    if (!activeThread) return null;
+    return activeThread.user_a_id === myUserId
+      ? activeThread.user_b?.logo_url ?? null
+      : activeThread.user_a?.logo_url ?? null;
+  }, [activeThread, myUserId]);
+
   const otherVendorUserId = useMemo(() => {
     if (!activeThread) return null;
     return activeThread.user_a_id === myUserId
@@ -557,20 +564,54 @@ export default function VendorPartnersPage() {
                         );
                       }
                       const m = it.message;
+                      const initial = (
+                        otherVendorName?.trim()?.charAt(0) ?? "V"
+                      ).toUpperCase();
                       return (
                         <div
                           key={m.id}
-                          className={`max-w-[80%] px-3.5 py-2 text-sm leading-relaxed whitespace-pre-wrap ${
-                            it.isMe
-                              ? "ml-auto bg-foreground text-background"
-                              : "bg-card border border-border"
-                          } ${it.firstInGroup ? "mt-2" : "mt-0.5"} ${
-                            it.isMe
-                              ? `rounded-2xl ${it.showTail ? "rounded-br-sm" : ""}`
-                              : `rounded-2xl ${it.showTail ? "rounded-bl-sm" : ""}`
-                          }`}
+                          className={`flex items-end gap-2 ${
+                            it.firstInGroup ? "mt-2" : "mt-0.5"
+                          } ${it.isMe ? "justify-end" : ""}`}
                         >
-                          {m.body}
+                          {!it.isMe ? (
+                            it.showTail ? (
+                              otherVendorLogo ? (
+                                <img
+                                  src={otherVendorLogo}
+                                  alt=""
+                                  className="shrink-0 w-6 h-6 rounded-full object-cover"
+                                  aria-hidden
+                                />
+                              ) : (
+                                <span
+                                  className="shrink-0 w-6 h-6 rounded-full inline-flex items-center justify-center text-[10px] font-semibold"
+                                  style={{
+                                    background: "rgba(255,138,76,0.18)",
+                                    color: "#c4541e",
+                                  }}
+                                  aria-hidden
+                                >
+                                  {initial}
+                                </span>
+                              )
+                            ) : (
+                              <span className="shrink-0 w-6" aria-hidden />
+                            )
+                          ) : null}
+                          <div
+                            className={`max-w-[80%] px-3.5 py-2 text-sm leading-relaxed whitespace-pre-wrap rounded-2xl ${
+                              it.isMe
+                                ? `bg-foreground text-background ${
+                                    it.showTail ? "rounded-br-sm" : ""
+                                  }`
+                                : `bg-card border border-border ${
+                                    it.showTail ? "rounded-bl-sm" : ""
+                                  }`
+                            }`}
+                          >
+                            {m.body}
+                          </div>
                         </div>
                       );
                     })}
