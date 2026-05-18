@@ -10,7 +10,6 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import { getBottomNav } from "@/data/navItems";
 import { useAuth } from "@/hooks/useAuth";
 
 interface NavItem {
@@ -46,7 +45,6 @@ export function MobileNav({ items }: MobileNavProps) {
   const overflowItems = items.filter(
     (it) => !primaryItems.some((p) => p.path === it.path),
   );
-  const bottomItems = getBottomNav(items) ?? [];
 
   async function handleLogout() {
     setDrawerOpen(false);
@@ -121,21 +119,6 @@ export function MobileNav({ items }: MobileNavProps) {
                     </Link>
                   );
                 })}
-              </div>
-            )}
-            {bottomItems.length > 0 && (
-              <div className="pt-3 mt-3 border-t border-border space-y-1">
-                {bottomItems.map((item) => (
-                  <Link
-                    key={item.path}
-                    to={item.path}
-                    onClick={() => setDrawerOpen(false)}
-                    className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors"
-                  >
-                    <item.icon className="w-4 h-4" aria-hidden="true" />
-                    <span className="truncate">{t(item.labelKey)}</span>
-                  </Link>
-                ))}
               </div>
             )}
             <div className="pt-3 mt-3 border-t border-border">

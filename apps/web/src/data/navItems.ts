@@ -45,7 +45,9 @@ export const vendorNavItems: NavItem[] = [
   // (Vendor Home — global feed + composers — removed: vendors land on
   // /vendor/me now, and the global feed lives only on the host side.)
   { labelKey: "sidebar.vendor.inbox", path: "/vendor/inbox", icon: Inbox },
-  // Calendar hub — sub-tabs: Appointments, Availability
+  // Calendar — single page that surfaces both upcoming appointments
+  // (inquiries with event_date set) and the per-day block-out grid for
+  // marking dates unavailable.
   { labelKey: "sidebar.vendor.calendar", path: "/vendor/appointments", icon: CalendarDays },
   // Profile — the vendor's IG-style identity surface (posts, reels,
   // buzz, listings, edit identity). Replaces the old separate
@@ -62,14 +64,6 @@ export const vendorNavItems: NavItem[] = [
   // reads as one continuous list. Log out lives on /settings now.
   { labelKey: "sidebar.bottom.settings", path: "/settings", icon: Settings },
 ];
-
-// Bottom-group nav retired — Settings was the only entry left after
-// Support was deleted, so it now lives inline in each main array.
-// getBottomNav still exists as a no-op so DashboardSidebar callers
-// don't break, and the WeakMap registry is gone.
-export function getBottomNav(_main: NavItem[]): NavItem[] | undefined {
-  return undefined;
-}
 
 // Cross-cutting pages like /settings and /support don't know which
 // dashboard the user came from — without this, they default to the

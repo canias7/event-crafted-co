@@ -17,7 +17,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { vendorNavItems as navItems } from "@/data/navItems";
-import { VENDOR_MESSAGES_HUB_TABS } from "@/data/hubTabs";
+import { VENDOR_INBOX_HUB_TABS } from "@/data/hubTabs";
 
 // Vendor-to-vendor partner messaging — separate from host conversations.
 // Threads are keyed on profiles.id (the user account) so a vendor with
@@ -384,12 +384,12 @@ export default function VendorPartnersPage() {
       <main id="main-content" className="flex-1 pb-20 lg:pb-0">
         <div className="backdrop-blur-sm px-4 md:px-8 py-5 sticky top-0 z-40 space-y-3">
           <div>
-            <h1 className="font-editorial text-3xl">Vendor messages</h1>
+            <h1 className="font-editorial text-3xl">Inbox</h1>
             <p className="text-sm text-muted-foreground">
               Chat with other vendors directly — no host in the loop.
             </p>
           </div>
-          <SubNavTabs tabs={VENDOR_MESSAGES_HUB_TABS} />
+          <SubNavTabs tabs={VENDOR_INBOX_HUB_TABS} />
         </div>
 
         {!myUserId ? (
