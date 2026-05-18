@@ -51,9 +51,6 @@ function lazyWithReload<T extends ComponentType<unknown>>(
 const importVendorBrowse = () => import("@/pages/VendorBrowsePage");
 export const VendorBrowsePage = lazyWithReload(importVendorBrowse);
 
-const importCompareVendors = () => import("@/pages/CompareVendorsPage");
-export const CompareVendorsPage = lazyWithReload(importCompareVendors);
-
 const importVendorLocations = () => import("@/pages/VendorLocationsPage");
 export const VendorLocationsPage = lazyWithReload(importVendorLocations);
 

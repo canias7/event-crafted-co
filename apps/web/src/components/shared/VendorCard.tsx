@@ -2,11 +2,9 @@ import { motion } from "framer-motion";
 import {
   MapPin,
   Heart,
-  GitCompare,
   ImageIcon,
 } from "lucide-react";
 import { useSavedVendors } from "@/hooks/useSavedVendors";
-import { useCompareVendors } from "@/hooks/useCompareVendors";
 import { PrefetchLink as Link } from "@/components/shared/PrefetchLink";
 import { Picture, type PictureSource } from "@/components/shared/Picture";
 import { VerificationBadges } from "@/components/vendor/VerificationBadges";
@@ -85,9 +83,7 @@ interface VendorCardProps {
 
 export function VendorCard({ vendor, eager = false }: VendorCardProps) {
   const { isSaved, toggle } = useSavedVendors();
-  const { isCompared, toggle: toggleCompare } = useCompareVendors();
   const saved = isSaved(vendor.id);
-  const compared = isCompared(vendor.id);
 
   return (
     <Link to={`/vendors/${vendor.id}`} className="group block">
@@ -114,7 +110,7 @@ export function VendorCard({ vendor, eager = false }: VendorCardProps) {
               <span className="text-xs">No listing photos yet</span>
             </div>
           )}
-          <div className="absolute top-2 right-2 flex flex-col gap-1.5">
+          <div className="absolute top-2 right-2">
             <button
               aria-label={saved ? "Remove from saved" : "Save vendor"}
               onClick={(e) => {
@@ -129,27 +125,12 @@ export function VendorCard({ vendor, eager = false }: VendorCardProps) {
                 }`}
               />
             </button>
-            <button
-              aria-label={compared ? "Remove from compare" : "Add to compare"}
-              aria-pressed={compared}
-              onClick={(e) => {
-                e.preventDefault();
-                toggleCompare(vendor.id);
-              }}
-              className={`w-7 h-7 rounded-full backdrop-blur-sm flex items-center justify-center transition-colors ${
-                compared
-                  ? "bg-foreground text-background hover:bg-foreground/90"
-                  : "bg-background/85 hover:bg-background"
-              }`}
-            >
-              <GitCompare className="w-3.5 h-3.5" />
-            </button>
           </div>
 
-          {/* Nothing overlays the photo on purpose — only the save /
-              compare buttons in the top-right corner sit on top of the
-              image. Category, rating, and availability surface in the
-              text block below instead. */}
+          {/* Nothing overlays the photo on purpose — only the save
+              button in the top-right corner sits on top of the image.
+              Category, rating, and availability surface in the text
+              block below instead. */}
         </div>
 
         <div className="space-y-1">
