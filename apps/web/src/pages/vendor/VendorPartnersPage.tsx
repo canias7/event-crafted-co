@@ -52,6 +52,8 @@ interface ThreadRow {
   user_a_id: string;
   user_b_id: string;
   last_message_at: string;
+  user_a_read_at: string | null;
+  user_b_read_at: string | null;
   user_a: ProfileBrand | null;
   user_b: ProfileBrand | null;
   last_preview: { body: string; sender_user_id: string } | null;
@@ -143,7 +145,7 @@ export default function VendorPartnersPage() {
     setLoadingThreads(true);
     const { data } = await threadsTable()
       .select(
-        "id, user_a_id, user_b_id, last_message_at, user_a:profiles!vendor_partner_threads_user_a_id_fkey(business_name, logo_url), user_b:profiles!vendor_partner_threads_user_b_id_fkey(business_name, logo_url)",
+        "id, user_a_id, user_b_id, last_message_at, user_a_read_at, user_b_read_at, user_a:profiles!vendor_partner_threads_user_a_id_fkey(business_name, logo_url), user_b:profiles!vendor_partner_threads_user_b_id_fkey(business_name, logo_url)",
       )
       .or(`user_a_id.eq.${myUserId},user_b_id.eq.${myUserId}`)
       .order("last_message_at", { ascending: false });
@@ -191,6 +193,33 @@ export default function VendorPartnersPage() {
     }, 50);
   }
 
+  // Mark the open thread as read for the current user. We fire two
+  // scoped updates so the DB picks the side that matches the caller —
+  // only one of them will touch a row. Local state mirrors the write so
+  // the unread dot clears immediately.
+  async function markRead(threadId: string) {
+    if (!myUserId) return;
+    const now = new Date().toISOString();
+    setThreads((prev) =>
+      prev.map((t) => {
+        if (t.id !== threadId) return t;
+        if (t.user_a_id === myUserId) return { ...t, user_a_read_at: now };
+        if (t.user_b_id === myUserId) return { ...t, user_b_read_at: now };
+        return t;
+      }),
+    );
+    await Promise.all([
+      threadsTable()
+        .update({ user_a_read_at: now })
+        .eq("id", threadId)
+        .eq("user_a_id", myUserId),
+      threadsTable()
+        .update({ user_b_read_at: now })
+        .eq("id", threadId)
+        .eq("user_b_id", myUserId),
+    ]);
+  }
+
   useEffect(() => {
     if (user && myUserId) loadThreads();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -202,6 +231,7 @@ export default function VendorPartnersPage() {
       return;
     }
     loadMessages(activeThreadId);
+    markRead(activeThreadId);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeThreadId]);
 
@@ -219,6 +249,20 @@ export default function VendorPartnersPage() {
   );
   useRealtime(partnerMsgConfig, () => {
     if (activeThreadId) loadMessages(activeThreadId);
+  });
+
+  // Second realtime sub: refresh the thread list on ANY partner message
+  // insert (RLS only delivers events for threads I'm in). This lights
+  // the unread dot in real time on inactive threads.
+  const allPartnerMsgsConfig = useMemo(
+    () =>
+      myUserId
+        ? { table: "vendor_partner_messages", event: "INSERT" as const }
+        : null,
+    [myUserId],
+  );
+  useRealtime(allPartnerMsgsConfig, () => {
+    if (myUserId) loadThreads();
   });
 
   async function send() {
@@ -389,6 +433,20 @@ export default function VendorPartnersPage() {
                       t.user_a_id === myUserId ? t.user_b : t.user_a;
                     const name = other?.business_name?.trim() || "Vendor";
                     const initial = name.charAt(0).toUpperCase();
+                    const lastSenderId = t.last_preview?.sender_user_id ?? null;
+                    const myReadAt =
+                      t.user_a_id === myUserId
+                        ? t.user_a_read_at
+                        : t.user_b_read_at;
+                    // Same convention as the inbox: a single blue dot
+                    // when the OTHER side sent the latest message and I
+                    // haven't opened the thread since then.
+                    const isUnread =
+                      lastSenderId !== null &&
+                      lastSenderId !== myUserId &&
+                      (!myReadAt ||
+                        new Date(t.last_message_at).getTime() >
+                          new Date(myReadAt).getTime());
                     const preview = t.last_preview
                       ? `${
                           t.last_preview.sender_user_id === myUserId
@@ -407,6 +465,16 @@ export default function VendorPartnersPage() {
                             isActive ? "bg-white/70" : "hover:bg-white/40"
                           } ${isFirst ? "" : "border-t border-foreground/[0.06]"}`}
                         >
+                          <span
+                            className="self-center shrink-0 w-2 h-2 rounded-full"
+                            aria-label={isUnread ? "Unread" : undefined}
+                            title={isUnread ? "Unread" : undefined}
+                          >
+                            {isUnread ? (
+                              <span className="block w-2 h-2 rounded-full bg-blue-500" />
+                            ) : null}
+                          </span>
+
                           {other?.logo_url ? (
                             <img
                               src={other.logo_url}
@@ -427,7 +495,13 @@ export default function VendorPartnersPage() {
                           )}
 
                           <div className="min-w-0 flex-1">
-                            <span className="block truncate text-[15px] font-medium text-foreground">
+                            <span
+                              className={`block truncate text-[15px] ${
+                                isUnread
+                                  ? "font-semibold text-foreground"
+                                  : "font-medium text-foreground"
+                              }`}
+                            >
                               {name}
                             </span>
                             <p className="mt-0.5 text-[13px] text-muted-foreground leading-snug truncate">
