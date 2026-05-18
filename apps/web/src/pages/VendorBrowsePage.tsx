@@ -27,7 +27,6 @@ import {
   ALL_SUBS,
   groupOfSub,
 } from "@/data/categoryTaxonomy";
-import { CompareBar } from "@/components/shared/CompareBar";
 
 // Sub-name → group-slug. Used to deep-link from a single-sub filter to
 // the parent group page (e.g. "Photography" → "/vendors/category/media").
@@ -437,7 +436,6 @@ export default function VendorBrowsePage() {
       </section>
 
       <Footer />
-      <CompareBar />
     </div>
   );
 }

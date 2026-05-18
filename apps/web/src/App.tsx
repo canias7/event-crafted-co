@@ -33,7 +33,6 @@ import { RouteFallback } from "@/components/shared/RouteFallback";
 // uses to warm chunks on hover/visibility.
 import {
   VendorBrowsePage,
-  CompareVendorsPage,
   VendorLocationsPage,
   VendorCityPage,
   VendorCityCategoryPage,
@@ -85,7 +84,6 @@ const App = () => (
               {/* Public */}
               <Route path="/" element={<LandingPage />} />
               <Route path="/vendors" element={<VendorBrowsePage />} />
-              <Route path="/compare" element={<CompareVendorsPage />} />
               <Route path="/vendors/locations" element={<VendorLocationsPage />} />
               <Route path="/vendors/in/:citySlug" element={<VendorCityPage />} />
               <Route path="/vendors/category/:slug" element={<VendorCategoryPage />} />
