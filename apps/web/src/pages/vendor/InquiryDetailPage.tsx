@@ -162,6 +162,12 @@ export default function InquiryDetailPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const composerRef = useRef<HTMLTextAreaElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const scrollerRef = useRef<HTMLDivElement>(null);
+  // Tracks whether the user is currently anchored near the bottom of
+  // the thread. New messages auto-scroll only when this is true —
+  // we don't yank a user back down while they're reading history.
+  const wasAtBottomRef = useRef(true);
+  const hasLoadedRef = useRef(false);
   // Track whether we've already rehydrated the draft for the active
   // inquiry — without this, the first effect-run overwrites the
   // freshly-loaded localStorage value with an empty string.
@@ -207,14 +213,15 @@ export default function InquiryDetailPage() {
     el.style.height = `${Math.min(el.scrollHeight, 128)}px`;
   }, [composer]);
 
-  // Auto-scroll to the bottom of the thread on first open and on
-  // every new incoming/outgoing message or typing-bubble flip. Smooth
-  // after the first paint so the user follows the conversation
-  // naturally; instant on mount so we don't see a flash of the top.
+  // Auto-scroll to the bottom — but only when the user is anchored
+  // near the bottom. If they've scrolled up to read history, hold
+  // their position so the next realtime tick doesn't yank them
+  // back. First paint always anchors at the bottom.
   useEffect(() => {
     if (!messagesEndRef.current) return;
+    if (!wasAtBottomRef.current && hasLoadedRef.current) return;
     messagesEndRef.current.scrollIntoView({
-      behavior: messages.length > 0 ? "smooth" : "auto",
+      behavior: hasLoadedRef.current ? "smooth" : "auto",
       block: "end",
     });
   }, [messages.length, otherTyping]);
@@ -332,6 +339,7 @@ export default function InquiryDetailPage() {
 
     setProposals((propsRes.data as unknown as Proposal[]) ?? []);
 
+    hasLoadedRef.current = true;
     setLoading(false);
   }, [inquiryId]);
 
@@ -460,6 +468,21 @@ export default function InquiryDetailPage() {
       load();
     }
   }
+
+  // Memoize the grouped-with-separators array so we don't redo the
+  // pass on every realtime tick / typing-indicator flip.
+  const groupedItems = useMemo(
+    () =>
+      groupMessages(messages, {
+        isMe: (m) =>
+          m.sender_role === "vendor" || m.sender_role === "agent",
+        senderKey: (m) =>
+          m.sender_role === "agent" ? "vendor" : m.sender_role,
+        createdAt: (m) => m.created_at,
+        id: (m) => m.id,
+      }),
+    [messages],
+  );
 
   const replyTarget = useMemo(
     () => (replyToId ? messages.find((m) => m.id === replyToId) ?? null : null),
@@ -595,7 +618,9 @@ export default function InquiryDetailPage() {
       }
     }
     setSending(false);
-    load();
+    // No explicit load() — the messages realtime subscription will
+    // pick up the INSERT we just made. Skips a redundant full
+    // refetch of inquiry+thread+messages+reactions+proposals.
   }
 
   if (loading) {
@@ -744,7 +769,18 @@ export default function InquiryDetailPage() {
       </div>
 
       {/* ─── Chat thread (scrolling area) ────────────────────────────── */}
-      <div className="flex-1 overflow-y-auto px-4 md:px-6 py-5">
+      <div
+        ref={scrollerRef}
+        onScroll={(e) => {
+          const el = e.currentTarget;
+          // 80px slack — small upward scroll still counts as "at the
+          // bottom" so a one-line read doesn't suppress auto-scroll
+          // for the next reply.
+          wasAtBottomRef.current =
+            el.scrollHeight - el.scrollTop - el.clientHeight < 80;
+        }}
+        className="flex-1 overflow-y-auto px-4 md:px-6 py-5"
+      >
         <div className="max-w-3xl mx-auto space-y-1.5">
           {/* Pinned: the original inquiry, rendered as the host's
               "opening message" so the thread starts with their ask. A
@@ -809,14 +845,7 @@ export default function InquiryDetailPage() {
               No messages yet. Say hi.
             </p>
           ) : (
-            groupMessages(messages, {
-              isMe: (m) =>
-                m.sender_role === "vendor" || m.sender_role === "agent",
-              senderKey: (m) =>
-                m.sender_role === "agent" ? "vendor" : m.sender_role,
-              createdAt: (m) => m.created_at,
-              id: (m) => m.id,
-            }).map((it) => {
+            groupedItems.map((it) => {
               if (it.kind === "sep") {
                 return (
                   <div

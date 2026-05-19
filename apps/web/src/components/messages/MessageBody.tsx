@@ -6,11 +6,16 @@
 // alternating chunks: text, url, text, url… so we can rely on the
 // index parity instead of re-testing each part.
 
+import { useMemo } from "react";
+
 const URL_RE = /(https?:\/\/[^\s<>"]+)/g;
 
 export function MessageBody({ body }: { body: string }) {
+  // Memoize the split: the parent re-renders on every realtime
+  // tick + every typing-indicator flip, and a thread can hold
+  // hundreds of bubbles. Avoid re-splitting unchanged bodies.
+  const parts = useMemo(() => (body ? body.split(URL_RE) : []), [body]);
   if (!body) return null;
-  const parts = body.split(URL_RE);
   return (
     <>
       {parts.map((part, i) =>
