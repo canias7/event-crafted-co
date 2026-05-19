@@ -80,31 +80,50 @@ export function VendorProfilePreviewSheet({
   useEffect(() => {
     if (!vendorId) return;
     let cancelled = false;
-    Promise.all([
-      supabase
-        .from("vendor_posts")
-        .select("id, image_url, caption, created_at")
-        .eq("vendor_id", vendorId)
-        .order("created_at", { ascending: false })
-        .limit(18),
-      supabase
-        .from("vendor_reels")
-        .select("id, video_url, thumbnail_url, caption, created_at")
-        .eq("vendor_id", vendorId)
-        .order("created_at", { ascending: false })
-        .limit(6),
-      supabase
-        .from("vendor_buzz")
-        .select("id, body, created_at")
-        .eq("vendor_id", vendorId)
-        .order("created_at", { ascending: false })
-        .limit(6),
-    ]).then(([pRes, rRes, bRes]) => {
+    (async () => {
+      // Posts / reels / buzz are user-scoped — they're the vendor's
+      // identity content, not per-listing. Resolve the listing's
+      // owner user_id first, then fetch all their content. This also
+      // means historical rows (written before vendor_id was added in
+      // PR #537) still surface here.
+      const { data: vp } = await supabase
+        .from("vendor_profiles")
+        .select("user_id")
+        .eq("id", vendorId)
+        .maybeSingle();
+      const ownerId = (vp as { user_id?: string } | null)?.user_id ?? null;
+      if (!ownerId) {
+        if (cancelled) return;
+        setPosts([]);
+        setReels([]);
+        setBuzz([]);
+        return;
+      }
+      const [pRes, rRes, bRes] = await Promise.all([
+        supabase
+          .from("vendor_posts")
+          .select("id, image_url, caption, created_at")
+          .eq("user_id", ownerId)
+          .order("created_at", { ascending: false })
+          .limit(18),
+        supabase
+          .from("vendor_reels")
+          .select("id, video_url, thumbnail_url, caption, created_at")
+          .eq("user_id", ownerId)
+          .order("created_at", { ascending: false })
+          .limit(6),
+        supabase
+          .from("vendor_buzz")
+          .select("id, body, created_at")
+          .eq("user_id", ownerId)
+          .order("created_at", { ascending: false })
+          .limit(6),
+      ]);
       if (cancelled) return;
       setPosts((pRes.data as PostRow[] | null) ?? []);
       setReels((rRes.data as ReelRow[] | null) ?? []);
       setBuzz((bRes.data as BuzzRow[] | null) ?? []);
-    });
+    })();
     return () => {
       cancelled = true;
     };
