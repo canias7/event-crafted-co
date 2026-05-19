@@ -838,7 +838,7 @@ export default function InquiryDetailPage() {
                     {initial}
                   </span>
                 )}
-                <div className="max-w-[80%] px-3.5 py-2.5 text-sm leading-relaxed whitespace-pre-wrap rounded-2xl rounded-bl-sm bg-background/95 border border-border/40 shadow-sm">
+                <div className="max-w-md px-3.5 py-2.5 text-sm leading-relaxed whitespace-pre-wrap rounded-2xl rounded-bl-sm bg-white/55 backdrop-blur-md text-foreground border border-white/60 shadow-sm">
                   <p>
                     <MessageBody body={inquiry.special_requests} />
                   </p>
@@ -939,14 +939,14 @@ export default function InquiryDetailPage() {
                   ) : null}
                   <div className="flex flex-col">
                     <div
-                      className={`max-w-[80%] px-3.5 py-2 text-sm leading-relaxed whitespace-pre-wrap rounded-2xl ${
+                      className={`max-w-md px-3.5 py-2 text-sm leading-relaxed whitespace-pre-wrap rounded-2xl backdrop-blur-md shadow-sm ${
                         isDeleted
-                          ? "bg-background/70 text-muted-foreground italic border border-border/40"
+                          ? "bg-background/60 text-muted-foreground italic border border-border/40"
                           : it.isMe
-                            ? `bg-foreground text-background ${
+                            ? `bg-foreground/85 text-background border border-foreground/30 ${
                                 it.showTail ? "rounded-br-sm" : ""
                               }`
-                            : `bg-background/95 border border-border/40 shadow-sm ${
+                            : `bg-white/55 text-foreground border border-white/60 ${
                                 it.showTail ? "rounded-bl-sm" : ""
                               }`
                       }`}
@@ -973,6 +973,7 @@ export default function InquiryDetailPage() {
                                   parent.deleted_at ? "" : parent.body
                                 }
                                 tone="bubble"
+                                inverted={it.isMe}
                               />
                             );
                           })() : null}
