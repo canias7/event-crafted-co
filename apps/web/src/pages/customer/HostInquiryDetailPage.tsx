@@ -726,8 +726,8 @@ export default function HostInquiryDetailPage() {
               bubble so the thread reads start-to-finish. */}
           {inquiry.special_requests && (
             <div className="flex items-end justify-end mt-2">
-              <div className="max-w-md px-3.5 py-2.5 text-sm leading-relaxed whitespace-pre-wrap rounded-2xl rounded-br-sm bg-foreground/85 backdrop-blur-md text-background border border-foreground/30 shadow-sm">
-                <p className="text-[10px] uppercase tracking-wider opacity-60 mb-1">
+              <div className="max-w-md px-3.5 py-2.5 text-sm leading-relaxed whitespace-pre-wrap rounded-2xl rounded-br-sm bg-white/65 backdrop-blur-md text-foreground border border-white/70 shadow-sm">
+                <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">
                   Your inquiry
                 </p>
                 <p>
@@ -824,10 +824,10 @@ export default function HostInquiryDetailPage() {
                         isDeleted
                           ? "bg-background/60 text-muted-foreground italic border border-border/40"
                           : it.isMe
-                            ? `bg-foreground/85 text-background border border-foreground/30 ${
+                            ? `bg-white/65 text-foreground border border-white/70 ${
                                 it.showTail ? "rounded-br-sm" : ""
                               }`
-                            : `bg-white/55 text-foreground border border-white/60 ${
+                            : `bg-white/45 text-foreground border border-white/55 ${
                                 it.showTail ? "rounded-bl-sm" : ""
                               }`
                       }`}
@@ -852,7 +852,6 @@ export default function HostInquiryDetailPage() {
                                 authorName={parentName}
                                 body={parent.deleted_at ? "" : parent.body}
                                 tone="bubble"
-                                inverted={it.isMe}
                               />
                             );
                           })() : null}
@@ -922,6 +921,20 @@ export default function HostInquiryDetailPage() {
                         align={it.isMe ? "right" : "left"}
                         onToggle={(emoji) => toggleReaction(m.id, emoji)}
                       />
+                    ) : null}
+                    {/* Tail-only timestamp — iMessage prints the time
+                        under the last message in a run. */}
+                    {it.showTail ? (
+                      <p
+                        className={`text-[10px] text-muted-foreground/80 tnum mt-0.5 ${
+                          it.isMe ? "text-right pr-1" : "pl-1"
+                        }`}
+                      >
+                        {new Date(m.created_at).toLocaleTimeString(undefined, {
+                          hour: "numeric",
+                          minute: "2-digit",
+                        })}
+                      </p>
                     ) : null}
                   </div>
                   {!isDeleted && !it.isMe ? (

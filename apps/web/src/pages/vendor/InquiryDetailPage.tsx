@@ -943,10 +943,10 @@ export default function InquiryDetailPage() {
                         isDeleted
                           ? "bg-background/60 text-muted-foreground italic border border-border/40"
                           : it.isMe
-                            ? `bg-foreground/85 text-background border border-foreground/30 ${
+                            ? `bg-white/65 text-foreground border border-white/70 ${
                                 it.showTail ? "rounded-br-sm" : ""
                               }`
-                            : `bg-white/55 text-foreground border border-white/60 ${
+                            : `bg-white/45 text-foreground border border-white/55 ${
                                 it.showTail ? "rounded-bl-sm" : ""
                               }`
                       }`}
@@ -973,7 +973,6 @@ export default function InquiryDetailPage() {
                                   parent.deleted_at ? "" : parent.body
                                 }
                                 tone="bubble"
-                                inverted={it.isMe}
                               />
                             );
                           })() : null}
@@ -1043,6 +1042,22 @@ export default function InquiryDetailPage() {
                         align={it.isMe ? "right" : "left"}
                         onToggle={(emoji) => toggleReaction(m.id, emoji)}
                       />
+                    ) : null}
+                    {/* Tail-only timestamp — iMessage prints the time
+                        under the last message in a run, not every
+                        bubble. Aligns under the right edge of mine,
+                        left edge of theirs. */}
+                    {it.showTail ? (
+                      <p
+                        className={`text-[10px] text-muted-foreground/80 tnum mt-0.5 ${
+                          it.isMe ? "text-right pr-1" : "pl-1"
+                        }`}
+                      >
+                        {new Date(m.created_at).toLocaleTimeString(undefined, {
+                          hour: "numeric",
+                          minute: "2-digit",
+                        })}
+                      </p>
                     ) : null}
                   </div>
                   {!isDeleted && !it.isMe ? (
