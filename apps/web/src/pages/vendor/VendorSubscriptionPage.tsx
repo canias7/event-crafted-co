@@ -5,26 +5,30 @@ import { MobileNav } from "@/components/shared/MobileNav";
 import { Button } from "@/components/ui/button";
 import { vendorNavItems as navItems } from "@/data/navItems";
 
-// Subscription / plan surface. Vendora is free today; this page sets
-// up the wayfinding for the future Stripe-billed Pro tier. The
-// Upgrade button stubs to a toast until Stripe Customer Portal is
-// wired (operator action — see CLAUDE.md "RESEND_API_KEY" + similar
-// pattern for the missing keys).
+// Subscription / plan surface. Vendora has 5 vendor tiers; today
+// we ship the Free tier on every account by default and a Pro
+// preview here for the upgrade flow. The remaining tiers + the
+// grandfathered-account exception list land once their pricing is
+// finalized. Until Stripe is wired the Upgrade CTA stubs to a
+// toast — see CLAUDE.md for the missing-keys pattern.
 
 const FREE_INCLUDED = [
+  "1 listing per account",
   "Unlimited inquiries from hosts",
   "Calendar + availability blocking",
   "Vendor-to-vendor DMs",
   "Public listing on the Vendora directory",
 ];
 
-const PRO_PREVIEW = [
-  "Lower booking fee per won inquiry",
-  "Featured placement in search",
-  "Custom branding on proposal PDFs",
-  "AI Superagents — auto-reply drafts on every new inquiry",
+const PRO_INCLUDED = [
+  "Up to 5 listings per account",
+  "Everything in Free",
+  "Featured placement in search (coming soon)",
+  "AI Superagents — auto-reply drafts (coming soon)",
   "Priority support",
 ];
+
+const PRO_PRICE = 19.99;
 
 export default function VendorSubscriptionPage() {
   return (
@@ -84,7 +88,7 @@ export default function VendorSubscriptionPage() {
             </ul>
           </div>
 
-          {/* Pro preview card */}
+          {/* Pro tier card */}
           <div
             className="rounded-2xl p-6"
             style={{
@@ -106,27 +110,31 @@ export default function VendorSubscriptionPage() {
                   <Crown className="w-4 h-4" />
                 </span>
                 <div>
-                  <p className="font-label text-muted-foreground">
-                    Coming soon
-                  </p>
+                  <p className="font-label text-muted-foreground">Upgrade</p>
                   <h2 className="font-editorial text-2xl mt-0.5">Vendora Pro</h2>
+                  <p className="text-sm text-muted-foreground mt-0.5">
+                    <span className="font-semibold text-foreground tnum">
+                      ${PRO_PRICE.toFixed(2)}
+                    </span>{" "}
+                    / month
+                  </p>
                 </div>
               </div>
               <Button
                 onClick={() =>
                   toast.info(
-                    "Pro launches soon — we'll email you the moment it's open.",
+                    "Pro checkout is launching soon — we'll email you the moment it's live.",
                   )
                 }
                 className="rounded-full bg-foreground text-background hover:bg-foreground/90"
               >
                 <Crown className="w-4 h-4 mr-1.5" />
-                Notify me
+                Upgrade to Pro
               </Button>
             </div>
 
             <ul className="mt-5 space-y-2">
-              {PRO_PREVIEW.map((line) => (
+              {PRO_INCLUDED.map((line) => (
                 <li
                   key={line}
                   className="flex items-start gap-2 text-sm text-foreground/80"
@@ -139,13 +147,18 @@ export default function VendorSubscriptionPage() {
           </div>
 
           <p className="text-xs text-muted-foreground px-2">
-            Billing is handled via Stripe. Questions about your plan?{" "}
+            Three more tiers are landing soon with different listing caps
+            and add-ons. Want a heads-up?{" "}
             <a
               href="mailto:hello@vendora.events"
               className="underline underline-offset-2"
             >
               hello@vendora.events
             </a>
+          </p>
+
+          <p className="text-xs text-muted-foreground px-2">
+            Billing is handled via Stripe.
           </p>
         </div>
       </main>
