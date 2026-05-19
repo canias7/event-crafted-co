@@ -140,6 +140,21 @@ export default function VendorMyProfilePage() {
       .order("created_at", { ascending: true });
 
     const vendors = ((vps ?? []) as VendorRow[]) ?? [];
+    // Approved (live) listings render first, then pending/submitted,
+    // then anything else (rejected/null/drafted). Created-at ASC
+    // breaks ties so the order is otherwise stable. primary picks up
+    // the first approved listing as a side-effect.
+    const statusRank = (s: string | null): number =>
+      s === "approved"
+        ? 0
+        : s === "pending" || s === "submitted"
+          ? 1
+          : 2;
+    vendors.sort((a, b) => {
+      const r = statusRank(a.application_status) - statusRank(b.application_status);
+      if (r !== 0) return r;
+      return (a.created_at ?? "").localeCompare(b.created_at ?? "");
+    });
     setListings(vendors);
     const primaryRow = vendors[0] ?? null;
     setPrimary(primaryRow);
