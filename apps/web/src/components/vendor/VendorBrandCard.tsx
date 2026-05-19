@@ -4,9 +4,10 @@
 // / ripple count there once and both surfaces update together.
 
 import { useEffect, useState } from "react";
-import { CheckCircle2 } from "lucide-react";
+import { CheckCircle2, Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { BrandCardShell } from "@/components/vendor/BrandCardShell";
+import { VendorProfilePreviewSheet } from "@/components/vendor/VendorProfilePreviewSheet";
 
 // Brand identity for the public listing card. logo_url is mirrored
 // from profiles to vendor_profiles via a trigger, but business_name
@@ -29,6 +30,7 @@ interface VendorRow {
 export function VendorBrandCard({ vendorId }: { vendorId: string }) {
   const [row, setRow] = useState<VendorRow | null>(null);
   const [ratingAvg, setRatingAvg] = useState<number | null>(null);
+  const [previewOpen, setPreviewOpen] = useState(false);
 
   useEffect(() => {
     if (!vendorId) return;
@@ -124,6 +126,26 @@ export function VendorBrandCard({ vendorId }: { vendorId: string }) {
         />
         <StatCell label="Joined" value={memberSinceYear ?? "—"} />
       </div>
+
+      <button
+        type="button"
+        onClick={() => setPreviewOpen(true)}
+        className="mt-3 w-full inline-flex items-center justify-center gap-2 rounded-full bg-white/70 hover:bg-white border border-white/50 backdrop-blur-sm text-sm font-medium text-[#0a0a0a] px-4 py-2.5 transition-colors"
+      >
+        <Sparkles className="w-3.5 h-3.5 text-[#b8472f]" />
+        Preview profile
+      </button>
+
+      {previewOpen ? (
+        <VendorProfilePreviewSheet
+          vendorId={vendorId}
+          businessName={businessName}
+          bio={bio}
+          logoUrl={logoUrl}
+          location={row.location}
+          onClose={() => setPreviewOpen(false)}
+        />
+      ) : null}
     </BrandCardShell>
   );
 }
