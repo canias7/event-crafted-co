@@ -8,6 +8,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Calendar as CalendarIcon,
   Check,
+  ChevronLeft,
+  ChevronRight,
   MapPin,
   MoreHorizontal,
   Pencil,
@@ -129,6 +131,12 @@ export default function HostEventsPage() {
   const [creating, setCreating] = useState(false);
   const [deleting, setDeleting] = useState<HostEvent | null>(null);
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
+  const [viewMonth, setViewMonth] = useState<Date>(() => {
+    const d = new Date();
+    d.setDate(1);
+    d.setHours(0, 0, 0, 0);
+    return d;
+  });
 
   const load = useCallback(async () => {
     if (!user?.id) return;
@@ -179,22 +187,43 @@ export default function HostEventsPage() {
     return { upcoming, past, nextUp: upcoming[0] ?? null };
   }, [events]);
 
-  // 30-day pill strip starting today. Selected day filters the list
-  // below; default lands on whichever day Up Next falls on so the
-  // hero card and pill agree on first paint.
-  const dayStrip = useMemo(() => {
-    const out: string[] = [];
-    const d = new Date();
-    d.setHours(0, 0, 0, 0);
+  // Month grid (Sun-first, 6 weeks = 42 cells). Selected day filters
+  // the list below; tapping a cell from a non-current month bounces
+  // the view to that month.
+  const monthCells = useMemo(() => {
+    const first = new Date(
+      viewMonth.getFullYear(),
+      viewMonth.getMonth(),
+      1,
+    );
+    const start = new Date(first);
+    start.setDate(first.getDate() - first.getDay());
     const pad = (n: number) => String(n).padStart(2, "0");
-    for (let i = 0; i < 30; i++) {
-      out.push(
-        `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`,
-      );
-      d.setDate(d.getDate() + 1);
+    const out: { date: Date; ymd: string; inMonth: boolean }[] = [];
+    for (let i = 0; i < 42; i++) {
+      const d = new Date(start);
+      d.setDate(start.getDate() + i);
+      out.push({
+        date: d,
+        ymd: `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`,
+        inMonth: d.getMonth() === viewMonth.getMonth(),
+      });
     }
     return out;
-  }, []);
+  }, [viewMonth]);
+
+  function shiftMonth(delta: number) {
+    setViewMonth((prev) => {
+      const d = new Date(prev);
+      d.setMonth(d.getMonth() + delta);
+      return d;
+    });
+  }
+
+  const monthLabel = viewMonth.toLocaleDateString(undefined, {
+    month: "long",
+    year: "numeric",
+  });
 
   const eventDayKeys = useMemo(
     () => new Set((events ?? []).map((e) => e.event_date)),
@@ -257,19 +286,24 @@ export default function HostEventsPage() {
             <EmptyState onCreate={() => setCreating(true)} />
           ) : (
             <>
-              {/* Day pills — 30-day rolling strip from today. Tap a day
-                  to filter the list below to events on that date. */}
-              <div className="flex gap-2 overflow-x-auto scrollbar-hide -mx-1 px-1 pb-1">
-                {dayStrip.map((ymd) => (
-                  <DayPill
-                    key={ymd}
-                    ymd={ymd}
-                    selected={selectedDay === ymd}
-                    hasEvent={eventDayKeys.has(ymd)}
-                    onClick={() => setSelectedDay(ymd)}
-                  />
-                ))}
-              </div>
+              {/* Month calendar — Sunday-first, 6-week grid. Cells
+                  with an event get a small dot; selected day fills
+                  dark. Chevrons move between months. */}
+              <MonthCalendar
+                viewMonth={viewMonth}
+                monthLabel={monthLabel}
+                cells={monthCells}
+                selectedDay={selectedDay}
+                eventDays={eventDayKeys}
+                onShiftMonth={shiftMonth}
+                onSelectDay={(ymd, inMonth) => {
+                  setSelectedDay(ymd);
+                  if (!inMonth) {
+                    const [y, m] = ymd.split("-").map(Number);
+                    setViewMonth(new Date(y, m - 1, 1));
+                  }
+                }}
+              />
 
               {/* Selected-day content: hero card for the first event +
                   card list for the rest. Empty state when nothing on
@@ -421,59 +455,125 @@ function EmptyState({ onCreate }: { onCreate: () => void }) {
   );
 }
 
-function DayPill({
-  ymd,
+const WEEKDAY_HEADERS = ["S", "M", "T", "W", "T", "F", "S"];
+
+function MonthCalendar({
+  monthLabel,
+  cells,
+  selectedDay,
+  eventDays,
+  onShiftMonth,
+  onSelectDay,
+}: {
+  viewMonth: Date;
+  monthLabel: string;
+  cells: { date: Date; ymd: string; inMonth: boolean }[];
+  selectedDay: string | null;
+  eventDays: Set<string>;
+  onShiftMonth: (delta: number) => void;
+  onSelectDay: (ymd: string, inMonth: boolean) => void;
+}) {
+  const today = todayYmd();
+  return (
+    <div
+      className="rounded-3xl p-4 md:p-5"
+      style={{
+        background: "rgba(255,253,250,0.7)",
+        border: "0.5px solid rgba(255,138,76,0.18)",
+        backdropFilter: "blur(10px)",
+        WebkitBackdropFilter: "blur(10px)",
+      }}
+    >
+      <div className="flex items-center justify-between mb-3">
+        <h2 className="font-editorial text-2xl">{monthLabel}</h2>
+        <div className="flex gap-1">
+          <button
+            type="button"
+            onClick={() => onShiftMonth(-1)}
+            aria-label="Previous month"
+            className="w-9 h-9 rounded-full bg-secondary/50 hover:bg-secondary flex items-center justify-center"
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </button>
+          <button
+            type="button"
+            onClick={() => onShiftMonth(1)}
+            aria-label="Next month"
+            className="w-9 h-9 rounded-full bg-secondary/50 hover:bg-secondary flex items-center justify-center"
+          >
+            <ChevronRight className="h-4 w-4" />
+          </button>
+        </div>
+      </div>
+      <div className="grid grid-cols-7 mb-1">
+        {WEEKDAY_HEADERS.map((d, i) => (
+          <div
+            key={i}
+            className="text-center text-[11px] font-semibold uppercase tracking-wider text-muted-foreground py-1"
+          >
+            {d}
+          </div>
+        ))}
+      </div>
+      <div className="grid grid-cols-7 gap-y-1">
+        {cells.map((c) => (
+          <CalendarCell
+            key={c.ymd}
+            day={c.date.getDate()}
+            ymd={c.ymd}
+            inMonth={c.inMonth}
+            isToday={c.ymd === today}
+            selected={selectedDay === c.ymd}
+            hasEvent={eventDays.has(c.ymd)}
+            onClick={() => onSelectDay(c.ymd, c.inMonth)}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function CalendarCell({
+  day,
+  inMonth,
+  isToday,
   selected,
   hasEvent,
   onClick,
 }: {
+  day: number;
   ymd: string;
+  inMonth: boolean;
+  isToday: boolean;
   selected: boolean;
   hasEvent: boolean;
   onClick: () => void;
 }) {
-  const [y, m, d] = ymd.split("-").map(Number);
-  const date = new Date(y, m - 1, d);
-  const weekday = date
-    .toLocaleDateString(undefined, { weekday: "short" })
-    .toUpperCase();
-  const day = date.getDate();
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-pressed={selected}
-      className={`shrink-0 rounded-2xl flex flex-col items-center justify-center transition relative ${
-        selected
-          ? "bg-foreground text-background"
-          : "bg-white/50 text-foreground hover:bg-white/70"
-      }`}
-      style={{
-        width: 64,
-        height: 78,
-        border: selected
-          ? "0.5px solid rgba(0,0,0,0.2)"
-          : "0.5px solid rgba(255,138,76,0.22)",
-      }}
-    >
-      <span
-        className="text-[10px] uppercase tracking-wider"
-        style={{ opacity: selected ? 0.65 : 0.55 }}
+    <div className="flex items-center justify-center py-0.5">
+      <button
+        type="button"
+        onClick={onClick}
+        aria-pressed={selected}
+        className={`relative w-10 h-10 rounded-xl flex items-center justify-center text-sm font-medium transition ${
+          selected
+            ? "bg-foreground text-background"
+            : isToday
+              ? "bg-white/70 ring-1 ring-foreground/30 hover:bg-white"
+              : "hover:bg-white/60"
+        } ${!inMonth && !selected ? "text-muted-foreground/50" : "text-foreground"}`}
       >
-        {weekday}
-      </span>
-      <span className="font-editorial text-2xl mt-0.5 leading-none">
         {day}
-      </span>
-      {hasEvent ? (
-        <span
-          className="absolute bottom-2 w-1 h-1 rounded-full"
-          style={{
-            background: selected ? "rgba(255,255,255,0.8)" : "#ff8a4c",
-          }}
-        />
-      ) : null}
-    </button>
+        {hasEvent ? (
+          <span
+            className="absolute bottom-1 w-1 h-1 rounded-full"
+            style={{
+              background: selected ? "rgba(255,255,255,0.85)" : "#ff8a4c",
+            }}
+          />
+        ) : null}
+      </button>
+    </div>
   );
 }
 
