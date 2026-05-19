@@ -94,6 +94,14 @@ function todayYmd(): string {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 }
 
+// Latest selectable date — end of the year AFTER the current one. We
+// compute it on read so the bound advances as the calendar year rolls
+// over (e.g. on 2026-12-31 the cap is 2027-12-31, on 2027-01-01 it
+// becomes 2028-12-31).
+function endOfNextYearYmd(): string {
+  return `${new Date().getFullYear() + 1}-12-31`;
+}
+
 function fmtDate(ymd: string): string {
   const [y, m, d] = ymd.split("-").map(Number);
   return new Date(y, m - 1, d).toLocaleDateString(undefined, {
@@ -864,6 +872,14 @@ function EventFormDialog({
       toast.error("Date is required");
       return;
     }
+    // Hard-cap on date range — browser min/max are soft hints (pasting
+    // bypasses them), so we re-check here.
+    const minYmd = todayYmd();
+    const maxYmd = endOfNextYearYmd();
+    if (form.event_date < minYmd || form.event_date > maxYmd) {
+      toast.error("Pick a date between today and the end of next year.");
+      return;
+    }
     setSaving(true);
     const payload = {
       host_id: hostId,
@@ -935,7 +951,7 @@ function EventFormDialog({
                 value={form.event_date}
                 onChange={(e) => update("event_date", e.target.value)}
                 min={todayYmd()}
-                max="2099-12-31"
+                max={endOfNextYearYmd()}
                 required
               />
             </div>
