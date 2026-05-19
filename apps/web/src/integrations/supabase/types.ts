@@ -53,6 +53,13 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "admin_audit_log_admin_id_fkey"
+            columns: ["admin_id"]
+            isOneToOne: false
+            referencedRelation: "vendor_brands"
+            referencedColumns: ["id"]
+          },
         ]
       }
       ai_agent_runs: {
@@ -267,13 +274,62 @@ export type Database = {
         }
         Relationships: []
       }
+      direct_message_reactions: {
+        Row: {
+          created_at: string
+          emoji: string
+          id: string
+          message_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          emoji: string
+          id?: string
+          message_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          emoji?: string
+          id?: string
+          message_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "direct_message_reactions_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "direct_messages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "direct_message_reactions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "direct_message_reactions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "vendor_brands"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       direct_messages: {
         Row: {
           attachments: Json
           body: string
           contact_info_flagged: boolean
           created_at: string
+          deleted_at: string | null
+          edited_at: string | null
           id: string
+          reply_to_message_id: string | null
           sender_id: string
           sender_role: string
           thread_id: string
@@ -283,7 +339,10 @@ export type Database = {
           body: string
           contact_info_flagged?: boolean
           created_at?: string
+          deleted_at?: string | null
+          edited_at?: string | null
           id?: string
+          reply_to_message_id?: string | null
           sender_id: string
           sender_role: string
           thread_id: string
@@ -293,12 +352,22 @@ export type Database = {
           body?: string
           contact_info_flagged?: boolean
           created_at?: string
+          deleted_at?: string | null
+          edited_at?: string | null
           id?: string
+          reply_to_message_id?: string | null
           sender_id?: string
           sender_role?: string
           thread_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "direct_messages_reply_to_message_id_fkey"
+            columns: ["reply_to_message_id"]
+            isOneToOne: false
+            referencedRelation: "direct_messages"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "direct_messages_thread_id_fkey"
             columns: ["thread_id"]
@@ -432,6 +501,13 @@ export type Database = {
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "email_leads_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "vendor_brands"
             referencedColumns: ["id"]
           },
           {
@@ -650,6 +726,110 @@ export type Database = {
         }
         Relationships: []
       }
+      host_event_rsvps: {
+        Row: {
+          created_at: string
+          email: string | null
+          event_id: string
+          id: string
+          name: string
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          event_id: string
+          id?: string
+          name: string
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          event_id?: string
+          id?: string
+          name?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "host_event_rsvps_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "host_events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      host_events: {
+        Row: {
+          budget_max_cents: number | null
+          budget_min_cents: number | null
+          created_at: string
+          end_time: string | null
+          event_date: string
+          event_type: string | null
+          guest_count: number | null
+          host_id: string
+          id: string
+          location: string | null
+          notes: string | null
+          share_token: string
+          start_time: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          budget_max_cents?: number | null
+          budget_min_cents?: number | null
+          created_at?: string
+          end_time?: string | null
+          event_date: string
+          event_type?: string | null
+          guest_count?: number | null
+          host_id: string
+          id?: string
+          location?: string | null
+          notes?: string | null
+          share_token: string
+          start_time?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          budget_max_cents?: number | null
+          budget_min_cents?: number | null
+          created_at?: string
+          end_time?: string | null
+          event_date?: string
+          event_type?: string | null
+          guest_count?: number | null
+          host_id?: string
+          id?: string
+          location?: string | null
+          notes?: string | null
+          share_token?: string
+          start_time?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "host_events_host_id_fkey"
+            columns: ["host_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "host_events_host_id_fkey"
+            columns: ["host_id"]
+            isOneToOne: false
+            referencedRelation: "vendor_brands"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       host_inquiry_templates: {
         Row: {
           body: string
@@ -717,6 +897,13 @@ export type Database = {
             columns: ["host_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "host_reliability_flags_host_id_fkey"
+            columns: ["host_id"]
+            isOneToOne: false
+            referencedRelation: "vendor_brands"
             referencedColumns: ["id"]
           },
           {
@@ -842,6 +1029,7 @@ export type Database = {
           event_type: string
           guest_count: number | null
           host_id: string
+          host_read_at: string | null
           id: string
           intake_answers: Json | null
           intent_score: number | null
@@ -853,6 +1041,7 @@ export type Database = {
           status: string
           updated_at: string
           vendor_id: string
+          vendor_read_at: string | null
         }
         Insert: {
           budget_max_cents?: number | null
@@ -862,6 +1051,7 @@ export type Database = {
           event_type: string
           guest_count?: number | null
           host_id: string
+          host_read_at?: string | null
           id?: string
           intake_answers?: Json | null
           intent_score?: number | null
@@ -873,6 +1063,7 @@ export type Database = {
           status?: string
           updated_at?: string
           vendor_id: string
+          vendor_read_at?: string | null
         }
         Update: {
           budget_max_cents?: number | null
@@ -882,6 +1073,7 @@ export type Database = {
           event_type?: string
           guest_count?: number | null
           host_id?: string
+          host_read_at?: string | null
           id?: string
           intake_answers?: Json | null
           intent_score?: number | null
@@ -893,6 +1085,7 @@ export type Database = {
           status?: string
           updated_at?: string
           vendor_id?: string
+          vendor_read_at?: string | null
         }
         Relationships: [
           {
@@ -900,6 +1093,13 @@ export type Database = {
             columns: ["host_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inquiries_host_id_fkey"
+            columns: ["host_id"]
+            isOneToOne: false
+            referencedRelation: "vendor_brands"
             referencedColumns: ["id"]
           },
           {
@@ -1008,6 +1208,13 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "vendor_brands"
             referencedColumns: ["id"]
           },
         ]
@@ -1217,6 +1424,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "proposals_host_id_fkey"
+            columns: ["host_id"]
+            isOneToOne: false
+            referencedRelation: "vendor_brands"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "proposals_inquiry_id_fkey"
             columns: ["inquiry_id"]
             isOneToOne: false
@@ -1343,6 +1557,13 @@ export type Database = {
             columns: ["host_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "real_events_host_id_fkey"
+            columns: ["host_id"]
+            isOneToOne: false
+            referencedRelation: "vendor_brands"
             referencedColumns: ["id"]
           },
           {
@@ -1516,6 +1737,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "reviews_host_id_fkey"
+            columns: ["host_id"]
+            isOneToOne: false
+            referencedRelation: "vendor_brands"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "reviews_inquiry_id_fkey"
             columns: ["inquiry_id"]
             isOneToOne: true
@@ -1553,6 +1781,13 @@ export type Database = {
             columns: ["host_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "saved_vendors_host_id_fkey"
+            columns: ["host_id"]
+            isOneToOne: false
+            referencedRelation: "vendor_brands"
             referencedColumns: ["id"]
           },
           {
@@ -1631,6 +1866,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "support_messages_sender_id_fkey"
+            columns: ["sender_id"]
+            isOneToOne: false
+            referencedRelation: "vendor_brands"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "support_messages_ticket_id_fkey"
             columns: ["ticket_id"]
             isOneToOne: false
@@ -1685,10 +1927,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "support_tickets_assigned_admin_id_fkey"
+            columns: ["assigned_admin_id"]
+            isOneToOne: false
+            referencedRelation: "vendor_brands"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "support_tickets_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "support_tickets_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "vendor_brands"
             referencedColumns: ["id"]
           },
         ]
@@ -1948,6 +2204,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "vendor_buzz_user_id_profiles_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "vendor_brands"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "vendor_buzz_vendor_id_fkey"
             columns: ["vendor_id"]
             isOneToOne: false
@@ -2002,6 +2265,13 @@ export type Database = {
             columns: ["invited_by"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vendor_claim_invitations_invited_by_fkey"
+            columns: ["invited_by"]
+            isOneToOne: false
+            referencedRelation: "vendor_brands"
             referencedColumns: ["id"]
           },
           {
@@ -2243,24 +2513,41 @@ export type Database = {
           body: string
           created_at: string
           id: string
-          sender_vendor_id: string
+          sender_user_id: string
+          sender_vendor_id: string | null
           thread_id: string
         }
         Insert: {
           body: string
           created_at?: string
           id?: string
-          sender_vendor_id: string
+          sender_user_id: string
+          sender_vendor_id?: string | null
           thread_id: string
         }
         Update: {
           body?: string
           created_at?: string
           id?: string
-          sender_vendor_id?: string
+          sender_user_id?: string
+          sender_vendor_id?: string | null
           thread_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "vendor_partner_messages_sender_user_id_fkey"
+            columns: ["sender_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vendor_partner_messages_sender_user_id_fkey"
+            columns: ["sender_user_id"]
+            isOneToOne: false
+            referencedRelation: "vendor_brands"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "vendor_partner_messages_sender_vendor_id_fkey"
             columns: ["sender_vendor_id"]
@@ -2282,24 +2569,64 @@ export type Database = {
           created_at: string
           id: string
           last_message_at: string
-          vendor_a_id: string
-          vendor_b_id: string
+          user_a_id: string
+          user_a_read_at: string | null
+          user_b_id: string
+          user_b_read_at: string | null
+          vendor_a_id: string | null
+          vendor_b_id: string | null
         }
         Insert: {
           created_at?: string
           id?: string
           last_message_at?: string
-          vendor_a_id: string
-          vendor_b_id: string
+          user_a_id: string
+          user_a_read_at?: string | null
+          user_b_id: string
+          user_b_read_at?: string | null
+          vendor_a_id?: string | null
+          vendor_b_id?: string | null
         }
         Update: {
           created_at?: string
           id?: string
           last_message_at?: string
-          vendor_a_id?: string
-          vendor_b_id?: string
+          user_a_id?: string
+          user_a_read_at?: string | null
+          user_b_id?: string
+          user_b_read_at?: string | null
+          vendor_a_id?: string | null
+          vendor_b_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "vendor_partner_threads_user_a_id_fkey"
+            columns: ["user_a_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vendor_partner_threads_user_a_id_fkey"
+            columns: ["user_a_id"]
+            isOneToOne: false
+            referencedRelation: "vendor_brands"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vendor_partner_threads_user_b_id_fkey"
+            columns: ["user_b_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vendor_partner_threads_user_b_id_fkey"
+            columns: ["user_b_id"]
+            isOneToOne: false
+            referencedRelation: "vendor_brands"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "vendor_partner_threads_vendor_a_id_fkey"
             columns: ["vendor_a_id"]
@@ -2382,6 +2709,13 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "vendor_post_comment_likes_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "vendor_brands"
+            referencedColumns: ["id"]
+          },
         ]
       }
       vendor_post_comments: {
@@ -2421,6 +2755,13 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "vendor_post_comments_user_id_profile_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "vendor_brands"
+            referencedColumns: ["id"]
+          },
         ]
       }
       vendor_posts: {
@@ -2454,6 +2795,13 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vendor_posts_user_id_profiles_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "vendor_brands"
             referencedColumns: ["id"]
           },
           {
@@ -2497,6 +2845,13 @@ export type Database = {
             columns: ["viewer_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vendor_profile_views_viewer_id_fkey"
+            columns: ["viewer_id"]
+            isOneToOne: false
+            referencedRelation: "vendor_brands"
             referencedColumns: ["id"]
           },
         ]
@@ -2627,6 +2982,13 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "vendor_profiles_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "vendor_brands"
+            referencedColumns: ["id"]
+          },
         ]
       }
       vendor_recommendations: {
@@ -2711,6 +3073,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "vendor_reels_user_id_profiles_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "vendor_brands"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "vendor_reels_vendor_id_fkey"
             columns: ["vendor_id"]
             isOneToOne: false
@@ -2756,6 +3125,13 @@ export type Database = {
             columns: ["host_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vendor_reengagement_log_host_id_fkey"
+            columns: ["host_id"]
+            isOneToOne: false
+            referencedRelation: "vendor_brands"
             referencedColumns: ["id"]
           },
           {
@@ -3053,6 +3429,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "vendor_verifications_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "vendor_brands"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "vendor_verifications_vendor_id_fkey"
             columns: ["vendor_id"]
             isOneToOne: false
@@ -3115,6 +3498,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "reviews_host_id_fkey"
+            columns: ["host_id"]
+            isOneToOne: false
+            referencedRelation: "vendor_brands"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "reviews_inquiry_id_fkey"
             columns: ["inquiry_id"]
             isOneToOne: true
@@ -3129,6 +3519,27 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      vendor_brands: {
+        Row: {
+          bio: string | null
+          business_name: string | null
+          id: string | null
+          logo_url: string | null
+        }
+        Insert: {
+          bio?: string | null
+          business_name?: string | null
+          id?: string | null
+          logo_url?: string | null
+        }
+        Update: {
+          bio?: string | null
+          business_name?: string | null
+          id?: string | null
+          logo_url?: string | null
+        }
+        Relationships: []
       }
       vendor_public_badges: {
         Row: {
@@ -3296,7 +3707,7 @@ export type Database = {
         }[]
       }
       find_or_create_partner_thread: {
-        Args: { p_my_vendor_id?: string; p_other_vendor_id: string }
+        Args: { p_other_user_id: string }
         Returns: string
       }
       find_reengagement_opportunities: {
@@ -3349,6 +3760,21 @@ export type Database = {
       get_email_deliverability_summary: {
         Args: { p_window_days?: number }
         Returns: Json
+      }
+      get_event_by_share_token: {
+        Args: { p_token: string }
+        Returns: {
+          end_time: string
+          event_date: string
+          event_type: string
+          going_count: number
+          id: string
+          location: string
+          maybe_count: number
+          notes: string
+          start_time: string
+          title: string
+        }[]
       }
       get_host_reputation: {
         Args: { p_host_id: string }
@@ -3485,6 +3911,15 @@ export type Database = {
       slugify_vendor_name: { Args: { p_name: string }; Returns: string }
       storage_path_from_public_url: {
         Args: { p_bucket: string; p_url: string }
+        Returns: string
+      }
+      submit_event_rsvp: {
+        Args: {
+          p_email: string
+          p_name: string
+          p_status: string
+          p_token: string
+        }
         Returns: string
       }
       submit_review_via_token: {
@@ -3637,4 +4072,3 @@ export const Constants = {
     Enums: {},
   },
 } as const
-

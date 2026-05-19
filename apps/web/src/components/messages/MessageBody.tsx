@@ -19,7 +19,7 @@ export function MessageBody({ body }: { body: string }) {
             key={i}
             href={part}
             target="_blank"
-            rel="noopener"
+            rel="noopener noreferrer"
             className="underline underline-offset-2 hover:opacity-90"
           >
             {part}
