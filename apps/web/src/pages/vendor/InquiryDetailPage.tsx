@@ -168,6 +168,8 @@ export default function InquiryDetailPage() {
   // we don't yank a user back down while they're reading history.
   const wasAtBottomRef = useRef(true);
   const hasLoadedRef = useRef(false);
+  // Per-(message, emoji) lock for reaction toggles — see toggleReaction.
+  const togglesInFlightRef = useRef<Set<string>>(new Set());
   // Track whether we've already rehydrated the draft for the active
   // inquiry — without this, the first effect-run overwrites the
   // freshly-loaded localStorage value with an empty string.
@@ -385,6 +387,12 @@ export default function InquiryDetailPage() {
   // (e.g. if the other side reacted in between).
   async function toggleReaction(messageId: string, emoji: string) {
     if (!user?.id) return;
+    // Per-(message, emoji) lock: rapid double-taps in the same
+    // render snapshot used to both observe `existing` and race
+    // to .insert() (PK violation, silent inconsistency).
+    const lockKey = `${messageId}:${emoji}`;
+    if (togglesInFlightRef.current.has(lockKey)) return;
+    togglesInFlightRef.current.add(lockKey);
     const existing = (reactionsByMsg[messageId] ?? []).find(
       (r) => r.user_id === user.id && r.emoji === emoji,
     );
@@ -397,27 +405,35 @@ export default function InquiryDetailPage() {
       next[messageId] = list;
       return next;
     });
-    if (existing) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await (supabase as any)
-        .from("direct_message_reactions")
-        .delete()
-        .eq("message_id", messageId)
-        .eq("user_id", user.id)
-        .eq("emoji", emoji);
-    } else {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await (supabase as any)
-        .from("direct_message_reactions")
-        .insert({ message_id: messageId, user_id: user.id, emoji });
+    try {
+      if (existing) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        await (supabase as any)
+          .from("direct_message_reactions")
+          .delete()
+          .eq("message_id", messageId)
+          .eq("user_id", user.id)
+          .eq("emoji", emoji);
+      } else {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        await (supabase as any)
+          .from("direct_message_reactions")
+          .insert({ message_id: messageId, user_id: user.id, emoji });
+      }
+    } finally {
+      togglesInFlightRef.current.delete(lockKey);
     }
   }
 
   // Soft-delete an outgoing message. The bubble shows "Message
-  // deleted" in its place; reactions and attachments hide.
+  // deleted" in its place; reactions and attachments hide. On
+  // failure we revert the optimistic local strike-through so the
+  // sender's view doesn't diverge from the recipient's until the
+  // next realtime tick.
   async function deleteMessage(messageId: string) {
     const ok = window.confirm("Delete this message? This can't be undone.");
     if (!ok) return;
+    const before = messages.find((m) => m.id === messageId);
     setMessages((prev) =>
       prev.map((m) =>
         m.id === messageId ? { ...m, deleted_at: new Date().toISOString() } : m,
@@ -425,12 +441,15 @@ export default function InquiryDetailPage() {
     );
     const { error } = await supabase
       .from("direct_messages")
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      .update({ deleted_at: new Date().toISOString() } as any)
+      .update({ deleted_at: new Date().toISOString() })
       .eq("id", messageId);
     if (error) {
       toast.error(error.message);
-      load();
+      if (before) {
+        setMessages((prev) =>
+          prev.map((m) => (m.id === messageId ? before : m)),
+        );
+      }
     }
   }
 
@@ -450,6 +469,7 @@ export default function InquiryDetailPage() {
       toast.error("Message can't be empty");
       return;
     }
+    const before = messages.find((m) => m.id === messageId);
     setMessages((prev) =>
       prev.map((m) =>
         m.id === messageId
@@ -460,12 +480,15 @@ export default function InquiryDetailPage() {
     cancelEditing();
     const { error } = await supabase
       .from("direct_messages")
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      .update({ body } as any)
+      .update({ body })
       .eq("id", messageId);
     if (error) {
       toast.error(error.message);
-      load();
+      if (before) {
+        setMessages((prev) =>
+          prev.map((m) => (m.id === messageId ? before : m)),
+        );
+      }
     }
   }
 

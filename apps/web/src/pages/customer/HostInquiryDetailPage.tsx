@@ -139,6 +139,8 @@ export default function HostInquiryDetailPage() {
   // the thread. New messages auto-scroll only when this is true so we
   // don't yank a user back down while they're reading history.
   const wasAtBottomRef = useRef(true);
+  // Per-(message, emoji) lock for reaction toggles — see toggleReaction.
+  const togglesInFlightRef = useRef<Set<string>>(new Set());
   const { otherTyping, broadcastTyping } = useInquiryTyping(
     inquiryId,
     "host",
@@ -351,6 +353,14 @@ export default function HostInquiryDetailPage() {
 
   async function toggleReaction(messageId: string, emoji: string) {
     if (!user?.id) return;
+    // Per-(message, emoji) lock: rapid double-taps within the same
+    // render snapshot used to both see the stale `existing` and
+    // both fire .insert(), hitting the PK violation on the second.
+    // Drop subsequent clicks until the in-flight one resolves —
+    // the realtime tick will reconcile state regardless.
+    const lockKey = `${messageId}:${emoji}`;
+    if (togglesInFlightRef.current.has(lockKey)) return;
+    togglesInFlightRef.current.add(lockKey);
     const existing = (reactionsByMsg[messageId] ?? []).find(
       (r) => r.user_id === user.id && r.emoji === emoji,
     );
@@ -363,19 +373,23 @@ export default function HostInquiryDetailPage() {
       next[messageId] = list;
       return next;
     });
-    if (existing) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await (supabase as any)
-        .from("direct_message_reactions")
-        .delete()
-        .eq("message_id", messageId)
-        .eq("user_id", user.id)
-        .eq("emoji", emoji);
-    } else {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await (supabase as any)
-        .from("direct_message_reactions")
-        .insert({ message_id: messageId, user_id: user.id, emoji });
+    try {
+      if (existing) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        await (supabase as any)
+          .from("direct_message_reactions")
+          .delete()
+          .eq("message_id", messageId)
+          .eq("user_id", user.id)
+          .eq("emoji", emoji);
+      } else {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        await (supabase as any)
+          .from("direct_message_reactions")
+          .insert({ message_id: messageId, user_id: user.id, emoji });
+      }
+    } finally {
+      togglesInFlightRef.current.delete(lockKey);
     }
   }
 
@@ -395,6 +409,11 @@ export default function HostInquiryDetailPage() {
       toast.error("Message can't be empty");
       return;
     }
+    // Snapshot the row pre-edit so we can revert if the UPDATE
+    // hits RLS or a network failure — otherwise the optimistic
+    // body sticks locally while the recipient still sees the old
+    // one.
+    const before = messages.find((m) => m.id === messageId);
     setMessages((prev) =>
       prev.map((m) =>
         m.id === messageId
@@ -405,18 +424,22 @@ export default function HostInquiryDetailPage() {
     cancelEditing();
     const { error } = await supabase
       .from("direct_messages")
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      .update({ body } as any)
+      .update({ body })
       .eq("id", messageId);
     if (error) {
       toast.error(error.message);
-      load();
+      if (before) {
+        setMessages((prev) =>
+          prev.map((m) => (m.id === messageId ? before : m)),
+        );
+      }
     }
   }
 
   async function deleteMessage(messageId: string) {
     const ok = window.confirm("Delete this message? This can't be undone.");
     if (!ok) return;
+    const before = messages.find((m) => m.id === messageId);
     setMessages((prev) =>
       prev.map((m) =>
         m.id === messageId
@@ -426,12 +449,15 @@ export default function HostInquiryDetailPage() {
     );
     const { error } = await supabase
       .from("direct_messages")
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      .update({ deleted_at: new Date().toISOString() } as any)
+      .update({ deleted_at: new Date().toISOString() })
       .eq("id", messageId);
     if (error) {
       toast.error(error.message);
-      load();
+      if (before) {
+        setMessages((prev) =>
+          prev.map((m) => (m.id === messageId ? before : m)),
+        );
+      }
     }
   }
 
@@ -476,6 +502,19 @@ export default function HostInquiryDetailPage() {
             toast.error(`${n}: ${m}`),
           )
         : [];
+    // Attachment-only message where every upload failed: don't post
+    // a `(attachment)` ghost row with an empty attachments array.
+    // Per-file errors already toasted; let the user retry or remove
+    // the failed files.
+    if (
+      pendingFiles.length > 0 &&
+      uploaded.length === 0 &&
+      !composer.trim()
+    ) {
+      setSending(false);
+      toast.error("Couldn't upload your attachments — message not sent.");
+      return;
+    }
     const { error } = await supabase.from("direct_messages").insert({
       thread_id: threadId,
       sender_id: user.id,
