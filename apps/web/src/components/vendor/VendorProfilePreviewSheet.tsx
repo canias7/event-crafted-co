@@ -4,6 +4,7 @@
 // without leaving the listing page.
 
 import { useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import {
   ArrowLeft,
   Film,
@@ -157,7 +158,12 @@ export function VendorProfilePreviewSheet({
     [posts, reels, buzz],
   );
 
-  return (
+  // Portal to document.body so the overlay isn't trapped in a
+  // parent stacking context (transform, filter, will-change on an
+  // ancestor would otherwise defeat backdrop-filter — the dim layer
+  // would render but the blur wouldn't show).
+  if (typeof document === "undefined") return null;
+  return createPortal(
     <div
       className="fixed inset-0 flex items-end sm:items-center justify-center sm:p-6"
       onClick={onClose}
@@ -368,7 +374,8 @@ export function VendorProfilePreviewSheet({
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
 
