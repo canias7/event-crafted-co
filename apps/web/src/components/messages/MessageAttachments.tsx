@@ -21,6 +21,7 @@ export function MessageAttachments({ attachments }: Props) {
       {attachments.map((a) => {
         const url = attachmentUrl(a.storage_path);
         const isImage = a.mime.startsWith("image/");
+        const isAudio = a.mime.startsWith("audio/");
         if (isImage) {
           return (
             <a
@@ -37,6 +38,18 @@ export function MessageAttachments({ attachments }: Props) {
                 className="w-full h-auto"
               />
             </a>
+          );
+        }
+        if (isAudio) {
+          return (
+            <audio
+              key={a.storage_path}
+              controls
+              preload="metadata"
+              src={url}
+              className="w-full max-w-xs rounded-md"
+              aria-label={a.filename}
+            />
           );
         }
         return (

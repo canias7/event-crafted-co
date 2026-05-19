@@ -7,6 +7,7 @@ import {
   type MessageReaction,
 } from "@/components/messages/MessageReactions";
 import { MessageReplyContext } from "@/components/messages/MessageReplyContext";
+import { VoiceRecorder } from "@/components/messages/VoiceRecorder";
 import { Link, useParams } from "react-router-dom";
 import { ArrowLeft, Send, Loader2, Star, Sparkles, Paperclip, X, CalendarDays, Smile } from "lucide-react";
 import {
@@ -929,6 +930,14 @@ export default function HostInquiryDetailPage() {
                         <Paperclip className="w-3.5 h-3.5 mr-1.5" />
                         Attach
                       </Button>
+                      <VoiceRecorder
+                        disabled={sending || pendingFiles.length >= MAX_FILES}
+                        onRecorded={(file) => {
+                          const list = new DataTransfer();
+                          list.items.add(file);
+                          pickFiles(list.files);
+                        }}
+                      />
                       <Popover>
                         <PopoverTrigger asChild>
                           <Button
