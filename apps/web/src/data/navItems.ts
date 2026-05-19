@@ -1,6 +1,7 @@
 import {
   Compass,
   CalendarDays,
+  Crown,
   Inbox,
   User,
   Settings,
@@ -60,6 +61,11 @@ export const vendorNavItems: NavItem[] = [
   { labelKey: "sidebar.vendor.ai_superagents", path: "/vendor/ai-superagents", icon: Sparkles },
   { labelKey: "sidebar.vendor.pay", path: "/vendor/pay", icon: CreditCard },
   { labelKey: "sidebar.vendor.gallery", path: "/vendor/gallery", icon: Images },
+  // Subscription — the vendor's Vendora plan + billing. Separate
+  // from Vendora Pay (which is the host-payment-processing surface)
+  // because they're different concerns: one is "the vendor pays
+  // Vendora," the other is "hosts pay the vendor."
+  { labelKey: "sidebar.vendor.subscription", path: "/vendor/subscription", icon: Crown },
   // Settings — pulled out of the separate bottom group so the rail
   // reads as one continuous list. Log out lives on /settings now.
   { labelKey: "sidebar.bottom.settings", path: "/settings", icon: Settings },
