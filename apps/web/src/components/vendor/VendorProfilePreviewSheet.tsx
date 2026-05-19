@@ -175,7 +175,7 @@ export function VendorProfilePreviewSheet({
       }}
     >
       <div
-        className="relative w-full sm:max-w-4xl rounded-t-3xl sm:rounded-3xl shadow-2xl overflow-hidden max-h-[94vh] flex flex-col"
+        className="relative w-full sm:max-w-4xl rounded-t-3xl sm:rounded-3xl shadow-2xl overflow-hidden h-[88vh] sm:h-[86vh] max-h-[94vh] flex flex-col"
         onClick={(e) => e.stopPropagation()}
         style={{
           background: "rgba(255,253,250,0.55)",
