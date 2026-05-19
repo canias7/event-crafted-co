@@ -217,6 +217,38 @@ async function fetchVendors(): Promise<Vendor[]> {
           }
         }
 
+        // Batch-fetch reviews so the directory's "Most reviewed" /
+        // "Highest rated" sort options aren't no-ops. Aggregate
+        // client-side: count + simple avg per vendor_id. RLS lets
+        // anonymous reads through for reviews tied to approved
+        // vendors so the public directory can power the sort.
+        const approvedIds = vendors.map((v) => v.id);
+        if (approvedIds.length > 0) {
+          const { data: revs } = await supabase
+            .from("reviews")
+            .select("vendor_id, rating")
+            .in("vendor_id", approvedIds);
+          if (revs && revs.length > 0) {
+            const agg: Record<string, { sum: number; count: number }> = {};
+            for (const r of revs as Array<{
+              vendor_id: string;
+              rating: number;
+            }>) {
+              const e = agg[r.vendor_id] ?? { sum: 0, count: 0 };
+              e.sum += r.rating;
+              e.count += 1;
+              agg[r.vendor_id] = e;
+            }
+            for (const v of vendors) {
+              const e = agg[v.id];
+              if (e) {
+                v.reviews = e.count;
+                v.rating = e.sum / e.count;
+              }
+            }
+          }
+        }
+
         // Batch-fetch verification badges so cards can render the
         // shield iconography without an N+1 fetch.
         // vendor_public_badges is a Postgres view; views aren't in the
