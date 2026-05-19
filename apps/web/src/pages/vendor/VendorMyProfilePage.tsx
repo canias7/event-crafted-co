@@ -396,6 +396,7 @@ export default function VendorMyProfilePage() {
       {composer === "buzz" && user ? (
         <BuzzComposerModal
           userId={user.id}
+          vendorId={primary?.id ?? null}
           onClose={() => setComposer(null)}
           onPosted={() => {
             setComposer(null);
@@ -407,6 +408,7 @@ export default function VendorMyProfilePage() {
         <MediaComposerModal
           kind={composer}
           userId={user.id}
+          vendorId={primary?.id ?? null}
           onClose={() => setComposer(null)}
           onPosted={() => {
             setComposer(null);

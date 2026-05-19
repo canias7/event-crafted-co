@@ -56,7 +56,6 @@ const VENDOR_NAV: NavTarget[] = [
   { label: "Inquiry inbox", path: "/vendor/inbox", icon: Inbox },
   { label: "Appointments", path: "/vendor/appointments", icon: CalendarDays },
   { label: "Partners", path: "/vendor/partners", icon: MessageSquare },
-  { label: "Studio", path: "/vendor/studio", icon: Store },
 ];
 
 const SETTINGS_NAV: NavTarget[] = [

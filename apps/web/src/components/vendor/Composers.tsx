@@ -47,11 +47,14 @@ export function ModalShell({
 
 export function BuzzComposerModal({
   userId,
+  vendorId,
   onClose,
   onPosted,
 }: {
   userId: string;
-  /** Optional. Pass to associate the buzz with a specific listing. */
+  /** Optional. Pass to associate the buzz with a specific listing —
+   *  the public listing page filters by vendor_id, so without this
+   *  the buzz won't surface publicly. */
   vendorId?: string | null;
   onClose: () => void;
   onPosted: () => void;
@@ -67,6 +70,7 @@ export function BuzzComposerModal({
     setPosting(true);
     const { error } = await supabase.from("vendor_buzz").insert({
       user_id: userId,
+      vendor_id: vendorId ?? null,
       body: trimmed,
     });
     if (error) {
@@ -163,6 +167,7 @@ export function MediaComposerModal({
         if (kind === "post") {
           const { error: insErr } = await supabase.from("vendor_posts").insert({
             user_id: userId,
+            vendor_id: vendorId ?? null,
             image_url: pub.publicUrl,
             caption: caption.trim() || null,
           });
@@ -170,6 +175,7 @@ export function MediaComposerModal({
         } else {
           const { error: insErr } = await supabase.from("vendor_reels").insert({
             user_id: userId,
+            vendor_id: vendorId ?? null,
             video_url: pub.publicUrl,
             thumbnail_url: null,
             caption: caption.trim() || null,

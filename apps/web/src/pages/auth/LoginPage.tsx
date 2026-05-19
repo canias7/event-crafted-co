@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Loader2, ArrowRight, Eye, EyeOff } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
@@ -20,6 +20,21 @@ type Step = "credentials" | "code";
 export default function LoginPage({ role }: LoginPageProps = {}) {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const location = useLocation();
+  // Honor a return URL passed via either ?next= or location.state.from
+  // (the latter set by RequireRole and the team-invite / claim flows
+  // when they bounce an unauthenticated user here). Only same-origin
+  // pathnames are accepted to avoid open-redirect to an attacker URL.
+  const returnTo = (() => {
+    const search = new URLSearchParams(location.search).get("next");
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const stateFrom = (location.state as any)?.from as string | undefined;
+    const candidate = search ?? stateFrom ?? null;
+    if (!candidate) return null;
+    return candidate.startsWith("/") && !candidate.startsWith("//")
+      ? candidate
+      : null;
+  })();
   const [step, setStep] = useState<Step>("credentials");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -199,6 +214,14 @@ export default function LoginPage({ role }: LoginPageProps = {}) {
     }
 
     setLoading(false);
+    // Honor an explicit return URL first (e.g. team-invite / claim
+    // deep links land users here with ?next=/accept-team-invite/xxx
+    // or location.state.from set by RequireRole). Falls back to the
+    // role-appropriate dashboard otherwise.
+    if (returnTo) {
+      navigate(returnTo);
+      return;
+    }
     // Admin accounts (rare on the public web app — the admin panel
     // lives at admin.eventvendora.com) fall through to the host-side
     // dashboard so they have somewhere to land.
