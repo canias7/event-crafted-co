@@ -1,6 +1,11 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRealtime } from "@/lib/realtime";
 import { useInquiryTyping } from "@/hooks/useInquiryTyping";
+import { MessageActionMenu } from "@/components/messages/MessageActionMenu";
+import {
+  MessageReactions,
+  type MessageReaction,
+} from "@/components/messages/MessageReactions";
 import { Link, useParams } from "react-router-dom";
 import {
   ArrowLeft,
@@ -84,6 +89,8 @@ interface Message {
   sender_role: "host" | "vendor" | "agent";
   created_at: string;
   attachments?: MessageAttachment[];
+  edited_at?: string | null;
+  deleted_at?: string | null;
 }
 
 const QUICK_EMOJIS = [
@@ -132,6 +139,11 @@ export default function InquiryDetailPage() {
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
   const [emojiOpen, setEmojiOpen] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
+  // reactionsByMsg: map of message_id → array of {user_id, emoji}.
+  // Refetched whenever messages reload + on the realtime sub below.
+  const [reactionsByMsg, setReactionsByMsg] = useState<
+    Record<string, MessageReaction[]>
+  >({});
   const { otherTyping, broadcastTyping } = useInquiryTyping(
     inquiryId,
     "vendor",
@@ -243,12 +255,38 @@ export default function InquiryDetailPage() {
     if (thread) {
       const { data: msgs } = await supabase
         .from("direct_messages")
-        .select("id, body, sender_role, created_at, attachments")
+        .select(
+          "id, body, sender_role, created_at, attachments, edited_at, deleted_at",
+        )
         .eq("thread_id", thread)
         .order("created_at", { ascending: true });
-      setMessages((msgs as unknown as Message[]) ?? []);
+      const messageRows = (msgs as unknown as Message[]) ?? [];
+      setMessages(messageRows);
+      // Reactions: one query for all messages in this thread.
+      if (messageRows.length > 0) {
+        const ids = messageRows.map((m) => m.id);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { data: rxns } = await (supabase as any)
+          .from("direct_message_reactions")
+          .select("message_id, user_id, emoji")
+          .in("message_id", ids);
+        const grouped: Record<string, MessageReaction[]> = {};
+        for (const r of (rxns as Array<{
+          message_id: string;
+          user_id: string;
+          emoji: string;
+        }> | null) ?? []) {
+          const list = grouped[r.message_id] ?? [];
+          list.push({ user_id: r.user_id, emoji: r.emoji });
+          grouped[r.message_id] = list;
+        }
+        setReactionsByMsg(grouped);
+      } else {
+        setReactionsByMsg({});
+      }
     } else {
       setMessages([]);
+      setReactionsByMsg({});
     }
 
     const reviewRow = reviewRes.data;
@@ -288,6 +326,18 @@ export default function InquiryDetailPage() {
   );
   useRealtime(messagesConfig, load);
 
+  // Reactions live in their own table; the shared user channel
+  // delivers events that pass RLS, so refetching the whole inquiry
+  // on every reaction change is fine.
+  const reactionsConfig = useMemo(
+    () =>
+      threadId
+        ? { table: "direct_message_reactions" as const }
+        : null,
+    [threadId],
+  );
+  useRealtime(reactionsConfig, load);
+
   const inquiryConfig = useMemo(
     () =>
       inquiryId
@@ -296,6 +346,61 @@ export default function InquiryDetailPage() {
     [inquiryId],
   );
   useRealtime(inquiryConfig, load);
+
+  // Toggle a reaction on a message: if I already reacted with this
+  // emoji, remove it; otherwise insert. Optimistic local update keeps
+  // the chip count responsive; the realtime sub corrects any drift
+  // (e.g. if the other side reacted in between).
+  async function toggleReaction(messageId: string, emoji: string) {
+    if (!user?.id) return;
+    const existing = (reactionsByMsg[messageId] ?? []).find(
+      (r) => r.user_id === user.id && r.emoji === emoji,
+    );
+    setReactionsByMsg((prev) => {
+      const next = { ...prev };
+      const list = (next[messageId] ?? []).filter(
+        (r) => !(r.user_id === user.id && r.emoji === emoji),
+      );
+      if (!existing) list.push({ user_id: user.id, emoji });
+      next[messageId] = list;
+      return next;
+    });
+    if (existing) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (supabase as any)
+        .from("direct_message_reactions")
+        .delete()
+        .eq("message_id", messageId)
+        .eq("user_id", user.id)
+        .eq("emoji", emoji);
+    } else {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (supabase as any)
+        .from("direct_message_reactions")
+        .insert({ message_id: messageId, user_id: user.id, emoji });
+    }
+  }
+
+  // Soft-delete an outgoing message. The bubble shows "Message
+  // deleted" in its place; reactions and attachments hide.
+  async function deleteMessage(messageId: string) {
+    const ok = window.confirm("Delete this message? This can't be undone.");
+    if (!ok) return;
+    setMessages((prev) =>
+      prev.map((m) =>
+        m.id === messageId ? { ...m, deleted_at: new Date().toISOString() } : m,
+      ),
+    );
+    const { error } = await supabase
+      .from("direct_messages")
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .update({ deleted_at: new Date().toISOString() } as any)
+      .eq("id", messageId);
+    if (error) {
+      toast.error(error.message);
+      load();
+    }
+  }
 
   async function transitionToReplied() {
     if (!inquiry || !inquiryId) return;
@@ -593,10 +698,13 @@ export default function InquiryDetailPage() {
               }
               const m = it.message;
               const isAi = m.sender_role === "agent";
+              const isDeleted = m.deleted_at != null;
+              const isEdited = m.edited_at != null && !isDeleted;
+              const msgReactions = reactionsByMsg[m.id] ?? [];
               return (
                 <div
                   key={m.id}
-                  className={`flex items-end gap-2 ${
+                  className={`group flex items-end gap-2 ${
                     it.firstInGroup ? "mt-2" : "mt-0.5"
                   } ${it.isMe ? "justify-end" : ""}`}
                 >
@@ -629,28 +737,71 @@ export default function InquiryDetailPage() {
                       <span className="shrink-0 w-6" aria-hidden />
                     )
                   ) : null}
-                  <div
-                    className={`max-w-[80%] px-3.5 py-2 text-sm leading-relaxed whitespace-pre-wrap rounded-2xl ${
-                      it.isMe
-                        ? `bg-foreground text-background ${
-                            it.showTail ? "rounded-br-sm" : ""
-                          }`
-                        : `bg-secondary ${
-                            it.showTail ? "rounded-bl-sm" : ""
-                          }`
-                    }`}
-                  >
-                    {isAi ? (
-                      <span className="inline-flex items-center gap-1 text-[10px] uppercase tracking-wider opacity-80 mb-1">
-                        <Sparkles className="w-3 h-3" />
-                        Sent by AI
-                      </span>
+                  {/* Action menu sits on the opposite side of the
+                      bubble — left of my outgoing messages, right of
+                      incoming. Hidden until the row is hovered. */}
+                  {!isDeleted && it.isMe ? (
+                    <div className="opacity-0 group-hover:opacity-100 transition-opacity self-center">
+                      <MessageActionMenu
+                        isMine
+                        onReact={(emoji) => toggleReaction(m.id, emoji)}
+                        onDelete={() => deleteMessage(m.id)}
+                      />
+                    </div>
+                  ) : null}
+                  <div className="flex flex-col">
+                    <div
+                      className={`max-w-[80%] px-3.5 py-2 text-sm leading-relaxed whitespace-pre-wrap rounded-2xl ${
+                        isDeleted
+                          ? "bg-secondary/60 text-muted-foreground italic"
+                          : it.isMe
+                            ? `bg-foreground text-background ${
+                                it.showTail ? "rounded-br-sm" : ""
+                              }`
+                            : `bg-secondary ${
+                                it.showTail ? "rounded-bl-sm" : ""
+                              }`
+                      }`}
+                    >
+                      {isDeleted ? (
+                        <p>Message deleted</p>
+                      ) : (
+                        <>
+                          {isAi ? (
+                            <span className="inline-flex items-center gap-1 text-[10px] uppercase tracking-wider opacity-80 mb-1">
+                              <Sparkles className="w-3 h-3" />
+                              Sent by AI
+                            </span>
+                          ) : null}
+                          <p>{m.body}</p>
+                          {m.attachments && m.attachments.length > 0 && (
+                            <MessageAttachments attachments={m.attachments} />
+                          )}
+                          {isEdited ? (
+                            <span className="block text-[10px] opacity-60 mt-1">
+                              edited
+                            </span>
+                          ) : null}
+                        </>
+                      )}
+                    </div>
+                    {!isDeleted && msgReactions.length > 0 ? (
+                      <MessageReactions
+                        reactions={msgReactions}
+                        currentUserId={user?.id ?? null}
+                        align={it.isMe ? "right" : "left"}
+                        onToggle={(emoji) => toggleReaction(m.id, emoji)}
+                      />
                     ) : null}
-                    <p>{m.body}</p>
-                    {m.attachments && m.attachments.length > 0 && (
-                      <MessageAttachments attachments={m.attachments} />
-                    )}
                   </div>
+                  {!isDeleted && !it.isMe ? (
+                    <div className="opacity-0 group-hover:opacity-100 transition-opacity self-center">
+                      <MessageActionMenu
+                        isMine={false}
+                        onReact={(emoji) => toggleReaction(m.id, emoji)}
+                      />
+                    </div>
+                  ) : null}
                 </div>
               );
             })
