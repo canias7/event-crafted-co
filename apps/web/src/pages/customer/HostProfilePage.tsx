@@ -22,6 +22,7 @@ import { DashboardSidebar } from "@/components/shared/DashboardSidebar";
 import { MobileNav } from "@/components/shared/MobileNav";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { Skeleton } from "@/components/ui/skeleton";
+import { LogoCropperModal } from "@/components/vendor/LogoCropperModal";
 import { customerNavItems } from "@/data/navItems";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -51,6 +52,7 @@ export default function HostProfilePage() {
   const [state, setState] = useState<ProfileState | null>(null);
   const [loading, setLoading] = useState(true);
   const [avatarUploading, setAvatarUploading] = useState(false);
+  const [pendingAvatar, setPendingAvatar] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const load = useCallback(async () => {
@@ -204,7 +206,7 @@ export default function HostProfilePage() {
                 stats={state.stats}
                 avatarUrl={state.avatarUrl}
                 uploading={avatarUploading}
-                onPickFile={(file) => onPickAvatar(file)}
+                onPickFile={(file) => setPendingAvatar(file)}
                 fileInputRef={fileInputRef}
               />
 
@@ -229,6 +231,17 @@ export default function HostProfilePage() {
         </div>
       </main>
       <MobileNav items={customerNavItems} />
+
+      {pendingAvatar ? (
+        <LogoCropperModal
+          file={pendingAvatar}
+          onCancel={() => setPendingAvatar(null)}
+          onApply={async (cropped) => {
+            setPendingAvatar(null);
+            await onPickAvatar(cropped);
+          }}
+        />
+      ) : null}
     </div>
   );
 }
