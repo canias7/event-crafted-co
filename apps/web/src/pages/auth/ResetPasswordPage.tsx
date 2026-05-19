@@ -4,6 +4,7 @@ import { Loader2, Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { GlassyAuthShell } from "@/components/auth/GlassyAuthShell";
+import { PasswordStrengthMeter } from "@/components/auth/PasswordStrengthMeter";
 
 export default function ResetPasswordPage() {
   const navigate = useNavigate();
@@ -141,6 +142,7 @@ export default function ResetPasswordPage() {
                 Password must be at least 8 characters.
               </p>
             )}
+            <PasswordStrengthMeter password={password} />
           </div>
           <div>
             <div

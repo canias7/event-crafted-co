@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { GlassyAuthShell } from "@/components/auth/GlassyAuthShell";
 import { TurnstileWidget } from "@/components/auth/TurnstileWidget";
+import { PasswordStrengthMeter } from "@/components/auth/PasswordStrengthMeter";
 
 // `role` decides what the user is signing up as. Default "host" keeps
 // the existing behavior (post-signup → /customer/onboarding). When
@@ -178,6 +179,7 @@ export default function SignupPage({ role = "host" }: { role?: "host" | "vendor"
               )}
             </button>
           </div>
+          <PasswordStrengthMeter password={password} />
         </div>
         <div
           className="flex items-start pt-1"
