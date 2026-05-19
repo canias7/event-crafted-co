@@ -28,7 +28,7 @@ export function MessageAttachments({ attachments }: Props) {
               key={a.storage_path}
               href={url}
               target="_blank"
-              rel="noopener"
+              rel="noopener noreferrer"
               className="block max-w-xs rounded-sm overflow-hidden border border-border hover:border-foreground/30 transition-colors"
             >
               <img
@@ -57,7 +57,7 @@ export function MessageAttachments({ attachments }: Props) {
             key={a.storage_path}
             href={url}
             target="_blank"
-            rel="noopener"
+            rel="noopener noreferrer"
             className="flex items-center gap-3 p-3 rounded-sm bg-background/60 border border-border hover:border-foreground/30 transition-colors max-w-sm"
           >
             <div className="w-9 h-9 rounded bg-secondary flex items-center justify-center flex-shrink-0">

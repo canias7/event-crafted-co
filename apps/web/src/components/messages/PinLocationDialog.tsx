@@ -40,10 +40,17 @@ export function PinLocationDialog({
   }, [open, defaultAddress]);
 
   function send() {
-    const trimmed = address.trim();
-    if (!trimmed) return;
-    const maps = `https://www.google.com/maps?q=${encodeURIComponent(trimmed)}`;
-    onSend(`📍 ${trimmed}\n${maps}`);
+    // Strip any http(s):// URLs the vendor might paste into the
+    // address field. The message we emit gets linkified by
+    // MessageBody on the recipient side, so an attacker-controlled
+    // URL inside the address text would render as a tappable link
+    // alongside our own google.com/maps URL — phishing surface. The
+    // maps link we synthesize from the cleaned text is the ONLY
+    // anchor we want in the bubble.
+    const cleaned = address.replace(/\bhttps?:\/\/\S+/gi, "").trim();
+    if (!cleaned) return;
+    const maps = `https://www.google.com/maps?q=${encodeURIComponent(cleaned)}`;
+    onSend(`📍 ${cleaned}\n${maps}`);
     onOpenChange(false);
   }
 
