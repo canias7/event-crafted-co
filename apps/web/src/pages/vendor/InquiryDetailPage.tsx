@@ -1,5 +1,6 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRealtime } from "@/lib/realtime";
+import { useInquiryTyping } from "@/hooks/useInquiryTyping";
 import { Link, useParams } from "react-router-dom";
 import {
   ArrowLeft,
@@ -73,6 +74,7 @@ interface Inquiry {
   intent_score: number | null;
   recommended_verification: string | null;
   vendor_read_at: string | null;
+  host_read_at: string | null;
   host: { display_name: string | null; avatar_url: string | null } | null;
 }
 
@@ -130,6 +132,10 @@ export default function InquiryDetailPage() {
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
   const [emojiOpen, setEmojiOpen] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
+  const { otherTyping, broadcastTyping } = useInquiryTyping(
+    inquiryId,
+    "vendor",
+  );
   const fileInputRef = useRef<HTMLInputElement>(null);
   const composerRef = useRef<HTMLTextAreaElement>(null);
   // Track whether we've already rehydrated the draft for the active
@@ -421,6 +427,29 @@ export default function InquiryDetailPage() {
   const hostName = inquiry.host?.display_name?.trim() || "Host";
   const initial = hostName.charAt(0).toUpperCase();
 
+  // "Seen" indicator: surface under the last outgoing (vendor/agent)
+  // message when the host has read past it. Stamping happens host-side
+  // — we just read it back.
+  const lastOutgoing = (() => {
+    for (let i = messages.length - 1; i >= 0; i--) {
+      const m = messages[i];
+      if (m.sender_role === "vendor" || m.sender_role === "agent") return m;
+    }
+    return null;
+  })();
+  const seenAt =
+    lastOutgoing && inquiry.host_read_at &&
+    new Date(inquiry.host_read_at).getTime() >=
+      new Date(lastOutgoing.created_at).getTime()
+      ? inquiry.host_read_at
+      : null;
+  const seenTimeLabel = seenAt
+    ? new Date(seenAt).toLocaleTimeString(undefined, {
+        hour: "numeric",
+        minute: "2-digit",
+      })
+    : null;
+
   return (
     <div className="min-h-screen vendor-canvas flex flex-col">
       {/* ─── Sticky chat header ─────────────────────────────────────────
@@ -627,6 +656,13 @@ export default function InquiryDetailPage() {
             })
           )}
 
+          {otherTyping ? <TypingBubble /> : null}
+          {seenTimeLabel ? (
+            <p className="text-right text-[11px] text-muted-foreground mt-1 mr-1">
+              Seen {seenTimeLabel}
+            </p>
+          ) : null}
+
           {/* Review as a system bubble at the end of the thread */}
           {review && (
             <div className="my-4">
@@ -728,7 +764,10 @@ export default function InquiryDetailPage() {
             <Textarea
               ref={composerRef}
               value={composer}
-              onChange={(e) => setComposer(e.target.value)}
+              onChange={(e) => {
+                setComposer(e.target.value);
+                if (e.target.value.length > 0) broadcastTyping();
+              }}
               onPaste={(e) => {
                 // Paste-an-image from clipboard: pull the image File
                 // out of clipboardData and run it through pickFiles
@@ -990,3 +1029,23 @@ function InquiryPreviewSheet({
 }
 
 
+
+
+// Three-dot animated typing bubble. Mirrors the bg-secondary side of
+// the chat bubble styles so it reads as an incoming "the other side is
+// composing" hint. Auto-clears after 3s of no events from the channel.
+function TypingBubble() {
+  return (
+    <div className="flex items-end gap-2 mt-2">
+      <span className="shrink-0 w-6" aria-hidden />
+      <div
+        className="bg-secondary px-3.5 py-2.5 rounded-2xl rounded-bl-sm inline-flex items-end gap-1"
+        aria-label="Typing"
+      >
+        <span className="inline-block w-1.5 h-1.5 rounded-full bg-foreground/40 animate-pulse" style={{ animationDelay: "0s" }} />
+        <span className="inline-block w-1.5 h-1.5 rounded-full bg-foreground/40 animate-pulse" style={{ animationDelay: "0.2s" }} />
+        <span className="inline-block w-1.5 h-1.5 rounded-full bg-foreground/40 animate-pulse" style={{ animationDelay: "0.4s" }} />
+      </div>
+    </div>
+  );
+}
