@@ -159,11 +159,13 @@ export function VendorProfilePreviewSheet({
 
   return (
     <div
-      className="fixed inset-0 z-50 bg-black/25 flex items-end sm:items-center justify-center sm:p-6"
+      className="fixed inset-0 flex items-end sm:items-center justify-center sm:p-6"
       onClick={onClose}
       style={{
-        backdropFilter: "blur(28px) saturate(140%)",
-        WebkitBackdropFilter: "blur(28px) saturate(140%)",
+        zIndex: 9999,
+        background: "rgba(0,0,0,0.25)",
+        backdropFilter: "blur(32px) saturate(140%)",
+        WebkitBackdropFilter: "blur(32px) saturate(140%)",
       }}
     >
       <div
