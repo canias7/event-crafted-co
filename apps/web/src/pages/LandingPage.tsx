@@ -42,6 +42,9 @@ export default function LandingPage() {
           <Link to="/vendors" className="hover:opacity-70 transition-opacity">
             Vendors
           </Link>
+          <Link to="/explore" className="hover:opacity-70 transition-opacity">
+            Explore
+          </Link>
           <Link
             to="/super-agents"
             className="inline-flex items-center gap-1.5 hover:opacity-70 transition-opacity"
@@ -305,6 +308,11 @@ export default function LandingPage() {
               <li>
                 <Link to="/vendors/locations" className="hover:opacity-70 transition-opacity">
                   By location
+                </Link>
+              </li>
+              <li>
+                <Link to="/explore" className="hover:opacity-70 transition-opacity">
+                  Explore
                 </Link>
               </li>
               <li>
