@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRealtime } from "@/lib/realtime";
 import { useInquiryTyping } from "@/hooks/useInquiryTyping";
 import { MessageActionMenu } from "@/components/messages/MessageActionMenu";
@@ -134,6 +134,11 @@ export default function HostInquiryDetailPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const composerRef = useRef<HTMLTextAreaElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const scrollerRef = useRef<HTMLDivElement>(null);
+  // Tracks whether the user is currently anchored near the bottom of
+  // the thread. New messages auto-scroll only when this is true so we
+  // don't yank a user back down while they're reading history.
+  const wasAtBottomRef = useRef(true);
   const { otherTyping, broadcastTyping } = useInquiryTyping(
     inquiryId,
     "host",
@@ -155,33 +160,63 @@ export default function HostInquiryDetailPage() {
   // Thread id is the direct_threads row for this inquiry; mobile uses
   // the same model — see ensure_inquiry_thread RPC. Resolved on load.
   const [threadId, setThreadId] = useState<string | null>(null);
+  // Tracks first-paint vs realtime-driven reloads so the skeleton
+  // overlay only flashes once. Ref instead of state because the
+  // load() closure used to read inquiry === null and could go stale
+  // when multiple loads were in flight.
+  const hasLoadedRef = useRef(false);
 
-  async function load() {
+  // useCallback so the realtime hook below sees a stable reference
+  // across renders; otherwise each render replaces the subscription
+  // callback and leaks listeners on rapid mount/unmount cycles.
+  const load = useCallback(async () => {
     if (!inquiryId || !user) return;
-    // Skeleton overlay shows only on the FIRST load. Subsequent
-    // realtime-triggered reloads keep the existing chat visible —
-    // toggling loading=true on every tick flashes the skeleton.
-    if (inquiry === null) setLoading(true);
+    if (!hasLoadedRef.current) setLoading(true);
 
-    const { data: i, error: iErr } = await supabase
-      .from("inquiries")
-      .select(
-        "id, vendor_id, event_type, event_date, guest_count, location, budget_min_cents, budget_max_cents, special_requests, status, created_at, vendor_read_at, host_read_at, vendor:vendor_profiles!inquiries_vendor_id_fkey(business_name, category, logo_url)",
-      )
-      .eq("id", inquiryId)
-      .maybeSingle();
+    // The four independent reads — inquiry, thread RPC, existing
+    // review, proposals — fire in parallel. Messages + reactions
+    // depend on the thread id so they chain after.
+    const [iRes, tidRes, rRes, propsRes] = await Promise.all([
+      supabase
+        .from("inquiries")
+        .select(
+          "id, vendor_id, event_type, event_date, guest_count, location, budget_min_cents, budget_max_cents, special_requests, status, created_at, vendor_read_at, host_read_at, vendor:vendor_profiles!inquiries_vendor_id_fkey(business_name, category, logo_url)",
+        )
+        .eq("id", inquiryId)
+        .maybeSingle(),
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (supabase as any).rpc("ensure_inquiry_thread", {
+        p_inquiry_id: inquiryId,
+      }),
+      supabase
+        .from("reviews")
+        .select("id, rating, body, photo_urls")
+        .eq("inquiry_id", inquiryId)
+        .maybeSingle(),
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (supabase as any)
+        .from("proposals")
+        .select(
+          "id, title, line_items, subtotal_cents, deposit_cents, terms, contract_body, status, sent_at, signed_at, signed_name, first_viewed_at, last_viewed_at, view_count",
+        )
+        .eq("inquiry_id", inquiryId)
+        .order("created_at", { ascending: false }),
+    ]);
 
-    if (iErr || !i) {
-      setNotFound(true);
+    // Only flip to 404 if the row is genuinely missing. Transient
+    // errors (network blip on a realtime refresh) keep the existing
+    // inquiry visible instead of permanently landing on the
+    // not-found state.
+    if (!iRes.data) {
+      if (!iRes.error) setNotFound(true);
       setLoading(false);
       return;
     }
-    setInquiry(i as unknown as Inquiry);
+    setInquiry(iRes.data as unknown as Inquiry);
 
     // First-time-open: stamp host_read_at so the vendor's "Seen" line
-    // can light up. Fire-and-forget — the page renders even if this
-    // write is slow.
-    const inq = i as unknown as Inquiry | null;
+    // can light up. Fire-and-forget.
+    const inq = iRes.data as unknown as Inquiry | null;
     if (inq && inq.host_read_at == null) {
       supabase
         .from("inquiries")
@@ -196,11 +231,7 @@ export default function HostInquiryDetailPage() {
         });
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: tid } = await (supabase as any).rpc("ensure_inquiry_thread", {
-      p_inquiry_id: inquiryId,
-    });
-    const thread = (tid as string | null) ?? null;
+    const thread = (tidRes.data as string | null) ?? null;
     setThreadId(thread);
 
     if (thread) {
@@ -239,26 +270,12 @@ export default function HostInquiryDetailPage() {
       setReactionsByMsg({});
     }
 
-    // Existing review (if any)
-    const { data: r } = await supabase
-      .from("reviews")
-      .select("id, rating, body, photo_urls")
-      .eq("inquiry_id", inquiryId)
-      .maybeSingle();
-    setReview((r as ExistingReview | null) ?? null);
+    setReview((rRes.data as ExistingReview | null) ?? null);
+    setProposals((propsRes.data as unknown as Proposal[]) ?? []);
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: props } = await (supabase as any)
-      .from("proposals")
-      .select(
-        "id, title, line_items, subtotal_cents, deposit_cents, terms, contract_body, status, sent_at, signed_at, signed_name, first_viewed_at, last_viewed_at, view_count",
-      )
-      .eq("inquiry_id", inquiryId)
-      .order("created_at", { ascending: false });
-    setProposals((props as unknown as Proposal[]) ?? []);
-
+    hasLoadedRef.current = true;
     setLoading(false);
-  }
+  }, [inquiryId, user]);
 
   async function respondProposal(
     p: Proposal,
@@ -297,16 +314,17 @@ export default function HostInquiryDetailPage() {
 
   useEffect(() => {
     load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [inquiryId, user]);
+  }, [load]);
 
-  // Auto-scroll to the bottom whenever the message list or typing
-  // indicator changes. Smooth on subsequent updates, instant on first
-  // mount so the user lands at the latest message rather than the top.
+  // Auto-scroll to the bottom — but only if the user is already
+  // anchored near the bottom. If they've scrolled up to read
+  // history, hold their position so the next realtime tick doesn't
+  // yank them back down.
   useEffect(() => {
     if (!messagesEndRef.current) return;
+    if (!wasAtBottomRef.current && hasLoadedRef.current) return;
     messagesEndRef.current.scrollIntoView({
-      behavior: messages.length > 0 ? "smooth" : "auto",
+      behavior: hasLoadedRef.current ? "smooth" : "auto",
       block: "end",
     });
   }, [messages.length, otherTyping]);
@@ -475,12 +493,28 @@ export default function HostInquiryDetailPage() {
     setComposer("");
     setPendingFiles([]);
     setReplyToId(null);
-    load();
+    // No explicit load() — the messages realtime subscription will
+    // fire on the INSERT we just made and pick the row up. Skipping
+    // the redundant fetch saves a full inquiry+thread+messages+
+    // reactions+review+proposals round-trip per send.
   }
 
   const replyTarget = useMemo(
     () => (replyToId ? messages.find((m) => m.id === replyToId) ?? null : null),
     [replyToId, messages],
+  );
+
+  // Memoize the grouped-with-separators array so we don't redo the
+  // pass on every realtime tick / typing-indicator flip.
+  const groupedItems = useMemo(
+    () =>
+      groupMessages(messages, {
+        isMe: (m) => m.sender_role === "host",
+        senderKey: (m) => m.sender_role,
+        createdAt: (m) => m.created_at,
+        id: (m) => m.id,
+      }),
+    [messages],
   );
 
   if (notFound) {
@@ -624,7 +658,18 @@ export default function HostInquiryDetailPage() {
       </div>
 
       {/* ─── Chat thread (scrolling area) ────────────────────────────── */}
-      <div className="flex-1 overflow-y-auto px-4 md:px-6 py-5">
+      <div
+        ref={scrollerRef}
+        onScroll={(e) => {
+          const el = e.currentTarget;
+          // 80px slack at the bottom — small upward scroll still
+          // counts as "at the bottom" so a one-line read doesn't
+          // suppress auto-scroll for the next reply.
+          wasAtBottomRef.current =
+            el.scrollHeight - el.scrollTop - el.clientHeight < 80;
+        }}
+        className="flex-1 overflow-y-auto px-4 md:px-6 py-5"
+      >
         <div className="max-w-3xl mx-auto space-y-1.5">
           {/* Pinned: status pill for context (the host's reminder of
               where this inquiry stands). */}
@@ -670,12 +715,7 @@ export default function HostInquiryDetailPage() {
               No messages yet — the vendor will reply soon.
             </p>
           ) : (
-            groupMessages(messages, {
-              isMe: (m) => m.sender_role === "host",
-              senderKey: (m) => m.sender_role,
-              createdAt: (m) => m.created_at,
-              id: (m) => m.id,
-            }).map((it) => {
+            groupedItems.map((it) => {
               if (it.kind === "sep") {
                 return (
                   <div
@@ -934,7 +974,11 @@ export default function HostInquiryDetailPage() {
 
       {/* ─── Sticky composer ─────────────────────────────────────────── */}
       <div
-        className="sticky bottom-0 px-4 md:px-6 py-3 backdrop-blur-md"
+        // bottom-20 on mobile lifts the composer above the floating
+        // MobileNav pill (≈80px including safe-area padding). On lg+
+        // the MobileNav is hidden, so the composer sticks at the
+        // actual viewport bottom.
+        className="sticky bottom-20 lg:bottom-0 px-4 md:px-6 py-3 backdrop-blur-md"
         style={{
           background: "rgba(255,253,250,0.92)",
           borderTop: "0.5px solid rgba(255,138,76,0.18)",
