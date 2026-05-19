@@ -357,18 +357,6 @@ export default function VendorBrowsePage() {
         <div className="container mx-auto px-6 md:px-8">
           <div className="flex items-end justify-between mb-10 flex-wrap gap-3">
             <div>
-              <p className="font-label text-muted-foreground">
-                {filtered.length}{" "}
-                {filtered.length === 1 ? "vendor" : "vendors"}
-                {category !== "All" && (
-                  <span className="ml-2 text-foreground/80">· {category}</span>
-                )}
-                {dateFilter && (
-                  <span className="ml-2 text-foreground/80">
-                    · available {dateFilter}
-                  </span>
-                )}
-              </p>
               {hiddenByDate > 0 && (
                 <p className="text-xs text-muted-foreground mt-1">
                   {hiddenByDate}{" "}
