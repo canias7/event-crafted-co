@@ -126,6 +126,9 @@ export const CustomerExplorePage = lazyWithReload(importCustomerExplore);
 const importHostProfile = () => import("@/pages/customer/HostProfilePage");
 export const HostProfilePage = lazyWithReload(importHostProfile);
 
+const importHostAccount = () => import("@/pages/customer/HostAccountPage");
+export const HostAccountPage = lazyWithReload(importHostAccount);
+
 // ---------------- Vendor ----------------
 // VendorHomePage deleted — /vendor/me is the landing surface for
 // vendors. /vendor/home redirects to /vendor/me in App.tsx so any
@@ -195,6 +198,7 @@ const ROUTE_IMPORTERS: Array<{ pattern: string; importer: () => Promise<unknown>
   { pattern: "/customer/inquiries/:inquiryId", importer: importHostInquiryDetail },
   { pattern: "/customer/events", importer: importHostEvents },
   { pattern: "/customer/profile", importer: importHostProfile },
+  { pattern: "/customer/account", importer: importHostAccount },
   // Vendor
   { pattern: "/vendor/me", importer: importVendorMyProfile },
   { pattern: "/vendor/edit-profile", importer: importVendorEditProfile },

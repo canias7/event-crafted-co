@@ -50,6 +50,7 @@ import {
   InquiriesPage,
   HostInquiryDetailPage,
   HostEventsPage,
+  HostAccountPage,
   CustomerExplorePage,
   HostProfilePage,
   VendorMyProfilePage,
@@ -154,6 +155,7 @@ const App = () => (
               <Route path="/customer/messages" element={<Navigate to="/customer/inquiries" replace />} />
               <Route path="/customer/events" element={<RequireRole role="host"><HostEventsPage /></RequireRole>} />
               <Route path="/customer/profile" element={<RequireRole role="host"><HostProfilePage /></RequireRole>} />
+              <Route path="/customer/account" element={<RequireRole role="host"><HostAccountPage /></RequireRole>} />
               {/* Legacy host routes — bounce to /customer/explore so
                   bookmarks, old emails, and external deep-links don't
                   hit a 404. */}
