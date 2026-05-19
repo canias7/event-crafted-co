@@ -12,6 +12,7 @@ import {
   MessageCircle,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { BrandCardShell } from "@/components/vendor/BrandCardShell";
 
 interface PostRow {
   id: string;
@@ -158,21 +159,34 @@ export function VendorProfilePreviewSheet({
 
   return (
     <div
-      className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-end sm:items-center justify-center"
+      className="fixed inset-0 z-50 bg-black/45 backdrop-blur-md flex items-end sm:items-center justify-center sm:p-6"
       onClick={onClose}
     >
       <div
-        className="relative w-full sm:max-w-2xl bg-[#fffdfa] rounded-t-3xl sm:rounded-3xl shadow-2xl overflow-hidden max-h-[92vh] flex flex-col"
+        className="relative w-full sm:max-w-4xl rounded-t-3xl sm:rounded-3xl shadow-2xl overflow-hidden max-h-[94vh] flex flex-col"
         onClick={(e) => e.stopPropagation()}
+        style={{
+          background: "rgba(255,253,250,0.55)",
+          border: "0.5px solid rgba(255,255,255,0.5)",
+          backdropFilter: "blur(24px) saturate(160%)",
+          WebkitBackdropFilter: "blur(24px) saturate(160%)",
+        }}
       >
         {/* Top bar — back arrow on the left mirrors how mobile screens
             unwind a stack. No close X; the back arrow is the dismiss. */}
-        <div className="sticky top-0 z-10 flex items-center gap-3 px-4 py-3 bg-[#fffdfa]/95 backdrop-blur-md border-b border-border/40">
+        <div
+          className="sticky top-0 z-10 flex items-center gap-3 px-4 py-3 border-b border-white/40"
+          style={{
+            background: "rgba(255,253,250,0.6)",
+            backdropFilter: "blur(20px)",
+            WebkitBackdropFilter: "blur(20px)",
+          }}
+        >
           <button
             type="button"
             onClick={onClose}
             aria-label="Back"
-            className="shrink-0 inline-flex items-center justify-center w-9 h-9 rounded-full bg-white/95 border border-border/40 shadow-sm text-foreground/80 hover:bg-white"
+            className="shrink-0 inline-flex items-center justify-center w-9 h-9 rounded-full bg-white/85 border border-white/60 shadow-sm text-foreground/80 hover:bg-white"
           >
             <ArrowLeft className="w-4 h-4" />
           </button>
@@ -182,47 +196,45 @@ export function VendorProfilePreviewSheet({
         </div>
 
         {/* Scrollable body */}
-        <div className="overflow-y-auto flex-1 px-4 md:px-6 py-5 space-y-5">
-          {/* Header card — mirrors the /vendor/me header */}
-          <div
-            className="rounded-2xl p-5"
-            style={{
-              background:
-                "linear-gradient(135deg, rgba(255,138,76,0.10), rgba(255,138,76,0.04))",
-              border: "0.5px solid rgba(255,138,76,0.22)",
-            }}
-          >
-            <div className="flex items-start gap-4">
-              {logoUrl ? (
-                <img
-                  src={logoUrl}
-                  alt={businessName}
-                  className="w-[88px] h-[88px] rounded-2xl object-cover bg-[#0a0a0a] shrink-0"
-                />
-              ) : (
-                <div className="w-[88px] h-[88px] rounded-2xl bg-[#0a0a0a] flex items-center justify-center shrink-0">
-                  <span className="font-editorial text-white text-4xl leading-none">
-                    {initial}
-                  </span>
-                </div>
-              )}
+        <div className="overflow-y-auto flex-1 px-4 md:px-7 py-6 space-y-6">
+          {/* Header card — uses the shared BrandCardShell so the
+              identity surface (gradient + ripples + flip-to-bio
+              toggle) matches /vendor/me + /vendors/<slug> exactly. */}
+          <BrandCardShell businessName={businessName} bio={bio}>
+            <div className="flex items-center gap-5 pl-14 sm:pl-16">
+              <div className="relative shrink-0">
+                {logoUrl ? (
+                  <img
+                    src={logoUrl}
+                    alt={businessName}
+                    className="w-[110px] h-[110px] rounded-[20px] object-cover bg-[#0a0a0a]"
+                    style={{
+                      boxShadow: "0 6px 18px -6px rgba(26,20,16,0.3)",
+                    }}
+                  />
+                ) : (
+                  <div
+                    className="w-[110px] h-[110px] rounded-[20px] bg-[#0a0a0a] flex items-center justify-center"
+                    style={{
+                      boxShadow: "0 6px 18px -6px rgba(26,20,16,0.3)",
+                    }}
+                  >
+                    <span className="font-editorial text-[#ffffff] text-6xl leading-none">
+                      {initial}
+                    </span>
+                  </div>
+                )}
+              </div>
               <div className="min-w-0 flex-1">
-                <h2 className="font-editorial text-2xl text-foreground leading-tight">
+                <h3 className="font-editorial text-3xl text-[#0a0a0a] leading-[1.05] tracking-tight">
                   {businessName}
-                </h2>
+                </h3>
                 {location ? (
-                  <p className="text-sm text-muted-foreground mt-0.5 truncate">
-                    {location}
-                  </p>
-                ) : null}
-                {bio ? (
-                  <p className="text-sm text-foreground/80 mt-2 leading-snug whitespace-pre-wrap">
-                    {bio}
-                  </p>
+                  <p className="mt-1 text-sm text-[#6b7280]">{location}</p>
                 ) : null}
               </div>
             </div>
-          </div>
+          </BrandCardShell>
 
           {/* Tabs */}
           <div className="flex gap-1 overflow-x-auto">
@@ -332,7 +344,7 @@ export function VendorProfilePreviewSheet({
                 {buzz.map((b) => (
                   <li
                     key={b.id}
-                    className="rounded-2xl bg-secondary/50 border border-border/40 px-3.5 py-2.5"
+                    className="rounded-2xl bg-white/55 border border-white/60 backdrop-blur-sm px-3.5 py-2.5"
                   >
                     <p className="text-sm leading-relaxed whitespace-pre-wrap">
                       {b.body}
