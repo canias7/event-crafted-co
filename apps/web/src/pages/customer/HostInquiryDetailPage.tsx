@@ -10,6 +10,7 @@ import { MessageReplyContext } from "@/components/messages/MessageReplyContext";
 import { VoiceRecorder } from "@/components/messages/VoiceRecorder";
 import { MessageBody } from "@/components/messages/MessageBody";
 import { TypingBubble } from "@/components/messages/TypingBubble";
+import { RatingPromptStrip } from "@/components/reviews/RatingPromptStrip";
 import { Link, useParams } from "react-router-dom";
 import {
   ArrowLeft,
@@ -957,6 +958,20 @@ export default function HostInquiryDetailPage() {
               <CheckCheck className="w-3 h-3" aria-hidden />
               <span>Read · {seenTimeLabel}</span>
             </div>
+          ) : null}
+
+          {/* Rating prompts — conversation rating (after ≥6 msgs) or
+              event review (after accepted proposal + event date
+              passed), whichever's unlocked. */}
+          {inquiry ? (
+            <RatingPromptStrip
+              inquiryId={inquiry.id}
+              vendorId={inquiry.vendor_id}
+              hostId={user?.id ?? ""}
+              eventDate={inquiry.event_date}
+              raterRole="host"
+              otherPartyName={vendorName}
+            />
           ) : null}
 
           {/* Review CTA — appears at the bottom of the thread once the

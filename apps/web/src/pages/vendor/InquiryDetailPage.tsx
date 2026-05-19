@@ -12,6 +12,7 @@ import { TemplatePicker } from "@/components/messages/TemplatePicker";
 import { PinLocationDialog } from "@/components/messages/PinLocationDialog";
 import { MessageBody } from "@/components/messages/MessageBody";
 import { TypingBubble } from "@/components/messages/TypingBubble";
+import { RatingPromptStrip } from "@/components/reviews/RatingPromptStrip";
 import { Link, useParams } from "react-router-dom";
 import {
   ArrowLeft,
@@ -1080,6 +1081,19 @@ export default function InquiryDetailPage() {
               <CheckCheck className="w-3 h-3" aria-hidden />
               <span>Read · {seenTimeLabel}</span>
             </div>
+          ) : null}
+
+          {/* Rating prompts — surfaces conversation OR event review
+              CTA based on what's unlocked for the vendor side. */}
+          {inquiry ? (
+            <RatingPromptStrip
+              inquiryId={inquiry.id}
+              vendorId={inquiry.vendor_id}
+              hostId={inquiry.host_id}
+              eventDate={inquiry.event_date}
+              raterRole="vendor"
+              otherPartyName={hostName}
+            />
           ) : null}
 
           {/* Review as a system bubble at the end of the thread */}

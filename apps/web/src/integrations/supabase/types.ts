@@ -1698,8 +1698,11 @@ export type Database = {
           id: string
           inquiry_id: string
           is_hidden: boolean
+          kind: string
           photo_urls: Json
+          rater_role: string
           rating: number
+          released_at: string | null
           updated_at: string
           vendor_id: string
         }
@@ -1712,8 +1715,11 @@ export type Database = {
           id?: string
           inquiry_id: string
           is_hidden?: boolean
+          kind?: string
           photo_urls?: Json
+          rater_role?: string
           rating: number
+          released_at?: string | null
           updated_at?: string
           vendor_id: string
         }
@@ -1726,8 +1732,11 @@ export type Database = {
           id?: string
           inquiry_id?: string
           is_hidden?: boolean
+          kind?: string
           photo_urls?: Json
+          rater_role?: string
           rating?: number
+          released_at?: string | null
           updated_at?: string
           vendor_id?: string
         }
