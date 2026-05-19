@@ -34,12 +34,17 @@ export function PinLocationDialog({
   onSend,
 }: Props) {
   const [address, setAddress] = useState("");
+  const [sending, setSending] = useState(false);
 
   useEffect(() => {
-    if (open) setAddress(defaultAddress ?? "");
+    if (open) {
+      setAddress(defaultAddress ?? "");
+      setSending(false);
+    }
   }, [open, defaultAddress]);
 
   function send() {
+    if (sending) return;
     // Strip any http(s):// URLs the vendor might paste into the
     // address field. The message we emit gets linkified by
     // MessageBody on the recipient side, so an attacker-controlled
@@ -49,6 +54,7 @@ export function PinLocationDialog({
     // anchor we want in the bubble.
     const cleaned = address.replace(/\bhttps?:\/\/\S+/gi, "").trim();
     if (!cleaned) return;
+    setSending(true);
     const maps = `https://www.google.com/maps?q=${encodeURIComponent(cleaned)}`;
     onSend(`📍 ${cleaned}\n${maps}`);
     onOpenChange(false);
@@ -94,7 +100,7 @@ export function PinLocationDialog({
           </Button>
           <Button
             onClick={send}
-            disabled={!address.trim()}
+            disabled={!address.trim() || sending}
             className="rounded-full"
           >
             <MapPin className="w-4 h-4 mr-1.5" />
