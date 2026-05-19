@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Globe, Loader2, LogOut, Mail, Trash2 } from "lucide-react";
+import { CreditCard, Globe, Loader2, LogOut, Mail, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -95,6 +95,33 @@ export default function SettingsPage() {
                 title="Language"
                 subtitle="Interface language for menus, buttons, and prompts"
                 right={<LanguageSwitcher tone="light" />}
+              />
+              <RowDivider />
+              <SettingRow
+                Icon={CreditCard}
+                title="Subscription"
+                subtitle="Your Vendora plan and billing"
+                right={
+                  <div className="flex items-center gap-2">
+                    <span
+                      className="inline-flex items-center text-[11px] font-medium rounded-full px-2.5 py-1"
+                      style={{
+                        background: "rgba(255,138,76,0.14)",
+                        color: "#c4541e",
+                      }}
+                    >
+                      Free plan
+                    </span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="rounded-full"
+                      onClick={() => navigate("/vendor/pay")}
+                    >
+                      Manage
+                    </Button>
+                  </div>
+                }
               />
               <RowDivider />
               <SettingRow
