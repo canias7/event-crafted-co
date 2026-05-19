@@ -4,9 +4,6 @@ import {
   Inbox,
   User,
   Settings,
-  Sparkles,
-  CreditCard,
-  Images,
   type LucideIcon,
 } from "lucide-react";
 
@@ -54,14 +51,14 @@ export const vendorNavItems: NavItem[] = [
   // "Profile (listing builder)" entry under Calendar — that page is
   // now reached from the Edit listing CTA on this profile.
   { labelKey: "sidebar.vendor.my_profile", path: "/vendor/me", icon: User },
-  // Three forward-looking tools that used to live under a single
-  // "Studio" tab. Each ships as a Coming Soon placeholder for now;
-  // sidebar entries exist so the future work has stable URLs.
-  { labelKey: "sidebar.vendor.ai_superagents", path: "/vendor/ai-superagents", icon: Sparkles },
-  { labelKey: "sidebar.vendor.pay", path: "/vendor/pay", icon: CreditCard },
-  { labelKey: "sidebar.vendor.gallery", path: "/vendor/gallery", icon: Images },
   // Settings — pulled out of the separate bottom group so the rail
   // reads as one continuous list. Log out lives on /settings now.
+  //
+  // Three forward-looking "Studio" tools — AI Superagents, Vendora
+  // Pay, Gallery — used to live here as sidebar entries pointing at
+  // Coming Soon placeholders. Hidden until they have content so
+  // vendors don't think the portal is half-built; the routes still
+  // resolve directly (App.tsx) for anyone who has a deep link.
   { labelKey: "sidebar.bottom.settings", path: "/settings", icon: Settings },
 ];
 
