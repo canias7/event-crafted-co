@@ -233,25 +233,34 @@ export default function VendorDetailPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [vendor?.id, vendor?.isReal]);
 
-  // Real reviews (only for DB-backed vendors)
-  const [realReviews, setRealReviews] = useState<RealReview[]>([]);
+  // Real reviews (only for DB-backed vendors). Filtered to
+  // rater_role='host' so the vendor's own reviews of hosts don't bleed
+  // onto the vendor's public profile. Conversation + event are
+  // fetched together and split client-side — conversation is shown as
+  // a compact secondary signal, event is the primary review feed.
+  const [eventReviews, setEventReviews] = useState<RealReview[]>([]);
+  const [conversationReviews, setConversationReviews] = useState<RealReview[]>(
+    [],
+  );
   useEffect(() => {
     if (!vendor || !vendor.isReal) {
-      setRealReviews([]);
+      setEventReviews([]);
+      setConversationReviews([]);
       return;
     }
     let cancelled = false;
-    supabase
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (supabase as any)
       .from("reviews")
       .select(
-        "id, rating, body, photo_urls, created_at, host:profiles!reviews_host_id_fkey(display_name), response:review_responses(body), inquiry:inquiries!reviews_inquiry_id_fkey(event_type, event_date)",
+        "id, rating, body, photo_urls, created_at, kind, host:profiles!reviews_host_id_fkey(display_name), response:review_responses(body), inquiry:inquiries!reviews_inquiry_id_fkey(event_type, event_date)",
       )
       .eq("vendor_id", vendor.id)
+      .eq("rater_role", "host")
       .order("created_at", { ascending: false })
-      .then(({ data }) => {
+      .then(({ data }: { data: (RealReview & { kind: string })[] | null }) => {
         if (cancelled) return;
-        const rows = (data as RealReview[] | null) ?? [];
-        // Supabase returns response as array for has-many; flatten.
+        const rows = data ?? [];
         const normalized = rows.map((r) => ({
           ...r,
           response: Array.isArray(r.response)
@@ -261,7 +270,10 @@ export default function VendorDetailPage() {
             ? (r.inquiry[0] ?? null)
             : r.inquiry,
         }));
-        setRealReviews(normalized);
+        setEventReviews(normalized.filter((r) => r.kind === "event"));
+        setConversationReviews(
+          normalized.filter((r) => r.kind === "conversation"),
+        );
       });
     return () => {
       cancelled = true;
@@ -350,12 +362,21 @@ export default function VendorDetailPage() {
     };
   }, [vendor]);
 
+  // Aggregate rating for the structured-data card uses EVENT reviews
+  // only — those are the higher-signal post-event reads Google should
+  // weight in rich results. Conversation ratings are a separate
+  // surface and don't feed schema.org/AggregateRating.
   const reviewsAvg =
-    realReviews.length > 0
-      ? realReviews.reduce((sum, r) => sum + r.rating, 0) / realReviews.length
+    eventReviews.length > 0
+      ? eventReviews.reduce((sum, r) => sum + r.rating, 0) / eventReviews.length
       : vendor?.rating ?? 0;
   const reviewsCount =
-    realReviews.length > 0 ? realReviews.length : vendor?.reviews ?? 0;
+    eventReviews.length > 0 ? eventReviews.length : vendor?.reviews ?? 0;
+  const conversationAvg =
+    conversationReviews.length > 0
+      ? conversationReviews.reduce((sum, r) => sum + r.rating, 0) /
+        conversationReviews.length
+      : 0;
 
   // Pricing packages (active only, sorted by display_order then price).
   interface VendorPackage {
@@ -765,10 +786,39 @@ export default function VendorDetailPage() {
                 </SilentErrorBoundary>
               )}
 
-              {/* Reviews + ImportedReviews sections pulled — empty
-                  "0.0 · 0 reviews" header read as noise on fresh
-                  listings. Re-enable once review collection is wired
-                  end-to-end. */}
+              {/* Reviews. Event reviews are the primary feed; the
+                  conversation-rating summary sits underneath as a
+                  separate "responsiveness" signal. Both render only
+                  when there's something real to show — fresh
+                  listings with zero of either skip this whole block
+                  rather than read as "0.0 · 0 reviews". */}
+              {vendor.isReal && eventReviews.length > 0 && (
+                <VendorReviewsList
+                  realReviews={eventReviews}
+                  samples={[]}
+                  averageRating={reviewsAvg}
+                  totalCount={eventReviews.length}
+                  vendorName={vendor.name}
+                />
+              )}
+              {vendor.isReal && conversationReviews.length > 0 && (
+                <div className="card-soft p-6">
+                  <p className="font-label text-accent mb-3">Chat responsiveness</p>
+                  <h3 className="font-editorial text-2xl">
+                    <span className="tnum">{conversationAvg.toFixed(1)}</span>{" "}
+                    <span className="text-muted-foreground font-light">·</span>{" "}
+                    <span className="text-muted-foreground font-light tnum">
+                      {conversationReviews.length}{" "}
+                      {conversationReviews.length === 1
+                        ? "rating"
+                        : "ratings"}
+                    </span>
+                  </h3>
+                  <p className="text-sm text-muted-foreground mt-2">
+                    What hosts say about messaging with {vendor.name}.
+                  </p>
+                </div>
+              )}
 
               {/* Often booked with (cross-sell from booking signal + curated) */}
               {vendor.isReal && (

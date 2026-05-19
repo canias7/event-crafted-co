@@ -222,11 +222,18 @@ async function fetchVendors(): Promise<Vendor[]> {
         // client-side: count + simple avg per vendor_id. RLS lets
         // anonymous reads through for reviews tied to approved
         // vendors so the public directory can power the sort.
+        //
+        // Filter to rater_role='host' so vendor-side conversation
+        // ratings of hosts don't pollute the vendor's own card. Both
+        // kinds (event + conversation) feed the listing-card rating
+        // since the card surfaces one number, not two.
         const approvedIds = vendors.map((v) => v.id);
         if (approvedIds.length > 0) {
-          const { data: revs } = await supabase
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const { data: revs } = await (supabase as any)
             .from("reviews")
             .select("vendor_id, rating")
+            .eq("rater_role", "host")
             .in("vendor_id", approvedIds);
           if (revs && revs.length > 0) {
             const agg: Record<string, { sum: number; count: number }> = {};
