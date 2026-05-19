@@ -1237,6 +1237,7 @@ export type Database = {
           preferred_language: string
           role: string
           suspended_at: string | null
+          unlimited_listings: boolean
           updated_at: string
         }
         Insert: {
@@ -1256,6 +1257,7 @@ export type Database = {
           preferred_language?: string
           role?: string
           suspended_at?: string | null
+          unlimited_listings?: boolean
           updated_at?: string
         }
         Update: {
@@ -1275,6 +1277,7 @@ export type Database = {
           preferred_language?: string
           role?: string
           suspended_at?: string | null
+          unlimited_listings?: boolean
           updated_at?: string
         }
         Relationships: []
