@@ -2508,32 +2508,86 @@ export type Database = {
           },
         ]
       }
+      vendor_partner_message_reactions: {
+        Row: {
+          created_at: string
+          emoji: string
+          id: string
+          message_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          emoji: string
+          id?: string
+          message_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          emoji?: string
+          id?: string
+          message_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vendor_partner_message_reactions_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "vendor_partner_messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       vendor_partner_messages: {
         Row: {
+          attachments: Json
           body: string
+          contact_info_flagged: boolean
           created_at: string
+          deleted_at: string | null
+          edited_at: string | null
           id: string
+          reply_to_message_id: string | null
           sender_user_id: string
           sender_vendor_id: string | null
           thread_id: string
         }
         Insert: {
+          attachments?: Json
           body: string
+          contact_info_flagged?: boolean
           created_at?: string
+          deleted_at?: string | null
+          edited_at?: string | null
           id?: string
+          reply_to_message_id?: string | null
           sender_user_id: string
           sender_vendor_id?: string | null
           thread_id: string
         }
         Update: {
+          attachments?: Json
           body?: string
+          contact_info_flagged?: boolean
           created_at?: string
+          deleted_at?: string | null
+          edited_at?: string | null
           id?: string
+          reply_to_message_id?: string | null
           sender_user_id?: string
           sender_vendor_id?: string | null
           thread_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "vendor_partner_messages_reply_to_message_id_fkey"
+            columns: ["reply_to_message_id"]
+            isOneToOne: false
+            referencedRelation: "vendor_partner_messages"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "vendor_partner_messages_sender_user_id_fkey"
             columns: ["sender_user_id"]
@@ -2569,8 +2623,10 @@ export type Database = {
           created_at: string
           id: string
           last_message_at: string
+          user_a_archived_at: string | null
           user_a_id: string
           user_a_read_at: string | null
+          user_b_archived_at: string | null
           user_b_id: string
           user_b_read_at: string | null
           vendor_a_id: string | null
@@ -2580,8 +2636,10 @@ export type Database = {
           created_at?: string
           id?: string
           last_message_at?: string
+          user_a_archived_at?: string | null
           user_a_id: string
           user_a_read_at?: string | null
+          user_b_archived_at?: string | null
           user_b_id: string
           user_b_read_at?: string | null
           vendor_a_id?: string | null
@@ -2591,8 +2649,10 @@ export type Database = {
           created_at?: string
           id?: string
           last_message_at?: string
+          user_a_archived_at?: string | null
           user_a_id?: string
           user_a_read_at?: string | null
+          user_b_archived_at?: string | null
           user_b_id?: string
           user_b_read_at?: string | null
           vendor_a_id?: string | null
