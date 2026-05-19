@@ -39,6 +39,11 @@ interface HookPayload {
     redirect_to?: string;
     email_action_type: ActionType;
     site_url?: string;
+    /** Supabase pre-builds the canonical verify URL and includes
+     *  it in newer hook payloads. Prefer this when present —
+     *  buildVerifyUrl falls back to manual construction only when
+     *  it isn't. */
+    email_action_link?: string;
     token_new?: string;
     token_hash_new?: string;
   };
@@ -312,7 +317,18 @@ function renderEmail(p: HookPayload): { subject: string; html: string } | null {
 }
 
 function buildVerifyUrl(p: HookPayload): string {
-  const base = (p.email_data.site_url || SUPABASE_URL).replace(/\/+$/, "");
+  // Prefer Supabase's pre-built canonical link. Recent hook payload
+  // versions include this; older configs used to require us to
+  // construct it ourselves. The manual path was the source of the
+  // /auth/v1/auth/v1/verify duplication bug — site_url in some
+  // payloads already contains /auth/v1.
+  if (p.email_data.email_action_link) {
+    return p.email_data.email_action_link;
+  }
+  // Defensive fallback: strip /auth/v1 if site_url already has it
+  // so we don't double up when we append below.
+  let base = (p.email_data.site_url || SUPABASE_URL).replace(/\/+$/, "");
+  base = base.replace(/\/auth\/v1$/, "");
   const params = new URLSearchParams({
     token: p.email_data.token_hash,
     type: p.email_data.email_action_type,
