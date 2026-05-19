@@ -8,6 +8,7 @@ import {
 } from "@/components/messages/MessageReactions";
 import { MessageReplyContext } from "@/components/messages/MessageReplyContext";
 import { VoiceRecorder } from "@/components/messages/VoiceRecorder";
+import { TemplatePicker } from "@/components/messages/TemplatePicker";
 import { Link, useParams } from "react-router-dom";
 import {
   ArrowLeft,
@@ -1045,6 +1046,13 @@ export default function InquiryDetailPage() {
                 </div>
               </PopoverContent>
             </Popover>
+            <TemplatePicker
+              vendorId={inquiry?.vendor_id ?? null}
+              onPick={(body) => {
+                setComposer((prev) => (prev ? `${prev}\n${body}` : body));
+                composerRef.current?.focus();
+              }}
+            />
             <Textarea
               ref={composerRef}
               value={composer}
