@@ -11,6 +11,7 @@ import { VoiceRecorder } from "@/components/messages/VoiceRecorder";
 import { TemplatePicker } from "@/components/messages/TemplatePicker";
 import { PinLocationDialog } from "@/components/messages/PinLocationDialog";
 import { MessageBody } from "@/components/messages/MessageBody";
+import { TypingBubble } from "@/components/messages/TypingBubble";
 import { Link, useParams } from "react-router-dom";
 import {
   ArrowLeft,
@@ -1057,7 +1058,7 @@ export default function InquiryDetailPage() {
             })
           )}
 
-          {otherTyping ? <TypingBubble /> : null}
+          {otherTyping ? <TypingBubble withAvatarSpacer /> : null}
           {seenTimeLabel ? (
             <div className="flex items-center justify-end gap-1 text-[11px] text-muted-foreground mt-1 mr-1">
               <CheckCheck className="w-3 h-3" aria-hidden />
@@ -1217,6 +1218,7 @@ export default function InquiryDetailPage() {
                       <button
                         key={e}
                         type="button"
+                        aria-label={`Insert ${e}`}
                         onClick={() => {
                           setComposer((v) => v + e);
                           setEmojiOpen(false);
@@ -1519,22 +1521,3 @@ function InquiryPreviewSheet({
 
 
 
-
-// Three-dot animated typing bubble. Mirrors the bg-secondary side of
-// the chat bubble styles so it reads as an incoming "the other side is
-// composing" hint. Auto-clears after 3s of no events from the channel.
-function TypingBubble() {
-  return (
-    <div className="flex items-end gap-2 mt-2">
-      <span className="shrink-0 w-6" aria-hidden />
-      <div
-        className="bg-secondary px-3.5 py-2.5 rounded-2xl rounded-bl-sm inline-flex items-end gap-1"
-        aria-label="Typing"
-      >
-        <span className="inline-block w-1.5 h-1.5 rounded-full bg-foreground/40 animate-pulse" style={{ animationDelay: "0s" }} />
-        <span className="inline-block w-1.5 h-1.5 rounded-full bg-foreground/40 animate-pulse" style={{ animationDelay: "0.2s" }} />
-        <span className="inline-block w-1.5 h-1.5 rounded-full bg-foreground/40 animate-pulse" style={{ animationDelay: "0.4s" }} />
-      </div>
-    </div>
-  );
-}

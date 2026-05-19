@@ -70,6 +70,7 @@ export function MessageActionMenu({
             <button
               key={e}
               type="button"
+              aria-label={`React with ${e}`}
               onClick={() => {
                 onReact(e);
                 setReactOpen(false);
