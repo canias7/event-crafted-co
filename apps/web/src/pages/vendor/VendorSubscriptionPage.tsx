@@ -1,16 +1,20 @@
-import { Check, Crown } from "lucide-react";
+import { Check, Crown, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { DashboardSidebar } from "@/components/shared/DashboardSidebar";
 import { MobileNav } from "@/components/shared/MobileNav";
 import { Button } from "@/components/ui/button";
 import { vendorNavItems as navItems } from "@/data/navItems";
 
-// Subscription / plan surface. Vendora has 5 vendor tiers; today
-// we ship the Free tier on every account by default and a Pro
-// preview here for the upgrade flow. The remaining tiers + the
-// grandfathered-account exception list land once their pricing is
-// finalized. Until Stripe is wired the Upgrade CTA stubs to a
-// toast — see CLAUDE.md for the missing-keys pattern.
+// Subscription / plan surface. Vendora has 5 vendor tiers:
+//   1. Free — every account by default. 1 listing.
+//   2. Pro — $19.99/mo. 5 listings.
+//   3-5. Three AI Superagents tiers — separate from Pro, gate the
+//        auto-reply / AI-assist features that live on /vendor/ai-
+//        superagents.
+//
+// A grandfathered-accounts whitelist gets the multi-listing benefit
+// on Free; that list lands later. Until Stripe is wired the Upgrade
+// CTA stubs to a toast.
 
 const FREE_INCLUDED = [
   "1 listing per account",
@@ -24,7 +28,6 @@ const PRO_INCLUDED = [
   "Up to 5 listings per account",
   "Everything in Free",
   "Featured placement in search (coming soon)",
-  "AI Superagents — auto-reply drafts (coming soon)",
   "Priority support",
 ];
 
@@ -146,16 +149,34 @@ export default function VendorSubscriptionPage() {
             </ul>
           </div>
 
-          <p className="text-xs text-muted-foreground px-2">
-            Three more tiers are landing soon with different listing caps
-            and add-ons. Want a heads-up?{" "}
-            <a
-              href="mailto:hello@vendora.events"
-              className="underline underline-offset-2"
+          {/* AI Superagents teaser — three more plans land here.
+              Sends vendors to the dedicated /vendor/ai-superagents
+              surface where the agent tiers live. */}
+          <div
+            className="rounded-2xl p-5 flex items-start gap-3"
+            style={{
+              background: "rgba(255,253,250,0.7)",
+              border: "0.5px dashed rgba(255,138,76,0.30)",
+            }}
+          >
+            <span
+              className="shrink-0 w-9 h-9 rounded-xl inline-flex items-center justify-center"
+              style={{
+                background: "rgba(255,138,76,0.14)",
+                color: "#c4541e",
+              }}
+              aria-hidden
             >
-              hello@vendora.events
-            </a>
-          </p>
+              <Sparkles className="w-4 h-4" />
+            </span>
+            <div className="flex-1 min-w-0">
+              <p className="font-medium">AI Superagents — 3 plans, coming soon</p>
+              <p className="text-xs text-muted-foreground mt-0.5 leading-snug">
+                Auto-reply drafts on every inquiry, smart follow-ups, and
+                proposal generation. Sold separately from Pro.
+              </p>
+            </div>
+          </div>
 
           <p className="text-xs text-muted-foreground px-2">
             Billing is handled via Stripe.
