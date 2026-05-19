@@ -6,6 +6,7 @@ import {
   MessageReactions,
   type MessageReaction,
 } from "@/components/messages/MessageReactions";
+import { MessageReplyContext } from "@/components/messages/MessageReplyContext";
 import { Link, useParams } from "react-router-dom";
 import { ArrowLeft, Send, Loader2, Star, Sparkles, Paperclip, X, CalendarDays, Smile } from "lucide-react";
 import {
@@ -81,6 +82,7 @@ interface Message {
   attachments?: MessageAttachment[];
   edited_at?: string | null;
   deleted_at?: string | null;
+  reply_to_message_id?: string | null;
 }
 
 const statusStyles: Record<string, string> = {
@@ -121,6 +123,9 @@ export default function HostInquiryDetailPage() {
   const [reactionsByMsg, setReactionsByMsg] = useState<
     Record<string, MessageReaction[]>
   >({});
+  const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
+  const [editingDraft, setEditingDraft] = useState("");
+  const [replyToId, setReplyToId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [notFound, setNotFound] = useState(false);
@@ -181,7 +186,7 @@ export default function HostInquiryDetailPage() {
       const { data: msgs } = await supabase
         .from("direct_messages")
         .select(
-          "id, body, sender_role, created_at, attachments, edited_at, deleted_at",
+          "id, body, sender_role, created_at, attachments, edited_at, deleted_at, reply_to_message_id",
         )
         .eq("thread_id", thread)
         .order("created_at", { ascending: true });
@@ -326,6 +331,41 @@ export default function HostInquiryDetailPage() {
     }
   }
 
+  function startEditing(msg: Message) {
+    setEditingMessageId(msg.id);
+    setEditingDraft(msg.body ?? "");
+  }
+
+  function cancelEditing() {
+    setEditingMessageId(null);
+    setEditingDraft("");
+  }
+
+  async function saveEdit(messageId: string) {
+    const body = editingDraft.trim();
+    if (!body) {
+      toast.error("Message can't be empty");
+      return;
+    }
+    setMessages((prev) =>
+      prev.map((m) =>
+        m.id === messageId
+          ? { ...m, body, edited_at: new Date().toISOString() }
+          : m,
+      ),
+    );
+    cancelEditing();
+    const { error } = await supabase
+      .from("direct_messages")
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .update({ body } as any)
+      .eq("id", messageId);
+    if (error) {
+      toast.error(error.message);
+      load();
+    }
+  }
+
   async function deleteMessage(messageId: string) {
     const ok = window.confirm("Delete this message? This can't be undone.");
     if (!ok) return;
@@ -395,6 +435,7 @@ export default function HostInquiryDetailPage() {
       body: composer.trim() || "(attachment)",
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       attachments: uploaded,
+      reply_to_message_id: replyToId,
     } as any);
     setSending(false);
     if (error) {
@@ -403,8 +444,14 @@ export default function HostInquiryDetailPage() {
     }
     setComposer("");
     setPendingFiles([]);
+    setReplyToId(null);
     load();
   }
+
+  const replyTarget = useMemo(
+    () => (replyToId ? messages.find((m) => m.id === replyToId) ?? null : null),
+    [replyToId, messages],
+  );
 
   if (notFound) {
     return (
@@ -685,6 +732,8 @@ export default function HostInquiryDetailPage() {
                                 <MessageActionMenu
                                   isMine
                                   onReact={(emoji) => toggleReaction(m.id, emoji)}
+                                  onReply={() => setReplyToId(m.id)}
+                                  onEdit={() => startEditing(m)}
                                   onDelete={() => deleteMessage(m.id)}
                                 />
                               </div>
@@ -707,7 +756,72 @@ export default function HostInquiryDetailPage() {
                                   <p>Message deleted</p>
                                 ) : (
                                   <>
-                                    {m.body}
+                                    {m.reply_to_message_id ? (() => {
+                                      const parent = messages.find(
+                                        (x) => x.id === m.reply_to_message_id,
+                                      );
+                                      if (!parent) return null;
+                                      const parentName =
+                                        parent.sender_role === "vendor"
+                                          ? inquiry?.vendor?.business_name ?? "Vendor"
+                                          : parent.sender_role === "host"
+                                            ? "You"
+                                            : "Vendora AI";
+                                      return (
+                                        <MessageReplyContext
+                                          authorName={parentName}
+                                          body={
+                                            parent.deleted_at
+                                              ? ""
+                                              : parent.body
+                                          }
+                                          tone="bubble"
+                                        />
+                                      );
+                                    })() : null}
+                                    {editingMessageId === m.id ? (
+                                      <div className="space-y-2">
+                                        <Textarea
+                                          value={editingDraft}
+                                          onChange={(e) =>
+                                            setEditingDraft(e.target.value)
+                                          }
+                                          onKeyDown={(e) => {
+                                            if (
+                                              e.key === "Enter" &&
+                                              !e.shiftKey
+                                            ) {
+                                              e.preventDefault();
+                                              saveEdit(m.id);
+                                            } else if (e.key === "Escape") {
+                                              e.preventDefault();
+                                              cancelEditing();
+                                            }
+                                          }}
+                                          rows={2}
+                                          autoFocus
+                                          className="text-sm bg-background/80 text-foreground rounded-lg min-h-[40px]"
+                                        />
+                                        <div className="flex items-center justify-end gap-2">
+                                          <button
+                                            type="button"
+                                            onClick={cancelEditing}
+                                            className="text-[11px] text-muted-foreground hover:text-foreground px-2 py-1"
+                                          >
+                                            Cancel
+                                          </button>
+                                          <button
+                                            type="button"
+                                            onClick={() => saveEdit(m.id)}
+                                            className="text-[11px] font-medium rounded-full px-3 py-1 bg-foreground text-background hover:opacity-90"
+                                          >
+                                            Save
+                                          </button>
+                                        </div>
+                                      </div>
+                                    ) : (
+                                      <p>{m.body}</p>
+                                    )}
                                     {m.attachments && m.attachments.length > 0 && (
                                       <MessageAttachments
                                         attachments={m.attachments}
@@ -735,6 +849,7 @@ export default function HostInquiryDetailPage() {
                                 <MessageActionMenu
                                   isMine={false}
                                   onReact={(emoji) => toggleReaction(m.id, emoji)}
+                                  onReply={() => setReplyToId(m.id)}
                                 />
                               </div>
                             ) : null}
@@ -754,6 +869,20 @@ export default function HostInquiryDetailPage() {
                 {/* Composer */}
                 <div className="card-soft p-6">
                   <p className="font-label text-muted-foreground mb-3">Reply</p>
+                  {replyTarget ? (
+                    <MessageReplyContext
+                      authorName={
+                        replyTarget.sender_role === "vendor"
+                          ? inquiry?.vendor?.business_name ?? "Vendor"
+                          : replyTarget.sender_role === "host"
+                            ? "You"
+                            : "Vendora AI"
+                      }
+                      body={replyTarget.deleted_at ? "" : replyTarget.body}
+                      tone="composer"
+                      onCancel={() => setReplyToId(null)}
+                    />
+                  ) : null}
                   <Textarea
                     value={composer}
                     onChange={(e) => {

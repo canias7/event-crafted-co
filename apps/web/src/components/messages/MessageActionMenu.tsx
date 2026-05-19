@@ -5,7 +5,13 @@
 // bubble so the trigger doesn't take width.
 
 import { useState } from "react";
-import { Smile, MoreHorizontal, Trash2 } from "lucide-react";
+import {
+  Smile,
+  MoreHorizontal,
+  Pencil,
+  Reply,
+  Trash2,
+} from "lucide-react";
 import {
   Popover,
   PopoverContent,
@@ -23,10 +29,18 @@ const QUICK_EMOJIS = ["👍", "❤️", "🎉", "🙏", "😂", "😍"];
 interface Props {
   isMine: boolean;
   onReact: (emoji: string) => void;
+  onReply?: () => void;
+  onEdit?: () => void;
   onDelete?: () => void;
 }
 
-export function MessageActionMenu({ isMine, onReact, onDelete }: Props) {
+export function MessageActionMenu({
+  isMine,
+  onReact,
+  onReply,
+  onEdit,
+  onDelete,
+}: Props) {
   const [reactOpen, setReactOpen] = useState(false);
   return (
     <div
@@ -67,7 +81,7 @@ export function MessageActionMenu({ isMine, onReact, onDelete }: Props) {
           ))}
         </PopoverContent>
       </Popover>
-      {isMine && onDelete ? (
+      {onReply || (isMine && (onEdit || onDelete)) ? (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button
@@ -79,13 +93,27 @@ export function MessageActionMenu({ isMine, onReact, onDelete }: Props) {
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align={isMine ? "end" : "start"}>
-            <DropdownMenuItem
-              onClick={onDelete}
-              className="text-destructive focus:text-destructive"
-            >
-              <Trash2 className="w-4 h-4 mr-2" />
-              Delete
-            </DropdownMenuItem>
+            {onReply ? (
+              <DropdownMenuItem onClick={onReply}>
+                <Reply className="w-4 h-4 mr-2" />
+                Reply
+              </DropdownMenuItem>
+            ) : null}
+            {isMine && onEdit ? (
+              <DropdownMenuItem onClick={onEdit}>
+                <Pencil className="w-4 h-4 mr-2" />
+                Edit
+              </DropdownMenuItem>
+            ) : null}
+            {isMine && onDelete ? (
+              <DropdownMenuItem
+                onClick={onDelete}
+                className="text-destructive focus:text-destructive"
+              >
+                <Trash2 className="w-4 h-4 mr-2" />
+                Delete
+              </DropdownMenuItem>
+            ) : null}
           </DropdownMenuContent>
         </DropdownMenu>
       ) : null}

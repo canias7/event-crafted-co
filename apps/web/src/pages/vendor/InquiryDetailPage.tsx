@@ -6,6 +6,7 @@ import {
   MessageReactions,
   type MessageReaction,
 } from "@/components/messages/MessageReactions";
+import { MessageReplyContext } from "@/components/messages/MessageReplyContext";
 import { Link, useParams } from "react-router-dom";
 import {
   ArrowLeft,
@@ -91,6 +92,7 @@ interface Message {
   attachments?: MessageAttachment[];
   edited_at?: string | null;
   deleted_at?: string | null;
+  reply_to_message_id?: string | null;
 }
 
 const QUICK_EMOJIS = [
@@ -144,6 +146,9 @@ export default function InquiryDetailPage() {
   const [reactionsByMsg, setReactionsByMsg] = useState<
     Record<string, MessageReaction[]>
   >({});
+  const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
+  const [editingDraft, setEditingDraft] = useState("");
+  const [replyToId, setReplyToId] = useState<string | null>(null);
   const { otherTyping, broadcastTyping } = useInquiryTyping(
     inquiryId,
     "vendor",
@@ -256,7 +261,7 @@ export default function InquiryDetailPage() {
       const { data: msgs } = await supabase
         .from("direct_messages")
         .select(
-          "id, body, sender_role, created_at, attachments, edited_at, deleted_at",
+          "id, body, sender_role, created_at, attachments, edited_at, deleted_at, reply_to_message_id",
         )
         .eq("thread_id", thread)
         .order("created_at", { ascending: true });
@@ -402,6 +407,46 @@ export default function InquiryDetailPage() {
     }
   }
 
+  function startEditing(msg: Message) {
+    setEditingMessageId(msg.id);
+    setEditingDraft(msg.body ?? "");
+  }
+
+  function cancelEditing() {
+    setEditingMessageId(null);
+    setEditingDraft("");
+  }
+
+  async function saveEdit(messageId: string) {
+    const body = editingDraft.trim();
+    if (!body) {
+      toast.error("Message can't be empty");
+      return;
+    }
+    setMessages((prev) =>
+      prev.map((m) =>
+        m.id === messageId
+          ? { ...m, body, edited_at: new Date().toISOString() }
+          : m,
+      ),
+    );
+    cancelEditing();
+    const { error } = await supabase
+      .from("direct_messages")
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .update({ body } as any)
+      .eq("id", messageId);
+    if (error) {
+      toast.error(error.message);
+      load();
+    }
+  }
+
+  const replyTarget = useMemo(
+    () => (replyToId ? messages.find((m) => m.id === replyToId) ?? null : null),
+    [replyToId, messages],
+  );
+
   async function transitionToReplied() {
     if (!inquiry || !inquiryId) return;
     if (inquiry.status !== "new" && inquiry.status !== "drafted") return;
@@ -492,6 +537,7 @@ export default function InquiryDetailPage() {
       body: composer.trim() || "(attachment)",
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       attachments: uploaded,
+      reply_to_message_id: replyToId,
     } as any);
     if (error) {
       setSending(false);
@@ -500,6 +546,7 @@ export default function InquiryDetailPage() {
     await transitionToReplied();
     setComposer("");
     setPendingFiles([]);
+    setReplyToId(null);
     // Drop the draft now that the message landed.
     const key = draftKey(inquiryId);
     if (key) {
@@ -745,6 +792,8 @@ export default function InquiryDetailPage() {
                       <MessageActionMenu
                         isMine
                         onReact={(emoji) => toggleReaction(m.id, emoji)}
+                        onReply={() => setReplyToId(m.id)}
+                        onEdit={() => startEditing(m)}
                         onDelete={() => deleteMessage(m.id)}
                       />
                     </div>
@@ -767,13 +816,73 @@ export default function InquiryDetailPage() {
                         <p>Message deleted</p>
                       ) : (
                         <>
+                          {m.reply_to_message_id ? (() => {
+                            const parent = messages.find(
+                              (x) => x.id === m.reply_to_message_id,
+                            );
+                            if (!parent) return null;
+                            const parentName =
+                              parent.sender_role === "host"
+                                ? hostName
+                                : parent.sender_role === "vendor"
+                                  ? "You"
+                                  : "Vendora AI";
+                            return (
+                              <MessageReplyContext
+                                authorName={parentName}
+                                body={
+                                  parent.deleted_at ? "" : parent.body
+                                }
+                                tone="bubble"
+                              />
+                            );
+                          })() : null}
                           {isAi ? (
                             <span className="inline-flex items-center gap-1 text-[10px] uppercase tracking-wider opacity-80 mb-1">
                               <Sparkles className="w-3 h-3" />
                               Sent by AI
                             </span>
                           ) : null}
-                          <p>{m.body}</p>
+                          {editingMessageId === m.id ? (
+                            <div className="space-y-2">
+                              <Textarea
+                                value={editingDraft}
+                                onChange={(e) =>
+                                  setEditingDraft(e.target.value)
+                                }
+                                onKeyDown={(e) => {
+                                  if (e.key === "Enter" && !e.shiftKey) {
+                                    e.preventDefault();
+                                    saveEdit(m.id);
+                                  } else if (e.key === "Escape") {
+                                    e.preventDefault();
+                                    cancelEditing();
+                                  }
+                                }}
+                                rows={2}
+                                autoFocus
+                                className="text-sm bg-background/80 text-foreground rounded-lg min-h-[40px]"
+                              />
+                              <div className="flex items-center justify-end gap-2">
+                                <button
+                                  type="button"
+                                  onClick={cancelEditing}
+                                  className="text-[11px] text-muted-foreground hover:text-foreground px-2 py-1"
+                                >
+                                  Cancel
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => saveEdit(m.id)}
+                                  className="text-[11px] font-medium rounded-full px-3 py-1 bg-foreground text-background hover:opacity-90"
+                                >
+                                  Save
+                                </button>
+                              </div>
+                            </div>
+                          ) : (
+                            <p>{m.body}</p>
+                          )}
                           {m.attachments && m.attachments.length > 0 && (
                             <MessageAttachments attachments={m.attachments} />
                           )}
@@ -799,6 +908,7 @@ export default function InquiryDetailPage() {
                       <MessageActionMenu
                         isMine={false}
                         onReact={(emoji) => toggleReaction(m.id, emoji)}
+                        onReply={() => setReplyToId(m.id)}
                       />
                     </div>
                   ) : null}
@@ -850,6 +960,20 @@ export default function InquiryDetailPage() {
             isDragOver ? "ring-2 ring-accent ring-offset-2 ring-offset-background" : ""
           }`}
         >
+          {replyTarget ? (
+            <MessageReplyContext
+              authorName={
+                replyTarget.sender_role === "host"
+                  ? hostName
+                  : replyTarget.sender_role === "vendor"
+                    ? "You"
+                    : "Vendora AI"
+              }
+              body={replyTarget.deleted_at ? "" : replyTarget.body}
+              tone="composer"
+              onCancel={() => setReplyToId(null)}
+            />
+          ) : null}
           {pendingFiles.length > 0 && (
             <div className="flex flex-wrap gap-2 mb-2">
               {pendingFiles.map((f, i) => (
