@@ -726,7 +726,7 @@ export default function HostInquiryDetailPage() {
               bubble so the thread reads start-to-finish. */}
           {inquiry.special_requests && (
             <div className="flex items-end justify-end mt-2">
-              <div className="max-w-[80%] px-3.5 py-2.5 text-sm leading-relaxed whitespace-pre-wrap rounded-2xl rounded-br-sm bg-foreground text-background">
+              <div className="max-w-md px-3.5 py-2.5 text-sm leading-relaxed whitespace-pre-wrap rounded-2xl rounded-br-sm bg-foreground/85 backdrop-blur-md text-background border border-foreground/30 shadow-sm">
                 <p className="text-[10px] uppercase tracking-wider opacity-60 mb-1">
                   Your inquiry
                 </p>
@@ -820,14 +820,14 @@ export default function HostInquiryDetailPage() {
                   ) : null}
                   <div className="flex flex-col">
                     <div
-                      className={`max-w-[80%] px-3.5 py-2 text-sm leading-relaxed whitespace-pre-wrap rounded-2xl ${
+                      className={`max-w-md px-3.5 py-2 text-sm leading-relaxed whitespace-pre-wrap rounded-2xl backdrop-blur-md shadow-sm ${
                         isDeleted
-                          ? "bg-background/70 text-muted-foreground italic border border-border/40"
+                          ? "bg-background/60 text-muted-foreground italic border border-border/40"
                           : it.isMe
-                            ? `bg-foreground text-background ${
+                            ? `bg-foreground/85 text-background border border-foreground/30 ${
                                 it.showTail ? "rounded-br-sm" : ""
                               }`
-                            : `bg-background/95 border border-border/40 shadow-sm ${
+                            : `bg-white/55 text-foreground border border-white/60 ${
                                 it.showTail ? "rounded-bl-sm" : ""
                               }`
                       }`}
@@ -852,6 +852,7 @@ export default function HostInquiryDetailPage() {
                                 authorName={parentName}
                                 body={parent.deleted_at ? "" : parent.body}
                                 tone="bubble"
+                                inverted={it.isMe}
                               />
                             );
                           })() : null}
