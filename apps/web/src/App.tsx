@@ -62,6 +62,7 @@ import {
   VendorPartnersPage,
   VendorAiSuperagentsPage,
   VendorPayPage,
+  VendorSubscriptionPage,
   VendorGalleryPage,
   VendorTemplatesPage,
   InquiryDetailPage,
@@ -217,6 +218,7 @@ const App = () => (
               <Route path="/vendor/partners" element={<RequireRole role="vendor"><VendorPartnersPage /></RequireRole>} />
               <Route path="/vendor/ai-superagents" element={<RequireRole role="vendor"><VendorAiSuperagentsPage /></RequireRole>} />
               <Route path="/vendor/pay" element={<RequireRole role="vendor"><VendorPayPage /></RequireRole>} />
+              <Route path="/vendor/subscription" element={<RequireRole role="vendor"><VendorSubscriptionPage /></RequireRole>} />
               <Route path="/vendor/gallery" element={<RequireRole role="vendor"><VendorGalleryPage /></RequireRole>} />
               <Route path="/vendor/templates" element={<RequireRole role="vendor"><VendorTemplatesPage /></RequireRole>} />
               {/* /vendor/studio retired — the three tools that lived under
