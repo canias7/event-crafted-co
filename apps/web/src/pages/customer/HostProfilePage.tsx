@@ -9,11 +9,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import {
-  Award,
   Camera,
   CheckCircle2,
   ChevronRight,
-  Clock,
   Loader2,
   LogOut,
   Settings as SettingsIcon,
@@ -52,7 +50,6 @@ export default function HostProfilePage() {
   const { user, signOut } = useAuth();
   const [state, setState] = useState<ProfileState | null>(null);
   const [loading, setLoading] = useState(true);
-  const [requesting, setRequesting] = useState(false);
   const [avatarUploading, setAvatarUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -172,26 +169,6 @@ export default function HostProfilePage() {
     load();
   }, [load]);
 
-  async function requestVerification() {
-    if (!user?.id) return;
-    const ok = window.confirm(
-      "Request host verification?\n\nWe'll reach out within 48 hours to verify your identity (a photo of a government ID is enough). It typically unlocks faster vendor replies.",
-    );
-    if (!ok) return;
-    setRequesting(true);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error } = await (supabase as any)
-      .from("host_verification_requests")
-      .insert({ user_id: user.id, status: "pending" });
-    setRequesting(false);
-    if (error) {
-      toast.error("Couldn't send request — try again in a moment.");
-      return;
-    }
-    toast.success("Request received — our team will reach out within 48 hours.");
-    load();
-  }
-
   return (
     <div className="flex min-h-screen vendor-canvas">
       <DashboardSidebar
@@ -231,14 +208,8 @@ export default function HostProfilePage() {
                 fileInputRef={fileInputRef}
               />
 
-              <VerificationCard
-                status={state.verifStatus}
-                requesting={requesting}
-                onRequest={requestVerification}
-              />
-
               <ActionCard
-                to="/settings"
+                to="/customer/account"
                 icon={SettingsIcon}
                 iconBg="bg-secondary"
                 iconColor="text-foreground"
@@ -372,57 +343,6 @@ function StatCol({
         {label}
       </span>
     </div>
-  );
-}
-
-function VerificationCard({
-  status,
-  requesting,
-  onRequest,
-}: {
-  status: VerifStatus;
-  requesting: boolean;
-  onRequest: () => void;
-}) {
-  if (status === "approved") {
-    return (
-      <ActionCard
-        onClick={() =>
-          toast.success(
-            "Verified host — vendors see a badge on your inquiries.",
-          )
-        }
-        icon={CheckCircle2}
-        iconBg="bg-emerald-500"
-        iconColor="text-white"
-        title="You're verified"
-        subtitle="Vendors prioritize verified hosts."
-      />
-    );
-  }
-  if (status === "pending") {
-    return (
-      <ActionCard
-        onClick={() =>
-          toast.message("Verification pending — we'll email you within 48h.")
-        }
-        icon={Clock}
-        iconBg="bg-amber-500"
-        iconColor="text-white"
-        title="Verification pending"
-        subtitle="We'll reach out within 48 hours."
-      />
-    );
-  }
-  return (
-    <ActionCard
-      onClick={requesting ? undefined : onRequest}
-      icon={Award}
-      iconBg="bg-foreground"
-      iconColor="text-background"
-      title={status === "rejected" ? "Try verifying again" : "Become Verified"}
-      subtitle="Build trust with vendors. Faster replies, better matches."
-    />
   );
 }
 
