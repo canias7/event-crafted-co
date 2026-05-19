@@ -1,603 +1,877 @@
-// Customer (host) Events tab. Same data model as the host-mobile
-// events screen: derive an "event" from any unique (event_type,
-// event_date, location) triple this host has inquiries against.
-// Pick the next upcoming event as the "Up next" hero card, then
-// group the rest by month.
-//
-// Tap an event → open the matching conversation. Single-vendor
-// events jump straight into the thread; multi-vendor events bounce
-// to the inbox so the host can pick a vendor to talk to.
+// Manual events the host plans themselves. Reads from public.host_events
+// (each row is one event), not derived from inquiries. The host creates,
+// edits, and deletes rows through the New event modal; the page renders
+// an Up Next hero card for the next upcoming row plus a chronological
+// list of upcoming and past events.
 
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { ChevronRight, Inbox, Sparkles } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  Calendar as CalendarIcon,
+  MapPin,
+  MoreHorizontal,
+  Pencil,
+  Plus,
+  Sparkles,
+  Trash2,
+  Users,
+} from "lucide-react";
+import { toast } from "sonner";
 import { DashboardSidebar } from "@/components/shared/DashboardSidebar";
 import { MobileNav } from "@/components/shared/MobileNav";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { customerNavItems as navItems } from "@/data/navItems";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
-
-interface RawInquiry {
-  id: string;
-  vendor_id: string | null;
-  status: string;
-  event_type: string | null;
-  event_date: string | null;
-  location: string | null;
-  vendor: { business_name: string | null; category: string | null } | null;
-}
-
-interface EventVendor {
-  inquiry_id: string;
-  vendor_id: string | null;
-  name: string;
-  status: string;
-}
 
 interface HostEvent {
-  key: string;
+  id: string;
   title: string;
-  eventDate: Date | null;
+  event_type: string | null;
+  event_date: string; // YYYY-MM-DD
+  start_time: string | null;
+  end_time: string | null;
   location: string | null;
-  vendors: EventVendor[];
+  guest_count: number | null;
+  budget_min_cents: number | null;
+  budget_max_cents: number | null;
+  notes: string | null;
 }
 
-function titleCase(s: string | null): string {
-  if (!s) return "Event";
-  return s
-    .replace(/[_-]/g, " ")
-    .replace(/\b\w/g, (m) => m.toUpperCase());
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const eventsTable = () => (supabase as any).from("host_events");
+
+const EVENT_TYPES = [
+  { value: "wedding", label: "Wedding" },
+  { value: "birthday", label: "Birthday" },
+  { value: "anniversary", label: "Anniversary" },
+  { value: "corporate", label: "Corporate" },
+  { value: "holiday_dinner", label: "Holiday dinner" },
+  { value: "other", label: "Other" },
+];
+
+function todayYmd(): string {
+  const d = new Date();
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 }
 
-function asDate(dateStr: string | null): Date | null {
-  if (!dateStr) return null;
-  const [y, m, d] = dateStr.split("-").map(Number);
-  if (!y || !m || !d) return null;
-  return new Date(y, m - 1, d);
-}
-
-function groupIntoEvents(rows: RawInquiry[]): HostEvent[] {
-  const map = new Map<string, HostEvent>();
-  for (const r of rows) {
-    const dateStr = r.event_date ?? "tbd";
-    const key = [r.event_type ?? "_", dateStr, r.location ?? "_"].join("|");
-    if (!map.has(key)) {
-      map.set(key, {
-        key,
-        title: titleCase(r.event_type),
-        eventDate: asDate(r.event_date),
-        location: r.location,
-        vendors: [],
-      });
-    }
-    map.get(key)!.vendors.push({
-      inquiry_id: r.id,
-      vendor_id: r.vendor_id,
-      name: r.vendor?.business_name ?? "Vendor",
-      status: r.status,
-    });
-  }
-  return [...map.values()].sort((a, b) => {
-    const aT = a.eventDate?.getTime() ?? Number.POSITIVE_INFINITY;
-    const bT = b.eventDate?.getTime() ?? Number.POSITIVE_INFINITY;
-    return aT - bT;
-  });
-}
-
-function daysUntil(date: Date): number {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const t = new Date(date);
-  t.setHours(0, 0, 0, 0);
-  return Math.round((t.getTime() - today.getTime()) / 86_400_000);
-}
-
-function relativeLabel(date: Date): string {
-  const d = daysUntil(date);
-  if (d < 0) return `${Math.abs(d)} ${Math.abs(d) === 1 ? "day" : "days"} ago`;
-  if (d === 0) return "Today";
-  if (d === 1) return "Tomorrow";
-  if (d < 7) return `In ${d} days`;
-  if (d < 14) return "Next week";
-  if (d < 30) return `In ${Math.round(d / 7)} weeks`;
-  return date.toLocaleDateString(undefined, { month: "short", day: "numeric" });
-}
-
-function fmtMonthYear(date: Date): string {
-  return date.toLocaleDateString(undefined, { month: "long", year: "numeric" });
-}
-
-function fmtFullDate(date: Date): string {
-  return date.toLocaleDateString(undefined, {
-    weekday: "short",
-    month: "short",
+function fmtDate(ymd: string): string {
+  const [y, m, d] = ymd.split("-").map(Number);
+  return new Date(y, m - 1, d).toLocaleDateString(undefined, {
+    weekday: "long",
+    month: "long",
     day: "numeric",
+    year: "numeric",
   });
+}
+
+function fmtTimeRange(start: string | null, end: string | null): string | null {
+  if (!start && !end) return null;
+  const fmt = (t: string) => {
+    const [h, m] = t.split(":").map(Number);
+    const d = new Date();
+    d.setHours(h, m, 0, 0);
+    return d.toLocaleTimeString(undefined, {
+      hour: "numeric",
+      minute: "2-digit",
+    });
+  };
+  if (start && end) return `${fmt(start)} – ${fmt(end)}`;
+  return fmt(start ?? end!);
+}
+
+function fmtMoney(cents: number | null): string | null {
+  if (cents == null) return null;
+  return `$${(cents / 100).toLocaleString()}`;
+}
+
+function fmtBudget(min: number | null, max: number | null): string | null {
+  const lo = fmtMoney(min);
+  const hi = fmtMoney(max);
+  if (lo && hi) return `${lo} – ${hi}`;
+  return lo ?? hi;
+}
+
+function eventTypeLabel(type: string | null): string | null {
+  if (!type) return null;
+  return EVENT_TYPES.find((t) => t.value === type)?.label ?? type;
 }
 
 export default function HostEventsPage() {
   const { user } = useAuth();
-  const navigate = useNavigate();
-  const [events, setEvents] = useState<HostEvent[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [showPast, setShowPast] = useState(false);
+  const [events, setEvents] = useState<HostEvent[] | null>(null);
+  const [editing, setEditing] = useState<HostEvent | null>(null);
+  const [creating, setCreating] = useState(false);
+  const [deleting, setDeleting] = useState<HostEvent | null>(null);
+  const [selectedDay, setSelectedDay] = useState<string | null>(null);
 
-  const openEvent = useCallback(
-    (event: HostEvent) => {
-      if (event.vendors.length === 0) return;
-      if (event.vendors.length === 1) {
-        // Single-vendor event → jump straight into that inquiry's
-        // detail page (which calls ensure_inquiry_thread on load to
-        // surface the chat). Mirrors mobile, which routes to
-        // /(host)/thread/[id] for the same case.
-        navigate(`/customer/inquiries/${event.vendors[0].inquiry_id}`);
-        return;
-      }
-      // Multi-vendor event: bounce to inquiries hub so the host can
-      // pick a vendor to talk to.
-      navigate("/customer/inquiries");
-    },
-    [navigate],
+  const load = useCallback(async () => {
+    if (!user?.id) return;
+    const { data, error } = await eventsTable()
+      .select(
+        "id, title, event_type, event_date, start_time, end_time, location, guest_count, budget_min_cents, budget_max_cents, notes",
+      )
+      .eq("host_id", user.id)
+      .order("event_date", { ascending: true });
+    if (error) {
+      toast.error(error.message);
+      setEvents([]);
+      return;
+    }
+    setEvents((data as HostEvent[]) ?? []);
+  }, [user?.id]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  const { upcoming, past, nextUp } = useMemo(() => {
+    if (!events) return { upcoming: [], past: [], nextUp: null };
+    const today = todayYmd();
+    const upcoming = events.filter((e) => e.event_date >= today);
+    const past = [...events]
+      .filter((e) => e.event_date < today)
+      .reverse();
+    return { upcoming, past, nextUp: upcoming[0] ?? null };
+  }, [events]);
+
+  // 30-day pill strip starting today. Selected day filters the list
+  // below; default lands on whichever day Up Next falls on so the
+  // hero card and pill agree on first paint.
+  const dayStrip = useMemo(() => {
+    const out: string[] = [];
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    const pad = (n: number) => String(n).padStart(2, "0");
+    for (let i = 0; i < 30; i++) {
+      out.push(
+        `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`,
+      );
+      d.setDate(d.getDate() + 1);
+    }
+    return out;
+  }, []);
+
+  const eventDayKeys = useMemo(
+    () => new Set((events ?? []).map((e) => e.event_date)),
+    [events],
   );
 
   useEffect(() => {
-    if (!user?.id) return;
-    let cancelled = false;
-    (async () => {
-      setLoading(true);
-      setError(null);
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data, error: e } = await (supabase as any)
-        .from("inquiries")
-        .select(
-          "id, vendor_id, status, event_type, event_date, location, vendor:vendor_profiles!inquiries_vendor_id_fkey(business_name, category)",
-        )
-        .eq("host_id", user.id)
-        .order("event_date", { ascending: true, nullsFirst: false });
-      if (cancelled) return;
-      if (e) setError(e.message);
-      else setEvents(groupIntoEvents((data ?? []) as RawInquiry[]));
-      setLoading(false);
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [user?.id]);
+    if (selectedDay !== null) return;
+    if (nextUp) setSelectedDay(nextUp.event_date);
+    else if (events) setSelectedDay(todayYmd());
+  }, [nextUp, events, selectedDay]);
 
-  const [selectedDayKey, setSelectedDayKey] = useState<string | null>(null);
-
-  // Split into upcoming + past based on eventDate.
-  const { upcoming, past, nextUp } = useMemo(() => {
-    const up: HostEvent[] = [];
-    const ps: HostEvent[] = [];
-    for (const ev of events) {
-      if (ev.eventDate && daysUntil(ev.eventDate) < 0) ps.push(ev);
-      else up.push(ev);
-    }
-    return { upcoming: up, past: ps.reverse(), nextUp: up[0] ?? null };
-  }, [events]);
-
-  const rest = useMemo(
-    () => (nextUp ? upcoming.slice(1) : upcoming),
-    [upcoming, nextUp],
+  const eventsOnSelectedDay = useMemo(
+    () =>
+      selectedDay
+        ? (events ?? []).filter((e) => e.event_date === selectedDay)
+        : [],
+    [events, selectedDay],
   );
 
-  // Group rest by month-year.
-  const byMonth = useMemo(() => {
-    const groups = new Map<string, HostEvent[]>();
-    for (const ev of rest) {
-      const label = ev.eventDate ? fmtMonthYear(ev.eventDate) : "Date TBD";
-      const existing = groups.get(label) ?? [];
-      existing.push(ev);
-      groups.set(label, existing);
+  async function confirmDelete() {
+    if (!deleting) return;
+    const id = deleting.id;
+    setDeleting(null);
+    const { error } = await eventsTable().delete().eq("id", id);
+    if (error) {
+      toast.error(error.message);
+      return;
     }
-    return [...groups.entries()];
-  }, [rest]);
-
-  // 14-day pill strip starting today. Mirrors mobile (host)/events.tsx
-  // dayStrip — lets the host glance at "what's coming this fortnight"
-  // and tap a day to filter the list to just that date.
-  const dayStrip = useMemo(() => {
-    const arr: Date[] = [];
-    const start = new Date();
-    start.setHours(0, 0, 0, 0);
-    for (let i = 0; i < 14; i++) {
-      const d = new Date(start);
-      d.setDate(start.getDate() + i);
-      arr.push(d);
-    }
-    return arr;
-  }, []);
-
-  // Map day-key → events for the dot indicator on each pill.
-  const eventsByDayKey = useMemo(() => {
-    const m = new Map<string, HostEvent[]>();
-    for (const ev of upcoming) {
-      if (!ev.eventDate) continue;
-      const k = ev.eventDate.toDateString();
-      const arr = m.get(k) ?? [];
-      arr.push(ev);
-      m.set(k, arr);
-    }
-    return m;
-  }, [upcoming]);
-
-  const filteredByDay = useMemo(() => {
-    if (!selectedDayKey) return null;
-    return eventsByDayKey.get(selectedDayKey) ?? [];
-  }, [selectedDayKey, eventsByDayKey]);
+    toast.success("Event deleted");
+    setEvents((prev) => prev?.filter((e) => e.id !== id) ?? null);
+  }
 
   return (
     <div className="flex min-h-screen vendor-canvas">
-      <DashboardSidebar items={navItems} title="Events" backPath="/customer/explore" />
-      <main className="flex-1 pb-24 md:pb-0">
-        <div className="px-5 pt-8 pb-12 md:px-12 md:pt-12 max-w-4xl mx-auto md:mx-0">
-          <div className="flex items-center justify-between gap-3 flex-wrap">
-            <div>
-              <h1 className="font-editorial text-4xl text-foreground">
-                Events
-              </h1>
-              <p className="mt-2 text-base text-muted-foreground">
-                Every event you have an inquiry against, grouped by date.
-              </p>
-            </div>
-            <div className="flex items-center gap-3">
-              {past.length > 0 ? (
-                <button
-                  onClick={() => setShowPast((s) => !s)}
-                  className="text-sm font-medium text-muted-foreground hover:text-foreground"
-                >
-                  {showPast ? "Hide past" : `Show past (${past.length})`}
-                </button>
-              ) : null}
-              <NotificationBell variant="light" />
-            </div>
+      <DashboardSidebar
+        items={navItems}
+        title="Events"
+        backPath="/customer/explore"
+      />
+      <main id="main-content" className="flex-1 pb-24 md:pb-0">
+        <div className="backdrop-blur-sm px-4 md:px-8 py-5 sticky top-0 z-40 flex items-start justify-between gap-3">
+          <div>
+            <h1 className="font-editorial text-3xl">Events</h1>
+            <p className="text-sm text-muted-foreground">
+              Plan your events — weddings, dinners, anything.
+            </p>
           </div>
+          <NotificationBell variant="light" />
+        </div>
 
-          {loading ? (
-            <p className="mt-12 text-sm text-muted-foreground">Loading events…</p>
-          ) : error ? (
-            <div className="mt-8 rounded-md border border-destructive/40 bg-destructive/10 p-4 text-sm text-destructive">
-              {error}
+        <div className="p-4 md:p-8 max-w-4xl mx-auto space-y-6">
+          {events === null ? (
+            <div className="space-y-4">
+              <Skeleton className="h-20 w-full rounded-2xl" />
+              <Skeleton className="h-44 w-full rounded-3xl" />
+              <Skeleton className="h-24 w-full rounded-2xl" />
             </div>
           ) : events.length === 0 ? (
-            <EmptyState />
+            <EmptyState onCreate={() => setCreating(true)} />
           ) : (
-            <div className="mt-8 space-y-10">
-              {nextUp ? <UpNextHero event={nextUp} onOpen={() => openEvent(nextUp)} /> : null}
-
-              {/* 14-day pill strip — tap a day to filter the list. */}
-              <div className="flex gap-2 overflow-x-auto scrollbar-hide -mx-1 px-1">
-                {dayStrip.map((d) => {
-                  const k = d.toDateString();
-                  const isSelected = selectedDayKey === k;
-                  const has = (eventsByDayKey.get(k) ?? []).length > 0;
-                  return (
-                    <DayPill
-                      key={k}
-                      date={d}
-                      isSelected={isSelected}
-                      hasEvent={has}
-                      onClick={() => setSelectedDayKey(isSelected ? null : k)}
-                    />
-                  );
-                })}
+            <>
+              {/* Day pills — 30-day rolling strip from today. Tap a day
+                  to filter the list below to events on that date. */}
+              <div className="flex gap-2 overflow-x-auto scrollbar-hide -mx-1 px-1 pb-1">
+                {dayStrip.map((ymd) => (
+                  <DayPill
+                    key={ymd}
+                    ymd={ymd}
+                    selected={selectedDay === ymd}
+                    hasEvent={eventDayKeys.has(ymd)}
+                    onClick={() => setSelectedDay(ymd)}
+                  />
+                ))}
               </div>
 
-              {filteredByDay !== null ? (
-                <section>
-                  <h2 className="font-editorial text-xl mb-3">
-                    {filteredByDay.length === 0 ? "Nothing on this day" : "On this day"}
-                  </h2>
-                  <div className="space-y-2">
-                    {filteredByDay.map((ev) => (
-                      <EventRow
-                        key={ev.key}
-                        event={ev}
-                        onOpen={() => openEvent(ev)}
-                      />
-                    ))}
-                  </div>
-                </section>
-              ) : null}
-
-              {byMonth.length > 0 && filteredByDay === null ? (
-                <div className="space-y-8">
-                  {byMonth.map(([label, evs]) => (
-                    <section key={label}>
-                      <h2 className="mb-3 text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
-                        {label}
-                      </h2>
-                      <div className="space-y-2">
-                        {evs.map((ev) => (
-                          <EventRow
-                            key={ev.key}
-                            event={ev}
-                            onOpen={() => openEvent(ev)}
-                          />
-                        ))}
-                      </div>
-                    </section>
+              {/* Selected-day content: hero card for the first event +
+                  card list for the rest. Empty state when nothing on
+                  the picked day. */}
+              {eventsOnSelectedDay.length > 0 ? (
+                <div className="space-y-3">
+                  <UpNextHero
+                    event={eventsOnSelectedDay[0]}
+                    label={
+                      selectedDay && nextUp?.event_date === selectedDay
+                        ? "Up next"
+                        : "On this day"
+                    }
+                  />
+                  {eventsOnSelectedDay.slice(1).map((e) => (
+                    <EventCard
+                      key={e.id}
+                      event={e}
+                      onEdit={() => setEditing(e)}
+                      onDelete={() => setDeleting(e)}
+                    />
                   ))}
                 </div>
-              ) : null}
+              ) : (
+                <div
+                  className="rounded-2xl p-6 text-center text-sm text-muted-foreground"
+                  style={{
+                    background: "rgba(255,253,250,0.5)",
+                    border: "0.5px solid rgba(255,138,76,0.14)",
+                  }}
+                >
+                  Nothing on this day.
+                </div>
+              )}
 
-              {showPast && past.length > 0 ? (
+              {past.length > 0 ? (
                 <section>
-                  <h2 className="mb-3 text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
-                    Past
-                  </h2>
-                  <div className="space-y-2">
-                    {past.map((ev) => (
-                      <EventRow
-                        key={ev.key}
-                        event={ev}
-                        onOpen={() => openEvent(ev)}
-                        muted
+                  <h2 className="font-editorial text-2xl mb-3 mt-4">Past</h2>
+                  <div className="space-y-3 opacity-80">
+                    {past.map((e) => (
+                      <EventCard
+                        key={e.id}
+                        event={e}
+                        onEdit={() => setEditing(e)}
+                        onDelete={() => setDeleting(e)}
                       />
                     ))}
                   </div>
                 </section>
               ) : null}
-            </div>
+
+              {/* New event CTA — bottom of the page so creation lives
+                  below the day picker, not in the page header. */}
+              <div className="pt-4 flex justify-center">
+                <Button
+                  onClick={() => setCreating(true)}
+                  className="rounded-full bg-foreground text-background hover:bg-foreground/90 px-6 h-11"
+                >
+                  <Plus className="w-4 h-4 mr-1.5" />
+                  New event
+                </Button>
+              </div>
+            </>
           )}
         </div>
       </main>
       <MobileNav items={navItems} />
+
+      <EventFormDialog
+        open={creating || editing !== null}
+        editing={editing}
+        hostId={user?.id ?? null}
+        onOpenChange={(open) => {
+          if (!open) {
+            setCreating(false);
+            setEditing(null);
+          }
+        }}
+        onSaved={() => {
+          setCreating(false);
+          setEditing(null);
+          load();
+        }}
+      />
+
+      <AlertDialog
+        open={deleting !== null}
+        onOpenChange={(open) => !open && setDeleting(null)}
+      >
+        <AlertDialogContent className="rounded-2xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="font-editorial text-3xl">
+              Delete event?
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-sm leading-relaxed">
+              "{deleting?.title}" will be removed. This can't be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="gap-2 sm:gap-0">
+            <AlertDialogCancel className="rounded-full">Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                confirmDelete();
+              }}
+              className="rounded-full bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
+  );
+}
+
+function EmptyState({ onCreate }: { onCreate: () => void }) {
+  return (
+    <div
+      className="rounded-2xl p-10 md:p-14 text-center"
+      style={{
+        background: "rgba(255,253,250,0.6)",
+        border: "0.5px solid rgba(255,138,76,0.22)",
+        backdropFilter: "blur(10px)",
+        WebkitBackdropFilter: "blur(10px)",
+      }}
+    >
+      <div
+        className="w-14 h-14 mx-auto rounded-full inline-flex items-center justify-center mb-5"
+        style={{ background: "rgba(255,138,76,0.18)", color: "#c4541e" }}
+      >
+        <CalendarIcon className="w-6 h-6" />
+      </div>
+      <h2 className="font-editorial italic text-3xl mb-2">
+        Plan your first event
+      </h2>
+      <p className="text-sm text-muted-foreground max-w-md mx-auto mb-6 leading-relaxed">
+        Add a date, location, and a few details. You'll have a clean
+        timeline of every event you're planning.
+      </p>
+      <Button
+        onClick={onCreate}
+        className="rounded-full bg-foreground text-background hover:bg-foreground/90"
+      >
+        <Plus className="w-4 h-4 mr-1.5" />
+        New event
+      </Button>
+    </div>
+  );
+}
+
+function DayPill({
+  ymd,
+  selected,
+  hasEvent,
+  onClick,
+}: {
+  ymd: string;
+  selected: boolean;
+  hasEvent: boolean;
+  onClick: () => void;
+}) {
+  const [y, m, d] = ymd.split("-").map(Number);
+  const date = new Date(y, m - 1, d);
+  const weekday = date
+    .toLocaleDateString(undefined, { weekday: "short" })
+    .toUpperCase();
+  const day = date.getDate();
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={selected}
+      className={`shrink-0 rounded-2xl flex flex-col items-center justify-center transition relative ${
+        selected
+          ? "bg-foreground text-background"
+          : "bg-white/50 text-foreground hover:bg-white/70"
+      }`}
+      style={{
+        width: 64,
+        height: 78,
+        border: selected
+          ? "0.5px solid rgba(0,0,0,0.2)"
+          : "0.5px solid rgba(255,138,76,0.22)",
+      }}
+    >
+      <span
+        className="text-[10px] uppercase tracking-wider"
+        style={{ opacity: selected ? 0.65 : 0.55 }}
+      >
+        {weekday}
+      </span>
+      <span className="font-editorial text-2xl mt-0.5 leading-none">
+        {day}
+      </span>
+      {hasEvent ? (
+        <span
+          className="absolute bottom-2 w-1 h-1 rounded-full"
+          style={{
+            background: selected ? "rgba(255,255,255,0.8)" : "#ff8a4c",
+          }}
+        />
+      ) : null}
+    </button>
   );
 }
 
 function UpNextHero({
   event,
-  onOpen,
+  label = "Up next",
 }: {
   event: HostEvent;
-  onOpen: () => void;
+  label?: string;
 }) {
-  const rel = event.eventDate ? relativeLabel(event.eventDate) : "Date TBD";
-  const full = event.eventDate ? fmtFullDate(event.eventDate) : null;
+  const time = fmtTimeRange(event.start_time, event.end_time);
   return (
-    <button
-      onClick={onOpen}
-      className="group block w-full rounded-2xl p-6 text-left transition active:opacity-80"
+    <div
+      className="rounded-3xl p-6 md:p-8 relative overflow-hidden"
       style={{
         background:
-          "linear-gradient(135deg, #fbc88a 0%, #fcd9a3 50%, #fce6c4 100%)",
+          "linear-gradient(135deg, rgba(255,213,165,1) 0%, rgba(255,176,107,1) 100%)",
       }}
     >
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-[0.18em] text-[#1a1a1a]/70">
-            <Sparkles className="h-3.5 w-3.5" />
-            Up next
-          </div>
-          <h3 className="mt-2 text-2xl font-bold text-[#1a1a1a]">
-            {event.title}
-          </h3>
-          {full ? (
-            <p className="mt-1 text-sm text-[#1a1a1a]/70">{full}</p>
-          ) : null}
-          {event.location ? (
-            <p className="mt-0.5 text-sm text-[#1a1a1a]/60">
-              {event.location}
-            </p>
-          ) : null}
-        </div>
-        <span className="rounded-full bg-[#1a1a1a]/10 px-3 py-1 text-xs font-semibold text-[#1a1a1a]">
-          {rel}
-        </span>
-      </div>
-      <div className="mt-5 flex flex-wrap items-center gap-2 text-xs text-[#1a1a1a]/75">
-        {event.vendors.slice(0, 4).map((v) => (
-          <span
-            key={v.inquiry_id}
-            className="rounded-full bg-white/60 px-2.5 py-0.5"
-          >
-            {v.name}
-          </span>
-        ))}
-        {event.vendors.length > 4 ? (
-          <span className="text-[#1a1a1a]/60">
-            +{event.vendors.length - 4} more
-          </span>
-        ) : null}
-      </div>
-    </button>
-  );
-}
-
-function EventRow({
-  event,
-  onOpen,
-  muted,
-}: {
-  event: HostEvent;
-  onOpen: () => void;
-  muted?: boolean;
-}) {
-  const rel = event.eventDate ? relativeLabel(event.eventDate) : "TBD";
-  const full = event.eventDate ? fmtFullDate(event.eventDate) : null;
-  const status = statusOf(event.vendors);
-  return (
-    <button
-      onClick={onOpen}
-      className={`group flex w-full items-center justify-between gap-3 rounded-xl border border-black/10 px-4 py-3 text-left transition hover:bg-foreground/5 ${
-        muted ? "opacity-60" : ""
-      }`}
-    >
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2 flex-wrap">
-          <h3 className="text-base font-semibold text-foreground truncate">
-            {event.title}
-          </h3>
-          <span className="text-xs text-muted-foreground">{rel}</span>
-          {status ? (
-            <span
-              className={`rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider ${status.cls}`}
-            >
-              {status.text}
-            </span>
-          ) : null}
-        </div>
-        <div className="mt-0.5 flex items-center gap-2 text-xs text-muted-foreground">
-          {full ? <span>{full}</span> : null}
-          {event.location ? (
-            <>
-              <span>·</span>
-              <span className="truncate">{event.location}</span>
-            </>
-          ) : null}
-          <span>·</span>
-          <span>
-            {event.vendors.length}{" "}
-            {event.vendors.length === 1 ? "vendor" : "vendors"}
-          </span>
-        </div>
-      </div>
-      <VendorBubbles vendors={event.vendors} />
-      <ChevronRight className="h-4 w-4 text-muted-foreground transition group-hover:translate-x-0.5" />
-    </button>
-  );
-}
-
-const AVATAR_HUES = [
-  "bg-violet-400",
-  "bg-pink-400",
-  "bg-orange-400",
-  "bg-amber-400",
-  "bg-emerald-400",
-  "bg-blue-400",
-  "bg-cyan-400",
-  "bg-rose-400",
-];
-
-function hueFor(seed: string): string {
-  let h = 0;
-  for (let i = 0; i < seed.length; i++) h = (h * 31 + seed.charCodeAt(i)) | 0;
-  return AVATAR_HUES[Math.abs(h) % AVATAR_HUES.length];
-}
-
-function initialsOf(name: string): string {
-  const parts = name.trim().split(/\s+/).filter(Boolean);
-  if (parts.length === 0) return "?";
-  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
-  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
-}
-
-function DayPill({
-  date,
-  isSelected,
-  hasEvent,
-  onClick,
-}: {
-  date: Date;
-  isSelected: boolean;
-  hasEvent: boolean;
-  onClick: () => void;
-}) {
-  const dow = date
-    .toLocaleDateString(undefined, { weekday: "short" })
-    .slice(0, 3)
-    .toUpperCase();
-  return (
-    <button
-      onClick={onClick}
-      className={`shrink-0 w-16 py-3 px-2 rounded-2xl flex flex-col items-center transition ${
-        isSelected
-          ? "bg-foreground text-background"
-          : "bg-secondary/60 text-foreground hover:bg-secondary"
-      }`}
-    >
-      <span
-        className={`text-[10px] font-semibold tracking-wider ${
-          isSelected ? "text-background/70" : "text-muted-foreground"
-        }`}
-      >
-        {dow}
+      <span className="inline-flex items-center gap-1 text-[11px] uppercase tracking-[0.2em] font-medium text-foreground/80">
+        <Sparkles className="w-3 h-3" />
+        {label}
       </span>
-      <span className="mt-0.5 font-editorial text-xl">{date.getDate()}</span>
-      <span
-        className={`mt-1.5 w-1 h-1 rounded-full ${
-          hasEvent
-            ? isSelected
-              ? "bg-background"
-              : "bg-foreground"
-            : "bg-transparent"
-        }`}
-      />
-    </button>
-  );
-}
-
-function VendorBubbles({ vendors }: { vendors: EventVendor[] }) {
-  const visible = vendors.slice(0, 3);
-  const overflow = vendors.length - visible.length;
-  return (
-    <div className="hidden sm:flex items-center">
-      {visible.map((v, i) => (
-        <div
-          key={v.inquiry_id}
-          className={`w-7 h-7 rounded-full text-white text-[10px] font-bold flex items-center justify-center border-2 border-background ${hueFor(
-            v.vendor_id ?? v.inquiry_id,
-          )}`}
-          style={{ marginLeft: i === 0 ? 0 : -8 }}
-        >
-          {initialsOf(v.name)}
-        </div>
-      ))}
-      {overflow > 0 ? (
-        <div
-          className="px-2 h-7 rounded-full bg-secondary text-[10px] font-bold flex items-center justify-center border-2 border-background text-foreground"
-          style={{ marginLeft: -8, minWidth: "1.75rem" }}
-        >
-          +{overflow}
-        </div>
+      <h3 className="font-editorial text-3xl mt-2">{event.title}</h3>
+      <p className="mt-1 text-sm text-foreground/80">{fmtDate(event.event_date)}</p>
+      {time ? <p className="text-sm text-foreground/80">{time}</p> : null}
+      {event.location ? (
+        <p className="mt-2 text-sm text-foreground/80 inline-flex items-center gap-1.5">
+          <MapPin className="w-3.5 h-3.5" />
+          {event.location}
+        </p>
+      ) : null}
+      {event.event_type ? (
+        <span className="mt-3 inline-block rounded-full bg-foreground/10 px-2.5 py-1 text-xs">
+          {eventTypeLabel(event.event_type)}
+        </span>
       ) : null}
     </div>
   );
 }
 
-function statusOf(
-  vendors: EventVendor[],
-): { text: string; cls: string } | null {
-  if (vendors.length === 0) return null;
-  const won = vendors.filter((v) => v.status === "won").length;
-  const pending = vendors.filter(
-    (v) =>
-      v.status === "new" || v.status === "replied" || v.status === "drafted",
-  ).length;
-  if (won === vendors.length) {
-    return { text: "Confirmed", cls: "bg-emerald-100 text-emerald-700" };
-  }
-  if (pending > 0) {
-    return {
-      text: `Awaiting ${pending}`,
-      cls: "bg-amber-100 text-amber-700",
-    };
-  }
-  return null;
+function EventCard({
+  event,
+  onEdit,
+  onDelete,
+}: {
+  event: HostEvent;
+  onEdit: () => void;
+  onDelete: () => void;
+}) {
+  const time = fmtTimeRange(event.start_time, event.end_time);
+  const budget = fmtBudget(event.budget_min_cents, event.budget_max_cents);
+  return (
+    <div
+      className="rounded-2xl p-4 md:p-5"
+      style={{
+        background: "rgba(255,253,250,0.7)",
+        border: "0.5px solid rgba(255,138,76,0.18)",
+        backdropFilter: "blur(10px)",
+        WebkitBackdropFilter: "blur(10px)",
+      }}
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0 flex-1">
+          <div className="flex items-baseline gap-2 flex-wrap">
+            <h3 className="font-editorial text-xl">{event.title}</h3>
+            {event.event_type ? (
+              <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                · {eventTypeLabel(event.event_type)}
+              </span>
+            ) : null}
+          </div>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {fmtDate(event.event_date)}
+            {time ? ` · ${time}` : ""}
+          </p>
+          {event.location ? (
+            <p className="mt-1 text-sm text-muted-foreground inline-flex items-center gap-1.5">
+              <MapPin className="w-3.5 h-3.5" />
+              {event.location}
+            </p>
+          ) : null}
+          <div className="mt-2 flex flex-wrap gap-3 text-xs text-muted-foreground">
+            {event.guest_count != null ? (
+              <span className="inline-flex items-center gap-1">
+                <Users className="w-3.5 h-3.5" />
+                {event.guest_count} guests
+              </span>
+            ) : null}
+            {budget ? <span>Budget: {budget}</span> : null}
+          </div>
+          {event.notes ? (
+            <p className="mt-3 text-sm text-foreground/90 leading-relaxed whitespace-pre-wrap">
+              {event.notes}
+            </p>
+          ) : null}
+        </div>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button
+              type="button"
+              aria-label="Event actions"
+              className="shrink-0 inline-flex items-center justify-center w-8 h-8 rounded-full hover:bg-black/5 text-muted-foreground"
+            >
+              <MoreHorizontal className="w-4 h-4" />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={onEdit}>
+              <Pencil className="w-4 h-4 mr-2" />
+              Edit
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={onDelete}
+              className="text-destructive focus:text-destructive"
+            >
+              <Trash2 className="w-4 h-4 mr-2" />
+              Delete
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+    </div>
+  );
 }
 
-function EmptyState() {
+interface FormState {
+  title: string;
+  event_type: string;
+  event_date: string;
+  start_time: string;
+  end_time: string;
+  location: string;
+  guest_count: string;
+  budget_min: string;
+  budget_max: string;
+  notes: string;
+}
+
+function emptyForm(): FormState {
+  return {
+    title: "",
+    event_type: "",
+    event_date: "",
+    start_time: "",
+    end_time: "",
+    location: "",
+    guest_count: "",
+    budget_min: "",
+    budget_max: "",
+    notes: "",
+  };
+}
+
+function eventToForm(e: HostEvent): FormState {
+  return {
+    title: e.title,
+    event_type: e.event_type ?? "",
+    event_date: e.event_date,
+    start_time: e.start_time ?? "",
+    end_time: e.end_time ?? "",
+    location: e.location ?? "",
+    guest_count: e.guest_count != null ? String(e.guest_count) : "",
+    budget_min:
+      e.budget_min_cents != null ? String(e.budget_min_cents / 100) : "",
+    budget_max:
+      e.budget_max_cents != null ? String(e.budget_max_cents / 100) : "",
+    notes: e.notes ?? "",
+  };
+}
+
+function EventFormDialog({
+  open,
+  editing,
+  hostId,
+  onOpenChange,
+  onSaved,
+}: {
+  open: boolean;
+  editing: HostEvent | null;
+  hostId: string | null;
+  onOpenChange: (open: boolean) => void;
+  onSaved: () => void;
+}) {
+  const [form, setForm] = useState<FormState>(emptyForm);
+  const [saving, setSaving] = useState(false);
+  // Track the open<->editing transition so we hydrate the form once
+  // per open, not on every render.
+  const lastEditingId = useRef<string | null>(null);
+  useEffect(() => {
+    if (!open) {
+      lastEditingId.current = null;
+      return;
+    }
+    const id = editing?.id ?? null;
+    if (lastEditingId.current === id) return;
+    lastEditingId.current = id;
+    setForm(editing ? eventToForm(editing) : emptyForm());
+  }, [open, editing]);
+
+  function update<K extends keyof FormState>(k: K, v: FormState[K]) {
+    setForm((prev) => ({ ...prev, [k]: v }));
+  }
+
+  function parseMoneyCents(v: string): number | null {
+    if (!v.trim()) return null;
+    const n = Number.parseFloat(v);
+    if (!Number.isFinite(n) || n < 0) return null;
+    return Math.round(n * 100);
+  }
+
+  function parseInt(v: string): number | null {
+    if (!v.trim()) return null;
+    const n = Number.parseInt(v, 10);
+    if (!Number.isFinite(n) || n < 0) return null;
+    return n;
+  }
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!hostId) {
+      toast.error("Sign in first");
+      return;
+    }
+    if (!form.title.trim()) {
+      toast.error("Title is required");
+      return;
+    }
+    if (!form.event_date) {
+      toast.error("Date is required");
+      return;
+    }
+    setSaving(true);
+    const payload = {
+      host_id: hostId,
+      title: form.title.trim(),
+      event_type: form.event_type || null,
+      event_date: form.event_date,
+      start_time: form.start_time || null,
+      end_time: form.end_time || null,
+      location: form.location.trim() || null,
+      guest_count: parseInt(form.guest_count),
+      budget_min_cents: parseMoneyCents(form.budget_min),
+      budget_max_cents: parseMoneyCents(form.budget_max),
+      notes: form.notes.trim() || null,
+    };
+    const result = editing
+      ? await eventsTable().update(payload).eq("id", editing.id)
+      : await eventsTable().insert(payload);
+    setSaving(false);
+    if (result.error) {
+      toast.error(result.error.message);
+      return;
+    }
+    toast.success(editing ? "Event updated" : "Event created");
+    onSaved();
+  }
+
   return (
-    <div className="mt-12 rounded-md border border-dashed border-border bg-card/40 p-12 text-center">
-      <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-secondary/60">
-        <Inbox className="h-5 w-5 text-foreground" />
-      </div>
-      <h2 className="font-editorial text-2xl">No events yet</h2>
-      <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">
-        Send an inquiry to a vendor and your event will show up here.
-      </p>
-      <Link
-        to="/customer/explore"
-        className="mt-6 inline-block rounded-full bg-foreground px-5 py-2 text-sm font-medium text-background hover:opacity-90"
-      >
-        Browse vendors
-      </Link>
-    </div>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-lg max-h-[92vh] overflow-y-auto rounded-2xl">
+        <DialogHeader>
+          <DialogTitle className="font-editorial text-3xl">
+            {editing ? "Edit event" : "New event"}
+          </DialogTitle>
+        </DialogHeader>
+        <form onSubmit={submit} className="space-y-4 pt-2">
+          <div className="space-y-2">
+            <Label htmlFor="title">Title</Label>
+            <Input
+              id="title"
+              value={form.title}
+              onChange={(e) => update("title", e.target.value)}
+              placeholder="e.g. Sarah & Marcus's Wedding"
+              autoFocus
+              required
+            />
+          </div>
+          <div className="grid sm:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="event_type">Event type</Label>
+              <Select
+                value={form.event_type}
+                onValueChange={(v) => update("event_type", v)}
+              >
+                <SelectTrigger id="event_type">
+                  <SelectValue placeholder="Pick one (optional)" />
+                </SelectTrigger>
+                <SelectContent>
+                  {EVENT_TYPES.map((t) => (
+                    <SelectItem key={t.value} value={t.value}>
+                      {t.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="event_date">Date</Label>
+              <Input
+                id="event_date"
+                type="date"
+                value={form.event_date}
+                onChange={(e) => update("event_date", e.target.value)}
+                required
+              />
+            </div>
+          </div>
+          <div className="grid sm:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="start_time">Start time</Label>
+              <Input
+                id="start_time"
+                type="time"
+                value={form.start_time}
+                onChange={(e) => update("start_time", e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="end_time">End time</Label>
+              <Input
+                id="end_time"
+                type="time"
+                value={form.end_time}
+                onChange={(e) => update("end_time", e.target.value)}
+              />
+            </div>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="location">Location</Label>
+            <Input
+              id="location"
+              value={form.location}
+              onChange={(e) => update("location", e.target.value)}
+              placeholder="Venue or address"
+            />
+          </div>
+          <div className="grid sm:grid-cols-3 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="guest_count">Guests</Label>
+              <Input
+                id="guest_count"
+                type="number"
+                min="0"
+                value={form.guest_count}
+                onChange={(e) => update("guest_count", e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="budget_min">Budget min ($)</Label>
+              <Input
+                id="budget_min"
+                type="number"
+                min="0"
+                step="0.01"
+                value={form.budget_min}
+                onChange={(e) => update("budget_min", e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="budget_max">Budget max ($)</Label>
+              <Input
+                id="budget_max"
+                type="number"
+                min="0"
+                step="0.01"
+                value={form.budget_max}
+                onChange={(e) => update("budget_max", e.target.value)}
+              />
+            </div>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="notes">Notes</Label>
+            <Textarea
+              id="notes"
+              rows={3}
+              value={form.notes}
+              onChange={(e) => update("notes", e.target.value)}
+              placeholder="Anything else worth remembering."
+            />
+          </div>
+          <DialogFooter className="pt-2 gap-2 sm:gap-0">
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => onOpenChange(false)}
+              disabled={saving}
+              className="rounded-full"
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              disabled={saving}
+              className="rounded-full bg-foreground text-background hover:bg-foreground/90"
+            >
+              {saving
+                ? editing
+                  ? "Saving…"
+                  : "Creating…"
+                : editing
+                  ? "Save changes"
+                  : "Create event"}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
   );
 }
