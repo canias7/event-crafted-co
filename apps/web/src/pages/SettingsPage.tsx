@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Loader2, LogOut, Mail, Trash2 } from "lucide-react";
+import { Globe, Loader2, LogOut, Mail, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { DashboardSidebar } from "@/components/shared/DashboardSidebar";
 import { MobileNav } from "@/components/shared/MobileNav";
+import { LanguageSwitcher } from "@/components/shared/LanguageSwitcher";
 import { customerNavItems, getLastDashboardSide, vendorNavItems } from "@/data/navItems";
 
 // Account settings — rowed-card layout. Each row is icon + title +
@@ -87,6 +88,13 @@ export default function SettingsPage() {
                     {user?.email ?? ""}
                   </a>
                 }
+              />
+              <RowDivider />
+              <SettingRow
+                Icon={Globe}
+                title="Language"
+                subtitle="Interface language for menus, buttons, and prompts"
+                right={<LanguageSwitcher tone="light" />}
               />
               <RowDivider />
               <SettingRow

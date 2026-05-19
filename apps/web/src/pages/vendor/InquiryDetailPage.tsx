@@ -10,12 +10,18 @@ import {
   Send,
   Loader2,
   MoreHorizontal,
+  Smile,
 } from "lucide-react";
 import { groupMessages } from "@/lib/threadFormatting";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -78,6 +84,27 @@ interface Message {
   attachments?: MessageAttachment[];
 }
 
+const QUICK_EMOJIS = [
+  "👍",
+  "❤️",
+  "🎉",
+  "🙏",
+  "😂",
+  "🔥",
+  "😍",
+  "😅",
+  "👋",
+  "🤝",
+  "✨",
+  "💯",
+];
+
+// localStorage key for the in-flight draft, scoped per inquiry so two
+// open tabs don't clobber each other.
+function draftKey(inquiryId: string | undefined): string | null {
+  return inquiryId ? `vendora.inquiry-draft.${inquiryId}` : null;
+}
+
 function fmtMoney(c: number | null) {
   return c == null ? "—" : `$${(c / 100).toLocaleString()}`;
 }
@@ -101,8 +128,43 @@ export default function InquiryDetailPage() {
   // to return to the chat.
   const [inquiryPreviewOpen, setInquiryPreviewOpen] = useState(false);
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
+  const [emojiOpen, setEmojiOpen] = useState(false);
+  const [isDragOver, setIsDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const composerRef = useRef<HTMLTextAreaElement>(null);
+  // Track whether we've already rehydrated the draft for the active
+  // inquiry — without this, the first effect-run overwrites the
+  // freshly-loaded localStorage value with an empty string.
+  const draftHydratedRef = useRef<string | null>(null);
+
+  // Rehydrate any in-flight draft from localStorage on inquiry change.
+  useEffect(() => {
+    if (!inquiryId) return;
+    if (draftHydratedRef.current === inquiryId) return;
+    draftHydratedRef.current = inquiryId;
+    const key = draftKey(inquiryId);
+    if (!key) return;
+    try {
+      const v = window.localStorage.getItem(key);
+      if (v) setComposer(v);
+    } catch {
+      /* private mode / quota — fall back to empty composer */
+    }
+  }, [inquiryId]);
+
+  // Persist the draft on every keystroke (no debounce — localStorage
+  // is cheap and the user's typing is the canonical source of truth).
+  useEffect(() => {
+    const key = draftKey(inquiryId);
+    if (!key) return;
+    if (draftHydratedRef.current !== inquiryId) return;
+    try {
+      if (composer) window.localStorage.setItem(key, composer);
+      else window.localStorage.removeItem(key);
+    } catch {
+      /* ignore */
+    }
+  }, [composer, inquiryId]);
 
   // Auto-grow the composer textarea up to max-h-32 (128px). HTML's
   // <textarea rows={1}> stays at one row by default — content past
@@ -327,6 +389,15 @@ export default function InquiryDetailPage() {
     await transitionToReplied();
     setComposer("");
     setPendingFiles([]);
+    // Drop the draft now that the message landed.
+    const key = draftKey(inquiryId);
+    if (key) {
+      try {
+        window.localStorage.removeItem(key);
+      } catch {
+        /* ignore */
+      }
+    }
     setSending(false);
     load();
   }
@@ -572,8 +643,26 @@ export default function InquiryDetailPage() {
           background: "rgba(255,253,250,0.92)",
           borderTop: "0.5px solid rgba(255,138,76,0.18)",
         }}
+        onDragOver={(e) => {
+          if (Array.from(e.dataTransfer.types).includes("Files")) {
+            e.preventDefault();
+            setIsDragOver(true);
+          }
+        }}
+        onDragLeave={() => setIsDragOver(false)}
+        onDrop={(e) => {
+          setIsDragOver(false);
+          if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+            e.preventDefault();
+            pickFiles(e.dataTransfer.files);
+          }
+        }}
       >
-        <div className="max-w-3xl mx-auto">
+        <div
+          className={`max-w-3xl mx-auto rounded-2xl transition ${
+            isDragOver ? "ring-2 ring-accent ring-offset-2 ring-offset-background" : ""
+          }`}
+        >
           {pendingFiles.length > 0 && (
             <div className="flex flex-wrap gap-2 mb-2">
               {pendingFiles.map((f, i) => (
@@ -606,10 +695,58 @@ export default function InquiryDetailPage() {
             >
               <Paperclip className="w-4 h-4" />
             </button>
+            <Popover open={emojiOpen} onOpenChange={setEmojiOpen}>
+              <PopoverTrigger asChild>
+                <button
+                  type="button"
+                  disabled={sending}
+                  aria-label="Quick reactions"
+                  className="shrink-0 inline-flex items-center justify-center w-9 h-9 rounded-full hover:bg-black/5 text-muted-foreground disabled:opacity-50"
+                >
+                  <Smile className="w-4 h-4" />
+                </button>
+              </PopoverTrigger>
+              <PopoverContent side="top" align="start" className="w-56 p-2">
+                <div className="grid grid-cols-6 gap-1">
+                  {QUICK_EMOJIS.map((e) => (
+                    <button
+                      key={e}
+                      type="button"
+                      onClick={() => {
+                        setComposer((v) => v + e);
+                        setEmojiOpen(false);
+                        composerRef.current?.focus();
+                      }}
+                      className="text-xl rounded-md p-1.5 hover:bg-secondary transition-colors"
+                    >
+                      {e}
+                    </button>
+                  ))}
+                </div>
+              </PopoverContent>
+            </Popover>
             <Textarea
               ref={composerRef}
               value={composer}
               onChange={(e) => setComposer(e.target.value)}
+              onPaste={(e) => {
+                // Paste-an-image from clipboard: pull the image File
+                // out of clipboardData and run it through pickFiles
+                // (same validation as the paperclip / drop paths).
+                const files: File[] = [];
+                for (const item of Array.from(e.clipboardData.items)) {
+                  if (item.kind === "file") {
+                    const f = item.getAsFile();
+                    if (f) files.push(f);
+                  }
+                }
+                if (files.length > 0) {
+                  e.preventDefault();
+                  const list = new DataTransfer();
+                  for (const f of files) list.items.add(f);
+                  pickFiles(list.files);
+                }
+              }}
               onKeyDown={(e) => {
                 // iMessage convention: Enter sends, Shift+Enter inserts
                 // a newline. Matches the "iMessage" placeholder copy.
