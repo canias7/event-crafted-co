@@ -7,10 +7,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Calendar as CalendarIcon,
+  Check,
   MapPin,
   MoreHorizontal,
   Pencil,
   Plus,
+  Share2,
   Sparkles,
   Trash2,
   Users,
@@ -67,9 +69,9 @@ interface HostEvent {
   end_time: string | null;
   location: string | null;
   guest_count: number | null;
-  budget_min_cents: number | null;
-  budget_max_cents: number | null;
   notes: string | null;
+  share_token: string;
+  going_count?: number;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -115,18 +117,6 @@ function fmtTimeRange(start: string | null, end: string | null): string | null {
   return fmt(start ?? end!);
 }
 
-function fmtMoney(cents: number | null): string | null {
-  if (cents == null) return null;
-  return `$${(cents / 100).toLocaleString()}`;
-}
-
-function fmtBudget(min: number | null, max: number | null): string | null {
-  const lo = fmtMoney(min);
-  const hi = fmtMoney(max);
-  if (lo && hi) return `${lo} – ${hi}`;
-  return lo ?? hi;
-}
-
 function eventTypeLabel(type: string | null): string | null {
   if (!type) return null;
   return EVENT_TYPES.find((t) => t.value === type)?.label ?? type;
@@ -144,7 +134,7 @@ export default function HostEventsPage() {
     if (!user?.id) return;
     const { data, error } = await eventsTable()
       .select(
-        "id, title, event_type, event_date, start_time, end_time, location, guest_count, budget_min_cents, budget_max_cents, notes",
+        "id, title, event_type, event_date, start_time, end_time, location, guest_count, notes, share_token",
       )
       .eq("host_id", user.id)
       .order("event_date", { ascending: true });
@@ -153,7 +143,26 @@ export default function HostEventsPage() {
       setEvents([]);
       return;
     }
-    setEvents((data as HostEvent[]) ?? []);
+    const rows = (data as HostEvent[]) ?? [];
+    // Pull going-count per event in one query so each card can show
+    // "N going" without N round-trips.
+    if (rows.length > 0) {
+      const ids = rows.map((r) => r.id);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: rsvps } = await (supabase as any)
+        .from("host_event_rsvps")
+        .select("event_id")
+        .in("event_id", ids)
+        .eq("status", "going");
+      const counts: Record<string, number> = {};
+      for (const r of (rsvps as Array<{ event_id: string }> | null) ?? []) {
+        counts[r.event_id] = (counts[r.event_id] ?? 0) + 1;
+      }
+      for (const row of rows) {
+        row.going_count = counts[row.id] ?? 0;
+      }
+    }
+    setEvents(rows);
   }, [user?.id]);
 
   useEffect(() => {
@@ -515,8 +524,19 @@ function EventCard({
   onEdit: () => void;
   onDelete: () => void;
 }) {
+  const [copied, setCopied] = useState(false);
   const time = fmtTimeRange(event.start_time, event.end_time);
-  const budget = fmtBudget(event.budget_min_cents, event.budget_max_cents);
+  async function copyShareLink() {
+    const url = `${window.location.origin}/rsvp/${event.share_token}`;
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+      toast.success("Invite link copied");
+      window.setTimeout(() => setCopied(false), 1800);
+    } catch {
+      toast.error("Couldn't copy — long-press the link in the menu instead.");
+    }
+  }
   return (
     <div
       className="rounded-2xl p-4 md:p-5"
@@ -554,13 +574,37 @@ function EventCard({
                 {event.guest_count} guests
               </span>
             ) : null}
-            {budget ? <span>Budget: {budget}</span> : null}
+            {event.going_count != null ? (
+              <span className="inline-flex items-center gap-1 font-medium text-foreground">
+                <Check className="w-3.5 h-3.5 text-emerald-600" />
+                {event.going_count} going
+              </span>
+            ) : null}
           </div>
           {event.notes ? (
             <p className="mt-3 text-sm text-foreground/90 leading-relaxed whitespace-pre-wrap">
               {event.notes}
             </p>
           ) : null}
+          <div className="mt-4">
+            <button
+              type="button"
+              onClick={copyShareLink}
+              className="inline-flex items-center gap-1.5 rounded-full bg-foreground/5 hover:bg-foreground/10 px-3 py-1.5 text-xs font-medium transition"
+            >
+              {copied ? (
+                <>
+                  <Check className="w-3.5 h-3.5 text-emerald-600" />
+                  Copied
+                </>
+              ) : (
+                <>
+                  <Share2 className="w-3.5 h-3.5" />
+                  Share invite link
+                </>
+              )}
+            </button>
+          </div>
         </div>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -599,8 +643,6 @@ interface FormState {
   end_time: string;
   location: string;
   guest_count: string;
-  budget_min: string;
-  budget_max: string;
   notes: string;
 }
 
@@ -613,8 +655,6 @@ function emptyForm(): FormState {
     end_time: "",
     location: "",
     guest_count: "",
-    budget_min: "",
-    budget_max: "",
     notes: "",
   };
 }
@@ -628,10 +668,6 @@ function eventToForm(e: HostEvent): FormState {
     end_time: e.end_time ?? "",
     location: e.location ?? "",
     guest_count: e.guest_count != null ? String(e.guest_count) : "",
-    budget_min:
-      e.budget_min_cents != null ? String(e.budget_min_cents / 100) : "",
-    budget_max:
-      e.budget_max_cents != null ? String(e.budget_max_cents / 100) : "",
     notes: e.notes ?? "",
   };
 }
@@ -669,13 +705,6 @@ function EventFormDialog({
     setForm((prev) => ({ ...prev, [k]: v }));
   }
 
-  function parseMoneyCents(v: string): number | null {
-    if (!v.trim()) return null;
-    const n = Number.parseFloat(v);
-    if (!Number.isFinite(n) || n < 0) return null;
-    return Math.round(n * 100);
-  }
-
   function parseInt(v: string): number | null {
     if (!v.trim()) return null;
     const n = Number.parseInt(v, 10);
@@ -707,8 +736,6 @@ function EventFormDialog({
       end_time: form.end_time || null,
       location: form.location.trim() || null,
       guest_count: parseInt(form.guest_count),
-      budget_min_cents: parseMoneyCents(form.budget_min),
-      budget_max_cents: parseMoneyCents(form.budget_max),
       notes: form.notes.trim() || null,
     };
     const result = editing
@@ -769,6 +796,8 @@ function EventFormDialog({
                 type="date"
                 value={form.event_date}
                 onChange={(e) => update("event_date", e.target.value)}
+                min={todayYmd()}
+                max="2099-12-31"
                 required
               />
             </div>
@@ -779,6 +808,7 @@ function EventFormDialog({
               <Input
                 id="start_time"
                 type="time"
+                step={900}
                 value={form.start_time}
                 onChange={(e) => update("start_time", e.target.value)}
               />
@@ -788,6 +818,7 @@ function EventFormDialog({
               <Input
                 id="end_time"
                 type="time"
+                step={900}
                 value={form.end_time}
                 onChange={(e) => update("end_time", e.target.value)}
               />
@@ -802,39 +833,15 @@ function EventFormDialog({
               placeholder="Venue or address"
             />
           </div>
-          <div className="grid sm:grid-cols-3 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="guest_count">Guests</Label>
-              <Input
-                id="guest_count"
-                type="number"
-                min="0"
-                value={form.guest_count}
-                onChange={(e) => update("guest_count", e.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="budget_min">Budget min ($)</Label>
-              <Input
-                id="budget_min"
-                type="number"
-                min="0"
-                step="0.01"
-                value={form.budget_min}
-                onChange={(e) => update("budget_min", e.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="budget_max">Budget max ($)</Label>
-              <Input
-                id="budget_max"
-                type="number"
-                min="0"
-                step="0.01"
-                value={form.budget_max}
-                onChange={(e) => update("budget_max", e.target.value)}
-              />
-            </div>
+          <div className="space-y-2">
+            <Label htmlFor="guest_count">Guests</Label>
+            <Input
+              id="guest_count"
+              type="number"
+              min="0"
+              value={form.guest_count}
+              onChange={(e) => update("guest_count", e.target.value)}
+            />
           </div>
           <div className="space-y-2">
             <Label htmlFor="notes">Notes</Label>

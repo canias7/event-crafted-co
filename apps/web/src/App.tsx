@@ -51,6 +51,7 @@ import {
   HostInquiryDetailPage,
   HostEventsPage,
   HostAccountPage,
+  PublicEventRsvpPage,
   CustomerExplorePage,
   HostProfilePage,
   VendorMyProfilePage,
@@ -112,6 +113,7 @@ const App = () => (
               <Route path="/proposals/:id/print" element={<ProposalPrintPage />} />
               <Route path="/p/:token" element={<PublicProposalPage />} />
               <Route path="/accept-team-invite/:token" element={<AcceptTeamInvitePage />} />
+              <Route path="/rsvp/:token" element={<PublicEventRsvpPage />} />
               {/* Planning-team feature removed when host portal mirrored
                   to mobile; outstanding invite links bounce to /. */}
               <Route path="/accept-planning-invite/:token" element={<Navigate to="/" replace />} />
@@ -191,7 +193,6 @@ const App = () => (
                   with the host editors. Bounce to / so old links
                   don't 404 outright. */}
               <Route path="/gift/:token" element={<Navigate to="/" replace />} />
-              <Route path="/rsvp/:token" element={<Navigate to="/" replace />} />
               <Route path="/e/:token" element={<Navigate to="/" replace />} />
               <Route path="/album/:token" element={<Navigate to="/" replace />} />
               <Route path="/board/:token" element={<Navigate to="/" replace />} />
