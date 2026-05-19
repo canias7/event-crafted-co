@@ -1,10 +1,16 @@
-// Profile preview overlay — opened from the public listing card.
-// Shows what the vendor's identity surface looks like (logo, name,
-// bio, posts + reels grid, buzz feed) in a sheet so a host can
-// quickly scan their vibe without leaving the listing page.
+// Profile preview overlay — opened from the public listing's brand
+// card. Mirrors the layout the vendor sees on /vendor/me so a host
+// can scan exactly what the vendor's identity surface looks like
+// without leaving the listing page.
 
-import { useEffect, useState } from "react";
-import { Loader2, MessageCircle, Play, X } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import {
+  ArrowLeft,
+  Film,
+  Grid3x3,
+  Loader2,
+  MessageCircle,
+} from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 interface PostRow {
@@ -25,6 +31,8 @@ interface BuzzRow {
   body: string;
   created_at: string;
 }
+
+type Tab = "grid" | "reels" | "buzz";
 
 function timeAgo(iso: string): string {
   const diff = (Date.now() - new Date(iso).getTime()) / 1000;
@@ -58,6 +66,7 @@ export function VendorProfilePreviewSheet({
   const [posts, setPosts] = useState<PostRow[] | null>(null);
   const [reels, setReels] = useState<ReelRow[] | null>(null);
   const [buzz, setBuzz] = useState<BuzzRow[] | null>(null);
+  const [tab, setTab] = useState<Tab>("grid");
 
   // Lock background scroll while the sheet is open.
   useEffect(() => {
@@ -81,11 +90,8 @@ export function VendorProfilePreviewSheet({
     if (!vendorId) return;
     let cancelled = false;
     (async () => {
-      // Posts / reels / buzz are user-scoped — they're the vendor's
-      // identity content, not per-listing. Resolve the listing's
-      // owner user_id first, then fetch all their content. This also
-      // means historical rows (written before vendor_id was added in
-      // PR #537) still surface here.
+      // Content is user-scoped (vendor's identity), not per-listing.
+      // Resolve the owner once, then fetch all their work.
       const { data: vp } = await supabase
         .from("vendor_profiles")
         .select("user_id")
@@ -104,20 +110,17 @@ export function VendorProfilePreviewSheet({
           .from("vendor_posts")
           .select("id, image_url, caption, created_at")
           .eq("user_id", ownerId)
-          .order("created_at", { ascending: false })
-          .limit(18),
+          .order("created_at", { ascending: false }),
         supabase
           .from("vendor_reels")
           .select("id, video_url, thumbnail_url, caption, created_at")
           .eq("user_id", ownerId)
-          .order("created_at", { ascending: false })
-          .limit(6),
+          .order("created_at", { ascending: false }),
         supabase
           .from("vendor_buzz")
           .select("id, body, created_at")
           .eq("user_id", ownerId)
-          .order("created_at", { ascending: false })
-          .limit(6),
+          .order("created_at", { ascending: false }),
       ]);
       if (cancelled) return;
       setPosts((pRes.data as PostRow[] | null) ?? []);
@@ -130,12 +133,28 @@ export function VendorProfilePreviewSheet({
   }, [vendorId]);
 
   const loading = posts === null || reels === null || buzz === null;
-  const empty =
-    !loading &&
-    (posts?.length ?? 0) === 0 &&
-    (reels?.length ?? 0) === 0 &&
-    (buzz?.length ?? 0) === 0;
   const initial = businessName[0]?.toUpperCase() ?? "V";
+
+  const tabs = useMemo(
+    () => [
+      {
+        id: "grid" as const,
+        label: `Posts · ${posts?.length ?? 0}`,
+        icon: Grid3x3,
+      },
+      {
+        id: "reels" as const,
+        label: `Reels · ${reels?.length ?? 0}`,
+        icon: Film,
+      },
+      {
+        id: "buzz" as const,
+        label: `Buzz · ${buzz?.length ?? 0}`,
+        icon: MessageCircle,
+      },
+    ],
+    [posts, reels, buzz],
+  );
 
   return (
     <div
@@ -146,150 +165,199 @@ export function VendorProfilePreviewSheet({
         className="relative w-full sm:max-w-2xl bg-[#fffdfa] rounded-t-3xl sm:rounded-3xl shadow-2xl overflow-hidden max-h-[92vh] flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Sticky close */}
-        <button
-          type="button"
-          onClick={onClose}
-          aria-label="Close preview"
-          className="absolute top-4 right-4 z-10 w-9 h-9 rounded-full bg-white/95 border border-border/40 shadow-sm text-foreground/80 hover:bg-white inline-flex items-center justify-center"
-        >
-          <X className="w-4 h-4" />
-        </button>
-
-        {/* Header */}
-        <div className="px-6 pt-7 pb-4 flex items-center gap-4 border-b border-border/40">
-          {logoUrl ? (
-            <img
-              src={logoUrl}
-              alt={businessName}
-              className="w-16 h-16 rounded-2xl object-cover bg-[#0a0a0a] shrink-0"
-            />
-          ) : (
-            <div className="w-16 h-16 rounded-2xl bg-[#0a0a0a] flex items-center justify-center shrink-0">
-              <span className="font-editorial text-white text-3xl leading-none">
-                {initial}
-              </span>
-            </div>
-          )}
-          <div className="min-w-0 flex-1">
-            <h2 className="font-editorial text-2xl text-foreground leading-tight truncate">
-              {businessName}
-            </h2>
-            {location ? (
-              <p className="text-sm text-muted-foreground mt-0.5 truncate">
-                {location}
-              </p>
-            ) : null}
-          </div>
+        {/* Top bar — back arrow on the left mirrors how mobile screens
+            unwind a stack. No close X; the back arrow is the dismiss. */}
+        <div className="sticky top-0 z-10 flex items-center gap-3 px-4 py-3 bg-[#fffdfa]/95 backdrop-blur-md border-b border-border/40">
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Back"
+            className="shrink-0 inline-flex items-center justify-center w-9 h-9 rounded-full bg-white/95 border border-border/40 shadow-sm text-foreground/80 hover:bg-white"
+          >
+            <ArrowLeft className="w-4 h-4" />
+          </button>
+          <p className="text-sm font-medium text-foreground/80 truncate">
+            {businessName}
+          </p>
         </div>
 
         {/* Scrollable body */}
-        <div className="overflow-y-auto flex-1 px-6 py-5 space-y-7">
-          {bio ? (
-            <p className="text-sm leading-relaxed text-foreground/85 whitespace-pre-wrap">
-              {bio}
-            </p>
-          ) : null}
-
-          {loading ? (
-            <div className="flex items-center justify-center py-12">
-              <Loader2 className="w-5 h-5 text-muted-foreground animate-spin" />
-            </div>
-          ) : empty ? (
-            <div className="py-12 text-center">
-              <p className="font-medium text-sm">No posts yet</p>
-              <p className="text-xs text-muted-foreground mt-1">
-                This vendor hasn't shared any work on their profile.
-              </p>
-            </div>
-          ) : (
-            <>
-              {posts && posts.length > 0 ? (
-                <section>
-                  <p className="font-label text-muted-foreground mb-2">
-                    Posts
+        <div className="overflow-y-auto flex-1 px-4 md:px-6 py-5 space-y-5">
+          {/* Header card — mirrors the /vendor/me header */}
+          <div
+            className="rounded-2xl p-5"
+            style={{
+              background:
+                "linear-gradient(135deg, rgba(255,138,76,0.10), rgba(255,138,76,0.04))",
+              border: "0.5px solid rgba(255,138,76,0.22)",
+            }}
+          >
+            <div className="flex items-start gap-4">
+              {logoUrl ? (
+                <img
+                  src={logoUrl}
+                  alt={businessName}
+                  className="w-[88px] h-[88px] rounded-2xl object-cover bg-[#0a0a0a] shrink-0"
+                />
+              ) : (
+                <div className="w-[88px] h-[88px] rounded-2xl bg-[#0a0a0a] flex items-center justify-center shrink-0">
+                  <span className="font-editorial text-white text-4xl leading-none">
+                    {initial}
+                  </span>
+                </div>
+              )}
+              <div className="min-w-0 flex-1">
+                <h2 className="font-editorial text-2xl text-foreground leading-tight">
+                  {businessName}
+                </h2>
+                {location ? (
+                  <p className="text-sm text-muted-foreground mt-0.5 truncate">
+                    {location}
                   </p>
-                  <div className="grid grid-cols-3 gap-1">
-                    {posts.map((p) => (
-                      <a
-                        key={p.id}
-                        href={p.image_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="aspect-square overflow-hidden rounded-sm bg-secondary/40"
-                      >
+                ) : null}
+                {bio ? (
+                  <p className="text-sm text-foreground/80 mt-2 leading-snug whitespace-pre-wrap">
+                    {bio}
+                  </p>
+                ) : null}
+              </div>
+            </div>
+          </div>
+
+          {/* Tabs */}
+          <div className="flex gap-1 overflow-x-auto">
+            {tabs.map((t) => {
+              const Icon = t.icon;
+              const active = tab === t.id;
+              return (
+                <button
+                  key={t.id}
+                  type="button"
+                  onClick={() => setTab(t.id)}
+                  className={`flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition shrink-0 ${
+                    active
+                      ? "bg-foreground text-background"
+                      : "bg-white/40 border border-white/55 text-muted-foreground hover:bg-white/70 hover:text-foreground"
+                  }`}
+                >
+                  <Icon className="h-4 w-4" />
+                  {t.label}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Tab content */}
+          <div>
+            {loading ? (
+              <div className="flex items-center justify-center py-16">
+                <Loader2 className="w-5 h-5 text-muted-foreground animate-spin" />
+              </div>
+            ) : tab === "grid" ? (
+              posts && posts.length > 0 ? (
+                <div className="grid grid-cols-3 sm:grid-cols-4 gap-x-2 gap-y-4">
+                  {posts.map((p) => (
+                    <a
+                      key={p.id}
+                      href={p.image_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-left group"
+                    >
+                      <div className="relative aspect-square overflow-hidden rounded-md bg-secondary/40">
                         <img
                           src={p.image_url}
-                          alt={p.caption ?? ""}
+                          alt={p.caption ?? "Post"}
                           loading="lazy"
-                          className="w-full h-full object-cover"
+                          className="w-full h-full object-cover transition group-hover:scale-[1.02]"
                         />
-                      </a>
-                    ))}
-                  </div>
-                </section>
-              ) : null}
-
-              {reels && reels.length > 0 ? (
-                <section>
-                  <p className="font-label text-muted-foreground mb-2">
-                    Reels
-                  </p>
-                  <div className="grid grid-cols-3 gap-1">
-                    {reels.map((r) => (
-                      <a
-                        key={r.id}
-                        href={r.video_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="relative aspect-[3/4] overflow-hidden rounded-sm bg-secondary/40"
-                      >
+                      </div>
+                      {p.caption ? (
+                        <p className="mt-2 text-xs text-foreground/80 leading-snug line-clamp-2">
+                          {p.caption}
+                        </p>
+                      ) : null}
+                    </a>
+                  ))}
+                </div>
+              ) : (
+                <Empty msg="No posts yet." />
+              )
+            ) : tab === "reels" ? (
+              reels && reels.length > 0 ? (
+                <div className="grid grid-cols-3 sm:grid-cols-4 gap-x-2 gap-y-4">
+                  {reels.map((r) => (
+                    <a
+                      key={r.id}
+                      href={r.video_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-left group"
+                    >
+                      <div className="relative aspect-square overflow-hidden rounded-md bg-black">
                         {r.thumbnail_url ? (
                           <img
                             src={r.thumbnail_url}
-                            alt={r.caption ?? ""}
+                            alt={r.caption ?? "Reel"}
                             loading="lazy"
                             className="w-full h-full object-cover"
                           />
                         ) : (
-                          <div className="w-full h-full bg-foreground/10" />
+                          <video
+                            src={`${r.video_url}#t=0.1`}
+                            className="w-full h-full object-cover pointer-events-none"
+                            preload="metadata"
+                            muted
+                            playsInline
+                            aria-label={r.caption ?? "Reel"}
+                          />
                         )}
                         <span className="absolute top-2 right-2 inline-flex items-center justify-center w-6 h-6 rounded-full bg-black/55 text-white">
-                          <Play className="w-3 h-3 fill-current" />
+                          <Film className="w-3 h-3" aria-hidden />
                         </span>
-                      </a>
-                    ))}
-                  </div>
-                </section>
-              ) : null}
-
-              {buzz && buzz.length > 0 ? (
-                <section>
-                  <p className="font-label text-muted-foreground mb-2">
-                    Buzz
-                  </p>
-                  <ul className="space-y-2">
-                    {buzz.map((b) => (
-                      <li
-                        key={b.id}
-                        className="rounded-2xl bg-secondary/50 border border-border/40 px-3.5 py-2.5"
-                      >
-                        <p className="text-sm leading-relaxed whitespace-pre-wrap">
-                          {b.body}
+                      </div>
+                      {r.caption ? (
+                        <p className="mt-2 text-xs text-foreground/80 leading-snug line-clamp-2">
+                          {r.caption}
                         </p>
-                        <p className="text-[11px] text-muted-foreground mt-1 inline-flex items-center gap-1">
-                          <MessageCircle className="w-3 h-3" />
-                          {timeAgo(b.created_at)}
-                        </p>
-                      </li>
-                    ))}
-                  </ul>
-                </section>
-              ) : null}
-            </>
-          )}
+                      ) : null}
+                    </a>
+                  ))}
+                </div>
+              ) : (
+                <Empty msg="No reels yet." />
+              )
+            ) : buzz && buzz.length > 0 ? (
+              <ul className="space-y-2">
+                {buzz.map((b) => (
+                  <li
+                    key={b.id}
+                    className="rounded-2xl bg-secondary/50 border border-border/40 px-3.5 py-2.5"
+                  >
+                    <p className="text-sm leading-relaxed whitespace-pre-wrap">
+                      {b.body}
+                    </p>
+                    <p className="text-[11px] text-muted-foreground mt-1 inline-flex items-center gap-1">
+                      <MessageCircle className="w-3 h-3" />
+                      {timeAgo(b.created_at)}
+                    </p>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <Empty msg="No buzz yet." />
+            )}
+          </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+function Empty({ msg }: { msg: string }) {
+  return (
+    <div className="py-12 text-center">
+      <p className="text-sm text-muted-foreground">{msg}</p>
     </div>
   );
 }
