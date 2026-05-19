@@ -9,16 +9,19 @@ import {
 import { MessageReplyContext } from "@/components/messages/MessageReplyContext";
 import { VoiceRecorder } from "@/components/messages/VoiceRecorder";
 import { TemplatePicker } from "@/components/messages/TemplatePicker";
+import { PinLocationDialog } from "@/components/messages/PinLocationDialog";
+import { MessageBody } from "@/components/messages/MessageBody";
 import { Link, useParams } from "react-router-dom";
 import {
   ArrowLeft,
   Sparkles,
-  Check,
+  CheckCheck,
+  Info,
+  MapPin,
   X,
   RotateCcw,
   Send,
   Loader2,
-  MoreHorizontal,
   Smile,
 } from "lucide-react";
 import { groupMessages } from "@/lib/threadFormatting";
@@ -136,6 +139,7 @@ export default function InquiryDetailPage() {
   const [proposals, setProposals] = useState<Proposal[]>([]);
   const [proposalModalOpen, setProposalModalOpen] = useState(false);
   const [appointmentModalOpen, setAppointmentModalOpen] = useState(false);
+  const [pinLocationOpen, setPinLocationOpen] = useState(false);
   // Inquiry preview sheet — opened from the "..." menu, shows the
   // full original inquiry on a blurred backdrop. Tap the close arrow
   // to return to the chat.
@@ -504,6 +508,25 @@ export default function InquiryDetailPage() {
     setPendingFiles((prev) => [...prev, ...accepted]);
   }
 
+  // Drop a single canned body into the thread without going through the
+  // composer (used by quick-action chips like "Pin location"). Keeps
+  // the composer's pending state and reply target intact.
+  async function sendBody(body: string) {
+    if (!body.trim() || !inquiryId || !user || !threadId) return;
+    const { error } = await supabase.from("direct_messages").insert({
+      thread_id: threadId,
+      sender_id: user.id,
+      sender_role: "vendor",
+      body: body.trim(),
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } as any);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    await transitionToReplied();
+  }
+
   async function sendMessage() {
     if (
       (!composer.trim() && pendingFiles.length === 0) ||
@@ -607,10 +630,10 @@ export default function InquiryDetailPage() {
   return (
     <div className="min-h-screen vendor-canvas flex flex-col">
       {/* ─── Sticky chat header ─────────────────────────────────────────
-          Compact bar: back arrow, host avatar+name+event type, status
-          dot, "..." menu for all the secondary actions (proposal,
-          meeting, mark booked, close, view details). The chat itself
-          is the rest of the screen. */}
+          Liquid-glass header: pill-shaped back button + avatar w/
+          online dot + name + "{event_type} inquiry · {date}" subtitle
+          + pill-shaped info button on the right. Info button opens the
+          actions dropdown (View inquiry / Close-or-Reopen). */}
       <div
         className="sticky top-0 z-40 px-4 md:px-6 py-3 backdrop-blur-md"
         style={{
@@ -622,38 +645,56 @@ export default function InquiryDetailPage() {
           <Link
             to="/vendor/inbox"
             aria-label="Back to inbox"
-            className="shrink-0 inline-flex items-center justify-center w-9 h-9 rounded-full hover:bg-black/5 text-muted-foreground"
+            className="shrink-0 inline-flex items-center justify-center w-10 h-10 rounded-full bg-white/95 shadow-sm border border-border/40 text-foreground/80 hover:bg-white"
           >
             <ArrowLeft className="w-4 h-4" />
           </Link>
-          {inquiry.host?.avatar_url ? (
-            <img
-              src={inquiry.host.avatar_url}
-              alt=""
-              className="shrink-0 w-10 h-10 rounded-full object-cover"
-              aria-hidden
-            />
-          ) : (
+          <div className="relative shrink-0">
+            {inquiry.host?.avatar_url ? (
+              <img
+                src={inquiry.host.avatar_url}
+                alt=""
+                className="w-10 h-10 rounded-full object-cover"
+                aria-hidden
+              />
+            ) : (
+              <span
+                className="w-10 h-10 rounded-full inline-flex items-center justify-center font-semibold"
+                style={{ background: "rgba(255,138,76,0.18)", color: "#c4541e" }}
+                aria-hidden
+              >
+                {initial}
+              </span>
+            )}
+            {/* Static "active" indicator. We don't track presence yet,
+                so anyone whose chat is open gets the dot — the host
+                appears reachable, the chat feels alive. */}
             <span
-              className="shrink-0 w-10 h-10 rounded-full inline-flex items-center justify-center font-semibold"
-              style={{ background: "rgba(255,138,76,0.18)", color: "#c4541e" }}
               aria-hidden
-            >
-              {initial}
-            </span>
-          )}
-          <div className="min-w-0 flex-1">
-            <p className="font-medium text-foreground truncate leading-tight">
-              {hostName}
+              className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-[#fffdfa]"
+            />
+          </div>
+          <div className="min-w-0 flex-1 leading-tight">
+            <p className="font-medium text-foreground truncate">{hostName}</p>
+            <p className="text-[11px] text-muted-foreground truncate">
+              {inquiry.event_type
+                ? `${inquiry.event_type.charAt(0).toUpperCase()}${inquiry.event_type.slice(1)} inquiry`
+                : "Inquiry"}
+              {inquiry.event_date
+                ? ` · ${new Date(inquiry.event_date).toLocaleDateString(undefined, {
+                    month: "short",
+                    day: "numeric",
+                  })}`
+                : ""}
             </p>
           </div>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button
-                aria-label="More actions"
-                className="shrink-0 inline-flex items-center justify-center w-9 h-9 rounded-full hover:bg-black/5 text-muted-foreground"
+                aria-label="Inquiry details"
+                className="shrink-0 inline-flex items-center justify-center w-10 h-10 rounded-full bg-white/95 shadow-sm border border-border/40 text-foreground/80 hover:bg-white"
               >
-                <MoreHorizontal className="w-4 h-4" />
+                <Info className="w-4 h-4" />
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
@@ -693,13 +734,41 @@ export default function InquiryDetailPage() {
       <div className="flex-1 overflow-y-auto px-4 md:px-6 py-5">
         <div className="max-w-3xl mx-auto space-y-1.5">
           {/* Pinned: the original inquiry, rendered as the host's
-              "opening message" so the thread starts with their ask. */}
+              "opening message" so the thread starts with their ask. A
+              small NEW INQUIRY chip sits above the bubble to flag that
+              this is the host's original brief, not a regular reply. */}
           {inquiry.special_requests && (
-            <div className="max-w-[80%] px-3.5 py-2.5 text-sm leading-relaxed whitespace-pre-wrap rounded-2xl rounded-bl-sm bg-secondary mt-2">
-              <p className="text-[10px] uppercase tracking-wider opacity-60 mb-1">
-                Inquiry from {hostName}
-              </p>
-              <p>{inquiry.special_requests}</p>
+            <div className="space-y-1.5">
+              <div className="flex items-center gap-1.5">
+                <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider bg-background/90 backdrop-blur-sm border border-border/40 text-foreground/70 rounded-full px-2.5 py-1 shadow-sm">
+                  <Sparkles className="w-3 h-3 text-accent" />
+                  New inquiry
+                </span>
+              </div>
+              <div className="flex items-end gap-2">
+                {inquiry.host?.avatar_url ? (
+                  <img
+                    src={inquiry.host.avatar_url}
+                    alt=""
+                    className="shrink-0 w-6 h-6 rounded-full object-cover"
+                    aria-hidden
+                  />
+                ) : (
+                  <span
+                    className="shrink-0 w-6 h-6 rounded-full inline-flex items-center justify-center text-[10px] font-semibold"
+                    style={{
+                      background: "rgba(255,138,76,0.18)",
+                      color: "#c4541e",
+                    }}
+                    aria-hidden
+                  >
+                    {initial}
+                  </span>
+                )}
+                <div className="max-w-[80%] px-3.5 py-2.5 text-sm leading-relaxed whitespace-pre-wrap rounded-2xl rounded-bl-sm bg-background/95 border border-border/40 shadow-sm">
+                  <p>{inquiry.special_requests}</p>
+                </div>
+              </div>
             </div>
           )}
 
@@ -739,8 +808,8 @@ export default function InquiryDetailPage() {
                     key={it.key}
                     className="flex items-center justify-center py-3"
                   >
-                    <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-                      — {it.label} —
+                    <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground bg-background/80 backdrop-blur-sm rounded-full px-3 py-1 border border-border/40 shadow-sm">
+                      {it.label}
                     </span>
                   </div>
                 );
@@ -804,12 +873,12 @@ export default function InquiryDetailPage() {
                     <div
                       className={`max-w-[80%] px-3.5 py-2 text-sm leading-relaxed whitespace-pre-wrap rounded-2xl ${
                         isDeleted
-                          ? "bg-secondary/60 text-muted-foreground italic"
+                          ? "bg-background/70 text-muted-foreground italic border border-border/40"
                           : it.isMe
                             ? `bg-foreground text-background ${
                                 it.showTail ? "rounded-br-sm" : ""
                               }`
-                            : `bg-secondary ${
+                            : `bg-background/95 border border-border/40 shadow-sm ${
                                 it.showTail ? "rounded-bl-sm" : ""
                               }`
                       }`}
@@ -883,7 +952,9 @@ export default function InquiryDetailPage() {
                               </div>
                             </div>
                           ) : (
-                            <p>{m.body}</p>
+                            <p>
+                              <MessageBody body={m.body} />
+                            </p>
                           )}
                           {m.attachments && m.attachments.length > 0 && (
                             <MessageAttachments attachments={m.attachments} />
@@ -921,9 +992,10 @@ export default function InquiryDetailPage() {
 
           {otherTyping ? <TypingBubble /> : null}
           {seenTimeLabel ? (
-            <p className="text-right text-[11px] text-muted-foreground mt-1 mr-1">
-              Seen {seenTimeLabel}
-            </p>
+            <div className="flex items-center justify-end gap-1 text-[11px] text-muted-foreground mt-1 mr-1">
+              <CheckCheck className="w-3 h-3" aria-hidden />
+              <span>Read · {seenTimeLabel}</span>
+            </div>
           ) : null}
 
           {/* Review as a system bubble at the end of the thread */}
@@ -957,166 +1029,214 @@ export default function InquiryDetailPage() {
           }
         }}
       >
-        <div
-          className={`max-w-3xl mx-auto rounded-2xl transition ${
-            isDragOver ? "ring-2 ring-accent ring-offset-2 ring-offset-background" : ""
-          }`}
-        >
-          {replyTarget ? (
-            <MessageReplyContext
-              authorName={
-                replyTarget.sender_role === "host"
-                  ? hostName
-                  : replyTarget.sender_role === "vendor"
-                    ? "You"
-                    : "Vendora AI"
-              }
-              body={replyTarget.deleted_at ? "" : replyTarget.body}
-              tone="composer"
-              onCancel={() => setReplyToId(null)}
-            />
-          ) : null}
-          {pendingFiles.length > 0 && (
-            <div className="flex flex-wrap gap-2 mb-2">
-              {pendingFiles.map((f, i) => (
-                <span
-                  key={i}
-                  className="inline-flex items-center gap-2 px-3 py-1 bg-secondary rounded-full text-xs"
-                >
-                  {f.name}
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setPendingFiles((prev) => prev.filter((_, j) => j !== i))
-                    }
-                    aria-label="Remove attachment"
-                    className="text-muted-foreground hover:text-foreground"
-                  >
-                    <X className="w-3 h-3" />
-                  </button>
-                </span>
-              ))}
-            </div>
-          )}
-          <div className="flex items-end gap-2">
+        <div className="max-w-3xl mx-auto space-y-2">
+          {/* Quick-action chips above the composer — each is a single
+              tap that either opens a focused modal or drops a templated
+              body into the thread. */}
+          <div className="flex flex-wrap items-center gap-2">
             <button
               type="button"
-              onClick={() => fileInputRef.current?.click()}
-              disabled={sending || pendingFiles.length >= MAX_FILES}
-              aria-label="Attach files"
-              className="shrink-0 inline-flex items-center justify-center w-9 h-9 rounded-full hover:bg-black/5 text-muted-foreground disabled:opacity-50"
+              onClick={() => setProposalModalOpen(true)}
+              className="inline-flex items-center gap-1.5 text-xs font-medium bg-background/95 border border-border/40 shadow-sm rounded-full px-3 py-1.5 hover:bg-background"
             >
-              <Paperclip className="w-4 h-4" />
+              <FileText className="w-3.5 h-3.5 text-foreground/70" />
+              Send quote
             </button>
-            <VoiceRecorder
-              disabled={sending || pendingFiles.length >= MAX_FILES}
-              onRecorded={(file) => {
-                const list = new DataTransfer();
-                list.items.add(file);
-                pickFiles(list.files);
-              }}
-            />
-            <Popover open={emojiOpen} onOpenChange={setEmojiOpen}>
-              <PopoverTrigger asChild>
-                <button
-                  type="button"
-                  disabled={sending}
-                  aria-label="Quick reactions"
-                  className="shrink-0 inline-flex items-center justify-center w-9 h-9 rounded-full hover:bg-black/5 text-muted-foreground disabled:opacity-50"
-                >
-                  <Smile className="w-4 h-4" />
-                </button>
-              </PopoverTrigger>
-              <PopoverContent side="top" align="start" className="w-56 p-2">
-                <div className="grid grid-cols-6 gap-1">
-                  {QUICK_EMOJIS.map((e) => (
-                    <button
-                      key={e}
-                      type="button"
-                      onClick={() => {
-                        setComposer((v) => v + e);
-                        setEmojiOpen(false);
-                        composerRef.current?.focus();
-                      }}
-                      className="text-xl rounded-md p-1.5 hover:bg-secondary transition-colors"
-                    >
-                      {e}
-                    </button>
-                  ))}
-                </div>
-              </PopoverContent>
-            </Popover>
-            <TemplatePicker
-              vendorId={inquiry?.vendor_id ?? null}
-              onPick={(body) => {
-                setComposer((prev) => (prev ? `${prev}\n${body}` : body));
-                composerRef.current?.focus();
-              }}
-            />
-            <Textarea
-              ref={composerRef}
-              value={composer}
-              onChange={(e) => {
-                setComposer(e.target.value);
-                if (e.target.value.length > 0) broadcastTyping();
-              }}
-              onPaste={(e) => {
-                // Paste-an-image from clipboard: pull the image File
-                // out of clipboardData and run it through pickFiles
-                // (same validation as the paperclip / drop paths).
-                const files: File[] = [];
-                for (const item of Array.from(e.clipboardData.items)) {
-                  if (item.kind === "file") {
-                    const f = item.getAsFile();
-                    if (f) files.push(f);
-                  }
-                }
-                if (files.length > 0) {
-                  e.preventDefault();
-                  const list = new DataTransfer();
-                  for (const f of files) list.items.add(f);
-                  pickFiles(list.files);
-                }
-              }}
-              onKeyDown={(e) => {
-                // iMessage convention: Enter sends, Shift+Enter inserts
-                // a newline. Matches the "iMessage" placeholder copy.
-                if (e.key === "Enter" && !e.shiftKey) {
-                  e.preventDefault();
-                  if (!sending && (composer.trim() || pendingFiles.length > 0)) {
-                    sendMessage();
-                  }
-                }
-              }}
-              rows={1}
-              placeholder="iMessage"
-              className="resize-none min-h-[40px] max-h-32 rounded-2xl"
-            />
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept={ACCEPTED_MIME.join(",")}
-              multiple
-              className="hidden"
-              onChange={(e) => {
-                if (e.target.files) pickFiles(e.target.files);
-                e.target.value = "";
-              }}
-            />
-            <Button
-              onClick={sendMessage}
-              disabled={
-                sending || (!composer.trim() && pendingFiles.length === 0)
-              }
-              aria-label="Send"
-              className="shrink-0 rounded-full bg-foreground text-background hover:bg-foreground/90 h-10 w-10 p-0"
+            <button
+              type="button"
+              onClick={() => setAppointmentModalOpen(true)}
+              className="inline-flex items-center gap-1.5 text-xs font-medium bg-background/95 border border-border/40 shadow-sm rounded-full px-3 py-1.5 hover:bg-background"
             >
-              {sending ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <Send className="w-4 h-4" />
-              )}
-            </Button>
+              <CalendarDays className="w-3.5 h-3.5 text-foreground/70" />
+              Share availability
+            </button>
+            <button
+              type="button"
+              onClick={() => setPinLocationOpen(true)}
+              className="inline-flex items-center gap-1.5 text-xs font-medium bg-background/95 border border-border/40 shadow-sm rounded-full px-3 py-1.5 hover:bg-background"
+            >
+              <MapPin className="w-3.5 h-3.5 text-accent" />
+              Pin location
+            </button>
+          </div>
+
+          {/* Reply quote + pending file chips, when present, sit above
+              the input pill so they're visually attached to the next
+              message. */}
+          <div
+            className={`rounded-2xl transition ${
+              isDragOver
+                ? "ring-2 ring-accent ring-offset-2 ring-offset-background"
+                : ""
+            }`}
+          >
+            {replyTarget ? (
+              <MessageReplyContext
+                authorName={
+                  replyTarget.sender_role === "host"
+                    ? hostName
+                    : replyTarget.sender_role === "vendor"
+                      ? "You"
+                      : "Vendora AI"
+                }
+                body={replyTarget.deleted_at ? "" : replyTarget.body}
+                tone="composer"
+                onCancel={() => setReplyToId(null)}
+              />
+            ) : null}
+            {pendingFiles.length > 0 && (
+              <div className="flex flex-wrap gap-2 mb-2">
+                {pendingFiles.map((f, i) => (
+                  <span
+                    key={i}
+                    className="inline-flex items-center gap-2 px-3 py-1 bg-background/90 border border-border/40 rounded-full text-xs"
+                  >
+                    {f.name}
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setPendingFiles((prev) =>
+                          prev.filter((_, j) => j !== i),
+                        )
+                      }
+                      aria-label="Remove attachment"
+                      className="text-muted-foreground hover:text-foreground"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
+
+            {/* The single composer pill — paperclip + secondary tools
+                on the left, textarea fills the middle, dark circular
+                send button on the right. All inside one rounded
+                container with a soft shadow. */}
+            <div className="flex items-end gap-1 bg-background/95 border border-border/40 shadow-sm rounded-3xl pl-2 pr-1.5 py-1.5">
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={sending || pendingFiles.length >= MAX_FILES}
+                aria-label="Attach files"
+                className="shrink-0 inline-flex items-center justify-center w-9 h-9 rounded-full hover:bg-black/5 text-muted-foreground disabled:opacity-50"
+              >
+                <Paperclip className="w-4 h-4" />
+              </button>
+              <VoiceRecorder
+                disabled={sending || pendingFiles.length >= MAX_FILES}
+                onRecorded={(file) => {
+                  const list = new DataTransfer();
+                  list.items.add(file);
+                  pickFiles(list.files);
+                }}
+              />
+              <Popover open={emojiOpen} onOpenChange={setEmojiOpen}>
+                <PopoverTrigger asChild>
+                  <button
+                    type="button"
+                    disabled={sending}
+                    aria-label="Quick reactions"
+                    className="shrink-0 inline-flex items-center justify-center w-9 h-9 rounded-full hover:bg-black/5 text-muted-foreground disabled:opacity-50"
+                  >
+                    <Smile className="w-4 h-4" />
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent side="top" align="start" className="w-56 p-2">
+                  <div className="grid grid-cols-6 gap-1">
+                    {QUICK_EMOJIS.map((e) => (
+                      <button
+                        key={e}
+                        type="button"
+                        onClick={() => {
+                          setComposer((v) => v + e);
+                          setEmojiOpen(false);
+                          composerRef.current?.focus();
+                        }}
+                        className="text-xl rounded-md p-1.5 hover:bg-secondary transition-colors"
+                      >
+                        {e}
+                      </button>
+                    ))}
+                  </div>
+                </PopoverContent>
+              </Popover>
+              <TemplatePicker
+                vendorId={inquiry?.vendor_id ?? null}
+                onPick={(body) => {
+                  setComposer((prev) => (prev ? `${prev}\n${body}` : body));
+                  composerRef.current?.focus();
+                }}
+              />
+              <Textarea
+                ref={composerRef}
+                value={composer}
+                onChange={(e) => {
+                  setComposer(e.target.value);
+                  if (e.target.value.length > 0) broadcastTyping();
+                }}
+                onPaste={(e) => {
+                  // Paste-an-image from clipboard: pull the image File
+                  // out of clipboardData and run it through pickFiles
+                  // (same validation as the paperclip / drop paths).
+                  const files: File[] = [];
+                  for (const item of Array.from(e.clipboardData.items)) {
+                    if (item.kind === "file") {
+                      const f = item.getAsFile();
+                      if (f) files.push(f);
+                    }
+                  }
+                  if (files.length > 0) {
+                    e.preventDefault();
+                    const list = new DataTransfer();
+                    for (const f of files) list.items.add(f);
+                    pickFiles(list.files);
+                  }
+                }}
+                onKeyDown={(e) => {
+                  // iMessage convention: Enter sends, Shift+Enter inserts
+                  // a newline.
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    if (
+                      !sending &&
+                      (composer.trim() || pendingFiles.length > 0)
+                    ) {
+                      sendMessage();
+                    }
+                  }
+                }}
+                rows={1}
+                placeholder={`Message ${hostName}…`}
+                className="resize-none min-h-[36px] max-h-32 rounded-2xl border-0 bg-transparent shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 px-2"
+              />
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept={ACCEPTED_MIME.join(",")}
+                multiple
+                className="hidden"
+                onChange={(e) => {
+                  if (e.target.files) pickFiles(e.target.files);
+                  e.target.value = "";
+                }}
+              />
+              <Button
+                onClick={sendMessage}
+                disabled={
+                  sending ||
+                  (!composer.trim() && pendingFiles.length === 0)
+                }
+                aria-label="Send"
+                className="shrink-0 rounded-full bg-foreground text-background hover:bg-foreground/90 h-9 w-9 p-0"
+              >
+                {sending ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Send className="w-4 h-4" />
+                )}
+              </Button>
+            </div>
           </div>
         </div>
       </div>
@@ -1143,6 +1263,14 @@ export default function InquiryDetailPage() {
             vendorId={inquiry.vendor_id}
             hostId={inquiry.host_id}
             proposedBy="vendor"
+          />
+          <PinLocationDialog
+            open={pinLocationOpen}
+            onOpenChange={setPinLocationOpen}
+            defaultAddress={inquiry.location}
+            onSend={(body) => {
+              sendBody(body);
+            }}
           />
           {inquiryPreviewOpen && (
             <InquiryPreviewSheet
