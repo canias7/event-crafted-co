@@ -63,6 +63,7 @@ import {
   VendorAiSuperagentsPage,
   VendorPayPage,
   VendorGalleryPage,
+  VendorTemplatesPage,
   InquiryDetailPage,
   AcceptTeamInvitePage,
   ClaimVendorPage,
@@ -217,6 +218,7 @@ const App = () => (
               <Route path="/vendor/ai-superagents" element={<RequireRole role="vendor"><VendorAiSuperagentsPage /></RequireRole>} />
               <Route path="/vendor/pay" element={<RequireRole role="vendor"><VendorPayPage /></RequireRole>} />
               <Route path="/vendor/gallery" element={<RequireRole role="vendor"><VendorGalleryPage /></RequireRole>} />
+              <Route path="/vendor/templates" element={<RequireRole role="vendor"><VendorTemplatesPage /></RequireRole>} />
               {/* /vendor/studio retired — the three tools that lived under
                   it (AI Superagents, Vendora Pay, Gallery) now have their
                   own sidebar entries + routes above. */}

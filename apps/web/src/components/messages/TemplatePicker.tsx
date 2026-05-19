@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { ChevronDown, FileText, Sparkles } from "lucide-react";
+import { Link } from "react-router-dom";
+import { ChevronDown, FileText, Sparkles, Settings as SettingsIcon } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import {
@@ -27,10 +28,12 @@ interface Props {
 export function TemplatePicker({ vendorId, onPick }: Props) {
   const [templates, setTemplates] = useState<Template[]>([]);
   const [loaded, setLoaded] = useState(false);
+  const [open, setOpen] = useState(false);
 
   useEffect(() => {
-    if (!vendorId) return;
+    if (!vendorId || !open) return;
     let cancelled = false;
+    setLoaded(false);
     templatesTable()
       .select("id, name, body")
       .eq("vendor_id", vendorId)
@@ -43,12 +46,12 @@ export function TemplatePicker({ vendorId, onPick }: Props) {
     return () => {
       cancelled = true;
     };
-  }, [vendorId]);
+  }, [vendorId, open]);
 
   if (!vendorId) return null;
 
   return (
-    <DropdownMenu>
+    <DropdownMenu open={open} onOpenChange={setOpen}>
       <DropdownMenuTrigger asChild>
         <Button
           type="button"
@@ -94,6 +97,16 @@ export function TemplatePicker({ vendorId, onPick }: Props) {
             </DropdownMenuItem>
           ))
         )}
+        <DropdownMenuSeparator />
+        <DropdownMenuItem asChild>
+          <Link
+            to="/vendor/templates"
+            className="cursor-pointer flex items-center gap-2 text-xs text-muted-foreground"
+          >
+            <SettingsIcon className="w-3 h-3" />
+            Manage templates
+          </Link>
+        </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   );
