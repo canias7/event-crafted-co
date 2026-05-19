@@ -7,6 +7,7 @@ import {
   type MessageReaction,
 } from "@/components/messages/MessageReactions";
 import { MessageReplyContext } from "@/components/messages/MessageReplyContext";
+import { VoiceRecorder } from "@/components/messages/VoiceRecorder";
 import { Link, useParams } from "react-router-dom";
 import {
   ArrowLeft,
@@ -1006,6 +1007,14 @@ export default function InquiryDetailPage() {
             >
               <Paperclip className="w-4 h-4" />
             </button>
+            <VoiceRecorder
+              disabled={sending || pendingFiles.length >= MAX_FILES}
+              onRecorded={(file) => {
+                const list = new DataTransfer();
+                list.items.add(file);
+                pickFiles(list.files);
+              }}
+            />
             <Popover open={emojiOpen} onOpenChange={setEmojiOpen}>
               <PopoverTrigger asChild>
                 <button

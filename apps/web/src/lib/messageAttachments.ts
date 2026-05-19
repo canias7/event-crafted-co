@@ -8,6 +8,15 @@ export const ACCEPTED_MIME = [
   "image/png",
   "image/webp",
   "application/pdf",
+  // Voice messages — webm is what MediaRecorder defaults to on
+  // Chrome/Firefox, audio/mp4 (m4a) on Safari, ogg on some Linux
+  // setups. The recorder hands us a Blob with the actual MIME, so we
+  // just need to accept the common ones here.
+  "audio/webm",
+  "audio/mp4",
+  "audio/ogg",
+  "audio/mpeg",
+  "audio/wav",
 ];
 
 export interface MessageAttachment {
@@ -59,7 +68,7 @@ export async function uploadAttachments(
 
 export function validateAttachment(file: File): string | null {
   if (!ACCEPTED_MIME.includes(file.type)) {
-    return `${file.name}: only JPG, PNG, WEBP, or PDF`;
+    return `${file.name}: only JPG, PNG, WEBP, PDF, or audio`;
   }
   if (file.size > MAX_BYTES) {
     return `${file.name}: max 10 MB`;
