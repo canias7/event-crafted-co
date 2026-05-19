@@ -979,47 +979,6 @@ export type Database = {
         }
         Relationships: []
       }
-      imported_reviews: {
-        Row: {
-          body: string | null
-          created_at: string
-          id: string
-          rating: number
-          reviewed_at: string | null
-          reviewer_name: string
-          source: string
-          vendor_id: string
-        }
-        Insert: {
-          body?: string | null
-          created_at?: string
-          id?: string
-          rating: number
-          reviewed_at?: string | null
-          reviewer_name: string
-          source: string
-          vendor_id: string
-        }
-        Update: {
-          body?: string | null
-          created_at?: string
-          id?: string
-          rating?: number
-          reviewed_at?: string | null
-          reviewer_name?: string
-          source?: string
-          vendor_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "imported_reviews_vendor_id_fkey"
-            columns: ["vendor_id"]
-            isOneToOne: false
-            referencedRelation: "vendor_profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       inquiries: {
         Row: {
           budget_max_cents: number | null

@@ -34,10 +34,6 @@ import { VendorOtherListings } from "@/components/vendor/VendorOtherListings";
 import { VendorBrandCard } from "@/components/vendor/VendorBrandCard";
 import { VerificationBadges } from "@/components/vendor/VerificationBadges";
 import { CoBookedRail } from "@/components/vendor/CoBookedRail";
-import {
-  ImportedReviewsList,
-  type ImportedReview,
-} from "@/components/vendor/ImportedReviewsList";
 import { VendorFaqList } from "@/components/vendor/VendorFaqList";
 import {
   VendorFaqsPublic,
@@ -274,29 +270,6 @@ export default function VendorDetailPage() {
         setConversationReviews(
           normalized.filter((r) => r.kind === "conversation"),
         );
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [vendor]);
-
-  // Imported reviews from external platforms (vendor-pasted).
-  const [importedReviews, setImportedReviews] = useState<ImportedReview[]>([]);
-  useEffect(() => {
-    if (!vendor || !vendor.isReal) {
-      setImportedReviews([]);
-      return;
-    }
-    let cancelled = false;
-    supabase
-      .from("imported_reviews")
-      .select("id, source, reviewer_name, rating, body, reviewed_at")
-      .eq("vendor_id", vendor.id)
-      .order("reviewed_at", { ascending: false, nullsFirst: false })
-      .order("created_at", { ascending: false })
-      .then(({ data }) => {
-        if (cancelled) return;
-        setImportedReviews((data as ImportedReview[] | null) ?? []);
       });
     return () => {
       cancelled = true;
