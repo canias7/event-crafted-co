@@ -129,6 +129,17 @@
   }
 }
 
+/* Hide the native scrollbar but keep scroll behavior. Used on
+   marketing chat demos / showcase scrollers where the scroll IS
+   intentional (animated content) but the bar reads as a UI seam. */
+.no-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
 /* Print stylesheet — opt-in via the .printable class on the page <main>.
    Hides chrome (sidebar, mobile nav, sticky headers, action buttons),
    forces black-on-white for cost reasons, opens columns/grids into a

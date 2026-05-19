@@ -198,7 +198,7 @@ export function HiluxChatDemo() {
       {/* Floating conversation — no card, no bubbles */}
       <div
         ref={scrollRef}
-        className="flex flex-col gap-5 overflow-y-auto"
+        className="flex flex-col gap-5 overflow-y-auto no-scrollbar"
         style={{ minHeight: 380, maxHeight: 520, paddingRight: 4 }}
       >
         <DayDivider label="TODAY" />
