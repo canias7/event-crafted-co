@@ -148,6 +148,21 @@ export function PublicNav() {
               {item.label}
             </Link>
           ))}
+
+          {/* Explore — public, read-only global feed of approved
+              vendor activity. Sits between Vendors and Super agents. */}
+          <Link
+            to="/explore"
+            className={`text-sm font-medium transition-colors duration-200 ${
+              location.pathname === "/explore"
+                ? "text-foreground"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+            aria-current={location.pathname === "/explore" ? "page" : undefined}
+          >
+            Explore
+          </Link>
+
           {/* Super agents — shipped across every public page so the
               NEW pill stays visible while a visitor browses around
               (was previously only on the landing). */}
@@ -340,6 +355,13 @@ export function PublicNav() {
               {item.label}
             </Link>
           ))}
+          <Link
+            to="/explore"
+            onClick={() => setMobileOpen(false)}
+            className="block py-3 text-sm font-medium text-muted-foreground hover:text-foreground"
+          >
+            Explore
+          </Link>
           {session && profile ? (
             <>
               <Link

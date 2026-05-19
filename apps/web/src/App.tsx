@@ -52,6 +52,7 @@ import {
   HostEventsPage,
   HostAccountPage,
   PublicEventRsvpPage,
+  PublicExplorePage,
   CustomerExplorePage,
   HostProfilePage,
   VendorMyProfilePage,
@@ -85,6 +86,7 @@ const App = () => (
             <Routes>
               {/* Public */}
               <Route path="/" element={<LandingPage />} />
+              <Route path="/explore" element={<PublicExplorePage />} />
               <Route path="/vendors" element={<VendorBrowsePage />} />
               <Route path="/vendors/locations" element={<VendorLocationsPage />} />
               <Route path="/vendors/in/:citySlug" element={<VendorCityPage />} />

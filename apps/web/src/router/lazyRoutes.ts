@@ -132,6 +132,9 @@ export const HostAccountPage = lazyWithReload(importHostAccount);
 const importPublicEventRsvp = () => import("@/pages/PublicEventRsvpPage");
 export const PublicEventRsvpPage = lazyWithReload(importPublicEventRsvp);
 
+const importPublicExplore = () => import("@/pages/PublicExplorePage");
+export const PublicExplorePage = lazyWithReload(importPublicExplore);
+
 // ---------------- Vendor ----------------
 // VendorHomePage deleted — /vendor/me is the landing surface for
 // vendors. /vendor/home redirects to /vendor/me in App.tsx so any
