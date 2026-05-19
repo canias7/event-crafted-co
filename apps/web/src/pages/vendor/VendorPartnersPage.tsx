@@ -65,6 +65,7 @@ interface PartnerMessage {
   sender_user_id: string;
   body: string;
   created_at: string;
+  contact_info_flagged?: boolean;
 }
 
 function relativeTime(iso: string | null): string {
@@ -185,7 +186,7 @@ export default function VendorPartnersPage() {
 
   async function loadMessages(threadId: string) {
     const { data } = await msgsTable()
-      .select("id, sender_user_id, body, created_at")
+      .select("id, sender_user_id, body, created_at, contact_info_flagged")
       .eq("thread_id", threadId)
       .order("created_at", { ascending: true });
     setMessages((data as PartnerMessage[]) ?? []);
@@ -194,31 +195,47 @@ export default function VendorPartnersPage() {
     }, 50);
   }
 
-  // Mark the open thread as read for the current user. We fire two
-  // scoped updates so the DB picks the side that matches the caller —
-  // only one of them will touch a row. Local state mirrors the write so
-  // the unread dot clears immediately.
+  // Mark the open thread as read for the current user. Only writes
+  // when the thread is ACTUALLY unread — without this guard every
+  // open hits two UPDATEs that each emit a realtime event the second
+  // listener then refetches on. Local state mirrors the write so the
+  // unread dot clears immediately.
   async function markRead(threadId: string) {
     if (!myUserId) return;
+    const thread = threads.find((t) => t.id === threadId);
+    if (!thread) return;
+    const mySide: "a" | "b" | null =
+      thread.user_a_id === myUserId
+        ? "a"
+        : thread.user_b_id === myUserId
+          ? "b"
+          : null;
+    if (!mySide) return;
+    const myReadAt =
+      mySide === "a" ? thread.user_a_read_at : thread.user_b_read_at;
+    // Already caught up — bail out so the no-op UPDATE doesn't fire
+    // a wasted realtime tick.
+    if (
+      myReadAt &&
+      new Date(myReadAt).getTime() >= new Date(thread.last_message_at).getTime()
+    ) {
+      return;
+    }
     const now = new Date().toISOString();
     setThreads((prev) =>
-      prev.map((t) => {
-        if (t.id !== threadId) return t;
-        if (t.user_a_id === myUserId) return { ...t, user_a_read_at: now };
-        if (t.user_b_id === myUserId) return { ...t, user_b_read_at: now };
-        return t;
-      }),
+      prev.map((t) =>
+        t.id !== threadId
+          ? t
+          : mySide === "a"
+            ? { ...t, user_a_read_at: now }
+            : { ...t, user_b_read_at: now },
+      ),
     );
-    await Promise.all([
-      threadsTable()
-        .update({ user_a_read_at: now })
-        .eq("id", threadId)
-        .eq("user_a_id", myUserId),
-      threadsTable()
-        .update({ user_b_read_at: now })
-        .eq("id", threadId)
-        .eq("user_b_id", myUserId),
-    ]);
+    await threadsTable()
+      .update(
+        mySide === "a" ? { user_a_read_at: now } : { user_b_read_at: now },
+      )
+      .eq("id", threadId);
   }
 
   useEffect(() => {
@@ -236,34 +253,29 @@ export default function VendorPartnersPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeThreadId]);
 
-  // Realtime: live-update the open partner thread via shared channel.
+  // Realtime: live-update the open partner thread + refresh the
+  // sidebar list on any inbound message. Single subscription on
+  // vendor_partner_messages — RLS guarantees we only see threads
+  // we're in, so the unfiltered listen is safe and cheap (one
+  // fanout per message instead of two).
   const partnerMsgConfig = useMemo(
-    () =>
-      activeThreadId
-        ? {
-            table: "vendor_partner_messages",
-            event: "INSERT" as const,
-            filter: `thread_id=eq.${activeThreadId}`,
-          }
-        : null,
-    [activeThreadId],
-  );
-  useRealtime(partnerMsgConfig, () => {
-    if (activeThreadId) loadMessages(activeThreadId);
-  });
-
-  // Second realtime sub: refresh the thread list on ANY partner message
-  // insert (RLS only delivers events for threads I'm in). This lights
-  // the unread dot in real time on inactive threads.
-  const allPartnerMsgsConfig = useMemo(
     () =>
       myUserId
         ? { table: "vendor_partner_messages", event: "INSERT" as const }
         : null,
     [myUserId],
   );
-  useRealtime(allPartnerMsgsConfig, () => {
-    if (myUserId) loadThreads();
+  useRealtime(partnerMsgConfig, (payload) => {
+    if (!myUserId) return;
+    // The realtime payload is the new row. If it's in the open
+    // thread, refresh the message list AND the inbox preview;
+    // otherwise just the inbox preview (so the unread dot lights).
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const newRow = (payload as any)?.new as { thread_id?: string } | null;
+    if (newRow?.thread_id && newRow.thread_id === activeThreadId) {
+      loadMessages(activeThreadId);
+    }
+    loadThreads();
   });
 
   async function send() {
@@ -599,18 +611,31 @@ export default function VendorPartnersPage() {
                               <span className="shrink-0 w-6" aria-hidden />
                             )
                           ) : null}
-                          <div
-                            className={`max-w-[80%] px-3.5 py-2 text-sm leading-relaxed whitespace-pre-wrap rounded-2xl ${
-                              it.isMe
-                                ? `bg-foreground text-background ${
-                                    it.showTail ? "rounded-br-sm" : ""
-                                  }`
-                                : `bg-card border border-border ${
-                                    it.showTail ? "rounded-bl-sm" : ""
-                                  }`
-                            }`}
-                          >
-                            {m.body}
+                          <div className="flex flex-col">
+                            <div
+                              className={`max-w-[80%] px-3.5 py-2 text-sm leading-relaxed whitespace-pre-wrap rounded-2xl ${
+                                it.isMe
+                                  ? `bg-foreground text-background ${
+                                      it.showTail ? "rounded-br-sm" : ""
+                                    }`
+                                  : `bg-card border border-border ${
+                                      it.showTail ? "rounded-bl-sm" : ""
+                                    }`
+                              }`}
+                            >
+                              {m.body}
+                            </div>
+                            {m.contact_info_flagged ? (
+                              <p
+                                className={`text-[10px] text-muted-foreground/80 mt-0.5 inline-flex items-center gap-1 ${
+                                  it.isMe ? "self-end pr-1" : "self-start pl-1"
+                                }`}
+                              >
+                                <span aria-hidden>⚠</span>
+                                Looks like contact info — kept on Vendora to
+                                stay covered.
+                              </p>
+                            ) : null}
                           </div>
                         </div>
                       );
