@@ -8,8 +8,21 @@ import {
 } from "@/components/messages/MessageReactions";
 import { MessageReplyContext } from "@/components/messages/MessageReplyContext";
 import { VoiceRecorder } from "@/components/messages/VoiceRecorder";
+import { MessageBody } from "@/components/messages/MessageBody";
 import { Link, useParams } from "react-router-dom";
-import { ArrowLeft, Send, Loader2, Star, Sparkles, Paperclip, X, CalendarDays, Smile } from "lucide-react";
+import {
+  ArrowLeft,
+  Send,
+  Loader2,
+  Star,
+  Sparkles,
+  Paperclip,
+  X,
+  CalendarDays,
+  CheckCheck,
+  Info,
+  Smile,
+} from "lucide-react";
 import {
   Popover,
   PopoverContent,
@@ -20,7 +33,6 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useRequireVerifiedEmail } from "@/hooks/useRequireVerifiedEmail";
-import { DashboardSidebar } from "@/components/shared/DashboardSidebar";
 import { MobileNav } from "@/components/shared/MobileNav";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -65,6 +77,7 @@ interface Inquiry {
   vendor: {
     business_name: string;
     category: string;
+    logo_url?: string | null;
   } | null;
 }
 
@@ -116,7 +129,11 @@ export default function HostInquiryDetailPage() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [composer, setComposer] = useState("");
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
+  const [emojiOpen, setEmojiOpen] = useState(false);
+  const [summaryOpen, setSummaryOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const composerRef = useRef<HTMLTextAreaElement>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
   const { otherTyping, broadcastTyping } = useInquiryTyping(
     inquiryId,
     "host",
@@ -141,12 +158,15 @@ export default function HostInquiryDetailPage() {
 
   async function load() {
     if (!inquiryId || !user) return;
-    setLoading(true);
+    // Skeleton overlay shows only on the FIRST load. Subsequent
+    // realtime-triggered reloads keep the existing chat visible —
+    // toggling loading=true on every tick flashes the skeleton.
+    if (inquiry === null) setLoading(true);
 
     const { data: i, error: iErr } = await supabase
       .from("inquiries")
       .select(
-        "id, vendor_id, event_type, event_date, guest_count, location, budget_min_cents, budget_max_cents, special_requests, status, created_at, vendor_read_at, host_read_at, vendor:vendor_profiles!inquiries_vendor_id_fkey(business_name, category)",
+        "id, vendor_id, event_type, event_date, guest_count, location, budget_min_cents, budget_max_cents, special_requests, status, created_at, vendor_read_at, host_read_at, vendor:vendor_profiles!inquiries_vendor_id_fkey(business_name, category, logo_url)",
       )
       .eq("id", inquiryId)
       .maybeSingle();
@@ -158,9 +178,9 @@ export default function HostInquiryDetailPage() {
     }
     setInquiry(i as unknown as Inquiry);
 
-    // First-time-open: stamp host_read_at so the vendor's "Seen at X"
-    // indicator can light up. Fire-and-forget — the page renders even
-    // if this write is slow / fails.
+    // First-time-open: stamp host_read_at so the vendor's "Seen" line
+    // can light up. Fire-and-forget — the page renders even if this
+    // write is slow.
     const inq = i as unknown as Inquiry | null;
     if (inq && inq.host_read_at == null) {
       supabase
@@ -255,8 +275,6 @@ export default function HostInquiryDetailPage() {
       update.signed_name = signature.signed_name;
       update.signed_user_agent = signature.signed_user_agent;
     }
-    // Update payload is dynamic (status + optional signature fields),
-    // which the typed update() can't validate. Cast through any.
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { error } = await (supabase as any)
       .from("proposals")
@@ -281,6 +299,17 @@ export default function HostInquiryDetailPage() {
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [inquiryId, user]);
+
+  // Auto-scroll to the bottom whenever the message list or typing
+  // indicator changes. Smooth on subsequent updates, instant on first
+  // mount so the user lands at the latest message rather than the top.
+  useEffect(() => {
+    if (!messagesEndRef.current) return;
+    messagesEndRef.current.scrollIntoView({
+      behavior: messages.length > 0 ? "smooth" : "auto",
+      block: "end",
+    });
+  }, [messages.length, otherTyping]);
 
   // Live updates: re-fetch when this thread's messages or this inquiry's
   // status change. Routed through the shared user-scoped channel.
@@ -457,7 +486,6 @@ export default function HostInquiryDetailPage() {
   if (notFound) {
     return (
       <div className="flex min-h-screen vendor-canvas">
-        <DashboardSidebar items={navItems} title="Customer" backPath="/" />
         <main className="flex-1 pb-20 lg:pb-0 p-8">
           <Link
             to="/customer/inquiries"
@@ -479,6 +507,34 @@ export default function HostInquiryDetailPage() {
     );
   }
 
+  // Skeleton-state render while initial load completes.
+  if (loading && inquiry === null) {
+    return (
+      <div className="min-h-screen vendor-canvas flex flex-col">
+        <div className="sticky top-0 z-40 px-4 md:px-6 py-3 backdrop-blur-md border-b border-border/40">
+          <div className="flex items-center gap-3 max-w-3xl mx-auto">
+            <Skeleton className="w-10 h-10 rounded-full" />
+            <Skeleton className="w-10 h-10 rounded-full" />
+            <div className="flex-1 space-y-1.5">
+              <Skeleton className="h-3.5 w-32" />
+              <Skeleton className="h-3 w-24" />
+            </div>
+          </div>
+        </div>
+        <div className="flex-1 p-6">
+          <Skeleton className="h-64 w-full rounded-2xl" />
+        </div>
+      </div>
+    );
+  }
+  if (!inquiry) return null;
+
+  const vendorName = inquiry.vendor?.business_name?.trim() || "Vendor";
+  const vendorInitial = vendorName.charAt(0).toUpperCase();
+  const eventTypeNice = inquiry.event_type
+    ? `${inquiry.event_type.charAt(0).toUpperCase()}${inquiry.event_type.slice(1).replace(/_/g, " ")}`
+    : "";
+
   // "Seen" indicator — only fires when the vendor has read past the
   // last outgoing host message.
   const lastOutgoing = (() => {
@@ -488,7 +544,7 @@ export default function HostInquiryDetailPage() {
     return null;
   })();
   const seenAt =
-    lastOutgoing && inquiry?.vendor_read_at &&
+    lastOutgoing && inquiry.vendor_read_at &&
     new Date(inquiry.vendor_read_at).getTime() >=
       new Date(lastOutgoing.created_at).getTime()
       ? inquiry.vendor_read_at
@@ -501,515 +557,554 @@ export default function HostInquiryDetailPage() {
     : null;
 
   return (
-    <div className="flex min-h-screen vendor-canvas">
-      <DashboardSidebar items={navItems} title="Customer" backPath="/" />
-
-      <main id="main-content" className="flex-1 pb-20 lg:pb-0">
-        <div className="backdrop-blur-sm px-4 md:px-8 py-4 sticky top-0 z-40">
+    <div className="min-h-screen vendor-canvas flex flex-col">
+      {/* ─── Sticky chat header ─────────────────────────────────────────
+          Pill back button + vendor avatar w/ subtle presence dot +
+          name + "{event} inquiry · {date}" subtitle + pill Info
+          button. Info opens the inquiry-summary sheet (the brief the
+          host originally submitted). */}
+      <div
+        className="sticky top-0 z-40 px-4 md:px-6 py-3 backdrop-blur-md"
+        style={{
+          background: "rgba(255,253,250,0.85)",
+          borderBottom: "0.5px solid rgba(255,138,76,0.18)",
+        }}
+      >
+        <div className="flex items-center gap-3 max-w-3xl mx-auto">
           <Link
             to="/customer/inquiries"
-            className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
+            aria-label="Back to inquiries"
+            className="shrink-0 inline-flex items-center justify-center w-10 h-10 rounded-full bg-white/95 shadow-sm border border-border/40 text-foreground/80 hover:bg-white"
           >
             <ArrowLeft className="w-4 h-4" />
-            Back to inquiries
           </Link>
+          <div className="relative shrink-0">
+            {inquiry.vendor?.logo_url ? (
+              <img
+                src={inquiry.vendor.logo_url}
+                alt=""
+                className="w-10 h-10 rounded-full object-cover"
+                aria-hidden
+              />
+            ) : (
+              <span
+                className="w-10 h-10 rounded-full inline-flex items-center justify-center font-semibold"
+                style={{ background: "rgba(255,138,76,0.18)", color: "#c4541e" }}
+                aria-hidden
+              >
+                {vendorInitial}
+              </span>
+            )}
+            <span
+              aria-hidden
+              className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-[#fffdfa]"
+            />
+          </div>
+          <div className="min-w-0 flex-1 leading-tight">
+            <p className="font-medium text-foreground truncate">{vendorName}</p>
+            <p className="text-[11px] text-muted-foreground truncate">
+              {eventTypeNice ? `${eventTypeNice} inquiry` : "Inquiry"}
+              {inquiry.event_date
+                ? ` · ${new Date(inquiry.event_date).toLocaleDateString(undefined, {
+                    month: "short",
+                    day: "numeric",
+                  })}`
+                : ""}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setSummaryOpen(true)}
+            aria-label="Inquiry details"
+            className="shrink-0 inline-flex items-center justify-center w-10 h-10 rounded-full bg-white/95 shadow-sm border border-border/40 text-foreground/80 hover:bg-white"
+          >
+            <Info className="w-4 h-4" />
+          </button>
         </div>
+      </div>
 
-        <div className="max-w-4xl mx-auto p-4 md:p-8 space-y-6">
-          {loading ? (
-            <>
-              <Skeleton className="h-32 w-full rounded-sm" />
-              <Skeleton className="h-48 w-full rounded-sm" />
-            </>
+      {/* ─── Chat thread (scrolling area) ────────────────────────────── */}
+      <div className="flex-1 overflow-y-auto px-4 md:px-6 py-5">
+        <div className="max-w-3xl mx-auto space-y-1.5">
+          {/* Pinned: status pill for context (the host's reminder of
+              where this inquiry stands). */}
+          <div className="flex items-center justify-center pb-2">
+            <Badge
+              variant="outline"
+              className={`${statusStyles[inquiry.status] ?? ""} rounded-full text-[11px] font-medium`}
+            >
+              {statusLabel[inquiry.status] ?? inquiry.status}
+            </Badge>
+          </div>
+
+          {/* Original brief — rendered as the host's opening outgoing
+              bubble so the thread reads start-to-finish. */}
+          {inquiry.special_requests && (
+            <div className="flex items-end justify-end mt-2">
+              <div className="max-w-[80%] px-3.5 py-2.5 text-sm leading-relaxed whitespace-pre-wrap rounded-2xl rounded-br-sm bg-foreground text-background">
+                <p className="text-[10px] uppercase tracking-wider opacity-60 mb-1">
+                  Your inquiry
+                </p>
+                <p>
+                  <MessageBody body={inquiry.special_requests} />
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* Proposals — sender-agnostic system bubbles */}
+          {proposals.map((p) => (
+            <div key={p.id} className="my-3">
+              <ProposalCard
+                proposal={p}
+                canRespond={p.status === "pending"}
+                acting={acting}
+                onAccept={(sig) => respondProposal(p, "accepted", sig)}
+                onReject={() => respondProposal(p, "rejected")}
+              />
+            </div>
+          ))}
+
+          {messages.length === 0 && !inquiry.special_requests ? (
+            <p className="text-sm text-muted-foreground py-12 text-center">
+              No messages yet — the vendor will reply soon.
+            </p>
           ) : (
-            inquiry && (
-              <>
-                {/* Inquiry summary */}
-                <div className="card-soft p-6">
-                  <div className="flex items-start justify-between gap-4 flex-wrap mb-4">
-                    <div>
-                      <p className="font-label text-muted-foreground">To</p>
-                      <h1 className="font-editorial text-3xl">
-                        {inquiry.vendor?.business_name ?? "Vendor"}
-                      </h1>
-                      {inquiry.vendor?.category && (
-                        <p className="text-sm text-muted-foreground mt-1">
-                          {inquiry.vendor.category}
-                        </p>
-                      )}
-                    </div>
-                    <Badge
-                      variant="outline"
-                      className={statusStyles[inquiry.status] ?? ""}
-                    >
-                      {statusLabel[inquiry.status] ?? inquiry.status}
-                    </Badge>
+            groupMessages(messages, {
+              isMe: (m) => m.sender_role === "host",
+              senderKey: (m) => m.sender_role,
+              createdAt: (m) => m.created_at,
+              id: (m) => m.id,
+            }).map((it) => {
+              if (it.kind === "sep") {
+                return (
+                  <div
+                    key={it.key}
+                    className="flex items-center justify-center py-3"
+                  >
+                    <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground bg-background/80 backdrop-blur-sm rounded-full px-3 py-1 border border-border/40 shadow-sm">
+                      {it.label}
+                    </span>
                   </div>
-
-                  <div className="grid sm:grid-cols-3 gap-4 pt-4 border-t border-border">
-                    <div>
-                      <p className="font-label text-muted-foreground">Event</p>
-                      <p className="text-sm capitalize mt-1">
-                        {inquiry.event_type.replace("_", " ")}
-                        {inquiry.event_date && (
-                          <>
-                            {" · "}
-                            <span className="tnum">{inquiry.event_date}</span>
-                          </>
-                        )}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="font-label text-muted-foreground">Guests</p>
-                      <p className="text-sm tnum mt-1">
-                        {inquiry.guest_count ?? "—"}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="font-label text-muted-foreground">Budget</p>
-                      <p className="text-sm tnum mt-1">
-                        {fmtMoney(inquiry.budget_min_cents)} –{" "}
-                        {fmtMoney(inquiry.budget_max_cents)}
-                      </p>
-                    </div>
-                  </div>
-
-                  {inquiry.location && (
-                    <div className="mt-4 pt-4 border-t border-border">
-                      <p className="font-label text-muted-foreground">
-                        Location
-                      </p>
-                      <p className="text-sm mt-1">{inquiry.location}</p>
-                    </div>
-                  )}
-
-                  {inquiry.special_requests && (
-                    <div className="mt-4 pt-4 border-t border-border">
-                      <p className="font-label text-muted-foreground">
-                        Your notes
-                      </p>
-                      <p className="text-sm mt-1 leading-relaxed">
-                        {inquiry.special_requests}
-                      </p>
-                    </div>
-                  )}
-                </div>
-
-                {/* Review CTA (only on booked inquiries) */}
-                {inquiry.status === "won" && (
-                  <div className="rounded-2xl bg-card border border-accent/30 bg-accent/5 p-6">
-                    <div className="flex items-start gap-4 flex-wrap">
-                      <div className="w-9 h-9 rounded-full bg-accent text-accent-foreground flex items-center justify-center flex-shrink-0">
-                        <Sparkles className="w-4 h-4" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        {review ? (
-                          <>
-                            <p className="font-display text-base mb-1">
-                              You rated{" "}
-                              {inquiry.vendor?.business_name ?? "this vendor"}{" "}
-                              {review.rating} {review.rating === 1 ? "star" : "stars"}
-                            </p>
-                            <div className="flex items-center gap-1 mb-2">
-                              {Array.from({ length: 5 }).map((_, i) => (
-                                <Star
-                                  key={i}
-                                  className={`w-4 h-4 ${
-                                    i < review.rating
-                                      ? "fill-accent text-accent"
-                                      : "text-muted-foreground/30"
-                                  }`}
-                                />
-                              ))}
-                            </div>
-                            {review.body && (
-                              <p className="text-sm text-foreground/80 leading-relaxed">
-                                "{review.body}"
-                              </p>
-                            )}
-                          </>
-                        ) : (
-                          <>
-                            <p className="font-display text-base mb-1">
-                              Loved working with{" "}
-                              {inquiry.vendor?.business_name ?? "this vendor"}?
-                            </p>
-                            <p className="text-sm text-muted-foreground leading-relaxed">
-                              Leave a review to help future hosts choose with
-                              confidence.
-                            </p>
-                          </>
-                        )}
-                      </div>
-                      <Button
-                        onClick={() => {
-                          if (!requireVerified("posting a review")) return;
-                          setReviewModalOpen(true);
-                        }}
-                        size="sm"
-                        variant={review ? "outline" : "default"}
-                        className={`rounded-full whitespace-nowrap ${
-                          !review
-                            ? "bg-foreground text-background hover:bg-foreground/90"
-                            : ""
-                        }`}
-                      >
-                        {review ? "Edit review" : "Leave a review"}
-                      </Button>
-                    </div>
-                  </div>
-                )}
-
-                {/* Proposals */}
-                {proposals.length > 0 && (
-                  <div className="space-y-4">
-                    {proposals.map((p) => (
-                      <ProposalCard
-                        key={p.id}
-                        proposal={p}
-                        canRespond={p.status === "pending"}
-                        acting={acting}
-                        onAccept={(sig) => respondProposal(p, "accepted", sig)}
-                        onReject={() => respondProposal(p, "rejected")}
-                      />
-                    ))}
-                  </div>
-                )}
-
-                {/* Thread */}
-                <div className="card-soft p-6 space-y-4">
-                  <div className="flex items-center justify-between gap-2 flex-wrap">
-                    <p className="font-label text-muted-foreground">
-                      Conversation
-                    </p>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setAppointmentModalOpen(true)}
-                      className="rounded-full h-8 text-xs"
-                    >
-                      <CalendarDays className="w-3 h-3 mr-1" />
-                      Propose meeting
-                    </Button>
-                  </div>
-                  {messages.length === 0 ? (
-                    <p className="text-sm text-muted-foreground py-8 text-center">
-                      No messages yet — your inquiry has been sent and the
-                      vendor will reply soon.
-                    </p>
-                  ) : (
-                    <div className="space-y-1.5">
-                      {groupMessages(messages, {
-                        isMe: (m) => m.sender_role === "host",
-                        senderKey: (m) => m.sender_role,
-                        createdAt: (m) => m.created_at,
-                        id: (m) => m.id,
-                      }).map((it) => {
-                        if (it.kind === "sep") {
-                          return (
-                            <div
-                              key={it.key}
-                              className="flex items-center justify-center py-3"
-                            >
-                              <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-                                — {it.label} —
-                              </span>
-                            </div>
-                          );
-                        }
-                        const m = it.message;
-                        const isDeleted = m.deleted_at != null;
-                        const isEdited = m.edited_at != null && !isDeleted;
-                        const msgReactions = reactionsByMsg[m.id] ?? [];
-                        return (
-                          <div
-                            key={m.id}
-                            className={`group flex items-end gap-2 ${
-                              it.firstInGroup ? "mt-2" : "mt-0.5"
-                            } ${it.isMe ? "justify-end" : ""}`}
-                          >
-                            {!isDeleted && it.isMe ? (
-                              <div className="opacity-0 group-hover:opacity-100 transition-opacity self-center">
-                                <MessageActionMenu
-                                  isMine
-                                  onReact={(emoji) => toggleReaction(m.id, emoji)}
-                                  onReply={() => setReplyToId(m.id)}
-                                  onEdit={() => startEditing(m)}
-                                  onDelete={() => deleteMessage(m.id)}
-                                />
-                              </div>
-                            ) : null}
-                            <div className="flex flex-col">
-                              <div
-                                className={`max-w-[80%] px-3.5 py-2 text-sm leading-relaxed whitespace-pre-wrap rounded-2xl ${
-                                  isDeleted
-                                    ? "bg-secondary/60 text-muted-foreground italic"
-                                    : it.isMe
-                                      ? `bg-foreground text-background ${
-                                          it.showTail ? "rounded-br-sm" : ""
-                                        }`
-                                      : `bg-secondary ${
-                                          it.showTail ? "rounded-bl-sm" : ""
-                                        }`
-                                }`}
-                              >
-                                {isDeleted ? (
-                                  <p>Message deleted</p>
-                                ) : (
-                                  <>
-                                    {m.reply_to_message_id ? (() => {
-                                      const parent = messages.find(
-                                        (x) => x.id === m.reply_to_message_id,
-                                      );
-                                      if (!parent) return null;
-                                      const parentName =
-                                        parent.sender_role === "vendor"
-                                          ? inquiry?.vendor?.business_name ?? "Vendor"
-                                          : parent.sender_role === "host"
-                                            ? "You"
-                                            : "Vendora AI";
-                                      return (
-                                        <MessageReplyContext
-                                          authorName={parentName}
-                                          body={
-                                            parent.deleted_at
-                                              ? ""
-                                              : parent.body
-                                          }
-                                          tone="bubble"
-                                        />
-                                      );
-                                    })() : null}
-                                    {editingMessageId === m.id ? (
-                                      <div className="space-y-2">
-                                        <Textarea
-                                          value={editingDraft}
-                                          onChange={(e) =>
-                                            setEditingDraft(e.target.value)
-                                          }
-                                          onKeyDown={(e) => {
-                                            if (
-                                              e.key === "Enter" &&
-                                              !e.shiftKey
-                                            ) {
-                                              e.preventDefault();
-                                              saveEdit(m.id);
-                                            } else if (e.key === "Escape") {
-                                              e.preventDefault();
-                                              cancelEditing();
-                                            }
-                                          }}
-                                          rows={2}
-                                          autoFocus
-                                          className="text-sm bg-background/80 text-foreground rounded-lg min-h-[40px]"
-                                        />
-                                        <div className="flex items-center justify-end gap-2">
-                                          <button
-                                            type="button"
-                                            onClick={cancelEditing}
-                                            className="text-[11px] text-muted-foreground hover:text-foreground px-2 py-1"
-                                          >
-                                            Cancel
-                                          </button>
-                                          <button
-                                            type="button"
-                                            onClick={() => saveEdit(m.id)}
-                                            className="text-[11px] font-medium rounded-full px-3 py-1 bg-foreground text-background hover:opacity-90"
-                                          >
-                                            Save
-                                          </button>
-                                        </div>
-                                      </div>
-                                    ) : (
-                                      <p>{m.body}</p>
-                                    )}
-                                    {m.attachments && m.attachments.length > 0 && (
-                                      <MessageAttachments
-                                        attachments={m.attachments}
-                                      />
-                                    )}
-                                    {isEdited ? (
-                                      <span className="block text-[10px] opacity-60 mt-1">
-                                        edited
-                                      </span>
-                                    ) : null}
-                                  </>
-                                )}
-                              </div>
-                              {!isDeleted && msgReactions.length > 0 ? (
-                                <MessageReactions
-                                  reactions={msgReactions}
-                                  currentUserId={user?.id ?? null}
-                                  align={it.isMe ? "right" : "left"}
-                                  onToggle={(emoji) => toggleReaction(m.id, emoji)}
-                                />
-                              ) : null}
-                            </div>
-                            {!isDeleted && !it.isMe ? (
-                              <div className="opacity-0 group-hover:opacity-100 transition-opacity self-center">
-                                <MessageActionMenu
-                                  isMine={false}
-                                  onReact={(emoji) => toggleReaction(m.id, emoji)}
-                                  onReply={() => setReplyToId(m.id)}
-                                />
-                              </div>
-                            ) : null}
-                          </div>
-                        );
-                      })}
-                      {otherTyping ? <HostTypingBubble /> : null}
-                      {seenTimeLabel ? (
-                        <p className="text-right text-[11px] text-muted-foreground mt-1 mr-1">
-                          Seen {seenTimeLabel}
-                        </p>
-                      ) : null}
-                    </div>
-                  )}
-                </div>
-
-                {/* Composer */}
-                <div className="card-soft p-6">
-                  <p className="font-label text-muted-foreground mb-3">Reply</p>
-                  {replyTarget ? (
-                    <MessageReplyContext
-                      authorName={
-                        replyTarget.sender_role === "vendor"
-                          ? inquiry?.vendor?.business_name ?? "Vendor"
-                          : replyTarget.sender_role === "host"
-                            ? "You"
-                            : "Vendora AI"
-                      }
-                      body={replyTarget.deleted_at ? "" : replyTarget.body}
-                      tone="composer"
-                      onCancel={() => setReplyToId(null)}
-                    />
-                  ) : null}
-                  <Textarea
-                    value={composer}
-                    onChange={(e) => {
-                      setComposer(e.target.value);
-                      if (e.target.value.length > 0) broadcastTyping();
-                    }}
-                    rows={4}
-                    placeholder="Write your message…"
-                  />
-                  {pendingFiles.length > 0 && (
-                    <div className="flex flex-wrap gap-2 mt-3">
-                      {pendingFiles.map((f, i) => (
+                );
+              }
+              const m = it.message;
+              const isAi = m.sender_role === "agent";
+              const isDeleted = m.deleted_at != null;
+              const isEdited = m.edited_at != null && !isDeleted;
+              const msgReactions = reactionsByMsg[m.id] ?? [];
+              return (
+                <div
+                  key={m.id}
+                  className={`group flex items-end gap-2 ${
+                    it.firstInGroup ? "mt-2" : "mt-0.5"
+                  } ${it.isMe ? "justify-end" : ""}`}
+                >
+                  {/* Vendor avatar on the tail bubble of each
+                      incoming run, like iMessage. */}
+                  {!it.isMe ? (
+                    it.showTail ? (
+                      inquiry.vendor?.logo_url ? (
+                        <img
+                          src={inquiry.vendor.logo_url}
+                          alt=""
+                          className="shrink-0 w-6 h-6 rounded-full object-cover"
+                          aria-hidden
+                        />
+                      ) : (
                         <span
-                          key={i}
-                          className="inline-flex items-center gap-2 px-3 py-1.5 bg-secondary rounded-full text-xs"
+                          className="shrink-0 w-6 h-6 rounded-full inline-flex items-center justify-center text-[10px] font-semibold"
+                          style={{
+                            background: "rgba(255,138,76,0.18)",
+                            color: "#c4541e",
+                          }}
+                          aria-hidden
                         >
-                          {f.name}
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setPendingFiles((prev) =>
-                                prev.filter((_, j) => j !== i),
-                              )
-                            }
-                            aria-label="Remove attachment"
-                            className="text-muted-foreground hover:text-foreground"
-                          >
-                            <X className="w-3 h-3" />
-                          </button>
+                          {vendorInitial}
                         </span>
-                      ))}
-                    </div>
-                  )}
-                  <div className="flex items-center justify-between gap-2 mt-3">
-                    <div className="flex items-center gap-1">
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => fileInputRef.current?.click()}
-                        disabled={sending || pendingFiles.length >= MAX_FILES}
-                        className="rounded-full text-muted-foreground"
-                      >
-                        <Paperclip className="w-3.5 h-3.5 mr-1.5" />
-                        Attach
-                      </Button>
-                      <VoiceRecorder
-                        disabled={sending || pendingFiles.length >= MAX_FILES}
-                        onRecorded={(file) => {
-                          const list = new DataTransfer();
-                          list.items.add(file);
-                          pickFiles(list.files);
-                        }}
+                      )
+                    ) : (
+                      <span className="shrink-0 w-6" aria-hidden />
+                    )
+                  ) : null}
+                  {!isDeleted && it.isMe ? (
+                    <div className="opacity-0 group-hover:opacity-100 transition-opacity self-center">
+                      <MessageActionMenu
+                        isMine
+                        onReact={(emoji) => toggleReaction(m.id, emoji)}
+                        onReply={() => setReplyToId(m.id)}
+                        onEdit={() => startEditing(m)}
+                        onDelete={() => deleteMessage(m.id)}
                       />
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon"
-                            className="rounded-full"
-                            disabled={sending}
-                            aria-label="Quick reactions"
-                          >
-                            <Smile className="w-4 h-4" />
-                          </Button>
-                        </PopoverTrigger>
-                        <PopoverContent
-                          side="top"
-                          align="start"
-                          className="w-56 p-2"
-                        >
-                          <div className="grid grid-cols-6 gap-1">
-                            {QUICK_EMOJIS.map((e) => (
-                              <button
-                                key={e}
-                                onClick={() => setComposer((v) => v + e)}
-                                className="text-xl rounded-md p-1.5 hover:bg-secondary transition-colors"
-                              >
-                                {e}
-                              </button>
-                            ))}
-                          </div>
-                        </PopoverContent>
-                      </Popover>
                     </div>
-                    <input
-                      ref={fileInputRef}
-                      type="file"
-                      accept={ACCEPTED_MIME.join(",")}
-                      multiple
-                      className="hidden"
-                      onChange={(e) => {
-                        if (e.target.files) pickFiles(e.target.files);
-                        e.target.value = "";
-                      }}
-                    />
-                    <Button
-                      onClick={sendMessage}
-                      disabled={
-                        sending ||
-                        (!composer.trim() && pendingFiles.length === 0)
-                      }
-                      className="rounded-full bg-foreground text-background hover:bg-foreground/90"
+                  ) : null}
+                  <div className="flex flex-col">
+                    <div
+                      className={`max-w-[80%] px-3.5 py-2 text-sm leading-relaxed whitespace-pre-wrap rounded-2xl ${
+                        isDeleted
+                          ? "bg-background/70 text-muted-foreground italic border border-border/40"
+                          : it.isMe
+                            ? `bg-foreground text-background ${
+                                it.showTail ? "rounded-br-sm" : ""
+                              }`
+                            : `bg-background/95 border border-border/40 shadow-sm ${
+                                it.showTail ? "rounded-bl-sm" : ""
+                              }`
+                      }`}
                     >
-                      {sending ? (
-                        <>
-                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                          Sending…
-                        </>
+                      {isDeleted ? (
+                        <p>Message deleted</p>
                       ) : (
                         <>
-                          <Send className="w-4 h-4 mr-2" />
-                          Send
+                          {m.reply_to_message_id ? (() => {
+                            const parent = messages.find(
+                              (x) => x.id === m.reply_to_message_id,
+                            );
+                            if (!parent) return null;
+                            const parentName =
+                              parent.sender_role === "vendor"
+                                ? vendorName
+                                : parent.sender_role === "host"
+                                  ? "You"
+                                  : "Vendora AI";
+                            return (
+                              <MessageReplyContext
+                                authorName={parentName}
+                                body={parent.deleted_at ? "" : parent.body}
+                                tone="bubble"
+                              />
+                            );
+                          })() : null}
+                          {isAi ? (
+                            <span className="inline-flex items-center gap-1 text-[10px] uppercase tracking-wider opacity-80 mb-1">
+                              <Sparkles className="w-3 h-3" />
+                              Sent by AI
+                            </span>
+                          ) : null}
+                          {editingMessageId === m.id ? (
+                            <div className="space-y-2">
+                              <Textarea
+                                value={editingDraft}
+                                onChange={(e) =>
+                                  setEditingDraft(e.target.value)
+                                }
+                                onKeyDown={(e) => {
+                                  if (e.key === "Enter" && !e.shiftKey) {
+                                    e.preventDefault();
+                                    saveEdit(m.id);
+                                  } else if (e.key === "Escape") {
+                                    e.preventDefault();
+                                    cancelEditing();
+                                  }
+                                }}
+                                rows={2}
+                                autoFocus
+                                className="text-sm bg-background/80 text-foreground rounded-lg min-h-[40px]"
+                              />
+                              <div className="flex items-center justify-end gap-2">
+                                <button
+                                  type="button"
+                                  onClick={cancelEditing}
+                                  className="text-[11px] text-muted-foreground hover:text-foreground px-2 py-1"
+                                >
+                                  Cancel
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => saveEdit(m.id)}
+                                  className="text-[11px] font-medium rounded-full px-3 py-1 bg-foreground text-background hover:opacity-90"
+                                >
+                                  Save
+                                </button>
+                              </div>
+                            </div>
+                          ) : (
+                            <p>
+                              <MessageBody body={m.body} />
+                            </p>
+                          )}
+                          {m.attachments && m.attachments.length > 0 && (
+                            <MessageAttachments attachments={m.attachments} />
+                          )}
+                          {isEdited ? (
+                            <span className="block text-[10px] opacity-60 mt-1">
+                              edited
+                            </span>
+                          ) : null}
                         </>
                       )}
-                    </Button>
+                    </div>
+                    {!isDeleted && msgReactions.length > 0 ? (
+                      <MessageReactions
+                        reactions={msgReactions}
+                        currentUserId={user?.id ?? null}
+                        align={it.isMe ? "right" : "left"}
+                        onToggle={(emoji) => toggleReaction(m.id, emoji)}
+                      />
+                    ) : null}
                   </div>
+                  {!isDeleted && !it.isMe ? (
+                    <div className="opacity-0 group-hover:opacity-100 transition-opacity self-center">
+                      <MessageActionMenu
+                        isMine={false}
+                        onReact={(emoji) => toggleReaction(m.id, emoji)}
+                        onReply={() => setReplyToId(m.id)}
+                      />
+                    </div>
+                  ) : null}
                 </div>
-              </>
-            )
+              );
+            })
           )}
+
+          {otherTyping ? <HostTypingBubble /> : null}
+          {seenTimeLabel ? (
+            <div className="flex items-center justify-end gap-1 text-[11px] text-muted-foreground mt-1 mr-1">
+              <CheckCheck className="w-3 h-3" aria-hidden />
+              <span>Read · {seenTimeLabel}</span>
+            </div>
+          ) : null}
+
+          {/* Review CTA — appears at the bottom of the thread once the
+              inquiry is booked. */}
+          {inquiry.status === "won" && (
+            <div className="my-4 rounded-2xl bg-background/95 border border-accent/30 p-4 shadow-sm">
+              <div className="flex items-start gap-3">
+                <div className="w-9 h-9 rounded-full bg-accent text-accent-foreground flex items-center justify-center flex-shrink-0">
+                  <Sparkles className="w-4 h-4" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  {review ? (
+                    <>
+                      <p className="font-medium text-sm mb-1">
+                        You rated {vendorName} {review.rating}{" "}
+                        {review.rating === 1 ? "star" : "stars"}
+                      </p>
+                      <div className="flex items-center gap-1 mb-2">
+                        {Array.from({ length: 5 }).map((_, i) => (
+                          <Star
+                            key={i}
+                            className={`w-3.5 h-3.5 ${
+                              i < review.rating
+                                ? "fill-accent text-accent"
+                                : "text-muted-foreground/30"
+                            }`}
+                          />
+                        ))}
+                      </div>
+                      {review.body && (
+                        <p className="text-xs text-foreground/80 leading-relaxed italic">
+                          "{review.body}"
+                        </p>
+                      )}
+                    </>
+                  ) : (
+                    <>
+                      <p className="font-medium text-sm mb-0.5">
+                        Loved working with {vendorName}?
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        Leave a review — it helps future hosts choose.
+                      </p>
+                    </>
+                  )}
+                </div>
+                <Button
+                  onClick={() => {
+                    if (!requireVerified("posting a review")) return;
+                    setReviewModalOpen(true);
+                  }}
+                  size="sm"
+                  variant={review ? "outline" : "default"}
+                  className={`rounded-full whitespace-nowrap shrink-0 ${
+                    !review
+                      ? "bg-foreground text-background hover:bg-foreground/90"
+                      : ""
+                  }`}
+                >
+                  {review ? "Edit" : "Leave review"}
+                </Button>
+              </div>
+            </div>
+          )}
+
+          <div ref={messagesEndRef} aria-hidden />
         </div>
-      </main>
+      </div>
+
+      {/* ─── Sticky composer ─────────────────────────────────────────── */}
+      <div
+        className="sticky bottom-0 px-4 md:px-6 py-3 backdrop-blur-md"
+        style={{
+          background: "rgba(255,253,250,0.92)",
+          borderTop: "0.5px solid rgba(255,138,76,0.18)",
+        }}
+      >
+        <div className="max-w-3xl mx-auto space-y-2">
+          {/* Quick-action chips — host-side has one: propose a
+              meeting time. */}
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setAppointmentModalOpen(true)}
+              className="inline-flex items-center gap-1.5 text-xs font-medium bg-background/95 border border-border/40 shadow-sm rounded-full px-3 py-1.5 hover:bg-background"
+            >
+              <CalendarDays className="w-3.5 h-3.5 text-foreground/70" />
+              Propose meeting
+            </button>
+          </div>
+
+          <div className="rounded-2xl">
+            {replyTarget ? (
+              <MessageReplyContext
+                authorName={
+                  replyTarget.sender_role === "vendor"
+                    ? vendorName
+                    : replyTarget.sender_role === "host"
+                      ? "You"
+                      : "Vendora AI"
+                }
+                body={replyTarget.deleted_at ? "" : replyTarget.body}
+                tone="composer"
+                onCancel={() => setReplyToId(null)}
+              />
+            ) : null}
+            {pendingFiles.length > 0 && (
+              <div className="flex flex-wrap gap-2 mb-2">
+                {pendingFiles.map((f, i) => (
+                  <span
+                    key={i}
+                    className="inline-flex items-center gap-2 px-3 py-1 bg-background/90 border border-border/40 rounded-full text-xs"
+                  >
+                    {f.name}
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setPendingFiles((prev) =>
+                          prev.filter((_, j) => j !== i),
+                        )
+                      }
+                      aria-label="Remove attachment"
+                      className="text-muted-foreground hover:text-foreground"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
+
+            <div className="flex items-end gap-1 bg-background/95 border border-border/40 shadow-sm rounded-3xl pl-2 pr-1.5 py-1.5">
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={sending || pendingFiles.length >= MAX_FILES}
+                aria-label="Attach files"
+                className="shrink-0 inline-flex items-center justify-center w-9 h-9 rounded-full hover:bg-black/5 text-muted-foreground disabled:opacity-50"
+              >
+                <Paperclip className="w-4 h-4" />
+              </button>
+              <VoiceRecorder
+                disabled={sending || pendingFiles.length >= MAX_FILES}
+                onRecorded={(file) => {
+                  const list = new DataTransfer();
+                  list.items.add(file);
+                  pickFiles(list.files);
+                }}
+              />
+              <Popover open={emojiOpen} onOpenChange={setEmojiOpen}>
+                <PopoverTrigger asChild>
+                  <button
+                    type="button"
+                    disabled={sending}
+                    aria-label="Quick reactions"
+                    className="shrink-0 inline-flex items-center justify-center w-9 h-9 rounded-full hover:bg-black/5 text-muted-foreground disabled:opacity-50"
+                  >
+                    <Smile className="w-4 h-4" />
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent side="top" align="start" className="w-56 p-2">
+                  <div className="grid grid-cols-6 gap-1">
+                    {QUICK_EMOJIS.map((e) => (
+                      <button
+                        key={e}
+                        type="button"
+                        onClick={() => {
+                          setComposer((v) => v + e);
+                          setEmojiOpen(false);
+                          composerRef.current?.focus();
+                        }}
+                        className="text-xl rounded-md p-1.5 hover:bg-secondary transition-colors"
+                      >
+                        {e}
+                      </button>
+                    ))}
+                  </div>
+                </PopoverContent>
+              </Popover>
+              <Textarea
+                ref={composerRef}
+                value={composer}
+                onChange={(e) => {
+                  setComposer(e.target.value);
+                  if (e.target.value.length > 0) broadcastTyping();
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    if (
+                      !sending &&
+                      (composer.trim() || pendingFiles.length > 0)
+                    ) {
+                      sendMessage();
+                    }
+                  }
+                }}
+                rows={1}
+                placeholder={`Message ${vendorName}…`}
+                className="resize-none min-h-[36px] max-h-32 rounded-2xl border-0 bg-transparent shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 px-2"
+              />
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept={ACCEPTED_MIME.join(",")}
+                multiple
+                className="hidden"
+                onChange={(e) => {
+                  if (e.target.files) pickFiles(e.target.files);
+                  e.target.value = "";
+                }}
+              />
+              <Button
+                onClick={sendMessage}
+                disabled={
+                  sending ||
+                  (!composer.trim() && pendingFiles.length === 0)
+                }
+                aria-label="Send"
+                className="shrink-0 rounded-full bg-foreground text-background hover:bg-foreground/90 h-9 w-9 p-0"
+              >
+                {sending ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Send className="w-4 h-4" />
+                )}
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
 
       <MobileNav items={navItems} />
+
+      {/* Inquiry summary sheet — opened from the Info button. Shows
+          the brief the host submitted as a reference. */}
+      {summaryOpen && (
+        <InquirySummarySheet
+          inquiry={inquiry}
+          onClose={() => setSummaryOpen(false)}
+        />
+      )}
 
       {inquiry && user && (
         <>
@@ -1041,20 +1136,103 @@ export default function HostInquiryDetailPage() {
   );
 }
 
-// Three-dot animated typing indicator — mirror of InquiryDetailPage's
-// TypingBubble but local to this file so the host page doesn't need
-// to import a peer page's component. The styling lines up with the
-// incoming-message bubble (bg-card / border-border) used on this side.
+// Three-dot animated typing indicator — styled to match the new
+// incoming-message bubble palette (cream card with hairline border).
 function HostTypingBubble() {
   return (
     <div className="flex items-end gap-2 mt-2">
+      <span className="shrink-0 w-6" aria-hidden />
       <div
-        className="bg-card border border-border px-3.5 py-2.5 rounded-2xl rounded-bl-sm inline-flex items-end gap-1"
+        className="bg-background/95 border border-border/40 shadow-sm px-3.5 py-2.5 rounded-2xl rounded-bl-sm inline-flex items-end gap-1"
         aria-label="Typing"
       >
         <span className="inline-block w-1.5 h-1.5 rounded-full bg-foreground/40 animate-pulse" style={{ animationDelay: "0s" }} />
         <span className="inline-block w-1.5 h-1.5 rounded-full bg-foreground/40 animate-pulse" style={{ animationDelay: "0.2s" }} />
         <span className="inline-block w-1.5 h-1.5 rounded-full bg-foreground/40 animate-pulse" style={{ animationDelay: "0.4s" }} />
+      </div>
+    </div>
+  );
+}
+
+// Full-inquiry summary rendered on a blurred backdrop. Opened from
+// the Info button in the chat header. Mirrors the vendor side's
+// InquiryPreviewSheet but stripped to the fields the host cares
+// about — what they asked the vendor for, in the form they submitted.
+function InquirySummarySheet({
+  inquiry,
+  onClose,
+}: {
+  inquiry: Inquiry;
+  onClose: () => void;
+}) {
+  return (
+    <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-end sm:items-center justify-center">
+      <div className="relative w-full sm:max-w-lg bg-[#fffdfa] rounded-t-3xl sm:rounded-3xl shadow-2xl overflow-hidden max-h-[90vh] overflow-y-auto">
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="Close"
+          className="absolute top-4 right-4 w-9 h-9 rounded-full bg-background/95 border border-border/40 shadow-sm text-foreground/80 hover:bg-white inline-flex items-center justify-center"
+        >
+          <X className="w-4 h-4" />
+        </button>
+        <div className="p-6 pt-7 space-y-5">
+          <div>
+            <p className="font-label text-muted-foreground">To</p>
+            <h2 className="font-editorial text-2xl">
+              {inquiry.vendor?.business_name ?? "Vendor"}
+            </h2>
+            {inquiry.vendor?.category && (
+              <p className="text-sm text-muted-foreground mt-0.5">
+                {inquiry.vendor.category}
+              </p>
+            )}
+          </div>
+
+          <div className="grid sm:grid-cols-3 gap-4 pt-4 border-t border-border/40">
+            <div>
+              <p className="font-label text-muted-foreground">Event</p>
+              <p className="text-sm capitalize mt-1">
+                {inquiry.event_type.replace(/_/g, " ")}
+                {inquiry.event_date && (
+                  <>
+                    {" · "}
+                    <span className="tnum">{inquiry.event_date}</span>
+                  </>
+                )}
+              </p>
+            </div>
+            <div>
+              <p className="font-label text-muted-foreground">Guests</p>
+              <p className="text-sm tnum mt-1">
+                {inquiry.guest_count ?? "—"}
+              </p>
+            </div>
+            <div>
+              <p className="font-label text-muted-foreground">Budget</p>
+              <p className="text-sm tnum mt-1">
+                {fmtMoney(inquiry.budget_min_cents)} –{" "}
+                {fmtMoney(inquiry.budget_max_cents)}
+              </p>
+            </div>
+          </div>
+
+          {inquiry.location && (
+            <div className="pt-4 border-t border-border/40">
+              <p className="font-label text-muted-foreground">Location</p>
+              <p className="text-sm mt-1">{inquiry.location}</p>
+            </div>
+          )}
+
+          {inquiry.special_requests && (
+            <div className="pt-4 border-t border-border/40">
+              <p className="font-label text-muted-foreground">Your notes</p>
+              <p className="text-sm mt-1 leading-relaxed whitespace-pre-wrap">
+                <MessageBody body={inquiry.special_requests} />
+              </p>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

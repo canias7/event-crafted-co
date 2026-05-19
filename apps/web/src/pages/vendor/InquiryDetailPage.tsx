@@ -161,6 +161,7 @@ export default function InquiryDetailPage() {
   );
   const fileInputRef = useRef<HTMLInputElement>(null);
   const composerRef = useRef<HTMLTextAreaElement>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
   // Track whether we've already rehydrated the draft for the active
   // inquiry — without this, the first effect-run overwrites the
   // freshly-loaded localStorage value with an empty string.
@@ -205,6 +206,18 @@ export default function InquiryDetailPage() {
     el.style.height = "auto";
     el.style.height = `${Math.min(el.scrollHeight, 128)}px`;
   }, [composer]);
+
+  // Auto-scroll to the bottom of the thread on first open and on
+  // every new incoming/outgoing message or typing-bubble flip. Smooth
+  // after the first paint so the user follows the conversation
+  // naturally; instant on mount so we don't see a flash of the top.
+  useEffect(() => {
+    if (!messagesEndRef.current) return;
+    messagesEndRef.current.scrollIntoView({
+      behavior: messages.length > 0 ? "smooth" : "auto",
+      block: "end",
+    });
+  }, [messages.length, otherTyping]);
 
   // useCallback so the realtime hook below sees a stable reference
   // across renders; without this, every render replaces the realtime
@@ -766,7 +779,9 @@ export default function InquiryDetailPage() {
                   </span>
                 )}
                 <div className="max-w-[80%] px-3.5 py-2.5 text-sm leading-relaxed whitespace-pre-wrap rounded-2xl rounded-bl-sm bg-background/95 border border-border/40 shadow-sm">
-                  <p>{inquiry.special_requests}</p>
+                  <p>
+                    <MessageBody body={inquiry.special_requests} />
+                  </p>
                 </div>
               </div>
             </div>
@@ -1004,6 +1019,8 @@ export default function InquiryDetailPage() {
               <InquiryReviewCard review={review} onResponseSaved={load} />
             </div>
           )}
+
+          <div ref={messagesEndRef} aria-hidden />
         </div>
       </div>
 
