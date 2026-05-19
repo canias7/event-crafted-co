@@ -11,9 +11,10 @@
 // page — RatingPromptStrip now handles the discovery CTA, this is
 // purely the post-submit status surface.
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Check, Clock, Star } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useRealtime } from "@/lib/realtime";
 
 interface Props {
   inquiryId: string;
@@ -37,24 +38,30 @@ export function SubmittedReviewStatusCard({
 }: Props) {
   const [rows, setRows] = useState<Row[] | null>(null);
 
-  useEffect(() => {
+  const refresh = useCallback(async () => {
     if (!inquiryId) return;
-    let cancelled = false;
-    (async () => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data } = await (supabase as any)
-        .from("reviews")
-        .select("id, kind, rating, body, created_at, released_at")
-        .eq("inquiry_id", inquiryId)
-        .eq("rater_role", raterRole)
-        .order("created_at", { ascending: false });
-      if (cancelled) return;
-      setRows((data as Row[] | null) ?? []);
-    })();
-    return () => {
-      cancelled = true;
-    };
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data } = await (supabase as any)
+      .from("reviews")
+      .select("id, kind, rating, body, created_at, released_at")
+      .eq("inquiry_id", inquiryId)
+      .eq("rater_role", raterRole)
+      .order("created_at", { ascending: false });
+    setRows((data as Row[] | null) ?? []);
   }, [inquiryId, raterRole]);
+
+  useEffect(() => {
+    refresh();
+  }, [refresh]);
+
+  // Realtime: re-fetch when reviews on this inquiry change. The
+  // mutual-reveal UPDATE flips released_at on the caller's own row,
+  // so the "Waiting…" tile auto-promotes to "Both reviewed · live"
+  // the moment the other side submits.
+  useRealtime(
+    inquiryId ? { table: "reviews", filter: `inquiry_id=eq.${inquiryId}` } : null,
+    refresh,
+  );
 
   const submitted = useMemo(() => rows ?? [], [rows]);
   if (rows === null || submitted.length === 0) return null;
