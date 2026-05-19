@@ -118,7 +118,7 @@ export function DashboardSidebar({
                   <span
                     className="text-[9.5px] uppercase tracking-[0.08em] font-semibold rounded-full px-2 py-0.5 bg-foreground text-background"
                   >
-                    Now Available
+                    Coming Soon
                   </span>
                   <Dot />
                   <span>HILUX 2.7</span>
