@@ -102,6 +102,18 @@ export default function InquiryDetailPage() {
   const [inquiryPreviewOpen, setInquiryPreviewOpen] = useState(false);
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const composerRef = useRef<HTMLTextAreaElement>(null);
+
+  // Auto-grow the composer textarea up to max-h-32 (128px). HTML's
+  // <textarea rows={1}> stays at one row by default — content past
+  // that scrolls in place, which is exactly the "chatbox breaks"
+  // behavior the host saw on long messages.
+  useEffect(() => {
+    const el = composerRef.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = `${Math.min(el.scrollHeight, 128)}px`;
+  }, [composer]);
 
   // useCallback so the realtime hook below sees a stable reference
   // across renders; without this, every render replaces the realtime
@@ -595,8 +607,19 @@ export default function InquiryDetailPage() {
               <Paperclip className="w-4 h-4" />
             </button>
             <Textarea
+              ref={composerRef}
               value={composer}
               onChange={(e) => setComposer(e.target.value)}
+              onKeyDown={(e) => {
+                // iMessage convention: Enter sends, Shift+Enter inserts
+                // a newline. Matches the "iMessage" placeholder copy.
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  if (!sending && (composer.trim() || pendingFiles.length > 0)) {
+                    sendMessage();
+                  }
+                }
+              }}
               rows={1}
               placeholder="iMessage"
               className="resize-none min-h-[40px] max-h-32 rounded-2xl"
