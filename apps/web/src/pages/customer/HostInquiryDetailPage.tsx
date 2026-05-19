@@ -1,5 +1,6 @@
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useRealtime } from "@/lib/realtime";
+import { useInquiryTyping } from "@/hooks/useInquiryTyping";
 import { Link, useParams } from "react-router-dom";
 import { ArrowLeft, Send, Loader2, Star, Sparkles, Paperclip, X, CalendarDays, Smile } from "lucide-react";
 import {
@@ -52,6 +53,8 @@ interface Inquiry {
   special_requests: string | null;
   status: string;
   created_at: string;
+  vendor_read_at: string | null;
+  host_read_at: string | null;
   vendor: {
     business_name: string;
     category: string;
@@ -104,6 +107,10 @@ export default function HostInquiryDetailPage() {
   const [composer, setComposer] = useState("");
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { otherTyping, broadcastTyping } = useInquiryTyping(
+    inquiryId,
+    "host",
+  );
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [notFound, setNotFound] = useState(false);
@@ -123,7 +130,7 @@ export default function HostInquiryDetailPage() {
     const { data: i, error: iErr } = await supabase
       .from("inquiries")
       .select(
-        "id, vendor_id, event_type, event_date, guest_count, location, budget_min_cents, budget_max_cents, special_requests, status, created_at, vendor:vendor_profiles!inquiries_vendor_id_fkey(business_name, category)",
+        "id, vendor_id, event_type, event_date, guest_count, location, budget_min_cents, budget_max_cents, special_requests, status, created_at, vendor_read_at, host_read_at, vendor:vendor_profiles!inquiries_vendor_id_fkey(business_name, category)",
       )
       .eq("id", inquiryId)
       .maybeSingle();
@@ -134,6 +141,24 @@ export default function HostInquiryDetailPage() {
       return;
     }
     setInquiry(i as unknown as Inquiry);
+
+    // First-time-open: stamp host_read_at so the vendor's "Seen at X"
+    // indicator can light up. Fire-and-forget — the page renders even
+    // if this write is slow / fails.
+    const inq = i as unknown as Inquiry | null;
+    if (inq && inq.host_read_at == null) {
+      supabase
+        .from("inquiries")
+        .update({ host_read_at: new Date().toISOString() })
+        .eq("id", inquiryId)
+        .then(({ error: readErr }) => {
+          if (readErr)
+            console.error(
+              "[HostInquiryDetail] mark-read failed",
+              readErr.message,
+            );
+        });
+    }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: tid } = await (supabase as any).rpc("ensure_inquiry_thread", {
@@ -310,6 +335,27 @@ export default function HostInquiryDetailPage() {
       </div>
     );
   }
+
+  // "Seen" indicator — only fires when the vendor has read past the
+  // last outgoing host message.
+  const lastOutgoing = (() => {
+    for (let i = messages.length - 1; i >= 0; i--) {
+      if (messages[i].sender_role === "host") return messages[i];
+    }
+    return null;
+  })();
+  const seenAt =
+    lastOutgoing && inquiry?.vendor_read_at &&
+    new Date(inquiry.vendor_read_at).getTime() >=
+      new Date(lastOutgoing.created_at).getTime()
+      ? inquiry.vendor_read_at
+      : null;
+  const seenTimeLabel = seenAt
+    ? new Date(seenAt).toLocaleTimeString(undefined, {
+        hour: "numeric",
+        minute: "2-digit",
+      })
+    : null;
 
   return (
     <div className="flex min-h-screen vendor-canvas">
@@ -551,6 +597,12 @@ export default function HostInquiryDetailPage() {
                           </div>
                         );
                       })}
+                      {otherTyping ? <HostTypingBubble /> : null}
+                      {seenTimeLabel ? (
+                        <p className="text-right text-[11px] text-muted-foreground mt-1 mr-1">
+                          Seen {seenTimeLabel}
+                        </p>
+                      ) : null}
                     </div>
                   )}
                 </div>
@@ -560,7 +612,10 @@ export default function HostInquiryDetailPage() {
                   <p className="font-label text-muted-foreground mb-3">Reply</p>
                   <Textarea
                     value={composer}
-                    onChange={(e) => setComposer(e.target.value)}
+                    onChange={(e) => {
+                      setComposer(e.target.value);
+                      if (e.target.value.length > 0) broadcastTyping();
+                    }}
                     rows={4}
                     placeholder="Write your message…"
                   />
@@ -700,6 +755,25 @@ export default function HostInquiryDetailPage() {
           />
         </>
       )}
+    </div>
+  );
+}
+
+// Three-dot animated typing indicator — mirror of InquiryDetailPage's
+// TypingBubble but local to this file so the host page doesn't need
+// to import a peer page's component. The styling lines up with the
+// incoming-message bubble (bg-card / border-border) used on this side.
+function HostTypingBubble() {
+  return (
+    <div className="flex items-end gap-2 mt-2">
+      <div
+        className="bg-card border border-border px-3.5 py-2.5 rounded-2xl rounded-bl-sm inline-flex items-end gap-1"
+        aria-label="Typing"
+      >
+        <span className="inline-block w-1.5 h-1.5 rounded-full bg-foreground/40 animate-pulse" style={{ animationDelay: "0s" }} />
+        <span className="inline-block w-1.5 h-1.5 rounded-full bg-foreground/40 animate-pulse" style={{ animationDelay: "0.2s" }} />
+        <span className="inline-block w-1.5 h-1.5 rounded-full bg-foreground/40 animate-pulse" style={{ animationDelay: "0.4s" }} />
+      </div>
     </div>
   );
 }
