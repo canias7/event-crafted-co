@@ -12,6 +12,7 @@ import {
   Alert,
   Image,
   KeyboardAvoidingView,
+  Linking,
   Modal,
   Platform,
   Pressable,
@@ -27,7 +28,43 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
 
-type AttachmentRef = { url: string; kind?: string };
+// Cross-platform attachment shape. Mobile-originated attachments
+// carry { url, kind }; web-originated attachments carry the storage
+// metadata triple { storage_path, filename, size, mime }. We accept
+// either and normalize at render time so a host-on-web's pic
+// renders on the vendor's iPhone (and vice-versa).
+type AttachmentRef = {
+  url?: string;
+  kind?: string;
+  storage_path?: string;
+  filename?: string;
+  size?: number;
+  mime?: string;
+};
+
+function resolveAttachmentUrl(a: AttachmentRef): string | null {
+  if (a.url) return a.url;
+  if (a.storage_path) {
+    return supabase.storage
+      .from("message-attachments")
+      .getPublicUrl(a.storage_path).data.publicUrl;
+  }
+  return null;
+}
+
+function isImageAttachment(a: AttachmentRef): boolean {
+  if (a.kind === "image") return true;
+  if (a.mime?.startsWith("image/")) return true;
+  const candidate = a.url ?? a.storage_path ?? "";
+  return /\.(jpe?g|png|webp|gif|heic)$/i.test(candidate);
+}
+
+function isAudioAttachment(a: AttachmentRef): boolean {
+  if (a.kind === "audio") return true;
+  if (a.mime?.startsWith("audio/")) return true;
+  const candidate = a.url ?? a.storage_path ?? "";
+  return /\.(webm|m4a|mp3|ogg|wav)$/i.test(candidate);
+}
 
 const QUICK_EMOJIS = ["👍", "❤️", "🎉", "🙏", "😂", "🔥", "😍", "😅", "👋", "🤝", "✨", "💯"];
 
@@ -47,6 +84,9 @@ interface DirectMessage {
   body: string;
   created_at: string;
   attachments: AttachmentRef[] | null;
+  edited_at?: string | null;
+  deleted_at?: string | null;
+  reply_to_message_id?: string | null;
 }
 
 interface ThreadHeader {
@@ -78,9 +118,15 @@ type EnrichedMessage = DirectMessage & {
   dateBreak: string | null;
   isFirstInGroup: boolean;
   isLastInGroup: boolean;
+  replyTo: {
+    senderRole: "host" | "vendor";
+    body: string;
+    deleted: boolean;
+  } | null;
 };
 
 function enrichMessages(msgs: DirectMessage[]): EnrichedMessage[] {
+  const byId = new Map(msgs.map((m) => [m.id, m]));
   const out: EnrichedMessage[] = [];
   let lastLabel: string | null = null;
   for (let i = 0; i < msgs.length; i++) {
@@ -95,11 +141,23 @@ function enrichMessages(msgs: DirectMessage[]): EnrichedMessage[] {
     const nextLabel = next ? formatDateSeparator(next.created_at) : null;
     const sameSenderAsNext =
       next && next.sender_role === m.sender_role && nextLabel === label;
+    let replyTo: EnrichedMessage["replyTo"] = null;
+    if (m.reply_to_message_id) {
+      const parent = byId.get(m.reply_to_message_id);
+      if (parent) {
+        replyTo = {
+          senderRole: parent.sender_role,
+          body: parent.body,
+          deleted: parent.deleted_at != null,
+        };
+      }
+    }
     out.push({
       ...m,
       dateBreak,
       isFirstInGroup: !sameSenderAsPrev,
       isLastInGroup: !sameSenderAsNext,
+      replyTo,
     });
   }
   return out;
@@ -316,7 +374,9 @@ export default function ThreadScreen() {
     if (!threadId) return;
     const { data } = await supabase
       .from("direct_messages")
-      .select("id, sender_id, sender_role, body, created_at, attachments")
+      .select(
+        "id, sender_id, sender_role, body, created_at, attachments, edited_at, deleted_at, reply_to_message_id",
+      )
       .eq("thread_id", threadId)
       .order("created_at", { ascending: true });
     setMessages((data ?? []) as DirectMessage[]);
@@ -723,28 +783,70 @@ function MessageRow({
         ) : null}
 
         <View style={{ maxWidth: "78%" }}>
-          {m.attachments && m.attachments.length > 0
-            ? m.attachments.map((a, idx) =>
-                a.kind === "image" || /\.(jpe?g|png|webp|gif|heic)$/i.test(a.url) ? (
-                  <Image
+          {/* Attachments — render images inline, audio as a tappable
+              chip that opens the system audio player, everything else
+              as a tap-to-open file chip. Skip entirely when the
+              message is soft-deleted. */}
+          {!m.deleted_at && m.attachments && m.attachments.length > 0
+            ? m.attachments.map((a, idx) => {
+                const url = resolveAttachmentUrl(a);
+                if (!url) return null;
+                if (isImageAttachment(a)) {
+                  return (
+                    <Image
+                      key={idx}
+                      source={{ uri: url }}
+                      style={{
+                        width: 220,
+                        height: 220,
+                        borderRadius: 18,
+                        marginBottom:
+                          m.body || idx < m.attachments!.length - 1 ? 6 : 0,
+                        backgroundColor: CREAM_DEEP,
+                      }}
+                      resizeMode="cover"
+                    />
+                  );
+                }
+                const audio = isAudioAttachment(a);
+                return (
+                  <Pressable
                     key={idx}
-                    source={{ uri: a.url }}
+                    onPress={() => Linking.openURL(url)}
                     style={{
-                      width: 220,
-                      height: 220,
+                      flexDirection: "row",
+                      alignItems: "center",
+                      gap: 8,
+                      paddingHorizontal: 12,
+                      paddingVertical: 10,
                       borderRadius: 18,
-                      marginBottom: m.body || idx < m.attachments!.length - 1 ? 6 : 0,
                       backgroundColor: CREAM_DEEP,
+                      marginBottom:
+                        m.body || idx < m.attachments!.length - 1 ? 6 : 0,
                     }}
-                    resizeMode="cover"
-                  />
-                ) : null,
-              )
+                  >
+                    <Feather
+                      name={audio ? "mic" : "paperclip"}
+                      size={16}
+                      color={INK}
+                    />
+                    <Text style={{ color: INK, fontSize: 14 }}>
+                      {audio
+                        ? "Voice message"
+                        : a.filename ?? "Attachment"}
+                    </Text>
+                  </Pressable>
+                );
+              })
             : null}
-          {m.body ? (
+          {m.body || m.deleted_at ? (
             <View
               style={{
-                backgroundColor: isMine ? INK : CREAM_DEEP,
+                backgroundColor: m.deleted_at
+                  ? CREAM_DEEP
+                  : isMine
+                    ? INK
+                    : CREAM_DEEP,
                 paddingHorizontal: 16,
                 paddingVertical: 10,
                 borderRadius: 22,
@@ -752,17 +854,83 @@ function MessageRow({
                 borderBottomRightRadius: isMine && !m.isLastInGroup ? 8 : 22,
                 borderTopLeftRadius: !isMine && m.isFirstInGroup ? 22 : 22,
                 borderBottomLeftRadius: !isMine && !m.isLastInGroup ? 8 : 22,
+                opacity: m.deleted_at ? 0.7 : 1,
               }}
             >
+              {!m.deleted_at && m.replyTo ? (
+                <View
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "flex-start",
+                    gap: 6,
+                    marginBottom: 6,
+                    paddingHorizontal: 8,
+                    paddingVertical: 6,
+                    borderRadius: 10,
+                    backgroundColor: isMine
+                      ? "rgba(255,255,255,0.12)"
+                      : "rgba(0,0,0,0.05)",
+                  }}
+                >
+                  <View
+                    style={{
+                      width: 2,
+                      alignSelf: "stretch",
+                      borderRadius: 2,
+                      backgroundColor: isMine
+                        ? "rgba(255,255,255,0.5)"
+                        : INK,
+                    }}
+                  />
+                  <View style={{ flex: 1, minWidth: 0 }}>
+                    <Text
+                      style={{
+                        color: isMine ? CREAM : INK,
+                        fontSize: 11,
+                        fontWeight: "700",
+                        marginBottom: 1,
+                      }}
+                      numberOfLines={1}
+                    >
+                      {m.replyTo.senderRole === "vendor" ? "You" : "Host"}
+                    </Text>
+                    <Text
+                      style={{
+                        color: isMine ? CREAM : INK,
+                        fontSize: 12,
+                        opacity: 0.75,
+                      }}
+                      numberOfLines={2}
+                    >
+                      {m.replyTo.deleted
+                        ? "Message deleted"
+                        : m.replyTo.body}
+                    </Text>
+                  </View>
+                </View>
+              ) : null}
               <Text
                 style={{
-                  color: isMine ? CREAM : INK,
+                  color: m.deleted_at ? INK_DIM : isMine ? CREAM : INK,
                   fontSize: 16,
                   lineHeight: 22,
+                  fontStyle: m.deleted_at ? "italic" : "normal",
                 }}
               >
-                {m.body}
+                {m.deleted_at ? "Message deleted" : m.body}
               </Text>
+              {m.edited_at && !m.deleted_at ? (
+                <Text
+                  style={{
+                    color: isMine ? CREAM : INK_DIM,
+                    fontSize: 10,
+                    marginTop: 3,
+                    opacity: 0.6,
+                  }}
+                >
+                  edited
+                </Text>
+              ) : null}
             </View>
           ) : null}
         </View>
