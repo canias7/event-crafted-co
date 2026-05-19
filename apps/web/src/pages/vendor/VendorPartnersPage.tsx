@@ -84,9 +84,28 @@ import { VENDOR_INBOX_HUB_TABS } from "@/data/hubTabs";
 const ACTIVE_WINDOW_MS = 5 * 60 * 1000;
 const DRAFT_KEY = (threadId: string) => `vendora.partnerDraft.${threadId}`;
 
+// Partner identity is rendered from the profiles row. Vendors fill
+// these fields inconsistently — some have a business_name + logo_url
+// (the brand pair), others only have a personal display_name +
+// avatar_url. Pull all four and fall back in order so name and
+// picture are always populated.
 interface ProfileBrand {
   business_name: string | null;
   logo_url: string | null;
+  display_name: string | null;
+  avatar_url: string | null;
+}
+
+function brandName(p: ProfileBrand | null): string {
+  return (
+    p?.business_name?.trim() ||
+    p?.display_name?.trim() ||
+    "Vendor"
+  );
+}
+
+function brandLogo(p: ProfileBrand | null): string | null {
+  return p?.logo_url || p?.avatar_url || null;
 }
 
 interface ThreadRow {
@@ -194,7 +213,7 @@ export default function VendorPartnersPage() {
     }
     const { data } = await threadsTable()
       .select(
-        "id, user_a_id, user_b_id, last_message_at, user_a_read_at, user_b_read_at, user_a_archived_at, user_b_archived_at, user_a:profiles!vendor_partner_threads_user_a_id_fkey(business_name, logo_url), user_b:profiles!vendor_partner_threads_user_b_id_fkey(business_name, logo_url)",
+        "id, user_a_id, user_b_id, last_message_at, user_a_read_at, user_b_read_at, user_a_archived_at, user_b_archived_at, user_a:profiles!vendor_partner_threads_user_a_id_fkey(business_name, logo_url, display_name, avatar_url), user_b:profiles!vendor_partner_threads_user_b_id_fkey(business_name, logo_url, display_name, avatar_url)",
       )
       .or(`user_a_id.eq.${myUserId},user_b_id.eq.${myUserId}`)
       .order("last_message_at", { ascending: false });
@@ -428,18 +447,20 @@ export default function VendorPartnersPage() {
       ? activeThread.user_b_id
       : activeThread.user_a_id;
   }, [activeThread, myUserId]);
-  const otherVendorName = useMemo(() => {
+  const otherProfile = useMemo<ProfileBrand | null>(() => {
     if (!activeThread || !myUserId) return null;
     return activeThread.user_a_id === myUserId
-      ? activeThread.user_b?.business_name
-      : activeThread.user_a?.business_name;
+      ? activeThread.user_b
+      : activeThread.user_a;
   }, [activeThread, myUserId]);
-  const otherVendorLogo = useMemo(() => {
-    if (!activeThread || !myUserId) return null;
-    return activeThread.user_a_id === myUserId
-      ? activeThread.user_b?.logo_url ?? null
-      : activeThread.user_a?.logo_url ?? null;
-  }, [activeThread, myUserId]);
+  const otherVendorName = useMemo(
+    () => brandName(otherProfile),
+    [otherProfile],
+  );
+  const otherVendorLogo = useMemo(
+    () => brandLogo(otherProfile),
+    [otherProfile],
+  );
 
   useEffect(() => {
     if (!otherVendorUserId) {
@@ -759,7 +780,7 @@ export default function VendorPartnersPage() {
 
   function authorNameOf(senderUserId: string): string {
     if (senderUserId === myUserId) return "You";
-    return otherVendorName ?? "Partner";
+    return otherVendorName;
   }
 
   return (
@@ -814,7 +835,8 @@ export default function VendorPartnersPage() {
                   const isFirst = i === 0;
                   const other =
                     t.user_a_id === myUserId ? t.user_b : t.user_a;
-                  const name = other?.business_name?.trim() || "Vendor";
+                  const name = brandName(other);
+                  const logo = brandLogo(other);
                   const initial = name.charAt(0).toUpperCase();
                   const lastSenderId = t.last_preview?.sender_user_id ?? null;
                   const myReadAt =
@@ -857,9 +879,9 @@ export default function VendorPartnersPage() {
                           ) : null}
                         </span>
 
-                        {other?.logo_url ? (
+                        {logo ? (
                           <img
-                            src={other.logo_url}
+                            src={logo}
                             alt=""
                             className="shrink-0 w-11 h-11 rounded-full object-cover self-center"
                           />
@@ -917,7 +939,7 @@ export default function VendorPartnersPage() {
             ) : (
               <PartnerChatPane
                 activeThreadId={activeThreadId}
-                otherVendorName={otherVendorName ?? "Partner"}
+                otherVendorName={otherVendorName}
                 otherVendorLogo={otherVendorLogo}
                 activeNow={activeNow}
                 muted={muted}
