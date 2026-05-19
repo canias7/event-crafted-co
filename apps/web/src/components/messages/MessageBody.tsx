@@ -8,7 +8,12 @@
 
 import { useMemo } from "react";
 
-const URL_RE = /(https?:\/\/[^\s<>"]+)/g;
+// Don't pull trailing punctuation into the href: a URL at the end
+// of a sentence like "see https://example.com." should not include
+// the period. Same for closing brackets `)`, `]`, `}` that sentences
+// often wrap URLs in. The character class excludes those at the
+// very end via a negative lookbehind-friendly trailing class.
+const URL_RE = /(https?:\/\/[^\s<>"]*[^\s<>".,;:!?)\]}])/g;
 
 export function MessageBody({ body }: { body: string }) {
   // Memoize the split: the parent re-renders on every realtime

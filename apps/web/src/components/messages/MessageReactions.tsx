@@ -38,6 +38,12 @@ export function MessageReactions({
         <button
           key={emoji}
           type="button"
+          aria-label={
+            mine
+              ? `Remove your ${emoji} reaction (${count})`
+              : `React with ${emoji} (${count})`
+          }
+          aria-pressed={mine}
           onClick={() => onToggle?.(emoji)}
           className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs transition ${
             mine
