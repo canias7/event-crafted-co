@@ -317,6 +317,8 @@ export default function HostEventsPage() {
                         ? "Up next"
                         : "On this day"
                     }
+                    onEdit={() => setEditing(eventsOnSelectedDay[0])}
+                    onDelete={() => setDeleting(eventsOnSelectedDay[0])}
                   />
                   {eventsOnSelectedDay.slice(1).map((e) => (
                     <EventCard
@@ -580,9 +582,13 @@ function CalendarCell({
 function UpNextHero({
   event,
   label = "Up next",
+  onEdit,
+  onDelete,
 }: {
   event: HostEvent;
   label?: string;
+  onEdit?: () => void;
+  onDelete?: () => void;
 }) {
   const time = fmtTimeRange(event.start_time, event.end_time);
   return (
@@ -593,10 +599,42 @@ function UpNextHero({
           "linear-gradient(135deg, rgba(255,213,165,1) 0%, rgba(255,176,107,1) 100%)",
       }}
     >
-      <span className="inline-flex items-center gap-1 text-[11px] uppercase tracking-[0.2em] font-medium text-foreground/80">
-        <Sparkles className="w-3 h-3" />
-        {label}
-      </span>
+      <div className="flex items-start justify-between gap-3">
+        <span className="inline-flex items-center gap-1 text-[11px] uppercase tracking-[0.2em] font-medium text-foreground/80">
+          <Sparkles className="w-3 h-3" />
+          {label}
+        </span>
+        {onEdit || onDelete ? (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                type="button"
+                aria-label="Event actions"
+                className="shrink-0 inline-flex items-center justify-center w-8 h-8 rounded-full hover:bg-foreground/10 text-foreground/70 -mt-1 -mr-1"
+              >
+                <MoreHorizontal className="w-4 h-4" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              {onEdit ? (
+                <DropdownMenuItem onClick={onEdit}>
+                  <Pencil className="w-4 h-4 mr-2" />
+                  Edit
+                </DropdownMenuItem>
+              ) : null}
+              {onDelete ? (
+                <DropdownMenuItem
+                  onClick={onDelete}
+                  className="text-destructive focus:text-destructive"
+                >
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Delete
+                </DropdownMenuItem>
+              ) : null}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        ) : null}
+      </div>
       <h3 className="font-editorial text-3xl mt-2">{event.title}</h3>
       <p className="mt-1 text-sm text-foreground/80">{fmtDate(event.event_date)}</p>
       {time ? <p className="text-sm text-foreground/80">{time}</p> : null}
