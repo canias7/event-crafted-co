@@ -14,6 +14,11 @@ import {
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { BrandCardShell } from "@/components/vendor/BrandCardShell";
+import { MediaLightbox } from "@/components/vendor/MediaLightbox";
+
+type LightboxItem =
+  | { kind: "post"; image_url: string; caption: string | null; created_at: string }
+  | { kind: "reel"; video_url: string; caption: string | null; created_at: string };
 
 interface PostRow {
   id: string;
@@ -69,6 +74,7 @@ export function VendorProfilePreviewSheet({
   const [reels, setReels] = useState<ReelRow[] | null>(null);
   const [buzz, setBuzz] = useState<BuzzRow[] | null>(null);
   const [tab, setTab] = useState<Tab>("grid");
+  const [lightbox, setLightbox] = useState<LightboxItem | null>(null);
 
   // Lock background scroll while the sheet is open.
   useEffect(() => {
@@ -281,11 +287,17 @@ export function VendorProfilePreviewSheet({
               posts && posts.length > 0 ? (
                 <div className="grid grid-cols-3 sm:grid-cols-4 gap-x-2 gap-y-4">
                   {posts.map((p) => (
-                    <a
+                    <button
                       key={p.id}
-                      href={p.image_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
+                      type="button"
+                      onClick={() =>
+                        setLightbox({
+                          kind: "post",
+                          image_url: p.image_url,
+                          caption: p.caption,
+                          created_at: p.created_at,
+                        })
+                      }
                       className="text-left group"
                     >
                       <div className="relative aspect-square overflow-hidden rounded-md bg-secondary/40">
@@ -301,7 +313,7 @@ export function VendorProfilePreviewSheet({
                           {p.caption}
                         </p>
                       ) : null}
-                    </a>
+                    </button>
                   ))}
                 </div>
               ) : (
@@ -311,11 +323,17 @@ export function VendorProfilePreviewSheet({
               reels && reels.length > 0 ? (
                 <div className="grid grid-cols-3 sm:grid-cols-4 gap-x-2 gap-y-4">
                   {reels.map((r) => (
-                    <a
+                    <button
                       key={r.id}
-                      href={r.video_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
+                      type="button"
+                      onClick={() =>
+                        setLightbox({
+                          kind: "reel",
+                          video_url: r.video_url,
+                          caption: r.caption,
+                          created_at: r.created_at,
+                        })
+                      }
                       className="text-left group"
                     >
                       <div className="relative aspect-square overflow-hidden rounded-md bg-black">
@@ -345,7 +363,7 @@ export function VendorProfilePreviewSheet({
                           {r.caption}
                         </p>
                       ) : null}
-                    </a>
+                    </button>
                   ))}
                 </div>
               ) : (
@@ -374,6 +392,18 @@ export function VendorProfilePreviewSheet({
           </div>
         </div>
       </div>
+      {/* Sub-lightbox — its own blurred backdrop sits above the sheet
+          (zIndex inline to escape the sheet's 9999). Clicking
+          outside or the X dismisses just the lightbox, returning the
+          user to the sheet — not closing the whole preview. */}
+      {lightbox ? (
+        <div style={{ position: "fixed", inset: 0, zIndex: 10000 }}>
+          <MediaLightbox
+            item={lightbox}
+            onClose={() => setLightbox(null)}
+          />
+        </div>
+      ) : null}
     </div>,
     document.body,
   );
