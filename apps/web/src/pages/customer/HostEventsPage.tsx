@@ -533,6 +533,7 @@ function MonthCalendar({
             ymd={c.ymd}
             inMonth={c.inMonth}
             isToday={c.ymd === today}
+            isPast={c.ymd < today}
             selected={selectedDay === c.ymd}
             hasEvent={eventDays.has(c.ymd)}
             onClick={() => onSelectDay(c.ymd, c.inMonth)}
@@ -547,6 +548,7 @@ function CalendarCell({
   day,
   inMonth,
   isToday,
+  isPast,
   selected,
   hasEvent,
   onClick,
@@ -555,30 +557,44 @@ function CalendarCell({
   ymd: string;
   inMonth: boolean;
   isToday: boolean;
+  isPast: boolean;
   selected: boolean;
   hasEvent: boolean;
   onClick: () => void;
 }) {
+  // Past days are read-only — the calendar is for planning forward.
+  // Disabling here also strips the hover/ring affordance so the dim
+  // cell looks the part. Past events still surface in the "Past"
+  // section below the calendar.
+  const disabled = isPast;
   return (
     <div className="flex items-center justify-center py-0.5">
       <button
         type="button"
         onClick={onClick}
+        disabled={disabled}
         aria-pressed={selected}
+        aria-disabled={disabled || undefined}
         className={`relative w-10 h-10 rounded-xl flex items-center justify-center text-sm font-medium transition ${
-          selected
-            ? "bg-foreground text-background"
-            : isToday
-              ? "bg-white/70 ring-1 ring-foreground/30 hover:bg-white"
-              : "hover:bg-white/60"
-        } ${!inMonth && !selected ? "text-muted-foreground/50" : "text-foreground"}`}
+          disabled
+            ? "text-muted-foreground/40 cursor-default"
+            : selected
+              ? "bg-foreground text-background"
+              : isToday
+                ? "bg-white/70 ring-1 ring-foreground/30 hover:bg-white text-foreground"
+                : `hover:bg-white/60 ${!inMonth ? "text-muted-foreground/50" : "text-foreground"}`
+        }`}
       >
         {day}
         {hasEvent ? (
           <span
             className="absolute bottom-1 w-1 h-1 rounded-full"
             style={{
-              background: selected ? "rgba(255,255,255,0.85)" : "#ff8a4c",
+              background: selected
+                ? "rgba(255,255,255,0.85)"
+                : disabled
+                  ? "rgba(255,138,76,0.35)"
+                  : "#ff8a4c",
             }}
           />
         ) : null}
