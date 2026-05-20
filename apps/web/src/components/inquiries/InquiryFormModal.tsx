@@ -304,6 +304,11 @@ export function InquiryFormModal({
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    // Guard against double-submit. A fast double-click on the Submit
+    // button (or pressing Enter while the first submit is in-flight)
+    // would otherwise fire two inserts in parallel and create two
+    // inquiry rows for the same form payload.
+    if (submitting) return;
     if (!user) {
       toast.error("Please sign in first");
       return;
