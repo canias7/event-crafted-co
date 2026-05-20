@@ -25,7 +25,20 @@ interface Img {
   exif: SanitizedExif | null;
   width: number | null;
   height: number | null;
+  file_size_bytes: number | null;
   created_at: string;
+}
+
+function formatFileSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  if (bytes < 1024 * 1024 * 1024) return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+  return `${(bytes / 1024 / 1024 / 1024).toFixed(1)} GB`;
+}
+
+function formatCoord(value: number, posLabel: string, negLabel: string): string {
+  const abs = Math.abs(value);
+  return `${abs.toFixed(4)}° ${value >= 0 ? posLabel : negLabel}`;
 }
 
 interface Props {
@@ -169,6 +182,9 @@ export function Lightbox({
               <ExifRow label="Dimensions">
                 {row.width && row.height ? `${row.width} × ${row.height}` : "—"}
               </ExifRow>
+              {row.file_size_bytes ? (
+                <ExifRow label="Size">{formatFileSize(row.file_size_bytes)}</ExifRow>
+              ) : null}
               <ExifRow label="Uploaded">
                 {new Date(row.created_at).toLocaleString()}
               </ExifRow>
@@ -207,6 +223,20 @@ export function Lightbox({
                 {row.exif.focal_length ? (
                   <ExifRow label="Focal length">
                     {row.exif.focal_length}mm
+                  </ExifRow>
+                ) : null}
+                {row.exif.gps_lat !== undefined &&
+                row.exif.gps_lon !== undefined ? (
+                  <ExifRow label="GPS">
+                    <a
+                      href={`https://www.google.com/maps?q=${row.exif.gps_lat},${row.exif.gps_lon}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-accent hover:underline"
+                    >
+                      {formatCoord(row.exif.gps_lat, "N", "S")},{" "}
+                      {formatCoord(row.exif.gps_lon, "E", "W")}
+                    </a>
                   </ExifRow>
                 ) : null}
               </div>

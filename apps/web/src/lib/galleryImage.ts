@@ -26,6 +26,13 @@ export interface SanitizedExif {
   shutter?: string; // "1/200" formatted
   focal_length?: number;
   orientation?: number;
+  // GPS, when present, in decimal degrees (signed: north/east
+  // positive, south/west negative). Shown in the vendor's own
+  // gallery EXIF panel — public share downloads still receive the
+  // raw file with its embedded GPS unless we later add a strip-
+  // on-share toggle.
+  gps_lat?: number;
+  gps_lon?: number;
 }
 
 const EXIF_TAGS = [
@@ -42,12 +49,11 @@ const EXIF_TAGS = [
 
 export async function parseExif(file: File): Promise<SanitizedExif | null> {
   try {
-    // Pick only the small whitelist — and explicitly skip the GPS
-    // segment + maker-notes. exifr's `gps: false` + the pick list
-    // prevents us from accidentally storing home addresses.
+    // Pick the small whitelist + GPS. exifr returns latitude /
+    // longitude pre-computed when `gps: true`.
     const raw = await exifr.parse(file, {
       pick: EXIF_TAGS,
-      gps: false,
+      gps: true,
       tiff: true,
       exif: true,
       iptc: false,
@@ -65,13 +71,14 @@ export async function parseExif(file: File): Promise<SanitizedExif | null> {
     if (typeof raw.ISO === "number") out.iso = raw.ISO;
     if (typeof raw.FNumber === "number") out.aperture = raw.FNumber;
     if (typeof raw.ExposureTime === "number") {
-      // Convert 0.005 → "1/200"
       const s = raw.ExposureTime;
       if (s >= 1) out.shutter = `${s}s`;
       else out.shutter = `1/${Math.round(1 / s)}`;
     }
     if (typeof raw.FocalLength === "number") out.focal_length = raw.FocalLength;
     if (typeof raw.Orientation === "number") out.orientation = raw.Orientation;
+    if (typeof raw.latitude === "number") out.gps_lat = raw.latitude;
+    if (typeof raw.longitude === "number") out.gps_lon = raw.longitude;
     return Object.keys(out).length > 0 ? out : null;
   } catch {
     return null;

@@ -2531,6 +2531,7 @@ export type Database = {
           deleted_at: string | null
           display_order: number
           exif: Json | null
+          file_size_bytes: number | null
           height: number | null
           id: string
           image_url: string
@@ -2545,6 +2546,7 @@ export type Database = {
           deleted_at?: string | null
           display_order?: number
           exif?: Json | null
+          file_size_bytes?: number | null
           height?: number | null
           id?: string
           image_url: string
@@ -2559,6 +2561,7 @@ export type Database = {
           deleted_at?: string | null
           display_order?: number
           exif?: Json | null
+          file_size_bytes?: number | null
           height?: number | null
           id?: string
           image_url?: string
