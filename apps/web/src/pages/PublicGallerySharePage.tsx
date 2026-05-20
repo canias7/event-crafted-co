@@ -8,7 +8,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import { Download, Lock, X } from "lucide-react";
+import { Download, Loader2, Lock, X } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -178,6 +178,7 @@ export default function PublicGallerySharePage() {
 }
 
 function SingleImageView({ image }: { image: ImageRow }) {
+  const [downloading, setDownloading] = useState(false);
   return (
     <div className="flex flex-col items-center gap-4">
       <img
@@ -191,19 +192,28 @@ function SingleImageView({ image }: { image: ImageRow }) {
         ) : null}
         <button
           type="button"
+          disabled={downloading}
           onClick={async () => {
+            if (downloading) return;
+            setDownloading(true);
             try {
               await downloadCrossOrigin(image.image_url);
             } catch (err) {
               toast.error(
                 err instanceof Error ? err.message : "Couldn't download.",
               );
+            } finally {
+              setDownloading(false);
             }
           }}
-          className="inline-flex items-center gap-1.5 text-sm font-medium text-accent hover:underline"
+          className="inline-flex items-center gap-1.5 text-sm font-medium text-accent hover:underline disabled:opacity-60"
         >
-          <Download className="w-4 h-4" />
-          Download
+          {downloading ? (
+            <Loader2 className="w-4 h-4 animate-spin" />
+          ) : (
+            <Download className="w-4 h-4" />
+          )}
+          {downloading ? "Downloading…" : "Download"}
         </button>
       </div>
     </div>
@@ -278,6 +288,7 @@ function SimpleLightbox({
   onNext: () => void;
 }) {
   const img = images[index];
+  const [downloading, setDownloading] = useState(false);
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
@@ -302,20 +313,29 @@ function SimpleLightbox({
       </button>
       <button
         type="button"
+        disabled={downloading}
         onClick={async (e) => {
           e.stopPropagation();
+          if (downloading) return;
+          setDownloading(true);
           try {
             await downloadCrossOrigin(img.image_url);
           } catch (err) {
             toast.error(
               err instanceof Error ? err.message : "Couldn't download.",
             );
+          } finally {
+            setDownloading(false);
           }
         }}
-        className="absolute bottom-4 right-4 inline-flex items-center gap-1.5 rounded-full bg-white/10 hover:bg-white/20 text-white text-sm px-3 py-1.5"
+        className="absolute bottom-4 right-4 inline-flex items-center gap-1.5 rounded-full bg-white/10 hover:bg-white/20 text-white text-sm px-3 py-1.5 disabled:opacity-60"
       >
-        <Download className="w-4 h-4" />
-        Download
+        {downloading ? (
+          <Loader2 className="w-4 h-4 animate-spin" />
+        ) : (
+          <Download className="w-4 h-4" />
+        )}
+        {downloading ? "Downloading…" : "Download"}
       </button>
       <img
         src={img.image_url}
