@@ -1,7 +1,11 @@
 import { Component, type ErrorInfo, type ReactNode } from "react";
 import { AlertTriangle, RefreshCw, Home } from "lucide-react";
 import { captureException } from "@/lib/sentry";
-import { isChunkLoadError, shouldAutoReload } from "@/lib/chunkReload";
+import {
+  isChunkLoadError,
+  reloadBustingCache,
+  shouldAutoReload,
+} from "@/lib/chunkReload";
 
 // Top-level error boundary. Without this, a render error inside any
 // route would replace the whole app with a blank screen — which is what
@@ -67,7 +71,7 @@ export class ErrorBoundary extends Component<Props, State> {
     if (isChunkLoadError(error) && typeof window !== "undefined") {
       const msg = String(error?.message ?? error);
       if (shouldAutoReload("boundary", msg)) {
-        window.location.reload();
+        reloadBustingCache();
         return;
       }
     }
@@ -75,7 +79,10 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   handleReload = () => {
-    window.location.reload();
+    // Cache-bust so the manual reload defeats any stale index.html
+    // sitting in the browser's HTTP cache or an intermediate proxy.
+    // Same trick the auto-heal uses.
+    reloadBustingCache();
   };
 
   handleHome = () => {
