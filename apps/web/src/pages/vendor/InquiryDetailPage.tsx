@@ -1211,6 +1211,23 @@ export default function InquiryDetailPage() {
       </div>
 
       {/* ─── Sticky composer ─────────────────────────────────────────── */}
+      {inquiry.status === "lost" ||
+      inquiry.status === "expired" ||
+      inquiry.status === "cancelled" ? (
+        <div
+          className="sticky bottom-0 px-4 md:px-6 py-3 backdrop-blur-md text-center text-sm text-muted-foreground"
+          style={{
+            background: "rgba(255,253,250,0.92)",
+            borderTop: "0.5px solid rgba(255,138,76,0.18)",
+          }}
+        >
+          {inquiry.status === "lost"
+            ? "This inquiry is closed."
+            : inquiry.status === "expired"
+              ? "This inquiry expired and is no longer accepting messages."
+              : "This inquiry was cancelled."}
+        </div>
+      ) : (
       <div
         className="sticky bottom-0 px-4 md:px-6 py-3 backdrop-blur-md"
         style={{
@@ -1437,6 +1454,7 @@ export default function InquiryDetailPage() {
           </div>
         </div>
       </div>
+      )}
 
       {inquiry && (
         <>

@@ -90,6 +90,14 @@ export function ProposeAppointmentModal({
       toast.error("Pick a date and time");
       return;
     }
+    // Block past datetimes. The datetime-local input's min attr stops
+    // most clicks, but it's bypassable (typing, paste, DevTools), so
+    // re-check at submit. 5 min cushion in case the user picked
+    // "right now" and the page sat open.
+    if (new Date(scheduledAt).getTime() < Date.now() - 5 * 60_000) {
+      toast.error("Pick a future date and time.");
+      return;
+    }
     setSubmitting(true);
     const { error } = await supabase.from("appointments").insert({
       vendor_id: vendorId,
@@ -164,6 +172,13 @@ export function ProposeAppointmentModal({
               type="datetime-local"
               value={scheduledAt}
               onChange={(e) => setScheduledAt(e.target.value)}
+              // Browser-level guard — submit() also re-checks since
+              // min on datetime-local is bypassable.
+              min={(() => {
+                const d = new Date();
+                d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+                return d.toISOString().slice(0, 16);
+              })()}
               required
             />
           </div>
