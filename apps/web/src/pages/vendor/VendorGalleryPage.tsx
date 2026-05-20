@@ -1122,7 +1122,13 @@ export default function VendorGalleryPage() {
               active={isTrashView}
               count={trashCount}
               onClick={() => {
-                setActiveAlbum(TRASH_TAB);
+                // Toggle: clicking Trash while already in Trash view
+                // sends the user back to "All". Other album tabs are
+                // destinations, but Trash is more naturally a view
+                // mode the user wants to enter and exit.
+                setActiveAlbum((curr) =>
+                  curr === TRASH_TAB ? ALL_TAB : TRASH_TAB,
+                );
                 exitSelectMode();
               }}
             />
