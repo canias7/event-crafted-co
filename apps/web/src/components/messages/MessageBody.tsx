@@ -15,12 +15,17 @@ import { useMemo } from "react";
 // very end via a negative lookbehind-friendly trailing class.
 const URL_RE = /(https?:\/\/[^\s<>"]*[^\s<>".,;:!?)\]}])/g;
 
+// Placeholder body used when a message has only attachments (the DB
+// column is NOT NULL so we can't store an empty body). Render nothing
+// for this sentinel — the attachment block below the body is enough.
+const ATTACHMENT_PLACEHOLDER = "(attachment)";
+
 export function MessageBody({ body }: { body: string }) {
   // Memoize the split: the parent re-renders on every realtime
   // tick + every typing-indicator flip, and a thread can hold
   // hundreds of bubbles. Avoid re-splitting unchanged bodies.
   const parts = useMemo(() => (body ? body.split(URL_RE) : []), [body]);
-  if (!body) return null;
+  if (!body || body === ATTACHMENT_PLACEHOLDER) return null;
   return (
     <>
       {parts.map((part, i) =>
