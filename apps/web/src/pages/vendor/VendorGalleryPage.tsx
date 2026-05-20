@@ -92,6 +92,7 @@ interface GalleryRow {
   deleted_at: string | null;
   width: number | null;
   height: number | null;
+  file_size_bytes: number | null;
   exif: SanitizedExif | null;
   blurhash: string | null;
 }
@@ -115,6 +116,8 @@ const SMART_RECENT_7 = "__smart_recent_7__";
 const SMART_RECENT_30 = "__smart_recent_30__";
 const SMART_PORTRAITS = "__smart_portraits__";
 const SMART_LANDSCAPES = "__smart_landscapes__";
+const SMART_LARGE_FILES = "__smart_large_files__";
+const LARGE_FILE_THRESHOLD = 5 * 1024 * 1024; // 5 MB
 const TRASH_TAB = "__trash__";
 
 const PAGE_SIZE = 60;
@@ -196,7 +199,7 @@ export default function VendorGalleryPage() {
       (supabase as any)
         .from("vendor_gallery_images")
         .select(
-          "id, image_url, caption, album_id, display_order, created_at, deleted_at, width, height, exif, blurhash",
+          "id, image_url, caption, album_id, display_order, created_at, deleted_at, width, height, file_size_bytes, exif, blurhash",
         )
         .eq("user_id", user.id)
         .order("display_order", { ascending: true })
@@ -232,7 +235,12 @@ export default function VendorGalleryPage() {
   useEffect(() => {
     if (!rows || backfillingRef.current) return;
     const pending = rows.filter(
-      (r) => r.deleted_at === null && (r.width === null || r.blurhash === null),
+      (r) =>
+        r.deleted_at === null &&
+        (r.width === null ||
+          r.blurhash === null ||
+          r.file_size_bytes === null ||
+          r.exif === null),
     );
     if (pending.length === 0) return;
     backfillingRef.current = true;
@@ -245,23 +253,30 @@ export default function VendorGalleryPage() {
           const file = new File([blob], filenameOf(r.image_url), {
             type: blob.type,
           });
-          const info = await computeBlurhash(file);
-          if (!info) continue;
+          const [info, exif] = await Promise.all([
+            computeBlurhash(file),
+            parseExif(file),
+          ]);
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const update: any = { file_size_bytes: blob.size };
+          if (info) {
+            update.width = info.width;
+            update.height = info.height;
+            update.blurhash = info.blurhash;
+          }
+          if (exif) update.exif = exif;
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           await (supabase as any)
             .from("vendor_gallery_images")
-            .update({
-              width: info.width,
-              height: info.height,
-              blurhash: info.blurhash,
-            })
+            .update(update)
             .eq("id", r.id);
         } catch (err) {
           console.warn("[gallery backfill]", r.id, err);
         }
       }
       backfillingRef.current = false;
-      // Refresh once we're done so the dims / blurhash are visible.
+      // Refresh once we're done so the dims / blurhash / size /
+      // exif all become visible to the user.
       load();
     })();
     // Only run on the first time rows load — subsequent loads from
@@ -303,6 +318,10 @@ export default function VendorGalleryPage() {
     } else if (activeTab === SMART_LANDSCAPES) {
       out = out.filter((r) =>
         r.width && r.height ? r.width / r.height > 1.05 : false,
+      );
+    } else if (activeTab === SMART_LARGE_FILES) {
+      out = out.filter((r) =>
+        r.file_size_bytes !== null && r.file_size_bytes > LARGE_FILE_THRESHOLD,
       );
     } else {
       out = out.filter((r) => r.album_id === activeTab);
@@ -475,6 +494,7 @@ export default function VendorGalleryPage() {
           album_id: targetAlbumId,
           width: info?.width ?? null,
           height: info?.height ?? null,
+          file_size_bytes: file.size,
           exif: exif ?? null,
           blurhash: info?.blurhash ?? null,
         });
@@ -598,10 +618,21 @@ export default function VendorGalleryPage() {
     load();
   }
 
-  async function bulkDownloadZip() {
-    if (selected.size === 0 || zipping) return;
-    const ids = Array.from(selected);
-    const rowsToZip = (rows ?? []).filter((r) => ids.includes(r.id));
+  // One-click zip of every image in the currently active custom
+  // album. Internally just bulk-download under a different selection.
+  async function downloadActiveAlbum() {
+    if (!isCustomAlbumActive || zipping) return;
+    const albumRows = (rows ?? []).filter(
+      (r) => r.album_id === activeTab && r.deleted_at === null,
+    );
+    if (albumRows.length === 0) {
+      toast.error("This album has no images.");
+      return;
+    }
+    await zipRows(albumRows, `album-${activeTab.slice(0, 8)}`);
+  }
+
+  async function zipRows(rowsToZip: GalleryRow[], suffix: string) {
     setZipping(true);
     setZipProgress({ done: 0, total: rowsToZip.length });
     try {
@@ -611,15 +642,15 @@ export default function VendorGalleryPage() {
         const res = await fetch(r.image_url);
         const blob = await res.blob();
         let name = filenameOf(r.image_url);
-        let suffix = 1;
+        let s = 1;
         const base = name;
         while (seenNames.has(name)) {
           const dot = base.lastIndexOf(".");
           name =
             dot > 0
-              ? `${base.slice(0, dot)}-${suffix}${base.slice(dot)}`
-              : `${base}-${suffix}`;
-          suffix += 1;
+              ? `${base.slice(0, dot)}-${s}${base.slice(dot)}`
+              : `${base}-${s}`;
+          s += 1;
         }
         seenNames.add(name);
         zip.file(name, blob);
@@ -628,7 +659,7 @@ export default function VendorGalleryPage() {
       const out = await zip.generateAsync({ type: "blob" });
       const a = document.createElement("a");
       a.href = URL.createObjectURL(out);
-      a.download = `gallery-${new Date().toISOString().slice(0, 10)}.zip`;
+      a.download = `gallery-${suffix}-${new Date().toISOString().slice(0, 10)}.zip`;
       document.body.appendChild(a);
       a.click();
       a.remove();
@@ -640,6 +671,13 @@ export default function VendorGalleryPage() {
     } finally {
       setZipping(false);
     }
+  }
+
+  async function bulkDownloadZip() {
+    if (selected.size === 0 || zipping) return;
+    const ids = Array.from(selected);
+    const rowsToZip = (rows ?? []).filter((r) => ids.includes(r.id));
+    await zipRows(rowsToZip, "selection");
   }
 
   async function createAlbum() {
@@ -894,6 +932,14 @@ export default function VendorGalleryPage() {
               active={activeTab === SMART_LANDSCAPES}
               onClick={() => {
                 setActiveTab(SMART_LANDSCAPES);
+                exitSelectMode();
+              }}
+            />
+            <AlbumTab
+              label="Large files"
+              active={activeTab === SMART_LARGE_FILES}
+              onClick={() => {
+                setActiveTab(SMART_LARGE_FILES);
                 exitSelectMode();
               }}
             />
@@ -1154,6 +1200,24 @@ export default function VendorGalleryPage() {
               <div className="flex items-center gap-2">
                 <button
                   type="button"
+                  onClick={downloadActiveAlbum}
+                  disabled={zipping}
+                  className="text-xs text-muted-foreground hover:text-foreground inline-flex items-center gap-1 disabled:opacity-60"
+                >
+                  {zipping ? (
+                    <>
+                      <Loader2 className="w-3 h-3 animate-spin" />
+                      Zipping {zipProgress.done}/{zipProgress.total}
+                    </>
+                  ) : (
+                    <>
+                      <Download className="w-3 h-3" />
+                      Download album
+                    </>
+                  )}
+                </button>
+                <button
+                  type="button"
                   onClick={renameActiveAlbum}
                   className="text-xs text-muted-foreground hover:text-foreground inline-flex items-center gap-1"
                 >
@@ -1356,6 +1420,7 @@ export default function VendorGalleryPage() {
             exif: r.exif,
             width: r.width,
             height: r.height,
+            file_size_bytes: r.file_size_bytes,
             created_at: r.created_at,
           }))}
           index={lightboxIdx}
@@ -1412,6 +1477,13 @@ function aspectLabel(a: AspectFilter): string {
       : a === "landscape"
         ? "Landscape"
         : "Square";
+}
+
+function formatFileSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  if (bytes < 1024 * 1024 * 1024) return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+  return `${(bytes / 1024 / 1024 / 1024).toFixed(1)} GB`;
 }
 
 function gridCols(d: Density): string {
@@ -1704,6 +1776,7 @@ function ListView({
               <span className="text-xs text-muted-foreground hidden md:inline">
                 {ext}
                 {r.width && r.height ? ` · ${r.width}×${r.height}` : ""}
+                {r.file_size_bytes ? ` · ${formatFileSize(r.file_size_bytes)}` : ""}
               </span>
               <button
                 type="button"
