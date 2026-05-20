@@ -75,7 +75,7 @@ async function sendCodeEmail(email: string, code: string): Promise<boolean> {
 <html><body style="margin:0;background:#f7f5f2;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;color:#1a1a1a;">
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="padding:48px 16px;"><tr><td align="center">
     <table role="presentation" width="560" cellpadding="0" cellspacing="0" style="max-width:560px;background:#ffffff;border-radius:8px;padding:40px 32px;">
-      <tr><td style="font-size:14px;letter-spacing:0.18em;color:#a08259;text-transform:uppercase;padding-bottom:24px;">— Vendora</td></tr>
+      <tr><td style="padding-bottom:24px;"><img src="https://eventvendora.com/pwa-192.png" alt="Vendora" width="44" height="44" style="display:block;border:0;border-radius:8px;outline:none;text-decoration:none;-ms-interpolation-mode:bicubic;" /></td></tr>
       <tr><td style="font-size:24px;line-height:1.25;font-weight:600;padding-bottom:16px;">Your sign-in code</td></tr>
       <tr><td style="font-size:15px;line-height:1.6;color:#3a3a3a;">
         <p style="margin:0 0 16px;">Use this 6-digit code to finish signing in to Vendora:</p>

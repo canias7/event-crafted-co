@@ -202,8 +202,8 @@ function shellHtml(title: string, bodyHtml: string) {
         <td align="center">
           <table role="presentation" width="560" cellpadding="0" cellspacing="0" style="max-width:560px;background:#ffffff;border-radius:8px;padding:40px 32px;">
             <tr>
-              <td style="font-size:14px;letter-spacing:0.18em;color:#a08259;text-transform:uppercase;padding-bottom:24px;">
-                — Vendora
+              <td style="padding-bottom:24px;">
+                <img src="https://eventvendora.com/pwa-192.png" alt="Vendora" width="44" height="44" style="display:block;border:0;border-radius:8px;outline:none;text-decoration:none;-ms-interpolation-mode:bicubic;" />
               </td>
             </tr>
             <tr>

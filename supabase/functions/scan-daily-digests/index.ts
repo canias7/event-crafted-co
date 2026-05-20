@@ -168,7 +168,8 @@ function digestHtml(r: DigestRow) {
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="padding:48px 16px;">
     <tr><td align="center">
       <table role="presentation" width="560" cellpadding="0" cellspacing="0" style="max-width:560px;background:#ffffff;border-radius:8px;padding:40px 32px;">
-        <tr><td style="font-size:14px;letter-spacing:0.18em;color:#a08259;text-transform:uppercase;padding-bottom:24px;">— Vendora · Daily digest</td></tr>
+        <tr><td style="padding-bottom:12px;"><img src="https://eventvendora.com/pwa-192.png" alt="Vendora" width="44" height="44" style="display:block;border:0;border-radius:8px;outline:none;text-decoration:none;-ms-interpolation-mode:bicubic;" /></td></tr>
+        <tr><td style="font-size:12px;letter-spacing:0.18em;color:#a08259;text-transform:uppercase;padding-bottom:24px;">Daily digest</td></tr>
         <tr><td style="font-size:24px;line-height:1.25;font-weight:600;padding-bottom:8px;">
           ${r.notifications.length} ${r.notifications.length === 1 ? "update" : "updates"} since yesterday
         </td></tr>
