@@ -155,7 +155,9 @@ export default function SuperAgentsPage() {
 // triple amber radial glow, perspective amber grid floor, slowly
 // rotating dashed orbital ring, scattered orange particles + stars.
 // Fixed position so the canvas stays under content as the user scrolls.
-function AmbientBackdrop({ disabled }: { disabled: boolean }) {
+// Exported so the vendor portal can reuse the same backdrop on its
+// internal Super Agents surface (/vendor/ai-superagents).
+export function AmbientBackdrop({ disabled }: { disabled: boolean }) {
   return (
     <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
       {/* Big center amber glow — anchor of the canvas */}
@@ -360,7 +362,9 @@ const PARTICLES: Particle[] = [
 ];
 
 // ─── Agents section ────────────────────────────────────────────────────
-function AgentsSection() {
+// Exported so the vendor portal reuses the same headline + cards on
+// /vendor/ai-superagents without duplicating ~600 lines of layout.
+export function AgentsSection() {
   return (
     <section
       id="meet"

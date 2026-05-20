@@ -6,6 +6,7 @@ import {
   LucideIcon,
   PanelLeftClose,
   PanelLeftOpen,
+  Sparkles,
 } from "lucide-react";
 import { customerNavItems, setLastDashboardSide, vendorNavItems } from "@/data/navItems";
 
@@ -62,12 +63,11 @@ export function DashboardSidebar({
       location.pathname.startsWith(`${item.path}/`);
     const label = t(item.labelKey);
 
-    // AI Superagents row mirrors the landing page / PublicNav style:
-    // "Super agents" label with a thin-bordered NEW pill. Replaces the
-    // earlier marquee announcing model names (HILUX / RAPTOR / AXION) —
-    // the public nav doesn't expose those, the sidebar shouldn't
-    // either. Collapsed sidebar falls back to the standard icon-only
-    // render below.
+    // AI Superagents is the only nav row that swaps its label for a
+    // horizontal scrolling marquee announcing the live agents. Same
+    // height, padding, active+hover treatment as every other row — the
+    // ONLY change is what fills the label area. Collapsed sidebar falls
+    // back to the standard icon-only render.
     if (item.path === "/vendor/ai-superagents" && !collapsed) {
       return (
         <Link
@@ -77,19 +77,59 @@ export function DashboardSidebar({
           aria-current={isActive ? "page" : undefined}
         >
           <div
-            className={`flex items-center gap-1.5 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors duration-200 ${
+            className={`relative flex items-center rounded-lg text-sm font-medium transition-colors duration-200 overflow-hidden px-3 py-2.5 ${
               isActive
                 ? "text-foreground bg-secondary"
                 : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
             }`}
           >
-            <span>Super agents</span>
+            {/* Fade gradients on both edges so the text doesn't ram the
+                row borders. Color picks up whatever bg is behind so the
+                gradient blends in both inactive and active states. */}
             <span
-              className="text-[9px] tracking-widest rounded-full px-1.5 py-px text-foreground/80"
-              style={{ border: "0.5px solid rgba(0,0,0,0.35)" }}
-            >
-              NEW
-            </span>
+              aria-hidden
+              className="pointer-events-none absolute inset-y-0 left-0 w-5 z-10"
+              style={{
+                background:
+                  "linear-gradient(90deg, var(--sidebar-bg, transparent) 0%, transparent 100%)",
+              }}
+            />
+            <span
+              aria-hidden
+              className="pointer-events-none absolute inset-y-0 right-0 w-5 z-10"
+              style={{
+                background:
+                  "linear-gradient(-90deg, var(--sidebar-bg, transparent) 0%, transparent 100%)",
+              }}
+            />
+            <div className="flex whitespace-nowrap gap-4 items-center animate-marquee-x hover:[animation-play-state:paused]">
+              {/* Track is duplicated once so translateX(-50%) loops seamlessly. */}
+              {[0, 1].map((dup) => (
+                <span
+                  key={dup}
+                  className="flex items-center gap-4 shrink-0"
+                  aria-hidden={dup === 1}
+                >
+                  <span className="inline-flex items-center gap-1.5 font-semibold text-foreground">
+                    <Sparkles className="w-3.5 h-3.5" />
+                    AI Super Agent
+                  </span>
+                  <Dot />
+                  <span
+                    className="text-[9.5px] uppercase tracking-[0.08em] font-semibold rounded-full px-2 py-0.5 bg-foreground text-background"
+                  >
+                    Coming Soon
+                  </span>
+                  <Dot />
+                  <span>HILUX 2.7</span>
+                  <Dot />
+                  <span>RAPTOR 3.5</span>
+                  <Dot />
+                  <span>AXION 9.1</span>
+                  <Dot />
+                </span>
+              ))}
+            </div>
           </div>
         </Link>
       );
@@ -116,6 +156,15 @@ export function DashboardSidebar({
           {!collapsed && <span className="truncate">{label}</span>}
         </div>
       </Link>
+    );
+  }
+
+  function Dot() {
+    return (
+      <span
+        aria-hidden
+        className="inline-block w-1 h-1 rounded-full bg-foreground/35 shrink-0"
+      />
     );
   }
 
