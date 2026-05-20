@@ -29,9 +29,10 @@ interface Props {
 
 const EXPIRY_OPTIONS = [
   { value: "never", label: "Never expires" },
-  { value: "1d", label: "Expires in 1 day" },
-  { value: "7d", label: "Expires in 7 days" },
-  { value: "30d", label: "Expires in 30 days" },
+  { value: "1d", label: "1 day" },
+  { value: "7d", label: "7 days" },
+  { value: "30d", label: "30 days" },
+  { value: "custom", label: "Custom date" },
 ];
 
 export function ShareModal({
@@ -42,6 +43,7 @@ export function ShareModal({
   targetLabel,
 }: Props) {
   const [expiry, setExpiry] = useState<string>("never");
+  const [customDate, setCustomDate] = useState<string>("");
   const [password, setPassword] = useState("");
   const [creating, setCreating] = useState(false);
   const [token, setToken] = useState<string | null>(null);
@@ -51,6 +53,7 @@ export function ShareModal({
     if (!open) {
       setToken(null);
       setExpiry("never");
+      setCustomDate("");
       setPassword("");
       setCopied(false);
     }
@@ -62,15 +65,28 @@ export function ShareModal({
 
   async function create() {
     if (!imageId && !albumId) return;
+    let expires_at: string | null;
+    if (expiry === "never") {
+      expires_at = null;
+    } else if (expiry === "custom") {
+      if (!customDate) {
+        toast.error("Pick an expiry date.");
+        return;
+      }
+      const ms = new Date(`${customDate}T23:59:59`).getTime();
+      if (Number.isNaN(ms) || ms <= Date.now()) {
+        toast.error("Pick a future date.");
+        return;
+      }
+      expires_at = new Date(ms).toISOString();
+    } else if (expiry === "1d") {
+      expires_at = new Date(Date.now() + 86400_000).toISOString();
+    } else if (expiry === "7d") {
+      expires_at = new Date(Date.now() + 7 * 86400_000).toISOString();
+    } else {
+      expires_at = new Date(Date.now() + 30 * 86400_000).toISOString();
+    }
     setCreating(true);
-    const expires_at =
-      expiry === "never"
-        ? null
-        : expiry === "1d"
-          ? new Date(Date.now() + 86400_000).toISOString()
-          : expiry === "7d"
-            ? new Date(Date.now() + 7 * 86400_000).toISOString()
-            : new Date(Date.now() + 30 * 86400_000).toISOString();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data, error } = await (supabase as any).rpc("create_gallery_share", {
       p_image_id: imageId ?? null,
@@ -133,6 +149,17 @@ export function ShareModal({
                   </button>
                 ))}
               </div>
+              {expiry === "custom" ? (
+                <Input
+                  type="date"
+                  value={customDate}
+                  onChange={(e) => setCustomDate(e.target.value)}
+                  min={new Date(Date.now() + 86400_000)
+                    .toISOString()
+                    .slice(0, 10)}
+                  className="mt-2 h-9"
+                />
+              ) : null}
             </div>
             <div>
               <Label htmlFor="share-password" className="text-xs font-medium text-muted-foreground">

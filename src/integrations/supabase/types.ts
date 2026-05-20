@@ -4125,7 +4125,12 @@ export type Database = {
       get_referral_by_code: { Args: { p_code: string }; Returns: Json }
       get_review_request_context: { Args: { p_token: string }; Returns: Json }
       get_share_payload: {
-        Args: { p_password?: string; p_token: string }
+        Args: {
+          p_limit?: number
+          p_offset?: number
+          p_password?: string
+          p_token: string
+        }
         Returns: Json
       }
       get_team_invite_by_token: { Args: { p_token: string }; Returns: Json }
