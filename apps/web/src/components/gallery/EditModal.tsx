@@ -42,7 +42,7 @@ import {
 import { computeBlurhash } from "@/lib/galleryImage";
 import { formatBytes, loadImageViaBlob } from "@/lib/downloadImage";
 import { removeGalleryFileWithRetry } from "@/lib/galleryStorage";
-import { captureException, captureMessage } from "@/lib/sentry";
+import { captureException } from "@/lib/sentry";
 
 interface Props {
   open: boolean;
@@ -122,19 +122,6 @@ export function EditModal({
     onOpenChangeRef.current = onOpenChange;
   }, [onOpenChange]);
 
-  // Diagnostic: fires whenever `t` actually changes per React's
-  // Object.is comparison. If setT is being called but this doesn't
-  // fire, the state update is being dropped somewhere. If it does
-  // fire but the transform effect (which also has t as a dep)
-  // doesn't, the two effects diverge somehow.
-  useEffect(() => {
-    captureMessage("EditModal: t changed", {
-      rotate: t.rotate,
-      flipH: t.flipH,
-      flipV: t.flipV,
-    });
-  }, [t]);
-
   // Reset transient state when the modal closes. Separated from the
   // load effect so a state change here can't accidentally cancel an
   // in-flight load. sourceRef is also cleared so the next open starts
@@ -142,9 +129,6 @@ export function EditModal({
   // bitmap.
   useEffect(() => {
     if (open) return;
-    captureMessage("EditModal: close-reset effect cleared sourceRef", {
-      hadSource: !!sourceRef.current,
-    });
     setT({ rotate: 0, flipH: false, flipV: false });
     setCrop(undefined);
     setCompletedCrop(null);
@@ -162,7 +146,6 @@ export function EditModal({
     if (!open) return;
     let cancelled = false;
     setLoadProgress({ received: 0, total: 0 });
-    captureMessage("EditModal: load effect started", { imageUrl });
     // Loaded via fetch → blob → object URL so canvas operations
     // later don't taint on cross-origin (Supabase storage). The
     // sourceRef holds the bitmap; transforms drawImage from it.
@@ -172,17 +155,10 @@ export function EditModal({
       if (!cancelled) setLoadProgress({ received, total });
     })
       .then((img) => {
-        if (cancelled) {
-          captureMessage("EditModal: load completed but cancelled");
-          return;
-        }
+        if (cancelled) return;
         sourceRef.current = img;
         setDisplayUrl(img.src);
         setLoaded(true);
-        captureMessage("EditModal: load completed, sourceRef set", {
-          naturalWidth: img.naturalWidth,
-          naturalHeight: img.naturalHeight,
-        });
         // Heads-up if saving will downgrade the format. Canvas can't
         // encode HEIC/AVIF/GIF back out, so any edit will land as JPEG
         // regardless of the original — set expectations upfront.
@@ -190,11 +166,7 @@ export function EditModal({
           toast.info("Edits to this image will be saved as JPEG.");
         }
       })
-      .catch((err) => {
-        captureMessage("EditModal: load .catch fired", {
-          cancelled,
-          message: err instanceof Error ? err.message : String(err),
-        });
+      .catch(() => {
         if (cancelled) return;
         toast.error("Couldn't load image for editing.");
         onOpenChangeRef.current(false);
@@ -216,34 +188,13 @@ export function EditModal({
   // mishandle. Identity transform uses the original source blob URL
   // directly (no canvas pass needed).
   useEffect(() => {
-    // Diagnostic: trace each entry to figure out why "buttons do
-    // nothing" — events surface as Sentry info messages with the
-    // current state.
-    captureMessage("EditModal: transform effect entry", {
-      open,
-      hasSource: !!sourceRef.current,
-      rotate: t.rotate,
-      flipH: t.flipH,
-      flipV: t.flipV,
-      imageUrl,
-    });
-    if (!open || !sourceRef.current) {
-      captureMessage("EditModal: transform effect bailed (no source)", {
-        open,
-        hasSource: !!sourceRef.current,
-      });
-      return;
-    }
+    if (!open || !sourceRef.current) return;
     const src = sourceRef.current;
     // Guard: if the source decoded but reported zero dimensions
     // (broken HEIC/AVIF on a browser that pretends to support it),
     // canvas ops would silently produce a 0×0 output. Bail out
     // explicitly so the user sees a real error.
     if (!src.naturalWidth || !src.naturalHeight) {
-      captureMessage("EditModal: transform bailed (zero dims)", {
-        naturalWidth: src.naturalWidth,
-        naturalHeight: src.naturalHeight,
-      });
       toast.error(
         "This image's format isn't supported by your browser's editor.",
       );
@@ -251,17 +202,11 @@ export function EditModal({
       return;
     }
     if (t.rotate === 0 && !t.flipH && !t.flipV) {
-      captureMessage("EditModal: transform identity branch");
       setDisplayUrl(src.src);
       setCrop(undefined);
       setCompletedCrop(null);
       return;
     }
-    captureMessage("EditModal: transform branch entered", {
-      rotate: t.rotate,
-      flipH: t.flipH,
-      flipV: t.flipV,
-    });
     let cancelled = false;
     let createdUrl: string | null = null;
     (async () => {
@@ -277,18 +222,11 @@ export function EditModal({
         if (!blob) {
           throw new Error("toBlob returned null (canvas may be tainted).");
         }
-        if (cancelled) {
-          captureMessage("EditModal: IIFE cancelled before setDisplayUrl");
-          return;
-        }
+        if (cancelled) return;
         createdUrl = URL.createObjectURL(blob);
         setCrop(undefined);
         setCompletedCrop(null);
         setDisplayUrl(createdUrl);
-        captureMessage("EditModal: setDisplayUrl fired", {
-          blobSize: blob.size,
-          urlPrefix: createdUrl.slice(0, 40),
-        });
         // Revoke the previous transformed URL after a tick so the
         // <img> has time to swap source without flicker.
         const prev = prevTransformedUrlRef.current;
@@ -329,7 +267,6 @@ export function EditModal({
   }, [open]);
 
   function rotateBy(deg: number) {
-    captureMessage("EditModal: rotateBy clicked", { deg });
     // flushSync forces React to commit this state update synchronously
     // before returning from the event handler. Without it, Sentry
     // traces showed the setT update getting deferred ~800ms (likely
@@ -600,7 +537,6 @@ export function EditModal({
               variant="outline"
               size="sm"
               onClick={() => {
-                captureMessage("EditModal: Flip H clicked");
                 flushSync(() => {
                   setT((p) => ({ ...p, flipH: !p.flipH }));
                 });
@@ -614,7 +550,6 @@ export function EditModal({
               variant="outline"
               size="sm"
               onClick={() => {
-                captureMessage("EditModal: Flip V clicked");
                 flushSync(() => {
                   setT((p) => ({ ...p, flipV: !p.flipV }));
                 });
