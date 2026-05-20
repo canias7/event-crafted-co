@@ -211,7 +211,7 @@ export default function HostInquiryDetailPage() {
       (supabase as any)
         .from("proposals")
         .select(
-          "id, title, line_items, subtotal_cents, deposit_cents, terms, contract_body, status, sent_at, signed_at, signed_name, first_viewed_at, last_viewed_at, view_count",
+          "id, title, line_items, subtotal_cents, deposit_cents, terms, contract_body, status, sent_at, signed_at, signed_name, first_viewed_at, last_viewed_at, view_count, payment_status, deposit_paid_at, paid_in_full_at, vendor:vendor_profiles!proposals_vendor_id_fkey(stripe_charges_enabled)",
         )
         .eq("inquiry_id", inquiryId)
         .order("created_at", { ascending: false }),
@@ -298,7 +298,15 @@ export default function HostInquiryDetailPage() {
       setReactionsByMsg({});
     }
 
-    setProposals((propsRes.data as unknown as Proposal[]) ?? []);
+    // Normalize the joined vendor row — Supabase types nested
+    // *-to-one selects as arrays; ProposalCard expects a scalar.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    setProposals(
+      (((propsRes.data as any[]) ?? []) as any[]).map((p) => ({
+        ...p,
+        vendor: Array.isArray(p.vendor) ? (p.vendor[0] ?? null) : p.vendor,
+      })) as unknown as Proposal[],
+    );
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     setVendorReviews(((vendorRevsRes.data as any[]) ?? []).map((r) => ({
       id: r.id,

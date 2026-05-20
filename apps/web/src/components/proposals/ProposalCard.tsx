@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { Check, X, FileText, Loader2, PenLine, Eye } from "lucide-react";
+import { Check, X, FileText, Loader2, PenLine, Eye, CreditCard, CheckCircle2 } from "lucide-react";
+import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -42,6 +43,12 @@ export interface Proposal {
   first_viewed_at?: string | null;
   last_viewed_at?: string | null;
   view_count?: number;
+  payment_status?: "unpaid" | "deposit_paid" | "paid_in_full" | "failed";
+  deposit_paid_at?: string | null;
+  paid_in_full_at?: string | null;
+  /** Joined from vendor_profiles. True when the vendor finished Stripe
+   *  onboarding and can accept charges. */
+  vendor?: { stripe_charges_enabled?: boolean } | null;
 }
 
 interface Props {
@@ -92,8 +99,32 @@ export function ProposalCard({
   onReject,
 }: Props) {
   const [signOpen, setSignOpen] = useState(false);
+  const [paying, setPaying] = useState<"deposit" | "full" | null>(null);
   const requiresSignature =
     Boolean(proposal.contract_body) || Boolean(proposal.terms);
+
+  async function pay(mode: "deposit" | "full") {
+    if (paying) return;
+    setPaying(mode);
+    const { data, error } = await supabase.functions.invoke(
+      "stripe-create-checkout",
+      { body: { proposal_id: proposal.id, mode } },
+    );
+    setPaying(null);
+    if (error) {
+      // Edge function returns the error body as JSON; surface the
+      // message verbatim. Common cases: vendor not onboarded, host
+      // is not the proposal owner, proposal not in accepted state.
+      toast.error(error.message ?? "Couldn't start payment");
+      return;
+    }
+    const url = (data as { url?: string } | null)?.url;
+    if (!url) {
+      toast.error("Stripe didn't return a checkout URL");
+      return;
+    }
+    window.location.href = url;
+  }
 
   // When a host views their own pending proposal, mark it viewed so
   // the vendor can see the open signal. RPC is debounced server-side
@@ -236,6 +267,18 @@ export function ProposalCard({
         </div>
       )}
 
+      {/* Payment controls — host only, accepted proposal, vendor onboarded.
+          The edge function double-checks, but we gate UI early so a
+          host on an un-onboarded vendor sees "Payouts not set up" copy
+          instead of clicking and bouncing back with an error toast. */}
+      {canRespond && proposal.status === "accepted" && (
+        <PaymentSection
+          proposal={proposal}
+          paying={paying}
+          onPay={pay}
+        />
+      )}
+
       {canRespond && proposal.status === "pending" && (
         <div className="flex gap-2 mt-6 pt-5 border-t border-border">
           <Button
@@ -286,6 +329,105 @@ export function ProposalCard({
         proposalTitle={proposal.title}
         onSubmit={handleSignSubmit}
       />
+    </div>
+  );
+}
+
+function PaymentSection({
+  proposal,
+  paying,
+  onPay,
+}: {
+  proposal: Proposal;
+  paying: "deposit" | "full" | null;
+  onPay: (mode: "deposit" | "full") => void;
+}) {
+  const status = proposal.payment_status ?? "unpaid";
+  const vendorReady = proposal.vendor?.stripe_charges_enabled === true;
+  const deposit = proposal.deposit_cents ?? 0;
+  const balanceCents =
+    proposal.subtotal_cents - (status === "deposit_paid" ? deposit : 0);
+
+  if (status === "paid_in_full") {
+    return (
+      <div className="mt-6 pt-5 border-t border-border">
+        <div className="flex items-center gap-2 text-accent">
+          <CheckCircle2 className="w-4 h-4" />
+          <p className="font-label">Paid in full</p>
+        </div>
+        {proposal.paid_in_full_at && (
+          <p className="text-xs text-muted-foreground mt-1">
+            on{" "}
+            {new Date(proposal.paid_in_full_at).toLocaleDateString(undefined, {
+              dateStyle: "long",
+            })}
+          </p>
+        )}
+      </div>
+    );
+  }
+
+  if (!vendorReady) {
+    return (
+      <div className="mt-6 pt-5 border-t border-border">
+        <p className="text-xs text-muted-foreground leading-relaxed">
+          This vendor hasn't finished setting up payouts yet. Once
+          they do, you'll be able to pay deposits and balances right
+          here.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="mt-6 pt-5 border-t border-border space-y-2">
+      {status === "deposit_paid" && (
+        <p className="text-xs text-muted-foreground">
+          Deposit of {fmt(deposit)} paid. Balance{" "}
+          <span className="font-medium text-foreground">
+            {fmt(balanceCents)}
+          </span>{" "}
+          remaining.
+        </p>
+      )}
+      {status === "failed" && (
+        <p className="text-xs text-destructive">
+          Last payment attempt failed. Try again below.
+        </p>
+      )}
+      <div className="flex gap-2 flex-wrap">
+        {deposit > 0 && status === "unpaid" && (
+          <Button
+            onClick={() => onPay("deposit")}
+            disabled={paying !== null}
+            variant="outline"
+            className="rounded-full"
+          >
+            {paying === "deposit" ? (
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+            ) : (
+              <CreditCard className="w-4 h-4 mr-2" />
+            )}
+            Pay deposit {fmt(deposit)}
+          </Button>
+        )}
+        {balanceCents > 0 && (
+          <Button
+            onClick={() => onPay("full")}
+            disabled={paying !== null}
+            className="rounded-full bg-foreground text-background hover:bg-foreground/90"
+          >
+            {paying === "full" ? (
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+            ) : (
+              <CreditCard className="w-4 h-4 mr-2" />
+            )}
+            {status === "deposit_paid"
+              ? `Pay balance ${fmt(balanceCents)}`
+              : `Pay ${fmt(balanceCents)}`}
+          </Button>
+        )}
+      </div>
     </div>
   );
 }
