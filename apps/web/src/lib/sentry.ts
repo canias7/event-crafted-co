@@ -37,12 +37,22 @@ export function initSentry() {
     replaysSessionSampleRate: 0,
     // Replay only sessions that hit an error.
     replaysOnErrorSampleRate: 1.0,
-    // Drop noisy network errors that aren't actionable: aborted
-    // fetches (user navigated away), expected supabase 4xx, etc.
+    // Drop noisy errors that aren't actionable:
+    //   - AbortError / ResizeObserver: harmless browser-internal
+    //   - "Failed to fetch dynamically imported module" et al: stale-
+    //     chunk after deploy. lazyWithReload + ErrorBoundary auto-
+    //     reload the page; the Sentry report is duplicate noise. We
+    //     match here as defense-in-depth in case a chunk import
+    //     bypasses both layers (e.g. an unguarded dynamic import in
+    //     a third-party lib).
     ignoreErrors: [
       "AbortError",
       "ResizeObserver loop limit exceeded",
       "ResizeObserver loop completed with undelivered notifications",
+      "Failed to fetch dynamically imported module",
+      "ChunkLoadError",
+      "Loading chunk",
+      "Importing a module script failed",
     ],
   });
   initialized = true;

@@ -16,15 +16,16 @@ import {
 // On chunk error, this reloads to pull the fresh index.html and
 // re-resolve to a valid chunk URL. Rate-limited per-URL: each unique
 // failing chunk gets one reload attempt. Different chunks failing don't
-// share a budget (so navigating across multiple stale pages doesn't
-// strand the user). Same chunk failing twice in the budget window
+// share a budget. Same chunk failing twice in the budget window
 // suppresses the reload to avoid loops on a genuinely broken deploy.
-// Always re-throws so the ErrorBoundary still fires its own safety-net
-// + Sentry report.
 //
-// Use this in place of React.lazy() for ALL lazy-loaded chunks —
-// page routes (router/lazyRoutes.ts) and one-off modal/banner lazies
-// (CookieBanner, InquiryFormModal, etc.).
+// When we DO reload, we swallow the error by returning a never-
+// resolving promise. The page is about to navigate away — letting the
+// rejection bubble out causes React to fire its internal
+// invokeGuardedCallback synthetic event, which Sentry's
+// auto-instrumentation captures via addEventListener. That's how the
+// "Failed to fetch dynamically imported module" issues kept landing
+// in Sentry even though the user was being healed transparently.
 
 export function lazyWithReload<T extends ComponentType<unknown>>(
   factory: () => Promise<{ default: T }>,
@@ -35,6 +36,10 @@ export function lazyWithReload<T extends ComponentType<unknown>>(
         const msg = String((err as { message?: string })?.message ?? err);
         if (shouldAutoReload("lazy", msg)) {
           reloadBustingCache();
+          // Stall React.lazy until the navigation completes. Throwing
+          // here would surface the error to Sentry's global listener
+          // before location.replace lands — noise we can't action.
+          return new Promise<{ default: T }>(() => {});
         }
       }
       throw err;

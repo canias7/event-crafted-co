@@ -48,6 +48,19 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+    // Stale-chunk auto-heal runs FIRST — if we're going to reload,
+    // the error is a transient deploy/cache mismatch and the user is
+    // being saved transparently. Skipping captureException keeps these
+    // out of Sentry; same per-URL budget as lazyWithReload means the
+    // "real bug" case (genuinely broken deploy with the same chunk
+    // failing twice) still reaches Sentry via the fall-through path.
+    if (isChunkLoadError(error) && typeof window !== "undefined") {
+      const msg = String(error?.message ?? error);
+      if (shouldAutoReload("boundary", msg)) {
+        reloadBustingCache();
+        return;
+      }
+    }
     // Surface to console for dev tools + any external monitor hooked up
     // to console.error or window.onerror.
     console.error("Vendora ErrorBoundary caught:", error, errorInfo);
@@ -64,17 +77,6 @@ export class ErrorBoundary extends Component<Props, State> {
     captureException(error, {
       componentStack: errorInfo?.componentStack,
     });
-    // Stale-chunk auto-heal. Independent budget from lazyWithReload so
-    // each layer gets one attempt per chunk URL before showing the snag
-    // screen. Per-URL dedup means navigating across multiple stale
-    // pages doesn't strand the user.
-    if (isChunkLoadError(error) && typeof window !== "undefined") {
-      const msg = String(error?.message ?? error);
-      if (shouldAutoReload("boundary", msg)) {
-        reloadBustingCache();
-        return;
-      }
-    }
     this.setState({ error, errorInfo });
   }
 
