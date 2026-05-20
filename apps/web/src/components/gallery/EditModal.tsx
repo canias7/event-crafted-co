@@ -23,6 +23,7 @@ import {
   Scissors,
 } from "lucide-react";
 import { toast } from "sonner";
+import { flushSync } from "react-dom";
 import ReactCrop, {
   type Crop,
   type PixelCrop,
@@ -329,7 +330,16 @@ export function EditModal({
 
   function rotateBy(deg: number) {
     captureMessage("EditModal: rotateBy clicked", { deg });
-    setT((p) => ({ ...p, rotate: ((p.rotate + deg) % 360 + 360) % 360 }));
+    // flushSync forces React to commit this state update synchronously
+    // before returning from the event handler. Without it, Sentry
+    // traces showed the setT update getting deferred ~800ms (likely
+    // React 18 concurrent-mode prioritization stalling on something),
+    // by which time the user had already clicked away thinking the
+    // button was broken. flushSync guarantees the rotation reaches
+    // the screen on the same frame as the click.
+    flushSync(() => {
+      setT((p) => ({ ...p, rotate: ((p.rotate + deg) % 360 + 360) % 360 }));
+    });
   }
 
   function resetCrop() {
@@ -579,7 +589,9 @@ export function EditModal({
               size="sm"
               onClick={() => {
                 captureMessage("EditModal: Flip H clicked");
-                setT((p) => ({ ...p, flipH: !p.flipH }));
+                flushSync(() => {
+                  setT((p) => ({ ...p, flipH: !p.flipH }));
+                });
               }}
               className="rounded-full"
             >
@@ -591,7 +603,9 @@ export function EditModal({
               size="sm"
               onClick={() => {
                 captureMessage("EditModal: Flip V clicked");
-                setT((p) => ({ ...p, flipV: !p.flipV }));
+                flushSync(() => {
+                  setT((p) => ({ ...p, flipV: !p.flipV }));
+                });
               }}
               className="rounded-full"
             >
