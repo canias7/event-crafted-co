@@ -40,7 +40,8 @@ import {
   Undo2,
 } from "lucide-react";
 import { toast } from "sonner";
-import JSZip from "jszip";
+// JSZip is dynamic-imported inside zipRows() — it's ~50KB gzipped and
+// most vendors never trigger a bulk download.
 import {
   DndContext,
   type DragEndEvent,
@@ -752,6 +753,8 @@ export default function VendorGalleryPage() {
     setZipping(true);
     setZipProgress({ done: 0, total: rowsToZip.length });
     try {
+      // Dynamic import — JSZip is ~50KB gzip and not in the hot path.
+      const { default: JSZip } = await import("jszip");
       const zip = new JSZip();
       const seenNames = new Set<string>();
       for (const r of rowsToZip) {

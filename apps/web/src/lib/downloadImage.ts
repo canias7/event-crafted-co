@@ -19,39 +19,57 @@ export interface ProgressCallback {
   (received: number, total: number): void;
 }
 
+// Wall-clock cap for the entire fetch + stream. On flaky 3G the
+// stream can stall mid-download without the request ever erroring,
+// so wrap everything in an AbortController and reject after 30s.
+// A successful headers-only response that then stops streaming
+// counts against the same budget — exactly the case we want to bail
+// out of, since the user is otherwise stuck on a frozen spinner.
+const FETCH_TIMEOUT_MS = 30_000;
+
 async function fetchAsBlob(
   url: string,
   onProgress?: ProgressCallback,
 ): Promise<Blob> {
-  const res = await fetch(url);
-  if (!res.ok) {
-    throw new Error(`Couldn't fetch image (${res.status})`);
-  }
-  // Fall back to the simple blob() path if the response isn't a
-  // streamable body (older browsers, or no progress requested).
-  const totalHeader = res.headers.get("content-length");
-  const total = totalHeader ? parseInt(totalHeader, 10) : 0;
-  if (!onProgress || !res.body) {
-    return res.blob();
-  }
-  const reader = res.body.getReader();
-  const chunks: Uint8Array[] = [];
-  let received = 0;
-  for (;;) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    if (value) {
-      chunks.push(value);
-      received += value.length;
-      onProgress(received, total);
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+  try {
+    const res = await fetch(url, { signal: controller.signal });
+    if (!res.ok) {
+      throw new Error(`Couldn't fetch image (${res.status})`);
     }
+    // Fall back to the simple blob() path if the response isn't a
+    // streamable body (older browsers, or no progress requested).
+    const totalHeader = res.headers.get("content-length");
+    const total = totalHeader ? parseInt(totalHeader, 10) : 0;
+    if (!onProgress || !res.body) {
+      return await res.blob();
+    }
+    const reader = res.body.getReader();
+    const chunks: Uint8Array[] = [];
+    let received = 0;
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      if (value) {
+        chunks.push(value);
+        received += value.length;
+        onProgress(received, total);
+      }
+    }
+    return new Blob(chunks as BlobPart[], {
+      type: res.headers.get("content-type") ?? "application/octet-stream",
+    });
+  } catch (err) {
+    if (err instanceof DOMException && err.name === "AbortError") {
+      throw new Error(
+        `Download timed out after ${FETCH_TIMEOUT_MS / 1000}s. Check your connection and retry.`,
+      );
+    }
+    throw err;
+  } finally {
+    clearTimeout(timeoutId);
   }
-  // Concatenate chunks into a single Blob preserving the
-  // response's content type so the browser picks the right
-  // extension on download.
-  return new Blob(chunks as BlobPart[], {
-    type: res.headers.get("content-type") ?? "application/octet-stream",
-  });
 }
 
 export async function downloadCrossOrigin(

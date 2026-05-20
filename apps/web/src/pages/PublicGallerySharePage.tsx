@@ -143,6 +143,60 @@ export default function PublicGallerySharePage() {
     void resolve(null);
   }, [resolve]);
 
+  // Inject SEO / social-card meta tags once the share resolves so
+  // a link pasted into Slack / Discord / iMessage previews with an
+  // image + title instead of a blank URL. Reset on unmount so we
+  // don't leak this state into other client-navigated routes.
+  useEffect(() => {
+    if (state.status !== "image" && state.status !== "album") return;
+    const preview =
+      state.status === "image"
+        ? {
+            title: state.image.caption ?? "Shared photo",
+            description: "",
+            image: state.image.image_url,
+          }
+        : {
+            title: state.album_name,
+            description: `${state.total} photo${state.total === 1 ? "" : "s"}`,
+            image: state.images[0]?.image_url ?? "",
+          };
+    const prevTitle = document.title;
+    document.title = preview.title + " · Vendora";
+    const tags: Array<{ key: string; attr: "property" | "name"; value: string }> = [
+      { key: "og:title", attr: "property", value: preview.title },
+      { key: "og:type", attr: "property", value: "website" },
+      { key: "og:url", attr: "property", value: window.location.href },
+      { key: "og:description", attr: "property", value: preview.description },
+      { key: "og:image", attr: "property", value: preview.image },
+      { key: "twitter:card", attr: "name", value: "summary_large_image" },
+      { key: "twitter:title", attr: "name", value: preview.title },
+      { key: "twitter:description", attr: "name", value: preview.description },
+      { key: "twitter:image", attr: "name", value: preview.image },
+      { key: "description", attr: "name", value: preview.description },
+    ];
+    const created: HTMLMetaElement[] = [];
+    for (const t of tags) {
+      if (!t.value) continue;
+      let el = document.head.querySelector<HTMLMetaElement>(
+        `meta[${t.attr}="${t.key}"]`,
+      );
+      if (!el) {
+        el = document.createElement("meta");
+        el.setAttribute(t.attr, t.key);
+        document.head.appendChild(el);
+        created.push(el);
+      }
+      el.setAttribute("content", t.value);
+    }
+    return () => {
+      document.title = prevTitle;
+      // Only remove tags we created; leave any that were pre-existing
+      // (e.g. the app shell's defaults) alone.
+      for (const el of created) el.remove();
+    };
+  }, [state]);
+
   async function submitPassword() {
     if (!passwordInput.trim() || submitting) return;
     setSubmitting(true);
