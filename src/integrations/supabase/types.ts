@@ -993,6 +993,7 @@ export type Database = {
           intake_answers: Json | null
           intent_score: number | null
           location: string | null
+          package_id: string | null
           quality_score: number | null
           recommended_verification: string | null
           review_prompt_sent_at: string | null
@@ -1015,6 +1016,7 @@ export type Database = {
           intake_answers?: Json | null
           intent_score?: number | null
           location?: string | null
+          package_id?: string | null
           quality_score?: number | null
           recommended_verification?: string | null
           review_prompt_sent_at?: string | null
@@ -1037,6 +1039,7 @@ export type Database = {
           intake_answers?: Json | null
           intent_score?: number | null
           location?: string | null
+          package_id?: string | null
           quality_score?: number | null
           recommended_verification?: string | null
           review_prompt_sent_at?: string | null
@@ -1059,6 +1062,13 @@ export type Database = {
             columns: ["host_id"]
             isOneToOne: false
             referencedRelation: "vendor_brands"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inquiries_package_id_fkey"
+            columns: ["package_id"]
+            isOneToOne: false
+            referencedRelation: "vendor_packages"
             referencedColumns: ["id"]
           },
           {
@@ -3477,6 +3487,22 @@ export type Database = {
       }
     }
     Views: {
+      package_rating_summary: {
+        Row: {
+          avg_rating: number | null
+          package_id: string | null
+          review_count: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inquiries_package_id_fkey"
+            columns: ["package_id"]
+            isOneToOne: false
+            referencedRelation: "vendor_packages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       reviews_public: {
         Row: {
           body: string | null
@@ -3965,6 +3991,37 @@ export type Database = {
       toggle_proposal_share: {
         Args: { p_enabled: boolean; p_proposal_id: string }
         Returns: string
+      }
+      update_review: {
+        Args: {
+          p_body?: string
+          p_id: string
+          p_photo_urls?: Json
+          p_rating: number
+        }
+        Returns: {
+          body: string | null
+          created_at: string
+          hidden_at: string | null
+          hidden_reason: string | null
+          host_id: string
+          id: string
+          inquiry_id: string
+          is_hidden: boolean
+          kind: string
+          photo_urls: Json
+          rater_role: string
+          rating: number
+          released_at: string | null
+          updated_at: string
+          vendor_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "reviews"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
       vendor_booked_dates: { Args: { p_vendor_id: string }; Returns: string[] }
       verify_user_password: {

@@ -12,10 +12,14 @@
 //   • Gated server-side on (accepted proposal exists) + (event_date
 //     passed > 3 days ago)
 //
-// Errors from the gate triggers surface as toasts using the
-// machine-readable reason strings the trigger raises.
+// Edit mode: when `editing` is set, the modal calls the
+// update_review RPC instead of insert. The RPC enforces a 10-minute
+// window from the row's original created_at — typo territory only.
+//
+// Errors from the gate triggers and the edit RPC surface as toasts
+// using the machine-readable reason strings raised server-side.
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Loader2, Star } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -42,7 +46,17 @@ const ERROR_LABELS: Record<string, string> = {
   not_authorized: "You're not allowed to review this inquiry.",
   host_mismatch: "Inquiry mismatch — refresh and try again.",
   vendor_mismatch: "Inquiry mismatch — refresh and try again.",
+  edit_window_expired:
+    "Edits are only allowed in the first 10 minutes after submission.",
+  invalid_rating: "Pick a star count between 1 and 5.",
+  not_found: "Review not found — it may have been removed.",
 };
+
+interface EditingReview {
+  id: string;
+  rating: number;
+  body: string | null;
+}
 
 interface Props {
   open: boolean;
@@ -54,6 +68,10 @@ interface Props {
   hostId: string;
   otherPartyName: string;
   onSuccess?: () => void;
+  /** When set, the modal edits this existing review via update_review
+   *  RPC instead of inserting a new one. The 10-min window is
+   *  enforced server-side. */
+  editing?: EditingReview;
 }
 
 export function RatingModal({
@@ -66,6 +84,7 @@ export function RatingModal({
   hostId,
   otherPartyName,
   onSuccess,
+  editing,
 }: Props) {
   const [rating, setRating] = useState(0);
   const [hovered, setHovered] = useState(0);
@@ -73,6 +92,19 @@ export function RatingModal({
   const [submitting, setSubmitting] = useState(false);
 
   const isEvent = kind === "event";
+  const isEditing = !!editing;
+
+  // Prefill when entering edit mode, reset on close.
+  useEffect(() => {
+    if (open && editing) {
+      setRating(editing.rating);
+      setBody(editing.body ?? "");
+    } else if (!open) {
+      setRating(0);
+      setBody("");
+      setHovered(0);
+    }
+  }, [open, editing]);
 
   async function submit() {
     if (rating < 1) {
@@ -80,27 +112,42 @@ export function RatingModal({
       return;
     }
     setSubmitting(true);
-    const { error } = await supabase.from("reviews").insert({
-      inquiry_id: inquiryId,
-      vendor_id: vendorId,
-      host_id: hostId,
-      rating,
-      body: body.trim() || null,
+    const trimmedBody = body.trim();
+    let errorCode: string | null = null;
+    if (editing) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      kind,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      rater_role: raterRole,
-    } as never);
+      const { error } = await (supabase as any).rpc("update_review", {
+        p_id: editing.id,
+        p_rating: rating,
+        p_body: trimmedBody,
+        p_photo_urls: null,
+      });
+      if (error) errorCode = error.message;
+    } else {
+      const { error } = await supabase.from("reviews").insert({
+        inquiry_id: inquiryId,
+        vendor_id: vendorId,
+        host_id: hostId,
+        rating,
+        body: trimmedBody || null,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        kind,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        rater_role: raterRole,
+      } as never);
+      if (error) errorCode = error.message;
+    }
     setSubmitting(false);
-    if (error) {
-      const code = error.message;
-      toast.error(ERROR_LABELS[code] ?? error.message);
+    if (errorCode) {
+      toast.error(ERROR_LABELS[errorCode] ?? errorCode);
       return;
     }
     toast.success(
-      isEvent
-        ? "Review submitted. It'll go live once the other side reviews too (or in 14 days)."
-        : "Rating submitted.",
+      isEditing
+        ? "Review updated."
+        : isEvent
+          ? "Review submitted. It'll go live once the other side reviews too (or in 14 days)."
+          : "Rating submitted.",
     );
     setRating(0);
     setBody("");
@@ -113,14 +160,20 @@ export function RatingModal({
       <DialogContent className="rounded-2xl sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="font-editorial text-2xl">
-            {isEvent
-              ? `How was your event with ${otherPartyName}?`
-              : `Rate ${otherPartyName}'s communication`}
+            {isEditing
+              ? isEvent
+                ? "Edit your event review"
+                : "Edit your conversation rating"
+              : isEvent
+                ? `How was your event with ${otherPartyName}?`
+                : `Rate ${otherPartyName}'s communication`}
           </DialogTitle>
           <DialogDescription>
-            {isEvent
-              ? "Your review goes live once both sides review — or after 14 days."
-              : "Quick read on how this conversation went so far."}
+            {isEditing
+              ? "Edits are only allowed in the first 10 minutes after submission."
+              : isEvent
+                ? "Your review goes live once both sides review — or after 14 days."
+                : "Quick read on how this conversation went so far."}
           </DialogDescription>
         </DialogHeader>
 
@@ -181,7 +234,7 @@ export function RatingModal({
             className="rounded-full"
           >
             {submitting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-            Submit
+            {isEditing ? "Save edit" : "Submit"}
           </Button>
         </DialogFooter>
       </DialogContent>
