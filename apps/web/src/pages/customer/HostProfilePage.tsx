@@ -79,7 +79,12 @@ export default function HostProfilePage() {
       supabase
         .from("reviews")
         .select("*", { count: "exact", head: true })
-        .eq("host_id", user.id),
+        .eq("host_id", user.id)
+        // Stat is "Ratings" on the host's own profile — meaning
+        // ratings vendors have given them, not ratings they've
+        // given vendors. Filter to rater_role='vendor' so the
+        // outgoing reviews don't inflate the count.
+        .eq("rater_role", "vendor"),
       supabase.auth.getUser(),
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (supabase as any)

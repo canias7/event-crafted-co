@@ -1642,13 +1642,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "review_responses_review_id_fkey"
-            columns: ["review_id"]
-            isOneToOne: true
-            referencedRelation: "reviews_public"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "review_responses_vendor_id_fkey"
             columns: ["vendor_id"]
             isOneToOne: false
@@ -1666,7 +1659,6 @@ export type Database = {
           host_id: string
           id: string
           inquiry_id: string
-          is_hidden: boolean
           kind: string
           photo_urls: Json
           rater_role: string
@@ -1683,7 +1675,6 @@ export type Database = {
           host_id: string
           id?: string
           inquiry_id: string
-          is_hidden?: boolean
           kind?: string
           photo_urls?: Json
           rater_role?: string
@@ -1700,7 +1691,6 @@ export type Database = {
           host_id?: string
           id?: string
           inquiry_id?: string
-          is_hidden?: boolean
           kind?: string
           photo_urls?: Json
           rater_role?: string
@@ -1727,7 +1717,7 @@ export type Database = {
           {
             foreignKeyName: "reviews_inquiry_id_fkey"
             columns: ["inquiry_id"]
-            isOneToOne: true
+            isOneToOne: false
             referencedRelation: "inquiries"
             referencedColumns: ["id"]
           },
@@ -3503,80 +3493,6 @@ export type Database = {
           },
         ]
       }
-      reviews_public: {
-        Row: {
-          body: string | null
-          created_at: string | null
-          hidden_at: string | null
-          hidden_reason: string | null
-          host_id: string | null
-          id: string | null
-          inquiry_id: string | null
-          is_hidden: boolean | null
-          photo_urls: Json | null
-          rating: number | null
-          updated_at: string | null
-          vendor_id: string | null
-        }
-        Insert: {
-          body?: string | null
-          created_at?: string | null
-          hidden_at?: string | null
-          hidden_reason?: string | null
-          host_id?: string | null
-          id?: string | null
-          inquiry_id?: string | null
-          is_hidden?: boolean | null
-          photo_urls?: Json | null
-          rating?: number | null
-          updated_at?: string | null
-          vendor_id?: string | null
-        }
-        Update: {
-          body?: string | null
-          created_at?: string | null
-          hidden_at?: string | null
-          hidden_reason?: string | null
-          host_id?: string | null
-          id?: string | null
-          inquiry_id?: string | null
-          is_hidden?: boolean | null
-          photo_urls?: Json | null
-          rating?: number | null
-          updated_at?: string | null
-          vendor_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "reviews_host_id_fkey"
-            columns: ["host_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "reviews_host_id_fkey"
-            columns: ["host_id"]
-            isOneToOne: false
-            referencedRelation: "vendor_brands"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "reviews_inquiry_id_fkey"
-            columns: ["inquiry_id"]
-            isOneToOne: true
-            referencedRelation: "inquiries"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "reviews_vendor_id_fkey"
-            columns: ["vendor_id"]
-            isOneToOne: false
-            referencedRelation: "vendor_profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       vendor_brands: {
         Row: {
           bio: string | null
@@ -4007,7 +3923,6 @@ export type Database = {
           host_id: string
           id: string
           inquiry_id: string
-          is_hidden: boolean
           kind: string
           photo_urls: Json
           rater_role: string

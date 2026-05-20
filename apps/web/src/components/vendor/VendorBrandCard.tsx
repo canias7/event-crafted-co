@@ -50,7 +50,11 @@ export function VendorBrandCard({ vendorId }: { vendorId: string }) {
         supabase
           .from("reviews")
           .select("rating")
-          .eq("vendor_id", vendorId),
+          .eq("vendor_id", vendorId)
+          // Brand card surfaces the vendor's *incoming* rating —
+          // host's review of vendor. Drop vendor-side ratings of
+          // hosts so they don't drag the brand score down.
+          .eq("rater_role", "host"),
       ]);
       if (cancelled) return;
       setRow((vp.data as VendorRow | null) ?? null);

@@ -165,7 +165,14 @@ export default function VendorMyProfilePage() {
     // shows "—" if there's nothing to average yet.
     if (ids.length > 0) {
       const [{ data: revs }, { data: photos }] = await Promise.all([
-        supabase.from("reviews").select("rating").in("vendor_id", ids),
+        supabase
+          .from("reviews")
+          .select("rating")
+          .in("vendor_id", ids)
+          // Vendor profile header averages the host's reviews of
+          // this vendor — not the vendor's outgoing ratings of
+          // hosts. Otherwise the header score lies.
+          .eq("rater_role", "host"),
         supabase
           .from("vendor_portfolio_images")
           .select("vendor_id, storage_path, display_order, created_at")
