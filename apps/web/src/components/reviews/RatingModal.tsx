@@ -178,18 +178,39 @@ export function RatingModal({
         </DialogHeader>
 
         <div className="space-y-4">
-          <div className="flex items-center justify-center gap-1.5 py-2">
+          <div
+            className="flex items-center justify-center gap-1.5 py-2"
+            role="radiogroup"
+            aria-label="Star rating"
+          >
             {[1, 2, 3, 4, 5].map((n) => {
               const lit = (hovered || rating) >= n;
               return (
                 <button
                   key={n}
                   type="button"
+                  role="radio"
+                  aria-checked={rating === n}
                   aria-label={`${n} star${n === 1 ? "" : "s"}`}
                   onMouseEnter={() => setHovered(n)}
                   onMouseLeave={() => setHovered(0)}
                   onClick={() => setRating(n)}
-                  className="p-1 transition-transform hover:scale-110"
+                  onKeyDown={(e) => {
+                    if (e.key === "ArrowRight" || e.key === "ArrowUp") {
+                      e.preventDefault();
+                      setRating(Math.min(5, (rating || 0) + 1));
+                    } else if (e.key === "ArrowLeft" || e.key === "ArrowDown") {
+                      e.preventDefault();
+                      setRating(Math.max(1, (rating || n) - 1));
+                    } else if (e.key === "Home") {
+                      e.preventDefault();
+                      setRating(1);
+                    } else if (e.key === "End") {
+                      e.preventDefault();
+                      setRating(5);
+                    }
+                  }}
+                  className="p-1 transition-transform hover:scale-110 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent rounded-sm"
                 >
                   <Star
                     className={`w-9 h-9 ${

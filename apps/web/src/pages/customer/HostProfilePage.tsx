@@ -67,7 +67,7 @@ export default function HostProfilePage() {
     const [
       { data: profile },
       { count: unread },
-      { data: ratingRows },
+      { data: statsRow },
       { count: postsN },
       { count: reelsN },
       { count: buzzN },
@@ -84,16 +84,10 @@ export default function HostProfilePage() {
         .select("*", { count: "exact", head: true })
         .eq("user_id", user.id)
         .is("read_at", null),
-      supabase
-        .from("reviews")
-        // Fetch the rating values themselves so we can compute the
-        // average client-side and surface a "4.8 ★" pill under the
-        // name. Cheap (1 row per review, integer rating). Same
-        // filter as before: vendors rating this host, not the host's
-        // outgoing reviews.
-        .select("rating")
-        .eq("host_id", user.id)
-        .eq("rater_role", "vendor"),
+      // Server-side aggregate so we don't pull every rating row just
+      // to compute an average. Returns one row with count + avg.
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (supabase as any).rpc("get_host_review_stats", { p_host_id: user.id }),
       supabase
         .from("posts")
         .select("*", { count: "exact", head: true })
@@ -140,12 +134,11 @@ export default function HostProfilePage() {
       | { display_name?: string | null; avatar_url?: string | null }
       | null;
 
-    const ratings = (ratingRows as Array<{ rating: number }> | null) ?? [];
-    const ratingsCount = ratings.length;
+    const statsArr = statsRow as Array<{ count: number; avg: number }> | null;
+    const statsObj = Array.isArray(statsArr) ? statsArr[0] : statsArr;
+    const ratingsCount = Number(statsObj?.count ?? 0);
     const avgRating =
-      ratingsCount > 0
-        ? ratings.reduce((s, r) => s + r.rating, 0) / ratingsCount
-        : null;
+      ratingsCount > 0 ? Number(statsObj?.avg ?? 0) : null;
 
     setState({
       name: titleCase,

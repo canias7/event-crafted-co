@@ -242,10 +242,15 @@ export default function VendorDetailPage() {
   const [conversationReviews, setConversationReviews] = useState<RealReview[]>(
     [],
   );
+  // Aggregate stats (count + avg) come from a server-side RPC so we
+  // can bound the detail-view fetch at .limit(50) without skewing the
+  // average. Falls back to client-side reduce until the RPC resolves.
+  const [reviewStats, setReviewStats] = useState<{ count: number; avg: number } | null>(null);
   useEffect(() => {
     if (!vendor || !vendor.isReal) {
       setEventReviews([]);
       setConversationReviews([]);
+      setReviewStats(null);
       return;
     }
     let cancelled = false;
@@ -258,6 +263,7 @@ export default function VendorDetailPage() {
       .eq("vendor_id", vendor.id)
       .eq("rater_role", "host")
       .order("created_at", { ascending: false })
+      .limit(50)
       .then(({ data }: { data: (RealReview & { kind: string })[] | null }) => {
         if (cancelled) return;
         const rows = data ?? [];
@@ -274,6 +280,14 @@ export default function VendorDetailPage() {
         setConversationReviews(
           normalized.filter((r) => r.kind === "conversation"),
         );
+      });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (supabase as any)
+      .rpc("get_vendor_review_stats", { p_vendor_id: vendor.id })
+      .then(({ data }: { data: Array<{ count: number; avg: number }> | null }) => {
+        if (cancelled) return;
+        const row = Array.isArray(data) ? data[0] : data;
+        if (row) setReviewStats({ count: Number(row.count) || 0, avg: Number(row.avg) || 0 });
       });
     return () => {
       cancelled = true;
@@ -343,12 +357,18 @@ export default function VendorDetailPage() {
   // only — those are the higher-signal post-event reads Google should
   // weight in rich results. Conversation ratings are a separate
   // surface and don't feed schema.org/AggregateRating.
-  const reviewsAvg =
-    eventReviews.length > 0
+  // Prefer the server-side stats so the aggregate covers ALL reviews,
+  // not just the 50 we pulled for the detail-view list.
+  const reviewsAvg = reviewStats?.count
+    ? reviewStats.avg
+    : eventReviews.length > 0
       ? eventReviews.reduce((sum, r) => sum + r.rating, 0) / eventReviews.length
       : vendor?.rating ?? 0;
-  const reviewsCount =
-    eventReviews.length > 0 ? eventReviews.length : vendor?.reviews ?? 0;
+  const reviewsCount = reviewStats?.count
+    ? reviewStats.count
+    : eventReviews.length > 0
+      ? eventReviews.length
+      : vendor?.reviews ?? 0;
   const conversationAvg =
     conversationReviews.length > 0
       ? conversationReviews.reduce((sum, r) => sum + r.rating, 0) /

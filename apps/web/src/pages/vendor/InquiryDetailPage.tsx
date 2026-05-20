@@ -278,7 +278,7 @@ export default function InquiryDetailPage() {
       (supabase as any)
         .from("reviews")
         .select(
-          "id, vendor_id, rating, body, created_at, response:review_responses(body, updated_at)",
+          "id, vendor_id, rating, body, created_at, response:review_responses(body, created_at, updated_at)",
         )
         .eq("inquiry_id", inquiryId)
         .eq("rater_role", "host")

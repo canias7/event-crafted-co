@@ -1,10 +1,15 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Star, MessageCircle, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { formatDate } from "@/lib/format";
+
+// Mirror of the WITH CHECK clause on review_responses UPDATE:
+// `created_at > now() - interval '10 minutes'`. Keep in sync with
+// 20260521130000_reviews_audit_r4.sql.
+const EDIT_WINDOW_MS = 10 * 60 * 1000;
 
 // Review card on an inquiry detail page. Shows a rating + body left
 // by the counterparty, and lets the subject post or edit a public
@@ -22,7 +27,12 @@ export interface ReviewWithResponse {
   body: string | null;
   kind?: "conversation" | "event";
   created_at: string;
-  response: { body: string; updated_at: string } | null;
+  response: {
+    body: string;
+    /** Anchors the 10-minute edit window — pulled from review_responses.created_at. */
+    created_at: string;
+    updated_at: string;
+  } | null;
 }
 
 interface Props {
@@ -42,6 +52,24 @@ export function InquiryReviewCard({
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(review.response?.body ?? "");
   const [saving, setSaving] = useState(false);
+  // Refresh every 30s so the "Edit (Nm left)" countdown stays current.
+  // Only ticks while a response exists and the window is potentially
+  // still open — otherwise there's nothing to update.
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    if (!review.response) return;
+    const created = new Date(review.response.created_at).getTime();
+    const expiresAt = created + EDIT_WINDOW_MS;
+    if (Date.now() >= expiresAt) return;
+    const id = setInterval(() => setNow(Date.now()), 30_000);
+    return () => clearInterval(id);
+  }, [review.response]);
+
+  const editMsLeft = review.response
+    ? new Date(review.response.created_at).getTime() + EDIT_WINDOW_MS - now
+    : 0;
+  const canEdit = editMsLeft > 0;
+  const minsLeft = Math.max(1, Math.ceil(editMsLeft / 60_000));
 
   const incomingLabel =
     responderRole === "vendor"
@@ -118,17 +146,23 @@ export function InquiryReviewCard({
                 <MessageCircle className="w-3 h-3" />
                 Your response
               </p>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="rounded-full text-xs"
-                onClick={() => {
-                  setDraft(review.response?.body ?? "");
-                  setEditing(true);
-                }}
-              >
-                Edit
-              </Button>
+              {canEdit ? (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="rounded-full text-xs"
+                  onClick={() => {
+                    setDraft(review.response?.body ?? "");
+                    setEditing(true);
+                  }}
+                >
+                  Edit ({minsLeft}m left)
+                </Button>
+              ) : (
+                <span className="text-[10px] text-muted-foreground/70">
+                  Edit window closed
+                </span>
+              )}
             </div>
             <p className="text-sm leading-relaxed text-foreground/85">
               {review.response.body}
