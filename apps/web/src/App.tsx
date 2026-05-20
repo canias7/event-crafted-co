@@ -14,7 +14,6 @@ import ForgotPasswordPage from "./pages/auth/ForgotPasswordPage";
 import ResetPasswordPage from "./pages/auth/ResetPasswordPage";
 import { AuthProvider } from "./hooks/useAuth";
 import { RealtimeProvider } from "./lib/realtime";
-import { ThemeProvider } from "./hooks/useTheme";
 import { RequireRole } from "./components/auth/RequireRole";
 import { CommandPaletteLauncher } from "./components/CommandPaletteLauncher";
 import { SkipLink } from "./components/SkipLink";
@@ -74,8 +73,7 @@ import {
 } from "@/router/lazyRoutes";
 
 const App = () => (
-  <ThemeProvider>
-    <TooltipProvider>
+  <TooltipProvider>
       <Toaster />
       <Sonner />
       <BrowserRouter>
@@ -241,8 +239,7 @@ const App = () => (
           </RealtimeProvider>
         </AuthProvider>
       </BrowserRouter>
-    </TooltipProvider>
-  </ThemeProvider>
+  </TooltipProvider>
 );
 
 export default App;
