@@ -257,6 +257,11 @@ export default function VendorGalleryPage() {
   // Backfill flag declared before debouncedLoad so the closure
   // captures the ref correctly.
   const backfillingRef = useRef(false);
+  // Reorder-in-flight flag. While true, the realtime debouncer skips
+  // load() so our optimistic local order isn't reverted to the DB
+  // snapshot that hasn't yet seen our upsert. Cleared when the upsert
+  // resolves (success OR failure — failure path re-syncs explicitly).
+  const reorderingRef = useRef(false);
   const debouncedLoad = useCallback(() => {
     if (reloadDebounceRef.current) clearTimeout(reloadDebounceRef.current);
     reloadDebounceRef.current = setTimeout(() => {
@@ -265,12 +270,15 @@ export default function VendorGalleryPage() {
       // own write would otherwise double up. 600ms buffer covers
       // postgres → realtime → client latency for typical writes.
       if (Date.now() - lastLoadAt.current < 600) return;
-      // #6 from the audit — suppress realtime refetches while the
-      // backfill loop is still running. Backfill UPDATEs each old
-      // row; each UPDATE fires a realtime event; without this we'd
-      // refetch the full library on every backfilled image. The
-      // backfill itself calls load() once when done.
+      // Suppress realtime refetches while the backfill loop is still
+      // running. Backfill UPDATEs each old row; each UPDATE fires a
+      // realtime event; without this we'd refetch the full library on
+      // every backfilled image. The backfill itself calls load() once
+      // when done.
       if (backfillingRef.current) return;
+      // Same idea for an in-flight reorder upsert — let it land
+      // before we accept any echoed state.
+      if (reorderingRef.current) return;
       load();
     }, 400);
   }, [load]);
@@ -364,13 +372,19 @@ export default function VendorGalleryPage() {
           await processOne(pending[idx]);
         }
       }
-      await Promise.all(
-        Array.from({ length: Math.min(CONCURRENCY, pending.length) }, worker),
-      );
-      backfillingRef.current = false;
-      // Refresh once we're done so the dims / blurhash / size /
-      // exif all become visible to the user.
-      load();
+      try {
+        await Promise.all(
+          Array.from({ length: Math.min(CONCURRENCY, pending.length) }, worker),
+        );
+        // Refresh once we're done so the dims / blurhash / size /
+        // exif all become visible to the user.
+        load();
+      } finally {
+        // Belt-and-braces: processOne catches internally so the Promise.all
+        // shouldn't reject, but a future refactor that re-throws would
+        // otherwise leave the flag stuck and block all realtime reloads.
+        backfillingRef.current = false;
+      }
     })();
     // Only run on the first time rows load — subsequent loads from
     // edits / deletes shouldn't re-trigger the whole backfill.
@@ -915,13 +929,21 @@ export default function VendorGalleryPage() {
       id: r.id,
       display_order: i,
     }));
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error } = await (supabase as any)
-      .from("vendor_gallery_images")
-      .upsert(updates, { onConflict: "id" });
-    if (error) {
-      toast.error(`Reorder failed: ${error.message}`);
-      load();
+    // Block the realtime debouncer from reverting our optimistic
+    // order before the upsert lands. The flag is cleared in both
+    // success + failure paths.
+    reorderingRef.current = true;
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error } = await (supabase as any)
+        .from("vendor_gallery_images")
+        .upsert(updates, { onConflict: "id" });
+      if (error) {
+        toast.error(`Reorder failed: ${error.message}`);
+        load();
+      }
+    } finally {
+      reorderingRef.current = false;
     }
   }
 
