@@ -264,7 +264,6 @@ export function Lightbox({
         onOpenChange={setEditOpen}
         imageId={row.id}
         imageUrl={row.image_url}
-        originalExif={row.exif}
         onSaved={onChange}
       />
       <ShareModal

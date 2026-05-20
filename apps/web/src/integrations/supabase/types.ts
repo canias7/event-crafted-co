@@ -4245,15 +4245,6 @@ export type Database = {
         }[]
       }
       request_account_deletion: { Args: never; Returns: undefined }
-      resolve_gallery_share: {
-        Args: { p_password?: string; p_token: string }
-        Returns: {
-          album_id: string
-          expires_at: string
-          id: string
-          image_id: string
-        }[]
-      }
       send_review_request: {
         Args: {
           p_inquiry_id: string
