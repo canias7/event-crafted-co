@@ -30,6 +30,7 @@ interface InquiryRow {
   budget_max_cents: number | null;
   status: string;
   created_at: string;
+  last_message_at: string;
   vendor: {
     business_name: string;
     category: string;
@@ -117,10 +118,10 @@ export default function InquiriesPage() {
     const { data, error } = await supabase
       .from("inquiries")
       .select(
-        "id, event_type, event_date, guest_count, location, budget_min_cents, budget_max_cents, status, created_at, vendor:vendor_profiles!inquiries_vendor_id_fkey(business_name, category)",
+        "id, event_type, event_date, guest_count, location, budget_min_cents, budget_max_cents, status, created_at, last_message_at, vendor:vendor_profiles!inquiries_vendor_id_fkey(business_name, category)",
       )
       .eq("host_id", user.id)
-      .order("created_at", { ascending: false })
+      .order("last_message_at", { ascending: false })
       .limit(100);
     if (error) {
       console.error(error);
@@ -154,6 +155,14 @@ export default function InquiriesPage() {
       setParams(next, { replace: true });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Re-render every minute so relativeTime() decays — "3h" rolls over
+  // to "4h" without requiring a manual refresh.
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => setTick((n) => n + 1), 60_000);
+    return () => clearInterval(id);
   }, []);
 
   // Filter chips mirror mobile inbox (apps/host-mobile/app/(host)/inbox.tsx):
@@ -380,7 +389,7 @@ export default function InquiriesPage() {
                           {statusLabel[r.status] ?? r.status}
                         </Badge>
                         <span className="text-xs text-muted-foreground tnum hidden sm:block">
-                          {relativeTime(r.created_at)}
+                          {relativeTime(r.last_message_at)}
                         </span>
                       </div>
                     </Link>
