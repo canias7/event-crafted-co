@@ -43,8 +43,13 @@ function readPreference(): ThemePreference {
 }
 
 function systemPrefersDark(): boolean {
-  if (typeof window === "undefined" || !window.matchMedia) return false;
-  return window.matchMedia("(prefers-color-scheme: dark)").matches;
+  // Intentionally always false — auto-following OS dark mode is OFF
+  // until the dark palette is fully implemented. Hardcoded cream
+  // backgrounds across the app would otherwise show white text on
+  // cream surfaces for dark-mode users. The matchMedia hook is kept
+  // wired (subscription below) so flipping this back is one line
+  // when the palette audit lands.
+  return false;
 }
 
 function apply(resolved: "light" | "dark") {
@@ -64,14 +69,9 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     setSystemDark(systemPrefersDark());
   }, []);
 
-  // Listen to system pref changes when user is on "system".
-  useEffect(() => {
-    if (typeof window === "undefined" || !window.matchMedia) return;
-    const mq = window.matchMedia("(prefers-color-scheme: dark)");
-    const onChange = (e: MediaQueryListEvent) => setSystemDark(e.matches);
-    mq.addEventListener("change", onChange);
-    return () => mq.removeEventListener("change", onChange);
-  }, []);
+  // Subscription to system pref changes is intentionally removed —
+  // see systemPrefersDark above. Re-add along with the matchMedia
+  // restoration when the dark palette is fully implemented.
 
   const resolved: "light" | "dark" = useMemo(() => {
     if (preference === "system") return systemDark ? "dark" : "light";

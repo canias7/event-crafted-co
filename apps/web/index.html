@@ -25,17 +25,17 @@
   <meta name="twitter:card" content="summary_large_image">
 
   <script>
-    // Apply theme before first paint to avoid the flash-of-light when
-    // the user's preference is dark. Mirrors the logic in useTheme().
+    // Apply theme before first paint. Auto-following OS dark mode is
+    // intentionally OFF — the dark palette is only half-implemented
+    // (most card / canvas backgrounds are hardcoded cream) so users
+    // on dark-mode machines saw white text on cream surfaces. We
+    // honor an explicit stored 'dark' preference if one exists, but
+    // default everyone else to light regardless of OS. Re-enable
+    // sysDark detection only after the dark palette is fully audited.
     (function () {
       try {
         var stored = localStorage.getItem("vendora-theme-preference");
-        var sysDark = window.matchMedia &&
-          window.matchMedia("(prefers-color-scheme: dark)").matches;
-        var resolved =
-          stored === "light" ? "light"
-          : stored === "dark" ? "dark"
-          : sysDark ? "dark" : "light";
+        var resolved = stored === "dark" ? "dark" : "light";
         if (resolved === "dark") {
           document.documentElement.classList.add("dark");
         }
