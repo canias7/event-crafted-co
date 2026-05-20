@@ -2,11 +2,25 @@ import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import "./index.css";
 import "./i18n";
-import { initSentry } from "./lib/sentry";
+import { captureException, initSentry } from "./lib/sentry";
 
 // Init Sentry before render so the boundary's captureException works on
 // the very first throw. No-op if VITE_SENTRY_DSN isn't set.
 initSentry();
+
+// Manual verification ping: visiting any URL with ?sentry=test fires a
+// captureException so you can confirm the SDK is wired end-to-end
+// without waiting for a real bug. Safe to leave in — only fires when
+// the param is explicitly present.
+if (
+  typeof window !== "undefined" &&
+  new URLSearchParams(window.location.search).get("sentry") === "test"
+) {
+  captureException(
+    new Error("Sentry verification ping — wired up correctly."),
+    { source: "main.tsx ?sentry=test" },
+  );
+}
 
 // Pre-mount safety check: if the Supabase env vars are missing the
 // supabase client throws during construction and React renders nothing
