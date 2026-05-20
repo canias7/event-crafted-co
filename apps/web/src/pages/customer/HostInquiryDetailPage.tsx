@@ -12,6 +12,7 @@ import { MessageBody } from "@/components/messages/MessageBody";
 import { TypingBubble } from "@/components/messages/TypingBubble";
 import { RatingPromptStrip } from "@/components/reviews/RatingPromptStrip";
 import { SubmittedReviewStatusCard } from "@/components/reviews/SubmittedReviewStatusCard";
+import { BookingConfirmationCard } from "@/components/inquiries/BookingConfirmationCard";
 import { Link, useParams } from "react-router-dom";
 import {
   ArrowLeft,
@@ -936,6 +937,17 @@ export default function HostInquiryDetailPage() {
               <CheckCheck className="w-3 h-3" aria-hidden />
               <span>Read · {seenTimeLabel}</span>
             </div>
+          ) : null}
+
+          {/* Off-platform booking handshake. Hidden when an accepted
+              proposal exists (the proposals path is canonical). */}
+          {inquiry ? (
+            <BookingConfirmationCard
+              inquiryId={inquiry.id}
+              selfRole="host"
+              otherPartyName={vendorName}
+              hasAcceptedProposal={proposals.some((p) => p.status === "accepted")}
+            />
           ) : null}
 
           {/* Rating discovery + status — RatingPromptStrip surfaces

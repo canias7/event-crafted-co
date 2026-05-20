@@ -38,7 +38,7 @@ const ERROR_LABELS: Record<string, string> = {
   min_messages_required:
     "Chat with this vendor a bit more before leaving a rating.",
   no_accepted_proposal:
-    "Event reviews are open after both parties accept a proposal.",
+    "Event reviews open after both sides confirm the booking — or once a proposal is accepted.",
   event_too_recent:
     "Hold off until 3 days after the event so the dust settles.",
   no_event_date:

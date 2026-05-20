@@ -987,6 +987,7 @@ export type Database = {
           event_date: string | null
           event_type: string
           guest_count: number | null
+          host_confirmed_booked_at: string | null
           host_id: string
           host_read_at: string | null
           id: string
@@ -1000,6 +1001,7 @@ export type Database = {
           special_requests: string | null
           status: string
           updated_at: string
+          vendor_confirmed_booked_at: string | null
           vendor_id: string
           vendor_read_at: string | null
         }
@@ -1010,6 +1012,7 @@ export type Database = {
           event_date?: string | null
           event_type: string
           guest_count?: number | null
+          host_confirmed_booked_at?: string | null
           host_id: string
           host_read_at?: string | null
           id?: string
@@ -1023,6 +1026,7 @@ export type Database = {
           special_requests?: string | null
           status?: string
           updated_at?: string
+          vendor_confirmed_booked_at?: string | null
           vendor_id: string
           vendor_read_at?: string | null
         }
@@ -1033,6 +1037,7 @@ export type Database = {
           event_date?: string | null
           event_type?: string
           guest_count?: number | null
+          host_confirmed_booked_at?: string | null
           host_id?: string
           host_read_at?: string | null
           id?: string
@@ -1046,6 +1051,7 @@ export type Database = {
           special_requests?: string | null
           status?: string
           updated_at?: string
+          vendor_confirmed_booked_at?: string | null
           vendor_id?: string
           vendor_read_at?: string | null
         }
@@ -3827,6 +3833,40 @@ export type Database = {
           p_target_type: string
         }
         Returns: undefined
+      }
+      mark_inquiry_booked: {
+        Args: { p_inquiry_id: string }
+        Returns: {
+          budget_max_cents: number | null
+          budget_min_cents: number | null
+          created_at: string
+          event_date: string | null
+          event_type: string
+          guest_count: number | null
+          host_confirmed_booked_at: string | null
+          host_id: string
+          host_read_at: string | null
+          id: string
+          intake_answers: Json | null
+          intent_score: number | null
+          location: string | null
+          package_id: string | null
+          quality_score: number | null
+          recommended_verification: string | null
+          review_prompt_sent_at: string | null
+          special_requests: string | null
+          status: string
+          updated_at: string
+          vendor_confirmed_booked_at: string | null
+          vendor_id: string
+          vendor_read_at: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "inquiries"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
       mark_proposal_viewed: {
         Args: { p_proposal_id: string }
