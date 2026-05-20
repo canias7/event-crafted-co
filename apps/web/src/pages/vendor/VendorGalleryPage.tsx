@@ -73,6 +73,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { BlurhashImage } from "@/components/gallery/BlurhashImage";
 import { Lightbox } from "@/components/gallery/Lightbox";
+import { useRealtime } from "@/lib/realtime";
 import { vendorNavItems } from "@/data/navItems";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -222,6 +223,26 @@ export default function VendorGalleryPage() {
     load();
   }, [load]);
 
+  // Realtime sync — if another tab / device modifies the user's
+  // gallery, reload here. Debounced via a coalescing timer so a
+  // burst (e.g. multi-upload) only triggers one refetch.
+  const reloadDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const debouncedLoad = useCallback(() => {
+    if (reloadDebounceRef.current) clearTimeout(reloadDebounceRef.current);
+    reloadDebounceRef.current = setTimeout(() => {
+      reloadDebounceRef.current = null;
+      load();
+    }, 400);
+  }, [load]);
+  useRealtime(
+    user?.id ? { table: "vendor_gallery_images", filter: `user_id=eq.${user.id}` } : null,
+    debouncedLoad,
+  );
+  useRealtime(
+    user?.id ? { table: "vendor_gallery_albums", filter: `user_id=eq.${user.id}` } : null,
+    debouncedLoad,
+  );
+
   useEffect(() => {
     setVisibleCount(PAGE_SIZE);
   }, [activeTab, query, sortMode, aspectFilter, formatFilter, dateFrom, dateTo]);
@@ -244,11 +265,13 @@ export default function VendorGalleryPage() {
     );
     if (pending.length === 0) return;
     backfillingRef.current = true;
+    const CONCURRENCY = 4;
     void (async () => {
-      for (const r of pending) {
+      let cursor = 0;
+      async function processOne(r: GalleryRow) {
         try {
           const res = await fetch(r.image_url);
-          if (!res.ok) continue;
+          if (!res.ok) return;
           const blob = await res.blob();
           const file = new File([blob], filenameOf(r.image_url), {
             type: blob.type,
@@ -274,6 +297,15 @@ export default function VendorGalleryPage() {
           console.warn("[gallery backfill]", r.id, err);
         }
       }
+      async function worker() {
+        while (cursor < pending.length) {
+          const idx = cursor++;
+          await processOne(pending[idx]);
+        }
+      }
+      await Promise.all(
+        Array.from({ length: Math.min(CONCURRENCY, pending.length) }, worker),
+      );
       backfillingRef.current = false;
       // Refresh once we're done so the dims / blurhash / size /
       // exif all become visible to the user.
@@ -807,9 +839,14 @@ export default function VendorGalleryPage() {
 
   const reorderEnabled = sortMode === "newest" && !isTrashView;
 
+  // Album-tab cover resolver. Exclude soft-deleted rows so a
+  // trashed cover image falls through to the album's first
+  // non-deleted member (the default fallback below).
   const imageById = useMemo(() => {
     const m: Record<string, GalleryRow> = {};
-    for (const r of rows ?? []) m[r.id] = r;
+    for (const r of rows ?? []) {
+      if (r.deleted_at === null) m[r.id] = r;
+    }
     return m;
   }, [rows]);
 
@@ -936,7 +973,7 @@ export default function VendorGalleryPage() {
               }}
             />
             <AlbumTab
-              label="Large files"
+              label="Large (>5 MB)"
               active={activeTab === SMART_LARGE_FILES}
               onClick={() => {
                 setActiveTab(SMART_LARGE_FILES);

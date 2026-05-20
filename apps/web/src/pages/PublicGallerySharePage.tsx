@@ -1,6 +1,10 @@
 // Public viewer for vendor-gallery share tokens at /g/:token.
-// Calls the resolve_gallery_share RPC; if the share has a password,
-// prompts for it before resolving the underlying image/album.
+// Uses get_share_payload — a SECURITY DEFINER RPC that validates
+// the token + optional password, then returns the share kind +
+// image_url / caption / blurhash / width / height for the
+// underlying image(s). EXIF + file_size_bytes are intentionally
+// withheld; vendor_gallery_images / _albums no longer have
+// public-read RLS, so this RPC is the only public path.
 
 import { useCallback, useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
@@ -12,13 +16,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PublicNav } from "@/components/public/PublicNav";
 
-interface ResolvedShare {
-  id: string;
-  image_id: string | null;
-  album_id: string | null;
-  expires_at: string | null;
-}
-
 interface ImageRow {
   id: string;
   image_url: string;
@@ -29,9 +26,10 @@ interface ImageRow {
   created_at: string;
 }
 
-interface AlbumRow {
-  id: string;
-  name: string;
+interface SharePayload {
+  kind: "image" | "album";
+  album_name: string | null;
+  images: ImageRow[];
 }
 
 type State =
@@ -40,7 +38,7 @@ type State =
   | { status: "not_found" }
   | { status: "expired" }
   | { status: "image"; image: ImageRow }
-  | { status: "album"; album: AlbumRow; images: ImageRow[] };
+  | { status: "album"; album_name: string; images: ImageRow[] };
 
 export default function PublicGallerySharePage() {
   const { token } = useParams<{ token: string }>();
@@ -53,7 +51,7 @@ export default function PublicGallerySharePage() {
     async (password: string | null) => {
       if (!token) return;
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data, error } = await (supabase as any).rpc("resolve_gallery_share", {
+      const { data, error } = await (supabase as any).rpc("get_share_payload", {
         p_token: token,
         p_password: password,
       });
@@ -67,51 +65,24 @@ export default function PublicGallerySharePage() {
         else setState({ status: "not_found" });
         return;
       }
-      // resolve_gallery_share returns at most one row in our shape.
-      const row = (Array.isArray(data) ? data[0] : data) as ResolvedShare | undefined;
-      if (!row) {
+      const payload = data as SharePayload | null;
+      if (!payload) {
         setState({ status: "not_found" });
         return;
       }
 
-      if (row.image_id) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const { data: img } = await (supabase as any)
-          .from("vendor_gallery_images")
-          .select("id, image_url, caption, blurhash, width, height, created_at")
-          .eq("id", row.image_id)
-          .is("deleted_at", null)
-          .maybeSingle();
+      if (payload.kind === "image") {
+        const img = payload.images[0];
         if (!img) {
           setState({ status: "not_found" });
           return;
         }
-        setState({ status: "image", image: img as ImageRow });
-      } else if (row.album_id) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const [albRes, imgRes] = await Promise.all([
-          (supabase as any)
-            .from("vendor_gallery_albums")
-            .select("id, name")
-            .eq("id", row.album_id)
-            .maybeSingle(),
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          (supabase as any)
-            .from("vendor_gallery_images")
-            .select("id, image_url, caption, blurhash, width, height, created_at")
-            .eq("album_id", row.album_id)
-            .is("deleted_at", null)
-            .order("display_order", { ascending: true })
-            .order("created_at", { ascending: false }),
-        ]);
-        if (!albRes.data) {
-          setState({ status: "not_found" });
-          return;
-        }
+        setState({ status: "image", image: img });
+      } else {
         setState({
           status: "album",
-          album: albRes.data as AlbumRow,
-          images: (imgRes.data as ImageRow[] | null) ?? [],
+          album_name: payload.album_name ?? "Album",
+          images: payload.images,
         });
       }
     },
@@ -193,7 +164,7 @@ export default function PublicGallerySharePage() {
           <SingleImageView image={state.image} />
         ) : (
           <AlbumView
-            album={state.album}
+            albumName={state.album_name}
             images={state.images}
             lightboxIdx={lightboxIdx}
             setLightboxIdx={setLightboxIdx}
@@ -230,19 +201,19 @@ function SingleImageView({ image }: { image: ImageRow }) {
 }
 
 function AlbumView({
-  album,
+  albumName,
   images,
   lightboxIdx,
   setLightboxIdx,
 }: {
-  album: AlbumRow;
+  albumName: string;
   images: ImageRow[];
   lightboxIdx: number | null;
   setLightboxIdx: (n: number | null) => void;
 }) {
   return (
     <div>
-      <h1 className="font-editorial text-3xl mb-2">{album.name}</h1>
+      <h1 className="font-editorial text-3xl mb-2">{albumName}</h1>
       <p className="text-sm text-muted-foreground mb-8">
         {images.length} image{images.length === 1 ? "" : "s"}
       </p>
