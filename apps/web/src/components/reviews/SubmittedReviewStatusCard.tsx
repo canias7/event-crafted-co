@@ -16,12 +16,13 @@
 // page — RatingPromptStrip now handles the discovery CTA, this is
 // purely the post-submit status surface.
 
-import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { Check, Clock, Pencil, Star } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useRealtime } from "@/lib/realtime";
+import { lazyWithReload } from "@/lib/lazyWithReload";
 
-const RatingModal = lazy(() =>
+const RatingModal = lazyWithReload(() =>
   import("./RatingModal").then((m) => ({ default: m.RatingModal })),
 );
 

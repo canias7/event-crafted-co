@@ -1,4 +1,5 @@
-import { lazy, Suspense, useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
+import { lazyWithReload } from "@/lib/lazyWithReload";
 import { Link, useSearchParams } from "react-router-dom";
 import { Plus, Inbox, Search } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -12,7 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 // Lazy: heavy modal only loads when the host opens the inquiry form.
-const InquiryFormModal = lazy(() =>
+const InquiryFormModal = lazyWithReload(() =>
   import("@/components/inquiries/InquiryFormModal").then((m) => ({
     default: m.InquiryFormModal,
   })),

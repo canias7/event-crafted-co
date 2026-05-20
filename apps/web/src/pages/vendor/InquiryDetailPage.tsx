@@ -1,4 +1,5 @@
-import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { lazyWithReload } from "@/lib/lazyWithReload";
 import { useRealtime } from "@/lib/realtime";
 import { useInquiryTyping } from "@/hooks/useInquiryTyping";
 import { MessageActionMenu } from "@/components/messages/MessageActionMenu";
@@ -46,7 +47,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 // Lazy: only loads when the vendor opens "Send proposal."
-const ProposalFormModal = lazy(() =>
+const ProposalFormModal = lazyWithReload(() =>
   import("@/components/proposals/ProposalFormModal").then((m) => ({
     default: m.ProposalFormModal,
   })),
