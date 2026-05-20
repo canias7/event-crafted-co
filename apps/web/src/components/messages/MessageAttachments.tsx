@@ -1,5 +1,6 @@
 import { FileText, Image as ImageIcon, Download } from "lucide-react";
 import { attachmentUrl, type MessageAttachment } from "@/lib/messageAttachments";
+import { AudioBubble } from "@/components/messages/AudioBubble";
 
 interface Props {
   attachments: MessageAttachment[];
@@ -42,13 +43,10 @@ export function MessageAttachments({ attachments }: Props) {
         }
         if (isAudio) {
           return (
-            <audio
+            <AudioBubble
               key={a.storage_path}
-              controls
-              preload="metadata"
               src={url}
-              className="w-full max-w-xs rounded-md"
-              aria-label={a.filename}
+              filename={a.filename}
             />
           );
         }
