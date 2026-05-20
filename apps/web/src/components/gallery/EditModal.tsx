@@ -121,6 +121,19 @@ export function EditModal({
     onOpenChangeRef.current = onOpenChange;
   }, [onOpenChange]);
 
+  // Diagnostic: fires whenever `t` actually changes per React's
+  // Object.is comparison. If setT is being called but this doesn't
+  // fire, the state update is being dropped somewhere. If it does
+  // fire but the transform effect (which also has t as a dep)
+  // doesn't, the two effects diverge somehow.
+  useEffect(() => {
+    captureMessage("EditModal: t changed", {
+      rotate: t.rotate,
+      flipH: t.flipH,
+      flipV: t.flipV,
+    });
+  }, [t]);
+
   // Reset transient state when the modal closes. Separated from the
   // load effect so a state change here can't accidentally cancel an
   // in-flight load. sourceRef is also cleared so the next open starts
