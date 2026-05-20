@@ -147,7 +147,7 @@ export function BookingConfirmationCard({
               <Button
                 size="sm"
                 onClick={markBooked}
-                disabled={submitting}
+                disabled={submitting || ownStamped}
                 className="mt-3 rounded-full"
               >
                 {submitting && <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />}
@@ -179,7 +179,7 @@ export function BookingConfirmationCard({
               <Button
                 size="sm"
                 onClick={markBooked}
-                disabled={submitting}
+                disabled={submitting || ownStamped}
                 className="mt-3 rounded-full"
               >
                 {submitting && <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />}
