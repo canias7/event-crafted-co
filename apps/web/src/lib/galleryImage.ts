@@ -145,6 +145,12 @@ export async function computeBlurhash(file: File): Promise<ImgInfo | null> {
 // Cache decoded blurhashes per (hash, target_w, target_h) — decoding
 // + canvas → dataURL is cheap but not free, and the same hash often
 // renders in multiple tiles (grid + lightbox preview).
+//
+// LRU-capped at MAX_CACHE entries. A long session over a 5k-image
+// gallery can otherwise grow this Map to multiple MB of PNG dataURLs.
+// JS Map preserves insertion order so promoting a hit to MRU is a
+// delete + set; eviction takes the first key.
+const MAX_CACHE = 1000;
 const cache = new Map<string, string>();
 
 export function blurhashToDataUrl(
@@ -154,7 +160,12 @@ export function blurhashToDataUrl(
 ): string | null {
   const key = `${hash}|${width}|${height}`;
   const hit = cache.get(key);
-  if (hit) return hit;
+  if (hit !== undefined) {
+    // Promote to MRU.
+    cache.delete(key);
+    cache.set(key, hit);
+    return hit;
+  }
   try {
     const pixels = decode(hash, width, height);
     const canvas = document.createElement("canvas");
@@ -167,6 +178,11 @@ export function blurhashToDataUrl(
     ctx.putImageData(imageData, 0, 0);
     const url = canvas.toDataURL("image/png");
     cache.set(key, url);
+    if (cache.size > MAX_CACHE) {
+      // Evict oldest (first inserted, not yet promoted).
+      const oldest = cache.keys().next().value;
+      if (oldest !== undefined) cache.delete(oldest);
+    }
     return url;
   } catch {
     return null;

@@ -82,6 +82,7 @@ import {
   parseExif,
   type SanitizedExif,
 } from "@/lib/galleryImage";
+import { removeGalleryFileWithRetry } from "@/lib/galleryStorage";
 
 interface GalleryRow {
   id: string;
@@ -280,6 +281,18 @@ export default function VendorGalleryPage() {
     user?.id ? { table: "vendor_gallery_albums", filter: `user_id=eq.${user.id}` } : null,
     debouncedLoad,
   );
+
+  // Cancel a pending debounced refetch when the page unmounts —
+  // otherwise the 400ms timer fires after navigation and triggers a
+  // wasted load() against state that's no longer mounted.
+  useEffect(() => {
+    return () => {
+      if (reloadDebounceRef.current) {
+        clearTimeout(reloadDebounceRef.current);
+        reloadDebounceRef.current = null;
+      }
+    };
+  }, []);
 
   useEffect(() => {
     setVisibleCount(PAGE_SIZE);
@@ -600,14 +613,10 @@ export default function VendorGalleryPage() {
         });
       if (insErr) {
         failed += 1;
-        supabase.storage
-          .from("vendor-gallery")
-          .remove([path])
-          .then(({ error: rmErr }) => {
-            if (rmErr) {
-              console.error("[gallery] failed to clean up orphan upload", path, rmErr);
-            }
-          });
+        // Orphan cleanup. removeGalleryFileWithRetry handles both
+        // API-returned errors and network throws — fire-and-forget is
+        // safe because the helper never rejects.
+        void removeGalleryFileWithRetry(path);
       }
       setUploadProgress((p) => ({ ...p, done: p.done + 1 }));
     }
