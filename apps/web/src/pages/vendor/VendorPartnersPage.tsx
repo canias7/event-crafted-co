@@ -218,32 +218,31 @@ export default function VendorPartnersPage() {
       .or(`user_a_id.eq.${myUserId},user_b_id.eq.${myUserId}`)
       .order("last_message_at", { ascending: false });
     const rows = (data as ThreadRow[]) ?? [];
-    // Fetch one row per thread for the preview. The audit flagged
-    // that fetching ALL messages and reducing client-side scales
-    // badly; this still does that pattern but is bounded by limit
-    // 1 per thread via the per-thread map below.
+    // Last-message preview per thread comes from get_partner_thread_previews,
+    // a DISTINCT ON RPC that returns exactly one row per thread_id.
+    // The old approach pulled ALL messages across ALL threads and
+    // deduped client-side — quadratic with usage.
     const lastBy = new Map<
       string,
       { body: string; sender_user_id: string }
     >();
     if (rows.length > 0) {
       const ids = rows.map((t) => t.id);
-      const { data: msgs } = await msgsTable()
-        .select("thread_id, body, sender_user_id, created_at, deleted_at")
-        .in("thread_id", ids)
-        .order("created_at", { ascending: false });
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: msgs } = await (supabase as any).rpc(
+        "get_partner_thread_previews",
+        { p_thread_ids: ids },
+      );
       for (const m of (msgs as Array<{
         thread_id: string;
         body: string;
         sender_user_id: string;
         deleted_at: string | null;
-      }>) ?? []) {
-        if (!lastBy.has(m.thread_id)) {
-          lastBy.set(m.thread_id, {
-            body: m.deleted_at ? "Message deleted" : m.body,
-            sender_user_id: m.sender_user_id,
-          });
-        }
+      }> | null) ?? []) {
+        lastBy.set(m.thread_id, {
+          body: m.deleted_at ? "Message deleted" : m.body,
+          sender_user_id: m.sender_user_id,
+        });
       }
     }
     // Filter out threads the user archived for their own side.
@@ -267,13 +266,17 @@ export default function VendorPartnersPage() {
   }, [myUserId]);
 
   const loadMessages = useCallback(async (threadId: string) => {
+    // Pull the latest 200 messages — descending so the LIMIT captures
+    // the most recent slice rather than the oldest, then reverse for
+    // chronological render. Older history can be paged in later.
     const { data } = await msgsTable()
       .select(
         "id, sender_user_id, body, created_at, attachments, edited_at, deleted_at, reply_to_message_id, contact_info_flagged",
       )
       .eq("thread_id", threadId)
-      .order("created_at", { ascending: true });
-    const rows = (data as PartnerMessage[]) ?? [];
+      .order("created_at", { ascending: false })
+      .limit(200);
+    const rows = ((data as PartnerMessage[]) ?? []).slice().reverse();
     setMessages(rows);
     if (rows.length > 0) {
       const ids = rows.map((m) => m.id);

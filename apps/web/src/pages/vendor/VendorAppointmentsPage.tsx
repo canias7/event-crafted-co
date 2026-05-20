@@ -268,13 +268,21 @@ export default function VendorAppointmentsPage() {
     }
     setAppointmentsLoading(true);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    // Bound to ~90 days back so years-old history doesn't bloat the
+    // payload. The calendar grid and "upcoming" lists only need the
+    // recent window; deeper history can be exposed via a dedicated
+    // archive view later.
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - 90);
     const { data } = await (supabase as any)
       .from("appointments")
       .select(
         "id, inquiry_id, vendor_id, host_id, kind, title, location, scheduled_at, duration_minutes, status, proposed_by, notes, meeting_url, meeting_provider, host:profiles!appointments_host_id_fkey(display_name)",
       )
       .eq("vendor_id", selectedListingId)
-      .order("scheduled_at", { ascending: true });
+      .gte("scheduled_at", cutoff.toISOString())
+      .order("scheduled_at", { ascending: true })
+      .limit(500);
     const rows = (
       (data as Array<
         Appointment & { host: { display_name: string | null } | null }
