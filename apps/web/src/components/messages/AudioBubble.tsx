@@ -79,6 +79,23 @@ export function AudioBubble({ src, filename }: Props) {
     el.currentTime = pct * el.duration;
   }
 
+  // Arrow keys jump 5s left/right, Home/End to ends. Native sliders
+  // give this for free; we're rolling our own so we have to wire it.
+  function onSliderKey(e: React.KeyboardEvent<HTMLDivElement>) {
+    const el = audioRef.current;
+    if (!el || !el.duration || !Number.isFinite(el.duration)) return;
+    const STEP = 5;
+    let next: number | null = null;
+    if (e.key === "ArrowRight") next = Math.min(el.duration, el.currentTime + STEP);
+    else if (e.key === "ArrowLeft") next = Math.max(0, el.currentTime - STEP);
+    else if (e.key === "Home") next = 0;
+    else if (e.key === "End") next = el.duration;
+    if (next !== null) {
+      e.preventDefault();
+      el.currentTime = next;
+    }
+  }
+
   // Show elapsed while playing or after first interaction; otherwise
   // show total duration so the user knows how long the clip is before
   // hitting play.
@@ -105,8 +122,10 @@ export function AudioBubble({ src, filename }: Props) {
         aria-valuemin={0}
         aria-valuemax={100}
         aria-valuenow={Math.round(progress * 100)}
+        tabIndex={0}
         onClick={seek}
-        className="flex items-center gap-[2px] h-7 flex-1 cursor-pointer"
+        onKeyDown={onSliderKey}
+        className="flex items-center gap-[2px] h-7 flex-1 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-foreground/40 focus-visible:ring-offset-2 rounded-full"
       >
         {BAR_HEIGHTS.map((h, i) => {
           const barProgress = i / BAR_HEIGHTS.length;

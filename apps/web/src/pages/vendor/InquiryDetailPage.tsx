@@ -178,6 +178,25 @@ export default function InquiryDetailPage() {
   // inquiry — without this, the first effect-run overwrites the
   // freshly-loaded localStorage value with an empty string.
   const draftHydratedRef = useRef<string | null>(null);
+  // Tracks the previously active inquiry so we know when to clear
+  // per-inquiry transient state (reply target, edit-in-progress,
+  // queued attachments) on navigation between inquiries.
+  const prevInquiryIdRef = useRef<string | undefined>(inquiryId);
+
+  // Reset transient per-inquiry state when navigating from one inquiry
+  // to another. Otherwise a "reply" or "edit" started in inquiry A
+  // bleeds into inquiry B — the composer thinks it's replying to a
+  // message that isn't even in the current thread, and a send would
+  // attach the wrong reply_to_message_id.
+  useEffect(() => {
+    if (prevInquiryIdRef.current !== inquiryId) {
+      setReplyToId(null);
+      setEditingMessageId(null);
+      setEditingDraft("");
+      setPendingFiles([]);
+      prevInquiryIdRef.current = inquiryId;
+    }
+  }, [inquiryId]);
 
   // Rehydrate any in-flight draft from localStorage on inquiry change.
   useEffect(() => {
@@ -370,9 +389,35 @@ export default function InquiryDetailPage() {
   );
   useRealtime(messagesConfig, load);
 
-  // Reactions live in their own table; the shared user channel
-  // delivers events that pass RLS, so refetching the whole inquiry
-  // on every reaction change is fine.
+  // Reactions live in their own table. When something changes, refetch
+  // ONLY the reactions for this thread's messages — not the full
+  // load() (which would also pull inquiry / messages / reviews /
+  // proposals). RLS already gates which reaction events the user can
+  // see, so any event landing here is relevant; we just keep the
+  // refetch scoped.
+  const loadReactionsForThread = useCallback(async () => {
+    const ids = messages.map((m) => m.id);
+    if (ids.length === 0) {
+      setReactionsByMsg({});
+      return;
+    }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: rxns } = await (supabase as any)
+      .from("direct_message_reactions")
+      .select("message_id, user_id, emoji")
+      .in("message_id", ids);
+    const grouped: Record<string, MessageReaction[]> = {};
+    for (const r of (rxns as Array<{
+      message_id: string;
+      user_id: string;
+      emoji: string;
+    }> | null) ?? []) {
+      const list = grouped[r.message_id] ?? [];
+      list.push({ user_id: r.user_id, emoji: r.emoji });
+      grouped[r.message_id] = list;
+    }
+    setReactionsByMsg(grouped);
+  }, [messages]);
   const reactionsConfig = useMemo(
     () =>
       threadId
@@ -380,7 +425,7 @@ export default function InquiryDetailPage() {
         : null,
     [threadId],
   );
-  useRealtime(reactionsConfig, load);
+  useRealtime(reactionsConfig, loadReactionsForThread);
 
   const inquiryConfig = useMemo(
     () =>
@@ -623,6 +668,18 @@ export default function InquiryDetailPage() {
       setSending(false);
       toast.error("Couldn't upload your attachments — message not sent.");
       return;
+    }
+    // Partial-failure case: some uploads succeeded, some didn't. Call
+    // it out so the vendor knows the sent message is missing files
+    // and can resend the failed ones.
+    if (
+      pendingFiles.length > 0 &&
+      uploaded.length > 0 &&
+      uploaded.length < pendingFiles.length
+    ) {
+      toast.info(
+        `${uploaded.length} of ${pendingFiles.length} attachments uploaded.`,
+      );
     }
     const { error } = await supabase.from("direct_messages").insert({
       thread_id: threadId,
