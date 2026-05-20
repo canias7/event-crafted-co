@@ -41,6 +41,7 @@ import {
 import { computeBlurhash } from "@/lib/galleryImage";
 import { formatBytes, loadImageViaBlob } from "@/lib/downloadImage";
 import { removeGalleryFileWithRetry } from "@/lib/galleryStorage";
+import { captureException } from "@/lib/sentry";
 
 interface Props {
   open: boolean;
@@ -152,46 +153,95 @@ export function EditModal({
     };
   }, [open, imageUrl, onOpenChange]);
 
+  // Track the previous transformed objectURL so we can revoke it
+  // when a new one replaces it (memory leak guard for large
+  // multi-step edits).
+  const prevTransformedUrlRef = useRef<string | null>(null);
+
   // Re-rasterize the source with the current transform whenever it
-  // changes. Always use the same-origin blob URL the source loaded
-  // from (identity case) or a canvas data URL (transformed) so
-  // ReactCrop never reaches for a cross-origin URL that would taint
-  // canvas ops on save. Transformed previews are downscaled before
-  // becoming a data URL so a 24 MP image doesn't ship 7+ MB of
-  // base64 into the DOM.
+  // changes. Output goes through toBlob → createObjectURL instead of
+  // toDataURL so big images (24 MP iPhone shots) don't generate
+  // multi-MB base64 strings that some browsers silently truncate or
+  // mishandle. Identity transform uses the original source blob URL
+  // directly (no canvas pass needed).
   useEffect(() => {
     if (!open || !sourceRef.current) return;
     const src = sourceRef.current;
+    // Guard: if the source decoded but reported zero dimensions
+    // (broken HEIC/AVIF on a browser that pretends to support it),
+    // canvas ops would silently produce a 0×0 output. Bail out
+    // explicitly so the user sees a real error.
+    if (!src.naturalWidth || !src.naturalHeight) {
+      toast.error(
+        "This image's format isn't supported by your browser's editor.",
+      );
+      setT({ rotate: 0, flipH: false, flipV: false });
+      return;
+    }
     if (t.rotate === 0 && !t.flipH && !t.flipV) {
       setDisplayUrl(src.src);
       setCrop(undefined);
       setCompletedCrop(null);
       return;
     }
-    // Wrap canvas ops in try/catch so a tainted-canvas SecurityError
-    // surfaces as a toast instead of silently breaking the buttons.
-    // The blob-URL approach should keep the canvas clean, but
-    // browser CORS edge cases (cached responses without CORS
-    // headers, mobile WebKit) have surprised us before.
-    try {
-      const baseCanvas = renderTransformed(src, t);
-      const preview =
-        baseCanvas.width > PREVIEW_MAX_WIDTH
-          ? downscale(baseCanvas, PREVIEW_MAX_WIDTH)
-          : baseCanvas;
-      const dataUrl = preview.toDataURL("image/jpeg", 0.85);
-      setCrop(undefined);
-      setCompletedCrop(null);
-      setDisplayUrl(dataUrl);
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
-      toast.error(`Couldn't apply transform: ${msg}`);
-      // Roll the transform back so the next click isn't from a
-      // stale state — user sees the buttons "do nothing" and we
-      // explained why via the toast.
-      setT({ rotate: 0, flipH: false, flipV: false });
+    let cancelled = false;
+    let createdUrl: string | null = null;
+    (async () => {
+      try {
+        const baseCanvas = renderTransformed(src, t);
+        const preview =
+          baseCanvas.width > PREVIEW_MAX_WIDTH
+            ? downscale(baseCanvas, PREVIEW_MAX_WIDTH)
+            : baseCanvas;
+        const blob: Blob | null = await new Promise((resolve) =>
+          preview.toBlob((b) => resolve(b), "image/jpeg", 0.85),
+        );
+        if (!blob) {
+          throw new Error("toBlob returned null (canvas may be tainted).");
+        }
+        if (cancelled) return;
+        createdUrl = URL.createObjectURL(blob);
+        setCrop(undefined);
+        setCompletedCrop(null);
+        setDisplayUrl(createdUrl);
+        // Revoke the previous transformed URL after a tick so the
+        // <img> has time to swap source without flicker.
+        const prev = prevTransformedUrlRef.current;
+        prevTransformedUrlRef.current = createdUrl;
+        if (prev) {
+          setTimeout(() => URL.revokeObjectURL(prev), 1_000);
+        }
+      } catch (err) {
+        if (cancelled) return;
+        const msg = err instanceof Error ? err.message : String(err);
+        toast.error(`Couldn't apply transform: ${msg}`);
+        captureException(err, {
+          where: "EditModal transform effect",
+          rotate: t.rotate,
+          flipH: t.flipH,
+          flipV: t.flipV,
+          naturalWidth: src.naturalWidth,
+          naturalHeight: src.naturalHeight,
+          imageUrl,
+        });
+        setT({ rotate: 0, flipH: false, flipV: false });
+      }
+    })();
+    return () => {
+      cancelled = true;
+      if (createdUrl && createdUrl !== prevTransformedUrlRef.current) {
+        URL.revokeObjectURL(createdUrl);
+      }
+    };
+  }, [t, open, imageUrl]);
+
+  // Final cleanup of any lingering objectURL when the modal closes.
+  useEffect(() => {
+    if (!open && prevTransformedUrlRef.current) {
+      URL.revokeObjectURL(prevTransformedUrlRef.current);
+      prevTransformedUrlRef.current = null;
     }
-  }, [t, open]);
+  }, [open]);
 
   function rotateBy(deg: number) {
     setT((p) => ({ ...p, rotate: ((p.rotate + deg) % 360 + 360) % 360 }));
@@ -405,9 +455,17 @@ export function EditModal({
               >
                 <img
                   ref={cropImgRef}
+                  key={displayUrl}
                   src={displayUrl}
                   alt="Edit"
                   className="max-h-[60vh] max-w-full rounded-md"
+                  onError={() => {
+                    toast.error("Preview failed to load. Try Cancel + Edit again.");
+                    captureException(
+                      new Error("EditModal preview img onError"),
+                      { displayUrl: displayUrl.slice(0, 80), imageUrl },
+                    );
+                  }}
                 />
               </ReactCrop>
             )}
