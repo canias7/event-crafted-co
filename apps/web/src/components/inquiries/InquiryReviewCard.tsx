@@ -6,29 +6,49 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { formatDate } from "@/lib/format";
 
-// Vendor-side review card on the inquiry detail page. Shows the host's
-// rating + body, and lets the vendor post or edit a public response.
-// Manages its own form state so the parent only has to pass the review
-// + an onChange callback for refreshing.
+// Review card on an inquiry detail page. Shows a rating + body left
+// by the counterparty, and lets the subject post or edit a public
+// response. Used on both sides:
+//   • vendor side — responding to host's event review (responderRole='vendor')
+//   • host side  — responding to vendor's rating of them (responderRole='host')
+//
+// Manages its own form state so the parent only has to pass the
+// review + an onChange callback for refreshing.
 
 export interface ReviewWithResponse {
   id: string;
   vendor_id: string;
   rating: number;
   body: string | null;
+  kind?: "conversation" | "event";
   created_at: string;
   response: { body: string; updated_at: string } | null;
 }
 
 interface Props {
   review: ReviewWithResponse;
+  /** The party writing the response — vendor responding to host's
+   *  review, or host responding to vendor's rating. RLS gates which
+   *  combinations are allowed; the prop drives labels + insert shape. */
+  responderRole?: "host" | "vendor";
   onResponseSaved: () => void;
 }
 
-export function InquiryReviewCard({ review, onResponseSaved }: Props) {
+export function InquiryReviewCard({
+  review,
+  responderRole = "vendor",
+  onResponseSaved,
+}: Props) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(review.response?.body ?? "");
   const [saving, setSaving] = useState(false);
+
+  const incomingLabel =
+    responderRole === "vendor"
+      ? "Host review"
+      : review.kind === "conversation"
+        ? "Vendor's chat rating"
+        : "Vendor's review";
 
   async function save() {
     if (!draft.trim() || saving) return;
@@ -38,9 +58,13 @@ export function InquiryReviewCard({ review, onResponseSaved }: Props) {
       ? await tbl.update({ body: draft.trim() }).eq("review_id", review.id)
       : await tbl.insert({
           review_id: review.id,
-          vendor_id: review.vendor_id,
+          // vendor_id is nullable post-migration — host responses
+          // leave it null. responder_user_id is set by trigger.
+          vendor_id: responderRole === "vendor" ? review.vendor_id : null,
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          responder_role: responderRole,
           body: draft.trim(),
-        });
+        } as never);
     setSaving(false);
     if (error) {
       toast.error(error.message);
@@ -55,7 +79,7 @@ export function InquiryReviewCard({ review, onResponseSaved }: Props) {
     <div className="bg-card border border-border rounded-sm p-6">
       <div className="flex items-center justify-between gap-4 mb-3 flex-wrap">
         <div className="flex items-center gap-2">
-          <p className="font-label text-muted-foreground">Host review</p>
+          <p className="font-label text-muted-foreground">{incomingLabel}</p>
           <span className="text-xs text-muted-foreground tnum">
             {formatDate(review.created_at, "short")}
           </span>

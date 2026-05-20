@@ -1129,7 +1129,11 @@ export default function InquiryDetailPage() {
           {/* Review as a system bubble at the end of the thread */}
           {review && (
             <div className="my-4">
-              <InquiryReviewCard review={review} onResponseSaved={load} />
+              <InquiryReviewCard
+                review={review}
+                responderRole="vendor"
+                onResponseSaved={load}
+              />
             </div>
           )}
 

@@ -1621,25 +1621,45 @@ export type Database = {
         Row: {
           body: string
           created_at: string
+          responder_role: string
+          responder_user_id: string | null
           review_id: string
           updated_at: string
-          vendor_id: string
+          vendor_id: string | null
         }
         Insert: {
           body: string
           created_at?: string
+          responder_role?: string
+          responder_user_id?: string | null
           review_id: string
           updated_at?: string
-          vendor_id: string
+          vendor_id?: string | null
         }
         Update: {
           body?: string
           created_at?: string
+          responder_role?: string
+          responder_user_id?: string | null
           review_id?: string
           updated_at?: string
-          vendor_id?: string
+          vendor_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "review_responses_responder_user_id_fkey"
+            columns: ["responder_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "review_responses_responder_user_id_fkey"
+            columns: ["responder_user_id"]
+            isOneToOne: false
+            referencedRelation: "vendor_brands"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "review_responses_review_id_fkey"
             columns: ["review_id"]

@@ -13,6 +13,7 @@ import { TypingBubble } from "@/components/messages/TypingBubble";
 import { RatingPromptStrip } from "@/components/reviews/RatingPromptStrip";
 import { SubmittedReviewStatusCard } from "@/components/reviews/SubmittedReviewStatusCard";
 import { BookingConfirmationCard } from "@/components/inquiries/BookingConfirmationCard";
+import { InquiryReviewCard } from "@/components/inquiries/InquiryReviewCard";
 import { Link, useParams } from "react-router-dom";
 import {
   ArrowLeft,
@@ -144,6 +145,21 @@ export default function HostInquiryDetailPage() {
   const [notFound, setNotFound] = useState(false);
   const [appointmentModalOpen, setAppointmentModalOpen] = useState(false);
   const [proposals, setProposals] = useState<Proposal[]>([]);
+  // Vendor-side reviews of this host (conversation + event). The host
+  // can post a public response per review via InquiryReviewCard.
+  // Loaded only after the page settles; RLS already gates blind-period
+  // event reviews so we never see unreleased rows.
+  const [vendorReviews, setVendorReviews] = useState<
+    Array<{
+      id: string;
+      vendor_id: string;
+      rating: number;
+      body: string | null;
+      kind: "conversation" | "event";
+      created_at: string;
+      response: { body: string; updated_at: string } | null;
+    }>
+  >([]);
   const [acting, setActing] = useState<"accept" | "reject" | null>(null);
   // Thread id is the direct_threads row for this inquiry; mobile uses
   // the same model — see ensure_inquiry_thread RPC. Resolved on load.
@@ -165,7 +181,7 @@ export default function HostInquiryDetailPage() {
     // fire in parallel. Messages + reactions depend on the thread id
     // so they chain after. Submitted-review status is fetched by
     // SubmittedReviewStatusCard on its own.
-    const [iRes, tidRes, propsRes] = await Promise.all([
+    const [iRes, tidRes, propsRes, vendorRevsRes] = await Promise.all([
       supabase
         .from("inquiries")
         .select(
@@ -185,6 +201,17 @@ export default function HostInquiryDetailPage() {
         )
         .eq("inquiry_id", inquiryId)
         .order("created_at", { ascending: false }),
+      // Vendor-side reviews this host is the subject of. RLS gates
+      // visibility — blind-period event reviews don't surface here.
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (supabase as any)
+        .from("reviews")
+        .select(
+          "id, vendor_id, rating, body, kind, created_at, response:review_responses(body, updated_at)",
+        )
+        .eq("inquiry_id", inquiryId)
+        .eq("rater_role", "vendor")
+        .order("created_at", { ascending: true }),
     ]);
 
     // Only flip to 404 if the row is genuinely missing. Transient
@@ -255,6 +282,19 @@ export default function HostInquiryDetailPage() {
     }
 
     setProposals((propsRes.data as unknown as Proposal[]) ?? []);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    setVendorReviews(((vendorRevsRes.data as any[]) ?? []).map((r) => ({
+      id: r.id,
+      vendor_id: r.vendor_id,
+      rating: r.rating,
+      body: r.body,
+      kind: r.kind,
+      created_at: r.created_at,
+      // response is a 1-row nested select; coerce to scalar.
+      response: Array.isArray(r.response)
+        ? (r.response[0] ?? null)
+        : (r.response ?? null),
+    })));
 
     hasLoadedRef.current = true;
     setLoading(false);
@@ -971,6 +1011,20 @@ export default function HostInquiryDetailPage() {
               otherPartyName={vendorName}
             />
           ) : null}
+
+          {/* Vendor-side ratings the host can publicly respond to.
+              Includes both conversation ratings (released on insert)
+              and event reviews (post-mutual-reveal). RLS hides blind-
+              period rows. */}
+          {vendorReviews.map((r) => (
+            <div key={r.id} className="my-4">
+              <InquiryReviewCard
+                review={r}
+                responderRole="host"
+                onResponseSaved={load}
+              />
+            </div>
+          ))}
 
           <div ref={messagesEndRef} aria-hidden />
         </div>
