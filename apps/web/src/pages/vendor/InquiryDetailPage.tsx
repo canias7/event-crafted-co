@@ -9,7 +9,6 @@ import {
 } from "@/components/messages/MessageReactions";
 import { MessageReplyContext } from "@/components/messages/MessageReplyContext";
 import { VoiceRecorder } from "@/components/messages/VoiceRecorder";
-import { TemplatePicker } from "@/components/messages/TemplatePicker";
 import { PinLocationDialog } from "@/components/messages/PinLocationDialog";
 import { MessageBody } from "@/components/messages/MessageBody";
 import { TypingBubble } from "@/components/messages/TypingBubble";
@@ -1297,13 +1296,6 @@ export default function InquiryDetailPage() {
                   </div>
                 </PopoverContent>
               </Popover>
-              <TemplatePicker
-                vendorId={inquiry?.vendor_id ?? null}
-                onPick={(body) => {
-                  setComposer((prev) => (prev ? `${prev}\n${body}` : body));
-                  composerRef.current?.focus();
-                }}
-              />
               <Textarea
                 ref={composerRef}
                 value={composer}
