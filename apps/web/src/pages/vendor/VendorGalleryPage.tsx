@@ -246,6 +246,9 @@ export default function VendorGalleryPage() {
   // gallery, reload here. Debounced via a coalescing timer so a
   // burst (e.g. multi-upload) only triggers one refetch.
   const reloadDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Backfill flag declared before debouncedLoad so the closure
+  // captures the ref correctly.
+  const backfillingRef = useRef(false);
   const debouncedLoad = useCallback(() => {
     if (reloadDebounceRef.current) clearTimeout(reloadDebounceRef.current);
     reloadDebounceRef.current = setTimeout(() => {
@@ -254,6 +257,12 @@ export default function VendorGalleryPage() {
       // own write would otherwise double up. 600ms buffer covers
       // postgres → realtime → client latency for typical writes.
       if (Date.now() - lastLoadAt.current < 600) return;
+      // #6 from the audit — suppress realtime refetches while the
+      // backfill loop is still running. Backfill UPDATEs each old
+      // row; each UPDATE fires a realtime event; without this we'd
+      // refetch the full library on every backfilled image. The
+      // backfill itself calls load() once when done.
+      if (backfillingRef.current) return;
       load();
     }, 400);
   }, [load]);
@@ -273,9 +282,9 @@ export default function VendorGalleryPage() {
   // Backfill old uploads that are missing width/height/blurhash —
   // those rows predate round 2 and don't show up in the Portraits /
   // Landscapes smart albums until they get processed. Fires once per
-  // page load, throttled to one image at a time so we don't slam
-  // the network. Best-effort: failures get logged and skipped.
-  const backfillingRef = useRef(false);
+  // page load. Sets backfillingRef so the realtime debouncedLoad
+  // above can suppress per-row echoes; load() at the end picks up
+  // the cumulative result.
   useEffect(() => {
     if (!rows || backfillingRef.current) return;
     const pending = rows.filter(
@@ -684,6 +693,13 @@ export default function VendorGalleryPage() {
       toast.error("This album has no images.");
       return;
     }
+    if (albumRows.length > 50) {
+      toast.error(
+        `Album zip is capped at 50 images (album has ${albumRows.length}). ` +
+          `Use Select + Download zip in batches.`,
+      );
+      return;
+    }
     await zipRows(albumRows, `album-${activeTab.slice(0, 8)}`);
   }
 
@@ -732,6 +748,17 @@ export default function VendorGalleryPage() {
     if (selected.size === 0 || zipping) return;
     const ids = Array.from(selected);
     const rowsToZip = (rows ?? []).filter((r) => ids.includes(r.id));
+    // #8 from the audit — JSZip buffers every blob in memory until
+    // generateAsync. 50 × ~5 MB = ~250 MB peak, which mobile
+    // browsers will crash on. Cap the batch and tell the user to
+    // download in chunks.
+    if (rowsToZip.length > 50) {
+      toast.error(
+        `Zip is capped at 50 images per batch (selected ${rowsToZip.length}). ` +
+          `Download in smaller groups.`,
+      );
+      return;
+    }
     await zipRows(rowsToZip, "selection");
   }
 
@@ -860,7 +887,10 @@ export default function VendorGalleryPage() {
     activeTab !== TRASH_TAB &&
     !activeTab.startsWith("__smart");
 
-  const reorderEnabled = sortMode === "newest" && !isTrashView;
+  // Drag-to-reorder is also disabled in select mode — otherwise a
+  // long-press on touch could trigger drag instead of toggling the
+  // checkbox. #7 from the audit.
+  const reorderEnabled = sortMode === "newest" && !isTrashView && !selecting;
 
   // Album-tab cover resolver. Exclude soft-deleted rows so a
   // trashed cover image falls through to the album's first

@@ -135,14 +135,29 @@ export function EditModal({
       setCompletedCrop(null);
       return;
     }
-    const baseCanvas = renderTransformed(src, t);
-    const preview =
-      baseCanvas.width > PREVIEW_MAX_WIDTH
-        ? downscale(baseCanvas, PREVIEW_MAX_WIDTH)
-        : baseCanvas;
-    setCrop(undefined);
-    setCompletedCrop(null);
-    setDisplayUrl(preview.toDataURL("image/jpeg", 0.85));
+    // Wrap canvas ops in try/catch so a tainted-canvas SecurityError
+    // surfaces as a toast instead of silently breaking the buttons.
+    // The blob-URL approach should keep the canvas clean, but
+    // browser CORS edge cases (cached responses without CORS
+    // headers, mobile WebKit) have surprised us before.
+    try {
+      const baseCanvas = renderTransformed(src, t);
+      const preview =
+        baseCanvas.width > PREVIEW_MAX_WIDTH
+          ? downscale(baseCanvas, PREVIEW_MAX_WIDTH)
+          : baseCanvas;
+      const dataUrl = preview.toDataURL("image/jpeg", 0.85);
+      setCrop(undefined);
+      setCompletedCrop(null);
+      setDisplayUrl(dataUrl);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      toast.error(`Couldn't apply transform: ${msg}`);
+      // Roll the transform back so the next click isn't from a
+      // stale state — user sees the buttons "do nothing" and we
+      // explained why via the toast.
+      setT({ rotate: 0, flipH: false, flipV: false });
+    }
   }, [t, open]);
 
   function rotateBy(deg: number) {
@@ -164,14 +179,25 @@ export function EditModal({
       completedCrop.width > 0 &&
       completedCrop.height > 0);
 
+  const abortRef = useRef<AbortController | null>(null);
+
   async function save() {
     if (!user?.id || !sourceRef.current) return;
+    // #3 from the audit — let Cancel / X stop an in-progress save.
+    // Each save step checks the signal and bails before doing
+    // anything destructive (upload, DB update, file remove).
+    abortRef.current = new AbortController();
+    const signal = abortRef.current.signal;
+    const checkAbort = () => {
+      if (signal.aborted) throw new Error("aborted");
+    };
+
     setSaving(true);
+    let uploadedPath: string | null = null;
     try {
       const src = sourceRef.current;
       // First pass: render source through the current transform at
-      // full natural resolution. This is the same canvas the
-      // displayed thumbnail was generated from, but unscaled.
+      // full natural resolution.
       const baseCanvas = renderTransformed(src, t);
 
       // Second pass: crop. completedCrop's coords are in CSS pixels
@@ -200,10 +226,13 @@ export function EditModal({
         outCanvas = cropCanvas;
       }
 
+      checkAbort();
+
       const blob: Blob | null = await new Promise((resolve) =>
         outCanvas.toBlob((b) => resolve(b), "image/jpeg", 0.92),
       );
       if (!blob) throw new Error("Couldn't encode the edited image.");
+      checkAbort();
 
       const filename = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.jpg`;
       const path = `${user.id}/${filename}`;
@@ -211,6 +240,9 @@ export function EditModal({
         .from("vendor-gallery")
         .upload(path, blob, { contentType: "image/jpeg", upsert: false });
       if (upload.error) throw upload.error;
+      uploadedPath = path;
+      checkAbort();
+
       const { data: pub } = supabase.storage
         .from("vendor-gallery")
         .getPublicUrl(path);
@@ -218,13 +250,13 @@ export function EditModal({
       const blurInfo = await computeBlurhash(
         new File([blob], filename, { type: "image/jpeg" }),
       );
+      checkAbort();
 
       // Preserve EXIF on transform-only edits — the camera / lens /
-      // capture date are still accurate. Drop EXIF on crop, since
-      // the image is now a meaningfully different framing. Re-fetch
-      // the row's current exif right before deciding, so a backfill
-      // that ran during the user's edit session doesn't get
-      // overwritten by a stale snapshot.
+      // capture date are still accurate. Drop EXIF on crop. Re-fetch
+      // the row's current exif so a backfill that ran during the
+      // user's edit session doesn't get overwritten by a stale
+      // snapshot.
       const cropped =
         completedCrop && completedCrop.width > 0 && completedCrop.height > 0;
       let nextExif: unknown = null;
@@ -237,9 +269,15 @@ export function EditModal({
           .maybeSingle();
         nextExif = fresh?.exif ?? null;
       }
+      checkAbort();
 
+      // #1 from the audit — chain .select().maybeSingle() so we can
+      // tell when the row was deleted in another session between
+      // load and save. Without this, the UPDATE matches 0 rows
+      // silently and the user sees "Saved" while the freshly-
+      // uploaded file becomes an orphan.
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { error: updErr } = await (supabase as any)
+      const { data: updated, error: updErr } = await (supabase as any)
         .from("vendor_gallery_images")
         .update({
           image_url: pub.publicUrl,
@@ -249,27 +287,79 @@ export function EditModal({
           file_size_bytes: blob.size,
           exif: nextExif,
         })
-        .eq("id", imageId);
+        .eq("id", imageId)
+        .select()
+        .maybeSingle();
       if (updErr) throw updErr;
+      if (!updated) {
+        // Row vanished between open and save. Clean up the orphan
+        // file we just uploaded and surface a clean error.
+        await removeWithRetry(path);
+        throw new Error(
+          "This image was removed in another session. Your edit wasn't saved.",
+        );
+      }
 
+      // Old-file removal with retry — #5 from the audit. Fire-and-
+      // forget would leave the previous version stranded on a
+      // transient network blip; retry with exponential backoff.
       const oldPath = extractStoragePath(imageUrl);
       if (oldPath) {
-        void supabase.storage.from("vendor-gallery").remove([oldPath]);
+        void removeWithRetry(oldPath);
       }
 
       toast.success("Saved.");
       onSaved();
       onOpenChange(false);
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "Couldn't save edit.";
-      toast.error(msg);
+      // Aborted saves get a quiet toast — no error sound — and we
+      // clean up the orphan file we may have already uploaded.
+      const isAbort = err instanceof Error && err.message === "aborted";
+      if (isAbort && uploadedPath) {
+        await removeWithRetry(uploadedPath);
+      }
+      const msg = isAbort
+        ? "Save cancelled."
+        : err instanceof Error
+          ? err.message
+          : "Couldn't save edit.";
+      toast[isAbort ? "info" : "error"](msg);
     } finally {
       setSaving(false);
+      abortRef.current = null;
     }
   }
 
+  // Storage remove with exponential backoff. Transient network
+  // errors otherwise leak files in the bucket forever — there's no
+  // batch cleanup job downstream.
+  async function removeWithRetry(path: string, attempts = 3): Promise<void> {
+    let delay = 500;
+    for (let i = 0; i < attempts; i++) {
+      const { error } = await supabase.storage
+        .from("vendor-gallery")
+        .remove([path]);
+      if (!error) return;
+      if (i === attempts - 1) {
+        console.warn("[gallery] storage remove failed", path, error);
+        return;
+      }
+      await new Promise((r) => setTimeout(r, delay));
+      delay *= 2;
+    }
+  }
+
+  // When the modal closes (Cancel / X / Esc), kill any in-flight
+  // save so the user isn't waiting on a request they don't want.
+  function handleClose(next: boolean) {
+    if (!next && saving) {
+      abortRef.current?.abort();
+    }
+    onOpenChange(next);
+  }
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="rounded-2xl sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle className="font-editorial text-2xl">Edit image</DialogTitle>
@@ -299,7 +389,6 @@ export function EditModal({
                   ref={cropImgRef}
                   src={displayUrl}
                   alt="Edit"
-                  crossOrigin="anonymous"
                   className="max-h-[60vh] max-w-full rounded-md"
                 />
               </ReactCrop>
@@ -363,11 +452,10 @@ export function EditModal({
         <DialogFooter className="gap-2 sm:gap-0">
           <Button
             variant="outline"
-            onClick={() => onOpenChange(false)}
-            disabled={saving}
+            onClick={() => handleClose(false)}
             className="rounded-full"
           >
-            Cancel
+            {saving ? "Stop" : "Cancel"}
           </Button>
           <Button
             onClick={save}
