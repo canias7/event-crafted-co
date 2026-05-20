@@ -2020,7 +2020,7 @@ function CalendarView({
         );
         return (
           <div key={key}>
-            <h3 className="font-editorial text-xl mb-3 sticky top-0 bg-background/80 backdrop-blur-sm py-1 z-10">
+            <h3 className="font-editorial text-xl mb-3 sticky top-0 bg-background/30 backdrop-blur-md py-1 z-10">
               {label}{" "}
               <span className="text-xs font-sans text-muted-foreground tnum">
                 · {items.length}
