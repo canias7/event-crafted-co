@@ -576,6 +576,18 @@ export default function HostInquiryDetailPage() {
   );
   useRealtime(inquiryConfig, () => load());
 
+  // Proposals: vendor can withdraw or revise after the host opens the
+  // page. Without a sub the bubble shows the stale state until manual
+  // refresh.
+  const proposalsConfig = useMemo(
+    () =>
+      inquiryId
+        ? { table: "proposals", filter: `inquiry_id=eq.${inquiryId}` }
+        : null,
+    [inquiryId],
+  );
+  useRealtime(proposalsConfig, () => load());
+
   function pickFiles(list: FileList) {
     const accepted: File[] = [];
     for (const f of Array.from(list)) {
