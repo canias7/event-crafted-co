@@ -436,6 +436,19 @@ export default function InquiryDetailPage() {
   );
   useRealtime(inquiryConfig, load);
 
+  // Proposals can be withdrawn / accepted / declined from either side
+  // after first load. Without a sub, the bubble shows "pending" until
+  // the user refreshes. Scoped to this inquiry so we don't refetch on
+  // unrelated activity.
+  const proposalsConfig = useMemo(
+    () =>
+      inquiryId
+        ? { table: "proposals", filter: `inquiry_id=eq.${inquiryId}` }
+        : null,
+    [inquiryId],
+  );
+  useRealtime(proposalsConfig, load);
+
   // Toggle a reaction on a message: if I already reacted with this
   // emoji, remove it; otherwise insert. Optimistic local update keeps
   // the chip count responsive; the realtime sub corrects any drift
