@@ -13,8 +13,18 @@
 // particular fails for a lot of edge cases (PNG, WebP without EXIF,
 // browser inconsistencies) and we just want best-effort metadata.
 
-import exifr from "exifr";
 import { encode, decode } from "blurhash";
+
+// exifr is ~80KB gzip and only used inside parseExif. Lazy-loaded
+// on first call so an unauthed visitor browsing the public site
+// never downloads it. Cached after first load.
+let exifrModulePromise: Promise<typeof import("exifr").default> | null = null;
+async function getExifr() {
+  if (!exifrModulePromise) {
+    exifrModulePromise = import("exifr").then((m) => m.default);
+  }
+  return exifrModulePromise;
+}
 
 export interface SanitizedExif {
   camera_make?: string;
@@ -49,6 +59,7 @@ const EXIF_TAGS = [
 
 export async function parseExif(file: File): Promise<SanitizedExif | null> {
   try {
+    const exifr = await getExifr();
     // Pick the small whitelist + GPS. exifr returns latitude /
     // longitude pre-computed when `gps: true`.
     const raw = await exifr.parse(file, {
