@@ -1,20 +1,14 @@
 // Vendor gallery — account-level media library.
 //
-// Round-1 features layered on top of the v1 grid:
-//   • search by caption + filename
-//   • sort: newest / oldest / name A→Z / name Z→A
-//   • aspect ratio filter (portrait / landscape / square)
-//   • file format filter (jpg / png / webp / gif)
-//   • grid density toggle (compact / medium / large)
-//   • list view alternative
-//   • smart albums (Last 7d / Last 30d / Portraits / Landscapes)
-//   • auto-generated thumbnails via Supabase image transforms
-//   • infinite scroll (60 at a time via IntersectionObserver)
-//   • cover image per album — right-click any tile to set it
-//
-// Per-image natural dimensions are captured client-side via the
-// <img> onLoad callback and cached in a map so subsequent filter
-// passes don't need to re-measure.
+// Round-2 features layered on round 1:
+//   • calendar view — third view mode alongside grid + list, groups
+//     images by year-month
+//   • EXIF capture on upload + sanitized panel in the lightbox
+//   • blurhash placeholder while real image streams in
+//   • soft-delete trash with 30-day lazy auto-purge
+//   • zip download for bulk-selected images
+//   • in-app edit (rotate / flip) via the Lightbox's Edit button
+//   • public share link via the Lightbox's Share button
 
 import {
   useCallback,
@@ -24,8 +18,10 @@ import {
   useState,
 } from "react";
 import {
+  CalendarDays,
   Check,
   CheckSquare,
+  Download,
   FolderPlus,
   Grid2x2,
   Grid3x3,
@@ -36,13 +32,15 @@ import {
   Loader2,
   MoveRight,
   Pencil,
+  RotateCcw,
   Search,
   Square,
   Star as StarIcon,
   Trash2,
-  X,
+  Undo2,
 } from "lucide-react";
 import { toast } from "sonner";
+import JSZip from "jszip";
 import {
   DndContext,
   type DragEndEvent,
@@ -73,9 +71,16 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { BlurhashImage } from "@/components/gallery/BlurhashImage";
+import { Lightbox } from "@/components/gallery/Lightbox";
 import { vendorNavItems } from "@/data/navItems";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
+import {
+  computeBlurhash,
+  parseExif,
+  type SanitizedExif,
+} from "@/lib/galleryImage";
 
 interface GalleryRow {
   id: string;
@@ -84,6 +89,11 @@ interface GalleryRow {
   album_id: string | null;
   display_order: number;
   created_at: string;
+  deleted_at: string | null;
+  width: number | null;
+  height: number | null;
+  exif: SanitizedExif | null;
+  blurhash: string | null;
 }
 
 interface Album {
@@ -93,16 +103,11 @@ interface Album {
   cover_image_id: string | null;
 }
 
-interface Dim {
-  width: number;
-  height: number;
-}
-
 type SortMode = "newest" | "oldest" | "name_asc" | "name_desc";
 type AspectFilter = "all" | "portrait" | "landscape" | "square";
 type FormatFilter = "all" | "jpg" | "png" | "webp" | "gif";
 type Density = "compact" | "medium" | "large";
-type ViewMode = "grid" | "list";
+type ViewMode = "grid" | "list" | "calendar";
 
 const ALL_TAB = "__all__";
 const UNCATEGORIZED_TAB = "__none__";
@@ -110,12 +115,11 @@ const SMART_RECENT_7 = "__smart_recent_7__";
 const SMART_RECENT_30 = "__smart_recent_30__";
 const SMART_PORTRAITS = "__smart_portraits__";
 const SMART_LANDSCAPES = "__smart_landscapes__";
+const TRASH_TAB = "__trash__";
 
 const PAGE_SIZE = 60;
+const TRASH_GRACE_MS = 30 * 86400_000;
 
-// Returns the filename portion of a Supabase public URL — the bit
-// after the final `/`, ignoring the optional `?transform=...` query
-// suffix. Used for sort-by-name + search.
 function filenameOf(url: string): string {
   const noQuery = url.split("?")[0];
   const slash = noQuery.lastIndexOf("/");
@@ -128,10 +132,6 @@ function extensionOf(url: string): string {
   return dot >= 0 ? name.slice(dot + 1).toLowerCase() : "";
 }
 
-// Build a thumbnail URL using Supabase Storage image transforms. The
-// `width` param resizes the served image while preserving the URL
-// path so RLS + cleanup triggers still work the same way. Falls back
-// to the original URL on non-Supabase URLs.
 function thumbUrl(url: string, width: number): string {
   if (!url.includes("/storage/v1/object/public/")) return url;
   const sep = url.includes("?") ? "&" : "?";
@@ -143,17 +143,6 @@ export default function VendorGalleryPage() {
   const [rows, setRows] = useState<GalleryRow[] | null>(null);
   const [albums, setAlbums] = useState<Album[] | null>(null);
   const [activeTab, setActiveTab] = useState<string>(ALL_TAB);
-
-  // Per-image natural dimensions, populated as <img> elements load.
-  // Stored in a ref + state so filter passes are sync but updates
-  // batch into a single re-render via the setState below.
-  const dimsRef = useRef<Record<string, Dim>>({});
-  const [dimsTick, setDimsTick] = useState(0);
-  function recordDim(id: string, d: Dim) {
-    if (dimsRef.current[id]) return;
-    dimsRef.current[id] = d;
-    setDimsTick((t) => t + 1);
-  }
 
   // Toolbar state
   const [query, setQuery] = useState("");
@@ -173,7 +162,26 @@ export default function VendorGalleryPage() {
   const [lightboxIdx, setLightboxIdx] = useState<number | null>(null);
   const [selecting, setSelecting] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [zipping, setZipping] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const isTrashView = activeTab === TRASH_TAB;
+
+  // Lazy 30-day auto-purge of soft-deleted rows on first mount.
+  // Files clean up automatically via the existing storage cleanup
+  // trigger when the row is hard-deleted.
+  useEffect(() => {
+    if (!user?.id) return;
+    const cutoff = new Date(Date.now() - TRASH_GRACE_MS).toISOString();
+    void (async () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (supabase as any)
+        .from("vendor_gallery_images")
+        .delete()
+        .eq("user_id", user.id)
+        .lt("deleted_at", cutoff);
+    })();
+  }, [user?.id]);
 
   const load = useCallback(async () => {
     if (!user?.id) return;
@@ -181,7 +189,9 @@ export default function VendorGalleryPage() {
     const [imgRes, albRes] = await Promise.all([
       (supabase as any)
         .from("vendor_gallery_images")
-        .select("id, image_url, caption, album_id, display_order, created_at")
+        .select(
+          "id, image_url, caption, album_id, display_order, created_at, deleted_at, width, height, exif, blurhash",
+        )
         .eq("user_id", user.id)
         .order("display_order", { ascending: true })
         .order("created_at", { ascending: false }),
@@ -203,28 +213,27 @@ export default function VendorGalleryPage() {
     load();
   }, [load]);
 
-  // Reset visible window when filters change.
   useEffect(() => {
     setVisibleCount(PAGE_SIZE);
   }, [activeTab, query, sortMode, aspectFilter, formatFilter]);
 
-  // The filtering pipeline. Order matters:
-  //   1. Tab (album / virtual album)
-  //   2. Search (caption + filename)
-  //   3. Aspect ratio (uses dimsRef; images with unknown dims pass through)
-  //   4. File format (extension match)
-  //   5. Sort
-  // The visible slice for infinite scroll is taken AFTER filtering so
-  // the rendered grid is page-sized within the filtered set.
+  // Filtering pipeline.
+  // Trash tab is mutually exclusive with all other tabs/smart filters
+  // — it shows rows where deleted_at IS NOT NULL. Every other tab
+  // hides those.
   const filteredRows = useMemo(() => {
     if (!rows) return [];
-
     let out = rows;
 
-    // Tab filter
+    if (isTrashView) {
+      out = out.filter((r) => r.deleted_at !== null);
+    } else {
+      out = out.filter((r) => r.deleted_at === null);
+    }
+
     const now = Date.now();
-    if (activeTab === ALL_TAB) {
-      // no-op
+    if (activeTab === ALL_TAB || isTrashView) {
+      // no extra tab filter
     } else if (activeTab === UNCATEGORIZED_TAB) {
       out = out.filter((r) => r.album_id === null);
     } else if (activeTab === SMART_RECENT_7) {
@@ -236,20 +245,17 @@ export default function VendorGalleryPage() {
         (r) => now - new Date(r.created_at).getTime() < 30 * 86400_000,
       );
     } else if (activeTab === SMART_PORTRAITS) {
-      out = out.filter((r) => {
-        const d = dimsRef.current[r.id];
-        return d ? d.height / d.width > 1.05 : false;
-      });
+      out = out.filter((r) =>
+        r.width && r.height ? r.height / r.width > 1.05 : false,
+      );
     } else if (activeTab === SMART_LANDSCAPES) {
-      out = out.filter((r) => {
-        const d = dimsRef.current[r.id];
-        return d ? d.width / d.height > 1.05 : false;
-      });
+      out = out.filter((r) =>
+        r.width && r.height ? r.width / r.height > 1.05 : false,
+      );
     } else {
       out = out.filter((r) => r.album_id === activeTab);
     }
 
-    // Search
     if (query.trim()) {
       const q = query.trim().toLowerCase();
       out = out.filter((r) => {
@@ -259,12 +265,10 @@ export default function VendorGalleryPage() {
       });
     }
 
-    // Aspect ratio
     if (aspectFilter !== "all") {
       out = out.filter((r) => {
-        const d = dimsRef.current[r.id];
-        if (!d) return false; // Unknown dims excluded until they load
-        const ratio = d.width / d.height;
+        if (!r.width || !r.height) return false;
+        const ratio = r.width / r.height;
         if (aspectFilter === "portrait") return ratio < 0.95;
         if (aspectFilter === "landscape") return ratio > 1.05;
         if (aspectFilter === "square") return ratio >= 0.95 && ratio <= 1.05;
@@ -272,7 +276,6 @@ export default function VendorGalleryPage() {
       });
     }
 
-    // File format
     if (formatFilter !== "all") {
       out = out.filter((r) => {
         const ext = extensionOf(r.image_url);
@@ -281,7 +284,6 @@ export default function VendorGalleryPage() {
       });
     }
 
-    // Sort
     const sorted = [...out];
     if (sortMode === "newest") {
       sorted.sort((a, b) => b.created_at.localeCompare(a.created_at));
@@ -298,9 +300,7 @@ export default function VendorGalleryPage() {
     }
 
     return sorted;
-    // dimsTick reruns this when natural dims load in
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [rows, activeTab, query, sortMode, aspectFilter, formatFilter, dimsTick]);
+  }, [rows, activeTab, query, sortMode, aspectFilter, formatFilter, isTrashView]);
 
   const visibleRows = useMemo(
     () => filteredRows.slice(0, visibleCount),
@@ -312,9 +312,6 @@ export default function VendorGalleryPage() {
     [visibleRows, selected],
   );
 
-  // IntersectionObserver-driven infinite scroll. Sentinel is a 1px
-  // div at the bottom of the rendered grid; when it crosses into the
-  // viewport, bump visibleCount by PAGE_SIZE.
   const sentinelRef = useRef<HTMLDivElement | null>(null);
   useEffect(() => {
     const el = sentinelRef.current;
@@ -363,6 +360,7 @@ export default function VendorGalleryPage() {
     const targetAlbumId =
       activeTab !== ALL_TAB &&
       activeTab !== UNCATEGORIZED_TAB &&
+      activeTab !== TRASH_TAB &&
       !activeTab.startsWith("__smart")
         ? activeTab
         : null;
@@ -371,6 +369,14 @@ export default function VendorGalleryPage() {
     setUploadProgress({ done: 0, total: list.length });
     let failed = 0;
     for (const file of list) {
+      // Best-effort metadata extraction — done first so we can store
+      // it on the row at insert time. Both are non-blocking; if
+      // either fails we still upload the image.
+      const [exif, info] = await Promise.all([
+        parseExif(file),
+        computeBlurhash(file),
+      ]);
+
       const ext =
         file.name.split(".").pop()?.toLowerCase().replace(/[^a-z0-9]/g, "") ?? "jpg";
       const filename = `${Date.now()}-${Math.random()
@@ -403,6 +409,10 @@ export default function VendorGalleryPage() {
           image_url: pub.publicUrl,
           caption: null,
           album_id: targetAlbumId,
+          width: info?.width ?? null,
+          height: info?.height ?? null,
+          exif: exif ?? null,
+          blurhash: info?.blurhash ?? null,
         });
       if (insErr) {
         failed += 1;
@@ -428,35 +438,79 @@ export default function VendorGalleryPage() {
     await load();
   }
 
+  // Soft-delete from anywhere except Trash, hard-delete from Trash.
   async function removeOne(id: string) {
-    if (!window.confirm("Delete this image? Can't be undone.")) return;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error } = await (supabase as any)
-      .from("vendor_gallery_images")
-      .delete()
-      .eq("id", id);
-    if (error) {
-      toast.error(error.message);
-      return;
+    if (isTrashView) {
+      if (!window.confirm("Delete permanently? Can't be undone.")) return;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error } = await (supabase as any)
+        .from("vendor_gallery_images")
+        .delete()
+        .eq("id", id);
+      if (error) {
+        toast.error(error.message);
+        return;
+      }
+      toast.success("Deleted.");
+    } else {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error } = await (supabase as any)
+        .from("vendor_gallery_images")
+        .update({ deleted_at: new Date().toISOString() })
+        .eq("id", id);
+      if (error) {
+        toast.error(error.message);
+        return;
+      }
+      toast.success("Moved to Trash. 30 days to restore.");
     }
-    toast.success("Deleted.");
     load();
   }
 
   async function bulkDelete() {
     if (selected.size === 0) return;
-    if (!window.confirm(`Delete ${selected.size} images? Can't be undone.`)) return;
+    const ids = Array.from(selected);
+    if (isTrashView) {
+      if (!window.confirm(`Delete ${ids.length} permanently? Can't be undone.`)) return;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error } = await (supabase as any)
+        .from("vendor_gallery_images")
+        .delete()
+        .in("id", ids);
+      if (error) {
+        toast.error(error.message);
+        return;
+      }
+      toast.success(`${ids.length} permanently deleted.`);
+    } else {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error } = await (supabase as any)
+        .from("vendor_gallery_images")
+        .update({ deleted_at: new Date().toISOString() })
+        .in("id", ids);
+      if (error) {
+        toast.error(error.message);
+        return;
+      }
+      toast.success(`${ids.length} moved to Trash.`);
+    }
+    exitSelectMode();
+    load();
+  }
+
+  async function bulkRestore() {
+    if (selected.size === 0 || !isTrashView) return;
     const ids = Array.from(selected);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { error } = await (supabase as any)
       .from("vendor_gallery_images")
-      .delete()
+      .update({ deleted_at: null })
       .in("id", ids);
     if (error) {
       toast.error(error.message);
       return;
     }
-    toast.success(`${ids.length} deleted.`);
+    toast.success(`${ids.length} restored.`);
     exitSelectMode();
     load();
   }
@@ -478,6 +532,50 @@ export default function VendorGalleryPage() {
     );
     exitSelectMode();
     load();
+  }
+
+  async function bulkDownloadZip() {
+    if (selected.size === 0 || zipping) return;
+    const ids = Array.from(selected);
+    const rowsToZip = (rows ?? []).filter((r) => ids.includes(r.id));
+    setZipping(true);
+    try {
+      const zip = new JSZip();
+      const seenNames = new Set<string>();
+      for (const r of rowsToZip) {
+        const res = await fetch(r.image_url);
+        const blob = await res.blob();
+        let name = filenameOf(r.image_url);
+        // Defensive: dedupe filenames in case the bucket happens to
+        // have two files with the same slug (shouldn't, but).
+        let suffix = 1;
+        const base = name;
+        while (seenNames.has(name)) {
+          const dot = base.lastIndexOf(".");
+          name =
+            dot > 0
+              ? `${base.slice(0, dot)}-${suffix}${base.slice(dot)}`
+              : `${base}-${suffix}`;
+          suffix += 1;
+        }
+        seenNames.add(name);
+        zip.file(name, blob);
+      }
+      const out = await zip.generateAsync({ type: "blob" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(out);
+      a.download = `gallery-${new Date().toISOString().slice(0, 10)}.zip`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(a.href);
+      toast.success(`Downloaded ${rowsToZip.length} images.`);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Couldn't build zip.";
+      toast.error(msg);
+    } finally {
+      setZipping(false);
+    }
   }
 
   async function createAlbum() {
@@ -541,8 +639,6 @@ export default function VendorGalleryPage() {
     load();
   }
 
-  // Set the active-album's cover to a specific image. Right-click on
-  // a tile dispatches this when the active tab is a custom album.
   async function setAlbumCover(imageId: string) {
     if (!isCustomAlbumActive) return;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -558,11 +654,6 @@ export default function VendorGalleryPage() {
     load();
   }
 
-  // Drag-to-reorder. Works within the current FILTERED set, not the
-  // full library — so reordering inside "Last 7 days" only rewrites
-  // those rows' display_order. Disabled when sort isn't "newest"
-  // (manual order is implied by display_order, which is what newest
-  // breaks ties on).
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
     useSensor(TouchSensor, { activationConstraint: { delay: 150, tolerance: 6 } }),
@@ -609,20 +700,21 @@ export default function VendorGalleryPage() {
   const isCustomAlbumActive =
     activeTab !== ALL_TAB &&
     activeTab !== UNCATEGORIZED_TAB &&
+    activeTab !== TRASH_TAB &&
     !activeTab.startsWith("__smart");
 
-  // Drag-to-reorder only makes sense in newest-sort mode (display_order
-  // is the tiebreaker there). In other sort modes, reorder doesn't
-  // produce visibly stable output, so we disable it.
-  const reorderEnabled = sortMode === "newest";
+  const reorderEnabled = sortMode === "newest" && !isTrashView;
 
-  // Build a lookup of imageId → image_url for cover thumbnails on
-  // album tabs.
   const imageById = useMemo(() => {
     const m: Record<string, GalleryRow> = {};
     for (const r of rows ?? []) m[r.id] = r;
     return m;
   }, [rows]);
+
+  const trashCount = useMemo(
+    () => (rows ?? []).filter((r) => r.deleted_at !== null).length,
+    [rows],
+  );
 
   return (
     <div className="min-h-screen vendor-canvas flex">
@@ -645,12 +737,12 @@ export default function VendorGalleryPage() {
         </div>
 
         <div className="p-4 md:p-8 max-w-6xl mx-auto space-y-5">
-          {/* Album tabs — custom albums + virtual all/uncategorized/smart */}
+          {/* Album tabs */}
           <div className="flex items-center gap-2 overflow-x-auto pb-1">
             <AlbumTab
               label="All"
               active={activeTab === ALL_TAB}
-              count={rows?.length}
+              count={rows?.filter((r) => r.deleted_at === null).length}
               onClick={() => {
                 setActiveTab(ALL_TAB);
                 exitSelectMode();
@@ -659,7 +751,11 @@ export default function VendorGalleryPage() {
             <AlbumTab
               label="Uncategorized"
               active={activeTab === UNCATEGORIZED_TAB}
-              count={rows?.filter((r) => r.album_id === null).length}
+              count={
+                rows?.filter(
+                  (r) => r.album_id === null && r.deleted_at === null,
+                ).length
+              }
               onClick={() => {
                 setActiveTab(UNCATEGORIZED_TAB);
                 exitSelectMode();
@@ -669,13 +765,19 @@ export default function VendorGalleryPage() {
               const cover =
                 a.cover_image_id && imageById[a.cover_image_id]
                   ? imageById[a.cover_image_id]
-                  : rows?.find((r) => r.album_id === a.id) ?? null;
+                  : rows?.find(
+                      (r) => r.album_id === a.id && r.deleted_at === null,
+                    ) ?? null;
               return (
                 <AlbumTab
                   key={a.id}
                   label={a.name}
                   active={activeTab === a.id}
-                  count={rows?.filter((r) => r.album_id === a.id).length}
+                  count={
+                    rows?.filter(
+                      (r) => r.album_id === a.id && r.deleted_at === null,
+                    ).length
+                  }
                   coverUrl={cover ? thumbUrl(cover.image_url, 60) : null}
                   onClick={() => {
                     setActiveTab(a.id);
@@ -694,7 +796,7 @@ export default function VendorGalleryPage() {
             </button>
           </div>
 
-          {/* Smart albums — separated visually from user albums */}
+          {/* Smart + Trash row */}
           <div className="flex items-center gap-2 overflow-x-auto pb-1">
             <span className="text-[10px] uppercase tracking-wider text-muted-foreground shrink-0 mr-1">
               Smart
@@ -731,9 +833,21 @@ export default function VendorGalleryPage() {
                 exitSelectMode();
               }}
             />
+            <span className="text-[10px] uppercase tracking-wider text-muted-foreground shrink-0 mx-1">
+              ·
+            </span>
+            <AlbumTab
+              label="Trash"
+              active={isTrashView}
+              count={trashCount}
+              onClick={() => {
+                setActiveTab(TRASH_TAB);
+                exitSelectMode();
+              }}
+            />
           </div>
 
-          {/* Toolbar: search + sort + filters + density + view + upload */}
+          {/* Toolbar */}
           <div className="flex flex-wrap items-center gap-2">
             <div className="relative flex-1 min-w-[180px]">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -827,22 +941,21 @@ export default function VendorGalleryPage() {
               </DropdownMenuContent>
             </DropdownMenu>
 
-            {/* Density (only relevant in grid view) */}
             {viewMode === "grid" ? (
               <div className="inline-flex rounded-full border border-border overflow-hidden">
-                <DensityBtn
+                <ViewBtn
                   active={density === "compact"}
                   label="Compact"
                   onClick={() => setDensity("compact")}
                   icon={<Grid3x3 className="w-3.5 h-3.5" />}
                 />
-                <DensityBtn
+                <ViewBtn
                   active={density === "medium"}
                   label="Medium"
                   onClick={() => setDensity("medium")}
                   icon={<Grid2x2 className="w-3.5 h-3.5" />}
                 />
-                <DensityBtn
+                <ViewBtn
                   active={density === "large"}
                   label="Large"
                   onClick={() => setDensity("large")}
@@ -851,19 +964,24 @@ export default function VendorGalleryPage() {
               </div>
             ) : null}
 
-            {/* Grid / list toggle */}
             <div className="inline-flex rounded-full border border-border overflow-hidden">
-              <DensityBtn
+              <ViewBtn
                 active={viewMode === "grid"}
                 label="Grid view"
                 onClick={() => setViewMode("grid")}
                 icon={<LayoutGrid className="w-3.5 h-3.5" />}
               />
-              <DensityBtn
+              <ViewBtn
                 active={viewMode === "list"}
                 label="List view"
                 onClick={() => setViewMode("list")}
                 icon={<List className="w-3.5 h-3.5" />}
+              />
+              <ViewBtn
+                active={viewMode === "calendar"}
+                label="Calendar view"
+                onClick={() => setViewMode("calendar")}
+                icon={<CalendarDays className="w-3.5 h-3.5" />}
               />
             </div>
 
@@ -890,19 +1008,21 @@ export default function VendorGalleryPage() {
             >
               {selecting ? "Cancel" : "Select"}
             </Button>
-            <Button onClick={openPicker} disabled={uploading} className="rounded-full">
-              {uploading ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
-                  {uploadProgress.done}/{uploadProgress.total}
-                </>
-              ) : (
-                <>
-                  <ImagePlus className="h-4 w-4 mr-1.5" />
-                  Upload
-                </>
-              )}
-            </Button>
+            {!isTrashView ? (
+              <Button onClick={openPicker} disabled={uploading} className="rounded-full">
+                {uploading ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
+                    {uploadProgress.done}/{uploadProgress.total}
+                  </>
+                ) : (
+                  <>
+                    <ImagePlus className="h-4 w-4 mr-1.5" />
+                    Upload
+                  </>
+                )}
+              </Button>
+            ) : null}
           </div>
 
           {/* Status / album actions row */}
@@ -911,8 +1031,15 @@ export default function VendorGalleryPage() {
               {rows === null
                 ? "Loading…"
                 : filteredRows.length === 0
-                  ? "No matches"
+                  ? isTrashView
+                    ? "Trash is empty"
+                    : "No matches"
                   : `${filteredRows.length} image${filteredRows.length === 1 ? "" : "s"}${visibleCount < filteredRows.length ? ` · showing ${visibleCount}` : ""}`}
+              {isTrashView && filteredRows.length > 0 ? (
+                <span className="ml-2 text-xs">
+                  · Items auto-delete after 30 days
+                </span>
+              ) : null}
             </p>
             {isCustomAlbumActive ? (
               <div className="flex items-center gap-2">
@@ -944,40 +1071,66 @@ export default function VendorGalleryPage() {
                 {selectedVisible.length} selected
               </p>
               <div className="flex items-center gap-2">
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
+                {isTrashView ? (
+                  <button
+                    type="button"
+                    onClick={bulkRestore}
+                    className="inline-flex items-center gap-1.5 rounded-full bg-background/15 hover:bg-background/25 text-background text-xs px-3 py-1.5"
+                  >
+                    <Undo2 className="w-3.5 h-3.5" />
+                    Restore
+                  </button>
+                ) : (
+                  <>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <button
+                          type="button"
+                          className="inline-flex items-center gap-1.5 rounded-full bg-background/15 hover:bg-background/25 text-background text-xs px-3 py-1.5"
+                        >
+                          <MoveRight className="w-3.5 h-3.5" />
+                          Move to
+                        </button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuLabel className="text-xs">Move to</DropdownMenuLabel>
+                        <DropdownMenuItem onClick={() => bulkMoveToAlbum(null)}>
+                          Uncategorized
+                        </DropdownMenuItem>
+                        {(albums ?? []).length > 0 ? <DropdownMenuSeparator /> : null}
+                        {(albums ?? []).map((a) => (
+                          <DropdownMenuItem
+                            key={a.id}
+                            onClick={() => bulkMoveToAlbum(a.id)}
+                            disabled={a.id === activeTab}
+                          >
+                            {a.name}
+                          </DropdownMenuItem>
+                        ))}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                     <button
                       type="button"
-                      className="inline-flex items-center gap-1.5 rounded-full bg-background/15 hover:bg-background/25 text-background text-xs px-3 py-1.5"
+                      onClick={bulkDownloadZip}
+                      disabled={zipping}
+                      className="inline-flex items-center gap-1.5 rounded-full bg-background/15 hover:bg-background/25 text-background text-xs px-3 py-1.5 disabled:opacity-60"
                     >
-                      <MoveRight className="w-3.5 h-3.5" />
-                      Move to
+                      {zipping ? (
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      ) : (
+                        <Download className="w-3.5 h-3.5" />
+                      )}
+                      {zipping ? "Zipping…" : "Download zip"}
                     </button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuLabel className="text-xs">Move to</DropdownMenuLabel>
-                    <DropdownMenuItem onClick={() => bulkMoveToAlbum(null)}>
-                      Uncategorized
-                    </DropdownMenuItem>
-                    {(albums ?? []).length > 0 ? <DropdownMenuSeparator /> : null}
-                    {(albums ?? []).map((a) => (
-                      <DropdownMenuItem
-                        key={a.id}
-                        onClick={() => bulkMoveToAlbum(a.id)}
-                        disabled={a.id === activeTab}
-                      >
-                        {a.name}
-                      </DropdownMenuItem>
-                    ))}
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                  </>
+                )}
                 <button
                   type="button"
                   onClick={bulkDelete}
                   className="inline-flex items-center gap-1.5 rounded-full bg-destructive hover:bg-destructive/90 text-destructive-foreground text-xs px-3 py-1.5"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
-                  Delete
+                  {isTrashView ? "Delete forever" : "Delete"}
                 </button>
               </div>
             </div>
@@ -991,33 +1144,56 @@ export default function VendorGalleryPage() {
               ))}
             </div>
           ) : filteredRows.length === 0 ? (
-            <button
-              type="button"
-              onClick={openPicker}
-              disabled={uploading}
-              className="w-full rounded-2xl border border-dashed border-border bg-card/40 p-12 text-center hover:bg-card/60 transition-colors disabled:opacity-60"
-            >
-              <ImagePlus className="h-8 w-8 mx-auto text-muted-foreground mb-3" />
-              <p className="text-sm font-medium text-foreground">
-                {query || aspectFilter !== "all" || formatFilter !== "all"
-                  ? "No images match your filters"
-                  : "Drop images here or tap to upload"}
-              </p>
-              <p className="text-xs text-muted-foreground mt-1">
-                JPG, PNG, WebP. Up to 20 MB each.
-              </p>
-            </button>
+            isTrashView ? (
+              <div className="w-full rounded-2xl border border-dashed border-border bg-card/40 p-12 text-center">
+                <Trash2 className="h-8 w-8 mx-auto text-muted-foreground mb-3" />
+                <p className="text-sm font-medium text-foreground">Trash is empty</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Deleted images appear here for 30 days before they're purged.
+                </p>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={openPicker}
+                disabled={uploading}
+                className="w-full rounded-2xl border border-dashed border-border bg-card/40 p-12 text-center hover:bg-card/60 transition-colors disabled:opacity-60"
+              >
+                <ImagePlus className="h-8 w-8 mx-auto text-muted-foreground mb-3" />
+                <p className="text-sm font-medium text-foreground">
+                  {query || aspectFilter !== "all" || formatFilter !== "all"
+                    ? "No images match your filters"
+                    : "Drop images here or tap to upload"}
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  JPG, PNG, WebP. Up to 20 MB each.
+                </p>
+              </button>
+            )
           ) : viewMode === "list" ? (
             <ListView
               rows={visibleRows}
-              dims={dimsRef.current}
               albums={albums ?? []}
               selecting={selecting}
               selected={selected}
+              isTrashView={isTrashView}
               onToggleSelect={toggleSelect}
               onOpen={(idx) => setLightboxIdx(idx)}
               onDelete={removeOne}
-              onLoadDim={recordDim}
+            />
+          ) : viewMode === "calendar" ? (
+            <CalendarView
+              rows={visibleRows}
+              density={density}
+              selecting={selecting}
+              selected={selected}
+              isTrashView={isTrashView}
+              onToggleSelect={toggleSelect}
+              onOpen={(id) => {
+                const idx = visibleRows.findIndex((r) => r.id === id);
+                if (idx >= 0) setLightboxIdx(idx);
+              }}
+              onDelete={removeOne}
             />
           ) : (
             <DndContext
@@ -1043,11 +1219,11 @@ export default function VendorGalleryPage() {
                         isCustomAlbumActive &&
                         albums?.find((a) => a.id === activeTab)?.cover_image_id === r.id
                       }
+                      isTrashView={isTrashView}
                       onToggleSelect={() => toggleSelect(r.id)}
                       onOpenLightbox={() => setLightboxIdx(i)}
                       onDelete={() => removeOne(r.id)}
                       onSetCover={() => setAlbumCover(r.id)}
-                      onLoadDim={(d) => recordDim(r.id, d)}
                     />
                   ))}
                 </div>
@@ -1055,7 +1231,6 @@ export default function VendorGalleryPage() {
             </DndContext>
           )}
 
-          {/* Infinite-scroll sentinel */}
           <div ref={sentinelRef} aria-hidden style={{ height: 1 }} />
         </div>
       </main>
@@ -1063,7 +1238,15 @@ export default function VendorGalleryPage() {
 
       {lightboxIdx !== null && visibleRows[lightboxIdx] ? (
         <Lightbox
-          rows={visibleRows}
+          rows={visibleRows.map((r) => ({
+            id: r.id,
+            image_url: r.image_url,
+            caption: r.caption,
+            exif: r.exif,
+            width: r.width,
+            height: r.height,
+            created_at: r.created_at,
+          }))}
           index={lightboxIdx}
           onClose={() => setLightboxIdx(null)}
           onPrev={() => setLightboxIdx((i) => (i === null ? null : Math.max(0, i - 1)))}
@@ -1072,6 +1255,7 @@ export default function VendorGalleryPage() {
               i === null ? null : Math.min(visibleRows.length - 1, i + 1),
             )
           }
+          onChange={() => load()}
         />
       ) : null}
     </div>
@@ -1155,7 +1339,7 @@ function AlbumTab({
   );
 }
 
-function DensityBtn({
+function ViewBtn({
   active,
   label,
   onClick,
@@ -1191,11 +1375,11 @@ function SortableTile({
   reorderEnabled,
   coverFor,
   isAlbumCover,
+  isTrashView,
   onToggleSelect,
   onOpenLightbox,
   onDelete,
   onSetCover,
-  onLoadDim,
 }: {
   row: GalleryRow;
   density: Density;
@@ -1204,11 +1388,11 @@ function SortableTile({
   reorderEnabled: boolean;
   coverFor: string | null;
   isAlbumCover: boolean;
+  isTrashView: boolean;
   onToggleSelect: () => void;
   onOpenLightbox: () => void;
   onDelete: () => void;
   onSetCover: () => void;
-  onLoadDim: (d: Dim) => void;
 }) {
   const {
     attributes,
@@ -1223,7 +1407,6 @@ function SortableTile({
     transition,
     opacity: isDragging ? 0.5 : 1,
   };
-  // Thumb width matches density bucket — minimizes wasted bandwidth.
   const thumbWidth = density === "compact" ? 240 : density === "large" ? 800 : 400;
   return (
     <div
@@ -1231,7 +1414,6 @@ function SortableTile({
       style={style}
       className="relative group"
       onContextMenu={(e) => {
-        // Right-click on a tile in a custom album → set as cover.
         if (coverFor) {
           e.preventDefault();
           onSetCover();
@@ -1245,30 +1427,19 @@ function SortableTile({
         {...(reorderEnabled ? listeners : {})}
         className="block w-full text-left"
       >
-        <div
-          className={`aspect-square overflow-hidden rounded-md bg-secondary/40 ${
+        <BlurhashImage
+          src={thumbUrl(row.image_url, thumbWidth)}
+          blurhash={row.blurhash}
+          alt={row.caption ?? "Gallery image"}
+          draggable={false}
+          className={`aspect-square rounded-md bg-secondary/40 ${
             selected
               ? "ring-2 ring-foreground ring-offset-2 ring-offset-background"
               : ""
           }`}
-        >
-          <img
-            src={thumbUrl(row.image_url, thumbWidth)}
-            alt={row.caption ?? "Gallery image"}
-            loading="lazy"
-            draggable={false}
-            onLoad={(e) => {
-              const el = e.currentTarget;
-              if (el.naturalWidth && el.naturalHeight) {
-                onLoadDim({ width: el.naturalWidth, height: el.naturalHeight });
-              }
-            }}
-            className="w-full h-full object-cover transition group-hover:scale-[1.02]"
-          />
-        </div>
+        />
       </button>
 
-      {/* Cover star — shown when this tile is the album's cover */}
       {isAlbumCover ? (
         <span
           aria-label="Album cover"
@@ -1279,7 +1450,6 @@ function SortableTile({
         </span>
       ) : null}
 
-      {/* Select overlay */}
       {selecting ? (
         <button
           type="button"
@@ -1300,7 +1470,7 @@ function SortableTile({
             e.stopPropagation();
             onDelete();
           }}
-          aria-label="Delete image"
+          aria-label={isTrashView ? "Delete permanently" : "Move to trash"}
           className="absolute top-2 right-2 inline-flex items-center justify-center w-7 h-7 rounded-full bg-black/55 text-white opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity"
         >
           <Trash2 className="w-3.5 h-3.5" aria-hidden />
@@ -1312,24 +1482,22 @@ function SortableTile({
 
 function ListView({
   rows,
-  dims,
   albums,
   selecting,
   selected,
+  isTrashView,
   onToggleSelect,
   onOpen,
   onDelete,
-  onLoadDim,
 }: {
   rows: GalleryRow[];
-  dims: Record<string, Dim>;
   albums: Album[];
   selecting: boolean;
   selected: Set<string>;
+  isTrashView: boolean;
   onToggleSelect: (id: string) => void;
   onOpen: (idx: number) => void;
   onDelete: (id: string) => void;
-  onLoadDim: (id: string, d: Dim) => void;
 }) {
   const albumById = useMemo(() => {
     const m: Record<string, string> = {};
@@ -1350,7 +1518,6 @@ function ListView({
       </div>
       <div className="divide-y divide-border">
         {rows.map((r, i) => {
-          const d = dims[r.id];
           const ext = extensionOf(r.image_url).toUpperCase();
           return (
             <div
@@ -1374,21 +1541,12 @@ function ListView({
                 onClick={() => onOpen(i)}
                 className="block w-14 h-14 rounded-md overflow-hidden bg-secondary/40"
               >
-                <img
+                <BlurhashImage
                   src={thumbUrl(r.image_url, 120)}
+                  blurhash={r.blurhash}
                   alt={r.caption ?? "Gallery image"}
-                  loading="lazy"
                   draggable={false}
-                  onLoad={(e) => {
-                    const el = e.currentTarget;
-                    if (el.naturalWidth && el.naturalHeight) {
-                      onLoadDim(r.id, {
-                        width: el.naturalWidth,
-                        height: el.naturalHeight,
-                      });
-                    }
-                  }}
-                  className="w-full h-full object-cover"
+                  className="w-full h-full"
                 />
               </button>
               <button
@@ -1413,15 +1571,19 @@ function ListView({
               </span>
               <span className="text-xs text-muted-foreground hidden md:inline">
                 {ext}
-                {d ? ` · ${d.width}×${d.height}` : ""}
+                {r.width && r.height ? ` · ${r.width}×${r.height}` : ""}
               </span>
               <button
                 type="button"
                 onClick={() => onDelete(r.id)}
-                aria-label="Delete"
+                aria-label={isTrashView ? "Delete permanently" : "Move to trash"}
                 className="inline-flex items-center justify-center w-7 h-7 rounded-md text-muted-foreground hover:text-destructive"
               >
-                <Trash2 className="w-3.5 h-3.5" />
+                {isTrashView ? (
+                  <Trash2 className="w-3.5 h-3.5" />
+                ) : (
+                  <Trash2 className="w-3.5 h-3.5" />
+                )}
               </button>
             </div>
           );
@@ -1431,48 +1593,112 @@ function ListView({
   );
 }
 
-function Lightbox({
+function CalendarView({
   rows,
-  index,
-  onClose,
-  onPrev,
-  onNext,
+  density,
+  selecting,
+  selected,
+  isTrashView,
+  onToggleSelect,
+  onOpen,
+  onDelete,
 }: {
   rows: GalleryRow[];
-  index: number;
-  onClose: () => void;
-  onPrev: () => void;
-  onNext: () => void;
+  density: Density;
+  selecting: boolean;
+  selected: Set<string>;
+  isTrashView: boolean;
+  onToggleSelect: (id: string) => void;
+  onOpen: (id: string) => void;
+  onDelete: (id: string) => void;
 }) {
-  const row = rows[index];
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-      else if (e.key === "ArrowLeft") onPrev();
-      else if (e.key === "ArrowRight") onNext();
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [onClose, onPrev, onNext]);
+  const groups = useMemo(() => {
+    const m = new Map<string, GalleryRow[]>();
+    for (const r of rows) {
+      const d = new Date(r.created_at);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+      const list = m.get(key) ?? [];
+      list.push(r);
+      m.set(key, list);
+    }
+    return Array.from(m.entries()).sort((a, b) => b[0].localeCompare(a[0]));
+  }, [rows]);
+
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-4"
-      onClick={onClose}
-    >
-      <button
-        type="button"
-        onClick={onClose}
-        aria-label="Close"
-        className="absolute top-4 right-4 inline-flex items-center justify-center w-10 h-10 rounded-full bg-white/10 text-white hover:bg-white/20"
-      >
-        <X className="w-5 h-5" />
-      </button>
-      <img
-        src={row.image_url}
-        alt={row.caption ?? "Gallery image"}
-        className="max-h-[90vh] max-w-[90vw] object-contain rounded-md"
-        onClick={(e) => e.stopPropagation()}
-      />
+    <div className="space-y-6">
+      {groups.map(([key, items]) => {
+        const [year, month] = key.split("-");
+        const label = new Date(Number(year), Number(month) - 1).toLocaleDateString(
+          undefined,
+          { month: "long", year: "numeric" },
+        );
+        return (
+          <div key={key}>
+            <h3 className="font-editorial text-xl mb-3 sticky top-0 bg-background/80 backdrop-blur-sm py-1 z-10">
+              {label}{" "}
+              <span className="text-xs font-sans text-muted-foreground tnum">
+                · {items.length}
+              </span>
+            </h3>
+            <div className={gridCols(density)}>
+              {items.map((r) => {
+                const thumbW =
+                  density === "compact" ? 240 : density === "large" ? 800 : 400;
+                return (
+                  <div key={r.id} className="relative group">
+                    <button
+                      type="button"
+                      onClick={() => (selecting ? onToggleSelect(r.id) : onOpen(r.id))}
+                      className="block w-full text-left"
+                    >
+                      <BlurhashImage
+                        src={thumbUrl(r.image_url, thumbW)}
+                        blurhash={r.blurhash}
+                        alt={r.caption ?? "Gallery image"}
+                        className={`aspect-square rounded-md bg-secondary/40 ${
+                          selected.has(r.id)
+                            ? "ring-2 ring-foreground ring-offset-2 ring-offset-background"
+                            : ""
+                        }`}
+                      />
+                    </button>
+                    {selecting ? (
+                      <button
+                        type="button"
+                        onClick={() => onToggleSelect(r.id)}
+                        aria-label={selected.has(r.id) ? "Deselect" : "Select"}
+                        className="absolute top-2 left-2 inline-flex items-center justify-center w-7 h-7 rounded-full bg-background/85 backdrop-blur-sm text-foreground shadow-sm"
+                      >
+                        {selected.has(r.id) ? (
+                          <Check className="w-3.5 h-3.5" />
+                        ) : (
+                          <Square className="w-3.5 h-3.5 opacity-60" />
+                        )}
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onDelete(r.id);
+                        }}
+                        aria-label={isTrashView ? "Delete permanently" : "Move to trash"}
+                        className="absolute top-2 right-2 inline-flex items-center justify-center w-7 h-7 rounded-full bg-black/55 text-white opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity"
+                      >
+                        {isTrashView ? (
+                          <RotateCcw className="w-3.5 h-3.5" />
+                        ) : (
+                          <Trash2 className="w-3.5 h-3.5" />
+                        )}
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 }

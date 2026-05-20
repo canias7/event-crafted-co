@@ -76,6 +76,9 @@ export const ProposalPrintPage = lazyWithReload(importProposalPrint);
 const importPublicProposal = () => import("@/pages/PublicProposalPage");
 export const PublicProposalPage = lazyWithReload(importPublicProposal);
 
+const importPublicGalleryShare = () => import("@/pages/PublicGallerySharePage");
+export const PublicGallerySharePage = lazyWithReload(importPublicGalleryShare);
+
 
 const importVendorDetail = () => import("@/pages/VendorDetailPage");
 export const VendorDetailPage = lazyWithReload(importVendorDetail);
@@ -187,6 +190,7 @@ const ROUTE_IMPORTERS: Array<{ pattern: string; importer: () => Promise<unknown>
   { pattern: "/status", importer: importStatus },
   { pattern: "/press", importer: importPress },
   { pattern: "/super-agents", importer: importSuperAgents },
+  { pattern: "/g/:token", importer: importPublicGalleryShare },
   { pattern: "/settings", importer: importSettings },
   // Dynamic public
   { pattern: "/vendors/in/:citySlug", importer: importVendorCity },
