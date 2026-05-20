@@ -319,6 +319,12 @@ export default function HostInquiryDetailPage() {
     action: "accepted" | "rejected",
     signature?: SignaturePayload,
   ) {
+    // Idempotency guard. Fast double-tap on Accept can fire two
+    // respondProposal calls before setActing(action) takes effect. The
+    // DB update would no-op (status is already accepted), but two
+    // toasts and two load() calls fire. Bail early if the proposal is
+    // already in a terminal state.
+    if (p.status !== "pending" || acting !== null) return;
     setActing(action === "accepted" ? "accept" : "reject");
     const update: Record<string, unknown> = {
       status: action,
@@ -352,6 +358,22 @@ export default function HostInquiryDetailPage() {
   useEffect(() => {
     load();
   }, [load]);
+
+  // Mark this inquiry's notifications as read whenever the host opens
+  // the page. Without this, opening from the NotificationBell leaves
+  // the bell badge counting that notification as unread until the
+  // user manually mark-all-reads. The inquiry's notifications all
+  // link to /customer/inquiries/<id>, so a LIKE on the link column
+  // catches both new-message and proposal-accepted entries.
+  useEffect(() => {
+    if (!user?.id || !inquiryId) return;
+    void supabase
+      .from("notifications")
+      .update({ read_at: new Date().toISOString() })
+      .eq("user_id", user.id)
+      .is("read_at", null)
+      .like("link", `%/customer/inquiries/${inquiryId}%`);
+  }, [user?.id, inquiryId]);
 
   // Reset transient per-inquiry state when navigating from one
   // inquiry to another. Otherwise a "reply" or "edit" started in
@@ -1139,6 +1161,28 @@ export default function HostInquiryDetailPage() {
       </div>
 
       {/* ─── Sticky composer ─────────────────────────────────────────── */}
+      {/* Closed-inquiry composer state. Inquiries in terminal "lost"
+          or "expired" states aren't actionable on either side — RLS
+          would reject the insert anyway. Hide the composer behind a
+          notice so the host doesn't waste time typing. "won" stays
+          open since booked vendors still chat about planning. */}
+      {inquiry &&
+      (inquiry.status === "lost" ||
+        inquiry.status === "expired" ||
+        inquiry.status === "cancelled") ? (
+        <div className="sticky bottom-20 lg:bottom-0 px-4 md:px-6 py-3 backdrop-blur-md text-center text-sm text-muted-foreground"
+          style={{
+            background: "rgba(255,253,250,0.92)",
+            borderTop: "0.5px solid rgba(255,138,76,0.18)",
+          }}
+        >
+          {inquiry.status === "lost"
+            ? "This inquiry is closed."
+            : inquiry.status === "expired"
+              ? "This inquiry expired and is no longer accepting messages."
+              : "This inquiry was cancelled."}
+        </div>
+      ) : (
       <div
         // bottom-20 on mobile lifts the composer above the floating
         // MobileNav pill (≈80px including safe-area padding). On lg+
@@ -1305,6 +1349,7 @@ export default function HostInquiryDetailPage() {
           </div>
         </div>
       </div>
+      )}
 
       <MobileNav items={navItems} />
 
