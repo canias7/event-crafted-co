@@ -314,14 +314,17 @@ export default function InquiryDetailPage() {
     const thread = (threadRes.data as string | null) ?? null;
     setThreadId(thread);
     if (thread) {
+      // Latest 200 messages — descending under LIMIT to slice from
+      // the newest end, then reversed to render oldest-first.
       const { data: msgs } = await supabase
         .from("direct_messages")
         .select(
           "id, body, sender_role, created_at, attachments, edited_at, deleted_at, reply_to_message_id",
         )
         .eq("thread_id", thread)
-        .order("created_at", { ascending: true });
-      const messageRows = (msgs as unknown as Message[]) ?? [];
+        .order("created_at", { ascending: false })
+        .limit(200);
+      const messageRows = ((msgs as unknown as Message[]) ?? []).slice().reverse();
       setMessages(messageRows);
       // Reactions: one query for all messages in this thread.
       if (messageRows.length > 0) {
