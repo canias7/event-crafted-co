@@ -94,6 +94,19 @@ export function Lightbox({
     };
   }, []);
 
+  // Lock body scroll while the lightbox is open. On iOS Safari, swipe
+  // inside the lightbox otherwise scrolls the gallery underneath it —
+  // both layers respond to touch and it's disorienting. Restore the
+  // previous overflow on close so we don't clobber another modal's
+  // own lock.
+  useEffect(() => {
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prevOverflow;
+    };
+  }, []);
+
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (editOpen || shareOpen) return;
