@@ -180,16 +180,29 @@ export default function VendorGalleryPage() {
   // Lazy 30-day auto-purge of soft-deleted rows on first mount.
   // Files clean up automatically via the existing storage cleanup
   // trigger when the row is hard-deleted.
+  //
+  // Batched to 100 rows per call so a vendor coming back to a huge
+  // stale trash (e.g. they soft-deleted a 5000-image album months
+  // ago) doesn't fire 5000 storage cleanup triggers in one
+  // transaction. The remainder purges on subsequent page loads.
   useEffect(() => {
     if (!user?.id) return;
     const cutoff = new Date(Date.now() - TRASH_GRACE_MS).toISOString();
     void (async () => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: oldIds } = await (supabase as any)
+        .from("vendor_gallery_images")
+        .select("id")
+        .eq("user_id", user.id)
+        .lt("deleted_at", cutoff)
+        .limit(100);
+      const ids = ((oldIds ?? []) as Array<{ id: string }>).map((r) => r.id);
+      if (ids.length === 0) return;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       await (supabase as any)
         .from("vendor_gallery_images")
         .delete()
-        .eq("user_id", user.id)
-        .lt("deleted_at", cutoff);
+        .in("id", ids);
     })();
   }, [user?.id]);
 

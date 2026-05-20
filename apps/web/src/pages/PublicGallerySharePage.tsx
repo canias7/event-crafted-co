@@ -32,7 +32,13 @@ interface SharePayload {
   kind: "image" | "album";
   album_name: string | null;
   images: ImageRow[];
+  total: number;
+  offset: number;
+  limit: number;
+  has_more: boolean;
 }
+
+const PAGE_SIZE = 200;
 
 type State =
   | { status: "loading" }
@@ -40,7 +46,13 @@ type State =
   | { status: "not_found" }
   | { status: "expired" }
   | { status: "image"; image: ImageRow }
-  | { status: "album"; album_name: string; images: ImageRow[] };
+  | {
+      status: "album";
+      album_name: string;
+      images: ImageRow[];
+      total: number;
+      hasMore: boolean;
+    };
 
 export default function PublicGallerySharePage() {
   const { token } = useParams<{ token: string }>();
@@ -48,14 +60,21 @@ export default function PublicGallerySharePage() {
   const [passwordInput, setPasswordInput] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [lightboxIdx, setLightboxIdx] = useState<number | null>(null);
+  // Cached password for follow-up Load more calls. Set once the
+  // first resolve succeeds with the right password (or null when
+  // the share isn't protected).
+  const [authedPassword, setAuthedPassword] = useState<string | null>(null);
+  const [loadingMore, setLoadingMore] = useState(false);
 
   const resolve = useCallback(
-    async (password: string | null) => {
+    async (password: string | null, offset = 0) => {
       if (!token) return;
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data, error } = await (supabase as any).rpc("get_share_payload", {
         p_token: token,
         p_password: password,
+        p_offset: offset,
+        p_limit: PAGE_SIZE,
       });
       if (error) {
         const msg = error.message;
@@ -72,7 +91,7 @@ export default function PublicGallerySharePage() {
         setState({ status: "not_found" });
         return;
       }
-
+      setAuthedPassword(password);
       if (payload.kind === "image") {
         const img = payload.images[0];
         if (!img) {
@@ -85,11 +104,40 @@ export default function PublicGallerySharePage() {
           status: "album",
           album_name: payload.album_name ?? "Album",
           images: payload.images,
+          total: payload.total,
+          hasMore: payload.has_more,
         });
       }
     },
     [token],
   );
+
+  // Append next page of an album payload to the current state.
+  const loadMore = useCallback(async () => {
+    if (state.status !== "album" || !state.hasMore || loadingMore) return;
+    setLoadingMore(true);
+    const offset = state.images.length;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data, error } = await (supabase as any).rpc("get_share_payload", {
+      p_token: token,
+      p_password: authedPassword,
+      p_offset: offset,
+      p_limit: PAGE_SIZE,
+    });
+    setLoadingMore(false);
+    if (error) return;
+    const payload = data as SharePayload | null;
+    if (!payload || payload.kind !== "album") return;
+    setState((prev) =>
+      prev.status === "album"
+        ? {
+            ...prev,
+            images: [...prev.images, ...payload.images],
+            hasMore: payload.has_more,
+          }
+        : prev,
+    );
+  }, [state, token, authedPassword, loadingMore]);
 
   useEffect(() => {
     void resolve(null);
@@ -168,6 +216,10 @@ export default function PublicGallerySharePage() {
           <AlbumView
             albumName={state.album_name}
             images={state.images}
+            total={state.total}
+            hasMore={state.hasMore}
+            loadingMore={loadingMore}
+            onLoadMore={loadMore}
             lightboxIdx={lightboxIdx}
             setLightboxIdx={setLightboxIdx}
           />
@@ -223,11 +275,19 @@ function SingleImageView({ image }: { image: ImageRow }) {
 function AlbumView({
   albumName,
   images,
+  total,
+  hasMore,
+  loadingMore,
+  onLoadMore,
   lightboxIdx,
   setLightboxIdx,
 }: {
   albumName: string;
   images: ImageRow[];
+  total: number;
+  hasMore: boolean;
+  loadingMore: boolean;
+  onLoadMore: () => void;
   lightboxIdx: number | null;
   setLightboxIdx: (n: number | null) => void;
 }) {
@@ -235,7 +295,10 @@ function AlbumView({
     <div>
       <h1 className="font-editorial text-3xl mb-2">{albumName}</h1>
       <p className="text-sm text-muted-foreground mb-8">
-        {images.length} image{images.length === 1 ? "" : "s"}
+        {total} image{total === 1 ? "" : "s"}
+        {hasMore || images.length < total ? (
+          <span className="opacity-70"> · showing {images.length}</span>
+        ) : null}
       </p>
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
         {images.map((img, i) => (
@@ -261,6 +324,25 @@ function AlbumView({
           </button>
         ))}
       </div>
+      {hasMore ? (
+        <div className="flex justify-center mt-8">
+          <Button
+            onClick={onLoadMore}
+            disabled={loadingMore}
+            variant="outline"
+            className="rounded-full"
+          >
+            {loadingMore ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Loading…
+              </>
+            ) : (
+              `Load more (${total - images.length} left)`
+            )}
+          </Button>
+        </div>
+      ) : null}
       {lightboxIdx !== null && images[lightboxIdx] ? (
         <SimpleLightbox
           images={images}
