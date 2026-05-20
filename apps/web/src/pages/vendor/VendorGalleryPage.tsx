@@ -193,6 +193,11 @@ export default function VendorGalleryPage() {
     })();
   }, [user?.id]);
 
+  // Stamp of the most recent successful local load. The realtime
+  // callback uses this to skip the echo a server fires right after
+  // a local write — load() will already have pulled the change in.
+  const lastLoadAt = useRef(0);
+
   const load = useCallback(async () => {
     if (!user?.id) return;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -217,6 +222,7 @@ export default function VendorGalleryPage() {
     if (albRes.error) toast.error(albRes.error.message);
     setRows((imgRes.data as GalleryRow[] | null) ?? []);
     setAlbums((albRes.data as Album[] | null) ?? []);
+    lastLoadAt.current = Date.now();
   }, [user?.id]);
 
   useEffect(() => {
@@ -231,6 +237,10 @@ export default function VendorGalleryPage() {
     if (reloadDebounceRef.current) clearTimeout(reloadDebounceRef.current);
     reloadDebounceRef.current = setTimeout(() => {
       reloadDebounceRef.current = null;
+      // Skip if we just loaded ourselves — realtime echo from our
+      // own write would otherwise double up. 600ms buffer covers
+      // postgres → realtime → client latency for typical writes.
+      if (Date.now() - lastLoadAt.current < 600) return;
       load();
     }, 400);
   }, [load]);

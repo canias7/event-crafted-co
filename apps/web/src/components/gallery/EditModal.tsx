@@ -38,19 +38,20 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import {
-  computeBlurhash,
-  type SanitizedExif,
-} from "@/lib/galleryImage";
+import { computeBlurhash } from "@/lib/galleryImage";
 
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   imageId: string;
   imageUrl: string;
-  originalExif: SanitizedExif | null;
   onSaved: () => void;
 }
+
+// Preview rendered for ReactCrop is downscaled when the source is
+// larger than this. Saves the user's RAM on phones (a 24MP image
+// would otherwise become a ~7MB base64 data URL just for display).
+const PREVIEW_MAX_WIDTH = 1500;
 
 interface Transform {
   rotate: number;
@@ -63,7 +64,6 @@ export function EditModal({
   onOpenChange,
   imageId,
   imageUrl,
-  originalExif,
   onSaved,
 }: Props) {
   const { user } = useAuth();
@@ -104,7 +104,9 @@ export function EditModal({
 
   // Re-rasterize the source with the current transform whenever it
   // changes. Identity transform short-circuits to the original URL
-  // (no decode hit; ReactCrop will reload the same image).
+  // (no decode hit; ReactCrop will reload the same image). On
+  // transforms we ALWAYS feed the preview through a downscaled
+  // canvas so the data URL doesn't balloon to multi-megabyte base64.
   useEffect(() => {
     if (!open || !sourceRef.current) return;
     const src = sourceRef.current;
@@ -114,11 +116,14 @@ export function EditModal({
       setCompletedCrop(null);
       return;
     }
-    const canvas = renderTransformed(src, t);
-    // Reset the crop since the display coords just changed under it.
+    const baseCanvas = renderTransformed(src, t);
+    const preview =
+      baseCanvas.width > PREVIEW_MAX_WIDTH
+        ? downscale(baseCanvas, PREVIEW_MAX_WIDTH)
+        : baseCanvas;
     setCrop(undefined);
     setCompletedCrop(null);
-    setDisplayUrl(canvas.toDataURL("image/jpeg", 0.92));
+    setDisplayUrl(preview.toDataURL("image/jpeg", 0.85));
   }, [t, imageUrl, open]);
 
   function rotateBy(deg: number) {
@@ -187,10 +192,22 @@ export function EditModal({
 
       // Preserve EXIF on transform-only edits — the camera / lens /
       // capture date are still accurate. Drop EXIF on crop, since
-      // the image is now a meaningfully different framing.
+      // the image is now a meaningfully different framing. Re-fetch
+      // the row's current exif right before deciding, so a backfill
+      // that ran during the user's edit session doesn't get
+      // overwritten by a stale snapshot.
       const cropped =
         completedCrop && completedCrop.width > 0 && completedCrop.height > 0;
-      const nextExif = cropped ? null : originalExif;
+      let nextExif: unknown = null;
+      if (!cropped) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { data: fresh } = await (supabase as any)
+          .from("vendor_gallery_images")
+          .select("exif")
+          .eq("id", imageId)
+          .maybeSingle();
+        nextExif = fresh?.exif ?? null;
+      }
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { error: updErr } = await (supabase as any)
@@ -345,6 +362,20 @@ function renderTransformed(img: HTMLImageElement, t: Transform): HTMLCanvasEleme
   ctx.drawImage(img, -drawW / 2, -drawH / 2, drawW, drawH);
   ctx.restore();
   return canvas;
+}
+
+function downscale(source: HTMLCanvasElement, maxWidth: number): HTMLCanvasElement {
+  const ratio = maxWidth / source.width;
+  const W = maxWidth;
+  const H = Math.round(source.height * ratio);
+  const out = document.createElement("canvas");
+  out.width = W;
+  out.height = H;
+  const ctx = out.getContext("2d");
+  if (!ctx) return source;
+  ctx.imageSmoothingQuality = "high";
+  ctx.drawImage(source, 0, 0, W, H);
+  return out;
 }
 
 function extractStoragePath(publicUrl: string): string | null {
