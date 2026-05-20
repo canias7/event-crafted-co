@@ -924,10 +924,17 @@ export default function VendorGalleryPage() {
     }
     setRows(newRows);
 
-    const updates = reorderedVisible.map((r, i) => ({
-      id: r.id,
-      display_order: i,
-    }));
+    // Use indices from the reconstructed GLOBAL order, not from the
+    // filtered subset. Otherwise dragging inside a filtered view
+    // (album, smart filter, etc.) writes display_order=0,1,2... for
+    // the filter members, which collides with non-filter rows that
+    // already hold those values. We rewrite display_order for every
+    // row that actually changed position to keep DB + UI aligned.
+    const updates = newRows
+      .map((r, i) => ({ row: r, idx: i }))
+      .filter(({ row, idx }) => row.display_order !== idx)
+      .map(({ row, idx }) => ({ id: row.id, display_order: idx }));
+    if (updates.length === 0) return;
     // Block the realtime debouncer from reverting our optimistic
     // order before the upsert lands. The flag is cleared in both
     // success + failure paths.
