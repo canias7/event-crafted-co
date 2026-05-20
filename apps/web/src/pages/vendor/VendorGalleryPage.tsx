@@ -149,6 +149,8 @@ export default function VendorGalleryPage() {
   const [sortMode, setSortMode] = useState<SortMode>("newest");
   const [aspectFilter, setAspectFilter] = useState<AspectFilter>("all");
   const [formatFilter, setFormatFilter] = useState<FormatFilter>("all");
+  const [dateFrom, setDateFrom] = useState<string>("");
+  const [dateTo, setDateTo] = useState<string>("");
   const [density, setDensity] = useState<Density>("medium");
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
@@ -163,6 +165,10 @@ export default function VendorGalleryPage() {
   const [selecting, setSelecting] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [zipping, setZipping] = useState(false);
+  const [zipProgress, setZipProgress] = useState<{ done: number; total: number }>({
+    done: 0,
+    total: 0,
+  });
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const isTrashView = activeTab === TRASH_TAB;
@@ -215,7 +221,53 @@ export default function VendorGalleryPage() {
 
   useEffect(() => {
     setVisibleCount(PAGE_SIZE);
-  }, [activeTab, query, sortMode, aspectFilter, formatFilter]);
+  }, [activeTab, query, sortMode, aspectFilter, formatFilter, dateFrom, dateTo]);
+
+  // Backfill old uploads that are missing width/height/blurhash —
+  // those rows predate round 2 and don't show up in the Portraits /
+  // Landscapes smart albums until they get processed. Fires once per
+  // page load, throttled to one image at a time so we don't slam
+  // the network. Best-effort: failures get logged and skipped.
+  const backfillingRef = useRef(false);
+  useEffect(() => {
+    if (!rows || backfillingRef.current) return;
+    const pending = rows.filter(
+      (r) => r.deleted_at === null && (r.width === null || r.blurhash === null),
+    );
+    if (pending.length === 0) return;
+    backfillingRef.current = true;
+    void (async () => {
+      for (const r of pending) {
+        try {
+          const res = await fetch(r.image_url);
+          if (!res.ok) continue;
+          const blob = await res.blob();
+          const file = new File([blob], filenameOf(r.image_url), {
+            type: blob.type,
+          });
+          const info = await computeBlurhash(file);
+          if (!info) continue;
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          await (supabase as any)
+            .from("vendor_gallery_images")
+            .update({
+              width: info.width,
+              height: info.height,
+              blurhash: info.blurhash,
+            })
+            .eq("id", r.id);
+        } catch (err) {
+          console.warn("[gallery backfill]", r.id, err);
+        }
+      }
+      backfillingRef.current = false;
+      // Refresh once we're done so the dims / blurhash are visible.
+      load();
+    })();
+    // Only run on the first time rows load — subsequent loads from
+    // edits / deletes shouldn't re-trigger the whole backfill.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rows === null]);
 
   // Filtering pipeline.
   // Trash tab is mutually exclusive with all other tabs/smart filters
@@ -284,6 +336,18 @@ export default function VendorGalleryPage() {
       });
     }
 
+    // Date range filter — dateFrom / dateTo are YYYY-MM-DD strings
+    // from the toolbar inputs; both inclusive. End-of-day on dateTo
+    // so a same-day "from = to" still surfaces that day.
+    if (dateFrom) {
+      const fromMs = new Date(`${dateFrom}T00:00:00`).getTime();
+      out = out.filter((r) => new Date(r.created_at).getTime() >= fromMs);
+    }
+    if (dateTo) {
+      const toMs = new Date(`${dateTo}T23:59:59`).getTime();
+      out = out.filter((r) => new Date(r.created_at).getTime() <= toMs);
+    }
+
     const sorted = [...out];
     if (sortMode === "newest") {
       sorted.sort((a, b) => b.created_at.localeCompare(a.created_at));
@@ -300,7 +364,7 @@ export default function VendorGalleryPage() {
     }
 
     return sorted;
-  }, [rows, activeTab, query, sortMode, aspectFilter, formatFilter, isTrashView]);
+  }, [rows, activeTab, query, sortMode, aspectFilter, formatFilter, dateFrom, dateTo, isTrashView]);
 
   const visibleRows = useMemo(
     () => filteredRows.slice(0, visibleCount),
@@ -539,6 +603,7 @@ export default function VendorGalleryPage() {
     const ids = Array.from(selected);
     const rowsToZip = (rows ?? []).filter((r) => ids.includes(r.id));
     setZipping(true);
+    setZipProgress({ done: 0, total: rowsToZip.length });
     try {
       const zip = new JSZip();
       const seenNames = new Set<string>();
@@ -546,8 +611,6 @@ export default function VendorGalleryPage() {
         const res = await fetch(r.image_url);
         const blob = await res.blob();
         let name = filenameOf(r.image_url);
-        // Defensive: dedupe filenames in case the bucket happens to
-        // have two files with the same slug (shouldn't, but).
         let suffix = 1;
         const base = name;
         while (seenNames.has(name)) {
@@ -560,6 +623,7 @@ export default function VendorGalleryPage() {
         }
         seenNames.add(name);
         zip.file(name, blob);
+        setZipProgress((p) => ({ ...p, done: p.done + 1 }));
       }
       const out = await zip.generateAsync({ type: "blob" });
       const a = document.createElement("a");
@@ -941,6 +1005,51 @@ export default function VendorGalleryPage() {
               </DropdownMenuContent>
             </DropdownMenu>
 
+            {/* Date range filter — two inputs in a dropdown panel */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" className="rounded-full">
+                  Dates: {dateRangeLabel(dateFrom, dateTo)}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-64 p-3 space-y-3">
+                <div>
+                  <label className="block text-[10px] uppercase tracking-wider text-muted-foreground mb-1">
+                    From
+                  </label>
+                  <Input
+                    type="date"
+                    value={dateFrom}
+                    onChange={(e) => setDateFrom(e.target.value)}
+                    className="h-8"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] uppercase tracking-wider text-muted-foreground mb-1">
+                    To
+                  </label>
+                  <Input
+                    type="date"
+                    value={dateTo}
+                    onChange={(e) => setDateTo(e.target.value)}
+                    className="h-8"
+                  />
+                </div>
+                {(dateFrom || dateTo) ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setDateFrom("");
+                      setDateTo("");
+                    }}
+                    className="w-full text-xs text-muted-foreground hover:text-foreground"
+                  >
+                    Clear
+                  </button>
+                ) : null}
+              </DropdownMenuContent>
+            </DropdownMenu>
+
             {viewMode === "grid" ? (
               <div className="inline-flex rounded-full border border-border overflow-hidden">
                 <ViewBtn
@@ -1120,7 +1229,9 @@ export default function VendorGalleryPage() {
                       ) : (
                         <Download className="w-3.5 h-3.5" />
                       )}
-                      {zipping ? "Zipping…" : "Download zip"}
+                      {zipping
+                        ? `Zipping ${zipProgress.done}/${zipProgress.total}…`
+                        : "Download zip"}
                     </button>
                   </>
                 )}
@@ -1256,6 +1367,20 @@ export default function VendorGalleryPage() {
             )
           }
           onChange={() => load()}
+          // Mobile-friendly cover setting: surface the action in the
+          // lightbox toolbar whenever the user is browsing inside a
+          // custom album. The right-click affordance on the grid
+          // stays for desktop.
+          onSetAsCover={
+            isCustomAlbumActive
+              ? () => setAlbumCover(visibleRows[lightboxIdx].id)
+              : undefined
+          }
+          isAlbumCover={
+            isCustomAlbumActive &&
+            albums?.find((a) => a.id === activeTab)?.cover_image_id ===
+              visibleRows[lightboxIdx].id
+          }
         />
       ) : null}
     </div>
@@ -1270,6 +1395,13 @@ function sortLabel(m: SortMode): string {
       : m === "name_asc"
         ? "A→Z"
         : "Z→A";
+}
+
+function dateRangeLabel(from: string, to: string): string {
+  if (!from && !to) return "Any";
+  if (from && to) return `${from} → ${to}`;
+  if (from) return `from ${from}`;
+  return `to ${to}`;
 }
 
 function aspectLabel(a: AspectFilter): string {

@@ -1,13 +1,12 @@
 // Create a shareable link for either a single gallery image or a
-// whole album. Inserts a vendor_gallery_shares row with a fresh
-// token (server-side default = encode(gen_random_bytes(16), 'hex'))
-// and shows the resulting /g/:token URL with a copy button.
+// whole album. Calls the create_gallery_share RPC so the password
+// (if any) is bcrypt-hashed server-side before storage; the
+// password_hash is never exposed on the wire.
 
 import { useEffect, useState } from "react";
-import { Check, Copy, Link2, Loader2, X } from "lucide-react";
+import { Check, Copy, Link2, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -23,8 +22,6 @@ import { Label } from "@/components/ui/label";
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  // Exactly one of these is set; the modal validates and the DB
-  // CHECK constraint enforces too.
   imageId?: string;
   albumId?: string;
   targetLabel: string;
@@ -44,17 +41,17 @@ export function ShareModal({
   albumId,
   targetLabel,
 }: Props) {
-  const { user } = useAuth();
   const [expiry, setExpiry] = useState<string>("never");
+  const [password, setPassword] = useState("");
   const [creating, setCreating] = useState(false);
   const [token, setToken] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
-    // Reset state when the modal closes so a re-open starts fresh.
     if (!open) {
       setToken(null);
       setExpiry("never");
+      setPassword("");
       setCopied(false);
     }
   }, [open]);
@@ -64,7 +61,6 @@ export function ShareModal({
     : "";
 
   async function create() {
-    if (!user?.id) return;
     if (!imageId && !albumId) return;
     setCreating(true);
     const expires_at =
@@ -76,22 +72,18 @@ export function ShareModal({
             ? new Date(Date.now() + 7 * 86400_000).toISOString()
             : new Date(Date.now() + 30 * 86400_000).toISOString();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data, error } = await (supabase as any)
-      .from("vendor_gallery_shares")
-      .insert({
-        user_id: user.id,
-        image_id: imageId ?? null,
-        album_id: albumId ?? null,
-        expires_at,
-      })
-      .select("token")
-      .single();
+    const { data, error } = await (supabase as any).rpc("create_gallery_share", {
+      p_image_id: imageId ?? null,
+      p_album_id: albumId ?? null,
+      p_expires_at: expires_at,
+      p_password: password.trim() || null,
+    });
     setCreating(false);
     if (error) {
       toast.error(error.message);
       return;
     }
-    setToken(data.token as string);
+    setToken(data as string);
   }
 
   async function copy() {
@@ -142,6 +134,23 @@ export function ShareModal({
                 ))}
               </div>
             </div>
+            <div>
+              <Label htmlFor="share-password" className="text-xs font-medium text-muted-foreground">
+                Password (optional)
+              </Label>
+              <Input
+                id="share-password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Leave blank for no password"
+                className="mt-1"
+              />
+              <p className="text-[11px] text-muted-foreground mt-1">
+                Hashed server-side. Required at /g/:token before the
+                viewer sees the image.
+              </p>
+            </div>
           </div>
         ) : (
           <div className="space-y-3">
@@ -158,9 +167,16 @@ export function ShareModal({
                 )}
               </Button>
             </div>
-            <p className="text-xs text-muted-foreground">
-              Revoke any time from the share's row in your gallery.
-            </p>
+            {password ? (
+              <p className="text-xs text-muted-foreground">
+                Password protected — viewer must enter the password
+                you set before the image loads.
+              </p>
+            ) : (
+              <p className="text-xs text-muted-foreground">
+                No password — anyone with this link can view.
+              </p>
+            )}
           </div>
         )}
 

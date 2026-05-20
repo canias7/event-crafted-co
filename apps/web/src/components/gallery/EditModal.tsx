@@ -1,9 +1,10 @@
-// In-app editor for a gallery image. v1 covers rotate 90° (either
-// direction) + flip horizontal + flip vertical. Renders a live
-// canvas preview; on save, exports the canvas to a blob, uploads
-// a new file to the vendor-gallery bucket, updates the row's
-// image_url, and removes the old file. blurhash + dimensions are
-// recomputed since they're now stale.
+// In-app editor for a gallery image. v2 covers rotate 90° (either
+// direction) + flip H/V + free-form crop via react-image-crop. On
+// save, the canvas is rendered at full source resolution applying
+// the crop bounds (if any) and the rotate/flip transform, exported
+// to JPEG, uploaded as a new file, and the row's image_url +
+// width/height/blurhash get updated. EXIF is cleared since the
+// image is no longer a faithful copy of the original capture.
 
 import { useEffect, useRef, useState } from "react";
 import {
@@ -12,8 +13,14 @@ import {
   Loader2,
   RotateCcw,
   RotateCw,
+  Scissors,
 } from "lucide-react";
 import { toast } from "sonner";
+import ReactCrop, {
+  type Crop,
+  type PixelCrop,
+} from "react-image-crop";
+import "react-image-crop/dist/ReactCrop.css";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -35,55 +42,94 @@ interface Props {
 }
 
 interface Transform {
-  rotate: number; // 0 | 90 | 180 | 270
+  rotate: number;
   flipH: boolean;
   flipV: boolean;
 }
 
 export function EditModal({ open, onOpenChange, imageId, imageUrl, onSaved }: Props) {
   const { user } = useAuth();
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const sourceRef = useRef<HTMLImageElement | null>(null);
+  const imgRef = useRef<HTMLImageElement | null>(null);
   const [t, setT] = useState<Transform>({ rotate: 0, flipH: false, flipV: false });
+  const [crop, setCrop] = useState<Crop | undefined>(undefined);
+  const [completedCrop, setCompletedCrop] = useState<PixelCrop | null>(null);
   const [saving, setSaving] = useState(false);
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
-    if (!open) return;
-    setT({ rotate: 0, flipH: false, flipV: false });
-    setLoaded(false);
-    const img = new Image();
-    img.crossOrigin = "anonymous";
-    img.onload = () => {
-      sourceRef.current = img;
-      setLoaded(true);
-    };
-    img.onerror = () => {
-      toast.error("Couldn't load image for editing.");
-      onOpenChange(false);
-    };
-    img.src = imageUrl;
-  }, [open, imageUrl, onOpenChange]);
+    if (!open) {
+      setT({ rotate: 0, flipH: false, flipV: false });
+      setCrop(undefined);
+      setCompletedCrop(null);
+      setLoaded(false);
+    }
+  }, [open]);
 
-  // Re-render canvas whenever the transform changes or the source loads.
-  useEffect(() => {
-    if (!loaded || !sourceRef.current || !canvasRef.current) return;
-    drawTo(canvasRef.current, sourceRef.current, t, 600);
-  }, [t, loaded]);
+  function rotateBy(deg: number) {
+    setT((p) => ({ ...p, rotate: ((p.rotate + deg) % 360 + 360) % 360 }));
+  }
+
+  function resetCrop() {
+    setCrop(undefined);
+    setCompletedCrop(null);
+  }
 
   async function save() {
-    if (!user?.id || !sourceRef.current) return;
+    if (!user?.id || !imgRef.current) return;
     setSaving(true);
     try {
-      // Render at full source resolution for the upload.
-      const exportCanvas = document.createElement("canvas");
-      drawTo(exportCanvas, sourceRef.current, t);
+      // Build the export canvas at full source resolution applying
+      // crop (if user dragged one) + rotate + flip.
+      const src = imgRef.current;
+      const natW = src.naturalWidth;
+      const natH = src.naturalHeight;
+
+      // Determine source rectangle to draw from. ReactCrop reports
+      // completedCrop in image *display* pixels — scale to natural.
+      let cropX = 0;
+      let cropY = 0;
+      let cropW = natW;
+      let cropH = natH;
+      if (completedCrop && completedCrop.width > 0 && completedCrop.height > 0) {
+        const sx = natW / src.width;
+        const sy = natH / src.height;
+        cropX = Math.round(completedCrop.x * sx);
+        cropY = Math.round(completedCrop.y * sy);
+        cropW = Math.round(completedCrop.width * sx);
+        cropH = Math.round(completedCrop.height * sy);
+      }
+
+      const rotated = t.rotate === 90 || t.rotate === 270;
+      const outW = rotated ? cropH : cropW;
+      const outH = rotated ? cropW : cropH;
+
+      const canvas = document.createElement("canvas");
+      canvas.width = outW;
+      canvas.height = outH;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) throw new Error("Couldn't get a 2D context.");
+      ctx.save();
+      ctx.translate(outW / 2, outH / 2);
+      ctx.rotate((t.rotate * Math.PI) / 180);
+      ctx.scale(t.flipH ? -1 : 1, t.flipV ? -1 : 1);
+      ctx.drawImage(
+        src,
+        cropX,
+        cropY,
+        cropW,
+        cropH,
+        -cropW / 2,
+        -cropH / 2,
+        cropW,
+        cropH,
+      );
+      ctx.restore();
+
       const blob: Blob | null = await new Promise((resolve) =>
-        exportCanvas.toBlob((b) => resolve(b), "image/jpeg", 0.92),
+        canvas.toBlob((b) => resolve(b), "image/jpeg", 0.92),
       );
       if (!blob) throw new Error("Couldn't encode the edited image.");
 
-      // Upload the new file under the same user folder.
       const filename = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.jpg`;
       const path = `${user.id}/${filename}`;
       const upload = await supabase.storage
@@ -94,7 +140,6 @@ export function EditModal({ open, onOpenChange, imageId, imageUrl, onSaved }: Pr
         .from("vendor-gallery")
         .getPublicUrl(path);
 
-      // Recompute blurhash + dimensions for the new file.
       const blurInfo = await computeBlurhash(
         new File([blob], filename, { type: "image/jpeg" }),
       );
@@ -104,18 +149,14 @@ export function EditModal({ open, onOpenChange, imageId, imageUrl, onSaved }: Pr
         .from("vendor_gallery_images")
         .update({
           image_url: pub.publicUrl,
-          width: blurInfo?.width ?? exportCanvas.width,
-          height: blurInfo?.height ?? exportCanvas.height,
+          width: blurInfo?.width ?? canvas.width,
+          height: blurInfo?.height ?? canvas.height,
           blurhash: blurInfo?.blurhash ?? null,
-          // EXIF is wiped — the rotated/flipped image is no longer
-          // the original; the camera metadata is stale.
           exif: null,
         })
         .eq("id", imageId);
       if (updErr) throw updErr;
 
-      // Best-effort cleanup of the old storage object. The path we
-      // had is encoded in the old URL.
       const oldPath = extractStoragePath(imageUrl);
       if (oldPath) {
         void supabase.storage.from("vendor-gallery").remove([oldPath]);
@@ -132,9 +173,13 @@ export function EditModal({ open, onOpenChange, imageId, imageUrl, onSaved }: Pr
     }
   }
 
-  function rotateBy(deg: number) {
-    setT((p) => ({ ...p, rotate: ((p.rotate + deg) % 360 + 360) % 360 }));
-  }
+  // Preview filter style applying the current transform to the
+  // <img> the user is cropping over. ReactCrop draws its overlay on
+  // top of the underlying img element; rotating it in CSS keeps the
+  // crop selection visually aligned with the transform.
+  const transformStyle = {
+    transform: `rotate(${t.rotate}deg) scale(${t.flipH ? -1 : 1}, ${t.flipV ? -1 : 1})`,
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -145,14 +190,22 @@ export function EditModal({ open, onOpenChange, imageId, imageUrl, onSaved }: Pr
 
         <div className="space-y-4">
           <div className="bg-secondary/40 rounded-lg p-3 flex items-center justify-center min-h-[300px]">
-            {!loaded ? (
-              <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
-            ) : (
-              <canvas
-                ref={canvasRef}
+            <ReactCrop
+              crop={crop}
+              onChange={(c) => setCrop(c)}
+              onComplete={(c) => setCompletedCrop(c)}
+              keepSelection
+            >
+              <img
+                ref={imgRef}
+                src={imageUrl}
+                alt="Edit"
+                crossOrigin="anonymous"
+                style={transformStyle}
                 className="max-h-[60vh] max-w-full rounded-md"
+                onLoad={() => setLoaded(true)}
               />
-            )}
+            </ReactCrop>
           </div>
           <div className="flex flex-wrap items-center justify-center gap-2">
             <Button
@@ -191,7 +244,22 @@ export function EditModal({ open, onOpenChange, imageId, imageUrl, onSaved }: Pr
               <FlipVertical className="w-3.5 h-3.5 mr-1.5" />
               Flip V
             </Button>
+            {completedCrop && completedCrop.width > 0 ? (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={resetCrop}
+                className="rounded-full"
+              >
+                <Scissors className="w-3.5 h-3.5 mr-1.5" />
+                Reset crop
+              </Button>
+            ) : null}
           </div>
+          <p className="text-xs text-center text-muted-foreground">
+            Drag on the image to crop. Rotate / flip apply after the
+            crop bounds.
+          </p>
         </div>
 
         <DialogFooter className="gap-2 sm:gap-0">
@@ -211,41 +279,6 @@ export function EditModal({ open, onOpenChange, imageId, imageUrl, onSaved }: Pr
       </DialogContent>
     </Dialog>
   );
-}
-
-function drawTo(
-  canvas: HTMLCanvasElement,
-  img: HTMLImageElement,
-  t: Transform,
-  maxSize?: number,
-): void {
-  const rotated = t.rotate === 90 || t.rotate === 270;
-  const naturalW = rotated ? img.naturalHeight : img.naturalWidth;
-  const naturalH = rotated ? img.naturalWidth : img.naturalHeight;
-  let W = naturalW;
-  let H = naturalH;
-  if (maxSize) {
-    // Fit within maxSize for preview rendering.
-    const scale = Math.min(maxSize / W, maxSize / H, 1);
-    W = Math.round(W * scale);
-    H = Math.round(H * scale);
-  }
-  canvas.width = W;
-  canvas.height = H;
-  const ctx = canvas.getContext("2d");
-  if (!ctx) return;
-  ctx.save();
-  ctx.translate(W / 2, H / 2);
-  ctx.rotate((t.rotate * Math.PI) / 180);
-  const scaleX = t.flipH ? -1 : 1;
-  const scaleY = t.flipV ? -1 : 1;
-  ctx.scale(scaleX, scaleY);
-  // After rotation, the image's "drawing" dimensions are the source
-  // intrinsic w/h (not the rotated bounds).
-  const drawW = rotated ? H : W;
-  const drawH = rotated ? W : H;
-  ctx.drawImage(img, -drawW / 2, -drawH / 2, drawW, drawH);
-  ctx.restore();
 }
 
 function extractStoragePath(publicUrl: string): string | null {
