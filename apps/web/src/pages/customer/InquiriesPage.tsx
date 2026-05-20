@@ -31,9 +31,11 @@ interface InquiryRow {
   status: string;
   created_at: string;
   last_message_at: string;
+  host_read_at: string | null;
   vendor: {
     business_name: string;
     category: string;
+    logo_url: string | null;
   } | null;
 }
 
@@ -103,7 +105,11 @@ export default function InquiriesPage() {
   const { user } = useAuth();
   const [params, setParams] = useSearchParams();
   const [rows, setRows] = useState<InquiryRow[]>([]);
-  const [statusFilter, setStatusFilter] = useState("all");
+  // Filter chip is mirrored to ?filter=<value> so it survives a
+  // round-trip into an inquiry detail page and back. Default = "all".
+  const [statusFilter, setStatusFilter] = useState(
+    () => params.get("filter") ?? "all",
+  );
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(params.get("new") === "1");
@@ -118,7 +124,7 @@ export default function InquiriesPage() {
     const { data, error } = await supabase
       .from("inquiries")
       .select(
-        "id, event_type, event_date, guest_count, location, budget_min_cents, budget_max_cents, status, created_at, last_message_at, vendor:vendor_profiles!inquiries_vendor_id_fkey(business_name, category)",
+        "id, event_type, event_date, guest_count, location, budget_min_cents, budget_max_cents, status, created_at, last_message_at, host_read_at, vendor:vendor_profiles!inquiries_vendor_id_fkey(business_name, category, logo_url)",
       )
       .eq("host_id", user.id)
       .order("last_message_at", { ascending: false })
@@ -259,7 +265,13 @@ export default function InquiriesPage() {
                   key={opt.value}
                   size="sm"
                   variant="ghost"
-                  onClick={() => setStatusFilter(opt.value)}
+                  onClick={() => {
+                    setStatusFilter(opt.value);
+                    const next = new URLSearchParams(params);
+                    if (opt.value === "all") next.delete("filter");
+                    else next.set("filter", opt.value);
+                    setParams(next, { replace: true });
+                  }}
                   className={`rounded-full whitespace-nowrap h-9 text-xs ${
                     statusFilter === opt.value
                       ? "bg-foreground text-background hover:bg-foreground/90"
@@ -331,6 +343,15 @@ export default function InquiriesPage() {
                 {filteredRows.map((r) => {
                   const vendorName = r.vendor?.business_name ?? "Vendor";
                   const seed = r.vendor?.business_name ?? r.id;
+                  const logoUrl = r.vendor?.logo_url ?? null;
+                  // Unread when the latest activity is newer than the
+                  // host's last visit. Mirrors the vendor inbox
+                  // predicate so the dot behavior is consistent
+                  // across roles.
+                  const isUnread =
+                    r.host_read_at == null ||
+                    new Date(r.last_message_at).getTime() >
+                      new Date(r.host_read_at).getTime();
                   return (
                     <Link
                       key={r.id}
@@ -338,13 +359,28 @@ export default function InquiriesPage() {
                       className="p-5 md:p-6 flex flex-col md:flex-row md:items-center gap-4 md:gap-6 hover:bg-secondary/40 transition-colors"
                     >
                       <div className="flex items-start gap-3 min-w-0 flex-1">
-                        <div
-                          className={`shrink-0 w-12 h-12 rounded-full text-white flex items-center justify-center text-sm font-semibold ${avatarColor(seed)}`}
-                        >
-                          {initialsOf(vendorName)}
-                        </div>
+                        {logoUrl ? (
+                          <img
+                            src={logoUrl}
+                            alt=""
+                            aria-hidden
+                            className="shrink-0 w-12 h-12 rounded-full object-cover"
+                          />
+                        ) : (
+                          <div
+                            className={`shrink-0 w-12 h-12 rounded-full text-white flex items-center justify-center text-sm font-semibold ${avatarColor(seed)}`}
+                          >
+                            {initialsOf(vendorName)}
+                          </div>
+                        )}
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-3 mb-1.5 flex-wrap">
+                            {isUnread ? (
+                              <span
+                                aria-label="Unread"
+                                className="shrink-0 w-2 h-2 rounded-full bg-blue-500"
+                              />
+                            ) : null}
                             <h3 className="font-display text-base truncate">
                               {vendorName}
                             </h3>
