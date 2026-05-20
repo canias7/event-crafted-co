@@ -2475,6 +2475,7 @@ export type Database = {
       }
       vendor_gallery_albums: {
         Row: {
+          cover_image_id: string | null
           created_at: string
           display_order: number
           id: string
@@ -2482,6 +2483,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          cover_image_id?: string | null
           created_at?: string
           display_order?: number
           id?: string
@@ -2489,6 +2491,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          cover_image_id?: string | null
           created_at?: string
           display_order?: number
           id?: string
@@ -2496,6 +2499,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "vendor_gallery_albums_cover_image_id_fkey"
+            columns: ["cover_image_id"]
+            isOneToOne: false
+            referencedRelation: "vendor_gallery_images"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "vendor_gallery_albums_user_id_fkey"
             columns: ["user_id"]
