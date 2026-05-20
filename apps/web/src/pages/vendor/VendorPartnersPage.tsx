@@ -784,11 +784,14 @@ export default function VendorPartnersPage() {
   }
 
   return (
-    <div className="flex min-h-screen vendor-canvas">
+    <div className="flex h-screen vendor-canvas overflow-hidden">
       <DashboardSidebar items={navItems} title="Vendor Portal" backPath="/" />
 
-      <main id="main-content" className="flex-1 pb-20 lg:pb-0">
-        <div className="backdrop-blur-sm px-4 md:px-8 py-5 sticky top-0 z-40 space-y-3">
+      <main
+        id="main-content"
+        className="flex-1 flex flex-col overflow-hidden pb-20 lg:pb-0"
+      >
+        <div className="backdrop-blur-sm px-4 md:px-8 py-5 space-y-3 shrink-0">
           <div className="flex items-start justify-between gap-3">
             <div>
               <h1 className="font-editorial text-3xl">Inbox</h1>
@@ -801,7 +804,9 @@ export default function VendorPartnersPage() {
           <SubNavTabs tabs={VENDOR_INBOX_HUB_TABS} />
         </div>
 
-        <div className="grid lg:grid-cols-[360px_1fr] h-[calc(100vh-65px)]">
+        {/* min-h-0 + flex-1 lets the inner overflow-y-auto scroller
+            actually scroll instead of pushing the page taller. */}
+        <div className="grid lg:grid-cols-[360px_1fr] flex-1 min-h-0">
           <aside className="border-r border-border overflow-y-auto p-3">
             {loadingThreads ? (
               <div className="space-y-2">

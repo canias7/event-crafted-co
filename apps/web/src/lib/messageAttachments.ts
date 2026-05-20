@@ -67,7 +67,12 @@ export async function uploadAttachments(
 }
 
 export function validateAttachment(file: File): string | null {
-  if (!ACCEPTED_MIME.includes(file.type)) {
+  // MediaRecorder hands us types like "audio/webm;codecs=opus" with
+  // the codec suffix — strict-equal against the whitelist fails. Allow
+  // any audio/* MIME (our own recorder is the only producer; the
+  // ACCEPTED_MIME list still covers the common image / pdf cases).
+  const isAcceptedAudio = file.type.startsWith("audio/");
+  if (!isAcceptedAudio && !ACCEPTED_MIME.includes(file.type)) {
     return `${file.name}: only JPG, PNG, WEBP, PDF, or audio`;
   }
   if (file.size > MAX_BYTES) {
