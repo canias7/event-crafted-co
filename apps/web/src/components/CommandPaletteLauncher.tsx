@@ -1,4 +1,5 @@
-import { lazy, Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
+import { lazyWithReload } from "@/lib/lazyWithReload";
 
 // Lazy CommandPalette mount: keeps the heavy palette code (icons,
 // cmdk dialog, vendor + inspiration data fetches inside CommandPalette
@@ -6,7 +7,7 @@ import { lazy, Suspense, useEffect, useState } from "react";
 // for ⌘K / Ctrl+K and only kicks off the dynamic import on first press
 // — most users never open the palette, so they never download it.
 
-const CommandPalette = lazy(() =>
+const CommandPalette = lazyWithReload(() =>
   import("@/components/CommandPalette").then((m) => ({ default: m.CommandPalette })),
 );
 

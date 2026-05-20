@@ -1,5 +1,5 @@
-import { lazy, type ComponentType } from "react";
 import { matchPath } from "react-router-dom";
+import { lazyWithReload } from "@/lib/lazyWithReload";
 
 // Centralized lazy-route registry. Keeping the import factory and the
 // lazy-wrapped component side-by-side lets PrefetchLink warm the chunk
@@ -13,39 +13,8 @@ import { matchPath } from "react-router-dom";
 // Static routes match exactly; dynamic routes use react-router-dom's
 // matchPath (so `/vendors/:id` matches `/vendors/abc-123`).
 //
-// `lazyWithReload` is a thin wrapper around React.lazy that catches
-// the stale-chunk error a user gets when they have a cached index.html
-// from a previous deploy that references hashed JS chunks the new
-// deploy no longer has. In that case Vercel's SPA fallback returns
-// index.html for the missing chunk URL, the browser rejects it with
-// "Failed to fetch dynamically imported module" / MIME mismatch, and
-// the page is dead. We auto-reload once to pick up the fresh
-// index.html. Reload is rate-limited to once per 60s so a genuinely
-// broken deploy doesn't put the user in an infinite loop.
-
-function lazyWithReload<T extends ComponentType<unknown>>(
-  factory: () => Promise<{ default: T }>,
-) {
-  return lazy(() =>
-    factory().catch((err: unknown) => {
-      const msg = String((err as { message?: string })?.message ?? err);
-      const isChunkError =
-        /Failed to fetch dynamically imported module|ChunkLoadError|Loading chunk|Importing a module script failed|MIME type/i.test(
-          msg,
-        );
-      if (isChunkError && typeof window !== "undefined") {
-        const key = "vendora.lastChunkReload";
-        const last = window.sessionStorage.getItem(key);
-        const now = Date.now();
-        if (!last || now - Number(last) > 60_000) {
-          window.sessionStorage.setItem(key, String(now));
-          window.location.reload();
-        }
-      }
-      throw err;
-    }),
-  );
-}
+// lazyWithReload wraps React.lazy with stale-chunk auto-heal. See
+// lib/lazyWithReload.ts for the full reasoning.
 
 // ---------------- Public ----------------
 const importVendorBrowse = () => import("@/pages/VendorBrowsePage");

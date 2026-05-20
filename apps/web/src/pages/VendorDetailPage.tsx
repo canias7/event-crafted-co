@@ -1,4 +1,5 @@
-import { lazy, Suspense, useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
+import { lazyWithReload } from "@/lib/lazyWithReload";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
@@ -45,7 +46,7 @@ import {
 } from "@/components/vendor/VendorReviewsList";
 import { useDocumentMeta } from "@/hooks/useDocumentMeta";
 // Lazy: 618-line modal only loads when the user clicks "Send inquiry."
-const InquiryFormModal = lazy(() =>
+const InquiryFormModal = lazyWithReload(() =>
   import("@/components/inquiries/InquiryFormModal").then((m) => ({
     default: m.InquiryFormModal,
   })),

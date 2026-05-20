@@ -1,5 +1,6 @@
-import { lazy, Suspense } from "react";
+import { Suspense } from "react";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import { lazyWithReload } from "@/lib/lazyWithReload";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -22,7 +23,7 @@ import { EmailVerificationBanner } from "./components/auth/EmailVerificationBann
 // Lazy ship-on-mount component. CookieBanner only renders once for
 // users who haven't accepted, so deferring the chunk shaves the
 // initial JS budget.
-const CookieBanner = lazy(() =>
+const CookieBanner = lazyWithReload(() =>
   import("./components/CookieBanner").then((m) => ({ default: m.CookieBanner })),
 );
 import { ErrorBoundary } from "@/components/shared/ErrorBoundary";
