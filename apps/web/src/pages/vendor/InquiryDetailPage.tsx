@@ -13,6 +13,8 @@ import { PinLocationDialog } from "@/components/messages/PinLocationDialog";
 import { MessageBody } from "@/components/messages/MessageBody";
 import { TypingBubble } from "@/components/messages/TypingBubble";
 import { RatingPromptStrip } from "@/components/reviews/RatingPromptStrip";
+import { SubmittedReviewStatusCard } from "@/components/reviews/SubmittedReviewStatusCard";
+import { BookingConfirmationCard } from "@/components/inquiries/BookingConfirmationCard";
 import { Link, useParams } from "react-router-dom";
 import {
   ArrowLeft,
@@ -250,12 +252,18 @@ export default function InquiryDetailPage() {
       (supabase as any).rpc("ensure_inquiry_thread", {
         p_inquiry_id: inquiryId,
       }),
-      supabase
+      // Only the host's review of the vendor (event kind) shows up
+      // here — that's the one the vendor can respond to. Conversation
+      // ratings + the vendor's own reviews are scoped out.
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (supabase as any)
         .from("reviews")
         .select(
           "id, vendor_id, rating, body, created_at, response:review_responses(body, updated_at)",
         )
         .eq("inquiry_id", inquiryId)
+        .eq("rater_role", "host")
+        .eq("kind", "event")
         .maybeSingle(),
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (supabase as any)
@@ -1083,8 +1091,23 @@ export default function InquiryDetailPage() {
             </div>
           ) : null}
 
-          {/* Rating prompts — surfaces conversation OR event review
-              CTA based on what's unlocked for the vendor side. */}
+          {/* Off-platform booking handshake. Hidden when an accepted
+              proposal exists. */}
+          {inquiry ? (
+            <BookingConfirmationCard
+              inquiryId={inquiry.id}
+              selfRole="vendor"
+              otherPartyName={hostName}
+              hasAcceptedProposal={proposals.some((p) => p.status === "accepted")}
+            />
+          ) : null}
+
+          {/* Rating discovery + status for the vendor side. The
+              SubmittedReviewStatusCard shows the vendor's OWN
+              submitted reviews and their reveal status (event reviews
+              held until the host reviews too). The host's published
+              review of the vendor still drops in below via
+              InquiryReviewCard. */}
           {inquiry ? (
             <RatingPromptStrip
               inquiryId={inquiry.id}
@@ -1095,11 +1118,22 @@ export default function InquiryDetailPage() {
               otherPartyName={hostName}
             />
           ) : null}
+          {inquiry ? (
+            <SubmittedReviewStatusCard
+              inquiryId={inquiry.id}
+              raterRole="vendor"
+              otherPartyName={hostName}
+            />
+          ) : null}
 
           {/* Review as a system bubble at the end of the thread */}
           {review && (
             <div className="my-4">
-              <InquiryReviewCard review={review} onResponseSaved={load} />
+              <InquiryReviewCard
+                review={review}
+                responderRole="vendor"
+                onResponseSaved={load}
+              />
             </div>
           )}
 

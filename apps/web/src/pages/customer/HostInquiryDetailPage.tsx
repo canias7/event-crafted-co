@@ -1,4 +1,4 @@
-import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRealtime } from "@/lib/realtime";
 import { useInquiryTyping } from "@/hooks/useInquiryTyping";
 import { MessageActionMenu } from "@/components/messages/MessageActionMenu";
@@ -11,12 +11,14 @@ import { VoiceRecorder } from "@/components/messages/VoiceRecorder";
 import { MessageBody } from "@/components/messages/MessageBody";
 import { TypingBubble } from "@/components/messages/TypingBubble";
 import { RatingPromptStrip } from "@/components/reviews/RatingPromptStrip";
+import { SubmittedReviewStatusCard } from "@/components/reviews/SubmittedReviewStatusCard";
+import { BookingConfirmationCard } from "@/components/inquiries/BookingConfirmationCard";
+import { InquiryReviewCard } from "@/components/inquiries/InquiryReviewCard";
 import { Link, useParams } from "react-router-dom";
 import {
   ArrowLeft,
   Send,
   Loader2,
-  Star,
   Sparkles,
   Paperclip,
   X,
@@ -34,18 +36,11 @@ import { QUICK_EMOJIS, groupMessages } from "@/lib/threadFormatting";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { useRequireVerifiedEmail } from "@/hooks/useRequireVerifiedEmail";
 import { MobileNav } from "@/components/shared/MobileNav";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-// Lazy: only loads when the host clicks "Leave a review."
-const ReviewFormModal = lazy(() =>
-  import("@/components/reviews/ReviewFormModal").then((m) => ({
-    default: m.ReviewFormModal,
-  })),
-);
 import { ProposeAppointmentModal } from "@/components/appointments/ProposeAppointmentModal";
 import {
   ProposalCard,
@@ -81,13 +76,6 @@ interface Inquiry {
     category: string;
     logo_url?: string | null;
   } | null;
-}
-
-interface ExistingReview {
-  id: string;
-  rating: number;
-  body: string | null;
-  photo_urls?: string[];
 }
 
 interface Message {
@@ -126,7 +114,6 @@ function fmtMoney(c: number | null) {
 export default function HostInquiryDetailPage() {
   const { inquiryId } = useParams();
   const { user } = useAuth();
-  const requireVerified = useRequireVerifiedEmail();
   const [inquiry, setInquiry] = useState<Inquiry | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [composer, setComposer] = useState("");
@@ -156,10 +143,23 @@ export default function HostInquiryDetailPage() {
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [notFound, setNotFound] = useState(false);
-  const [review, setReview] = useState<ExistingReview | null>(null);
-  const [reviewModalOpen, setReviewModalOpen] = useState(false);
   const [appointmentModalOpen, setAppointmentModalOpen] = useState(false);
   const [proposals, setProposals] = useState<Proposal[]>([]);
+  // Vendor-side reviews of this host (conversation + event). The host
+  // can post a public response per review via InquiryReviewCard.
+  // Loaded only after the page settles; RLS already gates blind-period
+  // event reviews so we never see unreleased rows.
+  const [vendorReviews, setVendorReviews] = useState<
+    Array<{
+      id: string;
+      vendor_id: string;
+      rating: number;
+      body: string | null;
+      kind: "conversation" | "event";
+      created_at: string;
+      response: { body: string; updated_at: string } | null;
+    }>
+  >([]);
   const [acting, setActing] = useState<"accept" | "reject" | null>(null);
   // Thread id is the direct_threads row for this inquiry; mobile uses
   // the same model — see ensure_inquiry_thread RPC. Resolved on load.
@@ -177,10 +177,11 @@ export default function HostInquiryDetailPage() {
     if (!inquiryId || !user) return;
     if (!hasLoadedRef.current) setLoading(true);
 
-    // The four independent reads — inquiry, thread RPC, existing
-    // review, proposals — fire in parallel. Messages + reactions
-    // depend on the thread id so they chain after.
-    const [iRes, tidRes, rRes, propsRes] = await Promise.all([
+    // Three independent reads — inquiry, thread RPC, proposals —
+    // fire in parallel. Messages + reactions depend on the thread id
+    // so they chain after. Submitted-review status is fetched by
+    // SubmittedReviewStatusCard on its own.
+    const [iRes, tidRes, propsRes, vendorRevsRes] = await Promise.all([
       supabase
         .from("inquiries")
         .select(
@@ -192,11 +193,6 @@ export default function HostInquiryDetailPage() {
       (supabase as any).rpc("ensure_inquiry_thread", {
         p_inquiry_id: inquiryId,
       }),
-      supabase
-        .from("reviews")
-        .select("id, rating, body, photo_urls")
-        .eq("inquiry_id", inquiryId)
-        .maybeSingle(),
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (supabase as any)
         .from("proposals")
@@ -205,6 +201,17 @@ export default function HostInquiryDetailPage() {
         )
         .eq("inquiry_id", inquiryId)
         .order("created_at", { ascending: false }),
+      // Vendor-side reviews this host is the subject of. RLS gates
+      // visibility — blind-period event reviews don't surface here.
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (supabase as any)
+        .from("reviews")
+        .select(
+          "id, vendor_id, rating, body, kind, created_at, response:review_responses(body, updated_at)",
+        )
+        .eq("inquiry_id", inquiryId)
+        .eq("rater_role", "vendor")
+        .order("created_at", { ascending: true }),
     ]);
 
     // Only flip to 404 if the row is genuinely missing. Transient
@@ -274,8 +281,20 @@ export default function HostInquiryDetailPage() {
       setReactionsByMsg({});
     }
 
-    setReview((rRes.data as ExistingReview | null) ?? null);
     setProposals((propsRes.data as unknown as Proposal[]) ?? []);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    setVendorReviews(((vendorRevsRes.data as any[]) ?? []).map((r) => ({
+      id: r.id,
+      vendor_id: r.vendor_id,
+      rating: r.rating,
+      body: r.body,
+      kind: r.kind,
+      created_at: r.created_at,
+      // response is a 1-row nested select; coerce to scalar.
+      response: Array.isArray(r.response)
+        ? (r.response[0] ?? null)
+        : (r.response ?? null),
+    })));
 
     hasLoadedRef.current = true;
     setLoading(false);
@@ -960,9 +979,21 @@ export default function HostInquiryDetailPage() {
             </div>
           ) : null}
 
-          {/* Rating prompts — conversation rating (after ≥6 msgs) or
-              event review (after accepted proposal + event date
-              passed), whichever's unlocked. */}
+          {/* Off-platform booking handshake. Hidden when an accepted
+              proposal exists (the proposals path is canonical). */}
+          {inquiry ? (
+            <BookingConfirmationCard
+              inquiryId={inquiry.id}
+              selfRole="host"
+              otherPartyName={vendorName}
+              hasAcceptedProposal={proposals.some((p) => p.status === "accepted")}
+            />
+          ) : null}
+
+          {/* Rating discovery + status — RatingPromptStrip surfaces
+              the CTA when eligible; SubmittedReviewStatusCard shows
+              what's already been submitted (with mutual-blind
+              "waiting" stamp for unreleased event reviews). */}
           {inquiry ? (
             <RatingPromptStrip
               inquiryId={inquiry.id}
@@ -973,69 +1004,27 @@ export default function HostInquiryDetailPage() {
               otherPartyName={vendorName}
             />
           ) : null}
+          {inquiry ? (
+            <SubmittedReviewStatusCard
+              inquiryId={inquiry.id}
+              raterRole="host"
+              otherPartyName={vendorName}
+            />
+          ) : null}
 
-          {/* Review CTA — appears at the bottom of the thread once the
-              inquiry is booked. */}
-          {inquiry.status === "won" && (
-            <div className="my-4 rounded-2xl bg-background/95 border border-accent/30 p-4 shadow-sm">
-              <div className="flex items-start gap-3">
-                <div className="w-9 h-9 rounded-full bg-accent text-accent-foreground flex items-center justify-center flex-shrink-0">
-                  <Sparkles className="w-4 h-4" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  {review ? (
-                    <>
-                      <p className="font-medium text-sm mb-1">
-                        You rated {vendorName} {review.rating}{" "}
-                        {review.rating === 1 ? "star" : "stars"}
-                      </p>
-                      <div className="flex items-center gap-1 mb-2">
-                        {Array.from({ length: 5 }).map((_, i) => (
-                          <Star
-                            key={i}
-                            className={`w-3.5 h-3.5 ${
-                              i < review.rating
-                                ? "fill-accent text-accent"
-                                : "text-muted-foreground/30"
-                            }`}
-                          />
-                        ))}
-                      </div>
-                      {review.body && (
-                        <p className="text-xs text-foreground/80 leading-relaxed italic">
-                          "{review.body}"
-                        </p>
-                      )}
-                    </>
-                  ) : (
-                    <>
-                      <p className="font-medium text-sm mb-0.5">
-                        Loved working with {vendorName}?
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        Leave a review — it helps future hosts choose.
-                      </p>
-                    </>
-                  )}
-                </div>
-                <Button
-                  onClick={() => {
-                    if (!requireVerified("posting a review")) return;
-                    setReviewModalOpen(true);
-                  }}
-                  size="sm"
-                  variant={review ? "outline" : "default"}
-                  className={`rounded-full whitespace-nowrap shrink-0 ${
-                    !review
-                      ? "bg-foreground text-background hover:bg-foreground/90"
-                      : ""
-                  }`}
-                >
-                  {review ? "Edit" : "Leave review"}
-                </Button>
-              </div>
+          {/* Vendor-side ratings the host can publicly respond to.
+              Includes both conversation ratings (released on insert)
+              and event reviews (post-mutual-reveal). RLS hides blind-
+              period rows. */}
+          {vendorReviews.map((r) => (
+            <div key={r.id} className="my-4">
+              <InquiryReviewCard
+                review={r}
+                responderRole="host"
+                onResponseSaved={load}
+              />
             </div>
-          )}
+          ))}
 
           <div ref={messagesEndRef} aria-hidden />
         </div>
@@ -1221,30 +1210,14 @@ export default function HostInquiryDetailPage() {
       )}
 
       {inquiry && user && (
-        <>
-          {reviewModalOpen && (
-            <Suspense fallback={null}>
-              <ReviewFormModal
-                open={reviewModalOpen}
-                onOpenChange={setReviewModalOpen}
-                inquiryId={inquiry.id}
-                vendorId={inquiry.vendor_id}
-                hostId={user.id}
-                vendorName={inquiry.vendor?.business_name ?? "this vendor"}
-                existingReview={review}
-                onSuccess={load}
-              />
-            </Suspense>
-          )}
-          <ProposeAppointmentModal
-            open={appointmentModalOpen}
-            onOpenChange={setAppointmentModalOpen}
-            inquiryId={inquiry.id}
-            vendorId={inquiry.vendor_id}
-            hostId={user.id}
-            proposedBy="host"
-          />
-        </>
+        <ProposeAppointmentModal
+          open={appointmentModalOpen}
+          onOpenChange={setAppointmentModalOpen}
+          inquiryId={inquiry.id}
+          vendorId={inquiry.vendor_id}
+          hostId={user.id}
+          proposedBy="host"
+        />
       )}
     </div>
   );

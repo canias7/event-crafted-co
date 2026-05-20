@@ -1,7 +1,9 @@
-// Composers shared between Vendor Home (global feed) and Vendor
-// Profile (own content). Each composer mounts as a modal and either
-// inserts into vendor_buzz or uploads media to vendor-posts /
-// vendor-reels storage and inserts the corresponding row.
+// Composers for host-side social content (posts / reels / buzz).
+// Each composer mounts as a modal and either inserts into the buzz
+// table or uploads media to the vendor-posts / vendor-reels storage
+// buckets (kept their legacy names — buckets are namespaces, not
+// semantic labels) and inserts the corresponding row into posts /
+// reels. Authoring is gated server-side to profiles.role='host'.
 
 import { useRef, useState } from "react";
 import { ImagePlus, Loader2, X } from "lucide-react";
@@ -47,15 +49,10 @@ export function ModalShell({
 
 export function BuzzComposerModal({
   userId,
-  vendorId,
   onClose,
   onPosted,
 }: {
   userId: string;
-  /** Optional. Pass to associate the buzz with a specific listing —
-   *  the public listing page filters by vendor_id, so without this
-   *  the buzz won't surface publicly. */
-  vendorId?: string | null;
   onClose: () => void;
   onPosted: () => void;
 }) {
@@ -68,9 +65,8 @@ export function BuzzComposerModal({
   async function handlePost() {
     if (!canPost) return;
     setPosting(true);
-    const { error } = await supabase.from("vendor_buzz").insert({
-      user_id: userId,
-      vendor_id: vendorId ?? null,
+    const { error } = await supabase.from("buzz").insert({
+      author_user_id: userId,
       body: trimmed,
     });
     if (error) {
@@ -113,14 +109,11 @@ export function BuzzComposerModal({
 export function MediaComposerModal({
   kind,
   userId,
-  vendorId,
   onClose,
   onPosted,
 }: {
   kind: "post" | "reel";
   userId: string;
-  /** Optional. Pass to associate the media with a specific listing. */
-  vendorId?: string | null;
   onClose: () => void;
   onPosted: () => void;
 }) {
@@ -165,17 +158,15 @@ export function MediaComposerModal({
 
       try {
         if (kind === "post") {
-          const { error: insErr } = await supabase.from("vendor_posts").insert({
-            user_id: userId,
-            vendor_id: vendorId ?? null,
+          const { error: insErr } = await supabase.from("posts").insert({
+            author_user_id: userId,
             image_url: pub.publicUrl,
             caption: caption.trim() || null,
           });
           if (insErr) throw insErr;
         } else {
-          const { error: insErr } = await supabase.from("vendor_reels").insert({
-            user_id: userId,
-            vendor_id: vendorId ?? null,
+          const { error: insErr } = await supabase.from("reels").insert({
+            author_user_id: userId,
             video_url: pub.publicUrl,
             thumbnail_url: null,
             caption: caption.trim() || null,

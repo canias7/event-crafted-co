@@ -29,15 +29,10 @@ import { Footer } from "@/components/public/Footer";
 import { Lightbox } from "@/components/shared/Lightbox";
 import { VideoEmbed } from "@/components/vendor/VideoEmbed";
 import { ShowcaseStrip } from "@/components/vendor/ShowcaseStrip";
-import { VendorSocialFeed } from "@/components/vendor/VendorSocialFeed";
 import { VendorOtherListings } from "@/components/vendor/VendorOtherListings";
 import { VendorBrandCard } from "@/components/vendor/VendorBrandCard";
 import { VerificationBadges } from "@/components/vendor/VerificationBadges";
 import { CoBookedRail } from "@/components/vendor/CoBookedRail";
-import {
-  ImportedReviewsList,
-  type ImportedReview,
-} from "@/components/vendor/ImportedReviewsList";
 import { VendorFaqList } from "@/components/vendor/VendorFaqList";
 import {
   VendorFaqsPublic,
@@ -167,6 +162,10 @@ export default function VendorDetailPage() {
   const { isSaved, toggle: toggleSave } = useSavedVendors();
   const [signinPromptOpen, setSigninPromptOpen] = useState(false);
   const [inquiryFormOpen, setInquiryFormOpen] = useState(false);
+  // When the host clicks "Inquire about this" on a specific package row,
+  // tag the resulting inquiry with that package id so any event review
+  // attributes to the package, not the vendor as a whole.
+  const [inquiryPackageId, setInquiryPackageId] = useState<string | null>(null);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
 
   const vendor = id
@@ -233,25 +232,34 @@ export default function VendorDetailPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [vendor?.id, vendor?.isReal]);
 
-  // Real reviews (only for DB-backed vendors)
-  const [realReviews, setRealReviews] = useState<RealReview[]>([]);
+  // Real reviews (only for DB-backed vendors). Filtered to
+  // rater_role='host' so the vendor's own reviews of hosts don't bleed
+  // onto the vendor's public profile. Conversation + event are
+  // fetched together and split client-side — conversation is shown as
+  // a compact secondary signal, event is the primary review feed.
+  const [eventReviews, setEventReviews] = useState<RealReview[]>([]);
+  const [conversationReviews, setConversationReviews] = useState<RealReview[]>(
+    [],
+  );
   useEffect(() => {
     if (!vendor || !vendor.isReal) {
-      setRealReviews([]);
+      setEventReviews([]);
+      setConversationReviews([]);
       return;
     }
     let cancelled = false;
-    supabase
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (supabase as any)
       .from("reviews")
       .select(
-        "id, rating, body, photo_urls, created_at, host:profiles!reviews_host_id_fkey(display_name), response:review_responses(body), inquiry:inquiries!reviews_inquiry_id_fkey(event_type, event_date)",
+        "id, rating, body, photo_urls, created_at, kind, host:profiles!reviews_host_id_fkey(display_name), response:review_responses(body), inquiry:inquiries!reviews_inquiry_id_fkey(event_type, event_date)",
       )
       .eq("vendor_id", vendor.id)
+      .eq("rater_role", "host")
       .order("created_at", { ascending: false })
-      .then(({ data }) => {
+      .then(({ data }: { data: (RealReview & { kind: string })[] | null }) => {
         if (cancelled) return;
-        const rows = (data as RealReview[] | null) ?? [];
-        // Supabase returns response as array for has-many; flatten.
+        const rows = data ?? [];
         const normalized = rows.map((r) => ({
           ...r,
           response: Array.isArray(r.response)
@@ -261,30 +269,10 @@ export default function VendorDetailPage() {
             ? (r.inquiry[0] ?? null)
             : r.inquiry,
         }));
-        setRealReviews(normalized);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [vendor]);
-
-  // Imported reviews from external platforms (vendor-pasted).
-  const [importedReviews, setImportedReviews] = useState<ImportedReview[]>([]);
-  useEffect(() => {
-    if (!vendor || !vendor.isReal) {
-      setImportedReviews([]);
-      return;
-    }
-    let cancelled = false;
-    supabase
-      .from("imported_reviews")
-      .select("id, source, reviewer_name, rating, body, reviewed_at")
-      .eq("vendor_id", vendor.id)
-      .order("reviewed_at", { ascending: false, nullsFirst: false })
-      .order("created_at", { ascending: false })
-      .then(({ data }) => {
-        if (cancelled) return;
-        setImportedReviews((data as ImportedReview[] | null) ?? []);
+        setEventReviews(normalized.filter((r) => r.kind === "event"));
+        setConversationReviews(
+          normalized.filter((r) => r.kind === "conversation"),
+        );
       });
     return () => {
       cancelled = true;
@@ -350,12 +338,21 @@ export default function VendorDetailPage() {
     };
   }, [vendor]);
 
+  // Aggregate rating for the structured-data card uses EVENT reviews
+  // only — those are the higher-signal post-event reads Google should
+  // weight in rich results. Conversation ratings are a separate
+  // surface and don't feed schema.org/AggregateRating.
   const reviewsAvg =
-    realReviews.length > 0
-      ? realReviews.reduce((sum, r) => sum + r.rating, 0) / realReviews.length
+    eventReviews.length > 0
+      ? eventReviews.reduce((sum, r) => sum + r.rating, 0) / eventReviews.length
       : vendor?.rating ?? 0;
   const reviewsCount =
-    realReviews.length > 0 ? realReviews.length : vendor?.reviews ?? 0;
+    eventReviews.length > 0 ? eventReviews.length : vendor?.reviews ?? 0;
+  const conversationAvg =
+    conversationReviews.length > 0
+      ? conversationReviews.reduce((sum, r) => sum + r.rating, 0) /
+        conversationReviews.length
+      : 0;
 
   // Pricing packages (active only, sorted by display_order then price).
   interface VendorPackage {
@@ -366,9 +363,16 @@ export default function VendorDetailPage() {
     includes: string[];
   }
   const [packages, setPackages] = useState<VendorPackage[]>([]);
+  // package_id → { avg, count } from released event reviews on
+  // inquiries tagged with that package. View handles RLS + 14-day
+  // grace; missing packages just render without a rating.
+  const [packageRatings, setPackageRatings] = useState<
+    Record<string, { avg: number; count: number }>
+  >({});
   useEffect(() => {
     if (!vendor || !vendor.isReal) {
       setPackages([]);
+      setPackageRatings({});
       return;
     }
     let cancelled = false;
@@ -381,7 +385,39 @@ export default function VendorDetailPage() {
       .order("price_cents", { ascending: true })
       .then(({ data }) => {
         if (cancelled) return;
-        setPackages((data as VendorPackage[] | null) ?? []);
+        const pkgs = (data as VendorPackage[] | null) ?? [];
+        setPackages(pkgs);
+        if (pkgs.length === 0) {
+          setPackageRatings({});
+          return;
+        }
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (supabase as any)
+          .from("package_rating_summary")
+          .select("package_id, avg_rating, review_count")
+          .in(
+            "package_id",
+            pkgs.map((p) => p.id),
+          )
+          .then(
+            ({
+              data: stats,
+            }: {
+              data:
+                | { package_id: string; avg_rating: number; review_count: number }[]
+                | null;
+            }) => {
+              if (cancelled) return;
+              const map: Record<string, { avg: number; count: number }> = {};
+              for (const s of stats ?? []) {
+                map[s.package_id] = {
+                  avg: Number(s.avg_rating),
+                  count: s.review_count,
+                };
+              }
+              setPackageRatings(map);
+            },
+          );
       });
     return () => {
       cancelled = true;
@@ -456,7 +492,7 @@ export default function VendorDetailPage() {
     };
   }, [vendor, reviewsAvg, reviewsCount]);
 
-  function handleInquiryClick() {
+  function handleInquiryClick(packageId?: string) {
     if (authLoading) return;
     if (!session || !profile) {
       setSigninPromptOpen(true);
@@ -468,6 +504,7 @@ export default function VendorDetailPage() {
       toast.info("Inquiries are sent from host or vendor accounts, not admin.");
       return;
     }
+    setInquiryPackageId(packageId ?? null);
     setInquiryFormOpen(true);
   }
 
@@ -599,10 +636,11 @@ export default function VendorDetailPage() {
                   <div className={`grid gap-4 ${packages.length >= 3 ? "md:grid-cols-3" : packages.length === 2 ? "md:grid-cols-2" : "md:grid-cols-1 max-w-md"}`}>
                     {packages.map((pkg, i) => {
                       const featured = packages.length >= 2 && i === Math.floor(packages.length / 2);
+                      const stats = packageRatings[pkg.id];
                       return (
                         <div
                           key={pkg.id}
-                          className={`relative rounded-sm p-6 border transition-colors ${
+                          className={`relative rounded-sm p-6 border transition-colors flex flex-col ${
                             featured
                               ? "border-accent bg-accent/5"
                               : "border-border bg-card"
@@ -619,6 +657,17 @@ export default function VendorDetailPage() {
                           <p className="font-editorial text-3xl mb-3 tnum">
                             ${(pkg.price_cents / 100).toLocaleString()}
                           </p>
+                          {stats && stats.count > 0 && (
+                            <div className="flex items-center gap-1.5 mb-3 text-xs">
+                              <Star className="w-3.5 h-3.5 fill-accent text-accent" />
+                              <span className="font-medium tnum">
+                                {stats.avg.toFixed(1)}
+                              </span>
+                              <span className="text-muted-foreground">
+                                ({stats.count})
+                              </span>
+                            </div>
+                          )}
                           {pkg.description && (
                             <p className="text-sm text-muted-foreground mb-5 leading-relaxed">
                               {pkg.description}
@@ -634,6 +683,14 @@ export default function VendorDetailPage() {
                               ))}
                             </ul>
                           )}
+                          <Button
+                            onClick={() => handleInquiryClick(pkg.id)}
+                            disabled={authLoading}
+                            variant={featured ? "default" : "outline"}
+                            className="mt-5 rounded-full"
+                          >
+                            Inquire about this
+                          </Button>
                         </div>
                       );
                     })}
@@ -731,15 +788,6 @@ export default function VendorDetailPage() {
                 </SilentErrorBoundary>
               )}
 
-              {/* Social feed — vendor_posts grid + vendor_buzz cards.
-                  Surfaces the same content the mobile host vendor page
-                  shows. Renders nothing if both are empty. */}
-              {vendor.isReal && (
-                <SilentErrorBoundary label="VendorSocialFeed">
-                  <VendorSocialFeed vendorId={vendor.id} />
-                </SilentErrorBoundary>
-              )}
-
               {/* Team section dropped from the listing — the wizard no
                   longer collects team bios. Re-enable along with the
                   wizard step when product wants it back. */}
@@ -765,10 +813,39 @@ export default function VendorDetailPage() {
                 </SilentErrorBoundary>
               )}
 
-              {/* Reviews + ImportedReviews sections pulled — empty
-                  "0.0 · 0 reviews" header read as noise on fresh
-                  listings. Re-enable once review collection is wired
-                  end-to-end. */}
+              {/* Reviews. Event reviews are the primary feed; the
+                  conversation-rating summary sits underneath as a
+                  separate "responsiveness" signal. Both render only
+                  when there's something real to show — fresh
+                  listings with zero of either skip this whole block
+                  rather than read as "0.0 · 0 reviews". */}
+              {vendor.isReal && eventReviews.length > 0 && (
+                <VendorReviewsList
+                  realReviews={eventReviews}
+                  samples={[]}
+                  averageRating={reviewsAvg}
+                  totalCount={eventReviews.length}
+                  vendorName={vendor.name}
+                />
+              )}
+              {vendor.isReal && conversationReviews.length > 0 && (
+                <div className="card-soft p-6">
+                  <p className="font-label text-accent mb-3">Chat responsiveness</p>
+                  <h3 className="font-editorial text-2xl">
+                    <span className="tnum">{conversationAvg.toFixed(1)}</span>{" "}
+                    <span className="text-muted-foreground font-light">·</span>{" "}
+                    <span className="text-muted-foreground font-light tnum">
+                      {conversationReviews.length}{" "}
+                      {conversationReviews.length === 1
+                        ? "rating"
+                        : "ratings"}
+                    </span>
+                  </h3>
+                  <p className="text-sm text-muted-foreground mt-2">
+                    What hosts say about messaging with {vendor.name}.
+                  </p>
+                </div>
+              )}
 
               {/* Often booked with (cross-sell from booking signal + curated) */}
               {vendor.isReal && (
@@ -856,7 +933,7 @@ export default function VendorDetailPage() {
                   </div>
 
                   <Button
-                    onClick={handleInquiryClick}
+                    onClick={() => handleInquiryClick()}
                     disabled={authLoading}
                     className="w-full h-12 rounded-full bg-foreground text-background hover:bg-foreground/90"
                   >
@@ -963,7 +1040,7 @@ export default function VendorDetailPage() {
           </p>
         </div>
         <Button
-          onClick={handleInquiryClick}
+          onClick={() => handleInquiryClick()}
           disabled={authLoading}
           className="rounded-full bg-foreground text-background hover:bg-foreground/90"
         >
@@ -1005,9 +1082,13 @@ export default function VendorDetailPage() {
         <Suspense fallback={null}>
           <InquiryFormModal
             open={inquiryFormOpen}
-            onOpenChange={setInquiryFormOpen}
+            onOpenChange={(o) => {
+              setInquiryFormOpen(o);
+              if (!o) setInquiryPackageId(null);
+            }}
             preferredVendorName={vendor.name}
             preferredVendorId={vendor.id}
+            preferredPackageId={inquiryPackageId ?? undefined}
           />
         </Suspense>
       )}

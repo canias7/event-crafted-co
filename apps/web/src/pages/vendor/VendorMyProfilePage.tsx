@@ -1,79 +1,28 @@
-// Vendor "My Profile" — Instagram-style identity hub showing the
-// signed-in vendor's OWN posts / reels / buzz / listings.
+// Vendor "My Profile" — listings-only identity hub. Posts / reels /
+// buzz moved to the host side; vendors only manage listings here.
 //
-// Mirrors apps/vendor-mobile/app/(vendor)/profile.tsx (the personal
-// profile tab). Header shows avatar / business name / location /
-// member-since / verified badge plus 4 mini-stats (posts, reels,
-// buzz, listings). Tabs swap the gallery underneath; each non-listing
-// tab has its own composer for publishing new content.
-//
-// Terminology: this is the vendor's ACCOUNT profile (one per user). The
-// rows in the vendor_profiles table are LISTINGS — up to 5 per account.
-// "Profile" = account; "listing" = marketplace listing row.
+// Header shows avatar / business name / member-since / verified
+// badge + rating. Below the header: the vendor's listings rendered
+// as the same directory cards the public /vendors directory uses.
+// Terminology: this is the vendor's ACCOUNT profile (one per user).
+// The rows in the vendor_profiles table are LISTINGS — up to 5
+// per account. "Profile" = account; "listing" = marketplace row.
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import {
-  CheckCircle2,
-  Edit3,
-  Film,
-  Grid3x3,
-  MessageCircle,
-  Plus,
-  Share2,
-  Store,
-} from "lucide-react";
+import { CheckCircle2, Edit3, Plus, Share2 } from "lucide-react";
 import { toast } from "sonner";
 import { DashboardSidebar } from "@/components/shared/DashboardSidebar";
 import { MobileNav } from "@/components/shared/MobileNav";
 import { Skeleton } from "@/components/ui/skeleton";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { Button } from "@/components/ui/button";
-import {
-  BuzzComposerModal,
-  MediaComposerModal,
-} from "@/components/vendor/Composers";
 import { BrandCardShell } from "@/components/vendor/BrandCardShell";
 import { ListingWizardModal } from "@/components/vendor/ListingWizardModal";
-import { MediaLightbox } from "@/components/vendor/MediaLightbox";
-
-type LightboxMedia =
-  | {
-      kind: "post";
-      image_url: string;
-      caption: string | null;
-      created_at: string;
-    }
-  | {
-      kind: "reel";
-      video_url: string;
-      caption: string | null;
-      created_at: string;
-    };
 import { vendorNavItems } from "@/data/navItems";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 
-type Tab = "grid" | "reels" | "buzz" | "listing";
-
-interface PostRow {
-  id: string;
-  image_url: string;
-  caption: string | null;
-  created_at: string;
-}
-interface ReelRow {
-  id: string;
-  video_url: string;
-  thumbnail_url: string | null;
-  caption: string | null;
-  created_at: string;
-}
-interface BuzzRow {
-  id: string;
-  body: string;
-  created_at: string;
-}
 interface VendorRow {
   id: string;
   business_name: string | null;
@@ -97,9 +46,7 @@ interface AccountProfile {
 
 export default function VendorMyProfilePage() {
   const { user } = useAuth();
-  const [tab, setTab] = useState<Tab>("grid");
   const [loading, setLoading] = useState(true);
-  const [vendorIds, setVendorIds] = useState<string[]>([]);
   const [primary, setPrimary] = useState<VendorRow | null>(null);
   const [account, setAccount] = useState<AccountProfile | null>(null);
   const [ratingAvg, setRatingAvg] = useState<number | null>(null);
@@ -107,14 +54,7 @@ export default function VendorMyProfilePage() {
   // First portfolio image per listing → used as the listing card cover
   // so the profile's Listings tab matches the public /vendors directory.
   const [heroByListing, setHeroByListing] = useState<Record<string, string>>({});
-  const [posts, setPosts] = useState<PostRow[]>([]);
-  const [reels, setReels] = useState<ReelRow[]>([]);
-  const [buzz, setBuzz] = useState<BuzzRow[]>([]);
-  const [composer, setComposer] = useState<"post" | "reel" | "buzz" | null>(
-    null,
-  );
   const [listingWizardOpen, setListingWizardOpen] = useState(false);
-  const [lightbox, setLightbox] = useState<LightboxMedia | null>(null);
 
   const load = useCallback(async () => {
     if (!user?.id) return;
@@ -159,13 +99,17 @@ export default function VendorMyProfilePage() {
     const primaryRow = vendors[0] ?? null;
     setPrimary(primaryRow);
     const ids = vendors.map((v) => v.id);
-    setVendorIds(ids);
 
-    // Average review rating across all the vendor's listings. Header
-    // shows "—" if there's nothing to average yet.
     if (ids.length > 0) {
       const [{ data: revs }, { data: photos }] = await Promise.all([
-        supabase.from("reviews").select("rating").in("vendor_id", ids),
+        supabase
+          .from("reviews")
+          .select("rating")
+          .in("vendor_id", ids)
+          // Vendor profile header averages the host's reviews of
+          // this vendor — not the vendor's outgoing ratings of
+          // hosts. Otherwise the header score lies.
+          .eq("rater_role", "host"),
         supabase
           .from("vendor_portfolio_images")
           .select("vendor_id, storage_path, display_order, created_at")
@@ -179,15 +123,12 @@ export default function VendorMyProfilePage() {
           ? null
           : ratings.reduce((s, r) => s + r.rating, 0) / ratings.length,
       );
-      // First photo per listing wins (lowest display_order, then earliest
-      // created_at). Same logic as useVendors so the profile + directory
-      // show the same cover.
       const heroes: Record<string, string> = {};
       for (const row of (photos as Array<{
         vendor_id: string;
-        storage_path: string;
+        storage_path: string | null;
       }> | null) ?? []) {
-        if (!heroes[row.vendor_id]) {
+        if (!heroes[row.vendor_id] && row.storage_path) {
           const { data: pub } = supabase.storage
             .from("vendor-portfolios")
             .getPublicUrl(row.storage_path);
@@ -200,33 +141,6 @@ export default function VendorMyProfilePage() {
       setHeroByListing({});
     }
 
-    // Posts / reels / buzz belong to the vendor (user_id), not a
-    // specific listing. Query by user_id so the feed shows every
-    // piece of social content the vendor's ever published,
-    // regardless of which (or zero) listings they have.
-    const [postsRes, reelsRes, buzzRes] = await Promise.all([
-      supabase
-        .from("vendor_posts")
-        .select("id, image_url, caption, created_at")
-        .eq("user_id", user.id)
-        .order("created_at", { ascending: false })
-        .limit(60),
-      supabase
-        .from("vendor_reels")
-        .select("id, video_url, thumbnail_url, caption, created_at")
-        .eq("user_id", user.id)
-        .order("created_at", { ascending: false })
-        .limit(40),
-      supabase
-        .from("vendor_buzz")
-        .select("id, body, created_at")
-        .eq("user_id", user.id)
-        .order("created_at", { ascending: false })
-        .limit(40),
-    ]);
-    setPosts((postsRes.data ?? []) as PostRow[]);
-    setReels((reelsRes.data ?? []) as ReelRow[]);
-    setBuzz((buzzRes.data ?? []) as BuzzRow[]);
     setLoading(false);
   }, [user?.id]);
 
@@ -240,25 +154,16 @@ export default function VendorMyProfilePage() {
     return String(new Date(stamp).getFullYear());
   }, [account?.created_at, primary?.created_at]);
 
-  // Open the listing wizard modal. Used to insert an empty draft row
-  // and navigate to /vendor/listing?id=X — but /vendor/listing was
-  // eliminated in the route cleanup, and "no drafts" means we never
-  // want a half-empty vendor_profiles row sitting in the DB. The wizard
-  // (fields TBD by product) will collect everything up front and INSERT
-  // once with application_status='pending'.
   function openListingWizard() {
     if (!user?.id) return;
     setListingWizardOpen(true);
   }
 
-  // Share the vendor's public listing URL. Falls back to clipboard
-  // when the browser doesn't expose navigator.share (desktop Chrome).
   async function onShare() {
     if (!primary) return;
     const slugOrId = primary.slug ?? primary.id;
     const url = `${window.location.origin}/vendors/${slugOrId}`;
     const text = `${primary.business_name ?? "Check out my listing"} on Vendora`;
-    // Web Share API (mobile browsers + Safari)
     if (
       typeof navigator !== "undefined" &&
       typeof (navigator as Navigator & { share?: unknown }).share === "function"
@@ -287,13 +192,6 @@ export default function VendorMyProfilePage() {
     return n.trim()[0]?.toUpperCase() ?? "V";
   }, [account?.business_name, user?.email]);
 
-  const TABS: Array<{ id: Tab; label: string; icon: typeof Grid3x3 }> = [
-    { id: "grid", label: `Posts · ${posts.length}`, icon: Grid3x3 },
-    { id: "reels", label: `Reels · ${reels.length}`, icon: Film },
-    { id: "buzz", label: `Buzz · ${buzz.length}`, icon: MessageCircle },
-    { id: "listing", label: `Listings · ${listings.length}`, icon: Store },
-  ];
-
   return (
     <div className="flex min-h-screen vendor-canvas">
       <DashboardSidebar
@@ -307,7 +205,7 @@ export default function VendorMyProfilePage() {
             <div>
               <h1 className="font-editorial text-3xl">My Profile</h1>
               <p className="text-sm text-muted-foreground">
-                Your posts, reels, buzz, and listings — only yours.
+                Your listings — manage your marketplace presence here.
               </p>
             </div>
             <NotificationBell variant="light" />
@@ -332,55 +230,9 @@ export default function VendorMyProfilePage() {
             />
           )}
 
-          <div className="flex items-center justify-between gap-3 flex-wrap">
-            <div className="flex gap-1 overflow-x-auto">
-              {TABS.map((t) => {
-                const Icon = t.icon;
-                const active = tab === t.id;
-                return (
-                  <button
-                    key={t.id}
-                    onClick={() => setTab(t.id)}
-                    className={`flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition ${
-                      active
-                        ? "bg-foreground text-background"
-                        : "bg-white/40 border border-white/55 text-muted-foreground hover:bg-white/70 hover:text-foreground"
-                    }`}
-                  >
-                    <Icon className="h-4 w-4" />
-                    {t.label}
-                  </button>
-                );
-              })}
-            </div>
-            {tab !== "listing" ? (
-              <Button
-                onClick={() =>
-                  setComposer(
-                    tab === "grid" ? "post" : tab === "reels" ? "reel" : "buzz",
-                  )
-                }
-                className="rounded-full"
-              >
-                <Plus className="h-4 w-4 mr-1" />
-                {tab === "grid"
-                  ? "New post"
-                  : tab === "reels"
-                    ? "New reel"
-                    : "New buzz"}
-              </Button>
-            ) : null}
-          </div>
-
           <div>
             {loading ? (
               <Skeleton className="h-72 w-full rounded-md" />
-            ) : tab === "grid" ? (
-              <PostsGrid posts={posts} onOpen={setLightbox} />
-            ) : tab === "reels" ? (
-              <ReelsGrid reels={reels} onOpen={setLightbox} />
-            ) : tab === "buzz" ? (
-              <BuzzList buzz={buzz} />
             ) : (
               <ListingsList
                 listings={listings}
@@ -393,29 +245,6 @@ export default function VendorMyProfilePage() {
       </main>
       <MobileNav items={vendorNavItems} />
 
-      {composer === "buzz" && user ? (
-        <BuzzComposerModal
-          userId={user.id}
-          vendorId={primary?.id ?? null}
-          onClose={() => setComposer(null)}
-          onPosted={() => {
-            setComposer(null);
-            load();
-          }}
-        />
-      ) : null}
-      {(composer === "post" || composer === "reel") && user ? (
-        <MediaComposerModal
-          kind={composer}
-          userId={user.id}
-          vendorId={primary?.id ?? null}
-          onClose={() => setComposer(null)}
-          onPosted={() => {
-            setComposer(null);
-            load();
-          }}
-        />
-      ) : null}
       {listingWizardOpen && user ? (
         <ListingWizardModal
           userId={user.id}
@@ -426,8 +255,6 @@ export default function VendorMyProfilePage() {
           }}
         />
       ) : null}
-      <MediaLightbox item={lightbox} onClose={() => setLightbox(null)} />
-      {void vendorIds /* silence unused */}
     </div>
   );
 }
@@ -445,13 +272,9 @@ function HeaderCard({
   initials: string;
   logoUrl: string | null;
   businessName: string;
-  /** Account-level bio (profiles.bio). Surfaces on the back of the
-   *  shared BrandCardShell flip. */
   bio: string | null;
   memberSince: string;
   verified: boolean;
-  /** Average review rating across all the vendor's listings, or
-   *  null when there are no reviews yet (renders as "—"). */
   ratingAvg: number | null;
   onShare: () => void;
 }) {
@@ -521,141 +344,12 @@ function Stat({ label, value }: { label: string; value: string }) {
   );
 }
 
-function PostsGrid({
-  posts,
-  onOpen,
-}: {
-  posts: PostRow[];
-  onOpen: (m: LightboxMedia) => void;
-}) {
-  if (posts.length === 0) {
-    return <Empty msg="No posts yet — tap New post to create one." />;
-  }
-  return (
-    <div className="grid grid-cols-3 sm:grid-cols-4 gap-x-2 gap-y-4">
-      {posts.map((p) => (
-        <button
-          key={p.id}
-          onClick={() =>
-            onOpen({
-              kind: "post",
-              image_url: p.image_url,
-              caption: p.caption,
-              created_at: p.created_at,
-            })
-          }
-          className="text-left group"
-        >
-          <div className="relative aspect-square overflow-hidden rounded-md bg-secondary/40">
-            <img
-              src={p.image_url}
-              alt={p.caption ?? "Post"}
-              className="w-full h-full object-cover transition group-hover:scale-[1.02]"
-              loading="lazy"
-            />
-          </div>
-          {p.caption ? (
-            <p className="mt-2 text-xs text-foreground/80 leading-snug line-clamp-2">
-              {p.caption}
-            </p>
-          ) : null}
-        </button>
-      ))}
-    </div>
-  );
-}
-
-function ReelsGrid({
-  reels,
-  onOpen,
-}: {
-  reels: ReelRow[];
-  onOpen: (m: LightboxMedia) => void;
-}) {
-  if (reels.length === 0) {
-    return <Empty msg="No reels yet — tap New reel to upload a video." />;
-  }
-  return (
-    <div className="grid grid-cols-3 sm:grid-cols-4 gap-x-2 gap-y-4">
-      {reels.map((r) => (
-        <button
-          key={r.id}
-          onClick={() =>
-            onOpen({
-              kind: "reel",
-              video_url: r.video_url,
-              caption: r.caption,
-              created_at: r.created_at,
-            })
-          }
-          className="text-left group"
-        >
-          <div className="relative aspect-square overflow-hidden rounded-md bg-black">
-            {r.thumbnail_url ? (
-              <img
-                src={r.thumbnail_url}
-                alt={r.caption ?? "Reel"}
-                className="w-full h-full object-cover"
-                loading="lazy"
-              />
-            ) : (
-              // No stored thumbnail — render the source video with
-              // preload="metadata" and a #t=0.1 hash so browsers seek
-              // to the first frame as a still. muted + playsInline so
-              // it never auto-plays audio.
-              <video
-                src={`${r.video_url}#t=0.1`}
-                className="w-full h-full object-cover pointer-events-none"
-                preload="metadata"
-                muted
-                playsInline
-                aria-label={r.caption ?? "Reel"}
-              />
-            )}
-            {/* Play indicator — small chip in the corner so the video
-                tile is distinguishable from a Post tile at a glance. */}
-            <span className="absolute top-2 right-2 inline-flex items-center justify-center w-6 h-6 rounded-full bg-black/55 text-white">
-              <Film className="w-3 h-3" aria-hidden />
-            </span>
-          </div>
-          {r.caption ? (
-            <p className="mt-2 text-xs text-foreground/80 leading-snug line-clamp-2">
-              {r.caption}
-            </p>
-          ) : null}
-        </button>
-      ))}
-    </div>
-  );
-}
-
-function BuzzList({ buzz }: { buzz: BuzzRow[] }) {
-  if (buzz.length === 0) {
-    return <Empty msg="No buzz yet — tap New buzz to share a thought." />;
-  }
-  return (
-    <div className="space-y-3 max-w-2xl">
-      {buzz.map((b) => (
-        <div key={b.id} className="card-soft p-4">
-          <p className="text-sm text-foreground whitespace-pre-wrap">{b.body}</p>
-          <p className="mt-2 text-xs text-muted-foreground">
-            {new Date(b.created_at).toLocaleDateString()}
-          </p>
-        </div>
-      ))}
-    </div>
-  );
-}
-
 function ListingsList({
   listings,
   heroByListing,
   onAddListing,
 }: {
   listings: VendorRow[];
-  /** Map of listing id → first portfolio image public URL. Listings
-   *  with no portfolio uploads fall back to the "No listing photos
-   *  yet" placeholder (same as the public /vendors directory). */
   heroByListing: Record<string, string>;
   onAddListing: () => void;
 }) {
@@ -735,47 +429,37 @@ function ListingDirectoryCard({
           />
         ) : (
           <div className="w-full h-full flex flex-col items-center justify-center gap-1 bg-muted text-muted-foreground">
-            <Store className="w-6 h-6" aria-hidden />
-            <span className="text-[11px]">No listing photos yet</span>
+            <span className="text-xs">No listing photos yet</span>
           </div>
         )}
         <span
-          className={`absolute top-2 left-2 inline-flex items-center rounded-full px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wider border ${statusTone} backdrop-blur-sm`}
+          className={`absolute top-2 left-2 inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-medium ${statusTone}`}
         >
           {statusLabel}
         </span>
       </div>
-      <div className="space-y-0.5">
-        <h3 className="font-editorial text-base leading-tight truncate">
-          {name}
-        </h3>
-        <p className="text-xs text-muted-foreground truncate">
-          {listing.category ?? "Vendor"}
-          {listing.location ? ` · ${listing.location}` : ""}
+      <div className="px-1">
+        <p className="text-sm font-medium leading-tight line-clamp-1">{name}</p>
+        <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">
+          {[listing.category, listing.location].filter(Boolean).join(" · ")}
         </p>
         {price ? (
-          <p className="text-xs text-muted-foreground">{price}</p>
+          <p className="text-xs text-foreground/80 mt-0.5 tnum">{price}</p>
         ) : null}
       </div>
     </>
   );
-  // Public VendorCard uses /vendors/{id} (UUID, looked up against the
-  // approved-vendor cache); same route here so the click takes the
-  // vendor to their listing's actual public page. Pending / rejected
-  // listings aren't in the public cache yet, so leave them
-  // non-interactive.
+  // Only approved listings have a public detail page worth linking
+  // to; others render as static cards.
   if (listing.application_status === "approved") {
     return (
-      <Link to={`/vendors/${listing.id}`} className="group block">
+      <Link
+        to={`/vendors/${listing.slug ?? listing.id}`}
+        className="block group"
+      >
         {inner}
       </Link>
     );
   }
   return <div className="block">{inner}</div>;
-}
-
-function Empty({ msg }: { msg: string }) {
-  return (
-    <p className="text-sm text-muted-foreground py-12 text-center">{msg}</p>
-  );
 }

@@ -22,15 +22,14 @@ import { supabase } from "@/integrations/supabase/client";
 
 type Tab = "listing" | "grid" | "reels" | "buzz";
 
-type Author = { business_name: string | null; logo_url: string | null };
+type Author = { display_name: string | null; avatar_url: string | null };
 
 interface PostRow {
   id: string;
   image_url: string;
   caption: string | null;
   created_at: string;
-  vendor_id: string;
-  vendor: Author | null;
+  author: Author | null;
 }
 interface ReelRow {
   id: string;
@@ -38,13 +37,13 @@ interface ReelRow {
   thumbnail_url: string | null;
   caption: string | null;
   created_at: string;
-  vendor: Author | null;
+  author: Author | null;
 }
 interface BuzzRow {
   id: string;
   body: string;
   created_at: string;
-  vendor: Author | null;
+  author: Author | null;
 }
 interface ListingRow {
   id: string;
@@ -80,23 +79,23 @@ export default function CustomerExplorePage() {
     const [postsRes, reelsRes, buzzRes, listingsRes, portfolioRes] =
       await Promise.all([
         supabase
-          .from("vendor_posts")
+          .from("posts")
           .select(
-            "id, image_url, caption, created_at, vendor_id, vendor:vendor_brands!vendor_posts_user_id_profiles_fkey!inner(business_name, logo_url)",
+            "id, image_url, caption, created_at, author:profiles!posts_author_user_id_fkey!inner(display_name, avatar_url)",
           )
           .order("created_at", { ascending: false })
           .limit(60),
         supabase
-          .from("vendor_reels")
+          .from("reels")
           .select(
-            "id, video_url, thumbnail_url, caption, created_at, vendor:vendor_brands!vendor_reels_user_id_profiles_fkey!inner(business_name, logo_url)",
+            "id, video_url, thumbnail_url, caption, created_at, author:profiles!reels_author_user_id_fkey!inner(display_name, avatar_url)",
           )
           .order("created_at", { ascending: false })
           .limit(40),
         supabase
-          .from("vendor_buzz")
+          .from("buzz")
           .select(
-            "id, body, created_at, vendor:vendor_brands!vendor_buzz_user_id_profiles_fkey!inner(business_name, logo_url)",
+            "id, body, created_at, author:profiles!buzz_author_user_id_fkey!inner(display_name, avatar_url)",
           )
           .order("created_at", { ascending: false })
           .limit(40),
@@ -415,22 +414,23 @@ function ListingCard({
   );
 }
 
-function FeedAuthorHeader({ vendor }: { vendor: Author | null }) {
+function FeedAuthorHeader({ author }: { author: Author | null }) {
+  const name = author?.display_name ?? "Host";
   return (
     <div className="flex items-center gap-3 px-4 py-3">
       <div className="h-9 w-9 overflow-hidden rounded-full bg-secondary/60 flex items-center justify-center text-sm font-semibold text-muted-foreground shrink-0">
-        {vendor?.logo_url ? (
+        {author?.avatar_url ? (
           <img
-            src={vendor.logo_url}
+            src={author.avatar_url}
             alt=""
             className="h-full w-full object-cover"
           />
         ) : (
-          (vendor?.business_name ?? "V")[0]?.toUpperCase()
+          name[0]?.toUpperCase()
         )}
       </div>
       <p className="flex-1 text-sm font-semibold text-foreground truncate">
-        {vendor?.business_name ?? "Vendor"}
+        {name}
       </p>
     </div>
   );
@@ -449,7 +449,7 @@ function PostsFeed({ posts }: { posts: PostRow[] }) {
           key={p.id}
           className="overflow-hidden rounded-xl bg-card border border-border shadow-sm"
         >
-          <FeedAuthorHeader vendor={p.vendor} />
+          <FeedAuthorHeader author={p.author} />
           <div className="aspect-[4/5] bg-secondary/40">
             <img
               src={p.image_url}
@@ -485,7 +485,7 @@ function ReelsFeed({ reels }: { reels: ReelRow[] }) {
           key={r.id}
           className="block overflow-hidden rounded-xl bg-card border border-border shadow-sm"
         >
-          <FeedAuthorHeader vendor={r.vendor} />
+          <FeedAuthorHeader author={r.author} />
           <div className="relative aspect-[4/5] bg-black">
             {/* Inline player — native controls keep the host on the
                 explore feed instead of yanking them to a raw URL. */}
@@ -524,19 +524,19 @@ function BuzzFeed({ buzz }: { buzz: BuzzRow[] }) {
           className="card-soft p-4"
         >
           <div className="flex items-center gap-2 mb-2">
-            {b.vendor?.logo_url ? (
+            {b.author?.avatar_url ? (
               <img
-                src={b.vendor.logo_url}
+                src={b.author.avatar_url}
                 alt=""
                 className="h-8 w-8 rounded-full object-cover"
               />
             ) : (
               <div className="h-8 w-8 rounded-full bg-secondary/60 flex items-center justify-center text-sm font-medium text-muted-foreground">
-                {b.vendor?.business_name?.[0]?.toUpperCase() ?? "V"}
+                {b.author?.display_name?.[0]?.toUpperCase() ?? "H"}
               </div>
             )}
             <p className="text-sm font-medium text-foreground">
-              {b.vendor?.business_name ?? "Vendor"}
+              {b.author?.display_name ?? "Host"}
             </p>
             <span className="text-xs text-muted-foreground ml-auto">
               {timeAgo(b.created_at)}

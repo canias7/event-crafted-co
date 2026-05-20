@@ -46,6 +46,12 @@ interface InquiryFormModalProps {
    *  the public listing detail page so a host arriving from a specific
    *  vendor's page doesn't have to re-pick. */
   preferredVendorId?: string;
+  /** When set, the inquiry is tagged with this vendor_packages.id so
+   *  any resulting event review attributes to the specific package
+   *  rather than the vendor as a whole. Used from the "Inquire about
+   *  this" CTA on each package row. Passes through silently — no
+   *  picker UI. */
+  preferredPackageId?: string;
   /** Called after a successful insert with the new inquiry id. */
   onSuccess?: (inquiryId: string) => void;
 }
@@ -62,6 +68,7 @@ export function InquiryFormModal({
   onOpenChange,
   preferredVendorName,
   preferredVendorId,
+  preferredPackageId,
   onSuccess,
 }: InquiryFormModalProps) {
   const { user, activeEvent, profile } = useAuth();
@@ -353,7 +360,9 @@ export function InquiryFormModal({
         intake_answers:
           Object.keys(intakeAnswers).length > 0 ? intakeAnswers : null,
         status: "new",
-      })
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        package_id: preferredPackageId ?? null,
+      } as never)
       .select("id")
       .single();
     setSubmitting(false);

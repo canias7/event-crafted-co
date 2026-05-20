@@ -202,6 +202,42 @@ export type Database = {
           },
         ]
       }
+      buzz: {
+        Row: {
+          author_user_id: string
+          body: string
+          created_at: string
+          id: string
+        }
+        Insert: {
+          author_user_id: string
+          body: string
+          created_at?: string
+          id?: string
+        }
+        Update: {
+          author_user_id?: string
+          body?: string
+          created_at?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "buzz_author_user_id_fkey"
+            columns: ["author_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "buzz_author_user_id_fkey"
+            columns: ["author_user_id"]
+            isOneToOne: false
+            referencedRelation: "vendor_brands"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       content_reports: {
         Row: {
           content_id: string
@@ -979,47 +1015,6 @@ export type Database = {
         }
         Relationships: []
       }
-      imported_reviews: {
-        Row: {
-          body: string | null
-          created_at: string
-          id: string
-          rating: number
-          reviewed_at: string | null
-          reviewer_name: string
-          source: string
-          vendor_id: string
-        }
-        Insert: {
-          body?: string | null
-          created_at?: string
-          id?: string
-          rating: number
-          reviewed_at?: string | null
-          reviewer_name: string
-          source: string
-          vendor_id: string
-        }
-        Update: {
-          body?: string | null
-          created_at?: string
-          id?: string
-          rating?: number
-          reviewed_at?: string | null
-          reviewer_name?: string
-          source?: string
-          vendor_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "imported_reviews_vendor_id_fkey"
-            columns: ["vendor_id"]
-            isOneToOne: false
-            referencedRelation: "vendor_profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       inquiries: {
         Row: {
           budget_max_cents: number | null
@@ -1028,18 +1023,21 @@ export type Database = {
           event_date: string | null
           event_type: string
           guest_count: number | null
+          host_confirmed_booked_at: string | null
           host_id: string
           host_read_at: string | null
           id: string
           intake_answers: Json | null
           intent_score: number | null
           location: string | null
+          package_id: string | null
           quality_score: number | null
           recommended_verification: string | null
           review_prompt_sent_at: string | null
           special_requests: string | null
           status: string
           updated_at: string
+          vendor_confirmed_booked_at: string | null
           vendor_id: string
           vendor_read_at: string | null
         }
@@ -1050,18 +1048,21 @@ export type Database = {
           event_date?: string | null
           event_type: string
           guest_count?: number | null
+          host_confirmed_booked_at?: string | null
           host_id: string
           host_read_at?: string | null
           id?: string
           intake_answers?: Json | null
           intent_score?: number | null
           location?: string | null
+          package_id?: string | null
           quality_score?: number | null
           recommended_verification?: string | null
           review_prompt_sent_at?: string | null
           special_requests?: string | null
           status?: string
           updated_at?: string
+          vendor_confirmed_booked_at?: string | null
           vendor_id: string
           vendor_read_at?: string | null
         }
@@ -1072,18 +1073,21 @@ export type Database = {
           event_date?: string | null
           event_type?: string
           guest_count?: number | null
+          host_confirmed_booked_at?: string | null
           host_id?: string
           host_read_at?: string | null
           id?: string
           intake_answers?: Json | null
           intent_score?: number | null
           location?: string | null
+          package_id?: string | null
           quality_score?: number | null
           recommended_verification?: string | null
           review_prompt_sent_at?: string | null
           special_requests?: string | null
           status?: string
           updated_at?: string
+          vendor_confirmed_booked_at?: string | null
           vendor_id?: string
           vendor_read_at?: string | null
         }
@@ -1100,6 +1104,13 @@ export type Database = {
             columns: ["host_id"]
             isOneToOne: false
             referencedRelation: "vendor_brands"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inquiries_package_id_fkey"
+            columns: ["package_id"]
+            isOneToOne: false
+            referencedRelation: "vendor_packages"
             referencedColumns: ["id"]
           },
           {
@@ -1213,6 +1224,45 @@ export type Database = {
           {
             foreignKeyName: "notifications_user_id_fkey"
             columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "vendor_brands"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      posts: {
+        Row: {
+          author_user_id: string
+          caption: string | null
+          created_at: string
+          id: string
+          image_url: string
+        }
+        Insert: {
+          author_user_id: string
+          caption?: string | null
+          created_at?: string
+          id?: string
+          image_url: string
+        }
+        Update: {
+          author_user_id?: string
+          caption?: string | null
+          created_at?: string
+          id?: string
+          image_url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "posts_author_user_id_fkey"
+            columns: ["author_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "posts_author_user_id_fkey"
+            columns: ["author_user_id"]
             isOneToOne: false
             referencedRelation: "vendor_brands"
             referencedColumns: ["id"]
@@ -1585,6 +1635,51 @@ export type Database = {
           },
         ]
       }
+      reels: {
+        Row: {
+          author_user_id: string
+          caption: string | null
+          created_at: string
+          duration_seconds: number | null
+          id: string
+          thumbnail_url: string | null
+          video_url: string
+        }
+        Insert: {
+          author_user_id: string
+          caption?: string | null
+          created_at?: string
+          duration_seconds?: number | null
+          id?: string
+          thumbnail_url?: string | null
+          video_url: string
+        }
+        Update: {
+          author_user_id?: string
+          caption?: string | null
+          created_at?: string
+          duration_seconds?: number | null
+          id?: string
+          thumbnail_url?: string | null
+          video_url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reels_author_user_id_fkey"
+            columns: ["author_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reels_author_user_id_fkey"
+            columns: ["author_user_id"]
+            isOneToOne: false
+            referencedRelation: "vendor_brands"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       review_requests: {
         Row: {
           completed_at: string | null
@@ -1646,37 +1741,50 @@ export type Database = {
         Row: {
           body: string
           created_at: string
+          responder_role: string
+          responder_user_id: string | null
           review_id: string
           updated_at: string
-          vendor_id: string
+          vendor_id: string | null
         }
         Insert: {
           body: string
           created_at?: string
+          responder_role?: string
+          responder_user_id?: string | null
           review_id: string
           updated_at?: string
-          vendor_id: string
+          vendor_id?: string | null
         }
         Update: {
           body?: string
           created_at?: string
+          responder_role?: string
+          responder_user_id?: string | null
           review_id?: string
           updated_at?: string
-          vendor_id?: string
+          vendor_id?: string | null
         }
         Relationships: [
           {
-            foreignKeyName: "review_responses_review_id_fkey"
-            columns: ["review_id"]
-            isOneToOne: true
-            referencedRelation: "reviews"
+            foreignKeyName: "review_responses_responder_user_id_fkey"
+            columns: ["responder_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "review_responses_responder_user_id_fkey"
+            columns: ["responder_user_id"]
+            isOneToOne: false
+            referencedRelation: "vendor_brands"
             referencedColumns: ["id"]
           },
           {
             foreignKeyName: "review_responses_review_id_fkey"
             columns: ["review_id"]
             isOneToOne: true
-            referencedRelation: "reviews_public"
+            referencedRelation: "reviews"
             referencedColumns: ["id"]
           },
           {
@@ -1697,7 +1805,6 @@ export type Database = {
           host_id: string
           id: string
           inquiry_id: string
-          is_hidden: boolean
           kind: string
           photo_urls: Json
           rater_role: string
@@ -1714,7 +1821,6 @@ export type Database = {
           host_id: string
           id?: string
           inquiry_id: string
-          is_hidden?: boolean
           kind?: string
           photo_urls?: Json
           rater_role?: string
@@ -1731,7 +1837,6 @@ export type Database = {
           host_id?: string
           id?: string
           inquiry_id?: string
-          is_hidden?: boolean
           kind?: string
           photo_urls?: Json
           rater_role?: string
@@ -1758,7 +1863,7 @@ export type Database = {
           {
             foreignKeyName: "reviews_inquiry_id_fkey"
             columns: ["inquiry_id"]
-            isOneToOne: true
+            isOneToOne: false
             referencedRelation: "inquiries"
             referencedColumns: ["id"]
           },
@@ -3518,76 +3623,18 @@ export type Database = {
       }
     }
     Views: {
-      reviews_public: {
+      package_rating_summary: {
         Row: {
-          body: string | null
-          created_at: string | null
-          hidden_at: string | null
-          hidden_reason: string | null
-          host_id: string | null
-          id: string | null
-          inquiry_id: string | null
-          is_hidden: boolean | null
-          photo_urls: Json | null
-          rating: number | null
-          updated_at: string | null
-          vendor_id: string | null
-        }
-        Insert: {
-          body?: string | null
-          created_at?: string | null
-          hidden_at?: string | null
-          hidden_reason?: string | null
-          host_id?: string | null
-          id?: string | null
-          inquiry_id?: string | null
-          is_hidden?: boolean | null
-          photo_urls?: Json | null
-          rating?: number | null
-          updated_at?: string | null
-          vendor_id?: string | null
-        }
-        Update: {
-          body?: string | null
-          created_at?: string | null
-          hidden_at?: string | null
-          hidden_reason?: string | null
-          host_id?: string | null
-          id?: string | null
-          inquiry_id?: string | null
-          is_hidden?: boolean | null
-          photo_urls?: Json | null
-          rating?: number | null
-          updated_at?: string | null
-          vendor_id?: string | null
+          avg_rating: number | null
+          package_id: string | null
+          review_count: number | null
         }
         Relationships: [
           {
-            foreignKeyName: "reviews_host_id_fkey"
-            columns: ["host_id"]
+            foreignKeyName: "inquiries_package_id_fkey"
+            columns: ["package_id"]
             isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "reviews_host_id_fkey"
-            columns: ["host_id"]
-            isOneToOne: false
-            referencedRelation: "vendor_brands"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "reviews_inquiry_id_fkey"
-            columns: ["inquiry_id"]
-            isOneToOne: true
-            referencedRelation: "inquiries"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "reviews_vendor_id_fkey"
-            columns: ["vendor_id"]
-            isOneToOne: false
-            referencedRelation: "vendor_profiles"
+            referencedRelation: "vendor_packages"
             referencedColumns: ["id"]
           },
         ]
@@ -3927,6 +3974,40 @@ export type Database = {
         }
         Returns: undefined
       }
+      mark_inquiry_booked: {
+        Args: { p_inquiry_id: string }
+        Returns: {
+          budget_max_cents: number | null
+          budget_min_cents: number | null
+          created_at: string
+          event_date: string | null
+          event_type: string
+          guest_count: number | null
+          host_confirmed_booked_at: string | null
+          host_id: string
+          host_read_at: string | null
+          id: string
+          intake_answers: Json | null
+          intent_score: number | null
+          location: string | null
+          package_id: string | null
+          quality_score: number | null
+          recommended_verification: string | null
+          review_prompt_sent_at: string | null
+          special_requests: string | null
+          status: string
+          updated_at: string
+          vendor_confirmed_booked_at: string | null
+          vendor_id: string
+          vendor_read_at: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "inquiries"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       mark_proposal_viewed: {
         Args: { p_proposal_id: string }
         Returns: undefined
@@ -4006,6 +4087,36 @@ export type Database = {
       toggle_proposal_share: {
         Args: { p_enabled: boolean; p_proposal_id: string }
         Returns: string
+      }
+      update_review: {
+        Args: {
+          p_body?: string
+          p_id: string
+          p_photo_urls?: Json
+          p_rating: number
+        }
+        Returns: {
+          body: string | null
+          created_at: string
+          hidden_at: string | null
+          hidden_reason: string | null
+          host_id: string
+          id: string
+          inquiry_id: string
+          kind: string
+          photo_urls: Json
+          rater_role: string
+          rating: number
+          released_at: string | null
+          updated_at: string
+          vendor_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "reviews"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
       vendor_booked_dates: { Args: { p_vendor_id: string }; Returns: string[] }
       verify_user_password: {

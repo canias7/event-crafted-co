@@ -25,23 +25,12 @@
   <meta name="twitter:card" content="summary_large_image">
 
   <script>
-    // Apply theme before first paint to avoid the flash-of-light when
-    // the user's preference is dark. Mirrors the logic in useTheme().
-    (function () {
-      try {
-        var stored = localStorage.getItem("vendora-theme-preference");
-        var sysDark = window.matchMedia &&
-          window.matchMedia("(prefers-color-scheme: dark)").matches;
-        var resolved =
-          stored === "light" ? "light"
-          : stored === "dark" ? "dark"
-          : sysDark ? "dark" : "light";
-        if (resolved === "dark") {
-          document.documentElement.classList.add("dark");
-        }
-        document.documentElement.style.colorScheme = resolved;
-      } catch (e) { /* localStorage blocked — default to light */ }
-    })();
+    // Single light palette for everyone. No user-facing theme toggle,
+    // no OS-preference auto-flip — the dark palette was never fully
+    // implemented and caused white-text-on-cream visibility bugs on
+    // dark-mode machines. Pinning colorScheme to light so native
+    // controls (scrollbars, form widgets) match.
+    document.documentElement.style.colorScheme = "light";
   </script>
 </head>
   <body>

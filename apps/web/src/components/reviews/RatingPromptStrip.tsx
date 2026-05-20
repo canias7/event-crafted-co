@@ -11,9 +11,10 @@
 // INSERT trigger on reviews; this component is just discovery /
 // scheduling.
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Sparkles, Star } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useRealtime } from "@/lib/realtime";
 import { RatingModal } from "@/components/reviews/RatingModal";
 
 interface Props {
@@ -40,6 +41,7 @@ export function RatingPromptStrip({
   const [messageCount, setMessageCount] = useState<number | null>(null);
   const [proposalAccepted, setProposalAccepted] = useState<boolean | null>(null);
   const [myRatings, setMyRatings] = useState<ExistingRating[] | null>(null);
+  const [threadId, setThreadId] = useState<string | null>(null);
   const [modalKind, setModalKind] = useState<"conversation" | "event" | null>(
     null,
   );
@@ -47,51 +49,68 @@ export function RatingPromptStrip({
   // Pull the three signals we need: message count for this
   // inquiry's thread, whether a proposal was accepted, and
   // whether the caller has already rated (so we don't re-prompt).
-  useEffect(() => {
+  const refresh = useCallback(async () => {
     if (!inquiryId) return;
-    let cancelled = false;
-    (async () => {
-      const [tRes, pRes, rRes] = await Promise.all([
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (supabase as any)
-          .from("direct_threads")
-          .select("id")
-          .eq("inquiry_id", inquiryId)
-          .maybeSingle(),
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (supabase as any)
-          .from("proposals")
-          .select("id, status")
-          .eq("inquiry_id", inquiryId)
-          .eq("status", "accepted")
-          .limit(1)
-          .maybeSingle(),
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (supabase as any)
-          .from("reviews")
-          .select("kind")
-          .eq("inquiry_id", inquiryId)
-          .eq("rater_role", raterRole),
-      ]);
-      if (cancelled) return;
-      const thread = (tRes.data as { id?: string } | null)?.id ?? null;
-      if (thread) {
-        const { count } = await supabase
-          .from("direct_messages")
-          .select("id", { count: "exact", head: true })
-          .eq("thread_id", thread);
-        if (cancelled) return;
-        setMessageCount(count ?? 0);
-      } else {
-        setMessageCount(0);
-      }
-      setProposalAccepted(!!pRes.data);
-      setMyRatings((rRes.data as ExistingRating[] | null) ?? []);
-    })();
-    return () => {
-      cancelled = true;
-    };
+    const [tRes, pRes, rRes] = await Promise.all([
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (supabase as any)
+        .from("direct_threads")
+        .select("id")
+        .eq("inquiry_id", inquiryId)
+        .maybeSingle(),
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (supabase as any)
+        .from("proposals")
+        .select("id, status")
+        .eq("inquiry_id", inquiryId)
+        .eq("status", "accepted")
+        .limit(1)
+        .maybeSingle(),
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (supabase as any)
+        .from("reviews")
+        .select("kind")
+        .eq("inquiry_id", inquiryId)
+        .eq("rater_role", raterRole),
+    ]);
+    const thread = (tRes.data as { id?: string } | null)?.id ?? null;
+    setThreadId(thread);
+    if (thread) {
+      const { count } = await supabase
+        .from("direct_messages")
+        .select("id", { count: "exact", head: true })
+        .eq("thread_id", thread);
+      setMessageCount(count ?? 0);
+    } else {
+      setMessageCount(0);
+    }
+    setProposalAccepted(!!pRes.data);
+    setMyRatings((rRes.data as ExistingRating[] | null) ?? []);
   }, [inquiryId, raterRole]);
+
+  useEffect(() => {
+    refresh();
+  }, [refresh]);
+
+  // Realtime triggers:
+  //   • reviews on this inquiry — your own insert hides the strip,
+  //     the other side's insert flips eligibility for the next prompt.
+  //   • direct_messages on this thread — bumps the ≥6 conversation
+  //     threshold without waiting for a page reload.
+  //   • proposals on this inquiry — acceptance unlocks the event
+  //     review eligibility.
+  useRealtime(
+    inquiryId ? { table: "reviews", filter: `inquiry_id=eq.${inquiryId}` } : null,
+    refresh,
+  );
+  useRealtime(
+    inquiryId ? { table: "proposals", filter: `inquiry_id=eq.${inquiryId}` } : null,
+    refresh,
+  );
+  useRealtime(
+    threadId ? { table: "direct_messages", filter: `thread_id=eq.${threadId}` } : null,
+    refresh,
+  );
 
   const eventEligible = useMemo(() => {
     if (!eventDate) return false;
