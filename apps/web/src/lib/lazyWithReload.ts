@@ -1,5 +1,9 @@
 import { lazy, type ComponentType } from "react";
-import { isChunkLoadError, shouldAutoReload } from "./chunkReload";
+import {
+  isChunkLoadError,
+  reloadBustingCache,
+  shouldAutoReload,
+} from "./chunkReload";
 
 // React.lazy wrapper that auto-heals stale-chunk errors after a deploy.
 //
@@ -30,7 +34,7 @@ export function lazyWithReload<T extends ComponentType<unknown>>(
       if (isChunkLoadError(err) && typeof window !== "undefined") {
         const msg = String((err as { message?: string })?.message ?? err);
         if (shouldAutoReload("lazy", msg)) {
-          window.location.reload();
+          reloadBustingCache();
         }
       }
       throw err;

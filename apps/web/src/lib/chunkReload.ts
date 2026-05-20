@@ -73,3 +73,26 @@ export function shouldAutoReload(scope: Scope, message: string): boolean {
     return false;
   }
 }
+
+// Force a cache-busting reload. Plain window.location.reload() can
+// re-serve a cached index.html from the browser's HTTP cache (or a
+// proxy in front of the user) — which keeps the user pinned to the
+// stale chunk references that just failed. Adding an ever-changing
+// query param defeats that cache: the URL is "new" so the browser
+// must round-trip to the server.
+//
+// We replace() rather than href= so it doesn't add a history entry.
+// The path is preserved; only the search string is rewritten.
+export function reloadBustingCache(): void {
+  if (typeof window === "undefined") return;
+  try {
+    const url = new URL(window.location.href);
+    // Strip any prior _cb so it doesn't pile up across reload chains.
+    url.searchParams.delete("_cb");
+    url.searchParams.set("_cb", String(Date.now()));
+    window.location.replace(url.toString());
+  } catch {
+    // Fall back to a plain reload if URL construction fails.
+    window.location.reload();
+  }
+}
