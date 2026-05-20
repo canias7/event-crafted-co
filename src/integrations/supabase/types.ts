@@ -2473,8 +2473,48 @@ export type Database = {
           },
         ]
       }
+      vendor_gallery_albums: {
+        Row: {
+          created_at: string
+          display_order: number
+          id: string
+          name: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          display_order?: number
+          id?: string
+          name: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          display_order?: number
+          id?: string
+          name?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vendor_gallery_albums_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vendor_gallery_albums_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "vendor_brands"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       vendor_gallery_images: {
         Row: {
+          album_id: string | null
           caption: string | null
           created_at: string
           display_order: number
@@ -2483,6 +2523,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          album_id?: string | null
           caption?: string | null
           created_at?: string
           display_order?: number
@@ -2491,6 +2532,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          album_id?: string | null
           caption?: string | null
           created_at?: string
           display_order?: number
@@ -2499,6 +2541,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "vendor_gallery_images_album_id_fkey"
+            columns: ["album_id"]
+            isOneToOne: false
+            referencedRelation: "vendor_gallery_albums"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "vendor_gallery_images_user_id_fkey"
             columns: ["user_id"]
