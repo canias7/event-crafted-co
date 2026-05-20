@@ -128,6 +128,9 @@ export default function HostInquiryDetailPage() {
   // inquiry — without this, the first effect-run overwrites the
   // freshly-loaded localStorage value with an empty string.
   const draftHydratedRef = useRef<string | null>(null);
+  // Tracks the previously active inquiry so we can clear transient
+  // per-inquiry state on navigate (reply target, edit, attachments).
+  const prevInquiryIdRef = useRef<string | undefined>(inquiryId);
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
   const [emojiOpen, setEmojiOpen] = useState(false);
   const [summaryOpen, setSummaryOpen] = useState(false);
@@ -350,6 +353,20 @@ export default function HostInquiryDetailPage() {
     load();
   }, [load]);
 
+  // Reset transient per-inquiry state when navigating from one
+  // inquiry to another. Otherwise a "reply" or "edit" started in
+  // inquiry A bleeds into inquiry B — the composer thinks it's
+  // replying to a message that isn't even in the current thread.
+  useEffect(() => {
+    if (prevInquiryIdRef.current !== inquiryId) {
+      setReplyToId(null);
+      setEditingMessageId(null);
+      setEditingDraft("");
+      setPendingFiles([]);
+      prevInquiryIdRef.current = inquiryId;
+    }
+  }, [inquiryId]);
+
   // Rehydrate any in-flight draft from localStorage when the active
   // inquiry changes. Hosts otherwise lose their reply on any nav.
   useEffect(() => {
@@ -404,6 +421,33 @@ export default function HostInquiryDetailPage() {
   );
   useRealtime(messagesConfig, () => load());
 
+  // Refetch ONLY reactions for this thread's messages on a reaction
+  // event — not the full load() which would also pull inquiry +
+  // messages + reviews. RLS gates relevance so any event we receive
+  // is one we care about; the goal is just to keep the refetch scoped.
+  const loadReactionsForThread = useCallback(async () => {
+    const ids = messages.map((m) => m.id);
+    if (ids.length === 0) {
+      setReactionsByMsg({});
+      return;
+    }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: rxns } = await (supabase as any)
+      .from("direct_message_reactions")
+      .select("message_id, user_id, emoji")
+      .in("message_id", ids);
+    const grouped: Record<string, MessageReaction[]> = {};
+    for (const r of (rxns as Array<{
+      message_id: string;
+      user_id: string;
+      emoji: string;
+    }> | null) ?? []) {
+      const list = grouped[r.message_id] ?? [];
+      list.push({ user_id: r.user_id, emoji: r.emoji });
+      grouped[r.message_id] = list;
+    }
+    setReactionsByMsg(grouped);
+  }, [messages]);
   const reactionsConfig = useMemo(
     () =>
       threadId
@@ -411,7 +455,7 @@ export default function HostInquiryDetailPage() {
         : null,
     [threadId],
   );
-  useRealtime(reactionsConfig, () => load());
+  useRealtime(reactionsConfig, loadReactionsForThread);
 
   async function toggleReaction(messageId: string, emoji: string) {
     if (!user?.id) return;
@@ -576,6 +620,17 @@ export default function HostInquiryDetailPage() {
       setSending(false);
       toast.error("Couldn't upload your attachments — message not sent.");
       return;
+    }
+    // Partial-failure case: some uploads succeeded, some didn't.
+    // Surface it so the user knows the message is missing files.
+    if (
+      pendingFiles.length > 0 &&
+      uploaded.length > 0 &&
+      uploaded.length < pendingFiles.length
+    ) {
+      toast.info(
+        `${uploaded.length} of ${pendingFiles.length} attachments uploaded.`,
+      );
     }
     const { error } = await supabase.from("direct_messages").insert({
       thread_id: threadId,
