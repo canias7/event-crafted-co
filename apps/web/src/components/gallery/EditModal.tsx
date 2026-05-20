@@ -112,15 +112,37 @@ export function EditModal({
     total: 0,
   });
 
+  // onOpenChange held in a ref so the load effect doesn't re-trigger
+  // if a fresh function reference comes in from a parent re-render.
+  // Empirically the parent passes a stable setState setter, but the
+  // ref pattern makes the effect immune to upstream changes.
+  const onOpenChangeRef = useRef(onOpenChange);
   useEffect(() => {
-    if (!open) {
-      setT({ rotate: 0, flipH: false, flipV: false });
-      setCrop(undefined);
-      setCompletedCrop(null);
-      setDisplayUrl(null);
-      setLoaded(false);
-      return;
-    }
+    onOpenChangeRef.current = onOpenChange;
+  }, [onOpenChange]);
+
+  // Reset transient state when the modal closes. Separated from the
+  // load effect so a state change here can't accidentally cancel an
+  // in-flight load. sourceRef is also cleared so the next open starts
+  // from a known-empty state instead of holding the previous image's
+  // bitmap.
+  useEffect(() => {
+    if (open) return;
+    setT({ rotate: 0, flipH: false, flipV: false });
+    setCrop(undefined);
+    setCompletedCrop(null);
+    setDisplayUrl(null);
+    setLoaded(false);
+    sourceRef.current = null;
+  }, [open]);
+
+  // Load the source image when the modal opens. Depends only on the
+  // two values that actually require a re-fetch — anything else in
+  // the parent's render cycle is irrelevant to whether we should
+  // re-load. The previous combined effect listed onOpenChange as a
+  // dep, which made the load fragile to upstream renders.
+  useEffect(() => {
+    if (!open) return;
     let cancelled = false;
     setLoadProgress({ received: 0, total: 0 });
     // Loaded via fetch → blob → object URL so canvas operations
@@ -146,12 +168,12 @@ export function EditModal({
       .catch(() => {
         if (cancelled) return;
         toast.error("Couldn't load image for editing.");
-        onOpenChange(false);
+        onOpenChangeRef.current(false);
       });
     return () => {
       cancelled = true;
     };
-  }, [open, imageUrl, onOpenChange]);
+  }, [open, imageUrl]);
 
   // Track the previous transformed objectURL so we can revoke it
   // when a new one replaces it (memory leak guard for large
