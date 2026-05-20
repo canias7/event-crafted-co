@@ -202,6 +202,42 @@ export type Database = {
           },
         ]
       }
+      buzz: {
+        Row: {
+          author_user_id: string
+          body: string
+          created_at: string
+          id: string
+        }
+        Insert: {
+          author_user_id: string
+          body: string
+          created_at?: string
+          id?: string
+        }
+        Update: {
+          author_user_id?: string
+          body?: string
+          created_at?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "buzz_author_user_id_fkey"
+            columns: ["author_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "buzz_author_user_id_fkey"
+            columns: ["author_user_id"]
+            isOneToOne: false
+            referencedRelation: "vendor_brands"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       content_reports: {
         Row: {
           content_id: string
@@ -1194,6 +1230,131 @@ export type Database = {
           },
         ]
       }
+      post_comment_likes: {
+        Row: {
+          comment_id: string
+          created_at: string
+          user_id: string
+        }
+        Insert: {
+          comment_id: string
+          created_at?: string
+          user_id: string
+        }
+        Update: {
+          comment_id?: string
+          created_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "post_comment_likes_comment_id_fkey"
+            columns: ["comment_id"]
+            isOneToOne: false
+            referencedRelation: "post_comments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "post_comment_likes_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "post_comment_likes_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "vendor_brands"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      post_comments: {
+        Row: {
+          author_user_id: string
+          body: string
+          created_at: string
+          id: string
+          post_id: string
+        }
+        Insert: {
+          author_user_id: string
+          body: string
+          created_at?: string
+          id?: string
+          post_id: string
+        }
+        Update: {
+          author_user_id?: string
+          body?: string
+          created_at?: string
+          id?: string
+          post_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "post_comments_author_user_id_fkey"
+            columns: ["author_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "post_comments_author_user_id_fkey"
+            columns: ["author_user_id"]
+            isOneToOne: false
+            referencedRelation: "vendor_brands"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "post_comments_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      posts: {
+        Row: {
+          author_user_id: string
+          caption: string | null
+          created_at: string
+          id: string
+          image_url: string
+        }
+        Insert: {
+          author_user_id: string
+          caption?: string | null
+          created_at?: string
+          id?: string
+          image_url: string
+        }
+        Update: {
+          author_user_id?: string
+          caption?: string | null
+          created_at?: string
+          id?: string
+          image_url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "posts_author_user_id_fkey"
+            columns: ["author_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "posts_author_user_id_fkey"
+            columns: ["author_user_id"]
+            isOneToOne: false
+            referencedRelation: "vendor_brands"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           application_status: string
@@ -1556,6 +1717,51 @@ export type Database = {
             columns: ["vendor_id"]
             isOneToOne: false
             referencedRelation: "vendor_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      reels: {
+        Row: {
+          author_user_id: string
+          caption: string | null
+          created_at: string
+          duration_seconds: number | null
+          id: string
+          thumbnail_url: string | null
+          video_url: string
+        }
+        Insert: {
+          author_user_id: string
+          caption?: string | null
+          created_at?: string
+          duration_seconds?: number | null
+          id?: string
+          thumbnail_url?: string | null
+          video_url: string
+        }
+        Update: {
+          author_user_id?: string
+          caption?: string | null
+          created_at?: string
+          duration_seconds?: number | null
+          id?: string
+          thumbnail_url?: string | null
+          video_url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reels_author_user_id_fkey"
+            columns: ["author_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reels_author_user_id_fkey"
+            columns: ["author_user_id"]
+            isOneToOne: false
+            referencedRelation: "vendor_brands"
             referencedColumns: ["id"]
           },
         ]

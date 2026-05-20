@@ -23,6 +23,7 @@ import { MobileNav } from "@/components/shared/MobileNav";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { Skeleton } from "@/components/ui/skeleton";
 import { LogoCropperModal } from "@/components/vendor/LogoCropperModal";
+import { HostContentSection } from "@/components/host/HostContentSection";
 import { customerNavItems } from "@/data/navItems";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -214,6 +215,8 @@ export default function HostProfilePage() {
                 onPickFile={(file) => setPendingAvatar(file)}
                 fileInputRef={fileInputRef}
               />
+
+              {user?.id ? <HostContentSection userId={user.id} /> : null}
 
               <ActionCard
                 to="/customer/account"
