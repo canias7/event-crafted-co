@@ -9,12 +9,14 @@
 import { useCallback, useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { Download, Lock, X } from "lucide-react";
+import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PublicNav } from "@/components/public/PublicNav";
+import { downloadCrossOrigin } from "@/lib/downloadImage";
 
 interface ImageRow {
   id: string;
@@ -187,14 +189,22 @@ function SingleImageView({ image }: { image: ImageRow }) {
         {image.caption ? (
           <p className="text-sm text-muted-foreground">{image.caption}</p>
         ) : null}
-        <a
-          href={image.image_url}
-          download
+        <button
+          type="button"
+          onClick={async () => {
+            try {
+              await downloadCrossOrigin(image.image_url);
+            } catch (err) {
+              toast.error(
+                err instanceof Error ? err.message : "Couldn't download.",
+              );
+            }
+          }}
           className="inline-flex items-center gap-1.5 text-sm font-medium text-accent hover:underline"
         >
           <Download className="w-4 h-4" />
           Download
-        </a>
+        </button>
       </div>
     </div>
   );
@@ -290,15 +300,23 @@ function SimpleLightbox({
       >
         <X className="w-5 h-5" />
       </button>
-      <a
-        href={img.image_url}
-        download
-        onClick={(e) => e.stopPropagation()}
+      <button
+        type="button"
+        onClick={async (e) => {
+          e.stopPropagation();
+          try {
+            await downloadCrossOrigin(img.image_url);
+          } catch (err) {
+            toast.error(
+              err instanceof Error ? err.message : "Couldn't download.",
+            );
+          }
+        }}
         className="absolute bottom-4 right-4 inline-flex items-center gap-1.5 rounded-full bg-white/10 hover:bg-white/20 text-white text-sm px-3 py-1.5"
       >
         <Download className="w-4 h-4" />
         Download
-      </a>
+      </button>
       <img
         src={img.image_url}
         alt={img.caption ?? "Shared image"}

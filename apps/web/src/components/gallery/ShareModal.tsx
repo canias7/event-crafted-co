@@ -143,12 +143,11 @@ export function ShareModal({
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="Leave blank for no password"
+                placeholder="No password — anyone with the link gets in"
                 className="mt-1"
               />
               <p className="text-[11px] text-muted-foreground mt-1">
-                Hashed server-side. Required at /g/:token before the
-                viewer sees the image.
+                Viewers will be asked for this before the image loads.
               </p>
             </div>
           </div>
@@ -169,8 +168,8 @@ export function ShareModal({
             </div>
             {password ? (
               <p className="text-xs text-muted-foreground">
-                Password protected — viewer must enter the password
-                you set before the image loads.
+                Password protected — share the link and the password
+                separately.
               </p>
             ) : (
               <p className="text-xs text-muted-foreground">

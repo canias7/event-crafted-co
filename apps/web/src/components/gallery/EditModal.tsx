@@ -39,6 +39,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { computeBlurhash } from "@/lib/galleryImage";
+import { loadImageViaBlob } from "@/lib/downloadImage";
 
 interface Props {
   open: boolean;
@@ -88,30 +89,42 @@ export function EditModal({
       setLoaded(false);
       return;
     }
-    const img = new Image();
-    img.crossOrigin = "anonymous";
-    img.onload = () => {
-      sourceRef.current = img;
-      setDisplayUrl(imageUrl); // identity transform: just point at the original URL
-      setLoaded(true);
+    let cancelled = false;
+    // Loaded via fetch → blob → object URL so canvas operations
+    // later don't taint on cross-origin (Supabase storage). The
+    // sourceRef holds the bitmap; transforms drawImage from it.
+    void loadImageViaBlob(imageUrl)
+      .then((img) => {
+        if (cancelled) return;
+        sourceRef.current = img;
+        // Initial display = the bare object URL of the source.
+        // ReactCrop reads from a same-origin URL too so the crop
+        // overlay and the saved data agree.
+        setDisplayUrl(img.src);
+        setLoaded(true);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        toast.error("Couldn't load image for editing.");
+        onOpenChange(false);
+      });
+    return () => {
+      cancelled = true;
     };
-    img.onerror = () => {
-      toast.error("Couldn't load image for editing.");
-      onOpenChange(false);
-    };
-    img.src = imageUrl;
   }, [open, imageUrl, onOpenChange]);
 
   // Re-rasterize the source with the current transform whenever it
-  // changes. Identity transform short-circuits to the original URL
-  // (no decode hit; ReactCrop will reload the same image). On
-  // transforms we ALWAYS feed the preview through a downscaled
-  // canvas so the data URL doesn't balloon to multi-megabyte base64.
+  // changes. Always use the same-origin blob URL the source loaded
+  // from (identity case) or a canvas data URL (transformed) so
+  // ReactCrop never reaches for a cross-origin URL that would taint
+  // canvas ops on save. Transformed previews are downscaled before
+  // becoming a data URL so a 24 MP image doesn't ship 7+ MB of
+  // base64 into the DOM.
   useEffect(() => {
     if (!open || !sourceRef.current) return;
     const src = sourceRef.current;
     if (t.rotate === 0 && !t.flipH && !t.flipV) {
-      setDisplayUrl(imageUrl);
+      setDisplayUrl(src.src);
       setCrop(undefined);
       setCompletedCrop(null);
       return;
@@ -124,7 +137,7 @@ export function EditModal({
     setCrop(undefined);
     setCompletedCrop(null);
     setDisplayUrl(preview.toDataURL("image/jpeg", 0.85));
-  }, [t, imageUrl, open]);
+  }, [t, open]);
 
   function rotateBy(deg: number) {
     setT((p) => ({ ...p, rotate: ((p.rotate + deg) % 360 + 360) % 360 }));

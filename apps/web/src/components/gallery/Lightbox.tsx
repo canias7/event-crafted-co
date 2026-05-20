@@ -13,10 +13,12 @@ import {
   Star,
   X,
 } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { EditModal } from "@/components/gallery/EditModal";
 import { ShareModal } from "@/components/gallery/ShareModal";
 import type { SanitizedExif } from "@/lib/galleryImage";
+import { downloadCrossOrigin } from "@/lib/downloadImage";
 
 interface Img {
   id: string;
@@ -144,16 +146,19 @@ export function Lightbox({
             <ActionButton onClick={() => setShareOpen(true)} label="Share">
               <Link2 className="w-4 h-4" />
             </ActionButton>
-            <a
-              href={row.image_url}
-              download
-              onClick={(e) => e.stopPropagation()}
-              className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 text-white"
-              aria-label="Download"
-              title="Download"
+            <ActionButton
+              onClick={async () => {
+                try {
+                  await downloadCrossOrigin(row.image_url);
+                } catch (err) {
+                  const msg = err instanceof Error ? err.message : "Couldn't download.";
+                  toast.error(msg);
+                }
+              }}
+              label="Download"
             >
               <Download className="w-4 h-4" />
-            </a>
+            </ActionButton>
             <ActionButton
               onClick={() => setPanelOpen((p) => !p)}
               label="Image info"
