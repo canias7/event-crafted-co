@@ -32,6 +32,7 @@ type VerifStatus = "none" | "pending" | "approved" | "rejected";
 
 interface Stats {
   ratings: number;
+  avgRating: number | null;
   posts: number;
   reels: number;
   buzz: number;
@@ -66,7 +67,7 @@ export default function HostProfilePage() {
     const [
       { data: profile },
       { count: unread },
-      { count: ratings },
+      { data: ratingRows },
       { count: postsN },
       { count: reelsN },
       { count: buzzN },
@@ -85,12 +86,13 @@ export default function HostProfilePage() {
         .is("read_at", null),
       supabase
         .from("reviews")
-        .select("*", { count: "exact", head: true })
+        // Fetch the rating values themselves so we can compute the
+        // average client-side and surface a "4.8 ★" pill under the
+        // name. Cheap (1 row per review, integer rating). Same
+        // filter as before: vendors rating this host, not the host's
+        // outgoing reviews.
+        .select("rating")
         .eq("host_id", user.id)
-        // Stat is "Ratings" on the host's own profile — meaning
-        // ratings vendors have given them, not ratings they've
-        // given vendors. Filter to rater_role='vendor' so the
-        // outgoing reviews don't inflate the count.
         .eq("rater_role", "vendor"),
       supabase
         .from("posts")
@@ -138,6 +140,13 @@ export default function HostProfilePage() {
       | { display_name?: string | null; avatar_url?: string | null }
       | null;
 
+    const ratings = (ratingRows as Array<{ rating: number }> | null) ?? [];
+    const ratingsCount = ratings.length;
+    const avgRating =
+      ratingsCount > 0
+        ? ratings.reduce((s, r) => s + r.rating, 0) / ratingsCount
+        : null;
+
     setState({
       name: titleCase,
       email: user.email ?? "",
@@ -145,7 +154,8 @@ export default function HostProfilePage() {
       unread: unread ?? 0,
       avatarUrl: profileRow?.avatar_url ?? null,
       stats: {
-        ratings: ratings ?? 0,
+        ratings: ratingsCount,
+        avgRating,
         posts: postsN ?? 0,
         reels: reelsN ?? 0,
         buzz: buzzN ?? 0,
@@ -351,6 +361,15 @@ function HeroCard({
       <h2 className="relative mt-3 font-editorial text-2xl text-foreground text-center">
         {name}
       </h2>
+      {stats.avgRating !== null ? (
+        <p className="relative mt-1 inline-flex items-center gap-1 text-sm font-semibold text-foreground">
+          <Star className="w-3.5 h-3.5 fill-current" aria-hidden />
+          {stats.avgRating.toFixed(2)}
+          <span className="text-muted-foreground font-normal">
+            · {stats.ratings} {stats.ratings === 1 ? "rating" : "ratings"}
+          </span>
+        </p>
+      ) : null}
       <p className="relative mt-1 text-sm text-muted-foreground">
         {verified ? "Verified Host  ·  " : ""}Member since {memberSince}
       </p>
