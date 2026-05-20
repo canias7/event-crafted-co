@@ -1,0 +1,260 @@
+// Gallery lightbox with side panel showing sanitized EXIF + the
+// row's caption + actions: Edit (rotate/flip), Share (create token
+// link), Download. Arrow keys + Esc navigate / close.
+
+import { useEffect, useState } from "react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  Download,
+  Info,
+  Link2,
+  Pencil,
+  X,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { EditModal } from "@/components/gallery/EditModal";
+import { ShareModal } from "@/components/gallery/ShareModal";
+import type { SanitizedExif } from "@/lib/galleryImage";
+
+interface Img {
+  id: string;
+  image_url: string;
+  caption: string | null;
+  exif: SanitizedExif | null;
+  width: number | null;
+  height: number | null;
+  created_at: string;
+}
+
+interface Props {
+  rows: Img[];
+  index: number;
+  onClose: () => void;
+  onPrev: () => void;
+  onNext: () => void;
+  onChange: () => void; // refresh after edit
+}
+
+export function Lightbox({ rows, index, onClose, onPrev, onNext, onChange }: Props) {
+  const row = rows[index];
+  const [panelOpen, setPanelOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (editOpen || shareOpen) return;
+      if (e.key === "Escape") onClose();
+      else if (e.key === "ArrowLeft") onPrev();
+      else if (e.key === "ArrowRight") onNext();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose, onPrev, onNext, editOpen, shareOpen]);
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-stretch bg-black/90"
+      onClick={onClose}
+    >
+      {/* Main viewer area */}
+      <div className="relative flex-1 flex items-center justify-center p-4">
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            onPrev();
+          }}
+          aria-label="Previous"
+          disabled={index === 0}
+          className="absolute left-4 top-1/2 -translate-y-1/2 inline-flex items-center justify-center w-10 h-10 rounded-full bg-white/10 text-white hover:bg-white/20 disabled:opacity-30"
+        >
+          <ChevronLeft className="w-5 h-5" />
+        </button>
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            onNext();
+          }}
+          aria-label="Next"
+          disabled={index === rows.length - 1}
+          className="absolute right-4 top-1/2 -translate-y-1/2 inline-flex items-center justify-center w-10 h-10 rounded-full bg-white/10 text-white hover:bg-white/20 disabled:opacity-30"
+        >
+          <ChevronRight className="w-5 h-5" />
+        </button>
+
+        <img
+          src={row.image_url}
+          alt={row.caption ?? "Gallery image"}
+          className="max-h-[90vh] max-w-full object-contain rounded-md"
+          onClick={(e) => e.stopPropagation()}
+        />
+
+        {/* Top action bar */}
+        <div
+          className="absolute top-4 left-4 right-4 flex items-center justify-between gap-2"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <p className="text-xs text-white/70 tnum">
+            {index + 1} / {rows.length}
+          </p>
+          <div className="flex items-center gap-1">
+            <ActionButton onClick={() => setEditOpen(true)} label="Edit">
+              <Pencil className="w-4 h-4" />
+            </ActionButton>
+            <ActionButton onClick={() => setShareOpen(true)} label="Share">
+              <Link2 className="w-4 h-4" />
+            </ActionButton>
+            <a
+              href={row.image_url}
+              download
+              onClick={(e) => e.stopPropagation()}
+              className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 text-white"
+              aria-label="Download"
+              title="Download"
+            >
+              <Download className="w-4 h-4" />
+            </a>
+            <ActionButton
+              onClick={() => setPanelOpen((p) => !p)}
+              label="Image info"
+              active={panelOpen}
+            >
+              <Info className="w-4 h-4" />
+            </ActionButton>
+            <ActionButton onClick={onClose} label="Close">
+              <X className="w-4 h-4" />
+            </ActionButton>
+          </div>
+        </div>
+      </div>
+
+      {/* EXIF panel */}
+      {panelOpen ? (
+        <aside
+          className="w-80 shrink-0 bg-background text-foreground border-l border-border overflow-y-auto"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="p-4 space-y-4">
+            <div>
+              <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-2">
+                File
+              </p>
+              <ExifRow label="Dimensions">
+                {row.width && row.height ? `${row.width} × ${row.height}` : "—"}
+              </ExifRow>
+              <ExifRow label="Uploaded">
+                {new Date(row.created_at).toLocaleString()}
+              </ExifRow>
+            </div>
+            {row.exif ? (
+              <div>
+                <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-2">
+                  Camera
+                </p>
+                {row.exif.camera_make || row.exif.camera_model ? (
+                  <ExifRow label="Body">
+                    {[row.exif.camera_make, row.exif.camera_model]
+                      .filter(Boolean)
+                      .join(" ")}
+                  </ExifRow>
+                ) : null}
+                {row.exif.lens ? (
+                  <ExifRow label="Lens">{row.exif.lens}</ExifRow>
+                ) : null}
+                {row.exif.date_taken ? (
+                  <ExifRow label="Captured">
+                    {new Date(row.exif.date_taken).toLocaleString()}
+                  </ExifRow>
+                ) : null}
+                {row.exif.iso ? (
+                  <ExifRow label="ISO">{String(row.exif.iso)}</ExifRow>
+                ) : null}
+                {row.exif.aperture ? (
+                  <ExifRow label="Aperture">
+                    f/{row.exif.aperture}
+                  </ExifRow>
+                ) : null}
+                {row.exif.shutter ? (
+                  <ExifRow label="Shutter">{row.exif.shutter}</ExifRow>
+                ) : null}
+                {row.exif.focal_length ? (
+                  <ExifRow label="Focal length">
+                    {row.exif.focal_length}mm
+                  </ExifRow>
+                ) : null}
+              </div>
+            ) : (
+              <p className="text-xs text-muted-foreground italic">
+                No camera metadata.
+              </p>
+            )}
+            {row.caption ? (
+              <div>
+                <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-2">
+                  Caption
+                </p>
+                <p className="text-sm text-foreground/90 leading-relaxed">
+                  {row.caption}
+                </p>
+              </div>
+            ) : null}
+          </div>
+        </aside>
+      ) : null}
+
+      <EditModal
+        open={editOpen}
+        onOpenChange={setEditOpen}
+        imageId={row.id}
+        imageUrl={row.image_url}
+        onSaved={onChange}
+      />
+      <ShareModal
+        open={shareOpen}
+        onOpenChange={setShareOpen}
+        imageId={row.id}
+        targetLabel={row.caption ?? "this image"}
+      />
+    </div>
+  );
+}
+
+function ActionButton({
+  onClick,
+  label,
+  active,
+  children,
+}: {
+  onClick: () => void;
+  label: string;
+  active?: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label={label}
+      title={label}
+      className={`inline-flex items-center justify-center w-10 h-10 rounded-full transition-colors ${
+        active
+          ? "bg-white text-black"
+          : "bg-white/10 hover:bg-white/20 text-white"
+      }`}
+    >
+      {children}
+    </button>
+  );
+}
+
+function ExifRow({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="flex items-baseline justify-between gap-3 py-1 text-sm">
+      <span className="text-xs text-muted-foreground">{label}</span>
+      <span className="font-medium text-foreground text-right">{children}</span>
+    </div>
+  );
+}

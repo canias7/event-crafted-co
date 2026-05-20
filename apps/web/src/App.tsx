@@ -70,6 +70,7 @@ import {
   PublicReviewPage,
   ProposalPrintPage,
   PublicProposalPage,
+  PublicGallerySharePage,
 } from "@/router/lazyRoutes";
 
 const App = () => (
@@ -114,6 +115,7 @@ const App = () => (
               <Route path="/review/:token" element={<PublicReviewPage />} />
               <Route path="/proposals/:id/print" element={<ProposalPrintPage />} />
               <Route path="/p/:token" element={<PublicProposalPage />} />
+              <Route path="/g/:token" element={<PublicGallerySharePage />} />
               <Route path="/accept-team-invite/:token" element={<AcceptTeamInvitePage />} />
               <Route path="/rsvp/:token" element={<PublicEventRsvpPage />} />
               {/* Planning-team feature removed when host portal mirrored

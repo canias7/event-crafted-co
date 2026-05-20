@@ -2525,30 +2525,45 @@ export type Database = {
       vendor_gallery_images: {
         Row: {
           album_id: string | null
+          blurhash: string | null
           caption: string | null
           created_at: string
+          deleted_at: string | null
           display_order: number
+          exif: Json | null
+          height: number | null
           id: string
           image_url: string
           user_id: string
+          width: number | null
         }
         Insert: {
           album_id?: string | null
+          blurhash?: string | null
           caption?: string | null
           created_at?: string
+          deleted_at?: string | null
           display_order?: number
+          exif?: Json | null
+          height?: number | null
           id?: string
           image_url: string
           user_id: string
+          width?: number | null
         }
         Update: {
           album_id?: string | null
+          blurhash?: string | null
           caption?: string | null
           created_at?: string
+          deleted_at?: string | null
           display_order?: number
+          exif?: Json | null
+          height?: number | null
           id?: string
           image_url?: string
           user_id?: string
+          width?: number | null
         }
         Relationships: [
           {
@@ -2567,6 +2582,65 @@ export type Database = {
           },
           {
             foreignKeyName: "vendor_gallery_images_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "vendor_brands"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vendor_gallery_shares: {
+        Row: {
+          album_id: string | null
+          created_at: string
+          expires_at: string | null
+          id: string
+          image_id: string | null
+          token: string
+          user_id: string
+        }
+        Insert: {
+          album_id?: string | null
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          image_id?: string | null
+          token?: string
+          user_id: string
+        }
+        Update: {
+          album_id?: string | null
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          image_id?: string | null
+          token?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vendor_gallery_shares_album_id_fkey"
+            columns: ["album_id"]
+            isOneToOne: false
+            referencedRelation: "vendor_gallery_albums"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vendor_gallery_shares_image_id_fkey"
+            columns: ["image_id"]
+            isOneToOne: false
+            referencedRelation: "vendor_gallery_images"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vendor_gallery_shares_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vendor_gallery_shares_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "vendor_brands"
