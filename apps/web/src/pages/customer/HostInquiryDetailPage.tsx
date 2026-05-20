@@ -239,22 +239,22 @@ export default function HostInquiryDetailPage() {
     }
     setInquiry(iRes.data as unknown as Inquiry);
 
-    // First-time-open: stamp host_read_at so the vendor's "Seen" line
-    // can light up. Fire-and-forget.
-    const inq = iRes.data as unknown as Inquiry | null;
-    if (inq && inq.host_read_at == null) {
-      supabase
-        .from("inquiries")
-        .update({ host_read_at: new Date().toISOString() })
-        .eq("id", inquiryId)
-        .then(({ error: readErr }) => {
-          if (readErr)
-            console.error(
-              "[HostInquiryDetail] mark-read failed",
-              readErr.message,
-            );
-        });
-    }
+    // Stamp host_read_at every time the host opens the inquiry so
+    // the inbox unread dot resets correctly. The unread predicate is
+    // last_message_at > host_read_at — without re-stamping on each
+    // visit, the dot would only clear on the very first open.
+    // Fire-and-forget.
+    supabase
+      .from("inquiries")
+      .update({ host_read_at: new Date().toISOString() })
+      .eq("id", inquiryId)
+      .then(({ error: readErr }) => {
+        if (readErr)
+          console.error(
+            "[HostInquiryDetail] mark-read failed",
+            readErr.message,
+          );
+      });
 
     const thread = (tidRes.data as string | null) ?? null;
     setThreadId(thread);
