@@ -95,6 +95,21 @@ export function InquiryReviewCard({
         } as never);
     setSaving(false);
     if (error) {
+      // RLS denies the UPDATE once review_responses.created_at falls
+      // outside the 10-minute window. Catch that case and surface
+      // friendly copy instead of the raw "violates row-level security
+      // policy" string. Bail out of editing so the stale form doesn't
+      // sit there inviting another doomed click.
+      if (/row-level security/i.test(error.message)) {
+        toast.error(
+          review.response
+            ? "Edit window closed — responses can only be edited within 10 minutes."
+            : "You're no longer allowed to respond to this review.",
+        );
+        setEditing(false);
+        onResponseSaved();
+        return;
+      }
       toast.error(error.message);
       return;
     }
