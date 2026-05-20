@@ -111,12 +111,23 @@ function fmtMoney(c: number | null) {
   return c == null ? "—" : `$${(c / 100).toLocaleString()}`;
 }
 
+// localStorage key for the in-flight draft, scoped per inquiry so two
+// open tabs (or a navigate-away-and-back) don't clobber each other.
+// Mirrors the vendor-side pattern in InquiryDetailPage.
+function draftKey(inquiryId: string | undefined): string | null {
+  return inquiryId ? `vendora.host-inquiry-draft.${inquiryId}` : null;
+}
+
 export default function HostInquiryDetailPage() {
   const { inquiryId } = useParams();
   const { user } = useAuth();
   const [inquiry, setInquiry] = useState<Inquiry | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [composer, setComposer] = useState("");
+  // Track whether we've already rehydrated the draft for the active
+  // inquiry — without this, the first effect-run overwrites the
+  // freshly-loaded localStorage value with an empty string.
+  const draftHydratedRef = useRef<string | null>(null);
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
   const [emojiOpen, setEmojiOpen] = useState(false);
   const [summaryOpen, setSummaryOpen] = useState(false);
@@ -338,6 +349,36 @@ export default function HostInquiryDetailPage() {
   useEffect(() => {
     load();
   }, [load]);
+
+  // Rehydrate any in-flight draft from localStorage when the active
+  // inquiry changes. Hosts otherwise lose their reply on any nav.
+  useEffect(() => {
+    if (!inquiryId) return;
+    if (draftHydratedRef.current === inquiryId) return;
+    draftHydratedRef.current = inquiryId;
+    const key = draftKey(inquiryId);
+    if (!key) return;
+    try {
+      const v = window.localStorage.getItem(key);
+      if (v) setComposer(v);
+    } catch {
+      /* private mode / quota — fall back to empty composer */
+    }
+  }, [inquiryId]);
+
+  // Persist the draft on every keystroke. localStorage is cheap; the
+  // user's typing is the canonical source of truth.
+  useEffect(() => {
+    const key = draftKey(inquiryId);
+    if (!key) return;
+    if (draftHydratedRef.current !== inquiryId) return;
+    try {
+      if (composer) window.localStorage.setItem(key, composer);
+      else window.localStorage.removeItem(key);
+    } catch {
+      /* ignore */
+    }
+  }, [composer, inquiryId]);
 
   // Auto-scroll to the bottom — but only if the user is already
   // anchored near the bottom. If they've scrolled up to read

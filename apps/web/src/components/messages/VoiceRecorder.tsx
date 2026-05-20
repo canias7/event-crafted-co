@@ -126,12 +126,21 @@ export function VoiceRecorder({
         setElapsed((s) => {
           const next = s + 1;
           if (next >= MAX_SECONDS) {
-            // Hit the cap — stop. The onstop handler will deliver.
+            // Hit the cap — stop, clamp, and kill the interval.
+            // onstop usually fires fast enough to clear the timer
+            // itself, but Safari has been observed delaying it,
+            // letting the counter tick past MAX_SECONDS. Belt-and-
+            // braces: clear here too.
             try {
               recorderRef.current?.stop();
             } catch {
               // already stopped
             }
+            if (timerRef.current) {
+              window.clearInterval(timerRef.current);
+              timerRef.current = null;
+            }
+            return MAX_SECONDS;
           }
           return next;
         });
