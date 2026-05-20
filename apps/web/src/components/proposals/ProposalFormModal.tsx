@@ -116,6 +116,16 @@ export function ProposalFormModal({
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     if (!formValid) return;
+    // The quantity input has min="1" but that's only a client-side
+    // hint — direct typing / paste / DevTools can land 0 or a huge
+    // value. Re-check at submit so we don't post invalid line items.
+    const badQuantity = validItems.find(
+      (it) => it.quantity < 1 || it.quantity > 9999,
+    );
+    if (badQuantity) {
+      toast.error("Quantity on each line must be between 1 and 9999.");
+      return;
+    }
 
     const lineItems = validItems.map((it) => ({
       description: it.description.trim(),

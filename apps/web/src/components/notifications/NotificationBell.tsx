@@ -131,14 +131,22 @@ export function NotificationBell({ variant = "dark" }: Props) {
   }
 
   async function markRead(id: string) {
+    const stamp = new Date().toISOString();
     setItems((prev) =>
-      prev.map((i) =>
-        i.id === id ? { ...i, read_at: new Date().toISOString() } : i,
-      ),
+      prev.map((i) => (i.id === id ? { ...i, read_at: stamp } : i)),
     );
-    await notifTable()
-      .update({ read_at: new Date().toISOString() })
+    const { error } = await notifTable()
+      .update({ read_at: stamp })
       .eq("id", id);
+    if (error) {
+      // Revert the optimistic update — leaving it stuck would show
+      // "read" in this session but the badge would reappear after a
+      // refresh, confusing the user.
+      setItems((prev) =>
+        prev.map((i) => (i.id === id ? { ...i, read_at: null } : i)),
+      );
+      console.warn("[NotificationBell] markRead failed", error.message);
+    }
   }
 
   const triggerColor =
