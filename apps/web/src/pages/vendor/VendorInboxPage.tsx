@@ -30,6 +30,7 @@ interface InquiryRow {
   special_requests: string | null;
   status: string;
   created_at: string;
+  last_message_at: string;
   vendor_read_at: string | null;
   host: { display_name: string | null; avatar_url: string | null } | null;
 }
@@ -89,10 +90,10 @@ export default function VendorInboxPage() {
     const { data } = await supabase
       .from("inquiries")
       .select(
-        "id, event_type, event_date, guest_count, location, budget_min_cents, budget_max_cents, special_requests, status, created_at, vendor_read_at, host:profiles!inquiries_host_id_fkey(display_name, avatar_url)",
+        "id, event_type, event_date, guest_count, location, budget_min_cents, budget_max_cents, special_requests, status, created_at, last_message_at, vendor_read_at, host:profiles!inquiries_host_id_fkey(display_name, avatar_url)",
       )
       .in("vendor_id", vids)
-      .order("created_at", { ascending: false })
+      .order("last_message_at", { ascending: false })
       .limit(100);
     setRows((data as unknown as InquiryRow[]) ?? []);
     setLoading(false);
@@ -108,6 +109,16 @@ export default function VendorInboxPage() {
     load(vendorIds);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, vendorIdsKey]);
+
+  // Re-render every minute so relativeTime() decays — "3h" rolls over
+  // to "4h" without requiring a manual refresh. Bumping a no-op state
+  // counter is enough; React re-runs the row map and the function
+  // recomputes against Date.now().
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => setTick((n) => n + 1), 60_000);
+    return () => clearInterval(id);
+  }, []);
 
   const filteredRows = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -220,10 +231,14 @@ function ConversationRow({
   const name = row.host?.display_name?.trim() || "Host";
   const initial = name.charAt(0).toUpperCase();
   const eventLabel = row.event_type.replace(/_/g, " ");
-  // iMessage convention: a single blue dot only when the vendor
-  // hasn't opened this thread yet. Once they tap in (which writes
-  // vendor_read_at server-side), the dot goes away.
-  const isUnread = row.vendor_read_at == null;
+  // iMessage convention: blue dot whenever there's activity newer than
+  // the last time the vendor opened this thread. Plain
+  // "vendor_read_at == null" used to flip permanently off on first
+  // open, hiding subsequent new messages from the inbox indicator.
+  const isUnread =
+    row.vendor_read_at == null ||
+    new Date(row.last_message_at).getTime() >
+      new Date(row.vendor_read_at).getTime();
   return (
     <li>
       <Link
@@ -288,7 +303,7 @@ function ConversationRow({
 
         {/* Timestamp */}
         <span className="shrink-0 text-[11px] text-muted-foreground self-start tnum">
-          {relativeTime(row.created_at)}
+          {relativeTime(row.last_message_at)}
         </span>
       </Link>
     </li>
