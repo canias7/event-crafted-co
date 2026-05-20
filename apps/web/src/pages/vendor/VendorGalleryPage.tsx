@@ -146,7 +146,13 @@ export default function VendorGalleryPage() {
   const { user } = useAuth();
   const [rows, setRows] = useState<GalleryRow[] | null>(null);
   const [albums, setAlbums] = useState<Album[] | null>(null);
-  const [activeTab, setActiveTab] = useState<string>(ALL_TAB);
+  // Two independent axes — album scope (or Trash) and an optional
+  // smart filter that composes on top. Click "Last 7 days" inside an
+  // album and you see that album's last-7-day images, not all of them.
+  const [activeAlbum, setActiveAlbum] = useState<string>(ALL_TAB);
+  const [activeSmartFilter, setActiveSmartFilter] = useState<string | null>(
+    null,
+  );
 
   // Toolbar state
   const [query, setQuery] = useState("");
@@ -175,7 +181,7 @@ export default function VendorGalleryPage() {
   });
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const isTrashView = activeTab === TRASH_TAB;
+  const isTrashView = activeAlbum === TRASH_TAB;
 
   // Lazy 30-day auto-purge of soft-deleted rows on first mount.
   // Files clean up automatically via the existing storage cleanup
@@ -277,7 +283,16 @@ export default function VendorGalleryPage() {
 
   useEffect(() => {
     setVisibleCount(PAGE_SIZE);
-  }, [activeTab, query, sortMode, aspectFilter, formatFilter, dateFrom, dateTo]);
+  }, [
+    activeAlbum,
+    activeSmartFilter,
+    query,
+    sortMode,
+    aspectFilter,
+    formatFilter,
+    dateFrom,
+    dateTo,
+  ]);
 
   // Backfill old uploads that are missing width/height/blurhash —
   // those rows predate round 2 and don't show up in the Portraits /
@@ -349,9 +364,11 @@ export default function VendorGalleryPage() {
   }, [rows === null]);
 
   // Filtering pipeline.
-  // Trash tab is mutually exclusive with all other tabs/smart filters
-  // — it shows rows where deleted_at IS NOT NULL. Every other tab
-  // hides those.
+  // Trash is its own axis — shows rows where deleted_at IS NOT NULL.
+  // All other album tabs (and the default) hide deleted rows. The
+  // smart filter composes on top of whichever album scope is active,
+  // so "Last 7 days" inside an album narrows to that album's recent
+  // images.
   const filteredRows = useMemo(() => {
     if (!rows) return [];
     let out = rows;
@@ -362,33 +379,42 @@ export default function VendorGalleryPage() {
       out = out.filter((r) => r.deleted_at === null);
     }
 
-    const now = Date.now();
-    if (activeTab === ALL_TAB || isTrashView) {
-      // no extra tab filter
-    } else if (activeTab === UNCATEGORIZED_TAB) {
-      out = out.filter((r) => r.album_id === null);
-    } else if (activeTab === SMART_RECENT_7) {
-      out = out.filter(
-        (r) => now - new Date(r.created_at).getTime() < 7 * 86400_000,
-      );
-    } else if (activeTab === SMART_RECENT_30) {
-      out = out.filter(
-        (r) => now - new Date(r.created_at).getTime() < 30 * 86400_000,
-      );
-    } else if (activeTab === SMART_PORTRAITS) {
-      out = out.filter((r) =>
-        r.width && r.height ? r.height / r.width > 1.05 : false,
-      );
-    } else if (activeTab === SMART_LANDSCAPES) {
-      out = out.filter((r) =>
-        r.width && r.height ? r.width / r.height > 1.05 : false,
-      );
-    } else if (activeTab === SMART_LARGE_FILES) {
-      out = out.filter((r) =>
-        r.file_size_bytes !== null && r.file_size_bytes > LARGE_FILE_THRESHOLD,
-      );
-    } else {
-      out = out.filter((r) => r.album_id === activeTab);
+    // Album scope. Trash collects deleted rows from every album so it
+    // ignores the album narrowing.
+    if (!isTrashView) {
+      if (activeAlbum === UNCATEGORIZED_TAB) {
+        out = out.filter((r) => r.album_id === null);
+      } else if (activeAlbum !== ALL_TAB) {
+        out = out.filter((r) => r.album_id === activeAlbum);
+      }
+    }
+
+    // Smart filter (optional, composes on top of album scope).
+    if (activeSmartFilter) {
+      const now = Date.now();
+      if (activeSmartFilter === SMART_RECENT_7) {
+        out = out.filter(
+          (r) => now - new Date(r.created_at).getTime() < 7 * 86400_000,
+        );
+      } else if (activeSmartFilter === SMART_RECENT_30) {
+        out = out.filter(
+          (r) => now - new Date(r.created_at).getTime() < 30 * 86400_000,
+        );
+      } else if (activeSmartFilter === SMART_PORTRAITS) {
+        out = out.filter((r) =>
+          r.width && r.height ? r.height / r.width > 1.05 : false,
+        );
+      } else if (activeSmartFilter === SMART_LANDSCAPES) {
+        out = out.filter((r) =>
+          r.width && r.height ? r.width / r.height > 1.05 : false,
+        );
+      } else if (activeSmartFilter === SMART_LARGE_FILES) {
+        out = out.filter(
+          (r) =>
+            r.file_size_bytes !== null &&
+            r.file_size_bytes > LARGE_FILE_THRESHOLD,
+        );
+      }
     }
 
     if (query.trim()) {
@@ -447,7 +473,18 @@ export default function VendorGalleryPage() {
     }
 
     return sorted;
-  }, [rows, activeTab, query, sortMode, aspectFilter, formatFilter, dateFrom, dateTo, isTrashView]);
+  }, [
+    rows,
+    activeAlbum,
+    activeSmartFilter,
+    query,
+    sortMode,
+    aspectFilter,
+    formatFilter,
+    dateFrom,
+    dateTo,
+    isTrashView,
+  ]);
 
   const visibleRows = useMemo(
     () => filteredRows.slice(0, visibleCount),
@@ -505,11 +542,10 @@ export default function VendorGalleryPage() {
     }
 
     const targetAlbumId =
-      activeTab !== ALL_TAB &&
-      activeTab !== UNCATEGORIZED_TAB &&
-      activeTab !== TRASH_TAB &&
-      !activeTab.startsWith("__smart")
-        ? activeTab
+      activeAlbum !== ALL_TAB &&
+      activeAlbum !== UNCATEGORIZED_TAB &&
+      activeAlbum !== TRASH_TAB
+        ? activeAlbum
         : null;
 
     setUploading(true);
@@ -687,7 +723,7 @@ export default function VendorGalleryPage() {
   async function downloadActiveAlbum() {
     if (!isCustomAlbumActive || zipping) return;
     const albumRows = (rows ?? []).filter(
-      (r) => r.album_id === activeTab && r.deleted_at === null,
+      (r) => r.album_id === activeAlbum && r.deleted_at === null,
     );
     if (albumRows.length === 0) {
       toast.error("This album has no images.");
@@ -700,7 +736,7 @@ export default function VendorGalleryPage() {
       );
       return;
     }
-    await zipRows(albumRows, `album-${activeTab.slice(0, 8)}`);
+    await zipRows(albumRows, `album-${activeAlbum.slice(0, 8)}`);
   }
 
   async function zipRows(rowsToZip: GalleryRow[], suffix: string) {
@@ -777,12 +813,12 @@ export default function VendorGalleryPage() {
     }
     toast.success("Album created.");
     await load();
-    if (data?.id) setActiveTab(data.id as string);
+    if (data?.id) setActiveAlbum(data.id as string);
   }
 
   async function renameActiveAlbum() {
     if (!isCustomAlbumActive) return;
-    const current = albums?.find((a) => a.id === activeTab);
+    const current = albums?.find((a) => a.id === activeAlbum);
     if (!current) return;
     const name = window.prompt("Rename album", current.name);
     if (!name || !name.trim() || name.trim() === current.name) return;
@@ -790,7 +826,7 @@ export default function VendorGalleryPage() {
     const { error } = await (supabase as any)
       .from("vendor_gallery_albums")
       .update({ name: name.trim() })
-      .eq("id", activeTab);
+      .eq("id", activeAlbum);
     if (error) {
       toast.error(error.message);
       return;
@@ -801,7 +837,7 @@ export default function VendorGalleryPage() {
 
   async function deleteActiveAlbum() {
     if (!isCustomAlbumActive) return;
-    const current = albums?.find((a) => a.id === activeTab);
+    const current = albums?.find((a) => a.id === activeAlbum);
     if (!current) return;
     if (
       !window.confirm(
@@ -813,13 +849,13 @@ export default function VendorGalleryPage() {
     const { error } = await (supabase as any)
       .from("vendor_gallery_albums")
       .delete()
-      .eq("id", activeTab);
+      .eq("id", activeAlbum);
     if (error) {
       toast.error(error.message);
       return;
     }
     toast.success("Album deleted.");
-    setActiveTab(ALL_TAB);
+    setActiveAlbum(ALL_TAB);
     load();
   }
 
@@ -829,7 +865,7 @@ export default function VendorGalleryPage() {
     const { error } = await (supabase as any)
       .from("vendor_gallery_albums")
       .update({ cover_image_id: imageId })
-      .eq("id", activeTab);
+      .eq("id", activeAlbum);
     if (error) {
       toast.error(error.message);
       return;
@@ -882,10 +918,9 @@ export default function VendorGalleryPage() {
   }
 
   const isCustomAlbumActive =
-    activeTab !== ALL_TAB &&
-    activeTab !== UNCATEGORIZED_TAB &&
-    activeTab !== TRASH_TAB &&
-    !activeTab.startsWith("__smart");
+    activeAlbum !== ALL_TAB &&
+    activeAlbum !== UNCATEGORIZED_TAB &&
+    activeAlbum !== TRASH_TAB;
 
   // Drag-to-reorder is also disabled in select mode — otherwise a
   // long-press on touch could trigger drag instead of toggling the
@@ -933,23 +968,23 @@ export default function VendorGalleryPage() {
           <div className="flex items-center gap-2 overflow-x-auto pb-1">
             <AlbumTab
               label="All"
-              active={activeTab === ALL_TAB}
+              active={activeAlbum === ALL_TAB}
               count={rows?.filter((r) => r.deleted_at === null).length}
               onClick={() => {
-                setActiveTab(ALL_TAB);
+                setActiveAlbum(ALL_TAB);
                 exitSelectMode();
               }}
             />
             <AlbumTab
               label="Uncategorized"
-              active={activeTab === UNCATEGORIZED_TAB}
+              active={activeAlbum === UNCATEGORIZED_TAB}
               count={
                 rows?.filter(
                   (r) => r.album_id === null && r.deleted_at === null,
                 ).length
               }
               onClick={() => {
-                setActiveTab(UNCATEGORIZED_TAB);
+                setActiveAlbum(UNCATEGORIZED_TAB);
                 exitSelectMode();
               }}
             />
@@ -964,7 +999,7 @@ export default function VendorGalleryPage() {
                 <AlbumTab
                   key={a.id}
                   label={a.name}
-                  active={activeTab === a.id}
+                  active={activeAlbum === a.id}
                   count={
                     rows?.filter(
                       (r) => r.album_id === a.id && r.deleted_at === null,
@@ -972,7 +1007,7 @@ export default function VendorGalleryPage() {
                   }
                   coverUrl={cover ? thumbUrl(cover.image_url, 60) : null}
                   onClick={() => {
-                    setActiveTab(a.id);
+                    setActiveAlbum(a.id);
                     exitSelectMode();
                   }}
                 />
@@ -988,48 +1023,60 @@ export default function VendorGalleryPage() {
             </button>
           </div>
 
-          {/* Smart + Trash row */}
+          {/* Smart + Trash row. Smart pills toggle on/off independently
+              of the album scope so e.g. "Last 7 days" inside an album
+              narrows that album. Trash is part of the album axis. */}
           <div className="flex items-center gap-2 overflow-x-auto pb-1">
             <span className="text-[10px] uppercase tracking-wider text-muted-foreground shrink-0 mr-1">
               Smart
             </span>
             <AlbumTab
               label="Last 7 days"
-              active={activeTab === SMART_RECENT_7}
+              active={activeSmartFilter === SMART_RECENT_7}
               onClick={() => {
-                setActiveTab(SMART_RECENT_7);
+                setActiveSmartFilter((curr) =>
+                  curr === SMART_RECENT_7 ? null : SMART_RECENT_7,
+                );
                 exitSelectMode();
               }}
             />
             <AlbumTab
               label="Last 30 days"
-              active={activeTab === SMART_RECENT_30}
+              active={activeSmartFilter === SMART_RECENT_30}
               onClick={() => {
-                setActiveTab(SMART_RECENT_30);
+                setActiveSmartFilter((curr) =>
+                  curr === SMART_RECENT_30 ? null : SMART_RECENT_30,
+                );
                 exitSelectMode();
               }}
             />
             <AlbumTab
               label="Portraits"
-              active={activeTab === SMART_PORTRAITS}
+              active={activeSmartFilter === SMART_PORTRAITS}
               onClick={() => {
-                setActiveTab(SMART_PORTRAITS);
+                setActiveSmartFilter((curr) =>
+                  curr === SMART_PORTRAITS ? null : SMART_PORTRAITS,
+                );
                 exitSelectMode();
               }}
             />
             <AlbumTab
               label="Landscapes"
-              active={activeTab === SMART_LANDSCAPES}
+              active={activeSmartFilter === SMART_LANDSCAPES}
               onClick={() => {
-                setActiveTab(SMART_LANDSCAPES);
+                setActiveSmartFilter((curr) =>
+                  curr === SMART_LANDSCAPES ? null : SMART_LANDSCAPES,
+                );
                 exitSelectMode();
               }}
             />
             <AlbumTab
               label="Large (>5 MB)"
-              active={activeTab === SMART_LARGE_FILES}
+              active={activeSmartFilter === SMART_LARGE_FILES}
               onClick={() => {
-                setActiveTab(SMART_LARGE_FILES);
+                setActiveSmartFilter((curr) =>
+                  curr === SMART_LARGE_FILES ? null : SMART_LARGE_FILES,
+                );
                 exitSelectMode();
               }}
             />
@@ -1041,7 +1088,7 @@ export default function VendorGalleryPage() {
               active={isTrashView}
               count={trashCount}
               onClick={() => {
-                setActiveTab(TRASH_TAB);
+                setActiveAlbum(TRASH_TAB);
                 exitSelectMode();
               }}
             />
@@ -1365,7 +1412,7 @@ export default function VendorGalleryPage() {
                           <DropdownMenuItem
                             key={a.id}
                             onClick={() => bulkMoveToAlbum(a.id)}
-                            disabled={a.id === activeTab}
+                            disabled={a.id === activeAlbum}
                           >
                             {a.name}
                           </DropdownMenuItem>
@@ -1426,7 +1473,12 @@ export default function VendorGalleryPage() {
               >
                 <ImagePlus className="h-8 w-8 mx-auto text-muted-foreground mb-3" />
                 <p className="text-sm font-medium text-foreground">
-                  {query || aspectFilter !== "all" || formatFilter !== "all"
+                  {query ||
+                  aspectFilter !== "all" ||
+                  formatFilter !== "all" ||
+                  activeSmartFilter ||
+                  dateFrom ||
+                  dateTo
                     ? "No images match your filters"
                     : "Drop images here or tap to upload"}
                 </p>
@@ -1479,10 +1531,10 @@ export default function VendorGalleryPage() {
                       selecting={selecting}
                       selected={selected.has(r.id)}
                       reorderEnabled={reorderEnabled}
-                      coverFor={isCustomAlbumActive ? activeTab : null}
+                      coverFor={isCustomAlbumActive ? activeAlbum : null}
                       isAlbumCover={
                         isCustomAlbumActive &&
-                        albums?.find((a) => a.id === activeTab)?.cover_image_id === r.id
+                        albums?.find((a) => a.id === activeAlbum)?.cover_image_id === r.id
                       }
                       isTrashView={isTrashView}
                       onToggleSelect={() => toggleSelect(r.id)}
@@ -1533,7 +1585,7 @@ export default function VendorGalleryPage() {
           }
           isAlbumCover={
             isCustomAlbumActive &&
-            albums?.find((a) => a.id === activeTab)?.cover_image_id ===
+            albums?.find((a) => a.id === activeAlbum)?.cover_image_id ===
               visibleRows[lightboxIdx].id
           }
         />
