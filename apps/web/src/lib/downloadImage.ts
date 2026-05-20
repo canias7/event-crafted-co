@@ -10,16 +10,56 @@
 // Both fixes route through fetch → blob → URL.createObjectURL.
 // The resulting blob URL is same-origin to the app, so downloads
 // honor the filename and canvas ops are clean.
+//
+// Streaming-fetch shape: both helpers accept an optional
+// `onProgress(received, total)` callback. `total` is the
+// Content-Length header (may be 0 if the server doesn't send it).
 
-export async function downloadCrossOrigin(
+export interface ProgressCallback {
+  (received: number, total: number): void;
+}
+
+async function fetchAsBlob(
   url: string,
-  filename?: string,
-): Promise<void> {
+  onProgress?: ProgressCallback,
+): Promise<Blob> {
   const res = await fetch(url);
   if (!res.ok) {
     throw new Error(`Couldn't fetch image (${res.status})`);
   }
-  const blob = await res.blob();
+  // Fall back to the simple blob() path if the response isn't a
+  // streamable body (older browsers, or no progress requested).
+  const totalHeader = res.headers.get("content-length");
+  const total = totalHeader ? parseInt(totalHeader, 10) : 0;
+  if (!onProgress || !res.body) {
+    return res.blob();
+  }
+  const reader = res.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let received = 0;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    if (value) {
+      chunks.push(value);
+      received += value.length;
+      onProgress(received, total);
+    }
+  }
+  // Concatenate chunks into a single Blob preserving the
+  // response's content type so the browser picks the right
+  // extension on download.
+  return new Blob(chunks as BlobPart[], {
+    type: res.headers.get("content-type") ?? "application/octet-stream",
+  });
+}
+
+export async function downloadCrossOrigin(
+  url: string,
+  filename?: string,
+  onProgress?: ProgressCallback,
+): Promise<void> {
+  const blob = await fetchAsBlob(url, onProgress);
   const objectUrl = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = objectUrl;
@@ -27,19 +67,20 @@ export async function downloadCrossOrigin(
   document.body.appendChild(a);
   a.click();
   a.remove();
-  // Defer revoke so Safari has time to start the download.
-  setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
+  // Lifting the revoke window to 30s — at 1s the URL could revoke
+  // while the browser is still preparing the save dialog on a
+  // large file. Blob URL lifetime cost is tiny.
+  setTimeout(() => URL.revokeObjectURL(objectUrl), 30_000);
 }
 
 // Load an image element from a cross-origin URL via a same-origin
 // blob so canvas operations don't taint. Returns the loaded <img>
 // element. Throws on fetch / decode failure.
-export async function loadImageViaBlob(url: string): Promise<HTMLImageElement> {
-  const res = await fetch(url);
-  if (!res.ok) {
-    throw new Error(`Couldn't fetch image (${res.status})`);
-  }
-  const blob = await res.blob();
+export async function loadImageViaBlob(
+  url: string,
+  onProgress?: ProgressCallback,
+): Promise<HTMLImageElement> {
+  const blob = await fetchAsBlob(url, onProgress);
   const objectUrl = URL.createObjectURL(blob);
   try {
     const img = await new Promise<HTMLImageElement>((resolve, reject) => {
@@ -52,7 +93,7 @@ export async function loadImageViaBlob(url: string): Promise<HTMLImageElement> {
   } finally {
     // The image element keeps the bitmap; revoking the URL doesn't
     // affect the already-decoded image data.
-    setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
+    setTimeout(() => URL.revokeObjectURL(objectUrl), 30_000);
   }
 }
 
@@ -60,4 +101,11 @@ function defaultName(url: string): string {
   const noQuery = url.split("?")[0];
   const slash = noQuery.lastIndexOf("/");
   return slash >= 0 ? noQuery.slice(slash + 1) : "image";
+}
+
+export function formatBytes(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  if (bytes < 1024 * 1024 * 1024) return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+  return `${(bytes / 1024 / 1024 / 1024).toFixed(1)} GB`;
 }

@@ -39,7 +39,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { computeBlurhash } from "@/lib/galleryImage";
-import { loadImageViaBlob } from "@/lib/downloadImage";
+import { formatBytes, loadImageViaBlob } from "@/lib/downloadImage";
 
 interface Props {
   open: boolean;
@@ -79,6 +79,10 @@ export function EditModal({
   const [completedCrop, setCompletedCrop] = useState<PixelCrop | null>(null);
   const [saving, setSaving] = useState(false);
   const [loaded, setLoaded] = useState(false);
+  const [loadProgress, setLoadProgress] = useState<{ received: number; total: number }>({
+    received: 0,
+    total: 0,
+  });
 
   useEffect(() => {
     if (!open) {
@@ -90,16 +94,18 @@ export function EditModal({
       return;
     }
     let cancelled = false;
+    setLoadProgress({ received: 0, total: 0 });
     // Loaded via fetch → blob → object URL so canvas operations
     // later don't taint on cross-origin (Supabase storage). The
     // sourceRef holds the bitmap; transforms drawImage from it.
-    void loadImageViaBlob(imageUrl)
+    // Streamed so the modal can show "Loading 4.2 / 8.3 MB…"
+    // instead of an unmoving spinner on a big file.
+    void loadImageViaBlob(imageUrl, (received, total) => {
+      if (!cancelled) setLoadProgress({ received, total });
+    })
       .then((img) => {
         if (cancelled) return;
         sourceRef.current = img;
-        // Initial display = the bare object URL of the source.
-        // ReactCrop reads from a same-origin URL too so the crop
-        // overlay and the saved data agree.
         setDisplayUrl(img.src);
         setLoaded(true);
       })
@@ -147,6 +153,16 @@ export function EditModal({
     setCrop(undefined);
     setCompletedCrop(null);
   }
+
+  // Save is disabled until the user actually changes something —
+  // otherwise we'd re-upload the same content as a new file.
+  const hasChanges =
+    t.rotate !== 0 ||
+    t.flipH ||
+    t.flipV ||
+    (completedCrop !== null &&
+      completedCrop.width > 0 &&
+      completedCrop.height > 0);
 
   async function save() {
     if (!user?.id || !sourceRef.current) return;
@@ -262,7 +278,16 @@ export function EditModal({
         <div className="space-y-4">
           <div className="bg-secondary/40 rounded-lg p-3 flex items-center justify-center min-h-[300px]">
             {!loaded || !displayUrl ? (
-              <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+              <div className="flex flex-col items-center gap-2 text-muted-foreground">
+                <Loader2 className="w-6 h-6 animate-spin" />
+                <p className="text-xs">
+                  {loadProgress.total > 0
+                    ? `Loading ${formatBytes(loadProgress.received)} / ${formatBytes(loadProgress.total)}`
+                    : loadProgress.received > 0
+                      ? `Loading ${formatBytes(loadProgress.received)}`
+                      : "Loading image…"}
+                </p>
+              </div>
             ) : (
               <ReactCrop
                 crop={crop}
@@ -344,7 +369,11 @@ export function EditModal({
           >
             Cancel
           </Button>
-          <Button onClick={save} disabled={saving || !loaded} className="rounded-full">
+          <Button
+            onClick={save}
+            disabled={saving || !loaded || !hasChanges}
+            className="rounded-full"
+          >
             {saving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
             Save
           </Button>

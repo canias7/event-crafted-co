@@ -9,6 +9,7 @@ import {
   Download,
   Info,
   Link2,
+  Loader2,
   Pencil,
   Star,
   X,
@@ -71,6 +72,7 @@ export function Lightbox({
   const [panelOpen, setPanelOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
+  const [downloading, setDownloading] = useState(false);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -148,16 +150,25 @@ export function Lightbox({
             </ActionButton>
             <ActionButton
               onClick={async () => {
+                if (downloading) return;
+                setDownloading(true);
                 try {
                   await downloadCrossOrigin(row.image_url);
                 } catch (err) {
                   const msg = err instanceof Error ? err.message : "Couldn't download.";
                   toast.error(msg);
+                } finally {
+                  setDownloading(false);
                 }
               }}
-              label="Download"
+              label={downloading ? "Downloading…" : "Download"}
+              disabled={downloading}
             >
-              <Download className="w-4 h-4" />
+              {downloading ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Download className="w-4 h-4" />
+              )}
             </ActionButton>
             <ActionButton
               onClick={() => setPanelOpen((p) => !p)}
@@ -285,11 +296,13 @@ function ActionButton({
   onClick,
   label,
   active,
+  disabled,
   children,
 }: {
   onClick: () => void;
   label: string;
   active?: boolean;
+  disabled?: boolean;
   children: React.ReactNode;
 }) {
   return (
@@ -298,10 +311,13 @@ function ActionButton({
       onClick={onClick}
       aria-label={label}
       title={label}
+      disabled={disabled}
       className={`inline-flex items-center justify-center w-10 h-10 rounded-full transition-colors ${
-        active
-          ? "bg-white text-black"
-          : "bg-white/10 hover:bg-white/20 text-white"
+        disabled
+          ? "bg-white/10 text-white/50 cursor-not-allowed"
+          : active
+            ? "bg-white text-black"
+            : "bg-white/10 hover:bg-white/20 text-white"
       }`}
     >
       {children}
