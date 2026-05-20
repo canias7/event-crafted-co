@@ -32,6 +32,9 @@ type VerifStatus = "none" | "pending" | "approved" | "rejected";
 
 interface Stats {
   ratings: number;
+  posts: number;
+  reels: number;
+  buzz: number;
 }
 
 interface ProfileState {
@@ -64,6 +67,9 @@ export default function HostProfilePage() {
       { data: profile },
       { count: unread },
       { count: ratings },
+      { count: postsN },
+      { count: reelsN },
+      { count: buzzN },
       authUser,
       { data: verifRow },
     ] = await Promise.all([
@@ -86,6 +92,18 @@ export default function HostProfilePage() {
         // given vendors. Filter to rater_role='vendor' so the
         // outgoing reviews don't inflate the count.
         .eq("rater_role", "vendor"),
+      supabase
+        .from("posts")
+        .select("*", { count: "exact", head: true })
+        .eq("author_user_id", user.id),
+      supabase
+        .from("reels")
+        .select("*", { count: "exact", head: true })
+        .eq("author_user_id", user.id),
+      supabase
+        .from("buzz")
+        .select("*", { count: "exact", head: true })
+        .eq("author_user_id", user.id),
       supabase.auth.getUser(),
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (supabase as any)
@@ -128,6 +146,9 @@ export default function HostProfilePage() {
       avatarUrl: profileRow?.avatar_url ?? null,
       stats: {
         ratings: ratings ?? 0,
+        posts: postsN ?? 0,
+        reels: reelsN ?? 0,
+        buzz: buzzN ?? 0,
       },
       verifStatus: status,
     });
@@ -334,7 +355,10 @@ function HeroCard({
         {verified ? "Verified Host  ·  " : ""}Member since {memberSince}
       </p>
       <div className="relative my-5 h-px w-full bg-border/60" />
-      <div className="relative flex w-full items-center justify-center">
+      <div className="relative grid grid-cols-4 w-full gap-2">
+        <StatCol label="Posts" value={String(stats.posts)} />
+        <StatCol label="Reels" value={String(stats.reels)} />
+        <StatCol label="Buzz" value={String(stats.buzz)} />
         <StatCol
           label="Ratings"
           value={String(stats.ratings)}

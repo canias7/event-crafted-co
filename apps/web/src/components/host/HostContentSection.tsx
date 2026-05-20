@@ -5,15 +5,16 @@
 // account settings link.
 
 import { useCallback, useEffect, useState } from "react";
-import { Film, Grid3x3, MessageCircle, Plus } from "lucide-react";
+import { Film, Grid3x3, MessageCircle, Plus, Trash2 } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
 import {
   BuzzComposerModal,
   MediaComposerModal,
-} from "@/components/vendor/Composers";
-import { MediaLightbox } from "@/components/vendor/MediaLightbox";
+} from "@/components/host/Composers";
+import { MediaLightbox } from "@/components/host/MediaLightbox";
 
 type Tab = "grid" | "reels" | "buzz";
 
@@ -80,6 +81,18 @@ export function HostContentSection({ userId }: { userId: string }) {
     load();
   }, [load]);
 
+  async function remove(table: "posts" | "reels" | "buzz", id: string) {
+    if (!window.confirm("Delete this? Can't be undone.")) return;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error } = await (supabase as any).from(table).delete().eq("id", id);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    toast.success("Deleted.");
+    load();
+  }
+
   const TABS: Array<{ id: Tab; label: string; icon: typeof Grid3x3 }> = [
     { id: "grid", label: `Posts · ${posts.length}`, icon: Grid3x3 },
     { id: "reels", label: `Reels · ${reels.length}`, icon: Film },
@@ -124,11 +137,19 @@ export function HostContentSection({ userId }: { userId: string }) {
         {loading ? (
           <Skeleton className="h-72 w-full rounded-md" />
         ) : tab === "grid" ? (
-          <PostsGrid posts={posts} onOpen={setLightbox} />
+          <PostsGrid
+            posts={posts}
+            onOpen={setLightbox}
+            onDelete={(id) => remove("posts", id)}
+          />
         ) : tab === "reels" ? (
-          <ReelsGrid reels={reels} onOpen={setLightbox} />
+          <ReelsGrid
+            reels={reels}
+            onOpen={setLightbox}
+            onDelete={(id) => remove("reels", id)}
+          />
         ) : (
-          <BuzzList buzz={buzz} />
+          <BuzzList buzz={buzz} onDelete={(id) => remove("buzz", id)} />
         )}
       </div>
 
@@ -162,9 +183,11 @@ export function HostContentSection({ userId }: { userId: string }) {
 function PostsGrid({
   posts,
   onOpen,
+  onDelete,
 }: {
   posts: PostRow[];
   onOpen: (m: LightboxMedia) => void;
+  onDelete: (id: string) => void;
 }) {
   if (posts.length === 0) {
     return <Empty msg="No posts yet — tap New post to create one." />;
@@ -172,32 +195,35 @@ function PostsGrid({
   return (
     <div className="grid grid-cols-3 sm:grid-cols-4 gap-x-2 gap-y-4">
       {posts.map((p) => (
-        <button
-          key={p.id}
-          onClick={() =>
-            onOpen({
-              kind: "post",
-              image_url: p.image_url,
-              caption: p.caption,
-              created_at: p.created_at,
-            })
-          }
-          className="text-left group"
-        >
-          <div className="relative aspect-square overflow-hidden rounded-md bg-secondary/40">
-            <img
-              src={p.image_url}
-              alt={p.caption ?? "Post"}
-              className="w-full h-full object-cover transition group-hover:scale-[1.02]"
-              loading="lazy"
-            />
-          </div>
-          {p.caption ? (
-            <p className="mt-2 text-xs text-foreground/80 leading-snug line-clamp-2">
-              {p.caption}
-            </p>
-          ) : null}
-        </button>
+        <div key={p.id} className="text-left group relative">
+          <button
+            type="button"
+            onClick={() =>
+              onOpen({
+                kind: "post",
+                image_url: p.image_url,
+                caption: p.caption,
+                created_at: p.created_at,
+              })
+            }
+            className="block w-full"
+          >
+            <div className="relative aspect-square overflow-hidden rounded-md bg-secondary/40">
+              <img
+                src={p.image_url}
+                alt={p.caption ?? "Post"}
+                className="w-full h-full object-cover transition group-hover:scale-[1.02]"
+                loading="lazy"
+              />
+            </div>
+            {p.caption ? (
+              <p className="mt-2 text-xs text-foreground/80 leading-snug line-clamp-2">
+                {p.caption}
+              </p>
+            ) : null}
+          </button>
+          <DeleteBadge onDelete={() => onDelete(p.id)} label="Delete post" />
+        </div>
       ))}
     </div>
   );
@@ -206,9 +232,11 @@ function PostsGrid({
 function ReelsGrid({
   reels,
   onOpen,
+  onDelete,
 }: {
   reels: ReelRow[];
   onOpen: (m: LightboxMedia) => void;
+  onDelete: (id: string) => void;
 }) {
   if (reels.length === 0) {
     return <Empty msg="No reels yet — tap New reel to upload a video." />;
@@ -216,66 +244,98 @@ function ReelsGrid({
   return (
     <div className="grid grid-cols-3 sm:grid-cols-4 gap-x-2 gap-y-4">
       {reels.map((r) => (
-        <button
-          key={r.id}
-          onClick={() =>
-            onOpen({
-              kind: "reel",
-              video_url: r.video_url,
-              caption: r.caption,
-              created_at: r.created_at,
-            })
-          }
-          className="text-left group"
-        >
-          <div className="relative aspect-square overflow-hidden rounded-md bg-black">
-            {r.thumbnail_url ? (
-              <img
-                src={r.thumbnail_url}
-                alt={r.caption ?? "Reel"}
-                className="w-full h-full object-cover"
-                loading="lazy"
-              />
-            ) : (
-              <video
-                src={`${r.video_url}#t=0.1`}
-                className="w-full h-full object-cover pointer-events-none"
-                preload="metadata"
-                muted
-                playsInline
-                aria-label={r.caption ?? "Reel"}
-              />
-            )}
-            <span className="absolute top-2 right-2 inline-flex items-center justify-center w-6 h-6 rounded-full bg-black/55 text-white">
-              <Film className="w-3 h-3" aria-hidden />
-            </span>
-          </div>
-          {r.caption ? (
-            <p className="mt-2 text-xs text-foreground/80 leading-snug line-clamp-2">
-              {r.caption}
-            </p>
-          ) : null}
-        </button>
+        <div key={r.id} className="text-left group relative">
+          <button
+            type="button"
+            onClick={() =>
+              onOpen({
+                kind: "reel",
+                video_url: r.video_url,
+                caption: r.caption,
+                created_at: r.created_at,
+              })
+            }
+            className="block w-full"
+          >
+            <div className="relative aspect-square overflow-hidden rounded-md bg-black">
+              {r.thumbnail_url ? (
+                <img
+                  src={r.thumbnail_url}
+                  alt={r.caption ?? "Reel"}
+                  className="w-full h-full object-cover"
+                  loading="lazy"
+                />
+              ) : (
+                <video
+                  src={`${r.video_url}#t=0.1`}
+                  className="w-full h-full object-cover pointer-events-none"
+                  preload="metadata"
+                  muted
+                  playsInline
+                  aria-label={r.caption ?? "Reel"}
+                />
+              )}
+              <span className="absolute top-2 right-2 inline-flex items-center justify-center w-6 h-6 rounded-full bg-black/55 text-white">
+                <Film className="w-3 h-3" aria-hidden />
+              </span>
+            </div>
+            {r.caption ? (
+              <p className="mt-2 text-xs text-foreground/80 leading-snug line-clamp-2">
+                {r.caption}
+              </p>
+            ) : null}
+          </button>
+          <DeleteBadge onDelete={() => onDelete(r.id)} label="Delete reel" />
+        </div>
       ))}
     </div>
   );
 }
 
-function BuzzList({ buzz }: { buzz: BuzzRow[] }) {
+function BuzzList({
+  buzz,
+  onDelete,
+}: {
+  buzz: BuzzRow[];
+  onDelete: (id: string) => void;
+}) {
   if (buzz.length === 0) {
     return <Empty msg="No buzz yet — tap New buzz to share a thought." />;
   }
   return (
     <div className="space-y-3 max-w-2xl">
       {buzz.map((b) => (
-        <div key={b.id} className="card-soft p-4">
+        <div key={b.id} className="card-soft p-4 relative group">
           <p className="text-sm text-foreground whitespace-pre-wrap">{b.body}</p>
           <p className="mt-2 text-xs text-muted-foreground">
             {new Date(b.created_at).toLocaleDateString()}
           </p>
+          <DeleteBadge onDelete={() => onDelete(b.id)} label="Delete buzz" />
         </div>
       ))}
     </div>
+  );
+}
+
+function DeleteBadge({
+  onDelete,
+  label,
+}: {
+  onDelete: () => void;
+  label: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={(e) => {
+        e.stopPropagation();
+        onDelete();
+      }}
+      aria-label={label}
+      className="absolute top-2 left-2 inline-flex items-center justify-center w-7 h-7 rounded-full bg-black/55 text-white opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity"
+    >
+      <Trash2 className="w-3.5 h-3.5" aria-hidden />
+    </button>
   );
 }
 
