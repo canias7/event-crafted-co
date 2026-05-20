@@ -1,23 +1,20 @@
 // Stripe webhook handler. Verifies the signature, dedupes by event
-// id (Stripe retries until we 2xx), and dispatches per event type.
+// id (Stripe retries until we 2xx), and syncs subscription state
+// onto vendor_profiles.
 //
 // Required env:
 //   STRIPE_SECRET_KEY          — sk_test_... or sk_live_...
 //   STRIPE_WEBHOOK_SECRET      — whsec_... from the webhook endpoint
-//   SUPABASE_URL               — auto-injected
-//   SUPABASE_SERVICE_ROLE_KEY  — auto-injected
 //
-// Endpoint URL (paste into Stripe dashboard → Developers → Webhooks):
-//   https://<project>.functions.supabase.co/stripe-webhook
+// Deployed with verify_jwt=false because Stripe doesn't send a
+// Supabase JWT — signature verification is what authenticates.
 //
 // Events handled:
-//   account.updated            — sync vendor onboarding status
-//   checkout.session.completed — mark proposal paid (deposit or full)
-//   payment_intent.payment_failed — mark proposal failed
-//
-// IMPORTANT: this function must be deployed with --no-verify-jwt
-// because Stripe doesn't send a Supabase JWT. Signature verification
-// is what authenticates the request.
+//   checkout.session.completed     — first checkout finishes, customer + sub IDs land
+//   customer.subscription.created  — alt entry path (e.g. portal-initiated)
+//   customer.subscription.updated  — renewal, plan change, cancel-at-period-end toggle
+//   customer.subscription.deleted  — subscription ends → tier=free
+//   invoice.payment_failed         — card declined → status=past_due (Stripe handles dunning)
 
 // deno-lint-ignore-file no-explicit-any
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
@@ -47,9 +44,6 @@ serve(async (req: Request) => {
     httpClient: Stripe.createFetchHttpClient(),
   });
 
-  // Stripe sends the raw body — we MUST verify against bytes, not
-  // a re-serialized JSON. Use req.text() and constructEventAsync (deno
-  // can't do sync HMAC the same way the node SDK does).
   const signature = req.headers.get("stripe-signature");
   if (!signature) return new Response("missing signature", { status: 400 });
 
@@ -70,85 +64,127 @@ serve(async (req: Request) => {
     auth: { persistSession: false },
   });
 
-  // Idempotency: insert the event id first. If it conflicts, we've
-  // already processed it (or a parallel retry won the race) — return
-  // 200 so Stripe stops retrying. Storing the payload helps with
-  // replay debugging; trim retention via a cron later.
+  // Idempotency log keyed on Stripe's event id. PK conflict means
+  // "already processed" — Stripe retries until we 2xx, so this
+  // prevents double-processing on retry.
   const { error: insertErr } = await db
     .from("stripe_events")
     .insert({ id: event.id, type: event.type, payload: event as any });
   if (insertErr) {
     if (insertErr.code === "23505") {
-      // Already processed — Stripe just retried us. Acknowledge.
       return new Response("ok (duplicate)", { status: 200 });
     }
     console.error("[stripe-webhook] failed to insert event log", insertErr);
-    // Don't 200 — let Stripe retry.
     return new Response("db error", { status: 500 });
   }
 
   try {
     switch (event.type) {
-      case "account.updated": {
-        const account = event.data.object as Stripe.Account;
-        const details = account.details_submitted ?? false;
-        const charges = account.charges_enabled ?? false;
-        const payouts = account.payouts_enabled ?? false;
+      case "checkout.session.completed": {
+        const session = event.data.object as Stripe.Checkout.Session;
+        // We only act on subscription-mode sessions. Anything else
+        // would be a stray (we don't run any other Checkout flows).
+        if (session.mode !== "subscription") break;
+        const vendorId = session.metadata?.vendor_id;
+        const customerId =
+          typeof session.customer === "string"
+            ? session.customer
+            : session.customer?.id;
+        const subscriptionId =
+          typeof session.subscription === "string"
+            ? session.subscription
+            : session.subscription?.id;
+        if (!vendorId || !subscriptionId) break;
+        // Fetch the subscription so we can stamp the accurate
+        // status + period_end immediately, instead of waiting for
+        // the customer.subscription.created event that fires
+        // adjacently. Stripe doesn't guarantee event ordering.
+        const sub = await stripe.subscriptions.retrieve(subscriptionId);
+        await applySubscription(db, vendorId, customerId ?? null, sub);
+        break;
+      }
+      case "customer.subscription.created":
+      case "customer.subscription.updated": {
+        const sub = event.data.object as Stripe.Subscription;
+        const vendorId = sub.metadata?.vendor_id;
+        const customerId =
+          typeof sub.customer === "string" ? sub.customer : sub.customer.id;
+        if (!vendorId) {
+          // Fallback: vendor_id may live on the Customer metadata
+          // if this sub was created outside our flow (e.g. portal).
+          const cust = await stripe.customers.retrieve(customerId);
+          const vid = (cust as Stripe.Customer).metadata?.vendor_id;
+          if (vid) await applySubscription(db, vid, customerId, sub);
+          break;
+        }
+        await applySubscription(db, vendorId, customerId, sub);
+        break;
+      }
+      case "customer.subscription.deleted": {
+        const sub = event.data.object as Stripe.Subscription;
+        const customerId =
+          typeof sub.customer === "string" ? sub.customer : sub.customer.id;
         await db
           .from("vendor_profiles")
           .update({
-            stripe_details_submitted: details,
-            stripe_charges_enabled: charges,
-            stripe_payouts_enabled: payouts,
-            stripe_onboarding_completed_at:
-              details && charges ? new Date().toISOString() : null,
+            subscription_tier: "free",
+            subscription_status: "canceled",
+            stripe_subscription_id: null,
+            // We keep stripe_customer_id around so resubscribing
+            // reuses the existing Stripe Customer (preserves card
+            // on file + invoice history under one record).
+            subscription_cancel_at_period_end: false,
           })
-          .eq("stripe_account_id", account.id);
+          .eq("stripe_customer_id", customerId);
         break;
       }
-      case "checkout.session.completed": {
-        const session = event.data.object as Stripe.Checkout.Session;
-        const proposalId = session.metadata?.proposal_id;
-        const mode = session.metadata?.mode;
-        if (!proposalId) break;
-        const update: Record<string, unknown> = {
-          stripe_payment_intent_id:
-            typeof session.payment_intent === "string"
-              ? session.payment_intent
-              : session.payment_intent?.id ?? null,
-        };
-        if (mode === "deposit") {
-          update.payment_status = "deposit_paid";
-          update.deposit_paid_at = new Date().toISOString();
-        } else {
-          update.payment_status = "paid_in_full";
-          update.paid_in_full_at = new Date().toISOString();
-        }
-        await db.from("proposals").update(update).eq("id", proposalId);
-        break;
-      }
-      case "payment_intent.payment_failed": {
-        const intent = event.data.object as Stripe.PaymentIntent;
-        const proposalId = intent.metadata?.proposal_id;
-        if (!proposalId) break;
+      case "invoice.payment_failed": {
+        const invoice = event.data.object as Stripe.Invoice;
+        const customerId =
+          typeof invoice.customer === "string"
+            ? invoice.customer
+            : invoice.customer?.id;
+        if (!customerId) break;
+        // Don't downgrade tier here — Stripe's dunning will retry
+        // the card a few times. Tier flips to free only when
+        // subscription.deleted lands (after dunning exhausts).
         await db
-          .from("proposals")
-          .update({ payment_status: "failed" })
-          .eq("id", proposalId);
+          .from("vendor_profiles")
+          .update({ subscription_status: "past_due" })
+          .eq("stripe_customer_id", customerId);
         break;
       }
       default:
-        // Event recorded for audit but no handler. That's fine —
-        // Stripe lets us subscribe broadly and ignore.
         break;
     }
   } catch (err) {
     console.error("[stripe-webhook] handler error", event.type, err);
-    // Roll back the dedup row so a retry can re-attempt. Without this
-    // a transient handler failure would cause permanent silent drop.
+    // Roll back the dedup row so Stripe's retry gets a fresh shot
+    // instead of being acked as already-processed.
     await db.from("stripe_events").delete().eq("id", event.id);
     return new Response("handler error", { status: 500 });
   }
 
   return new Response("ok", { status: 200 });
 });
+
+async function applySubscription(
+  db: any,
+  vendorId: string,
+  customerId: string | null,
+  sub: Stripe.Subscription,
+) {
+  const tier =
+    sub.status === "active" || sub.status === "trialing" ? "pro" : "free";
+  const update: Record<string, unknown> = {
+    subscription_status: sub.status,
+    subscription_tier: tier,
+    stripe_subscription_id: sub.id,
+    subscription_current_period_end: new Date(
+      sub.current_period_end * 1000,
+    ).toISOString(),
+    subscription_cancel_at_period_end: sub.cancel_at_period_end ?? false,
+  };
+  if (customerId) update.stripe_customer_id = customerId;
+  await db.from("vendor_profiles").update(update).eq("id", vendorId);
+}
