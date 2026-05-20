@@ -69,6 +69,10 @@ export default function PublicReviewPage() {
       setError("Please choose a star rating");
       return;
     }
+    // Whitespace-only bodies are noise. Normalize here so we send
+    // null to the RPC instead of "   " — keeps reviewers from
+    // spam-submitting "5★ + blank" pretending to be content.
+    const trimmedBody = body.trim();
     setError(null);
     setSubmitting(true);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -77,8 +81,8 @@ export default function PublicReviewPage() {
       {
         p_token: token,
         p_rating: rating,
-        p_body: body || null,
-        p_reviewer_name: name || null,
+        p_body: trimmedBody || null,
+        p_reviewer_name: name.trim() || null,
       },
     );
     setSubmitting(false);
