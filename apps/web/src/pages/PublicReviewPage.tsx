@@ -187,9 +187,25 @@ export default function PublicReviewPage() {
                     type="button"
                     key={star}
                     onClick={() => setRating(star)}
+                    onKeyDown={(e) => {
+                      if (e.key === "ArrowRight" || e.key === "ArrowUp") {
+                        e.preventDefault();
+                        setRating(Math.min(5, (rating || 0) + 1));
+                      } else if (e.key === "ArrowLeft" || e.key === "ArrowDown") {
+                        e.preventDefault();
+                        setRating(Math.max(1, (rating || star) - 1));
+                      } else if (e.key === "Home") {
+                        e.preventDefault();
+                        setRating(1);
+                      } else if (e.key === "End") {
+                        e.preventDefault();
+                        setRating(5);
+                      }
+                    }}
+                    role="radio"
+                    aria-checked={rating === star}
                     aria-label={`${star} star${star === 1 ? "" : "s"}`}
-                    aria-pressed={rating === star}
-                    className="p-1 hover:scale-110 transition-transform"
+                    className="p-1 hover:scale-110 transition-transform focus:outline-none focus-visible:ring-2 focus-visible:ring-accent rounded-sm"
                   >
                     <Star
                       className={`w-9 h-9 ${

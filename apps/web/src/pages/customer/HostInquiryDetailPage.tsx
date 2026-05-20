@@ -171,7 +171,7 @@ export default function HostInquiryDetailPage() {
       body: string | null;
       kind: "conversation" | "event";
       created_at: string;
-      response: { body: string; updated_at: string } | null;
+      response: { body: string; created_at: string; updated_at: string } | null;
     }>
   >([]);
   const [acting, setActing] = useState<"accept" | "reject" | null>(null);
@@ -221,7 +221,7 @@ export default function HostInquiryDetailPage() {
       (supabase as any)
         .from("reviews")
         .select(
-          "id, vendor_id, rating, body, kind, created_at, response:review_responses(body, updated_at)",
+          "id, vendor_id, rating, body, kind, created_at, response:review_responses(body, created_at, updated_at)",
         )
         .eq("inquiry_id", inquiryId)
         .eq("rater_role", "vendor")
