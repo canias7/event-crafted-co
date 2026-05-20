@@ -128,6 +128,9 @@ export function EditModal({
   // bitmap.
   useEffect(() => {
     if (open) return;
+    captureMessage("EditModal: close-reset effect cleared sourceRef", {
+      hadSource: !!sourceRef.current,
+    });
     setT({ rotate: 0, flipH: false, flipV: false });
     setCrop(undefined);
     setCompletedCrop(null);
@@ -145,6 +148,7 @@ export function EditModal({
     if (!open) return;
     let cancelled = false;
     setLoadProgress({ received: 0, total: 0 });
+    captureMessage("EditModal: load effect started", { imageUrl });
     // Loaded via fetch → blob → object URL so canvas operations
     // later don't taint on cross-origin (Supabase storage). The
     // sourceRef holds the bitmap; transforms drawImage from it.
@@ -154,10 +158,17 @@ export function EditModal({
       if (!cancelled) setLoadProgress({ received, total });
     })
       .then((img) => {
-        if (cancelled) return;
+        if (cancelled) {
+          captureMessage("EditModal: load completed but cancelled");
+          return;
+        }
         sourceRef.current = img;
         setDisplayUrl(img.src);
         setLoaded(true);
+        captureMessage("EditModal: load completed, sourceRef set", {
+          naturalWidth: img.naturalWidth,
+          naturalHeight: img.naturalHeight,
+        });
         // Heads-up if saving will downgrade the format. Canvas can't
         // encode HEIC/AVIF/GIF back out, so any edit will land as JPEG
         // regardless of the original — set expectations upfront.
@@ -165,7 +176,11 @@ export function EditModal({
           toast.info("Edits to this image will be saved as JPEG.");
         }
       })
-      .catch(() => {
+      .catch((err) => {
+        captureMessage("EditModal: load .catch fired", {
+          cancelled,
+          message: err instanceof Error ? err.message : String(err),
+        });
         if (cancelled) return;
         toast.error("Couldn't load image for editing.");
         onOpenChangeRef.current(false);
