@@ -56,6 +56,19 @@ export function captureException(
   Sentry.captureException(error, context ? { extra: context } : undefined);
 }
 
+// Non-error event ping. Useful for tracing a flow that "silently does
+// nothing" — see EditModal's transform pipeline instrumentation.
+export function captureMessage(
+  message: string,
+  context?: Record<string, unknown>,
+) {
+  if (!initialized) return;
+  Sentry.captureMessage(message, {
+    level: "info",
+    ...(context ? { extra: context } : {}),
+  });
+}
+
 export function setUser(user: { id: string; email?: string | null } | null) {
   if (!initialized) return;
   if (user) {

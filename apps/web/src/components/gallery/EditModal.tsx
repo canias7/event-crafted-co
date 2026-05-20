@@ -41,7 +41,7 @@ import {
 import { computeBlurhash } from "@/lib/galleryImage";
 import { formatBytes, loadImageViaBlob } from "@/lib/downloadImage";
 import { removeGalleryFileWithRetry } from "@/lib/galleryStorage";
-import { captureException } from "@/lib/sentry";
+import { captureException, captureMessage } from "@/lib/sentry";
 
 interface Props {
   open: boolean;
@@ -165,13 +165,34 @@ export function EditModal({
   // mishandle. Identity transform uses the original source blob URL
   // directly (no canvas pass needed).
   useEffect(() => {
-    if (!open || !sourceRef.current) return;
+    // Diagnostic: trace each entry to figure out why "buttons do
+    // nothing" — events surface as Sentry info messages with the
+    // current state.
+    captureMessage("EditModal: transform effect entry", {
+      open,
+      hasSource: !!sourceRef.current,
+      rotate: t.rotate,
+      flipH: t.flipH,
+      flipV: t.flipV,
+      imageUrl,
+    });
+    if (!open || !sourceRef.current) {
+      captureMessage("EditModal: transform effect bailed (no source)", {
+        open,
+        hasSource: !!sourceRef.current,
+      });
+      return;
+    }
     const src = sourceRef.current;
     // Guard: if the source decoded but reported zero dimensions
     // (broken HEIC/AVIF on a browser that pretends to support it),
     // canvas ops would silently produce a 0×0 output. Bail out
     // explicitly so the user sees a real error.
     if (!src.naturalWidth || !src.naturalHeight) {
+      captureMessage("EditModal: transform bailed (zero dims)", {
+        naturalWidth: src.naturalWidth,
+        naturalHeight: src.naturalHeight,
+      });
       toast.error(
         "This image's format isn't supported by your browser's editor.",
       );
@@ -179,11 +200,17 @@ export function EditModal({
       return;
     }
     if (t.rotate === 0 && !t.flipH && !t.flipV) {
+      captureMessage("EditModal: transform identity branch");
       setDisplayUrl(src.src);
       setCrop(undefined);
       setCompletedCrop(null);
       return;
     }
+    captureMessage("EditModal: transform branch entered", {
+      rotate: t.rotate,
+      flipH: t.flipH,
+      flipV: t.flipV,
+    });
     let cancelled = false;
     let createdUrl: string | null = null;
     (async () => {
@@ -199,11 +226,18 @@ export function EditModal({
         if (!blob) {
           throw new Error("toBlob returned null (canvas may be tainted).");
         }
-        if (cancelled) return;
+        if (cancelled) {
+          captureMessage("EditModal: IIFE cancelled before setDisplayUrl");
+          return;
+        }
         createdUrl = URL.createObjectURL(blob);
         setCrop(undefined);
         setCompletedCrop(null);
         setDisplayUrl(createdUrl);
+        captureMessage("EditModal: setDisplayUrl fired", {
+          blobSize: blob.size,
+          urlPrefix: createdUrl.slice(0, 40),
+        });
         // Revoke the previous transformed URL after a tick so the
         // <img> has time to swap source without flicker.
         const prev = prevTransformedUrlRef.current;
@@ -244,6 +278,7 @@ export function EditModal({
   }, [open]);
 
   function rotateBy(deg: number) {
+    captureMessage("EditModal: rotateBy clicked", { deg });
     setT((p) => ({ ...p, rotate: ((p.rotate + deg) % 360 + 360) % 360 }));
   }
 
@@ -492,7 +527,10 @@ export function EditModal({
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setT((p) => ({ ...p, flipH: !p.flipH }))}
+              onClick={() => {
+                captureMessage("EditModal: Flip H clicked");
+                setT((p) => ({ ...p, flipH: !p.flipH }));
+              }}
               className="rounded-full"
             >
               <FlipHorizontal className="w-3.5 h-3.5 mr-1.5" />
@@ -501,7 +539,10 @@ export function EditModal({
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setT((p) => ({ ...p, flipV: !p.flipV }))}
+              onClick={() => {
+                captureMessage("EditModal: Flip V clicked");
+                setT((p) => ({ ...p, flipV: !p.flipV }));
+              }}
               className="rounded-full"
             >
               <FlipVertical className="w-3.5 h-3.5 mr-1.5" />
