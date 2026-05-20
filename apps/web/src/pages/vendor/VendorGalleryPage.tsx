@@ -32,7 +32,6 @@ import {
   Loader2,
   MoveRight,
   Pencil,
-  RotateCcw,
   Search,
   Square,
   Star as StarIcon,
@@ -2072,11 +2071,7 @@ function CalendarView({
                         aria-label={isTrashView ? "Delete permanently" : "Move to trash"}
                         className="absolute top-2 right-2 inline-flex items-center justify-center w-7 h-7 rounded-full bg-black/55 text-white opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity"
                       >
-                        {isTrashView ? (
-                          <RotateCcw className="w-3.5 h-3.5" />
-                        ) : (
-                          <Trash2 className="w-3.5 h-3.5" />
-                        )}
+                        <Trash2 className="w-3.5 h-3.5" />
                       </button>
                     )}
                   </div>
