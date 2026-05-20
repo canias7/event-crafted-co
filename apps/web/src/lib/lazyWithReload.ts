@@ -1,4 +1,5 @@
 import { lazy, type ComponentType } from "react";
+import { isChunkLoadError, shouldAutoReload } from "./chunkReload";
 
 // React.lazy wrapper that auto-heals stale-chunk errors after a deploy.
 //
@@ -8,37 +9,28 @@ import { lazy, type ComponentType } from "react";
 // with "Failed to fetch dynamically imported module" / MIME mismatch,
 // and the page is dead.
 //
-// On chunk error, this reloads once (per 60s window) to pull the fresh
-// index.html and re-resolve to a valid chunk URL. Always re-throws so
-// the ErrorBoundary still fires its own safety-net reload + Sentry
-// report. The 60s throttle prevents an infinite refresh loop if the
-// deploy itself is broken.
+// On chunk error, this reloads to pull the fresh index.html and
+// re-resolve to a valid chunk URL. Rate-limited per-URL: each unique
+// failing chunk gets one reload attempt. Different chunks failing don't
+// share a budget (so navigating across multiple stale pages doesn't
+// strand the user). Same chunk failing twice in the budget window
+// suppresses the reload to avoid loops on a genuinely broken deploy.
+// Always re-throws so the ErrorBoundary still fires its own safety-net
+// + Sentry report.
 //
 // Use this in place of React.lazy() for ALL lazy-loaded chunks —
 // page routes (router/lazyRoutes.ts) and one-off modal/banner lazies
 // (CookieBanner, InquiryFormModal, etc.).
-
-const CHUNK_ERROR_PATTERN =
-  /Failed to fetch dynamically imported module|ChunkLoadError|Loading chunk|Importing a module script failed|MIME type|Unexpected token '<'/i;
-const RELOAD_KEY = "vendora.lastChunkReload";
-const RELOAD_WINDOW_MS = 60_000;
 
 export function lazyWithReload<T extends ComponentType<unknown>>(
   factory: () => Promise<{ default: T }>,
 ) {
   return lazy(() =>
     factory().catch((err: unknown) => {
-      const msg = String((err as { message?: string })?.message ?? err);
-      if (CHUNK_ERROR_PATTERN.test(msg) && typeof window !== "undefined") {
-        try {
-          const last = window.sessionStorage.getItem(RELOAD_KEY);
-          const now = Date.now();
-          if (!last || now - Number(last) > RELOAD_WINDOW_MS) {
-            window.sessionStorage.setItem(RELOAD_KEY, String(now));
-            window.location.reload();
-          }
-        } catch {
-          // sessionStorage can throw in private-mode Safari; ignore.
+      if (isChunkLoadError(err) && typeof window !== "undefined") {
+        const msg = String((err as { message?: string })?.message ?? err);
+        if (shouldAutoReload("lazy", msg)) {
+          window.location.reload();
         }
       }
       throw err;

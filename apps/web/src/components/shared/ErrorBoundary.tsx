@@ -1,6 +1,7 @@
 import { Component, type ErrorInfo, type ReactNode } from "react";
 import { AlertTriangle, RefreshCw, Home } from "lucide-react";
 import { captureException } from "@/lib/sentry";
+import { isChunkLoadError, shouldAutoReload } from "@/lib/chunkReload";
 
 // Top-level error boundary. Without this, a render error inside any
 // route would replace the whole app with a blank screen — which is what
@@ -17,20 +18,11 @@ import { captureException } from "@/lib/sentry";
 // no longer exist. Vercel's SPA rewrite returns index.html for those,
 // producing a MIME-type / "Failed to fetch dynamically imported module"
 // error inside React.lazy that bubbles here. lazyWithReload in
-// router/lazyRoutes already auto-reloads once per 60s, but a second
-// chunk error inside that window hits this boundary instead. Detect the
-// signature here and reload once (separate 60s budget) before showing
-// the user the snag screen — most "intermittent appointments page
-// broken, reload fixes it" reports trace back to exactly this race.
-
-const CHUNK_ERROR_PATTERN =
-  /Failed to fetch dynamically imported module|ChunkLoadError|Loading chunk|Importing a module script failed|MIME type|Unexpected token '<'/i;
-const RELOAD_KEY = "vendora.errorBoundaryChunkReload";
-const RELOAD_WINDOW_MS = 60_000;
-
-function isChunkLoadError(error: Error): boolean {
-  return CHUNK_ERROR_PATTERN.test(String(error?.message ?? error));
-}
+// router/lazyRoutes already auto-reloads on chunk-load errors with its
+// own per-URL budget; this boundary repeats the check as a safety net
+// so anything that bypassed lazyWithReload (or that came through an
+// older lazy callsite we missed) still self-heals before the user sees
+// the snag screen.
 
 interface Props {
   children: ReactNode;
@@ -68,23 +60,15 @@ export class ErrorBoundary extends Component<Props, State> {
     captureException(error, {
       componentStack: errorInfo?.componentStack,
     });
-    // Stale-chunk auto-heal. Independent rate limit from lazyWithReload
-    // so each layer gets one shot before bothering the user. The
-    // boundary's already mounted by the time we reach here; reloading
-    // immediately is fine, we just need the throttle so a genuinely
-    // broken deploy doesn't put us in a refresh loop.
+    // Stale-chunk auto-heal. Independent budget from lazyWithReload so
+    // each layer gets one attempt per chunk URL before showing the snag
+    // screen. Per-URL dedup means navigating across multiple stale
+    // pages doesn't strand the user.
     if (isChunkLoadError(error) && typeof window !== "undefined") {
-      try {
-        const last = window.sessionStorage.getItem(RELOAD_KEY);
-        const now = Date.now();
-        if (!last || now - Number(last) > RELOAD_WINDOW_MS) {
-          window.sessionStorage.setItem(RELOAD_KEY, String(now));
-          window.location.reload();
-          return;
-        }
-      } catch {
-        // sessionStorage can throw in private-mode Safari; ignore and
-        // fall through to the regular error UI.
+      const msg = String(error?.message ?? error);
+      if (shouldAutoReload("boundary", msg)) {
+        window.location.reload();
+        return;
       }
     }
     this.setState({ error, errorInfo });
