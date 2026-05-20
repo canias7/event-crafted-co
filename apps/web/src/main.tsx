@@ -2,6 +2,11 @@ import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import "./index.css";
 import "./i18n";
+import { initSentry } from "./lib/sentry";
+
+// Init Sentry before render so the boundary's captureException works on
+// the very first throw. No-op if VITE_SENTRY_DSN isn't set.
+initSentry();
 
 // Pre-mount safety check: if the Supabase env vars are missing the
 // supabase client throws during construction and React renders nothing

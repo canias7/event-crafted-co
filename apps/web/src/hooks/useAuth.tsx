@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState, ReactNode } from "react";
 import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
+import { setUser as setSentryUser } from "@/lib/sentry";
 
 export type AppRole = "host" | "vendor" | "admin";
 export type EventType = "wedding" | "birthday" | "holiday_dinner" | "other";
@@ -204,8 +205,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { data: sub } = supabase.auth.onAuthStateChange((_event, s) => {
       setSession(s);
       if (s?.user) {
+        setSentryUser({ id: s.user.id, email: s.user.email ?? null });
         setTimeout(() => loadProfile(s.user.id), 0);
       } else {
+        setSentryUser(null);
         // Bumping the generation invalidates any in-flight loadProfile
         // — otherwise a slow profile fetch from the previous session
         // could resolve and rewrite the just-cleared state.
@@ -220,6 +223,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     supabase.auth.getSession().then(({ data }) => {
       setSession(data.session);
       if (data.session?.user) {
+        setSentryUser({
+          id: data.session.user.id,
+          email: data.session.user.email ?? null,
+        });
         loadProfile(data.session.user.id).finally(() => setLoading(false));
       } else {
         setLoading(false);

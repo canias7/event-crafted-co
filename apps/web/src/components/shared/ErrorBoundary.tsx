@@ -1,5 +1,6 @@
 import { Component, type ErrorInfo, type ReactNode } from "react";
 import { AlertTriangle, RefreshCw, Home } from "lucide-react";
+import { captureException } from "@/lib/sentry";
 
 // Top-level error boundary. Without this, a render error inside any
 // route would replace the whole app with a blank screen — which is what
@@ -51,8 +52,8 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    // Surface to console for dev tools + any external monitor (Sentry,
-    // etc.) hooked up to console.error or window.onerror.
+    // Surface to console for dev tools + any external monitor hooked up
+    // to console.error or window.onerror.
     console.error("Vendora ErrorBoundary caught:", error, errorInfo);
     // Log the component stack as a separate plain-text entry too —
     // it's the only fast way to see *which* component blew up in a
@@ -62,6 +63,11 @@ export class ErrorBoundary extends Component<Props, State> {
         "Vendora ErrorBoundary component stack:\n" + errorInfo.componentStack,
       );
     }
+    // Report to Sentry with the component stack as extra context.
+    // No-op until VITE_SENTRY_DSN is set + initSentry() has run.
+    captureException(error, {
+      componentStack: errorInfo?.componentStack,
+    });
     // Stale-chunk auto-heal. Independent rate limit from lazyWithReload
     // so each layer gets one shot before bothering the user. The
     // boundary's already mounted by the time we reach here; reloading
