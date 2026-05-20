@@ -2596,6 +2596,7 @@ export type Database = {
           expires_at: string | null
           id: string
           image_id: string | null
+          password_hash: string | null
           token: string
           user_id: string
         }
@@ -2605,6 +2606,7 @@ export type Database = {
           expires_at?: string | null
           id?: string
           image_id?: string | null
+          password_hash?: string | null
           token?: string
           user_id: string
         }
@@ -2614,6 +2616,7 @@ export type Database = {
           expires_at?: string | null
           id?: string
           image_id?: string | null
+          password_hash?: string | null
           token?: string
           user_id?: string
         }
@@ -3932,6 +3935,15 @@ export type Database = {
         Args: { p_code: string; p_new_vendor_id: string }
         Returns: Json
       }
+      create_gallery_share: {
+        Args: {
+          p_album_id?: string
+          p_expires_at?: string
+          p_image_id?: string
+          p_password?: string
+        }
+        Returns: string
+      }
       delete_email: {
         Args: { message_id: number; queue_name: string }
         Returns: boolean
@@ -4226,6 +4238,15 @@ export type Database = {
         }[]
       }
       request_account_deletion: { Args: never; Returns: undefined }
+      resolve_gallery_share: {
+        Args: { p_password?: string; p_token: string }
+        Returns: {
+          album_id: string
+          expires_at: string
+          id: string
+          image_id: string
+        }[]
+      }
       send_review_request: {
         Args: {
           p_inquiry_id: string

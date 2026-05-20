@@ -10,6 +10,7 @@ import {
   Info,
   Link2,
   Pencil,
+  Star,
   X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -34,9 +35,23 @@ interface Props {
   onPrev: () => void;
   onNext: () => void;
   onChange: () => void; // refresh after edit
+  /** When set, the lightbox shows a "Set as album cover" button —
+   *  used to give mobile users access to the right-click-only
+   *  cover-setting action on the grid. */
+  onSetAsCover?: () => void;
+  isAlbumCover?: boolean;
 }
 
-export function Lightbox({ rows, index, onClose, onPrev, onNext, onChange }: Props) {
+export function Lightbox({
+  rows,
+  index,
+  onClose,
+  onPrev,
+  onNext,
+  onChange,
+  onSetAsCover,
+  isAlbumCover,
+}: Props) {
   const row = rows[index];
   const [panelOpen, setPanelOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
@@ -101,6 +116,15 @@ export function Lightbox({ rows, index, onClose, onPrev, onNext, onChange }: Pro
             {index + 1} / {rows.length}
           </p>
           <div className="flex items-center gap-1">
+            {onSetAsCover ? (
+              <ActionButton
+                onClick={onSetAsCover}
+                label={isAlbumCover ? "Album cover" : "Set as album cover"}
+                active={isAlbumCover}
+              >
+                <Star className={`w-4 h-4 ${isAlbumCover ? "fill-current" : ""}`} />
+              </ActionButton>
+            ) : null}
             <ActionButton onClick={() => setEditOpen(true)} label="Edit">
               <Pencil className="w-4 h-4" />
             </ActionButton>

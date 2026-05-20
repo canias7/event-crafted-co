@@ -1,15 +1,18 @@
 // Public viewer for vendor-gallery share tokens at /g/:token.
-// Resolves the share row (single image OR whole album), checks
-// expiry, renders the image(s). No auth required.
+// Calls the resolve_gallery_share RPC; if the share has a password,
+// prompts for it before resolving the underlying image/album.
 
 import { useCallback, useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import { Download, X } from "lucide-react";
+import { Download, Lock, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { PublicNav } from "@/components/public/PublicNav";
 
-interface ShareRow {
+interface ResolvedShare {
   id: string;
   image_id: string | null;
   album_id: string | null;
@@ -31,83 +34,100 @@ interface AlbumRow {
   name: string;
 }
 
+type State =
+  | { status: "loading" }
+  | { status: "needs_password"; error?: string }
+  | { status: "not_found" }
+  | { status: "expired" }
+  | { status: "image"; image: ImageRow }
+  | { status: "album"; album: AlbumRow; images: ImageRow[] };
+
 export default function PublicGallerySharePage() {
   const { token } = useParams<{ token: string }>();
-  const [state, setState] = useState<
-    | { status: "loading" }
-    | { status: "not_found" }
-    | { status: "expired" }
-    | { status: "image"; image: ImageRow }
-    | { status: "album"; album: AlbumRow; images: ImageRow[] }
-  >({ status: "loading" });
+  const [state, setState] = useState<State>({ status: "loading" });
+  const [passwordInput, setPasswordInput] = useState("");
+  const [submitting, setSubmitting] = useState(false);
   const [lightboxIdx, setLightboxIdx] = useState<number | null>(null);
 
-  const load = useCallback(async () => {
-    if (!token) return;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: share, error } = await (supabase as any)
-      .from("vendor_gallery_shares")
-      .select("id, image_id, album_id, expires_at")
-      .eq("token", token)
-      .maybeSingle();
-    if (error || !share) {
-      setState({ status: "not_found" });
-      return;
-    }
-    const s = share as ShareRow;
-    if (s.expires_at && new Date(s.expires_at).getTime() < Date.now()) {
-      setState({ status: "expired" });
-      return;
-    }
-
-    if (s.image_id) {
+  const resolve = useCallback(
+    async (password: string | null) => {
+      if (!token) return;
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data: img } = await (supabase as any)
-        .from("vendor_gallery_images")
-        .select("id, image_url, caption, blurhash, width, height, created_at")
-        .eq("id", s.image_id)
-        .is("deleted_at", null)
-        .maybeSingle();
-      if (!img) {
+      const { data, error } = await (supabase as any).rpc("resolve_gallery_share", {
+        p_token: token,
+        p_password: password,
+      });
+      if (error) {
+        const msg = error.message;
+        if (msg.includes("not_found")) setState({ status: "not_found" });
+        else if (msg.includes("expired")) setState({ status: "expired" });
+        else if (msg.includes("needs_password")) setState({ status: "needs_password" });
+        else if (msg.includes("bad_password"))
+          setState({ status: "needs_password", error: "Wrong password" });
+        else setState({ status: "not_found" });
+        return;
+      }
+      // resolve_gallery_share returns at most one row in our shape.
+      const row = (Array.isArray(data) ? data[0] : data) as ResolvedShare | undefined;
+      if (!row) {
         setState({ status: "not_found" });
         return;
       }
-      setState({ status: "image", image: img as ImageRow });
-      return;
-    }
 
-    if (s.album_id) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const [albRes, imgRes] = await Promise.all([
-        (supabase as any)
-          .from("vendor_gallery_albums")
-          .select("id, name")
-          .eq("id", s.album_id)
-          .maybeSingle(),
+      if (row.image_id) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (supabase as any)
+        const { data: img } = await (supabase as any)
           .from("vendor_gallery_images")
           .select("id, image_url, caption, blurhash, width, height, created_at")
-          .eq("album_id", s.album_id)
+          .eq("id", row.image_id)
           .is("deleted_at", null)
-          .order("display_order", { ascending: true })
-          .order("created_at", { ascending: false }),
-      ]);
-      if (!albRes.data) {
-        setState({ status: "not_found" });
-        return;
+          .maybeSingle();
+        if (!img) {
+          setState({ status: "not_found" });
+          return;
+        }
+        setState({ status: "image", image: img as ImageRow });
+      } else if (row.album_id) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const [albRes, imgRes] = await Promise.all([
+          (supabase as any)
+            .from("vendor_gallery_albums")
+            .select("id, name")
+            .eq("id", row.album_id)
+            .maybeSingle(),
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          (supabase as any)
+            .from("vendor_gallery_images")
+            .select("id, image_url, caption, blurhash, width, height, created_at")
+            .eq("album_id", row.album_id)
+            .is("deleted_at", null)
+            .order("display_order", { ascending: true })
+            .order("created_at", { ascending: false }),
+        ]);
+        if (!albRes.data) {
+          setState({ status: "not_found" });
+          return;
+        }
+        setState({
+          status: "album",
+          album: albRes.data as AlbumRow,
+          images: (imgRes.data as ImageRow[] | null) ?? [],
+        });
       }
-      setState({
-        status: "album",
-        album: albRes.data as AlbumRow,
-        images: (imgRes.data as ImageRow[] | null) ?? [],
-      });
-    }
-  }, [token]);
+    },
+    [token],
+  );
 
   useEffect(() => {
-    load();
-  }, [load]);
+    void resolve(null);
+  }, [resolve]);
+
+  async function submitPassword() {
+    if (!passwordInput.trim() || submitting) return;
+    setSubmitting(true);
+    await resolve(passwordInput);
+    setSubmitting(false);
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -118,6 +138,42 @@ export default function PublicGallerySharePage() {
             {Array.from({ length: 6 }).map((_, i) => (
               <Skeleton key={i} className="aspect-square rounded-md" />
             ))}
+          </div>
+        ) : state.status === "needs_password" ? (
+          <div className="max-w-sm mx-auto py-12">
+            <div className="rounded-2xl border border-border bg-card p-6">
+              <div className="flex items-center gap-2 mb-3">
+                <Lock className="w-5 h-5 text-muted-foreground" />
+                <h1 className="font-editorial text-xl">Password required</h1>
+              </div>
+              <p className="text-sm text-muted-foreground mb-4">
+                This share is password-protected.
+              </p>
+              <Label htmlFor="share-pw" className="text-xs font-medium text-muted-foreground">
+                Password
+              </Label>
+              <Input
+                id="share-pw"
+                type="password"
+                value={passwordInput}
+                onChange={(e) => setPasswordInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") void submitPassword();
+                }}
+                autoFocus
+                className="mt-1"
+              />
+              {state.error ? (
+                <p className="text-xs text-destructive mt-2">{state.error}</p>
+              ) : null}
+              <Button
+                onClick={submitPassword}
+                disabled={submitting || !passwordInput.trim()}
+                className="mt-4 w-full rounded-full"
+              >
+                Unlock
+              </Button>
+            </div>
           </div>
         ) : state.status === "not_found" ? (
           <div className="text-center py-20">
