@@ -2,7 +2,7 @@
 // row's caption + actions: Edit (rotate/flip), Share (create token
 // link), Download. Arrow keys + Esc navigate / close.
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   ChevronLeft,
   ChevronRight,
@@ -73,13 +73,61 @@ export function Lightbox({
   const [editOpen, setEditOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
   const [downloading, setDownloading] = useState(false);
+  const containerRef = useRef<HTMLDivElement | null>(null);
+
+  // Focus management: trap Tab inside the lightbox so keyboard users
+  // can't accidentally tab into the dimmed background page (it's still
+  // present at z<50 and would respond to clicks/Enter). Restore focus
+  // to whichever element opened the lightbox when it closes.
+  useEffect(() => {
+    const previouslyFocused = (document.activeElement as HTMLElement) ?? null;
+    // Defer one tick so the buttons inside have actually mounted.
+    const id = setTimeout(() => {
+      const first = containerRef.current?.querySelector<HTMLElement>(
+        'button:not([disabled]), [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
+      );
+      first?.focus();
+    }, 0);
+    return () => {
+      clearTimeout(id);
+      previouslyFocused?.focus?.();
+    };
+  }, []);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (editOpen || shareOpen) return;
-      if (e.key === "Escape") onClose();
-      else if (e.key === "ArrowLeft") onPrev();
-      else if (e.key === "ArrowRight") onNext();
+      if (e.key === "Escape") {
+        onClose();
+        return;
+      }
+      if (e.key === "ArrowLeft") {
+        onPrev();
+        return;
+      }
+      if (e.key === "ArrowRight") {
+        onNext();
+        return;
+      }
+      if (e.key === "Tab" && containerRef.current) {
+        // Cycle focus among the lightbox's own tabbable elements.
+        const focusables = Array.from(
+          containerRef.current.querySelectorAll<HTMLElement>(
+            'button:not([disabled]), [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
+          ),
+        ).filter((el) => !el.hasAttribute("aria-hidden"));
+        if (focusables.length === 0) return;
+        const first = focusables[0];
+        const last = focusables[focusables.length - 1];
+        const active = document.activeElement as HTMLElement | null;
+        if (e.shiftKey && (active === first || !containerRef.current.contains(active))) {
+          e.preventDefault();
+          last.focus();
+        } else if (!e.shiftKey && active === last) {
+          e.preventDefault();
+          first.focus();
+        }
+      }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
@@ -87,6 +135,10 @@ export function Lightbox({
 
   return (
     <div
+      ref={containerRef}
+      role="dialog"
+      aria-modal="true"
+      aria-label="Image viewer"
       className="fixed inset-0 z-50 flex items-stretch bg-black/90"
       onClick={onClose}
     >

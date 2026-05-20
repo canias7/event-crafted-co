@@ -40,6 +40,7 @@ import {
 } from "@/components/ui/dialog";
 import { computeBlurhash } from "@/lib/galleryImage";
 import { formatBytes, loadImageViaBlob } from "@/lib/downloadImage";
+import { removeGalleryFileWithRetry } from "@/lib/galleryStorage";
 
 interface Props {
   open: boolean;
@@ -53,6 +54,32 @@ interface Props {
 // larger than this. Saves the user's RAM on phones (a 24MP image
 // would otherwise become a ~7MB base64 data URL just for display).
 const PREVIEW_MAX_WIDTH = 1500;
+
+// Output format resolver. Canvas.toBlob natively encodes only
+// jpeg/png/webp, so HEIC/AVIF/GIF originals (anything iPhone Safari
+// can decode but the browser canvas can't encode back) fall through
+// to JPEG. We surface that downgrade with an upfront toast so the
+// user isn't surprised by a quality / format change post-save.
+interface OutputFormat {
+  mime: string;
+  ext: string;
+  quality: number | undefined;
+}
+function pickOutputFormat(url: string): OutputFormat {
+  const noQuery = url.split("?")[0];
+  const dot = noQuery.lastIndexOf(".");
+  const ext = dot > 0 ? noQuery.slice(dot + 1).toLowerCase() : "";
+  if (ext === "png") return { mime: "image/png", ext: "png", quality: undefined };
+  if (ext === "webp") return { mime: "image/webp", ext: "webp", quality: 0.92 };
+  // jpg / jpeg / heic / avif / gif / unknown → JPEG.
+  return { mime: "image/jpeg", ext: "jpg", quality: 0.92 };
+}
+function isCanvasNativeFormat(url: string): boolean {
+  const noQuery = url.split("?")[0];
+  const dot = noQuery.lastIndexOf(".");
+  const ext = dot > 0 ? noQuery.slice(dot + 1).toLowerCase() : "";
+  return ext === "jpg" || ext === "jpeg" || ext === "png" || ext === "webp";
+}
 
 interface Transform {
   rotate: number;
@@ -108,6 +135,12 @@ export function EditModal({
         sourceRef.current = img;
         setDisplayUrl(img.src);
         setLoaded(true);
+        // Heads-up if saving will downgrade the format. Canvas can't
+        // encode HEIC/AVIF/GIF back out, so any edit will land as JPEG
+        // regardless of the original — set expectations upfront.
+        if (!isCanvasNativeFormat(imageUrl)) {
+          toast.info("Edits to this image will be saved as JPEG.");
+        }
       })
       .catch(() => {
         if (cancelled) return;
@@ -228,17 +261,21 @@ export function EditModal({
 
       checkAbort();
 
+      // Match output format to the source when canvas can encode it
+      // (jpeg/png/webp); HEIC/AVIF/GIF fall back to JPEG. PNG ignores
+      // the quality arg.
+      const fmt = pickOutputFormat(imageUrl);
       const blob: Blob | null = await new Promise((resolve) =>
-        outCanvas.toBlob((b) => resolve(b), "image/jpeg", 0.92),
+        outCanvas.toBlob((b) => resolve(b), fmt.mime, fmt.quality),
       );
       if (!blob) throw new Error("Couldn't encode the edited image.");
       checkAbort();
 
-      const filename = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.jpg`;
+      const filename = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${fmt.ext}`;
       const path = `${user.id}/${filename}`;
       const upload = await supabase.storage
         .from("vendor-gallery")
-        .upload(path, blob, { contentType: "image/jpeg", upsert: false });
+        .upload(path, blob, { contentType: fmt.mime, upsert: false });
       if (upload.error) throw upload.error;
       uploadedPath = path;
       checkAbort();
@@ -248,7 +285,7 @@ export function EditModal({
         .getPublicUrl(path);
 
       const blurInfo = await computeBlurhash(
-        new File([blob], filename, { type: "image/jpeg" }),
+        new File([blob], filename, { type: fmt.mime }),
       );
       checkAbort();
 
@@ -294,7 +331,7 @@ export function EditModal({
       if (!updated) {
         // Row vanished between open and save. Clean up the orphan
         // file we just uploaded and surface a clean error.
-        await removeWithRetry(path);
+        await removeGalleryFileWithRetry(path);
         throw new Error(
           "This image was removed in another session. Your edit wasn't saved.",
         );
@@ -305,7 +342,7 @@ export function EditModal({
       // transient network blip; retry with exponential backoff.
       const oldPath = extractStoragePath(imageUrl);
       if (oldPath) {
-        void removeWithRetry(oldPath);
+        void removeGalleryFileWithRetry(oldPath);
       }
 
       toast.success("Saved.");
@@ -316,7 +353,7 @@ export function EditModal({
       // clean up the orphan file we may have already uploaded.
       const isAbort = err instanceof Error && err.message === "aborted";
       if (isAbort && uploadedPath) {
-        await removeWithRetry(uploadedPath);
+        await removeGalleryFileWithRetry(uploadedPath);
       }
       const msg = isAbort
         ? "Save cancelled."
@@ -327,25 +364,6 @@ export function EditModal({
     } finally {
       setSaving(false);
       abortRef.current = null;
-    }
-  }
-
-  // Storage remove with exponential backoff. Transient network
-  // errors otherwise leak files in the bucket forever — there's no
-  // batch cleanup job downstream.
-  async function removeWithRetry(path: string, attempts = 3): Promise<void> {
-    let delay = 500;
-    for (let i = 0; i < attempts; i++) {
-      const { error } = await supabase.storage
-        .from("vendor-gallery")
-        .remove([path]);
-      if (!error) return;
-      if (i === attempts - 1) {
-        console.warn("[gallery] storage remove failed", path, error);
-        return;
-      }
-      await new Promise((r) => setTimeout(r, delay));
-      delay *= 2;
     }
   }
 
