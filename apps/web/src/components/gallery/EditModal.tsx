@@ -523,7 +523,19 @@ export function EditModal({
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="rounded-2xl sm:max-w-2xl">
+      <DialogContent
+        className="rounded-2xl sm:max-w-2xl"
+        onClick={(e) => {
+          // React events bubble through the COMPONENT tree, not the DOM
+          // tree. Even though DialogContent is portaled outside the
+          // Lightbox's DOM tree, every click inside this modal still
+          // bubbles up to Lightbox's outer `onClick={onClose}`. Without
+          // stopPropagation, clicking Rotate/Flip closes the Lightbox
+          // mid-canvas-op and the in-flight transform IIFE gets
+          // cancelled by the cleanup that runs on unmount.
+          e.stopPropagation();
+        }}
+      >
         <DialogHeader>
           <DialogTitle className="font-editorial text-2xl">Edit image</DialogTitle>
         </DialogHeader>

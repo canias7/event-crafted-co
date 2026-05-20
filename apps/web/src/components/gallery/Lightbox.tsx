@@ -153,7 +153,14 @@ export function Lightbox({
       aria-modal="true"
       aria-label="Image viewer"
       className="fixed inset-0 z-50 flex items-stretch bg-black/90"
-      onClick={onClose}
+      onClick={(e) => {
+        // Only close when the backdrop itself was the click target.
+        // React's synthetic events bubble through the *component*
+        // tree, not the DOM — so a button inside a child modal
+        // (EditModal / ShareModal) that renders via Portal still
+        // bubbles up here and would otherwise close the Lightbox.
+        if (e.target === e.currentTarget) onClose();
+      }}
     >
       {/* Main viewer area */}
       <div className="relative flex-1 flex items-center justify-center p-4">
