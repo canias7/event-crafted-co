@@ -10,6 +10,26 @@ import { AlertTriangle, RefreshCw, Home } from "lucide-react";
 // Note: this only catches errors thrown during render / lifecycle.
 // Async errors inside fetch handlers etc. don't bubble up to React; we
 // rely on toasts + per-page try/catch for those.
+//
+// Stale-chunk auto-heal: when a deploy ships new hashed JS chunks, a
+// browser holding a cached old index.html will request chunk URLs that
+// no longer exist. Vercel's SPA rewrite returns index.html for those,
+// producing a MIME-type / "Failed to fetch dynamically imported module"
+// error inside React.lazy that bubbles here. lazyWithReload in
+// router/lazyRoutes already auto-reloads once per 60s, but a second
+// chunk error inside that window hits this boundary instead. Detect the
+// signature here and reload once (separate 60s budget) before showing
+// the user the snag screen — most "intermittent appointments page
+// broken, reload fixes it" reports trace back to exactly this race.
+
+const CHUNK_ERROR_PATTERN =
+  /Failed to fetch dynamically imported module|ChunkLoadError|Loading chunk|Importing a module script failed|MIME type|Unexpected token '<'/i;
+const RELOAD_KEY = "vendora.errorBoundaryChunkReload";
+const RELOAD_WINDOW_MS = 60_000;
+
+function isChunkLoadError(error: Error): boolean {
+  return CHUNK_ERROR_PATTERN.test(String(error?.message ?? error));
+}
 
 interface Props {
   children: ReactNode;
@@ -41,6 +61,25 @@ export class ErrorBoundary extends Component<Props, State> {
       console.error(
         "Vendora ErrorBoundary component stack:\n" + errorInfo.componentStack,
       );
+    }
+    // Stale-chunk auto-heal. Independent rate limit from lazyWithReload
+    // so each layer gets one shot before bothering the user. The
+    // boundary's already mounted by the time we reach here; reloading
+    // immediately is fine, we just need the throttle so a genuinely
+    // broken deploy doesn't put us in a refresh loop.
+    if (isChunkLoadError(error) && typeof window !== "undefined") {
+      try {
+        const last = window.sessionStorage.getItem(RELOAD_KEY);
+        const now = Date.now();
+        if (!last || now - Number(last) > RELOAD_WINDOW_MS) {
+          window.sessionStorage.setItem(RELOAD_KEY, String(now));
+          window.location.reload();
+          return;
+        }
+      } catch {
+        // sessionStorage can throw in private-mode Safari; ignore and
+        // fall through to the regular error UI.
+      }
     }
     this.setState({ error, errorInfo });
   }
