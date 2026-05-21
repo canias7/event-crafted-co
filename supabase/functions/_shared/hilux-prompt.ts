@@ -579,6 +579,95 @@ Output ONLY a JSON object on one line: {"detected": true|false, "reason": "<shor
   }
 }
 
+export interface ExtractedInquiryFields {
+  event_type?: string | null;
+  event_date?: string | null;
+  guest_count?: number | null;
+  location?: string | null;
+  budget_min_cents?: number | null;
+  budget_max_cents?: number | null;
+  special_requests?: string | null;
+}
+
+// Pull structured event details from the conversation that the host
+// has dropped in chat ("we're thinking 80 guests for Sept 14, budget
+// around $5k"). Returns a partial — only fields the model is
+// confident about. Caller should ONLY apply fields that are
+// currently null on the inquiry, so vendor-confirmed values are
+// never overwritten by a chat-extracted guess.
+export async function extractInquiryFields(
+  apiKey: string,
+  ctx: {
+    transcript: Array<{ role: "user" | "assistant"; content: string }>;
+    todayIso: string;
+  },
+): Promise<ExtractedInquiryFields> {
+  if (!apiKey) return {};
+  if (ctx.transcript.length === 0) return {};
+
+  const systemText = `You extract structured event details from a host's chat with a vendor. Read the whole transcript and report ONLY what the host has explicitly stated.
+
+Output a JSON object on one line. Include a key ONLY if the host clearly stated it. Skip keys for anything implied, guessed, or already-vendor-side. Never invent.
+
+Allowed keys (all optional):
+- event_type: lowercase noun ("wedding", "birthday", "corporate", "fundraiser", etc.)
+- event_date: ISO yyyy-mm-dd. Resolve relative phrases against today (${ctx.todayIso}). "next September 14" → next year if today is past Sept. "this Saturday" → the next Saturday from today.
+- guest_count: integer
+- location: city or short place name as stated
+- budget_min_cents: integer USD cents. "$5k" → 500000. Skip if only a max is given.
+- budget_max_cents: integer USD cents. "around 5k" → 500000 as max.
+- special_requests: short string ONLY if the host mentioned a specific accommodation (allergies, accessibility, theme constraints).
+
+Examples:
+Host: "We're looking at Sept 14, 80 guests, around 8k" → {"event_date":"2026-09-14","guest_count":80,"budget_max_cents":800000}
+Host: "Just exploring options" → {}
+
+No markdown. No prose outside the JSON.`;
+
+  try {
+    const res = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "x-api-key": apiKey,
+        "anthropic-version": "2023-06-01",
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({
+        model: MODEL,
+        max_tokens: 200,
+        system: [
+          { type: "text", text: systemText, cache_control: { type: "ephemeral" } },
+        ],
+        messages: ctx.transcript.length > 0
+          ? ctx.transcript
+          : [{ role: "user", content: "(empty)" }],
+      }),
+    });
+    if (!res.ok) return {};
+    const body = (await res.json()) as any;
+    const raw = ((body.content ?? []) as any[])
+      .filter((b) => b.type === "text")
+      .map((b) => b.text)
+      .join("\n")
+      .trim();
+    const jsonish = raw.replace(/^```(?:json)?/, "").replace(/```$/, "").trim();
+    const parsed = JSON.parse(jsonish);
+    // Allowlist + light coercion. Skip keys that don't conform.
+    const out: ExtractedInquiryFields = {};
+    if (typeof parsed?.event_type === "string") out.event_type = parsed.event_type.toLowerCase().slice(0, 40);
+    if (typeof parsed?.event_date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(parsed.event_date)) out.event_date = parsed.event_date;
+    if (Number.isInteger(parsed?.guest_count) && parsed.guest_count > 0 && parsed.guest_count < 10000) out.guest_count = parsed.guest_count;
+    if (typeof parsed?.location === "string") out.location = parsed.location.slice(0, 200);
+    if (Number.isInteger(parsed?.budget_min_cents) && parsed.budget_min_cents >= 0) out.budget_min_cents = parsed.budget_min_cents;
+    if (Number.isInteger(parsed?.budget_max_cents) && parsed.budget_max_cents >= 0) out.budget_max_cents = parsed.budget_max_cents;
+    if (typeof parsed?.special_requests === "string") out.special_requests = parsed.special_requests.slice(0, 800);
+    return out;
+  } catch (err) {
+    console.error("[extractInquiryFields] error", err);
+    return {};
+  }
+}
+
 export async function callClaude(
   apiKey: string,
   systemText: string,

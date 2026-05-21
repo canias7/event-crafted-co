@@ -19,6 +19,7 @@ import {
   callClaude,
   DEFAULT_ACTIONS,
   detectBookingIntent,
+  extractInquiryFields,
   isInQuietHours,
   loadVendorContext,
   priceUsd,
@@ -298,6 +299,45 @@ serve(async (req) => {
       }
     };
 
+    // Inquiry-field extraction: when on, pull event_date / guest_count
+    // / budget / etc. that the host stated in chat and write back to
+    // the inquiry. Only fill NULL columns so vendor-confirmed values
+    // are never overwritten by a chat-extracted guess.
+    const extractFieldsAfter = async () => {
+      if (!thread.inquiry_id) return;
+      if (!actions.updateInquiryFields) return;
+      try {
+        const extracted = await extractInquiryFields(ANTHROPIC_API_KEY, {
+          transcript: claudeMessages,
+          todayIso: new Date().toISOString().slice(0, 10),
+        });
+        const keys = Object.keys(extracted) as Array<keyof typeof extracted>;
+        if (keys.length === 0) return;
+        // Read current values so we only fill nulls.
+        const { data: current } = await admin
+          .from("inquiries")
+          .select("event_type, event_date, guest_count, location, budget_min_cents, budget_max_cents, special_requests")
+          .eq("id", thread.inquiry_id)
+          .maybeSingle();
+        if (!current) return;
+        const patch: Record<string, unknown> = {};
+        for (const k of keys) {
+          if ((current as any)[k] == null && extracted[k] != null) {
+            patch[k] = extracted[k];
+          }
+        }
+        if (Object.keys(patch).length === 0) return;
+        const { error: upErr } = await admin
+          .from("inquiries")
+          .update(patch)
+          .eq("id", thread.inquiry_id);
+        if (upErr) console.error("[hilux-respond] inquiry field update failed", upErr);
+        else log("inquiry fields extracted", { inquiry: thread.inquiry_id, filled: Object.keys(patch) });
+      } catch (err) {
+        console.error("[hilux-respond] extract fields error", err);
+      }
+    };
+
     const scoreInquiryAfter = async () => {
       if (!thread.inquiry_id) return;
       try {
@@ -390,6 +430,7 @@ serve(async (req) => {
       log("hilux escalated", { thread: threadId, reason, notified });
       await scoreInquiryAfter();
       await detectIntentAfter();
+      await extractFieldsAfter();
       await clearTyping();
       return ok({ escalated: true, reason, notified });
     }
@@ -448,6 +489,7 @@ serve(async (req) => {
 
     await scoreInquiryAfter();
     await detectIntentAfter();
+    await extractFieldsAfter();
     await clearTyping();
     return ok({ replied: true, length: sanitized.length });
   } catch (err) {
