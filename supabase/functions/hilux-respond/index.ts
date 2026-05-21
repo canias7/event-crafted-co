@@ -53,6 +53,7 @@ function buildSystemPrompt(ctx: {
   bio: string | null;
   location: string | null;
   startingPriceUsd: string | null;
+  customInstructions: string | null;
   packages: Array<{ name: string; description: string | null; priceUsd: string | null }>;
   faqs: Array<{ question: string; answer: string }>;
   inquiry: {
@@ -112,6 +113,12 @@ function buildSystemPrompt(ctx: {
       lines.push(`Q: ${f.question.trim()}`);
       lines.push(`A: ${f.answer.trim()}`);
     }
+  }
+
+  if (ctx.customInstructions && ctx.customInstructions.trim().length > 0) {
+    lines.push("");
+    lines.push("VENDOR'S CUSTOM INSTRUCTIONS (these take priority over the generic rules above — follow them precisely):");
+    lines.push(ctx.customInstructions.trim());
   }
 
   if (ctx.inquiry) {
@@ -196,7 +203,7 @@ serve(async (req) => {
     const { data: vendor, error: vendorErr } = await admin
       .from("vendor_profiles")
       .select(
-        "id, user_id, business_name, category, bio, base_price_cents, location, hilux_enabled",
+        "id, user_id, business_name, category, bio, base_price_cents, location, hilux_enabled, hilux_instructions",
       )
       .eq("id", thread.vendor_id)
       .maybeSingle();
@@ -292,6 +299,7 @@ serve(async (req) => {
       bio: vendor.bio,
       location: vendor.location,
       startingPriceUsd: priceUsd(vendor.base_price_cents),
+      customInstructions: vendor.hilux_instructions ?? null,
       packages: (packages ?? []).map((p) => ({
         name: p.name,
         description: p.description,
