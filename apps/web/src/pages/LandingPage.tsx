@@ -1,16 +1,14 @@
 import { Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 
-// Landing page. Pure white canvas, italic-serif wordmark, amber-glow
-// hero with an animated perspective grid + floating particles, then
-// a Featured vendors strip and a full-column footer. The nav and
-// footer are inlined here (rather than using PublicNav/Footer) so
-// the marketing surface keeps its bespoke styling — the rest of the
+// Landing page. Warm cream → peach gradient canvas with a single
+// fixed-position amber radial glow that acts as the real page
+// backdrop — the glow doesn't scroll with the hero, so the page
+// reads as one continuous shade top-to-bottom instead of an orange
+// "image" floating in the middle of a white page. Nav and footer
+// are inlined here (rather than using PublicNav/Footer) so the
+// marketing surface keeps its bespoke styling — the rest of the
 // public site still uses the shared chrome.
-//
-// Animations live in a single <style> block at the bottom of the
-// component. Keyframe names are namespaced (`landing-...`) so they
-// don't collide with anything else in the bundle.
 export default function LandingPage() {
   const { session, hasVendorAccess, hasHostAccess } = useAuth();
   // Authenticated users land on / after email confirmation. Surface a
@@ -82,128 +80,23 @@ export default function LandingPage() {
         </div>
       </header>
 
-      {/* HERO + VENDORS share one canvas so the glow + grid sit
-          continuously underneath both sections. overflow-x-hidden
-          (instead of overflow-hidden) lets the amber glow + grid
-          bleed past the bottom edge into the footer area so the
-          page reads as one shade — no hard seam between hero and
-          footer. */}
-      <div className="relative overflow-x-hidden">
-        {/* Ambient amber glow centered behind the hero. Soft tail
-            (transparent at 100% instead of 75%) so the glow blends
-            into the page gradient instead of ending at a hard edge
-            visible as a seam. */}
-        <div
-          aria-hidden
-          className="pointer-events-none absolute z-0"
-          style={{
-            top: "200px",
-            left: "50%",
-            transform: "translateX(-50%)",
-            width: "1200px",
-            height: "900px",
-            background:
-              "radial-gradient(ellipse at center, rgba(255,138,76,0.30) 0%, rgba(255,138,76,0.10) 35%, rgba(255,138,76,0.04) 65%, transparent 100%)",
-          }}
-        />
+      {/* HERO + footer share one continuous canvas. The ambient
+          amber glow lives on the body itself (fixed-position so it's
+          a real page backdrop, not a scrolling block that reads as
+          a floating image when you scroll past it). Previous version
+          used absolute-positioned blobs scoped to a wrapper, which
+          stopped at the hero's natural height and left the rest of
+          the page reading as a separate flat section. */}
+      <div
+        aria-hidden
+        className="pointer-events-none fixed inset-0 z-0"
+        style={{
+          background:
+            "radial-gradient(ellipse 80% 70% at 50% 35%, rgba(255,138,76,0.22) 0%, rgba(255,138,76,0.08) 45%, rgba(255,138,76,0) 75%)",
+        }}
+      />
 
-        {/* Perspective grid plane, animating "into" the horizon */}
-        <div
-          aria-hidden
-          className="pointer-events-none absolute z-0 inset-x-0"
-          style={{
-            top: "380px",
-            height: "360px",
-            perspective: "700px",
-            overflow: "hidden",
-            WebkitMaskImage:
-              "linear-gradient(to bottom, transparent 0%, #000 25%, #000 60%, transparent 100%)",
-            maskImage:
-              "linear-gradient(to bottom, transparent 0%, #000 25%, #000 60%, transparent 100%)",
-          }}
-        >
-          <div
-            className="landing-grid-scroll"
-            style={{
-              position: "absolute",
-              bottom: 0,
-              left: "-25%",
-              width: "150%",
-              height: "600px",
-              backgroundImage:
-                "linear-gradient(rgba(255,138,76,0.32) 1px, transparent 1px), linear-gradient(90deg, rgba(255,138,76,0.32) 1px, transparent 1px)",
-              backgroundSize: "56px 56px",
-              transform: "rotateX(74deg)",
-              transformOrigin: "center bottom",
-            }}
-          />
-        </div>
-
-        {/* Floating amber particles */}
-        <span
-          aria-hidden
-          className="landing-float-a absolute z-[1] rounded-full"
-          style={{
-            top: "220px",
-            left: "14%",
-            width: 3,
-            height: 3,
-            background: "#ff8a4c",
-            boxShadow: "0 0 8px #ff8a4c",
-          }}
-        />
-        <span
-          aria-hidden
-          className="landing-float-b absolute z-[1] rounded-full"
-          style={{
-            top: "340px",
-            right: "18%",
-            width: 2,
-            height: 2,
-            background: "#ffb27a",
-            boxShadow: "0 0 6px #ffb27a",
-            animationDelay: "1s",
-          }}
-        />
-        <span
-          aria-hidden
-          className="landing-float-a absolute z-[1] rounded-full"
-          style={{
-            top: "420px",
-            left: "22%",
-            width: 2,
-            height: 2,
-            background: "#ff8a4c",
-            boxShadow: "0 0 6px #ff8a4c",
-            animationDelay: "2s",
-          }}
-        />
-        <span
-          aria-hidden
-          className="landing-float-b absolute z-[1] rounded-full"
-          style={{
-            top: "280px",
-            right: "12%",
-            width: 3,
-            height: 3,
-            background: "#ffb27a",
-            boxShadow: "0 0 8px #ffb27a",
-            animationDelay: "0.5s",
-          }}
-        />
-        <span
-          aria-hidden
-          className="landing-float-a absolute z-[1] rounded-full"
-          style={{
-            top: "500px",
-            right: "28%",
-            width: 2,
-            height: 2,
-            background: "#ff8a4c",
-            boxShadow: "0 0 6px #ff8a4c",
-            animationDelay: "1.5s",
-          }}
-        />
+      <div className="relative z-[1]">
 
         {/* HERO CONTENT */}
         <section className="relative z-[2] px-6 md:px-10 pt-24 pb-24 md:pt-28 md:pb-28 text-center">
@@ -348,7 +241,7 @@ export default function LandingPage() {
       </div>
 
       {/* FOOTER */}
-      <footer className="px-6 md:px-10 pt-16 pb-8">
+      <footer className="relative z-[1] px-6 md:px-10 pt-16 pb-8">
         <div className="grid grid-cols-1 md:grid-cols-[2fr_1fr_1fr_1fr] gap-10 mb-12 max-w-6xl mx-auto">
           {/* Brand column */}
           <div>
@@ -503,27 +396,6 @@ export default function LandingPage() {
       {/* Keyframes — kept inline because they're specific to this page
           and the grid/particle animations don't reuse anywhere else. */}
       <style>{`
-        @keyframes landingGridScroll {
-          0% { background-position: 0 0; }
-          100% { background-position: 0 56px; }
-        }
-        .landing-grid-scroll {
-          animation: landingGridScroll 5s linear infinite;
-        }
-        @keyframes landingFloatA {
-          0%, 100% { transform: translateY(0); opacity: 0.4; }
-          50% { transform: translateY(-28px); opacity: 1; }
-        }
-        .landing-float-a {
-          animation: landingFloatA 6s ease-in-out infinite;
-        }
-        @keyframes landingFloatB {
-          0%, 100% { transform: translateY(0); opacity: 0.5; }
-          50% { transform: translateY(-22px); opacity: 1; }
-        }
-        .landing-float-b {
-          animation: landingFloatB 7s ease-in-out infinite;
-        }
         @keyframes landingHeroPulse {
           0%, 100% { transform: scale(1); opacity: 1; }
           50% { transform: scale(1.4); opacity: 0.6; }
