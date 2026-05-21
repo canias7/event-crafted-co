@@ -741,16 +741,28 @@ export async function loadVendorContext(
     actions: HiluxActions;
   } | null = null;
   if (vendor.user_id) {
-    const { data: profRow } = await admin
-      .from("profiles")
-      .select("*")
-      .eq("id", vendor.user_id)
-      .maybeSingle();
+    // Profile + private config are two separate tables now —
+    // hilux_instructions + hilux_voice_samples live on
+    // hilux_private_config (owner-only RLS) so hosts can't see
+    // them via the cross-user profiles policy.
+    const [profRes, privRes] = await Promise.all([
+      admin.from("profiles").select("*").eq("id", vendor.user_id).maybeSingle(),
+      admin
+        .from("hilux_private_config")
+        .select("hilux_instructions, hilux_voice_samples")
+        .eq("user_id", vendor.user_id)
+        .maybeSingle(),
+    ]);
+    const profRow = profRes.data as any;
+    const privRow = (privRes.data ?? null) as {
+      hilux_instructions: string | null;
+      hilux_voice_samples: string[] | null;
+    } | null;
     if (profRow) {
       profile = {
         hilux_enabled: profRow.hilux_enabled === true,
-        hilux_instructions: profRow.hilux_instructions ?? null,
-        hilux_voice_samples: profRow.hilux_voice_samples ?? [],
+        hilux_instructions: privRow?.hilux_instructions ?? null,
+        hilux_voice_samples: privRow?.hilux_voice_samples ?? [],
         hilux_greeting_line: profRow.hilux_greeting_line ?? null,
         hilux_reply_length: (["short", "medium", "long"].includes(profRow.hilux_reply_length) ? profRow.hilux_reply_length : "medium") as HiluxReplyLength,
         actions: {

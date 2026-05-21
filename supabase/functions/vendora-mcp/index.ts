@@ -929,15 +929,28 @@ async function getInquiry(admin: any, userId: string, inquiryId: string) {
 }
 
 async function getHiluxSettings(admin: any, userId: string) {
-  const { data, error } = await admin
-    .from("profiles")
-    .select(
-      "hilux_enabled, hilux_instructions, hilux_greeting_line, hilux_reply_length, hilux_action_follow_up, hilux_action_quiet_hours, hilux_action_pause_weekends, hilux_action_skip_when_active, hilux_action_use_calendar, hilux_action_escalate, hilux_action_detect_frustration, hilux_action_mention_starting_price, hilux_action_suggest_package, hilux_action_decline_negotiation, hilux_action_avoid_competitors, hilux_action_send_portfolio_link, hilux_action_offer_call, hilux_action_share_booking_process, hilux_action_echo_question, hilux_action_acknowledge_emotion, hilux_action_lead_with_question, hilux_action_refuse_legal, hilux_action_refuse_competitor_pricing, hilux_action_no_other_clients, hilux_action_redact_contact, hilux_action_auto_mark_replied, hilux_action_notify_on_reply, hilux_action_update_inquiry_fields, hilux_action_notify_on_escalation, hilux_action_notify_on_hot_lead, hilux_action_email_reply_copies, hilux_action_auto_archive_cold, hilux_action_daily_summary, hilux_action_cap_replies_per_inquiry, hilux_action_detect_booking_intent, hilux_action_log_actions",
-    )
-    .eq("id", userId)
-    .maybeSingle();
-  if (error) throw error;
-  return { hilux: data ?? null };
+  // Profile holds the toggles; private config holds instructions +
+  // voice samples (separate table with owner-only RLS).
+  const [profRes, privRes] = await Promise.all([
+    admin
+      .from("profiles")
+      .select(
+        "hilux_enabled, hilux_greeting_line, hilux_reply_length, hilux_action_follow_up, hilux_action_quiet_hours, hilux_action_pause_weekends, hilux_action_skip_when_active, hilux_action_use_calendar, hilux_action_escalate, hilux_action_detect_frustration, hilux_action_mention_starting_price, hilux_action_suggest_package, hilux_action_decline_negotiation, hilux_action_avoid_competitors, hilux_action_send_portfolio_link, hilux_action_offer_call, hilux_action_share_booking_process, hilux_action_echo_question, hilux_action_acknowledge_emotion, hilux_action_lead_with_question, hilux_action_refuse_legal, hilux_action_refuse_competitor_pricing, hilux_action_no_other_clients, hilux_action_redact_contact, hilux_action_auto_mark_replied, hilux_action_notify_on_reply, hilux_action_update_inquiry_fields, hilux_action_notify_on_escalation, hilux_action_notify_on_hot_lead, hilux_action_email_reply_copies, hilux_action_auto_archive_cold, hilux_action_daily_summary, hilux_action_cap_replies_per_inquiry, hilux_action_detect_booking_intent, hilux_action_log_actions",
+      )
+      .eq("id", userId)
+      .maybeSingle(),
+    admin
+      .from("hilux_private_config")
+      .select("hilux_instructions, hilux_voice_samples")
+      .eq("user_id", userId)
+      .maybeSingle(),
+  ]);
+  if (profRes.error) throw profRes.error;
+  if (privRes.error) throw privRes.error;
+  return {
+    hilux: profRes.data ?? null,
+    private: privRes.data ?? null,
+  };
 }
 
 async function listListings(admin: any, userId: string) {
