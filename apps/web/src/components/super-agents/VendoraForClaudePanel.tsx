@@ -109,6 +109,13 @@ const TOOL_GROUPS: ToolGroup[] = [
           "\"What has HILUX been doing today?\" — returns every reply, escalation, follow-up, and archive HILUX performed.",
         Icon: ScrollText,
       },
+      {
+        name: "get_mcp_call_log",
+        label: "Read Claude's own MCP call log",
+        blurb:
+          "\"Recap what you've done for me today\" — Claude reflects on every tool call it made through this connector.",
+        Icon: ScrollText,
+      },
     ],
   },
   {
@@ -614,7 +621,7 @@ export function VendoraForClaudePanel() {
           </div>
           <p className="text-[11px] text-black/45 italic mt-2 inline-flex items-center gap-1">
             <CheckCircle2 className="w-3 h-3" />
-            12 tools live + 3 static resources (vendora://settings, vendora://activity, vendora://listings) and 2 templates (vendora://inquiry/&lcub;id&rcub;, vendora://thread/&lcub;id&rcub;). Claude can read your inbox + take action on your behalf with your approval (Claude clients prompt before any write).
+            13 tools live + 3 static resources (vendora://settings, vendora://activity, vendora://listings) and 2 templates (vendora://inquiry/&lcub;id&rcub;, vendora://thread/&lcub;id&rcub;). Claude can read your inbox + take action on your behalf with your approval (Claude clients prompt before any write).
           </p>
         </div>
       </div>
