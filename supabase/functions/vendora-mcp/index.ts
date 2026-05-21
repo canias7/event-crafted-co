@@ -74,6 +74,29 @@ function rpcError(id: any, code: number, message: string) {
   );
 }
 
+// 401 with WWW-Authenticate per RFC 6750 + RFC 9728. Points
+// MCP clients at the protected-resource metadata so they can
+// discover the OAuth Authorization Server and run the code flow.
+function unauthorized(id: any, error: string) {
+  const resourceMeta =
+    `${Deno.env.get("SUPABASE_URL")!}/functions/v1/mcp-oauth-metadata?kind=resource`;
+  return new Response(
+    JSON.stringify({
+      jsonrpc: "2.0",
+      id,
+      error: { code: -32001, message: `Unauthorized: ${error}` },
+    }),
+    {
+      status: 401,
+      headers: {
+        ...cors,
+        "Content-Type": "application/json",
+        "WWW-Authenticate": `Bearer realm="vendora", resource_metadata="${resourceMeta}"`,
+      },
+    },
+  );
+}
+
 // SHA-256 of a string, returning lowercase hex. Matches the
 // pgcrypto digest call in create_vendor_access_token so the hash
 // stored at mint time matches what we compute here.
@@ -274,30 +297,71 @@ serve(async (req) => {
     return rpcResult(id, { tools: TOOLS });
   }
 
-  // Beyond this point: bearer token required.
+  // Beyond this point: bearer token required. We accept TWO token
+  // formats:
+  //   1. Vendor Access Tokens (PATs) — minted via /vendora-access-token
+  //   2. OAuth 2.1 access tokens — issued by /mcp-oauth-token
+  // OAuth tokens are prefixed `vat_`; PATs use a different scheme.
+  // We try OAuth first, then fall back to PAT.
   const authHeader = req.headers.get("Authorization") ?? "";
   const bearer = authHeader.replace(/^Bearer\s+/i, "").trim();
   if (!bearer) {
-    return rpcError(id, -32001, "Unauthorized: missing bearer token");
+    return unauthorized(id, "missing bearer token");
   }
   const tokenHash = await sha256Hex(bearer);
-  const { data: tokenRow } = await admin
-    .from("vendor_access_tokens")
-    .select("id, user_id")
+
+  let userId: string | null = null;
+
+  // Try OAuth first.
+  const { data: oauthRow } = await admin
+    .from("oauth_access_tokens")
+    .select("id, user_id, expires_at, revoked_at")
     .eq("token_hash", tokenHash)
     .maybeSingle();
-  if (!tokenRow) {
-    return rpcError(id, -32001, "Unauthorized: invalid token");
+  if (oauthRow) {
+    const r = oauthRow as {
+      id: string;
+      user_id: string;
+      expires_at: string;
+      revoked_at: string | null;
+    };
+    if (r.revoked_at) return unauthorized(id, "token revoked");
+    if (new Date(r.expires_at).getTime() < Date.now()) {
+      return unauthorized(id, "token expired");
+    }
+    userId = r.user_id;
+    admin
+      .from("oauth_access_tokens")
+      .update({ last_used_at: new Date().toISOString() })
+      .eq("id", r.id)
+      .then(({ error }) => {
+        if (error) console.error("[vendora-mcp] oauth last_used bump failed", error);
+      });
   }
-  const userId = (tokenRow as { user_id: string }).user_id;
-  // Best-effort last_used bump; ignore failures.
-  admin
-    .from("vendor_access_tokens")
-    .update({ last_used_at: new Date().toISOString() })
-    .eq("id", (tokenRow as { id: string }).id)
-    .then(({ error }) => {
-      if (error) console.error("[vendora-mcp] last_used bump failed", error);
-    });
+
+  // Fall back to PAT.
+  if (!userId) {
+    const { data: patRow } = await admin
+      .from("vendor_access_tokens")
+      .select("id, user_id")
+      .eq("token_hash", tokenHash)
+      .maybeSingle();
+    if (patRow) {
+      const p = patRow as { id: string; user_id: string };
+      userId = p.user_id;
+      admin
+        .from("vendor_access_tokens")
+        .update({ last_used_at: new Date().toISOString() })
+        .eq("id", p.id)
+        .then(({ error }) => {
+          if (error) console.error("[vendora-mcp] pat last_used bump failed", error);
+        });
+    }
+  }
+
+  if (!userId) {
+    return unauthorized(id, "invalid token");
+  }
 
   if (method !== "tools/call") {
     return rpcError(id, -32601, `Method not found: ${method}`);

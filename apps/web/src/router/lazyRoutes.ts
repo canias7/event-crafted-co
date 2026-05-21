@@ -51,6 +51,9 @@ export const PublicProposalPage = lazyWithReload(importPublicProposal);
 const importPublicGalleryShare = () => import("@/pages/PublicGallerySharePage");
 export const PublicGallerySharePage = lazyWithReload(importPublicGalleryShare);
 
+const importOAuthConsent = () => import("@/pages/oauth/OAuthConsentPage");
+export const OAuthConsentPage = lazyWithReload(importOAuthConsent);
+
 
 const importVendorDetail = () => import("@/pages/VendorDetailPage");
 export const VendorDetailPage = lazyWithReload(importVendorDetail);

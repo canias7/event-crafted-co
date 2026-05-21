@@ -421,10 +421,17 @@ export function VendoraForClaudePanel() {
           </p>
           <div className="grid md:grid-cols-2 gap-3">
             <div className="rounded-xl bg-white/55 border border-black/5 p-4">
-              <p className="text-sm font-medium text-black mb-1">Claude.ai</p>
+              <p className="text-sm font-medium text-black mb-1">
+                Claude.ai{" "}
+                <span className="inline-flex items-center text-[9px] uppercase tracking-wider font-medium px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 align-middle">
+                  OAuth
+                </span>
+              </p>
               <p className="text-xs text-black/60 leading-relaxed">
                 Settings → Connectors → Add custom connector. Paste the URL
-                above, then the token when prompted.
+                above and click Add — Claude will open a Vendora approval
+                screen, you click Approve, and the connection is live. No
+                token to copy.
               </p>
             </div>
             <div className="rounded-xl bg-white/55 border border-black/5 p-4">
@@ -433,7 +440,9 @@ export function VendoraForClaudePanel() {
                 <code className="bg-white/80 rounded px-1 py-0.5">
                   claude mcp add vendora --transport http
                 </code>{" "}
-                — paste the URL when prompted, add the token via{" "}
+                — paste the URL when prompted. If your client supports OAuth
+                it'll open the browser; otherwise generate a token below and
+                pass it via{" "}
                 <code className="bg-white/80 rounded px-1 py-0.5">
                   --header "Authorization: Bearer …"
                 </code>
@@ -485,7 +494,7 @@ export function VendoraForClaudePanel() {
           </div>
           <p className="text-[11px] text-black/45 italic mt-2 inline-flex items-center gap-1">
             <CheckCircle2 className="w-3 h-3" />
-            10 tools live. Claude can read your inbox + take action on your
+            11 tools live. Claude can read your inbox + take action on your
             behalf with your approval (Claude clients prompt before any write).
           </p>
         </div>
