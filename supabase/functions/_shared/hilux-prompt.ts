@@ -519,6 +519,66 @@ export async function scoreLead(
   }
 }
 
+export interface BookingIntentResult {
+  detected: boolean;
+  reason: string;
+}
+
+// Detect whether the host's LATEST message reads as explicit
+// booking commitment ("yes book us", "let's lock it in", "send
+// the contract") vs general interest. Bounded JSON response, same
+// shape as scoreLead. Never throws — returns detected=false on
+// any parse error so the caller can no-op cleanly.
+export async function detectBookingIntent(
+  apiKey: string,
+  ctx: {
+    businessName: string;
+    transcript: Array<{ role: "user" | "assistant"; content: string }>;
+  },
+): Promise<BookingIntentResult> {
+  if (!apiKey) return { detected: false, reason: "no_api_key" };
+  const lastHost = [...ctx.transcript].reverse().find((m) => m.role === "user");
+  if (!lastHost) return { detected: false, reason: "no_host_message" };
+
+  const systemText = `You are a binary classifier for ${ctx.businessName}'s inbox. Read the host's MOST RECENT message and decide whether it expresses EXPLICIT BOOKING COMMITMENT — meaning the host is saying "yes, let's do this", "we'd like to book you", "send the contract", "lock us in", or similar. General interest, questions, package shopping, or "let me think about it" do NOT count.
+
+Output ONLY a JSON object on one line: {"detected": true|false, "reason": "<short citation, max 90 chars>"}. Cite the exact phrase or signal. No markdown.`;
+
+  try {
+    const res = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "x-api-key": apiKey,
+        "anthropic-version": "2023-06-01",
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({
+        model: MODEL,
+        max_tokens: 80,
+        system: [
+          { type: "text", text: systemText, cache_control: { type: "ephemeral" } },
+        ],
+        messages: [{ role: "user", content: lastHost.content }],
+      }),
+    });
+    if (!res.ok) return { detected: false, reason: "intent_api_error" };
+    const body = (await res.json()) as any;
+    const raw = ((body.content ?? []) as any[])
+      .filter((b) => b.type === "text")
+      .map((b) => b.text)
+      .join("\n")
+      .trim();
+    const jsonish = raw.replace(/^```(?:json)?/, "").replace(/```$/, "").trim();
+    const parsed = JSON.parse(jsonish);
+    const detected = parsed?.detected === true;
+    const reason = String(parsed?.reason ?? "").trim().slice(0, 200);
+    return { detected, reason: reason || (detected ? "detected" : "no_signal") };
+  } catch (err) {
+    console.error("[detectBookingIntent] error", err);
+    return { detected: false, reason: "intent_exception" };
+  }
+}
+
 export async function callClaude(
   apiKey: string,
   systemText: string,

@@ -18,6 +18,7 @@ import {
   buildSystemPrompt,
   callClaude,
   DEFAULT_ACTIONS,
+  detectBookingIntent,
   isInQuietHours,
   loadVendorContext,
   priceUsd,
@@ -126,6 +127,20 @@ serve(async (req) => {
         .limit(1);
       if ((recentVendor ?? []).length > 0) {
         return ok({ skipped: "vendor_active_in_thread" });
+      }
+    }
+
+    // Reply cap: when capRepliesPerInquiry is on, HILUX backs off
+    // after 6 of its own replies in this thread. The vendor handles
+    // the rest. Prevents runaway loops on hosts who keep messaging.
+    if (ctx.profile.actions.capRepliesPerInquiry) {
+      const { count: hiluxCount } = await admin
+        .from("direct_messages")
+        .select("id", { count: "exact", head: true })
+        .eq("thread_id", threadId)
+        .eq("is_hilux_generated", true);
+      if ((hiluxCount ?? 0) >= 6) {
+        return ok({ skipped: "reply_cap_reached", hilux_count: hiluxCount });
       }
     }
 
@@ -246,6 +261,43 @@ serve(async (req) => {
     log("calling claude", { vendor: ctx.vendor.id, history_len: claudeMessages.length });
     const reply = await callClaude(ANTHROPIC_API_KEY, systemText, claudeMessages);
 
+    // Booking-intent detection: when on, classify the host's LATEST
+    // message for explicit commitment ("yes, book us"). Sets
+    // inquiries.booking_intent_at so the vendor can filter their
+    // inbox to "ready to close" without rereading every thread.
+    // Bounded + best-effort; never blocks the reply path.
+    const detectIntentAfter = async () => {
+      if (!thread.inquiry_id) return;
+      if (!actions.detectBookingIntent) return;
+      try {
+        const result = await detectBookingIntent(ANTHROPIC_API_KEY, {
+          businessName: ctx.vendor!.business_name ?? "this vendor",
+          transcript: claudeMessages,
+        });
+        if (!result.detected) return;
+        // Only set the timestamp the FIRST time we detect intent
+        // for this inquiry — repeat-detect on every host message
+        // in a hot conversation would clobber the original moment.
+        const { data: priorRow } = await admin
+          .from("inquiries")
+          .select("booking_intent_at")
+          .eq("id", thread.inquiry_id)
+          .maybeSingle();
+        if ((priorRow as { booking_intent_at?: string } | null)?.booking_intent_at) return;
+        const { error: intentErr } = await admin
+          .from("inquiries")
+          .update({
+            booking_intent_at: new Date().toISOString(),
+            booking_intent_reason: result.reason,
+          })
+          .eq("id", thread.inquiry_id);
+        if (intentErr) console.error("[hilux-respond] booking_intent update failed", intentErr);
+        else log("booking intent flagged", { inquiry: thread.inquiry_id, reason: result.reason });
+      } catch (err) {
+        console.error("[hilux-respond] booking_intent error", err);
+      }
+    };
+
     const scoreInquiryAfter = async () => {
       if (!thread.inquiry_id) return;
       try {
@@ -337,6 +389,7 @@ serve(async (req) => {
       }
       log("hilux escalated", { thread: threadId, reason, notified });
       await scoreInquiryAfter();
+      await detectIntentAfter();
       await clearTyping();
       return ok({ escalated: true, reason, notified });
     }
@@ -394,6 +447,7 @@ serve(async (req) => {
     }
 
     await scoreInquiryAfter();
+    await detectIntentAfter();
     await clearTyping();
     return ok({ replied: true, length: sanitized.length });
   } catch (err) {
