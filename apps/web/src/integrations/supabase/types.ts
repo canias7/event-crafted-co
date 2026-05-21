@@ -365,6 +365,7 @@ export type Database = {
           deleted_at: string | null
           edited_at: string | null
           id: string
+          is_hilux_generated: boolean
           reply_to_message_id: string | null
           sender_id: string
           sender_role: string
@@ -378,6 +379,7 @@ export type Database = {
           deleted_at?: string | null
           edited_at?: string | null
           id?: string
+          is_hilux_generated?: boolean
           reply_to_message_id?: string | null
           sender_id: string
           sender_role: string
@@ -391,6 +393,7 @@ export type Database = {
           deleted_at?: string | null
           edited_at?: string | null
           id?: string
+          is_hilux_generated?: boolean
           reply_to_message_id?: string | null
           sender_id?: string
           sender_role?: string
@@ -762,6 +765,76 @@ export type Database = {
         }
         Relationships: []
       }
+      host_event_live_streams: {
+        Row: {
+          created_at: string
+          ended_at: string | null
+          event_id: string
+          host_id: string
+          id: string
+          mux_asset_id: string | null
+          mux_playback_id: string
+          mux_stream_id: string
+          mux_stream_key: string
+          share_token: string
+          started_at: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          ended_at?: string | null
+          event_id: string
+          host_id: string
+          id?: string
+          mux_asset_id?: string | null
+          mux_playback_id: string
+          mux_stream_id: string
+          mux_stream_key: string
+          share_token?: string
+          started_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          ended_at?: string | null
+          event_id?: string
+          host_id?: string
+          id?: string
+          mux_asset_id?: string | null
+          mux_playback_id?: string
+          mux_stream_id?: string
+          mux_stream_key?: string
+          share_token?: string
+          started_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "host_event_live_streams_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "host_events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "host_event_live_streams_host_id_fkey"
+            columns: ["host_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "host_event_live_streams_host_id_fkey"
+            columns: ["host_id"]
+            isOneToOne: false
+            referencedRelation: "vendor_brands"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       host_event_rsvps: {
         Row: {
           created_at: string
@@ -1029,6 +1102,7 @@ export type Database = {
           id: string
           intake_answers: Json | null
           intent_score: number | null
+          last_message_at: string
           location: string | null
           package_id: string | null
           quality_score: number | null
@@ -1054,6 +1128,7 @@ export type Database = {
           id?: string
           intake_answers?: Json | null
           intent_score?: number | null
+          last_message_at?: string
           location?: string | null
           package_id?: string | null
           quality_score?: number | null
@@ -1079,6 +1154,7 @@ export type Database = {
           id?: string
           intake_answers?: Json | null
           intent_score?: number | null
+          last_message_at?: string
           location?: string | null
           package_id?: string | null
           quality_score?: number | null
@@ -1943,6 +2019,27 @@ export type Database = {
           expires_at?: string
           id?: string
           used_at?: string | null
+        }
+        Relationships: []
+      }
+      stripe_events: {
+        Row: {
+          id: string
+          payload: Json | null
+          processed_at: string
+          type: string
+        }
+        Insert: {
+          id: string
+          payload?: Json | null
+          processed_at?: string
+          type: string
+        }
+        Update: {
+          id?: string
+          payload?: Json | null
+          processed_at?: string
+          type?: string
         }
         Relationships: []
       }
@@ -3232,6 +3329,7 @@ export type Database = {
           deposit_pct: number | null
           geocoded_at: string | null
           geocoded_location: string | null
+          hilux_enabled: boolean
           id: string
           instagram_handle: string | null
           intro_video_url: string | null
@@ -3247,6 +3345,12 @@ export type Database = {
           responder_tier: string | null
           service_radius_miles: number | null
           slug: string | null
+          stripe_customer_id: string | null
+          stripe_subscription_id: string | null
+          subscription_cancel_at_period_end: boolean
+          subscription_current_period_end: string | null
+          subscription_status: string | null
+          subscription_tier: string
           tiktok_handle: string | null
           updated_at: string
           user_id: string | null
@@ -3271,6 +3375,7 @@ export type Database = {
           deposit_pct?: number | null
           geocoded_at?: string | null
           geocoded_location?: string | null
+          hilux_enabled?: boolean
           id?: string
           instagram_handle?: string | null
           intro_video_url?: string | null
@@ -3286,6 +3391,12 @@ export type Database = {
           responder_tier?: string | null
           service_radius_miles?: number | null
           slug?: string | null
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          subscription_cancel_at_period_end?: boolean
+          subscription_current_period_end?: string | null
+          subscription_status?: string | null
+          subscription_tier?: string
           tiktok_handle?: string | null
           updated_at?: string
           user_id?: string | null
@@ -3310,6 +3421,7 @@ export type Database = {
           deposit_pct?: number | null
           geocoded_at?: string | null
           geocoded_location?: string | null
+          hilux_enabled?: boolean
           id?: string
           instagram_handle?: string | null
           intro_video_url?: string | null
@@ -3325,6 +3437,12 @@ export type Database = {
           responder_tier?: string | null
           service_radius_miles?: number | null
           slug?: string | null
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          subscription_cancel_at_period_end?: boolean
+          subscription_current_period_end?: string | null
+          subscription_status?: string | null
+          subscription_tier?: string
           tiktok_handle?: string | null
           updated_at?: string
           user_id?: string | null
@@ -3903,6 +4021,7 @@ export type Database = {
           deposit_pct: number | null
           geocoded_at: string | null
           geocoded_location: string | null
+          hilux_enabled: boolean
           id: string
           instagram_handle: string | null
           intro_video_url: string | null
@@ -3918,6 +4037,12 @@ export type Database = {
           responder_tier: string | null
           service_radius_miles: number | null
           slug: string | null
+          stripe_customer_id: string | null
+          stripe_subscription_id: string | null
+          subscription_cancel_at_period_end: boolean
+          subscription_current_period_end: string | null
+          subscription_status: string | null
+          subscription_tier: string
           tiktok_handle: string | null
           updated_at: string
           user_id: string | null
@@ -4099,6 +4224,37 @@ export type Database = {
           total_inquiries: number
         }[]
       }
+      get_host_review_stats: {
+        Args: { p_host_id: string }
+        Returns: {
+          avg: number
+          count: number
+        }[]
+      }
+      get_live_stream_by_token: {
+        Args: { p_token: string }
+        Returns: {
+          ended_at: string
+          event_date: string
+          event_id: string
+          event_start_time: string
+          event_title: string
+          has_recording: boolean
+          id: string
+          mux_playback_id: string
+          started_at: string
+          status: string
+        }[]
+      }
+      get_partner_thread_previews: {
+        Args: { p_thread_ids: string[] }
+        Returns: {
+          body: string
+          deleted_at: string
+          sender_user_id: string
+          thread_id: string
+        }[]
+      }
       get_proposal_by_share_token: { Args: { p_token: string }; Returns: Json }
       get_push_deliverability_summary: {
         Args: { p_window_days?: number }
@@ -4150,6 +4306,13 @@ export type Database = {
         }[]
       }
       get_vendor_profile_score: { Args: { p_vendor_id: string }; Returns: Json }
+      get_vendor_review_stats: {
+        Args: { p_vendor_id: string }
+        Returns: {
+          avg: number
+          count: number
+        }[]
+      }
       is_admin: { Args: never; Returns: boolean }
       is_approved_vendor: { Args: { p_user_id: string }; Returns: boolean }
       is_inquiry_vendor_member: {
@@ -4188,6 +4351,7 @@ export type Database = {
           id: string
           intake_answers: Json | null
           intent_score: number | null
+          last_message_at: string
           location: string | null
           package_id: string | null
           quality_score: number | null
