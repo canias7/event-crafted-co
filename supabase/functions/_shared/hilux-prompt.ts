@@ -668,11 +668,31 @@ No markdown. No prose outside the JSON.`;
   }
 }
 
+export interface ClaudeUsage {
+  input_tokens: number;
+  output_tokens: number;
+  cache_creation_tokens: number;
+  cache_read_tokens: number;
+}
+
 export async function callClaude(
   apiKey: string,
   systemText: string,
   messages: Array<{ role: "user" | "assistant"; content: string }>,
 ): Promise<string> {
+  const { text } = await callClaudeWithUsage(apiKey, systemText, messages);
+  return text;
+}
+
+// Same as callClaude but also returns the Anthropic usage object so
+// callers can record tokens for cost reporting. Existing callers can
+// keep using callClaude; new callers that want token telemetry call
+// this variant.
+export async function callClaudeWithUsage(
+  apiKey: string,
+  systemText: string,
+  messages: Array<{ role: "user" | "assistant"; content: string }>,
+): Promise<{ text: string; usage: ClaudeUsage }> {
   if (!apiKey) throw new Error("ANTHROPIC_API_KEY not set in edge function env");
   const res = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
@@ -691,7 +711,14 @@ export async function callClaude(
   const body = (await res.json()) as any;
   const text = (body.content ?? []).filter((b: any) => b.type === "text").map((b: any) => b.text).join("\n").trim();
   if (!text) throw new Error("empty reply from claude");
-  return text;
+  const u = body.usage ?? {};
+  const usage: ClaudeUsage = {
+    input_tokens: Number(u.input_tokens) || 0,
+    output_tokens: Number(u.output_tokens) || 0,
+    cache_creation_tokens: Number(u.cache_creation_input_tokens) || 0,
+    cache_read_tokens: Number(u.cache_read_input_tokens) || 0,
+  };
+  return { text, usage };
 }
 
 // Loads listing + owner-profile context for HILUX. Listing-level
