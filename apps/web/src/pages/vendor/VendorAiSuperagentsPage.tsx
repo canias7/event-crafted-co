@@ -1,8 +1,12 @@
-// AI Superagents inside the vendor portal. Left-side picker lists
-// HILUX / RAPTOR / AXION; the right pane swaps to whichever the
-// vendor clicks. Only HILUX has a working agent today; RAPTOR and
-// AXION show the marketing pitch + capability list under a "Coming
-// soon" stamp.
+// AI Superagents inside the vendor portal. Left-side picker has
+// two surfaces:
+//   - HILUX: the always-on background agent.
+//   - Vendora for Claude: the MCP connector that brings the
+//     vendor's account into Claude.ai / Claude Code as a copilot.
+//
+// RAPTOR and AXION as separate "agents" are retired — the MCP
+// connector covers both copywriting and visual workflows because
+// the vendor can just ask Claude to do them.
 
 import { useState } from "react";
 import { useReducedMotion } from "framer-motion";
@@ -11,47 +15,8 @@ import { MobileNav } from "@/components/shared/MobileNav";
 import { vendorNavItems as navItems } from "@/data/navItems";
 import { AmbientBackdrop } from "@/pages/SuperAgentsPage";
 import { AgentPicker, type AgentKey } from "@/components/super-agents/AgentPicker";
-import { AxionLogo, RaptorLogo } from "@/components/super-agents/AgentLogos";
 import { HiluxVendorControls } from "@/components/super-agents/HiluxVendorControls";
-import { ComingSoonPanel } from "@/components/super-agents/ComingSoonPanel";
-
-const COMING_SOON_COPY: Record<
-  Exclude<AgentKey, "HILUX">,
-  React.ComponentProps<typeof ComingSoonPanel>
-> = {
-  RAPTOR: {
-    name: "RAPTOR 3.5",
-    role: "Wordsmith",
-    tagline: "Writes your listing copy in your voice.",
-    about:
-      "Drops the blank-page anxiety. Studies your past replies, your reviews, and the markets you serve, then drafts every word your listing needs — bio, FAQs, package descriptions — in a voice that sounds like you on your best day.",
-    capabilities: [
-      "One-prompt bios, FAQs, and package descriptions",
-      "Tone-matched to your existing reviews + replies",
-      "Multilingual — English, Spanish, French, more",
-      "A/B tests headline variants against real inquiries",
-    ],
-    accent: "#7aa8ff",
-    Logo: RaptorLogo,
-    selfContained: true,
-  },
-  AXION: {
-    name: "AXION 9.1",
-    role: "Visuals",
-    tagline: "Turns one phone photo into a portfolio.",
-    about:
-      "Generates, restyles, and cleans up listing photography on demand. Drop in a snapshot from last week's setup — Axion returns ten editorial-grade variants ready to publish, with consistent color, framing, and brand feel.",
-    capabilities: [
-      "Phone photo → editorial portfolio in seconds",
-      "Restyles existing galleries to one cohesive look",
-      "Generates lifestyle hero shots from scratch",
-      "Auto-crops + retouches for every aspect ratio",
-    ],
-    accent: "#d066ff",
-    Logo: AxionLogo,
-    selfContained: true,
-  },
-};
+import { VendoraForClaudePanel } from "@/components/super-agents/VendoraForClaudePanel";
 
 export default function VendorAiSuperagentsPage() {
   const reduceMotion = useReducedMotion();
@@ -71,10 +36,8 @@ export default function VendorAiSuperagentsPage() {
           <div className="flex-1 min-w-0">
             {selected === "HILUX" ? (
               <HiluxVendorControls />
-            ) : selected === "RAPTOR" ? (
-              <ComingSoonPanel {...COMING_SOON_COPY.RAPTOR} />
             ) : (
-              <ComingSoonPanel {...COMING_SOON_COPY.AXION} />
+              <VendoraForClaudePanel />
             )}
           </div>
         </div>

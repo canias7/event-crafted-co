@@ -1,12 +1,15 @@
-// Agent picker — vertical list of HILUX / RAPTOR / AXION on the
-// left of /vendor/super-agents. Tap one to swap the right pane.
-// Connectors-style: logo + name + selected highlight, nothing else.
-// Collapses to a horizontal scrollable strip on small screens.
+// Agent picker — left list on /vendor/super-agents. Two surfaces:
+//   - HILUX 2.7 (the always-on inbox agent, runs without the vendor)
+//   - Vendora for Claude (the MCP connector, runs WITH the vendor in
+//     their Claude client)
+//
+// Connectors-style: logo + name + selected highlight. Collapses to
+// a horizontal scrollable strip on small screens.
 
 import type { ComponentType, SVGProps } from "react";
-import { AxionLogo, HiluxLogo, RaptorLogo } from "./AgentLogos";
+import { HiluxLogo, VendoraForClaudeLogo } from "./AgentLogos";
 
-export type AgentKey = "HILUX" | "RAPTOR" | "AXION";
+export type AgentKey = "HILUX" | "VENDORA_FOR_CLAUDE";
 
 interface PickerAgent {
   key: AgentKey;
@@ -14,17 +17,17 @@ interface PickerAgent {
   role: string;
   status: "live" | "soon";
   Logo: ComponentType<SVGProps<SVGSVGElement> & { className?: string }>;
-  accent: string;
-  /** When true, the logo provides its own backdrop and is rendered
-   *  edge-to-edge in the row tile. Otherwise we wrap it in a tinted
-   *  square. */
-  selfContained?: boolean;
 }
 
 export const AGENT_LIST: PickerAgent[] = [
-  { key: "HILUX", name: "HILUX 2.7", role: "Always On", status: "live", Logo: HiluxLogo, accent: "#ff8a4c", selfContained: true },
-  { key: "RAPTOR", name: "RAPTOR 3.5", role: "Wordsmith", status: "soon", Logo: RaptorLogo, accent: "#7aa8ff", selfContained: true },
-  { key: "AXION", name: "AXION 9.1", role: "Visuals", status: "soon", Logo: AxionLogo, accent: "#d066ff", selfContained: true },
+  { key: "HILUX", name: "HILUX 2.7", role: "Always On", status: "live", Logo: HiluxLogo },
+  {
+    key: "VENDORA_FOR_CLAUDE",
+    name: "Vendora for Claude",
+    role: "MCP connector",
+    status: "live",
+    Logo: VendoraForClaudeLogo,
+  },
 ];
 
 interface Props {
@@ -57,30 +60,19 @@ export function AgentPicker({ selected, onSelect }: Props) {
                 }`}
                 aria-current={isActive ? "page" : undefined}
               >
-                {agent.selfContained ? (
-                  <span className="w-8 h-8 rounded-lg overflow-hidden shrink-0 ring-1 ring-black/5">
-                    <Logo className="w-full h-full block" />
-                  </span>
-                ) : (
-                  <span
-                    className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
-                    style={{
-                      background: isActive ? "rgba(255,255,255,0.12)" : agent.accent + "26",
-                    }}
-                  >
-                    <Logo
-                      className="w-4 h-4"
-                      style={{ color: isActive ? "#fff" : agent.accent }}
-                    />
-                  </span>
-                )}
+                <span className="w-8 h-8 rounded-lg overflow-hidden shrink-0 ring-1 ring-black/5">
+                  <Logo className="w-full h-full block" />
+                </span>
                 <span className="min-w-0">
                   <span className="block text-sm font-medium leading-tight truncate">
                     {agent.name}
                   </span>
-                  <span className={`block text-[10.5px] uppercase tracking-wider leading-tight mt-0.5 ${isActive ? "text-white/65" : "text-black/50"}`}>
+                  <span
+                    className={`block text-[10.5px] uppercase tracking-wider leading-tight mt-0.5 ${
+                      isActive ? "text-white/65" : "text-black/50"
+                    }`}
+                  >
                     {agent.role}
-                    {agent.status === "soon" ? " · Coming soon" : ""}
                   </span>
                 </span>
               </button>
