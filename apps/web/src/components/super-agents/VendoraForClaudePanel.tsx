@@ -6,11 +6,13 @@
 
 import { useCallback, useEffect, useState } from "react";
 import {
+  CalendarDays,
   Check,
   CheckCircle2,
   Copy,
   Eye,
   EyeOff,
+  Flame,
   Inbox,
   Key,
   Layers,
@@ -24,6 +26,7 @@ import {
   Send,
   Settings2,
   Sparkles,
+  Sunrise,
   Tag,
   Trash2,
 } from "lucide-react";
@@ -57,6 +60,13 @@ interface ToolInfo {
 interface ToolGroup {
   title: string;
   tools: ToolInfo[];
+}
+
+interface PromptInfo {
+  name: string;
+  label: string;
+  blurb: string;
+  Icon: typeof Inbox;
 }
 
 const TOOL_GROUPS: ToolGroup[] = [
@@ -153,6 +163,44 @@ const TOOL_GROUPS: ToolGroup[] = [
         Icon: RefreshCw,
       },
     ],
+  },
+];
+
+const PROMPT_CATALOG: PromptInfo[] = [
+  {
+    name: "morning_recap",
+    label: "Morning recap",
+    blurb:
+      "Overnight HILUX activity, hot leads, escalations, and what to address first.",
+    Icon: Sunrise,
+  },
+  {
+    name: "draft_for_thread",
+    label: "Draft a reply for a thread",
+    blurb:
+      "Generate a HILUX-voice draft for a specific thread, then review before sending.",
+    Icon: Pencil,
+  },
+  {
+    name: "score_hot_leads",
+    label: "Review hot leads",
+    blurb:
+      "List every hot-scored inquiry with one-line summaries + next-action proposal.",
+    Icon: Flame,
+  },
+  {
+    name: "audit_settings",
+    label: "Audit HILUX settings",
+    blurb:
+      "Walk current toggles, flag anything contradictory, suggest 3 changes.",
+    Icon: Settings2,
+  },
+  {
+    name: "weekly_review",
+    label: "Weekly review",
+    blurb:
+      "7-day activity rollup + tuning recommendations for next week's toggles.",
+    Icon: CalendarDays,
   },
 ];
 
@@ -462,6 +510,34 @@ export function VendoraForClaudePanel() {
 
         {/* Live activity log — what Claude has done via this MCP. */}
         <McpCallLog />
+
+        {/* Prompts — slash-menu shortcuts in Claude.ai. */}
+        <div>
+          <p className="text-[11px] uppercase tracking-[0.2em] text-black/55 mb-2">
+            Quick prompts (Claude.ai slash menu)
+          </p>
+          <ul className="divide-y divide-black/10 rounded-xl bg-white/45 border border-black/5">
+            {PROMPT_CATALOG.map((p) => (
+              <li key={p.name} className="flex items-start gap-3 px-4 py-3">
+                <p.Icon className="w-4 h-4 text-black/55 shrink-0 mt-0.5" />
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-medium text-black leading-tight">
+                    {p.label}
+                  </p>
+                  <p className="text-[11px] text-black/55 mt-0.5 leading-snug">
+                    {p.blurb}
+                  </p>
+                </div>
+                <code className="text-[10px] text-black/45 font-mono mt-0.5 shrink-0">
+                  /{p.name}
+                </code>
+              </li>
+            ))}
+          </ul>
+          <p className="text-[11px] text-black/45 italic mt-2">
+            In Claude.ai, type <code className="bg-white/80 rounded px-1 py-0.5">/</code> to see these as autocomplete options once the connector is live.
+          </p>
+        </div>
 
         {/* Tool catalog */}
         <div>
