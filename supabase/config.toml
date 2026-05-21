@@ -9,6 +9,8 @@ project_id = "pahpjjubhbcbwqjpamwv"
     verify_jwt = true
   [functions.hilux-respond]
     verify_jwt = false
+  [functions.hilux-sandbox]
+    verify_jwt = true
   [functions.process-email-queue]
     verify_jwt = true
   [functions.scan-daily-digests]
