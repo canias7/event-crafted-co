@@ -139,6 +139,13 @@ const TOOL_GROUPS: ToolGroup[] = [
         Icon: Tag,
       },
       {
+        name: "compose_draft_reply",
+        label: "Compose a HILUX-style draft",
+        blurb:
+          "\"Draft a reply to Sarah, lean enthusiastic.\" — generates a reply in your HILUX voice without sending. Review then call send_reply if you like it.",
+        Icon: Pencil,
+      },
+      {
         name: "regenerate_last_hilux_reply",
         label: "Regenerate HILUX's last reply",
         blurb:
@@ -498,7 +505,7 @@ export function VendoraForClaudePanel() {
           </div>
           <p className="text-[11px] text-black/45 italic mt-2 inline-flex items-center gap-1">
             <CheckCircle2 className="w-3 h-3" />
-            11 tools live. Claude can read your inbox + take action on your
+            12 tools live. Claude can read your inbox + take action on your
             behalf with your approval (Claude clients prompt before any write).
           </p>
         </div>

@@ -116,7 +116,7 @@ const TOOLS = [
   {
     name: "list_inquiries",
     description:
-      "List the vendor's inquiries, newest first. Filter by status (new/replied/won/lost/expired) or lead_score (hot/warm/cold/unknown).",
+      "List the vendor's inquiries, newest first. Filter by status (new/replied/won/lost/expired) or lead_score (hot/warm/cold/unknown). For pagination, pass `cursor` set to the `next_cursor` from the previous response. Result includes `next_cursor` when there are more rows.",
     inputSchema: {
       type: "object",
       properties: {
@@ -129,6 +129,11 @@ const TOOLS = [
           enum: ["hot", "warm", "cold", "unknown"],
         },
         limit: { type: "integer", minimum: 1, maximum: 50, default: 20 },
+        cursor: {
+          type: "string",
+          description:
+            "ISO timestamp of the last seen row's last_message_at. Pass the next_cursor returned from the previous call.",
+        },
       },
     },
   },
@@ -230,6 +235,24 @@ const TOOLS = [
         },
         limit: { type: "integer", minimum: 1, maximum: 100, default: 25 },
       },
+    },
+  },
+  {
+    name: "compose_draft_reply",
+    description:
+      "Generate a HILUX-style draft reply for a thread WITHOUT sending it. Uses the same system prompt, voice samples, and toggles as the always-on agent, so the draft matches what HILUX would have written. Pass `instructions` to nudge the draft (e.g. 'lean technical', 'offer a 15% discount'). The vendor reviews the draft in Claude; call send_reply with the body if they approve.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        thread_id: { type: "string" },
+        instructions: {
+          type: "string",
+          description:
+            "Optional one-off override to layer on top of the vendor's saved HILUX instructions for this single draft.",
+          maxLength: 1000,
+        },
+      },
+      required: ["thread_id"],
     },
   },
   {
@@ -448,6 +471,8 @@ async function runTool(
       return await markInquiry(admin, userId, args);
     case "get_action_log":
       return await getActionLog(admin, userId, args);
+    case "compose_draft_reply":
+      return await composeDraftReply(admin, userId, args);
     case "regenerate_last_hilux_reply":
       return await regenerateLastHiluxReply(admin, userId, String(args.thread_id ?? ""));
     default:
@@ -468,22 +493,35 @@ async function listInquiries(
     .select("id, business_name")
     .eq("user_id", userId);
   const vendorIds = ((vendors ?? []) as Array<{ id: string }>).map((v) => v.id);
-  if (vendorIds.length === 0) return { inquiries: [] };
+  if (vendorIds.length === 0) return { inquiries: [], next_cursor: null };
 
   const limit = Math.min(Math.max(Number(args.limit) || 20, 1), 50);
+  // Cursor: ISO of last_message_at on the last row returned in
+  // the previous page. We fetch limit+1 so we know whether there's
+  // another page; the +1 is dropped before returning and its
+  // last_message_at becomes the next_cursor.
   let q = admin
     .from("inquiries")
     .select(
       "id, vendor_id, event_type, event_date, guest_count, location, budget_min_cents, budget_max_cents, special_requests, status, last_message_at, lead_score, lead_score_reason, lead_score_updated_at, created_at",
     )
     .in("vendor_id", vendorIds)
-    .order("last_message_at", { ascending: false })
-    .limit(limit);
+    .order("last_message_at", { ascending: false, nullsFirst: false })
+    .limit(limit + 1);
   if (typeof args.status === "string") q = q.eq("status", args.status);
   if (typeof args.lead_score === "string") q = q.eq("lead_score", args.lead_score);
+  if (typeof args.cursor === "string" && args.cursor) {
+    q = q.lt("last_message_at", args.cursor);
+  }
   const { data, error } = await q;
   if (error) throw error;
-  return { inquiries: data ?? [] };
+  const rows = (data as Array<{ last_message_at: string | null }> | null) ?? [];
+  let nextCursor: string | null = null;
+  if (rows.length > limit) {
+    rows.pop();
+    nextCursor = rows[rows.length - 1]?.last_message_at ?? null;
+  }
+  return { inquiries: rows, next_cursor: nextCursor };
 }
 
 async function getInquiry(admin: any, userId: string, inquiryId: string) {
@@ -796,4 +834,108 @@ async function regenerateLastHiluxReply(
     .eq("id", target.id);
   if (updErr) throw updErr;
   return { regenerated: true, message_id: target.id, length: reply.length };
+}
+
+async function composeDraftReply(
+  admin: any,
+  userId: string,
+  args: Record<string, any>,
+) {
+  const thread = await loadOwnedThread(admin, userId, String(args.thread_id ?? ""));
+  const overrideInstructions =
+    typeof args.instructions === "string" ? args.instructions.slice(0, 1000) : null;
+
+  const ctx = await loadVendorContext(admin, thread.vendor_id);
+  if (!ctx.vendor) throw new Error("vendor not found");
+
+  // Pull the full recent transcript (oldest→newest) so HILUX
+  // builds the draft from the same context the auto-reply path
+  // sees. We include is_hilux_generated so isFirstReply keys off
+  // the correct column.
+  const { data: history } = await admin
+    .from("direct_messages")
+    .select("sender_role, body, created_at, is_hilux_generated")
+    .eq("thread_id", thread.id)
+    .order("created_at", { ascending: false })
+    .limit(HISTORY_LIMIT);
+  const orderedHistory = ((history ?? []) as Array<{
+    sender_role: string;
+    body: string;
+    is_hilux_generated: boolean;
+  }>).slice().reverse();
+  if (
+    orderedHistory.length === 0 ||
+    orderedHistory[orderedHistory.length - 1].sender_role !== "host"
+  ) {
+    throw new Error("no host message to reply to");
+  }
+  const claudeMessages = orderedHistory.map((m) => ({
+    role: (m.sender_role === "host" ? "user" : "assistant") as "user" | "assistant",
+    content: m.body,
+  }));
+
+  let inquiryCtx: any = null;
+  if (thread.inquiry_id) {
+    const { data: inq } = await admin
+      .from("inquiries")
+      .select(
+        "event_type, event_date, guest_count, location, budget_min_cents, budget_max_cents, special_requests",
+      )
+      .eq("id", thread.inquiry_id)
+      .maybeSingle();
+    if (inq) {
+      const min = priceUsd(inq.budget_min_cents);
+      const max = priceUsd(inq.budget_max_cents);
+      const range = min && max ? `${min}–${max}` : min ?? max ?? null;
+      inquiryCtx = {
+        eventType: inq.event_type,
+        eventDate: inq.event_date,
+        guestCount: inq.guest_count,
+        location: inq.location,
+        budgetRangeUsd: range,
+        specialRequests: inq.special_requests,
+      };
+    }
+  }
+
+  const actions = ctx.profile?.actions ?? DEFAULT_ACTIONS;
+  // Stack the per-call override on top of the vendor's saved
+  // instructions so Claude can nudge the draft without permanently
+  // changing the agent's voice.
+  const baseInstructions = ctx.profile?.hilux_instructions ?? null;
+  const customInstructions = overrideInstructions
+    ? `${baseInstructions ?? ""}\n\nFor this draft only: ${overrideInstructions}`.trim()
+    : baseInstructions;
+
+  const systemText = buildSystemPrompt({
+    businessName: ctx.vendor.business_name ?? "this vendor",
+    category: ctx.vendor.category,
+    bio: ctx.vendor.bio,
+    location: ctx.vendor.location,
+    startingPriceUsd: priceUsd(ctx.vendor.base_price_cents),
+    customInstructions,
+    voiceSamples: ctx.profile?.hilux_voice_samples ?? [],
+    packages: ctx.packages,
+    faqs: ctx.faqs,
+    inquiry: inquiryCtx,
+    availability: ctx.availability,
+    actions,
+    hostFirstName: null,
+    greetingLine: ctx.profile?.hilux_greeting_line ?? null,
+    replyLength: ctx.profile?.hilux_reply_length ?? "medium",
+    isFirstReply: !orderedHistory.some(
+      (m) => m.is_hilux_generated === true,
+    ),
+  });
+
+  const reply = await callClaude(ANTHROPIC_API_KEY, systemText, claudeMessages);
+  // Strip the ESCALATE token if HILUX would have escalated — for
+  // a draft, we still want Claude to see the text.
+  const sanitized = reply.replace(/^\s*ESCALATE\s*:.*$/im, "").trim() || reply.trim();
+  return {
+    draft: sanitized,
+    length: sanitized.length,
+    would_escalate: /^\s*ESCALATE\s*:/i.test(reply),
+    thread_id: thread.id,
+  };
 }
