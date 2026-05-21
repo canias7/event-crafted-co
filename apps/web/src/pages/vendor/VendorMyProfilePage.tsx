@@ -484,6 +484,11 @@ function ListingDirectoryCard({
 // Read-only preview of a listing — mirrors the public detail page
 // at a glance so the vendor can confirm what visitors will see. No
 // edit affordances here; "Edit" lives on the page outside the modal.
+//
+// Lazily loads the full portfolio gallery on open so the preview
+// stays scrollable for listings with many photos. The modal body
+// itself scrolls (max-h-[90vh]) so the close affordance + status
+// pill stay anchored at the top of the dialog.
 function ListingPreviewModal({
   open,
   onOpenChange,
@@ -503,72 +508,152 @@ function ListingPreviewModal({
 }) {
   const name = listing.business_name ?? "Listing";
   const isApproved = listing.application_status === "approved";
+  const [galleryUrls, setGalleryUrls] = useState<string[]>([]);
+  const [galleryLoading, setGalleryLoading] = useState(false);
+
+  // Fetch the full portfolio for this listing on open. Cached in
+  // local state so re-opening the same modal doesn't refetch — but
+  // we clear on close to keep memory tight when the vendor flips
+  // through many listings.
+  useEffect(() => {
+    if (!open) {
+      setGalleryUrls([]);
+      return;
+    }
+    let cancelled = false;
+    setGalleryLoading(true);
+    (async () => {
+      const { data, error } = await supabase
+        .from("vendor_portfolio_images")
+        .select("storage_path, display_order, created_at")
+        .eq("vendor_id", listing.id)
+        .order("display_order", { ascending: true })
+        .order("created_at", { ascending: true });
+      if (cancelled) return;
+      if (error || !data) {
+        setGalleryLoading(false);
+        return;
+      }
+      const urls: string[] = [];
+      for (const row of data as Array<{ storage_path: string | null }>) {
+        if (!row.storage_path) continue;
+        const { data: pub } = supabase.storage
+          .from("vendor-portfolios")
+          .getPublicUrl(row.storage_path);
+        if (pub?.publicUrl) urls.push(pub.publicUrl);
+      }
+      if (!cancelled) {
+        setGalleryUrls(urls);
+        setGalleryLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [open, listing.id]);
+
+  // First image in the gallery doubles as the hero, so don't render
+  // it twice. Fall back to the `heroUrl` passed in (already loaded
+  // by the parent for the card cover) while the gallery query is
+  // still in flight.
+  const heroImage = galleryUrls[0] ?? heroUrl;
+  const restOfGallery = galleryUrls.slice(1);
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl rounded-sm p-0 overflow-hidden">
-        <div className="relative bg-muted aspect-[16/9]">
-          {heroUrl ? (
-            <img
-              src={heroUrl}
-              alt={name}
-              className="w-full h-full object-cover"
-            />
-          ) : (
-            <div className="w-full h-full flex items-center justify-center text-muted-foreground text-sm">
-              No listing photos yet
-            </div>
-          )}
-          <span
-            className={`absolute top-3 left-3 inline-flex items-center rounded-full border px-2.5 py-0.5 text-[10px] font-medium ${statusTone}`}
-          >
-            {statusLabel}
-          </span>
-        </div>
-        <div className="px-6 pt-5 pb-6">
-          <DialogHeader className="space-y-2">
-            <DialogTitle className="font-editorial text-3xl flex items-center gap-2">
-              {name}
-              {listing.verified_at ? (
-                <CheckCircle2
-                  className="w-5 h-5 text-emerald-600"
-                  aria-label="Verified"
-                />
-              ) : null}
-            </DialogTitle>
-            <DialogDescription className="text-sm text-muted-foreground">
-              {[listing.category, listing.location].filter(Boolean).join(" · ") ||
-                "Category and location not set"}
-            </DialogDescription>
-          </DialogHeader>
+      <DialogContent className="max-w-4xl rounded-sm p-0 overflow-hidden max-h-[92vh] flex flex-col">
+        <div className="overflow-y-auto">
+          <div className="relative bg-muted aspect-[16/9]">
+            {heroImage ? (
+              <img
+                src={heroImage}
+                alt={name}
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center text-muted-foreground text-sm">
+                No listing photos yet
+              </div>
+            )}
+            <span
+              className={`absolute top-3 left-3 inline-flex items-center rounded-full border px-2.5 py-0.5 text-[10px] font-medium ${statusTone}`}
+            >
+              {statusLabel}
+            </span>
+          </div>
+          <div className="px-6 pt-5 pb-6">
+            <DialogHeader className="space-y-2 text-left">
+              <DialogTitle className="font-editorial text-3xl flex items-center gap-2">
+                {name}
+                {listing.verified_at ? (
+                  <CheckCircle2
+                    className="w-5 h-5 text-emerald-600"
+                    aria-label="Verified"
+                  />
+                ) : null}
+              </DialogTitle>
+              <DialogDescription className="text-sm text-muted-foreground">
+                {[listing.category, listing.location].filter(Boolean).join(" · ") ||
+                  "Category and location not set"}
+              </DialogDescription>
+            </DialogHeader>
 
-          {price ? (
-            <p className="mt-3 text-sm font-medium tnum">{price}</p>
-          ) : null}
+            {price ? (
+              <p className="mt-3 text-sm font-medium tnum">{price}</p>
+            ) : null}
 
-          {listing.bio ? (
-            <p className="mt-4 text-sm text-foreground/85 leading-relaxed whitespace-pre-wrap">
-              {listing.bio}
-            </p>
-          ) : (
-            <p className="mt-4 text-sm text-muted-foreground italic">
-              No description yet — add one in Edit profile so visitors
-              know what you offer.
-            </p>
-          )}
+            {listing.bio ? (
+              <p className="mt-4 text-sm text-foreground/85 leading-relaxed whitespace-pre-wrap">
+                {listing.bio}
+              </p>
+            ) : (
+              <p className="mt-4 text-sm text-muted-foreground italic">
+                No description yet — add one in Edit profile so visitors
+                know what you offer.
+              </p>
+            )}
 
-          {isApproved ? (
-            <div className="mt-6 pt-4 border-t border-border flex items-center justify-end">
-              <a
-                href={`/vendors/${listing.slug ?? listing.id}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
-              >
-                Open public page
-                <ExternalLink className="w-3 h-3" />
-              </a>
-            </div>
-          ) : null}
+            {/* Rest of the portfolio. Stacked vertically at full width
+                so each photo is large enough to actually preview. */}
+            {restOfGallery.length > 0 ? (
+              <div className="mt-6 space-y-3">
+                <p className="font-label text-muted-foreground text-xs">
+                  Gallery ({galleryUrls.length} photos)
+                </p>
+                {restOfGallery.map((url, idx) => (
+                  <div
+                    key={`${url}-${idx}`}
+                    className="relative bg-muted aspect-[4/3] rounded-sm overflow-hidden"
+                  >
+                    <img
+                      src={url}
+                      alt={`${name} — photo ${idx + 2}`}
+                      loading="lazy"
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                ))}
+              </div>
+            ) : galleryLoading && !heroImage ? (
+              <p className="mt-6 text-xs text-muted-foreground">
+                Loading photos…
+              </p>
+            ) : null}
+
+            {isApproved ? (
+              <div className="mt-6 pt-4 border-t border-border flex items-center justify-end">
+                <a
+                  href={`/vendors/${listing.slug ?? listing.id}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  Open public page
+                  <ExternalLink className="w-3 h-3" />
+                </a>
+              </div>
+            ) : null}
+          </div>
         </div>
       </DialogContent>
     </Dialog>
