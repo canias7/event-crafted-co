@@ -111,41 +111,90 @@ export default function VendorSubscriptionPage() {
     }
   }, [search, setSearch, load]);
 
-  async function upgrade() {
-    if (!vendorId || acting) return;
-    setActing("upgrade");
-    const { data, error } = await supabase.functions.invoke(
-      "stripe-subscription-checkout",
-      { body: { vendor_id: vendorId } },
-    );
-    setActing(null);
+  // Navigates to a Stripe-hosted URL after a roundtrip to an edge
+  // function that mints the URL. Handles three quirks that bit us in
+  // production:
+  //
+  //   1. iOS PWA standalone mode: window.location.href to a different
+  //      origin (checkout.stripe.com) doesn't reliably navigate the
+  //      installed app — the user appears to "click and nothing
+  //      happens." Opening in a fresh tab/window pops out of the PWA
+  //      sandbox into Safari proper, which works.
+  //   2. Popup blockers: window.open AFTER an async await has had its
+  //      user-gesture bit consumed, so the popup gets blocked. The
+  //      fix is to open "about:blank" synchronously at click time
+  //      while the gesture is still live, then redirect that handle
+  //      once the URL is in hand.
+  //   3. Supabase functions.invoke surfaces non-2xx as a generic
+  //      "Edge function returned a non-2xx status code" — useless
+  //      when the user needs to know it was actually "vendor admin
+  //      role required" or "already subscribed." We re-parse the
+  //      body to pull the real `error` field through to the toast.
+  async function callStripeFunction(
+    functionName: string,
+    body: Record<string, unknown>,
+    fallbackError: string,
+  ): Promise<string | null> {
+    const popup = window.open("about:blank", "_blank");
+    const { data, error } = await supabase.functions.invoke(functionName, {
+      body,
+    });
     if (error) {
-      toast.error(error.message ?? "Couldn't start checkout");
-      return;
+      // FunctionsHttpError exposes the raw Response on .context — pull
+      // the JSON `error` field out so the toast shows the real reason.
+      let msg = error.message ?? fallbackError;
+      const ctx = (error as { context?: Response }).context;
+      if (ctx && typeof ctx.text === "function") {
+        try {
+          const text = await ctx.text();
+          const parsed = JSON.parse(text);
+          if (parsed?.error) msg = String(parsed.error);
+        } catch {
+          // body wasn't json — keep msg as-is.
+        }
+      }
+      if (popup && !popup.closed) popup.close();
+      toast.error(msg);
+      return null;
     }
     const url = (data as { url?: string } | null)?.url;
     if (!url) {
-      toast.error("Stripe didn't return a checkout URL");
-      return;
+      if (popup && !popup.closed) popup.close();
+      toast.error("Stripe didn't return a URL");
+      return null;
     }
+    if (popup && !popup.closed) {
+      popup.location.href = url;
+      return url;
+    }
+    // Popup blocked. Fall back to same-tab navigation — works
+    // everywhere except iOS PWA, which is the case the popup was
+    // there to handle. Users in that bucket may still see a no-op;
+    // we'd need a different (in-PWA browser sheet) UX to fix that.
     window.location.href = url;
+    return url;
+  }
+
+  async function upgrade() {
+    if (!vendorId || acting) return;
+    setActing("upgrade");
+    await callStripeFunction(
+      "stripe-subscription-checkout",
+      { vendor_id: vendorId },
+      "Couldn't start checkout",
+    );
+    setActing(null);
   }
 
   async function openPortal() {
     if (!vendorId || acting) return;
     setActing("portal");
-    const { data, error } = await supabase.functions.invoke(
+    await callStripeFunction(
       "stripe-customer-portal",
-      { body: { vendor_id: vendorId } },
+      { vendor_id: vendorId },
+      "Couldn't open portal",
     );
     setActing(null);
-    if (error) {
-      toast.error(error.message ?? "Couldn't open portal");
-      return;
-    }
-    const url = (data as { url?: string } | null)?.url;
-    if (!url) return;
-    window.location.href = url;
   }
 
   const isPro = plan?.tier === "pro";
