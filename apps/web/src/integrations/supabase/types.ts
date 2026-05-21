@@ -1369,6 +1369,13 @@ export type Database = {
           category: string | null
           created_at: string
           display_name: string | null
+          hilux_action_escalate: boolean
+          hilux_action_follow_up: boolean
+          hilux_action_match_language: boolean
+          hilux_action_use_calendar: boolean
+          hilux_enabled: boolean
+          hilux_instructions: string | null
+          hilux_voice_samples: string[]
           id: string
           location: string | null
           logo_url: string | null
@@ -1389,6 +1396,13 @@ export type Database = {
           category?: string | null
           created_at?: string
           display_name?: string | null
+          hilux_action_escalate?: boolean
+          hilux_action_follow_up?: boolean
+          hilux_action_match_language?: boolean
+          hilux_action_use_calendar?: boolean
+          hilux_enabled?: boolean
+          hilux_instructions?: string | null
+          hilux_voice_samples?: string[]
           id: string
           location?: string | null
           logo_url?: string | null
@@ -1409,6 +1423,13 @@ export type Database = {
           category?: string | null
           created_at?: string
           display_name?: string | null
+          hilux_action_escalate?: boolean
+          hilux_action_follow_up?: boolean
+          hilux_action_match_language?: boolean
+          hilux_action_use_calendar?: boolean
+          hilux_enabled?: boolean
+          hilux_instructions?: string | null
+          hilux_voice_samples?: string[]
           id?: string
           location?: string | null
           logo_url?: string | null
