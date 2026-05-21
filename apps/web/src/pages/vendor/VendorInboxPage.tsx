@@ -100,6 +100,10 @@ export default function VendorInboxPage() {
   const [rows, setRows] = useState<InquiryRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  // Lead-temperature filter pills. "all" = no filter.
+  const [leadFilter, setLeadFilter] = useState<"all" | "hot" | "warm" | "cold">(
+    "all",
+  );
 
   async function load(forVendorIds?: string[]) {
     const vids = forVendorIds ?? vendorIds;
@@ -145,17 +149,29 @@ export default function VendorInboxPage() {
     return () => clearInterval(id);
   }, []);
 
+  const leadCounts = useMemo(() => {
+    const c = { hot: 0, warm: 0, cold: 0 };
+    for (const r of rows) {
+      if (r.lead_score === "hot") c.hot++;
+      else if (r.lead_score === "warm") c.warm++;
+      else if (r.lead_score === "cold") c.cold++;
+    }
+    return c;
+  }, [rows]);
+
   const filteredRows = useMemo(() => {
     const q = search.trim().toLowerCase();
-    if (!q) return rows;
-    return rows.filter(
-      (r) =>
+    return rows.filter((r) => {
+      if (leadFilter !== "all" && r.lead_score !== leadFilter) return false;
+      if (!q) return true;
+      return (
         r.host?.display_name?.toLowerCase().includes(q) ||
         r.event_type?.toLowerCase().includes(q) ||
         r.event_date?.toLowerCase().includes(q) ||
-        r.location?.toLowerCase().includes(q),
-    );
-  }, [rows, search]);
+        r.location?.toLowerCase().includes(q)
+      );
+    });
+  }, [rows, search, leadFilter]);
 
   // Realtime: subscribe to the user-scoped channel and refetch when
   // ANY inquiry changes. The shared user channel only delivers events
@@ -189,7 +205,7 @@ export default function VendorInboxPage() {
         </div>
 
         <div className="p-4 md:p-8 max-w-3xl">
-          <div className="relative mb-4">
+          <div className="relative mb-3">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               value={search}
@@ -197,6 +213,38 @@ export default function VendorInboxPage() {
               placeholder="Search by host, event type, location, or date"
               className="pl-9 rounded-full bg-secondary/50 border-transparent focus-visible:ring-1"
             />
+          </div>
+
+          {/* Lead-temperature filter pills. Counts come from the
+              unfiltered rows so the vendor can see at a glance how
+              many hot leads they have without clicking through. */}
+          <div className="mb-4 flex items-center gap-1.5 overflow-x-auto">
+            {([
+              { key: "all", label: "All", count: rows.length, dot: "" },
+              { key: "hot", label: "Hot", count: leadCounts.hot, dot: "bg-rose-500" },
+              { key: "warm", label: "Warm", count: leadCounts.warm, dot: "bg-amber-500" },
+              { key: "cold", label: "Cold", count: leadCounts.cold, dot: "bg-sky-500" },
+            ] as const).map((pill) => {
+              const active = leadFilter === pill.key;
+              return (
+                <button
+                  key={pill.key}
+                  type="button"
+                  onClick={() => setLeadFilter(pill.key)}
+                  className={`shrink-0 inline-flex items-center gap-1.5 text-[12px] px-3 py-1.5 rounded-full border transition-colors ${
+                    active
+                      ? "bg-foreground text-background border-foreground"
+                      : "bg-secondary/50 text-foreground/75 border-transparent hover:bg-secondary"
+                  }`}
+                >
+                  {pill.dot ? (
+                    <span className={`w-1.5 h-1.5 rounded-full ${pill.dot}`} />
+                  ) : null}
+                  {pill.label}
+                  <span className="tabular-nums opacity-70">{pill.count}</span>
+                </button>
+              );
+            })}
           </div>
 
           {loading ? (

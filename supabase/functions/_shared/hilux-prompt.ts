@@ -52,6 +52,10 @@ export interface HiluxPromptCtx {
   location: string | null;
   startingPriceUsd: string | null;
   customInstructions: string | null;
+  // Past replies the vendor has actually sent. Used as style examples
+  // so HILUX matches the vendor's voice (cadence, vocab, tone) instead
+  // of sounding like a generic chatbot. Capped to ~5 samples.
+  voiceSamples: string[];
   packages: PackageCtx[];
   faqs: FaqCtx[];
   inquiry: InquiryCtx | null;
@@ -178,6 +182,21 @@ export function buildSystemPrompt(ctx: HiluxPromptCtx): string {
     lines.push(
       `- For dates in range that are NOT in the busy list and NOT a recurring closed day, treat them as open and confirm availability directly.`,
     );
+  }
+
+  if (ctx.voiceSamples && ctx.voiceSamples.length > 0) {
+    lines.push("");
+    lines.push(
+      "VENDOR'S VOICE — these are real replies this vendor has previously sent. Match this style, cadence, vocabulary, punctuation habits, and personality EXACTLY. Don't quote them, but write like the same person wrote them:",
+    );
+    for (let i = 0; i < ctx.voiceSamples.length; i++) {
+      const sample = (ctx.voiceSamples[i] ?? "").trim();
+      if (!sample) continue;
+      lines.push(`---`);
+      lines.push(`Example ${i + 1}:`);
+      lines.push(sample);
+    }
+    lines.push("---");
   }
 
   if (ctx.customInstructions && ctx.customInstructions.trim().length > 0) {
@@ -361,6 +380,7 @@ export async function loadVendorContext(
     base_price_cents: number | null;
     hilux_enabled: boolean;
     hilux_instructions: string | null;
+    hilux_voice_samples: string[];
   } | null;
   packages: PackageCtx[];
   faqs: FaqCtx[];
@@ -369,7 +389,7 @@ export async function loadVendorContext(
   const { data: vendor } = await admin
     .from("vendor_profiles")
     .select(
-      "id, user_id, business_name, category, bio, base_price_cents, location, hilux_enabled, hilux_instructions",
+      "id, user_id, business_name, category, bio, base_price_cents, location, hilux_enabled, hilux_instructions, hilux_voice_samples",
     )
     .eq("id", vendorId)
     .maybeSingle();

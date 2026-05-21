@@ -153,6 +153,7 @@ serve(async (req) => {
       location: ctx.vendor.location,
       startingPriceUsd: priceUsd(ctx.vendor.base_price_cents),
       customInstructions: ctx.vendor.hilux_instructions ?? null,
+      voiceSamples: ctx.vendor.hilux_voice_samples ?? [],
       packages: ctx.packages,
       faqs: ctx.faqs,
       inquiry: inquiryCtx,
