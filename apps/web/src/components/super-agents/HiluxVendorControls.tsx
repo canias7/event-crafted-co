@@ -3,7 +3,7 @@
 // training sub-panel. All config saves go to `profiles` (HILUX is
 // one agent per user, not per listing).
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   Archive,
   Bell,
@@ -24,7 +24,6 @@ import {
   Mail,
   ScrollText,
   Sunrise,
-  HandHeart,
   HelpCircle,
   Image as ImageIcon,
   Inbox,
@@ -34,7 +33,6 @@ import {
   Phone,
   Quote,
   RotateCcw,
-  Ruler,
   Search as SearchIcon,
   Send,
   Shield,
@@ -93,12 +91,8 @@ type ActionKey =
   | "hilux_action_detect_booking_intent"
   | "hilux_action_log_actions";
 
-export type HiluxReplyLength = "short" | "medium" | "long";
-
 type HiluxProfileRow = {
   hilux_enabled: boolean;
-  hilux_greeting_line: string | null;
-  hilux_reply_length: HiluxReplyLength;
 } & Record<ActionKey, boolean>;
 
 interface ActionDef {
@@ -176,17 +170,15 @@ export function HiluxVendorControls() {
   const [profile, setProfile] = useState<HiluxProfileRow | null>(null);
   const [expanded, setExpanded] = useState(false);
   const [savingKey, setSavingKey] = useState<string | null>(null);
-  const [draftGreeting, setDraftGreeting] = useState("");
   const [query, setQuery] = useState("");
   const [resetting, setResetting] = useState(false);
-  const greetingSaveTimer = useRef<number | null>(null);
 
   const load = useCallback(async () => {
     if (!user?.id) return;
     const { data, error } = await supabase
       .from("profiles")
       .select(
-        "hilux_enabled, hilux_greeting_line, hilux_reply_length, hilux_action_follow_up, hilux_action_quiet_hours, hilux_action_pause_weekends, hilux_action_skip_when_active, hilux_action_use_calendar, hilux_action_escalate, hilux_action_detect_frustration, hilux_action_mention_starting_price, hilux_action_suggest_package, hilux_action_decline_negotiation, hilux_action_avoid_competitors, hilux_action_send_portfolio_link, hilux_action_offer_call, hilux_action_share_booking_process, hilux_action_echo_question, hilux_action_acknowledge_emotion, hilux_action_lead_with_question, hilux_action_refuse_legal, hilux_action_refuse_competitor_pricing, hilux_action_no_other_clients, hilux_action_redact_contact, hilux_action_auto_mark_replied, hilux_action_notify_on_reply, hilux_action_update_inquiry_fields, hilux_action_notify_on_escalation, hilux_action_notify_on_hot_lead, hilux_action_email_reply_copies, hilux_action_auto_archive_cold, hilux_action_daily_summary, hilux_action_cap_replies_per_inquiry, hilux_action_detect_booking_intent, hilux_action_log_actions",
+        "hilux_enabled, hilux_action_follow_up, hilux_action_quiet_hours, hilux_action_pause_weekends, hilux_action_skip_when_active, hilux_action_use_calendar, hilux_action_escalate, hilux_action_detect_frustration, hilux_action_mention_starting_price, hilux_action_suggest_package, hilux_action_decline_negotiation, hilux_action_avoid_competitors, hilux_action_send_portfolio_link, hilux_action_offer_call, hilux_action_share_booking_process, hilux_action_echo_question, hilux_action_acknowledge_emotion, hilux_action_lead_with_question, hilux_action_refuse_legal, hilux_action_refuse_competitor_pricing, hilux_action_no_other_clients, hilux_action_redact_contact, hilux_action_auto_mark_replied, hilux_action_notify_on_reply, hilux_action_update_inquiry_fields, hilux_action_notify_on_escalation, hilux_action_notify_on_hot_lead, hilux_action_email_reply_copies, hilux_action_auto_archive_cold, hilux_action_daily_summary, hilux_action_cap_replies_per_inquiry, hilux_action_detect_booking_intent, hilux_action_log_actions",
       )
       .eq("id", user.id)
       .maybeSingle();
@@ -197,8 +189,6 @@ export function HiluxVendorControls() {
     }
     const row = (data as HiluxProfileRow | null) ?? ({
       hilux_enabled: false,
-      hilux_greeting_line: null,
-      hilux_reply_length: "medium",
       hilux_action_follow_up: true,
       hilux_action_quiet_hours: false,
       hilux_action_pause_weekends: false,
@@ -233,7 +223,6 @@ export function HiluxVendorControls() {
       hilux_action_log_actions: false,
     } satisfies HiluxProfileRow);
     setProfile(row);
-    setDraftGreeting(row.hilux_greeting_line ?? "");
   }, [user?.id]);
 
   useEffect(() => {
@@ -269,32 +258,12 @@ export function HiluxVendorControls() {
     await persist({ [key]: next } as Partial<HiluxProfileRow>, key);
   };
 
-  const onGreetingChange = (value: string) => {
-    setDraftGreeting(value);
-    if (greetingSaveTimer.current) window.clearTimeout(greetingSaveTimer.current);
-    greetingSaveTimer.current = window.setTimeout(() => {
-      const trimmed = value.trim();
-      persist(
-        { hilux_greeting_line: trimmed.length === 0 ? null : trimmed },
-        "greeting",
-      );
-    }, 700);
-  };
-
-  const setReplyLength = async (next: HiluxReplyLength) => {
-    await persist({ hilux_reply_length: next }, "reply_length");
-  };
-
-  // Reset toggles + reply length + greeting to defaults. Custom
-  // instructions stay (those are the vendor's own writing; resetting
-  // them would feel destructive).
+  // Reset all action toggles to defaults.
   const resetToDefaults = async () => {
     if (!user?.id) return;
-    if (!confirm("Reset all action toggles and length/greeting to defaults? Your custom instructions stay.")) return;
+    if (!confirm("Reset all action toggles to defaults?")) return;
     setResetting(true);
     const patch: Partial<HiluxProfileRow> = {
-      hilux_greeting_line: null,
-      hilux_reply_length: "medium",
       hilux_action_follow_up: true,
       hilux_action_quiet_hours: false,
       hilux_action_pause_weekends: false,
@@ -339,7 +308,6 @@ export function HiluxVendorControls() {
       return;
     }
     setProfile((prev) => (prev ? { ...prev, ...patch } as HiluxProfileRow : prev));
-    setDraftGreeting("");
     toast.success("Reset to defaults.");
   };
 
@@ -403,62 +371,6 @@ export function HiluxVendorControls() {
 
         {expanded ? (
           <div className="border-t border-black/10 p-5 md:p-6 space-y-6 bg-white/30">
-            {/* Greeting line + reply length — two compact controls
-                that shape every reply HILUX writes. Greeting is a
-                free-text opener used on the FIRST reply only;
-                replyLength tunes the "X short sentences" target. */}
-            <div className="grid md:grid-cols-2 gap-4">
-              <div>
-                <div className="flex items-center gap-2 mb-2">
-                  <HandHeart className="w-3.5 h-3.5 text-black/55" />
-                  <p className="text-[11px] uppercase tracking-[0.2em] text-black/55">
-                    Custom greeting (first reply)
-                  </p>
-                </div>
-                <Input
-                  value={draftGreeting}
-                  onChange={(e) => onGreetingChange(e.target.value.slice(0, 200))}
-                  placeholder="e.g. Hey there! Thanks for reaching out —"
-                  className="bg-white/70 text-sm text-black"
-                  maxLength={200}
-                />
-                <p className="text-[11px] text-black/45 mt-1">
-                  Used verbatim on the first HILUX reply in a thread. Leave blank for HILUX to write its own opener.
-                </p>
-              </div>
-              <div>
-                <div className="flex items-center gap-2 mb-2">
-                  <Ruler className="w-3.5 h-3.5 text-black/55" />
-                  <p className="text-[11px] uppercase tracking-[0.2em] text-black/55">
-                    Reply length
-                  </p>
-                </div>
-                <div className="grid grid-cols-3 gap-1.5 rounded-lg bg-white/55 p-1">
-                  {(["short", "medium", "long"] as const).map((opt) => {
-                    const active = (profile?.hilux_reply_length ?? "medium") === opt;
-                    return (
-                      <button
-                        key={opt}
-                        type="button"
-                        onClick={() => setReplyLength(opt)}
-                        disabled={savingKey === "reply_length"}
-                        className={`text-xs font-medium capitalize py-1.5 rounded-md transition-colors ${
-                          active
-                            ? "bg-black text-white"
-                            : "text-black/70 hover:bg-white/70"
-                        }`}
-                      >
-                        {opt}
-                      </button>
-                    );
-                  })}
-                </div>
-                <p className="text-[11px] text-black/45 mt-1">
-                  Short: 1–2 sentences · Medium: 2–4 · Long: 3–6.
-                </p>
-              </div>
-            </div>
-
             {/* Tool permissions — connector-style. Header + subtitle
                 like Sentry/Stripe connector panels, then sub-groups
                 with a count chip and a search field above. */}
@@ -477,7 +389,7 @@ export function HiluxVendorControls() {
                   onClick={resetToDefaults}
                   disabled={resetting}
                   className="shrink-0 inline-flex items-center gap-1 text-[11px] text-black/55 hover:text-black/85 transition-colors"
-                  title="Reset toggles + greeting + length to defaults"
+                  title="Reset all toggles to defaults"
                 >
                   {resetting ? (
                     <Loader2 className="w-3 h-3 animate-spin" />

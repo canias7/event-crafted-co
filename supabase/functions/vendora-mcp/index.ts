@@ -368,8 +368,6 @@ const TOOLS = [
       type: "object",
       properties: {
         enabled: { type: "boolean" },
-        greeting_line: { type: ["string", "null"] },
-        reply_length: { type: "string", enum: ["short", "medium", "long"] },
         actions: {
           type: "object",
           additionalProperties: { type: "boolean" },
@@ -1240,7 +1238,7 @@ async function getHiluxSettings(admin: any, userId: string) {
     admin
       .from("profiles")
       .select(
-        "hilux_enabled, hilux_greeting_line, hilux_reply_length, hilux_action_follow_up, hilux_action_quiet_hours, hilux_action_pause_weekends, hilux_action_skip_when_active, hilux_action_use_calendar, hilux_action_escalate, hilux_action_detect_frustration, hilux_action_mention_starting_price, hilux_action_suggest_package, hilux_action_decline_negotiation, hilux_action_avoid_competitors, hilux_action_send_portfolio_link, hilux_action_offer_call, hilux_action_share_booking_process, hilux_action_echo_question, hilux_action_acknowledge_emotion, hilux_action_lead_with_question, hilux_action_refuse_legal, hilux_action_refuse_competitor_pricing, hilux_action_no_other_clients, hilux_action_redact_contact, hilux_action_auto_mark_replied, hilux_action_notify_on_reply, hilux_action_update_inquiry_fields, hilux_action_notify_on_escalation, hilux_action_notify_on_hot_lead, hilux_action_email_reply_copies, hilux_action_auto_archive_cold, hilux_action_daily_summary, hilux_action_cap_replies_per_inquiry, hilux_action_detect_booking_intent, hilux_action_log_actions",
+        "hilux_enabled, hilux_action_follow_up, hilux_action_quiet_hours, hilux_action_pause_weekends, hilux_action_skip_when_active, hilux_action_use_calendar, hilux_action_escalate, hilux_action_detect_frustration, hilux_action_mention_starting_price, hilux_action_suggest_package, hilux_action_decline_negotiation, hilux_action_avoid_competitors, hilux_action_send_portfolio_link, hilux_action_offer_call, hilux_action_share_booking_process, hilux_action_echo_question, hilux_action_acknowledge_emotion, hilux_action_lead_with_question, hilux_action_refuse_legal, hilux_action_refuse_competitor_pricing, hilux_action_no_other_clients, hilux_action_redact_contact, hilux_action_auto_mark_replied, hilux_action_notify_on_reply, hilux_action_update_inquiry_fields, hilux_action_notify_on_escalation, hilux_action_notify_on_hot_lead, hilux_action_email_reply_copies, hilux_action_auto_archive_cold, hilux_action_daily_summary, hilux_action_cap_replies_per_inquiry, hilux_action_detect_booking_intent, hilux_action_log_actions",
       )
       .eq("id", userId)
       .maybeSingle(),
@@ -1506,17 +1504,6 @@ async function updateHiluxSettings(
 ) {
   const patch: Record<string, any> = {};
   if (typeof args.enabled === "boolean") patch.hilux_enabled = args.enabled;
-  if ("greeting_line" in args) {
-    const v = args.greeting_line;
-    if (v === null) patch.hilux_greeting_line = null;
-    else if (typeof v === "string") {
-      const trimmed = v.trim().slice(0, 200);
-      patch.hilux_greeting_line = trimmed.length === 0 ? null : trimmed;
-    }
-  }
-  if (typeof args.reply_length === "string" && ["short", "medium", "long"].includes(args.reply_length)) {
-    patch.hilux_reply_length = args.reply_length;
-  }
   if (args.actions && typeof args.actions === "object") {
     for (const [k, v] of Object.entries(args.actions)) {
       if (typeof v !== "boolean") continue;
@@ -1653,8 +1640,6 @@ async function regenerateLastHiluxReply(
     availability: ctx.availability,
     actions,
     hostFirstName: null,
-    greetingLine: ctx.profile?.hilux_greeting_line ?? null,
-    replyLength: ctx.profile?.hilux_reply_length ?? "medium",
     isFirstReply: !orderedHistory.some(
       (m: any) => m.sender_role === "vendor" && m.is_hilux_generated === true,
     ),
@@ -1762,8 +1747,6 @@ async function composeDraftReply(
     availability: ctx.availability,
     actions,
     hostFirstName: null,
-    greetingLine: ctx.profile?.hilux_greeting_line ?? null,
-    replyLength: ctx.profile?.hilux_reply_length ?? "medium",
     isFirstReply: !orderedHistory.some(
       (m) => m.is_hilux_generated === true,
     ),

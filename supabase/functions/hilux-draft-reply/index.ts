@@ -158,8 +158,6 @@ serve(async (req) => {
       availability: ctx.availability,
       actions,
       hostFirstName,
-      greetingLine: ctx.profile?.hilux_greeting_line ?? null,
-      replyLength: ctx.profile?.hilux_reply_length ?? "medium",
       isFirstReply: !orderedHistory.some((m) => m.is_hilux_generated === true),
     });
 
