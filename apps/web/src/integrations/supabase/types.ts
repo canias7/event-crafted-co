@@ -3343,6 +3343,7 @@ export type Database = {
           geocoded_location: string | null
           hilux_enabled: boolean
           hilux_instructions: string | null
+          hilux_voice_samples: string[]
           id: string
           instagram_handle: string | null
           intro_video_url: string | null
@@ -3390,6 +3391,7 @@ export type Database = {
           geocoded_location?: string | null
           hilux_enabled?: boolean
           hilux_instructions?: string | null
+          hilux_voice_samples?: string[]
           id?: string
           instagram_handle?: string | null
           intro_video_url?: string | null
@@ -3437,6 +3439,7 @@ export type Database = {
           geocoded_location?: string | null
           hilux_enabled?: boolean
           hilux_instructions?: string | null
+          hilux_voice_samples?: string[]
           id?: string
           instagram_handle?: string | null
           intro_video_url?: string | null
@@ -4038,6 +4041,7 @@ export type Database = {
           geocoded_location: string | null
           hilux_enabled: boolean
           hilux_instructions: string | null
+          hilux_voice_samples: string[]
           id: string
           instagram_handle: string | null
           intro_video_url: string | null
