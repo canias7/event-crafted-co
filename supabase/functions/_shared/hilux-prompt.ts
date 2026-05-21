@@ -463,7 +463,7 @@ export async function scoreLead(
     inquiry: InquiryCtx | null;
     transcript: Array<{ role: "user" | "assistant"; content: string }>;
   },
-): Promise<LeadScoreResult> {
+): Promise<LeadScoreResult & { usage?: ClaudeUsage }> {
   if (!apiKey) return { score: "unknown", reason: "no_api_key" };
   const lines: string[] = [];
   lines.push(
@@ -507,12 +507,21 @@ export async function scoreLead(
     }
     const body = (await res.json()) as any;
     const raw = ((body.content ?? []) as any[]).filter((b) => b.type === "text").map((b) => b.text).join("\n").trim();
+    const u = body.usage ?? {};
+    const usage: ClaudeUsage = {
+      input_tokens: Number(u.input_tokens) || 0,
+      output_tokens: Number(u.output_tokens) || 0,
+      cache_creation_tokens: Number(u.cache_creation_input_tokens) || 0,
+      cache_read_tokens: Number(u.cache_read_input_tokens) || 0,
+    };
     const jsonish = raw.replace(/^```(?:json)?/, "").replace(/```$/, "").trim();
     const parsed = JSON.parse(jsonish);
     const score = String(parsed?.score ?? "").toLowerCase();
-    if (!["hot", "warm", "cold", "unknown"].includes(score)) return { score: "unknown", reason: "unparseable_score" };
+    if (!["hot", "warm", "cold", "unknown"].includes(score)) {
+      return { score: "unknown", reason: "unparseable_score", usage };
+    }
     const reason = String(parsed?.reason ?? "").trim().slice(0, 240);
-    return { score: score as LeadScoreResult["score"], reason: reason || "no_reason" };
+    return { score: score as LeadScoreResult["score"], reason: reason || "no_reason", usage };
   } catch (err) {
     console.error("[scoreLead] uncaught", err);
     return { score: "unknown", reason: "scoring_exception" };
@@ -535,7 +544,7 @@ export async function detectBookingIntent(
     businessName: string;
     transcript: Array<{ role: "user" | "assistant"; content: string }>;
   },
-): Promise<BookingIntentResult> {
+): Promise<BookingIntentResult & { usage?: ClaudeUsage }> {
   if (!apiKey) return { detected: false, reason: "no_api_key" };
   const lastHost = [...ctx.transcript].reverse().find((m) => m.role === "user");
   if (!lastHost) return { detected: false, reason: "no_host_message" };
@@ -568,11 +577,18 @@ Output ONLY a JSON object on one line: {"detected": true|false, "reason": "<shor
       .map((b) => b.text)
       .join("\n")
       .trim();
+    const u = body.usage ?? {};
+    const usage: ClaudeUsage = {
+      input_tokens: Number(u.input_tokens) || 0,
+      output_tokens: Number(u.output_tokens) || 0,
+      cache_creation_tokens: Number(u.cache_creation_input_tokens) || 0,
+      cache_read_tokens: Number(u.cache_read_input_tokens) || 0,
+    };
     const jsonish = raw.replace(/^```(?:json)?/, "").replace(/```$/, "").trim();
     const parsed = JSON.parse(jsonish);
     const detected = parsed?.detected === true;
     const reason = String(parsed?.reason ?? "").trim().slice(0, 200);
-    return { detected, reason: reason || (detected ? "detected" : "no_signal") };
+    return { detected, reason: reason || (detected ? "detected" : "no_signal"), usage };
   } catch (err) {
     console.error("[detectBookingIntent] error", err);
     return { detected: false, reason: "intent_exception" };
@@ -601,7 +617,7 @@ export async function extractInquiryFields(
     transcript: Array<{ role: "user" | "assistant"; content: string }>;
     todayIso: string;
   },
-): Promise<ExtractedInquiryFields> {
+): Promise<ExtractedInquiryFields & { _usage?: ClaudeUsage }> {
   if (!apiKey) return {};
   if (ctx.transcript.length === 0) return {};
 
@@ -650,10 +666,17 @@ No markdown. No prose outside the JSON.`;
       .map((b) => b.text)
       .join("\n")
       .trim();
+    const u = body.usage ?? {};
+    const usage: ClaudeUsage = {
+      input_tokens: Number(u.input_tokens) || 0,
+      output_tokens: Number(u.output_tokens) || 0,
+      cache_creation_tokens: Number(u.cache_creation_input_tokens) || 0,
+      cache_read_tokens: Number(u.cache_read_input_tokens) || 0,
+    };
     const jsonish = raw.replace(/^```(?:json)?/, "").replace(/```$/, "").trim();
     const parsed = JSON.parse(jsonish);
     // Allowlist + light coercion. Skip keys that don't conform.
-    const out: ExtractedInquiryFields = {};
+    const out: ExtractedInquiryFields & { _usage?: ClaudeUsage } = {};
     if (typeof parsed?.event_type === "string") out.event_type = parsed.event_type.toLowerCase().slice(0, 40);
     if (typeof parsed?.event_date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(parsed.event_date)) out.event_date = parsed.event_date;
     if (Number.isInteger(parsed?.guest_count) && parsed.guest_count > 0 && parsed.guest_count < 10000) out.guest_count = parsed.guest_count;
@@ -661,6 +684,7 @@ No markdown. No prose outside the JSON.`;
     if (Number.isInteger(parsed?.budget_min_cents) && parsed.budget_min_cents >= 0) out.budget_min_cents = parsed.budget_min_cents;
     if (Number.isInteger(parsed?.budget_max_cents) && parsed.budget_max_cents >= 0) out.budget_max_cents = parsed.budget_max_cents;
     if (typeof parsed?.special_requests === "string") out.special_requests = parsed.special_requests.slice(0, 800);
+    out._usage = usage;
     return out;
   } catch (err) {
     console.error("[extractInquiryFields] error", err);
