@@ -15,9 +15,38 @@
 // deno-lint-ignore-file no-explicit-any
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.7";
+import {
+  buildSystemPrompt,
+  callClaude,
+  DEFAULT_ACTIONS,
+  loadVendorContext,
+  priceUsd,
+} from "../_shared/hilux-prompt.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY") ?? "";
+
+// Action keys the MCP `update_hilux_settings` tool accepts in its
+// `actions` patch. Mirrors the columns on `profiles` — keeps the
+// allowlist explicit so we can't accidentally let Claude write
+// random profile columns through this surface.
+const ALLOWED_ACTION_KEYS = new Set([
+  "follow_up", "quiet_hours", "pause_weekends", "skip_when_active",
+  "use_calendar", "escalate", "detect_frustration",
+  "mention_starting_price", "suggest_package", "decline_negotiation",
+  "avoid_competitors", "send_portfolio_link", "offer_call",
+  "share_booking_process", "echo_question", "acknowledge_emotion",
+  "lead_with_question", "refuse_legal", "refuse_competitor_pricing",
+  "no_other_clients", "redact_contact", "auto_mark_replied",
+  "notify_on_reply", "update_inquiry_fields", "notify_on_escalation",
+  "notify_on_hot_lead", "email_reply_copies", "auto_archive_cold",
+  "daily_summary", "cap_replies_per_inquiry", "detect_booking_intent",
+  "log_actions",
+]);
+
+const INQUIRY_STATUSES = ["new", "replied", "won", "lost", "expired", "drafted"] as const;
+const HISTORY_LIMIT = 20;
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -101,6 +130,79 @@ const TOOLS = [
     description:
       "Return the vendor's listings (vendor_profiles rows they own) with category, location, base price, and approval status.",
     inputSchema: { type: "object", properties: {} },
+  },
+  {
+    name: "send_reply",
+    description:
+      "Send a message in a thread AS THE VENDOR (not HILUX). Use this for replies HILUX shouldn't write — price negotiations, custom asks, anything you'd want the host to know is from you personally. Plain text, max 5000 chars.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        thread_id: { type: "string" },
+        body: { type: "string", minLength: 1, maxLength: 5000 },
+      },
+      required: ["thread_id", "body"],
+    },
+  },
+  {
+    name: "pause_hilux_thread",
+    description:
+      "Pause HILUX on a single thread. HILUX will not auto-reply to the host in that conversation until it's resumed. Other threads keep working normally.",
+    inputSchema: {
+      type: "object",
+      properties: { thread_id: { type: "string" } },
+      required: ["thread_id"],
+    },
+  },
+  {
+    name: "resume_hilux_thread",
+    description:
+      "Resume HILUX on a thread that was paused. HILUX picks the conversation back up on the next host message.",
+    inputSchema: {
+      type: "object",
+      properties: { thread_id: { type: "string" } },
+      required: ["thread_id"],
+    },
+  },
+  {
+    name: "update_hilux_settings",
+    description:
+      "Update HILUX configuration on the vendor's profile. Pass any subset of fields. `actions` is a key→boolean map where keys are the snake_case action names (e.g. `follow_up`, `quiet_hours`, `use_calendar`, `escalate`, `mention_starting_price`, `suggest_package`, `notify_on_hot_lead`, etc. — see get_hilux_settings for the full list).",
+    inputSchema: {
+      type: "object",
+      properties: {
+        enabled: { type: "boolean" },
+        greeting_line: { type: ["string", "null"] },
+        reply_length: { type: "string", enum: ["short", "medium", "long"] },
+        actions: {
+          type: "object",
+          additionalProperties: { type: "boolean" },
+        },
+      },
+    },
+  },
+  {
+    name: "mark_inquiry",
+    description:
+      "Set an inquiry's status — e.g. mark a hot lead as won after they book, mark a cold thread as lost.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        inquiry_id: { type: "string" },
+        status: { type: "string", enum: [...INQUIRY_STATUSES] },
+      },
+      required: ["inquiry_id", "status"],
+    },
+  },
+  {
+    name: "regenerate_last_hilux_reply",
+    description:
+      "Ask HILUX to rewrite its most recent reply in a thread (different angle, different opener). Only works while HILUX's reply is still the latest message — once the host has replied, regeneration is moot.",
+    inputSchema: {
+      type: "object",
+      properties: { thread_id: { type: "string" } },
+      required: ["thread_id"],
+    },
   },
 ];
 
@@ -219,6 +321,18 @@ async function runTool(
       return await getHiluxSettings(admin, userId);
     case "list_listings":
       return await listListings(admin, userId);
+    case "send_reply":
+      return await sendReply(admin, userId, args);
+    case "pause_hilux_thread":
+      return await setHiluxPause(admin, userId, String(args.thread_id ?? ""), true);
+    case "resume_hilux_thread":
+      return await setHiluxPause(admin, userId, String(args.thread_id ?? ""), false);
+    case "update_hilux_settings":
+      return await updateHiluxSettings(admin, userId, args);
+    case "mark_inquiry":
+      return await markInquiry(admin, userId, args);
+    case "regenerate_last_hilux_reply":
+      return await regenerateLastHiluxReply(admin, userId, String(args.thread_id ?? ""));
     default:
       throw new Error(`Unknown tool: ${name}`);
   }
@@ -316,4 +430,235 @@ async function listListings(admin: any, userId: string) {
     .order("created_at", { ascending: true });
   if (error) throw error;
   return { listings: data ?? [] };
+}
+
+// -------- Write tools --------
+
+// Verify that a thread belongs to a vendor_profile this user owns.
+// Returns the loaded thread row on success; throws on miss/foreign.
+async function loadOwnedThread(admin: any, userId: string, threadId: string) {
+  if (!threadId) throw new Error("thread_id is required");
+  const { data: thread, error } = await admin
+    .from("direct_threads")
+    .select("id, vendor_id, host_id, inquiry_id, hilux_paused, vendor_profiles!inner(user_id)")
+    .eq("id", threadId)
+    .maybeSingle();
+  if (error) throw error;
+  if (!thread) throw new Error("thread not found");
+  const ownerId = (thread as any).vendor_profiles?.user_id;
+  if (ownerId !== userId) throw new Error("not_your_thread");
+  return thread as {
+    id: string;
+    vendor_id: string;
+    host_id: string;
+    inquiry_id: string | null;
+    hilux_paused: boolean;
+  };
+}
+
+async function sendReply(admin: any, userId: string, args: Record<string, any>) {
+  const body = String(args.body ?? "").trim();
+  if (!body) throw new Error("body is required");
+  const thread = await loadOwnedThread(admin, userId, String(args.thread_id ?? ""));
+
+  const { data, error } = await admin
+    .from("direct_messages")
+    .insert({
+      thread_id: thread.id,
+      sender_id: userId,
+      sender_role: "vendor",
+      body,
+      is_hilux_generated: false,
+    })
+    .select("id, created_at")
+    .single();
+  if (error) throw error;
+  return { sent: true, message_id: (data as { id: string }).id, created_at: (data as { created_at: string }).created_at };
+}
+
+async function setHiluxPause(
+  admin: any,
+  userId: string,
+  threadId: string,
+  paused: boolean,
+) {
+  const thread = await loadOwnedThread(admin, userId, threadId);
+  const { error } = await admin
+    .from("direct_threads")
+    .update({ hilux_paused: paused })
+    .eq("id", thread.id);
+  if (error) throw error;
+  return { thread_id: thread.id, hilux_paused: paused };
+}
+
+async function updateHiluxSettings(
+  admin: any,
+  userId: string,
+  args: Record<string, any>,
+) {
+  const patch: Record<string, any> = {};
+  if (typeof args.enabled === "boolean") patch.hilux_enabled = args.enabled;
+  if ("greeting_line" in args) {
+    const v = args.greeting_line;
+    if (v === null) patch.hilux_greeting_line = null;
+    else if (typeof v === "string") {
+      const trimmed = v.trim().slice(0, 200);
+      patch.hilux_greeting_line = trimmed.length === 0 ? null : trimmed;
+    }
+  }
+  if (typeof args.reply_length === "string" && ["short", "medium", "long"].includes(args.reply_length)) {
+    patch.hilux_reply_length = args.reply_length;
+  }
+  if (args.actions && typeof args.actions === "object") {
+    for (const [k, v] of Object.entries(args.actions)) {
+      if (typeof v !== "boolean") continue;
+      if (!ALLOWED_ACTION_KEYS.has(k)) continue;
+      patch[`hilux_action_${k}`] = v;
+    }
+  }
+  if (Object.keys(patch).length === 0) {
+    throw new Error("no recognised fields in update");
+  }
+  const { error } = await admin
+    .from("profiles")
+    .update(patch)
+    .eq("id", userId);
+  if (error) throw error;
+  return { updated: Object.keys(patch) };
+}
+
+async function markInquiry(
+  admin: any,
+  userId: string,
+  args: Record<string, any>,
+) {
+  const inquiryId = String(args.inquiry_id ?? "");
+  const status = String(args.status ?? "");
+  if (!inquiryId) throw new Error("inquiry_id is required");
+  if (!INQUIRY_STATUSES.includes(status as typeof INQUIRY_STATUSES[number])) {
+    throw new Error(`status must be one of ${INQUIRY_STATUSES.join(", ")}`);
+  }
+  // Ownership: load via vendor_profiles join.
+  const { data: inq, error } = await admin
+    .from("inquiries")
+    .select("id, vendor_profiles!inner(user_id)")
+    .eq("id", inquiryId)
+    .maybeSingle();
+  if (error) throw error;
+  if (!inq) throw new Error("inquiry not found");
+  if ((inq as any).vendor_profiles?.user_id !== userId) {
+    throw new Error("not_your_inquiry");
+  }
+  const { error: updErr } = await admin
+    .from("inquiries")
+    .update({ status })
+    .eq("id", inquiryId);
+  if (updErr) throw updErr;
+  return { inquiry_id: inquiryId, status };
+}
+
+async function regenerateLastHiluxReply(
+  admin: any,
+  userId: string,
+  threadId: string,
+) {
+  const thread = await loadOwnedThread(admin, userId, threadId);
+
+  // Latest message must be HILUX-generated. Once the host has
+  // replied, regen is moot.
+  const { data: latest } = await admin
+    .from("direct_messages")
+    .select("id, sender_role, is_hilux_generated, body, created_at")
+    .eq("thread_id", thread.id)
+    .order("created_at", { ascending: false })
+    .limit(1);
+  const target = (latest ?? [])[0];
+  if (!target) throw new Error("thread has no messages");
+  if (
+    target.sender_role !== "vendor" ||
+    target.is_hilux_generated !== true
+  ) {
+    throw new Error("not_the_latest_hilux_message");
+  }
+
+  const ctx = await loadVendorContext(admin, thread.vendor_id);
+  if (!ctx.vendor) throw new Error("vendor not found");
+
+  // History before the target — what HILUX should re-derive a reply from.
+  const { data: history } = await admin
+    .from("direct_messages")
+    .select("sender_role, body, created_at")
+    .eq("thread_id", thread.id)
+    .lt("created_at", target.created_at)
+    .order("created_at", { ascending: false })
+    .limit(HISTORY_LIMIT);
+  const orderedHistory = (history ?? []).slice().reverse();
+  const claudeMessages = orderedHistory.map((m: any) => ({
+    role: (m.sender_role === "host" ? "user" : "assistant") as "user" | "assistant",
+    content: m.body,
+  }));
+  if (claudeMessages.length === 0 || claudeMessages[claudeMessages.length - 1].role !== "user") {
+    throw new Error("no host message to reply to");
+  }
+
+  let inquiryCtx: any = null;
+  if (thread.inquiry_id) {
+    const { data: inq } = await admin
+      .from("inquiries")
+      .select(
+        "event_type, event_date, guest_count, location, budget_min_cents, budget_max_cents, special_requests",
+      )
+      .eq("id", thread.inquiry_id)
+      .maybeSingle();
+    if (inq) {
+      const min = priceUsd(inq.budget_min_cents);
+      const max = priceUsd(inq.budget_max_cents);
+      const range = min && max ? `${min}–${max}` : min ?? max ?? null;
+      inquiryCtx = {
+        eventType: inq.event_type,
+        eventDate: inq.event_date,
+        guestCount: inq.guest_count,
+        location: inq.location,
+        budgetRangeUsd: range,
+        specialRequests: inq.special_requests,
+      };
+    }
+  }
+
+  const actions = ctx.profile?.actions ?? DEFAULT_ACTIONS;
+  const systemText = buildSystemPrompt({
+    businessName: ctx.vendor.business_name ?? "this vendor",
+    category: ctx.vendor.category,
+    bio: ctx.vendor.bio,
+    location: ctx.vendor.location,
+    startingPriceUsd: priceUsd(ctx.vendor.base_price_cents),
+    customInstructions: ctx.profile?.hilux_instructions ?? null,
+    voiceSamples: ctx.profile?.hilux_voice_samples ?? [],
+    packages: ctx.packages,
+    faqs: ctx.faqs,
+    inquiry: inquiryCtx,
+    availability: ctx.availability,
+    actions,
+    hostFirstName: null,
+    greetingLine: ctx.profile?.hilux_greeting_line ?? null,
+    replyLength: ctx.profile?.hilux_reply_length ?? "medium",
+    isFirstReply: !orderedHistory.some(
+      (m: any) => m.sender_role === "vendor" && m.is_hilux_generated === true,
+    ),
+  });
+
+  const seasoned = systemText +
+    "\n\nIMPORTANT: The vendor has just asked you to RE-DRAFT a reply because they didn't love the previous version. Take a noticeably different angle — different opener, different emphasis — while still answering the host's most recent message. Don't apologize or reference the previous draft.";
+
+  const reply = await callClaude(ANTHROPIC_API_KEY, seasoned, claudeMessages);
+  if (/^\s*ESCALATE\s*:/i.test(reply)) {
+    throw new Error("would_escalate — Claude declined; vendor should reply manually");
+  }
+
+  const { error: updErr } = await admin
+    .from("direct_messages")
+    .update({ body: reply, edited_at: new Date().toISOString() })
+    .eq("id", target.id);
+  if (updErr) throw updErr;
+  return { regenerated: true, message_id: target.id, length: reply.length };
 }

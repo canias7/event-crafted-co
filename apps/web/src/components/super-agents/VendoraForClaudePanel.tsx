@@ -7,6 +7,7 @@
 import { useCallback, useEffect, useState } from "react";
 import {
   Check,
+  CheckCircle2,
   Copy,
   Eye,
   EyeOff,
@@ -14,9 +15,15 @@ import {
   Key,
   Layers,
   Loader2,
+  PauseCircle,
+  Pencil,
+  PlayCircle,
   Plus,
+  RefreshCw,
+  Send,
   Settings2,
   Sparkles,
+  Tag,
   Trash2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -45,34 +52,91 @@ interface ToolInfo {
   Icon: typeof Inbox;
 }
 
-const TOOLS: ToolInfo[] = [
+interface ToolGroup {
+  title: string;
+  tools: ToolInfo[];
+}
+
+const TOOL_GROUPS: ToolGroup[] = [
   {
-    name: "list_inquiries",
-    label: "List inquiries",
-    blurb:
-      "\"What hot leads do I have this week?\" — Claude reads your inquiries, filterable by status or lead score.",
-    Icon: Inbox,
+    title: "Read",
+    tools: [
+      {
+        name: "list_inquiries",
+        label: "List inquiries",
+        blurb:
+          "\"What hot leads do I have this week?\" — filterable by status or lead score.",
+        Icon: Inbox,
+      },
+      {
+        name: "get_inquiry",
+        label: "Read an inquiry + transcript",
+        blurb:
+          "\"Show me the conversation with Sarah and summarize it.\" — pulls inquiry + last 30 messages.",
+        Icon: Layers,
+      },
+      {
+        name: "get_hilux_settings",
+        label: "Inspect HILUX settings",
+        blurb:
+          "\"What's HILUX set to?\" — returns every toggle, greeting, and reply length.",
+        Icon: Settings2,
+      },
+      {
+        name: "list_listings",
+        label: "List your listings",
+        blurb:
+          "\"What listings do I have live?\" — returns your vendor profiles + approval status.",
+        Icon: Sparkles,
+      },
+    ],
   },
   {
-    name: "get_inquiry",
-    label: "Read an inquiry + transcript",
-    blurb:
-      "\"Show me the conversation with Sarah and summarize it.\" — pulls the inquiry + last 30 messages.",
-    Icon: Layers,
-  },
-  {
-    name: "get_hilux_settings",
-    label: "Inspect HILUX settings",
-    blurb:
-      "\"What's HILUX set to?\" — returns every toggle, the greeting, and reply length.",
-    Icon: Settings2,
-  },
-  {
-    name: "list_listings",
-    label: "List your listings",
-    blurb:
-      "\"What listings do I have live right now?\" — returns your vendor profiles + approval status.",
-    Icon: Sparkles,
+    title: "Write",
+    tools: [
+      {
+        name: "send_reply",
+        label: "Reply to a thread",
+        blurb:
+          "\"Reply to Sarah saying we're booked that weekend.\" — sends as you, not as HILUX.",
+        Icon: Send,
+      },
+      {
+        name: "pause_hilux_thread",
+        label: "Pause HILUX on a thread",
+        blurb:
+          "\"Pause HILUX in this conversation, I'll handle it.\" — HILUX stays out of that single thread.",
+        Icon: PauseCircle,
+      },
+      {
+        name: "resume_hilux_thread",
+        label: "Resume HILUX on a thread",
+        blurb:
+          "\"Hand this back to HILUX.\" — HILUX picks the conversation back up on the next host message.",
+        Icon: PlayCircle,
+      },
+      {
+        name: "update_hilux_settings",
+        label: "Update HILUX settings",
+        blurb:
+          "\"Turn on quiet hours and set my greeting to 'hey y'all'.\" — flips toggles, edits greeting / length.",
+        Icon: Pencil,
+      },
+      {
+        name: "mark_inquiry",
+        label: "Mark an inquiry",
+        blurb:
+          "\"Mark Sarah's inquiry as won — they booked us.\" — sets status (won / lost / replied / etc).",
+        Icon: Tag,
+      },
+      {
+        name: "regenerate_last_hilux_reply",
+        label: "Regenerate HILUX's last reply",
+        blurb:
+          "\"That last HILUX message was off — try again.\" — rewrites in place. Only while it's still the latest message.",
+        Icon: RefreshCw,
+      },
+    ],
   },
 ];
 
@@ -376,30 +440,45 @@ export function VendoraForClaudePanel() {
           <p className="text-[11px] uppercase tracking-[0.2em] text-black/55 mb-2">
             What Claude can do via this connector
           </p>
-          <ul className="divide-y divide-black/10 rounded-xl bg-white/45 border border-black/5">
-            {TOOLS.map((t) => {
-              const { Icon } = t;
-              return (
-                <li key={t.name} className="flex items-start gap-3 px-4 py-3">
-                  <Icon className="w-4 h-4 text-black/55 shrink-0 mt-0.5" />
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium text-black leading-tight">
-                      {t.label}
-                    </p>
-                    <p className="text-[11px] text-black/55 mt-0.5 leading-snug">
-                      {t.blurb}
-                    </p>
-                  </div>
-                  <code className="text-[10px] text-black/45 font-mono mt-0.5 shrink-0">
-                    {t.name}
-                  </code>
-                </li>
-              );
-            })}
-          </ul>
-          <p className="text-[11px] text-black/45 italic mt-2">
-            Read-only in V1. Write tools (send reply, pause HILUX, update
-            settings) land in the next iteration.
+          <div className="space-y-3">
+            {TOOL_GROUPS.map((group) => (
+              <div key={group.title}>
+                <div className="flex items-center gap-2 mb-1.5 px-1">
+                  <span className="text-[11px] uppercase tracking-wider font-medium text-black/65">
+                    {group.title}
+                  </span>
+                  <span className="inline-flex items-center justify-center min-w-[20px] h-[18px] px-1.5 rounded-md bg-black/10 text-[10px] font-medium text-black/65 tabular-nums">
+                    {group.tools.length}
+                  </span>
+                </div>
+                <ul className="divide-y divide-black/10 rounded-xl bg-white/45 border border-black/5">
+                  {group.tools.map((t) => {
+                    const { Icon } = t;
+                    return (
+                      <li key={t.name} className="flex items-start gap-3 px-4 py-3">
+                        <Icon className="w-4 h-4 text-black/55 shrink-0 mt-0.5" />
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-medium text-black leading-tight">
+                            {t.label}
+                          </p>
+                          <p className="text-[11px] text-black/55 mt-0.5 leading-snug">
+                            {t.blurb}
+                          </p>
+                        </div>
+                        <code className="text-[10px] text-black/45 font-mono mt-0.5 shrink-0">
+                          {t.name}
+                        </code>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            ))}
+          </div>
+          <p className="text-[11px] text-black/45 italic mt-2 inline-flex items-center gap-1">
+            <CheckCircle2 className="w-3 h-3" />
+            10 tools live. Claude can read your inbox + take action on your
+            behalf with your approval (Claude clients prompt before any write).
           </p>
         </div>
       </div>
