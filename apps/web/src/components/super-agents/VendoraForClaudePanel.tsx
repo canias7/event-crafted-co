@@ -33,6 +33,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { VendoraForClaudeLogo } from "./AgentLogos";
+import { McpCallLog } from "./McpCallLog";
 
 // Hardcoded for now. The MCP server lives at this URL once the
 // vendora-mcp edge function is deployed.
@@ -451,6 +452,9 @@ export function VendoraForClaudePanel() {
             </div>
           </div>
         </div>
+
+        {/* Live activity log — what Claude has done via this MCP. */}
+        <McpCallLog />
 
         {/* Tool catalog */}
         <div>
