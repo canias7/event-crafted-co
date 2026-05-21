@@ -1369,12 +1369,34 @@ export type Database = {
           category: string | null
           created_at: string
           display_name: string | null
+          hilux_action_acknowledge_emotion: boolean
+          hilux_action_allow_bullets: boolean
           hilux_action_ask_clarifying: boolean
+          hilux_action_auto_mark_replied: boolean
+          hilux_action_avoid_competitors: boolean
+          hilux_action_decline_negotiation: boolean
+          hilux_action_detect_frustration: boolean
+          hilux_action_echo_question: boolean
           hilux_action_escalate: boolean
           hilux_action_follow_up: boolean
+          hilux_action_lead_with_question: boolean
           hilux_action_match_language: boolean
+          hilux_action_mention_starting_price: boolean
+          hilux_action_no_other_clients: boolean
+          hilux_action_notify_on_reply: boolean
+          hilux_action_offer_call: boolean
+          hilux_action_pause_weekends: boolean
           hilux_action_quiet_hours: boolean
+          hilux_action_redact_contact: boolean
+          hilux_action_refuse_competitor_pricing: boolean
+          hilux_action_refuse_legal: boolean
+          hilux_action_send_portfolio_link: boolean
+          hilux_action_share_booking_process: boolean
+          hilux_action_skip_when_active: boolean
+          hilux_action_soft_cta_signoff: boolean
+          hilux_action_suggest_package: boolean
           hilux_action_use_calendar: boolean
+          hilux_action_use_emojis: boolean
           hilux_action_use_first_name: boolean
           hilux_enabled: boolean
           hilux_instructions: string | null
@@ -1399,12 +1421,34 @@ export type Database = {
           category?: string | null
           created_at?: string
           display_name?: string | null
+          hilux_action_acknowledge_emotion?: boolean
+          hilux_action_allow_bullets?: boolean
           hilux_action_ask_clarifying?: boolean
+          hilux_action_auto_mark_replied?: boolean
+          hilux_action_avoid_competitors?: boolean
+          hilux_action_decline_negotiation?: boolean
+          hilux_action_detect_frustration?: boolean
+          hilux_action_echo_question?: boolean
           hilux_action_escalate?: boolean
           hilux_action_follow_up?: boolean
+          hilux_action_lead_with_question?: boolean
           hilux_action_match_language?: boolean
+          hilux_action_mention_starting_price?: boolean
+          hilux_action_no_other_clients?: boolean
+          hilux_action_notify_on_reply?: boolean
+          hilux_action_offer_call?: boolean
+          hilux_action_pause_weekends?: boolean
           hilux_action_quiet_hours?: boolean
+          hilux_action_redact_contact?: boolean
+          hilux_action_refuse_competitor_pricing?: boolean
+          hilux_action_refuse_legal?: boolean
+          hilux_action_send_portfolio_link?: boolean
+          hilux_action_share_booking_process?: boolean
+          hilux_action_skip_when_active?: boolean
+          hilux_action_soft_cta_signoff?: boolean
+          hilux_action_suggest_package?: boolean
           hilux_action_use_calendar?: boolean
+          hilux_action_use_emojis?: boolean
           hilux_action_use_first_name?: boolean
           hilux_enabled?: boolean
           hilux_instructions?: string | null
@@ -1429,12 +1473,34 @@ export type Database = {
           category?: string | null
           created_at?: string
           display_name?: string | null
+          hilux_action_acknowledge_emotion?: boolean
+          hilux_action_allow_bullets?: boolean
           hilux_action_ask_clarifying?: boolean
+          hilux_action_auto_mark_replied?: boolean
+          hilux_action_avoid_competitors?: boolean
+          hilux_action_decline_negotiation?: boolean
+          hilux_action_detect_frustration?: boolean
+          hilux_action_echo_question?: boolean
           hilux_action_escalate?: boolean
           hilux_action_follow_up?: boolean
+          hilux_action_lead_with_question?: boolean
           hilux_action_match_language?: boolean
+          hilux_action_mention_starting_price?: boolean
+          hilux_action_no_other_clients?: boolean
+          hilux_action_notify_on_reply?: boolean
+          hilux_action_offer_call?: boolean
+          hilux_action_pause_weekends?: boolean
           hilux_action_quiet_hours?: boolean
+          hilux_action_redact_contact?: boolean
+          hilux_action_refuse_competitor_pricing?: boolean
+          hilux_action_refuse_legal?: boolean
+          hilux_action_send_portfolio_link?: boolean
+          hilux_action_share_booking_process?: boolean
+          hilux_action_skip_when_active?: boolean
+          hilux_action_soft_cta_signoff?: boolean
+          hilux_action_suggest_package?: boolean
           hilux_action_use_calendar?: boolean
+          hilux_action_use_emojis?: boolean
           hilux_action_use_first_name?: boolean
           hilux_enabled?: boolean
           hilux_instructions?: string | null
