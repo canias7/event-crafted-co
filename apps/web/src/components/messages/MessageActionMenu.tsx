@@ -9,6 +9,7 @@ import {
   Smile,
   MoreHorizontal,
   Pencil,
+  RefreshCw,
   Reply,
   Trash2,
 } from "lucide-react";
@@ -32,6 +33,7 @@ interface Props {
   onReply?: () => void;
   onEdit?: () => void;
   onDelete?: () => void;
+  onRegenerate?: () => void;
 }
 
 export function MessageActionMenu({
@@ -40,6 +42,7 @@ export function MessageActionMenu({
   onReply,
   onEdit,
   onDelete,
+  onRegenerate,
 }: Props) {
   const [reactOpen, setReactOpen] = useState(false);
   return (
@@ -82,7 +85,7 @@ export function MessageActionMenu({
           ))}
         </PopoverContent>
       </Popover>
-      {onReply || (isMine && (onEdit || onDelete)) ? (
+      {onReply || onRegenerate || (isMine && (onEdit || onDelete)) ? (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button
@@ -104,6 +107,12 @@ export function MessageActionMenu({
               <DropdownMenuItem onClick={onEdit}>
                 <Pencil className="w-4 h-4 mr-2" />
                 Edit
+              </DropdownMenuItem>
+            ) : null}
+            {onRegenerate ? (
+              <DropdownMenuItem onClick={onRegenerate}>
+                <RefreshCw className="w-4 h-4 mr-2" />
+                Regenerate with HILUX
               </DropdownMenuItem>
             ) : null}
             {isMine && onDelete ? (

@@ -179,6 +179,14 @@ export default function HostInquiryDetailPage() {
   // Thread id is the direct_threads row for this inquiry; mobile uses
   // the same model — see ensure_inquiry_thread RPC. Resolved on load.
   const [threadId, setThreadId] = useState<string | null>(null);
+  const [typingUntil, setTypingUntil] = useState<string | null>(null);
+  // Forces a re-render every ~1s so the typing chip auto-hides
+  // when the TTL passes without waiting for another realtime event.
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => setTick((n) => n + 1), 1000);
+    return () => clearInterval(id);
+  }, []);
   // Tracks first-paint vs realtime-driven reloads so the skeleton
   // overlay only flashes once. Ref instead of state because the
   // load() closure used to read inquiry === null and could go stale
@@ -259,6 +267,24 @@ export default function HostInquiryDetailPage() {
 
     const thread = (tidRes.data as string | null) ?? null;
     setThreadId(thread);
+
+    if (thread) {
+      // Pull the typing-until once on load so the indicator is
+      // correct on first render. The realtime subscription below
+      // keeps it current after that.
+      supabase
+        .from("direct_threads")
+        .select("hilux_typing_until")
+        .eq("id", thread)
+        .maybeSingle()
+        .then(({ data }) => {
+          setTypingUntil(
+            ((data as { hilux_typing_until?: string | null } | null)
+              ?.hilux_typing_until) ?? null,
+          );
+        });
+
+    }
 
     if (thread) {
       // Latest 200 messages — descending under LIMIT to slice from
@@ -446,6 +472,32 @@ export default function HostInquiryDetailPage() {
     [threadId],
   );
   useRealtime(messagesConfig, () => load());
+
+  // Subscribe to this thread's row so the typing indicator updates
+  // when HILUX flips hilux_typing_until on/off. We only need this
+  // one column, so we refetch it (not the whole conversation) on
+  // every direct_threads event for this row.
+  const threadConfig = useMemo(
+    () =>
+      threadId
+        ? { table: "direct_threads", filter: `id=eq.${threadId}` }
+        : null,
+    [threadId],
+  );
+  useRealtime(threadConfig, () => {
+    if (!threadId) return;
+    supabase
+      .from("direct_threads")
+      .select("hilux_typing_until")
+      .eq("id", threadId)
+      .maybeSingle()
+      .then(({ data }) => {
+        setTypingUntil(
+          ((data as { hilux_typing_until?: string | null } | null)
+            ?.hilux_typing_until) ?? null,
+        );
+      });
+  });
 
   // Refetch ONLY reactions for this thread's messages on a reaction
   // event — not the full load() which would also pull inquiry +
@@ -1106,7 +1158,17 @@ export default function HostInquiryDetailPage() {
             })
           )}
 
-          {otherTyping ? <TypingBubble withAvatarSpacer /> : null}
+          {(() => {
+            const hiluxTyping =
+              typingUntil != null &&
+              new Date(typingUntil).getTime() > Date.now();
+            // Prefer the HILUX label when the agent's processing; the
+            // human-presence "otherTyping" still wins if both are true,
+            // since the vendor would have taken over the thread.
+            if (otherTyping) return <TypingBubble withAvatarSpacer />;
+            if (hiluxTyping) return <TypingBubble withAvatarSpacer label="HILUX is typing" />;
+            return null;
+          })()}
           {seenTimeLabel ? (
             <div className="flex items-center justify-end gap-1 text-[11px] text-muted-foreground mt-1 mr-1">
               <CheckCheck className="w-3 h-3" aria-hidden />

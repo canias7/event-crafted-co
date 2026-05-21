@@ -1,16 +1,17 @@
-// HILUX v1.2 — vendor-side auto-reply agent.
+// HILUX v1.7 — vendor-side auto-reply with debounce + typing indicator.
 //
-// Triggered by an AFTER INSERT trigger on direct_messages (sender_role
-// = 'host') when the destination vendor has hilux_enabled = true. The
-// trigger POSTs { thread_id, message_id }; this function pulls the
-// vendor's listing context (incl. live availability + custom
-// instructions) + recent conversation history, asks Claude to draft a
-// reply in the vendor's voice and the host's language, and writes it
-// back into direct_messages as sender_role = 'vendor' with
-// is_hilux_generated = true.
-//
-// Prompt logic lives in _shared/hilux-prompt.ts so the sandbox
-// (hilux-sandbox) uses the exact same wiring and can't drift.
+// Flow:
+//   1. Trigger fires on host-message insert and POSTs here.
+//   2. We sleep 2s. During that window, additional rapid host
+//      messages will also fire the trigger and spawn their own
+//      invocations. After the sleep we re-check: if a newer message
+//      now exists, we bail BEFORE calling Claude — saving the API
+//      tokens. Net effect: a burst of 5 host messages = 1 Claude
+//      call (the latest), not 5.
+//   3. Set direct_threads.hilux_typing_until = now()+30s so the host
+//      UI shows "HILUX is typing..." via its realtime subscription.
+//   4. Call Claude, then score lead, then either insert reply OR
+//      escalate. Either way, clear hilux_typing_until at the end.
 
 // deno-lint-ignore-file no-explicit-any
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
@@ -28,6 +29,8 @@ const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY") ?? "";
 
 const HISTORY_LIMIT = 20;
+const DEBOUNCE_MS = 2000;
+const TYPING_TTL_MS = 30000;
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -47,6 +50,10 @@ function log(...args: unknown[]) {
   console.log("[hilux-respond]", ...args);
 }
 
+function sleep(ms: number) {
+  return new Promise((r) => setTimeout(r, ms));
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: cors });
@@ -55,40 +62,35 @@ serve(async (req) => {
   const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
     auth: { autoRefreshToken: false, persistSession: false },
   });
+  let typingThreadId: string | null = null;
+  const clearTyping = async () => {
+    if (typingThreadId) {
+      await admin
+        .from("direct_threads")
+        .update({ hilux_typing_until: null })
+        .eq("id", typingThreadId);
+    }
+  };
 
   try {
     const payload = await req.json().catch(() => ({}));
     const threadId = String(payload?.thread_id ?? "").trim();
     const messageId = String(payload?.message_id ?? "").trim();
-    if (!threadId || !messageId) {
-      log("missing thread_id or message_id; ignoring");
-      return ok({ skipped: "bad_payload" });
-    }
+    if (!threadId || !messageId) return ok({ skipped: "bad_payload" });
 
     const { data: thread, error: threadErr } = await admin
       .from("direct_threads")
-      .select("id, vendor_id, inquiry_id, host_id")
+      .select("id, vendor_id, inquiry_id, host_id, hilux_paused")
       .eq("id", threadId)
       .maybeSingle();
     if (threadErr) throw threadErr;
-    if (!thread) {
-      log("thread not found", threadId);
-      return ok({ skipped: "no_thread" });
-    }
+    if (!thread) return ok({ skipped: "no_thread" });
+    if (thread.hilux_paused) return ok({ skipped: "thread_paused" });
 
     const ctx = await loadVendorContext(admin, thread.vendor_id);
-    if (!ctx.vendor) {
-      log("vendor not found", thread.vendor_id);
-      return ok({ skipped: "no_vendor" });
-    }
-    if (!ctx.vendor.hilux_enabled) {
-      log("hilux disabled at processing time, skipping", ctx.vendor.id);
-      return ok({ skipped: "hilux_off" });
-    }
-    if (!ctx.vendor.user_id) {
-      log("vendor has no user_id, can't send as them", ctx.vendor.id);
-      return ok({ skipped: "no_owner" });
-    }
+    if (!ctx.vendor) return ok({ skipped: "no_vendor" });
+    if (!ctx.vendor.hilux_enabled) return ok({ skipped: "hilux_off" });
+    if (!ctx.vendor.user_id) return ok({ skipped: "no_owner" });
 
     const { data: triggeringMessage, error: msgErr } = await admin
       .from("direct_messages")
@@ -97,29 +99,40 @@ serve(async (req) => {
       .maybeSingle();
     if (msgErr) throw msgErr;
     if (!triggeringMessage || triggeringMessage.sender_role !== "host") {
-      log("triggering message missing or not from host", messageId);
       return ok({ skipped: "bad_trigger_msg" });
     }
 
-    const { data: latest, error: latestErr } = await admin
+    // DEBOUNCE: wait briefly so bursts of host messages collapse to
+    // a single Claude call. If a newer message arrived during the
+    // wait, this invocation exits without spending API tokens.
+    await sleep(DEBOUNCE_MS);
+
+    const { data: latest } = await admin
       .from("direct_messages")
-      .select("id, sender_role, body, created_at, is_hilux_generated")
+      .select("id")
       .eq("thread_id", threadId)
       .order("created_at", { ascending: false })
       .limit(1);
-    if (latestErr) throw latestErr;
     if (latest && latest.length > 0 && latest[0].id !== messageId) {
-      log("a newer message exists since the trigger fired, skipping this run");
-      return ok({ skipped: "stale" });
+      return ok({ skipped: "stale_after_debounce" });
     }
 
-    const { data: history, error: histErr } = await admin
+    // TYPING INDICATOR: set a TTL so a crash doesn't leave the host
+    // staring at a permanent typing dot. Cleared at the end.
+    typingThreadId = threadId;
+    await admin
+      .from("direct_threads")
+      .update({
+        hilux_typing_until: new Date(Date.now() + TYPING_TTL_MS).toISOString(),
+      })
+      .eq("id", threadId);
+
+    const { data: history } = await admin
       .from("direct_messages")
       .select("sender_role, body, created_at")
       .eq("thread_id", threadId)
       .order("created_at", { ascending: false })
       .limit(HISTORY_LIMIT);
-    if (histErr) throw histErr;
     const orderedHistory = (history ?? []).slice().reverse();
 
     let inquiryCtx: any = null;
@@ -161,21 +174,19 @@ serve(async (req) => {
     });
 
     const claudeMessages = orderedHistory.map((m) => ({
-      role: (m.sender_role === "host" ? "user" : "assistant") as "user" | "assistant",
+      role: (m.sender_role === "host" ? "user" : "assistant") as
+        | "user"
+        | "assistant",
       content: m.body,
     }));
     if (claudeMessages.length === 0 || claudeMessages[claudeMessages.length - 1].role !== "user") {
-      log("no host message at end of history, skipping");
+      await clearTyping();
       return ok({ skipped: "no_trailing_host_msg" });
     }
 
     log("calling claude", { vendor: ctx.vendor.id, history_len: claudeMessages.length });
     const reply = await callClaude(ANTHROPIC_API_KEY, systemText, claudeMessages);
 
-    // Lead scoring runs as a bounded second call against the same
-    // transcript. Best-effort: failures are logged but never block
-    // the actual reply / escalation path. Only meaningful when the
-    // thread is tied to a structured inquiry.
     const scoreInquiryAfter = async () => {
       if (!thread.inquiry_id) return;
       try {
@@ -193,54 +204,36 @@ serve(async (req) => {
             lead_score_updated_at: new Date().toISOString(),
           })
           .eq("id", thread.inquiry_id);
-        if (scoreErr) {
-          console.error("[hilux-respond] lead_score update failed", scoreErr);
-        } else {
-          log("lead scored", { inquiry: thread.inquiry_id, score: result.score });
-        }
+        if (scoreErr) console.error("[hilux-respond] lead_score update failed", scoreErr);
       } catch (err) {
         console.error("[hilux-respond] lead_score error", err);
       }
     };
 
-    // Smart escalation: if Claude couldn't confidently answer, it
-    // outputs "ESCALATE: <reason>" instead of a reply. We skip the
-    // message insert and instead notify the vendor's team that a
-    // host is waiting on a human.
     const escalateMatch = reply.match(/^\s*ESCALATE\s*:\s*(.+)$/im);
     if (escalateMatch) {
       const reason = escalateMatch[1].trim().slice(0, 200);
-      const businessName = ctx.vendor.business_name ?? "a host";
       const preview = (triggeringMessage.body ?? "").slice(0, 120);
-      const title = `HILUX needs you to take this one`;
+      const title = "HILUX needs you to take this one";
       const body = `${preview}${triggeringMessage.body.length > 120 ? "…" : ""} — reason: ${reason}`;
       const { data: members } = await admin
         .from("vendor_team_members")
         .select("user_id")
         .eq("vendor_id", ctx.vendor.id);
-      const rows = ((members ?? []) as Array<{ user_id: string }>).map(
-        (m) => ({
-          user_id: m.user_id,
-          type: "hilux_escalation",
-          title,
-          body,
-          link: `/vendor/messages?thread=${threadId}`,
-        }),
-      );
+      const rows = ((members ?? []) as Array<{ user_id: string }>).map((m) => ({
+        user_id: m.user_id,
+        type: "hilux_escalation",
+        title,
+        body,
+        link: `/vendor/messages?thread=${threadId}`,
+      }));
       if (rows.length > 0) {
-        const { error: notifErr } = await admin
-          .from("notifications")
-          .insert(rows);
-        if (notifErr) {
-          console.error("[hilux-respond] notification insert failed", notifErr);
-        }
+        const { error: notifErr } = await admin.from("notifications").insert(rows);
+        if (notifErr) console.error("[hilux-respond] notification insert failed", notifErr);
       }
-      log("hilux escalated", {
-        thread: threadId,
-        reason,
-        notified: rows.length,
-      });
+      log("hilux escalated", { thread: threadId, reason, notified: rows.length });
       await scoreInquiryAfter();
+      await clearTyping();
       return ok({ escalated: true, reason, notified: rows.length });
     }
 
@@ -251,13 +244,18 @@ serve(async (req) => {
       body: reply,
       is_hilux_generated: true,
     });
-    if (insertErr) throw insertErr;
+    if (insertErr) {
+      await clearTyping();
+      throw insertErr;
+    }
 
     log("hilux replied", { thread: threadId, length: reply.length });
     await scoreInquiryAfter();
+    await clearTyping();
     return ok({ replied: true, length: reply.length });
   } catch (err) {
     console.error("[hilux-respond] uncaught:", err);
+    await clearTyping();
     return ok({ error: err instanceof Error ? err.message : String(err) });
   }
 });
