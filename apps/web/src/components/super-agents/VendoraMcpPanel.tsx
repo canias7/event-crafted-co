@@ -4,7 +4,7 @@
 // surfaces the live tool catalog so the vendor knows what Claude
 // can do once connected.
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, type ReactNode } from "react";
 import {
   CalendarDays,
   Check,
@@ -12,6 +12,7 @@ import {
   Copy,
   Eye,
   EyeOff,
+  ExternalLink,
   Flame,
   Inbox,
   Key,
@@ -591,42 +592,93 @@ export function VendoraMcpPanel() {
           </p>
         </div>
 
-        {/* Install instructions */}
+        {/* Install instructions — three-card numbered flow matching
+            the Claude.ai connector-onboarding pattern (Higgsfield etc).
+            Three cards: open settings → paste URL → approve. The third
+            step lands on our OAuth consent page; vendor clicks Approve
+            and the connector is live. */}
         <div>
-          <p className="text-[11px] uppercase tracking-[0.2em] text-black/55 mb-2">
-            Install in your Claude client
+          <p className="text-[11px] uppercase tracking-[0.2em] text-black/55 mb-3">
+            How to connect
           </p>
-          <div className="grid md:grid-cols-2 gap-3">
-            <div className="rounded-xl bg-white/55 border border-black/5 p-4">
-              <p className="text-sm font-medium text-black mb-1">
-                Claude.ai{" "}
-                <span className="inline-flex items-center text-[9px] uppercase tracking-wider font-medium px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 align-middle">
-                  OAuth
-                </span>
-              </p>
-              <p className="text-xs text-black/60 leading-relaxed">
-                Settings → Connectors → Add custom connector. Paste the URL
-                above and click Add — Claude will open a Vendora approval
-                screen, you click Approve, and the connection is live. No
-                token to copy.
-              </p>
-            </div>
-            <div className="rounded-xl bg-white/55 border border-black/5 p-4">
-              <p className="text-sm font-medium text-black mb-1">Claude Code</p>
-              <p className="text-xs text-black/60 leading-relaxed">
-                <code className="bg-white/80 rounded px-1 py-0.5">
-                  claude mcp add vendora --transport http
-                </code>{" "}
-                — paste the URL when prompted. If your client supports OAuth
-                it'll open the browser; otherwise generate a token below and
-                pass it via{" "}
-                <code className="bg-white/80 rounded px-1 py-0.5">
-                  --header "Authorization: Bearer …"
-                </code>
-                .
-              </p>
-            </div>
+          <div className="grid md:grid-cols-3 gap-3">
+            <StepCard
+              n={1}
+              title="Open Claude settings"
+              body={
+                <>
+                  Launch the app or open{" "}
+                  <a
+                    href="https://claude.ai/settings/connectors"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="font-medium text-black underline underline-offset-2"
+                  >
+                    claude.ai
+                  </a>{" "}
+                  and go to:
+                </>
+              }
+              foot={
+                <a
+                  href="https://claude.ai/settings/connectors"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-1.5 rounded-md bg-black/85 text-white text-xs font-medium px-2.5 py-1.5 hover:bg-black transition-colors"
+                >
+                  Settings → Connectors
+                  <ExternalLink className="w-3 h-3" />
+                </a>
+              }
+            />
+            <StepCard
+              n={2}
+              title="Add a custom connector"
+              body={
+                <>
+                  Name it <strong className="text-black">Vendora</strong> and
+                  paste the URL:
+                </>
+              }
+              foot={
+                <div className="flex items-center gap-1.5 rounded-md bg-black/85 px-2 py-1.5">
+                  <code className="text-[10px] font-mono text-white flex-1 truncate">
+                    {MCP_URL}
+                  </code>
+                  <button
+                    type="button"
+                    onClick={() => copy("install-url", MCP_URL)}
+                    className="text-white/75 hover:text-white shrink-0"
+                    aria-label="Copy URL"
+                  >
+                    {copiedKey === "install-url" ? (
+                      <Check className="w-3 h-3" />
+                    ) : (
+                      <Copy className="w-3 h-3" />
+                    )}
+                  </button>
+                </div>
+              }
+            />
+            <StepCard
+              n={3}
+              title="Connect and sign in"
+              body={
+                <>
+                  Click <strong className="text-black">Add → Connect</strong>,
+                  sign in with your EventVendora account — you're all set, now
+                  just ask Claude to check your inbox or draft a reply.
+                </>
+              }
+            />
           </div>
+          <p className="text-[11px] text-black/45 italic mt-2">
+            Prefer Claude Code? Run{" "}
+            <code className="bg-white/80 rounded px-1 py-0.5">
+              claude mcp add vendora --transport http
+            </code>
+            {" "}and paste the same URL when prompted.
+          </p>
         </div>
 
         {/* Live activity log — what Claude has done via this MCP. */}
@@ -706,6 +758,37 @@ export function VendoraMcpPanel() {
           </p>
         </div>
       </div>
+    </div>
+  );
+}
+
+// Numbered step card used by the install instructions. Matches the
+// connector-onboarding pattern Claude.ai vendors will be used to
+// seeing (Higgsfield, Notion, etc): big number, title, body copy,
+// and an optional foot (CTA button or copyable URL block).
+function StepCard({
+  n,
+  title,
+  body,
+  foot,
+}: {
+  n: number;
+  title: string;
+  body: ReactNode;
+  foot?: ReactNode;
+}) {
+  return (
+    <div className="rounded-xl bg-white/55 border border-black/5 p-4 flex flex-col gap-2">
+      <div className="flex items-start gap-2.5">
+        <span className="shrink-0 inline-flex items-center justify-center w-6 h-6 rounded-full bg-black text-white text-[11px] font-semibold tabular-nums">
+          {n}
+        </span>
+        <p className="text-sm font-medium text-black leading-snug pt-0.5">
+          {title}
+        </p>
+      </div>
+      <div className="text-xs text-black/60 leading-relaxed">{body}</div>
+      {foot ? <div className="mt-1">{foot}</div> : null}
     </div>
   );
 }
