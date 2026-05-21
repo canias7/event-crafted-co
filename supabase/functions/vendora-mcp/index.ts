@@ -178,6 +178,29 @@ async function sha256Hex(text: string): Promise<string> {
 // Schemas are JSON Schema Draft 7 (what MCP expects). Each tool
 // is intentionally small + read-only in v1; we'll add write tools
 // (send_reply, pause_hilux, etc.) once the read surface is stable.
+// Tool annotation shapes. MCP clients (Claude.ai) render confirmation
+// prompts based on these hints — destructive tools get a "are you
+// sure?" before invocation, read-only tools fire silently.
+const READ = { readOnlyHint: true, idempotentHint: true, openWorldHint: false };
+const WRITE_ADDITIVE_IDEMPOTENT = {
+  readOnlyHint: false,
+  destructiveHint: false,
+  idempotentHint: true,
+  openWorldHint: false,
+};
+const WRITE_ADDITIVE_NONIDEMPOTENT = {
+  readOnlyHint: false,
+  destructiveHint: false,
+  idempotentHint: false,
+  openWorldHint: false,
+};
+const WRITE_DESTRUCTIVE = {
+  readOnlyHint: false,
+  destructiveHint: true,
+  idempotentHint: true,
+  openWorldHint: false,
+};
+
 const TOOLS = [
   {
     name: "list_inquiries",
@@ -202,6 +225,7 @@ const TOOLS = [
         },
       },
     },
+    annotations: { title: "List inquiries", ...READ },
   },
   {
     name: "get_inquiry",
@@ -212,30 +236,49 @@ const TOOLS = [
       properties: { inquiry_id: { type: "string" } },
       required: ["inquiry_id"],
     },
+    annotations: { title: "Read an inquiry + transcript", ...READ },
   },
   {
     name: "get_hilux_settings",
     description:
       "Return the vendor's current HILUX configuration: master enabled flag, custom greeting, reply length, and every action toggle. Useful when the vendor asks Claude what HILUX is set to.",
     inputSchema: { type: "object", properties: {} },
+    annotations: { title: "Inspect HILUX settings", ...READ },
   },
   {
     name: "list_listings",
     description:
       "Return the vendor's listings (vendor_profiles rows they own) with category, location, base price, and approval status.",
     inputSchema: { type: "object", properties: {} },
+    annotations: { title: "List vendor listings", ...READ },
   },
   {
     name: "send_reply",
     description:
-      "Send a message in a thread AS THE VENDOR (not HILUX). Use this for replies HILUX shouldn't write — price negotiations, custom asks, anything you'd want the host to know is from you personally. Plain text, max 5000 chars.",
+      "Send a message in a thread AS THE VENDOR (not HILUX). Use this for replies HILUX shouldn't write — price negotiations, custom asks, anything you'd want the host to know is from you personally. Plain text, max 5000 chars. Pass `idempotency_key` to safely retry on network errors without sending the message twice.",
     inputSchema: {
       type: "object",
       properties: {
         thread_id: { type: "string" },
         body: { type: "string", minLength: 1, maxLength: 5000 },
+        idempotency_key: {
+          type: "string",
+          description:
+            "Optional client-generated key. If the server has seen this key from this user in the last 10 minutes, the prior result is returned instead of sending again. Use a fresh UUID per logical send.",
+          maxLength: 80,
+        },
       },
       required: ["thread_id", "body"],
+    },
+    // send_reply writes a message visible to the host outside our
+    // system — open-world. With an idempotency key it's safely
+    // retryable; without one each call adds a new message.
+    annotations: {
+      title: "Reply to a host",
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: false,
+      openWorldHint: true,
     },
   },
   {
@@ -247,6 +290,7 @@ const TOOLS = [
       properties: { thread_id: { type: "string" } },
       required: ["thread_id"],
     },
+    annotations: { title: "Pause HILUX on a thread", ...WRITE_ADDITIVE_IDEMPOTENT },
   },
   {
     name: "resume_hilux_thread",
@@ -257,6 +301,7 @@ const TOOLS = [
       properties: { thread_id: { type: "string" } },
       required: ["thread_id"],
     },
+    annotations: { title: "Resume HILUX on a thread", ...WRITE_ADDITIVE_IDEMPOTENT },
   },
   {
     name: "update_hilux_settings",
@@ -274,6 +319,7 @@ const TOOLS = [
         },
       },
     },
+    annotations: { title: "Update HILUX settings", ...WRITE_ADDITIVE_IDEMPOTENT },
   },
   {
     name: "mark_inquiry",
@@ -287,6 +333,7 @@ const TOOLS = [
       },
       required: ["inquiry_id", "status"],
     },
+    annotations: { title: "Mark an inquiry", ...WRITE_ADDITIVE_IDEMPOTENT },
   },
   {
     name: "get_action_log",
@@ -302,6 +349,20 @@ const TOOLS = [
         limit: { type: "integer", minimum: 1, maximum: 100, default: 25 },
       },
     },
+    annotations: { title: "Read HILUX activity log", ...READ },
+  },
+  {
+    name: "get_mcp_call_log",
+    description:
+      "Return what CLAUDE has done via this MCP connector — every tool call (success + failure). Useful when the vendor asks 'what have you been doing for me?'. Includes timing, args, ok/error status. Newest first.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        tool_name: { type: "string" },
+        limit: { type: "integer", minimum: 1, maximum: 100, default: 25 },
+      },
+    },
+    annotations: { title: "Read Claude's own MCP call log", ...READ },
   },
   {
     name: "compose_draft_reply",
@@ -320,6 +381,12 @@ const TOOLS = [
       },
       required: ["thread_id"],
     },
+    // Doesn't mutate, but each call goes to Claude so results vary.
+    annotations: {
+      title: "Compose a HILUX-style draft",
+      ...WRITE_ADDITIVE_NONIDEMPOTENT,
+      readOnlyHint: true,
+    },
   },
   {
     name: "regenerate_last_hilux_reply",
@@ -330,6 +397,7 @@ const TOOLS = [
       properties: { thread_id: { type: "string" } },
       required: ["thread_id"],
     },
+    annotations: { title: "Regenerate HILUX's last reply", ...WRITE_DESTRUCTIVE },
   },
 ];
 
@@ -750,8 +818,13 @@ serve(async (req) => {
 
   // Best-effort audit logger. Fires once per tool/call regardless
   // of outcome. We strip giant text fields from args (body, detail)
-  // to keep the jsonb compact.
-  const logCall = (ok: boolean, error: string | null) => {
+  // to keep the jsonb compact. Idempotency key + result message id
+  // are extra columns that let sendReply replay safely on retry.
+  const logCall = (
+    ok: boolean,
+    error: string | null,
+    extras: { idempotency_key?: string | null; result_message_id?: string | null } = {},
+  ) => {
     const safeArgs: Record<string, any> = {};
     for (const [k, v] of Object.entries(args)) {
       if (typeof v === "string" && v.length > 200) {
@@ -771,6 +844,8 @@ serve(async (req) => {
         ok,
         error,
         duration_ms: Date.now() - startedAt,
+        idempotency_key: extras.idempotency_key ?? null,
+        result_message_id: extras.result_message_id ?? null,
       })
       .then(({ error: e }) => {
         if (e) console.error("[vendora-mcp] call log insert failed", e);
@@ -797,7 +872,20 @@ serve(async (req) => {
 
   try {
     const result = await runTool(admin, userId, toolName, args);
-    logCall(true, null);
+    // Pluck the internal fields (prefixed with _) before logging
+    // and serializing — they're plumbing, not user-facing output.
+    const r = result as Record<string, any> | null;
+    const idemKey = (r?._idempotency_key as string | null | undefined) ?? null;
+    const resultMessageId =
+      (r?._result_message_id as string | null | undefined) ?? null;
+    if (r) {
+      delete r._idempotency_key;
+      delete r._result_message_id;
+    }
+    logCall(true, null, {
+      idempotency_key: idemKey,
+      result_message_id: resultMessageId,
+    });
     return rpcResult(id, {
       content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
     });
@@ -836,6 +924,8 @@ async function runTool(
       return await markInquiry(admin, userId, args);
     case "get_action_log":
       return await getActionLog(admin, userId, args);
+    case "get_mcp_call_log":
+      return await getMcpCallLog(admin, userId, args);
     case "compose_draft_reply":
       return await composeDraftReply(admin, userId, args);
     case "regenerate_last_hilux_reply":
@@ -1003,6 +1093,27 @@ async function getActionLog(
   return { entries: data ?? [] };
 }
 
+// Mirror of getActionLog but for Claude's own MCP call log. Lets
+// Claude introspect what it has done via this connector when the
+// vendor asks "what have you been doing for me?".
+async function getMcpCallLog(
+  admin: any,
+  userId: string,
+  args: Record<string, any>,
+) {
+  const limit = Math.min(Math.max(Number(args.limit) || 25, 1), 100);
+  let q = admin
+    .from("mcp_call_log")
+    .select("id, tool_name, args, ok, error, duration_ms, auth_method, created_at")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false })
+    .limit(limit);
+  if (typeof args.tool_name === "string") q = q.eq("tool_name", args.tool_name);
+  const { data, error } = await q;
+  if (error) throw error;
+  return { entries: data ?? [] };
+}
+
 // Read a resource by URI. Reuses the existing handlers so
 // ownership + RLS semantics are identical to the corresponding
 // tools — vendora://inquiry/<id> calls the same getInquiry the
@@ -1074,6 +1185,46 @@ async function sendReply(admin: any, userId: string, args: Record<string, any>) 
   const body = String(args.body ?? "").trim();
   if (!body) throw new Error("body is required");
   const thread = await loadOwnedThread(admin, userId, String(args.thread_id ?? ""));
+  const idempotencyKey =
+    typeof args.idempotency_key === "string" && args.idempotency_key.trim()
+      ? args.idempotency_key.trim().slice(0, 80)
+      : null;
+
+  // Idempotency replay: if we've seen this key from this user in
+  // the last 10 minutes AND it succeeded, return the original
+  // message instead of inserting a duplicate. The mcp_call_log row
+  // for THAT prior call carries the result_message_id we wrote
+  // alongside it.
+  if (idempotencyKey) {
+    const sinceIso = new Date(Date.now() - 10 * 60 * 1000).toISOString();
+    const { data: prior } = await admin
+      .from("mcp_call_log")
+      .select("result_message_id, ok")
+      .eq("user_id", userId)
+      .eq("tool_name", "send_reply")
+      .eq("idempotency_key", idempotencyKey)
+      .gte("created_at", sinceIso)
+      .order("created_at", { ascending: false })
+      .limit(1);
+    const priorRow = (prior ?? [])[0] as
+      | { result_message_id: string | null; ok: boolean }
+      | undefined;
+    if (priorRow?.ok && priorRow.result_message_id) {
+      const { data: msg } = await admin
+        .from("direct_messages")
+        .select("id, created_at")
+        .eq("id", priorRow.result_message_id)
+        .maybeSingle();
+      if (msg) {
+        return {
+          sent: true,
+          message_id: (msg as { id: string }).id,
+          created_at: (msg as { created_at: string }).created_at,
+          replayed: true,
+        };
+      }
+    }
+  }
 
   const { data, error } = await admin
     .from("direct_messages")
@@ -1087,7 +1238,14 @@ async function sendReply(admin: any, userId: string, args: Record<string, any>) 
     .select("id, created_at")
     .single();
   if (error) throw error;
-  return { sent: true, message_id: (data as { id: string }).id, created_at: (data as { created_at: string }).created_at };
+  return {
+    sent: true,
+    message_id: (data as { id: string }).id,
+    created_at: (data as { created_at: string }).created_at,
+    // surfaced to the call-log writer so it can store this on the row
+    _idempotency_key: idempotencyKey,
+    _result_message_id: (data as { id: string }).id,
+  };
 }
 
 async function setHiluxPause(
