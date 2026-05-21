@@ -566,11 +566,12 @@ serve(async (req) => {
   let userId: string | null = null;
   let authMethod: "oauth" | "pat" | null = null;
   let clientId: string | null = null;
+  let scope: "read_only" | "read_write" = "read_write";
 
   // Try OAuth first.
   const { data: oauthRow } = await admin
     .from("oauth_access_tokens")
-    .select("id, user_id, client_id, expires_at, revoked_at")
+    .select("id, user_id, client_id, scope, expires_at, revoked_at")
     .eq("token_hash", tokenHash)
     .maybeSingle();
   if (oauthRow) {
@@ -578,6 +579,7 @@ serve(async (req) => {
       id: string;
       user_id: string;
       client_id: string;
+      scope: string;
       expires_at: string;
       revoked_at: string | null;
     };
@@ -588,6 +590,7 @@ serve(async (req) => {
     userId = r.user_id;
     authMethod = "oauth";
     clientId = r.client_id;
+    scope = r.scope === "read_only" ? "read_only" : "read_write";
     admin
       .from("oauth_access_tokens")
       .update({ last_used_at: new Date().toISOString() })
@@ -601,14 +604,20 @@ serve(async (req) => {
   if (!userId) {
     const { data: patRow } = await admin
       .from("vendor_access_tokens")
-      .select("id, user_id, token_prefix")
+      .select("id, user_id, token_prefix, scope")
       .eq("token_hash", tokenHash)
       .maybeSingle();
     if (patRow) {
-      const p = patRow as { id: string; user_id: string; token_prefix: string };
+      const p = patRow as {
+        id: string;
+        user_id: string;
+        token_prefix: string;
+        scope: string;
+      };
       userId = p.user_id;
       authMethod = "pat";
       clientId = p.token_prefix;
+      scope = p.scope === "read_only" ? "read_only" : "read_write";
       admin
         .from("vendor_access_tokens")
         .update({ last_used_at: new Date().toISOString() })
@@ -672,6 +681,15 @@ serve(async (req) => {
         if (e) console.error("[vendora-mcp] call log insert failed", e);
       });
   };
+
+  // Scope check: read-only tokens cannot call write tools. We log
+  // the rejected call so the vendor sees "tried to send_reply with
+  // a read-only token" in their activity log.
+  if (scope === "read_only" && WRITE_TOOLS.has(toolName)) {
+    const msg = `Scope: this token is read_only and cannot call '${toolName}'.`;
+    logCall(false, msg);
+    return rpcError(id, -32030, msg);
+  }
 
   // Rate-limit BEFORE running the tool. Log the rejected call so
   // the vendor can see "Claude was rate-limited at 3:14pm" in the
