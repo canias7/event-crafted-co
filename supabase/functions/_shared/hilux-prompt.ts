@@ -48,6 +48,9 @@ export interface HiluxActions {
   matchLanguage: boolean;
   useCalendar: boolean;
   escalate: boolean;
+  askClarifying: boolean;
+  useFirstName: boolean;
+  quietHours: boolean;
 }
 
 export const DEFAULT_ACTIONS: HiluxActions = {
@@ -55,7 +58,22 @@ export const DEFAULT_ACTIONS: HiluxActions = {
   matchLanguage: true,
   useCalendar: true,
   escalate: true,
+  askClarifying: true,
+  useFirstName: true,
+  quietHours: false,
 };
+
+// HILUX is paused during these UTC hours when the quietHours action
+// is on. v1 picks an Eastern-ish window (11pm-7am ET ≈ 04:00-12:00
+// UTC). Vendors outside ET get a roughly-correct nighttime band;
+// per-vendor TZ support is future work.
+export const QUIET_HOURS_UTC_START = 4;
+export const QUIET_HOURS_UTC_END = 12;
+
+export function isInQuietHours(date: Date = new Date()): boolean {
+  const h = date.getUTCHours();
+  return h >= QUIET_HOURS_UTC_START && h < QUIET_HOURS_UTC_END;
+}
 
 export interface HiluxPromptCtx {
   businessName: string;
@@ -70,6 +88,9 @@ export interface HiluxPromptCtx {
   inquiry: InquiryCtx | null;
   availability: AvailabilityCtx | null;
   actions: HiluxActions;
+  // Host's first name when known (parsed from profiles.display_name).
+  // Only included in the prompt when actions.useFirstName is true.
+  hostFirstName: string | null;
 }
 
 export interface LeadScoreResult {
@@ -124,9 +145,24 @@ export function buildSystemPrompt(ctx: HiluxPromptCtx): string {
   lines.push(
     "- If the host asks for a quote, anchor to the starting price or the relevant package, and note that final pricing depends on the date and details.",
   );
-  lines.push(
-    "- When useful, ask one focused clarifying question (event date, guest count, or vibe) instead of dumping every package.",
-  );
+  if (ctx.actions.askClarifying) {
+    lines.push(
+      "- When the host's message is vague or missing key details, ask ONE focused clarifying question (event date, guest count, or vibe) instead of guessing or dumping every package.",
+    );
+  } else {
+    lines.push(
+      "- DO NOT ask clarifying questions. Always do your best to answer with what's in the context — even if the host's question is vague, give a useful answer based on common assumptions.",
+    );
+  }
+  if (ctx.actions.useFirstName && ctx.hostFirstName) {
+    lines.push(
+      `- The host's first name is "${ctx.hostFirstName}". Open the reply by addressing them by first name (e.g. "Hi ${ctx.hostFirstName}," or just "${ctx.hostFirstName} —"). Don't overuse it; once is enough.`,
+    );
+  } else {
+    lines.push(
+      "- Do NOT use the host's name in the reply, even if it's visible in context.",
+    );
+  }
   lines.push(
     "- Don't sign off with names or signatures. The vendor's profile already shows who you are.",
   );
@@ -390,7 +426,7 @@ export async function loadVendorContext(
     const { data: profRow } = await admin
       .from("profiles")
       .select(
-        "hilux_enabled, hilux_instructions, hilux_voice_samples, hilux_action_follow_up, hilux_action_match_language, hilux_action_use_calendar, hilux_action_escalate",
+        "hilux_enabled, hilux_instructions, hilux_voice_samples, hilux_action_follow_up, hilux_action_match_language, hilux_action_use_calendar, hilux_action_escalate, hilux_action_ask_clarifying, hilux_action_use_first_name, hilux_action_quiet_hours",
       )
       .eq("id", vendor.user_id)
       .maybeSingle();
@@ -404,6 +440,9 @@ export async function loadVendorContext(
           matchLanguage: profRow.hilux_action_match_language !== false,
           useCalendar: profRow.hilux_action_use_calendar !== false,
           escalate: profRow.hilux_action_escalate !== false,
+          askClarifying: profRow.hilux_action_ask_clarifying !== false,
+          useFirstName: profRow.hilux_action_use_first_name !== false,
+          quietHours: profRow.hilux_action_quiet_hours === true,
         },
       };
     }

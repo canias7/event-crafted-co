@@ -10,10 +10,13 @@ import {
   ChevronDown,
   ChevronRight,
   Globe2,
+  HelpCircle,
   Loader2,
+  Moon,
   Pencil,
   Send,
   ShieldAlert,
+  UserCircle2,
 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
@@ -34,13 +37,19 @@ interface HiluxProfileRow {
   hilux_action_match_language: boolean;
   hilux_action_use_calendar: boolean;
   hilux_action_escalate: boolean;
+  hilux_action_ask_clarifying: boolean;
+  hilux_action_use_first_name: boolean;
+  hilux_action_quiet_hours: boolean;
 }
 
 type ActionKey =
   | "hilux_action_follow_up"
   | "hilux_action_match_language"
   | "hilux_action_use_calendar"
-  | "hilux_action_escalate";
+  | "hilux_action_escalate"
+  | "hilux_action_ask_clarifying"
+  | "hilux_action_use_first_name"
+  | "hilux_action_quiet_hours";
 
 interface ActionDef {
   key: ActionKey;
@@ -77,6 +86,27 @@ const ACTIONS: ActionDef[] = [
     blurb:
       "If HILUX can't confidently answer, route it to your inbox instead of guessing.",
     Icon: ShieldAlert,
+  },
+  {
+    key: "hilux_action_ask_clarifying",
+    label: "Ask one clarifying question",
+    blurb:
+      "When the host's message is vague, ask one focused question (date, guest count, vibe) instead of guessing.",
+    Icon: HelpCircle,
+  },
+  {
+    key: "hilux_action_use_first_name",
+    label: "Use the host's first name",
+    blurb:
+      "Open replies with the host's first name when their profile has one (\"Hi Sarah,\").",
+    Icon: UserCircle2,
+  },
+  {
+    key: "hilux_action_quiet_hours",
+    label: "Quiet hours overnight",
+    blurb:
+      "Pause auto-replies from late evening to early morning. HILUX skips host messages that land in that window so the host doesn't get a robotic 3am reply.",
+    Icon: Moon,
   },
 ];
 
@@ -121,7 +151,7 @@ export function HiluxVendorControls() {
     const { data, error } = await supabase
       .from("profiles")
       .select(
-        "hilux_enabled, hilux_instructions, hilux_action_follow_up, hilux_action_match_language, hilux_action_use_calendar, hilux_action_escalate",
+        "hilux_enabled, hilux_instructions, hilux_action_follow_up, hilux_action_match_language, hilux_action_use_calendar, hilux_action_escalate, hilux_action_ask_clarifying, hilux_action_use_first_name, hilux_action_quiet_hours",
       )
       .eq("id", user.id)
       .maybeSingle();
@@ -137,6 +167,9 @@ export function HiluxVendorControls() {
       hilux_action_match_language: true,
       hilux_action_use_calendar: true,
       hilux_action_escalate: true,
+      hilux_action_ask_clarifying: true,
+      hilux_action_use_first_name: true,
+      hilux_action_quiet_hours: false,
     };
     setProfile(row);
     setDraftInstructions(row.hilux_instructions ?? "");

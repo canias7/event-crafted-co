@@ -168,6 +168,7 @@ serve(async (req) => {
           inquiry: inquiryCtx,
           availability: ctx.availability,
           actions: ctx.profile.actions,
+          hostFirstName: null,
         });
 
         const claudeMessages = ordered.map((m) => ({
