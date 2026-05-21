@@ -151,7 +151,6 @@ export default function LandingPage() {
           >
             with Vendora.
           </h1>
-          <div className="mx-auto" style={{ width: 48, height: "0.5px", background: "#000" }} />
         </section>
 
       </div>
