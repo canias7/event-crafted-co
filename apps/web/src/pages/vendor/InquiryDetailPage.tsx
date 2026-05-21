@@ -1223,7 +1223,7 @@ export default function InquiryDetailPage() {
                           {isAi ? (
                             <span className="inline-flex items-center gap-1 text-[10px] uppercase tracking-wider opacity-80 mb-1">
                               <Sparkles className="w-3 h-3" />
-                              Sent by AI
+                              Sent by HILUX 2.7
                             </span>
                           ) : null}
                           {editingMessageId === m.id ? (
