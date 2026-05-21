@@ -13,6 +13,9 @@ import type { SVGProps } from "react";
 type IconProps = SVGProps<SVGSVGElement> & { className?: string };
 
 export function HiluxLogo({ className, ...props }: IconProps) {
+  // H-monogram with an "always on" pulse light in the top-right
+  // corner. The H reads as the H in HILUX; the glowing dot reads as
+  // the agent's live/listening state.
   return (
     <svg
       viewBox="0 0 24 24"
@@ -22,23 +25,13 @@ export function HiluxLogo({ className, ...props }: IconProps) {
       aria-hidden="true"
       {...props}
     >
-      <circle cx="12" cy="12" r="2.2" fill="currentColor" />
-      <circle
-        cx="12"
-        cy="12"
-        r="5.4"
-        stroke="currentColor"
-        strokeWidth="1.4"
-        opacity="0.55"
-      />
-      <circle
-        cx="12"
-        cy="12"
-        r="8.8"
-        stroke="currentColor"
-        strokeWidth="1"
-        opacity="0.25"
-      />
+      {/* H — two stacked pillars + a centered crossbar, all rounded */}
+      <rect x="4.5" y="5" width="2.6" height="14" rx="1.3" fill="currentColor" />
+      <rect x="13.5" y="5" width="2.6" height="14" rx="1.3" fill="currentColor" />
+      <rect x="6.4" y="10.7" width="9.2" height="2.6" rx="1.3" fill="currentColor" />
+      {/* Pulse light — soft halo + solid core */}
+      <circle cx="19.5" cy="4.5" r="3.4" fill="currentColor" opacity="0.22" />
+      <circle cx="19.5" cy="4.5" r="1.9" fill="currentColor" />
     </svg>
   );
 }
