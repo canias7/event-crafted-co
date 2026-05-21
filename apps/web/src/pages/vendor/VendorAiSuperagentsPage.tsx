@@ -35,6 +35,7 @@ const COMING_SOON_COPY: Record<
     ],
     accent: "#7aa8ff",
     Logo: RaptorLogo,
+    selfContained: true,
   },
   AXION: {
     name: "AXION 9.1",
