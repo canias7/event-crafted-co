@@ -10,7 +10,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { CheckCircle2, Edit3, ExternalLink, Plus, Share2 } from "lucide-react";
+import { CheckCircle2, Edit3, Plus, Share2 } from "lucide-react";
 import { toast } from "sonner";
 import { DashboardSidebar } from "@/components/shared/DashboardSidebar";
 import { MobileNav } from "@/components/shared/MobileNav";
@@ -537,17 +537,6 @@ function ListingPreviewModal({
               />
             ) : null}
           </div>
-          {isApproved ? (
-            <a
-              href={publicHref}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors shrink-0"
-            >
-              Open in new tab
-              <ExternalLink className="w-3 h-3" />
-            </a>
-          ) : null}
         </div>
 
         <DialogDescription className="sr-only">
