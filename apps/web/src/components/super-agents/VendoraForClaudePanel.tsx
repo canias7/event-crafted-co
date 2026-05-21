@@ -614,8 +614,7 @@ export function VendoraForClaudePanel() {
           </div>
           <p className="text-[11px] text-black/45 italic mt-2 inline-flex items-center gap-1">
             <CheckCircle2 className="w-3 h-3" />
-            12 tools live. Claude can read your inbox + take action on your
-            behalf with your approval (Claude clients prompt before any write).
+            12 tools live + 3 static resources (vendora://settings, vendora://activity, vendora://listings) and 2 templates (vendora://inquiry/&lcub;id&rcub;, vendora://thread/&lcub;id&rcub;). Claude can read your inbox + take action on your behalf with your approval (Claude clients prompt before any write).
           </p>
         </div>
       </div>

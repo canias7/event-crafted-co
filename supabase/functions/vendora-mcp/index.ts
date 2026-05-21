@@ -340,14 +340,57 @@ const INITIALIZE_RESULT = {
   capabilities: {
     tools: { listChanged: false },
     prompts: { listChanged: false },
+    resources: { listChanged: false, subscribe: false },
   },
   serverInfo: {
     name: "vendora",
-    version: "0.2.0",
+    version: "0.3.0",
   },
   instructions:
-    "Vendora exposes a vendor's marketplace inbox + HILUX configuration to Claude. Tools: use list_inquiries to see what's waiting, get_inquiry to drill in, compose_draft_reply to write in the vendor's HILUX voice. Prompts: discoverable workflows the vendor can invoke from the Claude.ai slash menu (morning_recap, draft_for_thread, score_hot_leads, etc.).",
+    "Vendora exposes a vendor's marketplace inbox + HILUX configuration to Claude. Tools: use list_inquiries to see what's waiting, get_inquiry to drill in, compose_draft_reply to write in the vendor's HILUX voice. Prompts: slash-menu workflows (morning_recap, draft_for_thread, score_hot_leads). Resources: reference vendora://settings, vendora://activity, or any inquiry/thread by URI.",
 };
+
+// Static resources Claude can always reference by URI. Templates
+// (dynamic per-id resources) are returned via resources/templates/list.
+const STATIC_RESOURCES = [
+  {
+    uri: "vendora://settings",
+    name: "HILUX settings",
+    description:
+      "The vendor's HILUX configuration — every toggle, greeting, and reply length. Equivalent to calling get_hilux_settings.",
+    mimeType: "application/json",
+  },
+  {
+    uri: "vendora://activity",
+    name: "HILUX activity log",
+    description:
+      "Recent HILUX actions (replies, escalations, follow-ups, archives). Equivalent to get_action_log with default limit.",
+    mimeType: "application/json",
+  },
+  {
+    uri: "vendora://listings",
+    name: "Vendor listings",
+    description:
+      "The vendor's vendor_profiles. Equivalent to calling list_listings.",
+    mimeType: "application/json",
+  },
+];
+
+const RESOURCE_TEMPLATES = [
+  {
+    uriTemplate: "vendora://inquiry/{inquiry_id}",
+    name: "Inquiry detail",
+    description:
+      "Full inquiry plus the last 30 messages in its thread. Use after listing inquiries to drill into one by id.",
+    mimeType: "application/json",
+  },
+  {
+    uriTemplate: "vendora://thread/{thread_id}",
+    name: "Thread transcript",
+    description: "Full message transcript for a thread by id (latest 30).",
+    mimeType: "application/json",
+  },
+];
 
 // Prompts catalog — discoverable workflows that vendors can fire
 // from Claude.ai's slash menu. Each prompt returns a pre-filled
@@ -540,14 +583,21 @@ serve(async (req) => {
     return rpcResult(id, INITIALIZE_RESULT);
   }
 
-  // `tools/list` and `prompts/list` are technically auth-required
-  // by spec, but returning the catalog publicly is harmless and
-  // improves DX (Claude can probe before the user authenticates).
+  // `tools/list`, `prompts/list`, and the static resource catalogs
+  // are technically auth-required by spec, but returning them
+  // publicly is harmless and improves DX (Claude can probe before
+  // the user authenticates).
   if (method === "tools/list") {
     return rpcResult(id, { tools: TOOLS });
   }
   if (method === "prompts/list") {
     return rpcResult(id, { prompts: PROMPTS });
+  }
+  if (method === "resources/list") {
+    return rpcResult(id, { resources: STATIC_RESOURCES });
+  }
+  if (method === "resources/templates/list") {
+    return rpcResult(id, { resourceTemplates: RESOURCE_TEMPLATES });
   }
 
   // Beyond this point: bearer token required. We accept TWO token
@@ -643,6 +693,51 @@ serve(async (req) => {
       return rpcError(id, -32602, `Unknown prompt or missing required arguments: ${promptName}`);
     }
     return rpcResult(id, rendered);
+  }
+
+  // resources/read: fetch the content for a referenced URI. Subject
+  // to the same ownership rules as the underlying tools — we route
+  // through the same handlers and serialize the result as a JSON
+  // text block. Logged so vendors can see in the activity panel
+  // when Claude reads a resource.
+  if (method === "resources/read") {
+    const uri = String(params?.uri ?? "");
+    const startedAt = Date.now();
+    const logResourceRead = (ok: boolean, error: string | null) => {
+      admin
+        .from("mcp_call_log")
+        .insert({
+          user_id: userId,
+          client_id: clientId,
+          auth_method: authMethod,
+          tool_name: `resources/read`,
+          args: { uri },
+          ok,
+          error,
+          duration_ms: Date.now() - startedAt,
+        })
+        .then(({ error: e }) => {
+          if (e) console.error("[vendora-mcp] resource log insert failed", e);
+        });
+    };
+    try {
+      const payload = await readResource(admin, userId, uri);
+      logResourceRead(true, null);
+      return rpcResult(id, {
+        contents: [
+          {
+            uri,
+            mimeType: "application/json",
+            text: JSON.stringify(payload, null, 2),
+          },
+        ],
+      });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error("[vendora-mcp] resource error", uri, err);
+      logResourceRead(false, msg);
+      return rpcError(id, -32602, msg);
+    }
   }
 
   if (method !== "tools/call") {
@@ -873,6 +968,49 @@ async function getActionLog(
   const { data, error } = await q;
   if (error) throw error;
   return { entries: data ?? [] };
+}
+
+// Read a resource by URI. Reuses the existing handlers so
+// ownership + RLS semantics are identical to the corresponding
+// tools — vendora://inquiry/<id> calls the same getInquiry the
+// get_inquiry tool does.
+async function readResource(
+  admin: any,
+  userId: string,
+  uri: string,
+): Promise<unknown> {
+  if (!uri.startsWith("vendora://")) {
+    throw new Error("invalid uri scheme; expected vendora://...");
+  }
+  const path = uri.slice("vendora://".length);
+  if (path === "settings") {
+    return await getHiluxSettings(admin, userId);
+  }
+  if (path === "activity") {
+    return await getActionLog(admin, userId, {});
+  }
+  if (path === "listings") {
+    return await listListings(admin, userId);
+  }
+  if (path.startsWith("inquiry/")) {
+    const inquiryId = path.slice("inquiry/".length);
+    if (!inquiryId) throw new Error("inquiry id required");
+    return await getInquiry(admin, userId, inquiryId);
+  }
+  if (path.startsWith("thread/")) {
+    const threadId = path.slice("thread/".length);
+    if (!threadId) throw new Error("thread id required");
+    const thread = await loadOwnedThread(admin, userId, threadId);
+    const { data: messages } = await admin
+      .from("direct_messages")
+      .select("id, sender_role, body, created_at, is_hilux_generated, edited_at")
+      .eq("thread_id", thread.id)
+      .order("created_at", { ascending: false })
+      .limit(30);
+    const ordered = ((messages ?? []) as any[]).slice().reverse();
+    return { thread_id: thread.id, vendor_id: thread.vendor_id, messages: ordered };
+  }
+  throw new Error(`unknown resource: ${uri}`);
 }
 
 // -------- Write tools --------
