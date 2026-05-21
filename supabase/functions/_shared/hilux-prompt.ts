@@ -33,6 +33,10 @@ export interface AvailabilityCtx {
   busyDates: string[];
   // 0=Sun..6=Sat day-of-week numbers that are fully closed every week.
   recurringClosedDays: number[];
+  // Per-weekday hour windows for days that are bookable but only
+  // during a specific time range (e.g., Wed 09:00–17:00 only).
+  // `start`/`end` are 24-hr HH:MM strings.
+  recurringHourWindows: Array<{ dayOfWeek: number; start: string; end: string }>;
   // ISO yyyy-mm-dd of "today" in vendor's expected timezone (UTC for
   // now; we don't track vendor TZ on the listing yet).
   today: string;
@@ -97,6 +101,9 @@ export function buildSystemPrompt(ctx: HiluxPromptCtx): string {
   lines.push(
     "- Don't sign off with names or signatures. The vendor's profile already shows who you are.",
   );
+  lines.push(
+    "- IF YOU CANNOT CONFIDENTLY ANSWER from the context above (e.g., custom pricing the listing doesn't cover, off-menu services, requests that require a human judgment, or facts you'd have to invent), DO NOT REPLY. Instead, output a single line starting with the literal token \"ESCALATE:\" followed by a short reason (max 100 chars). The system will route the conversation to the vendor — your job is to step aside, not to bluff. Use ESCALATE sparingly; if the answer is in the context, just answer.",
+  );
   lines.push("");
   lines.push("LISTING CONTEXT:");
   lines.push(`- Business: ${ctx.businessName}`);
@@ -139,6 +146,26 @@ export function buildSystemPrompt(ctx: HiluxPromptCtx): string {
         .map((d) => DAY_NAMES[d])
         .filter(Boolean);
       lines.push(`- Closed every week on: ${names.join(", ")}.`);
+    }
+    if (av.recurringHourWindows.length > 0) {
+      const byDay = new Map<number, string[]>();
+      for (const w of av.recurringHourWindows) {
+        const slot = `${w.start}–${w.end}`;
+        const arr = byDay.get(w.dayOfWeek) ?? [];
+        arr.push(slot);
+        byDay.set(w.dayOfWeek, arr);
+      }
+      const parts: string[] = [];
+      for (const [day, slots] of [...byDay.entries()].sort((a, b) => a[0] - b[0])) {
+        const name = DAY_NAMES[day];
+        if (!name) continue;
+        parts.push(`${name} ${slots.join(" & ")}`);
+      }
+      if (parts.length > 0) {
+        lines.push(
+          `- Bookable only within these hour windows (outside the listed times those weekdays count as closed): ${parts.join("; ")}.`,
+        );
+      }
     }
     if (av.busyDates.length > 0) {
       lines.push(`- Booked or blocked dates: ${av.busyDates.join(", ")}.`);
@@ -284,7 +311,7 @@ export async function loadVendorContext(
       .lte("date", horizonIso),
     admin
       .from("vendor_availability_rules")
-      .select("day_of_week, is_unavailable")
+      .select("day_of_week, is_unavailable, start_time, end_time")
       .eq("vendor_id", vendor.id),
     admin.rpc("vendor_booked_dates", { p_vendor_id: vendor.id }),
   ]);
@@ -303,12 +330,27 @@ export async function loadVendorContext(
     .filter((d) => d >= todayIso && d <= horizonIso)
     .sort();
 
-  const recurringClosedDays = ((rules ?? []) as Array<{
+  const rulesTyped = (rules ?? []) as Array<{
     day_of_week: number;
     is_unavailable: boolean;
-  }>)
+    start_time: string | null;
+    end_time: string | null;
+  }>;
+  const recurringClosedDays = rulesTyped
     .filter((r) => r.is_unavailable === true)
     .map((r) => r.day_of_week);
+  const recurringHourWindows = rulesTyped
+    .filter(
+      (r) =>
+        r.is_unavailable !== true &&
+        r.start_time != null &&
+        r.end_time != null,
+    )
+    .map((r) => ({
+      dayOfWeek: r.day_of_week,
+      start: (r.start_time ?? "").slice(0, 5),
+      end: (r.end_time ?? "").slice(0, 5),
+    }));
 
   return {
     vendor,
@@ -327,6 +369,7 @@ export async function loadVendorContext(
     availability: {
       busyDates,
       recurringClosedDays,
+      recurringHourWindows,
       today: todayIso,
       horizon: horizonIso,
     },

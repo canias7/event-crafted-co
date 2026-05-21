@@ -419,6 +419,7 @@ export type Database = {
       direct_threads: {
         Row: {
           created_at: string
+          hilux_paused: boolean
           host_id: string
           id: string
           inquiry_id: string | null
@@ -427,6 +428,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          hilux_paused?: boolean
           host_id: string
           id?: string
           inquiry_id?: string | null
@@ -435,6 +437,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          hilux_paused?: boolean
           host_id?: string
           id?: string
           inquiry_id?: string | null
