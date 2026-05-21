@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { Inbox, Search } from "lucide-react";
+import { Inbox, Search, Sparkles } from "lucide-react";
 import { useRealtime } from "@/lib/realtime";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -33,6 +33,7 @@ interface InquiryRow {
   last_message_at: string;
   vendor_read_at: string | null;
   host: { display_name: string | null; avatar_url: string | null } | null;
+  vendor_profiles: { hilux_enabled: boolean } | null;
 }
 
 function relativeTime(iso: string | null): string {
@@ -90,7 +91,7 @@ export default function VendorInboxPage() {
     const { data } = await supabase
       .from("inquiries")
       .select(
-        "id, event_type, event_date, guest_count, location, budget_min_cents, budget_max_cents, special_requests, status, created_at, last_message_at, vendor_read_at, host:profiles!inquiries_host_id_fkey(display_name, avatar_url)",
+        "id, event_type, event_date, guest_count, location, budget_min_cents, budget_max_cents, special_requests, status, created_at, last_message_at, vendor_read_at, host:profiles!inquiries_host_id_fkey(display_name, avatar_url), vendor_profiles(hilux_enabled)",
       )
       .in("vendor_id", vids)
       .order("last_message_at", { ascending: false })
@@ -290,6 +291,15 @@ function ConversationRow({
             >
               {name}
             </span>
+            {row.vendor_profiles?.hilux_enabled ? (
+              <span
+                className="shrink-0 inline-flex items-center"
+                title="HILUX is answering on this listing"
+                aria-label="HILUX is answering on this listing"
+              >
+                <Sparkles className="w-3 h-3 text-accent" />
+              </span>
+            ) : null}
             <span className="text-[11px] uppercase tracking-wider text-muted-foreground capitalize truncate">
               · {eventLabel}
             </span>

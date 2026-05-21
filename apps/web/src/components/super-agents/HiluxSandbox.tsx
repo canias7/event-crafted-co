@@ -6,7 +6,7 @@
 // chat resets when the listing changes or the page reloads.
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Bot, Loader2, RefreshCw, Send, Sparkles, User } from "lucide-react";
+import { AlertTriangle, Bot, Loader2, RefreshCw, Send, Sparkles, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -24,8 +24,9 @@ interface SandboxListing {
 interface SandboxMessage {
   role: "user" | "assistant";
   content: string;
-  // True when this user message has been answered. Replies are kept
-  // adjacent to their host turn in render order.
+  // When kind === "escalation", the message is rendered as a callout
+  // instead of a bubble — HILUX chose to defer to the vendor.
+  kind?: "reply" | "escalation";
 }
 
 export function HiluxSandbox() {
@@ -100,13 +101,34 @@ export function HiluxSandbox() {
         body: {
           vendor_id: selected.id,
           instructions_override: useOverride ? overrideText : null,
-          messages: next.map((m) => ({ role: m.role, content: m.content })),
+          // Escalation turns are UI-only — they were never an actual
+          // assistant reply to the host. Don't ship them back to
+          // Claude or it'll think it's continuing from a "ESCALATE:"
+          // string in conversation.
+          messages: next
+            .filter((m) => m.kind !== "escalation")
+            .map((m) => ({ role: m.role, content: m.content })),
         },
       });
       if (error) throw error;
       const reply = (data as { reply?: string } | null)?.reply;
       if (!reply) throw new Error("Empty reply");
-      setMessages((prev) => [...prev, { role: "assistant", content: reply }]);
+      const escalateMatch = reply.match(/^\s*ESCALATE\s*:\s*(.+)$/im);
+      if (escalateMatch) {
+        setMessages((prev) => [
+          ...prev,
+          {
+            role: "assistant",
+            content: escalateMatch[1].trim(),
+            kind: "escalation",
+          },
+        ]);
+      } else {
+        setMessages((prev) => [
+          ...prev,
+          { role: "assistant", content: reply, kind: "reply" },
+        ]);
+      }
     } catch (err: unknown) {
       console.error("[HiluxSandbox] send", err);
       const msg = err instanceof Error ? err.message : String(err);
@@ -228,37 +250,57 @@ export function HiluxSandbox() {
                   </span>
                 </p>
               ) : (
-                messages.map((m, i) => (
-                  <div
-                    key={i}
-                    className={`flex items-start gap-2 ${
-                      m.role === "user" ? "justify-end" : "justify-start"
-                    }`}
-                  >
-                    {m.role === "assistant" ? (
+                messages.map((m, i) => {
+                  if (m.role === "assistant" && m.kind === "escalation") {
+                    return (
                       <div
-                        className="w-6 h-6 rounded-full flex items-center justify-center shrink-0 mt-0.5"
-                        style={{ background: "rgba(255, 138, 76, 0.2)" }}
+                        key={i}
+                        className="flex items-start gap-2 px-2 py-2 rounded-xl bg-amber-50 border border-amber-200 text-amber-900"
                       >
-                        <Bot className="w-3.5 h-3.5" style={{ color: "#ff8a4c" }} />
+                        <AlertTriangle className="w-4 h-4 mt-0.5 text-amber-600 shrink-0" />
+                        <div className="text-sm leading-snug">
+                          <p className="font-medium">
+                            HILUX would escalate this to you instead of replying.
+                          </p>
+                          <p className="text-xs text-amber-800 mt-0.5">
+                            Reason: {m.content}
+                          </p>
+                        </div>
                       </div>
-                    ) : null}
+                    );
+                  }
+                  return (
                     <div
-                      className={`max-w-[78%] px-3 py-2 rounded-2xl text-sm whitespace-pre-wrap ${
-                        m.role === "user"
-                          ? "bg-black text-white rounded-br-sm"
-                          : "bg-white text-black rounded-bl-sm border border-black/5"
+                      key={i}
+                      className={`flex items-start gap-2 ${
+                        m.role === "user" ? "justify-end" : "justify-start"
                       }`}
                     >
-                      {m.content}
-                    </div>
-                    {m.role === "user" ? (
-                      <div className="w-6 h-6 rounded-full bg-black/10 flex items-center justify-center shrink-0 mt-0.5">
-                        <User className="w-3.5 h-3.5 text-black/60" />
+                      {m.role === "assistant" ? (
+                        <div
+                          className="w-6 h-6 rounded-full flex items-center justify-center shrink-0 mt-0.5"
+                          style={{ background: "rgba(255, 138, 76, 0.2)" }}
+                        >
+                          <Bot className="w-3.5 h-3.5" style={{ color: "#ff8a4c" }} />
+                        </div>
+                      ) : null}
+                      <div
+                        className={`max-w-[78%] px-3 py-2 rounded-2xl text-sm whitespace-pre-wrap ${
+                          m.role === "user"
+                            ? "bg-black text-white rounded-br-sm"
+                            : "bg-white text-black rounded-bl-sm border border-black/5"
+                        }`}
+                      >
+                        {m.content}
                       </div>
-                    ) : null}
-                  </div>
-                ))
+                      {m.role === "user" ? (
+                        <div className="w-6 h-6 rounded-full bg-black/10 flex items-center justify-center shrink-0 mt-0.5">
+                          <User className="w-3.5 h-3.5 text-black/60" />
+                        </div>
+                      ) : null}
+                    </div>
+                  );
+                })
               )}
               {sending ? (
                 <div className="flex items-center gap-2 text-xs text-black/50 pl-8">
