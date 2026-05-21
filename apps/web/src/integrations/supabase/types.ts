@@ -420,6 +420,7 @@ export type Database = {
         Row: {
           created_at: string
           hilux_paused: boolean
+          hilux_typing_until: string | null
           host_id: string
           id: string
           inquiry_id: string | null
@@ -429,6 +430,7 @@ export type Database = {
         Insert: {
           created_at?: string
           hilux_paused?: boolean
+          hilux_typing_until?: string | null
           host_id: string
           id?: string
           inquiry_id?: string | null
@@ -438,6 +440,7 @@ export type Database = {
         Update: {
           created_at?: string
           hilux_paused?: boolean
+          hilux_typing_until?: string | null
           host_id?: string
           id?: string
           inquiry_id?: string | null

@@ -617,6 +617,31 @@ export default function InquiryDetailPage() {
     }
   }
 
+  async function regenerateHilux(messageId: string) {
+    const optimisticToast = toast.loading("HILUX is rewriting…");
+    try {
+      const { data, error } = await supabase.functions.invoke(
+        "hilux-regenerate",
+        { body: { message_id: messageId } },
+      );
+      if (error) throw error;
+      const reply = (data as { reply?: string } | null)?.reply;
+      if (!reply) throw new Error("No reply returned");
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === messageId
+            ? { ...m, body: reply, edited_at: new Date().toISOString() }
+            : m,
+        ),
+      );
+      toast.success("Regenerated.", { id: optimisticToast });
+    } catch (err: unknown) {
+      console.error("[InquiryDetail] regenerate failed", err);
+      const msg = err instanceof Error ? err.message : String(err);
+      toast.error(`Couldn't regenerate: ${msg}`, { id: optimisticToast });
+    }
+  }
+
   async function toggleHiluxPause() {
     if (!threadId || hiluxToggling) return;
     const next = !hiluxPaused;
@@ -1077,6 +1102,13 @@ export default function InquiryDetailPage() {
                         onReply={() => setReplyToId(m.id)}
                         onEdit={() => startEditing(m)}
                         onDelete={() => deleteMessage(m.id)}
+                        onRegenerate={
+                          m.is_hilux_generated === true &&
+                          messages.length > 0 &&
+                          messages[messages.length - 1].id === m.id
+                            ? () => regenerateHilux(m.id)
+                            : undefined
+                        }
                       />
                     </div>
                   ) : null}
