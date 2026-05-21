@@ -10,6 +10,7 @@ import {
 import { MessageReplyContext } from "@/components/messages/MessageReplyContext";
 import { VoiceRecorder } from "@/components/messages/VoiceRecorder";
 import { PinLocationDialog } from "@/components/messages/PinLocationDialog";
+import { HiluxThreadActivity } from "@/components/super-agents/HiluxThreadActivity";
 import { MessageBody } from "@/components/messages/MessageBody";
 import { TypingBubble } from "@/components/messages/TypingBubble";
 import { RatingPromptStrip } from "@/components/reviews/RatingPromptStrip";
@@ -1037,6 +1038,10 @@ export default function InquiryDetailPage() {
         className="flex-1 overflow-y-auto px-4 md:px-6 py-5"
       >
         <div className="max-w-3xl mx-auto space-y-1.5">
+          {/* HILUX activity in this thread — null when the action log
+              is empty, so legacy inquiries stay clean. */}
+          <HiluxThreadActivity inquiryId={inquiry.id} />
+
           {/* Pinned: the original inquiry, rendered as the host's
               "opening message" so the thread starts with their ask. A
               small NEW INQUIRY chip sits above the bubble to flag that
