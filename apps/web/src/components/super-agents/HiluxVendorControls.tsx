@@ -31,6 +31,32 @@ const PLACEHOLDER = `Examples:
 • We don't do Sunday weddings. If asked, say we're closed Sundays.
 • If they mention "small wedding", recommend our Intimate package.`;
 
+// Quick-start tone presets the vendor can drop into the instructions
+// textarea. Picking one appends a stub paragraph they can edit; we
+// don't replace the existing text so iterative tweaking is safe.
+const TONE_PRESETS: Array<{ label: string; text: string }> = [
+  {
+    label: "Warm & casual",
+    text:
+      "Tone: warm, friendly, conversational. Use first names if the host shares theirs. Skip corporate phrases like 'thank you for reaching out.'",
+  },
+  {
+    label: "Professional",
+    text:
+      "Tone: polished and professional. Use complete sentences, no slang. Sign off the substance, not the bubble — keep it crisp.",
+  },
+  {
+    label: "Playful",
+    text:
+      "Tone: playful and a little witty. Light humour is welcome when it lands; never at the host's expense. Keep replies under 3 sentences.",
+  },
+  {
+    label: "Luxury",
+    text:
+      "Tone: refined, understated luxury. Lead with curiosity about their vision before pricing. Never lead with a price tag; lead with experience.",
+  },
+];
+
 export function HiluxVendorControls() {
   const { user } = useAuth();
   const [listings, setListings] = useState<HiluxListingRow[] | null>(null);
@@ -129,6 +155,12 @@ export function HiluxVendorControls() {
     }, 700);
   };
 
+  const applyTonePreset = (row: HiluxListingRow, preset: { text: string }) => {
+    const current = (drafts[row.id] ?? row.hilux_instructions ?? "").trim();
+    const next = current.length === 0 ? preset.text : `${current}\n\n${preset.text}`;
+    onInstructionsChange(row, next.slice(0, 4000));
+  };
+
   if (!user) return null;
 
   return (
@@ -219,7 +251,22 @@ export function HiluxVendorControls() {
                   </div>
 
                   {isExpanded ? (
-                    <div className="mt-3 space-y-1.5">
+                    <div className="mt-3 space-y-2">
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        <span className="text-[11px] uppercase tracking-wider text-black/45 mr-1">
+                          Quick tone:
+                        </span>
+                        {TONE_PRESETS.map((preset) => (
+                          <button
+                            key={preset.label}
+                            type="button"
+                            onClick={() => applyTonePreset(row, preset)}
+                            className="text-[11px] px-2.5 py-1 rounded-full border border-black/15 bg-white/70 text-black/75 hover:bg-white hover:border-black/30 transition-colors"
+                          >
+                            + {preset.label}
+                          </button>
+                        ))}
+                      </div>
                       <Textarea
                         value={draft}
                         onChange={(e) => onInstructionsChange(row, e.target.value)}
