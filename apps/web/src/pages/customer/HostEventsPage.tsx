@@ -14,6 +14,7 @@ import {
   MoreHorizontal,
   Pencil,
   Plus,
+  Radio,
   Share2,
   Sparkles,
   Trash2,
@@ -61,6 +62,7 @@ import {
 import { customerNavItems as navItems } from "@/data/navItems";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
+import { LiveBroadcastModal } from "@/components/host/LiveBroadcastModal";
 
 interface HostEvent {
   id: string;
@@ -687,6 +689,7 @@ function EventCard({
   onDelete: () => void;
 }) {
   const [copied, setCopied] = useState(false);
+  const [liveOpen, setLiveOpen] = useState(false);
   const time = fmtTimeRange(event.start_time, event.end_time);
   async function copyShareLink() {
     const url = `${window.location.origin}/rsvp/${event.share_token}`;
@@ -748,7 +751,7 @@ function EventCard({
               {event.notes}
             </p>
           ) : null}
-          <div className="mt-4">
+          <div className="mt-4 flex flex-wrap gap-2">
             <button
               type="button"
               onClick={copyShareLink}
@@ -766,7 +769,21 @@ function EventCard({
                 </>
               )}
             </button>
+            <button
+              type="button"
+              onClick={() => setLiveOpen(true)}
+              className="inline-flex items-center gap-1.5 rounded-full bg-foreground text-background hover:bg-foreground/90 px-3 py-1.5 text-xs font-medium transition"
+            >
+              <Radio className="w-3.5 h-3.5" />
+              Go live
+            </button>
           </div>
+          <LiveBroadcastModal
+            open={liveOpen}
+            onOpenChange={setLiveOpen}
+            eventId={event.id}
+            eventTitle={event.title}
+          />
         </div>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>

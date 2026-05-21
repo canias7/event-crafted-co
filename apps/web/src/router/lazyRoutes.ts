@@ -39,6 +39,9 @@ export const ClaimVendorPage = lazyWithReload(importClaimVendor);
 const importPublicReview = () => import("@/pages/PublicReviewPage");
 export const PublicReviewPage = lazyWithReload(importPublicReview);
 
+const importLiveWatch = () => import("@/pages/LiveWatchPage");
+export const LiveWatchPage = lazyWithReload(importLiveWatch);
+
 const importProposalPrint = () => import("@/pages/ProposalPrintPage");
 export const ProposalPrintPage = lazyWithReload(importProposalPrint);
 
