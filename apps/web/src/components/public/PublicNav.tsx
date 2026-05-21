@@ -3,6 +3,7 @@ import { PrefetchLink as Link } from "@/components/shared/PrefetchLink";
 import { motion } from "framer-motion";
 import { Menu, X, LogOut, LayoutDashboard, ChevronDown, Settings } from "lucide-react";
 import { useMemo, useState } from "react";
+import { VendoraLogo } from "@/components/shared/VendoraLogo";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import {
@@ -67,8 +68,8 @@ export function PublicNav() {
       aria-label="Public"
     >
       <div className="container mx-auto flex items-center justify-between h-16 px-4 md:px-8">
-        <Link to="/" className="font-editorial text-2xl text-foreground">
-          Vendora
+        <Link to="/" aria-label="Vendora — Events, simplified">
+          <VendoraLogo size="md" color="#000" />
         </Link>
 
         {/* Desktop nav */}

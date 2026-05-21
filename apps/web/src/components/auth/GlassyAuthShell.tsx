@@ -7,6 +7,7 @@
 
 import { ReactNode } from "react";
 import { Link } from "react-router-dom";
+import { VendoraLogo } from "@/components/shared/VendoraLogo";
 
 interface Props {
   /** Sans-serif headline (e.g. "Welcome back,") */
@@ -156,12 +157,8 @@ export function GlassyAuthShell({
         style={{ padding: "28px 40px" }}
       >
         <div className="flex items-center gap-3.5">
-          <Link
-            to="/"
-            className="font-editorial italic"
-            style={{ fontSize: "26px", color: "#000" }}
-          >
-            Vendora
+          <Link to="/" aria-label="Vendora — Events, simplified">
+            <VendoraLogo size="md" color="#000" />
           </Link>
           <div
             style={{
