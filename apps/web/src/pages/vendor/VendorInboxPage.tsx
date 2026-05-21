@@ -35,7 +35,6 @@ interface InquiryRow {
   lead_score: "hot" | "warm" | "cold" | "unknown" | null;
   lead_score_reason: string | null;
   host: { display_name: string | null; avatar_url: string | null } | null;
-  vendor_profiles: { hilux_enabled: boolean } | null;
 }
 
 // Map HILUX-classified temperatures to a pip color + label.
@@ -100,6 +99,10 @@ export default function VendorInboxPage() {
   const [rows, setRows] = useState<InquiryRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  // HILUX master state lives on profiles (per-user, not per-listing
+  // anymore). We fetch it once for the logged-in user; the sparkle
+  // pip on every inbox row reflects that single value.
+  const [hiluxEnabled, setHiluxEnabled] = useState(false);
   // Lead-temperature filter pills. "all" = no filter.
   const [leadFilter, setLeadFilter] = useState<"all" | "hot" | "warm" | "cold">(
     "all",
@@ -119,7 +122,7 @@ export default function VendorInboxPage() {
     const { data } = await supabase
       .from("inquiries")
       .select(
-        "id, event_type, event_date, guest_count, location, budget_min_cents, budget_max_cents, special_requests, status, created_at, last_message_at, vendor_read_at, host:profiles!inquiries_host_id_fkey(display_name, avatar_url), vendor_profiles(hilux_enabled)",
+        "id, event_type, event_date, guest_count, location, budget_min_cents, budget_max_cents, special_requests, status, created_at, last_message_at, vendor_read_at, host:profiles!inquiries_host_id_fkey(display_name, avatar_url)",
       )
       .in("vendor_id", vids)
       .order("last_message_at", { ascending: false })
@@ -164,6 +167,28 @@ export default function VendorInboxPage() {
     load(vendorIds);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, vendorIdsKey]);
+
+  // Load the HILUX master flag from the owner profile once. The
+  // sparkle pip on every row reflects this single boolean. RLS
+  // restricts the read to the caller's own row.
+  useEffect(() => {
+    if (!user?.id) return;
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from("profiles")
+        .select("hilux_enabled")
+        .eq("id", user.id)
+        .maybeSingle();
+      if (cancelled) return;
+      setHiluxEnabled(
+        ((data as { hilux_enabled?: boolean } | null)?.hilux_enabled) === true,
+      );
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.id]);
 
   // Re-render every minute so relativeTime() decays — "3h" rolls over
   // to "4h" without requiring a manual refresh. Bumping a no-op state
@@ -309,6 +334,7 @@ export default function VendorInboxPage() {
                   key={r.id}
                   row={r}
                   isFirst={i === 0}
+                  hiluxEnabled={hiluxEnabled}
                 />
               ))}
             </ul>
@@ -323,9 +349,11 @@ export default function VendorInboxPage() {
 function ConversationRow({
   row,
   isFirst,
+  hiluxEnabled,
 }: {
   row: InquiryRow;
   isFirst: boolean;
+  hiluxEnabled: boolean;
 }) {
   const name = row.host?.display_name?.trim() || "Host";
   const initial = name.charAt(0).toUpperCase();
@@ -389,11 +417,11 @@ function ConversationRow({
             >
               {name}
             </span>
-            {row.vendor_profiles?.hilux_enabled ? (
+            {hiluxEnabled ? (
               <span
                 className="shrink-0 inline-flex items-center"
-                title="HILUX is answering on this listing"
-                aria-label="HILUX is answering on this listing"
+                title="HILUX is answering for you"
+                aria-label="HILUX is answering for you"
               >
                 <Sparkles className="w-3 h-3 text-accent" />
               </span>
