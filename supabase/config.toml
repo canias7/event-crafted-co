@@ -7,6 +7,8 @@ project_id = "pahpjjubhbcbwqjpamwv"
     verify_jwt = false
   [functions.geocode-vendor]
     verify_jwt = true
+  [functions.hilux-respond]
+    verify_jwt = false
   [functions.process-email-queue]
     verify_jwt = true
   [functions.scan-daily-digests]

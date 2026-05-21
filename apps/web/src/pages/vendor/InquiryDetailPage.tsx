@@ -102,6 +102,7 @@ interface Message {
   edited_at?: string | null;
   deleted_at?: string | null;
   reply_to_message_id?: string | null;
+  is_hilux_generated?: boolean | null;
 }
 
 const QUICK_EMOJIS = [
@@ -319,7 +320,7 @@ export default function InquiryDetailPage() {
       const { data: msgs } = await supabase
         .from("direct_messages")
         .select(
-          "id, body, sender_role, created_at, attachments, edited_at, deleted_at, reply_to_message_id",
+          "id, body, sender_role, created_at, attachments, edited_at, deleted_at, reply_to_message_id, is_hilux_generated",
         )
         .eq("thread_id", thread)
         .order("created_at", { ascending: false })
@@ -964,7 +965,8 @@ export default function InquiryDetailPage() {
                 );
               }
               const m = it.message;
-              const isAi = m.sender_role === "agent";
+              const isAi =
+                m.sender_role === "agent" || m.is_hilux_generated === true;
               const isDeleted = m.deleted_at != null;
               const isEdited = m.edited_at != null && !isDeleted;
               const msgReactions = reactionsByMsg[m.id] ?? [];
