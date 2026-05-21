@@ -24,7 +24,7 @@ interface PickerAgent {
 export const AGENT_LIST: PickerAgent[] = [
   { key: "HILUX", name: "HILUX 2.7", role: "Always On", status: "live", Logo: HiluxLogo, accent: "#ff8a4c", selfContained: true },
   { key: "RAPTOR", name: "RAPTOR 3.5", role: "Wordsmith", status: "soon", Logo: RaptorLogo, accent: "#7aa8ff", selfContained: true },
-  { key: "AXION", name: "AXION 9.1", role: "Visuals", status: "soon", Logo: AxionLogo, accent: "#d066ff" },
+  { key: "AXION", name: "AXION 9.1", role: "Visuals", status: "soon", Logo: AxionLogo, accent: "#d066ff", selfContained: true },
 ];
 
 interface Props {

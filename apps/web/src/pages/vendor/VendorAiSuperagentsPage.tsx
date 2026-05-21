@@ -51,6 +51,7 @@ const COMING_SOON_COPY: Record<
     ],
     accent: "#d066ff",
     Logo: AxionLogo,
+    selfContained: true,
   },
 };
 

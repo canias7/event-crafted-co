@@ -105,19 +105,45 @@ export function RaptorLogo({ className, ...props }: IconProps) {
 }
 
 export function AxionLogo({ className, ...props }: IconProps) {
+  // Full brand badge: deep forest-green tile with a green-to-teal
+  // gear motif (eight spokes orbiting a ringed core) and a white
+  // pinpoint center. Reads as "vision / generative engine" distinct
+  // from HILUX's waveform and RAPTOR's sentinel.
+  const reactId = useId();
+  const bgId = `axion-bg-${reactId}`;
+  const fgId = `axion-fg-${reactId}`;
   return (
     <svg
-      viewBox="0 0 24 24"
+      viewBox="0 0 120 120"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
       className={className}
       aria-hidden="true"
       {...props}
     >
-      <path
-        d="M12 2 L13.6 10.4 L22 12 L13.6 13.6 L12 22 L10.4 13.6 L2 12 L10.4 10.4 Z"
-        fill="currentColor"
-      />
+      <defs>
+        <linearGradient id={bgId} x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stopColor="#10211a" />
+          <stop offset="1" stopColor="#0a110e" />
+        </linearGradient>
+        <linearGradient id={fgId} x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stopColor="#9dff5e" />
+          <stop offset="1" stopColor="#2ee0c0" />
+        </linearGradient>
+      </defs>
+      <rect x="4" y="4" width="112" height="112" rx="28" fill={`url(#${bgId})`} />
+      <g fill={`url(#${fgId})`}>
+        <rect x="55" y="26" width="10" height="14" rx="3" />
+        <rect x="55" y="80" width="10" height="14" rx="3" />
+        <rect x="26" y="55" width="14" height="10" rx="3" />
+        <rect x="80" y="55" width="14" height="10" rx="3" />
+        <rect x="36" y="36" width="11" height="11" rx="3" transform="rotate(45 41 41)" />
+        <rect x="73" y="73" width="11" height="11" rx="3" transform="rotate(45 78 78)" />
+        <rect x="73" y="36" width="11" height="11" rx="3" transform="rotate(45 78 41)" />
+        <rect x="36" y="73" width="11" height="11" rx="3" transform="rotate(45 41 78)" />
+      </g>
+      <circle cx="60" cy="60" r="18" fill="none" stroke={`url(#${fgId})`} strokeWidth="5" />
+      <circle cx="60" cy="60" r="6" fill="#ffffff" />
     </svg>
   );
 }
