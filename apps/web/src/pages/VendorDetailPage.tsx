@@ -961,56 +961,60 @@ export default function VendorDetailPage() {
                     </div>
                   </div>
 
-                  <Button
-                    onClick={() => handleInquiryClick()}
-                    disabled={authLoading}
-                    className="w-full h-12 rounded-full bg-foreground text-background hover:bg-foreground/90"
-                  >
-                    <Mail className="w-4 h-4 mr-2" />
-                    Send Inquiry
-                  </Button>
+                  {!isPreview && (
+                    <>
+                      <Button
+                        onClick={() => handleInquiryClick()}
+                        disabled={authLoading}
+                        className="w-full h-12 rounded-full bg-foreground text-background hover:bg-foreground/90"
+                      >
+                        <Mail className="w-4 h-4 mr-2" />
+                        Send Inquiry
+                      </Button>
 
-                  {/* "Message vendor" button is shown to every approved
-                      vendor (listing or not — partner threads are keyed
-                      on profiles.id, not vendor_profiles.id). Hidden
-                      when the viewer owns this listing themselves
-                      (can't DM yourself) or while the owner lookup is
-                      still in flight. Hosts route through "Send Inquiry". */}
-                  {isApprovedVendor &&
-                    listingOwnerUserId &&
-                    listingOwnerUserId !== session?.user?.id && (
-                    <Button
-                      onClick={handleMessageClick}
-                      disabled={authLoading}
-                      variant="outline"
-                      className="w-full h-10 rounded-full mt-2"
-                    >
-                      Message vendor
-                    </Button>
+                      {/* "Message vendor" button is shown to every approved
+                          vendor (listing or not — partner threads are keyed
+                          on profiles.id, not vendor_profiles.id). Hidden
+                          when the viewer owns this listing themselves
+                          (can't DM yourself) or while the owner lookup is
+                          still in flight. Hosts route through "Send Inquiry". */}
+                      {isApprovedVendor &&
+                        listingOwnerUserId &&
+                        listingOwnerUserId !== session?.user?.id && (
+                        <Button
+                          onClick={handleMessageClick}
+                          disabled={authLoading}
+                          variant="outline"
+                          className="w-full h-10 rounded-full mt-2"
+                        >
+                          Message vendor
+                        </Button>
+                      )}
+
+                      <div className="grid grid-cols-2 gap-2 mt-3">
+                        <Button
+                          variant="outline"
+                          className="rounded-full h-10"
+                          onClick={() => toggleSave(vendor.id, { isReal: vendor.isReal })}
+                        >
+                          <Heart
+                            className={`w-3.5 h-3.5 mr-2 ${
+                              saved ? "fill-accent text-accent" : ""
+                            }`}
+                          />
+                          {saved ? "Saved" : "Save"}
+                        </Button>
+                        <Button
+                          variant="outline"
+                          className="rounded-full h-10"
+                          onClick={handleShare}
+                        >
+                          <Share2 className="w-3.5 h-3.5 mr-2" />
+                          Share
+                        </Button>
+                      </div>
+                    </>
                   )}
-
-                  <div className="grid grid-cols-2 gap-2 mt-3">
-                    <Button
-                      variant="outline"
-                      className="rounded-full h-10"
-                      onClick={() => toggleSave(vendor.id, { isReal: vendor.isReal })}
-                    >
-                      <Heart
-                        className={`w-3.5 h-3.5 mr-2 ${
-                          saved ? "fill-accent text-accent" : ""
-                        }`}
-                      />
-                      {saved ? "Saved" : "Save"}
-                    </Button>
-                    <Button
-                      variant="outline"
-                      className="rounded-full h-10"
-                      onClick={handleShare}
-                    >
-                      <Share2 className="w-3.5 h-3.5 mr-2" />
-                      Share
-                    </Button>
-                  </div>
                 </div>
 
                 <div className="bg-secondary/50 rounded-sm p-5 text-xs text-muted-foreground leading-relaxed">
@@ -1028,7 +1032,7 @@ export default function VendorDetailPage() {
                   />
                 )}
 
-                {vendor.isReal && (
+                {vendor.isReal && !isPreview && (
                   <div className="text-center pt-1">
                     <ReportButton
                       contentType="vendor_profile"
