@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
+import { VendoraLogo } from "@/components/shared/VendoraLogo";
 
 // Landing page. Warm cream → peach gradient canvas with a single
 // fixed-position amber radial glow that acts as the real page
@@ -33,8 +34,8 @@ export default function LandingPage() {
     >
       {/* NAV */}
       <header className="relative z-30 flex items-center justify-between px-6 py-5 md:px-10 md:py-6">
-        <Link to="/" className="font-editorial text-[22px] italic text-black">
-          Vendora
+        <Link to="/" aria-label="Vendora — Events, simplified">
+          <VendoraLogo size="md" color="#000" />
         </Link>
         <nav className="hidden md:flex items-center gap-8 text-[13px] text-black">
           <Link to="/vendors" className="hover:opacity-70 transition-opacity">

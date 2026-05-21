@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { PrefetchLink as Link } from "@/components/shared/PrefetchLink";
+import { VendoraLogo, VendoraMark } from "@/components/shared/VendoraLogo";
 import {
   LucideIcon,
   PanelLeftClose,
@@ -187,10 +188,10 @@ export function DashboardSidebar({
         <div className="px-2 py-4 border-b border-[rgba(255,138,76,0.14)] flex flex-col items-center gap-3">
           <Link
             to={backPath}
-            className="font-display text-lg leading-none"
-            title="Vendora"
+            title="Vendora — Events, simplified"
+            aria-label="Vendora"
           >
-            V
+            <VendoraMark size={28} color="currentColor" />
           </Link>
           <button
             type="button"
@@ -204,10 +205,10 @@ export function DashboardSidebar({
       ) : (
         <div className="p-6 border-b border-[rgba(255,138,76,0.14)] flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <Link to={backPath} className="font-editorial text-2xl">
-              Vendora
+            <Link to={backPath} aria-label="Vendora — Events, simplified">
+              <VendoraLogo size="md" color="currentColor" />
             </Link>
-            <p className="font-label text-muted-foreground mt-1 truncate">
+            <p className="font-label text-muted-foreground mt-2 truncate">
               {title}
             </p>
           </div>
