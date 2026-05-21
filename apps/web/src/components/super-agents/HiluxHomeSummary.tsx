@@ -11,6 +11,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   ArrowRight,
+  DollarSign,
   Flame,
   Loader2,
   Pause,
@@ -27,6 +28,7 @@ interface Stats {
   escalations: number;
   hotLeads: number;
   bookingIntent: number;
+  costCents: number;
 }
 
 const ZERO_STATS: Stats = {
@@ -34,6 +36,16 @@ const ZERO_STATS: Stats = {
   escalations: 0,
   hotLeads: 0,
   bookingIntent: 0,
+  costCents: 0,
+};
+
+// claude-sonnet-4-6 pricing (cents per token). Source: Anthropic
+// pricing page. Update these when the model or pricing changes.
+const PRICE_CENTS_PER_TOKEN = {
+  input: 3 / 10_000,            // $3 / 1M tokens = 0.0003 cents/token
+  output: 15 / 10_000,          // $15 / 1M tokens
+  cache_write: 3.75 / 10_000,   // $3.75 / 1M tokens
+  cache_read: 0.3 / 10_000,     // $0.30 / 1M tokens
 };
 
 export function HiluxHomeSummary() {
@@ -56,7 +68,9 @@ export function HiluxHomeSummary() {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (supabase as any)
         .from("hilux_action_log")
-        .select("action")
+        .select(
+          "action, input_tokens, output_tokens, cache_creation_tokens, cache_read_tokens",
+        )
         .gte("created_at", since)
         .limit(1000),
     ]);
@@ -67,13 +81,24 @@ export function HiluxHomeSummary() {
     setHiluxEnabled(prof?.hilux_enabled ?? false);
     setLogActionsOn(prof?.hilux_action_log_actions === true);
 
-    const rows = ((logRes.data ?? []) as Array<{ action: string }>);
+    const rows = ((logRes.data ?? []) as Array<{
+      action: string;
+      input_tokens: number | null;
+      output_tokens: number | null;
+      cache_creation_tokens: number | null;
+      cache_read_tokens: number | null;
+    }>);
     const s: Stats = { ...ZERO_STATS };
     for (const r of rows) {
       if (r.action === "reply") s.replies++;
       else if (r.action === "escalate") s.escalations++;
       else if (r.action === "lead_score_hot") s.hotLeads++;
       else if (r.action === "booking_intent_detected") s.bookingIntent++;
+      s.costCents +=
+        (r.input_tokens ?? 0) * PRICE_CENTS_PER_TOKEN.input +
+        (r.output_tokens ?? 0) * PRICE_CENTS_PER_TOKEN.output +
+        (r.cache_creation_tokens ?? 0) * PRICE_CENTS_PER_TOKEN.cache_write +
+        (r.cache_read_tokens ?? 0) * PRICE_CENTS_PER_TOKEN.cache_read;
     }
     setStats(s);
     setLoading(false);
@@ -162,8 +187,24 @@ export function HiluxHomeSummary() {
           No activity yet in the last 24 hours.
         </p>
       ) : null}
+
+      {hiluxEnabled && logActionsOn && stats.costCents > 0 ? (
+        <p className="text-[11px] text-black/55 mt-3 inline-flex items-center gap-1">
+          <DollarSign className="w-3 h-3" />
+          HILUX cost in the last 24h:{" "}
+          <strong className="text-black/85 font-medium">
+            {formatCost(stats.costCents)}
+          </strong>
+        </p>
+      ) : null}
     </div>
   );
+}
+
+function formatCost(cents: number): string {
+  if (cents < 1) return `<1¢`;
+  if (cents < 100) return `${cents.toFixed(1)}¢`;
+  return `$${(cents / 100).toFixed(2)}`;
 }
 
 function StatTile({

@@ -16,7 +16,8 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.7";
 import {
   buildSystemPrompt,
-  callClaude,
+  callClaudeWithUsage,
+  type ClaudeUsage,
   DEFAULT_ACTIONS,
   detectBookingIntent,
   extractInquiryFields,
@@ -264,7 +265,11 @@ serve(async (req) => {
     }
 
     log("calling claude", { vendor: ctx.vendor.id, history_len: claudeMessages.length });
-    const reply = await callClaude(ANTHROPIC_API_KEY, systemText, claudeMessages);
+    const { text: reply, usage: replyUsage } = await callClaudeWithUsage(
+      ANTHROPIC_API_KEY,
+      systemText,
+      claudeMessages,
+    );
 
     // Booking-intent detection: when on, classify the host's LATEST
     // message for explicit commitment ("yes, book us"). Sets
@@ -348,11 +353,13 @@ serve(async (req) => {
 
     // Audit log: when logActions is on, write one row per HILUX
     // action (reply / escalate). Used by the vendor's activity view
-    // + the MCP connector's get_action_log tool. Best-effort.
+    // + the MCP connector's get_action_log tool. Best-effort. The
+    // usage argument carries Anthropic token counts for cost view.
     const logAction = async (
       action: "reply" | "escalate",
       detail: string | null,
       messageId: string | null,
+      usage: ClaudeUsage | null = null,
     ) => {
       if (!actions.logActions) return;
       const { error } = await admin.from("hilux_action_log").insert({
@@ -363,6 +370,10 @@ serve(async (req) => {
         message_id: messageId,
         action,
         detail,
+        input_tokens: usage?.input_tokens ?? null,
+        output_tokens: usage?.output_tokens ?? null,
+        cache_creation_tokens: usage?.cache_creation_tokens ?? null,
+        cache_read_tokens: usage?.cache_read_tokens ?? null,
       });
       if (error) console.error("[hilux-respond] action log insert failed", error);
     };
@@ -461,7 +472,7 @@ serve(async (req) => {
         notified = rows.length;
       }
       log("hilux escalated", { thread: threadId, reason, notified });
-      await logAction("escalate", reason, null);
+      await logAction("escalate", reason, null, replyUsage);
       await scoreInquiryAfter();
       await detectIntentAfter();
       await extractFieldsAfter();
@@ -491,7 +502,7 @@ serve(async (req) => {
     const insertedMsgId = (insertedRow as { id: string } | null)?.id ?? null;
 
     log("hilux replied", { thread: threadId, length: sanitized.length });
-    await logAction("reply", null, insertedMsgId);
+    await logAction("reply", null, insertedMsgId, replyUsage);
 
     // Auto-mark the inquiry as 'replied' so it moves out of the
     // vendor's 'new' bucket. Only flips when the inquiry is still
