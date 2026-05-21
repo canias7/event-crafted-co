@@ -1,6 +1,6 @@
 // MCP tool-call log. Reads mcp_call_log via RLS (vendor sees own
 // rows only) and renders the 25 most-recent entries Claude made
-// via the connector. Lives inside VendoraForClaudePanel.
+// via the connector. Lives inside VendoraMcpPanel.
 
 import { useCallback, useEffect, useState } from "react";
 import { Activity, Check, ChevronDown, Loader2, X } from "lucide-react";

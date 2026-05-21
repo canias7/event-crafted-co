@@ -1,9 +1,9 @@
-// Custom logo marks for HILUX and the Vendora-for-Claude connector.
+// Custom logo marks for HILUX and the Vendora MCP connector.
 //
 // HILUX: full brand badge with its own gradient background
 // (cream tile + orange waveform).
-// VendoraForClaude: black tile with a stylized V monogram + a
-// soft Claude-style halo. Reads as "your account piped into Claude".
+// VendoraMcp: black tile with a stylized V monogram + a
+// soft halo. Reads as "your account piped into your MCP client".
 
 import { useId, type SVGProps } from "react";
 
@@ -52,7 +52,7 @@ export function HiluxLogo({ className, ...props }: IconProps) {
   );
 }
 
-export function VendoraForClaudeLogo({ className, ...props }: IconProps) {
+export function VendoraMcpLogo({ className, ...props }: IconProps) {
   // Dark tile + cream V monogram with a soft halo ring evoking
   // the Claude brand colour. Distinct from HILUX's warm waveform
   // so the picker reads two clearly different surfaces.
