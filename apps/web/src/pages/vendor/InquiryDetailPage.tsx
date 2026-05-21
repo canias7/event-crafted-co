@@ -90,8 +90,16 @@ interface Inquiry {
   recommended_verification: string | null;
   vendor_read_at: string | null;
   host_read_at: string | null;
+  lead_score: "hot" | "warm" | "cold" | "unknown" | null;
+  lead_score_reason: string | null;
   host: { display_name: string | null; avatar_url: string | null } | null;
 }
+
+const LEAD_CHIP: Record<"hot" | "warm" | "cold", { bg: string; text: string; label: string }> = {
+  hot: { bg: "bg-rose-100", text: "text-rose-700", label: "Hot lead" },
+  warm: { bg: "bg-amber-100", text: "text-amber-700", label: "Warm lead" },
+  cold: { bg: "bg-sky-100", text: "text-sky-700", label: "Cold lead" },
+};
 
 interface Message {
   id: string;
@@ -846,7 +854,22 @@ export default function InquiryDetailPage() {
             />
           </div>
           <div className="min-w-0 flex-1 leading-tight">
-            <p className="font-medium text-foreground truncate">{hostName}</p>
+            <div className="flex items-center gap-2 min-w-0">
+              <p className="font-medium text-foreground truncate">{hostName}</p>
+              {inquiry.lead_score && inquiry.lead_score !== "unknown" ? (
+                (() => {
+                  const chip = LEAD_CHIP[inquiry.lead_score];
+                  return (
+                    <span
+                      className={`shrink-0 inline-flex items-center gap-1 text-[10px] uppercase tracking-wider font-medium px-1.5 py-0.5 rounded-full ${chip.bg} ${chip.text}`}
+                      title={inquiry.lead_score_reason ?? undefined}
+                    >
+                      {chip.label}
+                    </span>
+                  );
+                })()
+              ) : null}
+            </div>
             <p className="text-[11px] text-muted-foreground truncate">
               {inquiry.event_type
                 ? `${inquiry.event_type.charAt(0).toUpperCase()}${inquiry.event_type.slice(1)} inquiry`

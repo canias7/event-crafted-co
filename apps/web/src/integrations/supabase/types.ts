@@ -1106,6 +1106,9 @@ export type Database = {
           intake_answers: Json | null
           intent_score: number | null
           last_message_at: string
+          lead_score: string | null
+          lead_score_reason: string | null
+          lead_score_updated_at: string | null
           location: string | null
           package_id: string | null
           quality_score: number | null
@@ -1132,6 +1135,9 @@ export type Database = {
           intake_answers?: Json | null
           intent_score?: number | null
           last_message_at?: string
+          lead_score?: string | null
+          lead_score_reason?: string | null
+          lead_score_updated_at?: string | null
           location?: string | null
           package_id?: string | null
           quality_score?: number | null
@@ -1158,6 +1164,9 @@ export type Database = {
           intake_answers?: Json | null
           intent_score?: number | null
           last_message_at?: string
+          lead_score?: string | null
+          lead_score_reason?: string | null
+          lead_score_updated_at?: string | null
           location?: string | null
           package_id?: string | null
           quality_score?: number | null
@@ -4359,6 +4368,9 @@ export type Database = {
           intake_answers: Json | null
           intent_score: number | null
           last_message_at: string
+          lead_score: string | null
+          lead_score_reason: string | null
+          lead_score_updated_at: string | null
           location: string | null
           package_id: string | null
           quality_score: number | null
