@@ -97,6 +97,72 @@ function unauthorized(id: any, error: string) {
   );
 }
 
+// Rate-limit thresholds. Per-user counts over the mcp_call_log
+// table. We use two tiers: a generous all-tools cap and a tight
+// write-tools cap, so a runaway agent can't blast send_reply.
+// All limits are per-minute except the daily safety net.
+const RATE_LIMIT_PER_MINUTE = 60;
+const RATE_LIMIT_PER_DAY = 1000;
+const WRITE_RATE_LIMIT_PER_MINUTE = 10;
+const WRITE_TOOLS = new Set([
+  "send_reply",
+  "pause_hilux_thread",
+  "resume_hilux_thread",
+  "update_hilux_settings",
+  "mark_inquiry",
+  "compose_draft_reply",
+  "regenerate_last_hilux_reply",
+]);
+
+// Check rate limits BEFORE invoking the tool. Returns null when ok,
+// or an error string ready to feed into rpcError when the user has
+// exceeded a window. Uses head:count which is a cheap exact count
+// when the index is in place (we have user_id, created_at desc).
+async function checkRateLimit(
+  admin: any,
+  userId: string,
+  toolName: string,
+): Promise<string | null> {
+  const now = Date.now();
+  const minuteAgo = new Date(now - 60_000).toISOString();
+  const dayAgo = new Date(now - 86_400_000).toISOString();
+
+  // Per-minute (all tools).
+  const minuteCount = await admin
+    .from("mcp_call_log")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", userId)
+    .gte("created_at", minuteAgo);
+  if ((minuteCount.count ?? 0) >= RATE_LIMIT_PER_MINUTE) {
+    return `Rate limit: ${RATE_LIMIT_PER_MINUTE} calls/minute exceeded. Slow down.`;
+  }
+
+  // Per-day (all tools).
+  const dayCount = await admin
+    .from("mcp_call_log")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", userId)
+    .gte("created_at", dayAgo);
+  if ((dayCount.count ?? 0) >= RATE_LIMIT_PER_DAY) {
+    return `Rate limit: ${RATE_LIMIT_PER_DAY} calls/day exceeded. Try again tomorrow.`;
+  }
+
+  // Per-minute (write tools only).
+  if (WRITE_TOOLS.has(toolName)) {
+    const writeCount = await admin
+      .from("mcp_call_log")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", userId)
+      .in("tool_name", Array.from(WRITE_TOOLS))
+      .gte("created_at", minuteAgo);
+    if ((writeCount.count ?? 0) >= WRITE_RATE_LIMIT_PER_MINUTE) {
+      return `Rate limit: ${WRITE_RATE_LIMIT_PER_MINUTE} write calls/minute exceeded. Slow down or confirm with the vendor first.`;
+    }
+  }
+
+  return null;
+}
+
 // SHA-256 of a string, returning lowercase hex. Matches the
 // pgcrypto digest call in create_vendor_access_token so the hash
 // stored at mint time matches what we compute here.
@@ -606,6 +672,15 @@ serve(async (req) => {
         if (e) console.error("[vendora-mcp] call log insert failed", e);
       });
   };
+
+  // Rate-limit BEFORE running the tool. Log the rejected call so
+  // the vendor can see "Claude was rate-limited at 3:14pm" in the
+  // activity log.
+  const limitMsg = await checkRateLimit(admin, userId, toolName);
+  if (limitMsg) {
+    logCall(false, limitMsg);
+    return rpcError(id, -32029, limitMsg);
+  }
 
   try {
     const result = await runTool(admin, userId, toolName, args);

@@ -59,7 +59,7 @@ export function McpCallLog() {
             Claude activity
           </p>
           <p className="text-xs text-black/55">
-            What Claude has called via this connector (last {PAGE_SIZE}).
+            What Claude has called via this connector (last {PAGE_SIZE}). Limits: 60 calls/min, 10 write-calls/min, 1000/day.
           </p>
         </div>
         <button
