@@ -1369,10 +1369,13 @@ export type Database = {
           category: string | null
           created_at: string
           display_name: string | null
+          hilux_action_ask_clarifying: boolean
           hilux_action_escalate: boolean
           hilux_action_follow_up: boolean
           hilux_action_match_language: boolean
+          hilux_action_quiet_hours: boolean
           hilux_action_use_calendar: boolean
+          hilux_action_use_first_name: boolean
           hilux_enabled: boolean
           hilux_instructions: string | null
           hilux_voice_samples: string[]
@@ -1396,10 +1399,13 @@ export type Database = {
           category?: string | null
           created_at?: string
           display_name?: string | null
+          hilux_action_ask_clarifying?: boolean
           hilux_action_escalate?: boolean
           hilux_action_follow_up?: boolean
           hilux_action_match_language?: boolean
+          hilux_action_quiet_hours?: boolean
           hilux_action_use_calendar?: boolean
+          hilux_action_use_first_name?: boolean
           hilux_enabled?: boolean
           hilux_instructions?: string | null
           hilux_voice_samples?: string[]
@@ -1423,10 +1429,13 @@ export type Database = {
           category?: string | null
           created_at?: string
           display_name?: string | null
+          hilux_action_ask_clarifying?: boolean
           hilux_action_escalate?: boolean
           hilux_action_follow_up?: boolean
           hilux_action_match_language?: boolean
+          hilux_action_quiet_hours?: boolean
           hilux_action_use_calendar?: boolean
+          hilux_action_use_first_name?: boolean
           hilux_enabled?: boolean
           hilux_instructions?: string | null
           hilux_voice_samples?: string[]

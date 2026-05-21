@@ -108,6 +108,7 @@ serve(async (req) => {
       inquiry: null,
       availability: ctx.availability,
       actions: ctx.profile?.actions ?? DEFAULT_ACTIONS,
+      hostFirstName: null,
     });
 
     const reply = await callClaude(ANTHROPIC_API_KEY, systemText, messages);

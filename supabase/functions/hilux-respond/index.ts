@@ -18,6 +18,7 @@ import {
   buildSystemPrompt,
   callClaude,
   DEFAULT_ACTIONS,
+  isInQuietHours,
   loadVendorContext,
   priceUsd,
   scoreLead,
@@ -91,6 +92,15 @@ serve(async (req) => {
     if (!ctx.profile || !ctx.profile.hilux_enabled) return ok({ skipped: "hilux_off" });
     if (!ctx.vendor.user_id) return ok({ skipped: "no_owner" });
 
+    // Quiet hours: vendor asked us to stay silent overnight. We skip
+    // entirely — no typing indicator, no Claude call, no reply. The
+    // host's message sits in the inbox until either (a) the vendor
+    // answers manually, or (b) another host message arrives outside
+    // quiet hours and HILUX picks the convo back up.
+    if (ctx.profile.actions.quietHours && isInQuietHours()) {
+      return ok({ skipped: "quiet_hours" });
+    }
+
     const { data: triggeringMessage, error: msgErr } = await admin
       .from("direct_messages")
       .select("id, sender_role, body, created_at")
@@ -154,6 +164,21 @@ serve(async (req) => {
     }
 
     const actions = ctx.profile?.actions ?? DEFAULT_ACTIONS;
+
+    // First name comes from the host's profiles.display_name. We only
+    // bother looking it up when the toggle is on; the prompt will
+    // ignore it otherwise.
+    let hostFirstName: string | null = null;
+    if (actions.useFirstName && thread.host_id) {
+      const { data: hostProfile } = await admin
+        .from("profiles")
+        .select("display_name")
+        .eq("id", thread.host_id)
+        .maybeSingle();
+      const raw = (hostProfile as { display_name?: string } | null)?.display_name?.trim() ?? "";
+      hostFirstName = raw.length > 0 ? raw.split(/\s+/)[0] : null;
+    }
+
     const systemText = buildSystemPrompt({
       businessName: ctx.vendor.business_name ?? "this vendor",
       category: ctx.vendor.category,
@@ -167,6 +192,7 @@ serve(async (req) => {
       inquiry: inquiryCtx,
       availability: ctx.availability,
       actions,
+      hostFirstName,
     });
 
     const claudeMessages = orderedHistory.map((m) => ({

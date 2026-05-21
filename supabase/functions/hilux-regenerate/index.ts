@@ -113,6 +113,18 @@ serve(async (req) => {
     }
 
     const actions = ctx.profile?.actions ?? DEFAULT_ACTIONS;
+
+    let hostFirstName: string | null = null;
+    if (actions.useFirstName && thread.host_id) {
+      const { data: hostProfile } = await admin
+        .from("profiles")
+        .select("display_name")
+        .eq("id", thread.host_id)
+        .maybeSingle();
+      const raw = (hostProfile as { display_name?: string } | null)?.display_name?.trim() ?? "";
+      hostFirstName = raw.length > 0 ? raw.split(/\s+/)[0] : null;
+    }
+
     const systemText = buildSystemPrompt({
       businessName: ctx.vendor.business_name ?? "this vendor",
       category: ctx.vendor.category,
@@ -126,6 +138,7 @@ serve(async (req) => {
       inquiry: inquiryCtx,
       availability: ctx.availability,
       actions,
+      hostFirstName,
     });
 
     const claudeMessages = orderedHistory.map((m) => ({
