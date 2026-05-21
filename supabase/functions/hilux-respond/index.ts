@@ -338,6 +338,27 @@ serve(async (req) => {
       }
     };
 
+    // Audit log: when logActions is on, write one row per HILUX
+    // action (reply / escalate). Used by the vendor's activity view
+    // + the MCP connector's get_action_log tool. Best-effort.
+    const logAction = async (
+      action: "reply" | "escalate",
+      detail: string | null,
+      messageId: string | null,
+    ) => {
+      if (!actions.logActions) return;
+      const { error } = await admin.from("hilux_action_log").insert({
+        user_id: ctx.vendor!.user_id,
+        vendor_id: ctx.vendor!.id,
+        thread_id: threadId,
+        inquiry_id: thread.inquiry_id,
+        message_id: messageId,
+        action,
+        detail,
+      });
+      if (error) console.error("[hilux-respond] action log insert failed", error);
+    };
+
     const scoreInquiryAfter = async () => {
       if (!thread.inquiry_id) return;
       try {
@@ -428,6 +449,7 @@ serve(async (req) => {
         notified = rows.length;
       }
       log("hilux escalated", { thread: threadId, reason, notified });
+      await logAction("escalate", reason, null);
       await scoreInquiryAfter();
       await detectIntentAfter();
       await extractFieldsAfter();
@@ -439,19 +461,25 @@ serve(async (req) => {
     // the ESCALATE: line so the host doesn't see the raw token.
     const sanitized = reply.replace(/^\s*ESCALATE\s*:.*$/im, "").trim() || reply.trim();
 
-    const { error: insertErr } = await admin.from("direct_messages").insert({
-      thread_id: threadId,
-      sender_id: ctx.vendor.user_id,
-      sender_role: "vendor",
-      body: sanitized,
-      is_hilux_generated: true,
-    });
+    const { data: insertedRow, error: insertErr } = await admin
+      .from("direct_messages")
+      .insert({
+        thread_id: threadId,
+        sender_id: ctx.vendor.user_id,
+        sender_role: "vendor",
+        body: sanitized,
+        is_hilux_generated: true,
+      })
+      .select("id")
+      .single();
     if (insertErr) {
       await clearTyping();
       throw insertErr;
     }
+    const insertedMsgId = (insertedRow as { id: string } | null)?.id ?? null;
 
     log("hilux replied", { thread: threadId, length: sanitized.length });
+    await logAction("reply", null, insertedMsgId);
 
     // Auto-mark the inquiry as 'replied' so it moves out of the
     // vendor's 'new' bucket. Only flips when the inquiry is still
