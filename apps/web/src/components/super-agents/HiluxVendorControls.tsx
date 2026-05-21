@@ -238,11 +238,8 @@ export function HiluxVendorControls() {
             className="flex items-center gap-4 min-w-0 flex-1 text-left hover:opacity-90 transition-opacity"
             aria-expanded={expanded}
           >
-            <div
-              className="w-12 h-12 rounded-full flex items-center justify-center shrink-0"
-              style={{ background: "rgba(255, 138, 76, 0.15)" }}
-            >
-              <HiluxLogo className="w-6 h-6" style={{ color: "#ff8a4c" }} />
+            <div className="w-12 h-12 rounded-2xl overflow-hidden shrink-0 ring-1 ring-black/5">
+              <HiluxLogo className="w-full h-full block" />
             </div>
             <div className="min-w-0 flex-1">
               <p

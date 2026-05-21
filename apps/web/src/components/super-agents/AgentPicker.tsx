@@ -15,10 +15,14 @@ interface PickerAgent {
   status: "live" | "soon";
   Logo: ComponentType<SVGProps<SVGSVGElement> & { className?: string }>;
   accent: string;
+  /** When true, the logo provides its own backdrop and is rendered
+   *  edge-to-edge in the row tile. Otherwise we wrap it in a tinted
+   *  square. */
+  selfContained?: boolean;
 }
 
 export const AGENT_LIST: PickerAgent[] = [
-  { key: "HILUX", name: "HILUX 2.7", role: "Always On", status: "live", Logo: HiluxLogo, accent: "#ff8a4c" },
+  { key: "HILUX", name: "HILUX 2.7", role: "Always On", status: "live", Logo: HiluxLogo, accent: "#ff8a4c", selfContained: true },
   { key: "RAPTOR", name: "RAPTOR 3.5", role: "Wordsmith", status: "soon", Logo: RaptorLogo, accent: "#7aa8ff" },
   { key: "AXION", name: "AXION 9.1", role: "Visuals", status: "soon", Logo: AxionLogo, accent: "#d066ff" },
 ];
@@ -53,17 +57,23 @@ export function AgentPicker({ selected, onSelect }: Props) {
                 }`}
                 aria-current={isActive ? "page" : undefined}
               >
-                <span
-                  className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
-                  style={{
-                    background: isActive ? "rgba(255,255,255,0.12)" : agent.accent + "26",
-                  }}
-                >
-                  <Logo
-                    className="w-4 h-4"
-                    style={{ color: isActive ? "#fff" : agent.accent }}
-                  />
-                </span>
+                {agent.selfContained ? (
+                  <span className="w-8 h-8 rounded-lg overflow-hidden shrink-0 ring-1 ring-black/5">
+                    <Logo className="w-full h-full block" />
+                  </span>
+                ) : (
+                  <span
+                    className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
+                    style={{
+                      background: isActive ? "rgba(255,255,255,0.12)" : agent.accent + "26",
+                    }}
+                  >
+                    <Logo
+                      className="w-4 h-4"
+                      style={{ color: isActive ? "#fff" : agent.accent }}
+                    />
+                  </span>
+                )}
                 <span className="min-w-0">
                   <span className="block text-sm font-medium leading-tight truncate">
                     {agent.name}
