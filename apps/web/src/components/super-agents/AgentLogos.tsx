@@ -51,29 +51,55 @@ export function HiluxLogo({ className, ...props }: IconProps) {
 }
 
 export function RaptorLogo({ className, ...props }: IconProps) {
+  // Full brand badge: dark warm-bronze tile with a faint hexagonal
+  // perimeter and a gold sentinel figure (circle head + arm) at the
+  // center. Reads as "wordsmith / sentinel of the listing copy"
+  // distinct from HILUX's chat waveform.
+  const reactId = useId();
+  const bgId = `raptor-bg-${reactId}`;
+  const fgId = `raptor-fg-${reactId}`;
   return (
     <svg
-      viewBox="0 0 24 24"
+      viewBox="0 0 120 120"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
       className={className}
       aria-hidden="true"
       {...props}
     >
-      <path
-        d="M5.5 18.5 L18.5 5.5"
-        stroke="currentColor"
-        strokeWidth="2.2"
-        strokeLinecap="round"
-      />
-      <path
-        d="M10 18.5 L18.5 10"
-        stroke="currentColor"
-        strokeWidth="1.4"
-        strokeLinecap="round"
+      <defs>
+        <linearGradient id={bgId} x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stopColor="#1c1606" />
+          <stop offset="1" stopColor="#0c0a04" />
+        </linearGradient>
+        <linearGradient id={fgId} x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stopColor="#ffd24a" />
+          <stop offset="1" stopColor="#ff8a2e" />
+        </linearGradient>
+      </defs>
+      <rect x="4" y="4" width="112" height="112" rx="28" fill={`url(#${bgId})`} />
+      <polygon
+        points="60,28 88,44 88,76 60,92 32,76 32,44"
+        fill="none"
+        stroke={`url(#${fgId})`}
+        strokeWidth="3.5"
+        strokeLinejoin="round"
         opacity="0.5"
       />
-      <circle cx="5.5" cy="18.5" r="1.7" fill="currentColor" />
+      <circle
+        cx="60"
+        cy="54"
+        r="12"
+        fill="none"
+        stroke={`url(#${fgId})`}
+        strokeWidth="5"
+      />
+      <path
+        d="M60 64 L60 82 M60 76 L70 76"
+        stroke={`url(#${fgId})`}
+        strokeWidth="5"
+        strokeLinecap="round"
+      />
     </svg>
   );
 }

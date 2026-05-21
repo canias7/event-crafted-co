@@ -14,6 +14,10 @@ interface Props {
   capabilities: string[];
   accent: string;
   Logo: ComponentType<SVGProps<SVGSVGElement> & { className?: string }>;
+  /** True when the Logo brings its own background (full brand
+   *  badge); we then render it edge-to-edge instead of wrapping it
+   *  in a tinted circle. */
+  selfContained?: boolean;
 }
 
 export function ComingSoonPanel({
@@ -24,17 +28,24 @@ export function ComingSoonPanel({
   capabilities,
   accent,
   Logo,
+  selfContained,
 }: Props) {
   return (
     <div className="relative z-10 px-6 md:px-10 pt-24 md:pt-28 pb-12">
       <div className="max-w-3xl mx-auto rounded-2xl border border-white/10 bg-white/[0.04] backdrop-blur-xl shadow-[0_8px_40px_-12px_rgba(0,0,0,0.4)] p-6 md:p-8">
         <div className="flex items-start gap-4 mb-5">
-          <div
-            className="w-12 h-12 rounded-full flex items-center justify-center shrink-0"
-            style={{ background: accent + "26" }}
-          >
-            <Logo className="w-6 h-6" style={{ color: accent }} />
-          </div>
+          {selfContained ? (
+            <div className="w-12 h-12 rounded-2xl overflow-hidden shrink-0 ring-1 ring-black/5">
+              <Logo className="w-full h-full block" />
+            </div>
+          ) : (
+            <div
+              className="w-12 h-12 rounded-full flex items-center justify-center shrink-0"
+              style={{ background: accent + "26" }}
+            >
+              <Logo className="w-6 h-6" style={{ color: accent }} />
+            </div>
+          )}
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2 flex-wrap">
               <p className="text-[11px] uppercase tracking-[0.2em]" style={{ color: accent + "d9" }}>
