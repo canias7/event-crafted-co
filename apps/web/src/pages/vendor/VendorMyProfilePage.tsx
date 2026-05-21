@@ -10,7 +10,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { CheckCircle2, Edit3, Plus, Share2 } from "lucide-react";
+import { CheckCircle2, Edit3, ExternalLink, Plus, Share2 } from "lucide-react";
 import { toast } from "sonner";
 import { DashboardSidebar } from "@/components/shared/DashboardSidebar";
 import { MobileNav } from "@/components/shared/MobileNav";
@@ -19,6 +19,13 @@ import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { Button } from "@/components/ui/button";
 import { BrandCardShell } from "@/components/vendor/BrandCardShell";
 import { ListingWizardModal } from "@/components/vendor/ListingWizardModal";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { vendorNavItems } from "@/data/navItems";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -391,6 +398,12 @@ function ListingsList({
 // cover photo on top (4:3), name + category · location + price
 // below. Status pill in the top-left so the vendor sees whether
 // the listing is Live / Pending / Rejected at a glance.
+//
+// Tap behavior: opens an in-place preview modal (read-only) instead
+// of navigating to the public /vendors/<slug> page. Vendors want a
+// quick "what does this look like?" without losing the dashboard
+// context. The modal exposes the public page as a secondary action
+// for vendors who do want to leave.
 function ListingDirectoryCard({
   listing,
   heroUrl,
@@ -398,6 +411,7 @@ function ListingDirectoryCard({
   listing: VendorRow;
   heroUrl: string | null;
 }) {
+  const [previewOpen, setPreviewOpen] = useState(false);
   const name = listing.business_name ?? "Listing";
   const price =
     listing.base_price_cents != null && listing.base_price_cents > 0
@@ -417,49 +431,146 @@ function ListingDirectoryCard({
       : listing.application_status === "rejected"
         ? "bg-red-500/15 text-red-700 border-red-500/30"
         : "bg-foreground/10 text-foreground/70 border-foreground/15";
-  const inner = (
+  return (
     <>
-      <div className="relative aspect-[4/3] overflow-hidden rounded-sm mb-3 bg-muted">
-        {heroUrl ? (
-          <img
-            src={heroUrl}
-            alt={name}
-            loading="lazy"
-            className="w-full h-full object-cover"
-          />
-        ) : (
-          <div className="w-full h-full flex flex-col items-center justify-center gap-1 bg-muted text-muted-foreground">
-            <span className="text-xs">No listing photos yet</span>
-          </div>
-        )}
-        <span
-          className={`absolute top-2 left-2 inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-medium ${statusTone}`}
-        >
-          {statusLabel}
-        </span>
-      </div>
-      <div className="px-1">
-        <p className="text-sm font-medium leading-tight line-clamp-1">{name}</p>
-        <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">
-          {[listing.category, listing.location].filter(Boolean).join(" · ")}
-        </p>
-        {price ? (
-          <p className="text-xs text-foreground/80 mt-0.5 tnum">{price}</p>
-        ) : null}
-      </div>
+      <button
+        type="button"
+        onClick={() => setPreviewOpen(true)}
+        className="block group text-left w-full focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 rounded-sm"
+        aria-label={`Preview ${name}`}
+      >
+        <div className="relative aspect-[4/3] overflow-hidden rounded-sm mb-3 bg-muted">
+          {heroUrl ? (
+            <img
+              src={heroUrl}
+              alt={name}
+              loading="lazy"
+              className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
+            />
+          ) : (
+            <div className="w-full h-full flex flex-col items-center justify-center gap-1 bg-muted text-muted-foreground">
+              <span className="text-xs">No listing photos yet</span>
+            </div>
+          )}
+          <span
+            className={`absolute top-2 left-2 inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-medium ${statusTone}`}
+          >
+            {statusLabel}
+          </span>
+        </div>
+        <div className="px-1">
+          <p className="text-sm font-medium leading-tight line-clamp-1">{name}</p>
+          <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">
+            {[listing.category, listing.location].filter(Boolean).join(" · ")}
+          </p>
+          {price ? (
+            <p className="text-xs text-foreground/80 mt-0.5 tnum">{price}</p>
+          ) : null}
+        </div>
+      </button>
+      <ListingPreviewModal
+        open={previewOpen}
+        onOpenChange={setPreviewOpen}
+        listing={listing}
+        heroUrl={heroUrl}
+        statusLabel={statusLabel}
+        statusTone={statusTone}
+        price={price}
+      />
     </>
   );
-  // Only approved listings have a public detail page worth linking
-  // to; others render as static cards.
-  if (listing.application_status === "approved") {
-    return (
-      <Link
-        to={`/vendors/${listing.slug ?? listing.id}`}
-        className="block group"
-      >
-        {inner}
-      </Link>
-    );
-  }
-  return <div className="block">{inner}</div>;
+}
+
+// Read-only preview of a listing — mirrors the public detail page
+// at a glance so the vendor can confirm what visitors will see. No
+// edit affordances here; "Edit" lives on the page outside the modal.
+function ListingPreviewModal({
+  open,
+  onOpenChange,
+  listing,
+  heroUrl,
+  statusLabel,
+  statusTone,
+  price,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  listing: VendorRow;
+  heroUrl: string | null;
+  statusLabel: string;
+  statusTone: string;
+  price: string | null;
+}) {
+  const name = listing.business_name ?? "Listing";
+  const isApproved = listing.application_status === "approved";
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-2xl rounded-sm p-0 overflow-hidden">
+        <div className="relative bg-muted aspect-[16/9]">
+          {heroUrl ? (
+            <img
+              src={heroUrl}
+              alt={name}
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center text-muted-foreground text-sm">
+              No listing photos yet
+            </div>
+          )}
+          <span
+            className={`absolute top-3 left-3 inline-flex items-center rounded-full border px-2.5 py-0.5 text-[10px] font-medium ${statusTone}`}
+          >
+            {statusLabel}
+          </span>
+        </div>
+        <div className="px-6 pt-5 pb-6">
+          <DialogHeader className="space-y-2">
+            <DialogTitle className="font-editorial text-3xl flex items-center gap-2">
+              {name}
+              {listing.verified_at ? (
+                <CheckCircle2
+                  className="w-5 h-5 text-emerald-600"
+                  aria-label="Verified"
+                />
+              ) : null}
+            </DialogTitle>
+            <DialogDescription className="text-sm text-muted-foreground">
+              {[listing.category, listing.location].filter(Boolean).join(" · ") ||
+                "Category and location not set"}
+            </DialogDescription>
+          </DialogHeader>
+
+          {price ? (
+            <p className="mt-3 text-sm font-medium tnum">{price}</p>
+          ) : null}
+
+          {listing.bio ? (
+            <p className="mt-4 text-sm text-foreground/85 leading-relaxed whitespace-pre-wrap">
+              {listing.bio}
+            </p>
+          ) : (
+            <p className="mt-4 text-sm text-muted-foreground italic">
+              No description yet — add one in Edit profile so visitors
+              know what you offer.
+            </p>
+          )}
+
+          {isApproved ? (
+            <div className="mt-6 pt-4 border-t border-border flex items-center justify-end">
+              <a
+                href={`/vendors/${listing.slug ?? listing.id}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+              >
+                Open public page
+                <ExternalLink className="w-3 h-3" />
+              </a>
+            </div>
+          ) : null}
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
 }
