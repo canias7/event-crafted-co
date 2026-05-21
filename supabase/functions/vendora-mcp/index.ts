@@ -311,17 +311,20 @@ serve(async (req) => {
   const tokenHash = await sha256Hex(bearer);
 
   let userId: string | null = null;
+  let authMethod: "oauth" | "pat" | null = null;
+  let clientId: string | null = null;
 
   // Try OAuth first.
   const { data: oauthRow } = await admin
     .from("oauth_access_tokens")
-    .select("id, user_id, expires_at, revoked_at")
+    .select("id, user_id, client_id, expires_at, revoked_at")
     .eq("token_hash", tokenHash)
     .maybeSingle();
   if (oauthRow) {
     const r = oauthRow as {
       id: string;
       user_id: string;
+      client_id: string;
       expires_at: string;
       revoked_at: string | null;
     };
@@ -330,6 +333,8 @@ serve(async (req) => {
       return unauthorized(id, "token expired");
     }
     userId = r.user_id;
+    authMethod = "oauth";
+    clientId = r.client_id;
     admin
       .from("oauth_access_tokens")
       .update({ last_used_at: new Date().toISOString() })
@@ -343,12 +348,14 @@ serve(async (req) => {
   if (!userId) {
     const { data: patRow } = await admin
       .from("vendor_access_tokens")
-      .select("id, user_id")
+      .select("id, user_id, token_prefix")
       .eq("token_hash", tokenHash)
       .maybeSingle();
     if (patRow) {
-      const p = patRow as { id: string; user_id: string };
+      const p = patRow as { id: string; user_id: string; token_prefix: string };
       userId = p.user_id;
+      authMethod = "pat";
+      clientId = p.token_prefix;
       admin
         .from("vendor_access_tokens")
         .update({ last_used_at: new Date().toISOString() })
@@ -359,7 +366,7 @@ serve(async (req) => {
     }
   }
 
-  if (!userId) {
+  if (!userId || !authMethod) {
     return unauthorized(id, "invalid token");
   }
 
@@ -369,19 +376,48 @@ serve(async (req) => {
 
   const toolName = String(params?.name ?? "");
   const args = (params?.arguments ?? {}) as Record<string, any>;
+  const startedAt = Date.now();
+
+  // Best-effort audit logger. Fires once per tool/call regardless
+  // of outcome. We strip giant text fields from args (body, detail)
+  // to keep the jsonb compact.
+  const logCall = (ok: boolean, error: string | null) => {
+    const safeArgs: Record<string, any> = {};
+    for (const [k, v] of Object.entries(args)) {
+      if (typeof v === "string" && v.length > 200) {
+        safeArgs[k] = `${v.slice(0, 200)}…(${v.length} chars)`;
+      } else {
+        safeArgs[k] = v;
+      }
+    }
+    admin
+      .from("mcp_call_log")
+      .insert({
+        user_id: userId,
+        client_id: clientId,
+        auth_method: authMethod,
+        tool_name: toolName,
+        args: safeArgs,
+        ok,
+        error,
+        duration_ms: Date.now() - startedAt,
+      })
+      .then(({ error: e }) => {
+        if (e) console.error("[vendora-mcp] call log insert failed", e);
+      });
+  };
 
   try {
     const result = await runTool(admin, userId, toolName, args);
+    logCall(true, null);
     return rpcResult(id, {
       content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
     });
   } catch (err) {
     console.error("[vendora-mcp] tool error", toolName, err);
-    return rpcError(
-      id,
-      -32603,
-      err instanceof Error ? err.message : String(err),
-    );
+    const msg = err instanceof Error ? err.message : String(err);
+    logCall(false, msg);
+    return rpcError(id, -32603, msg);
   }
 });
 
