@@ -11,17 +11,12 @@ import {
   ChevronRight,
   Globe2,
   Loader2,
-  Mic,
   Pencil,
-  Plus,
   Send,
   ShieldAlert,
-  Sparkles,
-  Trash2,
 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
-import { Button } from "@/components/ui/button";
 import {
   Collapsible,
   CollapsibleContent,
@@ -35,7 +30,6 @@ import { HiluxLogo } from "./AgentLogos";
 interface HiluxProfileRow {
   hilux_enabled: boolean;
   hilux_instructions: string | null;
-  hilux_voice_samples: string[];
   hilux_action_follow_up: boolean;
   hilux_action_match_language: boolean;
   hilux_action_use_calendar: boolean;
@@ -91,9 +85,6 @@ const INSTRUCTIONS_PLACEHOLDER = `Examples:
 • Always ask about budget before sharing prices.
 • We don't do Sunday weddings. If asked, say we're closed Sundays.`;
 
-const MAX_SAMPLES = 5;
-const MAX_SAMPLE_LEN = 1500;
-
 const TONE_PRESETS: Array<{ label: string; text: string }> = [
   {
     label: "Warm & casual",
@@ -123,7 +114,6 @@ export function HiluxVendorControls() {
   const [expanded, setExpanded] = useState(false);
   const [savingKey, setSavingKey] = useState<string | null>(null);
   const [draftInstructions, setDraftInstructions] = useState("");
-  const [draftSample, setDraftSample] = useState("");
   const instructionsSaveTimer = useRef<number | null>(null);
 
   const load = useCallback(async () => {
@@ -131,7 +121,7 @@ export function HiluxVendorControls() {
     const { data, error } = await supabase
       .from("profiles")
       .select(
-        "hilux_enabled, hilux_instructions, hilux_voice_samples, hilux_action_follow_up, hilux_action_match_language, hilux_action_use_calendar, hilux_action_escalate",
+        "hilux_enabled, hilux_instructions, hilux_action_follow_up, hilux_action_match_language, hilux_action_use_calendar, hilux_action_escalate",
       )
       .eq("id", user.id)
       .maybeSingle();
@@ -143,7 +133,6 @@ export function HiluxVendorControls() {
     const row = (data as HiluxProfileRow | null) ?? {
       hilux_enabled: false,
       hilux_instructions: null,
-      hilux_voice_samples: [],
       hilux_action_follow_up: true,
       hilux_action_match_language: true,
       hilux_action_use_calendar: true,
@@ -205,33 +194,9 @@ export function HiluxVendorControls() {
     onInstructionsChange(next.slice(0, 4000));
   };
 
-  const addSample = async () => {
-    if (!profile) return;
-    const trimmed = draftSample.trim();
-    if (!trimmed) return;
-    if ((profile.hilux_voice_samples ?? []).length >= MAX_SAMPLES) return;
-    const next = [...(profile.hilux_voice_samples ?? []), trimmed].slice(
-      0,
-      MAX_SAMPLES,
-    );
-    const ok = await persist({ hilux_voice_samples: next }, "voice");
-    if (ok) {
-      setDraftSample("");
-      toast.success("Sample added.");
-    }
-  };
-
-  const removeSample = async (idx: number) => {
-    if (!profile) return;
-    const next = (profile.hilux_voice_samples ?? []).filter((_, i) => i !== idx);
-    await persist({ hilux_voice_samples: next }, "voice");
-  };
-
   if (!user) return null;
 
   const enabled = profile?.hilux_enabled === true;
-  const samples = profile?.hilux_voice_samples ?? [];
-  const atSampleCap = samples.length >= MAX_SAMPLES;
 
   return (
     <div className="relative z-10 px-6 md:px-10 pt-24 md:pt-28">
@@ -393,82 +358,6 @@ export function HiluxVendorControls() {
                 </span>
               </div>
             </div>
-
-            {/* Voice training */}
-            <div>
-              <div className="flex items-center gap-2 mb-2">
-                <Mic className="w-3.5 h-3.5 text-black/55" />
-                <p className="text-[11px] uppercase tracking-[0.2em] text-black/55">
-                  Voice training · {samples.length}/{MAX_SAMPLES}
-                </p>
-              </div>
-              <p className="text-xs text-black/55 mb-2">
-                Paste 3–5 messages you've actually sent to past inquiries.
-                HILUX learns your cadence and vocab.
-              </p>
-              {samples.length > 0 ? (
-                <ul className="space-y-2 mb-3">
-                  {samples.map((sample, i) => (
-                    <li
-                      key={i}
-                      className="group flex items-start gap-2 rounded-xl bg-white/65 border border-black/5 p-3"
-                    >
-                      <span className="text-[10px] font-medium uppercase tracking-wider text-black/40 mt-0.5 shrink-0">
-                        #{i + 1}
-                      </span>
-                      <p className="text-sm text-black/85 whitespace-pre-wrap flex-1 leading-snug">
-                        {sample}
-                      </p>
-                      <button
-                        type="button"
-                        onClick={() => removeSample(i)}
-                        disabled={savingKey === "voice"}
-                        aria-label="Remove sample"
-                        className="opacity-30 group-hover:opacity-100 hover:text-rose-600 transition-opacity shrink-0 mt-0.5"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              ) : null}
-              <div className="space-y-1.5">
-                <Textarea
-                  value={draftSample}
-                  onChange={(e) => setDraftSample(e.target.value.slice(0, MAX_SAMPLE_LEN))}
-                  placeholder={
-                    atSampleCap
-                      ? `You've hit the ${MAX_SAMPLES} sample cap — remove one to add a new one.`
-                      : `Paste a real reply you've sent...`
-                  }
-                  disabled={atSampleCap || savingKey === "voice"}
-                  className="min-h-[100px] resize-y bg-white text-sm text-black"
-                />
-                <div className="flex items-center justify-between gap-3">
-                  <span className="text-[11px] text-black/45 tabular-nums">
-                    {draftSample.length} / {MAX_SAMPLE_LEN}
-                  </span>
-                  <Button
-                    onClick={addSample}
-                    disabled={!draftSample.trim() || savingKey === "voice" || atSampleCap}
-                    size="sm"
-                    className="bg-black text-white hover:bg-black/85"
-                  >
-                    {savingKey === "voice" ? (
-                      <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
-                    ) : (
-                      <Plus className="w-3.5 h-3.5 mr-1.5" />
-                    )}
-                    Add sample
-                  </Button>
-                </div>
-              </div>
-            </div>
-
-            <p className="text-[11px] text-black/45 italic flex items-center gap-1.5 pt-1">
-              <Sparkles className="w-3 h-3" />
-              HILUX uses these settings across all your listings.
-            </p>
           </div>
         ) : null}
       </div>
