@@ -13,8 +13,6 @@ import { AmbientBackdrop } from "@/pages/SuperAgentsPage";
 import { AgentPicker, type AgentKey } from "@/components/super-agents/AgentPicker";
 import { AxionLogo, RaptorLogo } from "@/components/super-agents/AgentLogos";
 import { HiluxVendorControls } from "@/components/super-agents/HiluxVendorControls";
-import { HiluxSandbox } from "@/components/super-agents/HiluxSandbox";
-import { HiluxActivityLog } from "@/components/super-agents/HiluxActivityLog";
 import { ComingSoonPanel } from "@/components/super-agents/ComingSoonPanel";
 
 const COMING_SOON_COPY: Record<
@@ -72,11 +70,7 @@ export default function VendorAiSuperagentsPage() {
           <AgentPicker selected={selected} onSelect={setSelected} />
           <div className="flex-1 min-w-0">
             {selected === "HILUX" ? (
-              <>
-                <HiluxVendorControls />
-                <HiluxActivityLog />
-                <HiluxSandbox />
-              </>
+              <HiluxVendorControls />
             ) : selected === "RAPTOR" ? (
               <ComingSoonPanel {...COMING_SOON_COPY.RAPTOR} />
             ) : (
