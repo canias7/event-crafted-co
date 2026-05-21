@@ -270,6 +270,17 @@ serve(async (req) => {
       systemText,
       claudeMessages,
     );
+    // Token accumulator: every Claude call below (scoring, intent,
+    // field extraction) adds its usage to this so the per-host-msg
+    // cost we log reflects the full HILUX spend, not just the reply.
+    const totalUsage: ClaudeUsage = { ...replyUsage };
+    const addUsage = (u: ClaudeUsage | undefined) => {
+      if (!u) return;
+      totalUsage.input_tokens += u.input_tokens;
+      totalUsage.output_tokens += u.output_tokens;
+      totalUsage.cache_creation_tokens += u.cache_creation_tokens;
+      totalUsage.cache_read_tokens += u.cache_read_tokens;
+    };
 
     // Booking-intent detection: when on, classify the host's LATEST
     // message for explicit commitment ("yes, book us"). Sets
@@ -284,6 +295,7 @@ serve(async (req) => {
           businessName: ctx.vendor!.business_name ?? "this vendor",
           transcript: claudeMessages,
         });
+        addUsage(result.usage);
         if (!result.detected) return;
         // Booking intent lives on inquiry_scores (vendor-only RLS).
         // Only set the FIRST time we detect intent for this inquiry —
@@ -324,6 +336,10 @@ serve(async (req) => {
           transcript: claudeMessages,
           todayIso: new Date().toISOString().slice(0, 10),
         });
+        addUsage(extracted._usage);
+        // _usage is the only non-extracted-field key; strip it before
+        // iterating so it doesn't get patched into the inquiries row.
+        delete extracted._usage;
         const keys = Object.keys(extracted) as Array<keyof typeof extracted>;
         if (keys.length === 0) return;
         // Read current values so we only fill nulls.
@@ -398,6 +414,7 @@ serve(async (req) => {
           inquiry: inquiryCtx,
           transcript: claudeMessages,
         });
+        addUsage(result.usage);
         const { error: scoreErr } = await admin
           .from("inquiry_scores")
           .upsert(
@@ -502,7 +519,6 @@ serve(async (req) => {
     const insertedMsgId = (insertedRow as { id: string } | null)?.id ?? null;
 
     log("hilux replied", { thread: threadId, length: sanitized.length });
-    await logAction("reply", null, insertedMsgId, replyUsage);
 
     // Auto-mark the inquiry as 'replied' so it moves out of the
     // vendor's 'new' bucket. Only flips when the inquiry is still
@@ -595,6 +611,9 @@ serve(async (req) => {
     await scoreInquiryAfter();
     await detectIntentAfter();
     await extractFieldsAfter();
+    // Log AFTER the helpers so totalUsage reflects every Claude call
+    // the host's message triggered — reply + score + intent + extract.
+    await logAction("reply", null, insertedMsgId, totalUsage);
     await clearTyping();
     return ok({ replied: true, length: sanitized.length });
   } catch (err) {
