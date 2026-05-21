@@ -204,6 +204,108 @@ export function buildSystemPrompt(ctx: HiluxPromptCtx): string {
   return lines.join("\n");
 }
 
+export interface LeadScoreResult {
+  score: "hot" | "warm" | "cold" | "unknown";
+  reason: string;
+}
+
+// Classifies the inquiry's current temperature from the conversation
+// transcript + the inquiry's structured fields. Bounded to a tiny
+// reply (a JSON object), so this is a cheap second call after the
+// main HILUX reply. Designed to never throw — returns "unknown" on
+// any parsing failure so the calling function can carry on writing
+// the actual reply.
+export async function scoreLead(
+  apiKey: string,
+  ctx: {
+    businessName: string;
+    category: string | null;
+    inquiry: InquiryCtx | null;
+    transcript: Array<{ role: "user" | "assistant"; content: string }>;
+  },
+): Promise<LeadScoreResult> {
+  if (!apiKey) return { score: "unknown", reason: "no_api_key" };
+
+  const lines: string[] = [];
+  lines.push(
+    `You are a lead-scoring assistant for ${ctx.businessName}${ctx.category ? `, a ${ctx.category} vendor` : ""}. Read the conversation transcript and the structured inquiry below, then classify the host's current temperature as one of:`,
+  );
+  lines.push(
+    "- hot: explicit booking intent (asked to confirm, requested a contract, picked a package, said 'we want to book', etc.)",
+  );
+  lines.push(
+    "- warm: actively engaged, asking detailed questions, considering — but no firm commitment yet",
+  );
+  lines.push(
+    "- cold: vague, slow, price-shopping signals, low specificity, lukewarm responses",
+  );
+  lines.push(
+    "- unknown: not enough signal yet (e.g. just the initial inquiry with no follow-up)",
+  );
+  lines.push("");
+  lines.push(
+    "Output ONLY a JSON object on one line with two fields: score (one of hot/warm/cold/unknown) and reason (one short sentence, max 100 chars, citing the specific signal). No markdown. No prose outside the JSON.",
+  );
+  lines.push("Example: {\"score\":\"warm\",\"reason\":\"Asking about packages but no date yet.\"}");
+  lines.push("");
+  if (ctx.inquiry) {
+    lines.push("STRUCTURED INQUIRY:");
+    if (ctx.inquiry.eventType) lines.push(`- Event type: ${ctx.inquiry.eventType}`);
+    if (ctx.inquiry.eventDate) lines.push(`- Event date: ${ctx.inquiry.eventDate}`);
+    if (ctx.inquiry.guestCount != null) lines.push(`- Guest count: ${ctx.inquiry.guestCount}`);
+    if (ctx.inquiry.budgetRangeUsd) lines.push(`- Budget: ${ctx.inquiry.budgetRangeUsd}`);
+    if (ctx.inquiry.location) lines.push(`- Location: ${ctx.inquiry.location}`);
+    if (ctx.inquiry.specialRequests) lines.push(`- Special requests: ${ctx.inquiry.specialRequests.trim()}`);
+    lines.push("");
+  }
+  lines.push("TRANSCRIPT (host = user, vendor or HILUX = assistant):");
+
+  const systemText = lines.join("\n");
+  try {
+    const res = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "x-api-key": apiKey,
+        "anthropic-version": "2023-06-01",
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({
+        model: MODEL,
+        max_tokens: 120,
+        system: [
+          { type: "text", text: systemText, cache_control: { type: "ephemeral" } },
+        ],
+        messages: ctx.transcript.length > 0
+          ? ctx.transcript
+          : [{ role: "user", content: "(empty transcript)" }],
+      }),
+    });
+    if (!res.ok) {
+      const errText = await res.text();
+      console.error("[scoreLead] anthropic non-ok", res.status, errText.slice(0, 300));
+      return { score: "unknown", reason: "scoring_api_error" };
+    }
+    const body = (await res.json()) as any;
+    const raw = ((body.content ?? []) as any[])
+      .filter((b) => b.type === "text")
+      .map((b) => b.text)
+      .join("\n")
+      .trim();
+    // Strip code-fence wrappers if Claude added them.
+    const jsonish = raw.replace(/^```(?:json)?/, "").replace(/```$/, "").trim();
+    const parsed = JSON.parse(jsonish);
+    const score = String(parsed?.score ?? "").toLowerCase();
+    if (!["hot", "warm", "cold", "unknown"].includes(score)) {
+      return { score: "unknown", reason: "unparseable_score" };
+    }
+    const reason = String(parsed?.reason ?? "").trim().slice(0, 240);
+    return { score: score as LeadScoreResult["score"], reason: reason || "no_reason" };
+  } catch (err) {
+    console.error("[scoreLead] uncaught", err);
+    return { score: "unknown", reason: "scoring_exception" };
+  }
+}
+
 export async function callClaude(
   apiKey: string,
   systemText: string,

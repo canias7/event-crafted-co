@@ -20,6 +20,7 @@ import {
   callClaude,
   loadVendorContext,
   priceUsd,
+  scoreLead,
 } from "../_shared/hilux-prompt.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
@@ -170,6 +171,37 @@ serve(async (req) => {
     log("calling claude", { vendor: ctx.vendor.id, history_len: claudeMessages.length });
     const reply = await callClaude(ANTHROPIC_API_KEY, systemText, claudeMessages);
 
+    // Lead scoring runs as a bounded second call against the same
+    // transcript. Best-effort: failures are logged but never block
+    // the actual reply / escalation path. Only meaningful when the
+    // thread is tied to a structured inquiry.
+    const scoreInquiryAfter = async () => {
+      if (!thread.inquiry_id) return;
+      try {
+        const result = await scoreLead(ANTHROPIC_API_KEY, {
+          businessName: ctx.vendor!.business_name ?? "this vendor",
+          category: ctx.vendor!.category,
+          inquiry: inquiryCtx,
+          transcript: claudeMessages,
+        });
+        const { error: scoreErr } = await admin
+          .from("inquiries")
+          .update({
+            lead_score: result.score,
+            lead_score_reason: result.reason,
+            lead_score_updated_at: new Date().toISOString(),
+          })
+          .eq("id", thread.inquiry_id);
+        if (scoreErr) {
+          console.error("[hilux-respond] lead_score update failed", scoreErr);
+        } else {
+          log("lead scored", { inquiry: thread.inquiry_id, score: result.score });
+        }
+      } catch (err) {
+        console.error("[hilux-respond] lead_score error", err);
+      }
+    };
+
     // Smart escalation: if Claude couldn't confidently answer, it
     // outputs "ESCALATE: <reason>" instead of a reply. We skip the
     // message insert and instead notify the vendor's team that a
@@ -207,6 +239,7 @@ serve(async (req) => {
         reason,
         notified: rows.length,
       });
+      await scoreInquiryAfter();
       return ok({ escalated: true, reason, notified: rows.length });
     }
 
@@ -220,6 +253,7 @@ serve(async (req) => {
     if (insertErr) throw insertErr;
 
     log("hilux replied", { thread: threadId, length: reply.length });
+    await scoreInquiryAfter();
     return ok({ replied: true, length: reply.length });
   } catch (err) {
     console.error("[hilux-respond] uncaught:", err);

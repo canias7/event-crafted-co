@@ -32,9 +32,33 @@ interface InquiryRow {
   created_at: string;
   last_message_at: string;
   vendor_read_at: string | null;
+  lead_score: "hot" | "warm" | "cold" | "unknown" | null;
+  lead_score_reason: string | null;
   host: { display_name: string | null; avatar_url: string | null } | null;
   vendor_profiles: { hilux_enabled: boolean } | null;
 }
+
+// Map HILUX-classified temperatures to a pip color + label.
+const LEAD_SCORE_STYLE: Record<
+  "hot" | "warm" | "cold",
+  { dot: string; text: string; label: string }
+> = {
+  hot: {
+    dot: "bg-rose-500",
+    text: "text-rose-700",
+    label: "Hot",
+  },
+  warm: {
+    dot: "bg-amber-500",
+    text: "text-amber-700",
+    label: "Warm",
+  },
+  cold: {
+    dot: "bg-sky-500",
+    text: "text-sky-700",
+    label: "Cold",
+  },
+};
 
 function relativeTime(iso: string | null): string {
   if (!iso) return "";
@@ -91,7 +115,7 @@ export default function VendorInboxPage() {
     const { data } = await supabase
       .from("inquiries")
       .select(
-        "id, event_type, event_date, guest_count, location, budget_min_cents, budget_max_cents, special_requests, status, created_at, last_message_at, vendor_read_at, host:profiles!inquiries_host_id_fkey(display_name, avatar_url), vendor_profiles(hilux_enabled)",
+        "id, event_type, event_date, guest_count, location, budget_min_cents, budget_max_cents, special_requests, status, created_at, last_message_at, vendor_read_at, lead_score, lead_score_reason, host:profiles!inquiries_host_id_fkey(display_name, avatar_url), vendor_profiles(hilux_enabled)",
       )
       .in("vendor_id", vids)
       .order("last_message_at", { ascending: false })
@@ -299,6 +323,23 @@ function ConversationRow({
               >
                 <Sparkles className="w-3 h-3 text-accent" />
               </span>
+            ) : null}
+            {row.lead_score && row.lead_score !== "unknown" ? (
+              (() => {
+                const style = LEAD_SCORE_STYLE[row.lead_score];
+                return (
+                  <span
+                    className={`shrink-0 inline-flex items-center gap-1 text-[10px] font-medium uppercase tracking-wider ${style.text}`}
+                    title={row.lead_score_reason ?? undefined}
+                    aria-label={`Lead temperature: ${style.label}${
+                      row.lead_score_reason ? `. ${row.lead_score_reason}` : ""
+                    }`}
+                  >
+                    <span className={`w-1.5 h-1.5 rounded-full ${style.dot}`} />
+                    {style.label}
+                  </span>
+                );
+              })()
             ) : null}
             <span className="text-[11px] uppercase tracking-wider text-muted-foreground capitalize truncate">
               · {eventLabel}
