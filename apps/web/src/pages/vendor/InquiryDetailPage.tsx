@@ -272,11 +272,19 @@ export default function InquiryDetailPage() {
     // parallel. messages still has to wait on the RPC's thread id, so
     // it goes in a second hop. Cuts page-open latency roughly in half
     // versus the previous fully-sequential chain.
-    const [inqRes, threadRes, reviewRes, propsRes] = await Promise.all([
+    const [inqRes, scoreRes, threadRes, reviewRes, propsRes] = await Promise.all([
       supabase
         .from("inquiries")
         .select("*, host:profiles!inquiries_host_id_fkey(display_name, avatar_url)")
         .eq("id", inquiryId)
+        .maybeSingle(),
+      // Lead score lives on inquiry_scores (vendor-only RLS) so
+      // the host can't read how the vendor classified them.
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (supabase as any)
+        .from("inquiry_scores")
+        .select("lead_score, lead_score_reason")
+        .eq("inquiry_id", inquiryId)
         .maybeSingle(),
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (supabase as any).rpc("ensure_inquiry_thread", {
@@ -306,7 +314,19 @@ export default function InquiryDetailPage() {
     ]);
 
     const i = inqRes.data;
-    setInquiry(i as unknown as Inquiry);
+    const score = (scoreRes.data ?? null) as {
+      lead_score: "hot" | "warm" | "cold" | "unknown" | null;
+      lead_score_reason: string | null;
+    } | null;
+    setInquiry(
+      i
+        ? ({
+            ...(i as Record<string, unknown>),
+            lead_score: score?.lead_score ?? null,
+            lead_score_reason: score?.lead_score_reason ?? null,
+          } as unknown as Inquiry)
+        : null,
+    );
 
     // Stamp vendor_read_at every time the vendor opens the inquiry
     // so the inbox unread dot resets correctly. The unread predicate
@@ -456,6 +476,17 @@ export default function InquiryDetailPage() {
     [inquiryId],
   );
   useRealtime(inquiryConfig, load);
+
+  // Lead score / booking intent live on inquiry_scores now; subscribe
+  // so the chip refreshes when HILUX flips us hot or detects intent.
+  const inquiryScoreConfig = useMemo(
+    () =>
+      inquiryId
+        ? { table: "inquiry_scores", filter: `inquiry_id=eq.${inquiryId}` }
+        : null,
+    [inquiryId],
+  );
+  useRealtime(inquiryScoreConfig, load);
 
   // Proposals can be withdrawn / accepted / declined from either side
   // after first load. Without a sub, the bubble shows "pending" until

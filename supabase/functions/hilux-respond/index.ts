@@ -280,22 +280,26 @@ serve(async (req) => {
           transcript: claudeMessages,
         });
         if (!result.detected) return;
-        // Only set the timestamp the FIRST time we detect intent
-        // for this inquiry — repeat-detect on every host message
-        // in a hot conversation would clobber the original moment.
+        // Booking intent lives on inquiry_scores (vendor-only RLS).
+        // Only set the FIRST time we detect intent for this inquiry —
+        // repeat-detect on every host message would clobber the
+        // original moment.
         const { data: priorRow } = await admin
-          .from("inquiries")
+          .from("inquiry_scores")
           .select("booking_intent_at")
-          .eq("id", thread.inquiry_id)
+          .eq("inquiry_id", thread.inquiry_id)
           .maybeSingle();
         if ((priorRow as { booking_intent_at?: string } | null)?.booking_intent_at) return;
         const { error: intentErr } = await admin
-          .from("inquiries")
-          .update({
-            booking_intent_at: new Date().toISOString(),
-            booking_intent_reason: result.reason,
-          })
-          .eq("id", thread.inquiry_id);
+          .from("inquiry_scores")
+          .upsert(
+            {
+              inquiry_id: thread.inquiry_id,
+              booking_intent_at: new Date().toISOString(),
+              booking_intent_reason: result.reason,
+            },
+            { onConflict: "inquiry_id" },
+          );
         if (intentErr) console.error("[hilux-respond] booking_intent update failed", intentErr);
         else log("booking intent flagged", { inquiry: thread.inquiry_id, reason: result.reason });
       } catch (err) {
@@ -368,11 +372,12 @@ serve(async (req) => {
       try {
         // Read the prior score BEFORE we overwrite it, so we can
         // detect the "warm → hot" transition that fires the hot-lead
-        // notification.
+        // notification. Lead scores live on inquiry_scores now
+        // (vendor-only RLS) so hosts can't see how we classified them.
         const { data: priorRow } = await admin
-          .from("inquiries")
+          .from("inquiry_scores")
           .select("lead_score")
-          .eq("id", thread.inquiry_id)
+          .eq("inquiry_id", thread.inquiry_id)
           .maybeSingle();
         const priorScore = (priorRow as { lead_score?: string } | null)?.lead_score ?? null;
 
@@ -383,13 +388,16 @@ serve(async (req) => {
           transcript: claudeMessages,
         });
         const { error: scoreErr } = await admin
-          .from("inquiries")
-          .update({
-            lead_score: result.score,
-            lead_score_reason: result.reason,
-            lead_score_updated_at: new Date().toISOString(),
-          })
-          .eq("id", thread.inquiry_id);
+          .from("inquiry_scores")
+          .upsert(
+            {
+              inquiry_id: thread.inquiry_id,
+              lead_score: result.score,
+              lead_score_reason: result.reason,
+              lead_score_updated_at: new Date().toISOString(),
+            },
+            { onConflict: "inquiry_id" },
+          );
         if (scoreErr) console.error("[hilux-respond] lead_score update failed", scoreErr);
 
         // Hot-lead notification: only fire when the lead JUST became

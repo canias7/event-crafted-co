@@ -57,14 +57,17 @@ serve(async (req) => {
     // Doing this as a single SQL query through PostgREST is awkward
     // (multi-hop with `.in`); easier to pull candidate inquiries
     // first, then filter by owner-profile flag in a second query.
+    // lead_score + booking_intent_at moved to inquiry_scores. Join
+    // inquiries to inquiry_scores via the FK relationship so we can
+    // filter cold + non-booking inquiries in a single PostgREST query.
     const { data: candidates, error } = await admin
       .from("inquiries")
       .select(
-        "id, vendor_id, status, lead_score, last_message_at, booking_intent_at, vendor_profiles!inner(user_id)",
+        "id, vendor_id, status, last_message_at, vendor_profiles!inner(user_id), inquiry_scores!inner(lead_score, booking_intent_at)",
       )
-      .eq("lead_score", "cold")
+      .eq("inquiry_scores.lead_score", "cold")
       .lte("last_message_at", cutoffIso)
-      .is("booking_intent_at", null)
+      .is("inquiry_scores.booking_intent_at", null)
       .not("status", "in", '("won","lost","expired")')
       .limit(MAX_PER_RUN);
     if (error) throw error;
