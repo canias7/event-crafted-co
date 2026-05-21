@@ -3,7 +3,8 @@
 // list with a "Coming soon" stamp so the marketing pitch lives in
 // one place and the vendor knows what's on the way.
 
-import { Bot, Sparkles } from "lucide-react";
+import type { ComponentType, SVGProps } from "react";
+import { Sparkles } from "lucide-react";
 
 interface Props {
   name: string;
@@ -12,7 +13,7 @@ interface Props {
   about: string;
   capabilities: string[];
   accent: string;
-  Icon: typeof Bot;
+  Logo: ComponentType<SVGProps<SVGSVGElement> & { className?: string }>;
 }
 
 export function ComingSoonPanel({
@@ -22,7 +23,7 @@ export function ComingSoonPanel({
   about,
   capabilities,
   accent,
-  Icon,
+  Logo,
 }: Props) {
   return (
     <div className="relative z-10 px-6 md:px-10 pt-24 md:pt-28 pb-12">
@@ -32,7 +33,7 @@ export function ComingSoonPanel({
             className="w-12 h-12 rounded-full flex items-center justify-center shrink-0"
             style={{ background: accent + "26" }}
           >
-            <Icon className="w-6 h-6" style={{ color: accent }} />
+            <Logo className="w-6 h-6" style={{ color: accent }} />
           </div>
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2 flex-wrap">

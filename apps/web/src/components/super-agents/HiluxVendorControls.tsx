@@ -24,6 +24,7 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { HiluxLogo } from "./AgentLogos";
 
 interface HiluxProfileRow {
   hilux_enabled: boolean;
@@ -241,7 +242,7 @@ export function HiluxVendorControls() {
               className="w-12 h-12 rounded-full flex items-center justify-center shrink-0"
               style={{ background: "rgba(255, 138, 76, 0.15)" }}
             >
-              <Bot className="w-6 h-6" style={{ color: "#ff8a4c" }} />
+              <HiluxLogo className="w-6 h-6" style={{ color: "#ff8a4c" }} />
             </div>
             <div className="min-w-0 flex-1">
               <p
