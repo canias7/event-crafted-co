@@ -14,7 +14,7 @@ import { Loader2, ShieldCheck, X } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { VendoraForClaudeLogo } from "@/components/super-agents/AgentLogos";
+import { VendoraMcpLogo } from "@/components/super-agents/AgentLogos";
 import { toast } from "sonner";
 
 const AUTHORIZE_URL =
@@ -123,14 +123,14 @@ export default function OAuthConsentPage() {
         <div className="p-6 border-b border-black/10">
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 rounded-xl overflow-hidden ring-1 ring-black/5">
-              <VendoraForClaudeLogo className="w-full h-full block" />
+              <VendoraMcpLogo className="w-full h-full block" />
             </div>
             <div className="min-w-0">
               <p className="text-[11px] uppercase tracking-[0.2em] text-black/55">
                 Claude wants to connect
               </p>
               <h1 className="font-editorial text-xl text-black leading-tight">
-                Vendora for Claude
+                Vendora MCP
               </h1>
             </div>
           </div>
@@ -160,8 +160,8 @@ export default function OAuthConsentPage() {
             </div>
           </div>
           <p className="text-[11px] text-black/55">
-            You can revoke this connection any time from the Vendora for Claude
-            panel in your vendor settings. The access token expires after 1 hour
+            You can revoke this connection any time from the Vendora MCP
+            panel in your account settings. The access token expires after 1 hour
             and rotates on every refresh.
           </p>
           <div className="text-[11px] text-black/45 break-all">

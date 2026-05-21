@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Globe, Loader2, LogOut, Mail, Trash2 } from "lucide-react";
+import { ChevronRight, Globe, Loader2, LogOut, Mail, Plug, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -96,6 +96,27 @@ export default function SettingsPage() {
                 subtitle="Interface language for menus, buttons, and prompts"
                 right={<LanguageSwitcher tone="light" />}
               />
+              {isApprovedVendor ? (
+                <>
+                  <RowDivider />
+                  <SettingRow
+                    Icon={Plug}
+                    title="Integrations"
+                    subtitle="Connect your Vendora account to Claude (MCP), CLI, and Skill clients"
+                    right={
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="rounded-full"
+                        onClick={() => navigate("/vendor/integrations")}
+                      >
+                        Manage
+                        <ChevronRight className="w-3.5 h-3.5 ml-1" />
+                      </Button>
+                    }
+                  />
+                </>
+              ) : null}
               <RowDivider />
               <SettingRow
                 Icon={LogOut}

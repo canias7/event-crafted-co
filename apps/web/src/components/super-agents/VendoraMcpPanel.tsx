@@ -1,4 +1,4 @@
-// Vendora for Claude — the MCP connector panel. Shows the
+// Vendora MCP — the MCP connector panel. Shows the
 // connector URL, lets the vendor mint a Personal Access Token,
 // shows install instructions for Claude.ai and Claude Code, and
 // surfaces the live tool catalog so the vendor knows what Claude
@@ -35,7 +35,7 @@ import { Input } from "@/components/ui/input";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { VendoraForClaudeLogo } from "./AgentLogos";
+import { VendoraMcpLogo } from "./AgentLogos";
 import { McpCallLog } from "./McpCallLog";
 
 // Hardcoded for now. The MCP server lives at this URL once the
@@ -218,7 +218,7 @@ const PROMPT_CATALOG: PromptInfo[] = [
   },
 ];
 
-export function VendoraForClaudePanel() {
+export function VendoraMcpPanel() {
   const { user } = useAuth();
   const [tokens, setTokens] = useState<TokenRow[] | null>(null);
   const [creating, setCreating] = useState(false);
@@ -247,7 +247,7 @@ export function VendoraForClaudePanel() {
       .eq("user_id", user.id)
       .order("created_at", { ascending: false });
     if (error) {
-      console.error("[VendoraForClaude] load tokens", error);
+      console.error("[VendoraMcp] load tokens", error);
       setTokens([]);
       return;
     }
@@ -283,7 +283,7 @@ export function VendoraForClaudePanel() {
       setCopiedKey(key);
       window.setTimeout(() => setCopiedKey((cur) => (cur === key ? null : cur)), 1500);
     } catch (err) {
-      console.error("[VendoraForClaude] copy", err);
+      console.error("[VendoraMcp] copy", err);
       toast.error("Couldn't copy.");
     }
   };
@@ -302,7 +302,7 @@ export function VendoraForClaudePanel() {
     );
     setCreating(false);
     if (error) {
-      console.error("[VendoraForClaude] mint", error);
+      console.error("[VendoraMcp] mint", error);
       toast.error("Couldn't generate token.");
       return;
     }
@@ -328,7 +328,7 @@ export function VendoraForClaudePanel() {
       .delete()
       .eq("id", id);
     if (error) {
-      console.error("[VendoraForClaude] revoke", error);
+      console.error("[VendoraMcp] revoke", error);
       toast.error("Couldn't revoke.");
       return;
     }
@@ -345,11 +345,11 @@ export function VendoraForClaudePanel() {
         {/* Header */}
         <div className="flex items-start gap-4">
           <div className="w-12 h-12 rounded-2xl overflow-hidden shrink-0 ring-1 ring-black/5">
-            <VendoraForClaudeLogo className="w-full h-full block" />
+            <VendoraMcpLogo className="w-full h-full block" />
           </div>
           <div className="min-w-0 flex-1">
             <p className="text-[11px] uppercase tracking-[0.2em] text-black/55 mb-1">
-              Vendora for Claude · MCP connector
+              Vendora MCP · model context protocol connector
             </p>
             <h3 className="font-editorial text-2xl md:text-3xl text-black leading-tight">
               Bring your whole vendor account into Claude.
