@@ -1375,13 +1375,17 @@ export type Database = {
           hilux_action_auto_archive_cold: boolean
           hilux_action_auto_mark_replied: boolean
           hilux_action_avoid_competitors: boolean
+          hilux_action_cap_replies_per_inquiry: boolean
+          hilux_action_daily_summary: boolean
           hilux_action_decline_negotiation: boolean
+          hilux_action_detect_booking_intent: boolean
           hilux_action_detect_frustration: boolean
           hilux_action_echo_question: boolean
           hilux_action_email_reply_copies: boolean
           hilux_action_escalate: boolean
           hilux_action_follow_up: boolean
           hilux_action_lead_with_question: boolean
+          hilux_action_log_actions: boolean
           hilux_action_match_language: boolean
           hilux_action_mention_starting_price: boolean
           hilux_action_no_other_clients: boolean
@@ -1434,13 +1438,17 @@ export type Database = {
           hilux_action_auto_archive_cold?: boolean
           hilux_action_auto_mark_replied?: boolean
           hilux_action_avoid_competitors?: boolean
+          hilux_action_cap_replies_per_inquiry?: boolean
+          hilux_action_daily_summary?: boolean
           hilux_action_decline_negotiation?: boolean
+          hilux_action_detect_booking_intent?: boolean
           hilux_action_detect_frustration?: boolean
           hilux_action_echo_question?: boolean
           hilux_action_email_reply_copies?: boolean
           hilux_action_escalate?: boolean
           hilux_action_follow_up?: boolean
           hilux_action_lead_with_question?: boolean
+          hilux_action_log_actions?: boolean
           hilux_action_match_language?: boolean
           hilux_action_mention_starting_price?: boolean
           hilux_action_no_other_clients?: boolean
@@ -1493,13 +1501,17 @@ export type Database = {
           hilux_action_auto_archive_cold?: boolean
           hilux_action_auto_mark_replied?: boolean
           hilux_action_avoid_competitors?: boolean
+          hilux_action_cap_replies_per_inquiry?: boolean
+          hilux_action_daily_summary?: boolean
           hilux_action_decline_negotiation?: boolean
+          hilux_action_detect_booking_intent?: boolean
           hilux_action_detect_frustration?: boolean
           hilux_action_echo_question?: boolean
           hilux_action_email_reply_copies?: boolean
           hilux_action_escalate?: boolean
           hilux_action_follow_up?: boolean
           hilux_action_lead_with_question?: boolean
+          hilux_action_log_actions?: boolean
           hilux_action_match_language?: boolean
           hilux_action_mention_starting_price?: boolean
           hilux_action_no_other_clients?: boolean

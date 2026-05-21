@@ -84,6 +84,10 @@ export interface HiluxActions {
   notifyOnHotLead: boolean;
   emailReplyCopies: boolean;
   autoArchiveCold: boolean;
+  dailySummary: boolean;
+  capRepliesPerInquiry: boolean;
+  detectBookingIntent: boolean;
+  logActions: boolean;
 }
 
 export const DEFAULT_ACTIONS: HiluxActions = {
@@ -121,6 +125,10 @@ export const DEFAULT_ACTIONS: HiluxActions = {
   notifyOnHotLead: true,
   emailReplyCopies: false,
   autoArchiveCold: false,
+  dailySummary: false,
+  capRepliesPerInquiry: false,
+  detectBookingIntent: true,
+  logActions: false,
 };
 
 // HILUX is paused during these UTC hours when the quietHours action
@@ -631,6 +639,10 @@ export async function loadVendorContext(
           notifyOnHotLead: profRow.hilux_action_notify_on_hot_lead !== false,
           emailReplyCopies: profRow.hilux_action_email_reply_copies === true,
           autoArchiveCold: profRow.hilux_action_auto_archive_cold === true,
+          dailySummary: profRow.hilux_action_daily_summary === true,
+          capRepliesPerInquiry: profRow.hilux_action_cap_replies_per_inquiry === true,
+          detectBookingIntent: profRow.hilux_action_detect_booking_intent !== false,
+          logActions: profRow.hilux_action_log_actions === true,
         },
       };
     }
