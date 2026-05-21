@@ -1,17 +1,15 @@
-// HILUX v1.7 — vendor-side auto-reply with debounce + typing indicator.
+// HILUX v1.8 — vendor-side auto-reply, profile-scoped config.
 //
-// Flow:
-//   1. Trigger fires on host-message insert and POSTs here.
-//   2. We sleep 2s. During that window, additional rapid host
-//      messages will also fire the trigger and spawn their own
-//      invocations. After the sleep we re-check: if a newer message
-//      now exists, we bail BEFORE calling Claude — saving the API
-//      tokens. Net effect: a burst of 5 host messages = 1 Claude
-//      call (the latest), not 5.
-//   3. Set direct_threads.hilux_typing_until = now()+30s so the host
-//      UI shows "HILUX is typing..." via its realtime subscription.
-//   4. Call Claude, then score lead, then either insert reply OR
-//      escalate. Either way, clear hilux_typing_until at the end.
+// Trigger fires on host-message insert. We sleep 2s for debounce,
+// then re-check that the message is still the latest. If still
+// latest, we set the typing indicator, pull listing + owner-profile
+// context, call Claude, score the lead, and either insert a reply
+// or escalate (a notification per vendor team member). Either way
+// we clear the typing indicator at the end.
+//
+// HILUX config (enabled, instructions, voice, action toggles) lives
+// on the OWNER profile, not the listing — see _shared/hilux-prompt.ts
+// loadVendorContext().
 
 // deno-lint-ignore-file no-explicit-any
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
@@ -19,6 +17,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.7";
 import {
   buildSystemPrompt,
   callClaude,
+  DEFAULT_ACTIONS,
   loadVendorContext,
   priceUsd,
   scoreLead,
@@ -89,7 +88,7 @@ serve(async (req) => {
 
     const ctx = await loadVendorContext(admin, thread.vendor_id);
     if (!ctx.vendor) return ok({ skipped: "no_vendor" });
-    if (!ctx.vendor.hilux_enabled) return ok({ skipped: "hilux_off" });
+    if (!ctx.profile || !ctx.profile.hilux_enabled) return ok({ skipped: "hilux_off" });
     if (!ctx.vendor.user_id) return ok({ skipped: "no_owner" });
 
     const { data: triggeringMessage, error: msgErr } = await admin
@@ -102,9 +101,6 @@ serve(async (req) => {
       return ok({ skipped: "bad_trigger_msg" });
     }
 
-    // DEBOUNCE: wait briefly so bursts of host messages collapse to
-    // a single Claude call. If a newer message arrived during the
-    // wait, this invocation exits without spending API tokens.
     await sleep(DEBOUNCE_MS);
 
     const { data: latest } = await admin
@@ -117,8 +113,6 @@ serve(async (req) => {
       return ok({ skipped: "stale_after_debounce" });
     }
 
-    // TYPING INDICATOR: set a TTL so a crash doesn't leave the host
-    // staring at a permanent typing dot. Cleared at the end.
     typingThreadId = threadId;
     await admin
       .from("direct_threads")
@@ -159,24 +153,24 @@ serve(async (req) => {
       }
     }
 
+    const actions = ctx.profile?.actions ?? DEFAULT_ACTIONS;
     const systemText = buildSystemPrompt({
       businessName: ctx.vendor.business_name ?? "this vendor",
       category: ctx.vendor.category,
       bio: ctx.vendor.bio,
       location: ctx.vendor.location,
       startingPriceUsd: priceUsd(ctx.vendor.base_price_cents),
-      customInstructions: ctx.vendor.hilux_instructions ?? null,
-      voiceSamples: ctx.vendor.hilux_voice_samples ?? [],
+      customInstructions: ctx.profile?.hilux_instructions ?? null,
+      voiceSamples: ctx.profile?.hilux_voice_samples ?? [],
       packages: ctx.packages,
       faqs: ctx.faqs,
       inquiry: inquiryCtx,
       availability: ctx.availability,
+      actions,
     });
 
     const claudeMessages = orderedHistory.map((m) => ({
-      role: (m.sender_role === "host" ? "user" : "assistant") as
-        | "user"
-        | "assistant",
+      role: (m.sender_role === "host" ? "user" : "assistant") as "user" | "assistant",
       content: m.body,
     }));
     if (claudeMessages.length === 0 || claudeMessages[claudeMessages.length - 1].role !== "user") {
@@ -210,7 +204,13 @@ serve(async (req) => {
       }
     };
 
-    const escalateMatch = reply.match(/^\s*ESCALATE\s*:\s*(.+)$/im);
+    // Escalate is only meaningful when the vendor has it ON. If
+    // escalate is OFF the system prompt already instructs Claude to
+    // always reply; if it slips and outputs ESCALATE anyway, we just
+    // post a generic placeholder rather than dropping the reply.
+    const escalateMatch = actions.escalate
+      ? reply.match(/^\s*ESCALATE\s*:\s*(.+)$/im)
+      : null;
     if (escalateMatch) {
       const reason = escalateMatch[1].trim().slice(0, 200);
       const preview = (triggeringMessage.body ?? "").slice(0, 120);
@@ -237,11 +237,15 @@ serve(async (req) => {
       return ok({ escalated: true, reason, notified: rows.length });
     }
 
+    // If escalate is OFF and Claude still tried to escalate, strip
+    // the ESCALATE: line so the host doesn't see the raw token.
+    const sanitized = reply.replace(/^\s*ESCALATE\s*:.*$/im, "").trim() || reply.trim();
+
     const { error: insertErr } = await admin.from("direct_messages").insert({
       thread_id: threadId,
       sender_id: ctx.vendor.user_id,
       sender_role: "vendor",
-      body: reply,
+      body: sanitized,
       is_hilux_generated: true,
     });
     if (insertErr) {
@@ -249,10 +253,10 @@ serve(async (req) => {
       throw insertErr;
     }
 
-    log("hilux replied", { thread: threadId, length: reply.length });
+    log("hilux replied", { thread: threadId, length: sanitized.length });
     await scoreInquiryAfter();
     await clearTyping();
-    return ok({ replied: true, length: reply.length });
+    return ok({ replied: true, length: sanitized.length });
   } catch (err) {
     console.error("[hilux-respond] uncaught:", err);
     await clearTyping();

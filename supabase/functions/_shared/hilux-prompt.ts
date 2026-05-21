@@ -1,7 +1,7 @@
-// Shared HILUX prompt builder + Claude caller. Imported by both
-// hilux-respond (production trigger path) and hilux-sandbox (vendor
-// preview path). Keeps prompt drift impossible: a sandbox reply uses
-// the EXACT same wiring as a real one.
+// Shared HILUX prompt builder + Claude caller + lead scorer +
+// voice training + per-profile config. Imported by hilux-respond,
+// hilux-sandbox, hilux-follow-up, and hilux-regenerate so all four
+// see the same prompt construction and config lookup.
 
 // deno-lint-ignore-file no-explicit-any
 
@@ -28,22 +28,34 @@ export interface InquiryCtx {
 }
 
 export interface AvailabilityCtx {
-  // ISO yyyy-mm-dd dates that are booked or blocked over the next
-  // ~180 days. Pre-merged from appointments + vendor_unavailable_dates.
   busyDates: string[];
-  // 0=Sun..6=Sat day-of-week numbers that are fully closed every week.
   recurringClosedDays: number[];
-  // Per-weekday hour windows for days that are bookable but only
-  // during a specific time range (e.g., Wed 09:00–17:00 only).
-  // `start`/`end` are 24-hr HH:MM strings.
   recurringHourWindows: Array<{ dayOfWeek: number; start: string; end: string }>;
-  // ISO yyyy-mm-dd of "today" in vendor's expected timezone (UTC for
-  // now; we don't track vendor TZ on the listing yet).
   today: string;
-  // ISO yyyy-mm-dd of the last day the busy list is authoritative for.
-  // Beyond this we don't claim certainty.
   horizon: string;
 }
+
+// Per-action toggles, sourced from the OWNER profile of the listing
+// the conversation is on. All default to true so a vendor who flips
+// the master enable on inherits the full agent without having to
+// hunt for sub-toggles. Action gating is enforced by buildSystemPrompt
+// (e.g. drops the multi-language rule when matchLanguage = false) and
+// by the calling edge function (drops the AVAILABILITY block when
+// useCalendar = false, suppresses the ESCALATE rule when escalate
+// = false, etc.).
+export interface HiluxActions {
+  followUp: boolean;
+  matchLanguage: boolean;
+  useCalendar: boolean;
+  escalate: boolean;
+}
+
+export const DEFAULT_ACTIONS: HiluxActions = {
+  followUp: true,
+  matchLanguage: true,
+  useCalendar: true,
+  escalate: true,
+};
 
 export interface HiluxPromptCtx {
   businessName: string;
@@ -52,14 +64,17 @@ export interface HiluxPromptCtx {
   location: string | null;
   startingPriceUsd: string | null;
   customInstructions: string | null;
-  // Past replies the vendor has actually sent. Used as style examples
-  // so HILUX matches the vendor's voice (cadence, vocab, tone) instead
-  // of sounding like a generic chatbot. Capped to ~5 samples.
   voiceSamples: string[];
   packages: PackageCtx[];
   faqs: FaqCtx[];
   inquiry: InquiryCtx | null;
   availability: AvailabilityCtx | null;
+  actions: HiluxActions;
+}
+
+export interface LeadScoreResult {
+  score: "hot" | "warm" | "cold" | "unknown";
+  reason: string;
 }
 
 const DAY_NAMES = [
@@ -84,15 +99,25 @@ export function buildSystemPrompt(ctx: HiluxPromptCtx): string {
   );
   lines.push("");
   lines.push("RULES:");
-  lines.push(
-    "- Detect the language of the host's most recent message and reply in that same language. If they write in Spanish, reply in Spanish; if French, French; etc. Match dialect (US Spanish vs Mexican Spanish, Brazilian vs European Portuguese) when it's clearly signaled.",
-  );
+  if (ctx.actions.matchLanguage) {
+    lines.push(
+      "- Detect the language of the host's most recent message and reply in that same language. If they write in Spanish, reply in Spanish; if French, French; etc. Match dialect (US Spanish vs Mexican Spanish, Brazilian vs European Portuguese) when it's clearly signaled.",
+    );
+  } else {
+    lines.push("- Reply in English regardless of the host's language.");
+  }
   lines.push(
     "- Only answer using the listing context below. If the host asks about something you don't know (custom pricing, off-menu services), say you'll check and follow up rather than inventing an answer.",
   );
-  lines.push(
-    "- For DATE AVAILABILITY questions, use the AVAILABILITY block below — you have the live calendar. Don't say \"let me check\" for date questions; answer directly.",
-  );
+  if (ctx.actions.useCalendar && ctx.availability) {
+    lines.push(
+      "- For DATE AVAILABILITY questions, use the AVAILABILITY block below — you have the live calendar. Don't say \"let me check\" for date questions; answer directly.",
+    );
+  } else {
+    lines.push(
+      "- You don't have calendar access. For any date-availability question, say you'll need to check the calendar and circle back.",
+    );
+  }
   lines.push(
     "- Never share phone numbers, email addresses, or external links. Keep the conversation in this thread.",
   );
@@ -105,9 +130,15 @@ export function buildSystemPrompt(ctx: HiluxPromptCtx): string {
   lines.push(
     "- Don't sign off with names or signatures. The vendor's profile already shows who you are.",
   );
-  lines.push(
-    "- IF YOU CANNOT CONFIDENTLY ANSWER from the context above (e.g., custom pricing the listing doesn't cover, off-menu services, requests that require a human judgment, or facts you'd have to invent), DO NOT REPLY. Instead, output a single line starting with the literal token \"ESCALATE:\" followed by a short reason (max 100 chars). The system will route the conversation to the vendor — your job is to step aside, not to bluff. Use ESCALATE sparingly; if the answer is in the context, just answer.",
-  );
+  if (ctx.actions.escalate) {
+    lines.push(
+      "- IF YOU CANNOT CONFIDENTLY ANSWER from the context above (e.g., custom pricing the listing doesn't cover, off-menu services, requests that require a human judgment, or facts you'd have to invent), DO NOT REPLY. Instead, output a single line starting with the literal token \"ESCALATE:\" followed by a short reason (max 100 chars). The system will route the conversation to the vendor — your job is to step aside, not to bluff. Use ESCALATE sparingly; if the answer is in the context, just answer.",
+    );
+  } else {
+    lines.push(
+      "- The vendor has asked you to ALWAYS reply (never escalate). When uncertain, give your best answer and acknowledge you'll confirm specifics with them.",
+    );
+  }
   lines.push("");
   lines.push("LISTING CONTEXT:");
   lines.push(`- Business: ${ctx.businessName}`);
@@ -137,7 +168,7 @@ export function buildSystemPrompt(ctx: HiluxPromptCtx): string {
     }
   }
 
-  if (ctx.availability) {
+  if (ctx.actions.useCalendar && ctx.availability) {
     const av = ctx.availability;
     lines.push("");
     lines.push(
@@ -215,25 +246,12 @@ export function buildSystemPrompt(ctx: HiluxPromptCtx): string {
     if (ctx.inquiry.guestCount != null) lines.push(`- Guest count: ${ctx.inquiry.guestCount}`);
     if (ctx.inquiry.location) lines.push(`- Event location: ${ctx.inquiry.location}`);
     if (ctx.inquiry.budgetRangeUsd) lines.push(`- Budget: ${ctx.inquiry.budgetRangeUsd}`);
-    if (ctx.inquiry.specialRequests) {
-      lines.push(`- Special requests: ${ctx.inquiry.specialRequests.trim()}`);
-    }
+    if (ctx.inquiry.specialRequests) lines.push(`- Special requests: ${ctx.inquiry.specialRequests.trim()}`);
   }
 
   return lines.join("\n");
 }
 
-export interface LeadScoreResult {
-  score: "hot" | "warm" | "cold" | "unknown";
-  reason: string;
-}
-
-// Classifies the inquiry's current temperature from the conversation
-// transcript + the inquiry's structured fields. Bounded to a tiny
-// reply (a JSON object), so this is a cheap second call after the
-// main HILUX reply. Designed to never throw — returns "unknown" on
-// any parsing failure so the calling function can carry on writing
-// the actual reply.
 export async function scoreLead(
   apiKey: string,
   ctx: {
@@ -244,27 +262,16 @@ export async function scoreLead(
   },
 ): Promise<LeadScoreResult> {
   if (!apiKey) return { score: "unknown", reason: "no_api_key" };
-
   const lines: string[] = [];
   lines.push(
     `You are a lead-scoring assistant for ${ctx.businessName}${ctx.category ? `, a ${ctx.category} vendor` : ""}. Read the conversation transcript and the structured inquiry below, then classify the host's current temperature as one of:`,
   );
-  lines.push(
-    "- hot: explicit booking intent (asked to confirm, requested a contract, picked a package, said 'we want to book', etc.)",
-  );
-  lines.push(
-    "- warm: actively engaged, asking detailed questions, considering — but no firm commitment yet",
-  );
-  lines.push(
-    "- cold: vague, slow, price-shopping signals, low specificity, lukewarm responses",
-  );
-  lines.push(
-    "- unknown: not enough signal yet (e.g. just the initial inquiry with no follow-up)",
-  );
+  lines.push("- hot: explicit booking intent (asked to confirm, requested a contract, picked a package, said 'we want to book', etc.)");
+  lines.push("- warm: actively engaged, asking detailed questions, considering — but no firm commitment yet");
+  lines.push("- cold: vague, slow, price-shopping signals, low specificity, lukewarm responses");
+  lines.push("- unknown: not enough signal yet (e.g. just the initial inquiry with no follow-up)");
   lines.push("");
-  lines.push(
-    "Output ONLY a JSON object on one line with two fields: score (one of hot/warm/cold/unknown) and reason (one short sentence, max 100 chars, citing the specific signal). No markdown. No prose outside the JSON.",
-  );
+  lines.push("Output ONLY a JSON object on one line with two fields: score (one of hot/warm/cold/unknown) and reason (one short sentence, max 100 chars, citing the specific signal). No markdown. No prose outside the JSON.");
   lines.push("Example: {\"score\":\"warm\",\"reason\":\"Asking about packages but no date yet.\"}");
   lines.push("");
   if (ctx.inquiry) {
@@ -278,25 +285,16 @@ export async function scoreLead(
     lines.push("");
   }
   lines.push("TRANSCRIPT (host = user, vendor or HILUX = assistant):");
-
   const systemText = lines.join("\n");
   try {
     const res = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
-      headers: {
-        "x-api-key": apiKey,
-        "anthropic-version": "2023-06-01",
-        "content-type": "application/json",
-      },
+      headers: { "x-api-key": apiKey, "anthropic-version": "2023-06-01", "content-type": "application/json" },
       body: JSON.stringify({
         model: MODEL,
         max_tokens: 120,
-        system: [
-          { type: "text", text: systemText, cache_control: { type: "ephemeral" } },
-        ],
-        messages: ctx.transcript.length > 0
-          ? ctx.transcript
-          : [{ role: "user", content: "(empty transcript)" }],
+        system: [{ type: "text", text: systemText, cache_control: { type: "ephemeral" } }],
+        messages: ctx.transcript.length > 0 ? ctx.transcript : [{ role: "user", content: "(empty transcript)" }],
       }),
     });
     if (!res.ok) {
@@ -305,18 +303,11 @@ export async function scoreLead(
       return { score: "unknown", reason: "scoring_api_error" };
     }
     const body = (await res.json()) as any;
-    const raw = ((body.content ?? []) as any[])
-      .filter((b) => b.type === "text")
-      .map((b) => b.text)
-      .join("\n")
-      .trim();
-    // Strip code-fence wrappers if Claude added them.
+    const raw = ((body.content ?? []) as any[]).filter((b) => b.type === "text").map((b) => b.text).join("\n").trim();
     const jsonish = raw.replace(/^```(?:json)?/, "").replace(/```$/, "").trim();
     const parsed = JSON.parse(jsonish);
     const score = String(parsed?.score ?? "").toLowerCase();
-    if (!["hot", "warm", "cold", "unknown"].includes(score)) {
-      return { score: "unknown", reason: "unparseable_score" };
-    }
+    if (!["hot", "warm", "cold", "unknown"].includes(score)) return { score: "unknown", reason: "unparseable_score" };
     const reason = String(parsed?.reason ?? "").trim().slice(0, 240);
     return { score: score as LeadScoreResult["score"], reason: reason || "no_reason" };
   } catch (err) {
@@ -330,22 +321,14 @@ export async function callClaude(
   systemText: string,
   messages: Array<{ role: "user" | "assistant"; content: string }>,
 ): Promise<string> {
-  if (!apiKey) {
-    throw new Error("ANTHROPIC_API_KEY not set in edge function env");
-  }
+  if (!apiKey) throw new Error("ANTHROPIC_API_KEY not set in edge function env");
   const res = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
-    headers: {
-      "x-api-key": apiKey,
-      "anthropic-version": "2023-06-01",
-      "content-type": "application/json",
-    },
+    headers: { "x-api-key": apiKey, "anthropic-version": "2023-06-01", "content-type": "application/json" },
     body: JSON.stringify({
       model: MODEL,
       max_tokens: 600,
-      system: [
-        { type: "text", text: systemText, cache_control: { type: "ephemeral" } },
-      ],
+      system: [{ type: "text", text: systemText, cache_control: { type: "ephemeral" } }],
       messages,
     }),
   });
@@ -354,18 +337,15 @@ export async function callClaude(
     throw new Error(`anthropic ${res.status}: ${errText.slice(0, 500)}`);
   }
   const body = (await res.json()) as any;
-  const text = (body.content ?? [])
-    .filter((b: any) => b.type === "text")
-    .map((b: any) => b.text)
-    .join("\n")
-    .trim();
+  const text = (body.content ?? []).filter((b: any) => b.type === "text").map((b: any) => b.text).join("\n").trim();
   if (!text) throw new Error("empty reply from claude");
   return text;
 }
 
-// Loads the listing-side context (business + packages + FAQs +
-// availability) for HILUX. Used by both hilux-respond and hilux-sandbox.
-// Caller provides an authenticated Supabase admin client.
+// Loads listing + owner-profile context for HILUX. Listing-level
+// fields (bio, packages, FAQs, availability) come from
+// vendor_profiles; agent-level config (enabled, instructions, voice,
+// action toggles) comes from the profile that OWNS the listing.
 export async function loadVendorContext(
   admin: any,
   vendorId: string,
@@ -378,9 +358,12 @@ export async function loadVendorContext(
     bio: string | null;
     location: string | null;
     base_price_cents: number | null;
+  } | null;
+  profile: {
     hilux_enabled: boolean;
     hilux_instructions: string | null;
     hilux_voice_samples: string[];
+    actions: HiluxActions;
   } | null;
   packages: PackageCtx[];
   faqs: FaqCtx[];
@@ -389,21 +372,47 @@ export async function loadVendorContext(
   const { data: vendor } = await admin
     .from("vendor_profiles")
     .select(
-      "id, user_id, business_name, category, bio, base_price_cents, location, hilux_enabled, hilux_instructions, hilux_voice_samples",
+      "id, user_id, business_name, category, bio, base_price_cents, location",
     )
     .eq("id", vendorId)
     .maybeSingle();
   if (!vendor) {
-    return { vendor: null, packages: [], faqs: [], availability: null };
+    return { vendor: null, profile: null, packages: [], faqs: [], availability: null };
   }
 
-  // Run independent queries in parallel: packages, faqs, blocked
-  // dates, recurring rules, booked dates RPC.
+  let profile: {
+    hilux_enabled: boolean;
+    hilux_instructions: string | null;
+    hilux_voice_samples: string[];
+    actions: HiluxActions;
+  } | null = null;
+  if (vendor.user_id) {
+    const { data: profRow } = await admin
+      .from("profiles")
+      .select(
+        "hilux_enabled, hilux_instructions, hilux_voice_samples, hilux_action_follow_up, hilux_action_match_language, hilux_action_use_calendar, hilux_action_escalate",
+      )
+      .eq("id", vendor.user_id)
+      .maybeSingle();
+    if (profRow) {
+      profile = {
+        hilux_enabled: profRow.hilux_enabled === true,
+        hilux_instructions: profRow.hilux_instructions ?? null,
+        hilux_voice_samples: profRow.hilux_voice_samples ?? [],
+        actions: {
+          followUp: profRow.hilux_action_follow_up !== false,
+          matchLanguage: profRow.hilux_action_match_language !== false,
+          useCalendar: profRow.hilux_action_use_calendar !== false,
+          escalate: profRow.hilux_action_escalate !== false,
+        },
+      };
+    }
+  }
+
   const horizonDays = 180;
   const today = new Date();
   const todayIso = today.toISOString().slice(0, 10);
-  const horizonDate = new Date(today.getTime() + horizonDays * 86400000);
-  const horizonIso = horizonDate.toISOString().slice(0, 10);
+  const horizonIso = new Date(today.getTime() + horizonDays * 86400000).toISOString().slice(0, 10);
 
   const [
     { data: packages },
@@ -412,29 +421,10 @@ export async function loadVendorContext(
     { data: rules },
     { data: bookedRows },
   ] = await Promise.all([
-    admin
-      .from("vendor_packages")
-      .select("name, description, price_cents, display_order")
-      .eq("vendor_id", vendor.id)
-      .eq("is_active", true)
-      .order("display_order", { ascending: true })
-      .limit(10),
-    admin
-      .from("vendor_faqs")
-      .select("question, answer, display_order")
-      .eq("vendor_id", vendor.id)
-      .order("display_order", { ascending: true })
-      .limit(15),
-    admin
-      .from("vendor_unavailable_dates")
-      .select("date")
-      .eq("vendor_id", vendor.id)
-      .gte("date", todayIso)
-      .lte("date", horizonIso),
-    admin
-      .from("vendor_availability_rules")
-      .select("day_of_week, is_unavailable, start_time, end_time")
-      .eq("vendor_id", vendor.id),
+    admin.from("vendor_packages").select("name, description, price_cents, display_order").eq("vendor_id", vendor.id).eq("is_active", true).order("display_order", { ascending: true }).limit(10),
+    admin.from("vendor_faqs").select("question, answer, display_order").eq("vendor_id", vendor.id).order("display_order", { ascending: true }).limit(15),
+    admin.from("vendor_unavailable_dates").select("date").eq("vendor_id", vendor.id).gte("date", todayIso).lte("date", horizonIso),
+    admin.from("vendor_availability_rules").select("day_of_week, is_unavailable, start_time, end_time").eq("vendor_id", vendor.id),
     admin.rpc("vendor_booked_dates", { p_vendor_id: vendor.id }),
   ]);
 
@@ -443,14 +433,10 @@ export async function loadVendorContext(
     if (row.date) busySet.add(row.date.slice(0, 10));
   }
   for (const row of (bookedRows ?? []) as Array<{ vendor_booked_dates?: string } | string>) {
-    // RPC returns setof date — supabase-js returns a flat array of
-    // strings or an array of objects depending on version. Handle both.
     const value = typeof row === "string" ? row : row.vendor_booked_dates;
     if (value) busySet.add(String(value).slice(0, 10));
   }
-  const busyDates = Array.from(busySet)
-    .filter((d) => d >= todayIso && d <= horizonIso)
-    .sort();
+  const busyDates = Array.from(busySet).filter((d) => d >= todayIso && d <= horizonIso).sort();
 
   const rulesTyped = (rules ?? []) as Array<{
     day_of_week: number;
@@ -458,16 +444,9 @@ export async function loadVendorContext(
     start_time: string | null;
     end_time: string | null;
   }>;
-  const recurringClosedDays = rulesTyped
-    .filter((r) => r.is_unavailable === true)
-    .map((r) => r.day_of_week);
+  const recurringClosedDays = rulesTyped.filter((r) => r.is_unavailable === true).map((r) => r.day_of_week);
   const recurringHourWindows = rulesTyped
-    .filter(
-      (r) =>
-        r.is_unavailable !== true &&
-        r.start_time != null &&
-        r.end_time != null,
-    )
+    .filter((r) => r.is_unavailable !== true && r.start_time != null && r.end_time != null)
     .map((r) => ({
       dayOfWeek: r.day_of_week,
       start: (r.start_time ?? "").slice(0, 5),
@@ -476,24 +455,13 @@ export async function loadVendorContext(
 
   return {
     vendor,
-    packages: ((packages ?? []) as Array<{
-      name: string;
-      description: string | null;
-      price_cents: number | null;
-    }>).map((p) => ({
+    profile,
+    packages: ((packages ?? []) as Array<{ name: string; description: string | null; price_cents: number | null }>).map((p) => ({
       name: p.name,
       description: p.description,
       priceUsd: priceUsd(p.price_cents),
     })),
-    faqs: ((faqs ?? []) as Array<{ question: string; answer: string }>).map(
-      (f) => ({ question: f.question, answer: f.answer }),
-    ),
-    availability: {
-      busyDates,
-      recurringClosedDays,
-      recurringHourWindows,
-      today: todayIso,
-      horizon: horizonIso,
-    },
+    faqs: ((faqs ?? []) as Array<{ question: string; answer: string }>).map((f) => ({ question: f.question, answer: f.answer })),
+    availability: { busyDates, recurringClosedDays, recurringHourWindows, today: todayIso, horizon: horizonIso },
   };
 }
