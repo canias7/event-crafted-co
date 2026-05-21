@@ -346,11 +346,6 @@ export function HiluxVendorControls() {
                   {enabled ? "Always On" : "Off"}
                 </span>
               </div>
-              <p className="text-xs text-black/60 mt-1 leading-snug">
-                Reads each host inquiry, replies in your voice using your
-                bio, packages, and FAQs, and hands off to you when it's
-                not sure.
-              </p>
             </div>
             <ChevronDown
               className={`w-5 h-5 text-black/50 shrink-0 transition-transform ${expanded ? "rotate-180" : ""}`}
@@ -360,12 +355,28 @@ export function HiluxVendorControls() {
             {savingKey === "enabled" ? (
               <Loader2 className="w-3.5 h-3.5 animate-spin text-black/40" />
             ) : null}
+            {/* OFF / ON labels flank the switch so it's unambiguous
+                which side is which. Active side is emphasized. */}
+            <span
+              className={`text-[10px] font-semibold uppercase tracking-wider ${
+                enabled ? "text-black/30" : "text-black/70"
+              }`}
+            >
+              Off
+            </span>
             <Switch
               checked={enabled}
               disabled={savingKey === "enabled" || !profile}
               onCheckedChange={toggleEnabled}
               onClick={(e) => e.stopPropagation()}
             />
+            <span
+              className={`text-[10px] font-semibold uppercase tracking-wider ${
+                enabled ? "text-[#c4541e]" : "text-black/30"
+              }`}
+            >
+              On
+            </span>
           </div>
         </div>
 
