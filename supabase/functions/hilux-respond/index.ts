@@ -170,6 +170,46 @@ serve(async (req) => {
     log("calling claude", { vendor: ctx.vendor.id, history_len: claudeMessages.length });
     const reply = await callClaude(ANTHROPIC_API_KEY, systemText, claudeMessages);
 
+    // Smart escalation: if Claude couldn't confidently answer, it
+    // outputs "ESCALATE: <reason>" instead of a reply. We skip the
+    // message insert and instead notify the vendor's team that a
+    // host is waiting on a human.
+    const escalateMatch = reply.match(/^\s*ESCALATE\s*:\s*(.+)$/im);
+    if (escalateMatch) {
+      const reason = escalateMatch[1].trim().slice(0, 200);
+      const businessName = ctx.vendor.business_name ?? "a host";
+      const preview = (triggeringMessage.body ?? "").slice(0, 120);
+      const title = `HILUX needs you to take this one`;
+      const body = `${preview}${triggeringMessage.body.length > 120 ? "…" : ""} — reason: ${reason}`;
+      const { data: members } = await admin
+        .from("vendor_team_members")
+        .select("user_id")
+        .eq("vendor_id", ctx.vendor.id);
+      const rows = ((members ?? []) as Array<{ user_id: string }>).map(
+        (m) => ({
+          user_id: m.user_id,
+          type: "hilux_escalation",
+          title,
+          body,
+          link: `/vendor/messages?thread=${threadId}`,
+        }),
+      );
+      if (rows.length > 0) {
+        const { error: notifErr } = await admin
+          .from("notifications")
+          .insert(rows);
+        if (notifErr) {
+          console.error("[hilux-respond] notification insert failed", notifErr);
+        }
+      }
+      log("hilux escalated", {
+        thread: threadId,
+        reason,
+        notified: rows.length,
+      });
+      return ok({ escalated: true, reason, notified: rows.length });
+    }
+
     const { error: insertErr } = await admin.from("direct_messages").insert({
       thread_id: threadId,
       sender_id: ctx.vendor.user_id,

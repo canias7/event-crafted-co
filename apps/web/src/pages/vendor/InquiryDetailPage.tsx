@@ -136,6 +136,8 @@ export default function InquiryDetailPage() {
   const [inquiry, setInquiry] = useState<Inquiry | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [threadId, setThreadId] = useState<string | null>(null);
+  const [hiluxPaused, setHiluxPaused] = useState(false);
+  const [hiluxToggling, setHiluxToggling] = useState(false);
   const [composer, setComposer] = useState("");
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
@@ -315,6 +317,14 @@ export default function InquiryDetailPage() {
     const thread = (threadRes.data as string | null) ?? null;
     setThreadId(thread);
     if (thread) {
+      supabase
+        .from("direct_threads")
+        .select("hilux_paused")
+        .eq("id", thread)
+        .maybeSingle()
+        .then(({ data }) => {
+          setHiluxPaused(((data as { hilux_paused?: boolean } | null)?.hilux_paused) ?? false);
+        });
       // Latest 200 messages — descending under LIMIT to slice from
       // the newest end, then reversed to render oldest-first.
       const { data: msgs } = await supabase
@@ -599,6 +609,23 @@ export default function InquiryDetailPage() {
     }
   }
 
+  async function toggleHiluxPause() {
+    if (!threadId || hiluxToggling) return;
+    const next = !hiluxPaused;
+    setHiluxToggling(true);
+    const { error } = await supabase
+      .from("direct_threads")
+      .update({ hilux_paused: next })
+      .eq("id", threadId);
+    setHiluxToggling(false);
+    if (error) {
+      toast.error("Couldn't update HILUX for this thread.");
+      return;
+    }
+    setHiluxPaused(next);
+    toast.success(next ? "HILUX paused for this thread" : "HILUX is answering again");
+  }
+
   async function setStatus(next: "won" | "lost" | "replied") {
     if (!inquiryId) return;
     setStatusUpdating(true);
@@ -849,6 +876,16 @@ export default function InquiryDetailPage() {
                 <Eye className="w-4 h-4 mr-2" />
                 View inquiry
               </DropdownMenuItem>
+              {threadId ? (
+                <DropdownMenuItem
+                  disabled={hiluxToggling}
+                  onClick={toggleHiluxPause}
+                  className="cursor-pointer"
+                >
+                  <Sparkles className="w-4 h-4 mr-2" />
+                  {hiluxPaused ? "Resume HILUX here" : "Pause HILUX here"}
+                </DropdownMenuItem>
+              ) : null}
               <DropdownMenuSeparator />
               {isClosed ? (
                 <DropdownMenuItem
