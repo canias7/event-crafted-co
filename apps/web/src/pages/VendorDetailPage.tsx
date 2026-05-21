@@ -1,6 +1,6 @@
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { lazyWithReload } from "@/lib/lazyWithReload";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
   Star,
@@ -158,6 +158,12 @@ export default function VendorDetailPage() {
   // misses. UUIDs and slugs don't share a character set, so no
   // collision risk.
   const { id, slug } = useParams();
+  const [searchParams] = useSearchParams();
+  // When this page is iframed by the /vendor/me "Live Listing" preview,
+  // the parent appends ?preview=1 so we can strip the public-site chrome
+  // (top nav, "Back to directory" link, "More from this vendor" rail,
+  // footer, and the mobile sticky inquiry bar) and show only the body.
+  const isPreview = searchParams.get("preview") === "1";
   const { session, profile, isApprovedVendor, loading: authLoading } = useAuth();
   const { vendors, loading: vendorsLoading } = useVendors();
   const { isSaved, toggle: toggleSave } = useSavedVendors();
@@ -619,22 +625,24 @@ export default function VendorDetailPage() {
   const heroPicture = imageMap[vendor.image] ?? featureFlorals;
 
   return (
-    <div className="min-h-screen public-canvas pb-24 lg:pb-0">
-      <PublicNav />
+    <div className={`min-h-screen public-canvas ${isPreview ? "" : "pb-24 lg:pb-0"}`}>
+      {!isPreview && <PublicNav />}
 
 
       {/* Body — the cinematic hero was removed, so the page opens
           straight into the brand card. Small back-to-directory link
           above the body keeps the escape one tap away. */}
-      <section className="pt-28 pb-16 md:pt-32 md:pb-24">
+      <section className={isPreview ? "pt-8 pb-16 md:pt-10 md:pb-24" : "pt-28 pb-16 md:pt-32 md:pb-24"}>
         <div className="container mx-auto px-6 md:px-8">
-          <Link
-            to="/vendors"
-            className="inline-flex items-center gap-2 text-xs uppercase tracking-[0.3em] text-muted-foreground hover:text-foreground transition-colors mb-8"
-          >
-            <ArrowLeft className="w-3.5 h-3.5" />
-            Back to directory
-          </Link>
+          {!isPreview && (
+            <Link
+              to="/vendors"
+              className="inline-flex items-center gap-2 text-xs uppercase tracking-[0.3em] text-muted-foreground hover:text-foreground transition-colors mb-8"
+            >
+              <ArrowLeft className="w-3.5 h-3.5" />
+              Back to directory
+            </Link>
+          )}
           <div className="grid lg:grid-cols-3 gap-12 lg:gap-16">
             {/* Main content */}
             <div className="lg:col-span-2 space-y-16">
@@ -925,7 +933,7 @@ export default function VendorDetailPage() {
               {/* "More from this vendor" — moved to the bottom so it's
                   the last thing a host reads before scrolling away.
                   Renders for every category. */}
-              {vendor.isReal && (
+              {vendor.isReal && !isPreview && (
                 <SilentErrorBoundary label="VendorOtherListings">
                   <VendorOtherListings vendorId={vendor.id} />
                 </SilentErrorBoundary>
@@ -1048,27 +1056,29 @@ export default function VendorDetailPage() {
           listing page already ends with FAQ + "More from this vendor".
           A second cross-sell strip was reading as noise. */}
 
-      <Footer />
+      {!isPreview && <Footer />}
 
       {/* Mobile sticky inquiry bar — keeps Send Inquiry one tap away */}
-      <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-background/95 backdrop-blur-sm border-t border-border px-4 py-3 flex items-center gap-3 shadow-[0_-4px_12px_-4px_rgba(0,0,0,0.08)]">
-        <div className="flex-1 min-w-0">
-          <p className="font-label text-muted-foreground text-[10px] tracking-[0.2em]">
-            From
-          </p>
-          <p className="font-display text-lg tnum leading-tight">
-            ${vendor.startingPrice.toLocaleString()}
-          </p>
+      {!isPreview && (
+        <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-background/95 backdrop-blur-sm border-t border-border px-4 py-3 flex items-center gap-3 shadow-[0_-4px_12px_-4px_rgba(0,0,0,0.08)]">
+          <div className="flex-1 min-w-0">
+            <p className="font-label text-muted-foreground text-[10px] tracking-[0.2em]">
+              From
+            </p>
+            <p className="font-display text-lg tnum leading-tight">
+              ${vendor.startingPrice.toLocaleString()}
+            </p>
+          </div>
+          <Button
+            onClick={() => handleInquiryClick()}
+            disabled={authLoading}
+            className="rounded-full bg-foreground text-background hover:bg-foreground/90"
+          >
+            <Mail className="w-4 h-4 mr-2" />
+            Send Inquiry
+          </Button>
         </div>
-        <Button
-          onClick={() => handleInquiryClick()}
-          disabled={authLoading}
-          className="rounded-full bg-foreground text-background hover:bg-foreground/90"
-        >
-          <Mail className="w-4 h-4 mr-2" />
-          Send Inquiry
-        </Button>
-      </div>
+      )}
 
       {/* Logged-out: prompt to sign in/up before inquiring */}
       <Dialog open={signinPromptOpen} onOpenChange={setSigninPromptOpen}>
