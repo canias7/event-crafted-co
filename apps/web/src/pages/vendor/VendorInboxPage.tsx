@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { Inbox, Search, Sparkles } from "lucide-react";
+import { Inbox, Loader2, Pause, Search, Sparkles } from "lucide-react";
+import { toast } from "sonner";
 import { useRealtime } from "@/lib/realtime";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -103,6 +104,7 @@ export default function VendorInboxPage() {
   // anymore). We fetch it once for the logged-in user; the sparkle
   // pip on every inbox row reflects that single value.
   const [hiluxEnabled, setHiluxEnabled] = useState(false);
+  const [hiluxToggling, setHiluxToggling] = useState(false);
   // Lead-temperature filter pills. "all" = no filter.
   const [leadFilter, setLeadFilter] = useState<"all" | "hot" | "warm" | "cold">(
     "all",
@@ -155,6 +157,27 @@ export default function VendorInboxPage() {
     }
     setRows(scored);
     setLoading(false);
+  }
+
+  // Master HILUX toggle from the inbox header. Same field the
+  // settings page writes; we update profiles.hilux_enabled and
+  // bump local state optimistically.
+  async function toggleHilux() {
+    if (!user?.id || hiluxToggling) return;
+    const next = !hiluxEnabled;
+    setHiluxToggling(true);
+    setHiluxEnabled(next);
+    const { error } = await supabase
+      .from("profiles")
+      .update({ hilux_enabled: next })
+      .eq("id", user.id);
+    setHiluxToggling(false);
+    if (error) {
+      setHiluxEnabled(!next);
+      toast.error("Couldn't toggle HILUX.");
+      return;
+    }
+    toast.success(next ? "HILUX is on" : "HILUX paused");
   }
 
   useEffect(() => {
@@ -296,6 +319,30 @@ export default function VendorInboxPage() {
                 </button>
               );
             })}
+
+            {/* HILUX one-tap pause. Tap when going on vacation; tap
+                again to resume. Same source of truth as the agent
+                settings page (profiles.hilux_enabled). */}
+            <button
+              type="button"
+              onClick={toggleHilux}
+              disabled={hiluxToggling}
+              title={hiluxEnabled ? "Tap to pause HILUX" : "Tap to resume HILUX"}
+              className={`shrink-0 ml-auto inline-flex items-center gap-1.5 text-[12px] px-3 py-1.5 rounded-full border transition-colors ${
+                hiluxEnabled
+                  ? "border-orange-300/70 bg-orange-50 text-orange-900 hover:bg-orange-100"
+                  : "border-transparent bg-secondary/50 text-foreground/70 hover:bg-secondary"
+              } disabled:opacity-60`}
+            >
+              {hiluxToggling ? (
+                <Loader2 className="w-3 h-3 animate-spin" />
+              ) : hiluxEnabled ? (
+                <Sparkles className="w-3 h-3" />
+              ) : (
+                <Pause className="w-3 h-3" />
+              )}
+              {hiluxEnabled ? "HILUX on" : "HILUX paused"}
+            </button>
           </div>
 
           {loading ? (
