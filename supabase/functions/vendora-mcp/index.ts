@@ -267,20 +267,180 @@ const TOOLS = [
   },
 ];
 
-// Initialize handshake response. Capabilities tell the client what
-// this server supports; tools-only for now.
+// Initialize handshake response. Capabilities tell the client
+// what this server supports.
 const INITIALIZE_RESULT = {
   protocolVersion: "2024-11-05",
   capabilities: {
     tools: { listChanged: false },
+    prompts: { listChanged: false },
   },
   serverInfo: {
     name: "vendora",
-    version: "0.1.0",
+    version: "0.2.0",
   },
   instructions:
-    "Vendora exposes a vendor's marketplace inbox + HILUX configuration to Claude. Use list_inquiries to see what's waiting, get_inquiry to drill in, and get_hilux_settings to inspect the always-on agent's setup.",
+    "Vendora exposes a vendor's marketplace inbox + HILUX configuration to Claude. Tools: use list_inquiries to see what's waiting, get_inquiry to drill in, compose_draft_reply to write in the vendor's HILUX voice. Prompts: discoverable workflows the vendor can invoke from the Claude.ai slash menu (morning_recap, draft_for_thread, score_hot_leads, etc.).",
 };
+
+// Prompts catalog — discoverable workflows that vendors can fire
+// from Claude.ai's slash menu. Each prompt returns a pre-filled
+// instruction Claude executes using the tools above. Prompts give
+// the vendor one-tap access to HILUX-curated routines instead of
+// re-typing the same context every time.
+const PROMPTS = [
+  {
+    name: "morning_recap",
+    description:
+      "Walk through everything that happened overnight: HILUX's actions, hot leads, escalations, booking-intent signals. Use this first thing in the morning.",
+    arguments: [],
+  },
+  {
+    name: "draft_for_thread",
+    description:
+      "Generate a HILUX-voice draft reply for a specific thread and stage it for vendor review.",
+    arguments: [
+      {
+        name: "thread_id",
+        description: "The thread id (uuid). Find one via list_inquiries or get_inquiry.",
+        required: true,
+      },
+      {
+        name: "angle",
+        description:
+          "Optional tone / direction nudge for this single draft, e.g. 'lean enthusiastic' or 'mention the discount'.",
+        required: false,
+      },
+    ],
+  },
+  {
+    name: "score_hot_leads",
+    description:
+      "Find every inquiry HILUX has scored hot, summarize each in one line, and propose the single next action.",
+    arguments: [],
+  },
+  {
+    name: "audit_settings",
+    description:
+      "Walk the vendor through their current HILUX settings, flag anything that looks off or contradictory, and suggest improvements.",
+    arguments: [],
+  },
+  {
+    name: "weekly_review",
+    description:
+      "Pull the last 7 days of HILUX activity (replies, escalations, hot leads, archives), summarize what worked, and recommend toggle changes for next week.",
+    arguments: [],
+  },
+];
+
+function renderPrompt(
+  name: string,
+  args: Record<string, any>,
+): { description: string; messages: Array<{ role: "user"; content: { type: "text"; text: string } }> } | null {
+  switch (name) {
+    case "morning_recap":
+      return {
+        description: "Morning recap of HILUX activity + hot leads.",
+        messages: [
+          {
+            role: "user",
+            content: {
+              type: "text",
+              text:
+                "Run a morning recap using the Vendora MCP. Steps:\n" +
+                "1. Call get_action_log to pull HILUX's last 24h of activity.\n" +
+                "2. Call list_inquiries with lead_score=hot to surface hot leads.\n" +
+                "3. Call list_inquiries with status=new to see anything HILUX escalated or hasn't touched.\n" +
+                "Then give me a 5-line summary: how many replies, escalations, hot leads, and the single most important thread to address first.",
+            },
+          },
+        ],
+      };
+    case "draft_for_thread": {
+      const threadId = String(args.thread_id ?? "").trim();
+      const angle = typeof args.angle === "string" && args.angle.trim()
+        ? args.angle.trim()
+        : null;
+      if (!threadId) return null;
+      const angleClause = angle
+        ? `Pass instructions="${angle.replace(/"/g, '\\"')}" so the draft picks up that direction.`
+        : "Use the vendor's default HILUX voice — no override.";
+      return {
+        description: `Draft a HILUX-voice reply for thread ${threadId}.`,
+        messages: [
+          {
+            role: "user",
+            content: {
+              type: "text",
+              text:
+                `Draft a reply for thread_id="${threadId}" using the Vendora MCP.\n\n` +
+                "Steps:\n" +
+                `1. Call compose_draft_reply with thread_id="${threadId}". ${angleClause}\n` +
+                "2. Show me the returned draft VERBATIM in a code block.\n" +
+                "3. Below the draft, ask: 'Send as-is, edit, or skip?'\n" +
+                "If I say send, call send_reply with that exact body. Don't call send_reply until I confirm.",
+            },
+          },
+        ],
+      };
+    }
+    case "score_hot_leads":
+      return {
+        description: "List hot leads + propose next action for each.",
+        messages: [
+          {
+            role: "user",
+            content: {
+              type: "text",
+              text:
+                "Find my hot leads:\n" +
+                "1. Call list_inquiries with lead_score=hot, limit=20.\n" +
+                "2. For each, give me ONE line: event_type/date/location + the lead_score_reason.\n" +
+                "3. Then pick the single highest-priority one and propose the next action (compose a draft, schedule a call, etc.). Don't take the action — just propose it.",
+            },
+          },
+        ],
+      };
+    case "audit_settings":
+      return {
+        description: "Audit HILUX settings + suggest improvements.",
+        messages: [
+          {
+            role: "user",
+            content: {
+              type: "text",
+              text:
+                "Audit my HILUX configuration:\n" +
+                "1. Call get_hilux_settings to see every toggle, greeting, and reply length.\n" +
+                "2. Flag any toggles that look contradictory (e.g. 'decline_negotiation=on' + 'mention_starting_price=off') or obviously wrong for my category.\n" +
+                "3. Suggest 3 specific toggle changes you think would improve HILUX's replies. For each, explain why in one sentence.\n" +
+                "Don't change anything yet — just recommend.",
+            },
+          },
+        ],
+      };
+    case "weekly_review":
+      return {
+        description: "7-day HILUX activity review + tuning recommendations.",
+        messages: [
+          {
+            role: "user",
+            content: {
+              type: "text",
+              text:
+                "Run a weekly HILUX review:\n" +
+                "1. Call get_action_log with limit=100 to pull recent activity.\n" +
+                "2. Count actions in the last 7 days vs the prior 7 days (replies, escalations, hot leads, archives).\n" +
+                "3. Tell me: what worked, what looked off, and 2-3 toggle changes worth trying for next week.\n" +
+                "Keep it under 200 words.",
+            },
+          },
+        ],
+      };
+    default:
+      return null;
+  }
+}
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -314,10 +474,14 @@ serve(async (req) => {
     return rpcResult(id, INITIALIZE_RESULT);
   }
 
-  // `tools/list` is technically auth-required by spec, but
-  // returning the catalog publicly is harmless and improves DX.
+  // `tools/list` and `prompts/list` are technically auth-required
+  // by spec, but returning the catalog publicly is harmless and
+  // improves DX (Claude can probe before the user authenticates).
   if (method === "tools/list") {
     return rpcResult(id, { tools: TOOLS });
+  }
+  if (method === "prompts/list") {
+    return rpcResult(id, { prompts: PROMPTS });
   }
 
   // Beyond this point: bearer token required. We accept TWO token
@@ -391,6 +555,19 @@ serve(async (req) => {
 
   if (!userId || !authMethod) {
     return unauthorized(id, "invalid token");
+  }
+
+  // prompts/get: render a pre-filled prompt the vendor invoked
+  // from Claude.ai's slash menu. No DB writes, no MCP call_log
+  // entry — this is a templating call.
+  if (method === "prompts/get") {
+    const promptName = String(params?.name ?? "");
+    const promptArgs = (params?.arguments ?? {}) as Record<string, any>;
+    const rendered = renderPrompt(promptName, promptArgs);
+    if (!rendered) {
+      return rpcError(id, -32602, `Unknown prompt or missing required arguments: ${promptName}`);
+    }
+    return rpcResult(id, rendered);
   }
 
   if (method !== "tools/call") {
