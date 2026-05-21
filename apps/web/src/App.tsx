@@ -69,6 +69,7 @@ import {
   AcceptTeamInvitePage,
   ClaimVendorPage,
   PublicReviewPage,
+  LiveWatchPage,
   ProposalPrintPage,
   PublicProposalPage,
   PublicGallerySharePage,
@@ -114,6 +115,7 @@ const App = () => (
               {/* /real-events + /real-events/:slug routes pulled
                   temporarily — page is hidden until we re-enable. */}
               <Route path="/review/:token" element={<PublicReviewPage />} />
+              <Route path="/live/:token" element={<LiveWatchPage />} />
               <Route path="/proposals/:id/print" element={<ProposalPrintPage />} />
               <Route path="/p/:token" element={<PublicProposalPage />} />
               <Route path="/g/:token" element={<PublicGallerySharePage />} />
