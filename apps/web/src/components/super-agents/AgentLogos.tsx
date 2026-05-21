@@ -1,37 +1,51 @@
 // Custom logo marks for the three Super Agents.
-// Each is a single-color SVG that takes the agent's accent via
-// currentColor, so a parent applying `style={{ color: accent }}`
-// (or `text-` class) gets the brand tint for free.
-//
-// Visual cues:
-//   - HILUX (Always On / chat)   → pulse rings broadcasting from a center dot
-//   - RAPTOR (Wordsmith / copy)  → diagonal nib stroke + drop, like a pen tip
-//   - AXION (Visuals / generative) → four-point sparkle / aperture
+// HILUX is a full badge with its own gradient background; RAPTOR
+// and AXION are single-color glyphs that take the agent's accent
+// via currentColor.
 
-import type { SVGProps } from "react";
+import { useId, type SVGProps } from "react";
 
 type IconProps = SVGProps<SVGSVGElement> & { className?: string };
 
 export function HiluxLogo({ className, ...props }: IconProps) {
-  // H-monogram with an "always on" pulse light in the top-right
-  // corner. The H reads as the H in HILUX; the glowing dot reads as
-  // the agent's live/listening state.
+  // Full brand badge: cream → peach background tile + an orange
+  // waveform peak/valley line with two anchor dots. Reads as
+  // "voice / always-on chat" instead of a generic icon.
+  // useId keeps the gradient IDs unique when the logo renders
+  // multiple times on the same page (picker + header).
+  const reactId = useId();
+  const bgId = `hilux-bg-${reactId}`;
+  const fgId = `hilux-fg-${reactId}`;
   return (
     <svg
-      viewBox="0 0 24 24"
+      viewBox="0 0 120 120"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
       className={className}
       aria-hidden="true"
       {...props}
     >
-      {/* H — two stacked pillars + a centered crossbar, all rounded */}
-      <rect x="4.5" y="5" width="2.6" height="14" rx="1.3" fill="currentColor" />
-      <rect x="13.5" y="5" width="2.6" height="14" rx="1.3" fill="currentColor" />
-      <rect x="6.4" y="10.7" width="9.2" height="2.6" rx="1.3" fill="currentColor" />
-      {/* Pulse light — soft halo + solid core */}
-      <circle cx="19.5" cy="4.5" r="3.4" fill="currentColor" opacity="0.22" />
-      <circle cx="19.5" cy="4.5" r="1.9" fill="currentColor" />
+      <defs>
+        <linearGradient id={bgId} x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stopColor="#fffaf0" />
+          <stop offset="1" stopColor="#fff0d6" />
+        </linearGradient>
+        <linearGradient id={fgId} x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0" stopColor="#ffb02e" />
+          <stop offset="1" stopColor="#ff6a00" />
+        </linearGradient>
+      </defs>
+      <rect x="4" y="4" width="112" height="112" rx="28" fill={`url(#${bgId})`} />
+      <path
+        d="M22 60 L40 60 L48 38 L60 86 L72 50 L80 60 L98 60"
+        fill="none"
+        stroke={`url(#${fgId})`}
+        strokeWidth="5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <circle cx="98" cy="60" r="4.5" fill="#ff6a00" />
+      <circle cx="22" cy="60" r="4.5" fill="#ffb02e" />
     </svg>
   );
 }
