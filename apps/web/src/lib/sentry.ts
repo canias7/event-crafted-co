@@ -18,6 +18,40 @@ import * as Sentry from "@sentry/react";
 const PRODUCTION_DSN =
   "https://95e6e8cecdabe9a13b4c8251550120be@o4511420871802880.ingest.us.sentry.io/4511420910731264";
 
+// Substrings we treat as "stale chunk after deploy" noise — any event
+// whose error text contains one of these gets dropped in beforeSend.
+const CHUNK_ERROR_NEEDLES = [
+  "Failed to fetch dynamically imported module",
+  "Importing a module script failed",
+  "ChunkLoadError",
+  "Loading chunk",
+  "Loading CSS chunk",
+];
+
+// Pulls the most useful text we can match against out of either the
+// original exception (when Sentry hands one to beforeSend) or the
+// event payload itself (when the integration synthesized one).
+function chunkErrorText(
+  originalException: unknown,
+  event: Sentry.ErrorEvent,
+): string {
+  const parts: string[] = [];
+  if (originalException) {
+    const ex = originalException as { message?: unknown; toString?: () => string };
+    if (typeof ex.message === "string") parts.push(ex.message);
+    try {
+      if (typeof ex.toString === "function") parts.push(ex.toString());
+    } catch {
+      // some thrown values stringify oddly; ignore.
+    }
+  }
+  if (event.message) parts.push(event.message);
+  const ex = event.exception?.values?.[0];
+  if (ex?.value) parts.push(ex.value);
+  if (ex?.type) parts.push(`${ex.type}: ${ex.value ?? ""}`);
+  return parts.join(" || ");
+}
+
 let initialized = false;
 
 export function initSentry() {
@@ -54,6 +88,21 @@ export function initSentry() {
       "Loading chunk",
       "Importing a module script failed",
     ],
+    // Belt-and-suspenders over `ignoreErrors`. The default browser
+    // integrations (specifically `BrowserApiErrors`) capture errors
+    // thrown inside addEventListener callbacks BEFORE the inbound
+    // filter chain that consults `ignoreErrors` — at least for some
+    // error shapes (React 18's `react-invokeguardedcallback` synthetic
+    // event firing during a failed dynamic import is the canonical
+    // case). `beforeSend` runs for every event regardless of how it
+    // was captured, so this catches what `ignoreErrors` misses.
+    beforeSend(event, hint) {
+      const text = chunkErrorText(hint?.originalException, event);
+      if (text && CHUNK_ERROR_NEEDLES.some((n) => text.includes(n))) {
+        return null;
+      }
+      return event;
+    },
   });
   initialized = true;
 }
