@@ -70,6 +70,17 @@ serve(async (req) => {
       .maybeSingle();
     if (!thread) return json(404, { error: "thread_not_found" });
 
+    // Vendor-ownership check. Without this, a host (who can SELECT
+    // any direct_messages row in their thread) could call this
+    // endpoint with a HILUX message_id and rewrite the body.
+    const { data: membership } = await admin
+      .from("vendor_team_members")
+      .select("user_id")
+      .eq("vendor_id", thread.vendor_id)
+      .eq("user_id", userData.user.id)
+      .maybeSingle();
+    if (!membership) return json(403, { error: "not_a_vendor_member" });
+
     const { data: latest } = await admin
       .from("direct_messages")
       .select("id")
@@ -83,7 +94,7 @@ serve(async (req) => {
 
     const { data: history } = await admin
       .from("direct_messages")
-      .select("sender_role, body, created_at")
+      .select("sender_role, body, created_at, is_hilux_generated")
       .eq("thread_id", target.thread_id)
       .lt("created_at", target.created_at)
       .order("created_at", { ascending: false })
@@ -125,11 +136,12 @@ serve(async (req) => {
       hostFirstName = raw.length > 0 ? raw.split(/\s+/)[0] : null;
     }
 
-    // For regenerate, treat it as a first reply only when the
-    // target HILUX message is the only assistant message in the
-    // thread up to that point.
+    // For regenerate, treat it as a first reply only when no
+    // earlier HILUX message exists. Keys off is_hilux_generated
+    // so a manual vendor reply earlier in the thread doesn't
+    // suppress the greeting line on HILUX's first regenerated take.
     const isFirstReply = !orderedHistory.some(
-      (m) => m.sender_role === "vendor",
+      (m) => (m as { is_hilux_generated?: boolean }).is_hilux_generated === true,
     );
     const systemText = buildSystemPrompt({
       businessName: ctx.vendor.business_name ?? "this vendor",

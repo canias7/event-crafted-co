@@ -181,7 +181,7 @@ serve(async (req) => {
 
     const { data: history } = await admin
       .from("direct_messages")
-      .select("sender_role, body, created_at")
+      .select("sender_role, body, created_at, is_hilux_generated")
       .eq("thread_id", threadId)
       .order("created_at", { ascending: false })
       .limit(HISTORY_LIMIT);
@@ -227,12 +227,12 @@ serve(async (req) => {
       hostFirstName = raw.length > 0 ? raw.split(/\s+/)[0] : null;
     }
 
-    // First reply iff there's no prior assistant (vendor/HILUX)
-    // message in the loaded history. orderedHistory ends with the
-    // host's just-arrived message; anything before it that's
-    // assistant means HILUX has spoken in this thread before.
+    // First reply iff HILUX has not spoken in this thread before.
+    // We key off is_hilux_generated (not sender_role === "vendor")
+    // so a manual vendor reply doesn't suppress HILUX's greeting
+    // line when it later picks up the conversation.
     const isFirstReply = !orderedHistory.some(
-      (m) => m.sender_role === "vendor",
+      (m) => (m as { is_hilux_generated?: boolean }).is_hilux_generated === true,
     );
 
     const systemText = buildSystemPrompt({
