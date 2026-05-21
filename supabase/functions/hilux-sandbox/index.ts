@@ -75,17 +75,23 @@ serve(async (req) => {
     }
     if (messages.length > 30) return json(400, { error: "too_many_messages" });
 
-    // RLS-gated ownership check: caller must be able to read the listing.
-    const { data: ownership } = await userClient
-      .from("vendor_profiles")
-      .select("id")
-      .eq("id", vendorId)
-      .maybeSingle();
-    if (!ownership) return json(403, { error: "not_your_listing" });
-
     const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
       auth: { autoRefreshToken: false, persistSession: false },
     });
+
+    // Ownership check. The old version selected vendor_profiles
+    // through the user's RLS, but vendor_profiles is publicly
+    // readable for the marketplace — so any authenticated user
+    // could pass that check with any vendor_id and preview a
+    // competitor's HILUX config. We check vendor_team_members
+    // directly via service role here.
+    const { data: membership } = await admin
+      .from("vendor_team_members")
+      .select("user_id")
+      .eq("vendor_id", vendorId)
+      .eq("user_id", userId)
+      .maybeSingle();
+    if (!membership) return json(403, { error: "not_your_listing" });
 
     const ctx = await loadVendorContext(admin, vendorId);
     if (!ctx.vendor) return json(404, { error: "vendor_not_found" });
