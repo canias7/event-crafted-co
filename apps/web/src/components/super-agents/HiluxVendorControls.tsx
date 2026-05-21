@@ -330,22 +330,9 @@ export function HiluxVendorControls() {
               <HiluxLogo className="w-full h-full block" />
             </div>
             <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-2">
-                <h3 className="font-editorial text-2xl md:text-3xl text-black leading-tight truncate">
-                  HILUX 2.7
-                </h3>
-                <span
-                  className="inline-flex items-center text-[10px] uppercase tracking-wider font-medium px-1.5 py-0.5 rounded-full"
-                  style={{
-                    background: enabled
-                      ? "rgba(255, 138, 76, 0.15)"
-                      : "rgba(0, 0, 0, 0.08)",
-                    color: enabled ? "#c4541e" : "rgba(0, 0, 0, 0.5)",
-                  }}
-                >
-                  {enabled ? "Always On" : "Off"}
-                </span>
-              </div>
+              <h3 className="font-editorial text-2xl md:text-3xl text-black leading-tight truncate">
+                HILUX 2.7
+              </h3>
             </div>
             <ChevronDown
               className={`w-5 h-5 text-black/50 shrink-0 transition-transform ${expanded ? "rotate-180" : ""}`}
