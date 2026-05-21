@@ -47,8 +47,14 @@ interface TokenRow {
   token_prefix: string;
   name: string | null;
   scope: "read_only" | "read_write" | null;
+  vendor_id: string | null;
   last_used_at: string | null;
   created_at: string;
+}
+
+interface VendorListing {
+  id: string;
+  business_name: string | null;
 }
 
 interface ToolInfo {
@@ -218,6 +224,11 @@ export function VendoraForClaudePanel() {
   const [creating, setCreating] = useState(false);
   const [newTokenName, setNewTokenName] = useState("");
   const [newTokenScope, setNewTokenScope] = useState<"read_only" | "read_write">("read_write");
+  // null = "all my listings". A specific id binds the token to that
+  // single vendor — useful when a vendor wants Claude to operate on
+  // only one of their listings.
+  const [newTokenVendorId, setNewTokenVendorId] = useState<string | null>(null);
+  const [listings, setListings] = useState<VendorListing[]>([]);
   const [justMinted, setJustMinted] = useState<{ id: string; token: string } | null>(
     null,
   );
@@ -232,7 +243,7 @@ export function VendoraForClaudePanel() {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data, error } = await (supabase as any)
       .from("vendor_access_tokens")
-      .select("id, token_prefix, name, scope, last_used_at, created_at")
+      .select("id, token_prefix, name, scope, vendor_id, last_used_at, created_at")
       .eq("user_id", user.id)
       .order("created_at", { ascending: false });
     if (error) {
@@ -246,6 +257,25 @@ export function VendoraForClaudePanel() {
   useEffect(() => {
     load();
   }, [load]);
+
+  // Load the vendor's own listings so the mint UI can offer a
+  // per-listing scope picker. Empty until the user is loaded.
+  useEffect(() => {
+    if (!user?.id) return;
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from("vendor_profiles")
+        .select("id, business_name")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: true });
+      if (cancelled) return;
+      setListings(((data as VendorListing[] | null) ?? []));
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.id]);
 
   const copy = async (key: string, value: string) => {
     try {
@@ -264,7 +294,11 @@ export function VendoraForClaudePanel() {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data, error } = await (supabase as any).rpc(
       "create_vendor_access_token",
-      { p_name: newTokenName.trim() || null, p_scope: newTokenScope },
+      {
+        p_name: newTokenName.trim() || null,
+        p_scope: newTokenScope,
+        p_vendor_id: newTokenVendorId,
+      },
     );
     setCreating(false);
     if (error) {
@@ -432,7 +466,7 @@ export function VendoraForClaudePanel() {
                     {t.token_prefix}…
                   </code>
                   <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-1.5">
+                    <div className="flex items-center gap-1.5 flex-wrap">
                       <p className="text-sm text-black/85 truncate">
                         {t.name ?? "Unnamed token"}
                       </p>
@@ -446,6 +480,17 @@ export function VendoraForClaudePanel() {
                       >
                         {(t.scope ?? "read_write") === "read_only" ? "Read only" : "Read + Write"}
                       </span>
+                      {t.vendor_id ? (
+                        <span
+                          className="inline-flex items-center text-[9px] uppercase tracking-wider font-medium px-1.5 py-0.5 rounded-full bg-black/8 text-black/65 max-w-[140px] truncate"
+                          title={
+                            listings.find((l) => l.id === t.vendor_id)?.business_name ?? t.vendor_id
+                          }
+                        >
+                          {(listings.find((l) => l.id === t.vendor_id)?.business_name ??
+                            "1 listing").slice(0, 22)}
+                        </span>
+                      ) : null}
                     </div>
                     <p className="text-[10px] text-black/45">
                       Created {new Date(t.created_at).toLocaleDateString()}
@@ -505,8 +550,44 @@ export function VendoraForClaudePanel() {
               Generate token
             </Button>
           </div>
+          {listings.length > 1 ? (
+            <div className="mt-2 flex items-center gap-2 flex-wrap">
+              <span className="text-[11px] uppercase tracking-wider text-black/55 font-medium">
+                Scope to listing
+              </span>
+              <button
+                type="button"
+                onClick={() => setNewTokenVendorId(null)}
+                className={`text-[11px] px-2 py-1 rounded-full border transition-colors ${
+                  newTokenVendorId === null
+                    ? "border-black bg-black text-white"
+                    : "border-black/15 bg-white/60 text-black/65 hover:bg-white"
+                }`}
+              >
+                All my listings
+              </button>
+              {listings.map((l) => (
+                <button
+                  key={l.id}
+                  type="button"
+                  onClick={() => setNewTokenVendorId(l.id)}
+                  className={`text-[11px] px-2 py-1 rounded-full border transition-colors max-w-[160px] truncate ${
+                    newTokenVendorId === l.id
+                      ? "border-black bg-black text-white"
+                      : "border-black/15 bg-white/60 text-black/65 hover:bg-white"
+                  }`}
+                  title={l.business_name ?? ""}
+                >
+                  {l.business_name || "Unnamed listing"}
+                </button>
+              ))}
+            </div>
+          ) : null}
           <p className="text-[11px] text-black/45 mt-1.5">
             Read-only tokens let Claude inspect your inbox + settings but can't send replies, mark inquiries, or change HILUX config.
+            {listings.length > 1
+              ? " Listing-scoped tokens only see one of your vendor profiles — useful when you want Claude to focus on a single listing."
+              : ""}
           </p>
         </div>
 

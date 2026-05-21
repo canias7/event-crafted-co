@@ -114,18 +114,27 @@ const WRITE_TOOLS = new Set([
   "regenerate_last_hilux_reply",
 ]);
 
-// Check rate limits BEFORE invoking the tool. Returns null when ok,
-// or an error string ready to feed into rpcError when the user has
-// exceeded a window. Uses head:count which is a cheap exact count
-// when the index is in place (we have user_id, created_at desc).
+interface RateLimitInfo {
+  limit: number;
+  remaining: number;
+  resetSeconds: number;
+  retryAfterSeconds: number;
+}
+
+// Check rate limits BEFORE invoking the tool. Returns null when
+// ok, or a { message, info } pair the caller can use to build the
+// 429 response with RateLimit-* headers. Uses head:count which is
+// a cheap exact count under the existing (user_id, created_at desc)
+// index.
 async function checkRateLimit(
   admin: any,
   userId: string,
   toolName: string,
-): Promise<string | null> {
+): Promise<{ message: string; info: RateLimitInfo } | null> {
   const now = Date.now();
   const minuteAgo = new Date(now - 60_000).toISOString();
   const dayAgo = new Date(now - 86_400_000).toISOString();
+  const secsTillNextMinute = 60 - Math.floor((now % 60_000) / 1000);
 
   // Per-minute (all tools).
   const minuteCount = await admin
@@ -133,8 +142,17 @@ async function checkRateLimit(
     .select("id", { count: "exact", head: true })
     .eq("user_id", userId)
     .gte("created_at", minuteAgo);
-  if ((minuteCount.count ?? 0) >= RATE_LIMIT_PER_MINUTE) {
-    return `Rate limit: ${RATE_LIMIT_PER_MINUTE} calls/minute exceeded. Slow down.`;
+  const minutes = minuteCount.count ?? 0;
+  if (minutes >= RATE_LIMIT_PER_MINUTE) {
+    return {
+      message: `Rate limit: ${RATE_LIMIT_PER_MINUTE} calls/minute exceeded. Slow down.`,
+      info: {
+        limit: RATE_LIMIT_PER_MINUTE,
+        remaining: 0,
+        resetSeconds: secsTillNextMinute,
+        retryAfterSeconds: secsTillNextMinute,
+      },
+    };
   }
 
   // Per-day (all tools).
@@ -144,7 +162,15 @@ async function checkRateLimit(
     .eq("user_id", userId)
     .gte("created_at", dayAgo);
   if ((dayCount.count ?? 0) >= RATE_LIMIT_PER_DAY) {
-    return `Rate limit: ${RATE_LIMIT_PER_DAY} calls/day exceeded. Try again tomorrow.`;
+    return {
+      message: `Rate limit: ${RATE_LIMIT_PER_DAY} calls/day exceeded. Try again tomorrow.`,
+      info: {
+        limit: RATE_LIMIT_PER_DAY,
+        remaining: 0,
+        resetSeconds: 86_400,
+        retryAfterSeconds: 3600,
+      },
+    };
   }
 
   // Per-minute (write tools only).
@@ -156,11 +182,42 @@ async function checkRateLimit(
       .in("tool_name", Array.from(WRITE_TOOLS))
       .gte("created_at", minuteAgo);
     if ((writeCount.count ?? 0) >= WRITE_RATE_LIMIT_PER_MINUTE) {
-      return `Rate limit: ${WRITE_RATE_LIMIT_PER_MINUTE} write calls/minute exceeded. Slow down or confirm with the vendor first.`;
+      return {
+        message: `Rate limit: ${WRITE_RATE_LIMIT_PER_MINUTE} write calls/minute exceeded. Slow down or confirm with the vendor first.`,
+        info: {
+          limit: WRITE_RATE_LIMIT_PER_MINUTE,
+          remaining: 0,
+          resetSeconds: secsTillNextMinute,
+          retryAfterSeconds: secsTillNextMinute,
+        },
+      };
     }
   }
 
   return null;
+}
+
+// Build a 429 response for a rate-limit hit with the appropriate
+// RateLimit-* and Retry-After headers per IETF draft.
+function rateLimited(id: any, message: string, info: RateLimitInfo) {
+  return new Response(
+    JSON.stringify({
+      jsonrpc: "2.0",
+      id,
+      error: { code: -32029, message },
+    }),
+    {
+      status: 429,
+      headers: {
+        ...cors,
+        "Content-Type": "application/json",
+        "Retry-After": String(info.retryAfterSeconds),
+        "RateLimit-Limit": String(info.limit),
+        "RateLimit-Remaining": String(info.remaining),
+        "RateLimit-Reset": String(info.resetSeconds),
+      },
+    },
+  );
 }
 
 // SHA-256 of a string, returning lowercase hex. Matches the
@@ -685,6 +742,10 @@ serve(async (req) => {
   let authMethod: "oauth" | "pat" | null = null;
   let clientId: string | null = null;
   let scope: "read_only" | "read_write" = "read_write";
+  // When the auth token is bound to a single vendor (PAT only,
+  // for now), every vendor-scoped tool filters/checks against
+  // this id. Null = caller sees all vendors they own.
+  let vendorScope: string | null = null;
 
   // Try OAuth first.
   const { data: oauthRow } = await admin
@@ -722,7 +783,7 @@ serve(async (req) => {
   if (!userId) {
     const { data: patRow } = await admin
       .from("vendor_access_tokens")
-      .select("id, user_id, token_prefix, scope")
+      .select("id, user_id, token_prefix, scope, vendor_id")
       .eq("token_hash", tokenHash)
       .maybeSingle();
     if (patRow) {
@@ -731,11 +792,13 @@ serve(async (req) => {
         user_id: string;
         token_prefix: string;
         scope: string;
+        vendor_id: string | null;
       };
       userId = p.user_id;
       authMethod = "pat";
       clientId = p.token_prefix;
       scope = p.scope === "read_only" ? "read_only" : "read_write";
+      vendorScope = p.vendor_id;
       admin
         .from("vendor_access_tokens")
         .update({ last_used_at: new Date().toISOString() })
@@ -863,15 +926,16 @@ serve(async (req) => {
 
   // Rate-limit BEFORE running the tool. Log the rejected call so
   // the vendor can see "Claude was rate-limited at 3:14pm" in the
-  // activity log.
-  const limitMsg = await checkRateLimit(admin, userId, toolName);
-  if (limitMsg) {
-    logCall(false, limitMsg);
-    return rpcError(id, -32029, limitMsg);
+  // activity log. We return HTTP 429 with RateLimit-* headers so
+  // clients can back off intelligently.
+  const limit = await checkRateLimit(admin, userId, toolName);
+  if (limit) {
+    logCall(false, limit.message);
+    return rateLimited(id, limit.message, limit.info);
   }
 
   try {
-    const result = await runTool(admin, userId, toolName, args);
+    const result = await runTool(admin, userId, toolName, args, vendorScope);
     // Pluck the internal fields (prefixed with _) before logging
     // and serializing — they're plumbing, not user-facing output.
     const r = result as Record<string, any> | null;
@@ -902,34 +966,35 @@ async function runTool(
   userId: string,
   name: string,
   args: Record<string, any>,
+  vendorScope: string | null,
 ): Promise<unknown> {
   switch (name) {
     case "list_inquiries":
-      return await listInquiries(admin, userId, args);
+      return await listInquiries(admin, userId, args, vendorScope);
     case "get_inquiry":
-      return await getInquiry(admin, userId, String(args.inquiry_id ?? ""));
+      return await getInquiry(admin, userId, String(args.inquiry_id ?? ""), vendorScope);
     case "get_hilux_settings":
       return await getHiluxSettings(admin, userId);
     case "list_listings":
-      return await listListings(admin, userId);
+      return await listListings(admin, userId, vendorScope);
     case "send_reply":
-      return await sendReply(admin, userId, args);
+      return await sendReply(admin, userId, args, vendorScope);
     case "pause_hilux_thread":
-      return await setHiluxPause(admin, userId, String(args.thread_id ?? ""), true);
+      return await setHiluxPause(admin, userId, String(args.thread_id ?? ""), true, vendorScope);
     case "resume_hilux_thread":
-      return await setHiluxPause(admin, userId, String(args.thread_id ?? ""), false);
+      return await setHiluxPause(admin, userId, String(args.thread_id ?? ""), false, vendorScope);
     case "update_hilux_settings":
       return await updateHiluxSettings(admin, userId, args);
     case "mark_inquiry":
-      return await markInquiry(admin, userId, args);
+      return await markInquiry(admin, userId, args, vendorScope);
     case "get_action_log":
       return await getActionLog(admin, userId, args);
     case "get_mcp_call_log":
       return await getMcpCallLog(admin, userId, args);
     case "compose_draft_reply":
-      return await composeDraftReply(admin, userId, args);
+      return await composeDraftReply(admin, userId, args, vendorScope);
     case "regenerate_last_hilux_reply":
-      return await regenerateLastHiluxReply(admin, userId, String(args.thread_id ?? ""));
+      return await regenerateLastHiluxReply(admin, userId, String(args.thread_id ?? ""), vendorScope);
     default:
       throw new Error(`Unknown tool: ${name}`);
   }
@@ -939,15 +1004,20 @@ async function listInquiries(
   admin: any,
   userId: string,
   args: Record<string, any>,
+  vendorScope: string | null,
 ) {
   // Resolve vendor_profiles the caller owns, then filter inquiries
   // to those vendor_ids. Service-role bypasses RLS, so we enforce
-  // ownership explicitly here.
+  // ownership explicitly here. When the token is bound to a single
+  // vendor we narrow the list to just that one.
   const { data: vendors } = await admin
     .from("vendor_profiles")
     .select("id, business_name")
     .eq("user_id", userId);
-  const vendorIds = ((vendors ?? []) as Array<{ id: string }>).map((v) => v.id);
+  let vendorIds = ((vendors ?? []) as Array<{ id: string }>).map((v) => v.id);
+  if (vendorScope) {
+    vendorIds = vendorIds.filter((id) => id === vendorScope);
+  }
   if (vendorIds.length === 0) return { inquiries: [], next_cursor: null };
 
   const limit = Math.min(Math.max(Number(args.limit) || 20, 1), 50);
@@ -990,7 +1060,12 @@ async function listInquiries(
   return { inquiries: rows, next_cursor: nextCursor };
 }
 
-async function getInquiry(admin: any, userId: string, inquiryId: string) {
+async function getInquiry(
+  admin: any,
+  userId: string,
+  inquiryId: string,
+  vendorScope: string | null,
+) {
   if (!inquiryId) throw new Error("inquiry_id is required");
 
   // Ownership: load the inquiry's vendor and check the user owns it.
@@ -1006,6 +1081,9 @@ async function getInquiry(admin: any, userId: string, inquiryId: string) {
   if (!inq) throw new Error("inquiry not found");
   const ownerId = (inq as any).vendor_profiles?.user_id;
   if (ownerId !== userId) throw new Error("not_your_inquiry");
+  if (vendorScope && (inq as any).vendor_id !== vendorScope) {
+    throw new Error("not_your_vendor: token is bound to a different vendor");
+  }
   // Flatten the score embed onto the inquiry for response shape parity
   // with the old columns.
   const s = (inq as any).inquiry_scores;
@@ -1063,14 +1141,20 @@ async function getHiluxSettings(admin: any, userId: string) {
   };
 }
 
-async function listListings(admin: any, userId: string) {
-  const { data, error } = await admin
+async function listListings(
+  admin: any,
+  userId: string,
+  vendorScope: string | null,
+) {
+  let q = admin
     .from("vendor_profiles")
     .select(
       "id, business_name, category, location, base_price_cents, application_status, slug, verified_at",
     )
     .eq("user_id", userId)
     .order("created_at", { ascending: true });
+  if (vendorScope) q = q.eq("id", vendorScope);
+  const { data, error } = await q;
   if (error) throw error;
   return { listings: data ?? [] };
 }
@@ -1161,7 +1245,12 @@ async function readResource(
 
 // Verify that a thread belongs to a vendor_profile this user owns.
 // Returns the loaded thread row on success; throws on miss/foreign.
-async function loadOwnedThread(admin: any, userId: string, threadId: string) {
+async function loadOwnedThread(
+  admin: any,
+  userId: string,
+  threadId: string,
+  vendorScope: string | null = null,
+) {
   if (!threadId) throw new Error("thread_id is required");
   const { data: thread, error } = await admin
     .from("direct_threads")
@@ -1172,6 +1261,9 @@ async function loadOwnedThread(admin: any, userId: string, threadId: string) {
   if (!thread) throw new Error("thread not found");
   const ownerId = (thread as any).vendor_profiles?.user_id;
   if (ownerId !== userId) throw new Error("not_your_thread");
+  if (vendorScope && (thread as any).vendor_id !== vendorScope) {
+    throw new Error("not_your_vendor: token is bound to a different vendor");
+  }
   return thread as {
     id: string;
     vendor_id: string;
@@ -1181,10 +1273,15 @@ async function loadOwnedThread(admin: any, userId: string, threadId: string) {
   };
 }
 
-async function sendReply(admin: any, userId: string, args: Record<string, any>) {
+async function sendReply(
+  admin: any,
+  userId: string,
+  args: Record<string, any>,
+  vendorScope: string | null,
+) {
   const body = String(args.body ?? "").trim();
   if (!body) throw new Error("body is required");
-  const thread = await loadOwnedThread(admin, userId, String(args.thread_id ?? ""));
+  const thread = await loadOwnedThread(admin, userId, String(args.thread_id ?? ""), vendorScope);
   const idempotencyKey =
     typeof args.idempotency_key === "string" && args.idempotency_key.trim()
       ? args.idempotency_key.trim().slice(0, 80)
@@ -1253,8 +1350,9 @@ async function setHiluxPause(
   userId: string,
   threadId: string,
   paused: boolean,
+  vendorScope: string | null,
 ) {
-  const thread = await loadOwnedThread(admin, userId, threadId);
+  const thread = await loadOwnedThread(admin, userId, threadId, vendorScope);
   const { error } = await admin
     .from("direct_threads")
     .update({ hilux_paused: paused })
@@ -1303,6 +1401,7 @@ async function markInquiry(
   admin: any,
   userId: string,
   args: Record<string, any>,
+  vendorScope: string | null,
 ) {
   const inquiryId = String(args.inquiry_id ?? "");
   const status = String(args.status ?? "");
@@ -1313,13 +1412,16 @@ async function markInquiry(
   // Ownership: load via vendor_profiles join.
   const { data: inq, error } = await admin
     .from("inquiries")
-    .select("id, vendor_profiles!inner(user_id)")
+    .select("id, vendor_id, vendor_profiles!inner(user_id)")
     .eq("id", inquiryId)
     .maybeSingle();
   if (error) throw error;
   if (!inq) throw new Error("inquiry not found");
   if ((inq as any).vendor_profiles?.user_id !== userId) {
     throw new Error("not_your_inquiry");
+  }
+  if (vendorScope && (inq as any).vendor_id !== vendorScope) {
+    throw new Error("not_your_vendor: token is bound to a different vendor");
   }
   const { error: updErr } = await admin
     .from("inquiries")
@@ -1333,8 +1435,9 @@ async function regenerateLastHiluxReply(
   admin: any,
   userId: string,
   threadId: string,
+  vendorScope: string | null,
 ) {
-  const thread = await loadOwnedThread(admin, userId, threadId);
+  const thread = await loadOwnedThread(admin, userId, threadId, vendorScope);
 
   // Latest message must be HILUX-generated. Once the host has
   // replied, regen is moot.
@@ -1439,8 +1542,9 @@ async function composeDraftReply(
   admin: any,
   userId: string,
   args: Record<string, any>,
+  vendorScope: string | null,
 ) {
-  const thread = await loadOwnedThread(admin, userId, String(args.thread_id ?? ""));
+  const thread = await loadOwnedThread(admin, userId, String(args.thread_id ?? ""), vendorScope);
   const overrideInstructions =
     typeof args.instructions === "string" ? args.instructions.slice(0, 1000) : null;
 
