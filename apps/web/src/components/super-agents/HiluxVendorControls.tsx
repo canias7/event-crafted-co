@@ -26,7 +26,6 @@ import {
   List,
   Loader2,
   Moon,
-  Pencil,
   Phone,
   Quote,
   Repeat,
@@ -46,7 +45,6 @@ import {
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Collapsible,
   CollapsibleContent,
@@ -163,44 +161,15 @@ const ACTION_GROUPS: ActionGroup[] = [
 
 const ALL_ACTIONS: ActionDef[] = ACTION_GROUPS.flatMap((g) => g.actions);
 
-const INSTRUCTIONS_PLACEHOLDER = `Examples:
-• Our tone is warm and casual — no corporate language.
-• Always ask about budget before sharing prices.
-• We don't do Sunday weddings. If asked, say we're closed Sundays.`;
-
-const TONE_PRESETS: Array<{ label: string; text: string }> = [
-  {
-    label: "Warm & casual",
-    text:
-      "Tone: warm, friendly, conversational. Use first names if the host shares theirs. Skip corporate phrases like 'thank you for reaching out.'",
-  },
-  {
-    label: "Professional",
-    text:
-      "Tone: polished and professional. Use complete sentences, no slang. Sign off the substance, not the bubble — keep it crisp.",
-  },
-  {
-    label: "Playful",
-    text:
-      "Tone: playful and a little witty. Light humour is welcome when it lands; never at the host's expense. Keep replies under 3 sentences.",
-  },
-  {
-    label: "Luxury",
-    text:
-      "Tone: refined, understated luxury. Lead with curiosity about their vision before pricing. Never lead with a price tag; lead with experience.",
-  },
-];
 
 export function HiluxVendorControls() {
   const { user } = useAuth();
   const [profile, setProfile] = useState<HiluxProfileRow | null>(null);
   const [expanded, setExpanded] = useState(false);
   const [savingKey, setSavingKey] = useState<string | null>(null);
-  const [draftInstructions, setDraftInstructions] = useState("");
   const [draftGreeting, setDraftGreeting] = useState("");
   const [query, setQuery] = useState("");
   const [resetting, setResetting] = useState(false);
-  const instructionsSaveTimer = useRef<number | null>(null);
   const greetingSaveTimer = useRef<number | null>(null);
 
   const load = useCallback(async () => {
@@ -253,7 +222,6 @@ export function HiluxVendorControls() {
       hilux_action_notify_on_reply: false,
     } satisfies HiluxProfileRow);
     setProfile(row);
-    setDraftInstructions(row.hilux_instructions ?? "");
     setDraftGreeting(row.hilux_greeting_line ?? "");
   }, [user?.id]);
 
@@ -288,25 +256,6 @@ export function HiluxVendorControls() {
 
   const toggleAction = async (key: ActionKey, next: boolean) => {
     await persist({ [key]: next } as Partial<HiluxProfileRow>, key);
-  };
-
-  const onInstructionsChange = (value: string) => {
-    setDraftInstructions(value);
-    if (instructionsSaveTimer.current)
-      window.clearTimeout(instructionsSaveTimer.current);
-    instructionsSaveTimer.current = window.setTimeout(() => {
-      const trimmed = value.trim();
-      persist(
-        { hilux_instructions: trimmed.length === 0 ? null : trimmed },
-        "instructions",
-      );
-    }, 700);
-  };
-
-  const applyTonePreset = (preset: { text: string }) => {
-    const current = (draftInstructions ?? "").trim();
-    const next = current.length === 0 ? preset.text : `${current}\n\n${preset.text}`;
-    onInstructionsChange(next.slice(0, 4000));
   };
 
   const onGreetingChange = (value: string) => {
@@ -609,47 +558,6 @@ export function HiluxVendorControls() {
                   Flip HILUX on above to use these.
                 </p>
               ) : null}
-            </div>
-
-            {/* Custom instructions */}
-            <div>
-              <div className="flex items-center gap-2 mb-2">
-                <Pencil className="w-3.5 h-3.5 text-black/55" />
-                <p className="text-[11px] uppercase tracking-[0.2em] text-black/55">
-                  Custom instructions
-                </p>
-              </div>
-              <div className="flex flex-wrap items-center gap-1.5 mb-2">
-                <span className="text-[11px] uppercase tracking-wider text-black/45 mr-1">
-                  Quick tone:
-                </span>
-                {TONE_PRESETS.map((p) => (
-                  <button
-                    key={p.label}
-                    type="button"
-                    onClick={() => applyTonePreset(p)}
-                    className="text-[11px] px-2.5 py-1 rounded-full border border-black/15 bg-white/70 text-black/75 hover:bg-white hover:border-black/30 transition-colors"
-                  >
-                    + {p.label}
-                  </button>
-                ))}
-              </div>
-              <Textarea
-                value={draftInstructions}
-                onChange={(e) => onInstructionsChange(e.target.value)}
-                placeholder={INSTRUCTIONS_PLACEHOLDER}
-                className="min-h-[140px] resize-y bg-white/70 text-sm font-mono text-black"
-                maxLength={4000}
-              />
-              <div className="flex items-center justify-between text-[11px] text-black/45 mt-1">
-                <span>
-                  HILUX always reads each listing's bio, packages, and FAQs.
-                  Use this box for tone, rules, or anything else.
-                </span>
-                <span className="shrink-0 pl-3 tabular-nums">
-                  {draftInstructions.length} / 4000
-                </span>
-              </div>
             </div>
           </div>
         ) : null}
