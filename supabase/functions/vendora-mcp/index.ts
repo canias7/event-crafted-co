@@ -195,6 +195,21 @@ const TOOLS = [
     },
   },
   {
+    name: "get_action_log",
+    description:
+      "Return HILUX's recent actions (replies, escalations, follow-ups, regenerations, archives). Newest first. Useful when the vendor asks Claude what HILUX has been doing on their behalf.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        action: {
+          type: "string",
+          enum: ["reply", "escalate", "follow_up", "regenerate", "archive_cold", "booking_intent_detected", "lead_score_hot", "fields_extracted"],
+        },
+        limit: { type: "integer", minimum: 1, maximum: 100, default: 25 },
+      },
+    },
+  },
+  {
     name: "regenerate_last_hilux_reply",
     description:
       "Ask HILUX to rewrite its most recent reply in a thread (different angle, different opener). Only works while HILUX's reply is still the latest message — once the host has replied, regeneration is moot.",
@@ -331,6 +346,8 @@ async function runTool(
       return await updateHiluxSettings(admin, userId, args);
     case "mark_inquiry":
       return await markInquiry(admin, userId, args);
+    case "get_action_log":
+      return await getActionLog(admin, userId, args);
     case "regenerate_last_hilux_reply":
       return await regenerateLastHiluxReply(admin, userId, String(args.thread_id ?? ""));
     default:
@@ -430,6 +447,24 @@ async function listListings(admin: any, userId: string) {
     .order("created_at", { ascending: true });
   if (error) throw error;
   return { listings: data ?? [] };
+}
+
+async function getActionLog(
+  admin: any,
+  userId: string,
+  args: Record<string, any>,
+) {
+  const limit = Math.min(Math.max(Number(args.limit) || 25, 1), 100);
+  let q = admin
+    .from("hilux_action_log")
+    .select("id, vendor_id, thread_id, inquiry_id, message_id, action, detail, created_at")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false })
+    .limit(limit);
+  if (typeof args.action === "string") q = q.eq("action", args.action);
+  const { data, error } = await q;
+  if (error) throw error;
+  return { entries: data ?? [] };
 }
 
 // -------- Write tools --------

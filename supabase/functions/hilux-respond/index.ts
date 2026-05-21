@@ -29,6 +29,10 @@ import {
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY") ?? "";
+const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY") ?? "";
+const EMAIL_FROM_ADDRESS =
+  Deno.env.get("EMAIL_FROM_ADDRESS") ?? "Vendora <noreply@eventvendora.com>";
+const APP_URL = Deno.env.get("APP_URL") ?? "https://eventvendora.com";
 
 const HISTORY_LIMIT = 20;
 const DEBOUNCE_MS = 2000;
@@ -338,6 +342,27 @@ serve(async (req) => {
       }
     };
 
+    // Audit log: when logActions is on, write one row per HILUX
+    // action (reply / escalate). Used by the vendor's activity view
+    // + the MCP connector's get_action_log tool. Best-effort.
+    const logAction = async (
+      action: "reply" | "escalate",
+      detail: string | null,
+      messageId: string | null,
+    ) => {
+      if (!actions.logActions) return;
+      const { error } = await admin.from("hilux_action_log").insert({
+        user_id: ctx.vendor!.user_id,
+        vendor_id: ctx.vendor!.id,
+        thread_id: threadId,
+        inquiry_id: thread.inquiry_id,
+        message_id: messageId,
+        action,
+        detail,
+      });
+      if (error) console.error("[hilux-respond] action log insert failed", error);
+    };
+
     const scoreInquiryAfter = async () => {
       if (!thread.inquiry_id) return;
       try {
@@ -428,6 +453,7 @@ serve(async (req) => {
         notified = rows.length;
       }
       log("hilux escalated", { thread: threadId, reason, notified });
+      await logAction("escalate", reason, null);
       await scoreInquiryAfter();
       await detectIntentAfter();
       await extractFieldsAfter();
@@ -439,19 +465,25 @@ serve(async (req) => {
     // the ESCALATE: line so the host doesn't see the raw token.
     const sanitized = reply.replace(/^\s*ESCALATE\s*:.*$/im, "").trim() || reply.trim();
 
-    const { error: insertErr } = await admin.from("direct_messages").insert({
-      thread_id: threadId,
-      sender_id: ctx.vendor.user_id,
-      sender_role: "vendor",
-      body: sanitized,
-      is_hilux_generated: true,
-    });
+    const { data: insertedRow, error: insertErr } = await admin
+      .from("direct_messages")
+      .insert({
+        thread_id: threadId,
+        sender_id: ctx.vendor.user_id,
+        sender_role: "vendor",
+        body: sanitized,
+        is_hilux_generated: true,
+      })
+      .select("id")
+      .single();
     if (insertErr) {
       await clearTyping();
       throw insertErr;
     }
+    const insertedMsgId = (insertedRow as { id: string } | null)?.id ?? null;
 
     log("hilux replied", { thread: threadId, length: sanitized.length });
+    await logAction("reply", null, insertedMsgId);
 
     // Auto-mark the inquiry as 'replied' so it moves out of the
     // vendor's 'new' bucket. Only flips when the inquiry is still
@@ -487,6 +519,60 @@ serve(async (req) => {
       }
     }
 
+    // Email reply copies. Sends a Resend email to every vendor team
+    // member with the host's last question + HILUX's reply, so the
+    // vendor can keep tabs from their inbox. Best-effort: a Resend
+    // failure never blocks the reply.
+    if (actions.emailReplyCopies && RESEND_API_KEY) {
+      try {
+        const { data: members } = await admin
+          .from("vendor_team_members")
+          .select("user_id")
+          .eq("vendor_id", ctx.vendor.id);
+        const lastHostMsg = orderedHistory
+          .slice()
+          .reverse()
+          .find((m) => m.sender_role === "host");
+        const hostBody = (lastHostMsg?.body ?? "").trim();
+        const vendorName = ctx.vendor.business_name ?? "your business";
+        const threadLink = `${APP_URL}/vendor/messages?thread=${threadId}`;
+        for (const m of (members ?? []) as Array<{ user_id: string }>) {
+          const { data: u } = await admin.auth.admin.getUserById(m.user_id);
+          const to = u?.user?.email;
+          if (!to) continue;
+          const subject = `HILUX replied for ${vendorName}`;
+          const html = replyCopyHtml({
+            vendorName,
+            hostFirstName,
+            hostBody,
+            reply: sanitized,
+            threadLink,
+          });
+          const send = await fetch("https://api.resend.com/emails", {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${RESEND_API_KEY}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              from: EMAIL_FROM_ADDRESS,
+              to,
+              subject,
+              html,
+            }),
+          });
+          if (!send.ok) {
+            console.error(
+              "[hilux-respond] reply copy email failed",
+              await send.text(),
+            );
+          }
+        }
+      } catch (err) {
+        console.error("[hilux-respond] reply copy email error", err);
+      }
+    }
+
     await scoreInquiryAfter();
     await detectIntentAfter();
     await extractFieldsAfter();
@@ -498,3 +584,38 @@ serve(async (req) => {
     return ok({ error: err instanceof Error ? err.message : String(err) });
   }
 });
+
+function escapeHtml(s: string): string {
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function replyCopyHtml(args: {
+  vendorName: string;
+  hostFirstName: string | null;
+  hostBody: string;
+  reply: string;
+  threadLink: string;
+}): string {
+  const hostLabel = args.hostFirstName ? escapeHtml(args.hostFirstName) : "the host";
+  const hostBody = escapeHtml(args.hostBody).replace(/\n/g, "<br />");
+  const reply = escapeHtml(args.reply).replace(/\n/g, "<br />");
+  return `<!doctype html>
+<html><body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 560px; margin: 0 auto; padding: 24px; color: #111;">
+  <p style="color:#666;font-size:13px;margin:0 0 16px;">HILUX just replied to a host on behalf of <strong>${escapeHtml(args.vendorName)}</strong>.</p>
+  <div style="border-left:3px solid #ddd;padding:8px 16px;margin:0 0 16px;color:#555;">
+    <div style="font-size:12px;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px;">${hostLabel} wrote</div>
+    <div>${hostBody}</div>
+  </div>
+  <div style="border-left:3px solid #f97316;padding:8px 16px;margin:0 0 24px;">
+    <div style="font-size:12px;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px;color:#f97316;">HILUX replied</div>
+    <div>${reply}</div>
+  </div>
+  <p style="margin:0;"><a href="${escapeHtml(args.threadLink)}" style="background:#111;color:#fff;text-decoration:none;padding:10px 16px;border-radius:6px;display:inline-block;">Open the thread</a></p>
+  <p style="color:#999;font-size:11px;margin-top:32px;">You're getting this because the Email reply copies toggle is on for HILUX. Turn it off in your agent settings to stop.</p>
+</body></html>`;
+}

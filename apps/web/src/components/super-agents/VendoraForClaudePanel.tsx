@@ -20,6 +20,7 @@ import {
   PlayCircle,
   Plus,
   RefreshCw,
+  ScrollText,
   Send,
   Settings2,
   Sparkles,
@@ -88,6 +89,13 @@ const TOOL_GROUPS: ToolGroup[] = [
         blurb:
           "\"What listings do I have live?\" — returns your vendor profiles + approval status.",
         Icon: Sparkles,
+      },
+      {
+        name: "get_action_log",
+        label: "Read HILUX's activity log",
+        blurb:
+          "\"What has HILUX been doing today?\" — returns every reply, escalation, follow-up, and archive HILUX performed.",
+        Icon: ScrollText,
       },
     ],
   },
