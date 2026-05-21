@@ -119,12 +119,38 @@ export default function VendorInboxPage() {
     const { data } = await supabase
       .from("inquiries")
       .select(
-        "id, event_type, event_date, guest_count, location, budget_min_cents, budget_max_cents, special_requests, status, created_at, last_message_at, vendor_read_at, lead_score, lead_score_reason, host:profiles!inquiries_host_id_fkey(display_name, avatar_url), vendor_profiles(hilux_enabled)",
+        "id, event_type, event_date, guest_count, location, budget_min_cents, budget_max_cents, special_requests, status, created_at, last_message_at, vendor_read_at, host:profiles!inquiries_host_id_fkey(display_name, avatar_url), vendor_profiles(hilux_enabled)",
       )
       .in("vendor_id", vids)
       .order("last_message_at", { ascending: false })
       .limit(100);
-    setRows((data as unknown as InquiryRow[]) ?? []);
+    const baseRows = ((data as unknown as InquiryRow[]) ?? []);
+    // Lead scores moved to a vendor-only inquiry_scores table so
+    // hosts can't see how we classified them. Fetch separately and
+    // merge in client-side. RLS gates to vendor team members only.
+    const ids = baseRows.map((r) => r.id);
+    let scored = baseRows;
+    if (ids.length > 0) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: scores } = await (supabase as any)
+        .from("inquiry_scores")
+        .select("inquiry_id, lead_score, lead_score_reason")
+        .in("inquiry_id", ids);
+      const byId = new Map<string, { lead_score: string | null; lead_score_reason: string | null }>();
+      for (const s of (scores ?? []) as Array<{
+        inquiry_id: string;
+        lead_score: string | null;
+        lead_score_reason: string | null;
+      }>) {
+        byId.set(s.inquiry_id, { lead_score: s.lead_score, lead_score_reason: s.lead_score_reason });
+      }
+      scored = baseRows.map((r) => ({
+        ...r,
+        lead_score: (byId.get(r.id)?.lead_score ?? null) as InquiryRow["lead_score"],
+        lead_score_reason: byId.get(r.id)?.lead_score_reason ?? null,
+      }));
+    }
+    setRows(scored);
     setLoading(false);
   }
 

@@ -865,26 +865,37 @@ async function listInquiries(
   // the previous page. We fetch limit+1 so we know whether there's
   // another page; the +1 is dropped before returning and its
   // last_message_at becomes the next_cursor.
+  // lead_score lives on inquiry_scores. Embed via the FK so each
+  // returned inquiry carries its score inline; the filter on
+  // args.lead_score applies through the embed.
+  const baseCols =
+    "id, vendor_id, event_type, event_date, guest_count, location, budget_min_cents, budget_max_cents, special_requests, status, last_message_at, created_at";
+  const scoreEmbed =
+    "inquiry_scores(lead_score, lead_score_reason, lead_score_updated_at, booking_intent_at, booking_intent_reason)";
   let q = admin
     .from("inquiries")
-    .select(
-      "id, vendor_id, event_type, event_date, guest_count, location, budget_min_cents, budget_max_cents, special_requests, status, last_message_at, lead_score, lead_score_reason, lead_score_updated_at, created_at",
-    )
+    .select(`${baseCols}, ${scoreEmbed}`)
     .in("vendor_id", vendorIds)
     .order("last_message_at", { ascending: false, nullsFirst: false })
     .limit(limit + 1);
   if (typeof args.status === "string") q = q.eq("status", args.status);
-  if (typeof args.lead_score === "string") q = q.eq("lead_score", args.lead_score);
+  if (typeof args.lead_score === "string") {
+    q = q.eq("inquiry_scores.lead_score", args.lead_score);
+  }
   if (typeof args.cursor === "string" && args.cursor) {
     q = q.lt("last_message_at", args.cursor);
   }
   const { data, error } = await q;
   if (error) throw error;
-  const rows = (data as Array<{ last_message_at: string | null }> | null) ?? [];
+  const rows = ((data as Array<any> | null) ?? []).map((r) => {
+    const s = Array.isArray(r.inquiry_scores) ? r.inquiry_scores[0] : r.inquiry_scores;
+    const { inquiry_scores: _drop, ...rest } = r;
+    return { ...rest, ...(s ?? {}) };
+  });
   let nextCursor: string | null = null;
   if (rows.length > limit) {
     rows.pop();
-    nextCursor = rows[rows.length - 1]?.last_message_at ?? null;
+    nextCursor = (rows[rows.length - 1] as { last_message_at?: string })?.last_message_at ?? null;
   }
   return { inquiries: rows, next_cursor: nextCursor };
 }
@@ -893,15 +904,24 @@ async function getInquiry(admin: any, userId: string, inquiryId: string) {
   if (!inquiryId) throw new Error("inquiry_id is required");
 
   // Ownership: load the inquiry's vendor and check the user owns it.
+  // Embed inquiry_scores so the score arrives inline.
   const { data: inq, error } = await admin
     .from("inquiries")
-    .select("*, vendor_profiles!inner(user_id, business_name)")
+    .select(
+      "*, vendor_profiles!inner(user_id, business_name), inquiry_scores(lead_score, lead_score_reason, lead_score_updated_at, booking_intent_at, booking_intent_reason)",
+    )
     .eq("id", inquiryId)
     .maybeSingle();
   if (error) throw error;
   if (!inq) throw new Error("inquiry not found");
   const ownerId = (inq as any).vendor_profiles?.user_id;
   if (ownerId !== userId) throw new Error("not_your_inquiry");
+  // Flatten the score embed onto the inquiry for response shape parity
+  // with the old columns.
+  const s = (inq as any).inquiry_scores;
+  const score = Array.isArray(s) ? s[0] : s;
+  if (score) Object.assign(inq as object, score);
+  delete (inq as any).inquiry_scores;
 
   // Pull thread + last 30 messages.
   const { data: thread } = await admin
