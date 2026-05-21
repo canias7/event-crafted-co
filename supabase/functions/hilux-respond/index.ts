@@ -92,13 +92,41 @@ serve(async (req) => {
     if (!ctx.profile || !ctx.profile.hilux_enabled) return ok({ skipped: "hilux_off" });
     if (!ctx.vendor.user_id) return ok({ skipped: "no_owner" });
 
-    // Quiet hours: vendor asked us to stay silent overnight. We skip
-    // entirely — no typing indicator, no Claude call, no reply. The
-    // host's message sits in the inbox until either (a) the vendor
-    // answers manually, or (b) another host message arrives outside
-    // quiet hours and HILUX picks the convo back up.
+    // Pacing-level skips. Each one short-circuits BEFORE we touch
+    // typing indicators or Claude, so a paused thread never shows
+    // "HILUX is typing..." and we never spend API tokens.
+
+    // Quiet hours: vendor asked us to stay silent overnight.
     if (ctx.profile.actions.quietHours && isInQuietHours()) {
       return ok({ skipped: "quiet_hours" });
+    }
+
+    // Pause on weekends (UTC days). Same coarse-TZ caveat as
+    // quiet hours — vendor-local Friday late-night might still
+    // land in the UTC Saturday window. v1 approximation.
+    if (ctx.profile.actions.pauseWeekends) {
+      const dow = new Date().getUTCDay(); // 0=Sun, 6=Sat
+      if (dow === 0 || dow === 6) {
+        return ok({ skipped: "weekend_pause" });
+      }
+    }
+
+    // Skip if the vendor was active in this thread in the last 30 min.
+    // "Active" = posted a non-HILUX-generated message. If the vendor
+    // is handling the conversation themselves, HILUX defers.
+    if (ctx.profile.actions.skipWhenActive) {
+      const cutoffIso = new Date(Date.now() - 30 * 60_000).toISOString();
+      const { data: recentVendor } = await admin
+        .from("direct_messages")
+        .select("id")
+        .eq("thread_id", threadId)
+        .eq("sender_role", "vendor")
+        .eq("is_hilux_generated", false)
+        .gte("created_at", cutoffIso)
+        .limit(1);
+      if ((recentVendor ?? []).length > 0) {
+        return ok({ skipped: "vendor_active_in_thread" });
+      }
     }
 
     const { data: triggeringMessage, error: msgErr } = await admin
@@ -280,6 +308,41 @@ serve(async (req) => {
     }
 
     log("hilux replied", { thread: threadId, length: sanitized.length });
+
+    // Auto-mark the inquiry as 'replied' so it moves out of the
+    // vendor's 'new' bucket. Only flips when the inquiry is still
+    // in 'new' — we don't downgrade won/lost/etc.
+    if (actions.autoMarkReplied && thread.inquiry_id) {
+      const { error: statusErr } = await admin
+        .from("inquiries")
+        .update({ status: "replied" })
+        .eq("id", thread.inquiry_id)
+        .eq("status", "new");
+      if (statusErr) console.error("[hilux-respond] auto-mark replied failed", statusErr);
+    }
+
+    // Notify the vendor team that HILUX just replied on their
+    // behalf. Default OFF — most vendors don't want a push every
+    // time. Notification type 'hilux_reply' so the bell can group
+    // these separately from real direct-message pings.
+    if (actions.notifyOnReply) {
+      const { data: members } = await admin
+        .from("vendor_team_members")
+        .select("user_id")
+        .eq("vendor_id", ctx.vendor.id);
+      const rows = ((members ?? []) as Array<{ user_id: string }>).map((m) => ({
+        user_id: m.user_id,
+        type: "hilux_reply",
+        title: "HILUX replied for you",
+        body: sanitized.slice(0, 140),
+        link: `/vendor/messages?thread=${threadId}`,
+      }));
+      if (rows.length > 0) {
+        const { error: notifErr } = await admin.from("notifications").insert(rows);
+        if (notifErr) console.error("[hilux-respond] notify failed", notifErr);
+      }
+    }
+
     await scoreInquiryAfter();
     await clearTyping();
     return ok({ replied: true, length: sanitized.length });

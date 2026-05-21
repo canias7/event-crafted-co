@@ -44,23 +44,73 @@ export interface AvailabilityCtx {
 // useCalendar = false, suppresses the ESCALATE rule when escalate
 // = false, etc.).
 export interface HiluxActions {
+  // Pacing
   followUp: boolean;
+  quietHours: boolean;
+  pauseWeekends: boolean;
+  skipWhenActive: boolean;
+  // Conversation / how HILUX listens
   matchLanguage: boolean;
   useCalendar: boolean;
   escalate: boolean;
   askClarifying: boolean;
   useFirstName: boolean;
-  quietHours: boolean;
+  detectFrustration: boolean;
+  // Conversation / what HILUX says
+  mentionStartingPrice: boolean;
+  suggestPackage: boolean;
+  declineNegotiation: boolean;
+  avoidCompetitors: boolean;
+  sendPortfolioLink: boolean;
+  offerCall: boolean;
+  shareBookingProcess: boolean;
+  // Conversation / how HILUX writes
+  echoQuestion: boolean;
+  useEmojis: boolean;
+  acknowledgeEmotion: boolean;
+  leadWithQuestion: boolean;
+  softCtaSignoff: boolean;
+  allowBullets: boolean;
+  // Safety / privacy
+  refuseLegal: boolean;
+  refuseCompetitorPricing: boolean;
+  noOtherClients: boolean;
+  redactContact: boolean;
+  // Operations (code-level)
+  autoMarkReplied: boolean;
+  notifyOnReply: boolean;
 }
 
 export const DEFAULT_ACTIONS: HiluxActions = {
   followUp: true,
+  quietHours: false,
+  pauseWeekends: false,
+  skipWhenActive: true,
   matchLanguage: true,
   useCalendar: true,
   escalate: true,
   askClarifying: true,
   useFirstName: true,
-  quietHours: false,
+  detectFrustration: true,
+  mentionStartingPrice: false,
+  suggestPackage: true,
+  declineNegotiation: true,
+  avoidCompetitors: true,
+  sendPortfolioLink: false,
+  offerCall: true,
+  shareBookingProcess: true,
+  echoQuestion: false,
+  useEmojis: false,
+  acknowledgeEmotion: true,
+  leadWithQuestion: false,
+  softCtaSignoff: true,
+  allowBullets: false,
+  refuseLegal: true,
+  refuseCompetitorPricing: true,
+  noOtherClients: true,
+  redactContact: true,
+  autoMarkReplied: true,
+  notifyOnReply: false,
 };
 
 // HILUX is paused during these UTC hours when the quietHours action
@@ -115,8 +165,12 @@ export function priceUsd(cents: number | null | undefined): string | null {
 
 export function buildSystemPrompt(ctx: HiluxPromptCtx): string {
   const lines: string[] = [];
+  // Compose the formatting clause based on what's allowed.
+  const formattingNos: string[] = ["no markdown headings"];
+  if (!ctx.actions.allowBullets) formattingNos.push("no bullet lists");
+  if (!ctx.actions.useEmojis) formattingNos.push("no emojis");
   lines.push(
-    `You are HILUX, the always-on AI inbox agent for ${ctx.businessName}${ctx.category ? `, a ${ctx.category} vendor` : ""}${ctx.location ? ` based in ${ctx.location}` : ""}. You are replying to a host (potential customer) who messaged this listing. Speak in the FIRST PERSON as the vendor's team (use "we" / "our" naturally). Keep replies warm, professional, and concise — 2 to 4 short sentences, no markdown headings, no bullet lists, no emojis.`,
+    `You are HILUX, the always-on AI inbox agent for ${ctx.businessName}${ctx.category ? `, a ${ctx.category} vendor` : ""}${ctx.location ? ` based in ${ctx.location}` : ""}. You are replying to a host (potential customer) who messaged this listing. Speak in the FIRST PERSON as the vendor's team (use "we" / "our" naturally). Keep replies warm, professional, and concise — 2 to 4 short sentences, ${formattingNos.join(", ")}.`,
   );
   lines.push("");
   lines.push("RULES:");
@@ -173,6 +227,99 @@ export function buildSystemPrompt(ctx: HiluxPromptCtx): string {
   } else {
     lines.push(
       "- The vendor has asked you to ALWAYS reply (never escalate). When uncertain, give your best answer and acknowledge you'll confirm specifics with them.",
+    );
+  }
+  if (ctx.actions.detectFrustration && ctx.actions.escalate) {
+    lines.push(
+      "- If the host sounds frustrated, angry, or upset (caps, repeated punctuation, \"this is unacceptable\", complaint language), DO NOT try to fix it in the reply. ESCALATE: host_frustrated and let the vendor handle it personally.",
+    );
+  }
+  // What HILUX talks about
+  if (ctx.actions.mentionStartingPrice) {
+    lines.push(
+      "- When the host asks about cost (\"how much\", \"what's the price\"), lead with the starting price directly in the first sentence. Don't qualify-question first.",
+    );
+  }
+  if (ctx.actions.suggestPackage) {
+    lines.push(
+      "- When the host's ask matches one of the listed packages, recommend it by name in the reply. Don't list every package — just the most relevant one.",
+    );
+  }
+  if (ctx.actions.declineNegotiation) {
+    lines.push(
+      "- If the host asks for a discount or wants to negotiate the price, politely decline (one short sentence — \"our pricing reflects what goes into the work, we keep it firm\") and offer to discuss what's included instead.",
+    );
+  }
+  if (ctx.actions.avoidCompetitors) {
+    lines.push(
+      "- If the host mentions, asks about, or compares to other vendors / competitors, do NOT discuss them. Redirect to what makes this vendor's work distinctive without naming names.",
+    );
+  }
+  if (ctx.actions.sendPortfolioLink) {
+    lines.push(
+      "- On the very first HILUX reply in a thread (no prior assistant messages), mention that there's a full portfolio on the vendor's profile (\"You can see more of our recent work on our profile page\"). Don't include a literal URL — that's against the no-external-links rule.",
+    );
+  }
+  if (ctx.actions.offerCall) {
+    lines.push(
+      "- Once the lead warms up (host has answered a clarifying question or shared event details), offer to set up a quick call (\"Want to hop on a 15-min call to walk through it?\"). Don't push a call in the first reply.",
+    );
+  }
+  if (ctx.actions.shareBookingProcess) {
+    lines.push(
+      "- When the host expresses booking intent (\"we want to book\", \"how do we lock this in\"), briefly outline the next step (\"We send a quick proposal, you confirm the date with a deposit, and we lock it in\") — one sentence max.",
+    );
+  }
+  // How HILUX writes
+  if (ctx.actions.echoQuestion) {
+    lines.push(
+      "- Open the reply by briefly restating what the host is asking, so they know you understood (\"So you're looking for coverage from ceremony through cocktail hour — \").",
+    );
+  }
+  if (ctx.actions.useEmojis) {
+    lines.push(
+      "- Emojis are OK in moderation (max one or two per reply, where they fit the tone). Don't overdo it.",
+    );
+  }
+  if (ctx.actions.acknowledgeEmotion) {
+    lines.push(
+      "- When the host expresses excitement (\"we're so excited!\", \"can't wait\"), warmly acknowledge it in one beat before answering. Don't gush.",
+    );
+  }
+  if (ctx.actions.leadWithQuestion) {
+    lines.push(
+      "- On a FIRST HILUX reply to a new conversation, lead with a friendly question that pulls more info (\"Before I dig in — what's the vibe you're going for?\") instead of jumping straight to an answer.",
+    );
+  }
+  if (ctx.actions.softCtaSignoff) {
+    lines.push(
+      "- End the reply with a soft prompt to keep the conversation moving — e.g. \"Want me to share more details?\" or \"What date are you thinking?\". Skip on the message where you've already asked a clarifying question.",
+    );
+  }
+  if (ctx.actions.allowBullets) {
+    lines.push(
+      "- Bullet lists are OK when listing 2-3 specific things side by side (packages, dates, etc.). Keep them tight; no nested lists.",
+    );
+  }
+  // Safety / privacy
+  if (ctx.actions.refuseLegal) {
+    lines.push(
+      "- Don't discuss legal terms, contracts, cancellation language, or anything that would normally be in writing. Redirect: \"We'll send the contract once you're ready to lock in.\"",
+    );
+  }
+  if (ctx.actions.refuseCompetitorPricing) {
+    lines.push(
+      "- If the host asks how the vendor's pricing compares to competitors or asks for a price match, politely decline. Redirect to value, not comparison.",
+    );
+  }
+  if (ctx.actions.noOtherClients) {
+    lines.push(
+      "- Never reference other clients, even anonymously (no \"we just did a wedding for...\"). The host you're talking to is the only client that matters in the reply.",
+    );
+  }
+  if (ctx.actions.redactContact) {
+    lines.push(
+      "- Belt-and-suspenders contact rule: never write a phone number, email address, or URL. If the host shares theirs, don't echo it back.",
     );
   }
   lines.push("");
@@ -425,9 +572,7 @@ export async function loadVendorContext(
   if (vendor.user_id) {
     const { data: profRow } = await admin
       .from("profiles")
-      .select(
-        "hilux_enabled, hilux_instructions, hilux_voice_samples, hilux_action_follow_up, hilux_action_match_language, hilux_action_use_calendar, hilux_action_escalate, hilux_action_ask_clarifying, hilux_action_use_first_name, hilux_action_quiet_hours",
-      )
+      .select("*")
       .eq("id", vendor.user_id)
       .maybeSingle();
     if (profRow) {
@@ -437,12 +582,34 @@ export async function loadVendorContext(
         hilux_voice_samples: profRow.hilux_voice_samples ?? [],
         actions: {
           followUp: profRow.hilux_action_follow_up !== false,
+          quietHours: profRow.hilux_action_quiet_hours === true,
+          pauseWeekends: profRow.hilux_action_pause_weekends === true,
+          skipWhenActive: profRow.hilux_action_skip_when_active !== false,
           matchLanguage: profRow.hilux_action_match_language !== false,
           useCalendar: profRow.hilux_action_use_calendar !== false,
           escalate: profRow.hilux_action_escalate !== false,
           askClarifying: profRow.hilux_action_ask_clarifying !== false,
           useFirstName: profRow.hilux_action_use_first_name !== false,
-          quietHours: profRow.hilux_action_quiet_hours === true,
+          detectFrustration: profRow.hilux_action_detect_frustration !== false,
+          mentionStartingPrice: profRow.hilux_action_mention_starting_price === true,
+          suggestPackage: profRow.hilux_action_suggest_package !== false,
+          declineNegotiation: profRow.hilux_action_decline_negotiation !== false,
+          avoidCompetitors: profRow.hilux_action_avoid_competitors !== false,
+          sendPortfolioLink: profRow.hilux_action_send_portfolio_link === true,
+          offerCall: profRow.hilux_action_offer_call !== false,
+          shareBookingProcess: profRow.hilux_action_share_booking_process !== false,
+          echoQuestion: profRow.hilux_action_echo_question === true,
+          useEmojis: profRow.hilux_action_use_emojis === true,
+          acknowledgeEmotion: profRow.hilux_action_acknowledge_emotion !== false,
+          leadWithQuestion: profRow.hilux_action_lead_with_question === true,
+          softCtaSignoff: profRow.hilux_action_soft_cta_signoff !== false,
+          allowBullets: profRow.hilux_action_allow_bullets === true,
+          refuseLegal: profRow.hilux_action_refuse_legal !== false,
+          refuseCompetitorPricing: profRow.hilux_action_refuse_competitor_pricing !== false,
+          noOtherClients: profRow.hilux_action_no_other_clients !== false,
+          redactContact: profRow.hilux_action_redact_contact !== false,
+          autoMarkReplied: profRow.hilux_action_auto_mark_replied !== false,
+          notifyOnReply: profRow.hilux_action_notify_on_reply === true,
         },
       };
     }
