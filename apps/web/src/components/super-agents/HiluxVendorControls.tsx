@@ -18,6 +18,7 @@ import {
   EyeOff,
   Frown,
   Globe2,
+  HandHeart,
   HelpCircle,
   Image as ImageIcon,
   Inbox,
@@ -29,6 +30,9 @@ import {
   Phone,
   Quote,
   Repeat,
+  RotateCcw,
+  Ruler,
+  Search as SearchIcon,
   Send,
   Shield,
   ShieldAlert,
@@ -40,6 +44,7 @@ import {
   UserX,
   Workflow,
 } from "lucide-react";
+import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -83,9 +88,13 @@ type ActionKey =
   | "hilux_action_auto_mark_replied"
   | "hilux_action_notify_on_reply";
 
+export type HiluxReplyLength = "short" | "medium" | "long";
+
 type HiluxProfileRow = {
   hilux_enabled: boolean;
   hilux_instructions: string | null;
+  hilux_greeting_line: string | null;
+  hilux_reply_length: HiluxReplyLength;
 } & Record<ActionKey, boolean>;
 
 interface ActionDef {
@@ -188,7 +197,11 @@ export function HiluxVendorControls() {
   const [expanded, setExpanded] = useState(false);
   const [savingKey, setSavingKey] = useState<string | null>(null);
   const [draftInstructions, setDraftInstructions] = useState("");
+  const [draftGreeting, setDraftGreeting] = useState("");
+  const [query, setQuery] = useState("");
+  const [resetting, setResetting] = useState(false);
   const instructionsSaveTimer = useRef<number | null>(null);
+  const greetingSaveTimer = useRef<number | null>(null);
 
   const load = useCallback(async () => {
     if (!user?.id) return;
@@ -207,6 +220,8 @@ export function HiluxVendorControls() {
     const row = (data as HiluxProfileRow | null) ?? ({
       hilux_enabled: false,
       hilux_instructions: null,
+      hilux_greeting_line: null,
+      hilux_reply_length: "medium",
       hilux_action_follow_up: true,
       hilux_action_quiet_hours: false,
       hilux_action_pause_weekends: false,
@@ -239,6 +254,7 @@ export function HiluxVendorControls() {
     } satisfies HiluxProfileRow);
     setProfile(row);
     setDraftInstructions(row.hilux_instructions ?? "");
+    setDraftGreeting(row.hilux_greeting_line ?? "");
   }, [user?.id]);
 
   useEffect(() => {
@@ -291,6 +307,77 @@ export function HiluxVendorControls() {
     const current = (draftInstructions ?? "").trim();
     const next = current.length === 0 ? preset.text : `${current}\n\n${preset.text}`;
     onInstructionsChange(next.slice(0, 4000));
+  };
+
+  const onGreetingChange = (value: string) => {
+    setDraftGreeting(value);
+    if (greetingSaveTimer.current) window.clearTimeout(greetingSaveTimer.current);
+    greetingSaveTimer.current = window.setTimeout(() => {
+      const trimmed = value.trim();
+      persist(
+        { hilux_greeting_line: trimmed.length === 0 ? null : trimmed },
+        "greeting",
+      );
+    }, 700);
+  };
+
+  const setReplyLength = async (next: HiluxReplyLength) => {
+    await persist({ hilux_reply_length: next }, "reply_length");
+  };
+
+  // Reset toggles + reply length + greeting to defaults. Custom
+  // instructions stay (those are the vendor's own writing; resetting
+  // them would feel destructive).
+  const resetToDefaults = async () => {
+    if (!user?.id) return;
+    if (!confirm("Reset all action toggles and length/greeting to defaults? Your custom instructions stay.")) return;
+    setResetting(true);
+    const patch: Partial<HiluxProfileRow> = {
+      hilux_greeting_line: null,
+      hilux_reply_length: "medium",
+      hilux_action_follow_up: true,
+      hilux_action_quiet_hours: false,
+      hilux_action_pause_weekends: false,
+      hilux_action_skip_when_active: true,
+      hilux_action_match_language: true,
+      hilux_action_use_calendar: true,
+      hilux_action_escalate: true,
+      hilux_action_ask_clarifying: true,
+      hilux_action_use_first_name: true,
+      hilux_action_detect_frustration: true,
+      hilux_action_mention_starting_price: false,
+      hilux_action_suggest_package: true,
+      hilux_action_decline_negotiation: true,
+      hilux_action_avoid_competitors: true,
+      hilux_action_send_portfolio_link: false,
+      hilux_action_offer_call: true,
+      hilux_action_share_booking_process: true,
+      hilux_action_echo_question: false,
+      hilux_action_use_emojis: false,
+      hilux_action_acknowledge_emotion: true,
+      hilux_action_lead_with_question: false,
+      hilux_action_soft_cta_signoff: true,
+      hilux_action_allow_bullets: false,
+      hilux_action_refuse_legal: true,
+      hilux_action_refuse_competitor_pricing: true,
+      hilux_action_no_other_clients: true,
+      hilux_action_redact_contact: true,
+      hilux_action_auto_mark_replied: true,
+      hilux_action_notify_on_reply: false,
+    };
+    const { error } = await supabase
+      .from("profiles")
+      .update(patch)
+      .eq("id", user.id);
+    setResetting(false);
+    if (error) {
+      console.error("[HiluxVendorControls] reset failed", error);
+      toast.error("Couldn't reset.");
+      return;
+    }
+    setProfile((prev) => (prev ? { ...prev, ...patch } as HiluxProfileRow : prev));
+    setDraftGreeting("");
+    toast.success("Reset to defaults.");
   };
 
   if (!user) return null;
@@ -353,69 +440,169 @@ export function HiluxVendorControls() {
 
         {expanded ? (
           <div className="border-t border-black/10 p-5 md:p-6 space-y-6 bg-white/30">
+            {/* Greeting line + reply length — two compact controls
+                that shape every reply HILUX writes. Greeting is a
+                free-text opener used on the FIRST reply only;
+                replyLength tunes the "X short sentences" target. */}
+            <div className="grid md:grid-cols-2 gap-4">
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <HandHeart className="w-3.5 h-3.5 text-black/55" />
+                  <p className="text-[11px] uppercase tracking-[0.2em] text-black/55">
+                    Custom greeting (first reply)
+                  </p>
+                </div>
+                <Input
+                  value={draftGreeting}
+                  onChange={(e) => onGreetingChange(e.target.value.slice(0, 200))}
+                  placeholder="e.g. Hey there! Thanks for reaching out —"
+                  className="bg-white/70 text-sm text-black"
+                  maxLength={200}
+                />
+                <p className="text-[11px] text-black/45 mt-1">
+                  Used verbatim on the first HILUX reply in a thread. Leave blank for HILUX to write its own opener.
+                </p>
+              </div>
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <Ruler className="w-3.5 h-3.5 text-black/55" />
+                  <p className="text-[11px] uppercase tracking-[0.2em] text-black/55">
+                    Reply length
+                  </p>
+                </div>
+                <div className="grid grid-cols-3 gap-1.5 rounded-lg bg-white/55 p-1">
+                  {(["short", "medium", "long"] as const).map((opt) => {
+                    const active = (profile?.hilux_reply_length ?? "medium") === opt;
+                    return (
+                      <button
+                        key={opt}
+                        type="button"
+                        onClick={() => setReplyLength(opt)}
+                        disabled={savingKey === "reply_length"}
+                        className={`text-xs font-medium capitalize py-1.5 rounded-md transition-colors ${
+                          active
+                            ? "bg-black text-white"
+                            : "text-black/70 hover:bg-white/70"
+                        }`}
+                      >
+                        {opt}
+                      </button>
+                    );
+                  })}
+                </div>
+                <p className="text-[11px] text-black/45 mt-1">
+                  Short: 1–2 sentences · Medium: 2–4 · Long: 3–6.
+                </p>
+              </div>
+            </div>
+
             {/* Tool permissions — connector-style. Header + subtitle
-                like Sentry/Stripe connector panels, then a
-                collapsible "Actions" group with a count chip. Each
-                row is a tool HILUX can use, with an on/off toggle. */}
+                like Sentry/Stripe connector panels, then sub-groups
+                with a count chip and a search field above. */}
             <div>
-              <p className="text-sm font-medium text-black mb-0.5">
-                Tool permissions
-              </p>
-              <p className="text-xs text-black/55 mb-3">
-                Choose when HILUX is allowed to use these.
-              </p>
+              <div className="flex items-baseline justify-between gap-3 mb-2">
+                <div>
+                  <p className="text-sm font-medium text-black mb-0.5">
+                    Tool permissions
+                  </p>
+                  <p className="text-xs text-black/55">
+                    Choose when HILUX is allowed to use these.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={resetToDefaults}
+                  disabled={resetting}
+                  className="shrink-0 inline-flex items-center gap-1 text-[11px] text-black/55 hover:text-black/85 transition-colors"
+                  title="Reset toggles + greeting + length to defaults"
+                >
+                  {resetting ? (
+                    <Loader2 className="w-3 h-3 animate-spin" />
+                  ) : (
+                    <RotateCcw className="w-3 h-3" />
+                  )}
+                  Reset
+                </button>
+              </div>
+              <div className="relative mb-3">
+                <SearchIcon className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-black/40" />
+                <Input
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder="Find an action…"
+                  className="pl-8 h-8 bg-white/70 text-sm text-black"
+                />
+              </div>
               <div className="space-y-1">
-                {ACTION_GROUPS.map((group) => (
-                  <Collapsible
-                    key={group.title}
-                    defaultOpen={group.title === "Conversation"}
-                  >
-                    <CollapsibleTrigger className="group flex items-center justify-between w-full py-2.5 rounded-md hover:bg-white/40 transition-colors">
-                      <div className="flex items-center gap-2">
-                        <ChevronRight className="w-3.5 h-3.5 text-black/55 transition-transform group-data-[state=open]:rotate-90" />
-                        <span className="text-sm font-medium text-black">
-                          {group.title}
-                        </span>
-                        <span className="inline-flex items-center justify-center min-w-[20px] h-[18px] px-1.5 rounded-md bg-black/10 text-[10px] font-medium text-black/65 tabular-nums">
-                          {group.actions.length}
-                        </span>
-                      </div>
-                    </CollapsibleTrigger>
-                    <CollapsibleContent>
-                      <ul className="divide-y divide-black/10 pl-5">
-                        {group.actions.map((action) => {
-                          const { Icon } = action;
-                          const value = profile?.[action.key] !== false;
-                          const isSaving = savingKey === action.key;
-                          return (
-                            <li
-                              key={action.key}
-                              className="flex items-center gap-3 py-3"
-                            >
-                              <Icon className="w-4 h-4 text-black/55 shrink-0" />
-                              <div className="min-w-0 flex-1">
-                                <p className="text-sm font-medium text-black leading-tight">
-                                  {action.label}
-                                </p>
-                                <p className="text-[11px] text-black/55 mt-0.5 leading-snug">
-                                  {action.blurb}
-                                </p>
-                              </div>
-                              {isSaving ? (
-                                <Loader2 className="w-3.5 h-3.5 animate-spin text-black/40 shrink-0" />
-                              ) : null}
-                              <Switch
-                                checked={value}
-                                disabled={!enabled || isSaving}
-                                onCheckedChange={(v) => toggleAction(action.key, v)}
-                              />
-                            </li>
-                          );
-                        })}
-                      </ul>
-                    </CollapsibleContent>
-                  </Collapsible>
-                ))}
+                {ACTION_GROUPS.map((group) => {
+                  const q = query.trim().toLowerCase();
+                  const visible = q
+                    ? group.actions.filter(
+                        (a) =>
+                          a.label.toLowerCase().includes(q) ||
+                          a.blurb.toLowerCase().includes(q),
+                      )
+                    : group.actions;
+                  if (visible.length === 0) return null;
+                  return (
+                    <Collapsible
+                      key={group.title}
+                      defaultOpen={
+                        group.title === "Conversation" || q.length > 0
+                      }
+                    >
+                      <CollapsibleTrigger className="group flex items-center justify-between w-full py-2.5 rounded-md hover:bg-white/40 transition-colors">
+                        <div className="flex items-center gap-2">
+                          <ChevronRight className="w-3.5 h-3.5 text-black/55 transition-transform group-data-[state=open]:rotate-90" />
+                          <span className="text-sm font-medium text-black">
+                            {group.title}
+                          </span>
+                          <span className="inline-flex items-center justify-center min-w-[20px] h-[18px] px-1.5 rounded-md bg-black/10 text-[10px] font-medium text-black/65 tabular-nums">
+                            {visible.length}
+                            {q && visible.length !== group.actions.length
+                              ? `/${group.actions.length}`
+                              : ""}
+                          </span>
+                        </div>
+                      </CollapsibleTrigger>
+                      <CollapsibleContent>
+                        <ul className="divide-y divide-black/10 pl-5">
+                          {visible.map((action) => {
+                            const { Icon } = action;
+                            const value = profile?.[action.key] !== false;
+                            const isSaving = savingKey === action.key;
+                            return (
+                              <li
+                                key={action.key}
+                                className="flex items-center gap-3 py-3"
+                              >
+                                <Icon className="w-4 h-4 text-black/55 shrink-0" />
+                                <div className="min-w-0 flex-1">
+                                  <p className="text-sm font-medium text-black leading-tight">
+                                    {action.label}
+                                  </p>
+                                  <p className="text-[11px] text-black/55 mt-0.5 leading-snug">
+                                    {action.blurb}
+                                  </p>
+                                </div>
+                                {isSaving ? (
+                                  <Loader2 className="w-3.5 h-3.5 animate-spin text-black/40 shrink-0" />
+                                ) : null}
+                                <Switch
+                                  checked={value}
+                                  disabled={!enabled || isSaving}
+                                  onCheckedChange={(v) =>
+                                    toggleAction(action.key, v)
+                                  }
+                                />
+                              </li>
+                            );
+                          })}
+                        </ul>
+                      </CollapsibleContent>
+                    </Collapsible>
+                  );
+                })}
               </div>
               {!enabled ? (
                 <p className="mt-2 text-[11px] text-black/45 italic">
