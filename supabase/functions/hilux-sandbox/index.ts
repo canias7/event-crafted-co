@@ -95,6 +95,7 @@ serve(async (req) => {
         ? instructionsOverride
         : (ctx.profile?.hilux_instructions ?? null);
 
+    const isFirstReply = !messages.some((m) => m.role === "assistant");
     const systemText = buildSystemPrompt({
       businessName: ctx.vendor.business_name ?? "this vendor",
       category: ctx.vendor.category,
@@ -109,6 +110,9 @@ serve(async (req) => {
       availability: ctx.availability,
       actions: ctx.profile?.actions ?? DEFAULT_ACTIONS,
       hostFirstName: null,
+      greetingLine: ctx.profile?.hilux_greeting_line ?? null,
+      replyLength: ctx.profile?.hilux_reply_length ?? "medium",
+      isFirstReply,
     });
 
     const reply = await callClaude(ANTHROPIC_API_KEY, systemText, messages);

@@ -169,6 +169,10 @@ serve(async (req) => {
           availability: ctx.availability,
           actions: ctx.profile.actions,
           hostFirstName: null,
+          // Follow-ups are by definition not a first reply.
+          greetingLine: null,
+          replyLength: ctx.profile.hilux_reply_length ?? "short",
+          isFirstReply: false,
         });
 
         const claudeMessages = ordered.map((m) => ({

@@ -1399,7 +1399,9 @@ export type Database = {
           hilux_action_use_emojis: boolean
           hilux_action_use_first_name: boolean
           hilux_enabled: boolean
+          hilux_greeting_line: string | null
           hilux_instructions: string | null
+          hilux_reply_length: string
           hilux_voice_samples: string[]
           id: string
           location: string | null
@@ -1451,7 +1453,9 @@ export type Database = {
           hilux_action_use_emojis?: boolean
           hilux_action_use_first_name?: boolean
           hilux_enabled?: boolean
+          hilux_greeting_line?: string | null
           hilux_instructions?: string | null
+          hilux_reply_length?: string
           hilux_voice_samples?: string[]
           id: string
           location?: string | null
@@ -1503,7 +1507,9 @@ export type Database = {
           hilux_action_use_emojis?: boolean
           hilux_action_use_first_name?: boolean
           hilux_enabled?: boolean
+          hilux_greeting_line?: string | null
           hilux_instructions?: string | null
+          hilux_reply_length?: string
           hilux_voice_samples?: string[]
           id?: string
           location?: string | null

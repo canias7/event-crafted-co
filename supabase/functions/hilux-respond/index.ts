@@ -207,6 +207,14 @@ serve(async (req) => {
       hostFirstName = raw.length > 0 ? raw.split(/\s+/)[0] : null;
     }
 
+    // First reply iff there's no prior assistant (vendor/HILUX)
+    // message in the loaded history. orderedHistory ends with the
+    // host's just-arrived message; anything before it that's
+    // assistant means HILUX has spoken in this thread before.
+    const isFirstReply = !orderedHistory.some(
+      (m) => m.sender_role === "vendor",
+    );
+
     const systemText = buildSystemPrompt({
       businessName: ctx.vendor.business_name ?? "this vendor",
       category: ctx.vendor.category,
@@ -221,6 +229,9 @@ serve(async (req) => {
       availability: ctx.availability,
       actions,
       hostFirstName,
+      greetingLine: ctx.profile?.hilux_greeting_line ?? null,
+      replyLength: ctx.profile?.hilux_reply_length ?? "medium",
+      isFirstReply,
     });
 
     const claudeMessages = orderedHistory.map((m) => ({
