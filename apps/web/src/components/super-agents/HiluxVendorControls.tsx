@@ -5,30 +5,30 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
-  AlertOctagon,
-  AlertTriangle,
+  Archive,
   Bell,
+  BellRing,
   Bot,
   Calendar,
   CalendarOff,
   ChevronDown,
   ChevronRight,
   CircleDollarSign,
+  ClipboardList,
   Eye,
   EyeOff,
+  Flame,
   Frown,
-  Globe2,
+  Mail,
   HandHeart,
   HelpCircle,
   Image as ImageIcon,
   Inbox,
   Lock,
-  List,
   Loader2,
   Moon,
   Phone,
   Quote,
-  Repeat,
   RotateCcw,
   Ruler,
   Search as SearchIcon,
@@ -39,7 +39,6 @@ import {
   ShieldOff,
   Smile,
   Tag,
-  UserCircle2,
   UserX,
   Workflow,
 } from "lucide-react";
@@ -60,11 +59,8 @@ type ActionKey =
   | "hilux_action_quiet_hours"
   | "hilux_action_pause_weekends"
   | "hilux_action_skip_when_active"
-  | "hilux_action_match_language"
   | "hilux_action_use_calendar"
   | "hilux_action_escalate"
-  | "hilux_action_ask_clarifying"
-  | "hilux_action_use_first_name"
   | "hilux_action_detect_frustration"
   | "hilux_action_mention_starting_price"
   | "hilux_action_suggest_package"
@@ -74,17 +70,19 @@ type ActionKey =
   | "hilux_action_offer_call"
   | "hilux_action_share_booking_process"
   | "hilux_action_echo_question"
-  | "hilux_action_use_emojis"
   | "hilux_action_acknowledge_emotion"
   | "hilux_action_lead_with_question"
-  | "hilux_action_soft_cta_signoff"
-  | "hilux_action_allow_bullets"
   | "hilux_action_refuse_legal"
   | "hilux_action_refuse_competitor_pricing"
   | "hilux_action_no_other_clients"
   | "hilux_action_redact_contact"
   | "hilux_action_auto_mark_replied"
-  | "hilux_action_notify_on_reply";
+  | "hilux_action_notify_on_reply"
+  | "hilux_action_update_inquiry_fields"
+  | "hilux_action_notify_on_escalation"
+  | "hilux_action_notify_on_hot_lead"
+  | "hilux_action_email_reply_copies"
+  | "hilux_action_auto_archive_cold";
 
 export type HiluxReplyLength = "short" | "medium" | "long";
 
@@ -111,9 +109,6 @@ const ACTION_GROUPS: ActionGroup[] = [
   {
     title: "Conversation",
     actions: [
-      { key: "hilux_action_ask_clarifying", label: "Ask one clarifying question", blurb: "When the host's message is vague, ask one focused question (date, guest count, vibe) instead of guessing.", Icon: HelpCircle },
-      { key: "hilux_action_use_first_name", label: "Use the host's first name", blurb: "Open replies with the host's first name when known (\"Hi Sarah,\").", Icon: UserCircle2 },
-      { key: "hilux_action_match_language", label: "Match the host's language", blurb: "Reply in whatever language the host wrote in.", Icon: Globe2 },
       { key: "hilux_action_use_calendar", label: "Use my calendar for date answers", blurb: "Read live availability so HILUX can answer \"are you free on Sept 12?\" directly.", Icon: Calendar },
       { key: "hilux_action_escalate", label: "Escalate when uncertain", blurb: "If HILUX can't confidently answer, route it to your inbox instead of guessing.", Icon: ShieldAlert },
       { key: "hilux_action_detect_frustration", label: "Escalate frustrated hosts", blurb: "If the host sounds upset, hand off to you instead of trying to smooth it over.", Icon: Frown },
@@ -127,9 +122,6 @@ const ACTION_GROUPS: ActionGroup[] = [
       { key: "hilux_action_echo_question", label: "Echo back the question", blurb: "Restate what the host asked before answering, to prove HILUX understood.", Icon: Quote },
       { key: "hilux_action_acknowledge_emotion", label: "Acknowledge their excitement", blurb: "When the host expresses excitement, warmly acknowledge it before answering.", Icon: Smile },
       { key: "hilux_action_lead_with_question", label: "Open with a question", blurb: "First HILUX reply leads with a question to pull more info instead of answering.", Icon: HelpCircle },
-      { key: "hilux_action_soft_cta_signoff", label: "End with a soft prompt", blurb: "Sign off with something like \"Want more details?\" to keep the convo moving.", Icon: Repeat },
-      { key: "hilux_action_use_emojis", label: "Allow emojis", blurb: "Permit one or two emojis per reply where they fit the tone.", Icon: Smile },
-      { key: "hilux_action_allow_bullets", label: "Allow bullet lists", blurb: "Permit short bullet lists when listing 2-3 specific things side by side.", Icon: List },
     ],
   },
   {
@@ -153,8 +145,13 @@ const ACTION_GROUPS: ActionGroup[] = [
   {
     title: "Operations",
     actions: [
-      { key: "hilux_action_auto_mark_replied", label: "Auto-mark inquiry as 'replied'", blurb: "Once HILUX answers, flip the inquiry's status from new to replied so it leaves the new bucket.", Icon: Inbox },
-      { key: "hilux_action_notify_on_reply", label: "Notify me on every HILUX reply", blurb: "Get a push notification whenever HILUX sends a message on your behalf.", Icon: Bell },
+      { key: "hilux_action_auto_mark_replied", label: "Auto-mark inquiry as 'replied'", blurb: "Once HILUX answers, flip the inquiry status from new to replied so it leaves the new bucket.", Icon: Inbox },
+      { key: "hilux_action_notify_on_escalation", label: "Notify me when HILUX escalates", blurb: "Push notification when HILUX can't answer and routes the conversation to you.", Icon: BellRing },
+      { key: "hilux_action_notify_on_hot_lead", label: "Notify me when a lead turns hot", blurb: "Push notification the first time HILUX flags a conversation as a hot lead.", Icon: Flame },
+      { key: "hilux_action_notify_on_reply", label: "Notify me on every HILUX reply", blurb: "Push notification whenever HILUX sends a message on your behalf. Can get noisy.", Icon: Bell },
+      { key: "hilux_action_email_reply_copies", label: "Email me a copy of every HILUX reply", blurb: "Receive an email each time HILUX answers, with the host's question and HILUX's reply.", Icon: Mail },
+      { key: "hilux_action_update_inquiry_fields", label: "Update inquiry fields from chat", blurb: "When the host mentions an event date, guest count, or budget in conversation, write it back to the inquiry record automatically.", Icon: ClipboardList },
+      { key: "hilux_action_auto_archive_cold", label: "Auto-archive cold leads after 14 days", blurb: "Mark inquiries as lost when HILUX has scored them cold and the host hasn't replied in 14 days.", Icon: Archive },
     ],
   },
 ];
@@ -177,7 +174,7 @@ export function HiluxVendorControls() {
     const { data, error } = await supabase
       .from("profiles")
       .select(
-        "hilux_enabled, hilux_instructions, hilux_action_follow_up, hilux_action_match_language, hilux_action_use_calendar, hilux_action_escalate, hilux_action_ask_clarifying, hilux_action_use_first_name, hilux_action_quiet_hours",
+        "hilux_enabled, hilux_instructions, hilux_greeting_line, hilux_reply_length, hilux_action_follow_up, hilux_action_quiet_hours, hilux_action_pause_weekends, hilux_action_skip_when_active, hilux_action_use_calendar, hilux_action_escalate, hilux_action_detect_frustration, hilux_action_mention_starting_price, hilux_action_suggest_package, hilux_action_decline_negotiation, hilux_action_avoid_competitors, hilux_action_send_portfolio_link, hilux_action_offer_call, hilux_action_share_booking_process, hilux_action_echo_question, hilux_action_acknowledge_emotion, hilux_action_lead_with_question, hilux_action_refuse_legal, hilux_action_refuse_competitor_pricing, hilux_action_no_other_clients, hilux_action_redact_contact, hilux_action_auto_mark_replied, hilux_action_notify_on_reply, hilux_action_update_inquiry_fields, hilux_action_notify_on_escalation, hilux_action_notify_on_hot_lead, hilux_action_email_reply_copies, hilux_action_auto_archive_cold",
       )
       .eq("id", user.id)
       .maybeSingle();
@@ -195,11 +192,8 @@ export function HiluxVendorControls() {
       hilux_action_quiet_hours: false,
       hilux_action_pause_weekends: false,
       hilux_action_skip_when_active: true,
-      hilux_action_match_language: true,
       hilux_action_use_calendar: true,
       hilux_action_escalate: true,
-      hilux_action_ask_clarifying: true,
-      hilux_action_use_first_name: true,
       hilux_action_detect_frustration: true,
       hilux_action_mention_starting_price: false,
       hilux_action_suggest_package: true,
@@ -209,17 +203,19 @@ export function HiluxVendorControls() {
       hilux_action_offer_call: true,
       hilux_action_share_booking_process: true,
       hilux_action_echo_question: false,
-      hilux_action_use_emojis: false,
       hilux_action_acknowledge_emotion: true,
       hilux_action_lead_with_question: false,
-      hilux_action_soft_cta_signoff: true,
-      hilux_action_allow_bullets: false,
       hilux_action_refuse_legal: true,
       hilux_action_refuse_competitor_pricing: true,
       hilux_action_no_other_clients: true,
       hilux_action_redact_contact: true,
       hilux_action_auto_mark_replied: true,
       hilux_action_notify_on_reply: false,
+      hilux_action_update_inquiry_fields: false,
+      hilux_action_notify_on_escalation: true,
+      hilux_action_notify_on_hot_lead: true,
+      hilux_action_email_reply_copies: false,
+      hilux_action_auto_archive_cold: false,
     } satisfies HiluxProfileRow);
     setProfile(row);
     setDraftGreeting(row.hilux_greeting_line ?? "");
@@ -288,11 +284,8 @@ export function HiluxVendorControls() {
       hilux_action_quiet_hours: false,
       hilux_action_pause_weekends: false,
       hilux_action_skip_when_active: true,
-      hilux_action_match_language: true,
       hilux_action_use_calendar: true,
       hilux_action_escalate: true,
-      hilux_action_ask_clarifying: true,
-      hilux_action_use_first_name: true,
       hilux_action_detect_frustration: true,
       hilux_action_mention_starting_price: false,
       hilux_action_suggest_package: true,
@@ -302,17 +295,19 @@ export function HiluxVendorControls() {
       hilux_action_offer_call: true,
       hilux_action_share_booking_process: true,
       hilux_action_echo_question: false,
-      hilux_action_use_emojis: false,
       hilux_action_acknowledge_emotion: true,
       hilux_action_lead_with_question: false,
-      hilux_action_soft_cta_signoff: true,
-      hilux_action_allow_bullets: false,
       hilux_action_refuse_legal: true,
       hilux_action_refuse_competitor_pricing: true,
       hilux_action_no_other_clients: true,
       hilux_action_redact_contact: true,
       hilux_action_auto_mark_replied: true,
       hilux_action_notify_on_reply: false,
+      hilux_action_update_inquiry_fields: false,
+      hilux_action_notify_on_escalation: true,
+      hilux_action_notify_on_hot_lead: true,
+      hilux_action_email_reply_copies: false,
+      hilux_action_auto_archive_cold: false,
     };
     const { error } = await supabase
       .from("profiles")
@@ -497,7 +492,9 @@ export function HiluxVendorControls() {
                     <Collapsible
                       key={group.title}
                       defaultOpen={
-                        group.title === "Conversation" || q.length > 0
+                        group.title === "Conversation" ||
+                        group.title === "Operations" ||
+                        q.length > 0
                       }
                     >
                       <CollapsibleTrigger className="group flex items-center justify-between w-full py-2.5 rounded-md hover:bg-white/40 transition-colors">

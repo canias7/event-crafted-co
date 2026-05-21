@@ -79,6 +79,11 @@ export interface HiluxActions {
   // Operations (code-level)
   autoMarkReplied: boolean;
   notifyOnReply: boolean;
+  updateInquiryFields: boolean;
+  notifyOnEscalation: boolean;
+  notifyOnHotLead: boolean;
+  emailReplyCopies: boolean;
+  autoArchiveCold: boolean;
 }
 
 export const DEFAULT_ACTIONS: HiluxActions = {
@@ -111,6 +116,11 @@ export const DEFAULT_ACTIONS: HiluxActions = {
   redactContact: true,
   autoMarkReplied: true,
   notifyOnReply: false,
+  updateInquiryFields: false,
+  notifyOnEscalation: true,
+  notifyOnHotLead: true,
+  emailReplyCopies: false,
+  autoArchiveCold: false,
 };
 
 // HILUX is paused during these UTC hours when the quietHours action
@@ -176,10 +186,10 @@ export function priceUsd(cents: number | null | undefined): string | null {
 
 export function buildSystemPrompt(ctx: HiluxPromptCtx): string {
   const lines: string[] = [];
-  // Compose the formatting clause based on what's allowed.
+  // Compose the formatting clause. Emojis + bullet lists are now
+  // always allowed (the vendor-side toggles for them were removed
+  // because HILUX should always make those calls itself in context).
   const formattingNos: string[] = ["no markdown headings"];
-  if (!ctx.actions.allowBullets) formattingNos.push("no bullet lists");
-  if (!ctx.actions.useEmojis) formattingNos.push("no emojis");
   const lengthTarget =
     ctx.replyLength === "short"
       ? "1 to 2 short sentences"
@@ -196,13 +206,9 @@ export function buildSystemPrompt(ctx: HiluxPromptCtx): string {
       `- This is your FIRST reply in this thread. Start the reply with EXACTLY this opener (verbatim, the vendor wrote it themselves): "${ctx.greetingLine.trim()}" — then continue naturally with your answer in the same paragraph.`,
     );
   }
-  if (ctx.actions.matchLanguage) {
-    lines.push(
-      "- Detect the language of the host's most recent message and reply in that same language. If they write in Spanish, reply in Spanish; if French, French; etc. Match dialect (US Spanish vs Mexican Spanish, Brazilian vs European Portuguese) when it's clearly signaled.",
-    );
-  } else {
-    lines.push("- Reply in English regardless of the host's language.");
-  }
+  lines.push(
+    "- Detect the language of the host's most recent message and reply in that same language. If they write in Spanish, reply in Spanish; if French, French; etc. Match dialect (US Spanish vs Mexican Spanish, Brazilian vs European Portuguese) when it's clearly signaled.",
+  );
   lines.push(
     "- Only answer using the listing context below. If the host asks about something you don't know (custom pricing, off-menu services), say you'll check and follow up rather than inventing an answer.",
   );
@@ -221,22 +227,12 @@ export function buildSystemPrompt(ctx: HiluxPromptCtx): string {
   lines.push(
     "- If the host asks for a quote, anchor to the starting price or the relevant package, and note that final pricing depends on the date and details.",
   );
-  if (ctx.actions.askClarifying) {
-    lines.push(
-      "- When the host's message is vague or missing key details, ask ONE focused clarifying question (event date, guest count, or vibe) instead of guessing or dumping every package.",
-    );
-  } else {
-    lines.push(
-      "- DO NOT ask clarifying questions. Always do your best to answer with what's in the context — even if the host's question is vague, give a useful answer based on common assumptions.",
-    );
-  }
-  if (ctx.actions.useFirstName && ctx.hostFirstName) {
+  lines.push(
+    "- When the host's message is vague or missing key details, ask ONE focused clarifying question (event date, guest count, or vibe) instead of guessing or dumping every package.",
+  );
+  if (ctx.hostFirstName) {
     lines.push(
       `- The host's first name is "${ctx.hostFirstName}". Open the reply by addressing them by first name (e.g. "Hi ${ctx.hostFirstName}," or just "${ctx.hostFirstName} —"). Don't overuse it; once is enough.`,
-    );
-  } else {
-    lines.push(
-      "- Do NOT use the host's name in the reply, even if it's visible in context.",
     );
   }
   lines.push(
@@ -298,11 +294,9 @@ export function buildSystemPrompt(ctx: HiluxPromptCtx): string {
       "- Open the reply by briefly restating what the host is asking, so they know you understood (\"So you're looking for coverage from ceremony through cocktail hour — \").",
     );
   }
-  if (ctx.actions.useEmojis) {
-    lines.push(
-      "- Emojis are OK in moderation (max one or two per reply, where they fit the tone). Don't overdo it.",
-    );
-  }
+  lines.push(
+    "- Emojis are OK in moderation (max one or two per reply, where they fit the tone). Don't overdo it.",
+  );
   if (ctx.actions.acknowledgeEmotion) {
     lines.push(
       "- When the host expresses excitement (\"we're so excited!\", \"can't wait\"), warmly acknowledge it in one beat before answering. Don't gush.",
@@ -313,16 +307,12 @@ export function buildSystemPrompt(ctx: HiluxPromptCtx): string {
       "- On a FIRST HILUX reply to a new conversation, lead with a friendly question that pulls more info (\"Before I dig in — what's the vibe you're going for?\") instead of jumping straight to an answer.",
     );
   }
-  if (ctx.actions.softCtaSignoff) {
-    lines.push(
-      "- End the reply with a soft prompt to keep the conversation moving — e.g. \"Want me to share more details?\" or \"What date are you thinking?\". Skip on the message where you've already asked a clarifying question.",
-    );
-  }
-  if (ctx.actions.allowBullets) {
-    lines.push(
-      "- Bullet lists are OK when listing 2-3 specific things side by side (packages, dates, etc.). Keep them tight; no nested lists.",
-    );
-  }
+  lines.push(
+    "- End the reply with a soft prompt to keep the conversation moving — e.g. \"Want me to share more details?\" or \"What date are you thinking?\". Skip if you've already asked a clarifying question in this same reply.",
+  );
+  lines.push(
+    "- Bullet lists are OK when listing 2-3 specific things side by side (packages, dates, etc.). Keep them tight; no nested lists.",
+  );
   // Safety / privacy
   if (ctx.actions.refuseLegal) {
     lines.push(
@@ -636,6 +626,11 @@ export async function loadVendorContext(
           redactContact: profRow.hilux_action_redact_contact !== false,
           autoMarkReplied: profRow.hilux_action_auto_mark_replied !== false,
           notifyOnReply: profRow.hilux_action_notify_on_reply === true,
+          updateInquiryFields: profRow.hilux_action_update_inquiry_fields === true,
+          notifyOnEscalation: profRow.hilux_action_notify_on_escalation !== false,
+          notifyOnHotLead: profRow.hilux_action_notify_on_hot_lead !== false,
+          emailReplyCopies: profRow.hilux_action_email_reply_copies === true,
+          autoArchiveCold: profRow.hilux_action_auto_archive_cold === true,
         },
       };
     }
