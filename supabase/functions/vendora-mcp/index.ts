@@ -395,7 +395,7 @@ const TOOLS = [
   {
     name: "get_action_log",
     description:
-      "Return HILUX's recent actions (replies, escalations, follow-ups, regenerations, archives). Newest first. Useful when the vendor asks Claude what HILUX has been doing on their behalf.",
+      "Return HILUX's recent actions (replies, escalations, follow-ups, regenerations, archives). Newest first. Pass `cursor` from a previous response's `next_cursor` to page back further. Useful when the vendor asks Claude what HILUX has been doing on their behalf.",
     inputSchema: {
       type: "object",
       properties: {
@@ -404,6 +404,10 @@ const TOOLS = [
           enum: ["reply", "escalate", "follow_up", "regenerate", "archive_cold", "booking_intent_detected", "lead_score_hot", "fields_extracted"],
         },
         limit: { type: "integer", minimum: 1, maximum: 100, default: 25 },
+        cursor: {
+          type: "string",
+          description: "ISO created_at from a prior page's next_cursor.",
+        },
       },
     },
     annotations: { title: "Read HILUX activity log", ...READ },
@@ -411,12 +415,16 @@ const TOOLS = [
   {
     name: "get_mcp_call_log",
     description:
-      "Return what CLAUDE has done via this MCP connector — every tool call (success + failure). Useful when the vendor asks 'what have you been doing for me?'. Includes timing, args, ok/error status. Newest first.",
+      "Return what CLAUDE has done via this MCP connector — every tool call (success + failure). Useful when the vendor asks 'what have you been doing for me?'. Includes timing, args, ok/error status. Newest first. Pass `cursor` from a previous response's `next_cursor` to page back further.",
     inputSchema: {
       type: "object",
       properties: {
         tool_name: { type: "string" },
         limit: { type: "integer", minimum: 1, maximum: 100, default: 25 },
+        cursor: {
+          type: "string",
+          description: "ISO created_at from a prior page's next_cursor.",
+        },
       },
     },
     annotations: { title: "Read Claude's own MCP call log", ...READ },
@@ -466,10 +474,11 @@ const INITIALIZE_RESULT = {
     tools: { listChanged: false },
     prompts: { listChanged: false },
     resources: { listChanged: false, subscribe: false },
+    completions: {},
   },
   serverInfo: {
     name: "vendora",
-    version: "0.3.0",
+    version: "0.4.0",
   },
   instructions:
     "Vendora exposes a vendor's marketplace inbox + HILUX configuration to Claude. Tools: use list_inquiries to see what's waiting, get_inquiry to drill in, compose_draft_reply to write in the vendor's HILUX voice. Prompts: slash-menu workflows (morning_recap, draft_for_thread, score_hot_leads). Resources: reference vendora://settings, vendora://activity, or any inquiry/thread by URI.",
@@ -676,9 +685,103 @@ function renderPrompt(
   }
 }
 
+// completion/complete handler. Used by Claude clients to autocomplete
+// arg values when filling in prompts or resource templates. We only
+// return completions for IDs the user could plausibly want to fill —
+// inquiry_id and thread_id pulled from their recent inbox.
+async function completeArgument(
+  admin: any,
+  userId: string,
+  vendorScope: string | null,
+  params: Record<string, any>,
+): Promise<{ values: string[]; total?: number; hasMore?: boolean }> {
+  const ref = params?.ref ?? {};
+  const arg = params?.argument ?? {};
+  const argName = String(arg.name ?? "");
+  const value = String(arg.value ?? "").toLowerCase();
+  const refType = String(ref.type ?? "");
+  const refName = String(ref.name ?? "");
+  const refUri = String(ref.uri ?? "");
+
+  // Only the id-shaped args benefit from server-side completion.
+  // Static enums are already in the schema.
+  if (argName !== "thread_id" && argName !== "inquiry_id") {
+    return { values: [] };
+  }
+
+  // Look up the user's vendor scope (or all owned vendors).
+  const { data: vendors } = await admin
+    .from("vendor_profiles")
+    .select("id")
+    .eq("user_id", userId);
+  let vendorIds = ((vendors ?? []) as Array<{ id: string }>).map((v) => v.id);
+  if (vendorScope) vendorIds = vendorIds.filter((id) => id === vendorScope);
+  if (vendorIds.length === 0) return { values: [] };
+
+  // refName-based dispatch:
+  //   - prompt:draft_for_thread.thread_id  → recent thread ids
+  //   - resource:vendora://thread/{id}     → same
+  //   - resource:vendora://inquiry/{id}    → recent inquiry ids
+  const wantsThread =
+    argName === "thread_id" &&
+    (refName === "draft_for_thread" ||
+      refUri.startsWith("vendora://thread/") ||
+      refType === "ref/prompt" ||
+      refType === "ref/resource");
+  const wantsInquiry =
+    argName === "inquiry_id" &&
+    (refUri.startsWith("vendora://inquiry/") ||
+      refType === "ref/resource" ||
+      refType === "ref/prompt");
+
+  if (wantsInquiry) {
+    const { data } = await admin
+      .from("inquiries")
+      .select("id, event_type, location, last_message_at")
+      .in("vendor_id", vendorIds)
+      .order("last_message_at", { ascending: false, nullsFirst: false })
+      .limit(50);
+    const rows = ((data ?? []) as Array<{ id: string }>);
+    const ids = rows.map((r) => r.id);
+    const filtered = value ? ids.filter((id) => id.toLowerCase().includes(value)) : ids;
+    return { values: filtered.slice(0, 100), total: filtered.length, hasMore: false };
+  }
+
+  if (wantsThread) {
+    const { data } = await admin
+      .from("direct_threads")
+      .select("id, vendor_id, last_message_at")
+      .in("vendor_id", vendorIds)
+      .order("last_message_at", { ascending: false, nullsFirst: false })
+      .limit(50);
+    const rows = ((data ?? []) as Array<{ id: string }>);
+    const ids = rows.map((r) => r.id);
+    const filtered = value ? ids.filter((id) => id.toLowerCase().includes(value)) : ids;
+    return { values: filtered.slice(0, 100), total: filtered.length, hasMore: false };
+  }
+
+  return { values: [] };
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: cors });
+  }
+  // Health check: GET /vendora-mcp returns 200 with a tiny JSON
+  // body so uptime monitors can ping this URL. No auth, no DB.
+  if (req.method === "GET") {
+    return new Response(
+      JSON.stringify({
+        ok: true,
+        name: "vendora",
+        version: INITIALIZE_RESULT.serverInfo.version,
+        protocolVersion: INITIALIZE_RESULT.protocolVersion,
+      }),
+      {
+        status: 200,
+        headers: { ...cors, "Content-Type": "application/json" },
+      },
+    );
   }
   if (req.method !== "POST") {
     return new Response("Method Not Allowed", { status: 405, headers: cors });
@@ -867,6 +970,20 @@ serve(async (req) => {
       const msg = err instanceof Error ? err.message : String(err);
       console.error("[vendora-mcp] resource error", uri, err);
       logResourceRead(false, msg);
+      return rpcError(id, -32602, msg);
+    }
+  }
+
+  // completion/complete: when Claude is filling a prompt argument
+  // or a resource-template variable, the server can suggest values.
+  // We respect vendor scope so completions on a listing-scoped
+  // token only see that listing's data.
+  if (method === "completion/complete") {
+    try {
+      const completion = await completeArgument(admin, userId, vendorScope, params ?? {});
+      return rpcResult(id, { completion });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
       return rpcError(id, -32602, msg);
     }
   }
@@ -1165,16 +1282,28 @@ async function getActionLog(
   args: Record<string, any>,
 ) {
   const limit = Math.min(Math.max(Number(args.limit) || 25, 1), 100);
+  // Cursor pagination: fetch limit+1; if extra row present, its
+  // created_at becomes the next_cursor. Clients pass it back via
+  // args.cursor on the subsequent call.
   let q = admin
     .from("hilux_action_log")
     .select("id, vendor_id, thread_id, inquiry_id, message_id, action, detail, created_at")
     .eq("user_id", userId)
     .order("created_at", { ascending: false })
-    .limit(limit);
+    .limit(limit + 1);
   if (typeof args.action === "string") q = q.eq("action", args.action);
+  if (typeof args.cursor === "string" && args.cursor) {
+    q = q.lt("created_at", args.cursor);
+  }
   const { data, error } = await q;
   if (error) throw error;
-  return { entries: data ?? [] };
+  const rows = ((data as Array<{ created_at: string }> | null) ?? []);
+  let nextCursor: string | null = null;
+  if (rows.length > limit) {
+    rows.pop();
+    nextCursor = rows[rows.length - 1]?.created_at ?? null;
+  }
+  return { entries: rows, next_cursor: nextCursor };
 }
 
 // Mirror of getActionLog but for Claude's own MCP call log. Lets
@@ -1191,11 +1320,20 @@ async function getMcpCallLog(
     .select("id, tool_name, args, ok, error, duration_ms, auth_method, created_at")
     .eq("user_id", userId)
     .order("created_at", { ascending: false })
-    .limit(limit);
+    .limit(limit + 1);
   if (typeof args.tool_name === "string") q = q.eq("tool_name", args.tool_name);
+  if (typeof args.cursor === "string" && args.cursor) {
+    q = q.lt("created_at", args.cursor);
+  }
   const { data, error } = await q;
   if (error) throw error;
-  return { entries: data ?? [] };
+  const rows = ((data as Array<{ created_at: string }> | null) ?? []);
+  let nextCursor: string | null = null;
+  if (rows.length > limit) {
+    rows.pop();
+    nextCursor = rows[rows.length - 1]?.created_at ?? null;
+  }
+  return { entries: rows, next_cursor: nextCursor };
 }
 
 // Read a resource by URI. Reuses the existing handlers so
