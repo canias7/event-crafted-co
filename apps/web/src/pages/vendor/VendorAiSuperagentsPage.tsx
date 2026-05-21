@@ -6,12 +6,12 @@
 
 import { useState } from "react";
 import { useReducedMotion } from "framer-motion";
-import { ImagePlus, Sparkles } from "lucide-react";
 import { DashboardSidebar } from "@/components/shared/DashboardSidebar";
 import { MobileNav } from "@/components/shared/MobileNav";
 import { vendorNavItems as navItems } from "@/data/navItems";
 import { AmbientBackdrop } from "@/pages/SuperAgentsPage";
 import { AgentPicker, type AgentKey } from "@/components/super-agents/AgentPicker";
+import { AxionLogo, RaptorLogo } from "@/components/super-agents/AgentLogos";
 import { HiluxVendorControls } from "@/components/super-agents/HiluxVendorControls";
 import { HiluxSandbox } from "@/components/super-agents/HiluxSandbox";
 import { HiluxActivityLog } from "@/components/super-agents/HiluxActivityLog";
@@ -34,7 +34,7 @@ const COMING_SOON_COPY: Record<
       "A/B tests headline variants against real inquiries",
     ],
     accent: "#7aa8ff",
-    Icon: Sparkles,
+    Logo: RaptorLogo,
   },
   AXION: {
     name: "AXION 9.1",
@@ -49,7 +49,7 @@ const COMING_SOON_COPY: Record<
       "Auto-crops + retouches for every aspect ratio",
     ],
     accent: "#d066ff",
-    Icon: ImagePlus,
+    Logo: AxionLogo,
   },
 };
 
@@ -76,9 +76,9 @@ export default function VendorAiSuperagentsPage() {
                 <HiluxSandbox />
               </>
             ) : selected === "RAPTOR" ? (
-              <ComingSoonPanel {...COMING_SOON_COPY.RAPTOR} Icon={Sparkles} />
+              <ComingSoonPanel {...COMING_SOON_COPY.RAPTOR} />
             ) : (
-              <ComingSoonPanel {...COMING_SOON_COPY.AXION} Icon={ImagePlus} />
+              <ComingSoonPanel {...COMING_SOON_COPY.AXION} />
             )}
           </div>
         </div>

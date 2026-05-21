@@ -1,9 +1,10 @@
 // Agent picker — vertical list of HILUX / RAPTOR / AXION on the
 // left of /vendor/super-agents. Tap one to swap the right pane.
-// Connectors-style: icon + name + selected highlight, nothing else.
+// Connectors-style: logo + name + selected highlight, nothing else.
 // Collapses to a horizontal scrollable strip on small screens.
 
-import { Bot, ImagePlus, Sparkles } from "lucide-react";
+import type { ComponentType, SVGProps } from "react";
+import { AxionLogo, HiluxLogo, RaptorLogo } from "./AgentLogos";
 
 export type AgentKey = "HILUX" | "RAPTOR" | "AXION";
 
@@ -12,14 +13,14 @@ interface PickerAgent {
   name: string;
   role: string;
   status: "live" | "soon";
-  Icon: typeof Bot;
+  Logo: ComponentType<SVGProps<SVGSVGElement> & { className?: string }>;
   accent: string;
 }
 
 export const AGENT_LIST: PickerAgent[] = [
-  { key: "HILUX", name: "HILUX 2.7", role: "Always On", status: "live", Icon: Bot, accent: "#ff8a4c" },
-  { key: "RAPTOR", name: "RAPTOR 3.5", role: "Wordsmith", status: "soon", Icon: Sparkles, accent: "#7aa8ff" },
-  { key: "AXION", name: "AXION 9.1", role: "Visuals", status: "soon", Icon: ImagePlus, accent: "#d066ff" },
+  { key: "HILUX", name: "HILUX 2.7", role: "Always On", status: "live", Logo: HiluxLogo, accent: "#ff8a4c" },
+  { key: "RAPTOR", name: "RAPTOR 3.5", role: "Wordsmith", status: "soon", Logo: RaptorLogo, accent: "#7aa8ff" },
+  { key: "AXION", name: "AXION 9.1", role: "Visuals", status: "soon", Logo: AxionLogo, accent: "#d066ff" },
 ];
 
 interface Props {
@@ -39,7 +40,7 @@ export function AgentPicker({ selected, onSelect }: Props) {
         <nav className="flex md:flex-col gap-1.5 md:gap-0.5 overflow-x-auto md:overflow-visible -mx-1 px-1">
           {AGENT_LIST.map((agent) => {
             const isActive = selected === agent.key;
-            const { Icon } = agent;
+            const { Logo } = agent;
             return (
               <button
                 key={agent.key}
@@ -53,12 +54,15 @@ export function AgentPicker({ selected, onSelect }: Props) {
                 aria-current={isActive ? "page" : undefined}
               >
                 <span
-                  className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
+                  className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
                   style={{
                     background: isActive ? "rgba(255,255,255,0.12)" : agent.accent + "26",
                   }}
                 >
-                  <Icon className="w-3.5 h-3.5" style={{ color: isActive ? "#fff" : agent.accent }} />
+                  <Logo
+                    className="w-4 h-4"
+                    style={{ color: isActive ? "#fff" : agent.accent }}
+                  />
                 </span>
                 <span className="min-w-0">
                   <span className="block text-sm font-medium leading-tight truncate">
