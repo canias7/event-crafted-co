@@ -93,6 +93,10 @@ interface ThreadHeader {
   otherName: string;
   otherUserId: string | null;
   isActive: boolean;
+  // HILUX agent state — null when this vendor has HILUX off entirely
+  // (no chip in the header); boolean when HILUX is on and may be
+  // paused for this specific thread.
+  hiluxPaused: boolean | null;
 }
 
 function initialsOf(name: string): string {
@@ -346,7 +350,7 @@ export default function ThreadScreen() {
     const { data } = await (supabase as any)
       .from("direct_threads")
       .select(
-        "host_id, host:profiles!direct_threads_host_id_fkey(display_name)",
+        "host_id, hilux_paused, host:profiles!direct_threads_host_id_fkey(display_name), vendor_profiles!inner(user_id)",
       )
       .eq("id", threadId)
       .maybeSingle();
@@ -363,12 +367,48 @@ export default function ThreadScreen() {
         isActive = Date.now() - new Date(lastSeen as string).getTime() < ACTIVE_WINDOW_MS;
       }
     }
+
+    // HILUX chip is only relevant when the OWNER vendor has HILUX
+    // enabled. Look up the owner's profile.hilux_enabled.
+    const ownerId = data.vendor_profiles?.user_id;
+    let hiluxPaused: boolean | null = null;
+    if (ownerId) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: ownerProfile } = await (supabase as any)
+        .from("profiles")
+        .select("hilux_enabled")
+        .eq("id", ownerId)
+        .maybeSingle();
+      if (ownerProfile?.hilux_enabled === true) {
+        hiluxPaused = data.hilux_paused === true;
+      }
+    }
+
     setHeader({
       otherName: data.host?.display_name ?? "Host",
       otherUserId,
       isActive,
+      hiluxPaused,
     });
   }, [threadId]);
+
+  // Flip HILUX paused state for this thread. RLS gates writes to
+  // direct_threads to vendor-team members only.
+  const toggleHiluxPause = useCallback(async () => {
+    if (!threadId || !header || header.hiluxPaused === null) return;
+    const next = !header.hiluxPaused;
+    setHeader((h) => (h ? { ...h, hiluxPaused: next } : h));
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error } = await (supabase as any)
+      .from("direct_threads")
+      .update({ hilux_paused: next })
+      .eq("id", threadId);
+    if (error) {
+      // Roll back the optimistic flip.
+      setHeader((h) => (h ? { ...h, hiluxPaused: !next } : h));
+      Alert.alert("Couldn't update HILUX for this thread.");
+    }
+  }, [threadId, header]);
 
   const loadMessages = useCallback(async () => {
     if (!threadId) return;
@@ -489,6 +529,8 @@ export default function ThreadScreen() {
           name={header?.otherName ?? "Conversation"}
           initial={initial}
           isActive={!!header?.isActive}
+          hiluxPaused={header?.hiluxPaused ?? null}
+          onToggleHilux={toggleHiluxPause}
           onBack={() => router.back()}
           onMore={onHeaderMore}
         />
@@ -633,12 +675,16 @@ function Header({
   name,
   initial,
   isActive,
+  hiluxPaused,
+  onToggleHilux,
   onBack,
   onMore,
 }: {
   name: string;
   initial: string;
   isActive: boolean;
+  hiluxPaused: boolean | null;
+  onToggleHilux: () => void;
   onBack: () => void;
   onMore: () => void;
 }) {
@@ -720,6 +766,39 @@ function Header({
           </Text>
         ) : null}
       </View>
+      {hiluxPaused !== null ? (
+        <Pressable
+          onPress={onToggleHilux}
+          hitSlop={8}
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            gap: 4,
+            backgroundColor: hiluxPaused ? "rgba(0,0,0,0.06)" : "rgba(255,138,76,0.15)",
+            paddingHorizontal: 8,
+            paddingVertical: 4,
+            borderRadius: 999,
+            marginRight: 4,
+          }}
+        >
+          <Feather
+            name={hiluxPaused ? "pause" : "zap"}
+            size={11}
+            color={hiluxPaused ? "rgba(0,0,0,0.55)" : "#c4541e"}
+          />
+          <Text
+            style={{
+              color: hiluxPaused ? "rgba(0,0,0,0.55)" : "#c4541e",
+              fontSize: 10,
+              fontWeight: "700",
+              textTransform: "uppercase",
+              letterSpacing: 0.5,
+            }}
+          >
+            {hiluxPaused ? "HILUX paused" : "HILUX on"}
+          </Text>
+        </Pressable>
+      ) : null}
       <Pressable
         onPress={onMore}
         hitSlop={10}
