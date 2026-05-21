@@ -143,8 +143,6 @@ export function isInQuietHours(date: Date = new Date()): boolean {
   return h >= QUIET_HOURS_UTC_START && h < QUIET_HOURS_UTC_END;
 }
 
-export type HiluxReplyLength = "short" | "medium" | "long";
-
 export interface HiluxPromptCtx {
   businessName: string;
   category: string | null;
@@ -161,14 +159,9 @@ export interface HiluxPromptCtx {
   // Host's first name when known (parsed from profiles.display_name).
   // Only included in the prompt when actions.useFirstName is true.
   hostFirstName: string | null;
-  // Custom opener used on the FIRST HILUX reply in a thread.
-  // Null = HILUX writes its own opener.
-  greetingLine: string | null;
-  // Reply length target. Drives the "X short sentences" line.
-  replyLength: HiluxReplyLength;
   // True when this is the first HILUX-side reply in the thread,
-  // i.e. no previous assistant messages. Drives whether the
-  // greetingLine and any "first-reply only" rules apply.
+  // i.e. no previous assistant messages. Drives "first-reply only"
+  // rules.
   isFirstReply: boolean;
 }
 
@@ -198,22 +191,11 @@ export function buildSystemPrompt(ctx: HiluxPromptCtx): string {
   // always allowed (the vendor-side toggles for them were removed
   // because HILUX should always make those calls itself in context).
   const formattingNos: string[] = ["no markdown headings"];
-  const lengthTarget =
-    ctx.replyLength === "short"
-      ? "1 to 2 short sentences"
-      : ctx.replyLength === "long"
-        ? "3 to 6 sentences"
-        : "2 to 4 short sentences";
   lines.push(
-    `You are HILUX, the always-on AI inbox agent for ${ctx.businessName}${ctx.category ? `, a ${ctx.category} vendor` : ""}${ctx.location ? ` based in ${ctx.location}` : ""}. You are replying to a host (potential customer) who messaged this listing. Speak in the FIRST PERSON as the vendor's team (use "we" / "our" naturally). Keep replies warm, professional, and concise — ${lengthTarget}, ${formattingNos.join(", ")}.`,
+    `You are HILUX, the always-on AI inbox agent for ${ctx.businessName}${ctx.category ? `, a ${ctx.category} vendor` : ""}${ctx.location ? ` based in ${ctx.location}` : ""}. You are replying to a host (potential customer) who messaged this listing. Speak in the FIRST PERSON as the vendor's team (use "we" / "our" naturally). Keep replies warm, professional, and concise — 2 to 4 short sentences, ${formattingNos.join(", ")}.`,
   );
   lines.push("");
   lines.push("RULES:");
-  if (ctx.greetingLine && ctx.greetingLine.trim().length > 0 && ctx.isFirstReply) {
-    lines.push(
-      `- This is your FIRST reply in this thread. Start the reply with EXACTLY this opener (verbatim, the vendor wrote it themselves): "${ctx.greetingLine.trim()}" — then continue naturally with your answer in the same paragraph.`,
-    );
-  }
   lines.push(
     "- Detect the language of the host's most recent message and reply in that same language. If they write in Spanish, reply in Spanish; if French, French; etc. Match dialect (US Spanish vs Mexican Spanish, Brazilian vs European Portuguese) when it's clearly signaled.",
   );
@@ -766,8 +748,6 @@ export async function loadVendorContext(
     hilux_enabled: boolean;
     hilux_instructions: string | null;
     hilux_voice_samples: string[];
-    hilux_greeting_line: string | null;
-    hilux_reply_length: HiluxReplyLength;
     actions: HiluxActions;
   } | null;
   packages: PackageCtx[];
@@ -814,8 +794,6 @@ export async function loadVendorContext(
         hilux_enabled: profRow.hilux_enabled === true,
         hilux_instructions: privRow?.hilux_instructions ?? null,
         hilux_voice_samples: privRow?.hilux_voice_samples ?? [],
-        hilux_greeting_line: profRow.hilux_greeting_line ?? null,
-        hilux_reply_length: (["short", "medium", "long"].includes(profRow.hilux_reply_length) ? profRow.hilux_reply_length : "medium") as HiluxReplyLength,
         actions: {
           followUp: profRow.hilux_action_follow_up !== false,
           quietHours: profRow.hilux_action_quiet_hours === true,

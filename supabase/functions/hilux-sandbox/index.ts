@@ -116,8 +116,6 @@ serve(async (req) => {
       availability: ctx.availability,
       actions: ctx.profile?.actions ?? DEFAULT_ACTIONS,
       hostFirstName: null,
-      greetingLine: ctx.profile?.hilux_greeting_line ?? null,
-      replyLength: ctx.profile?.hilux_reply_length ?? "medium",
       isFirstReply,
     });
 
