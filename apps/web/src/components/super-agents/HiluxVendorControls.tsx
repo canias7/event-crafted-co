@@ -8,6 +8,7 @@ import {
   Bot,
   Calendar,
   ChevronDown,
+  ChevronRight,
   Globe2,
   Loader2,
   Mic,
@@ -21,6 +22,11 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -242,17 +248,26 @@ export function HiluxVendorControls() {
               <HiluxLogo className="w-full h-full block" />
             </div>
             <div className="min-w-0 flex-1">
-              <p
-                className="text-[11px] uppercase tracking-[0.2em]"
-                style={{ color: "rgba(255, 138, 76, 0.85)" }}
-              >
-                HILUX 2.7 · {enabled ? "Always On" : "Off"}
-              </p>
-              <h3 className="font-editorial text-2xl md:text-3xl text-black leading-tight truncate">
-                Your AI inbox agent
-              </h3>
-              <p className="text-xs text-black/55 mt-1">
-                Click to {expanded ? "hide" : "see"} what HILUX does and customize it.
+              <div className="flex items-center gap-2">
+                <h3 className="font-editorial text-2xl md:text-3xl text-black leading-tight truncate">
+                  HILUX 2.7
+                </h3>
+                <span
+                  className="inline-flex items-center text-[10px] uppercase tracking-wider font-medium px-1.5 py-0.5 rounded-full"
+                  style={{
+                    background: enabled
+                      ? "rgba(255, 138, 76, 0.15)"
+                      : "rgba(0, 0, 0, 0.08)",
+                    color: enabled ? "#c4541e" : "rgba(0, 0, 0, 0.5)",
+                  }}
+                >
+                  {enabled ? "Always On" : "Off"}
+                </span>
+              </div>
+              <p className="text-xs text-black/60 mt-1 leading-snug">
+                Reads each host inquiry, replies in your voice using your
+                bio, packages, and FAQs, and hands off to you when it's
+                not sure.
               </p>
             </div>
             <ChevronDown
@@ -274,42 +289,63 @@ export function HiluxVendorControls() {
 
         {expanded ? (
           <div className="border-t border-black/10 p-5 md:p-6 space-y-6 bg-white/30">
-            {/* Capability toggles */}
+            {/* Tool permissions — connector-style. Header + subtitle
+                like Sentry/Stripe connector panels, then a
+                collapsible "Actions" group with a count chip. Each
+                row is a tool HILUX can use, with an on/off toggle. */}
             <div>
-              <p className="text-[11px] uppercase tracking-[0.2em] text-black/55 mb-3">
-                What HILUX can do
+              <p className="text-sm font-medium text-black mb-0.5">
+                Tool permissions
               </p>
-              <ul className="divide-y divide-black/10">
-                {ACTIONS.map((action) => {
-                  const { Icon } = action;
-                  const value = profile?.[action.key] !== false;
-                  const isSaving = savingKey === action.key;
-                  return (
-                    <li
-                      key={action.key}
-                      className="flex items-center gap-3 py-3.5"
-                    >
-                      <Icon className="w-4 h-4 text-black/55 shrink-0" />
-                      <div className="min-w-0 flex-1">
-                        <p className="text-sm font-medium text-black leading-tight">
-                          {action.label}
-                        </p>
-                        <p className="text-xs text-black/55 mt-0.5">
-                          {action.blurb}
-                        </p>
-                      </div>
-                      {isSaving ? (
-                        <Loader2 className="w-3.5 h-3.5 animate-spin text-black/40 shrink-0" />
-                      ) : null}
-                      <Switch
-                        checked={value}
-                        disabled={!enabled || isSaving}
-                        onCheckedChange={(v) => toggleAction(action.key, v)}
-                      />
-                    </li>
-                  );
-                })}
-              </ul>
+              <p className="text-xs text-black/55 mb-3">
+                Choose when HILUX is allowed to use these.
+              </p>
+              <Collapsible defaultOpen>
+                <CollapsibleTrigger className="group flex items-center justify-between w-full py-2.5 rounded-md hover:bg-white/40 transition-colors">
+                  <div className="flex items-center gap-2">
+                    <ChevronRight className="w-3.5 h-3.5 text-black/55 transition-transform group-data-[state=open]:rotate-90" />
+                    <span className="text-sm font-medium text-black">
+                      Actions
+                    </span>
+                    <span className="inline-flex items-center justify-center min-w-[20px] h-[18px] px-1.5 rounded-md bg-black/10 text-[10px] font-medium text-black/65 tabular-nums">
+                      {ACTIONS.length}
+                    </span>
+                  </div>
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                  <ul className="divide-y divide-black/10">
+                    {ACTIONS.map((action) => {
+                      const { Icon } = action;
+                      const value = profile?.[action.key] !== false;
+                      const isSaving = savingKey === action.key;
+                      return (
+                        <li
+                          key={action.key}
+                          className="flex items-center gap-3 py-3"
+                        >
+                          <Icon className="w-4 h-4 text-black/55 shrink-0" />
+                          <div className="min-w-0 flex-1">
+                            <p className="text-sm font-medium text-black leading-tight">
+                              {action.label}
+                            </p>
+                            <p className="text-[11px] text-black/55 mt-0.5 leading-snug">
+                              {action.blurb}
+                            </p>
+                          </div>
+                          {isSaving ? (
+                            <Loader2 className="w-3.5 h-3.5 animate-spin text-black/40 shrink-0" />
+                          ) : null}
+                          <Switch
+                            checked={value}
+                            disabled={!enabled || isSaving}
+                            onCheckedChange={(v) => toggleAction(action.key, v)}
+                          />
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </CollapsibleContent>
+              </Collapsible>
               {!enabled ? (
                 <p className="mt-2 text-[11px] text-black/45 italic">
                   Flip HILUX on above to use these.
