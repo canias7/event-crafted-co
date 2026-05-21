@@ -207,34 +207,118 @@ export default function LandingPage() {
 
         {/* HERO CONTENT */}
         <section className="relative z-[2] px-6 md:px-10 pt-24 pb-24 md:pt-28 md:pb-28 text-center">
-          <div
-            className="inline-flex items-center gap-2.5 rounded-full px-4 py-1.5 mb-8"
+          {/* Scrolling marquee badge — Opus-powered messaging that
+              loops through the agent lineup. Mirrors the dashboard
+              sidebar's marquee, adapted for the hero (centered,
+              fixed width so the track has somewhere to scroll, fade
+              gradients on both edges, pause on hover). Clicking
+              jumps to /super-agents. */}
+          <Link
+            to="/super-agents"
+            aria-label="Now with Super Agents powered by Opus 4.7"
+            className="relative block mx-auto mb-8 rounded-full overflow-hidden hover:opacity-95 transition-opacity"
             style={{
               border: "0.5px solid rgba(255,138,76,0.7)",
               background: "rgba(255,255,255,0.7)",
               backdropFilter: "blur(4px)",
               WebkitBackdropFilter: "blur(4px)",
+              width: "min(440px, 92vw)",
             }}
           >
             <span
-              className="landing-hero-pulse rounded-full"
+              aria-hidden
+              className="pointer-events-none absolute inset-y-0 left-0 z-10"
               style={{
-                width: 6,
-                height: 6,
-                background: "#ff8a4c",
-                boxShadow: "0 0 8px #ff8a4c",
+                width: 28,
+                background:
+                  "linear-gradient(90deg, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0) 100%)",
               }}
             />
             <span
-              className="uppercase font-semibold text-black"
+              aria-hidden
+              className="pointer-events-none absolute inset-y-0 right-0 z-10"
               style={{
-                fontSize: "11px",
-                letterSpacing: "2.5px",
+                width: 28,
+                background:
+                  "linear-gradient(-90deg, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0) 100%)",
               }}
-            >
-              Now with Super Agents powered by Opus 4.7
-            </span>
-          </div>
+            />
+            <div className="flex whitespace-nowrap items-center py-1.5 animate-marquee-x hover:[animation-play-state:paused]">
+              {/* Duplicate the track so translateX(-50%) loops seamlessly. */}
+              {[0, 1].map((dup) => (
+                <span
+                  key={dup}
+                  className="flex items-center gap-3 shrink-0 px-3"
+                  aria-hidden={dup === 1}
+                >
+                  <span
+                    className="landing-hero-pulse rounded-full shrink-0"
+                    style={{
+                      width: 6,
+                      height: 6,
+                      background: "#ff8a4c",
+                      boxShadow: "0 0 8px #ff8a4c",
+                    }}
+                  />
+                  <span
+                    className="uppercase font-semibold text-black"
+                    style={{ fontSize: 11, letterSpacing: "2.5px" }}
+                  >
+                    Now with Super Agents
+                  </span>
+                  <span
+                    aria-hidden
+                    className="inline-block w-1 h-1 rounded-full shrink-0"
+                    style={{ background: "rgba(0,0,0,0.35)" }}
+                  />
+                  <span
+                    className="uppercase font-semibold text-black"
+                    style={{ fontSize: 11, letterSpacing: "2.5px" }}
+                  >
+                    Powered by Opus 4.7
+                  </span>
+                  <span
+                    aria-hidden
+                    className="inline-block w-1 h-1 rounded-full shrink-0"
+                    style={{ background: "rgba(0,0,0,0.35)" }}
+                  />
+                  <span
+                    className="uppercase font-semibold text-black"
+                    style={{ fontSize: 11, letterSpacing: "2.5px" }}
+                  >
+                    HILUX 2.7
+                  </span>
+                  <span
+                    aria-hidden
+                    className="inline-block w-1 h-1 rounded-full shrink-0"
+                    style={{ background: "rgba(0,0,0,0.35)" }}
+                  />
+                  <span
+                    className="uppercase font-semibold text-black"
+                    style={{ fontSize: 11, letterSpacing: "2.5px" }}
+                  >
+                    RAPTOR 3.5
+                  </span>
+                  <span
+                    aria-hidden
+                    className="inline-block w-1 h-1 rounded-full shrink-0"
+                    style={{ background: "rgba(0,0,0,0.35)" }}
+                  />
+                  <span
+                    className="uppercase font-semibold text-black"
+                    style={{ fontSize: 11, letterSpacing: "2.5px" }}
+                  >
+                    AXION 9.1
+                  </span>
+                  <span
+                    aria-hidden
+                    className="inline-block w-1 h-1 rounded-full shrink-0"
+                    style={{ background: "rgba(0,0,0,0.35)" }}
+                  />
+                </span>
+              ))}
+            </div>
+          </Link>
 
           <h1
             className="text-black m-0"
