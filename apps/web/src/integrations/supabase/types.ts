@@ -1372,17 +1372,25 @@ export type Database = {
           hilux_action_acknowledge_emotion: boolean
           hilux_action_allow_bullets: boolean
           hilux_action_ask_clarifying: boolean
+          hilux_action_auto_archive_cold: boolean
           hilux_action_auto_mark_replied: boolean
           hilux_action_avoid_competitors: boolean
+          hilux_action_cap_replies_per_inquiry: boolean
+          hilux_action_daily_summary: boolean
           hilux_action_decline_negotiation: boolean
+          hilux_action_detect_booking_intent: boolean
           hilux_action_detect_frustration: boolean
           hilux_action_echo_question: boolean
+          hilux_action_email_reply_copies: boolean
           hilux_action_escalate: boolean
           hilux_action_follow_up: boolean
           hilux_action_lead_with_question: boolean
+          hilux_action_log_actions: boolean
           hilux_action_match_language: boolean
           hilux_action_mention_starting_price: boolean
           hilux_action_no_other_clients: boolean
+          hilux_action_notify_on_escalation: boolean
+          hilux_action_notify_on_hot_lead: boolean
           hilux_action_notify_on_reply: boolean
           hilux_action_offer_call: boolean
           hilux_action_pause_weekends: boolean
@@ -1395,6 +1403,7 @@ export type Database = {
           hilux_action_skip_when_active: boolean
           hilux_action_soft_cta_signoff: boolean
           hilux_action_suggest_package: boolean
+          hilux_action_update_inquiry_fields: boolean
           hilux_action_use_calendar: boolean
           hilux_action_use_emojis: boolean
           hilux_action_use_first_name: boolean
@@ -1426,17 +1435,25 @@ export type Database = {
           hilux_action_acknowledge_emotion?: boolean
           hilux_action_allow_bullets?: boolean
           hilux_action_ask_clarifying?: boolean
+          hilux_action_auto_archive_cold?: boolean
           hilux_action_auto_mark_replied?: boolean
           hilux_action_avoid_competitors?: boolean
+          hilux_action_cap_replies_per_inquiry?: boolean
+          hilux_action_daily_summary?: boolean
           hilux_action_decline_negotiation?: boolean
+          hilux_action_detect_booking_intent?: boolean
           hilux_action_detect_frustration?: boolean
           hilux_action_echo_question?: boolean
+          hilux_action_email_reply_copies?: boolean
           hilux_action_escalate?: boolean
           hilux_action_follow_up?: boolean
           hilux_action_lead_with_question?: boolean
+          hilux_action_log_actions?: boolean
           hilux_action_match_language?: boolean
           hilux_action_mention_starting_price?: boolean
           hilux_action_no_other_clients?: boolean
+          hilux_action_notify_on_escalation?: boolean
+          hilux_action_notify_on_hot_lead?: boolean
           hilux_action_notify_on_reply?: boolean
           hilux_action_offer_call?: boolean
           hilux_action_pause_weekends?: boolean
@@ -1449,6 +1466,7 @@ export type Database = {
           hilux_action_skip_when_active?: boolean
           hilux_action_soft_cta_signoff?: boolean
           hilux_action_suggest_package?: boolean
+          hilux_action_update_inquiry_fields?: boolean
           hilux_action_use_calendar?: boolean
           hilux_action_use_emojis?: boolean
           hilux_action_use_first_name?: boolean
@@ -1480,17 +1498,25 @@ export type Database = {
           hilux_action_acknowledge_emotion?: boolean
           hilux_action_allow_bullets?: boolean
           hilux_action_ask_clarifying?: boolean
+          hilux_action_auto_archive_cold?: boolean
           hilux_action_auto_mark_replied?: boolean
           hilux_action_avoid_competitors?: boolean
+          hilux_action_cap_replies_per_inquiry?: boolean
+          hilux_action_daily_summary?: boolean
           hilux_action_decline_negotiation?: boolean
+          hilux_action_detect_booking_intent?: boolean
           hilux_action_detect_frustration?: boolean
           hilux_action_echo_question?: boolean
+          hilux_action_email_reply_copies?: boolean
           hilux_action_escalate?: boolean
           hilux_action_follow_up?: boolean
           hilux_action_lead_with_question?: boolean
+          hilux_action_log_actions?: boolean
           hilux_action_match_language?: boolean
           hilux_action_mention_starting_price?: boolean
           hilux_action_no_other_clients?: boolean
+          hilux_action_notify_on_escalation?: boolean
+          hilux_action_notify_on_hot_lead?: boolean
           hilux_action_notify_on_reply?: boolean
           hilux_action_offer_call?: boolean
           hilux_action_pause_weekends?: boolean
@@ -1503,6 +1529,7 @@ export type Database = {
           hilux_action_skip_when_active?: boolean
           hilux_action_soft_cta_signoff?: boolean
           hilux_action_suggest_package?: boolean
+          hilux_action_update_inquiry_fields?: boolean
           hilux_action_use_calendar?: boolean
           hilux_action_use_emojis?: boolean
           hilux_action_use_first_name?: boolean

@@ -249,6 +249,16 @@ serve(async (req) => {
     const scoreInquiryAfter = async () => {
       if (!thread.inquiry_id) return;
       try {
+        // Read the prior score BEFORE we overwrite it, so we can
+        // detect the "warm → hot" transition that fires the hot-lead
+        // notification.
+        const { data: priorRow } = await admin
+          .from("inquiries")
+          .select("lead_score")
+          .eq("id", thread.inquiry_id)
+          .maybeSingle();
+        const priorScore = (priorRow as { lead_score?: string } | null)?.lead_score ?? null;
+
         const result = await scoreLead(ANTHROPIC_API_KEY, {
           businessName: ctx.vendor!.business_name ?? "this vendor",
           category: ctx.vendor!.category,
@@ -264,6 +274,31 @@ serve(async (req) => {
           })
           .eq("id", thread.inquiry_id);
         if (scoreErr) console.error("[hilux-respond] lead_score update failed", scoreErr);
+
+        // Hot-lead notification: only fire when the lead JUST became
+        // hot (was not hot before). Skips repeat-hot pings on every
+        // host message in a hot conversation.
+        if (
+          actions.notifyOnHotLead &&
+          result.score === "hot" &&
+          priorScore !== "hot"
+        ) {
+          const { data: members } = await admin
+            .from("vendor_team_members")
+            .select("user_id")
+            .eq("vendor_id", ctx.vendor!.id);
+          const rows = ((members ?? []) as Array<{ user_id: string }>).map((m) => ({
+            user_id: m.user_id,
+            type: "hilux_hot_lead",
+            title: "Hot lead — HILUX flagged this one",
+            body: result.reason || "Host is ready to book.",
+            link: `/vendor/messages?thread=${threadId}`,
+          }));
+          if (rows.length > 0) {
+            const { error: nerr } = await admin.from("notifications").insert(rows);
+            if (nerr) console.error("[hilux-respond] hot-lead notify failed", nerr);
+          }
+        }
       } catch (err) {
         console.error("[hilux-respond] lead_score error", err);
       }
@@ -281,25 +316,29 @@ serve(async (req) => {
       const preview = (triggeringMessage.body ?? "").slice(0, 120);
       const title = "HILUX needs you to take this one";
       const body = `${preview}${triggeringMessage.body.length > 120 ? "…" : ""} — reason: ${reason}`;
-      const { data: members } = await admin
-        .from("vendor_team_members")
-        .select("user_id")
-        .eq("vendor_id", ctx.vendor.id);
-      const rows = ((members ?? []) as Array<{ user_id: string }>).map((m) => ({
-        user_id: m.user_id,
-        type: "hilux_escalation",
-        title,
-        body,
-        link: `/vendor/messages?thread=${threadId}`,
-      }));
-      if (rows.length > 0) {
-        const { error: notifErr } = await admin.from("notifications").insert(rows);
-        if (notifErr) console.error("[hilux-respond] notification insert failed", notifErr);
+      let notified = 0;
+      if (actions.notifyOnEscalation) {
+        const { data: members } = await admin
+          .from("vendor_team_members")
+          .select("user_id")
+          .eq("vendor_id", ctx.vendor.id);
+        const rows = ((members ?? []) as Array<{ user_id: string }>).map((m) => ({
+          user_id: m.user_id,
+          type: "hilux_escalation",
+          title,
+          body,
+          link: `/vendor/messages?thread=${threadId}`,
+        }));
+        if (rows.length > 0) {
+          const { error: notifErr } = await admin.from("notifications").insert(rows);
+          if (notifErr) console.error("[hilux-respond] notification insert failed", notifErr);
+        }
+        notified = rows.length;
       }
-      log("hilux escalated", { thread: threadId, reason, notified: rows.length });
+      log("hilux escalated", { thread: threadId, reason, notified });
       await scoreInquiryAfter();
       await clearTyping();
-      return ok({ escalated: true, reason, notified: rows.length });
+      return ok({ escalated: true, reason, notified });
     }
 
     // If escalate is OFF and Claude still tried to escalate, strip
