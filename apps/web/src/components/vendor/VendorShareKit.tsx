@@ -75,7 +75,7 @@ function ShareKitDialog({
 }) {
   const url = typeof window !== "undefined"
     ? `${window.location.origin}/v/${slug}`
-    : `https://vendora.events/v/${slug}`;
+    : `https://eventvendora.com/v/${slug}`;
   const [copied, setCopied] = useState<"url" | "embed" | null>(null);
   const qrRef = useRef<HTMLDivElement>(null);
 

@@ -11,8 +11,8 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.7";
 
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
 const FROM_ADDRESS =
-  Deno.env.get("EMAIL_FROM_ADDRESS") ?? "Vendora <hello@vendora.events>";
-const APP_URL = Deno.env.get("APP_URL") ?? "https://vendora.events";
+  Deno.env.get("EMAIL_FROM_ADDRESS") ?? "Vendora <noreply@eventvendora.com>";
+const APP_URL = Deno.env.get("APP_URL") ?? "https://eventvendora.com";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 

@@ -37,5 +37,7 @@ project_id = "pahpjjubhbcbwqjpamwv"
     verify_jwt = true
   [functions.sitemap-xml]
     verify_jwt = false
+  [functions.vendor-signup]
+    verify_jwt = false
   [functions.vendora-mcp]
     verify_jwt = false
