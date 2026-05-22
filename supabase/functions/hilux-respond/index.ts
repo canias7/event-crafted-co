@@ -21,7 +21,6 @@ import {
   DEFAULT_ACTIONS,
   detectBookingIntent,
   extractInquiryFields,
-  isInQuietHours,
   loadVendorContext,
   priceUsd,
   scoreLead,
@@ -106,24 +105,9 @@ serve(async (req) => {
     if (!ctx.profile || !ctx.profile.hilux_enabled) return ok({ skipped: "hilux_off" });
     if (!ctx.vendor.user_id) return ok({ skipped: "no_owner" });
 
-    // Pacing-level skips. Each one short-circuits BEFORE we touch
-    // typing indicators or Claude, so a paused thread never shows
+    // Pacing-level skip. Short-circuits BEFORE we touch typing
+    // indicators or Claude, so a deferred thread never shows
     // "HILUX is typing..." and we never spend API tokens.
-
-    // Quiet hours: vendor asked us to stay silent overnight.
-    if (ctx.profile.actions.quietHours && isInQuietHours()) {
-      return ok({ skipped: "quiet_hours" });
-    }
-
-    // Pause on weekends (UTC days). Same coarse-TZ caveat as
-    // quiet hours — vendor-local Friday late-night might still
-    // land in the UTC Saturday window. v1 approximation.
-    if (ctx.profile.actions.pauseWeekends) {
-      const dow = new Date().getUTCDay(); // 0=Sun, 6=Sat
-      if (dow === 0 || dow === 6) {
-        return ok({ skipped: "weekend_pause" });
-      }
-    }
 
     // Skip if the vendor was active in this thread in the last 30 min.
     // "Active" = posted a non-HILUX-generated message. If the vendor

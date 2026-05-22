@@ -45,8 +45,6 @@ export interface AvailabilityCtx {
 export interface HiluxActions {
   // Pacing
   followUp: boolean;
-  quietHours: boolean;
-  pauseWeekends: boolean;
   skipWhenActive: boolean;
   // Conversation / how HILUX listens
   matchLanguage: boolean;
@@ -86,8 +84,6 @@ export interface HiluxActions {
 
 export const DEFAULT_ACTIONS: HiluxActions = {
   followUp: true,
-  quietHours: false,
-  pauseWeekends: false,
   skipWhenActive: true,
   matchLanguage: true,
   useCalendar: true,
@@ -119,18 +115,6 @@ export const DEFAULT_ACTIONS: HiluxActions = {
   detectBookingIntent: true,
   logActions: false,
 };
-
-// HILUX is paused during these UTC hours when the quietHours action
-// is on. v1 picks an Eastern-ish window (11pm-7am ET ≈ 04:00-12:00
-// UTC). Vendors outside ET get a roughly-correct nighttime band;
-// per-vendor TZ support is future work.
-export const QUIET_HOURS_UTC_START = 4;
-export const QUIET_HOURS_UTC_END = 12;
-
-export function isInQuietHours(date: Date = new Date()): boolean {
-  const h = date.getUTCHours();
-  return h >= QUIET_HOURS_UTC_START && h < QUIET_HOURS_UTC_END;
-}
 
 export interface HiluxPromptCtx {
   businessName: string;
@@ -773,8 +757,6 @@ export async function loadVendorContext(
         hilux_voice_samples: privRow?.hilux_voice_samples ?? [],
         actions: {
           followUp: profRow.hilux_action_follow_up !== false,
-          quietHours: profRow.hilux_action_quiet_hours === true,
-          pauseWeekends: profRow.hilux_action_pause_weekends === true,
           skipWhenActive: profRow.hilux_action_skip_when_active !== false,
           matchLanguage: profRow.hilux_action_match_language !== false,
           useCalendar: profRow.hilux_action_use_calendar !== false,
