@@ -1,9 +1,7 @@
-// Custom logo marks for the AI agents + the Vendora MCP connector.
+// Custom logo marks for HILUX and the Vendora MCP connector.
 //
 // HILUX: full brand badge with its own gradient background
 // (cream tile + orange waveform).
-// Axion: lavender tile + a purple photo-frame mark (sun +
-// mountain). Reads as "image / visuals".
 // VendoraMcp: black tile with a stylized V monogram + a
 // soft halo. Reads as "your account piped into your MCP client".
 
@@ -50,52 +48,6 @@ export function HiluxLogo({ className, ...props }: IconProps) {
       />
       <circle cx="98" cy="60" r="4.5" fill="#ff6a00" />
       <circle cx="22" cy="60" r="4.5" fill="#ffb02e" />
-    </svg>
-  );
-}
-
-export function AxionLogo({ className, ...props }: IconProps) {
-  // Full brand badge: soft lavender tile + a purple photo-frame
-  // mark (sun + mountain peaks). Reads as "image / visuals",
-  // distinct from HILUX's warm waveform.
-  const reactId = useId();
-  const bgId = `axion-bg-${reactId}`;
-  const fgId = `axion-fg-${reactId}`;
-  return (
-    <svg
-      viewBox="0 0 120 120"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-      className={className}
-      aria-hidden="true"
-      {...props}
-    >
-      <defs>
-        <linearGradient id={bgId} x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" stopColor="#faf1ff" />
-          <stop offset="1" stopColor="#efdcff" />
-        </linearGradient>
-        <linearGradient id={fgId} x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" stopColor="#c46bff" />
-          <stop offset="1" stopColor="#9326d9" />
-        </linearGradient>
-      </defs>
-      <rect x="4" y="4" width="112" height="112" rx="28" fill={`url(#${bgId})`} />
-      {/* photo frame */}
-      <rect
-        x="33"
-        y="37"
-        width="54"
-        height="46"
-        rx="11"
-        fill="none"
-        stroke={`url(#${fgId})`}
-        strokeWidth="6"
-      />
-      {/* sun */}
-      <circle cx="49" cy="52" r="6.5" fill={`url(#${fgId})`} />
-      {/* mountain peaks */}
-      <path d="M38 79 L54 60 L63 69 L73 56 L82 71 L82 79 Z" fill={`url(#${fgId})`} />
     </svg>
   );
 }
