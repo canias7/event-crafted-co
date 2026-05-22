@@ -462,17 +462,19 @@ serve(async (req) => {
       }
     };
 
-    // Escalate is only meaningful when the vendor has it ON. If
-    // escalate is OFF the system prompt already instructs Claude to
-    // always reply; if it slips and outputs ESCALATE anyway, we just
-    // post a generic placeholder rather than dropping the reply.
-    const escalateMatch = actions.escalate
+    // The only silent step-aside left is the frustrated-host
+    // handoff. HILUX outputs ESCALATE: only when detectFrustration
+    // is on; for everything else it always replies (offering to
+    // loop in the team when it can't answer). If detectFrustration
+    // is off and ESCALATE slips out anyway, we ignore the token and
+    // strip it from the reply below.
+    const escalateMatch = actions.detectFrustration
       ? reply.match(/^\s*ESCALATE\s*:\s*(.+)$/im)
       : null;
     if (escalateMatch) {
       const reason = escalateMatch[1].trim().slice(0, 200);
       const preview = (triggeringMessage.body ?? "").slice(0, 120);
-      const title = "HILUX needs you to take this one";
+      const title = "Upset host — HILUX handed this to you";
       const body = `${preview}${triggeringMessage.body.length > 120 ? "…" : ""} — reason: ${reason}`;
       let notified = 0;
       if (actions.notifyOnEscalation) {
@@ -723,7 +725,7 @@ function escalationEmailHtml(args: {
   return `<!doctype html>
 <html><body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 560px; margin: 0 auto; padding: 24px; color: #111;">
   <div style="display:inline-block;background:#fef2f2;color:#b91c1c;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;padding:5px 10px;border-radius:999px;margin-bottom:14px;">Action needed</div>
-  <p style="font-size:15px;margin:0 0 18px;">HILUX couldn't confidently handle a message for <strong>${escapeHtml(args.vendorName)}</strong> and has stepped aside — <strong>${hostLabel} is waiting for a reply from you.</strong></p>
+  <p style="font-size:15px;margin:0 0 18px;"><strong>${hostLabel}</strong> sounds upset, so HILUX stepped aside on a conversation for <strong>${escapeHtml(args.vendorName)}</strong> — <strong>they need a personal reply from you.</strong></p>
   <p style="margin:0 0 24px;"><a href="${escapeHtml(args.threadLink)}" style="background:#b91c1c;color:#fff;text-decoration:none;padding:12px 20px;border-radius:6px;display:inline-block;font-weight:600;font-size:15px;">Reply to the host →</a></p>
   <div style="border-left:3px solid #ddd;padding:8px 16px;margin:0 0 16px;color:#555;">
     <div style="font-size:12px;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px;">${hostLabel} wrote</div>
