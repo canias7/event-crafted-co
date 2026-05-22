@@ -40,47 +40,30 @@ export function VendoraMark({
   );
 }
 
-// Full lockup: V mark + "Vendora" italic wordmark + tagline.
+// The Vendora wordmark — the brand name set in the editorial serif.
 // Used in every top-left logo position (public nav, dashboard
-// sidebar, landing page header, auth shell). Sizing scales with
-// the `size` prop so the same component fits both compact sidebars
-// and the wider public surfaces.
+// sidebar, landing page header, auth shell).
 export function VendoraLogo({
   size = "md",
   color = "#000",
-  showTagline = true,
   className,
 }: {
   size?: "sm" | "md" | "lg";
   color?: string;
-  showTagline?: boolean;
   className?: string;
 }) {
-  const dims = {
-    sm: { mark: 22, wordmark: "text-[18px]", tagline: "text-[8px] tracking-[0.18em]" },
-    md: { mark: 28, wordmark: "text-[22px]", tagline: "text-[9px] tracking-[0.2em]" },
-    lg: { mark: 36, wordmark: "text-[28px]", tagline: "text-[10px] tracking-[0.22em]" },
+  const wordmark = {
+    sm: "text-[18px]",
+    md: "text-[22px]",
+    lg: "text-[28px]",
   }[size];
 
   return (
-    <span className={cn("inline-flex items-center gap-2.5", className)}>
-      <VendoraMark size={dims.mark} color={color} />
-      <span className="flex flex-col leading-none">
-        <span
-          className={cn("font-editorial italic", dims.wordmark)}
-          style={{ color }}
-        >
-          Vendora
-        </span>
-        {showTagline ? (
-          <span
-            className={cn("uppercase font-medium mt-1", dims.tagline)}
-            style={{ color, opacity: 0.85 }}
-          >
-            Events, simplified
-          </span>
-        ) : null}
-      </span>
+    <span
+      className={cn("font-editorial italic", wordmark, className)}
+      style={{ color }}
+    >
+      Vendora
     </span>
   );
 }
