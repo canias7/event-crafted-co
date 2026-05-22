@@ -9,7 +9,6 @@ import {
   Clock,
   MapPin,
   ChevronRight,
-  Video,
 } from "lucide-react";
 import { downloadIcs, slugForFile } from "@/lib/ics";
 import { formatDate, formatTime } from "@/lib/format";
@@ -42,8 +41,6 @@ export interface Appointment {
   status: "proposed" | "accepted" | "declined" | "cancelled" | "completed";
   proposed_by: "host" | "vendor";
   notes: string | null;
-  meeting_url?: string | null;
-  meeting_provider?: "jitsi" | "google_meet" | null;
   // Display only
   vendor_name?: string | null;
   host_name?: string | null;
@@ -281,21 +278,6 @@ export function AppointmentsList({ appointments, side, onMutate }: Props) {
                   <p className="text-sm text-foreground/80 leading-relaxed border-l-2 border-border pl-3 mb-3 whitespace-pre-wrap">
                     {appt.notes}
                   </p>
-                )}
-
-                {appt.meeting_url && appt.status !== "cancelled" && appt.status !== "declined" && (
-                  <a
-                    href={appt.meeting_url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex items-center gap-2 text-sm bg-secondary/60 hover:bg-secondary text-foreground rounded-sm px-3 py-2 mb-3 transition-colors group"
-                  >
-                    <Video className="w-3.5 h-3.5 text-accent" />
-                    <span className="font-medium">
-                      Join {appt.meeting_provider === "google_meet" ? "Google Meet" : "video call"}
-                    </span>
-                    <ChevronRight className="w-3 h-3 ml-auto opacity-50 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all" />
-                  </a>
                 )}
 
                 {(needsMyResponse || canCancel || canMarkComplete || canExport) && (

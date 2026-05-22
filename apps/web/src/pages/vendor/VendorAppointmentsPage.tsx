@@ -277,7 +277,7 @@ export default function VendorAppointmentsPage() {
     const { data } = await (supabase as any)
       .from("appointments")
       .select(
-        "id, inquiry_id, vendor_id, host_id, kind, title, location, scheduled_at, duration_minutes, status, proposed_by, notes, meeting_url, meeting_provider, host:profiles!appointments_host_id_fkey(display_name)",
+        "id, inquiry_id, vendor_id, host_id, kind, title, location, scheduled_at, duration_minutes, status, proposed_by, notes, host:profiles!appointments_host_id_fkey(display_name)",
       )
       .eq("vendor_id", selectedListingId)
       .gte("scheduled_at", cutoff.toISOString())
