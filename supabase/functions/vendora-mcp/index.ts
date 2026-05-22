@@ -35,8 +35,7 @@ const ALLOWED_ACTION_KEYS = new Set([
   "follow_up", "skip_when_active",
   "use_calendar", "detect_frustration",
   "decline_negotiation", "offer_call",
-  "share_booking_process", "echo_question",
-  "lead_with_question", "refuse_legal", "refuse_competitor_pricing",
+  "refuse_legal", "refuse_competitor_pricing",
   "no_other_clients", "redact_contact", "auto_mark_replied",
   "notify_on_reply", "update_inquiry_fields", "notify_on_escalation",
   "notify_on_hot_lead", "email_reply_copies", "auto_archive_cold",
@@ -1237,7 +1236,7 @@ async function getHiluxSettings(admin: any, userId: string) {
     admin
       .from("profiles")
       .select(
-        "hilux_enabled, hilux_action_follow_up, hilux_action_skip_when_active, hilux_action_use_calendar, hilux_action_detect_frustration, hilux_action_decline_negotiation, hilux_action_offer_call, hilux_action_share_booking_process, hilux_action_echo_question, hilux_action_lead_with_question, hilux_action_refuse_legal, hilux_action_refuse_competitor_pricing, hilux_action_no_other_clients, hilux_action_redact_contact, hilux_action_auto_mark_replied, hilux_action_notify_on_reply, hilux_action_update_inquiry_fields, hilux_action_notify_on_escalation, hilux_action_notify_on_hot_lead, hilux_action_email_reply_copies, hilux_action_auto_archive_cold, hilux_action_daily_summary, hilux_action_cap_replies_per_inquiry, hilux_action_detect_booking_intent, hilux_action_log_actions",
+        "hilux_enabled, hilux_action_follow_up, hilux_action_skip_when_active, hilux_action_use_calendar, hilux_action_detect_frustration, hilux_action_decline_negotiation, hilux_action_offer_call, hilux_action_refuse_legal, hilux_action_refuse_competitor_pricing, hilux_action_no_other_clients, hilux_action_redact_contact, hilux_action_auto_mark_replied, hilux_action_notify_on_reply, hilux_action_update_inquiry_fields, hilux_action_notify_on_escalation, hilux_action_notify_on_hot_lead, hilux_action_email_reply_copies, hilux_action_auto_archive_cold, hilux_action_daily_summary, hilux_action_cap_replies_per_inquiry, hilux_action_detect_booking_intent, hilux_action_log_actions",
       )
       .eq("id", userId)
       .maybeSingle(),

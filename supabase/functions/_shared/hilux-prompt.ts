@@ -55,11 +55,8 @@ export interface HiluxActions {
   // Conversation / what HILUX says
   declineNegotiation: boolean;
   offerCall: boolean;
-  shareBookingProcess: boolean;
   // Conversation / how HILUX writes
-  echoQuestion: boolean;
   useEmojis: boolean;
-  leadWithQuestion: boolean;
   softCtaSignoff: boolean;
   allowBullets: boolean;
   // Safety / privacy
@@ -91,10 +88,7 @@ export const DEFAULT_ACTIONS: HiluxActions = {
   detectFrustration: true,
   declineNegotiation: true,
   offerCall: true,
-  shareBookingProcess: true,
-  echoQuestion: false,
   useEmojis: false,
-  leadWithQuestion: false,
   softCtaSignoff: true,
   allowBullets: false,
   refuseLegal: true,
@@ -232,25 +226,19 @@ export function buildSystemPrompt(ctx: HiluxPromptCtx): string {
       "- Once the lead warms up (host has answered a clarifying question or shared event details), offer to set up a quick call (\"Want to hop on a 15-min call to walk through it?\"). Don't push a call in the first reply.",
     );
   }
-  if (ctx.actions.shareBookingProcess) {
-    lines.push(
-      "- When the host expresses booking intent (\"we want to book\", \"how do we lock this in\"), briefly outline the next step (\"We send a quick proposal, you confirm the date with a deposit, and we lock it in\") — one sentence max.",
-    );
-  }
+  lines.push(
+    "- When the host expresses booking intent (\"we want to book\", \"how do we lock this in\"), briefly outline the next step (\"We send a quick proposal, you confirm the date with a deposit, and we lock it in\") — one sentence max.",
+  );
   // How HILUX writes
-  if (ctx.actions.echoQuestion) {
-    lines.push(
-      "- Open the reply by briefly restating what the host is asking, so they know you understood (\"So you're looking for coverage from ceremony through cocktail hour — \").",
-    );
-  }
+  lines.push(
+    "- Briefly reflect what the host asked before answering, so they know you understood it (\"So you're looking for coverage from the ceremony through cocktail hour — \"). Keep it to a short clause, and skip it when the question is a simple one-liner.",
+  );
   lines.push(
     "- Emojis are OK in moderation (max one or two per reply, where they fit the tone). Don't overdo it.",
   );
-  if (ctx.actions.leadWithQuestion) {
-    lines.push(
-      "- On a FIRST HILUX reply to a new conversation, lead with a friendly question that pulls more info (\"Before I dig in — what's the vibe you're going for?\") instead of jumping straight to an answer.",
-    );
-  }
+  lines.push(
+    "- Especially on the first reply in a conversation, ask a friendly question that pulls more info about their event (\"what's the vibe you're going for?\", guest count, date) — ask it alongside answering what they came for, never instead of answering.",
+  );
   lines.push(
     "- End the reply with a soft prompt to keep the conversation moving — e.g. \"Want me to share more details?\" or \"What date are you thinking?\". Skip if you've already asked a clarifying question in this same reply.",
   );
@@ -758,10 +746,7 @@ export async function loadVendorContext(
           detectFrustration: profRow.hilux_action_detect_frustration !== false,
           declineNegotiation: profRow.hilux_action_decline_negotiation !== false,
           offerCall: profRow.hilux_action_offer_call !== false,
-          shareBookingProcess: profRow.hilux_action_share_booking_process !== false,
-          echoQuestion: profRow.hilux_action_echo_question === true,
           useEmojis: profRow.hilux_action_use_emojis === true,
-          leadWithQuestion: profRow.hilux_action_lead_with_question === true,
           softCtaSignoff: profRow.hilux_action_soft_cta_signoff !== false,
           allowBullets: profRow.hilux_action_allow_bullets === true,
           refuseLegal: profRow.hilux_action_refuse_legal !== false,
