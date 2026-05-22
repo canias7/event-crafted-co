@@ -329,11 +329,19 @@ export default function VendorInboxPage() {
               onClick={toggleHilux}
               disabled={hiluxToggling}
               title={hiluxEnabled ? "Tap to turn HILUX off" : "Tap to turn HILUX on"}
-              className={`shrink-0 ml-auto inline-flex items-center gap-1.5 text-[12px] pl-1.5 pr-2 py-1 rounded-full border transition-colors ${
+              className={`shrink-0 ml-auto inline-flex items-center gap-1.5 text-[12px] pl-1.5 pr-2 py-1 rounded-full border transition-colors disabled:opacity-60 ${
                 hiluxEnabled
-                  ? "border-orange-300/70 bg-orange-50 text-orange-900 hover:bg-orange-100"
-                  : "border-transparent bg-secondary/50 text-foreground/70 hover:bg-secondary"
-              } disabled:opacity-60`}
+                  ? "border-orange-200/60 text-orange-900 hover:bg-orange-100/50"
+                  : "border-white/50 text-foreground/65 hover:bg-white/55"
+              }`}
+              style={{
+                background: hiluxEnabled
+                  ? "rgba(255, 237, 213, 0.45)"
+                  : "rgba(255, 255, 255, 0.4)",
+                backdropFilter: "blur(10px)",
+                WebkitBackdropFilter: "blur(10px)",
+                boxShadow: "0 2px 10px -5px rgba(0,0,0,0.25)",
+              }}
             >
               <span className="w-4 h-4 rounded overflow-hidden ring-1 ring-black/5 shrink-0">
                 <HiluxLogo className="w-full h-full block" />
