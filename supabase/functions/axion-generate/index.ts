@@ -30,20 +30,6 @@ function json(status: number, body: Record<string, unknown>) {
   });
 }
 
-// Style key → edit instruction. The gpt-image-1 edit endpoint keeps
-// the input photo's subject + composition; the prompt drives the
-// finish, not the content.
-const STYLE_PROMPTS: Record<string, string> = {
-  editorial:
-    "Restyle this event-vendor listing photo into a polished, editorial magazine-quality image. Keep the real subject, composition, and details intact — only elevate the lighting, color grading, sharpness, and overall finish. High-end and natural, never over-processed or artificial.",
-  bright:
-    "Restyle this event-vendor listing photo into a bright, airy, light-filled image. Keep the subject and composition intact. Lift the exposure, soften the shadows, and give it a clean, fresh, welcoming feel.",
-  warm:
-    "Restyle this event-vendor listing photo with warm, inviting golden tones. Keep the subject and composition intact. Add cozy ambiance, richness, and depth while keeping it realistic.",
-  studio:
-    "Restyle this event-vendor listing photo into a clean, professional studio-style shot. Keep the subject crisp and intact; tidy and neutralize the background and balance the lighting evenly.",
-};
-
 // Accept a data URL ("data:image/jpeg;base64,...") or bare base64.
 function decodeImage(input: string): { bytes: Uint8Array; mime: string } | null {
   let b64 = input.trim();
@@ -78,9 +64,13 @@ serve(async (req) => {
     if (!OPENAI_API_KEY) return json(500, { error: "openai_key_missing" });
 
     const payload = await req.json().catch(() => ({}));
-    const style = String(payload?.style ?? "editorial").trim();
-    const prompt = STYLE_PROMPTS[style];
-    if (!prompt) return json(400, { error: "unknown_style" });
+    const userPrompt = String(payload?.prompt ?? "").trim();
+    if (!userPrompt) return json(400, { error: "missing_prompt" });
+    // Wrap the vendor's free-text direction with guardrails so the
+    // edit stays a realistic listing photo, not an AI-looking render.
+    const prompt =
+      "Edit this event-vendor listing photo. Apply the direction below while keeping the real subject, composition, and details intact — keep it photorealistic and natural, never artificial or AI-looking. Direction: " +
+      userPrompt.slice(0, 1000);
 
     const decoded = decodeImage(String(payload?.image ?? ""));
     if (!decoded) return json(400, { error: "invalid_image" });
