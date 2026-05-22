@@ -31,7 +31,6 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { HiluxLogo } from "./AgentLogos";
-import { HiluxActivityLog } from "./HiluxActivityLog";
 
 type ActionKey =
   | "hilux_action_use_calendar"
@@ -360,10 +359,6 @@ export function HiluxVendorControls() {
                 </p>
               ) : null}
             </div>
-
-            {enabled ? (
-              <HiluxActivityLog />
-            ) : null}
           </div>
         ) : null}
       </div>
