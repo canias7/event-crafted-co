@@ -125,9 +125,6 @@ export type Database = {
         Row: {
           created_at: string
           duration_minutes: number
-          external_event_id: string | null
-          external_event_provider: string | null
-          external_synced_at: string | null
           host_id: string
           id: string
           inquiry_id: string | null
@@ -144,9 +141,6 @@ export type Database = {
         Insert: {
           created_at?: string
           duration_minutes?: number
-          external_event_id?: string | null
-          external_event_provider?: string | null
-          external_synced_at?: string | null
           host_id: string
           id?: string
           inquiry_id?: string | null
@@ -163,9 +157,6 @@ export type Database = {
         Update: {
           created_at?: string
           duration_minutes?: number
-          external_event_id?: string | null
-          external_event_provider?: string | null
-          external_synced_at?: string | null
           host_id?: string
           id?: string
           inquiry_id?: string | null
