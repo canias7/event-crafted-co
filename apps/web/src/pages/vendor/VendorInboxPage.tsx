@@ -338,7 +338,7 @@ export default function VendorInboxPage() {
               <span className="w-4 h-4 rounded overflow-hidden ring-1 ring-black/5 shrink-0">
                 <HiluxLogo className="w-full h-full block" />
               </span>
-              <span className="font-medium">HILUX</span>
+              <span className="font-medium">HILUX 2.7</span>
               {hiluxToggling ? (
                 <Loader2 className="w-3 h-3 animate-spin" />
               ) : (
