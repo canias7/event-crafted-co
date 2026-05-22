@@ -717,19 +717,23 @@ function escalationEmailHtml(args: {
   const hostLabel = args.hostFirstName ? escapeHtml(args.hostFirstName) : "A host";
   const hostBody = escapeHtml(args.hostBody).replace(/\n/g, "<br />");
   const reason = escapeHtml(args.reason);
+  // CTA button sits near the TOP — right under the intro — so Gmail's
+  // "trim repeated content" heuristic (the •••) can never collapse it
+  // out of view. The quote + reason blocks live below it.
   return `<!doctype html>
 <html><body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 560px; margin: 0 auto; padding: 24px; color: #111;">
   <div style="display:inline-block;background:#fef2f2;color:#b91c1c;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;padding:5px 10px;border-radius:999px;margin-bottom:14px;">Action needed</div>
-  <p style="font-size:15px;margin:0 0 16px;">HILUX couldn't confidently handle a message for <strong>${escapeHtml(args.vendorName)}</strong> and has stepped aside — <strong>${hostLabel} is waiting for a reply from you.</strong></p>
+  <p style="font-size:15px;margin:0 0 18px;">HILUX couldn't confidently handle a message for <strong>${escapeHtml(args.vendorName)}</strong> and has stepped aside — <strong>${hostLabel} is waiting for a reply from you.</strong></p>
+  <p style="margin:0 0 24px;"><a href="${escapeHtml(args.threadLink)}" style="background:#b91c1c;color:#fff;text-decoration:none;padding:12px 20px;border-radius:6px;display:inline-block;font-weight:600;font-size:15px;">Reply to the host →</a></p>
   <div style="border-left:3px solid #ddd;padding:8px 16px;margin:0 0 16px;color:#555;">
     <div style="font-size:12px;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px;">${hostLabel} wrote</div>
     <div>${hostBody}</div>
   </div>
-  <div style="border-left:3px solid #b91c1c;padding:8px 16px;margin:0 0 24px;">
+  <div style="border-left:3px solid #b91c1c;padding:8px 16px;margin:0 0 20px;">
     <div style="font-size:12px;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px;color:#b91c1c;">Why HILUX escalated</div>
     <div>${reason}</div>
   </div>
-  <p style="margin:0;"><a href="${escapeHtml(args.threadLink)}" style="background:#b91c1c;color:#fff;text-decoration:none;padding:11px 18px;border-radius:6px;display:inline-block;font-weight:600;">Reply to the host</a></p>
-  <p style="color:#999;font-size:11px;margin-top:32px;">HILUX did not send a reply — the conversation is waiting on you. You're getting this because the "Notify me when HILUX escalates" toggle is on.</p>
+  <p style="margin:0;"><a href="${escapeHtml(args.threadLink)}" style="color:#b91c1c;font-weight:600;text-decoration:none;">Open the conversation →</a></p>
+  <p style="color:#999;font-size:11px;margin-top:24px;">HILUX did not send a reply — the conversation is waiting on you. You're getting this because the "Notify me when HILUX escalates" toggle is on.</p>
 </body></html>`;
 }
