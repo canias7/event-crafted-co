@@ -15,6 +15,7 @@ export default {
     extend: {
       fontFamily: {
         sans: ['Satoshi', 'system-ui', '-apple-system', 'sans-serif'],
+        serif: ['Bodoni Moda', 'Georgia', 'Times New Roman', 'serif'],
       },
       colors: {
         border: "hsl(var(--border))",

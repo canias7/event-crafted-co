@@ -81,6 +81,7 @@
   }
 
   h1, h2, h3, h4, h5, h6 {
+    font-family: 'Bodoni Moda', Georgia, 'Times New Roman', serif;
     text-wrap: balance;
     letter-spacing: -0.02em;
     line-height: 1.1;
@@ -162,19 +163,17 @@
 
 @layer utilities {
   .font-display {
-    font-family: 'Satoshi', system-ui, sans-serif;
+    font-family: 'Bodoni Moda', Georgia, 'Times New Roman', serif;
     font-weight: 700;
     letter-spacing: -0.02em;
     line-height: 1.1;
   }
 
-  /* Editorial italic serif — used for headlines across the host
-     portal to mirror the mobile design (Times New Roman italic on
-     iOS, system serif italic elsewhere). The mobile apps build their
-     entire identity around this typeface; web pages that talk
-     directly to hosts should match. */
+  /* Editorial italic serif — Bodoni Moda. Carries the Vendora
+     wordmark and the editorial headlines across the host portal.
+     Falls back to Times New Roman until the web font loads. */
   .font-editorial {
-    font-family: 'Times New Roman', 'Times', Georgia, ui-serif, serif;
+    font-family: 'Bodoni Moda', 'Times New Roman', 'Times', Georgia, ui-serif, serif;
     font-style: italic;
     font-weight: 500;
     letter-spacing: -0.01em;
