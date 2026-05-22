@@ -473,7 +473,8 @@ serve(async (req) => {
           .from("vendor_team_members")
           .select("user_id")
           .eq("vendor_id", ctx.vendor.id);
-        const rows = ((members ?? []) as Array<{ user_id: string }>).map((m) => ({
+        const memberRows = (members ?? []) as Array<{ user_id: string }>;
+        const rows = memberRows.map((m) => ({
           user_id: m.user_id,
           type: "hilux_escalation",
           title,
@@ -485,6 +486,49 @@ serve(async (req) => {
           if (notifErr) console.error("[hilux-respond] notification insert failed", notifErr);
         }
         notified = rows.length;
+
+        // Action-required email. An escalation is the most
+        // time-sensitive HILUX event — a host is waiting and the
+        // agent stepped aside — so we email the vendor team
+        // immediately, not just the in-app bell. Best-effort.
+        if (RESEND_API_KEY) {
+          try {
+            const vendorName = ctx.vendor.business_name ?? "your business";
+            const threadLink = `${APP_URL}/vendor/messages?thread=${threadId}`;
+            for (const m of memberRows) {
+              const { data: u } = await admin.auth.admin.getUserById(m.user_id);
+              const to = u?.user?.email;
+              if (!to) continue;
+              const send = await fetch("https://api.resend.com/emails", {
+                method: "POST",
+                headers: {
+                  Authorization: `Bearer ${RESEND_API_KEY}`,
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                  from: EMAIL_FROM_ADDRESS,
+                  to,
+                  subject: `Action needed — HILUX handed you a conversation`,
+                  html: escalationEmailHtml({
+                    vendorName,
+                    hostFirstName,
+                    hostBody: triggeringMessage.body ?? "",
+                    reason,
+                    threadLink,
+                  }),
+                }),
+              });
+              if (!send.ok) {
+                console.error(
+                  "[hilux-respond] escalation email failed",
+                  await send.text(),
+                );
+              }
+            }
+          } catch (err) {
+            console.error("[hilux-respond] escalation email error", err);
+          }
+        }
       }
       log("hilux escalated", { thread: threadId, reason, notified });
       await logAction("escalate", reason, null, replyUsage);
@@ -653,5 +697,32 @@ function replyCopyHtml(args: {
   </div>
   <p style="margin:0;"><a href="${escapeHtml(args.threadLink)}" style="background:#111;color:#fff;text-decoration:none;padding:10px 16px;border-radius:6px;display:inline-block;">Open the thread</a></p>
   <p style="color:#999;font-size:11px;margin-top:32px;">You're getting this because the Email reply copies toggle is on for HILUX. Turn it off in your agent settings to stop.</p>
+</body></html>`;
+}
+
+function escalationEmailHtml(args: {
+  vendorName: string;
+  hostFirstName: string | null;
+  hostBody: string;
+  reason: string;
+  threadLink: string;
+}): string {
+  const hostLabel = args.hostFirstName ? escapeHtml(args.hostFirstName) : "A host";
+  const hostBody = escapeHtml(args.hostBody).replace(/\n/g, "<br />");
+  const reason = escapeHtml(args.reason);
+  return `<!doctype html>
+<html><body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 560px; margin: 0 auto; padding: 24px; color: #111;">
+  <div style="display:inline-block;background:#fef2f2;color:#b91c1c;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;padding:5px 10px;border-radius:999px;margin-bottom:14px;">Action needed</div>
+  <p style="font-size:15px;margin:0 0 16px;">HILUX couldn't confidently handle a message for <strong>${escapeHtml(args.vendorName)}</strong> and has stepped aside — <strong>${hostLabel} is waiting for a reply from you.</strong></p>
+  <div style="border-left:3px solid #ddd;padding:8px 16px;margin:0 0 16px;color:#555;">
+    <div style="font-size:12px;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px;">${hostLabel} wrote</div>
+    <div>${hostBody}</div>
+  </div>
+  <div style="border-left:3px solid #b91c1c;padding:8px 16px;margin:0 0 24px;">
+    <div style="font-size:12px;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px;color:#b91c1c;">Why HILUX escalated</div>
+    <div>${reason}</div>
+  </div>
+  <p style="margin:0;"><a href="${escapeHtml(args.threadLink)}" style="background:#b91c1c;color:#fff;text-decoration:none;padding:11px 18px;border-radius:6px;display:inline-block;font-weight:600;">Reply to the host</a></p>
+  <p style="color:#999;font-size:11px;margin-top:32px;">HILUX did not send a reply — the conversation is waiting on you. You're getting this because the "Notify me when HILUX escalates" toggle is on.</p>
 </body></html>`;
 }
