@@ -458,10 +458,15 @@ const TOOLS = [
   },
 ];
 
+// MCP spec revisions this server speaks, newest first. `initialize`
+// echoes the client's requested version when it's one of these,
+// else answers with the newest (index 0).
+const SUPPORTED_PROTOCOL_VERSIONS = ["2025-06-18", "2025-03-26", "2024-11-05"];
+
 // Initialize handshake response. Capabilities tell the client
 // what this server supports.
 const INITIALIZE_RESULT = {
-  protocolVersion: "2024-11-05",
+  protocolVersion: SUPPORTED_PROTOCOL_VERSIONS[0],
   capabilities: {
     tools: { listChanged: false },
     prompts: { listChanged: false },
@@ -800,7 +805,15 @@ serve(async (req) => {
   // `initialize` doesn't need auth — the client is just asking what
   // we are. Auth happens before the first tool call.
   if (method === "initialize") {
-    return rpcResult(id, INITIALIZE_RESULT);
+    // Echo the client's requested protocol version when we support
+    // it (proper MCP negotiation); otherwise answer with our latest.
+    const requested = typeof params?.protocolVersion === "string"
+      ? params.protocolVersion
+      : null;
+    const negotiated = requested && SUPPORTED_PROTOCOL_VERSIONS.includes(requested)
+      ? requested
+      : SUPPORTED_PROTOCOL_VERSIONS[0];
+    return rpcResult(id, { ...INITIALIZE_RESULT, protocolVersion: negotiated });
   }
 
   // `tools/list`, `prompts/list`, and the static resource catalogs
