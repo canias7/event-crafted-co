@@ -112,8 +112,6 @@ const ACTION_GROUPS: ActionGroup[] = [
     title: "Conversation",
     actions: [
       { key: "hilux_action_use_calendar", label: "Use my calendar for date answers", blurb: "Read live availability so HILUX can answer \"are you free on Sept 12?\" directly.", Icon: Calendar },
-      { key: "hilux_action_escalate", label: "Escalate when uncertain", blurb: "If HILUX can't confidently answer, route it to your inbox instead of guessing.", Icon: ShieldAlert },
-      { key: "hilux_action_detect_frustration", label: "Escalate frustrated hosts", blurb: "If the host sounds upset, hand off to you instead of trying to smooth it over.", Icon: Frown },
       { key: "hilux_action_mention_starting_price", label: "Mention starting price upfront", blurb: "When the host asks about cost, lead with the starting price right away.", Icon: CircleDollarSign },
       { key: "hilux_action_suggest_package", label: "Suggest the right package", blurb: "When the host's ask matches a package, recommend it by name.", Icon: Tag },
       { key: "hilux_action_decline_negotiation", label: "Decline price negotiation", blurb: "If the host asks for a discount, politely decline. No haggling.", Icon: ShieldOff },
@@ -124,6 +122,13 @@ const ACTION_GROUPS: ActionGroup[] = [
       { key: "hilux_action_echo_question", label: "Echo back the question", blurb: "Restate what the host asked before answering, to prove HILUX understood.", Icon: Quote },
       { key: "hilux_action_acknowledge_emotion", label: "Acknowledge their excitement", blurb: "When the host expresses excitement, warmly acknowledge it before answering.", Icon: Smile },
       { key: "hilux_action_lead_with_question", label: "Open with a question", blurb: "First HILUX reply leads with a question to pull more info instead of answering.", Icon: HelpCircle },
+    ],
+  },
+  {
+    title: "Escalation",
+    actions: [
+      { key: "hilux_action_escalate", label: "Escalate when uncertain", blurb: "If HILUX can't confidently answer, route it to your inbox instead of guessing.", Icon: ShieldAlert },
+      { key: "hilux_action_detect_frustration", label: "Escalate frustrated hosts", blurb: "If the host sounds upset, hand off to you instead of trying to smooth it over.", Icon: Frown },
     ],
   },
   {
