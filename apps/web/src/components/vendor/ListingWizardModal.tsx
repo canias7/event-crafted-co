@@ -166,6 +166,12 @@ export function ListingWizardModal({
         })
         .catch(() => undefined);
 
+      // 5. Geocode the listing's location in the background so map /
+      //    distance features have coordinates. Best-effort.
+      void supabase.functions
+        .invoke("geocode-vendor", { body: { vendorId } })
+        .catch(() => undefined);
+
       toast.success("Listing submitted for review.");
       onPublished();
     } catch (err) {

@@ -272,7 +272,7 @@ serve(async (req) => {
     // get_action_log tool. Best-effort. The usage argument carries
     // Anthropic token counts for cost view.
     const logAction = async (
-      action: "reply" | "escalate",
+      action: "reply" | "escalate" | "lead_score_hot",
       detail: string | null,
       messageId: string | null,
       usage: ClaudeUsage | null = null,
@@ -330,25 +330,27 @@ serve(async (req) => {
         // Hot-lead notification: only fire when the lead JUST became
         // hot (was not hot before). Skips repeat-hot pings on every
         // host message in a hot conversation.
-        if (
-          actions.notifyOnHotLead &&
-          result.score === "hot" &&
-          priorScore !== "hot"
-        ) {
-          const { data: members } = await admin
-            .from("vendor_team_members")
-            .select("user_id")
-            .eq("vendor_id", ctx.vendor!.id);
-          const rows = ((members ?? []) as Array<{ user_id: string }>).map((m) => ({
-            user_id: m.user_id,
-            type: "hilux_hot_lead",
-            title: "Hot lead — HILUX flagged this one",
-            body: result.reason || "Host is ready to book.",
-            link: inquiryPath,
-          }));
-          if (rows.length > 0) {
-            const { error: nerr } = await admin.from("notifications").insert(rows);
-            if (nerr) console.error("[hilux-respond] hot-lead notify failed", nerr);
+        // Lead just turned hot (was not hot before). Log it for the
+        // daily summary + activity feed regardless of the notify
+        // toggle; only the push/email alert below is opt-in.
+        if (result.score === "hot" && priorScore !== "hot") {
+          await logAction("lead_score_hot", result.reason, null);
+          if (actions.notifyOnHotLead) {
+            const { data: members } = await admin
+              .from("vendor_team_members")
+              .select("user_id")
+              .eq("vendor_id", ctx.vendor!.id);
+            const rows = ((members ?? []) as Array<{ user_id: string }>).map((m) => ({
+              user_id: m.user_id,
+              type: "hilux_hot_lead",
+              title: "Hot lead — HILUX flagged this one",
+              body: result.reason || "Host is ready to book.",
+              link: inquiryPath,
+            }));
+            if (rows.length > 0) {
+              const { error: nerr } = await admin.from("notifications").insert(rows);
+              if (nerr) console.error("[hilux-respond] hot-lead notify failed", nerr);
+            }
           }
         }
       } catch (err) {

@@ -2,11 +2,9 @@
 // every profile with hilux_action_daily_summary = true, computes
 // HILUX's last-24h activity and emails a digest to the vendor team.
 //
-// Counts: replies sent, escalations, follow-ups, archives, hot
-// leads detected, booking-intent signals. Numbers come from
-// hilux_action_log (which is itself gated by hilux_action_log_actions
-// — vendors who want the digest should also have logging on; we
-// note that in the email when the log is empty).
+// Counts: replies sent, escalations, and hot leads detected — the
+// three action types HILUX writes to hilux_action_log. Silent days
+// (zero activity) are skipped rather than emailed.
 
 // deno-lint-ignore-file no-explicit-any
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
@@ -43,20 +41,14 @@ function log(...args: unknown[]) {
 interface Counts {
   reply: number;
   escalate: number;
-  follow_up: number;
-  archive_cold: number;
   lead_score_hot: number;
-  booking_intent_detected: number;
 }
 
 function emptyCounts(): Counts {
   return {
     reply: 0,
     escalate: 0,
-    follow_up: 0,
-    archive_cold: 0,
     lead_score_hot: 0,
-    booking_intent_detected: 0,
   };
 }
 
@@ -183,12 +175,7 @@ function escapeHtml(s: string): string {
 const ACTION_LABEL: Record<string, string> = {
   reply: "replied to a host",
   escalate: "escalated to you",
-  follow_up: "sent a follow-up nudge",
-  regenerate: "regenerated a reply",
-  archive_cold: "archived a cold inquiry",
-  booking_intent_detected: "spotted booking intent",
   lead_score_hot: "flagged a hot lead",
-  fields_extracted: "extracted inquiry fields",
 };
 
 function summaryHtml(args: {
@@ -220,7 +207,6 @@ function summaryHtml(args: {
     ${stat(args.counts.reply, "Replies sent")}
     ${stat(args.counts.escalate, "Escalations")}
     ${stat(args.counts.lead_score_hot, "Hot leads")}
-    ${stat(args.counts.booking_intent_detected, "Booking intent")}
   </div>
   ${recent ? `<h3 style="font-size:14px;margin:0 0 8px;color:#111;">Recent activity</h3><ul style="margin:0 0 24px;padding:0;list-style:none;font-size:13px;">${recent}</ul>` : ""}
   <p style="margin:0;"><a href="${escapeHtml(args.appUrl)}/vendor/inbox" style="background:#111;color:#fff;text-decoration:none;padding:10px 16px;border-radius:6px;display:inline-block;">Open your inbox</a></p>
