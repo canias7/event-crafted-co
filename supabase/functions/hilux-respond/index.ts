@@ -94,6 +94,13 @@ serve(async (req) => {
     if (!thread) return ok({ skipped: "no_thread" });
     if (thread.hilux_paused) return ok({ skipped: "thread_paused" });
 
+    // Deep link to the inquiry-detail page. The vendor inbox is
+    // routed /vendor/inbox/:inquiryId — keyed by inquiry id, not
+    // thread id. Every notification + email below uses this.
+    const inquiryPath = thread.inquiry_id
+      ? `/vendor/inbox/${thread.inquiry_id}`
+      : "/vendor/inbox";
+
     const ctx = await loadVendorContext(admin, thread.vendor_id);
     if (!ctx.vendor) return ok({ skipped: "no_vendor" });
     if (!ctx.profile || !ctx.profile.hilux_enabled) return ok({ skipped: "hilux_off" });
@@ -443,7 +450,7 @@ serve(async (req) => {
             type: "hilux_hot_lead",
             title: "Hot lead — HILUX flagged this one",
             body: result.reason || "Host is ready to book.",
-            link: `/vendor/messages?thread=${threadId}`,
+            link: inquiryPath,
           }));
           if (rows.length > 0) {
             const { error: nerr } = await admin.from("notifications").insert(rows);
@@ -479,7 +486,7 @@ serve(async (req) => {
           type: "hilux_escalation",
           title,
           body,
-          link: `/vendor/messages?thread=${threadId}`,
+          link: inquiryPath,
         }));
         if (rows.length > 0) {
           const { error: notifErr } = await admin.from("notifications").insert(rows);
@@ -494,7 +501,7 @@ serve(async (req) => {
         if (RESEND_API_KEY) {
           try {
             const vendorName = ctx.vendor.business_name ?? "your business";
-            const threadLink = `${APP_URL}/vendor/messages?thread=${threadId}`;
+            const threadLink = `${APP_URL}${inquiryPath}`;
             for (const m of memberRows) {
               const { data: u } = await admin.auth.admin.getUserById(m.user_id);
               const to = u?.user?.email;
@@ -588,7 +595,7 @@ serve(async (req) => {
         type: "hilux_reply",
         title: "HILUX replied for you",
         body: sanitized.slice(0, 140),
-        link: `/vendor/messages?thread=${threadId}`,
+        link: inquiryPath,
       }));
       if (rows.length > 0) {
         const { error: notifErr } = await admin.from("notifications").insert(rows);
@@ -612,7 +619,7 @@ serve(async (req) => {
           .find((m) => m.sender_role === "host");
         const hostBody = (lastHostMsg?.body ?? "").trim();
         const vendorName = ctx.vendor.business_name ?? "your business";
-        const threadLink = `${APP_URL}/vendor/messages?thread=${threadId}`;
+        const threadLink = `${APP_URL}${inquiryPath}`;
         for (const m of (members ?? []) as Array<{ user_id: string }>) {
           const { data: u } = await admin.auth.admin.getUserById(m.user_id);
           const to = u?.user?.email;
