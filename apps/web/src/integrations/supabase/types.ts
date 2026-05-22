@@ -133,8 +133,6 @@ export type Database = {
           inquiry_id: string | null
           kind: string
           location: string | null
-          meeting_provider: string | null
-          meeting_url: string | null
           notes: string | null
           proposed_by: string
           scheduled_at: string
@@ -154,8 +152,6 @@ export type Database = {
           inquiry_id?: string | null
           kind?: string
           location?: string | null
-          meeting_provider?: string | null
-          meeting_url?: string | null
           notes?: string | null
           proposed_by: string
           scheduled_at: string
@@ -175,8 +171,6 @@ export type Database = {
           inquiry_id?: string | null
           kind?: string
           location?: string | null
-          meeting_provider?: string | null
-          meeting_url?: string | null
           notes?: string | null
           proposed_by?: string
           scheduled_at?: string
