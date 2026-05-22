@@ -10,7 +10,6 @@ import { Check, Download, Loader2, Sparkles, Upload } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
-import { AxionLogo } from "./AgentLogos";
 
 // Quick-fill prompt presets — tapping one drops editable text into
 // the prompt box. The vendor can tweak it or write their own.
@@ -168,7 +167,11 @@ export function AxionVendorControls() {
         {/* Header — mirrors the HILUX panel */}
         <div className="flex items-center gap-4 p-5 md:p-6">
           <div className="w-12 h-12 rounded-2xl overflow-hidden ring-1 ring-black/5 shrink-0">
-            <AxionLogo className="w-full h-full block" />
+            <img
+              src="/agents/axion-logo.jpg"
+              alt="Axion"
+              className="w-full h-full object-cover block"
+            />
           </div>
           <div className="min-w-0 flex-1">
             <h3 className="font-editorial text-2xl md:text-3xl text-black leading-tight">
