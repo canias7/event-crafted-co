@@ -1,9 +1,8 @@
-// Axion 9.1 — the listing-photo agent. Three-step flow: upload a
-// photo, write a prompt (or tap a quick preset), and Axion (OpenAI
-// gpt-image-1) returns restyled variants. Variants can be downloaded
-// or saved into the vendor's gallery ("Axion" album).
-//
-// Chrome (card + header) mirrors the HILUX panel.
+// Axion 9.1 — the listing-photo agent. Two modes:
+//   Generate — text-to-image: a prompt becomes brand-new photos.
+//   Edit     — image-to-image: upload a photo, restyle it.
+// Both end in a Result zone; variants download or save into the
+// vendor's gallery ("Axion" album). Chrome mirrors the HILUX panel.
 
 import { useRef, useState } from "react";
 import { Check, Download, Loader2, Sparkles, Upload } from "lucide-react";
@@ -11,26 +10,53 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 
-// Quick-fill prompt presets — tapping one drops editable text into
-// the prompt box. The vendor can tweak it or write their own.
-const QUICK_PROMPTS = [
-  {
-    label: "Editorial",
-    text: "Polish this into an editorial, magazine-quality photo — elevate the lighting, colour, and sharpness while keeping it natural.",
-  },
-  {
-    label: "Bright & airy",
-    text: "Make this bright and airy — lift the exposure, soften the shadows, clean and fresh.",
-  },
-  {
-    label: "Warm",
-    text: "Give this warm, inviting golden tones and a cozy ambiance.",
-  },
-  {
-    label: "Clean background",
-    text: "Tidy and neutralize the background into a clean, professional studio backdrop.",
-  },
+type Mode = "generate" | "edit";
+
+const MODES: { key: Mode; label: string }[] = [
+  { key: "generate", label: "Generate" },
+  { key: "edit", label: "Edit" },
 ];
+
+// Quick-fill prompt presets per mode — tapping one drops editable
+// text into the prompt box.
+const QUICK_PROMPTS: Record<Mode, { label: string; text: string }[]> = {
+  generate: [
+    {
+      label: "Hero tablescape",
+      text: "An elegant event reception tablescape — styled place settings, fresh florals, soft natural light.",
+    },
+    {
+      label: "Lifestyle scene",
+      text: "A warm, candid lifestyle scene of guests enjoying a celebration.",
+    },
+    {
+      label: "Detail close-up",
+      text: "A crisp editorial close-up of event details — florals, styling, or decor.",
+    },
+    {
+      label: "Venue shot",
+      text: "A wide, inviting photo of an event venue dressed for a celebration.",
+    },
+  ],
+  edit: [
+    {
+      label: "Editorial",
+      text: "Polish this into an editorial, magazine-quality photo — elevate the lighting, colour, and sharpness while keeping it natural.",
+    },
+    {
+      label: "Bright & airy",
+      text: "Make this bright and airy — lift the exposure, soften the shadows, clean and fresh.",
+    },
+    {
+      label: "Warm",
+      text: "Give this warm, inviting golden tones and a cozy ambiance.",
+    },
+    {
+      label: "Clean background",
+      text: "Tidy and neutralize the background into a clean, professional studio backdrop.",
+    },
+  ],
+};
 
 const MAX_UPLOAD_BYTES = 15 * 1024 * 1024;
 
@@ -45,12 +71,26 @@ function StepLabel({ n, children }: { n: number; children: string }) {
 
 export function AxionVendorControls() {
   const { user } = useAuth();
+  const [mode, setMode] = useState<Mode>("generate");
   const [sourceDataUrl, setSourceDataUrl] = useState<string | null>(null);
   const [prompt, setPrompt] = useState("");
   const [generating, setGenerating] = useState(false);
   const [variants, setVariants] = useState<string[]>([]);
   const [saved, setSaved] = useState<Record<number, "saving" | "saved">>({});
   const fileRef = useRef<HTMLInputElement>(null);
+
+  const resetWork = () => {
+    setVariants([]);
+    setSaved({});
+  };
+
+  const switchMode = (next: Mode) => {
+    if (next === mode) return;
+    setMode(next);
+    setPrompt("");
+    setSourceDataUrl(null);
+    resetWork();
+  };
 
   const onPick = (file: File | null) => {
     if (!file) return;
@@ -65,20 +105,27 @@ export function AxionVendorControls() {
     const reader = new FileReader();
     reader.onload = () => {
       setSourceDataUrl(typeof reader.result === "string" ? reader.result : null);
-      setVariants([]);
-      setSaved({});
+      resetWork();
     };
     reader.readAsDataURL(file);
   };
 
+  const canGenerate =
+    !generating &&
+    !!prompt.trim() &&
+    (mode === "generate" || !!sourceDataUrl);
+
   const generate = async () => {
-    if (!sourceDataUrl || !prompt.trim()) return;
+    if (!canGenerate) return;
     setGenerating(true);
-    setVariants([]);
-    setSaved({});
+    resetWork();
     try {
+      const body =
+        mode === "edit"
+          ? { mode, image: sourceDataUrl, prompt: prompt.trim() }
+          : { mode, prompt: prompt.trim() };
       const { data, error } = await supabase.functions.invoke("axion-generate", {
-        body: { image: sourceDataUrl, prompt: prompt.trim() },
+        body,
       });
       if (error) throw error;
       const v = (data?.variants ?? []) as string[];
@@ -86,7 +133,7 @@ export function AxionVendorControls() {
       setVariants(v);
     } catch (err) {
       console.error("[Axion] generate failed", err);
-      toast.error("Couldn't generate variants. Try again in a moment.");
+      toast.error("Couldn't generate. Try again in a moment.");
     } finally {
       setGenerating(false);
     }
@@ -159,7 +206,8 @@ export function AxionVendorControls() {
     }
   };
 
-  const canGenerate = !!sourceDataUrl && !!prompt.trim() && !generating;
+  const promptStep = mode === "edit" ? 2 : 1;
+  const resultStep = mode === "edit" ? 3 : 2;
 
   return (
     <div className="relative z-10 px-6 md:px-10 pt-6 pb-24">
@@ -178,13 +226,31 @@ export function AxionVendorControls() {
               AXION 9.1
             </h3>
             <p className="text-xs text-black/55 mt-0.5">
-              Turn a listing photo into editorial-grade shots.
+              Generate or restyle listing photography on demand.
             </p>
           </div>
         </div>
 
-        {/* Body — three steps: photo → prompt → result */}
+        {/* Body */}
         <div className="border-t border-black/10 p-5 md:p-6 space-y-6 bg-white/30">
+          {/* Mode switcher */}
+          <div className="flex rounded-full bg-black/[0.05] p-1">
+            {MODES.map((m) => (
+              <button
+                key={m.key}
+                type="button"
+                onClick={() => switchMode(m.key)}
+                className={`flex-1 text-xs font-medium py-1.5 rounded-full transition-colors ${
+                  mode === m.key
+                    ? "bg-white text-black shadow-sm"
+                    : "text-black/50 hover:text-black/75"
+                }`}
+              >
+                {m.label}
+              </button>
+            ))}
+          </div>
+
           <input
             ref={fileRef}
             type="file"
@@ -193,42 +259,48 @@ export function AxionVendorControls() {
             onChange={(e) => onPick(e.target.files?.[0] ?? null)}
           />
 
-          {/* 1 — Your photo */}
-          <div>
-            <StepLabel n={1}>Your photo</StepLabel>
-            {sourceDataUrl ? (
-              <div className="relative rounded-xl overflow-hidden">
-                <img
-                  src={sourceDataUrl}
-                  alt="Upload to restyle"
-                  className="w-full max-h-72 object-contain bg-black/5"
-                />
+          {/* Photo step — Edit mode only */}
+          {mode === "edit" ? (
+            <div>
+              <StepLabel n={1}>Your photo</StepLabel>
+              {sourceDataUrl ? (
+                <div className="relative rounded-xl overflow-hidden">
+                  <img
+                    src={sourceDataUrl}
+                    alt="Upload to restyle"
+                    className="w-full max-h-72 object-contain bg-black/5"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => fileRef.current?.click()}
+                    className="absolute top-2 right-2 text-[11px] bg-black/70 text-white px-2 py-1 rounded-md"
+                  >
+                    Replace
+                  </button>
+                </div>
+              ) : (
                 <button
                   type="button"
                   onClick={() => fileRef.current?.click()}
-                  className="absolute top-2 right-2 text-[11px] bg-black/70 text-white px-2 py-1 rounded-md"
+                  className="w-full rounded-xl border border-dashed border-black/20 py-10 flex flex-col items-center gap-2 text-black/50 hover:text-black/70 hover:border-black/30 transition-colors"
                 >
-                  Replace
+                  <Upload className="w-5 h-5" />
+                  <span className="text-sm">Upload a listing photo</span>
+                  <span className="text-[11px]">JPG or PNG, up to 15MB</span>
                 </button>
-              </div>
-            ) : (
-              <button
-                type="button"
-                onClick={() => fileRef.current?.click()}
-                className="w-full rounded-xl border border-dashed border-black/20 py-10 flex flex-col items-center gap-2 text-black/50 hover:text-black/70 hover:border-black/30 transition-colors"
-              >
-                <Upload className="w-5 h-5" />
-                <span className="text-sm">Upload a listing photo</span>
-                <span className="text-[11px]">JPG or PNG, up to 15MB</span>
-              </button>
-            )}
-          </div>
+              )}
+            </div>
+          ) : null}
 
-          {/* 2 — Prompt */}
+          {/* Prompt step */}
           <div>
-            <StepLabel n={2}>What should Axion do?</StepLabel>
+            <StepLabel n={promptStep}>
+              {mode === "edit"
+                ? "What should Axion do?"
+                : "What should Axion create?"}
+            </StepLabel>
             <div className="flex flex-wrap gap-1.5 mb-2">
-              {QUICK_PROMPTS.map((q) => (
+              {QUICK_PROMPTS[mode].map((q) => (
                 <button
                   key={q.label}
                   type="button"
@@ -248,7 +320,11 @@ export function AxionVendorControls() {
               onChange={(e) => setPrompt(e.target.value)}
               rows={3}
               maxLength={1000}
-              placeholder="Describe the look you want — e.g. brighter, natural lighting; clean studio background; warmer tones…"
+              placeholder={
+                mode === "edit"
+                  ? "Describe the look you want — e.g. brighter, natural lighting; clean studio background; warmer tones…"
+                  : "Describe the photo to create — e.g. an elegant wedding tablescape with florals and soft window light…"
+              }
               className="w-full rounded-xl border border-black/15 bg-white/70 p-3 text-sm text-black placeholder:text-black/35 resize-none focus:outline-none focus:ring-2 focus:ring-black/10"
             />
             <button
@@ -260,24 +336,26 @@ export function AxionVendorControls() {
               {generating ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  Generating… (~30s)
+                  Working… (~30s)
                 </>
               ) : (
                 <>
                   <Sparkles className="w-4 h-4" />
-                  Generate variants
+                  {mode === "edit" ? "Generate variants" : "Generate images"}
                 </>
               )}
             </button>
           </div>
 
-          {/* 3 — Result */}
+          {/* Result step */}
           <div>
-            <StepLabel n={3}>Result</StepLabel>
+            <StepLabel n={resultStep}>Result</StepLabel>
             {generating ? (
               <div className="rounded-xl border border-dashed border-black/20 py-12 flex flex-col items-center gap-2 text-black/45">
                 <Loader2 className="w-5 h-5 animate-spin" />
-                <span className="text-xs">Axion is restyling your photo…</span>
+                <span className="text-xs">
+                  Axion is {mode === "edit" ? "restyling your photo" : "creating your images"}…
+                </span>
               </div>
             ) : variants.length > 0 ? (
               <div className="grid grid-cols-2 gap-3">
@@ -312,7 +390,7 @@ export function AxionVendorControls() {
                         </button>
                         <a
                           href={v}
-                          download={`axion-variant-${i + 1}.png`}
+                          download={`axion-${i + 1}.png`}
                           className="text-black/55 hover:text-black p-1.5 rounded-md hover:bg-black/5"
                           aria-label={`Download variant ${i + 1}`}
                         >
@@ -325,7 +403,7 @@ export function AxionVendorControls() {
               </div>
             ) : (
               <div className="rounded-xl border border-dashed border-black/20 py-12 flex items-center justify-center text-xs text-black/40">
-                Your restyled variants will appear here.
+                Your images will appear here.
               </div>
             )}
           </div>

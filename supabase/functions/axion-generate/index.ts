@@ -1,11 +1,10 @@
-// Axion image edge function. The vendor uploads a listing photo and
-// picks a style; Axion sends it to OpenAI's gpt-image-1 edit endpoint
-// and returns restyled variants.
+// Axion image edge function. Two modes:
+//   generate — text-to-image: a prompt becomes brand-new listing
+//              photos (OpenAI gpt-image-1 generations).
+//   edit     — image-to-image: an uploaded photo is restyled per a
+//              prompt (gpt-image-1 edits).
 //
-// Stateless for v1 — nothing is persisted. The panel shows the
-// returned variants for the vendor to download. Persistence +
-// save-to-gallery is a planned follow-up.
-//
+// Stateless — variants are returned for the panel to show/save.
 // Auth: vendor JWT (verify_jwt=true).
 
 // deno-lint-ignore-file no-explicit-any
@@ -64,43 +63,65 @@ serve(async (req) => {
     if (!OPENAI_API_KEY) return json(500, { error: "openai_key_missing" });
 
     const payload = await req.json().catch(() => ({}));
+    const mode = payload?.mode === "generate" ? "generate" : "edit";
     const userPrompt = String(payload?.prompt ?? "").trim();
     if (!userPrompt) return json(400, { error: "missing_prompt" });
-    // Wrap the vendor's free-text direction with guardrails so the
-    // edit stays a realistic listing photo, not an AI-looking render.
-    const prompt =
-      "Edit this event-vendor listing photo. Apply the direction below while keeping the real subject, composition, and details intact — keep it photorealistic and natural, never artificial or AI-looking. Direction: " +
-      userPrompt.slice(0, 1000);
+    const direction = userPrompt.slice(0, 1000);
 
-    const decoded = decodeImage(String(payload?.image ?? ""));
-    if (!decoded) return json(400, { error: "invalid_image" });
-    // Headroom under OpenAI's 50MB-per-image edit limit.
-    if (decoded.bytes.length > 20 * 1024 * 1024) {
-      return json(413, { error: "image_too_large" });
+    let res: Response;
+    if (mode === "generate") {
+      // Text-to-image: a brand-new listing photo from a description.
+      const prompt =
+        "Create a photorealistic, editorial-quality photo for an event vendor's marketplace listing. It must look like a real photograph — never an illustration, 3D render, or obviously AI-generated image. Subject: " +
+        direction;
+      res = await fetch("https://api.openai.com/v1/images/generations", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${OPENAI_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "gpt-image-1",
+          prompt,
+          n: 2,
+          size: "1024x1024",
+          quality: "medium",
+        }),
+      });
+    } else {
+      // Image-to-image: restyle the vendor's uploaded photo.
+      const decoded = decodeImage(String(payload?.image ?? ""));
+      if (!decoded) return json(400, { error: "invalid_image" });
+      // Headroom under OpenAI's 50MB-per-image edit limit.
+      if (decoded.bytes.length > 20 * 1024 * 1024) {
+        return json(413, { error: "image_too_large" });
+      }
+      const prompt =
+        "Edit this event-vendor listing photo. Apply the direction below while keeping the real subject, composition, and details intact — keep it photorealistic and natural, never artificial or AI-looking. Direction: " +
+        direction;
+      const subtype = decoded.mime.split("/")[1] ?? "png";
+      const ext = subtype === "jpeg" ? "jpg" : subtype;
+      const form = new FormData();
+      form.append("model", "gpt-image-1");
+      form.append(
+        "image",
+        new Blob([decoded.bytes], { type: decoded.mime }),
+        `source.${ext}`,
+      );
+      form.append("prompt", prompt);
+      form.append("n", "2");
+      form.append("size", "1024x1024");
+      form.append("quality", "medium");
+      res = await fetch("https://api.openai.com/v1/images/edits", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${OPENAI_API_KEY}` },
+        body: form,
+      });
     }
 
-    const subtype = decoded.mime.split("/")[1] ?? "png";
-    const ext = subtype === "jpeg" ? "jpg" : subtype;
-    const form = new FormData();
-    form.append("model", "gpt-image-1");
-    form.append(
-      "image",
-      new Blob([decoded.bytes], { type: decoded.mime }),
-      `source.${ext}`,
-    );
-    form.append("prompt", prompt);
-    form.append("n", "2");
-    form.append("size", "1024x1024");
-    form.append("quality", "medium");
-
-    const res = await fetch("https://api.openai.com/v1/images/edits", {
-      method: "POST",
-      headers: { Authorization: `Bearer ${OPENAI_API_KEY}` },
-      body: form,
-    });
     if (!res.ok) {
       const detail = await res.text();
-      console.error("[axion-generate] openai error", res.status, detail);
+      console.error("[axion-generate] openai error", mode, res.status, detail);
       return json(502, {
         error: "openai_error",
         status: res.status,
