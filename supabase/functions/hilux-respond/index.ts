@@ -112,19 +112,17 @@ serve(async (req) => {
     // Skip if the vendor was active in this thread in the last 30 min.
     // "Active" = posted a non-HILUX-generated message. If the vendor
     // is handling the conversation themselves, HILUX defers.
-    if (ctx.profile.actions.skipWhenActive) {
-      const cutoffIso = new Date(Date.now() - 30 * 60_000).toISOString();
-      const { data: recentVendor } = await admin
-        .from("direct_messages")
-        .select("id")
-        .eq("thread_id", threadId)
-        .eq("sender_role", "vendor")
-        .eq("is_hilux_generated", false)
-        .gte("created_at", cutoffIso)
-        .limit(1);
-      if ((recentVendor ?? []).length > 0) {
-        return ok({ skipped: "vendor_active_in_thread" });
-      }
+    const cutoffIso = new Date(Date.now() - 30 * 60_000).toISOString();
+    const { data: recentVendor } = await admin
+      .from("direct_messages")
+      .select("id")
+      .eq("thread_id", threadId)
+      .eq("sender_role", "vendor")
+      .eq("is_hilux_generated", false)
+      .gte("created_at", cutoffIso)
+      .limit(1);
+    if ((recentVendor ?? []).length > 0) {
+      return ok({ skipped: "vendor_active_in_thread" });
     }
 
     // Reply cap: when capRepliesPerInquiry is on, HILUX backs off

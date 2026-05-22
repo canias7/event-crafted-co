@@ -88,12 +88,6 @@ serve(async (req) => {
           skipReasons.hilux_off = (skipReasons.hilux_off ?? 0) + 1;
           continue;
         }
-        if (!ctx.profile.actions.followUp) {
-          skipped++;
-          skipReasons.follow_up_off = (skipReasons.follow_up_off ?? 0) + 1;
-          continue;
-        }
-
         const { data: latest } = await admin
           .from("direct_messages")
           .select("sender_role, is_hilux_generated, body, created_at")

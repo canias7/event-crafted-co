@@ -43,9 +43,6 @@ export interface AvailabilityCtx {
 // by the calling edge function (drops the AVAILABILITY block when
 // useCalendar = false, etc.).
 export interface HiluxActions {
-  // Pacing
-  followUp: boolean;
-  skipWhenActive: boolean;
   // Conversation / how HILUX listens
   matchLanguage: boolean;
   useCalendar: boolean;
@@ -74,8 +71,6 @@ export interface HiluxActions {
 }
 
 export const DEFAULT_ACTIONS: HiluxActions = {
-  followUp: true,
-  skipWhenActive: true,
   matchLanguage: true,
   useCalendar: true,
   askClarifying: true,
@@ -720,8 +715,6 @@ export async function loadVendorContext(
         hilux_instructions: privRow?.hilux_instructions ?? null,
         hilux_voice_samples: privRow?.hilux_voice_samples ?? [],
         actions: {
-          followUp: profRow.hilux_action_follow_up !== false,
-          skipWhenActive: profRow.hilux_action_skip_when_active !== false,
           matchLanguage: profRow.hilux_action_match_language !== false,
           useCalendar: profRow.hilux_action_use_calendar !== false,
           askClarifying: profRow.hilux_action_ask_clarifying !== false,

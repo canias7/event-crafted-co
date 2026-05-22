@@ -13,7 +13,6 @@ import {
   ChevronDown,
   ChevronRight,
   ClipboardList,
-  Eye,
   Flag,
   Flame,
   Frown,
@@ -26,7 +25,6 @@ import {
   Phone,
   RotateCcw,
   Search as SearchIcon,
-  Send,
   ShieldOff,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -43,8 +41,6 @@ import { HiluxLogo } from "./AgentLogos";
 import { HiluxActivityLog } from "./HiluxActivityLog";
 
 type ActionKey =
-  | "hilux_action_follow_up"
-  | "hilux_action_skip_when_active"
   | "hilux_action_use_calendar"
   | "hilux_action_detect_frustration"
   | "hilux_action_decline_negotiation"
@@ -93,13 +89,6 @@ const ACTION_GROUPS: ActionGroup[] = [
     ],
   },
   {
-    title: "Pacing",
-    actions: [
-      { key: "hilux_action_follow_up", label: "Send follow-up nudges", blurb: "If a host goes silent 2-3 days after a reply, send one gentle nudge.", Icon: Send },
-      { key: "hilux_action_skip_when_active", label: "Defer when I'm in the thread", blurb: "If you sent a manual reply in this thread within the last 30 min, HILUX backs off.", Icon: Eye },
-    ],
-  },
-  {
     title: "Operations",
     actions: [
       { key: "hilux_action_auto_mark_replied", label: "Auto-mark inquiry as 'replied'", blurb: "Once HILUX answers, flip the inquiry status from new to replied so it leaves the new bucket.", Icon: Inbox },
@@ -133,7 +122,7 @@ export function HiluxVendorControls() {
     const { data, error } = await supabase
       .from("profiles")
       .select(
-        "hilux_enabled, hilux_action_follow_up, hilux_action_skip_when_active, hilux_action_use_calendar, hilux_action_detect_frustration, hilux_action_decline_negotiation, hilux_action_offer_call, hilux_action_auto_mark_replied, hilux_action_notify_on_reply, hilux_action_update_inquiry_fields, hilux_action_notify_on_escalation, hilux_action_notify_on_hot_lead, hilux_action_email_reply_copies, hilux_action_auto_archive_cold, hilux_action_daily_summary, hilux_action_cap_replies_per_inquiry, hilux_action_detect_booking_intent, hilux_action_log_actions",
+        "hilux_enabled, hilux_action_use_calendar, hilux_action_detect_frustration, hilux_action_decline_negotiation, hilux_action_offer_call, hilux_action_auto_mark_replied, hilux_action_notify_on_reply, hilux_action_update_inquiry_fields, hilux_action_notify_on_escalation, hilux_action_notify_on_hot_lead, hilux_action_email_reply_copies, hilux_action_auto_archive_cold, hilux_action_daily_summary, hilux_action_cap_replies_per_inquiry, hilux_action_detect_booking_intent, hilux_action_log_actions",
       )
       .eq("id", user.id)
       .maybeSingle();
@@ -144,8 +133,6 @@ export function HiluxVendorControls() {
     }
     const row = (data as HiluxProfileRow | null) ?? ({
       hilux_enabled: false,
-      hilux_action_follow_up: true,
-      hilux_action_skip_when_active: true,
       hilux_action_use_calendar: true,
       hilux_action_detect_frustration: true,
       hilux_action_decline_negotiation: true,
@@ -204,8 +191,6 @@ export function HiluxVendorControls() {
     if (!confirm("Reset all action toggles to defaults?")) return;
     setResetting(true);
     const patch: Partial<HiluxProfileRow> = {
-      hilux_action_follow_up: true,
-      hilux_action_skip_when_active: true,
       hilux_action_use_calendar: true,
       hilux_action_detect_frustration: true,
       hilux_action_decline_negotiation: true,
