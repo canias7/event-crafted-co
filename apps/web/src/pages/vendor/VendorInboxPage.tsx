@@ -36,6 +36,7 @@ interface InquiryRow {
   vendor_read_at: string | null;
   lead_score: "hot" | "warm" | "cold" | "unknown" | null;
   lead_score_reason: string | null;
+  hilux_paused: boolean;
   host: { display_name: string | null; avatar_url: string | null } | null;
 }
 
@@ -137,11 +138,17 @@ export default function VendorInboxPage() {
     const ids = baseRows.map((r) => r.id);
     let scored = baseRows;
     if (ids.length > 0) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data: scores } = await (supabase as any)
-        .from("inquiry_scores")
-        .select("inquiry_id, lead_score, lead_score_reason")
-        .in("inquiry_id", ids);
+      const [{ data: scores }, { data: threads }] = await Promise.all([
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (supabase as any)
+          .from("inquiry_scores")
+          .select("inquiry_id, lead_score, lead_score_reason")
+          .in("inquiry_id", ids),
+        supabase
+          .from("direct_threads")
+          .select("inquiry_id, hilux_paused")
+          .in("inquiry_id", ids),
+      ]);
       const byId = new Map<string, { lead_score: string | null; lead_score_reason: string | null }>();
       for (const s of (scores ?? []) as Array<{
         inquiry_id: string;
@@ -150,10 +157,20 @@ export default function VendorInboxPage() {
       }>) {
         byId.set(s.inquiry_id, { lead_score: s.lead_score, lead_score_reason: s.lead_score_reason });
       }
+      // Per-thread HILUX pause state — the inbox sparkle pip should
+      // only show where HILUX is actually answering.
+      const pausedById = new Map<string, boolean>();
+      for (const t of (threads ?? []) as Array<{
+        inquiry_id: string | null;
+        hilux_paused: boolean | null;
+      }>) {
+        if (t.inquiry_id) pausedById.set(t.inquiry_id, t.hilux_paused === true);
+      }
       scored = baseRows.map((r) => ({
         ...r,
         lead_score: (byId.get(r.id)?.lead_score ?? null) as InquiryRow["lead_score"],
         lead_score_reason: byId.get(r.id)?.lead_score_reason ?? null,
+        hilux_paused: pausedById.get(r.id) ?? false,
       }));
     }
     setRows(scored);
@@ -482,7 +499,7 @@ function ConversationRow({
             >
               {name}
             </span>
-            {hiluxEnabled ? (
+            {hiluxEnabled && !row.hilux_paused ? (
               <span
                 className="shrink-0 inline-flex items-center"
                 title="HILUX is answering for you"

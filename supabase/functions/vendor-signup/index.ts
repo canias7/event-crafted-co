@@ -64,8 +64,34 @@ async function sha256(input: string): Promise<string> {
 }
 
 function randomCode(): string {
-  const n = crypto.getRandomValues(new Uint32Array(1))[0] % 1_000_000;
-  return n.toString().padStart(6, "0");
+  // Rejection-sample to avoid modulo bias: 2^32 is not a multiple of
+  // 1e6, so a bare % skews probability toward lower codes.
+  const limit = Math.floor(0x1_0000_0000 / 1_000_000) * 1_000_000;
+  let r = crypto.getRandomValues(new Uint32Array(1))[0];
+  while (r >= limit) {
+    r = crypto.getRandomValues(new Uint32Array(1))[0];
+  }
+  return (r % 1_000_000).toString().padStart(6, "0");
+}
+
+// Find an auth user by email, paging through listUsers. The admin API
+// has no email filter and listUsers() defaults to just the first 50
+// users — a bare call silently misses everyone past page 1 once the
+// project grows past 50 accounts.
+async function findUserByEmail(sb: any, email: string): Promise<any | null> {
+  const target = email.toLowerCase();
+  for (let page = 1; page <= 100; page++) {
+    const { data, error } = await sb.auth.admin.listUsers({
+      page,
+      perPage: 200,
+    });
+    if (error) throw error;
+    const users = (data?.users ?? []) as any[];
+    const match = users.find((u) => (u.email ?? "").toLowerCase() === target);
+    if (match) return match;
+    if (users.length < 200) break;
+  }
+  return null;
 }
 
 // Sent in place of the 6-digit code when /request is invoked with an
@@ -175,12 +201,9 @@ serve(async (req) => {
     // return the SAME success shape as a fresh signup. The API can no
     // longer be used to enumerate registered emails — the user finds
     // out from their inbox, not from the JSON response.
-    const { data: existing } = await sb.auth.admin.listUsers();
-    const taken = existing?.users?.some(
-      (u) =>
-        (u.email ?? "").toLowerCase() === email &&
-        u.email_confirmed_at != null,
-    );
+    const existingUser = await findUserByEmail(sb, email);
+    const taken =
+      existingUser != null && existingUser.email_confirmed_at != null;
     if (taken) {
       // Return success shape regardless to avoid leaking which emails
       // are registered. Log on failure so we'd notice in dashboards.
@@ -271,10 +294,7 @@ serve(async (req) => {
       user_metadata: userMeta,
     });
     if (createErr) {
-      const { data: list } = await sb.auth.admin.listUsers();
-      const existing = list?.users?.find(
-        (u) => (u.email ?? "").toLowerCase() === email,
-      );
+      const existing = await findUserByEmail(sb, email);
       if (existing) {
         const { error: updErr } = await sb.auth.admin.updateUserById(
           existing.id,

@@ -290,6 +290,12 @@ export function EditListingModal({
         }
       }
 
+      // Refresh geocoding off the (possibly changed) location —
+      // best-effort; geocode-vendor no-ops when it is unchanged.
+      void supabase.functions
+        .invoke("geocode-vendor", { body: { vendorId } })
+        .catch(() => undefined);
+
       toast.success("Listing updated.");
       onSaved();
     } catch (err) {

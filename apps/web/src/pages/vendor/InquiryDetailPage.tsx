@@ -670,8 +670,28 @@ export default function InquiryDetailPage() {
       toast.success("Regenerated.", { id: optimisticToast });
     } catch (err: unknown) {
       console.error("[InquiryDetail] regenerate failed", err);
-      const msg = err instanceof Error ? err.message : String(err);
-      toast.error(`Couldn't regenerate: ${msg}`, { id: optimisticToast });
+      // hilux-regenerate 409s when a newer message arrived between the
+      // button rendering and the click — surface that clearly instead
+      // of a raw "non-2xx status" HTTP error.
+      let friendly: string | null = null;
+      const ctx = (err as { context?: Response })?.context;
+      if (ctx && typeof ctx.json === "function") {
+        try {
+          const body = await ctx.json();
+          if (body?.error === "not_the_latest_message") {
+            friendly =
+              "A newer message arrived — regenerate only works on HILUX's latest reply.";
+          } else if (typeof body?.error === "string") {
+            friendly = body.error;
+          }
+        } catch {
+          // body wasn't JSON — fall back to the generic message
+        }
+      }
+      const msg = friendly ?? (err instanceof Error ? err.message : String(err));
+      toast.error(friendly ? msg : `Couldn't regenerate: ${msg}`, {
+        id: optimisticToast,
+      });
     }
   }
 
@@ -1706,6 +1726,40 @@ function InquiryPreviewSheet({
     };
   }, [onClose]);
 
+  // Intake answers are stored keyed by question id. Pull the vendor's
+  // intake form so each answer shows its real question label instead
+  // of a raw UUID fragment.
+  const [questionLabels, setQuestionLabels] = useState<Record<string, string>>(
+    {},
+  );
+  useEffect(() => {
+    const answers = inquiry.intake_answers;
+    if (!answers || Object.keys(answers).length === 0) return;
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from("vendor_intake_forms")
+        .select("questions")
+        .eq("vendor_id", inquiry.vendor_id)
+        .maybeSingle();
+      if (cancelled) return;
+      const questions = (
+        data as { questions?: Array<{ id?: string; label?: string }> } | null
+      )?.questions;
+      if (!Array.isArray(questions)) return;
+      const map: Record<string, string> = {};
+      for (const q of questions) {
+        if (q && typeof q.id === "string" && typeof q.label === "string") {
+          map[q.id] = q.label;
+        }
+      }
+      setQuestionLabels(map);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [inquiry.vendor_id, inquiry.intake_answers]);
+
   const eventLabel = inquiry.event_type.replace(/_/g, " ");
   const dateStr = inquiry.event_date
     ? (() => {
@@ -1821,7 +1875,7 @@ function InquiryPreviewSheet({
               {intakeEntries.map(([qid, val]) => (
                 <div key={qid}>
                   <dt className="text-xs text-muted-foreground">
-                    {qid.slice(0, 8)}…
+                    {questionLabels[qid] ?? `${qid.slice(0, 8)}…`}
                   </dt>
                   <dd className="text-sm text-foreground">
                     {Array.isArray(val) ? val.join(", ") : String(val)}
