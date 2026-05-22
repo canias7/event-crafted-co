@@ -4,9 +4,10 @@
 // Both end in a Result zone; variants download or save into the
 // vendor's gallery ("Axion" album). Chrome mirrors the HILUX panel.
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Check, Download, Loader2, Sparkles, Upload } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { Switch } from "@/components/ui/switch";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 
@@ -77,7 +78,26 @@ export function AxionVendorControls() {
   const [generating, setGenerating] = useState(false);
   const [variants, setVariants] = useState<string[]>([]);
   const [saved, setSaved] = useState<Record<number, "saving" | "saved">>({});
+  const [autosave, setAutosave] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+
+  // Load the vendor's Axion settings.
+  useEffect(() => {
+    if (!user?.id) return;
+    let cancelled = false;
+    (async () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data } = await (supabase as any)
+        .from("profiles")
+        .select("axion_autosave")
+        .eq("id", user.id)
+        .maybeSingle();
+      if (!cancelled && data) setAutosave(data.axion_autosave === true);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.id]);
 
   const resetWork = () => {
     setVariants([]);
@@ -108,6 +128,21 @@ export function AxionVendorControls() {
       resetWork();
     };
     reader.readAsDataURL(file);
+  };
+
+  const toggleAutosave = async (next: boolean) => {
+    if (!user?.id) return;
+    setAutosave(next);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error } = await (supabase as any)
+      .from("profiles")
+      .update({ axion_autosave: next })
+      .eq("id", user.id);
+    if (error) {
+      console.error("[Axion] autosave setting save failed", error);
+      setAutosave(!next);
+      toast.error("Couldn't save the setting.");
+    }
   };
 
   const canGenerate =
@@ -205,6 +240,23 @@ export function AxionVendorControls() {
       toast.error("Couldn't save to gallery. Try again.");
     }
   };
+
+  // Auto-save freshly generated variants when the setting is on.
+  // Keyed off the variants change so `saved` is freshly reset first.
+  useEffect(() => {
+    if (!autosave || variants.length === 0) return;
+    let cancelled = false;
+    (async () => {
+      for (let i = 0; i < variants.length; i++) {
+        if (cancelled) break;
+        await saveToGallery(variants[i], i);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [variants, autosave]);
 
   const promptStep = mode === "edit" ? 2 : 1;
   const resultStep = mode === "edit" ? 3 : 2;
@@ -406,6 +458,24 @@ export function AxionVendorControls() {
                 Your images will appear here.
               </div>
             )}
+          </div>
+
+          {/* Settings */}
+          <div className="border-t border-black/10 pt-4">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.13em] text-black/45 mb-3">
+              Settings
+            </p>
+            <div className="flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-sm font-medium text-black">
+                  Auto-save to gallery
+                </p>
+                <p className="text-xs text-black/55">
+                  Generated images save straight to your “Axion” gallery album.
+                </p>
+              </div>
+              <Switch checked={autosave} onCheckedChange={toggleAutosave} />
+            </div>
           </div>
         </div>
       </div>
