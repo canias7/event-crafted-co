@@ -54,7 +54,6 @@ export interface HiluxActions {
   detectFrustration: boolean;
   // Conversation / what HILUX says
   declineNegotiation: boolean;
-  sendPortfolioLink: boolean;
   offerCall: boolean;
   shareBookingProcess: boolean;
   // Conversation / how HILUX writes
@@ -91,7 +90,6 @@ export const DEFAULT_ACTIONS: HiluxActions = {
   useFirstName: true,
   detectFrustration: true,
   declineNegotiation: true,
-  sendPortfolioLink: false,
   offerCall: true,
   shareBookingProcess: true,
   echoQuestion: false,
@@ -227,11 +225,6 @@ export function buildSystemPrompt(ctx: HiluxPromptCtx): string {
   if (ctx.actions.declineNegotiation) {
     lines.push(
       "- If the host asks for a discount or wants to negotiate the price, politely decline (one short sentence — \"our pricing reflects what goes into the work, we keep it firm\") and offer to discuss what's included instead.",
-    );
-  }
-  if (ctx.actions.sendPortfolioLink) {
-    lines.push(
-      "- On the very first HILUX reply in a thread (no prior assistant messages), mention that there's a full portfolio on the vendor's profile (\"You can see more of our recent work on our profile page\"). Don't include a literal URL — that's against the no-external-links rule.",
     );
   }
   if (ctx.actions.offerCall) {
@@ -764,7 +757,6 @@ export async function loadVendorContext(
           useFirstName: profRow.hilux_action_use_first_name !== false,
           detectFrustration: profRow.hilux_action_detect_frustration !== false,
           declineNegotiation: profRow.hilux_action_decline_negotiation !== false,
-          sendPortfolioLink: profRow.hilux_action_send_portfolio_link === true,
           offerCall: profRow.hilux_action_offer_call !== false,
           shareBookingProcess: profRow.hilux_action_share_booking_process !== false,
           echoQuestion: profRow.hilux_action_echo_question === true,
