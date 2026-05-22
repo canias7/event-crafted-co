@@ -41,8 +41,7 @@ export interface AvailabilityCtx {
 // hunt for sub-toggles. Action gating is enforced by buildSystemPrompt
 // (e.g. drops the multi-language rule when matchLanguage = false) and
 // by the calling edge function (drops the AVAILABILITY block when
-// useCalendar = false, suppresses the ESCALATE rule when escalate
-// = false, etc.).
+// useCalendar = false, etc.).
 export interface HiluxActions {
   // Pacing
   followUp: boolean;
@@ -52,7 +51,6 @@ export interface HiluxActions {
   // Conversation / how HILUX listens
   matchLanguage: boolean;
   useCalendar: boolean;
-  escalate: boolean;
   askClarifying: boolean;
   useFirstName: boolean;
   detectFrustration: boolean;
@@ -97,7 +95,6 @@ export const DEFAULT_ACTIONS: HiluxActions = {
   skipWhenActive: true,
   matchLanguage: true,
   useCalendar: true,
-  escalate: true,
   askClarifying: true,
   useFirstName: true,
   detectFrustration: true,
@@ -228,18 +225,16 @@ export function buildSystemPrompt(ctx: HiluxPromptCtx): string {
   lines.push(
     "- Don't sign off with names or signatures. The vendor's profile already shows who you are.",
   );
-  if (ctx.actions.escalate) {
+  // HILUX should answer almost everything. When it genuinely can't,
+  // it still REPLIES — gracefully offering to bring in the team —
+  // rather than going silent. (The only silent step-aside left is
+  // for frustrated hosts, below.)
+  lines.push(
+    "- Answer as many of the host's questions as you can using the context above. If something is genuinely outside what you know — custom legal/contract terms, pricing the listing doesn't cover, or a judgment call only the vendor can make — do NOT stay silent and do NOT invent an answer. Reply warmly, acknowledge the question, and offer to bring in the team: e.g. \"That's something our team handles directly — want me to loop them in so they can get you exact details?\" Keep the conversation moving and stay helpful.",
+  );
+  if (ctx.actions.detectFrustration) {
     lines.push(
-      "- IF YOU CANNOT CONFIDENTLY ANSWER from the context above (e.g., custom pricing the listing doesn't cover, off-menu services, requests that require a human judgment, or facts you'd have to invent), DO NOT REPLY. Instead, output a single line starting with the literal token \"ESCALATE:\" followed by a short reason (max 100 chars). The system will route the conversation to the vendor — your job is to step aside, not to bluff. Use ESCALATE sparingly; if the answer is in the context, just answer.",
-    );
-  } else {
-    lines.push(
-      "- The vendor has asked you to ALWAYS reply (never escalate). When uncertain, give your best answer and acknowledge you'll confirm specifics with them.",
-    );
-  }
-  if (ctx.actions.detectFrustration && ctx.actions.escalate) {
-    lines.push(
-      "- If the host sounds frustrated, angry, or upset (caps, repeated punctuation, \"this is unacceptable\", complaint language), DO NOT try to fix it in the reply. ESCALATE: host_frustrated and let the vendor handle it personally.",
+      "- If the host sounds frustrated, angry, or upset (caps, repeated punctuation, \"this is unacceptable\", complaint language), DO NOT try to fix it in the reply. Instead output a single line: the literal token \"ESCALATE:\" followed by \"host_frustrated\" and a short note (max 100 chars). The system routes the conversation to the vendor — an upset host needs a real person, not an AI reply.",
     );
   }
   // What HILUX talks about
@@ -801,7 +796,6 @@ export async function loadVendorContext(
           skipWhenActive: profRow.hilux_action_skip_when_active !== false,
           matchLanguage: profRow.hilux_action_match_language !== false,
           useCalendar: profRow.hilux_action_use_calendar !== false,
-          escalate: profRow.hilux_action_escalate !== false,
           askClarifying: profRow.hilux_action_ask_clarifying !== false,
           useFirstName: profRow.hilux_action_use_first_name !== false,
           detectFrustration: profRow.hilux_action_detect_frustration !== false,

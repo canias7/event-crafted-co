@@ -36,7 +36,6 @@ import {
   Search as SearchIcon,
   Send,
   Shield,
-  ShieldAlert,
   ShieldCheck,
   ShieldOff,
   Smile,
@@ -63,7 +62,6 @@ type ActionKey =
   | "hilux_action_pause_weekends"
   | "hilux_action_skip_when_active"
   | "hilux_action_use_calendar"
-  | "hilux_action_escalate"
   | "hilux_action_detect_frustration"
   | "hilux_action_mention_starting_price"
   | "hilux_action_suggest_package"
@@ -127,7 +125,6 @@ const ACTION_GROUPS: ActionGroup[] = [
   {
     title: "Escalation",
     actions: [
-      { key: "hilux_action_escalate", label: "Escalate when uncertain", blurb: "If HILUX can't confidently answer, route it to your inbox instead of guessing.", Icon: ShieldAlert },
       { key: "hilux_action_detect_frustration", label: "Escalate frustrated hosts", blurb: "If the host sounds upset, hand off to you instead of trying to smooth it over.", Icon: Frown },
     ],
   },
@@ -153,7 +150,7 @@ const ACTION_GROUPS: ActionGroup[] = [
     title: "Operations",
     actions: [
       { key: "hilux_action_auto_mark_replied", label: "Auto-mark inquiry as 'replied'", blurb: "Once HILUX answers, flip the inquiry status from new to replied so it leaves the new bucket.", Icon: Inbox },
-      { key: "hilux_action_notify_on_escalation", label: "Notify me when HILUX escalates", blurb: "When HILUX can't answer and steps aside, get an in-app alert AND an immediate \"Action needed\" email — a host is waiting on you.", Icon: BellRing },
+      { key: "hilux_action_notify_on_escalation", label: "Notify me when HILUX escalates", blurb: "When HILUX hands off an upset host, get an in-app alert AND an immediate \"Action needed\" email — they need a personal reply from you.", Icon: BellRing },
       { key: "hilux_action_notify_on_hot_lead", label: "Notify me when a lead turns hot", blurb: "Push notification the first time HILUX flags a conversation as a hot lead.", Icon: Flame },
       { key: "hilux_action_notify_on_reply", label: "Notify me on every HILUX reply", blurb: "Push notification whenever HILUX sends a message on your behalf. Can get noisy.", Icon: Bell },
       { key: "hilux_action_email_reply_copies", label: "Email me a copy of every HILUX reply", blurb: "Receive an email each time HILUX answers, with the host's question and HILUX's reply.", Icon: Mail },
@@ -183,7 +180,7 @@ export function HiluxVendorControls() {
     const { data, error } = await supabase
       .from("profiles")
       .select(
-        "hilux_enabled, hilux_action_follow_up, hilux_action_quiet_hours, hilux_action_pause_weekends, hilux_action_skip_when_active, hilux_action_use_calendar, hilux_action_escalate, hilux_action_detect_frustration, hilux_action_mention_starting_price, hilux_action_suggest_package, hilux_action_decline_negotiation, hilux_action_avoid_competitors, hilux_action_send_portfolio_link, hilux_action_offer_call, hilux_action_share_booking_process, hilux_action_echo_question, hilux_action_acknowledge_emotion, hilux_action_lead_with_question, hilux_action_refuse_legal, hilux_action_refuse_competitor_pricing, hilux_action_no_other_clients, hilux_action_redact_contact, hilux_action_auto_mark_replied, hilux_action_notify_on_reply, hilux_action_update_inquiry_fields, hilux_action_notify_on_escalation, hilux_action_notify_on_hot_lead, hilux_action_email_reply_copies, hilux_action_auto_archive_cold, hilux_action_daily_summary, hilux_action_cap_replies_per_inquiry, hilux_action_detect_booking_intent, hilux_action_log_actions",
+        "hilux_enabled, hilux_action_follow_up, hilux_action_quiet_hours, hilux_action_pause_weekends, hilux_action_skip_when_active, hilux_action_use_calendar, hilux_action_detect_frustration, hilux_action_mention_starting_price, hilux_action_suggest_package, hilux_action_decline_negotiation, hilux_action_avoid_competitors, hilux_action_send_portfolio_link, hilux_action_offer_call, hilux_action_share_booking_process, hilux_action_echo_question, hilux_action_acknowledge_emotion, hilux_action_lead_with_question, hilux_action_refuse_legal, hilux_action_refuse_competitor_pricing, hilux_action_no_other_clients, hilux_action_redact_contact, hilux_action_auto_mark_replied, hilux_action_notify_on_reply, hilux_action_update_inquiry_fields, hilux_action_notify_on_escalation, hilux_action_notify_on_hot_lead, hilux_action_email_reply_copies, hilux_action_auto_archive_cold, hilux_action_daily_summary, hilux_action_cap_replies_per_inquiry, hilux_action_detect_booking_intent, hilux_action_log_actions",
       )
       .eq("id", user.id)
       .maybeSingle();
@@ -199,7 +196,6 @@ export function HiluxVendorControls() {
       hilux_action_pause_weekends: false,
       hilux_action_skip_when_active: true,
       hilux_action_use_calendar: true,
-      hilux_action_escalate: true,
       hilux_action_detect_frustration: true,
       hilux_action_mention_starting_price: false,
       hilux_action_suggest_package: true,
@@ -274,7 +270,6 @@ export function HiluxVendorControls() {
       hilux_action_pause_weekends: false,
       hilux_action_skip_when_active: true,
       hilux_action_use_calendar: true,
-      hilux_action_escalate: true,
       hilux_action_detect_frustration: true,
       hilux_action_mention_starting_price: false,
       hilux_action_suggest_package: true,
