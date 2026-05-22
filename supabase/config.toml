@@ -3,8 +3,6 @@ project_id = "pahpjjubhbcbwqjpamwv"
 [functions]
   [functions.auth-email-hook]
     verify_jwt = false
-  [functions.calendar-feed]
-    verify_jwt = false
   [functions.geocode-vendor]
     verify_jwt = true
   [functions.hilux-archive-cold]
