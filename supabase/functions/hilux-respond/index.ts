@@ -327,12 +327,11 @@ serve(async (req) => {
           );
         if (scoreErr) console.error("[hilux-respond] lead_score update failed", scoreErr);
 
-        // Hot-lead notification: only fire when the lead JUST became
-        // hot (was not hot before). Skips repeat-hot pings on every
-        // host message in a hot conversation.
         // Lead just turned hot (was not hot before). Log it for the
         // daily summary + activity feed regardless of the notify
-        // toggle; only the push/email alert below is opt-in.
+        // toggle; the push/email alert below is opt-in and only
+        // fires on the first transition (skips repeat-hot pings on
+        // subsequent host messages in a hot conversation).
         if (result.score === "hot" && priorScore !== "hot") {
           await logAction("lead_score_hot", result.reason, null);
           if (actions.notifyOnHotLead) {

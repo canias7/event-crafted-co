@@ -187,6 +187,20 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "appointments_host_id_fkey"
+            columns: ["host_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "appointments_host_id_fkey"
+            columns: ["host_id"]
+            isOneToOne: false
+            referencedRelation: "vendor_brands"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "appointments_inquiry_id_fkey"
             columns: ["inquiry_id"]
             isOneToOne: false
@@ -771,6 +785,104 @@ export type Database = {
         }
         Relationships: []
       }
+      hilux_action_log: {
+        Row: {
+          action: string
+          cache_creation_tokens: number | null
+          cache_read_tokens: number | null
+          created_at: string
+          detail: string | null
+          id: string
+          input_tokens: number | null
+          inquiry_id: string | null
+          message_id: string | null
+          output_tokens: number | null
+          thread_id: string | null
+          user_id: string
+          vendor_id: string | null
+        }
+        Insert: {
+          action: string
+          cache_creation_tokens?: number | null
+          cache_read_tokens?: number | null
+          created_at?: string
+          detail?: string | null
+          id?: string
+          input_tokens?: number | null
+          inquiry_id?: string | null
+          message_id?: string | null
+          output_tokens?: number | null
+          thread_id?: string | null
+          user_id: string
+          vendor_id?: string | null
+        }
+        Update: {
+          action?: string
+          cache_creation_tokens?: number | null
+          cache_read_tokens?: number | null
+          created_at?: string
+          detail?: string | null
+          id?: string
+          input_tokens?: number | null
+          inquiry_id?: string | null
+          message_id?: string | null
+          output_tokens?: number | null
+          thread_id?: string | null
+          user_id?: string
+          vendor_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hilux_action_log_inquiry_id_fkey"
+            columns: ["inquiry_id"]
+            isOneToOne: false
+            referencedRelation: "inquiries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "hilux_action_log_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "direct_messages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "hilux_action_log_thread_id_fkey"
+            columns: ["thread_id"]
+            isOneToOne: false
+            referencedRelation: "direct_threads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "hilux_action_log_vendor_id_fkey"
+            columns: ["vendor_id"]
+            isOneToOne: false
+            referencedRelation: "vendor_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      hilux_private_config: {
+        Row: {
+          hilux_instructions: string | null
+          hilux_voice_samples: string[]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          hilux_instructions?: string | null
+          hilux_voice_samples?: string[]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          hilux_instructions?: string | null
+          hilux_voice_samples?: string[]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       host_event_live_streams: {
         Row: {
           created_at: string
@@ -1109,9 +1221,6 @@ export type Database = {
           intake_answers: Json | null
           intent_score: number | null
           last_message_at: string
-          lead_score: string | null
-          lead_score_reason: string | null
-          lead_score_updated_at: string | null
           location: string | null
           package_id: string | null
           quality_score: number | null
@@ -1138,9 +1247,6 @@ export type Database = {
           intake_answers?: Json | null
           intent_score?: number | null
           last_message_at?: string
-          lead_score?: string | null
-          lead_score_reason?: string | null
-          lead_score_updated_at?: string | null
           location?: string | null
           package_id?: string | null
           quality_score?: number | null
@@ -1167,9 +1273,6 @@ export type Database = {
           intake_answers?: Json | null
           intent_score?: number | null
           last_message_at?: string
-          lead_score?: string | null
-          lead_score_reason?: string | null
-          lead_score_updated_at?: string | null
           location?: string | null
           package_id?: string | null
           quality_score?: number | null
@@ -1249,6 +1352,86 @@ export type Database = {
           },
         ]
       }
+      inquiry_scores: {
+        Row: {
+          booking_intent_at: string | null
+          booking_intent_reason: string | null
+          inquiry_id: string
+          lead_score: string | null
+          lead_score_reason: string | null
+          lead_score_updated_at: string | null
+        }
+        Insert: {
+          booking_intent_at?: string | null
+          booking_intent_reason?: string | null
+          inquiry_id: string
+          lead_score?: string | null
+          lead_score_reason?: string | null
+          lead_score_updated_at?: string | null
+        }
+        Update: {
+          booking_intent_at?: string | null
+          booking_intent_reason?: string | null
+          inquiry_id?: string
+          lead_score?: string | null
+          lead_score_reason?: string | null
+          lead_score_updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inquiry_scores_inquiry_id_fkey"
+            columns: ["inquiry_id"]
+            isOneToOne: true
+            referencedRelation: "inquiries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      mcp_call_log: {
+        Row: {
+          args: Json | null
+          auth_method: string
+          client_id: string | null
+          created_at: string
+          duration_ms: number | null
+          error: string | null
+          id: string
+          idempotency_key: string | null
+          ok: boolean
+          result_message_id: string | null
+          tool_name: string
+          user_id: string
+        }
+        Insert: {
+          args?: Json | null
+          auth_method: string
+          client_id?: string | null
+          created_at?: string
+          duration_ms?: number | null
+          error?: string | null
+          id?: string
+          idempotency_key?: string | null
+          ok: boolean
+          result_message_id?: string | null
+          tool_name: string
+          user_id: string
+        }
+        Update: {
+          args?: Json | null
+          auth_method?: string
+          client_id?: string | null
+          created_at?: string
+          duration_ms?: number | null
+          error?: string | null
+          id?: string
+          idempotency_key?: string | null
+          ok?: boolean
+          result_message_id?: string | null
+          tool_name?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       mobile_debug_events: {
         Row: {
           created_at: string
@@ -1321,6 +1504,117 @@ export type Database = {
           },
         ]
       }
+      oauth_access_tokens: {
+        Row: {
+          client_id: string
+          created_at: string
+          expires_at: string
+          id: string
+          last_used_at: string | null
+          refresh_expires_at: string
+          refresh_token_hash: string
+          revoked_at: string | null
+          scope: string
+          token_hash: string
+          user_id: string
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          expires_at: string
+          id?: string
+          last_used_at?: string | null
+          refresh_expires_at: string
+          refresh_token_hash: string
+          revoked_at?: string | null
+          scope?: string
+          token_hash: string
+          user_id: string
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          last_used_at?: string | null
+          refresh_expires_at?: string
+          refresh_token_hash?: string
+          revoked_at?: string | null
+          scope?: string
+          token_hash?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      oauth_auth_codes: {
+        Row: {
+          client_id: string
+          code_challenge: string
+          code_challenge_method: string
+          code_hash: string
+          consumed_at: string | null
+          created_at: string
+          expires_at: string
+          redirect_uri: string
+          scope: string
+          user_id: string
+        }
+        Insert: {
+          client_id: string
+          code_challenge: string
+          code_challenge_method: string
+          code_hash: string
+          consumed_at?: string | null
+          created_at?: string
+          expires_at: string
+          redirect_uri: string
+          scope?: string
+          user_id: string
+        }
+        Update: {
+          client_id?: string
+          code_challenge?: string
+          code_challenge_method?: string
+          code_hash?: string
+          consumed_at?: string | null
+          created_at?: string
+          expires_at?: string
+          redirect_uri?: string
+          scope?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      oauth_clients: {
+        Row: {
+          client_id: string
+          client_name: string | null
+          client_secret_hash: string
+          created_at: string
+          id: string
+          redirect_uris: string[]
+          token_endpoint_auth_method: string
+        }
+        Insert: {
+          client_id: string
+          client_name?: string | null
+          client_secret_hash: string
+          created_at?: string
+          id?: string
+          redirect_uris: string[]
+          token_endpoint_auth_method?: string
+        }
+        Update: {
+          client_id?: string
+          client_name?: string | null
+          client_secret_hash?: string
+          created_at?: string
+          id?: string
+          redirect_uris?: string[]
+          token_endpoint_auth_method?: string
+        }
+        Relationships: []
+      }
       posts: {
         Row: {
           author_user_id: string
@@ -1364,54 +1658,22 @@ export type Database = {
         Row: {
           application_status: string
           avatar_url: string | null
+          axion_autosave: boolean
           bio: string | null
           business_name: string | null
           category: string | null
           created_at: string
           display_name: string | null
-          hilux_action_acknowledge_emotion: boolean
-          hilux_action_allow_bullets: boolean
-          hilux_action_ask_clarifying: boolean
-          hilux_action_auto_archive_cold: boolean
-          hilux_action_auto_mark_replied: boolean
-          hilux_action_avoid_competitors: boolean
           hilux_action_cap_replies_per_inquiry: boolean
           hilux_action_daily_summary: boolean
           hilux_action_decline_negotiation: boolean
-          hilux_action_detect_booking_intent: boolean
           hilux_action_detect_frustration: boolean
-          hilux_action_echo_question: boolean
-          hilux_action_email_reply_copies: boolean
-          hilux_action_escalate: boolean
-          hilux_action_follow_up: boolean
-          hilux_action_lead_with_question: boolean
-          hilux_action_log_actions: boolean
-          hilux_action_match_language: boolean
-          hilux_action_mention_starting_price: boolean
-          hilux_action_no_other_clients: boolean
-          hilux_action_notify_on_escalation: boolean
           hilux_action_notify_on_hot_lead: boolean
           hilux_action_notify_on_reply: boolean
           hilux_action_offer_call: boolean
-          hilux_action_pause_weekends: boolean
-          hilux_action_quiet_hours: boolean
-          hilux_action_redact_contact: boolean
-          hilux_action_refuse_competitor_pricing: boolean
-          hilux_action_refuse_legal: boolean
-          hilux_action_send_portfolio_link: boolean
-          hilux_action_share_booking_process: boolean
-          hilux_action_skip_when_active: boolean
-          hilux_action_soft_cta_signoff: boolean
-          hilux_action_suggest_package: boolean
-          hilux_action_update_inquiry_fields: boolean
           hilux_action_use_calendar: boolean
-          hilux_action_use_emojis: boolean
           hilux_action_use_first_name: boolean
           hilux_enabled: boolean
-          hilux_greeting_line: string | null
-          hilux_instructions: string | null
-          hilux_reply_length: string
-          hilux_voice_samples: string[]
           id: string
           location: string | null
           logo_url: string | null
@@ -1427,54 +1689,22 @@ export type Database = {
         Insert: {
           application_status?: string
           avatar_url?: string | null
+          axion_autosave?: boolean
           bio?: string | null
           business_name?: string | null
           category?: string | null
           created_at?: string
           display_name?: string | null
-          hilux_action_acknowledge_emotion?: boolean
-          hilux_action_allow_bullets?: boolean
-          hilux_action_ask_clarifying?: boolean
-          hilux_action_auto_archive_cold?: boolean
-          hilux_action_auto_mark_replied?: boolean
-          hilux_action_avoid_competitors?: boolean
           hilux_action_cap_replies_per_inquiry?: boolean
           hilux_action_daily_summary?: boolean
           hilux_action_decline_negotiation?: boolean
-          hilux_action_detect_booking_intent?: boolean
           hilux_action_detect_frustration?: boolean
-          hilux_action_echo_question?: boolean
-          hilux_action_email_reply_copies?: boolean
-          hilux_action_escalate?: boolean
-          hilux_action_follow_up?: boolean
-          hilux_action_lead_with_question?: boolean
-          hilux_action_log_actions?: boolean
-          hilux_action_match_language?: boolean
-          hilux_action_mention_starting_price?: boolean
-          hilux_action_no_other_clients?: boolean
-          hilux_action_notify_on_escalation?: boolean
           hilux_action_notify_on_hot_lead?: boolean
           hilux_action_notify_on_reply?: boolean
           hilux_action_offer_call?: boolean
-          hilux_action_pause_weekends?: boolean
-          hilux_action_quiet_hours?: boolean
-          hilux_action_redact_contact?: boolean
-          hilux_action_refuse_competitor_pricing?: boolean
-          hilux_action_refuse_legal?: boolean
-          hilux_action_send_portfolio_link?: boolean
-          hilux_action_share_booking_process?: boolean
-          hilux_action_skip_when_active?: boolean
-          hilux_action_soft_cta_signoff?: boolean
-          hilux_action_suggest_package?: boolean
-          hilux_action_update_inquiry_fields?: boolean
           hilux_action_use_calendar?: boolean
-          hilux_action_use_emojis?: boolean
           hilux_action_use_first_name?: boolean
           hilux_enabled?: boolean
-          hilux_greeting_line?: string | null
-          hilux_instructions?: string | null
-          hilux_reply_length?: string
-          hilux_voice_samples?: string[]
           id: string
           location?: string | null
           logo_url?: string | null
@@ -1490,54 +1720,22 @@ export type Database = {
         Update: {
           application_status?: string
           avatar_url?: string | null
+          axion_autosave?: boolean
           bio?: string | null
           business_name?: string | null
           category?: string | null
           created_at?: string
           display_name?: string | null
-          hilux_action_acknowledge_emotion?: boolean
-          hilux_action_allow_bullets?: boolean
-          hilux_action_ask_clarifying?: boolean
-          hilux_action_auto_archive_cold?: boolean
-          hilux_action_auto_mark_replied?: boolean
-          hilux_action_avoid_competitors?: boolean
           hilux_action_cap_replies_per_inquiry?: boolean
           hilux_action_daily_summary?: boolean
           hilux_action_decline_negotiation?: boolean
-          hilux_action_detect_booking_intent?: boolean
           hilux_action_detect_frustration?: boolean
-          hilux_action_echo_question?: boolean
-          hilux_action_email_reply_copies?: boolean
-          hilux_action_escalate?: boolean
-          hilux_action_follow_up?: boolean
-          hilux_action_lead_with_question?: boolean
-          hilux_action_log_actions?: boolean
-          hilux_action_match_language?: boolean
-          hilux_action_mention_starting_price?: boolean
-          hilux_action_no_other_clients?: boolean
-          hilux_action_notify_on_escalation?: boolean
           hilux_action_notify_on_hot_lead?: boolean
           hilux_action_notify_on_reply?: boolean
           hilux_action_offer_call?: boolean
-          hilux_action_pause_weekends?: boolean
-          hilux_action_quiet_hours?: boolean
-          hilux_action_redact_contact?: boolean
-          hilux_action_refuse_competitor_pricing?: boolean
-          hilux_action_refuse_legal?: boolean
-          hilux_action_send_portfolio_link?: boolean
-          hilux_action_share_booking_process?: boolean
-          hilux_action_skip_when_active?: boolean
-          hilux_action_soft_cta_signoff?: boolean
-          hilux_action_suggest_package?: boolean
-          hilux_action_update_inquiry_fields?: boolean
           hilux_action_use_calendar?: boolean
-          hilux_action_use_emojis?: boolean
           hilux_action_use_first_name?: boolean
           hilux_enabled?: boolean
-          hilux_greeting_line?: string | null
-          hilux_instructions?: string | null
-          hilux_reply_length?: string
-          hilux_voice_samples?: string[]
           id?: string
           location?: string | null
           logo_url?: string | null
@@ -2409,6 +2607,50 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      vendor_access_tokens: {
+        Row: {
+          created_at: string
+          id: string
+          last_used_at: string | null
+          name: string | null
+          scope: string
+          token_hash: string
+          token_prefix: string
+          user_id: string
+          vendor_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          last_used_at?: string | null
+          name?: string | null
+          scope?: string
+          token_hash: string
+          token_prefix: string
+          user_id: string
+          vendor_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          last_used_at?: string | null
+          name?: string | null
+          scope?: string
+          token_hash?: string
+          token_prefix?: string
+          user_id?: string
+          vendor_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vendor_access_tokens_vendor_id_fkey"
+            columns: ["vendor_id"]
+            isOneToOne: false
+            referencedRelation: "vendor_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       vendor_availability_rules: {
         Row: {
@@ -3473,9 +3715,6 @@ export type Database = {
           deposit_pct: number | null
           geocoded_at: string | null
           geocoded_location: string | null
-          hilux_enabled: boolean
-          hilux_instructions: string | null
-          hilux_voice_samples: string[]
           id: string
           instagram_handle: string | null
           intro_video_url: string | null
@@ -3521,9 +3760,6 @@ export type Database = {
           deposit_pct?: number | null
           geocoded_at?: string | null
           geocoded_location?: string | null
-          hilux_enabled?: boolean
-          hilux_instructions?: string | null
-          hilux_voice_samples?: string[]
           id?: string
           instagram_handle?: string | null
           intro_video_url?: string | null
@@ -3569,9 +3805,6 @@ export type Database = {
           deposit_pct?: number | null
           geocoded_at?: string | null
           geocoded_location?: string | null
-          hilux_enabled?: boolean
-          hilux_instructions?: string | null
-          hilux_voice_samples?: string[]
           id?: string
           instagram_handle?: string | null
           intro_video_url?: string | null
@@ -4171,9 +4404,6 @@ export type Database = {
           deposit_pct: number | null
           geocoded_at: string | null
           geocoded_location: string | null
-          hilux_enabled: boolean
-          hilux_instructions: string | null
-          hilux_voice_samples: string[]
           id: string
           instagram_handle: string | null
           intro_video_url: string | null
@@ -4224,6 +4454,28 @@ export type Database = {
         }
         Returns: string
       }
+      create_vendor_access_token:
+        | {
+            Args: { p_name?: string }
+            Returns: {
+              id: string
+              token: string
+            }[]
+          }
+        | {
+            Args: { p_name?: string; p_scope?: string }
+            Returns: {
+              id: string
+              token: string
+            }[]
+          }
+        | {
+            Args: { p_name?: string; p_scope?: string; p_vendor_id?: string }
+            Returns: {
+              id: string
+              token: string
+            }[]
+          }
       delete_email: {
         Args: { message_id: number; queue_name: string }
         Returns: boolean
@@ -4476,7 +4728,6 @@ export type Database = {
         Returns: boolean
       }
       is_vendor_member: { Args: { _vendor_id: string }; Returns: boolean }
-      is_vendor_owner: { Args: { _vendor_id: string }; Returns: boolean }
       is_vendor_team_admin: { Args: { _vendor_id: string }; Returns: boolean }
       log_admin_action: {
         Args: {
@@ -4504,9 +4755,6 @@ export type Database = {
           intake_answers: Json | null
           intent_score: number | null
           last_message_at: string
-          lead_score: string | null
-          lead_score_reason: string | null
-          lead_score_updated_at: string | null
           location: string | null
           package_id: string | null
           quality_score: number | null
@@ -4773,3 +5021,4 @@ export const Constants = {
     Enums: {},
   },
 } as const
+

@@ -38,7 +38,7 @@ interface ReviewRequest {
   recipient_email: string;
   recipient_name: string | null;
   token: string;
-  status: "sent" | "completed" | "expired" | "revoked";
+  status: "sent" | "completed" | "expired";
   sent_at: string;
   send_count: number;
   completed_at: string | null;
@@ -48,7 +48,6 @@ const STATUS_TONE: Record<ReviewRequest["status"], string> = {
   sent: "bg-accent/15 text-accent border-accent/30",
   completed: "bg-secondary text-secondary-foreground border-border",
   expired: "bg-secondary text-muted-foreground border-border",
-  revoked: "bg-secondary text-muted-foreground border-border",
 };
 
 export function ReviewRequestsCard({ vendorId }: { vendorId: string }) {

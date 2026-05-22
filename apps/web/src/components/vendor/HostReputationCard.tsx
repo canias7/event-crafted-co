@@ -34,7 +34,6 @@ interface HostReputation {
   bookings: number;
   ghosted: number;
   response_rate: number | null;
-  booking_rate: number | null;
   positive_flags: number;
   negative_flags: number;
   joined_at: string;

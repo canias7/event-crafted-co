@@ -36,27 +36,19 @@ export interface AvailabilityCtx {
 }
 
 // Per-action toggles, sourced from the OWNER profile of the listing
-// the conversation is on. All default to true so a vendor who flips
-// the master enable on inherits the full agent without having to
-// hunt for sub-toggles. Action gating is enforced by buildSystemPrompt
-// (e.g. drops the multi-language rule when matchLanguage = false) and
-// by the calling edge function (drops the AVAILABILITY block when
-// useCalendar = false, etc.).
+// the conversation is on. Some gate prompt content in
+// buildSystemPrompt (detectFrustration, declineNegotiation,
+// offerCall, useCalendar); the rest are read by the calling edge
+// function for code-level behavior (useFirstName, notifyOnReply,
+// notifyOnHotLead, dailySummary, capRepliesPerInquiry).
 export interface HiluxActions {
-  // Conversation / how HILUX listens
-  matchLanguage: boolean;
+  // Conversation (gates content in buildSystemPrompt)
   useCalendar: boolean;
-  askClarifying: boolean;
   useFirstName: boolean;
   detectFrustration: boolean;
-  // Conversation / what HILUX says
   declineNegotiation: boolean;
   offerCall: boolean;
-  // Conversation / how HILUX writes
-  useEmojis: boolean;
-  softCtaSignoff: boolean;
-  allowBullets: boolean;
-  // Operations (code-level)
+  // Operations (code-level, consumed by hilux-respond)
   notifyOnReply: boolean;
   notifyOnHotLead: boolean;
   dailySummary: boolean;
@@ -64,16 +56,11 @@ export interface HiluxActions {
 }
 
 export const DEFAULT_ACTIONS: HiluxActions = {
-  matchLanguage: true,
   useCalendar: true,
-  askClarifying: true,
   useFirstName: true,
   detectFrustration: true,
   declineNegotiation: true,
   offerCall: true,
-  useEmojis: false,
-  softCtaSignoff: true,
-  allowBullets: false,
   notifyOnReply: false,
   notifyOnHotLead: true,
   dailySummary: false,
@@ -416,170 +403,6 @@ export async function scoreLead(
   }
 }
 
-export interface BookingIntentResult {
-  detected: boolean;
-  reason: string;
-}
-
-// Detect whether the host's LATEST message reads as explicit
-// booking commitment ("yes book us", "let's lock it in", "send
-// the contract") vs general interest. Bounded JSON response, same
-// shape as scoreLead. Never throws — returns detected=false on
-// any parse error so the caller can no-op cleanly.
-export async function detectBookingIntent(
-  apiKey: string,
-  ctx: {
-    businessName: string;
-    transcript: Array<{ role: "user" | "assistant"; content: string }>;
-  },
-): Promise<BookingIntentResult & { usage?: ClaudeUsage }> {
-  if (!apiKey) return { detected: false, reason: "no_api_key" };
-  const lastHost = [...ctx.transcript].reverse().find((m) => m.role === "user");
-  if (!lastHost) return { detected: false, reason: "no_host_message" };
-
-  const systemText = `You are a binary classifier for ${ctx.businessName}'s inbox. Read the host's MOST RECENT message and decide whether it expresses EXPLICIT BOOKING COMMITMENT — meaning the host is saying "yes, let's do this", "we'd like to book you", "send the contract", "lock us in", or similar. General interest, questions, package shopping, or "let me think about it" do NOT count.
-
-Output ONLY a JSON object on one line: {"detected": true|false, "reason": "<short citation, max 90 chars>"}. Cite the exact phrase or signal. No markdown.`;
-
-  try {
-    const res = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: {
-        "x-api-key": apiKey,
-        "anthropic-version": "2023-06-01",
-        "content-type": "application/json",
-      },
-      body: JSON.stringify({
-        model: MODEL,
-        max_tokens: 80,
-        system: [
-          { type: "text", text: systemText, cache_control: { type: "ephemeral" } },
-        ],
-        messages: [{ role: "user", content: lastHost.content }],
-      }),
-    });
-    if (!res.ok) return { detected: false, reason: "intent_api_error" };
-    const body = (await res.json()) as any;
-    const raw = ((body.content ?? []) as any[])
-      .filter((b) => b.type === "text")
-      .map((b) => b.text)
-      .join("\n")
-      .trim();
-    const u = body.usage ?? {};
-    const usage: ClaudeUsage = {
-      input_tokens: Number(u.input_tokens) || 0,
-      output_tokens: Number(u.output_tokens) || 0,
-      cache_creation_tokens: Number(u.cache_creation_input_tokens) || 0,
-      cache_read_tokens: Number(u.cache_read_input_tokens) || 0,
-    };
-    const jsonish = raw.replace(/^```(?:json)?/, "").replace(/```$/, "").trim();
-    const parsed = JSON.parse(jsonish);
-    const detected = parsed?.detected === true;
-    const reason = String(parsed?.reason ?? "").trim().slice(0, 200);
-    return { detected, reason: reason || (detected ? "detected" : "no_signal"), usage };
-  } catch (err) {
-    console.error("[detectBookingIntent] error", err);
-    return { detected: false, reason: "intent_exception" };
-  }
-}
-
-export interface ExtractedInquiryFields {
-  event_type?: string | null;
-  event_date?: string | null;
-  guest_count?: number | null;
-  location?: string | null;
-  budget_min_cents?: number | null;
-  budget_max_cents?: number | null;
-  special_requests?: string | null;
-}
-
-// Pull structured event details from the conversation that the host
-// has dropped in chat ("we're thinking 80 guests for Sept 14, budget
-// around $5k"). Returns a partial — only fields the model is
-// confident about. Caller should ONLY apply fields that are
-// currently null on the inquiry, so vendor-confirmed values are
-// never overwritten by a chat-extracted guess.
-export async function extractInquiryFields(
-  apiKey: string,
-  ctx: {
-    transcript: Array<{ role: "user" | "assistant"; content: string }>;
-    todayIso: string;
-  },
-): Promise<ExtractedInquiryFields & { _usage?: ClaudeUsage }> {
-  if (!apiKey) return {};
-  if (ctx.transcript.length === 0) return {};
-
-  const systemText = `You extract structured event details from a host's chat with a vendor. Read the whole transcript and report ONLY what the host has explicitly stated.
-
-Output a JSON object on one line. Include a key ONLY if the host clearly stated it. Skip keys for anything implied, guessed, or already-vendor-side. Never invent.
-
-Allowed keys (all optional):
-- event_type: lowercase noun ("wedding", "birthday", "corporate", "fundraiser", etc.)
-- event_date: ISO yyyy-mm-dd. Resolve relative phrases against today (${ctx.todayIso}). "next September 14" → next year if today is past Sept. "this Saturday" → the next Saturday from today.
-- guest_count: integer
-- location: city or short place name as stated
-- budget_min_cents: integer USD cents. "$5k" → 500000. Skip if only a max is given.
-- budget_max_cents: integer USD cents. "around 5k" → 500000 as max.
-- special_requests: short string ONLY if the host mentioned a specific accommodation (allergies, accessibility, theme constraints).
-
-Examples:
-Host: "We're looking at Sept 14, 80 guests, around 8k" → {"event_date":"2026-09-14","guest_count":80,"budget_max_cents":800000}
-Host: "Just exploring options" → {}
-
-No markdown. No prose outside the JSON.`;
-
-  try {
-    const res = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: {
-        "x-api-key": apiKey,
-        "anthropic-version": "2023-06-01",
-        "content-type": "application/json",
-      },
-      body: JSON.stringify({
-        model: MODEL,
-        max_tokens: 200,
-        system: [
-          { type: "text", text: systemText, cache_control: { type: "ephemeral" } },
-        ],
-        messages: ctx.transcript.length > 0
-          ? ctx.transcript
-          : [{ role: "user", content: "(empty)" }],
-      }),
-    });
-    if (!res.ok) return {};
-    const body = (await res.json()) as any;
-    const raw = ((body.content ?? []) as any[])
-      .filter((b) => b.type === "text")
-      .map((b) => b.text)
-      .join("\n")
-      .trim();
-    const u = body.usage ?? {};
-    const usage: ClaudeUsage = {
-      input_tokens: Number(u.input_tokens) || 0,
-      output_tokens: Number(u.output_tokens) || 0,
-      cache_creation_tokens: Number(u.cache_creation_input_tokens) || 0,
-      cache_read_tokens: Number(u.cache_read_input_tokens) || 0,
-    };
-    const jsonish = raw.replace(/^```(?:json)?/, "").replace(/```$/, "").trim();
-    const parsed = JSON.parse(jsonish);
-    // Allowlist + light coercion. Skip keys that don't conform.
-    const out: ExtractedInquiryFields & { _usage?: ClaudeUsage } = {};
-    if (typeof parsed?.event_type === "string") out.event_type = parsed.event_type.toLowerCase().slice(0, 40);
-    if (typeof parsed?.event_date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(parsed.event_date)) out.event_date = parsed.event_date;
-    if (Number.isInteger(parsed?.guest_count) && parsed.guest_count > 0 && parsed.guest_count < 10000) out.guest_count = parsed.guest_count;
-    if (typeof parsed?.location === "string") out.location = parsed.location.slice(0, 200);
-    if (Number.isInteger(parsed?.budget_min_cents) && parsed.budget_min_cents >= 0) out.budget_min_cents = parsed.budget_min_cents;
-    if (Number.isInteger(parsed?.budget_max_cents) && parsed.budget_max_cents >= 0) out.budget_max_cents = parsed.budget_max_cents;
-    if (typeof parsed?.special_requests === "string") out.special_requests = parsed.special_requests.slice(0, 800);
-    out._usage = usage;
-    return out;
-  } catch (err) {
-    console.error("[extractInquiryFields] error", err);
-    return {};
-  }
-}
-
 export interface ClaudeUsage {
   input_tokens: number;
   output_tokens: number;
@@ -701,16 +524,11 @@ export async function loadVendorContext(
         hilux_instructions: privRow?.hilux_instructions ?? null,
         hilux_voice_samples: privRow?.hilux_voice_samples ?? [],
         actions: {
-          matchLanguage: profRow.hilux_action_match_language !== false,
           useCalendar: profRow.hilux_action_use_calendar !== false,
-          askClarifying: profRow.hilux_action_ask_clarifying !== false,
           useFirstName: profRow.hilux_action_use_first_name !== false,
           detectFrustration: profRow.hilux_action_detect_frustration !== false,
           declineNegotiation: profRow.hilux_action_decline_negotiation !== false,
           offerCall: profRow.hilux_action_offer_call !== false,
-          useEmojis: profRow.hilux_action_use_emojis === true,
-          softCtaSignoff: profRow.hilux_action_soft_cta_signoff !== false,
-          allowBullets: profRow.hilux_action_allow_bullets === true,
           notifyOnReply: profRow.hilux_action_notify_on_reply === true,
           notifyOnHotLead: profRow.hilux_action_notify_on_hot_lead !== false,
           dailySummary: profRow.hilux_action_daily_summary === true,

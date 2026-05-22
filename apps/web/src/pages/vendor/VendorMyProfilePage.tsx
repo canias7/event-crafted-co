@@ -88,7 +88,7 @@ export default function VendorMyProfilePage() {
       .eq("user_id", user.id)
       .order("created_at", { ascending: true });
 
-    const vendors = ((vps ?? []) as VendorRow[]) ?? [];
+    const vendors = (vps ?? []) as VendorRow[];
     // Approved (live) listings render first, then pending/submitted,
     // then anything else (rejected/null/drafted). Created-at ASC
     // breaks ties so the order is otherwise stable. primary picks up

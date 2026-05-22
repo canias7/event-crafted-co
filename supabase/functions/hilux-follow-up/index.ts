@@ -1,6 +1,7 @@
 // HILUX follow-up scanner. Daily cron. Skips threads where the
-// owner profile has hilux_enabled = false OR
-// hilux_action_follow_up = false.
+// owner profile has hilux_enabled = false. The per-toggle pacing
+// switch was retired (migration 20260522070000) — follow-up is now
+// permanent agent behavior on every HILUX-enabled thread.
 
 // deno-lint-ignore-file no-explicit-any
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
@@ -53,9 +54,9 @@ serve(async (req) => {
     const cooldownIso = new Date(now - COOLDOWN_DAYS * 86400000).toISOString();
 
     // Candidate threads = HILUX-enabled vendor + thread not paused +
-    // last activity in our nudge window. We don't filter by
-    // hilux_action_follow_up here because RLS-friendly nested filters
-    // through profiles get hairy; we re-check per-thread below.
+    // last activity in our nudge window. The hilux_enabled gate is
+    // applied per-thread below via loadVendorContext (joining through
+    // profiles in this SELECT would be hairy).
     const { data: candidates, error: candErr } = await admin
       .from("direct_threads")
       .select("id, vendor_id, inquiry_id, last_message_at, hilux_paused")
