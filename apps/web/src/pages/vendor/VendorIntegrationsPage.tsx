@@ -1,17 +1,17 @@
-// Vendor integrations page — segmented MCP / CLI / Skill picker
-// at the top, the chosen surface below. Reached from /settings →
-// "Integrations" row. MCP is the live Vendora MCP connector panel;
-// CLI and Skill are placeholders for connectors we'll wire up later.
+// Vendor integrations page — segmented MCP / CLI picker at the top,
+// the chosen surface below. Reached from /settings → "Integrations"
+// row. MCP is the live Vendora MCP connector panel; CLI is a
+// placeholder for a connector we'll wire up later.
 
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ChevronLeft, FileCode, Sparkles, Terminal } from "lucide-react";
+import { ChevronLeft, Sparkles, Terminal } from "lucide-react";
 import { DashboardSidebar } from "@/components/shared/DashboardSidebar";
 import { MobileNav } from "@/components/shared/MobileNav";
 import { vendorNavItems } from "@/data/navItems";
 import { VendoraMcpPanel } from "@/components/super-agents/VendoraMcpPanel";
 
-type IntegrationKey = "mcp" | "cli" | "skill";
+type IntegrationKey = "mcp" | "cli";
 
 interface Tab {
   key: IntegrationKey;
@@ -23,7 +23,6 @@ interface Tab {
 const TABS: Tab[] = [
   { key: "mcp", label: "MCP", Icon: Sparkles, ready: true },
   { key: "cli", label: "CLI", Icon: Terminal, ready: false },
-  { key: "skill", label: "Skill", Icon: FileCode, ready: false },
 ];
 
 export default function VendorIntegrationsPage() {
@@ -55,9 +54,8 @@ export default function VendorIntegrationsPage() {
 
         <div className="px-4 md:px-8 pt-2">
           {/* Segmented picker — dark pill bar, active tab as a
-              white chip. Two upcoming tabs render with a faded
-              "Coming soon" label but stay tappable to show the
-              placeholder body. */}
+              white chip. The CLI tab stays tappable to show its
+              "Coming soon" placeholder body. */}
           <div className="inline-flex items-center gap-1 rounded-full bg-foreground/90 p-1 shadow-sm">
             {TABS.map((t) => {
               const isActive = active === t.key;
@@ -84,12 +82,8 @@ export default function VendorIntegrationsPage() {
           <VendoraMcpPanel />
         ) : (
           <ComingSoon
-            label={active === "cli" ? "CLI" : "Skill"}
-            blurb={
-              active === "cli"
-                ? "A first-class command-line client for power users — manage inquiries, draft replies, and tweak HILUX from your terminal. Wiring this up next."
-                : "A Claude Skill package that bundles Vendora-specific instructions + slash-commands so any Claude session feels native. Wiring this up next."
-            }
+            label="CLI"
+            blurb="A first-class command-line client for power users — manage inquiries, draft replies, and tweak HILUX from your terminal. Wiring this up next."
           />
         )}
       </main>
