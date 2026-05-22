@@ -459,66 +459,64 @@ serve(async (req) => {
       const title = "Upset host — HILUX handed this to you";
       const body = `${preview}${triggeringMessage.body.length > 120 ? "…" : ""} — reason: ${reason}`;
       let notified = 0;
-      if (actions.notifyOnEscalation) {
-        const { data: members } = await admin
-          .from("vendor_team_members")
-          .select("user_id")
-          .eq("vendor_id", ctx.vendor.id);
-        const memberRows = (members ?? []) as Array<{ user_id: string }>;
-        const rows = memberRows.map((m) => ({
-          user_id: m.user_id,
-          type: "hilux_escalation",
-          title,
-          body,
-          link: inquiryPath,
-        }));
-        if (rows.length > 0) {
-          const { error: notifErr } = await admin.from("notifications").insert(rows);
-          if (notifErr) console.error("[hilux-respond] notification insert failed", notifErr);
-        }
-        notified = rows.length;
+      const { data: members } = await admin
+        .from("vendor_team_members")
+        .select("user_id")
+        .eq("vendor_id", ctx.vendor.id);
+      const memberRows = (members ?? []) as Array<{ user_id: string }>;
+      const rows = memberRows.map((m) => ({
+        user_id: m.user_id,
+        type: "hilux_escalation",
+        title,
+        body,
+        link: inquiryPath,
+      }));
+      if (rows.length > 0) {
+        const { error: notifErr } = await admin.from("notifications").insert(rows);
+        if (notifErr) console.error("[hilux-respond] notification insert failed", notifErr);
+      }
+      notified = rows.length;
 
-        // Action-required email. An escalation is the most
-        // time-sensitive HILUX event — a host is waiting and the
-        // agent stepped aside — so we email the vendor team
-        // immediately, not just the in-app bell. Best-effort.
-        if (RESEND_API_KEY) {
-          try {
-            const vendorName = ctx.vendor.business_name ?? "your business";
-            const threadLink = `${APP_URL}${inquiryPath}`;
-            for (const m of memberRows) {
-              const { data: u } = await admin.auth.admin.getUserById(m.user_id);
-              const to = u?.user?.email;
-              if (!to) continue;
-              const send = await fetch("https://api.resend.com/emails", {
-                method: "POST",
-                headers: {
-                  Authorization: `Bearer ${RESEND_API_KEY}`,
-                  "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                  from: EMAIL_FROM_ADDRESS,
-                  to,
-                  subject: `Action needed — HILUX handed you a conversation`,
-                  html: escalationEmailHtml({
-                    vendorName,
-                    hostFirstName,
-                    hostBody: triggeringMessage.body ?? "",
-                    reason,
-                    threadLink,
-                  }),
+      // Action-required email. An escalation is the most
+      // time-sensitive HILUX event — a host is waiting and the
+      // agent stepped aside — so we email the vendor team
+      // immediately, not just the in-app bell. Best-effort.
+      if (RESEND_API_KEY) {
+        try {
+          const vendorName = ctx.vendor.business_name ?? "your business";
+          const threadLink = `${APP_URL}${inquiryPath}`;
+          for (const m of memberRows) {
+            const { data: u } = await admin.auth.admin.getUserById(m.user_id);
+            const to = u?.user?.email;
+            if (!to) continue;
+            const send = await fetch("https://api.resend.com/emails", {
+              method: "POST",
+              headers: {
+                Authorization: `Bearer ${RESEND_API_KEY}`,
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                from: EMAIL_FROM_ADDRESS,
+                to,
+                subject: `Action needed — HILUX handed you a conversation`,
+                html: escalationEmailHtml({
+                  vendorName,
+                  hostFirstName,
+                  hostBody: triggeringMessage.body ?? "",
+                  reason,
+                  threadLink,
                 }),
-              });
-              if (!send.ok) {
-                console.error(
-                  "[hilux-respond] escalation email failed",
-                  await send.text(),
-                );
-              }
+              }),
+            });
+            if (!send.ok) {
+              console.error(
+                "[hilux-respond] escalation email failed",
+                await send.text(),
+              );
             }
-          } catch (err) {
-            console.error("[hilux-respond] escalation email error", err);
           }
+        } catch (err) {
+          console.error("[hilux-respond] escalation email error", err);
         }
       }
       log("hilux escalated", { thread: threadId, reason, notified });
@@ -556,7 +554,7 @@ serve(async (req) => {
     // Auto-mark the inquiry as 'replied' so it moves out of the
     // vendor's 'new' bucket. Only flips when the inquiry is still
     // in 'new' — we don't downgrade won/lost/etc.
-    if (actions.autoMarkReplied && thread.inquiry_id) {
+    if (thread.inquiry_id) {
       const { error: statusErr } = await admin
         .from("inquiries")
         .update({ status: "replied" })

@@ -57,10 +57,8 @@ export interface HiluxActions {
   softCtaSignoff: boolean;
   allowBullets: boolean;
   // Operations (code-level)
-  autoMarkReplied: boolean;
   notifyOnReply: boolean;
   updateInquiryFields: boolean;
-  notifyOnEscalation: boolean;
   notifyOnHotLead: boolean;
   emailReplyCopies: boolean;
   autoArchiveCold: boolean;
@@ -81,10 +79,8 @@ export const DEFAULT_ACTIONS: HiluxActions = {
   useEmojis: false,
   softCtaSignoff: true,
   allowBullets: false,
-  autoMarkReplied: true,
   notifyOnReply: false,
   updateInquiryFields: false,
-  notifyOnEscalation: true,
   notifyOnHotLead: true,
   emailReplyCopies: false,
   autoArchiveCold: false,
@@ -725,10 +721,8 @@ export async function loadVendorContext(
           useEmojis: profRow.hilux_action_use_emojis === true,
           softCtaSignoff: profRow.hilux_action_soft_cta_signoff !== false,
           allowBullets: profRow.hilux_action_allow_bullets === true,
-          autoMarkReplied: profRow.hilux_action_auto_mark_replied !== false,
           notifyOnReply: profRow.hilux_action_notify_on_reply === true,
           updateInquiryFields: profRow.hilux_action_update_inquiry_fields === true,
-          notifyOnEscalation: profRow.hilux_action_notify_on_escalation !== false,
           notifyOnHotLead: profRow.hilux_action_notify_on_hot_lead !== false,
           emailReplyCopies: profRow.hilux_action_email_reply_copies === true,
           autoArchiveCold: profRow.hilux_action_auto_archive_cold === true,
