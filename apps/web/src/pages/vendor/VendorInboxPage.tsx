@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { Inbox, Loader2, Pause, Search, Sparkles } from "lucide-react";
+import { Inbox, Loader2, Search, Sparkles } from "lucide-react";
+import { HiluxLogo } from "@/components/super-agents/AgentLogos";
 import { toast } from "sonner";
 import { useRealtime } from "@/lib/realtime";
 import { supabase } from "@/integrations/supabase/client";
@@ -177,7 +178,7 @@ export default function VendorInboxPage() {
       toast.error("Couldn't toggle HILUX.");
       return;
     }
-    toast.success(next ? "HILUX is on" : "HILUX paused");
+    toast.success(next ? "HILUX is on" : "HILUX is off");
   }
 
   useEffect(() => {
@@ -320,28 +321,37 @@ export default function VendorInboxPage() {
               );
             })}
 
-            {/* HILUX one-tap pause. Tap when going on vacation; tap
-                again to resume. Same source of truth as the agent
-                settings page (profiles.hilux_enabled). */}
+            {/* HILUX on/off pill — the agent logo + an explicit
+                ON / OFF sign. One tap flips profiles.hilux_enabled
+                (same source of truth as the settings page). */}
             <button
               type="button"
               onClick={toggleHilux}
               disabled={hiluxToggling}
-              title={hiluxEnabled ? "Tap to pause HILUX" : "Tap to resume HILUX"}
-              className={`shrink-0 ml-auto inline-flex items-center gap-1.5 text-[12px] px-3 py-1.5 rounded-full border transition-colors ${
+              title={hiluxEnabled ? "Tap to turn HILUX off" : "Tap to turn HILUX on"}
+              className={`shrink-0 ml-auto inline-flex items-center gap-1.5 text-[12px] pl-1.5 pr-2 py-1 rounded-full border transition-colors ${
                 hiluxEnabled
                   ? "border-orange-300/70 bg-orange-50 text-orange-900 hover:bg-orange-100"
                   : "border-transparent bg-secondary/50 text-foreground/70 hover:bg-secondary"
               } disabled:opacity-60`}
             >
+              <span className="w-4 h-4 rounded overflow-hidden ring-1 ring-black/5 shrink-0">
+                <HiluxLogo className="w-full h-full block" />
+              </span>
+              <span className="font-medium">HILUX</span>
               {hiluxToggling ? (
                 <Loader2 className="w-3 h-3 animate-spin" />
-              ) : hiluxEnabled ? (
-                <Sparkles className="w-3 h-3" />
               ) : (
-                <Pause className="w-3 h-3" />
+                <span
+                  className={`text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded-full ${
+                    hiluxEnabled
+                      ? "bg-emerald-600 text-white"
+                      : "bg-black/15 text-black/55"
+                  }`}
+                >
+                  {hiluxEnabled ? "On" : "Off"}
+                </span>
               )}
-              {hiluxEnabled ? "HILUX on" : "HILUX paused"}
             </button>
           </div>
 
