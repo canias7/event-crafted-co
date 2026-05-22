@@ -58,14 +58,9 @@ export interface HiluxActions {
   allowBullets: boolean;
   // Operations (code-level)
   notifyOnReply: boolean;
-  updateInquiryFields: boolean;
   notifyOnHotLead: boolean;
-  emailReplyCopies: boolean;
-  autoArchiveCold: boolean;
   dailySummary: boolean;
   capRepliesPerInquiry: boolean;
-  detectBookingIntent: boolean;
-  logActions: boolean;
 }
 
 export const DEFAULT_ACTIONS: HiluxActions = {
@@ -80,14 +75,9 @@ export const DEFAULT_ACTIONS: HiluxActions = {
   softCtaSignoff: true,
   allowBullets: false,
   notifyOnReply: false,
-  updateInquiryFields: false,
   notifyOnHotLead: true,
-  emailReplyCopies: false,
-  autoArchiveCold: false,
   dailySummary: false,
   capRepliesPerInquiry: false,
-  detectBookingIntent: true,
-  logActions: false,
 };
 
 export interface HiluxPromptCtx {
@@ -722,14 +712,9 @@ export async function loadVendorContext(
           softCtaSignoff: profRow.hilux_action_soft_cta_signoff !== false,
           allowBullets: profRow.hilux_action_allow_bullets === true,
           notifyOnReply: profRow.hilux_action_notify_on_reply === true,
-          updateInquiryFields: profRow.hilux_action_update_inquiry_fields === true,
           notifyOnHotLead: profRow.hilux_action_notify_on_hot_lead !== false,
-          emailReplyCopies: profRow.hilux_action_email_reply_copies === true,
-          autoArchiveCold: profRow.hilux_action_auto_archive_cold === true,
           dailySummary: profRow.hilux_action_daily_summary === true,
           capRepliesPerInquiry: profRow.hilux_action_cap_replies_per_inquiry === true,
-          detectBookingIntent: profRow.hilux_action_detect_booking_intent !== false,
-          logActions: profRow.hilux_action_log_actions === true,
         },
       };
     }

@@ -19,8 +19,6 @@ import {
   callClaudeWithUsage,
   type ClaudeUsage,
   DEFAULT_ACTIONS,
-  detectBookingIntent,
-  extractInquiryFields,
   loadVendorContext,
   priceUsd,
   scoreLead,
@@ -269,102 +267,16 @@ serve(async (req) => {
       totalUsage.cache_read_tokens += u.cache_read_tokens;
     };
 
-    // Booking-intent detection: when on, classify the host's LATEST
-    // message for explicit commitment ("yes, book us"). Sets
-    // inquiries.booking_intent_at so the vendor can filter their
-    // inbox to "ready to close" without rereading every thread.
-    // Bounded + best-effort; never blocks the reply path.
-    const detectIntentAfter = async () => {
-      if (!thread.inquiry_id) return;
-      if (!actions.detectBookingIntent) return;
-      try {
-        const result = await detectBookingIntent(ANTHROPIC_API_KEY, {
-          businessName: ctx.vendor!.business_name ?? "this vendor",
-          transcript: claudeMessages,
-        });
-        addUsage(result.usage);
-        if (!result.detected) return;
-        // Booking intent lives on inquiry_scores (vendor-only RLS).
-        // Only set the FIRST time we detect intent for this inquiry —
-        // repeat-detect on every host message would clobber the
-        // original moment.
-        const { data: priorRow } = await admin
-          .from("inquiry_scores")
-          .select("booking_intent_at")
-          .eq("inquiry_id", thread.inquiry_id)
-          .maybeSingle();
-        if ((priorRow as { booking_intent_at?: string } | null)?.booking_intent_at) return;
-        const { error: intentErr } = await admin
-          .from("inquiry_scores")
-          .upsert(
-            {
-              inquiry_id: thread.inquiry_id,
-              booking_intent_at: new Date().toISOString(),
-              booking_intent_reason: result.reason,
-            },
-            { onConflict: "inquiry_id" },
-          );
-        if (intentErr) console.error("[hilux-respond] booking_intent update failed", intentErr);
-        else log("booking intent flagged", { inquiry: thread.inquiry_id, reason: result.reason });
-      } catch (err) {
-        console.error("[hilux-respond] booking_intent error", err);
-      }
-    };
-
-    // Inquiry-field extraction: when on, pull event_date / guest_count
-    // / budget / etc. that the host stated in chat and write back to
-    // the inquiry. Only fill NULL columns so vendor-confirmed values
-    // are never overwritten by a chat-extracted guess.
-    const extractFieldsAfter = async () => {
-      if (!thread.inquiry_id) return;
-      if (!actions.updateInquiryFields) return;
-      try {
-        const extracted = await extractInquiryFields(ANTHROPIC_API_KEY, {
-          transcript: claudeMessages,
-          todayIso: new Date().toISOString().slice(0, 10),
-        });
-        addUsage(extracted._usage);
-        // _usage is the only non-extracted-field key; strip it before
-        // iterating so it doesn't get patched into the inquiries row.
-        delete extracted._usage;
-        const keys = Object.keys(extracted) as Array<keyof typeof extracted>;
-        if (keys.length === 0) return;
-        // Read current values so we only fill nulls.
-        const { data: current } = await admin
-          .from("inquiries")
-          .select("event_type, event_date, guest_count, location, budget_min_cents, budget_max_cents, special_requests")
-          .eq("id", thread.inquiry_id)
-          .maybeSingle();
-        if (!current) return;
-        const patch: Record<string, unknown> = {};
-        for (const k of keys) {
-          if ((current as any)[k] == null && extracted[k] != null) {
-            patch[k] = extracted[k];
-          }
-        }
-        if (Object.keys(patch).length === 0) return;
-        const { error: upErr } = await admin
-          .from("inquiries")
-          .update(patch)
-          .eq("id", thread.inquiry_id);
-        if (upErr) console.error("[hilux-respond] inquiry field update failed", upErr);
-        else log("inquiry fields extracted", { inquiry: thread.inquiry_id, filled: Object.keys(patch) });
-      } catch (err) {
-        console.error("[hilux-respond] extract fields error", err);
-      }
-    };
-
-    // Audit log: when logActions is on, write one row per HILUX
-    // action (reply / escalate). Used by the vendor's activity view
-    // + the MCP connector's get_action_log tool. Best-effort. The
-    // usage argument carries Anthropic token counts for cost view.
+    // Audit log: write one row per HILUX action (reply / escalate).
+    // Used by the vendor's activity view + the MCP connector's
+    // get_action_log tool. Best-effort. The usage argument carries
+    // Anthropic token counts for cost view.
     const logAction = async (
       action: "reply" | "escalate",
       detail: string | null,
       messageId: string | null,
       usage: ClaudeUsage | null = null,
     ) => {
-      if (!actions.logActions) return;
       const { error } = await admin.from("hilux_action_log").insert({
         user_id: ctx.vendor!.user_id,
         vendor_id: ctx.vendor!.id,
@@ -522,8 +434,6 @@ serve(async (req) => {
       log("hilux escalated", { thread: threadId, reason, notified });
       await logAction("escalate", reason, null, replyUsage);
       await scoreInquiryAfter();
-      await detectIntentAfter();
-      await extractFieldsAfter();
       await clearTyping();
       return ok({ escalated: true, reason, notified });
     }
@@ -585,65 +495,9 @@ serve(async (req) => {
       }
     }
 
-    // Email reply copies. Sends a Resend email to every vendor team
-    // member with the host's last question + HILUX's reply, so the
-    // vendor can keep tabs from their inbox. Best-effort: a Resend
-    // failure never blocks the reply.
-    if (actions.emailReplyCopies && RESEND_API_KEY) {
-      try {
-        const { data: members } = await admin
-          .from("vendor_team_members")
-          .select("user_id")
-          .eq("vendor_id", ctx.vendor.id);
-        const lastHostMsg = orderedHistory
-          .slice()
-          .reverse()
-          .find((m) => m.sender_role === "host");
-        const hostBody = (lastHostMsg?.body ?? "").trim();
-        const vendorName = ctx.vendor.business_name ?? "your business";
-        const threadLink = `${APP_URL}${inquiryPath}`;
-        for (const m of (members ?? []) as Array<{ user_id: string }>) {
-          const { data: u } = await admin.auth.admin.getUserById(m.user_id);
-          const to = u?.user?.email;
-          if (!to) continue;
-          const subject = `HILUX replied for ${vendorName}`;
-          const html = replyCopyHtml({
-            vendorName,
-            hostFirstName,
-            hostBody,
-            reply: sanitized,
-            threadLink,
-          });
-          const send = await fetch("https://api.resend.com/emails", {
-            method: "POST",
-            headers: {
-              Authorization: `Bearer ${RESEND_API_KEY}`,
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              from: EMAIL_FROM_ADDRESS,
-              to,
-              subject,
-              html,
-            }),
-          });
-          if (!send.ok) {
-            console.error(
-              "[hilux-respond] reply copy email failed",
-              await send.text(),
-            );
-          }
-        }
-      } catch (err) {
-        console.error("[hilux-respond] reply copy email error", err);
-      }
-    }
-
     await scoreInquiryAfter();
-    await detectIntentAfter();
-    await extractFieldsAfter();
     // Log AFTER the helpers so totalUsage reflects every Claude call
-    // the host's message triggered — reply + score + intent + extract.
+    // the host's message triggered — reply + score.
     await logAction("reply", null, insertedMsgId, totalUsage);
     await clearTyping();
     return ok({ replied: true, length: sanitized.length });
@@ -661,32 +515,6 @@ function escapeHtml(s: string): string {
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#39;");
-}
-
-function replyCopyHtml(args: {
-  vendorName: string;
-  hostFirstName: string | null;
-  hostBody: string;
-  reply: string;
-  threadLink: string;
-}): string {
-  const hostLabel = args.hostFirstName ? escapeHtml(args.hostFirstName) : "the host";
-  const hostBody = escapeHtml(args.hostBody).replace(/\n/g, "<br />");
-  const reply = escapeHtml(args.reply).replace(/\n/g, "<br />");
-  return `<!doctype html>
-<html><body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 560px; margin: 0 auto; padding: 24px; color: #111;">
-  <p style="color:#666;font-size:13px;margin:0 0 16px;">HILUX just replied to a host on behalf of <strong>${escapeHtml(args.vendorName)}</strong>.</p>
-  <div style="border-left:3px solid #ddd;padding:8px 16px;margin:0 0 16px;color:#555;">
-    <div style="font-size:12px;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px;">${hostLabel} wrote</div>
-    <div>${hostBody}</div>
-  </div>
-  <div style="border-left:3px solid #f97316;padding:8px 16px;margin:0 0 24px;">
-    <div style="font-size:12px;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px;color:#f97316;">HILUX replied</div>
-    <div>${reply}</div>
-  </div>
-  <p style="margin:0;"><a href="${escapeHtml(args.threadLink)}" style="background:#111;color:#fff;text-decoration:none;padding:10px 16px;border-radius:6px;display:inline-block;">Open the thread</a></p>
-  <p style="color:#999;font-size:11px;margin-top:32px;">You're getting this because the Email reply copies toggle is on for HILUX. Turn it off in your agent settings to stop.</p>
-</body></html>`;
 }
 
 function escalationEmailHtml(args: {
