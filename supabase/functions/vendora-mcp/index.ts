@@ -34,10 +34,9 @@ const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY") ?? "";
 const ALLOWED_ACTION_KEYS = new Set([
   "use_calendar", "detect_frustration",
   "decline_negotiation", "offer_call",
-  "notify_on_reply", "update_inquiry_fields",
-  "notify_on_hot_lead", "email_reply_copies", "auto_archive_cold",
-  "daily_summary", "cap_replies_per_inquiry", "detect_booking_intent",
-  "log_actions",
+  "notify_on_reply",
+  "notify_on_hot_lead",
+  "daily_summary", "cap_replies_per_inquiry",
 ]);
 
 const INQUIRY_STATUSES = ["new", "replied", "won", "lost", "expired", "drafted"] as const;
@@ -1233,7 +1232,7 @@ async function getHiluxSettings(admin: any, userId: string) {
     admin
       .from("profiles")
       .select(
-        "hilux_enabled, hilux_action_use_calendar, hilux_action_detect_frustration, hilux_action_decline_negotiation, hilux_action_offer_call, hilux_action_notify_on_reply, hilux_action_update_inquiry_fields, hilux_action_notify_on_hot_lead, hilux_action_email_reply_copies, hilux_action_auto_archive_cold, hilux_action_daily_summary, hilux_action_cap_replies_per_inquiry, hilux_action_detect_booking_intent, hilux_action_log_actions",
+        "hilux_enabled, hilux_action_use_calendar, hilux_action_detect_frustration, hilux_action_decline_negotiation, hilux_action_offer_call, hilux_action_notify_on_reply, hilux_action_notify_on_hot_lead, hilux_action_daily_summary, hilux_action_cap_replies_per_inquiry",
       )
       .eq("id", userId)
       .maybeSingle(),

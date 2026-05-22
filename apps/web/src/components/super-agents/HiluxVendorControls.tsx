@@ -5,19 +5,14 @@
 
 import { useCallback, useEffect, useState } from "react";
 import {
-  Archive,
   Bell,
   Bot,
   Calendar,
   ChevronDown,
   ChevronRight,
-  ClipboardList,
-  Flag,
   Flame,
   Frown,
   Gauge,
-  Mail,
-  ScrollText,
   Sunrise,
   Loader2,
   Phone,
@@ -44,14 +39,9 @@ type ActionKey =
   | "hilux_action_decline_negotiation"
   | "hilux_action_offer_call"
   | "hilux_action_notify_on_reply"
-  | "hilux_action_update_inquiry_fields"
   | "hilux_action_notify_on_hot_lead"
-  | "hilux_action_email_reply_copies"
-  | "hilux_action_auto_archive_cold"
   | "hilux_action_daily_summary"
-  | "hilux_action_cap_replies_per_inquiry"
-  | "hilux_action_detect_booking_intent"
-  | "hilux_action_log_actions";
+  | "hilux_action_cap_replies_per_inquiry";
 
 type HiluxProfileRow = {
   hilux_enabled: boolean;
@@ -89,13 +79,8 @@ const ACTION_GROUPS: ActionGroup[] = [
     actions: [
       { key: "hilux_action_notify_on_hot_lead", label: "Notify me when a lead turns hot", blurb: "Push notification the first time HILUX flags a conversation as a hot lead.", Icon: Flame },
       { key: "hilux_action_notify_on_reply", label: "Notify me on every HILUX reply", blurb: "Push notification whenever HILUX sends a message on your behalf. Can get noisy.", Icon: Bell },
-      { key: "hilux_action_email_reply_copies", label: "Email me a copy of every HILUX reply", blurb: "Receive an email each time HILUX answers, with the host's question and HILUX's reply.", Icon: Mail },
-      { key: "hilux_action_update_inquiry_fields", label: "Update inquiry fields from chat", blurb: "When the host mentions an event date, guest count, or budget in conversation, write it back to the inquiry record automatically.", Icon: ClipboardList },
-      { key: "hilux_action_auto_archive_cold", label: "Auto-archive cold leads after 14 days", blurb: "Mark inquiries as lost when HILUX has scored them cold and the host hasn't replied in 14 days.", Icon: Archive },
       { key: "hilux_action_daily_summary", label: "Send me a 9am daily summary", blurb: "Get a single push + email at 9am each morning with yesterday's HILUX activity (replies, escalations, hot leads).", Icon: Sunrise },
-      { key: "hilux_action_detect_booking_intent", label: "Flag booking intent", blurb: "When the host says \"yes, book us\" or similar, mark the inquiry as ready to close so you don't miss it.", Icon: Flag },
       { key: "hilux_action_cap_replies_per_inquiry", label: "Cap HILUX at 6 replies per inquiry", blurb: "After 6 HILUX replies in a single conversation, HILUX backs off and defers to you for the rest.", Icon: Gauge },
-      { key: "hilux_action_log_actions", label: "Log every HILUX action for export", blurb: "Write each HILUX reply, escalation, and follow-up to an audit log you can export as CSV.", Icon: ScrollText },
     ],
   },
 ];
@@ -116,7 +101,7 @@ export function HiluxVendorControls() {
     const { data, error } = await supabase
       .from("profiles")
       .select(
-        "hilux_enabled, hilux_action_use_calendar, hilux_action_detect_frustration, hilux_action_decline_negotiation, hilux_action_offer_call, hilux_action_notify_on_reply, hilux_action_update_inquiry_fields, hilux_action_notify_on_hot_lead, hilux_action_email_reply_copies, hilux_action_auto_archive_cold, hilux_action_daily_summary, hilux_action_cap_replies_per_inquiry, hilux_action_detect_booking_intent, hilux_action_log_actions",
+        "hilux_enabled, hilux_action_use_calendar, hilux_action_detect_frustration, hilux_action_decline_negotiation, hilux_action_offer_call, hilux_action_notify_on_reply, hilux_action_notify_on_hot_lead, hilux_action_daily_summary, hilux_action_cap_replies_per_inquiry",
       )
       .eq("id", user.id)
       .maybeSingle();
@@ -132,14 +117,9 @@ export function HiluxVendorControls() {
       hilux_action_decline_negotiation: true,
       hilux_action_offer_call: true,
       hilux_action_notify_on_reply: false,
-      hilux_action_update_inquiry_fields: false,
       hilux_action_notify_on_hot_lead: true,
-      hilux_action_email_reply_copies: false,
-      hilux_action_auto_archive_cold: false,
       hilux_action_daily_summary: false,
       hilux_action_cap_replies_per_inquiry: false,
-      hilux_action_detect_booking_intent: true,
-      hilux_action_log_actions: false,
     } satisfies HiluxProfileRow);
     setProfile(row);
   }, [user?.id]);
@@ -188,14 +168,9 @@ export function HiluxVendorControls() {
       hilux_action_decline_negotiation: true,
       hilux_action_offer_call: true,
       hilux_action_notify_on_reply: false,
-      hilux_action_update_inquiry_fields: false,
       hilux_action_notify_on_hot_lead: true,
-      hilux_action_email_reply_copies: false,
-      hilux_action_auto_archive_cold: false,
       hilux_action_daily_summary: false,
       hilux_action_cap_replies_per_inquiry: false,
-      hilux_action_detect_booking_intent: true,
-      hilux_action_log_actions: false,
     };
     const { error } = await supabase
       .from("profiles")
@@ -386,7 +361,7 @@ export function HiluxVendorControls() {
               ) : null}
             </div>
 
-            {enabled && profile?.hilux_action_log_actions ? (
+            {enabled ? (
               <HiluxActivityLog />
             ) : null}
           </div>

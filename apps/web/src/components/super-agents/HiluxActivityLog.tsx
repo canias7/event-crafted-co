@@ -1,7 +1,7 @@
 // HILUX activity log viewer. Reads hilux_action_log via RLS (user
-// only sees own rows). Shown inside HILUX vendor controls when the
-// hilux_action_log_actions toggle is on. CSV export uses the same
-// query, formatted client-side.
+// only sees own rows). Shown inside HILUX vendor controls whenever
+// HILUX is enabled. CSV export uses the same query, formatted
+// client-side.
 
 import { useCallback, useEffect, useState } from "react";
 import {
