@@ -292,7 +292,7 @@ const TOOLS = [
   {
     name: "get_hilux_settings",
     description:
-      "Return the vendor's current HILUX configuration: master enabled flag, custom greeting, reply length, and every action toggle. Useful when the vendor asks Claude what HILUX is set to.",
+      "Return the vendor's current HILUX configuration: the master enabled flag and every action toggle. Useful when the vendor asks Claude what HILUX is set to.",
     inputSchema: { type: "object", properties: {} },
     annotations: { title: "Inspect HILUX settings", ...READ },
   },
@@ -357,7 +357,7 @@ const TOOLS = [
   {
     name: "update_hilux_settings",
     description:
-      "Update HILUX configuration on the vendor's profile. Pass any subset of fields. `actions` is a key→boolean map where keys are the snake_case action names (e.g. `follow_up`, `skip_when_active`, `use_calendar`, `detect_frustration`, `notify_on_hot_lead`, etc. — see get_hilux_settings for the full list).",
+      "Update HILUX configuration on the vendor's profile. Pass any subset of fields. `actions` is a key→boolean map where keys are the snake_case action names (e.g. `use_calendar`, `detect_frustration`, `offer_call`, `notify_on_hot_lead`, etc. — see get_hilux_settings for the full list).",
     inputSchema: {
       type: "object",
       properties: {
@@ -393,7 +393,7 @@ const TOOLS = [
       properties: {
         action: {
           type: "string",
-          enum: ["reply", "escalate", "follow_up", "regenerate", "archive_cold", "booking_intent_detected", "lead_score_hot", "fields_extracted"],
+          enum: ["reply", "escalate", "follow_up", "regenerate", "lead_score_hot"],
         },
         limit: { type: "integer", minimum: 1, maximum: 100, default: 25 },
         cursor: {
@@ -483,7 +483,7 @@ const STATIC_RESOURCES = [
     uri: "vendora://settings",
     name: "HILUX settings",
     description:
-      "The vendor's HILUX configuration — every toggle, greeting, and reply length. Equivalent to calling get_hilux_settings.",
+      "The vendor's HILUX configuration — every action toggle. Equivalent to calling get_hilux_settings.",
     mimeType: "application/json",
   },
   {
@@ -646,7 +646,7 @@ function renderPrompt(
               type: "text",
               text:
                 "Audit my HILUX configuration:\n" +
-                "1. Call get_hilux_settings to see every toggle, greeting, and reply length.\n" +
+                "1. Call get_hilux_settings to see every toggle.\n" +
                 "2. Flag any toggles that look contradictory or obviously wrong for my category.\n" +
                 "3. Suggest 3 specific toggle changes you think would improve HILUX's replies. For each, explain why in one sentence.\n" +
                 "Don't change anything yet — just recommend.",
