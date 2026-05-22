@@ -41,8 +41,8 @@ export interface Appointment {
   status: "proposed" | "accepted" | "declined" | "cancelled" | "completed";
   proposed_by: "host" | "vendor";
   notes: string | null;
-  // Display only
-  vendor_name?: string | null;
+  // Display only — host's display name resolved by the page that
+  // owns the list. (This list is vendor-only; there is no host UI.)
   host_name?: string | null;
 }
 
@@ -83,15 +83,12 @@ const statusBadge: Record<
   },
 };
 
-export type AppointmentsListSide = "host" | "vendor";
-
 interface Props {
   appointments: Appointment[];
-  side: AppointmentsListSide;
   onMutate: () => void;
 }
 
-export function AppointmentsList({ appointments, side, onMutate }: Props) {
+export function AppointmentsList({ appointments, onMutate }: Props) {
   const [filter, setFilter] = useState<
     "upcoming" | "past" | "needs_response" | "all"
   >("upcoming");
@@ -111,7 +108,8 @@ export function AppointmentsList({ appointments, side, onMutate }: Props) {
     };
     for (const a of appointments) {
       const t = new Date(a.scheduled_at).getTime();
-      if (a.status === "proposed" && a.proposed_by !== side) counts.needs_response++;
+      if (a.status === "proposed" && a.proposed_by === "host")
+        counts.needs_response++;
       if ((a.status === "accepted" || a.status === "proposed") && t >= now.getTime())
         counts.upcoming++;
       if (t < now.getTime()) counts.past++;
@@ -126,7 +124,7 @@ export function AppointmentsList({ appointments, side, onMutate }: Props) {
       { value: "past", label: "Past", count: counts.past },
       { value: "all", label: "All", count: counts.all },
     ];
-  }, [appointments, side]);
+  }, [appointments]);
 
   const visible = useMemo(() => {
     const now = Date.now();
@@ -140,12 +138,12 @@ export function AppointmentsList({ appointments, side, onMutate }: Props) {
         case "past":
           return t < now;
         case "needs_response":
-          return a.status === "proposed" && a.proposed_by !== side;
+          return a.status === "proposed" && a.proposed_by === "host";
         case "all":
           return true;
       }
     });
-  }, [appointments, filter, side]);
+  }, [appointments, filter]);
 
   async function setStatus(
     appt: Appointment,
@@ -173,9 +171,8 @@ export function AppointmentsList({ appointments, side, onMutate }: Props) {
         </div>
         <h3 className="font-editorial text-2xl mb-2">No appointments yet</h3>
         <p className="text-sm text-muted-foreground leading-relaxed">
-          {side === "host"
-            ? "Vendors can propose meetings — tastings, walkthroughs, consultations — and they'll show up here."
-            : "When you propose a meeting from an inquiry, it'll show up here once the host responds."}
+          When you propose a meeting from an inquiry, it'll show up here
+          once the host responds.
         </p>
       </div>
     );
@@ -211,15 +208,14 @@ export function AppointmentsList({ appointments, side, onMutate }: Props) {
           {visible.map((appt) => {
             const badge = statusBadge[appt.status];
             const when = new Date(appt.scheduled_at);
-            const otherName =
-              side === "host" ? appt.vendor_name : appt.host_name;
+            const otherName = appt.host_name;
             const needsMyResponse =
-              appt.status === "proposed" && appt.proposed_by !== side;
+              appt.status === "proposed" && appt.proposed_by === "host";
             const canCancel =
               appt.status === "accepted" || appt.status === "proposed";
             const inPast = when.getTime() < Date.now();
             const canMarkComplete =
-              appt.status === "accepted" && inPast && side === "vendor";
+              appt.status === "accepted" && inPast;
             const canExport =
               (appt.status === "accepted" || appt.status === "proposed") &&
               !inPast;
@@ -241,9 +237,9 @@ export function AppointmentsList({ appointments, side, onMutate }: Props) {
                       )}
                     </p>
                     <p className="text-xs text-muted-foreground tnum">
-                      {appt.proposed_by === side
+                      {appt.proposed_by === "vendor"
                         ? "Proposed by you"
-                        : `Proposed by the ${appt.proposed_by}`}
+                        : "Proposed by the host"}
                     </p>
                   </div>
                   <Badge className={badge.className}>{badge.label}</Badge>
@@ -367,11 +363,7 @@ export function AppointmentsList({ appointments, side, onMutate }: Props) {
                           const desc = [
                             appt.notes,
                             appt.inquiry_id
-                              ? `Linked inquiry: ${window.location.origin}${
-                                  side === "host"
-                                    ? `/customer/inquiries/${appt.inquiry_id}`
-                                    : `/vendor/inbox/${appt.inquiry_id}`
-                                }`
+                              ? `Linked inquiry: ${window.location.origin}/vendor/inbox/${appt.inquiry_id}`
                               : null,
                           ]
                             .filter(Boolean)
@@ -403,13 +395,7 @@ export function AppointmentsList({ appointments, side, onMutate }: Props) {
                         asChild
                         className="rounded-full h-8 text-xs ml-auto"
                       >
-                        <a
-                          href={
-                            side === "host"
-                              ? `/customer/inquiries/${appt.inquiry_id}`
-                              : `/vendor/inbox/${appt.inquiry_id}`
-                          }
-                        >
+                        <a href={`/vendor/inbox/${appt.inquiry_id}`}>
                           Open inquiry
                           <ChevronRight className="w-3 h-3 ml-1" />
                         </a>

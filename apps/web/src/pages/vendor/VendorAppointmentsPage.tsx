@@ -560,7 +560,6 @@ export default function VendorAppointmentsPage() {
               ) : (
                 <AppointmentsList
                   appointments={appointments}
-                  side="vendor"
                   onMutate={loadAppointments}
                 />
               )}
