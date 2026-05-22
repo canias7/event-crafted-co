@@ -59,11 +59,6 @@ export interface HiluxActions {
   useEmojis: boolean;
   softCtaSignoff: boolean;
   allowBullets: boolean;
-  // Safety / privacy
-  refuseLegal: boolean;
-  refuseCompetitorPricing: boolean;
-  noOtherClients: boolean;
-  redactContact: boolean;
   // Operations (code-level)
   autoMarkReplied: boolean;
   notifyOnReply: boolean;
@@ -91,10 +86,6 @@ export const DEFAULT_ACTIONS: HiluxActions = {
   useEmojis: false,
   softCtaSignoff: true,
   allowBullets: false,
-  refuseLegal: true,
-  refuseCompetitorPricing: true,
-  noOtherClients: true,
-  redactContact: true,
   autoMarkReplied: true,
   notifyOnReply: false,
   updateInquiryFields: false,
@@ -246,26 +237,18 @@ export function buildSystemPrompt(ctx: HiluxPromptCtx): string {
     "- Bullet lists are OK when listing 2-3 specific things side by side (packages, dates, etc.). Keep them tight; no nested lists.",
   );
   // Safety / privacy
-  if (ctx.actions.refuseLegal) {
-    lines.push(
-      "- Don't discuss legal terms, contracts, cancellation language, or anything that would normally be in writing. Redirect: \"We'll send the contract once you're ready to lock in.\"",
-    );
-  }
-  if (ctx.actions.refuseCompetitorPricing) {
-    lines.push(
-      "- If the host asks how the vendor's pricing compares to competitors or asks for a price match, politely decline. Redirect to value, not comparison.",
-    );
-  }
-  if (ctx.actions.noOtherClients) {
-    lines.push(
-      "- Never reference other clients, even anonymously (no \"we just did a wedding for...\"). The host you're talking to is the only client that matters in the reply.",
-    );
-  }
-  if (ctx.actions.redactContact) {
-    lines.push(
-      "- Belt-and-suspenders contact rule: never write a phone number, email address, or URL. If the host shares theirs, don't echo it back.",
-    );
-  }
+  lines.push(
+    "- Don't discuss legal terms, contracts, cancellation language, or anything that would normally be in writing. Redirect: \"We'll send the contract once you're ready to lock in.\"",
+  );
+  lines.push(
+    "- If the host asks how the vendor's pricing compares to competitors or asks for a price match, politely decline. Redirect to value, not comparison.",
+  );
+  lines.push(
+    "- Never reference other clients, even anonymously (no \"we just did a wedding for...\"). The host you're talking to is the only client that matters in the reply.",
+  );
+  lines.push(
+    "- Belt-and-suspenders contact rule: never write a phone number, email address, or URL. If the host shares theirs, don't echo it back.",
+  );
   lines.push("");
   lines.push("LISTING CONTEXT:");
   lines.push(`- Business: ${ctx.businessName}`);
@@ -749,10 +732,6 @@ export async function loadVendorContext(
           useEmojis: profRow.hilux_action_use_emojis === true,
           softCtaSignoff: profRow.hilux_action_soft_cta_signoff !== false,
           allowBullets: profRow.hilux_action_allow_bullets === true,
-          refuseLegal: profRow.hilux_action_refuse_legal !== false,
-          refuseCompetitorPricing: profRow.hilux_action_refuse_competitor_pricing !== false,
-          noOtherClients: profRow.hilux_action_no_other_clients !== false,
-          redactContact: profRow.hilux_action_redact_contact !== false,
           autoMarkReplied: profRow.hilux_action_auto_mark_replied !== false,
           notifyOnReply: profRow.hilux_action_notify_on_reply === true,
           updateInquiryFields: profRow.hilux_action_update_inquiry_fields === true,

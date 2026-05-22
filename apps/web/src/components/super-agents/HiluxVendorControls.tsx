@@ -14,7 +14,6 @@ import {
   ChevronRight,
   ClipboardList,
   Eye,
-  EyeOff,
   Flag,
   Flame,
   Frown,
@@ -23,15 +22,12 @@ import {
   ScrollText,
   Sunrise,
   Inbox,
-  Lock,
   Loader2,
   Phone,
   RotateCcw,
   Search as SearchIcon,
   Send,
-  ShieldCheck,
   ShieldOff,
-  UserX,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
@@ -53,10 +49,6 @@ type ActionKey =
   | "hilux_action_detect_frustration"
   | "hilux_action_decline_negotiation"
   | "hilux_action_offer_call"
-  | "hilux_action_refuse_legal"
-  | "hilux_action_refuse_competitor_pricing"
-  | "hilux_action_no_other_clients"
-  | "hilux_action_redact_contact"
   | "hilux_action_auto_mark_replied"
   | "hilux_action_notify_on_reply"
   | "hilux_action_update_inquiry_fields"
@@ -101,15 +93,6 @@ const ACTION_GROUPS: ActionGroup[] = [
     ],
   },
   {
-    title: "Safety & privacy",
-    actions: [
-      { key: "hilux_action_refuse_legal", label: "Refuse legal / contract talk", blurb: "Redirect contract / cancellation questions until the host is ready to sign.", Icon: Lock },
-      { key: "hilux_action_refuse_competitor_pricing", label: "Refuse price-match asks", blurb: "Politely decline any \"can you match X's price\" question.", Icon: ShieldCheck },
-      { key: "hilux_action_no_other_clients", label: "Never reference other clients", blurb: "Don't drop names, even anonymously (\"we just did a wedding for...\").", Icon: UserX },
-      { key: "hilux_action_redact_contact", label: "Strip contact info from replies", blurb: "Belt-and-suspenders: never write phone, email, or URL — even if echoing.", Icon: EyeOff },
-    ],
-  },
-  {
     title: "Pacing",
     actions: [
       { key: "hilux_action_follow_up", label: "Send follow-up nudges", blurb: "If a host goes silent 2-3 days after a reply, send one gentle nudge.", Icon: Send },
@@ -150,7 +133,7 @@ export function HiluxVendorControls() {
     const { data, error } = await supabase
       .from("profiles")
       .select(
-        "hilux_enabled, hilux_action_follow_up, hilux_action_skip_when_active, hilux_action_use_calendar, hilux_action_detect_frustration, hilux_action_decline_negotiation, hilux_action_offer_call, hilux_action_refuse_legal, hilux_action_refuse_competitor_pricing, hilux_action_no_other_clients, hilux_action_redact_contact, hilux_action_auto_mark_replied, hilux_action_notify_on_reply, hilux_action_update_inquiry_fields, hilux_action_notify_on_escalation, hilux_action_notify_on_hot_lead, hilux_action_email_reply_copies, hilux_action_auto_archive_cold, hilux_action_daily_summary, hilux_action_cap_replies_per_inquiry, hilux_action_detect_booking_intent, hilux_action_log_actions",
+        "hilux_enabled, hilux_action_follow_up, hilux_action_skip_when_active, hilux_action_use_calendar, hilux_action_detect_frustration, hilux_action_decline_negotiation, hilux_action_offer_call, hilux_action_auto_mark_replied, hilux_action_notify_on_reply, hilux_action_update_inquiry_fields, hilux_action_notify_on_escalation, hilux_action_notify_on_hot_lead, hilux_action_email_reply_copies, hilux_action_auto_archive_cold, hilux_action_daily_summary, hilux_action_cap_replies_per_inquiry, hilux_action_detect_booking_intent, hilux_action_log_actions",
       )
       .eq("id", user.id)
       .maybeSingle();
@@ -167,10 +150,6 @@ export function HiluxVendorControls() {
       hilux_action_detect_frustration: true,
       hilux_action_decline_negotiation: true,
       hilux_action_offer_call: true,
-      hilux_action_refuse_legal: true,
-      hilux_action_refuse_competitor_pricing: true,
-      hilux_action_no_other_clients: true,
-      hilux_action_redact_contact: true,
       hilux_action_auto_mark_replied: true,
       hilux_action_notify_on_reply: false,
       hilux_action_update_inquiry_fields: false,
@@ -231,10 +210,6 @@ export function HiluxVendorControls() {
       hilux_action_detect_frustration: true,
       hilux_action_decline_negotiation: true,
       hilux_action_offer_call: true,
-      hilux_action_refuse_legal: true,
-      hilux_action_refuse_competitor_pricing: true,
-      hilux_action_no_other_clients: true,
-      hilux_action_redact_contact: true,
       hilux_action_auto_mark_replied: true,
       hilux_action_notify_on_reply: false,
       hilux_action_update_inquiry_fields: false,
