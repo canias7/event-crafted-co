@@ -7,7 +7,6 @@ import { useCallback, useEffect, useState } from "react";
 import {
   Archive,
   Bell,
-  BellRing,
   Bot,
   Calendar,
   ChevronDown,
@@ -20,7 +19,6 @@ import {
   Mail,
   ScrollText,
   Sunrise,
-  Inbox,
   Loader2,
   Phone,
   RotateCcw,
@@ -45,10 +43,8 @@ type ActionKey =
   | "hilux_action_detect_frustration"
   | "hilux_action_decline_negotiation"
   | "hilux_action_offer_call"
-  | "hilux_action_auto_mark_replied"
   | "hilux_action_notify_on_reply"
   | "hilux_action_update_inquiry_fields"
-  | "hilux_action_notify_on_escalation"
   | "hilux_action_notify_on_hot_lead"
   | "hilux_action_email_reply_copies"
   | "hilux_action_auto_archive_cold"
@@ -91,8 +87,6 @@ const ACTION_GROUPS: ActionGroup[] = [
   {
     title: "Operations",
     actions: [
-      { key: "hilux_action_auto_mark_replied", label: "Auto-mark inquiry as 'replied'", blurb: "Once HILUX answers, flip the inquiry status from new to replied so it leaves the new bucket.", Icon: Inbox },
-      { key: "hilux_action_notify_on_escalation", label: "Notify me when HILUX escalates", blurb: "When HILUX hands off an upset host, get an in-app alert AND an immediate \"Action needed\" email — they need a personal reply from you.", Icon: BellRing },
       { key: "hilux_action_notify_on_hot_lead", label: "Notify me when a lead turns hot", blurb: "Push notification the first time HILUX flags a conversation as a hot lead.", Icon: Flame },
       { key: "hilux_action_notify_on_reply", label: "Notify me on every HILUX reply", blurb: "Push notification whenever HILUX sends a message on your behalf. Can get noisy.", Icon: Bell },
       { key: "hilux_action_email_reply_copies", label: "Email me a copy of every HILUX reply", blurb: "Receive an email each time HILUX answers, with the host's question and HILUX's reply.", Icon: Mail },
@@ -122,7 +116,7 @@ export function HiluxVendorControls() {
     const { data, error } = await supabase
       .from("profiles")
       .select(
-        "hilux_enabled, hilux_action_use_calendar, hilux_action_detect_frustration, hilux_action_decline_negotiation, hilux_action_offer_call, hilux_action_auto_mark_replied, hilux_action_notify_on_reply, hilux_action_update_inquiry_fields, hilux_action_notify_on_escalation, hilux_action_notify_on_hot_lead, hilux_action_email_reply_copies, hilux_action_auto_archive_cold, hilux_action_daily_summary, hilux_action_cap_replies_per_inquiry, hilux_action_detect_booking_intent, hilux_action_log_actions",
+        "hilux_enabled, hilux_action_use_calendar, hilux_action_detect_frustration, hilux_action_decline_negotiation, hilux_action_offer_call, hilux_action_notify_on_reply, hilux_action_update_inquiry_fields, hilux_action_notify_on_hot_lead, hilux_action_email_reply_copies, hilux_action_auto_archive_cold, hilux_action_daily_summary, hilux_action_cap_replies_per_inquiry, hilux_action_detect_booking_intent, hilux_action_log_actions",
       )
       .eq("id", user.id)
       .maybeSingle();
@@ -137,10 +131,8 @@ export function HiluxVendorControls() {
       hilux_action_detect_frustration: true,
       hilux_action_decline_negotiation: true,
       hilux_action_offer_call: true,
-      hilux_action_auto_mark_replied: true,
       hilux_action_notify_on_reply: false,
       hilux_action_update_inquiry_fields: false,
-      hilux_action_notify_on_escalation: true,
       hilux_action_notify_on_hot_lead: true,
       hilux_action_email_reply_copies: false,
       hilux_action_auto_archive_cold: false,
@@ -195,10 +187,8 @@ export function HiluxVendorControls() {
       hilux_action_detect_frustration: true,
       hilux_action_decline_negotiation: true,
       hilux_action_offer_call: true,
-      hilux_action_auto_mark_replied: true,
       hilux_action_notify_on_reply: false,
       hilux_action_update_inquiry_fields: false,
-      hilux_action_notify_on_escalation: true,
       hilux_action_notify_on_hot_lead: true,
       hilux_action_email_reply_copies: false,
       hilux_action_auto_archive_cold: false,
