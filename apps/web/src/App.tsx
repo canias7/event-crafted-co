@@ -13,6 +13,7 @@ import SignupRoleChooserPage from "./pages/auth/SignupRoleChooserPage";
 import CheckEmailPage from "./pages/auth/CheckEmailPage";
 import ForgotPasswordPage from "./pages/auth/ForgotPasswordPage";
 import ResetPasswordPage from "./pages/auth/ResetPasswordPage";
+import Vendor360TourPage from "./pages/vendor/Vendor360TourPage";
 import { AuthProvider } from "./hooks/useAuth";
 import { RealtimeProvider } from "./lib/realtime";
 import { RequireRole } from "./components/auth/RequireRole";
@@ -227,6 +228,7 @@ const App = () => (
               <Route path="/vendor/pay" element={<RequireRole role="vendor"><VendorPayPage /></RequireRole>} />
               <Route path="/vendor/subscription" element={<RequireRole role="vendor"><VendorSubscriptionPage /></RequireRole>} />
               <Route path="/vendor/gallery" element={<RequireRole role="vendor"><VendorGalleryPage /></RequireRole>} />
+              <Route path="/vendor/tour-360" element={<RequireRole role="vendor"><Vendor360TourPage /></RequireRole>} />
               <Route path="/vendor/templates" element={<RequireRole role="vendor"><VendorTemplatesPage /></RequireRole>} />
               {/* /vendor/studio retired — the three tools that lived under
                   it (AI Superagents, Vendora Pay, Gallery) now have their
