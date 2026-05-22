@@ -34,9 +34,8 @@ const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY") ?? "";
 const ALLOWED_ACTION_KEYS = new Set([
   "follow_up", "quiet_hours", "pause_weekends", "skip_when_active",
   "use_calendar", "detect_frustration",
-  "mention_starting_price", "suggest_package", "decline_negotiation",
-  "avoid_competitors", "send_portfolio_link", "offer_call",
-  "share_booking_process", "echo_question", "acknowledge_emotion",
+  "decline_negotiation", "send_portfolio_link", "offer_call",
+  "share_booking_process", "echo_question",
   "lead_with_question", "refuse_legal", "refuse_competitor_pricing",
   "no_other_clients", "redact_contact", "auto_mark_replied",
   "notify_on_reply", "update_inquiry_fields", "notify_on_escalation",
@@ -363,7 +362,7 @@ const TOOLS = [
   {
     name: "update_hilux_settings",
     description:
-      "Update HILUX configuration on the vendor's profile. Pass any subset of fields. `actions` is a key→boolean map where keys are the snake_case action names (e.g. `follow_up`, `quiet_hours`, `use_calendar`, `escalate`, `mention_starting_price`, `suggest_package`, `notify_on_hot_lead`, etc. — see get_hilux_settings for the full list).",
+      "Update HILUX configuration on the vendor's profile. Pass any subset of fields. `actions` is a key→boolean map where keys are the snake_case action names (e.g. `follow_up`, `quiet_hours`, `use_calendar`, `detect_frustration`, `notify_on_hot_lead`, etc. — see get_hilux_settings for the full list).",
     inputSchema: {
       type: "object",
       properties: {
@@ -653,7 +652,7 @@ function renderPrompt(
               text:
                 "Audit my HILUX configuration:\n" +
                 "1. Call get_hilux_settings to see every toggle, greeting, and reply length.\n" +
-                "2. Flag any toggles that look contradictory (e.g. 'decline_negotiation=on' + 'mention_starting_price=off') or obviously wrong for my category.\n" +
+                "2. Flag any toggles that look contradictory or obviously wrong for my category.\n" +
                 "3. Suggest 3 specific toggle changes you think would improve HILUX's replies. For each, explain why in one sentence.\n" +
                 "Don't change anything yet — just recommend.",
             },
@@ -1238,7 +1237,7 @@ async function getHiluxSettings(admin: any, userId: string) {
     admin
       .from("profiles")
       .select(
-        "hilux_enabled, hilux_action_follow_up, hilux_action_quiet_hours, hilux_action_pause_weekends, hilux_action_skip_when_active, hilux_action_use_calendar, hilux_action_detect_frustration, hilux_action_mention_starting_price, hilux_action_suggest_package, hilux_action_decline_negotiation, hilux_action_avoid_competitors, hilux_action_send_portfolio_link, hilux_action_offer_call, hilux_action_share_booking_process, hilux_action_echo_question, hilux_action_acknowledge_emotion, hilux_action_lead_with_question, hilux_action_refuse_legal, hilux_action_refuse_competitor_pricing, hilux_action_no_other_clients, hilux_action_redact_contact, hilux_action_auto_mark_replied, hilux_action_notify_on_reply, hilux_action_update_inquiry_fields, hilux_action_notify_on_escalation, hilux_action_notify_on_hot_lead, hilux_action_email_reply_copies, hilux_action_auto_archive_cold, hilux_action_daily_summary, hilux_action_cap_replies_per_inquiry, hilux_action_detect_booking_intent, hilux_action_log_actions",
+        "hilux_enabled, hilux_action_follow_up, hilux_action_quiet_hours, hilux_action_pause_weekends, hilux_action_skip_when_active, hilux_action_use_calendar, hilux_action_detect_frustration, hilux_action_decline_negotiation, hilux_action_send_portfolio_link, hilux_action_offer_call, hilux_action_share_booking_process, hilux_action_echo_question, hilux_action_lead_with_question, hilux_action_refuse_legal, hilux_action_refuse_competitor_pricing, hilux_action_no_other_clients, hilux_action_redact_contact, hilux_action_auto_mark_replied, hilux_action_notify_on_reply, hilux_action_update_inquiry_fields, hilux_action_notify_on_escalation, hilux_action_notify_on_hot_lead, hilux_action_email_reply_copies, hilux_action_auto_archive_cold, hilux_action_daily_summary, hilux_action_cap_replies_per_inquiry, hilux_action_detect_booking_intent, hilux_action_log_actions",
       )
       .eq("id", userId)
       .maybeSingle(),

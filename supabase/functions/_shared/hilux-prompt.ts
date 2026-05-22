@@ -55,17 +55,13 @@ export interface HiluxActions {
   useFirstName: boolean;
   detectFrustration: boolean;
   // Conversation / what HILUX says
-  mentionStartingPrice: boolean;
-  suggestPackage: boolean;
   declineNegotiation: boolean;
-  avoidCompetitors: boolean;
   sendPortfolioLink: boolean;
   offerCall: boolean;
   shareBookingProcess: boolean;
   // Conversation / how HILUX writes
   echoQuestion: boolean;
   useEmojis: boolean;
-  acknowledgeEmotion: boolean;
   leadWithQuestion: boolean;
   softCtaSignoff: boolean;
   allowBullets: boolean;
@@ -98,16 +94,12 @@ export const DEFAULT_ACTIONS: HiluxActions = {
   askClarifying: true,
   useFirstName: true,
   detectFrustration: true,
-  mentionStartingPrice: false,
-  suggestPackage: true,
   declineNegotiation: true,
-  avoidCompetitors: true,
   sendPortfolioLink: false,
   offerCall: true,
   shareBookingProcess: true,
   echoQuestion: false,
   useEmojis: false,
-  acknowledgeEmotion: true,
   leadWithQuestion: false,
   softCtaSignoff: true,
   allowBullets: false,
@@ -238,24 +230,19 @@ export function buildSystemPrompt(ctx: HiluxPromptCtx): string {
     );
   }
   // What HILUX talks about
-  if (ctx.actions.mentionStartingPrice) {
-    lines.push(
-      "- When the host asks about cost (\"how much\", \"what's the price\"), lead with the starting price directly in the first sentence. Don't qualify-question first.",
-    );
-  }
-  if (ctx.actions.suggestPackage) {
-    lines.push(
-      "- When the host's ask matches one of the listed packages, recommend it by name in the reply. Don't list every package — just the most relevant one.",
-    );
-  }
+  // Baked-in personality + professionalism — always on, no toggle.
+  lines.push(
+    "- When the host expresses excitement about their event, warmly acknowledge it before getting to the answer — you're a real person who's genuinely glad they reached out.",
+  );
+  lines.push(
+    "- When the host's ask clearly matches one of the listed packages, recommend that package by name — just the single most relevant one, don't list them all.",
+  );
+  lines.push(
+    "- Never badmouth or compare against other vendors. If the host brings up a competitor, redirect warmly to what makes this vendor's work distinctive — without naming names.",
+  );
   if (ctx.actions.declineNegotiation) {
     lines.push(
       "- If the host asks for a discount or wants to negotiate the price, politely decline (one short sentence — \"our pricing reflects what goes into the work, we keep it firm\") and offer to discuss what's included instead.",
-    );
-  }
-  if (ctx.actions.avoidCompetitors) {
-    lines.push(
-      "- If the host mentions, asks about, or compares to other vendors / competitors, do NOT discuss them. Redirect to what makes this vendor's work distinctive without naming names.",
     );
   }
   if (ctx.actions.sendPortfolioLink) {
@@ -282,11 +269,6 @@ export function buildSystemPrompt(ctx: HiluxPromptCtx): string {
   lines.push(
     "- Emojis are OK in moderation (max one or two per reply, where they fit the tone). Don't overdo it.",
   );
-  if (ctx.actions.acknowledgeEmotion) {
-    lines.push(
-      "- When the host expresses excitement (\"we're so excited!\", \"can't wait\"), warmly acknowledge it in one beat before answering. Don't gush.",
-    );
-  }
   if (ctx.actions.leadWithQuestion) {
     lines.push(
       "- On a FIRST HILUX reply to a new conversation, lead with a friendly question that pulls more info (\"Before I dig in — what's the vibe you're going for?\") instead of jumping straight to an answer.",
@@ -799,16 +781,12 @@ export async function loadVendorContext(
           askClarifying: profRow.hilux_action_ask_clarifying !== false,
           useFirstName: profRow.hilux_action_use_first_name !== false,
           detectFrustration: profRow.hilux_action_detect_frustration !== false,
-          mentionStartingPrice: profRow.hilux_action_mention_starting_price === true,
-          suggestPackage: profRow.hilux_action_suggest_package !== false,
           declineNegotiation: profRow.hilux_action_decline_negotiation !== false,
-          avoidCompetitors: profRow.hilux_action_avoid_competitors !== false,
           sendPortfolioLink: profRow.hilux_action_send_portfolio_link === true,
           offerCall: profRow.hilux_action_offer_call !== false,
           shareBookingProcess: profRow.hilux_action_share_booking_process !== false,
           echoQuestion: profRow.hilux_action_echo_question === true,
           useEmojis: profRow.hilux_action_use_emojis === true,
-          acknowledgeEmotion: profRow.hilux_action_acknowledge_emotion !== false,
           leadWithQuestion: profRow.hilux_action_lead_with_question === true,
           softCtaSignoff: profRow.hilux_action_soft_cta_signoff !== false,
           allowBullets: profRow.hilux_action_allow_bullets === true,
