@@ -183,9 +183,9 @@ export function HiluxActivityLog() {
                     </p>
                   ) : null}
                 </div>
-                {r.thread_id ? (
+                {r.inquiry_id ? (
                   <a
-                    href={`/vendor/messages?thread=${r.thread_id}`}
+                    href={`/vendor/inbox/${r.inquiry_id}`}
                     className="text-[10px] text-black/55 hover:text-black/95 underline underline-offset-2 shrink-0 mt-0.5"
                   >
                     open
