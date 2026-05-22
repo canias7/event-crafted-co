@@ -1,11 +1,12 @@
 // Axion 9.1 — the listing-photo agent. Vendor uploads a photo,
 // picks a style, and Axion (OpenAI gpt-image-1) returns restyled
-// editorial-grade variants to download. Stateless for v1: results
-// live in the panel until the page reloads.
+// editorial-grade variants. Variants can be downloaded or saved
+// straight into the vendor's gallery (an auto-created "Axion" album).
 
 import { useRef, useState } from "react";
-import { Download, ImagePlus, Loader2, Sparkles, Upload } from "lucide-react";
+import { Check, Download, ImagePlus, Loader2, Sparkles, Upload } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 
 const STYLES = [
@@ -18,10 +19,12 @@ const STYLES = [
 const MAX_UPLOAD_BYTES = 15 * 1024 * 1024;
 
 export function AxionVendorControls() {
+  const { user } = useAuth();
   const [sourceDataUrl, setSourceDataUrl] = useState<string | null>(null);
   const [style, setStyle] = useState("editorial");
   const [generating, setGenerating] = useState(false);
   const [variants, setVariants] = useState<string[]>([]);
+  const [saved, setSaved] = useState<Record<number, "saving" | "saved">>({});
   const fileRef = useRef<HTMLInputElement>(null);
 
   const onPick = (file: File | null) => {
@@ -38,6 +41,7 @@ export function AxionVendorControls() {
     reader.onload = () => {
       setSourceDataUrl(typeof reader.result === "string" ? reader.result : null);
       setVariants([]);
+      setSaved({});
     };
     reader.readAsDataURL(file);
   };
@@ -46,6 +50,7 @@ export function AxionVendorControls() {
     if (!sourceDataUrl) return;
     setGenerating(true);
     setVariants([]);
+    setSaved({});
     try {
       const { data, error } = await supabase.functions.invoke("axion-generate", {
         body: { image: sourceDataUrl, style },
@@ -59,6 +64,73 @@ export function AxionVendorControls() {
       toast.error("Couldn't generate variants. Try again in a moment.");
     } finally {
       setGenerating(false);
+    }
+  };
+
+  // Find the vendor's "Axion" gallery album, creating it on first save.
+  const ensureAxionAlbum = async (): Promise<string | null> => {
+    if (!user?.id) return null;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: existing } = await (supabase as any)
+      .from("vendor_gallery_albums")
+      .select("id")
+      .eq("user_id", user.id)
+      .eq("name", "Axion")
+      .limit(1)
+      .maybeSingle();
+    if (existing?.id) return existing.id as string;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: created, error } = await (supabase as any)
+      .from("vendor_gallery_albums")
+      .insert({ user_id: user.id, name: "Axion" })
+      .select("id")
+      .single();
+    if (error) {
+      console.error("[Axion] album create failed", error);
+      return null;
+    }
+    return (created?.id as string) ?? null;
+  };
+
+  const saveToGallery = async (dataUrl: string, index: number) => {
+    if (!user?.id || saved[index]) return;
+    setSaved((s) => ({ ...s, [index]: "saving" }));
+    try {
+      const albumId = await ensureAxionAlbum();
+      if (!albumId) throw new Error("no_album");
+      const blob = await (await fetch(dataUrl)).blob();
+      const path = `${user.id}/axion-${Date.now()}-${Math.random()
+        .toString(36)
+        .slice(2, 8)}.png`;
+      const up = await supabase.storage
+        .from("vendor-gallery")
+        .upload(path, blob, { contentType: "image/png", upsert: false });
+      if (up.error) throw up.error;
+      const { data: pub } = supabase.storage
+        .from("vendor-gallery")
+        .getPublicUrl(path);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error: insErr } = await (supabase as any)
+        .from("vendor_gallery_images")
+        .insert({
+          user_id: user.id,
+          image_url: pub.publicUrl,
+          album_id: albumId,
+          width: 1024,
+          height: 1024,
+          file_size_bytes: blob.size,
+        });
+      if (insErr) throw insErr;
+      setSaved((s) => ({ ...s, [index]: "saved" }));
+      toast.success("Saved to your gallery — “Axion” album.");
+    } catch (err) {
+      console.error("[Axion] save failed", err);
+      setSaved((s) => {
+        const next = { ...s };
+        delete next[index];
+        return next;
+      });
+      toast.error("Couldn't save to gallery. Try again.");
     }
   };
 
@@ -162,22 +234,47 @@ export function AxionVendorControls() {
 
         {variants.length > 0 ? (
           <div className="grid grid-cols-2 gap-3 mt-4">
-            {variants.map((v, i) => (
-              <div
-                key={i}
-                className="relative rounded-xl overflow-hidden border border-black/10"
-              >
-                <img src={v} alt={`Variant ${i + 1}`} className="w-full" />
-                <a
-                  href={v}
-                  download={`axion-${style}-${i + 1}.png`}
-                  className="absolute bottom-2 right-2 bg-black/70 text-white p-1.5 rounded-md"
-                  aria-label={`Download variant ${i + 1}`}
+            {variants.map((v, i) => {
+              const state = saved[i];
+              return (
+                <div
+                  key={i}
+                  className="rounded-xl overflow-hidden border border-black/10 bg-white"
                 >
-                  <Download className="w-3.5 h-3.5" />
-                </a>
-              </div>
-            ))}
+                  <img src={v} alt={`Variant ${i + 1}`} className="w-full" />
+                  <div className="flex items-center gap-1.5 p-1.5">
+                    <button
+                      type="button"
+                      onClick={() => saveToGallery(v, i)}
+                      disabled={!!state}
+                      className={`flex-1 text-[11px] rounded-md py-1.5 flex items-center justify-center gap-1 transition-colors ${
+                        state === "saved"
+                          ? "bg-emerald-50 text-emerald-700"
+                          : "bg-foreground text-background disabled:opacity-60"
+                      }`}
+                    >
+                      {state === "saving" ? (
+                        <Loader2 className="w-3 h-3 animate-spin" />
+                      ) : state === "saved" ? (
+                        <>
+                          <Check className="w-3 h-3" /> Saved
+                        </>
+                      ) : (
+                        "Save to gallery"
+                      )}
+                    </button>
+                    <a
+                      href={v}
+                      download={`axion-${style}-${i + 1}.png`}
+                      className="text-black/55 hover:text-black p-1.5 rounded-md hover:bg-black/5"
+                      aria-label={`Download variant ${i + 1}`}
+                    >
+                      <Download className="w-3.5 h-3.5" />
+                    </a>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         ) : null}
       </div>
