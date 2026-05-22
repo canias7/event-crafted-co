@@ -29,7 +29,6 @@ import {
 import { vendorNavItems } from "@/data/navItems";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
-import { HiluxHomeSummary } from "@/components/super-agents/HiluxHomeSummary";
 
 interface VendorRow {
   id: string;
@@ -237,8 +236,6 @@ export default function VendorMyProfilePage() {
               onShare={onShare}
             />
           )}
-
-          <HiluxHomeSummary />
 
           <div>
             {loading ? (
