@@ -22,19 +22,16 @@ import {
   Mail,
   ScrollText,
   Sunrise,
-  HelpCircle,
   Inbox,
   Lock,
   Loader2,
   Phone,
-  Quote,
   RotateCcw,
   Search as SearchIcon,
   Send,
   ShieldCheck,
   ShieldOff,
   UserX,
-  Workflow,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
@@ -56,9 +53,6 @@ type ActionKey =
   | "hilux_action_detect_frustration"
   | "hilux_action_decline_negotiation"
   | "hilux_action_offer_call"
-  | "hilux_action_share_booking_process"
-  | "hilux_action_echo_question"
-  | "hilux_action_lead_with_question"
   | "hilux_action_refuse_legal"
   | "hilux_action_refuse_competitor_pricing"
   | "hilux_action_no_other_clients"
@@ -98,9 +92,6 @@ const ACTION_GROUPS: ActionGroup[] = [
       { key: "hilux_action_use_calendar", label: "Use my calendar for date answers", blurb: "Read live availability so HILUX can answer \"are you free on Sept 12?\" directly.", Icon: Calendar },
       { key: "hilux_action_decline_negotiation", label: "Decline price negotiation", blurb: "If the host asks for a discount, politely decline. No haggling.", Icon: ShieldOff },
       { key: "hilux_action_offer_call", label: "Offer to schedule a call", blurb: "Once the lead warms up, offer a quick call to walk through details.", Icon: Phone },
-      { key: "hilux_action_share_booking_process", label: "Explain the next step", blurb: "When the host expresses booking intent, briefly outline what's next.", Icon: Workflow },
-      { key: "hilux_action_echo_question", label: "Echo back the question", blurb: "Restate what the host asked before answering, to prove HILUX understood.", Icon: Quote },
-      { key: "hilux_action_lead_with_question", label: "Open with a question", blurb: "First HILUX reply leads with a question to pull more info instead of answering.", Icon: HelpCircle },
     ],
   },
   {
@@ -159,7 +150,7 @@ export function HiluxVendorControls() {
     const { data, error } = await supabase
       .from("profiles")
       .select(
-        "hilux_enabled, hilux_action_follow_up, hilux_action_skip_when_active, hilux_action_use_calendar, hilux_action_detect_frustration, hilux_action_decline_negotiation, hilux_action_offer_call, hilux_action_share_booking_process, hilux_action_echo_question, hilux_action_lead_with_question, hilux_action_refuse_legal, hilux_action_refuse_competitor_pricing, hilux_action_no_other_clients, hilux_action_redact_contact, hilux_action_auto_mark_replied, hilux_action_notify_on_reply, hilux_action_update_inquiry_fields, hilux_action_notify_on_escalation, hilux_action_notify_on_hot_lead, hilux_action_email_reply_copies, hilux_action_auto_archive_cold, hilux_action_daily_summary, hilux_action_cap_replies_per_inquiry, hilux_action_detect_booking_intent, hilux_action_log_actions",
+        "hilux_enabled, hilux_action_follow_up, hilux_action_skip_when_active, hilux_action_use_calendar, hilux_action_detect_frustration, hilux_action_decline_negotiation, hilux_action_offer_call, hilux_action_refuse_legal, hilux_action_refuse_competitor_pricing, hilux_action_no_other_clients, hilux_action_redact_contact, hilux_action_auto_mark_replied, hilux_action_notify_on_reply, hilux_action_update_inquiry_fields, hilux_action_notify_on_escalation, hilux_action_notify_on_hot_lead, hilux_action_email_reply_copies, hilux_action_auto_archive_cold, hilux_action_daily_summary, hilux_action_cap_replies_per_inquiry, hilux_action_detect_booking_intent, hilux_action_log_actions",
       )
       .eq("id", user.id)
       .maybeSingle();
@@ -176,9 +167,6 @@ export function HiluxVendorControls() {
       hilux_action_detect_frustration: true,
       hilux_action_decline_negotiation: true,
       hilux_action_offer_call: true,
-      hilux_action_share_booking_process: true,
-      hilux_action_echo_question: false,
-      hilux_action_lead_with_question: false,
       hilux_action_refuse_legal: true,
       hilux_action_refuse_competitor_pricing: true,
       hilux_action_no_other_clients: true,
@@ -243,9 +231,6 @@ export function HiluxVendorControls() {
       hilux_action_detect_frustration: true,
       hilux_action_decline_negotiation: true,
       hilux_action_offer_call: true,
-      hilux_action_share_booking_process: true,
-      hilux_action_echo_question: false,
-      hilux_action_lead_with_question: false,
       hilux_action_refuse_legal: true,
       hilux_action_refuse_competitor_pricing: true,
       hilux_action_no_other_clients: true,
