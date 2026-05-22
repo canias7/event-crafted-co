@@ -19,6 +19,7 @@ import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { Button } from "@/components/ui/button";
 import { BrandCardShell } from "@/components/vendor/BrandCardShell";
 import { ListingWizardModal } from "@/components/vendor/ListingWizardModal";
+import { EditListingModal } from "@/components/vendor/EditListingModal";
 import {
   Dialog,
   DialogContent,
@@ -62,6 +63,7 @@ export default function VendorMyProfilePage() {
   // so the profile's Listings tab matches the public /vendors directory.
   const [heroByListing, setHeroByListing] = useState<Record<string, string>>({});
   const [listingWizardOpen, setListingWizardOpen] = useState(false);
+  const [editingVendorId, setEditingVendorId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     if (!user?.id) return;
@@ -245,6 +247,7 @@ export default function VendorMyProfilePage() {
                 listings={listings}
                 heroByListing={heroByListing}
                 onAddListing={openListingWizard}
+                onEditListing={setEditingVendorId}
               />
             )}
           </div>
@@ -258,6 +261,17 @@ export default function VendorMyProfilePage() {
           onClose={() => setListingWizardOpen(false)}
           onPublished={() => {
             setListingWizardOpen(false);
+            load();
+          }}
+        />
+      ) : null}
+
+      {editingVendorId ? (
+        <EditListingModal
+          vendorId={editingVendorId}
+          onClose={() => setEditingVendorId(null)}
+          onSaved={() => {
+            setEditingVendorId(null);
             load();
           }}
         />
@@ -355,10 +369,12 @@ function ListingsList({
   listings,
   heroByListing,
   onAddListing,
+  onEditListing,
 }: {
   listings: VendorRow[];
   heroByListing: Record<string, string>;
   onAddListing: () => void;
+  onEditListing: (vendorId: string) => void;
 }) {
   if (listings.length === 0) {
     return (
@@ -387,6 +403,7 @@ function ListingsList({
             key={l.id}
             listing={l}
             heroUrl={heroByListing[l.id] ?? null}
+            onEdit={onEditListing}
           />
         ))}
       </div>
@@ -407,9 +424,11 @@ function ListingsList({
 function ListingDirectoryCard({
   listing,
   heroUrl,
+  onEdit,
 }: {
   listing: VendorRow;
   heroUrl: string | null;
+  onEdit: (vendorId: string) => void;
 }) {
   const [previewOpen, setPreviewOpen] = useState(false);
   const name = listing.business_name ?? "Listing";
@@ -476,6 +495,7 @@ function ListingDirectoryCard({
         statusLabel={statusLabel}
         statusTone={statusTone}
         price={price}
+        onEdit={() => onEdit(listing.id)}
       />
     </>
   );
@@ -501,6 +521,7 @@ function ListingPreviewModal({
   statusLabel,
   statusTone,
   price,
+  onEdit,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -509,6 +530,7 @@ function ListingPreviewModal({
   statusLabel: string;
   statusTone: string;
   price: string | null;
+  onEdit: () => void;
 }) {
   const name = listing.business_name ?? "Listing";
   const isApproved = listing.application_status === "approved";
@@ -537,6 +559,18 @@ function ListingPreviewModal({
               />
             ) : null}
           </div>
+          <Button
+            size="sm"
+            variant="outline"
+            className="rounded-full shrink-0"
+            onClick={() => {
+              onOpenChange(false);
+              onEdit();
+            }}
+          >
+            <Edit3 className="h-3.5 w-3.5 mr-1" />
+            Edit listing
+          </Button>
         </div>
 
         <DialogDescription className="sr-only">
