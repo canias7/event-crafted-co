@@ -2,6 +2,9 @@
 // picks a style, and Axion (OpenAI gpt-image-1) returns restyled
 // editorial-grade variants. Variants can be downloaded or saved
 // straight into the vendor's gallery (an auto-created "Axion" album).
+//
+// Chrome (card + header) mirrors the HILUX panel so the two agents
+// read as a consistent stack.
 
 import { useRef, useState } from "react";
 import { Check, Download, ImagePlus, Loader2, Sparkles, Upload } from "lucide-react";
@@ -135,148 +138,145 @@ export function AxionVendorControls() {
   };
 
   return (
-    <div className="mx-auto w-full max-w-2xl px-4 pb-12">
-      <div
-        className="rounded-2xl p-5"
-        style={{
-          background: "rgba(255,253,250,0.7)",
-          border: "0.5px solid rgba(0,0,0,0.08)",
-          backdropFilter: "blur(10px)",
-          WebkitBackdropFilter: "blur(10px)",
-          boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
-        }}
-      >
-        <div className="flex items-center gap-3 mb-4">
+    <div className="relative z-10 px-6 md:px-10 pt-6 pb-24">
+      <div className="max-w-3xl mx-auto rounded-2xl border border-white/10 bg-white/[0.04] backdrop-blur-xl shadow-[0_8px_40px_-12px_rgba(0,0,0,0.4)] overflow-hidden">
+        {/* Header — mirrors the HILUX panel */}
+        <div className="flex items-center gap-4 p-5 md:p-6">
           <div
-            className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+            className="w-12 h-12 rounded-2xl ring-1 ring-black/5 flex items-center justify-center shrink-0"
             style={{ background: "rgba(208,102,255,0.14)" }}
           >
-            <ImagePlus className="w-5 h-5" style={{ color: "#b13bdb" }} />
+            <ImagePlus className="w-6 h-6" style={{ color: "#b13bdb" }} />
           </div>
-          <div>
-            <h3 className="font-editorial text-xl leading-none">AXION 9.1</h3>
-            <p className="text-xs text-black/55 mt-1">
+          <div className="min-w-0 flex-1">
+            <h3 className="font-editorial text-2xl md:text-3xl text-black leading-tight">
+              AXION 9.1
+            </h3>
+            <p className="text-xs text-black/55 mt-0.5">
               Turn a listing photo into editorial-grade shots.
             </p>
           </div>
         </div>
 
-        <input
-          ref={fileRef}
-          type="file"
-          accept="image/*"
-          className="hidden"
-          onChange={(e) => onPick(e.target.files?.[0] ?? null)}
-        />
+        {/* Body */}
+        <div className="border-t border-black/10 p-5 md:p-6 space-y-4 bg-white/30">
+          <input
+            ref={fileRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={(e) => onPick(e.target.files?.[0] ?? null)}
+          />
 
-        {sourceDataUrl ? (
-          <div className="relative rounded-xl overflow-hidden mb-3">
-            <img
-              src={sourceDataUrl}
-              alt="Upload to restyle"
-              className="w-full max-h-72 object-contain bg-black/5"
-            />
+          {sourceDataUrl ? (
+            <div className="relative rounded-xl overflow-hidden">
+              <img
+                src={sourceDataUrl}
+                alt="Upload to restyle"
+                className="w-full max-h-72 object-contain bg-black/5"
+              />
+              <button
+                type="button"
+                onClick={() => fileRef.current?.click()}
+                className="absolute top-2 right-2 text-[11px] bg-black/70 text-white px-2 py-1 rounded-md"
+              >
+                Replace
+              </button>
+            </div>
+          ) : (
             <button
               type="button"
               onClick={() => fileRef.current?.click()}
-              className="absolute top-2 right-2 text-[11px] bg-black/70 text-white px-2 py-1 rounded-md"
+              className="w-full rounded-xl border border-dashed border-black/20 py-10 flex flex-col items-center gap-2 text-black/50 hover:text-black/70 hover:border-black/30 transition-colors"
             >
-              Replace
+              <Upload className="w-5 h-5" />
+              <span className="text-sm">Upload a listing photo</span>
+              <span className="text-[11px]">JPG or PNG, up to 15MB</span>
             </button>
+          )}
+
+          <div className="flex flex-wrap gap-1.5">
+            {STYLES.map((s) => (
+              <button
+                key={s.key}
+                type="button"
+                onClick={() => setStyle(s.key)}
+                className={`text-xs px-3 py-1.5 rounded-full border transition-colors ${
+                  style === s.key
+                    ? "bg-foreground text-background border-foreground"
+                    : "border-black/15 text-black/60 hover:text-black/80"
+                }`}
+              >
+                {s.label}
+              </button>
+            ))}
           </div>
-        ) : (
+
           <button
             type="button"
-            onClick={() => fileRef.current?.click()}
-            className="w-full rounded-xl border border-dashed border-black/20 py-10 flex flex-col items-center gap-2 text-black/50 hover:text-black/70 hover:border-black/30 transition-colors mb-3"
+            onClick={generate}
+            disabled={!sourceDataUrl || generating}
+            className="w-full rounded-xl bg-foreground text-background text-sm font-medium py-2.5 flex items-center justify-center gap-2 disabled:opacity-40 transition-opacity"
           >
-            <Upload className="w-5 h-5" />
-            <span className="text-sm">Upload a listing photo</span>
-            <span className="text-[11px]">JPG or PNG, up to 15MB</span>
+            {generating ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Generating… (~30s)
+              </>
+            ) : (
+              <>
+                <Sparkles className="w-4 h-4" />
+                Generate variants
+              </>
+            )}
           </button>
-        )}
 
-        <div className="flex flex-wrap gap-1.5 mb-3">
-          {STYLES.map((s) => (
-            <button
-              key={s.key}
-              type="button"
-              onClick={() => setStyle(s.key)}
-              className={`text-xs px-3 py-1.5 rounded-full border transition-colors ${
-                style === s.key
-                  ? "bg-foreground text-background border-foreground"
-                  : "border-black/15 text-black/60 hover:text-black/80"
-              }`}
-            >
-              {s.label}
-            </button>
-          ))}
-        </div>
-
-        <button
-          type="button"
-          onClick={generate}
-          disabled={!sourceDataUrl || generating}
-          className="w-full rounded-xl bg-foreground text-background text-sm font-medium py-2.5 flex items-center justify-center gap-2 disabled:opacity-40 transition-opacity"
-        >
-          {generating ? (
-            <>
-              <Loader2 className="w-4 h-4 animate-spin" />
-              Generating… (~30s)
-            </>
-          ) : (
-            <>
-              <Sparkles className="w-4 h-4" />
-              Generate variants
-            </>
-          )}
-        </button>
-
-        {variants.length > 0 ? (
-          <div className="grid grid-cols-2 gap-3 mt-4">
-            {variants.map((v, i) => {
-              const state = saved[i];
-              return (
-                <div
-                  key={i}
-                  className="rounded-xl overflow-hidden border border-black/10 bg-white"
-                >
-                  <img src={v} alt={`Variant ${i + 1}`} className="w-full" />
-                  <div className="flex items-center gap-1.5 p-1.5">
-                    <button
-                      type="button"
-                      onClick={() => saveToGallery(v, i)}
-                      disabled={!!state}
-                      className={`flex-1 text-[11px] rounded-md py-1.5 flex items-center justify-center gap-1 transition-colors ${
-                        state === "saved"
-                          ? "bg-emerald-50 text-emerald-700"
-                          : "bg-foreground text-background disabled:opacity-60"
-                      }`}
-                    >
-                      {state === "saving" ? (
-                        <Loader2 className="w-3 h-3 animate-spin" />
-                      ) : state === "saved" ? (
-                        <>
-                          <Check className="w-3 h-3" /> Saved
-                        </>
-                      ) : (
-                        "Save to gallery"
-                      )}
-                    </button>
-                    <a
-                      href={v}
-                      download={`axion-${style}-${i + 1}.png`}
-                      className="text-black/55 hover:text-black p-1.5 rounded-md hover:bg-black/5"
-                      aria-label={`Download variant ${i + 1}`}
-                    >
-                      <Download className="w-3.5 h-3.5" />
-                    </a>
+          {variants.length > 0 ? (
+            <div className="grid grid-cols-2 gap-3">
+              {variants.map((v, i) => {
+                const state = saved[i];
+                return (
+                  <div
+                    key={i}
+                    className="rounded-xl overflow-hidden border border-black/10 bg-white"
+                  >
+                    <img src={v} alt={`Variant ${i + 1}`} className="w-full" />
+                    <div className="flex items-center gap-1.5 p-1.5">
+                      <button
+                        type="button"
+                        onClick={() => saveToGallery(v, i)}
+                        disabled={!!state}
+                        className={`flex-1 text-[11px] rounded-md py-1.5 flex items-center justify-center gap-1 transition-colors ${
+                          state === "saved"
+                            ? "bg-emerald-50 text-emerald-700"
+                            : "bg-foreground text-background disabled:opacity-60"
+                        }`}
+                      >
+                        {state === "saving" ? (
+                          <Loader2 className="w-3 h-3 animate-spin" />
+                        ) : state === "saved" ? (
+                          <>
+                            <Check className="w-3 h-3" /> Saved
+                          </>
+                        ) : (
+                          "Save to gallery"
+                        )}
+                      </button>
+                      <a
+                        href={v}
+                        download={`axion-${style}-${i + 1}.png`}
+                        className="text-black/55 hover:text-black p-1.5 rounded-md hover:bg-black/5"
+                        aria-label={`Download variant ${i + 1}`}
+                      >
+                        <Download className="w-3.5 h-3.5" />
+                      </a>
+                    </div>
                   </div>
-                </div>
-              );
-            })}
-          </div>
-        ) : null}
+                );
+              })}
+            </div>
+          ) : null}
+        </div>
       </div>
     </div>
   );
