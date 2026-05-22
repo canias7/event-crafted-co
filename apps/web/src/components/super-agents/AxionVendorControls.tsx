@@ -7,10 +7,11 @@
 // read as a consistent stack.
 
 import { useRef, useState } from "react";
-import { Check, Download, ImagePlus, Loader2, Sparkles, Upload } from "lucide-react";
+import { Check, Download, Loader2, Sparkles, Upload } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
+import { AxionLogo } from "./AgentLogos";
 
 const STYLES = [
   { key: "editorial", label: "Editorial" },
@@ -142,11 +143,8 @@ export function AxionVendorControls() {
       <div className="max-w-3xl mx-auto rounded-2xl border border-white/10 bg-white/[0.04] backdrop-blur-xl shadow-[0_8px_40px_-12px_rgba(0,0,0,0.4)] overflow-hidden">
         {/* Header — mirrors the HILUX panel */}
         <div className="flex items-center gap-4 p-5 md:p-6">
-          <div
-            className="w-12 h-12 rounded-2xl ring-1 ring-black/5 flex items-center justify-center shrink-0"
-            style={{ background: "rgba(208,102,255,0.14)" }}
-          >
-            <ImagePlus className="w-6 h-6" style={{ color: "#b13bdb" }} />
+          <div className="w-12 h-12 rounded-2xl overflow-hidden ring-1 ring-black/5 shrink-0">
+            <AxionLogo className="w-full h-full block" />
           </div>
           <div className="min-w-0 flex-1">
             <h3 className="font-editorial text-2xl md:text-3xl text-black leading-tight">
