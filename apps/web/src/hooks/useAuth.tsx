@@ -238,15 +238,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Catch admin-deleted accounts. Supabase invalidates refresh tokens
   // on delete but the cached access token stays valid for ~1h. Poll
   // getUser() every 30s so a deleted user is signed out within 30s
-  // instead of an hour. getUser() hits the auth server (not the cache),
-  // so a deleted account returns an error → force signOut.
+  // instead of an hour. getUser() hits the auth server (not the cache).
   useEffect(() => {
     if (!session?.user) return;
     let cancelled = false;
     const tick = async () => {
       const { data, error } = await supabase.auth.getUser();
       if (cancelled) return;
-      if (error || !data?.user) {
+      // getUser() also fails on a transient network blip — offline for
+      // a moment, a closed connection, a 5xx. That must NOT be mistaken
+      // for a deleted account, or every wifi hiccup logs the user out.
+      // AuthRetryableFetchError flags exactly those retryable cases;
+      // skip them and let the next 30s tick retry. Only a genuine auth
+      // rejection (the account/token is actually gone) signs out.
+      if (error) {
+        if (error.name !== "AuthRetryableFetchError") {
+          await supabase.auth.signOut();
+        }
+      } else if (!data?.user) {
         await supabase.auth.signOut();
       }
     };
