@@ -13,6 +13,7 @@ import {
   loadVendorContext,
   priceUsd,
 } from "../_shared/hilux-prompt.ts";
+import { consumeCredits, refundCredits } from "../_shared/credits.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -177,8 +178,40 @@ serve(async (req) => {
             "[SYSTEM] The host has been silent for a few days. Write ONE short, friendly follow-up nudge (1–2 sentences max) in the same language as the previous conversation. Don't repeat what you already said. Don't be pushy. Reference any concrete next step that's natural (a date, a package, an open question they didn't answer). If you can't think of a useful nudge, output \"ESCALATE: silent_no_useful_nudge\" instead.",
         });
 
-        const reply = await callClaude(ANTHROPIC_API_KEY, systemText, claudeMessages);
+        // Charge credits before the Claude call. Cron context: if
+        // a specific vendor is out of credits, skip them and move
+        // on to the next thread — don't fail the whole cron.
+        const consume = await consumeCredits(
+          ctx.vendor.user_id,
+          "hilux_followup",
+          thread.id,
+        );
+        if (!consume.ok) {
+          skipped++;
+          skipReasons[`credits_${consume.reason}`] =
+            (skipReasons[`credits_${consume.reason}`] ?? 0) + 1;
+          continue;
+        }
+
+        let reply: string;
+        try {
+          reply = await callClaude(ANTHROPIC_API_KEY, systemText, claudeMessages);
+        } catch (claudeErr) {
+          await refundCredits(
+            ctx.vendor.user_id,
+            "hilux_followup",
+            thread.id,
+            `claude_error: ${claudeErr instanceof Error ? claudeErr.message : String(claudeErr)}`,
+          );
+          throw claudeErr;
+        }
         if (/^\s*ESCALATE\s*:/i.test(reply)) {
+          await refundCredits(
+            ctx.vendor.user_id,
+            "hilux_followup",
+            thread.id,
+            "would_escalate",
+          );
           skipped++;
           skipReasons.escalated = (skipReasons.escalated ?? 0) + 1;
           continue;
@@ -194,6 +227,12 @@ serve(async (req) => {
             is_hilux_generated: true,
           });
         if (insertErr) {
+          await refundCredits(
+            ctx.vendor.user_id,
+            "hilux_followup",
+            thread.id,
+            `insert_failed: ${insertErr.message ?? String(insertErr)}`,
+          );
           console.error("[hilux-follow-up] insert failed", insertErr);
           skipped++;
           skipReasons.insert_error = (skipReasons.insert_error ?? 0) + 1;

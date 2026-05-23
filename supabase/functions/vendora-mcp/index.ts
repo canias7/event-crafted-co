@@ -22,6 +22,7 @@ import {
   loadVendorContext,
   priceUsd,
 } from "../_shared/hilux-prompt.ts";
+import { consumeCredits, refundCredits } from "../_shared/credits.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -1851,8 +1852,28 @@ async function regenerateLastHiluxReply(
   const seasoned = systemText +
     "\n\nIMPORTANT: The vendor has just asked you to RE-DRAFT a reply because they didn't love the previous version. Take a noticeably different angle — different opener, different emphasis — while still answering the host's most recent message. Don't apologize or reference the previous draft.";
 
-  const reply = await callClaude(ANTHROPIC_API_KEY, seasoned, claudeMessages);
+  // Charge before the Claude call. Refund on every failure path
+  // (ESCALATE, DB update fail, Claude throw) so the vendor only
+  // pays for a draft they can actually use.
+  const consume = await consumeCredits(userId, "hilux_regenerate", target.id);
+  if (!consume.ok) {
+    if (consume.reason === "insufficient_credits") {
+      throw new Error("insufficient_credits");
+    }
+    throw new Error("credit_service_unavailable");
+  }
+  let reply: string;
+  try {
+    reply = await callClaude(ANTHROPIC_API_KEY, seasoned, claudeMessages);
+  } catch (claudeErr) {
+    await refundCredits(
+      userId, "hilux_regenerate", target.id,
+      `claude_error: ${claudeErr instanceof Error ? claudeErr.message : String(claudeErr)}`,
+    );
+    throw claudeErr;
+  }
   if (/^\s*ESCALATE\s*:/i.test(reply)) {
+    await refundCredits(userId, "hilux_regenerate", target.id, "would_escalate");
     throw new Error("would_escalate — Claude declined; vendor should reply manually");
   }
 
@@ -1860,8 +1881,14 @@ async function regenerateLastHiluxReply(
     .from("direct_messages")
     .update({ body: reply, edited_at: new Date().toISOString() })
     .eq("id", target.id);
-  if (updErr) throw updErr;
-  return { regenerated: true, message_id: target.id, length: reply.length };
+  if (updErr) {
+    await refundCredits(
+      userId, "hilux_regenerate", target.id,
+      `update_failed: ${updErr.message ?? String(updErr)}`,
+    );
+    throw updErr;
+  }
+  return { regenerated: true, message_id: target.id, length: reply.length, credits_remaining: consume.balance };
 }
 
 async function composeDraftReply(
@@ -1955,7 +1982,24 @@ async function composeDraftReply(
     ),
   });
 
-  const reply = await callClaude(ANTHROPIC_API_KEY, systemText, claudeMessages);
+  // Charge before the Claude call. Refund on throw.
+  const consume = await consumeCredits(userId, "hilux_draft", thread.id);
+  if (!consume.ok) {
+    if (consume.reason === "insufficient_credits") {
+      throw new Error("insufficient_credits");
+    }
+    throw new Error("credit_service_unavailable");
+  }
+  let reply: string;
+  try {
+    reply = await callClaude(ANTHROPIC_API_KEY, systemText, claudeMessages);
+  } catch (claudeErr) {
+    await refundCredits(
+      userId, "hilux_draft", thread.id,
+      `claude_error: ${claudeErr instanceof Error ? claudeErr.message : String(claudeErr)}`,
+    );
+    throw claudeErr;
+  }
   // Strip the ESCALATE token if HILUX would have escalated — for
   // a draft, we still want Claude to see the text.
   const sanitized = reply.replace(/^\s*ESCALATE\s*:.*$/im, "").trim() || reply.trim();
@@ -1964,5 +2008,6 @@ async function composeDraftReply(
     length: sanitized.length,
     would_escalate: /^\s*ESCALATE\s*:/i.test(reply),
     thread_id: thread.id,
+    credits_remaining: consume.balance,
   };
 }
