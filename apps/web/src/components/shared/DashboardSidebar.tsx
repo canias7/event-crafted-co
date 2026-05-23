@@ -10,6 +10,15 @@ import {
   Sparkles,
 } from "lucide-react";
 import { customerNavItems, setLastDashboardSide, vendorNavItems } from "@/data/navItems";
+import { useAuth } from "@/hooks/useAuth";
+import { useVendorPlan, type VendorTier } from "@/hooks/useVendorPlan";
+
+const TIER_LABEL: Record<VendorTier, string> = {
+  free: "Free plan",
+  starter: "Starter plan",
+  pro: "Pro plan",
+  studio: "Studio plan",
+};
 
 interface NavItem {
   labelKey: string;
@@ -32,6 +41,13 @@ export function DashboardSidebar({
 }: DashboardSidebarProps) {
   const location = useLocation();
   const { t } = useTranslation();
+  // Vendor-side sidebars swap the page-title sub-label for a live
+  // plan badge ("Starter plan", "Pro plan", …) that flips the moment
+  // the Stripe webhook updates vendor_profiles.subscription_tier.
+  const { ownListing } = useAuth();
+  const isVendorSide = items === vendorNavItems;
+  const { tier } = useVendorPlan(isVendorSide ? ownListing?.id ?? null : null);
+  const subLabel = isVendorSide ? TIER_LABEL[tier] : title;
 
   // Stash the active side so cross-cutting pages (/settings, /support)
   // know which sidebar to render when the user clicks over. Without
@@ -209,7 +225,7 @@ export function DashboardSidebar({
               <VendoraLogo size="md" color="currentColor" />
             </Link>
             <p className="font-label text-muted-foreground mt-2 truncate">
-              {title}
+              {subLabel}
             </p>
           </div>
           <button
