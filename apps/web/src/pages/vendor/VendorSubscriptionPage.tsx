@@ -66,11 +66,7 @@ const TIERS: Array<{
     monthlyCredits: 0,
     listings: "1 listing",
     highlights: [
-      "Inquiry inbox + DMs",
-      "Calendar + availability",
-      "100 gallery images",
       "100 trial credits on signup",
-      "Top up credits anytime",
     ],
   },
   {
