@@ -41,24 +41,10 @@ const QUICK_PROMPTS: Record<Mode, { label: string; text: string }[]> = {
       text: "A wide, inviting photo of an event venue dressed for a celebration.",
     },
   ],
-  edit: [
-    {
-      label: "Editorial",
-      text: "Polish this into an editorial, magazine-quality photo — elevate the lighting, colour, and sharpness while keeping it natural.",
-    },
-    {
-      label: "Bright & airy",
-      text: "Make this bright and airy — lift the exposure, soften the shadows, clean and fresh.",
-    },
-    {
-      label: "Warm",
-      text: "Give this warm, inviting golden tones and a cozy ambiance.",
-    },
-    {
-      label: "Clean background",
-      text: "Tidy and neutralize the background into a clean, professional studio backdrop.",
-    },
-  ],
+  // Edit mode renders no preset chips — vendors describe their own
+  // tweak in the prompt box. Keep the key so the union type stays
+  // honest with TS / the rest of the file.
+  edit: [],
 };
 
 const MAX_UPLOAD_BYTES = 15 * 1024 * 1024;
@@ -361,22 +347,24 @@ export function AxionVendorControls() {
                 ? "What should Axion do?"
                 : "What should Axion create?"}
             </StepLabel>
-            <div className="flex flex-wrap gap-1.5 mb-2">
-              {QUICK_PROMPTS[mode].map((q) => (
-                <button
-                  key={q.label}
-                  type="button"
-                  onClick={() => setPrompt(q.text)}
-                  className={`text-xs px-3 py-1.5 rounded-full border transition-colors ${
-                    prompt === q.text
-                      ? "bg-foreground text-background border-foreground"
-                      : "border-black/15 text-black/60 hover:text-black/80"
-                  }`}
-                >
-                  {q.label}
-                </button>
-              ))}
-            </div>
+            {QUICK_PROMPTS[mode].length > 0 && (
+              <div className="flex flex-wrap gap-1.5 mb-2">
+                {QUICK_PROMPTS[mode].map((q) => (
+                  <button
+                    key={q.label}
+                    type="button"
+                    onClick={() => setPrompt(q.text)}
+                    className={`text-xs px-3 py-1.5 rounded-full border transition-colors ${
+                      prompt === q.text
+                        ? "bg-foreground text-background border-foreground"
+                        : "border-black/15 text-black/60 hover:text-black/80"
+                    }`}
+                  >
+                    {q.label}
+                  </button>
+                ))}
+              </div>
+            )}
             <textarea
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
@@ -403,7 +391,7 @@ export function AxionVendorControls() {
               ) : (
                 <>
                   <Sparkles className="w-4 h-4" />
-                  {mode === "edit" ? "Generate variants" : "Generate images"}
+                  {mode === "edit" ? "Generate" : "Generate images"}
                 </>
               )}
             </button>
