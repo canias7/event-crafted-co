@@ -16,7 +16,8 @@ import { TypingBubble } from "@/components/messages/TypingBubble";
 import { RatingPromptStrip } from "@/components/reviews/RatingPromptStrip";
 import { SubmittedReviewStatusCard } from "@/components/reviews/SubmittedReviewStatusCard";
 import { BookingConfirmationCard } from "@/components/inquiries/BookingConfirmationCard";
-import { Link, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
+import { handleInsufficientCredits } from "@/lib/credits";
 import {
   ArrowLeft,
   Sparkles,
@@ -141,6 +142,7 @@ function fmtMoney(c: number | null) {
 
 export default function InquiryDetailPage() {
   const { inquiryId } = useParams();
+  const navigate = useNavigate();
   const { user } = useAuth();
   const [inquiry, setInquiry] = useState<Inquiry | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -670,6 +672,13 @@ export default function InquiryDetailPage() {
       toast.success("Regenerated.", { id: optimisticToast });
     } catch (err: unknown) {
       console.error("[InquiryDetail] regenerate failed", err);
+      // 402 from credit enforcement -> toast with "Top up" CTA.
+      // handleInsufficientCredits returns true if it handled the
+      // error; we bail before the generic toast below.
+      if (await handleInsufficientCredits(err, navigate)) {
+        toast.dismiss(optimisticToast);
+        return;
+      }
       // hilux-regenerate 409s when a newer message arrived between the
       // button rendering and the click — surface that clearly instead
       // of a raw "non-2xx status" HTTP error.
@@ -789,6 +798,7 @@ export default function InquiryDetailPage() {
       toast.success("HILUX drafted a reply — review and send.");
     } catch (err) {
       console.error("[hilux-draft-reply]", err);
+      if (await handleInsufficientCredits(err, navigate)) return;
       const msg = err instanceof Error ? err.message : String(err);
       // Common case: the last message in the thread is from the vendor
       // (or HILUX), not the host. Show a friendlier note.
