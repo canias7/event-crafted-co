@@ -7,6 +7,7 @@ import { useEffect, useState } from "react";
 import { CheckCircle2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { BrandCardShell } from "@/components/vendor/BrandCardShell";
+import { StudioVerifiedBadge } from "@/components/vendor/StudioVerifiedBadge";
 
 // Brand identity for the public listing card. logo_url is mirrored
 // from profiles to vendor_profiles via a trigger, but business_name
@@ -20,6 +21,7 @@ interface VendorRow {
   location: string | null;
   verified_at: string | null;
   created_at: string | null;
+  subscription_tier: string | null;
   brand: {
     business_name: string | null;
     bio: string | null;
@@ -41,7 +43,7 @@ export function VendorBrandCard({ vendorId }: { vendorId: string }) {
         supabase
           .from("vendor_profiles")
           .select(
-            "business_name, logo_url, bio, location, verified_at, created_at, brand:vendor_brands!vendor_profiles_user_id_fkey(business_name, bio)",
+            "business_name, logo_url, bio, location, verified_at, created_at, subscription_tier, brand:vendor_brands!vendor_profiles_user_id_fkey(business_name, bio)",
           )
           .eq("id", vendorId)
           .maybeSingle(),
@@ -80,6 +82,7 @@ export function VendorBrandCard({ vendorId }: { vendorId: string }) {
     ? String(new Date(row.created_at).getFullYear())
     : null;
   const verified = !!row.verified_at;
+  const studioVerified = row.subscription_tier === "studio";
   const logoUrl = row.logo_url ?? null;
 
   return (
@@ -111,9 +114,12 @@ export function VendorBrandCard({ vendorId }: { vendorId: string }) {
         </div>
 
         <div className="min-w-0 flex-1">
-          <h3 className="font-editorial text-3xl text-[#0a0a0a] leading-[1.05] tracking-tight">
-            {businessName}
-          </h3>
+          <div className="flex items-center gap-2 flex-wrap">
+            <h3 className="font-editorial text-3xl text-[#0a0a0a] leading-[1.05] tracking-tight">
+              {businessName}
+            </h3>
+            {studioVerified && <StudioVerifiedBadge size="lg" showLabel />}
+          </div>
           {row.location ? (
             <p className="mt-1 text-sm text-[#6b7280]">{row.location}</p>
           ) : null}
