@@ -59,6 +59,26 @@ function rpcResult(id: any, result: unknown) {
   });
 }
 
+// Tool-level error class for "vendor is out of credits." Thrown by
+// any tool that consumes credits when consumeCredits returns
+// insufficient_credits. The dispatcher catches it and turns it into
+// an MCP tool error result (isError: true + content describing the
+// problem + cost + upgrade path) so the MCP client / model can
+// surface it to the user — instead of a generic JSON-RPC -32603
+// "internal error" with no actionable text.
+class InsufficientCreditsError extends Error {
+  cost: number;
+  action: string;
+  constructor(cost: number, action: string) {
+    super(
+      `Out of credits — this action would cost ${cost} credit${cost === 1 ? "" : "s"}.`,
+    );
+    this.name = "InsufficientCreditsError";
+    this.cost = cost;
+    this.action = action;
+  }
+}
+
 function rpcError(id: any, code: number, message: string) {
   return new Response(
     JSON.stringify({ jsonrpc: "2.0", id, error: { code, message } }),
@@ -1293,6 +1313,32 @@ serve(async (req) => {
     console.error("[vendora-mcp] tool error", toolName, err);
     const msg = err instanceof Error ? err.message : String(err);
     finishCall(false, msg);
+    // InsufficientCreditsError is a tool-level error, not a
+    // protocol error — the call reached us, was authorized, and
+    // just couldn't complete because the vendor's balance hit
+    // zero. MCP spec: return isError=true with descriptive content
+    // so the model sees the message and can suggest the user top
+    // up. Generic JSON-RPC -32603 would have read as "the server
+    // is broken" to the model.
+    if (err instanceof InsufficientCreditsError) {
+      return rpcResult(id, {
+        isError: true,
+        structuredContent: {
+          error: "insufficient_credits",
+          cost: err.cost,
+          action: err.action,
+          upgrade_url: "https://eventvendora.com/vendor/subscription",
+        },
+        content: [
+          {
+            type: "text",
+            text:
+              `Out of credits. This tool (${err.action}) would cost ${err.cost} credit${err.cost === 1 ? "" : "s"}. ` +
+              `Top up at https://eventvendora.com/vendor/subscription or upgrade the plan to keep using HILUX from MCP.`,
+          },
+        ],
+      });
+    }
     return rpcError(id, -32603, msg);
   }
 });
@@ -1858,7 +1904,7 @@ async function regenerateLastHiluxReply(
   const consume = await consumeCredits(userId, "hilux_regenerate", target.id);
   if (!consume.ok) {
     if (consume.reason === "insufficient_credits") {
-      throw new Error("insufficient_credits");
+      throw new InsufficientCreditsError(consume.cost, "hilux_regenerate");
     }
     throw new Error("credit_service_unavailable");
   }
@@ -1986,7 +2032,7 @@ async function composeDraftReply(
   const consume = await consumeCredits(userId, "hilux_draft", thread.id);
   if (!consume.ok) {
     if (consume.reason === "insufficient_credits") {
-      throw new Error("insufficient_credits");
+      throw new InsufficientCreditsError(consume.cost, "hilux_draft");
     }
     throw new Error("credit_service_unavailable");
   }
