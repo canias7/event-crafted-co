@@ -1,6 +1,62 @@
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
+// Subscribes to postgres_changes on vendor_credit_balances for the
+// current user so the balance flips the moment a webhook (grant,
+// top-up, consume) writes a new row. Used by surfaces like the
+// sidebar that want a live number without polling.
+export function useLiveVendorBalance(userId: string | null | undefined): {
+  balance: number;
+  initialized: boolean;
+} {
+  const [balance, setBalance] = useState<number>(0);
+  const [initialized, setInitialized] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (!userId) {
+      setBalance(0);
+      setInitialized(true);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data } = await (supabase as any)
+        .from("vendor_credit_balances")
+        .select("balance")
+        .eq("user_id", userId)
+        .maybeSingle();
+      if (cancelled) return;
+      setBalance(((data as { balance?: number } | null)?.balance) ?? 0);
+      setInitialized(true);
+    })();
+
+    const channel = supabase
+      .channel(`vendor-balance:${userId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "vendor_credit_balances",
+          filter: `user_id=eq.${userId}`,
+        },
+        (payload) => {
+          const next = (payload.new as { balance?: number } | null)?.balance;
+          if (typeof next === "number") setBalance(next);
+        },
+      )
+      .subscribe();
+
+    return () => {
+      cancelled = true;
+      supabase.removeChannel(channel);
+    };
+  }, [userId]);
+
+  return { balance, initialized };
+}
+
 // Reads the current vendor's AI credit balance from
 // vendor_credit_balances. Balance is per-user (not per-listing) —
 // a vendor with multiple listings shares one credit bucket.
