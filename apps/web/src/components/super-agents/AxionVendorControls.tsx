@@ -20,30 +20,12 @@ const MODES: { key: Mode; label: string }[] = [
   { key: "edit", label: "Edit" },
 ];
 
-// Quick-fill prompt presets per mode — tapping one drops editable
-// text into the prompt box.
+// Quick-fill prompt presets per mode — neither mode ships any
+// chips now. Vendors describe what they want in the prompt box.
+// Kept as an empty record (typed against Mode) so the chip-row
+// guard at the render site stays a one-liner.
 const QUICK_PROMPTS: Record<Mode, { label: string; text: string }[]> = {
-  generate: [
-    {
-      label: "Hero tablescape",
-      text: "An elegant event reception tablescape — styled place settings, fresh florals, soft natural light.",
-    },
-    {
-      label: "Lifestyle scene",
-      text: "A warm, candid lifestyle scene of guests enjoying a celebration.",
-    },
-    {
-      label: "Detail close-up",
-      text: "A crisp editorial close-up of event details — florals, styling, or decor.",
-    },
-    {
-      label: "Venue shot",
-      text: "A wide, inviting photo of an event venue dressed for a celebration.",
-    },
-  ],
-  // Edit mode renders no preset chips — vendors describe their own
-  // tweak in the prompt box. Keep the key so the union type stays
-  // honest with TS / the rest of the file.
+  generate: [],
   edit: [],
 };
 
