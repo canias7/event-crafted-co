@@ -33,7 +33,9 @@ import { vendorNavItems as navItems } from "@/data/navItems";
 const LAUNCH_OFFER_ENDS_AT = "2026-06-30T23:59:59-04:00";
 
 // Keep these tables in sync with vendor_credit_packages on the DB.
-// Price IDs are LIVE-mode (created 2026-05-23 via Stripe MCP).
+// Price IDs below are TEST-MODE (created 2026-05-23 in Stripe sandbox).
+// Swap to live-mode IDs (price_1TaBv...) when going live + updating
+// STRIPE_SECRET_KEY env var accordingly.
 //
 // wasMonthly is the anchor price we render as a strikethrough above
 // the current price — frames launch pricing as a discount. Pure
@@ -67,7 +69,7 @@ const TIERS: Array<{
     name: "Starter",
     priceMonthly: 14.99,
     wasMonthly: 29,
-    priceId: "price_1TaBvB2VPrcT6XA1fnKKxXVx",
+    priceId: "price_1TaKot2VPrcT6XA1pMa6Q1fY",
     monthlyCredits: 200,
     listings: "1 listing",
     highlights: [
@@ -82,7 +84,7 @@ const TIERS: Array<{
     name: "Pro",
     priceMonthly: 39,
     wasMonthly: 89,
-    priceId: "price_1TaBvD2VPrcT6XA1ZvEtx8gW",
+    priceId: "price_1TaKpC2VPrcT6XA17I2TSi6u",
     monthlyCredits: 800,
     listings: "Up to 5 listings",
     highlights: [
@@ -97,7 +99,7 @@ const TIERS: Array<{
     name: "Studio",
     priceMonthly: 99,
     wasMonthly: 249,
-    priceId: "price_1TaBvG2VPrcT6XA19uuNkLZH",
+    priceId: "price_1TaKpY2VPrcT6XA1EfBgJryx",
     monthlyCredits: 2500,
     listings: "Unlimited listings",
     highlights: [
@@ -122,7 +124,7 @@ const TOPUPS: Array<{
     name: "Boost",
     credits: 500,
     price: 12,
-    priceId: "price_1TaBvI2VPrcT6XA1XdeJWee8",
+    priceId: "price_1TaKq72VPrcT6XA1AeyBHdnn",
     blurb: "~250 HILUX replies or 50 Axion images",
   },
   {
@@ -130,7 +132,7 @@ const TOPUPS: Array<{
     name: "Power",
     credits: 1500,
     price: 30,
-    priceId: "price_1TaBvL2VPrcT6XA1annE7gNd",
+    priceId: "price_1TaKqc2VPrcT6XA1kr2icZHw",
     blurb: "~750 HILUX replies or 150 Axion images",
   },
   {
@@ -138,7 +140,7 @@ const TOPUPS: Array<{
     name: "Pro Pack",
     credits: 3500,
     price: 60,
-    priceId: "price_1TaBvN2VPrcT6XA1d0hcB7Ro",
+    priceId: "price_1TaKr12VPrcT6XA1YjzZcylM",
     blurb: "~1,750 HILUX replies or 350 Axion images",
   },
   {
@@ -146,7 +148,7 @@ const TOPUPS: Array<{
     name: "Studio Pack",
     credits: 8000,
     price: 120,
-    priceId: "price_1TaBvQ2VPrcT6XA11dQxKNRJ",
+    priceId: "price_1TaKrZ2VPrcT6XA1SmiwGeis",
     blurb: "~4,000 HILUX replies or 800 Axion images — best $/credit",
   },
 ];
