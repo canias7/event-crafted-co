@@ -230,19 +230,23 @@ export default function VendorUsagePage() {
             <LifetimeCard label="Used" value={credits.lifetimeConsumed} />
           </div>
 
-          {/* Storage usage — per-tier image cap. Cap=null means
-              grandfathered unlimited; show "—" instead of a fraction. */}
+          {/* Gallery usage — per-tier cap on the standalone Gallery
+              surface. Listing photos (vendor-portfolios) are excluded
+              from this count; they get unlimited uploads tied to the
+              listings themselves. Cap=null means grandfathered. */}
           {imageCount !== null && (
             <div
               className="rounded-2xl p-6"
               style={{
                 background: "rgba(255,253,250,0.7)",
                 border: "0.5px solid rgba(255,138,76,0.22)",
+                backdropFilter: "blur(10px)",
+                WebkitBackdropFilter: "blur(10px)",
               }}
             >
               <div className="flex items-start justify-between gap-4 flex-wrap">
                 <div>
-                  <p className="font-label text-muted-foreground">Storage</p>
+                  <p className="font-label text-muted-foreground">Gallery images</p>
                   <h3 className="font-editorial text-3xl mt-1 tnum">
                     {imageCount.toLocaleString()}
                     {imageCap !== null && (
@@ -254,10 +258,10 @@ export default function VendorUsagePage() {
                   </h3>
                   <p className="text-sm text-muted-foreground mt-1">
                     {imageCap === null
-                      ? "Images uploaded. Your plan has no cap."
+                      ? "Gallery images uploaded. Your plan has no cap."
                       : imageCount >= imageCap
-                        ? "You've hit your plan's image cap. Upgrade to upload more."
-                        : `Images uploaded — ${(imageCap - imageCount).toLocaleString()} left on your plan.`}
+                        ? "You've hit your plan's gallery cap. Upgrade to upload more — listing photos are still unlimited."
+                        : `In your gallery — ${(imageCap - imageCount).toLocaleString()} left on your plan. Listing photos are unlimited.`}
                   </p>
                 </div>
               </div>

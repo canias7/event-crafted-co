@@ -586,11 +586,11 @@ export default function VendorGalleryPage() {
       const remaining = Math.max(0, cap - currentCount);
       toast.error(
         remaining === 0
-          ? "You've hit your plan's image cap."
-          : `Only ${remaining} image upload${remaining === 1 ? "" : "s"} left on your plan.`,
+          ? "You've hit your plan's gallery cap."
+          : `Only ${remaining} gallery image${remaining === 1 ? "" : "s"} left on your plan.`,
         {
           description:
-            "Upgrade your plan or remove some images to keep uploading.",
+            "Upgrade your plan or remove some gallery images. Listing photos aren't affected.",
           action: {
             label: "Upgrade",
             onClick: () => {

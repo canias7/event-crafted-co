@@ -60,7 +60,7 @@ const TIERS: Array<{
     highlights: [
       "Inquiry inbox + DMs",
       "Calendar + availability",
-      "100 image uploads",
+      "100 gallery images",
       "100 trial credits on signup",
       "Top up credits anytime",
     ],
@@ -75,7 +75,7 @@ const TIERS: Array<{
     listings: "1 listing",
     highlights: [
       "200 AI credits / month",
-      "500 image uploads",
+      "500 gallery images",
       "Lead scoring on every inquiry",
       "Proposals + appointments",
     ],
@@ -90,7 +90,7 @@ const TIERS: Array<{
     listings: "Up to 5 listings",
     highlights: [
       "800 AI credits / month",
-      "1,200 image uploads",
+      "1,200 gallery images",
       "Featured search placement",
       "MCP Claude.ai connector",
     ],
@@ -105,7 +105,7 @@ const TIERS: Array<{
     listings: "Unlimited listings",
     highlights: [
       "2,500 AI credits / month",
-      "2,000 image uploads",
+      "2,000 gallery images",
       "Unlimited team seats",
       "Priority support + MCP",
     ],
