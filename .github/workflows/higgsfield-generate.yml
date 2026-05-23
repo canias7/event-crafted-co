@@ -69,16 +69,17 @@ jobs:
       - name: Download reference image
         id: ref
         if: inputs.image_url != ''
+        env:
+          IMAGE_URL: ${{ inputs.image_url }}
         run: |
           set -euo pipefail
-          url='${{ inputs.image_url }}'
-          ext="${url##*.}"
+          ext="${IMAGE_URL##*.}"
           case "$ext" in
             jpg|jpeg|png|webp|gif) ;;
             *) ext="png" ;;
           esac
           out="$RUNNER_TEMP/ref.$ext"
-          curl -fsSL "$url" -o "$out"
+          curl -fsSL "$IMAGE_URL" -o "$out"
           echo "path=$out" >> "$GITHUB_OUTPUT"
 
       - name: Run Higgsfield CLI

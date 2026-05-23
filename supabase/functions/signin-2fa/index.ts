@@ -56,6 +56,20 @@ async function sha256(input: string): Promise<string> {
     .join("");
 }
 
+// Constant-time equality for two equal-length hex strings. Both
+// sides here are SHA-256 digests (64 hex chars). Plain === has an
+// early-exit timing characteristic; this loops the full length
+// regardless of whether bytes match so an attacker can't use
+// response timing to confirm prefix matches.
+function constantTimeHexEqual(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
+  let diff = 0;
+  for (let i = 0; i < a.length; i++) {
+    diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  }
+  return diff === 0;
+}
+
 function randomCode(): string {
   // 6-digit numeric code, zero-padded
   const n = crypto.getRandomValues(new Uint32Array(1))[0] % 1_000_000;
@@ -229,7 +243,7 @@ serve(async (req) => {
     }
 
     const hash = await sha256(code);
-    if (hash !== r.code_hash) {
+    if (!constantTimeHexEqual(hash, r.code_hash)) {
       await sb
         .from("signin_2fa_codes")
         .update({ attempts: r.attempts + 1 })
