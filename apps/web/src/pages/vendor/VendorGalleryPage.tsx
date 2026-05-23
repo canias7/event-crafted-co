@@ -150,10 +150,12 @@ function thumbUrl(url: string, width: number): string {
 }
 
 export default function VendorGalleryPage() {
-  const { user, ownListing } = useAuth();
+  const { user } = useAuth();
   // Gallery is a Starter+ feature. Free vendors land on a paywall
   // instead of the empty grid so the upsell is obvious.
-  const { tier } = useVendorPlan(ownListing?.id ?? null);
+  // useVendorPlan takes the user.id (subscription state lives on
+  // profiles per-user post migration 20260524000000).
+  const { tier } = useVendorPlan(user?.id ?? null);
   const isFreeTier = tier === "free";
   const [rows, setRows] = useState<GalleryRow[] | null>(null);
   const [albums, setAlbums] = useState<Album[] | null>(null);

@@ -45,9 +45,11 @@ export function DashboardSidebar({
   // Vendor-side sidebars swap the page-title sub-label for a live
   // plan badge ("Starter plan", "Pro plan", …) that flips the moment
   // the Stripe webhook updates vendor_profiles.subscription_tier.
-  const { ownListing, user } = useAuth();
+  const { user } = useAuth();
   const isVendorSide = items === vendorNavItems;
-  const { tier } = useVendorPlan(isVendorSide ? ownListing?.id ?? null : null);
+  // Subscription tier lives on profiles (per-user) post migration
+  // 20260524000000 — pass user.id, not ownListing.id.
+  const { tier } = useVendorPlan(isVendorSide ? user?.id ?? null : null);
   const subLabel = isVendorSide ? TIER_LABEL[tier] : title;
   // Live credit balance shown as a small chip on the right of the
   // Usage nav row. Subscribes to vendor_credit_balances UPDATEs so

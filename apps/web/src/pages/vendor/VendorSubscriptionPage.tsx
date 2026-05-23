@@ -171,19 +171,22 @@ export default function VendorSubscriptionPage() {
   const credits = useVendorCredits(user?.id ?? null);
 
   const load = useCallback(async () => {
-    if (!vendorId) {
+    if (!user?.id) {
       setPlan(null);
       setLoading(false);
       return;
     }
     setLoading(true);
+    // Subscription state lives on profiles (per-user) post migration
+    // 20260524000000. The old vendor_profiles.subscription_* columns
+    // are deprecated and won't be updated by the webhook anymore.
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data } = await (supabase as any)
-      .from("vendor_profiles")
+      .from("profiles")
       .select(
         "subscription_tier, subscription_status, subscription_cancel_at_period_end, subscription_current_period_end, stripe_customer_id",
       )
-      .eq("id", vendorId)
+      .eq("id", user.id)
       .maybeSingle();
     setPlan(
       data
@@ -197,7 +200,7 @@ export default function VendorSubscriptionPage() {
         : { tier: "free", status: null, cancelAtPeriodEnd: false, currentPeriodEnd: null, stripeCustomerId: null },
     );
     setLoading(false);
-  }, [vendorId]);
+  }, [user?.id]);
 
   useEffect(() => {
     void load();

@@ -21,10 +21,13 @@ interface VendorRow {
   location: string | null;
   verified_at: string | null;
   created_at: string | null;
-  subscription_tier: string | null;
+  // subscription_tier lives on the embedded brand view (profiles)
+  // now — see migrations 20260524000000 + 20260524000200. The
+  // column still exists on vendor_profiles for soak but is stale.
   brand: {
     business_name: string | null;
     bio: string | null;
+    subscription_tier: string | null;
   } | null;
 }
 
@@ -43,7 +46,7 @@ export function VendorBrandCard({ vendorId }: { vendorId: string }) {
         supabase
           .from("vendor_profiles")
           .select(
-            "business_name, logo_url, bio, location, verified_at, created_at, subscription_tier, brand:vendor_brands!vendor_profiles_user_id_fkey(business_name, bio)",
+            "business_name, logo_url, bio, location, verified_at, created_at, brand:vendor_brands!vendor_profiles_user_id_fkey(business_name, bio, subscription_tier)",
           )
           .eq("id", vendorId)
           .maybeSingle(),
@@ -82,7 +85,7 @@ export function VendorBrandCard({ vendorId }: { vendorId: string }) {
     ? String(new Date(row.created_at).getFullYear())
     : null;
   const verified = !!row.verified_at;
-  const studioVerified = row.subscription_tier === "studio";
+  const studioVerified = row.brand?.subscription_tier === "studio";
   const logoUrl = row.logo_url ?? null;
 
   return (

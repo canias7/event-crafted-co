@@ -1,7 +1,9 @@
 // Stripe webhook handler. Verifies the signature, dedupes by event
 // id (Stripe retries until we 2xx), syncs subscription state onto
-// vendor_profiles, AND grants AI credits from the credit ledger
-// based on the price ID -> credits map in vendor_credit_packages.
+// profiles (per-user — was on vendor_profiles per-listing before,
+// see migration 20260524000000_subscription_state_to_profiles), AND
+// grants AI credits from the credit ledger based on the price ID
+// -> credits map in vendor_credit_packages.
 //
 // Required env:
 //   STRIPE_SECRET_KEY          — sk_test_... or sk_live_...
@@ -55,20 +57,34 @@ async function lookupPackage(
   return (data as PackageRow | null) ?? null;
 }
 
-// Resolve a vendor_profiles row (id + user_id) from the Stripe
-// customer id. We need the OWNER user_id to grant credits — the
-// credit ledger keys on auth.users.id, not vendor_profiles.id.
-async function resolveVendor(
+// Resolve a user_id from the Stripe customer id via profiles. The
+// credit ledger keys on auth.users.id, which equals profiles.id.
+async function resolveUserId(
   db: any,
   customerId: string,
-): Promise<{ vendorId: string; userId: string } | null> {
+): Promise<string | null> {
   const { data } = await db
-    .from("vendor_profiles")
-    .select("id, user_id")
+    .from("profiles")
+    .select("id")
     .eq("stripe_customer_id", customerId)
     .maybeSingle();
-  if (!data || !(data as any).user_id) return null;
-  return { vendorId: (data as any).id, userId: (data as any).user_id };
+  return (data as { id?: string } | null)?.id ?? null;
+}
+
+// Translate a vendor_profiles.id (the listing id we stamp into
+// session.metadata.vendor_id) into the owning auth user_id. Used
+// in checkout.session.completed where the session carries the
+// listing id, not the user id.
+async function vendorIdToUserId(
+  db: any,
+  vendorId: string,
+): Promise<string | null> {
+  const { data } = await db
+    .from("vendor_profiles")
+    .select("user_id")
+    .eq("id", vendorId)
+    .maybeSingle();
+  return (data as { user_id?: string } | null)?.user_id ?? null;
 }
 
 async function grantCredits(
@@ -171,24 +187,23 @@ serve(async (req: Request) => {
               ? session.subscription
               : session.subscription?.id;
           if (!vendorId || !subscriptionId) break;
+          // vendor_id in session.metadata is the listing id we
+          // launched checkout from; resolve to the owning user so
+          // subscription state lands on the user-scoped profile row.
+          const userId = await vendorIdToUserId(db, vendorId);
+          if (!userId) break;
           const sub = await stripe.subscriptions.retrieve(subscriptionId);
           const priceId = sub.items.data[0]?.price?.id;
           const pkg = priceId ? await lookupPackage(db, priceId) : null;
-          await applySubscription(db, vendorId, customerId ?? null, sub, pkg);
+          await applySubscription(db, userId, customerId ?? null, sub, pkg);
 
-          // Initial credit grant — first month's allotment. The
-          // user_id comes from vendor_profiles since the vendor row
-          // was just updated with the customer id.
-          if (pkg && pkg.kind === "subscription" && customerId) {
-            const vendor = await resolveVendor(db, customerId);
-            if (vendor) {
-              await grantCredits(
-                db, vendor.userId, pkg.credits,
-                "monthly_grant", event.id,
-                typeof session.invoice === "string" ? session.invoice : null,
-                `checkout: ${pkg.display_name} initial month`,
-              );
-            }
+          if (pkg && pkg.kind === "subscription") {
+            await grantCredits(
+              db, userId, pkg.credits,
+              "monthly_grant", event.id,
+              typeof session.invoice === "string" ? session.invoice : null,
+              `checkout: ${pkg.display_name} initial month`,
+            );
           }
         } else if (session.mode === "payment") {
           // One-time payment (top-up). Pull the line items to find
@@ -204,11 +219,11 @@ serve(async (req: Request) => {
             if (!priceId) continue;
             const pkg = await lookupPackage(db, priceId);
             if (!pkg || pkg.kind !== "topup") continue;
-            const vendor = await resolveVendor(db, customerId);
-            if (!vendor) continue;
+            const userId = await resolveUserId(db, customerId);
+            if (!userId) continue;
             const qty = item.quantity ?? 1;
             await grantCredits(
-              db, vendor.userId, pkg.credits * qty,
+              db, userId, pkg.credits * qty,
               "topup", event.id,
               typeof session.invoice === "string" ? session.invoice : null,
               `topup: ${pkg.display_name} x${qty}`,
@@ -225,15 +240,32 @@ serve(async (req: Request) => {
           typeof sub.customer === "string" ? sub.customer : sub.customer.id;
         const priceId = sub.items.data[0]?.price?.id;
         const pkg = priceId ? await lookupPackage(db, priceId) : null;
-        let vendorId = sub.metadata?.vendor_id;
-        if (!vendorId) {
-          // Fallback: vendor_id may live on the Customer metadata
-          // if this sub was created outside our flow (e.g. portal).
-          const cust = await stripe.customers.retrieve(customerId);
-          vendorId = (cust as Stripe.Customer).metadata?.vendor_id;
+        // Resolution order: subscription.metadata.user_id -> existing
+        // profiles row by stripe_customer_id -> derive from vendor_id
+        // -> Customer.metadata.user_id|vendor_id. Covers checkouts
+        // we launched, portal-initiated changes, and Stripe-side
+        // subscription creates.
+        let userId = sub.metadata?.user_id ?? null;
+        if (!userId) {
+          userId = await resolveUserId(db, customerId);
         }
-        if (vendorId) {
-          await applySubscription(db, vendorId, customerId, sub, pkg);
+        let vendorIdMeta = sub.metadata?.vendor_id;
+        if (!userId && vendorIdMeta) {
+          userId = await vendorIdToUserId(db, vendorIdMeta);
+        }
+        if (!userId) {
+          // Last-chance fallback: read user_id / vendor_id off the
+          // Stripe Customer's metadata (set when this sub was
+          // created outside our flow — e.g. the portal).
+          const cust = await stripe.customers.retrieve(customerId);
+          const meta = (cust as Stripe.Customer).metadata ?? {};
+          userId = meta.user_id ?? null;
+          if (!userId && meta.vendor_id) {
+            userId = await vendorIdToUserId(db, meta.vendor_id);
+          }
+        }
+        if (userId) {
+          await applySubscription(db, userId, customerId, sub, pkg);
         }
         // Note: no credit grant here — checkout.session.completed
         // already granted the first month, and invoice.paid handles
@@ -248,7 +280,7 @@ serve(async (req: Request) => {
         const customerId =
           typeof sub.customer === "string" ? sub.customer : sub.customer.id;
         await db
-          .from("vendor_profiles")
+          .from("profiles")
           .update({
             subscription_tier: "free",
             subscription_status: "canceled",
@@ -257,6 +289,9 @@ serve(async (req: Request) => {
             // reuses the existing Stripe Customer (preserves card
             // on file + invoice history under one record).
             subscription_cancel_at_period_end: false,
+            monthly_grant: 0,
+            period_started_at: null,
+            period_ends_at: null,
           })
           .eq("stripe_customer_id", customerId);
         // Credits are NOT clawed back on cancellation — vendor
@@ -284,10 +319,10 @@ serve(async (req: Request) => {
         if (!priceId) break;
         const pkg = await lookupPackage(db, priceId);
         if (!pkg || pkg.kind !== "subscription") break;
-        const vendor = await resolveVendor(db, customerId);
-        if (!vendor) break;
+        const userId = await resolveUserId(db, customerId);
+        if (!userId) break;
         await grantCredits(
-          db, vendor.userId, pkg.credits,
+          db, userId, pkg.credits,
           "monthly_grant", event.id, invoice.id ?? null,
           `renewal: ${pkg.display_name} ${invoice.billing_reason}`,
         );
@@ -305,7 +340,7 @@ serve(async (req: Request) => {
         // the card a few times. Tier flips to free only when
         // subscription.deleted lands (after dunning exhausts).
         await db
-          .from("vendor_profiles")
+          .from("profiles")
           .update({ subscription_status: "past_due" })
           .eq("stripe_customer_id", customerId);
         break;
@@ -326,7 +361,7 @@ serve(async (req: Request) => {
 
 async function applySubscription(
   db: any,
-  vendorId: string,
+  userId: string,
   customerId: string | null,
   sub: Stripe.Subscription,
   pkg: PackageRow | null,
@@ -337,6 +372,7 @@ async function applySubscription(
   // (so we don't accidentally downgrade a real customer if a price
   // row is missing).
   const tier = active ? (pkg?.tier ?? "pro") : "free";
+  const monthlyGrant = active && pkg?.kind === "subscription" ? pkg.credits : 0;
   const update: Record<string, unknown> = {
     subscription_status: sub.status,
     subscription_tier: tier,
@@ -345,7 +381,14 @@ async function applySubscription(
       sub.current_period_end * 1000,
     ).toISOString(),
     subscription_cancel_at_period_end: sub.cancel_at_period_end ?? false,
+    // Period bookkeeping is on profiles too now — the usage page
+    // reads these to render the "X used of Y this period" bar.
+    // Audit #3 in the launch report: grant_credits never wrote
+    // these, so the bar was always blank.
+    monthly_grant: monthlyGrant,
+    period_started_at: new Date(sub.current_period_start * 1000).toISOString(),
+    period_ends_at: new Date(sub.current_period_end * 1000).toISOString(),
   };
   if (customerId) update.stripe_customer_id = customerId;
-  await db.from("vendor_profiles").update(update).eq("id", vendorId);
+  await db.from("profiles").update(update).eq("id", userId);
 }
