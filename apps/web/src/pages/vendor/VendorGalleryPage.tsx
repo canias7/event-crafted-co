@@ -1081,8 +1081,8 @@ export default function VendorGalleryPage() {
             >
               <h2 className="font-editorial text-2xl">Gallery is on Starter and up</h2>
               <p className="text-sm text-muted-foreground mt-2">
-                Upload once, reuse across listings. Comes with 500 gallery images on
-                Starter, 1,200 on Pro, 2,000 on Studio. Listing photos remain
+                Upload once, reuse across listings. Comes with 250 gallery images on
+                Starter, 1,000 on Pro, 2,000 on Studio. Listing photos remain
                 unlimited regardless of plan.
               </p>
               <a

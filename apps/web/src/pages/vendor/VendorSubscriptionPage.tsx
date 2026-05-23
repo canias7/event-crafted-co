@@ -79,7 +79,7 @@ const TIERS: Array<{
     listings: "1 listing",
     highlights: [
       "200 AI credits / month",
-      "500 gallery images",
+      "250 gallery images",
     ],
   },
   {
@@ -92,8 +92,7 @@ const TIERS: Array<{
     listings: "Up to 5 listings",
     highlights: [
       "800 AI credits / month",
-      "1,200 gallery images",
-      "Featured search placement",
+      "1,000 gallery images",
       "MCP Claude.ai connector",
     ],
   },
