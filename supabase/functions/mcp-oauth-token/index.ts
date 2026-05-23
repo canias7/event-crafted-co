@@ -59,6 +59,19 @@ async function sha256Hex(text: string): Promise<string> {
     .join("");
 }
 
+// Constant-time equality for two equal-length hex strings. Both
+// sides are SHA-256 digests (64 hex chars) so plain `===` would
+// have an early-exit timing characteristic; this loops the full
+// length regardless of whether bytes match.
+function constantTimeHexEqual(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
+  let diff = 0;
+  for (let i = 0; i < a.length; i++) {
+    diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  }
+  return diff === 0;
+}
+
 async function parseForm(req: Request): Promise<Record<string, string>> {
   const ct = req.headers.get("Content-Type") ?? "";
   if (ct.includes("application/x-www-form-urlencoded")) {
@@ -112,15 +125,18 @@ async function verifyClientAuth(
     .eq("client_id", clientId)
     .maybeSingle();
   if (!client) return { ok: false, error: "invalid_client" };
-  if (clientSecret) {
+  const storedHash = (client as { client_secret_hash: string | null })
+    .client_secret_hash;
+  // Confidential clients (those registered with a secret) MUST present
+  // it. Skipping this lets a stolen auth code + PKCE verifier be
+  // redeemed without proving client identity.
+  if (storedHash) {
+    if (!clientSecret) return { ok: false, error: "invalid_client" };
     const hash = await sha256Hex(clientSecret);
-    if (hash !== (client as { client_secret_hash: string }).client_secret_hash) {
+    if (!constantTimeHexEqual(hash, storedHash)) {
       return { ok: false, error: "invalid_client" };
     }
   }
-  // PKCE-only ("none" auth method) is also allowed for public clients,
-  // but DCR defaults to client_secret_post, so we accept either as
-  // long as we found the client_id.
   return { ok: true, clientId };
 }
 

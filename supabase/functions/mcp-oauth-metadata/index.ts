@@ -38,7 +38,7 @@ serve((req) => {
       resource: MCP_RESOURCE_URL,
       authorization_servers: [`${PUBLIC_BASE}/mcp-oauth-metadata?kind=as`],
       bearer_methods_supported: ["header"],
-      scopes_supported: ["vendora"],
+      scopes_supported: ["read_only", "read_write"],
     });
   }
 
@@ -55,7 +55,7 @@ serve((req) => {
       "client_secret_post",
       "none",
     ],
-    scopes_supported: ["vendora"],
+    scopes_supported: ["read_only", "read_write"],
   });
 });
 

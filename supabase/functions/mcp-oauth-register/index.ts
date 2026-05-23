@@ -42,6 +42,30 @@ async function sha256Hex(text: string): Promise<string> {
     .join("");
 }
 
+// Redirect URIs are user-controlled. Without validation, a client
+// could register `javascript:`/`data:` URIs that we'd later redirect
+// the browser to — XSS-equivalent. Limit to https:// plus loopback
+// http:// for local development (RFC 8252 §7.3).
+function isAllowedRedirectUri(s: string): boolean {
+  let url: URL;
+  try {
+    url = new URL(s);
+  } catch {
+    return false;
+  }
+  if (url.hash) return false;
+  if (url.protocol === "https:") return true;
+  if (
+    url.protocol === "http:" &&
+    (url.hostname === "localhost" ||
+      url.hostname === "127.0.0.1" ||
+      url.hostname === "[::1]")
+  ) {
+    return true;
+  }
+  return false;
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
   if (req.method !== "POST") {
@@ -62,6 +86,18 @@ serve(async (req) => {
       { error: "invalid_redirect_uri", error_description: "redirect_uris required" },
       400,
     );
+  }
+  for (const u of redirectUris) {
+    if (!isAllowedRedirectUri(u as string)) {
+      return json(
+        {
+          error: "invalid_redirect_uri",
+          error_description:
+            "redirect_uris must be https:// (or http://localhost for development); no javascript:, data:, or fragment URIs",
+        },
+        400,
+      );
+    }
   }
   const clientName =
     typeof body?.client_name === "string" ? body.client_name.slice(0, 200) : null;

@@ -21,6 +21,7 @@ const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const APP_URL = Deno.env.get("APP_URL") ?? "https://eventvendora.com";
 const AUTH_CODE_TTL_MS = 60_000;
+const ALLOWED_SCOPES = new Set(["read_only", "read_write"]);
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -87,13 +88,19 @@ serve(async (req) => {
     const codeChallengeMethod =
       url.searchParams.get("code_challenge_method") ?? "";
     const state = url.searchParams.get("state") ?? "";
-    const scope = url.searchParams.get("scope") ?? "vendora";
+    const scope = url.searchParams.get("scope") ?? "read_only";
 
     if (responseType !== "code") {
       return json({ error: "unsupported_response_type" }, 400);
     }
     if (codeChallengeMethod !== "S256" || !codeChallenge) {
       return json({ error: "invalid_request", error_description: "PKCE S256 required" }, 400);
+    }
+    if (!ALLOWED_SCOPES.has(scope)) {
+      return json(
+        { error: "invalid_scope", error_description: "scope must be read_only or read_write" },
+        400,
+      );
     }
     const v = await validateClient(admin, clientId, redirectUri);
     if (!v.ok) return json({ error: v.error }, 400);
@@ -139,10 +146,16 @@ serve(async (req) => {
   const codeChallenge = String(body?.code_challenge ?? "");
   const codeChallengeMethod = String(body?.code_challenge_method ?? "");
   const state = String(body?.state ?? "");
-  const scope = String(body?.scope ?? "vendora");
+  const scope = String(body?.scope ?? "read_only");
 
   if (codeChallengeMethod !== "S256" || !codeChallenge) {
     return json({ error: "invalid_request", error_description: "PKCE S256 required" }, 400);
+  }
+  if (!ALLOWED_SCOPES.has(scope)) {
+    return json(
+      { error: "invalid_scope", error_description: "scope must be read_only or read_write" },
+      400,
+    );
   }
   const v = await validateClient(admin, clientId, redirectUri);
   if (!v.ok) return json({ error: v.error }, 400);
