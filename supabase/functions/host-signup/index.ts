@@ -7,14 +7,21 @@
 //
 //   POST {action: "request", email}
 //     - Generates a 6-digit code, stores hash in host_signup_codes.
+//     - Two-tier rate limit per email: 60s floor + 5 requests/hour
+//       cap. Throttled requests return the same success shape so the
+//       endpoint can't be used to probe state.
 //     - Sends the code to the email via Resend.
 //     - Returns {ok: true} (never returns the code itself).
 //
 //   POST {action: "verify", email, code, password}
 //     - Looks up the most recent unused, unexpired code.
-//     - Compares hash (constant-time).
+//     - Constant-time hash compare. TTL 10min, max 5 attempts.
 //     - On success, creates the auth user via the admin API with
 //       email_confirm:true and intended_role:"host" metadata.
+//     - If the email already belongs to an auth user (confirmed or
+//       not), refuses with reason="account_exists" rather than
+//       overwriting the existing password. The old fallback was an
+//       ATO path on unconfirmed accounts.
 //     - Marks the code used. Returns {ok: true}; the client then
 //       calls signInWithPassword to get a session.
 //
@@ -32,6 +39,9 @@ const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 
 const CODE_TTL_MIN = 10;
 const MAX_ATTEMPTS = 5;
+const REQUEST_MIN_INTERVAL_MS = 60_000;
+const REQUEST_WINDOW_MS = 3_600_000;
+const MAX_REQUESTS_PER_WINDOW = 5;
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -64,9 +74,48 @@ async function sha256(input: string): Promise<string> {
     .join("");
 }
 
+// Constant-time equality for two equal-length hex strings. Both
+// sides are SHA-256 digests (64 hex chars). Plain === has an
+// early-exit timing characteristic; this loops the full length
+// regardless of whether bytes match.
+function constantTimeHexEqual(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
+  let diff = 0;
+  for (let i = 0; i < a.length; i++) {
+    diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  }
+  return diff === 0;
+}
+
 function randomCode(): string {
-  const n = crypto.getRandomValues(new Uint32Array(1))[0] % 1_000_000;
-  return n.toString().padStart(6, "0");
+  // Rejection-sample to avoid modulo bias: 2^32 is not a multiple of
+  // 1e6, so a bare % skews probability toward lower codes.
+  const limit = Math.floor(0x1_0000_0000 / 1_000_000) * 1_000_000;
+  let r = crypto.getRandomValues(new Uint32Array(1))[0];
+  while (r >= limit) {
+    r = crypto.getRandomValues(new Uint32Array(1))[0];
+  }
+  return (r % 1_000_000).toString().padStart(6, "0");
+}
+
+// Find an auth user by email, paging through listUsers. The admin API
+// has no email filter and listUsers() defaults to just the first 50
+// users — a bare call silently misses everyone past page 1 once the
+// project grows past 50 accounts.
+async function findUserByEmail(sb: any, email: string): Promise<any | null> {
+  const target = email.toLowerCase();
+  for (let page = 1; page <= 100; page++) {
+    const { data, error } = await sb.auth.admin.listUsers({
+      page,
+      perPage: 200,
+    });
+    if (error) throw error;
+    const users = (data?.users ?? []) as any[];
+    const match = users.find((u) => (u.email ?? "").toLowerCase() === target);
+    if (match) return match;
+    if (users.length < 200) break;
+  }
+  return null;
 }
 
 // Sent in place of the 6-digit code when /request is invoked with an
@@ -176,17 +225,14 @@ serve(async (req) => {
     // return the SAME success shape as a fresh signup. The API can no
     // longer be used to enumerate registered emails — the user finds
     // out from their inbox, not from the JSON response.
-    const { data: existing } = await sb.auth.admin.listUsers();
-    const taken = existing?.users?.some(
-      (u) =>
-        (u.email ?? "").toLowerCase() === email &&
-        u.email_confirmed_at != null,
-    );
+    //
+    // Uses findUserByEmail (paginates listUsers) instead of the bare
+    // listUsers call we used to do, which silently capped at the
+    // first 50 accounts.
+    const existingUser = await findUserByEmail(sb, email);
+    const taken =
+      existingUser != null && existingUser.email_confirmed_at != null;
     if (taken) {
-      // Return success shape regardless — the email IS sent or it's
-      // logged. We must not leak "this email is already registered"
-      // back to the API caller, so any failure is logged server-side
-      // only. The user is told to check their inbox in both branches.
       const sent = await sendAlreadyRegisteredEmail(email);
       if (!sent) {
         console.error(
@@ -197,18 +243,65 @@ serve(async (req) => {
       return json({ ok: true, expiresInMinutes: CODE_TTL_MIN });
     }
 
+    // Per-email rate limit. Two tiers:
+    //   60s floor between requests (anti-spam) and
+    //   5 requests / hour (anti-brute-force).
+    // Throttled requests return the success shape so the endpoint
+    // can't be used to probe whether an email is in cool-down.
+    const now = Date.now();
+    const { data: existingCode } = await sb
+      .from("host_signup_codes")
+      .select(
+        "requested_at, request_count_window, request_window_started_at",
+      )
+      .eq("email", email)
+      .maybeSingle();
+
+    let requestCountWindow = 1;
+    let windowStartedAtIso = new Date(now).toISOString();
+    if (existingCode) {
+      const ec = existingCode as {
+        requested_at: string | null;
+        request_count_window: number | null;
+        request_window_started_at: string | null;
+      };
+      if (
+        ec.requested_at &&
+        new Date(ec.requested_at).getTime() + REQUEST_MIN_INTERVAL_MS > now
+      ) {
+        return json({ ok: true, expiresInMinutes: CODE_TTL_MIN });
+      }
+      if (ec.request_window_started_at) {
+        const winStart = new Date(ec.request_window_started_at).getTime();
+        if (now - winStart < REQUEST_WINDOW_MS) {
+          if ((ec.request_count_window ?? 0) >= MAX_REQUESTS_PER_WINDOW) {
+            return json({ ok: true, expiresInMinutes: CODE_TTL_MIN });
+          }
+          requestCountWindow = (ec.request_count_window ?? 0) + 1;
+          windowStartedAtIso = ec.request_window_started_at;
+        }
+      }
+    }
+
     const code = randomCode();
     const code_hash = await sha256(code);
-    const expires_at = new Date(
-      Date.now() + CODE_TTL_MIN * 60_000,
-    ).toISOString();
+    const expires_at = new Date(now + CODE_TTL_MIN * 60_000).toISOString();
 
     // Upsert — one pending code per email; a fresh request invalidates
     // the previous code by overwriting the row.
     const { error: upErr } = await sb
       .from("host_signup_codes")
       .upsert(
-        { email, code_hash, expires_at, attempts: 0, used_at: null },
+        {
+          email,
+          code_hash,
+          expires_at,
+          attempts: 0,
+          used_at: null,
+          requested_at: new Date(now).toISOString(),
+          request_count_window: requestCountWindow,
+          request_window_started_at: windowStartedAtIso,
+        },
         { onConflict: "email" },
       );
     if (upErr) return json({ error: upErr.message }, 500);
@@ -255,7 +348,7 @@ serve(async (req) => {
     }
 
     const hash = await sha256(code);
-    if (hash !== r.code_hash) {
+    if (!constantTimeHexEqual(hash, r.code_hash)) {
       await sb
         .from("host_signup_codes")
         .update({ attempts: r.attempts + 1 })
@@ -273,29 +366,22 @@ serve(async (req) => {
       user_metadata: { intended_role: "host" },
     });
     if (createErr) {
-      // If the user already exists (e.g. abandoned signup with
-      // unconfirmed email), update them to set the password and
-      // mark confirmed instead.
-      const { data: list } = await sb.auth.admin.listUsers();
-      const existing = list?.users?.find(
-        (u) => (u.email ?? "").toLowerCase() === email,
-      );
-      if (existing) {
-        const { error: updErr } = await sb.auth.admin.updateUserById(
-          existing.id,
-          {
-            password,
-            email_confirm: true,
-            user_metadata: {
-              ...(existing.user_metadata ?? {}),
-              intended_role: "host",
-            },
-          },
-        );
-        if (updErr) return json({ error: updErr.message }, 500);
-      } else {
-        return json({ error: createErr.message }, 500);
+      // ATO defense: the old fallback called updateUserById with the
+      // attacker-supplied password whenever createUser said the email
+      // existed. Combined with /request's lack of rate-limiting, that
+      // let an attacker brute-force a code for any unconfirmed
+      // account, then overwrite its password on /verify. We no longer
+      // do that — if the email is already taken we mark the code used
+      // (so it can't be replayed) and tell the caller to sign in.
+      await sb
+        .from("host_signup_codes")
+        .update({ used_at: new Date().toISOString() })
+        .eq("email", email);
+      const msg = createErr.message ?? "";
+      if (/already (registered|exists)/i.test(msg)) {
+        return json({ ok: false, reason: "account_exists" }, 200);
       }
+      return json({ error: createErr.message }, 500);
     }
 
     await sb

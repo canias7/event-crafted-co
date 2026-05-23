@@ -5,17 +5,25 @@
 //
 //   POST {action: "request", email, businessName?, category?}
 //     - Generates a 6-digit code, stores hash in vendor_signup_codes.
+//     - Two-tier rate limit per email: 60s floor + 5 requests/hour
+//       cap. Throttled requests return the same success shape so the
+//       endpoint can't be used to probe state.
 //     - Emails the code via Resend.
 //     - Returns {ok: true}.
 //
 //   POST {action: "verify", email, code, password,
 //          businessName?, category?}
-//     - Validates the code (TTL 10min, max 5 attempts).
+//     - Validates the code (TTL 10min, max 5 attempts per code,
+//       constant-time hash compare).
 //     - Creates the auth user via admin API with email_confirm:true
 //       and intended_role:"vendor" metadata. handle_new_user then
 //       sets profiles.role='vendor'. No vendor_profile row is
 //       created here — listings are born only when the vendor
 //       hits Create listing in the profile tab.
+//     - If the email already belongs to an auth user (confirmed or
+//       not), refuses with reason="account_exists" rather than
+//       overwriting the existing password. The old fallback was an
+//       ATO path on unconfirmed accounts.
 //     - Marks the code used. Client signInWithPassword to get a
 //       session.
 
@@ -31,6 +39,9 @@ const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 
 const CODE_TTL_MIN = 10;
 const MAX_ATTEMPTS = 5;
+const REQUEST_MIN_INTERVAL_MS = 60_000;
+const REQUEST_WINDOW_MS = 3_600_000;
+const MAX_REQUESTS_PER_WINDOW = 5;
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -61,6 +72,19 @@ async function sha256(input: string): Promise<string> {
   return Array.from(new Uint8Array(buf))
     .map((b) => b.toString(16).padStart(2, "0"))
     .join("");
+}
+
+// Constant-time equality for two equal-length hex strings. Both
+// sides are SHA-256 digests (64 hex chars). Plain === has an
+// early-exit timing characteristic; this loops the full length
+// regardless of whether bytes match.
+function constantTimeHexEqual(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
+  let diff = 0;
+  for (let i = 0; i < a.length; i++) {
+    diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  }
+  return diff === 0;
 }
 
 function randomCode(): string {
@@ -217,16 +241,63 @@ serve(async (req) => {
       return json({ ok: true, expiresInMinutes: CODE_TTL_MIN });
     }
 
+    // Per-email rate limit. Two tiers:
+    //   60s floor between requests (anti-spam) and
+    //   5 requests / hour (anti-brute-force).
+    // Throttled requests return the success shape so the endpoint
+    // can't be used to probe whether an email is in cool-down.
+    const now = Date.now();
+    const { data: existingCode } = await sb
+      .from("vendor_signup_codes")
+      .select(
+        "requested_at, request_count_window, request_window_started_at",
+      )
+      .eq("email", email)
+      .maybeSingle();
+
+    let requestCountWindow = 1;
+    let windowStartedAtIso = new Date(now).toISOString();
+    if (existingCode) {
+      const ec = existingCode as {
+        requested_at: string | null;
+        request_count_window: number | null;
+        request_window_started_at: string | null;
+      };
+      if (
+        ec.requested_at &&
+        new Date(ec.requested_at).getTime() + REQUEST_MIN_INTERVAL_MS > now
+      ) {
+        return json({ ok: true, expiresInMinutes: CODE_TTL_MIN });
+      }
+      if (ec.request_window_started_at) {
+        const winStart = new Date(ec.request_window_started_at).getTime();
+        if (now - winStart < REQUEST_WINDOW_MS) {
+          if ((ec.request_count_window ?? 0) >= MAX_REQUESTS_PER_WINDOW) {
+            return json({ ok: true, expiresInMinutes: CODE_TTL_MIN });
+          }
+          requestCountWindow = (ec.request_count_window ?? 0) + 1;
+          windowStartedAtIso = ec.request_window_started_at;
+        }
+      }
+    }
+
     const code = randomCode();
     const code_hash = await sha256(code);
-    const expires_at = new Date(
-      Date.now() + CODE_TTL_MIN * 60_000,
-    ).toISOString();
+    const expires_at = new Date(now + CODE_TTL_MIN * 60_000).toISOString();
 
     const { error: upErr } = await sb
       .from("vendor_signup_codes")
       .upsert(
-        { email, code_hash, expires_at, attempts: 0, used_at: null },
+        {
+          email,
+          code_hash,
+          expires_at,
+          attempts: 0,
+          used_at: null,
+          requested_at: new Date(now).toISOString(),
+          request_count_window: requestCountWindow,
+          request_window_started_at: windowStartedAtIso,
+        },
         { onConflict: "email" },
       );
     if (upErr) return json({ error: upErr.message }, 500);
@@ -275,7 +346,7 @@ serve(async (req) => {
     }
 
     const hash = await sha256(code);
-    if (hash !== r.code_hash) {
+    if (!constantTimeHexEqual(hash, r.code_hash)) {
       await sb
         .from("vendor_signup_codes")
         .update({ attempts: r.attempts + 1 })
@@ -294,20 +365,22 @@ serve(async (req) => {
       user_metadata: userMeta,
     });
     if (createErr) {
-      const existing = await findUserByEmail(sb, email);
-      if (existing) {
-        const { error: updErr } = await sb.auth.admin.updateUserById(
-          existing.id,
-          {
-            password,
-            email_confirm: true,
-            user_metadata: { ...(existing.user_metadata ?? {}), ...userMeta },
-          },
-        );
-        if (updErr) return json({ error: updErr.message }, 500);
-      } else {
-        return json({ error: createErr.message }, 500);
+      // ATO defense: the old fallback called updateUserById with the
+      // attacker-supplied password whenever createUser said the email
+      // existed. Combined with /request's lack of rate-limiting, that
+      // let an attacker brute-force a code for any unconfirmed
+      // account, then overwrite its password on /verify. We no longer
+      // do that — if the email is already taken we mark the code used
+      // (so it can't be replayed) and tell the caller to sign in.
+      await sb
+        .from("vendor_signup_codes")
+        .update({ used_at: new Date().toISOString() })
+        .eq("email", email);
+      const msg = createErr.message ?? "";
+      if (/already (registered|exists)/i.test(msg)) {
+        return json({ ok: false, reason: "account_exists" }, 200);
       }
+      return json({ error: createErr.message }, 500);
     }
 
     await sb
