@@ -240,6 +240,56 @@ function waitUntil(p: Promise<unknown>) {
   }
 }
 
+// Outcome of polling an in-flight idempotent call:
+//   completed → the prior call wrote a result_message_id we can replay.
+//   failed    → the prior call ended in error; the same key can't retry.
+//   timeout   → the prior call is still in flight at our deadline.
+type IdempotentPoll =
+  | { kind: "completed"; resultMessageId: string }
+  | { kind: "failed"; error: string }
+  | { kind: "timeout" };
+
+// Wait for a concurrent call holding the same (user_id,
+// idempotency_key) tuple to settle. The convention written by
+// the claim-ahead path in `serve` is:
+//   in-flight  → ok=false AND error IS NULL
+//   completed  → ok=true  AND result_message_id IS NOT NULL
+//   failed     → ok=false AND error IS NOT NULL
+// We poll until one of the terminal states or the budget elapses.
+async function pollIdempotentResult(
+  admin: any,
+  userId: string,
+  idempotencyKey: string,
+  budgetMs = 3000,
+): Promise<IdempotentPoll> {
+  const deadline = Date.now() + budgetMs;
+  while (Date.now() < deadline) {
+    const { data } = await admin
+      .from("mcp_call_log")
+      .select("ok, error, result_message_id")
+      .eq("user_id", userId)
+      .eq("idempotency_key", idempotencyKey)
+      .order("created_at", { ascending: false })
+      .limit(1);
+    const row = ((data ?? []) as Array<{
+      ok: boolean;
+      error: string | null;
+      result_message_id: string | null;
+    }>)[0];
+    if (row) {
+      if (row.ok && row.result_message_id) {
+        return { kind: "completed", resultMessageId: row.result_message_id };
+      }
+      if (!row.ok && row.error) {
+        return { kind: "failed", error: row.error };
+      }
+      // in-flight (ok=false, error=null) — keep polling
+    }
+    await new Promise((r) => setTimeout(r, 200));
+  }
+  return { kind: "timeout" };
+}
+
 // Tool catalog — describes what Claude can do via this server.
 // Schemas are JSON Schema Draft 7 (what MCP expects). Each tool
 // is intentionally small + read-only in v1; we'll add write tools
@@ -1093,6 +1143,132 @@ serve(async (req) => {
     return rateLimited(id, limit.message, limit.info);
   }
 
+  // Idempotency claim-ahead. When send_reply carries an
+  // idempotency_key, we lock the (user_id, key) tuple in
+  // mcp_call_log BEFORE the message insert. The partial UNIQUE
+  // index on that pair turns the table into a cross-request mutex:
+  // a concurrent second call gets a UNIQUE violation on its claim
+  // INSERT, then polls the winner's row and returns the replayed
+  // result. Without this, the old "SELECT prior → INSERT message →
+  // INSERT log row" sequence let two concurrent send_replies both
+  // see "no prior" and both insert direct_messages.
+  //
+  // Scope: send_reply only. Other tools don't surface a
+  // result_message_id to replay, so a generic claim would be
+  // bookkeeping without semantic value.
+  const idempotencyKey =
+    toolName === "send_reply" &&
+    typeof args.idempotency_key === "string" && args.idempotency_key.trim()
+      ? args.idempotency_key.trim().slice(0, 80)
+      : null;
+
+  let claimRowId: string | null = null;
+  if (idempotencyKey) {
+    const safeArgs: Record<string, any> = {};
+    for (const [k, v] of Object.entries(args)) {
+      if (typeof v === "string" && v.length > 200) {
+        safeArgs[k] = `${v.slice(0, 200)}…(${v.length} chars)`;
+      } else {
+        safeArgs[k] = v;
+      }
+    }
+    const { data: claim, error: claimErr } = await admin
+      .from("mcp_call_log")
+      .insert({
+        user_id: userId,
+        client_id: clientId,
+        auth_method: authMethod,
+        tool_name: toolName,
+        args: safeArgs,
+        ok: false,
+        error: null,
+        duration_ms: 0,
+        idempotency_key: idempotencyKey,
+        result_message_id: null,
+      })
+      .select("id")
+      .single();
+
+    if (claimErr) {
+      // Either UNIQUE violation (another call is the winner) or
+      // some other write error. Either way, the most useful next
+      // step is to poll the existing row — if it's a winner-row
+      // from a prior call we'll replay, otherwise we'll surface a
+      // best-effort error.
+      const replayed = await pollIdempotentResult(admin, userId, idempotencyKey);
+      if (replayed.kind === "completed") {
+        const { data: msg } = await admin
+          .from("direct_messages")
+          .select("id, created_at")
+          .eq("id", replayed.resultMessageId)
+          .maybeSingle();
+        if (msg) {
+          return rpcResult(id, {
+            content: [{
+              type: "text",
+              text: JSON.stringify({
+                sent: true,
+                message_id: (msg as { id: string }).id,
+                created_at: (msg as { created_at: string }).created_at,
+                replayed: true,
+              }, null, 2),
+            }],
+          });
+        }
+        return rpcError(
+          id,
+          -32603,
+          "idempotent replay: prior message no longer exists",
+        );
+      }
+      if (replayed.kind === "failed") {
+        return rpcError(
+          id,
+          -32603,
+          `prior call with same idempotency_key failed: ${replayed.error}`,
+        );
+      }
+      // Still in flight at our deadline. -32029 keeps this in the
+      // same code-space as the rate-limit response so clients can
+      // back off on the same handler.
+      return rpcError(
+        id,
+        -32029,
+        "concurrent send_reply with same idempotency_key still in flight; retry shortly",
+      );
+    }
+    claimRowId = (claim as { id: string }).id;
+  }
+
+  // finishCall: when we hold a claim row, promote it (UPDATE);
+  // otherwise insert a fresh log row via the existing logCall
+  // path. Both run via waitUntil so they survive worker reclaim
+  // after the response streams.
+  const finishCall = (
+    ok: boolean,
+    error: string | null,
+    extras: { idempotency_key?: string | null; result_message_id?: string | null } = {},
+  ) => {
+    if (claimRowId) {
+      waitUntil(
+        admin
+          .from("mcp_call_log")
+          .update({
+            ok,
+            error,
+            duration_ms: Date.now() - startedAt,
+            result_message_id: extras.result_message_id ?? null,
+          })
+          .eq("id", claimRowId)
+          .then(({ error: e }: { error: unknown }) => {
+            if (e) console.error("[vendora-mcp] claim promote failed", e);
+          }),
+      );
+    } else {
+      logCall(ok, error, extras);
+    }
+  };
+
   try {
     const result = await runTool(admin, userId, toolName, args, vendorScope);
     // Pluck the internal fields (prefixed with _) before logging
@@ -1105,7 +1281,7 @@ serve(async (req) => {
       delete r._idempotency_key;
       delete r._result_message_id;
     }
-    logCall(true, null, {
+    finishCall(true, null, {
       idempotency_key: idemKey,
       result_message_id: resultMessageId,
     });
@@ -1115,7 +1291,7 @@ serve(async (req) => {
   } catch (err) {
     console.error("[vendora-mcp] tool error", toolName, err);
     const msg = err instanceof Error ? err.message : String(err);
-    logCall(false, msg);
+    finishCall(false, msg);
     return rpcError(id, -32603, msg);
   }
 });
@@ -1476,46 +1652,15 @@ async function sendReply(
   const body = String(args.body ?? "").trim();
   if (!body) throw new Error("body is required");
   const thread = await loadOwnedThread(admin, userId, String(args.thread_id ?? ""), vendorScope);
+  // Idempotency is enforced by the outer serve() claim-ahead.
+  // When args.idempotency_key is set, serve() has already locked
+  // the (user_id, key) tuple in mcp_call_log; concurrent retries
+  // never reach this function. We still surface the key on the
+  // result so the outer finishCall can promote the claim row.
   const idempotencyKey =
     typeof args.idempotency_key === "string" && args.idempotency_key.trim()
       ? args.idempotency_key.trim().slice(0, 80)
       : null;
-
-  // Idempotency replay: if we've seen this key from this user in
-  // the last 10 minutes AND it succeeded, return the original
-  // message instead of inserting a duplicate. The mcp_call_log row
-  // for THAT prior call carries the result_message_id we wrote
-  // alongside it.
-  if (idempotencyKey) {
-    const sinceIso = new Date(Date.now() - 10 * 60 * 1000).toISOString();
-    const { data: prior } = await admin
-      .from("mcp_call_log")
-      .select("result_message_id, ok")
-      .eq("user_id", userId)
-      .eq("tool_name", "send_reply")
-      .eq("idempotency_key", idempotencyKey)
-      .gte("created_at", sinceIso)
-      .order("created_at", { ascending: false })
-      .limit(1);
-    const priorRow = (prior ?? [])[0] as
-      | { result_message_id: string | null; ok: boolean }
-      | undefined;
-    if (priorRow?.ok && priorRow.result_message_id) {
-      const { data: msg } = await admin
-        .from("direct_messages")
-        .select("id, created_at")
-        .eq("id", priorRow.result_message_id)
-        .maybeSingle();
-      if (msg) {
-        return {
-          sent: true,
-          message_id: (msg as { id: string }).id,
-          created_at: (msg as { created_at: string }).created_at,
-          replayed: true,
-        };
-      }
-    }
-  }
 
   const { data, error } = await admin
     .from("direct_messages")
