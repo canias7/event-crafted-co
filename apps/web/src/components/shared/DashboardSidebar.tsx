@@ -12,6 +12,7 @@ import {
 import { customerNavItems, setLastDashboardSide, vendorNavItems } from "@/data/navItems";
 import { useAuth } from "@/hooks/useAuth";
 import { useVendorPlan, type VendorTier } from "@/hooks/useVendorPlan";
+import { useLiveVendorBalance } from "@/hooks/useVendorCredits";
 
 const TIER_LABEL: Record<VendorTier, string> = {
   free: "Free plan",
@@ -44,10 +45,16 @@ export function DashboardSidebar({
   // Vendor-side sidebars swap the page-title sub-label for a live
   // plan badge ("Starter plan", "Pro plan", …) that flips the moment
   // the Stripe webhook updates vendor_profiles.subscription_tier.
-  const { ownListing } = useAuth();
+  const { ownListing, user } = useAuth();
   const isVendorSide = items === vendorNavItems;
   const { tier } = useVendorPlan(isVendorSide ? ownListing?.id ?? null : null);
   const subLabel = isVendorSide ? TIER_LABEL[tier] : title;
+  // Live credit balance shown as a small chip on the right of the
+  // Usage nav row. Subscribes to vendor_credit_balances UPDATEs so
+  // it ticks down as the vendor uses HILUX/Axion and ticks up on
+  // top-ups, without a refresh.
+  const { balance: liveBalance, initialized: balanceReady } =
+    useLiveVendorBalance(isVendorSide ? user?.id ?? null : null);
 
   // Stash the active side so cross-cutting pages (/settings, /support)
   // know which sidebar to render when the user clicks over. Without
@@ -152,6 +159,11 @@ export function DashboardSidebar({
       );
     }
 
+    // Usage row gets a live balance chip on the right so the vendor
+    // can see their credits without opening the page.
+    const showBalance =
+      isVendorSide && !collapsed && item.path === "/vendor/usage" && balanceReady;
+
     return (
       <Link
         key={item.path}
@@ -170,7 +182,15 @@ export function DashboardSidebar({
           }`}
         >
           <item.icon className="w-4 h-4 shrink-0" aria-hidden="true" />
-          {!collapsed && <span className="truncate">{label}</span>}
+          {!collapsed && <span className="truncate flex-1">{label}</span>}
+          {showBalance && (
+            <span
+              className="text-[11px] font-medium tnum shrink-0 text-foreground/70"
+              aria-label={`${liveBalance.toLocaleString()} credits`}
+            >
+              {liveBalance.toLocaleString()}
+            </span>
+          )}
         </div>
       </Link>
     );
