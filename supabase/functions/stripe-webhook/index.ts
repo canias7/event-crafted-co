@@ -325,14 +325,16 @@ serve(async (req: Request) => {
 
       case "invoice.paid": {
         // Recurring subscription renewal. Grant the tier's monthly
-        // credit allotment. Skip when billing_reason is
-        // 'subscription_create' (that's covered by the initial
-        // grant on checkout.session.completed — double-grant
-        // dodge).
+        // credit allotment. Skip when billing_reason is anything
+        // other than 'subscription_cycle' — `subscription_create`
+        // is covered by checkout.session.completed and
+        // `subscription_update` is a mid-cycle plan change that
+        // would otherwise double-grant on top of the current
+        // period's credits (audit #7). Vendor pays the prorated
+        // upgrade charge for the feature unlock; the new tier's
+        // full credit allotment lands on the next cycle.
         const invoice = event.data.object as Stripe.Invoice;
-        if (invoice.billing_reason === "subscription_create") break;
-        if (invoice.billing_reason !== "subscription_cycle" &&
-            invoice.billing_reason !== "subscription_update") break;
+        if (invoice.billing_reason !== "subscription_cycle") break;
         const customerId =
           typeof invoice.customer === "string"
             ? invoice.customer
@@ -485,8 +487,17 @@ serve(async (req: Request) => {
     }
   } catch (err) {
     console.error("[stripe-webhook] handler error", event.type, err);
-    // Roll back the dedup row so Stripe's retry gets a fresh shot
+    // Delete the dedup row so Stripe's retry gets a fresh shot
     // instead of being acked as already-processed.
+    //
+    // SAFETY: if grant_credits already succeeded before the throw,
+    // the retry will fire grant_credits again — protected from
+    // double-grant only by the unique partial index on
+    // vendor_credit_transactions.stripe_event_id (the second grant
+    // hits 23505, which grantCredits treats as success). Same for
+    // revoke_topup_credits via its own unique-event-id constraint.
+    // Any future change that bypasses those indices could
+    // double-credit on retry.
     await db.from("stripe_events").delete().eq("id", event.id);
     return new Response("handler error", { status: 500 });
   }

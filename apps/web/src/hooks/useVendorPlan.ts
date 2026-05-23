@@ -24,7 +24,15 @@ const VALID_TIERS = new Set<VendorTier>(["free", "starter", "pro", "studio"]);
 // instance), so without this cache the plan badge under "Vendora"
 // flickers from "Free plan" to the real tier on every navigation
 // while the fetch is in flight.
+//
+// Cleared on auth SIGNED_OUT (audit #16) so a re-login of a
+// different account doesn't briefly paint with the previous user's
+// tier.
 const tierCache = new Map<string, VendorTier>();
+
+supabase.auth.onAuthStateChange((event) => {
+  if (event === "SIGNED_OUT") tierCache.clear();
+});
 
 export function useVendorPlan(userId: string | null | undefined): {
   tier: VendorTier;

@@ -33,16 +33,20 @@ import { vendorNavItems as navItems } from "@/data/navItems";
 // actual Stripe prices are unchanged either way.
 const LAUNCH_OFFER_ENDS_AT = "2026-06-30T23:59:59-04:00";
 
-// Keep these tables in sync with vendor_credit_packages on the DB.
-// Price IDs below are TEST-MODE (created 2026-05-23 in Stripe sandbox).
-// Swap to live-mode IDs (price_1TaBv...) when going live + updating
-// STRIPE_SECRET_KEY env var accordingly.
+// Subscription + top-up catalog is fetched from
+// public.vendor_credit_packages at runtime now. Going live = re-seed
+// the table with live-mode Stripe price IDs + flip STRIPE_SECRET_KEY
+// — no code change here. The Free tier stays hardcoded since it
+// has no Stripe price (no checkout, nothing to keep in sync).
 //
 // wasMonthly is the anchor price we render as a strikethrough above
 // the current price — frames launch pricing as a discount. Pure
-// marketing copy, not stored anywhere in Stripe.
-const TIERS: Array<{
-  id: "free" | "starter" | "pro" | "studio";
+// marketing copy, lives on vendor_credit_packages.was_monthly_cents.
+
+type TierId = "free" | "starter" | "pro" | "studio";
+
+interface TierRow {
+  id: TierId;
   name: string;
   priceMonthly: number;
   wasMonthly?: number;
@@ -50,98 +54,42 @@ const TIERS: Array<{
   monthlyCredits: number;
   listings: string;
   highlights: string[];
-}> = [
-  {
-    id: "free",
-    name: "Free",
-    priceMonthly: 0,
-    priceId: null,
-    monthlyCredits: 0,
-    listings: "1 listing",
-    highlights: [
-      "100 trial credits on signup",
-    ],
-  },
-  {
-    id: "starter",
-    name: "Starter",
-    priceMonthly: 14.99,
-    wasMonthly: 29,
-    priceId: "price_1TaKot2VPrcT6XA1pMa6Q1fY",
-    monthlyCredits: 200,
-    listings: "1 listing",
-    highlights: [
-      "200 AI credits / month",
-      "250 gallery images",
-    ],
-  },
-  {
-    id: "pro",
-    name: "Pro",
-    priceMonthly: 39,
-    wasMonthly: 89,
-    priceId: "price_1TaKpC2VPrcT6XA17I2TSi6u",
-    monthlyCredits: 800,
-    listings: "Up to 5 listings",
-    highlights: [
-      "800 AI credits / month",
-      "1,000 gallery images",
-      "MCP connection",
-    ],
-  },
-  {
-    id: "studio",
-    name: "Studio",
-    priceMonthly: 99,
-    wasMonthly: 249,
-    priceId: "price_1TaKpY2VPrcT6XA1EfBgJryx",
-    monthlyCredits: 2500,
-    listings: "Up to 5 listings",
-    highlights: [
-      "2,500 AI credits / month",
-      "2,000 gallery images",
-      "Become verified",
-      "MCP connection",
-    ],
-  },
-];
+}
 
-const TOPUPS: Array<{
+interface TopupRow {
   id: string;
   name: string;
   credits: number;
   price: number;
   priceId: string;
-}> = [
-  {
-    id: "boost",
-    name: "Boost",
-    credits: 500,
-    price: 12,
-    priceId: "price_1TaKq72VPrcT6XA1AeyBHdnn",
-  },
-  {
-    id: "power",
-    name: "Power",
-    credits: 1500,
-    price: 30,
-    priceId: "price_1TaKqc2VPrcT6XA1kr2icZHw",
-  },
-  {
-    id: "pro_pack",
-    name: "Pro Pack",
-    credits: 3500,
-    price: 60,
-    priceId: "price_1TaKr12VPrcT6XA1YjzZcylM",
-  },
-  {
-    id: "studio_pack",
-    name: "Studio Pack",
-    credits: 8000,
-    price: 120,
-    priceId: "price_1TaKrZ2VPrcT6XA1SmiwGeis",
-  },
-];
+}
+
+const FREE_TIER: TierRow = {
+  id: "free",
+  name: "Free",
+  priceMonthly: 0,
+  priceId: null,
+  monthlyCredits: 0,
+  listings: "1 listing",
+  highlights: ["100 trial credits on signup"],
+};
+
+// Maps the DB display_name -> the short label used on top-up cards
+// ("Vendora Credits Boost Pack" -> "Boost"). Keeps the card title
+// punchy without forcing marketing to edit DB rows.
+const TOPUP_SHORT_NAMES: Record<string, string> = {
+  "Vendora Credits Boost Pack": "Boost",
+  "Vendora Credits Power Pack": "Power",
+  "Vendora Credits Pro Pack": "Pro Pack",
+  "Vendora Credits Studio Pack": "Studio Pack",
+};
+
+// Same for subscription tier display name -> short card label.
+const TIER_SHORT_NAMES: Record<string, string> = {
+  "Vendora Starter": "Starter",
+  "Vendora Pro": "Pro",
+  "Vendora Studio": "Studio",
+};
 
 interface PlanState {
   tier: "free" | "starter" | "pro" | "studio";
@@ -166,6 +114,70 @@ export default function VendorSubscriptionPage() {
   const [plan, setPlan] = useState<PlanState | null>(null);
   const [loading, setLoading] = useState(true);
   const [actingId, setActingId] = useState<string | null>(null);
+  // Catalog state. Starts with just the Free tier + empty top-ups
+  // so first paint still shows something while the DB fetch lands.
+  const [tiers, setTiers] = useState<TierRow[]>([FREE_TIER]);
+  const [topups, setTopups] = useState<TopupRow[]>([]);
+
+  // Load the live catalog from vendor_credit_packages. Goes live cut-
+  // over = reseed that table; this page picks up the new IDs on next
+  // mount without a redeploy.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data, error } = await (supabase as any)
+        .from("vendor_credit_packages")
+        .select(
+          "stripe_price_id, kind, tier, credits, display_name, unit_amount_cents, was_monthly_cents, listings_copy, highlights, display_order",
+        )
+        .eq("active", true)
+        .order("display_order", { ascending: true });
+      if (cancelled || error || !data) return;
+      const subs: TierRow[] = (data as Array<{
+        stripe_price_id: string;
+        kind: string;
+        tier: TierId | null;
+        credits: number;
+        display_name: string;
+        unit_amount_cents: number;
+        was_monthly_cents: number | null;
+        listings_copy: string | null;
+        highlights: string[] | null;
+      }>)
+        .filter((r) => r.kind === "subscription" && r.tier)
+        .map((r) => ({
+          id: r.tier as TierId,
+          name: TIER_SHORT_NAMES[r.display_name] ?? r.display_name,
+          priceMonthly: r.unit_amount_cents / 100,
+          wasMonthly: r.was_monthly_cents ? r.was_monthly_cents / 100 : undefined,
+          priceId: r.stripe_price_id,
+          monthlyCredits: r.credits,
+          listings: r.listings_copy ?? "",
+          highlights: Array.isArray(r.highlights) ? r.highlights : [],
+        }));
+      const packs: TopupRow[] = (data as Array<{
+        stripe_price_id: string;
+        kind: string;
+        credits: number;
+        display_name: string;
+        unit_amount_cents: number;
+      }>)
+        .filter((r) => r.kind === "topup")
+        .map((r) => ({
+          id: r.stripe_price_id,
+          name: TOPUP_SHORT_NAMES[r.display_name] ?? r.display_name,
+          credits: r.credits,
+          price: r.unit_amount_cents / 100,
+          priceId: r.stripe_price_id,
+        }));
+      setTiers([FREE_TIER, ...subs]);
+      setTopups(packs);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const vendorId = ownListing?.id ?? null;
   const credits = useVendorCredits(user?.id ?? null);
@@ -262,7 +274,7 @@ export default function VendorSubscriptionPage() {
     return url;
   }
 
-  async function upgradeTo(tier: typeof TIERS[number]) {
+  async function upgradeTo(tier: TierRow) {
     if (!vendorId || actingId || !tier.priceId) return;
     setActingId(`tier_${tier.id}`);
     // If the vendor already has a paid subscription, stripe-subscription-
@@ -289,7 +301,7 @@ export default function VendorSubscriptionPage() {
     setActingId(null);
   }
 
-  async function buyTopup(pack: typeof TOPUPS[number]) {
+  async function buyTopup(pack: TopupRow) {
     if (!vendorId || actingId) return;
     setActingId(`topup_${pack.id}`);
     await callStripeFunction(
@@ -415,7 +427,7 @@ export default function VendorSubscriptionPage() {
           <div>
             <h3 className="font-editorial text-2xl mb-3">Choose a plan</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
-              {TIERS.map((tier) => {
+              {tiers.map((tier) => {
                 const isCurrent = plan?.tier === tier.id;
                 const isAct = actingId === `tier_${tier.id}`;
                 return (
@@ -539,7 +551,7 @@ export default function VendorSubscriptionPage() {
               $/credit.
             </p>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
-              {TOPUPS.map((pack) => {
+              {topups.map((pack) => {
                 const isAct = actingId === `topup_${pack.id}`;
                 const perCredit = (pack.price / pack.credits) * 100;
                 return (
