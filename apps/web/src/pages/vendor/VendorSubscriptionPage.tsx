@@ -261,11 +261,27 @@ export default function VendorSubscriptionPage() {
   async function upgradeTo(tier: typeof TIERS[number]) {
     if (!vendorId || actingId || !tier.priceId) return;
     setActingId(`tier_${tier.id}`);
-    await callStripeFunction(
-      "stripe-subscription-checkout",
-      { vendor_id: vendorId, price_id: tier.priceId },
-      "Couldn't start checkout",
-    );
+    // If the vendor already has a paid subscription, stripe-subscription-
+    // checkout rejects with "already subscribed — use the portal." Route
+    // them straight to the Stripe customer portal in that case so the
+    // tier switch + proration happens server-side without the user
+    // having to hunt for "Manage billing" themselves.
+    const alreadyPaid =
+      (plan?.tier ?? "free") !== "free" &&
+      (plan?.status === "active" || plan?.status === "trialing");
+    if (alreadyPaid) {
+      await callStripeFunction(
+        "stripe-customer-portal",
+        { vendor_id: vendorId },
+        "Couldn't open billing portal",
+      );
+    } else {
+      await callStripeFunction(
+        "stripe-subscription-checkout",
+        { vendor_id: vendorId, price_id: tier.priceId },
+        "Couldn't start checkout",
+      );
+    }
     setActingId(null);
   }
 
@@ -478,7 +494,11 @@ export default function VendorSubscriptionPage() {
                           ) : (
                             <Crown className="w-3.5 h-3.5 mr-1.5" />
                           )}
-                          {isCurrent ? "Current plan" : `Choose ${tier.name}`}
+                          {isCurrent
+                            ? "Current plan"
+                            : (plan?.tier ?? "free") !== "free"
+                              ? `Switch to ${tier.name}`
+                              : `Choose ${tier.name}`}
                         </Button>
                       ) : (
                         <Button
