@@ -108,7 +108,7 @@ const TIERS: Array<{
       "2,500 AI credits / month",
       "2,000 gallery images",
       "Unlimited team seats",
-      "Priority support + MCP",
+      "MCP connection",
     ],
   },
 ];
