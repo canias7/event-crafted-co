@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Check, Crown, Loader2, Sparkles, Flame } from "lucide-react";
+import { StudioVerifiedBadge } from "@/components/vendor/StudioVerifiedBadge";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -476,7 +477,12 @@ export default function VendorSubscriptionPage() {
                       {tier.highlights.map((h) => (
                         <li key={h} className="flex items-start gap-1.5 text-xs text-foreground/85">
                           <Check className="w-3 h-3 text-accent shrink-0 mt-[3px]" />
-                          <span>{h}</span>
+                          <span className="inline-flex items-center gap-1">
+                            {h}
+                            {h === "Become verified" && (
+                              <StudioVerifiedBadge />
+                            )}
+                          </span>
                         </li>
                       ))}
                     </ul>
