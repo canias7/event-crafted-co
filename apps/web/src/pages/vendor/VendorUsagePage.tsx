@@ -132,8 +132,16 @@ export default function VendorUsagePage() {
   }, [consume30]);
 
   // Per-action breakdown — totals by action_type, plus event count.
+  // Seeded with every known action_type at zero so the card always
+  // surfaces the full list of AI agents (HILUX, Axion, MCP, Mux),
+  // even on fresh accounts. Unknown action_types from the DB get
+  // appended on top, and the whole list sorts by spend desc with
+  // 0-spend rows alphabetically at the bottom.
   const actionBreakdown = useMemo(() => {
     const agg = new Map<string, { credits: number; count: number }>();
+    for (const known of Object.keys(ACTION_LABEL)) {
+      agg.set(known, { credits: 0, count: 0 });
+    }
     for (const row of consume30) {
       const key = row.action_type ?? "other";
       const cur = agg.get(key) ?? { credits: 0, count: 0 };
@@ -143,7 +151,14 @@ export default function VendorUsagePage() {
     }
     return Array.from(agg.entries())
       .map(([action, v]) => ({ action, ...v }))
-      .sort((a, b) => b.credits - a.credits);
+      .sort((a, b) => {
+        if (b.credits !== a.credits) return b.credits - a.credits;
+        return (
+          (ACTION_LABEL[a.action] ?? a.action).localeCompare(
+            ACTION_LABEL[b.action] ?? b.action,
+          )
+        );
+      });
   }, [consume30]);
 
   const totalSpent30 = useMemo(
@@ -302,37 +317,35 @@ export default function VendorUsagePage() {
               <p className="text-xs text-muted-foreground mt-1 mb-5">
                 Every HILUX reply, Axion image, and MCP call you've billed.
               </p>
-              {totalSpent30 === 0 ? (
-                <p className="text-sm text-muted-foreground">
-                  Nothing spent in the last 30 days. Once you use an AI
-                  agent, the daily breakdown lands here.
-                </p>
-              ) : (
-                <div className="flex items-end gap-[3px] h-32">
-                  {dailyTotals.map((d) => {
-                    const heightPct =
-                      maxDaily === 0 ? 0 : (d.credits / maxDaily) * 100;
-                    return (
-                      <div
-                        key={d.date}
-                        className="flex-1 rounded-t-[2px] transition-colors hover:opacity-80"
-                        title={`${new Date(d.date).toLocaleDateString(undefined, {
-                          month: "short",
-                          day: "numeric",
-                        })}: ${d.credits.toLocaleString()} cr`}
-                        style={{
-                          height: `${Math.max(heightPct, d.credits > 0 ? 4 : 1.5)}%`,
-                          background:
-                            d.credits > 0
-                              ? "linear-gradient(180deg, #ff8a4c 0%, #c4541e 100%)"
-                              : "rgba(20,15,10,0.07)",
-                          minHeight: "2px",
-                        }}
-                      />
-                    );
-                  })}
-                </div>
-              )}
+              {/* Always render the 30 bars — when there's no spend
+                  yet they show as hairline tracks so vendors see the
+                  chart structure waiting for their data. */}
+              <div className="flex items-end gap-[3px] h-32">
+                {dailyTotals.map((d) => {
+                  const heightPct =
+                    maxDaily === 0 ? 0 : (d.credits / maxDaily) * 100;
+                  return (
+                    <div
+                      key={d.date}
+                      className="flex-1 rounded-t-[2px] transition-colors hover:opacity-80"
+                      title={`${new Date(d.date).toLocaleDateString(undefined, {
+                        month: "short",
+                        day: "numeric",
+                      })}: ${d.credits.toLocaleString()} cr`}
+                      style={{
+                        height:
+                          d.credits > 0
+                            ? `${Math.max(heightPct, 4)}%`
+                            : "4px",
+                        background:
+                          d.credits > 0
+                            ? "linear-gradient(180deg, #ff8a4c 0%, #c4541e 100%)"
+                            : "rgba(20,15,10,0.08)",
+                      }}
+                    />
+                  );
+                })}
+              </div>
               <div className="flex justify-between mt-2 text-[10px] uppercase tracking-wider text-muted-foreground">
                 <span>30 days ago</span>
                 <span>Today</span>
@@ -354,44 +367,41 @@ export default function VendorUsagePage() {
               <p className="text-xs text-muted-foreground mt-1 mb-5">
                 Breakdown by AI action across the last 30 days.
               </p>
-              {actionBreakdown.length === 0 ? (
-                <p className="text-sm text-muted-foreground">
-                  No AI actions yet. HILUX, Axion, and Vendora MCP usage
-                  show up here once you start.
-                </p>
-              ) : (
-                <ul className="space-y-3">
-                  {actionBreakdown.map((row) => {
-                    const pct =
-                      totalSpent30 === 0
-                        ? 0
-                        : (row.credits / totalSpent30) * 100;
-                    return (
-                      <li key={row.action}>
-                        <div className="flex justify-between items-baseline">
-                          <span className="text-sm font-medium">
-                            {formatActionType(row.action) ?? row.action}
-                          </span>
-                          <span className="text-xs text-muted-foreground tnum">
-                            {row.credits.toLocaleString()} cr ·{" "}
-                            {row.count} {row.count === 1 ? "use" : "uses"}
-                          </span>
-                        </div>
-                        <div className="h-1.5 rounded-full mt-1.5 bg-foreground/8 overflow-hidden">
-                          <div
-                            className="h-full rounded-full"
-                            style={{
-                              width: `${pct}%`,
-                              background:
-                                "linear-gradient(90deg, #ff8a4c, #c4541e)",
-                            }}
-                          />
-                        </div>
-                      </li>
-                    );
-                  })}
-                </ul>
-              )}
+              <ul className="space-y-3">
+                {actionBreakdown.map((row) => {
+                  const pct =
+                    totalSpent30 === 0
+                      ? 0
+                      : (row.credits / totalSpent30) * 100;
+                  const idle = row.credits === 0;
+                  return (
+                    <li key={row.action}>
+                      <div className="flex justify-between items-baseline">
+                        <span
+                          className={`text-sm ${idle ? "text-muted-foreground" : "font-medium"}`}
+                        >
+                          {formatActionType(row.action) ?? row.action}
+                        </span>
+                        <span className="text-xs text-muted-foreground tnum">
+                          {idle
+                            ? "—"
+                            : `${row.credits.toLocaleString()} cr · ${row.count} ${row.count === 1 ? "use" : "uses"}`}
+                        </span>
+                      </div>
+                      <div className="h-1.5 rounded-full mt-1.5 bg-foreground/8 overflow-hidden">
+                        <div
+                          className="h-full rounded-full"
+                          style={{
+                            width: `${pct}%`,
+                            background:
+                              "linear-gradient(90deg, #ff8a4c, #c4541e)",
+                          }}
+                        />
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
             </div>
           </div>
 
