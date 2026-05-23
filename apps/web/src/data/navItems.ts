@@ -2,6 +2,7 @@ import {
   Compass,
   CalendarDays,
   Crown,
+  Gauge,
   Inbox,
   User,
   Settings,
@@ -66,6 +67,9 @@ export const vendorNavItems: NavItem[] = [
   // because they're different concerns: one is "the vendor pays
   // Vendora," the other is "hosts pay the vendor."
   { labelKey: "sidebar.vendor.subscription", path: "/vendor/subscription", icon: Crown },
+  // Usage — credit balance, ledger, billing portal. Lives next to
+  // Subscription so the two billing-adjacent surfaces sit together.
+  { labelKey: "sidebar.vendor.usage", path: "/vendor/usage", icon: Gauge },
   // Settings — pulled out of the separate bottom group so the rail
   // reads as one continuous list. Log out lives on /settings now.
   { labelKey: "sidebar.bottom.settings", path: "/settings", icon: Settings },
