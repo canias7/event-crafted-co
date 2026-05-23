@@ -13,7 +13,7 @@ import { vendorNavItems as navItems } from "@/data/navItems";
 // Subscription + AI credits surface for the vendor.
 //
 // Vendora's plan model (post credits launch):
-//   Free        — 1 listing, no included AI credits (50 trial on signup).
+//   Free        — 1 listing, no included AI credits (100 trial on signup).
 //   Starter $14.99 / mo  — 1 listing,  200 AI credits/mo.
 //   Pro     $39    / mo  — 5 listings, 800 AI credits/mo, featured search.
 //   Studio  $99    / mo  — unlimited listings, 2,500 AI credits/mo, team seats.
@@ -60,7 +60,7 @@ const TIERS: Array<{
     highlights: [
       "Inquiry inbox + DMs",
       "Calendar + availability",
-      "50 trial credits on signup",
+      "100 trial credits on signup",
       "Top up credits anytime",
     ],
   },
