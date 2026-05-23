@@ -69,9 +69,11 @@ jobs:
       - name: Download reference image
         id: ref
         if: inputs.image_url != ''
+        env:
+          IMAGE_URL: ${{ inputs.image_url }}
         run: |
           set -euo pipefail
-          url='${{ inputs.image_url }}'
+          url="$IMAGE_URL"
           ext="${url##*.}"
           case "$ext" in
             jpg|jpeg|png|webp|gif) ;;
