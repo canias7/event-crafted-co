@@ -80,8 +80,6 @@ const TIERS: Array<{
     highlights: [
       "200 AI credits / month",
       "500 gallery images",
-      "Lead scoring on every inquiry",
-      "Proposals + appointments",
     ],
   },
   {
