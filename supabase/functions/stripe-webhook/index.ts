@@ -17,9 +17,14 @@
 //                                    payment (topup): grant top-up credits
 //   customer.subscription.created  — alt entry path (e.g. portal)
 //   customer.subscription.updated  — renewal, plan change, cancel-at-period-end toggle
+//   customer.subscription.paused   — pause from portal -> status=paused, monthly_grant=0
+//   customer.subscription.resumed  — resume from portal -> status=active
 //   customer.subscription.deleted  — subscription ends -> tier=free
 //   invoice.paid                   — recurring renewal -> grant another month's credits
 //   invoice.payment_failed         — card declined -> status=past_due (Stripe handles dunning)
+//   charge.refunded                — refund issued -> revoke matching top-up credits
+//   charge.dispute.created         — chargeback opened -> log only (Stripe fires
+//                                    refund separately on a lost dispute)
 //
 // Credit grants use stripe_event_id for idempotency: the unique
 // partial index on vendor_credit_transactions makes a duplicate
@@ -214,6 +219,14 @@ serve(async (req: Request) => {
             session.id,
             { limit: 5 },
           );
+          // payment_intent on the checkout session is the canonical
+          // link back to the charge that will (eventually) refund.
+          // Stash it on every top-up row so charge.refunded can
+          // find the matching grant.
+          const paymentIntentId =
+            typeof session.payment_intent === "string"
+              ? session.payment_intent
+              : session.payment_intent?.id ?? null;
           for (const item of items.data) {
             const priceId = item.price?.id;
             if (!priceId) continue;
@@ -222,12 +235,22 @@ serve(async (req: Request) => {
             const userId = await resolveUserId(db, customerId);
             if (!userId) continue;
             const qty = item.quantity ?? 1;
-            await grantCredits(
+            const result = await grantCredits(
               db, userId, pkg.credits * qty,
               "topup", event.id,
               typeof session.invoice === "string" ? session.invoice : null,
               `topup: ${pkg.display_name} x${qty}`,
             );
+            // Stamp payment_intent_id on the just-granted row. Skip
+            // when the grant was an idempotent replay (sentinel
+            // balance: -1 from grantCredits) — the row already has
+            // the payment_intent from the first run.
+            if (result.ok && result.balance !== -1 && paymentIntentId) {
+              await db
+                .from("vendor_credit_transactions")
+                .update({ stripe_payment_intent_id: paymentIntentId })
+                .eq("stripe_event_id", event.id);
+            }
           }
         }
         break;
@@ -345,6 +368,118 @@ serve(async (req: Request) => {
           .eq("stripe_customer_id", customerId);
         break;
       }
+
+      case "customer.subscription.paused": {
+        // Stripe portal can pause a subscription. We flip
+        // subscription_status + zero out monthly_grant so the
+        // usage page bar stops showing "X / Y this period" against
+        // a grant that won't refill while paused. The next
+        // resumed event re-establishes monthly_grant from the
+        // package; the next invoice.paid grants the next cycle's
+        // credits.
+        const sub = event.data.object as Stripe.Subscription;
+        const customerId =
+          typeof sub.customer === "string" ? sub.customer : sub.customer.id;
+        await db
+          .from("profiles")
+          .update({
+            subscription_status: "paused",
+            monthly_grant: 0,
+          })
+          .eq("stripe_customer_id", customerId);
+        break;
+      }
+
+      case "customer.subscription.resumed": {
+        const sub = event.data.object as Stripe.Subscription;
+        const customerId =
+          typeof sub.customer === "string" ? sub.customer : sub.customer.id;
+        const priceId = sub.items.data[0]?.price?.id;
+        const pkg = priceId ? await lookupPackage(db, priceId) : null;
+        const userId = await resolveUserId(db, customerId);
+        if (userId) {
+          // applySubscription re-stamps status + restores
+          // monthly_grant from the package. No credit grant — the
+          // next invoice.paid handles that.
+          await applySubscription(db, userId, customerId, sub, pkg);
+        }
+        break;
+      }
+
+      case "charge.refunded": {
+        // Top-up refunds: revoke matching credits. Subscription
+        // refunds: skipped — those credits were granted to spend
+        // during the billing period and the vendor likely already
+        // used them; we don't claw back retroactively.
+        //
+        // Detection: top-up charges have no invoice (Stripe payment
+        // mode), subscription charges have one. We also confirm via
+        // the payment_intent's metadata.kind === 'credit_topup'
+        // before debiting anything.
+        const charge = event.data.object as Stripe.Charge;
+        if (charge.invoice) {
+          console.log("[stripe-webhook] charge.refunded for subscription invoice — skipping revocation", charge.id);
+          break;
+        }
+        const piId =
+          typeof charge.payment_intent === "string"
+            ? charge.payment_intent
+            : charge.payment_intent?.id;
+        if (!piId) break;
+
+        const pi = await stripe.paymentIntents.retrieve(piId);
+        if (pi.metadata?.kind !== "credit_topup") {
+          console.log("[stripe-webhook] charge.refunded with non-topup payment_intent — skipping", piId);
+          break;
+        }
+        // Find the original grant by payment_intent_id (we now stamp
+        // it on top-up rows, see grant block in checkout.session.completed).
+        const { data: original } = await db
+          .from("vendor_credit_transactions")
+          .select("user_id, delta")
+          .eq("stripe_payment_intent_id", piId)
+          .eq("kind", "topup")
+          .maybeSingle();
+        if (!original) {
+          console.warn("[stripe-webhook] charge.refunded but no original topup row found", piId);
+          break;
+        }
+        // Prorate revocation: full refund -> revoke full credit
+        // amount, partial -> credits * (amount_refunded / amount).
+        const refundRatio =
+          charge.amount > 0
+            ? (charge.amount_refunded ?? 0) / charge.amount
+            : 1;
+        const toRevoke = Math.round((original.delta as number) * refundRatio);
+        if (toRevoke <= 0) break;
+
+        const { error: revokeErr } = await db.rpc("revoke_topup_credits", {
+          p_user_id: original.user_id,
+          p_n: toRevoke,
+          p_stripe_event_id: event.id,
+          p_stripe_payment_intent_id: piId,
+          p_note: `refund of charge ${charge.id}${refundRatio < 1 ? ` (${Math.round(refundRatio * 100)}% partial)` : ""}`,
+        });
+        if (revokeErr && (revokeErr.code ?? "") !== "23505") {
+          console.error("[stripe-webhook] revoke_topup_credits failed", revokeErr);
+        }
+        break;
+      }
+
+      case "charge.dispute.created": {
+        // Chargebacks: don't auto-revoke. Dispute may be won or
+        // lost; if lost, Stripe fires charge.refunded which the
+        // handler above takes care of. This event is informational
+        // — surface it in logs so an admin can intervene if they
+        // want to proactively pause access.
+        const dispute = event.data.object as Stripe.Dispute;
+        console.warn(
+          "[stripe-webhook] charge.dispute.created",
+          { charge: dispute.charge, amount: dispute.amount, reason: dispute.reason },
+        );
+        break;
+      }
+
       default:
         break;
     }
