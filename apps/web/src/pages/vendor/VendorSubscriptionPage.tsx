@@ -339,6 +339,9 @@ export default function VendorSubscriptionPage() {
               style={{
                 background: "linear-gradient(135deg, rgba(255,138,76,0.18), rgba(255,138,76,0.06))",
                 border: "1px solid rgba(255,138,76,0.45)",
+                backdropFilter: "blur(10px)",
+                WebkitBackdropFilter: "blur(10px)",
+                boxShadow: "0 8px 28px -12px rgba(255,138,76,0.20)",
               }}
             >
               <span
@@ -389,6 +392,11 @@ export default function VendorSubscriptionPage() {
                       border: isCurrent
                         ? "1px solid rgba(255,138,76,0.45)"
                         : "0.5px solid rgba(255,138,76,0.22)",
+                      backdropFilter: "blur(10px)",
+                      WebkitBackdropFilter: "blur(10px)",
+                      boxShadow: isCurrent
+                        ? "0 8px 28px -12px rgba(255,138,76,0.25)"
+                        : "0 4px 18px -8px rgba(20,15,10,0.06)",
                     }}
                   >
                     <div className="flex items-center justify-between">
@@ -495,6 +503,9 @@ export default function VendorSubscriptionPage() {
                     style={{
                       background: "rgba(255,253,250,0.7)",
                       border: "0.5px solid rgba(255,138,76,0.22)",
+                      backdropFilter: "blur(10px)",
+                      WebkitBackdropFilter: "blur(10px)",
+                      boxShadow: "0 4px 18px -8px rgba(20,15,10,0.06)",
                     }}
                   >
                     <p className="font-medium">{pack.name}</p>
