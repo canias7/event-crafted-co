@@ -5,10 +5,12 @@
 // vendor's gallery ("Axion" album). Chrome mirrors the HILUX panel.
 
 import { useEffect, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Check, Download, Loader2, Sparkles, Upload } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Switch } from "@/components/ui/switch";
 import { useAuth } from "@/hooks/useAuth";
+import { handleInsufficientCredits } from "@/lib/credits";
 import { toast } from "sonner";
 
 type Mode = "generate" | "edit";
@@ -72,6 +74,7 @@ function StepLabel({ n, children }: { n: number; children: string }) {
 
 export function AxionVendorControls() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [mode, setMode] = useState<Mode>("generate");
   const [sourceDataUrl, setSourceDataUrl] = useState<string | null>(null);
   const [prompt, setPrompt] = useState("");
@@ -166,6 +169,7 @@ export function AxionVendorControls() {
       setVariants(v);
     } catch (err) {
       console.error("[Axion] generate failed", err);
+      if (await handleInsufficientCredits(err, navigate)) return;
       toast.error("Couldn't generate. Try again in a moment.");
     } finally {
       setGenerating(false);
