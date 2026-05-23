@@ -106,9 +106,17 @@ serve(async (req) => {
       });
     } else {
       // Image-to-image: restyle the vendor's uploaded photo.
-      const decoded = decodeImage(String(payload?.image ?? ""));
+      const rawInput = String(payload?.image ?? "");
+      // Reject oversize base64 BEFORE atob — base64 expands by
+      // ~4/3, so a 20MB byte budget caps the encoded string at
+      // ~28MB. atob would otherwise allocate the entire decoded
+      // buffer in one shot, opening a DoS surface.
+      if (rawInput.length > 28 * 1024 * 1024) {
+        return json(413, { error: "image_too_large" });
+      }
+      const decoded = decodeImage(rawInput);
       if (!decoded) return json(400, { error: "invalid_image" });
-      // Headroom under OpenAI's 50MB-per-image edit limit.
+      // Defense in depth (smaller actual byte budget post-decode).
       if (decoded.bytes.length > 20 * 1024 * 1024) {
         return json(413, { error: "image_too_large" });
       }
@@ -136,13 +144,12 @@ serve(async (req) => {
     }
 
     if (!res.ok) {
+      // OpenAI error bodies often contain the failing prompt,
+      // model internals, and account context. Log them for
+      // debugging but do NOT return them to the client.
       const detail = await res.text();
       console.error("[axion-generate] openai error", mode, res.status, detail);
-      return json(502, {
-        error: "openai_error",
-        status: res.status,
-        detail: detail.slice(0, 300),
-      });
+      return json(502, { error: "openai_error", status: res.status });
     }
     const out = await res.json();
     const variants = ((out?.data ?? []) as Array<{ b64_json?: string }>)
