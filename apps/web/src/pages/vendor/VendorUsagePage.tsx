@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { ExternalLink, Loader2, MessageSquare, Image, Zap, Sparkles } from "lucide-react";
+import { ExternalLink, Loader2, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -27,10 +27,35 @@ const KIND_LABEL: Record<string, string> = {
   trial_grant: "Signup trial",
   monthly_grant: "Monthly grant",
   topup: "Top-up",
-  consume: "Used",
+  consume: "AI action",
   refund: "Refund",
   admin_adjust: "Admin adjustment",
 };
+
+// Snake-case action_types like "hilux_reply" come from the edge
+// functions verbatim; map known ones to friendly names and fall back
+// to a Title Case render of the raw key so unknown types still read
+// reasonably.
+const ACTION_LABEL: Record<string, string> = {
+  hilux_reply: "HILUX reply",
+  hilux_regenerate: "HILUX regenerate",
+  hilux_draft_reply: "HILUX draft reply",
+  hilux_followup: "HILUX follow-up",
+  axion_generate: "Axion image",
+  vendora_mcp: "Vendora MCP",
+  mux_stream: "Mux stream",
+};
+
+function formatActionType(action: string | null): string | null {
+  if (!action) return null;
+  return (
+    ACTION_LABEL[action] ??
+    action
+      .split("_")
+      .map((p) => p.charAt(0).toUpperCase() + p.slice(1))
+      .join(" ")
+  );
+}
 
 export default function VendorUsagePage() {
   const { ownListing, user } = useAuth();
@@ -169,20 +194,6 @@ export default function VendorUsagePage() {
               </div>
             )}
 
-            <div className="mt-5 grid grid-cols-2 md:grid-cols-3 gap-2 text-xs text-muted-foreground">
-              <div className="flex items-center gap-1.5">
-                <MessageSquare className="w-3.5 h-3.5" />
-                HILUX reply: <span className="font-medium text-foreground">2 cr</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <Image className="w-3.5 h-3.5" />
-                Axion image: <span className="font-medium text-foreground">10 cr</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <Zap className="w-3.5 h-3.5" />
-                Mux stream: <span className="font-medium text-foreground">1 cr/min</span>
-              </div>
-            </div>
           </div>
 
           {/* Lifetime totals */}
@@ -221,8 +232,16 @@ export default function VendorUsagePage() {
                     >
                       <div className="min-w-0">
                         <p className="text-sm font-medium truncate">
-                          {KIND_LABEL[row.kind] ?? row.kind}
-                          {row.action_type ? ` · ${row.action_type}` : ""}
+                          {/* For consume rows, lead with the friendly
+                              action name (HILUX reply, Axion image, …)
+                              since that's what the vendor cares about.
+                              Grants/top-ups lead with their kind label. */}
+                          {row.kind === "consume" && row.action_type
+                            ? formatActionType(row.action_type)
+                            : KIND_LABEL[row.kind] ?? row.kind}
+                          {row.kind !== "consume" && row.action_type
+                            ? ` · ${formatActionType(row.action_type)}`
+                            : ""}
                         </p>
                         <p className="text-[11px] text-muted-foreground">
                           {new Date(row.created_at).toLocaleString(undefined, {
