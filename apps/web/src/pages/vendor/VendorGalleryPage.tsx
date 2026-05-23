@@ -74,6 +74,7 @@ import {
 import { BlurhashImage } from "@/components/gallery/BlurhashImage";
 import { Lightbox } from "@/components/gallery/Lightbox";
 import { useRealtime } from "@/lib/realtime";
+import { formatFileSize } from "@/lib/format";
 import { vendorNavItems } from "@/data/navItems";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -1665,13 +1666,6 @@ function aspectLabel(a: AspectFilter): string {
       : a === "landscape"
         ? "Landscape"
         : "Square";
-}
-
-function formatFileSize(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  if (bytes < 1024 * 1024 * 1024) return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
-  return `${(bytes / 1024 / 1024 / 1024).toFixed(1)} GB`;
 }
 
 function gridCols(d: Density): string {

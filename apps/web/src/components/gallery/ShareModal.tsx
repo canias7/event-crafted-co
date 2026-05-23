@@ -1,7 +1,8 @@
-// Create a shareable link for either a single gallery image or a
-// whole album. Calls the create_gallery_share RPC so the password
-// (if any) is bcrypt-hashed server-side before storage; the
-// password_hash is never exposed on the wire.
+// Create a shareable link for a single gallery image. Calls the
+// create_gallery_share RPC so the password (if any) is bcrypt-hashed
+// server-side before storage; the password_hash is never exposed on
+// the wire. The RPC still supports album shares server-side, but no
+// UI currently exposes that path.
 
 import { useEffect, useState } from "react";
 import { Check, Copy, Link2, Loader2 } from "lucide-react";
@@ -22,8 +23,7 @@ import { Label } from "@/components/ui/label";
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  imageId?: string;
-  albumId?: string;
+  imageId: string;
   targetLabel: string;
 }
 
@@ -39,7 +39,6 @@ export function ShareModal({
   open,
   onOpenChange,
   imageId,
-  albumId,
   targetLabel,
 }: Props) {
   const [expiry, setExpiry] = useState<string>("never");
@@ -64,7 +63,7 @@ export function ShareModal({
     : "";
 
   async function create() {
-    if (!imageId && !albumId) return;
+    if (!imageId) return;
     let expires_at: string | null;
     if (expiry === "never") {
       expires_at = null;
@@ -89,8 +88,8 @@ export function ShareModal({
     setCreating(true);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data, error } = await (supabase as any).rpc("create_gallery_share", {
-      p_image_id: imageId ?? null,
-      p_album_id: albumId ?? null,
+      p_image_id: imageId,
+      p_album_id: null,
       p_expires_at: expires_at,
       p_password: password.trim() || null,
     });
@@ -120,7 +119,7 @@ export function ShareModal({
         <DialogHeader>
           <DialogTitle className="font-editorial text-2xl flex items-center gap-2">
             <Link2 className="w-5 h-5" />
-            Share {imageId ? "image" : "album"}
+            Share image
           </DialogTitle>
           <DialogDescription>
             Anyone with this link can view {targetLabel}.
@@ -154,9 +153,16 @@ export function ShareModal({
                   type="date"
                   value={customDate}
                   onChange={(e) => setCustomDate(e.target.value)}
-                  min={new Date(Date.now() + 86400_000)
-                    .toISOString()
-                    .slice(0, 10)}
+                  // Tomorrow in the user's LOCAL timezone — the
+                  // expiry-time math below uses local T23:59:59, so
+                  // the picker's min must agree or users west of UTC
+                  // get a min one day ahead of their actual tomorrow.
+                  min={(() => {
+                    const d = new Date();
+                    d.setDate(d.getDate() + 1);
+                    const pad = (n: number) => String(n).padStart(2, "0");
+                    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+                  })()}
                   className="mt-2 h-9"
                 />
               ) : null}

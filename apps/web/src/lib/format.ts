@@ -137,6 +137,17 @@ export function formatCentsRange(
   return `${formatCents(min)} – ${formatCents(max)}`;
 }
 
+// ─── File sizes ───
+
+// Human-readable byte count. Not localized — file sizes typically
+// aren't (a "MB" in any locale is a "MB").
+export function formatFileSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  if (bytes < 1024 * 1024 * 1024) return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+  return `${(bytes / 1024 / 1024 / 1024).toFixed(1)} GB`;
+}
+
 // ─── Helpers ───
 
 function parseInput(input: string | Date): Date | null {
