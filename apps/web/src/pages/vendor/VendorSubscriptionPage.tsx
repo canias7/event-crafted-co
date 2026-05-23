@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { Check, Crown, Loader2, Sparkles, ExternalLink, AlertCircle, Zap, Image, MessageSquare } from "lucide-react";
+import { Check, Crown, Loader2, Sparkles, ExternalLink, AlertCircle, Zap, Image, MessageSquare, Flame } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -25,6 +25,12 @@ import { vendorNavItems as navItems } from "@/data/navItems";
 //
 // Tier change goes through Stripe Checkout; the existing customer
 // portal handles cancel / card update / invoice history.
+
+// Launch offer end. Past this date the anchor prices + the
+// countdown banner disappear. Edit (or remove) to extend / kill
+// the promo. Stored client-side because it's marketing UX — the
+// actual Stripe prices are unchanged either way.
+const LAUNCH_OFFER_ENDS_AT = "2026-06-30T23:59:59-04:00";
 
 // Keep these tables in sync with vendor_credit_packages on the DB.
 // Price IDs are LIVE-mode (created 2026-05-23 via Stripe MCP).
@@ -294,6 +300,30 @@ export default function VendorSubscriptionPage() {
     setActingId(null);
   }
 
+  // Live countdown to launch offer expiry. Re-renders every second
+  // while the offer is still active; flips off when expired so the
+  // wasMonthly anchors disappear automatically.
+  const launchEndsMs = useMemo(
+    () => new Date(LAUNCH_OFFER_ENDS_AT).getTime(),
+    [],
+  );
+  const [nowMs, setNowMs] = useState(() => Date.now());
+  useEffect(() => {
+    if (Date.now() >= launchEndsMs) return;
+    const id = setInterval(() => setNowMs(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, [launchEndsMs]);
+  const offerActive = nowMs < launchEndsMs;
+  const countdown = useMemo(() => {
+    if (!offerActive) return null;
+    const diff = launchEndsMs - nowMs;
+    const days = Math.floor(diff / 86_400_000);
+    const hours = Math.floor((diff % 86_400_000) / 3_600_000);
+    const minutes = Math.floor((diff % 3_600_000) / 60_000);
+    const seconds = Math.floor((diff % 60_000) / 1000);
+    return { days, hours, minutes, seconds };
+  }, [offerActive, launchEndsMs, nowMs]);
+
   const currentTier = TIERS.find((t) => t.id === (plan?.tier ?? "free"));
   const isPaid = (plan?.tier ?? "free") !== "free";
   const renewsAt = plan?.currentPeriodEnd
@@ -444,6 +474,45 @@ export default function VendorSubscriptionPage() {
             </div>
           </div>
 
+          {/* ===== Launch offer countdown banner ===== */}
+          {offerActive && countdown && (
+            <div
+              className="rounded-2xl p-4 flex items-center gap-3 flex-wrap"
+              style={{
+                background: "linear-gradient(135deg, rgba(255,138,76,0.18), rgba(255,138,76,0.06))",
+                border: "1px solid rgba(255,138,76,0.45)",
+              }}
+            >
+              <span
+                className="shrink-0 w-9 h-9 rounded-xl inline-flex items-center justify-center"
+                style={{ background: "rgba(255,138,76,0.22)", color: "#c4541e" }}
+                aria-hidden
+              >
+                <Flame className="w-4 h-4" />
+              </span>
+              <div className="flex-1 min-w-0">
+                <p className="font-medium text-foreground">
+                  Launch pricing — up to 60% off
+                </p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Lock in these rates before the offer ends. New rates apply on the next billing cycle after expiry.
+                </p>
+              </div>
+              <div
+                className="flex items-center gap-2 tnum"
+                aria-label="Time remaining"
+              >
+                <CountdownCell n={countdown.days} label="d" />
+                <span className="text-foreground/40">:</span>
+                <CountdownCell n={countdown.hours} label="h" pad />
+                <span className="text-foreground/40">:</span>
+                <CountdownCell n={countdown.minutes} label="m" pad />
+                <span className="text-foreground/40">:</span>
+                <CountdownCell n={countdown.seconds} label="s" pad />
+              </div>
+            </div>
+          )}
+
           {/* ===== Tier grid ===== */}
           <div>
             <h3 className="font-editorial text-2xl mb-3">Choose a plan</h3>
@@ -467,7 +536,7 @@ export default function VendorSubscriptionPage() {
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-1.5 flex-wrap">
                         <p className="font-medium text-foreground">{tier.name}</p>
-                        {tier.wasMonthly && !isCurrent && (
+                        {tier.wasMonthly && offerActive && !isCurrent && (
                           <span
                             className="text-[9px] uppercase tracking-wide font-semibold px-1.5 py-0.5 rounded"
                             style={{ background: "rgba(255,138,76,0.18)", color: "#c4541e" }}
@@ -483,7 +552,7 @@ export default function VendorSubscriptionPage() {
                       )}
                     </div>
                     <p className="mt-1">
-                      {tier.wasMonthly && (
+                      {tier.wasMonthly && offerActive && (
                         <span className="text-sm text-muted-foreground line-through mr-1.5 tnum">
                           ${tier.wasMonthly}
                         </span>
@@ -498,7 +567,7 @@ export default function VendorSubscriptionPage() {
                         ? `${tier.monthlyCredits.toLocaleString()} credits/mo · ${tier.listings}`
                         : tier.listings}
                     </p>
-                    {tier.wasMonthly && !isCurrent && (
+                    {tier.wasMonthly && offerActive && !isCurrent && (
                       <p className="text-[10px] text-[#c4541e] font-medium mt-0.5">
                         Launch pricing — limited time
                       </p>
@@ -614,6 +683,26 @@ export default function VendorSubscriptionPage() {
       </main>
 
       <MobileNav items={navItems} />
+    </div>
+  );
+}
+
+function CountdownCell({
+  n,
+  label,
+  pad,
+}: {
+  n: number;
+  label: string;
+  pad?: boolean;
+}) {
+  const text = pad ? String(n).padStart(2, "0") : String(n);
+  return (
+    <div className="flex items-baseline gap-0.5">
+      <span className="text-lg md:text-xl font-semibold tabular-nums text-foreground">
+        {text}
+      </span>
+      <span className="text-[10px] text-muted-foreground uppercase">{label}</span>
     </div>
   );
 }
