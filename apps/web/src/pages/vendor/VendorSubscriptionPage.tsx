@@ -95,10 +95,11 @@ const TIERS: Array<{
     wasMonthly: 249,
     priceId: "price_1TaKpY2VPrcT6XA1EfBgJryx",
     monthlyCredits: 2500,
-    listings: "Unlimited listings",
+    listings: "Up to 5 listings",
     highlights: [
       "2,500 AI credits / month",
       "2,000 gallery images",
+      "Become verified",
       "MCP connection",
     ],
   },

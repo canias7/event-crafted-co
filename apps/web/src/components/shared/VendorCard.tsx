@@ -8,6 +8,7 @@ import { useSavedVendors } from "@/hooks/useSavedVendors";
 import { PrefetchLink as Link } from "@/components/shared/PrefetchLink";
 import { Picture, type PictureSource } from "@/components/shared/Picture";
 import { VerificationBadges } from "@/components/vendor/VerificationBadges";
+import { StudioVerifiedBadge } from "@/components/vendor/StudioVerifiedBadge";
 // vite-imagetools auto-pictureifies anything in /assets/vendor-*,
 // /assets/vendora-*, and /assets/hero/* (see vite.config.ts) into
 // AVIF + WebP + JPG variants at 640/1024/1600 widths. Each import
@@ -76,6 +77,10 @@ interface VendorCardProps {
     responderTier?: "fast" | "standard" | null;
     isReal?: boolean;
     verifiedKinds?: string[];
+    /** True when this vendor's subscription_tier === 'studio'. Shows
+     *  a blue check next to the name on the card. Distinct from
+     *  verifiedKinds, which is document-based KYC. */
+    studioVerified?: boolean;
   };
   /** Above-the-fold cards should pass eager so the first paint isn't a flash of empty squares. */
   eager?: boolean;
@@ -138,6 +143,7 @@ export function VendorCard({ vendor, eager = false }: VendorCardProps) {
             <h3 className="font-editorial text-lg leading-tight transition-colors group-hover:text-accent">
               {vendor.name}
             </h3>
+            {vendor.studioVerified && <StudioVerifiedBadge />}
             {vendor.verifiedKinds && vendor.verifiedKinds.length > 0 && (
               <VerificationBadges
                 kinds={vendor.verifiedKinds}
