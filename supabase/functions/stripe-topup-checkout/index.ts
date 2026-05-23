@@ -74,35 +74,46 @@ serve(async (req: Request) => {
     return json({ error: "invalid_topup_price" }, 400);
   }
 
-  const { data: vendor } = await db
-    .from("vendor_profiles")
-    .select("id, business_name, stripe_customer_id")
-    .eq("id", vendorId)
-    .maybeSingle();
-  if (!vendor) return json({ error: "vendor not found" }, 404);
+  // Stripe customer lives on profiles (per-user). Listing's
+  // business_name is still pulled from vendor_profiles for the
+  // Stripe Customer display name.
+  const [{ data: profile }, { data: listing }] = await Promise.all([
+    db
+      .from("profiles")
+      .select("id, stripe_customer_id")
+      .eq("id", userId)
+      .maybeSingle(),
+    db
+      .from("vendor_profiles")
+      .select("id, business_name")
+      .eq("id", vendorId)
+      .maybeSingle(),
+  ]);
+  if (!profile) return json({ error: "profile not found" }, 404);
+  if (!listing) return json({ error: "vendor not found" }, 404);
 
-  // Top-ups need a Stripe Customer too — webhook resolves the vendor
+  // Top-ups need a Stripe Customer too — webhook resolves the user
   // from the customer id when granting credits.
-  let customerId = vendor.stripe_customer_id as string | null;
+  let customerId = profile.stripe_customer_id as string | null;
   if (!customerId) {
     const customer = await stripe.customers.create({
       email: userEmail ?? undefined,
-      name: vendor.business_name ?? undefined,
-      metadata: { vendor_id: vendorId },
+      name: listing.business_name ?? undefined,
+      metadata: { user_id: userId, vendor_id: vendorId },
     });
     customerId = customer.id;
     await db
-      .from("vendor_profiles")
+      .from("profiles")
       .update({ stripe_customer_id: customerId })
-      .eq("id", vendorId);
+      .eq("id", userId);
   }
 
   const session = await stripe.checkout.sessions.create({
     mode: "payment",
     customer: customerId,
     line_items: [{ price: priceId, quantity: 1 }],
-    payment_intent_data: { metadata: { vendor_id: vendorId, kind: "credit_topup" } },
-    metadata: { vendor_id: vendorId, kind: "credit_topup" },
+    payment_intent_data: { metadata: { user_id: userId, vendor_id: vendorId, kind: "credit_topup" } },
+    metadata: { user_id: userId, vendor_id: vendorId, kind: "credit_topup" },
     allow_promotion_codes: true,
     success_url: `${APP_URL}/vendor/subscription?topup=1`,
     cancel_url: `${APP_URL}/vendor/subscription?topup_cancelled=1`,

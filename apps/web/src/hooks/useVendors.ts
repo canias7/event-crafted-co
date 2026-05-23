@@ -114,14 +114,17 @@ interface VendorProfileRow {
   cancellation_policy: string | null;
   reschedule_window_days: number | null;
   policy_notes: string | null;
-  subscription_tier: string | null;
   // Owner's brand identity, embedded via vendor_brands (the public-safe
   // view over profiles). Listings created via the wizard ship with
   // business_name + bio null, so display falls back to the brand here.
   // Multi-listing vendors who set per-listing values still win.
+  // subscription_tier is on the brand row now too (per migration
+  // 20260524000200) — that's where the studio-verified badge reads
+  // from; the column on vendor_profiles is deprecated.
   brand: {
     business_name: string | null;
     bio: string | null;
+    subscription_tier: string | null;
   } | null;
 }
 
@@ -157,7 +160,7 @@ function normalizeDb(row: VendorProfileRow): Vendor {
     policyNotes: row.policy_notes ?? null,
     ownerUserId: row.user_id,
     isReal: true,
-    studioVerified: row.subscription_tier === "studio",
+    studioVerified: row.brand?.subscription_tier === "studio",
   };
 }
 
@@ -191,7 +194,7 @@ async function fetchVendors(): Promise<Vendor[]> {
       const { data, error } = await (supabase as any)
         .from("vendor_profiles")
         .select(
-          "id, user_id, business_name, category, bio, base_price_cents, location, service_radius_miles, portfolio_summary, verified_at, responder_tier, intro_video_url, slug, instagram_handle, tiktok_handle, deposit_pct, cancellation_policy, reschedule_window_days, policy_notes, subscription_tier, brand:vendor_brands!vendor_profiles_user_id_fkey(business_name, bio)",
+          "id, user_id, business_name, category, bio, base_price_cents, location, service_radius_miles, portfolio_summary, verified_at, responder_tier, intro_video_url, slug, instagram_handle, tiktok_handle, deposit_pct, cancellation_policy, reschedule_window_days, policy_notes, brand:vendor_brands!vendor_profiles_user_id_fkey(business_name, bio, subscription_tier)",
         )
         .eq("application_status", "approved")
         .order("verified_at", { ascending: false, nullsFirst: false });

@@ -67,17 +67,20 @@ serve(async (req: Request) => {
   const db = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!, {
     auth: { persistSession: false },
   });
-  const { data: vendor } = await db
-    .from("vendor_profiles")
+  // Stripe customer lives on profiles per-user now. vendor_id is
+  // still the admin-check key (so a team admin on listing X can open
+  // billing for the owning user's Stripe Customer).
+  const { data: profile } = await db
+    .from("profiles")
     .select("id, stripe_customer_id")
-    .eq("id", vendorId)
+    .eq("id", userId)
     .maybeSingle();
-  if (!vendor?.stripe_customer_id) {
-    return json({ error: "no stripe customer for this vendor" }, 400);
+  if (!profile?.stripe_customer_id) {
+    return json({ error: "no stripe customer on this account" }, 400);
   }
 
   const portal = await stripe.billingPortal.sessions.create({
-    customer: vendor.stripe_customer_id as string,
+    customer: profile.stripe_customer_id as string,
     return_url: `${APP_URL}/vendor/subscription`,
   });
 
