@@ -13,12 +13,22 @@ export type VendorTier = "free" | "starter" | "pro" | "studio";
 
 const VALID_TIERS = new Set<VendorTier>(["free", "starter", "pro", "studio"]);
 
+// Per-vendor tier cache. DashboardSidebar remounts on every route
+// change in the vendor portal (each page mounts its own sidebar
+// instance), so without this cache the plan badge under "Vendora"
+// flickers from "Free plan" to the real tier on every navigation
+// while the fetch is in flight.
+const tierCache = new Map<string, VendorTier>();
+
 export function useVendorPlan(vendorId: string | null | undefined): {
   tier: VendorTier;
   loading: boolean;
 } {
-  const [tier, setTier] = useState<VendorTier>("free");
-  const [loading, setLoading] = useState<boolean>(Boolean(vendorId));
+  const cached = vendorId ? tierCache.get(vendorId) : undefined;
+  const [tier, setTier] = useState<VendorTier>(cached ?? "free");
+  const [loading, setLoading] = useState<boolean>(
+    Boolean(vendorId) && cached === undefined,
+  );
   // useId gives every mounting consumer a unique suffix so two pages
   // (sidebar + page) using the same vendorId don't collide on the
   // same supabase channel — supabase's client reuses a channel by
@@ -33,7 +43,16 @@ export function useVendorPlan(vendorId: string | null | undefined): {
       return;
     }
     let cancelled = false;
-    setLoading(true);
+    // Paint with cache if we have it so the label doesn't blink
+    // through "Free plan" on every remount; still kick off the
+    // refetch in the background to catch any updates we missed.
+    const fromCache = tierCache.get(vendorId);
+    if (fromCache !== undefined) {
+      setTier(fromCache);
+      setLoading(false);
+    } else {
+      setLoading(true);
+    }
     (async () => {
       const { data } = await supabase
         .from("vendor_profiles")
@@ -42,7 +61,10 @@ export function useVendorPlan(vendorId: string | null | undefined): {
         .maybeSingle();
       if (cancelled) return;
       const raw = (data as { subscription_tier?: string } | null)?.subscription_tier;
-      setTier(raw && VALID_TIERS.has(raw as VendorTier) ? (raw as VendorTier) : "free");
+      const next: VendorTier =
+        raw && VALID_TIERS.has(raw as VendorTier) ? (raw as VendorTier) : "free";
+      tierCache.set(vendorId, next);
+      setTier(next);
       setLoading(false);
     })();
 
@@ -59,7 +81,12 @@ export function useVendorPlan(vendorId: string | null | undefined): {
         (payload) => {
           const next = (payload.new as { subscription_tier?: string } | null)
             ?.subscription_tier;
-          setTier(next && VALID_TIERS.has(next as VendorTier) ? (next as VendorTier) : "free");
+          const resolved: VendorTier =
+            next && VALID_TIERS.has(next as VendorTier)
+              ? (next as VendorTier)
+              : "free";
+          tierCache.set(vendorId, resolved);
+          setTier(resolved);
         },
       )
       .subscribe();
