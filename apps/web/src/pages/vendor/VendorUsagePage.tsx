@@ -64,6 +64,33 @@ export default function VendorUsagePage() {
   const [ledger, setLedger] = useState<LedgerRow[]>([]);
   const [ledgerLoading, setLedgerLoading] = useState(true);
   const [actingId, setActingId] = useState<string | null>(null);
+  // Storage usage: count + per-tier cap from public.user_image_count
+  // and public.user_image_cap. cap=null means unlimited (grandfathered).
+  const [imageCount, setImageCount] = useState<number | null>(null);
+  const [imageCap, setImageCap] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (!user?.id) {
+      setImageCount(null);
+      setImageCap(null);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      const [{ data: countData }, { data: capData }] = await Promise.all([
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (supabase as any).rpc("user_image_count", { p_user_id: user.id }),
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (supabase as any).rpc("user_image_cap", { p_user_id: user.id }),
+      ]);
+      if (cancelled) return;
+      setImageCount(typeof countData === "number" ? countData : 0);
+      setImageCap(typeof capData === "number" ? capData : null);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.id]);
 
   useEffect(() => {
     if (!user?.id) {
@@ -202,6 +229,58 @@ export default function VendorUsagePage() {
             <LifetimeCard label="Topped up" value={credits.lifetimeToppedUp} />
             <LifetimeCard label="Used" value={credits.lifetimeConsumed} />
           </div>
+
+          {/* Storage usage — per-tier image cap. Cap=null means
+              grandfathered unlimited; show "—" instead of a fraction. */}
+          {imageCount !== null && (
+            <div
+              className="rounded-2xl p-6"
+              style={{
+                background: "rgba(255,253,250,0.7)",
+                border: "0.5px solid rgba(255,138,76,0.22)",
+              }}
+            >
+              <div className="flex items-start justify-between gap-4 flex-wrap">
+                <div>
+                  <p className="font-label text-muted-foreground">Storage</p>
+                  <h3 className="font-editorial text-3xl mt-1 tnum">
+                    {imageCount.toLocaleString()}
+                    {imageCap !== null && (
+                      <span className="text-muted-foreground text-2xl">
+                        {" "}
+                        / {imageCap.toLocaleString()}
+                      </span>
+                    )}
+                  </h3>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    {imageCap === null
+                      ? "Images uploaded. Your plan has no cap."
+                      : imageCount >= imageCap
+                        ? "You've hit your plan's image cap. Upgrade to upload more."
+                        : `Images uploaded — ${(imageCap - imageCount).toLocaleString()} left on your plan.`}
+                  </p>
+                </div>
+              </div>
+              {imageCap !== null && (
+                <div className="mt-4">
+                  <div className="h-2 rounded-full bg-foreground/8 overflow-hidden">
+                    <div
+                      className="h-full rounded-full transition-all"
+                      style={{
+                        width: `${Math.min(100, Math.round((imageCount / imageCap) * 100))}%`,
+                        background:
+                          imageCount / imageCap >= 0.9
+                            ? "#dc2626"
+                            : imageCount / imageCap >= 0.7
+                              ? "#f59e0b"
+                              : "#c4541e",
+                      }}
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Recent activity */}
           <div
