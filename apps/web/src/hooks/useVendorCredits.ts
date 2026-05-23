@@ -5,15 +5,24 @@ import { supabase } from "@/integrations/supabase/client";
 // current user so the balance flips the moment a webhook (grant,
 // top-up, consume) writes a new row. Used by surfaces like the
 // sidebar that want a live number without polling.
+// Module-scope cache keyed by user_id. Each page in the vendor portal
+// mounts its own DashboardSidebar, which means the hook remounts on
+// every route change — without this cache, the sidebar's balance chip
+// flickers from "hidden → visible" on every nav while the next fetch
+// resolves. Cache survives within the SPA session; full refresh
+// reloads from supabase as normal.
+const balanceCache = new Map<string, number>();
+
 export function useLiveVendorBalance(userId: string | null | undefined): {
   balance: number;
   initialized: boolean;
 } {
-  const [balance, setBalance] = useState<number>(0);
-  const [initialized, setInitialized] = useState<boolean>(false);
-  // Unique per-mount key so two consumers of the same userId don't
-  // both try to subscribe to the same supabase channel (which would
-  // throw "cannot add postgres_changes callbacks ... after subscribe").
+  const cached = userId ? balanceCache.get(userId) : undefined;
+  const [balance, setBalance] = useState<number>(cached ?? 0);
+  // If we have a cached value, treat the hook as initialized
+  // immediately so the consumer (sidebar chip) doesn't blink off
+  // while the fresh fetch is in flight.
+  const [initialized, setInitialized] = useState<boolean>(cached !== undefined);
   const instanceKey = useId();
 
   useEffect(() => {
@@ -21,6 +30,14 @@ export function useLiveVendorBalance(userId: string | null | undefined): {
       setBalance(0);
       setInitialized(true);
       return;
+    }
+    // If we had a cached value, paint with it immediately so there's
+    // no flicker; otherwise the consumer keeps initialized=false until
+    // the first fetch lands.
+    const fromCache = balanceCache.get(userId);
+    if (fromCache !== undefined) {
+      setBalance(fromCache);
+      setInitialized(true);
     }
     let cancelled = false;
     (async () => {
@@ -31,7 +48,9 @@ export function useLiveVendorBalance(userId: string | null | undefined): {
         .eq("user_id", userId)
         .maybeSingle();
       if (cancelled) return;
-      setBalance(((data as { balance?: number } | null)?.balance) ?? 0);
+      const next = ((data as { balance?: number } | null)?.balance) ?? 0;
+      balanceCache.set(userId, next);
+      setBalance(next);
       setInitialized(true);
     })();
 
@@ -47,7 +66,10 @@ export function useLiveVendorBalance(userId: string | null | undefined): {
         },
         (payload) => {
           const next = (payload.new as { balance?: number } | null)?.balance;
-          if (typeof next === "number") setBalance(next);
+          if (typeof next === "number") {
+            balanceCache.set(userId, next);
+            setBalance(next);
+          }
         },
       )
       .subscribe();
