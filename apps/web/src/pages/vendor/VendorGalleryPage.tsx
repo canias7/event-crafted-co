@@ -83,7 +83,11 @@ import {
   parseExif,
   type SanitizedExif,
 } from "@/lib/galleryImage";
-import { removeGalleryFileWithRetry } from "@/lib/galleryStorage";
+import {
+  purgeGalleryStorageObject,
+  purgeGalleryStorageObjects,
+  removeGalleryFileWithRetry,
+} from "@/lib/galleryStorage";
 
 interface GalleryRow {
   id: string;
@@ -684,6 +688,16 @@ export default function VendorGalleryPage() {
   async function removeOne(id: string) {
     if (isTrashView) {
       if (!window.confirm("Delete permanently? Can't be undone.")) return;
+      // Pull the URL before deleting so we know which storage file
+      // to purge. Without this, the DB row goes but the storage
+      // object stays — accumulating zombies that count toward the
+      // image cap forever.
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: row } = await (supabase as any)
+        .from("vendor_gallery_images")
+        .select("image_url")
+        .eq("id", id)
+        .maybeSingle();
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { error } = await (supabase as any)
         .from("vendor_gallery_images")
@@ -693,6 +707,7 @@ export default function VendorGalleryPage() {
         toast.error(error.message);
         return;
       }
+      await purgeGalleryStorageObject(row?.image_url ?? null);
       toast.success("Deleted.");
     } else {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -714,6 +729,13 @@ export default function VendorGalleryPage() {
     const ids = Array.from(selected);
     if (isTrashView) {
       if (!window.confirm(`Delete ${ids.length} permanently? Can't be undone.`)) return;
+      // Fetch image_urls before delete so we can purge storage too —
+      // see comment in removeOne for the why.
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: rows } = await (supabase as any)
+        .from("vendor_gallery_images")
+        .select("image_url")
+        .in("id", ids);
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { error } = await (supabase as any)
         .from("vendor_gallery_images")
@@ -723,6 +745,10 @@ export default function VendorGalleryPage() {
         toast.error(error.message);
         return;
       }
+      const urls: string[] = (rows ?? [])
+        .map((r: { image_url?: string }) => r.image_url ?? "")
+        .filter(Boolean);
+      await purgeGalleryStorageObjects(urls);
       toast.success(`${ids.length} permanently deleted.`);
     } else {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
