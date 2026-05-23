@@ -20,6 +20,7 @@ import { EditModal } from "@/components/gallery/EditModal";
 import { ShareModal } from "@/components/gallery/ShareModal";
 import type { SanitizedExif } from "@/lib/galleryImage";
 import { downloadCrossOrigin } from "@/lib/downloadImage";
+import { formatFileSize } from "@/lib/format";
 
 interface Img {
   id: string;
@@ -30,13 +31,6 @@ interface Img {
   height: number | null;
   file_size_bytes: number | null;
   created_at: string;
-}
-
-function formatFileSize(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  if (bytes < 1024 * 1024 * 1024) return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
-  return `${(bytes / 1024 / 1024 / 1024).toFixed(1)} GB`;
 }
 
 function formatCoord(value: number, posLabel: string, negLabel: string): string {

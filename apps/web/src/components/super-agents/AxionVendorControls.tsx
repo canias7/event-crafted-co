@@ -86,8 +86,7 @@ export function AxionVendorControls() {
     if (!user?.id) return;
     let cancelled = false;
     (async () => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data } = await (supabase as any)
+      const { data } = await supabase
         .from("profiles")
         .select("axion_autosave")
         .eq("id", user.id)
@@ -133,8 +132,7 @@ export function AxionVendorControls() {
   const toggleAutosave = async (next: boolean) => {
     if (!user?.id) return;
     setAutosave(next);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error } = await (supabase as any)
+    const { error } = await supabase
       .from("profiles")
       .update({ axion_autosave: next })
       .eq("id", user.id);
@@ -177,8 +175,7 @@ export function AxionVendorControls() {
   // Find the vendor's "Axion" gallery album, creating it on first save.
   const ensureAxionAlbum = async (): Promise<string | null> => {
     if (!user?.id) return null;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: existing } = await (supabase as any)
+    const { data: existing } = await supabase
       .from("vendor_gallery_albums")
       .select("id")
       .eq("user_id", user.id)
@@ -186,8 +183,7 @@ export function AxionVendorControls() {
       .limit(1)
       .maybeSingle();
     if (existing?.id) return existing.id as string;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: created, error } = await (supabase as any)
+    const { data: created, error } = await supabase
       .from("vendor_gallery_albums")
       .insert({ user_id: user.id, name: "Axion" })
       .select("id")
@@ -202,6 +198,10 @@ export function AxionVendorControls() {
   const saveToGallery = async (dataUrl: string, index: number) => {
     if (!user?.id || saved[index]) return;
     setSaved((s) => ({ ...s, [index]: "saving" }));
+    // Track the uploaded storage path so we can clean it up if the
+    // metadata insert later fails — otherwise the PNG is left orphaned
+    // in the bucket with no row pointing at it.
+    let uploadedPath: string | null = null;
     try {
       const albumId = await ensureAxionAlbum();
       if (!albumId) throw new Error("no_album");
@@ -213,11 +213,11 @@ export function AxionVendorControls() {
         .from("vendor-gallery")
         .upload(path, blob, { contentType: "image/png", upsert: false });
       if (up.error) throw up.error;
+      uploadedPath = path;
       const { data: pub } = supabase.storage
         .from("vendor-gallery")
         .getPublicUrl(path);
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { error: insErr } = await (supabase as any)
+      const { error: insErr } = await supabase
         .from("vendor_gallery_images")
         .insert({
           user_id: user.id,
@@ -232,6 +232,12 @@ export function AxionVendorControls() {
       toast.success("Saved to your gallery — “Axion” album.");
     } catch (err) {
       console.error("[Axion] save failed", err);
+      if (uploadedPath) {
+        // Best-effort orphan cleanup.
+        await supabase.storage
+          .from("vendor-gallery")
+          .remove([uploadedPath]);
+      }
       setSaved((s) => {
         const next = { ...s };
         delete next[index];
