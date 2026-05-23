@@ -10,6 +10,11 @@
 // deno-lint-ignore-file no-explicit-any
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.7";
+import {
+  consumeCredits,
+  refundCredits,
+  insufficientCreditsResponse,
+} from "../_shared/credits.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
@@ -49,6 +54,10 @@ function decodeImage(input: string): { bytes: Uint8Array; mime: string } | null 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
   if (req.method !== "POST") return json(405, { error: "method_not_allowed" });
+  // Track the user we charged so the outer catch can refund if the
+  // OpenAI call throws after we've already debited credits.
+  let chargedUserId: string | null = null;
+  let chargedRef: string | null = null;
   try {
     const authHeader = req.headers.get("Authorization") ?? "";
     const bearer = authHeader.replace(/^Bearer\s+/i, "").trim();
@@ -83,6 +92,24 @@ serve(async (req) => {
     const userPrompt = String(payload?.prompt ?? "").trim();
     if (!userPrompt) return json(400, { error: "missing_prompt" });
     const direction = userPrompt.slice(0, 1000);
+
+    // Charge credits BEFORE the OpenAI call. 10 credits per Axion
+    // request (each request returns n=2 variants for the vendor to
+    // pick from; cost-to-serve ≈ 2 × $0.042 = $0.084 vs $0.25
+    // retail = 66% margin).
+    const consume = await consumeCredits(
+      userData.user.id,
+      "axion_image",
+      mode,
+    );
+    if (!consume.ok) {
+      if (consume.reason === "insufficient_credits") {
+        return insufficientCreditsResponse(consume.cost, cors);
+      }
+      return json(503, { error: "credit_service_unavailable" });
+    }
+    chargedUserId = userData.user.id;
+    chargedRef = mode;
 
     let res: Response;
     if (mode === "generate") {
@@ -149,6 +176,13 @@ serve(async (req) => {
       // debugging but do NOT return them to the client.
       const detail = await res.text();
       console.error("[axion-generate] openai error", mode, res.status, detail);
+      await refundCredits(
+        chargedUserId,
+        "axion_image",
+        chargedRef,
+        `openai_${res.status}`,
+      );
+      chargedUserId = null;
       return json(502, { error: "openai_error", status: res.status });
     }
     const out = await res.json();
@@ -156,10 +190,22 @@ serve(async (req) => {
       .map((d) => d.b64_json)
       .filter((b): b is string => typeof b === "string" && b.length > 0)
       .map((b) => `data:image/png;base64,${b}`);
-    if (variants.length === 0) return json(502, { error: "no_variants" });
+    if (variants.length === 0) {
+      await refundCredits(chargedUserId, "axion_image", chargedRef, "no_variants");
+      chargedUserId = null;
+      return json(502, { error: "no_variants" });
+    }
 
-    return json(200, { variants });
+    return json(200, { variants, credits_remaining: consume.balance });
   } catch (err) {
+    if (chargedUserId) {
+      await refundCredits(
+        chargedUserId,
+        "axion_image",
+        chargedRef,
+        `exception: ${err instanceof Error ? err.message : String(err)}`,
+      );
+    }
     console.error("[axion-generate] uncaught", err);
     return json(500, { error: err instanceof Error ? err.message : String(err) });
   }
