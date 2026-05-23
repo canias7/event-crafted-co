@@ -1,14 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Check, Crown, Loader2, Sparkles, Flame } from "lucide-react";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -118,7 +110,6 @@ const TOPUPS: Array<{
   credits: number;
   price: number;
   priceId: string;
-  blurb: string;
 }> = [
   {
     id: "boost",
@@ -126,7 +117,6 @@ const TOPUPS: Array<{
     credits: 500,
     price: 12,
     priceId: "price_1TaKq72VPrcT6XA1AeyBHdnn",
-    blurb: "~250 HILUX replies or 50 Axion images",
   },
   {
     id: "power",
@@ -134,7 +124,6 @@ const TOPUPS: Array<{
     credits: 1500,
     price: 30,
     priceId: "price_1TaKqc2VPrcT6XA1kr2icZHw",
-    blurb: "~750 HILUX replies or 150 Axion images",
   },
   {
     id: "pro_pack",
@@ -142,7 +131,6 @@ const TOPUPS: Array<{
     credits: 3500,
     price: 60,
     priceId: "price_1TaKr12VPrcT6XA1YjzZcylM",
-    blurb: "~1,750 HILUX replies or 350 Axion images",
   },
   {
     id: "studio_pack",
@@ -150,7 +138,6 @@ const TOPUPS: Array<{
     credits: 8000,
     price: 120,
     priceId: "price_1TaKrZ2VPrcT6XA1SmiwGeis",
-    blurb: "~4,000 HILUX replies or 800 Axion images — best $/credit",
   },
 ];
 
@@ -321,76 +308,87 @@ export default function VendorSubscriptionPage() {
       <DashboardSidebar items={navItems} title="Vendor Portal" backPath="/" />
 
       <main id="main-content" className="flex-1 pb-20 lg:pb-0">
-        <div className="backdrop-blur-sm px-4 md:px-8 py-5 sticky top-0 z-40 flex items-start justify-between gap-4 flex-wrap">
-          <div>
-            <h1 className="font-editorial text-3xl">Subscription</h1>
-            <p className="text-sm text-muted-foreground">
-              Pick a plan or top up credits. Track usage on the Usage tab.
-            </p>
-          </div>
-          {/* Launch-pricing pill in the header — replaces the full
-              inline banner. Click opens a dialog with the full
-              countdown + copy. */}
-          {offerActive && countdown && (
-            <Dialog>
-              <DialogTrigger asChild>
-                <button
-                  type="button"
-                  className="inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-semibold transition-colors"
-                  style={{
-                    background: "rgba(255,138,76,0.18)",
-                    color: "#c4541e",
-                    border: "1px solid rgba(255,138,76,0.35)",
-                  }}
-                >
-                  <Flame className="w-3.5 h-3.5" />
-                  <span className="tnum">
-                    60% off · {countdown.days}d {String(countdown.hours).padStart(2, "0")}h{" "}
-                    {String(countdown.minutes).padStart(2, "0")}m{" "}
-                    {String(countdown.seconds).padStart(2, "0")}s
-                  </span>
-                </button>
-              </DialogTrigger>
-              <DialogContent className="max-w-md">
-                <DialogHeader>
-                  <DialogTitle className="font-editorial text-2xl flex items-center gap-2">
-                    <span
-                      className="shrink-0 w-9 h-9 rounded-xl inline-flex items-center justify-center"
-                      style={{ background: "rgba(255,138,76,0.22)", color: "#c4541e" }}
-                      aria-hidden
-                    >
-                      <Flame className="w-4 h-4" />
-                    </span>
-                    Launch pricing — up to 60% off
-                  </DialogTitle>
-                  <DialogDescription className="text-sm">
-                    Lock in these rates before the offer ends. New rates apply on the next billing cycle after expiry.
-                  </DialogDescription>
-                </DialogHeader>
-                <div
-                  className="flex items-center justify-center gap-3 tnum mt-2 rounded-xl p-4"
-                  aria-label="Time remaining"
-                  style={{
-                    background: "linear-gradient(135deg, rgba(255,138,76,0.12), rgba(255,138,76,0.04))",
-                    border: "0.5px solid rgba(255,138,76,0.25)",
-                  }}
-                >
-                  <CountdownCell n={countdown.days} label="d" />
-                  <span className="text-foreground/40">:</span>
-                  <CountdownCell n={countdown.hours} label="h" pad />
-                  <span className="text-foreground/40">:</span>
-                  <CountdownCell n={countdown.minutes} label="m" pad />
-                  <span className="text-foreground/40">:</span>
-                  <CountdownCell n={countdown.seconds} label="s" pad />
-                </div>
-              </DialogContent>
-            </Dialog>
-          )}
+        <div className="backdrop-blur-sm px-4 md:px-8 py-5 sticky top-0 z-40">
+          <h1 className="font-editorial text-3xl">Subscription</h1>
+          <p className="text-sm text-muted-foreground">
+            Pick a plan or top up credits. Track usage on the Usage tab.
+          </p>
         </div>
 
         <div className="p-4 md:p-8 max-w-5xl space-y-5">
-          {/* Current-plan and AI-credits cards moved to /vendor/usage.
-              Launch-pricing banner moved to a header pill + dialog. */}
+          {/* Launch-pricing hero banner — Higgsfield-style. Dark warm
+              gradient, neon-amber headline, bordered countdown tiles
+              on the right. Only renders while the launch offer is
+              live; when offerActive flips false the whole block
+              disappears and the tier cards step down to fill. */}
+          {offerActive && countdown && (
+            <div
+              className="rounded-2xl px-6 md:px-8 py-6 md:py-7 relative overflow-hidden"
+              style={{
+                background:
+                  "linear-gradient(135deg, #2a1810 0%, #3d1f1a 45%, #4a2620 100%)",
+                border: "1px solid rgba(255,138,76,0.35)",
+                boxShadow: "0 12px 40px -16px rgba(255,138,76,0.35)",
+              }}
+            >
+              {/* Soft glow accent in the top-right so the dark block
+                  doesn't read as a flat rectangle. */}
+              <div
+                aria-hidden
+                className="absolute -top-20 -right-20 w-72 h-72 rounded-full pointer-events-none"
+                style={{
+                  background:
+                    "radial-gradient(circle, rgba(255,138,76,0.22) 0%, transparent 70%)",
+                }}
+              />
+              <div className="relative flex items-start justify-between gap-6 flex-wrap">
+                <div className="min-w-0 flex-1">
+                  <span
+                    className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] uppercase tracking-[0.15em] font-bold"
+                    style={{
+                      background:
+                        "linear-gradient(135deg, #ff8a4c 0%, #ff6b3d 100%)",
+                      color: "#1a0d08",
+                    }}
+                  >
+                    <Flame className="w-3 h-3" />
+                    Launch pricing 60% off
+                  </span>
+                  <h2
+                    className="mt-4 font-editorial leading-[0.95] text-4xl md:text-5xl"
+                    style={{ color: "#ff8a4c" }}
+                  >
+                    Vendora Starter, Pro &amp; Studio
+                  </h2>
+                  <h3 className="font-editorial leading-tight text-2xl md:text-3xl text-white/90 mt-1">
+                    Locked in at up to 60% off
+                  </h3>
+                  <p className="text-sm text-white/55 mt-3 max-w-md">
+                    Lock in these rates before the offer ends. New rates apply on the
+                    next billing cycle after expiry.
+                  </p>
+                </div>
+
+                <div className="shrink-0">
+                  <p
+                    className="text-[11px] uppercase tracking-[0.12em] font-semibold mb-2 flex items-center gap-1.5"
+                    style={{ color: "rgba(255,138,76,0.85)" }}
+                  >
+                    <Flame className="w-3 h-3" />
+                    Offer expires in
+                  </p>
+                  <div className="flex items-stretch gap-2 tnum" aria-label="Time remaining">
+                    <CountdownTile n={countdown.days} label="Days" />
+                    <CountdownTile n={countdown.hours} label="Hours" pad />
+                    <CountdownTile n={countdown.minutes} label="Mins" pad />
+                    <CountdownTile n={countdown.seconds} label="Secs" pad />
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Current-plan and AI-credits cards moved to /vendor/usage. */}
 
           {/* ===== Tier grid ===== */}
           <div>
@@ -539,9 +537,7 @@ export default function VendorSubscriptionPage() {
                     <p className="text-[11px] text-muted-foreground mt-0.5">
                       {perCredit.toFixed(2)}¢ / credit
                     </p>
-                    <p className="text-xs text-muted-foreground mt-2 flex-1">
-                      {pack.blurb}
-                    </p>
+                    <div className="flex-1" />
                     <Button
                       onClick={() => buyTopup(pack)}
                       disabled={actingId !== null}
@@ -574,7 +570,10 @@ export default function VendorSubscriptionPage() {
   );
 }
 
-function CountdownCell({
+// Boxed countdown tile for the Higgsfield-style hero banner. Large
+// number, small uppercase label underneath, hairline border around
+// it so each unit reads as its own card.
+function CountdownTile({
   n,
   label,
   pad,
@@ -585,11 +584,21 @@ function CountdownCell({
 }) {
   const text = pad ? String(n).padStart(2, "0") : String(n);
   return (
-    <div className="flex items-baseline gap-0.5">
-      <span className="text-lg md:text-xl font-semibold tabular-nums text-foreground">
+    <div
+      className="flex flex-col items-center justify-center rounded-lg px-3 md:px-4 py-2 md:py-2.5 min-w-[58px] md:min-w-[68px]"
+      style={{
+        background: "rgba(255,255,255,0.04)",
+        border: "1px solid rgba(255,138,76,0.22)",
+        backdropFilter: "blur(4px)",
+        WebkitBackdropFilter: "blur(4px)",
+      }}
+    >
+      <span className="text-2xl md:text-3xl font-light tabular-nums text-white leading-none">
         {text}
       </span>
-      <span className="text-[10px] text-muted-foreground uppercase">{label}</span>
+      <span className="text-[9px] uppercase tracking-[0.1em] text-white/55 mt-1.5">
+        {label}
+      </span>
     </div>
   );
 }

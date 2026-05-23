@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
 // Live-reads the vendor's current subscription tier from
@@ -19,6 +19,12 @@ export function useVendorPlan(vendorId: string | null | undefined): {
 } {
   const [tier, setTier] = useState<VendorTier>("free");
   const [loading, setLoading] = useState<boolean>(Boolean(vendorId));
+  // useId gives every mounting consumer a unique suffix so two pages
+  // (sidebar + page) using the same vendorId don't collide on the
+  // same supabase channel — supabase's client reuses a channel by
+  // name, and calling .on() on an already-subscribed channel throws
+  // "cannot add postgres_changes callbacks ... after subscribe()".
+  const instanceKey = useId();
 
   useEffect(() => {
     if (!vendorId) {
@@ -41,7 +47,7 @@ export function useVendorPlan(vendorId: string | null | undefined): {
     })();
 
     const channel = supabase
-      .channel(`vendor-plan:${vendorId}`)
+      .channel(`vendor-plan:${vendorId}:${instanceKey}`)
       .on(
         "postgres_changes",
         {
@@ -62,7 +68,7 @@ export function useVendorPlan(vendorId: string | null | undefined): {
       cancelled = true;
       supabase.removeChannel(channel);
     };
-  }, [vendorId]);
+  }, [vendorId, instanceKey]);
 
   return { tier, loading };
 }

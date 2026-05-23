@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useId, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
 // Subscribes to postgres_changes on vendor_credit_balances for the
@@ -11,6 +11,10 @@ export function useLiveVendorBalance(userId: string | null | undefined): {
 } {
   const [balance, setBalance] = useState<number>(0);
   const [initialized, setInitialized] = useState<boolean>(false);
+  // Unique per-mount key so two consumers of the same userId don't
+  // both try to subscribe to the same supabase channel (which would
+  // throw "cannot add postgres_changes callbacks ... after subscribe").
+  const instanceKey = useId();
 
   useEffect(() => {
     if (!userId) {
@@ -32,7 +36,7 @@ export function useLiveVendorBalance(userId: string | null | undefined): {
     })();
 
     const channel = supabase
-      .channel(`vendor-balance:${userId}`)
+      .channel(`vendor-balance:${userId}:${instanceKey}`)
       .on(
         "postgres_changes",
         {
@@ -52,7 +56,7 @@ export function useLiveVendorBalance(userId: string | null | undefined): {
       cancelled = true;
       supabase.removeChannel(channel);
     };
-  }, [userId]);
+  }, [userId, instanceKey]);
 
   return { balance, initialized };
 }
