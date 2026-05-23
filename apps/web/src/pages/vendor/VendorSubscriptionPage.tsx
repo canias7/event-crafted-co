@@ -352,7 +352,11 @@ export default function VendorSubscriptionPage() {
                   }}
                 >
                   <Flame className="w-3.5 h-3.5" />
-                  <span>60% off · ends in {countdown.days}d</span>
+                  <span className="tnum">
+                    60% off · {countdown.days}d {String(countdown.hours).padStart(2, "0")}h{" "}
+                    {String(countdown.minutes).padStart(2, "0")}m{" "}
+                    {String(countdown.seconds).padStart(2, "0")}s
+                  </span>
                 </button>
               </DialogTrigger>
               <DialogContent className="max-w-md">
