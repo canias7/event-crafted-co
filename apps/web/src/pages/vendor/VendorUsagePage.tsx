@@ -32,18 +32,20 @@ const KIND_LABEL: Record<string, string> = {
   admin_adjust: "Admin adjustment",
 };
 
-// Snake-case action_types like "hilux_reply" come from the edge
-// functions verbatim; map known ones to friendly names and fall back
-// to a Title Case render of the raw key so unknown types still read
-// reasonably.
+// Snake-case action_types come from the edge functions verbatim
+// (see _shared/credits.ts::CreditAction — the source of truth for
+// what gets written to vendor_credit_transactions.action_type).
+// Map known ones to friendly names; fall back to Title Case for
+// anything new so the page never shows raw snake_case.
 const ACTION_LABEL: Record<string, string> = {
   hilux_reply: "HILUX reply",
   hilux_regenerate: "HILUX regenerate",
-  hilux_draft_reply: "HILUX draft reply",
+  hilux_draft: "HILUX draft reply",
   hilux_followup: "HILUX follow-up",
-  axion_generate: "Axion image",
-  vendora_mcp: "Vendora MCP",
-  mux_stream: "Mux stream",
+  hilux_summary: "HILUX summary",
+  axion_image: "Axion image",
+  mux_minute: "Mux minute",
+  email_parse: "Email parse",
 };
 
 function formatActionType(action: string | null): string | null {
