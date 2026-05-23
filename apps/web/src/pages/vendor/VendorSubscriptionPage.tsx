@@ -93,7 +93,7 @@ const TIERS: Array<{
     highlights: [
       "800 AI credits / month",
       "1,000 gallery images",
-      "MCP Claude.ai connector",
+      "MCP connection",
     ],
   },
   {
