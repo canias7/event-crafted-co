@@ -63,59 +63,97 @@ export default function VendorUsagePage() {
   const credits = useVendorCredits(user?.id ?? null);
   const [ledger, setLedger] = useState<LedgerRow[]>([]);
   const [ledgerLoading, setLedgerLoading] = useState(true);
+  // Consume entries from the last 30 days power the usage charts —
+  // pulled separately from the ledger (which is just the most recent
+  // 25 rows for display) so we get every spend event in the window.
+  const [consume30, setConsume30] = useState<
+    Array<{ created_at: string; delta: number; action_type: string | null }>
+  >([]);
   const [actingId, setActingId] = useState<string | null>(null);
-  // Storage usage: count + per-tier cap from public.user_image_count
-  // and public.user_image_cap. cap=null means unlimited (grandfathered).
-  const [imageCount, setImageCount] = useState<number | null>(null);
-  const [imageCap, setImageCap] = useState<number | null>(null);
-
-  useEffect(() => {
-    if (!user?.id) {
-      setImageCount(null);
-      setImageCap(null);
-      return;
-    }
-    let cancelled = false;
-    (async () => {
-      const [{ data: countData }, { data: capData }] = await Promise.all([
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (supabase as any).rpc("user_image_count", { p_user_id: user.id }),
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (supabase as any).rpc("user_image_cap", { p_user_id: user.id }),
-      ]);
-      if (cancelled) return;
-      setImageCount(typeof countData === "number" ? countData : 0);
-      setImageCap(typeof capData === "number" ? capData : null);
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [user?.id]);
 
   useEffect(() => {
     if (!user?.id) {
       setLedger([]);
+      setConsume30([]);
       setLedgerLoading(false);
       return;
     }
     let cancelled = false;
     setLedgerLoading(true);
+    const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
     (async () => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data } = await (supabase as any)
-        .from("vendor_credit_transactions")
-        .select("created_at, delta, kind, action_type, balance_after, note")
-        .eq("user_id", user.id)
-        .order("created_at", { ascending: false })
-        .limit(25);
+      const [{ data: recent }, { data: spend }] = await Promise.all([
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (supabase as any)
+          .from("vendor_credit_transactions")
+          .select("created_at, delta, kind, action_type, balance_after, note")
+          .eq("user_id", user.id)
+          .order("created_at", { ascending: false })
+          .limit(25),
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (supabase as any)
+          .from("vendor_credit_transactions")
+          .select("created_at, delta, action_type")
+          .eq("user_id", user.id)
+          .eq("kind", "consume")
+          .gte("created_at", since)
+          .order("created_at", { ascending: true }),
+      ]);
       if (cancelled) return;
-      setLedger((data as LedgerRow[] | null) ?? []);
+      setLedger((recent as LedgerRow[] | null) ?? []);
+      setConsume30(
+        (spend as Array<{ created_at: string; delta: number; action_type: string | null }> | null) ??
+          [],
+      );
       setLedgerLoading(false);
     })();
     return () => {
       cancelled = true;
     };
   }, [user?.id]);
+
+  // Daily spend buckets across the last 30 days. delta on consume
+  // rows is negative; we render the absolute value as "credits used".
+  const dailyTotals = useMemo(() => {
+    const buckets = new Map<string, number>();
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    for (let i = 29; i >= 0; i--) {
+      const d = new Date(today);
+      d.setDate(today.getDate() - i);
+      buckets.set(d.toISOString().slice(0, 10), 0);
+    }
+    for (const row of consume30) {
+      const key = row.created_at.slice(0, 10);
+      if (!buckets.has(key)) continue;
+      buckets.set(key, (buckets.get(key) ?? 0) + Math.abs(row.delta));
+    }
+    return Array.from(buckets.entries()).map(([date, credits]) => ({ date, credits }));
+  }, [consume30]);
+
+  // Per-action breakdown — totals by action_type, plus event count.
+  const actionBreakdown = useMemo(() => {
+    const agg = new Map<string, { credits: number; count: number }>();
+    for (const row of consume30) {
+      const key = row.action_type ?? "other";
+      const cur = agg.get(key) ?? { credits: 0, count: 0 };
+      cur.credits += Math.abs(row.delta);
+      cur.count += 1;
+      agg.set(key, cur);
+    }
+    return Array.from(agg.entries())
+      .map(([action, v]) => ({ action, ...v }))
+      .sort((a, b) => b.credits - a.credits);
+  }, [consume30]);
+
+  const totalSpent30 = useMemo(
+    () => dailyTotals.reduce((s, d) => s + d.credits, 0),
+    [dailyTotals],
+  );
+  const maxDaily = useMemo(
+    () => dailyTotals.reduce((m, d) => Math.max(m, d.credits), 0),
+    [dailyTotals],
+  );
 
   const usedThisPeriod = Math.max(0, credits.monthlyGrant - credits.balance);
   const usagePct = useMemo(() => {
@@ -159,28 +197,41 @@ export default function VendorUsagePage() {
         </div>
 
         <div className="p-4 md:p-8 max-w-5xl space-y-5">
-          {/* Credit balance + usage bar */}
+          {/* AI credits — hero card. Big number on the left, soft
+              orange radial glow behind it; Manage-billing pill on the
+              right. Progress bar (only when on a monthly allotment)
+              tucked under the headline. */}
           <div
-            className="rounded-2xl p-6"
+            className="relative overflow-hidden rounded-2xl p-7 md:p-8"
             style={{
-              background: "rgba(255,253,250,0.7)",
+              background:
+                "linear-gradient(135deg, rgba(255,253,250,0.82) 0%, rgba(255,245,234,0.62) 100%)",
               border: "0.5px solid rgba(255,138,76,0.22)",
-              backdropFilter: "blur(10px)",
-              WebkitBackdropFilter: "blur(10px)",
+              backdropFilter: "blur(14px)",
+              WebkitBackdropFilter: "blur(14px)",
+              boxShadow: "0 10px 36px -18px rgba(255,138,76,0.22)",
             }}
           >
-            <div className="flex items-start justify-between gap-4 flex-wrap">
-              <div>
+            <div
+              aria-hidden
+              className="absolute -top-24 -left-24 w-72 h-72 rounded-full pointer-events-none"
+              style={{
+                background:
+                  "radial-gradient(circle, rgba(255,138,76,0.16) 0%, transparent 70%)",
+              }}
+            />
+            <div className="relative flex items-start justify-between gap-4 flex-wrap">
+              <div className="min-w-0">
                 <p className="font-label text-muted-foreground inline-flex items-center gap-1.5">
                   <Sparkles className="w-3.5 h-3.5" />
                   AI credits
                 </p>
-                <h2 className="font-editorial text-3xl mt-1 tnum">
+                <h2 className="font-editorial text-6xl md:text-7xl mt-2 tnum leading-none">
                   {credits.initialized ? credits.balance.toLocaleString() : "—"}
                 </h2>
-                <p className="text-sm text-muted-foreground mt-1">
+                <p className="text-sm text-muted-foreground mt-2 max-w-md">
                   {credits.monthlyGrant > 0
-                    ? `${usedThisPeriod.toLocaleString()} used this period of ${credits.monthlyGrant.toLocaleString()} included.`
+                    ? `${usedThisPeriod.toLocaleString()} used of ${credits.monthlyGrant.toLocaleString()} included this period.`
                     : "Credits never expire. Top up any time from Subscription."}
                 </p>
               </div>
@@ -189,6 +240,10 @@ export default function VendorUsagePage() {
                 disabled={!vendorId || actingId !== null}
                 variant="outline"
                 className="rounded-full"
+                style={{
+                  background: "rgba(255,255,255,0.6)",
+                  borderColor: "rgba(255,138,76,0.3)",
+                }}
               >
                 {actingId === "portal" ? (
                   <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
@@ -200,7 +255,7 @@ export default function VendorUsagePage() {
             </div>
 
             {usagePct !== null && (
-              <div className="mt-4">
+              <div className="relative mt-6">
                 <div className="h-2 rounded-full bg-foreground/8 overflow-hidden">
                   <div
                     className="h-full rounded-full transition-all"
@@ -211,87 +266,144 @@ export default function VendorUsagePage() {
                           ? "#dc2626"
                           : usagePct >= 70
                             ? "#f59e0b"
-                            : "#c4541e",
+                            : "linear-gradient(90deg, #ff8a4c, #c4541e)",
                     }}
                   />
                 </div>
-                <p className="text-[11px] text-muted-foreground mt-1.5">
+                <p className="text-[11px] text-muted-foreground mt-2">
                   {usagePct}% of your monthly allotment used.
                 </p>
               </div>
             )}
-
           </div>
 
-          {/* Lifetime totals */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-            <LifetimeCard label="Granted" value={credits.lifetimeGranted} />
-            <LifetimeCard label="Topped up" value={credits.lifetimeToppedUp} />
-            <LifetimeCard label="Used" value={credits.lifetimeConsumed} />
-          </div>
-
-          {/* Gallery usage — per-tier cap on the standalone Gallery
-              surface. Listing photos (vendor-portfolios) are excluded
-              from this count; they get unlimited uploads tied to the
-              listings themselves. Cap=null means grandfathered. */}
-          {imageCount !== null && (
+          {/* Usage charts — last 30 days. Two cards side by side
+              on desktop: daily-spend bar chart + per-action breakdown.
+              Both gracefully degrade to empty states when no consume
+              entries exist yet. */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+            {/* Daily spend bar chart */}
             <div
-              className="rounded-2xl p-6"
+              className="relative overflow-hidden rounded-2xl p-6 md:p-7"
               style={{
-                background: "rgba(255,253,250,0.7)",
+                background: "rgba(255,253,250,0.72)",
                 border: "0.5px solid rgba(255,138,76,0.22)",
-                backdropFilter: "blur(10px)",
-                WebkitBackdropFilter: "blur(10px)",
+                backdropFilter: "blur(12px)",
+                WebkitBackdropFilter: "blur(12px)",
+                boxShadow: "0 6px 24px -12px rgba(20,15,10,0.08)",
               }}
             >
-              <div className="flex items-start justify-between gap-4 flex-wrap">
-                <div>
-                  <p className="font-label text-muted-foreground">Gallery images</p>
-                  <h3 className="font-editorial text-3xl mt-1 tnum">
-                    {imageCount.toLocaleString()}
-                    {imageCap !== null && (
-                      <span className="text-muted-foreground text-2xl">
-                        {" "}
-                        / {imageCap.toLocaleString()}
-                      </span>
-                    )}
-                  </h3>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    {imageCap === null
-                      ? "Gallery images uploaded. Your plan has no cap."
-                      : imageCount >= imageCap
-                        ? "You've hit your plan's gallery cap. Upgrade to upload more — listing photos are still unlimited."
-                        : `In your gallery — ${(imageCap - imageCount).toLocaleString()} left on your plan. Listing photos are unlimited.`}
-                  </p>
-                </div>
+              <div className="flex items-baseline justify-between">
+                <h3 className="font-editorial text-xl">Credits used per day</h3>
+                <span className="text-xs text-muted-foreground tnum">
+                  {totalSpent30.toLocaleString()} in the last 30 days
+                </span>
               </div>
-              {imageCap !== null && (
-                <div className="mt-4">
-                  <div className="h-2 rounded-full bg-foreground/8 overflow-hidden">
-                    <div
-                      className="h-full rounded-full transition-all"
-                      style={{
-                        width: `${Math.min(100, Math.round((imageCount / imageCap) * 100))}%`,
-                        background:
-                          imageCount / imageCap >= 0.9
-                            ? "#dc2626"
-                            : imageCount / imageCap >= 0.7
-                              ? "#f59e0b"
-                              : "#c4541e",
-                      }}
-                    />
-                  </div>
+              <p className="text-xs text-muted-foreground mt-1 mb-5">
+                Every HILUX reply, Axion image, and MCP call you've billed.
+              </p>
+              {totalSpent30 === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  Nothing spent in the last 30 days. Once you use an AI
+                  agent, the daily breakdown lands here.
+                </p>
+              ) : (
+                <div className="flex items-end gap-[3px] h-32">
+                  {dailyTotals.map((d) => {
+                    const heightPct =
+                      maxDaily === 0 ? 0 : (d.credits / maxDaily) * 100;
+                    return (
+                      <div
+                        key={d.date}
+                        className="flex-1 rounded-t-[2px] transition-colors hover:opacity-80"
+                        title={`${new Date(d.date).toLocaleDateString(undefined, {
+                          month: "short",
+                          day: "numeric",
+                        })}: ${d.credits.toLocaleString()} cr`}
+                        style={{
+                          height: `${Math.max(heightPct, d.credits > 0 ? 4 : 1.5)}%`,
+                          background:
+                            d.credits > 0
+                              ? "linear-gradient(180deg, #ff8a4c 0%, #c4541e 100%)"
+                              : "rgba(20,15,10,0.07)",
+                          minHeight: "2px",
+                        }}
+                      />
+                    );
+                  })}
                 </div>
               )}
+              <div className="flex justify-between mt-2 text-[10px] uppercase tracking-wider text-muted-foreground">
+                <span>30 days ago</span>
+                <span>Today</span>
+              </div>
             </div>
-          )}
+
+            {/* Per-action breakdown */}
+            <div
+              className="relative overflow-hidden rounded-2xl p-6 md:p-7"
+              style={{
+                background: "rgba(255,253,250,0.72)",
+                border: "0.5px solid rgba(255,138,76,0.22)",
+                backdropFilter: "blur(12px)",
+                WebkitBackdropFilter: "blur(12px)",
+                boxShadow: "0 6px 24px -12px rgba(20,15,10,0.08)",
+              }}
+            >
+              <h3 className="font-editorial text-xl">Where credits went</h3>
+              <p className="text-xs text-muted-foreground mt-1 mb-5">
+                Breakdown by AI action across the last 30 days.
+              </p>
+              {actionBreakdown.length === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  No AI actions yet. HILUX, Axion, and Vendora MCP usage
+                  show up here once you start.
+                </p>
+              ) : (
+                <ul className="space-y-3">
+                  {actionBreakdown.map((row) => {
+                    const pct =
+                      totalSpent30 === 0
+                        ? 0
+                        : (row.credits / totalSpent30) * 100;
+                    return (
+                      <li key={row.action}>
+                        <div className="flex justify-between items-baseline">
+                          <span className="text-sm font-medium">
+                            {formatActionType(row.action) ?? row.action}
+                          </span>
+                          <span className="text-xs text-muted-foreground tnum">
+                            {row.credits.toLocaleString()} cr ·{" "}
+                            {row.count} {row.count === 1 ? "use" : "uses"}
+                          </span>
+                        </div>
+                        <div className="h-1.5 rounded-full mt-1.5 bg-foreground/8 overflow-hidden">
+                          <div
+                            className="h-full rounded-full"
+                            style={{
+                              width: `${pct}%`,
+                              background:
+                                "linear-gradient(90deg, #ff8a4c, #c4541e)",
+                            }}
+                          />
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </div>
+          </div>
 
           {/* Recent activity */}
           <div
-            className="rounded-2xl p-6"
+            className="relative overflow-hidden rounded-2xl p-6 md:p-7"
             style={{
-              background: "rgba(255,253,250,0.7)",
+              background: "rgba(255,253,250,0.72)",
               border: "0.5px solid rgba(255,138,76,0.22)",
+              backdropFilter: "blur(12px)",
+              WebkitBackdropFilter: "blur(12px)",
+              boxShadow: "0 6px 24px -12px rgba(20,15,10,0.08)",
             }}
           >
             <h3 className="font-editorial text-2xl mb-1">Recent activity</h3>
@@ -355,19 +467,3 @@ export default function VendorUsagePage() {
   );
 }
 
-function LifetimeCard({ label, value }: { label: string; value: number }) {
-  return (
-    <div
-      className="rounded-2xl p-5"
-      style={{
-        background: "rgba(255,253,250,0.7)",
-        border: "0.5px solid rgba(255,138,76,0.22)",
-      }}
-    >
-      <p className="font-label text-muted-foreground text-xs">{label}</p>
-      <p className="font-editorial text-2xl mt-1 tnum">
-        {value.toLocaleString()}
-      </p>
-    </div>
-  );
-}
