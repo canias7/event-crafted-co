@@ -248,7 +248,7 @@ export default function VendorUsagePage() {
           </div>
         </div>
       </main>
-      <MobileNav variant="vendor" />
+      <MobileNav items={navItems} />
     </div>
   );
 }
