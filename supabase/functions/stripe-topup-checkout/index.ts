@@ -1,21 +1,9 @@
-// Starts a subscription Checkout flow for a vendor.
+// Starts a one-time Checkout flow for a credit top-up pack.
+// Validates the requested price_id is a known top-up package
+// (vendor_credit_packages.kind='topup'). On completion the
+// stripe-webhook adds the credits to the vendor's balance.
 //
-// Accepts a `price_id` from the request body. Validates it against
-// vendor_credit_packages (kind='subscription') so a caller can't
-// hit Stripe with an arbitrary price. Falls back to
-// STRIPE_PRO_PRICE_ID for legacy callers that don't send price_id
-// (existing button on the old subscription page).
-//
-// Required env:
-//   STRIPE_SECRET_KEY     — sk_test_... or sk_live_...
-//   STRIPE_PRO_PRICE_ID   — fallback price_... (back-compat only)
-//   APP_URL               — base URL of the web app
-//
-// Invoke from frontend:
-//   const { data } = await supabase.functions.invoke(
-//     "stripe-subscription-checkout",
-//     { body: { vendor_id, price_id } },
-//   );
+// Required env: same set as stripe-subscription-checkout.
 
 // deno-lint-ignore-file no-explicit-any
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
@@ -23,7 +11,6 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.7";
 import Stripe from "https://esm.sh/stripe@14.21.0?target=deno";
 
 const STRIPE_SECRET_KEY = Deno.env.get("STRIPE_SECRET_KEY");
-const STRIPE_PRO_PRICE_ID = Deno.env.get("STRIPE_PRO_PRICE_ID");
 const APP_URL = Deno.env.get("APP_URL") ?? "https://eventvendora.com";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
@@ -62,12 +49,11 @@ serve(async (req: Request) => {
 
   const body = await req.json().catch(() => ({}));
   const vendorId = body?.vendor_id as string | undefined;
-  const requestedPriceId = (body?.price_id as string | undefined) ?? STRIPE_PRO_PRICE_ID;
+  const priceId = body?.price_id as string | undefined;
   if (!vendorId) return json({ error: "vendor_id required" }, 400);
-  if (!requestedPriceId) return json({ error: "price_id required (and STRIPE_PRO_PRICE_ID fallback unset)" }, 400);
+  if (!priceId) return json({ error: "price_id required" }, 400);
 
-  // Admin-only — billing changes (upgrading, attaching a card) are
-  // financial decisions on the org's behalf.
+  // Top-ups are admin-only too — they cost real money.
   const { data: isAdmin } = await userClient.rpc("is_vendor_team_admin", {
     _vendor_id: vendorId,
   });
@@ -77,41 +63,26 @@ serve(async (req: Request) => {
     auth: { persistSession: false },
   });
 
-  // Validate the price is a known subscription package. Without
-  // this anyone with checkout access could pass a top-up price ID
-  // (one-time) to a subscription-mode session, or an arbitrary
-  // Stripe price ID we don't expect.
+  // Validate this is a known top-up package.
   const { data: pkg } = await db
     .from("vendor_credit_packages")
-    .select("kind, tier, display_name")
-    .eq("stripe_price_id", requestedPriceId)
+    .select("kind, credits, display_name, unit_amount_cents")
+    .eq("stripe_price_id", priceId)
     .eq("active", true)
     .maybeSingle();
-  if (!pkg || (pkg as any).kind !== "subscription") {
-    return json({ error: "invalid_subscription_price" }, 400);
+  if (!pkg || (pkg as any).kind !== "topup") {
+    return json({ error: "invalid_topup_price" }, 400);
   }
 
   const { data: vendor } = await db
     .from("vendor_profiles")
-    .select(
-      "id, business_name, stripe_customer_id, subscription_tier, subscription_status",
-    )
+    .select("id, business_name, stripe_customer_id")
     .eq("id", vendorId)
     .maybeSingle();
   if (!vendor) return json({ error: "vendor not found" }, 404);
 
-  // Block double-checkout when an active subscription already exists.
-  // For tier changes (upgrade/downgrade) the vendor uses the portal,
-  // not a fresh Checkout.
-  const liveTiers = ["starter", "pro", "studio"];
-  if (
-    liveTiers.includes(vendor.subscription_tier as string) &&
-    vendor.subscription_status &&
-    ["active", "trialing"].includes(vendor.subscription_status as string)
-  ) {
-    return json({ error: "already subscribed — use the portal to change plan" }, 400);
-  }
-
+  // Top-ups need a Stripe Customer too — webhook resolves the vendor
+  // from the customer id when granting credits.
   let customerId = vendor.stripe_customer_id as string | null;
   if (!customerId) {
     const customer = await stripe.customers.create({
@@ -127,14 +98,14 @@ serve(async (req: Request) => {
   }
 
   const session = await stripe.checkout.sessions.create({
-    mode: "subscription",
+    mode: "payment",
     customer: customerId,
-    line_items: [{ price: requestedPriceId, quantity: 1 }],
-    subscription_data: { metadata: { vendor_id: vendorId } },
-    metadata: { vendor_id: vendorId },
+    line_items: [{ price: priceId, quantity: 1 }],
+    payment_intent_data: { metadata: { vendor_id: vendorId, kind: "credit_topup" } },
+    metadata: { vendor_id: vendorId, kind: "credit_topup" },
     allow_promotion_codes: true,
-    success_url: `${APP_URL}/vendor/subscription?upgraded=1`,
-    cancel_url: `${APP_URL}/vendor/subscription?cancelled=1`,
+    success_url: `${APP_URL}/vendor/subscription?topup=1`,
+    cancel_url: `${APP_URL}/vendor/subscription?topup_cancelled=1`,
   });
 
   return json({ url: session.url, session_id: session.id });
