@@ -1,6 +1,7 @@
 // Stripe webhook handler. Verifies the signature, dedupes by event
-// id (Stripe retries until we 2xx), and syncs subscription state
-// onto vendor_profiles.
+// id (Stripe retries until we 2xx), syncs subscription state onto
+// vendor_profiles, AND grants AI credits from the credit ledger
+// based on the price ID -> credits map in vendor_credit_packages.
 //
 // Required env:
 //   STRIPE_SECRET_KEY          — sk_test_... or sk_live_...
@@ -10,11 +11,18 @@
 // Supabase JWT — signature verification is what authenticates.
 //
 // Events handled:
-//   checkout.session.completed     — first checkout finishes, customer + sub IDs land
-//   customer.subscription.created  — alt entry path (e.g. portal-initiated)
+//   checkout.session.completed     — subscription: stamp tier + grant first month's credits
+//                                    payment (topup): grant top-up credits
+//   customer.subscription.created  — alt entry path (e.g. portal)
 //   customer.subscription.updated  — renewal, plan change, cancel-at-period-end toggle
-//   customer.subscription.deleted  — subscription ends → tier=free
-//   invoice.payment_failed         — card declined → status=past_due (Stripe handles dunning)
+//   customer.subscription.deleted  — subscription ends -> tier=free
+//   invoice.paid                   — recurring renewal -> grant another month's credits
+//   invoice.payment_failed         — card declined -> status=past_due (Stripe handles dunning)
+//
+// Credit grants use stripe_event_id for idempotency: the unique
+// partial index on vendor_credit_transactions makes a duplicate
+// event INSERT fail, which rolls back the grant transaction. So
+// Stripe retrying an event we already credited just no-ops.
 
 // deno-lint-ignore-file no-explicit-any
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
@@ -25,6 +33,73 @@ const STRIPE_SECRET_KEY = Deno.env.get("STRIPE_SECRET_KEY");
 const STRIPE_WEBHOOK_SECRET = Deno.env.get("STRIPE_WEBHOOK_SECRET");
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+
+interface PackageRow {
+  stripe_price_id: string;
+  kind: "subscription" | "topup";
+  tier: "starter" | "pro" | "studio" | null;
+  credits: number;
+  display_name: string;
+}
+
+async function lookupPackage(
+  db: any,
+  priceId: string,
+): Promise<PackageRow | null> {
+  const { data } = await db
+    .from("vendor_credit_packages")
+    .select("stripe_price_id, kind, tier, credits, display_name")
+    .eq("stripe_price_id", priceId)
+    .eq("active", true)
+    .maybeSingle();
+  return (data as PackageRow | null) ?? null;
+}
+
+// Resolve a vendor_profiles row (id + user_id) from the Stripe
+// customer id. We need the OWNER user_id to grant credits — the
+// credit ledger keys on auth.users.id, not vendor_profiles.id.
+async function resolveVendor(
+  db: any,
+  customerId: string,
+): Promise<{ vendorId: string; userId: string } | null> {
+  const { data } = await db
+    .from("vendor_profiles")
+    .select("id, user_id")
+    .eq("stripe_customer_id", customerId)
+    .maybeSingle();
+  if (!data || !(data as any).user_id) return null;
+  return { vendorId: (data as any).id, userId: (data as any).user_id };
+}
+
+async function grantCredits(
+  db: any,
+  userId: string,
+  n: number,
+  kind: "monthly_grant" | "topup",
+  stripeEventId: string,
+  stripeInvoiceId: string | null,
+  note: string,
+): Promise<{ ok: true; balance: number } | { ok: false; reason: string }> {
+  const { data, error } = await db.rpc("grant_credits", {
+    p_user_id: userId,
+    p_n: n,
+    p_kind: kind,
+    p_stripe_event_id: stripeEventId,
+    p_stripe_invoice_id: stripeInvoiceId,
+    p_note: note,
+  });
+  if (error) {
+    // Unique violation on stripe_event_id = idempotent replay. Treat
+    // as success so Stripe's retry gets a 200.
+    if ((error.code ?? "") === "23505") {
+      console.log("[stripe-webhook] grant idempotent skip", stripeEventId);
+      return { ok: true, balance: -1 };
+    }
+    console.error("[stripe-webhook] grant_credits failed", error);
+    return { ok: false, reason: error.message ?? String(error) };
+  }
+  return { ok: true, balance: (data as number) ?? 0 };
+}
 
 serve(async (req: Request) => {
   if (req.method !== "POST") {
@@ -82,44 +157,92 @@ serve(async (req: Request) => {
     switch (event.type) {
       case "checkout.session.completed": {
         const session = event.data.object as Stripe.Checkout.Session;
-        // We only act on subscription-mode sessions. Anything else
-        // would be a stray (we don't run any other Checkout flows).
-        if (session.mode !== "subscription") break;
         const vendorId = session.metadata?.vendor_id;
         const customerId =
           typeof session.customer === "string"
             ? session.customer
             : session.customer?.id;
-        const subscriptionId =
-          typeof session.subscription === "string"
-            ? session.subscription
-            : session.subscription?.id;
-        if (!vendorId || !subscriptionId) break;
-        // Fetch the subscription so we can stamp the accurate
-        // status + period_end immediately, instead of waiting for
-        // the customer.subscription.created event that fires
-        // adjacently. Stripe doesn't guarantee event ordering.
-        const sub = await stripe.subscriptions.retrieve(subscriptionId);
-        await applySubscription(db, vendorId, customerId ?? null, sub);
+
+        if (session.mode === "subscription") {
+          // Subscription checkout: stamp tier + grant first month's
+          // credits. Renewals fire invoice.paid (handled below).
+          const subscriptionId =
+            typeof session.subscription === "string"
+              ? session.subscription
+              : session.subscription?.id;
+          if (!vendorId || !subscriptionId) break;
+          const sub = await stripe.subscriptions.retrieve(subscriptionId);
+          const priceId = sub.items.data[0]?.price?.id;
+          const pkg = priceId ? await lookupPackage(db, priceId) : null;
+          await applySubscription(db, vendorId, customerId ?? null, sub, pkg);
+
+          // Initial credit grant — first month's allotment. The
+          // user_id comes from vendor_profiles since the vendor row
+          // was just updated with the customer id.
+          if (pkg && pkg.kind === "subscription" && customerId) {
+            const vendor = await resolveVendor(db, customerId);
+            if (vendor) {
+              await grantCredits(
+                db, vendor.userId, pkg.credits,
+                "monthly_grant", event.id,
+                typeof session.invoice === "string" ? session.invoice : null,
+                `checkout: ${pkg.display_name} initial month`,
+              );
+            }
+          }
+        } else if (session.mode === "payment") {
+          // One-time payment (top-up). Pull the line items to find
+          // the price ID (session.amount_total is the total, not
+          // useful for routing).
+          if (!customerId) break;
+          const items = await stripe.checkout.sessions.listLineItems(
+            session.id,
+            { limit: 5 },
+          );
+          for (const item of items.data) {
+            const priceId = item.price?.id;
+            if (!priceId) continue;
+            const pkg = await lookupPackage(db, priceId);
+            if (!pkg || pkg.kind !== "topup") continue;
+            const vendor = await resolveVendor(db, customerId);
+            if (!vendor) continue;
+            const qty = item.quantity ?? 1;
+            await grantCredits(
+              db, vendor.userId, pkg.credits * qty,
+              "topup", event.id,
+              typeof session.invoice === "string" ? session.invoice : null,
+              `topup: ${pkg.display_name} x${qty}`,
+            );
+          }
+        }
         break;
       }
+
       case "customer.subscription.created":
       case "customer.subscription.updated": {
         const sub = event.data.object as Stripe.Subscription;
-        const vendorId = sub.metadata?.vendor_id;
         const customerId =
           typeof sub.customer === "string" ? sub.customer : sub.customer.id;
+        const priceId = sub.items.data[0]?.price?.id;
+        const pkg = priceId ? await lookupPackage(db, priceId) : null;
+        let vendorId = sub.metadata?.vendor_id;
         if (!vendorId) {
           // Fallback: vendor_id may live on the Customer metadata
           // if this sub was created outside our flow (e.g. portal).
           const cust = await stripe.customers.retrieve(customerId);
-          const vid = (cust as Stripe.Customer).metadata?.vendor_id;
-          if (vid) await applySubscription(db, vid, customerId, sub);
-          break;
+          vendorId = (cust as Stripe.Customer).metadata?.vendor_id;
         }
-        await applySubscription(db, vendorId, customerId, sub);
+        if (vendorId) {
+          await applySubscription(db, vendorId, customerId, sub, pkg);
+        }
+        // Note: no credit grant here — checkout.session.completed
+        // already granted the first month, and invoice.paid handles
+        // renewals. Tier changes (upgrade/downgrade) deliberately
+        // don't double-grant; the new tier takes effect at the next
+        // billing cycle's invoice.paid.
         break;
       }
+
       case "customer.subscription.deleted": {
         const sub = event.data.object as Stripe.Subscription;
         const customerId =
@@ -136,8 +259,41 @@ serve(async (req: Request) => {
             subscription_cancel_at_period_end: false,
           })
           .eq("stripe_customer_id", customerId);
+        // Credits are NOT clawed back on cancellation — vendor
+        // already paid for them and can spend down through the end
+        // of the billing period (or beyond, if they had top-ups).
         break;
       }
+
+      case "invoice.paid": {
+        // Recurring subscription renewal. Grant the tier's monthly
+        // credit allotment. Skip when billing_reason is
+        // 'subscription_create' (that's covered by the initial
+        // grant on checkout.session.completed — double-grant
+        // dodge).
+        const invoice = event.data.object as Stripe.Invoice;
+        if (invoice.billing_reason === "subscription_create") break;
+        if (invoice.billing_reason !== "subscription_cycle" &&
+            invoice.billing_reason !== "subscription_update") break;
+        const customerId =
+          typeof invoice.customer === "string"
+            ? invoice.customer
+            : invoice.customer?.id;
+        if (!customerId) break;
+        const priceId = invoice.lines.data[0]?.price?.id;
+        if (!priceId) break;
+        const pkg = await lookupPackage(db, priceId);
+        if (!pkg || pkg.kind !== "subscription") break;
+        const vendor = await resolveVendor(db, customerId);
+        if (!vendor) break;
+        await grantCredits(
+          db, vendor.userId, pkg.credits,
+          "monthly_grant", event.id, invoice.id ?? null,
+          `renewal: ${pkg.display_name} ${invoice.billing_reason}`,
+        );
+        break;
+      }
+
       case "invoice.payment_failed": {
         const invoice = event.data.object as Stripe.Invoice;
         const customerId =
@@ -173,9 +329,14 @@ async function applySubscription(
   vendorId: string,
   customerId: string | null,
   sub: Stripe.Subscription,
+  pkg: PackageRow | null,
 ) {
-  const tier =
-    sub.status === "active" || sub.status === "trialing" ? "pro" : "free";
+  const active = sub.status === "active" || sub.status === "trialing";
+  // Tier picks the package's tier when active, else 'free'. Falls
+  // back to 'pro' for active subs whose price isn't in the catalog
+  // (so we don't accidentally downgrade a real customer if a price
+  // row is missing).
+  const tier = active ? (pkg?.tier ?? "pro") : "free";
   const update: Record<string, unknown> = {
     subscription_status: sub.status,
     subscription_tier: tier,
