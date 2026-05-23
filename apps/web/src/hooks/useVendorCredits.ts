@@ -11,7 +11,14 @@ import { supabase } from "@/integrations/supabase/client";
 // flickers from "hidden → visible" on every nav while the next fetch
 // resolves. Cache survives within the SPA session; full refresh
 // reloads from supabase as normal.
+//
+// Cleared on auth SIGNED_OUT (audit #16) so a re-login of a different
+// account doesn't briefly paint with the previous user's balance.
 const balanceCache = new Map<string, number>();
+
+supabase.auth.onAuthStateChange((event) => {
+  if (event === "SIGNED_OUT") balanceCache.clear();
+});
 
 export function useLiveVendorBalance(userId: string | null | undefined): {
   balance: number;
