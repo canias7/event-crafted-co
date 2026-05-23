@@ -195,7 +195,8 @@
       "ai_superagents": "AI Superagents",
       "pay": "Vendora Pay",
       "gallery": "Gallery",
-      "subscription": "Subscription"
+      "subscription": "Subscription",
+      "usage": "Usage"
     },
     "bottom": {
       "payments": "Payments",

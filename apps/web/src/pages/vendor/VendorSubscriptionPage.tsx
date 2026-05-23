@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { Check, Crown, Loader2, Sparkles, ExternalLink, AlertCircle, Zap, Image, MessageSquare, Flame } from "lucide-react";
+import { Check, Crown, Loader2, Sparkles, Flame } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -291,17 +291,6 @@ export default function VendorSubscriptionPage() {
     setActingId(null);
   }
 
-  async function openPortal() {
-    if (!vendorId || actingId) return;
-    setActingId("portal");
-    await callStripeFunction(
-      "stripe-customer-portal",
-      { vendor_id: vendorId },
-      "Couldn't open portal",
-    );
-    setActingId(null);
-  }
-
   // Live countdown to launch offer expiry. Re-renders every second
   // while the offer is still active; flips off when expired so the
   // wasMonthly anchors disappear automatically.
@@ -326,155 +315,21 @@ export default function VendorSubscriptionPage() {
     return { days, hours, minutes, seconds };
   }, [offerActive, launchEndsMs, nowMs]);
 
-  const currentTier = TIERS.find((t) => t.id === (plan?.tier ?? "free"));
-  const isPaid = (plan?.tier ?? "free") !== "free";
-  const renewsAt = plan?.currentPeriodEnd
-    ? new Date(plan.currentPeriodEnd).toLocaleDateString(undefined, {
-        dateStyle: "long",
-      })
-    : null;
-
-  // Usage bar shows credits-consumed-this-period / monthly-grant.
-  // When monthly_grant is 0 (Free + topup-only vendors) we show the
-  // raw balance instead.
-  const usedThisPeriod = Math.max(0, credits.monthlyGrant - credits.balance);
-  const usagePct = credits.monthlyGrant > 0
-    ? Math.min(100, Math.round((usedThisPeriod / credits.monthlyGrant) * 100))
-    : null;
-
   return (
     <div className="flex min-h-screen vendor-canvas">
       <DashboardSidebar items={navItems} title="Vendor Portal" backPath="/" />
 
       <main id="main-content" className="flex-1 pb-20 lg:pb-0">
         <div className="backdrop-blur-sm px-4 md:px-8 py-5 sticky top-0 z-40">
-          <h1 className="font-editorial text-3xl">Subscription &amp; credits</h1>
+          <h1 className="font-editorial text-3xl">Subscription</h1>
           <p className="text-sm text-muted-foreground">
-            Your Vendora plan, AI credits, and billing
+            Pick a plan or top up credits. Track usage on the Usage tab.
           </p>
         </div>
 
         <div className="p-4 md:p-8 max-w-5xl space-y-5">
-          {/* ===== Current plan card ===== */}
-          <div
-            className="rounded-2xl p-6"
-            style={{
-              background: "rgba(255,253,250,0.7)",
-              border: "0.5px solid rgba(255,138,76,0.22)",
-              backdropFilter: "blur(10px)",
-              WebkitBackdropFilter: "blur(10px)",
-            }}
-          >
-            <div className="flex items-start justify-between gap-4 flex-wrap">
-              <div>
-                <p className="font-label text-muted-foreground">Current plan</p>
-                <h2 className="font-editorial text-3xl mt-1">
-                  {loading ? "—" : currentTier?.name ?? "Free"}
-                </h2>
-                <p className="text-sm text-muted-foreground mt-1">
-                  {isPaid
-                    ? plan?.cancelAtPeriodEnd
-                      ? `Cancels ${renewsAt ?? "at end of period"} — you'll be moved to Free.`
-                      : renewsAt
-                        ? `Renews ${renewsAt}.`
-                        : "Active."
-                    : "Pick a tier below — or top up credits without a subscription."}
-                </p>
-              </div>
-              {!loading && (
-                <PlanBadge tier={plan?.tier ?? "free"} status={plan?.status ?? null} />
-              )}
-            </div>
-
-            {plan?.status === "past_due" && (
-              <div className="mt-4 rounded-lg border border-amber-500/30 bg-amber-500/5 p-3 flex items-start gap-2.5">
-                <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-                <div className="text-xs leading-relaxed">
-                  <p className="font-medium text-foreground">Payment failed</p>
-                  <p className="text-muted-foreground">
-                    Your card was declined. Update it from the billing portal —
-                    Stripe is retrying for a few days before your plan is paused.
-                  </p>
-                </div>
-              </div>
-            )}
-
-            {isPaid && (
-              <div className="mt-5">
-                <Button
-                  onClick={openPortal}
-                  disabled={actingId !== null}
-                  variant="outline"
-                  className="rounded-full"
-                >
-                  {actingId === "portal" ? (
-                    <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
-                  ) : (
-                    <ExternalLink className="w-3.5 h-3.5 mr-1.5" />
-                  )}
-                  Manage billing
-                </Button>
-              </div>
-            )}
-          </div>
-
-          {/* ===== Credit balance card ===== */}
-          <div
-            className="rounded-2xl p-6"
-            style={{
-              background: "rgba(255,253,250,0.7)",
-              border: "0.5px solid rgba(255,138,76,0.22)",
-            }}
-          >
-            <div className="flex items-start justify-between gap-4 flex-wrap">
-              <div>
-                <p className="font-label text-muted-foreground inline-flex items-center gap-1.5">
-                  <Sparkles className="w-3.5 h-3.5" />
-                  AI credits
-                </p>
-                <h2 className="font-editorial text-3xl mt-1 tnum">
-                  {credits.initialized ? credits.balance.toLocaleString() : "—"}
-                </h2>
-                <p className="text-sm text-muted-foreground mt-1">
-                  {credits.monthlyGrant > 0
-                    ? `${usedThisPeriod.toLocaleString()} used this period of ${credits.monthlyGrant.toLocaleString()} included.`
-                    : "Top up below — credits never expire."}
-                </p>
-              </div>
-            </div>
-
-            {usagePct !== null && (
-              <div className="mt-4">
-                <div className="h-2 rounded-full bg-foreground/8 overflow-hidden">
-                  <div
-                    className="h-full rounded-full transition-all"
-                    style={{
-                      width: `${usagePct}%`,
-                      background: usagePct >= 90 ? "#dc2626" : usagePct >= 70 ? "#f59e0b" : "#c4541e",
-                    }}
-                  />
-                </div>
-                <p className="text-[11px] text-muted-foreground mt-1.5">
-                  {usagePct}% of your monthly allotment used.
-                </p>
-              </div>
-            )}
-
-            <div className="mt-5 grid grid-cols-2 md:grid-cols-3 gap-2 text-xs text-muted-foreground">
-              <div className="flex items-center gap-1.5">
-                <MessageSquare className="w-3.5 h-3.5" />
-                HILUX reply: <span className="font-medium text-foreground">2 cr</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <Image className="w-3.5 h-3.5" />
-                Axion image: <span className="font-medium text-foreground">10 cr</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <Zap className="w-3.5 h-3.5" />
-                Mux stream: <span className="font-medium text-foreground">1 cr/min</span>
-              </div>
-            </div>
-          </div>
+          {/* Current-plan and AI-credits cards moved to /vendor/usage.
+              This page is plan-selection-only now. */}
 
           {/* ===== Launch offer countdown banner ===== */}
           {offerActive && countdown && (
@@ -709,35 +564,3 @@ function CountdownCell({
   );
 }
 
-function PlanBadge({
-  tier,
-  status,
-}: {
-  tier: PlanState["tier"];
-  status: PlanState["status"];
-}) {
-  const isHealthy =
-    tier !== "free" && (status === "active" || status === "trialing");
-  if (isHealthy) {
-    return (
-      <span
-        className="inline-flex items-center text-[11px] font-medium rounded-full px-2.5 py-1"
-        style={{ background: "rgba(255,138,76,0.14)", color: "#c4541e" }}
-      >
-        Active
-      </span>
-    );
-  }
-  if (tier === "free") {
-    return (
-      <span className="inline-flex items-center text-[11px] font-medium rounded-full px-2.5 py-1 bg-muted text-muted-foreground">
-        Free
-      </span>
-    );
-  }
-  return (
-    <span className="inline-flex items-center text-[11px] font-medium rounded-full px-2.5 py-1 bg-amber-500/15 text-amber-700">
-      {status ?? "Inactive"}
-    </span>
-  );
-}
