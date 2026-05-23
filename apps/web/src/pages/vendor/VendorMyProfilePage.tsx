@@ -562,7 +562,7 @@ function ListingPreviewModal({
           <Button
             size="sm"
             variant="outline"
-            className="rounded-full shrink-0"
+            className="rounded-full shrink-0 mr-8"
             onClick={() => {
               onOpenChange(false);
               onEdit();
