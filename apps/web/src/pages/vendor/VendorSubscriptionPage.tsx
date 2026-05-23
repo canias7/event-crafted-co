@@ -28,10 +28,15 @@ import { vendorNavItems as navItems } from "@/data/navItems";
 
 // Keep these tables in sync with vendor_credit_packages on the DB.
 // Price IDs are LIVE-mode (created 2026-05-23 via Stripe MCP).
+//
+// wasMonthly is the anchor price we render as a strikethrough above
+// the current price — frames launch pricing as a discount. Pure
+// marketing copy, not stored anywhere in Stripe.
 const TIERS: Array<{
   id: "free" | "starter" | "pro" | "studio";
   name: string;
   priceMonthly: number;
+  wasMonthly?: number;
   priceId: string | null; // null = Free (no checkout)
   monthlyCredits: number;
   listings: string;
@@ -55,6 +60,7 @@ const TIERS: Array<{
     id: "starter",
     name: "Starter",
     priceMonthly: 14.99,
+    wasMonthly: 29,
     priceId: "price_1TaBvB2VPrcT6XA1fnKKxXVx",
     monthlyCredits: 200,
     listings: "1 listing",
@@ -69,6 +75,7 @@ const TIERS: Array<{
     id: "pro",
     name: "Pro",
     priceMonthly: 39,
+    wasMonthly: 89,
     priceId: "price_1TaBvD2VPrcT6XA1ZvEtx8gW",
     monthlyCredits: 800,
     listings: "Up to 5 listings",
@@ -83,6 +90,7 @@ const TIERS: Array<{
     id: "studio",
     name: "Studio",
     priceMonthly: 99,
+    wasMonthly: 249,
     priceId: "price_1TaBvG2VPrcT6XA19uuNkLZH",
     monthlyCredits: 2500,
     listings: "Unlimited listings",
@@ -457,7 +465,17 @@ export default function VendorSubscriptionPage() {
                     }}
                   >
                     <div className="flex items-center justify-between">
-                      <p className="font-medium text-foreground">{tier.name}</p>
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <p className="font-medium text-foreground">{tier.name}</p>
+                        {tier.wasMonthly && !isCurrent && (
+                          <span
+                            className="text-[9px] uppercase tracking-wide font-semibold px-1.5 py-0.5 rounded"
+                            style={{ background: "rgba(255,138,76,0.18)", color: "#c4541e" }}
+                          >
+                            Save {Math.round((1 - tier.priceMonthly / tier.wasMonthly) * 100)}%
+                          </span>
+                        )}
+                      </div>
                       {isCurrent && (
                         <span className="text-[10px] uppercase tracking-wide font-semibold text-[#c4541e]">
                           Current
@@ -465,6 +483,11 @@ export default function VendorSubscriptionPage() {
                       )}
                     </div>
                     <p className="mt-1">
+                      {tier.wasMonthly && (
+                        <span className="text-sm text-muted-foreground line-through mr-1.5 tnum">
+                          ${tier.wasMonthly}
+                        </span>
+                      )}
                       <span className="text-2xl font-semibold tnum">
                         ${tier.priceMonthly.toFixed(2)}
                       </span>
@@ -475,6 +498,11 @@ export default function VendorSubscriptionPage() {
                         ? `${tier.monthlyCredits.toLocaleString()} credits/mo · ${tier.listings}`
                         : tier.listings}
                     </p>
+                    {tier.wasMonthly && !isCurrent && (
+                      <p className="text-[10px] text-[#c4541e] font-medium mt-0.5">
+                        Launch pricing — limited time
+                      </p>
+                    )}
 
                     <ul className="mt-3 space-y-1.5 flex-1">
                       {tier.highlights.map((h) => (
