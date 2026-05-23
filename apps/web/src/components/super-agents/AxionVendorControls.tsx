@@ -11,6 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Switch } from "@/components/ui/switch";
 import { useAuth } from "@/hooks/useAuth";
 import { handleInsufficientCredits } from "@/lib/credits";
+import { ensureGalleryCapacity } from "@/lib/galleryStorage";
 import { toast } from "sonner";
 
 type Mode = "generate" | "edit";
@@ -169,6 +170,13 @@ export function AxionVendorControls() {
 
   const saveToGallery = async (dataUrl: string, index: number) => {
     if (!user?.id || saved[index]) return;
+    // Per-tier gallery cap pre-check. Without this a Free vendor
+    // (cap = 0) saving an Axion image hits the storage RLS reject
+    // and gets a cryptic "row violates row-level security policy"
+    // toast instead of the friendly upgrade prompt. ensureGalleryCapacity
+    // toasts the user itself when over cap and returns false.
+    const ok = await ensureGalleryCapacity(user.id, 1);
+    if (!ok) return;
     setSaved((s) => ({ ...s, [index]: "saving" }));
     // Track the uploaded storage path so we can clean it up if the
     // metadata insert later fails — otherwise the PNG is left orphaned

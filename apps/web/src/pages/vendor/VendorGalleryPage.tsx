@@ -85,6 +85,7 @@ import {
   type SanitizedExif,
 } from "@/lib/galleryImage";
 import {
+  ensureGalleryCapacity,
   purgeGalleryStorageObject,
   purgeGalleryStorageObjects,
   removeGalleryFileWithRetry,
@@ -580,39 +581,13 @@ export default function VendorGalleryPage() {
       return;
     }
 
-    // Per-tier image cap pre-check. Storage costs money, so each tier
-    // gets a hard ceiling on total image uploads. RLS enforces the
-    // same cap server-side; this just lets us show a friendly toast
-    // with an upgrade path instead of silent RLS rejections.
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const [{ data: cntData }, { data: capData }] = await Promise.all([
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (supabase as any).rpc("user_image_count", { p_user_id: user.id }),
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (supabase as any).rpc("user_image_cap", { p_user_id: user.id }),
-    ]);
-    const currentCount = typeof cntData === "number" ? cntData : 0;
-    const cap = typeof capData === "number" ? capData : null;
-    if (cap !== null && currentCount + list.length > cap) {
-      const remaining = Math.max(0, cap - currentCount);
-      toast.error(
-        remaining === 0
-          ? "You've hit your plan's gallery cap."
-          : `Only ${remaining} gallery image${remaining === 1 ? "" : "s"} left on your plan.`,
-        {
-          description:
-            "Upgrade your plan or remove some gallery images. Listing photos aren't affected.",
-          action: {
-            label: "Upgrade",
-            onClick: () => {
-              window.location.href = "/vendor/subscription";
-            },
-          },
-          duration: 8000,
-        },
-      );
-      return;
-    }
+    // Per-tier image cap pre-check via the shared helper. Returns
+    // false (after toasting the user) when the upload would exceed
+    // the cap. Mirrors what Axion's save-to-gallery does so both
+    // surfaces show the same "Upgrade" CTA instead of letting the
+    // storage RLS reject leak a raw error.
+    const okToUpload = await ensureGalleryCapacity(user.id, list.length);
+    if (!okToUpload) return;
 
     const targetAlbumId =
       activeAlbum !== ALL_TAB &&
