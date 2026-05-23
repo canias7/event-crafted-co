@@ -1,6 +1,14 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Check, Crown, Loader2, Sparkles, Flame } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -321,58 +329,72 @@ export default function VendorSubscriptionPage() {
       <DashboardSidebar items={navItems} title="Vendor Portal" backPath="/" />
 
       <main id="main-content" className="flex-1 pb-20 lg:pb-0">
-        <div className="backdrop-blur-sm px-4 md:px-8 py-5 sticky top-0 z-40">
-          <h1 className="font-editorial text-3xl">Subscription</h1>
-          <p className="text-sm text-muted-foreground">
-            Pick a plan or top up credits. Track usage on the Usage tab.
-          </p>
+        <div className="backdrop-blur-sm px-4 md:px-8 py-5 sticky top-0 z-40 flex items-start justify-between gap-4 flex-wrap">
+          <div>
+            <h1 className="font-editorial text-3xl">Subscription</h1>
+            <p className="text-sm text-muted-foreground">
+              Pick a plan or top up credits. Track usage on the Usage tab.
+            </p>
+          </div>
+          {/* Launch-pricing pill in the header — replaces the full
+              inline banner. Click opens a dialog with the full
+              countdown + copy. */}
+          {offerActive && countdown && (
+            <Dialog>
+              <DialogTrigger asChild>
+                <button
+                  type="button"
+                  className="inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-semibold transition-colors"
+                  style={{
+                    background: "rgba(255,138,76,0.18)",
+                    color: "#c4541e",
+                    border: "1px solid rgba(255,138,76,0.35)",
+                  }}
+                >
+                  <Flame className="w-3.5 h-3.5" />
+                  <span>60% off · ends in {countdown.days}d</span>
+                </button>
+              </DialogTrigger>
+              <DialogContent className="max-w-md">
+                <DialogHeader>
+                  <DialogTitle className="font-editorial text-2xl flex items-center gap-2">
+                    <span
+                      className="shrink-0 w-9 h-9 rounded-xl inline-flex items-center justify-center"
+                      style={{ background: "rgba(255,138,76,0.22)", color: "#c4541e" }}
+                      aria-hidden
+                    >
+                      <Flame className="w-4 h-4" />
+                    </span>
+                    Launch pricing — up to 60% off
+                  </DialogTitle>
+                  <DialogDescription className="text-sm">
+                    Lock in these rates before the offer ends. New rates apply on the next billing cycle after expiry.
+                  </DialogDescription>
+                </DialogHeader>
+                <div
+                  className="flex items-center justify-center gap-3 tnum mt-2 rounded-xl p-4"
+                  aria-label="Time remaining"
+                  style={{
+                    background: "linear-gradient(135deg, rgba(255,138,76,0.12), rgba(255,138,76,0.04))",
+                    border: "0.5px solid rgba(255,138,76,0.25)",
+                  }}
+                >
+                  <CountdownCell n={countdown.days} label="d" />
+                  <span className="text-foreground/40">:</span>
+                  <CountdownCell n={countdown.hours} label="h" pad />
+                  <span className="text-foreground/40">:</span>
+                  <CountdownCell n={countdown.minutes} label="m" pad />
+                  <span className="text-foreground/40">:</span>
+                  <CountdownCell n={countdown.seconds} label="s" pad />
+                </div>
+              </DialogContent>
+            </Dialog>
+          )}
         </div>
 
         <div className="p-4 md:p-8 max-w-5xl space-y-5">
           {/* Current-plan and AI-credits cards moved to /vendor/usage.
-              This page is plan-selection-only now. */}
-
-          {/* ===== Launch offer countdown banner ===== */}
-          {offerActive && countdown && (
-            <div
-              className="rounded-2xl p-4 flex items-center gap-3 flex-wrap"
-              style={{
-                background: "linear-gradient(135deg, rgba(255,138,76,0.18), rgba(255,138,76,0.06))",
-                border: "1px solid rgba(255,138,76,0.45)",
-                backdropFilter: "blur(10px)",
-                WebkitBackdropFilter: "blur(10px)",
-                boxShadow: "0 8px 28px -12px rgba(255,138,76,0.20)",
-              }}
-            >
-              <span
-                className="shrink-0 w-9 h-9 rounded-xl inline-flex items-center justify-center"
-                style={{ background: "rgba(255,138,76,0.22)", color: "#c4541e" }}
-                aria-hidden
-              >
-                <Flame className="w-4 h-4" />
-              </span>
-              <div className="flex-1 min-w-0">
-                <p className="font-medium text-foreground">
-                  Launch pricing — up to 60% off
-                </p>
-                <p className="text-xs text-muted-foreground mt-0.5">
-                  Lock in these rates before the offer ends. New rates apply on the next billing cycle after expiry.
-                </p>
-              </div>
-              <div
-                className="flex items-center gap-2 tnum"
-                aria-label="Time remaining"
-              >
-                <CountdownCell n={countdown.days} label="d" />
-                <span className="text-foreground/40">:</span>
-                <CountdownCell n={countdown.hours} label="h" pad />
-                <span className="text-foreground/40">:</span>
-                <CountdownCell n={countdown.minutes} label="m" pad />
-                <span className="text-foreground/40">:</span>
-                <CountdownCell n={countdown.seconds} label="s" pad />
-              </div>
-            </div>
-          )}
+              Launch-pricing banner moved to a header pill + dialog. */}
 
           {/* ===== Tier grid ===== */}
           <div>
