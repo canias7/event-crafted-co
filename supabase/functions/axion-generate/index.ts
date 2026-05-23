@@ -60,6 +60,22 @@ serve(async (req) => {
     const { data: userData, error: userErr } = await userClient.auth.getUser();
     if (userErr || !userData?.user) return json(401, { error: "invalid_session" });
 
+    // Vendor-only: Axion bills against the org's OpenAI key, so a
+    // logged-in non-vendor (host, test user) must not be able to
+    // burn quota here. Self-read works via the profiles owner-select
+    // RLS policy.
+    const { data: profileRow, error: profErr } = await userClient
+      .from("profiles")
+      .select("role")
+      .eq("id", userData.user.id)
+      .maybeSingle();
+    if (
+      profErr ||
+      (profileRow as { role?: string } | null)?.role !== "vendor"
+    ) {
+      return json(403, { error: "vendor_only" });
+    }
+
     if (!OPENAI_API_KEY) return json(500, { error: "openai_key_missing" });
 
     const payload = await req.json().catch(() => ({}));
