@@ -225,6 +225,21 @@ async function sha256Hex(text: string): Promise<string> {
     .join("");
 }
 
+// Keep a background promise alive past the response cycle. On
+// Supabase Edge Functions the worker is reclaimed once the response
+// streams out, dropping fire-and-forget .then() chains — audit log
+// entries and last_used_at bumps were getting lost. EdgeRuntime
+// exposes a waitUntil that holds the worker until the promise
+// settles. Falls back to the bare promise on platforms (like local
+// dev) where the global isn't present.
+function waitUntil(p: Promise<unknown>) {
+  const er = (globalThis as { EdgeRuntime?: { waitUntil?: (p: Promise<unknown>) => void } })
+    .EdgeRuntime;
+  if (er && typeof er.waitUntil === "function") {
+    er.waitUntil(p);
+  }
+}
+
 // Tool catalog — describes what Claude can do via this server.
 // Schemas are JSON Schema Draft 7 (what MCP expects). Each tool
 // is intentionally small + read-only in v1; we'll add write tools
@@ -878,13 +893,15 @@ serve(async (req) => {
     authMethod = "oauth";
     clientId = r.client_id;
     scope = r.scope === "read_only" ? "read_only" : "read_write";
-    admin
-      .from("oauth_access_tokens")
-      .update({ last_used_at: new Date().toISOString() })
-      .eq("id", r.id)
-      .then(({ error }) => {
-        if (error) console.error("[vendora-mcp] oauth last_used bump failed", error);
-      });
+    waitUntil(
+      admin
+        .from("oauth_access_tokens")
+        .update({ last_used_at: new Date().toISOString() })
+        .eq("id", r.id)
+        .then(({ error }: { error: unknown }) => {
+          if (error) console.error("[vendora-mcp] oauth last_used bump failed", error);
+        }),
+    );
   }
 
   // Fall back to PAT.
@@ -907,13 +924,15 @@ serve(async (req) => {
       clientId = p.token_prefix;
       scope = p.scope === "read_only" ? "read_only" : "read_write";
       vendorScope = p.vendor_id;
-      admin
-        .from("vendor_access_tokens")
-        .update({ last_used_at: new Date().toISOString() })
-        .eq("id", p.id)
-        .then(({ error }) => {
-          if (error) console.error("[vendora-mcp] pat last_used bump failed", error);
-        });
+      waitUntil(
+        admin
+          .from("vendor_access_tokens")
+          .update({ last_used_at: new Date().toISOString() })
+          .eq("id", p.id)
+          .then(({ error }: { error: unknown }) => {
+            if (error) console.error("[vendora-mcp] pat last_used bump failed", error);
+          }),
+      );
     }
   }
 
@@ -943,24 +962,26 @@ serve(async (req) => {
     const uri = String(params?.uri ?? "");
     const startedAt = Date.now();
     const logResourceRead = (ok: boolean, error: string | null) => {
-      admin
-        .from("mcp_call_log")
-        .insert({
-          user_id: userId,
-          client_id: clientId,
-          auth_method: authMethod,
-          tool_name: `resources/read`,
-          args: { uri },
-          ok,
-          error,
-          duration_ms: Date.now() - startedAt,
-        })
-        .then(({ error: e }) => {
-          if (e) console.error("[vendora-mcp] resource log insert failed", e);
-        });
+      waitUntil(
+        admin
+          .from("mcp_call_log")
+          .insert({
+            user_id: userId,
+            client_id: clientId,
+            auth_method: authMethod,
+            tool_name: `resources/read`,
+            args: { uri },
+            ok,
+            error,
+            duration_ms: Date.now() - startedAt,
+          })
+          .then(({ error: e }: { error: unknown }) => {
+            if (e) console.error("[vendora-mcp] resource log insert failed", e);
+          }),
+      );
     };
     try {
-      const payload = await readResource(admin, userId, uri);
+      const payload = await readResource(admin, userId, uri, vendorScope);
       logResourceRead(true, null);
       return rpcResult(id, {
         contents: [
@@ -1018,24 +1039,40 @@ serve(async (req) => {
         safeArgs[k] = v;
       }
     }
-    admin
-      .from("mcp_call_log")
-      .insert({
-        user_id: userId,
-        client_id: clientId,
-        auth_method: authMethod,
-        tool_name: toolName,
-        args: safeArgs,
-        ok,
-        error,
-        duration_ms: Date.now() - startedAt,
-        idempotency_key: extras.idempotency_key ?? null,
-        result_message_id: extras.result_message_id ?? null,
-      })
-      .then(({ error: e }) => {
-        if (e) console.error("[vendora-mcp] call log insert failed", e);
-      });
+    waitUntil(
+      admin
+        .from("mcp_call_log")
+        .insert({
+          user_id: userId,
+          client_id: clientId,
+          auth_method: authMethod,
+          tool_name: toolName,
+          args: safeArgs,
+          ok,
+          error,
+          duration_ms: Date.now() - startedAt,
+          idempotency_key: extras.idempotency_key ?? null,
+          result_message_id: extras.result_message_id ?? null,
+        })
+        .then(({ error: e }: { error: unknown }) => {
+          if (e) console.error("[vendora-mcp] call log insert failed", e);
+        }),
+    );
   };
+
+  // Vendor-scoped PATs can't manage HILUX settings: those live on
+  // the account-wide profiles row, not per-vendor. A PAT bound to
+  // vendor A would otherwise read/write HILUX for every other
+  // vendor the same user owns. Reject cleanly.
+  if (
+    vendorScope &&
+    (toolName === "get_hilux_settings" || toolName === "update_hilux_settings")
+  ) {
+    const msg =
+      "Scope: HILUX settings are account-wide; a vendor-scoped token cannot read or update them.";
+    logCall(false, msg);
+    return rpcError(id, -32030, msg);
+  }
 
   // Scope check: read-only tokens cannot call write tools. We log
   // the rejected call so the vendor sees "tried to send_reply with
@@ -1110,7 +1147,7 @@ async function runTool(
     case "mark_inquiry":
       return await markInquiry(admin, userId, args, vendorScope);
     case "get_action_log":
-      return await getActionLog(admin, userId, args);
+      return await getActionLog(admin, userId, args, vendorScope);
     case "get_mcp_call_log":
       return await getMcpCallLog(admin, userId, args);
     case "compose_draft_reply":
@@ -1152,8 +1189,14 @@ async function listInquiries(
   // args.lead_score applies through the embed.
   const baseCols =
     "id, vendor_id, event_type, event_date, guest_count, location, budget_min_cents, budget_max_cents, special_requests, status, last_message_at, created_at";
-  const scoreEmbed =
-    "inquiry_scores(lead_score, lead_score_reason, lead_score_updated_at, booking_intent_at, booking_intent_reason)";
+  // Use `!inner` when the caller asked to filter by lead_score, so the
+  // filter actually restricts the parent rows. Without the !inner the
+  // filter only narrows the embed; non-matching inquiries still come
+  // back with score=null (effectively a no-op filter).
+  const isScoreFiltered = typeof args.lead_score === "string";
+  const scoreEmbed = isScoreFiltered
+    ? "inquiry_scores!inner(lead_score, lead_score_reason, lead_score_updated_at, booking_intent_at, booking_intent_reason)"
+    : "inquiry_scores(lead_score, lead_score_reason, lead_score_updated_at, booking_intent_at, booking_intent_reason)";
   let q = admin
     .from("inquiries")
     .select(`${baseCols}, ${scoreEmbed}`)
@@ -1161,7 +1204,7 @@ async function listInquiries(
     .order("last_message_at", { ascending: false, nullsFirst: false })
     .limit(limit + 1);
   if (typeof args.status === "string") q = q.eq("status", args.status);
-  if (typeof args.lead_score === "string") {
+  if (isScoreFiltered) {
     q = q.eq("inquiry_scores.lead_score", args.lead_score);
   }
   if (typeof args.cursor === "string" && args.cursor) {
@@ -1285,6 +1328,7 @@ async function getActionLog(
   admin: any,
   userId: string,
   args: Record<string, any>,
+  vendorScope: string | null,
 ) {
   const limit = Math.min(Math.max(Number(args.limit) || 25, 1), 100);
   // Cursor pagination: fetch limit+1; if extra row present, its
@@ -1296,6 +1340,7 @@ async function getActionLog(
     .eq("user_id", userId)
     .order("created_at", { ascending: false })
     .limit(limit + 1);
+  if (vendorScope) q = q.eq("vendor_id", vendorScope);
   if (typeof args.action === "string") q = q.eq("action", args.action);
   if (typeof args.cursor === "string" && args.cursor) {
     q = q.lt("created_at", args.cursor);
@@ -1349,29 +1394,35 @@ async function readResource(
   admin: any,
   userId: string,
   uri: string,
+  vendorScope: string | null,
 ): Promise<unknown> {
   if (!uri.startsWith("vendora://")) {
     throw new Error("invalid uri scheme; expected vendora://...");
   }
   const path = uri.slice("vendora://".length);
   if (path === "settings") {
+    if (vendorScope) {
+      throw new Error(
+        "vendor_scoped_token_cannot_access_settings: HILUX settings are account-wide",
+      );
+    }
     return await getHiluxSettings(admin, userId);
   }
   if (path === "activity") {
-    return await getActionLog(admin, userId, {});
+    return await getActionLog(admin, userId, {}, vendorScope);
   }
   if (path === "listings") {
-    return await listListings(admin, userId);
+    return await listListings(admin, userId, vendorScope);
   }
   if (path.startsWith("inquiry/")) {
     const inquiryId = path.slice("inquiry/".length);
     if (!inquiryId) throw new Error("inquiry id required");
-    return await getInquiry(admin, userId, inquiryId);
+    return await getInquiry(admin, userId, inquiryId, vendorScope);
   }
   if (path.startsWith("thread/")) {
     const threadId = path.slice("thread/".length);
     if (!threadId) throw new Error("thread id required");
-    const thread = await loadOwnedThread(admin, userId, threadId);
+    const thread = await loadOwnedThread(admin, userId, threadId, vendorScope);
     const { data: messages } = await admin
       .from("direct_messages")
       .select("id, sender_role, body, created_at, is_hilux_generated, edited_at")
