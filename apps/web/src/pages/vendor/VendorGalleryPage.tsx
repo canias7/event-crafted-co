@@ -569,6 +569,40 @@ export default function VendorGalleryPage() {
       return;
     }
 
+    // Per-tier image cap pre-check. Storage costs money, so each tier
+    // gets a hard ceiling on total image uploads. RLS enforces the
+    // same cap server-side; this just lets us show a friendly toast
+    // with an upgrade path instead of silent RLS rejections.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const [{ data: cntData }, { data: capData }] = await Promise.all([
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (supabase as any).rpc("user_image_count", { p_user_id: user.id }),
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (supabase as any).rpc("user_image_cap", { p_user_id: user.id }),
+    ]);
+    const currentCount = typeof cntData === "number" ? cntData : 0;
+    const cap = typeof capData === "number" ? capData : null;
+    if (cap !== null && currentCount + list.length > cap) {
+      const remaining = Math.max(0, cap - currentCount);
+      toast.error(
+        remaining === 0
+          ? "You've hit your plan's image cap."
+          : `Only ${remaining} image upload${remaining === 1 ? "" : "s"} left on your plan.`,
+        {
+          description:
+            "Upgrade your plan or remove some images to keep uploading.",
+          action: {
+            label: "Upgrade",
+            onClick: () => {
+              window.location.href = "/vendor/subscription";
+            },
+          },
+          duration: 8000,
+        },
+      );
+      return;
+    }
+
     const targetAlbumId =
       activeAlbum !== ALL_TAB &&
       activeAlbum !== UNCATEGORIZED_TAB &&
