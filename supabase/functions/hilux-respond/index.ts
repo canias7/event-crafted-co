@@ -23,6 +23,10 @@ import {
   priceUsd,
   scoreLead,
 } from "../_shared/hilux-prompt.ts";
+import {
+  consumeCredits,
+  refundCredits,
+} from "../_shared/credits.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -249,12 +253,41 @@ serve(async (req) => {
       return ok({ skipped: "no_trailing_host_msg" });
     }
 
-    log("calling claude", { vendor: ctx.vendor.id, history_len: claudeMessages.length });
-    const { text: reply, usage: replyUsage } = await callClaudeWithUsage(
-      ANTHROPIC_API_KEY,
-      systemText,
-      claudeMessages,
+    // Charge credits BEFORE the Claude call. Refunded if the call
+    // throws so a flaky Anthropic response doesn't bill the vendor.
+    // Out of credits = HILUX stays silent on this thread; the host
+    // just doesn't get an auto-reply. (Vendor sees this in the UI
+    // balance widget and the activity log once Phase 4 lands.)
+    const consume = await consumeCredits(
+      ctx.vendor.user_id,
+      "hilux_reply",
+      messageId,
     );
+    if (!consume.ok) {
+      await clearTyping();
+      return ok({ skipped: consume.reason });
+    }
+
+    log("calling claude", { vendor: ctx.vendor.id, history_len: claudeMessages.length });
+    let reply: string;
+    let replyUsage: ClaudeUsage;
+    try {
+      const out = await callClaudeWithUsage(
+        ANTHROPIC_API_KEY,
+        systemText,
+        claudeMessages,
+      );
+      reply = out.text;
+      replyUsage = out.usage;
+    } catch (claudeErr) {
+      await refundCredits(
+        ctx.vendor.user_id,
+        "hilux_reply",
+        messageId,
+        `claude_error: ${claudeErr instanceof Error ? claudeErr.message : String(claudeErr)}`,
+      );
+      throw claudeErr;
+    }
     // Token accumulator: every Claude call below (scoring, intent,
     // field extraction) adds its usage to this so the per-host-msg
     // cost we log reflects the full HILUX spend, not just the reply.

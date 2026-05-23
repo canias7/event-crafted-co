@@ -12,6 +12,11 @@ import {
   loadVendorContext,
   priceUsd,
 } from "../_shared/hilux-prompt.ts";
+import {
+  consumeCredits,
+  refundCredits,
+  insufficientCreditsResponse,
+} from "../_shared/credits.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -171,20 +176,60 @@ serve(async (req) => {
     const seasoned = systemText +
       "\n\nIMPORTANT: The vendor has just asked you to RE-DRAFT a reply because they didn't love the previous version. Take a noticeably different angle — different opener, different emphasis — while still answering the host's most recent message. Don't apologize or reference the previous draft.";
 
-    const reply = await callClaude(ANTHROPIC_API_KEY, seasoned, claudeMessages);
-    if (/^\s*ESCALATE\s*:/i.test(reply)) return json(409, { error: "would_escalate", body: reply.trim() });
+    // Charge credits BEFORE the Claude call. Refunded below if the
+    // call throws, returns ESCALATE, or the message update fails —
+    // vendor shouldn't pay for an outcome they can't use.
+    const consume = await consumeCredits(
+      userData.user.id,
+      "hilux_regenerate",
+      messageId,
+    );
+    if (!consume.ok) {
+      if (consume.reason === "insufficient_credits") {
+        return insufficientCreditsResponse(consume.cost, cors);
+      }
+      return json(503, { error: "credit_service_unavailable" });
+    }
+
+    let reply: string;
+    try {
+      reply = await callClaude(ANTHROPIC_API_KEY, seasoned, claudeMessages);
+    } catch (claudeErr) {
+      await refundCredits(
+        userData.user.id,
+        "hilux_regenerate",
+        messageId,
+        `claude_error: ${claudeErr instanceof Error ? claudeErr.message : String(claudeErr)}`,
+      );
+      throw claudeErr;
+    }
+    if (/^\s*ESCALATE\s*:/i.test(reply)) {
+      await refundCredits(
+        userData.user.id,
+        "hilux_regenerate",
+        messageId,
+        "would_escalate",
+      );
+      return json(409, { error: "would_escalate", body: reply.trim() });
+    }
 
     const { error: updateErr } = await admin
       .from("direct_messages")
       .update({ body: reply, edited_at: new Date().toISOString() })
       .eq("id", messageId);
     if (updateErr) {
+      await refundCredits(
+        userData.user.id,
+        "hilux_regenerate",
+        messageId,
+        `update_failed: ${updateErr.message ?? String(updateErr)}`,
+      );
       console.error("[hilux-regenerate] update failed", updateErr);
       return json(500, { error: "update_failed" });
     }
 
     console.log("[hilux-regenerate] ok", { user: userData.user.id, message_id: messageId, length: reply.length });
-    return json(200, { reply });
+    return json(200, { reply, credits_remaining: consume.balance });
   } catch (err) {
     console.error("[hilux-regenerate] uncaught:", err);
     return json(500, { error: err instanceof Error ? err.message : String(err) });

@@ -17,6 +17,11 @@ import {
   loadVendorContext,
   priceUsd,
 } from "../_shared/hilux-prompt.ts";
+import {
+  consumeCredits,
+  refundCredits,
+  insufficientCreditsResponse,
+} from "../_shared/credits.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -161,7 +166,32 @@ serve(async (req) => {
       isFirstReply: !orderedHistory.some((m) => m.is_hilux_generated === true),
     });
 
-    const reply = await callClaude(ANTHROPIC_API_KEY, systemText, claudeMessages);
+    // Charge credits BEFORE the Claude call. Refunded if the call
+    // throws — vendor shouldn't pay when no draft comes back.
+    const consume = await consumeCredits(
+      userData.user.id,
+      "hilux_draft",
+      threadId,
+    );
+    if (!consume.ok) {
+      if (consume.reason === "insufficient_credits") {
+        return insufficientCreditsResponse(consume.cost, cors);
+      }
+      return json(503, { error: "credit_service_unavailable" });
+    }
+
+    let reply: string;
+    try {
+      reply = await callClaude(ANTHROPIC_API_KEY, systemText, claudeMessages);
+    } catch (claudeErr) {
+      await refundCredits(
+        userData.user.id,
+        "hilux_draft",
+        threadId,
+        `claude_error: ${claudeErr instanceof Error ? claudeErr.message : String(claudeErr)}`,
+      );
+      throw claudeErr;
+    }
     // Strip ESCALATE token if HILUX would have escalated — vendor
     // still wants the draft text.
     const sanitized =
@@ -169,6 +199,7 @@ serve(async (req) => {
     return json(200, {
       draft: sanitized,
       would_escalate: /^\s*ESCALATE\s*:/i.test(reply),
+      credits_remaining: consume.balance,
     });
   } catch (err) {
     console.error("[hilux-draft-reply] uncaught:", err);
