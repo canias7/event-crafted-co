@@ -292,7 +292,7 @@ export default function VendorUsagePage() {
           {/* Hero strip + daily-spend chart sit side-by-side: the
               credits chip on the left (w-fit), the bar chart fills
               the rest of the row. */}
-          <div className="flex flex-col lg:flex-row gap-5 items-stretch">
+          <div className="flex flex-col lg:flex-row gap-5 items-start">
           <Card className="w-fit max-w-full !p-3 md:!px-5 md:!py-3 shrink-0">
             <div className="flex items-center gap-3">
               <p className="font-label text-muted-foreground shrink-0 hidden sm:inline">
