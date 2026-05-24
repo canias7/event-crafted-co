@@ -29,6 +29,8 @@ import {
 } from "@/components/ui/dialog";
 import { vendorNavItems } from "@/data/navItems";
 import { useAuth } from "@/hooks/useAuth";
+import { useVendorPlan } from "@/hooks/useVendorPlan";
+import { StudioVerifiedBadge } from "@/components/vendor/StudioVerifiedBadge";
 import { supabase } from "@/integrations/supabase/client";
 
 interface VendorRow {
@@ -54,6 +56,11 @@ interface AccountProfile {
 
 export default function VendorMyProfilePage() {
   const { user } = useAuth();
+  // Studio-tier verification badge on the header logo. Reads from
+  // profiles.subscription_tier per the per-user subscription model
+  // (migration 20260524000000).
+  const { tier } = useVendorPlan(user?.id ?? null);
+  const studioVerified = tier === "studio";
   const [loading, setLoading] = useState(true);
   const [primary, setPrimary] = useState<VendorRow | null>(null);
   const [account, setAccount] = useState<AccountProfile | null>(null);
@@ -234,6 +241,7 @@ export default function VendorMyProfilePage() {
               bio={account?.bio ?? null}
               memberSince={memberSince}
               verified={!!primary?.verified_at}
+              studioVerified={studioVerified}
               ratingAvg={ratingAvg}
               onShare={onShare}
             />
@@ -287,6 +295,7 @@ function HeaderCard({
   bio,
   memberSince,
   verified,
+  studioVerified,
   ratingAvg,
   onShare,
 }: {
@@ -296,6 +305,7 @@ function HeaderCard({
   bio: string | null;
   memberSince: string;
   verified: boolean;
+  studioVerified: boolean;
   ratingAvg: number | null;
   onShare: () => void;
 }) {
@@ -317,6 +327,17 @@ function HeaderCard({
           {verified ? (
             <div className="absolute -right-1 bottom-1 w-7 h-7 rounded-full bg-card border-2 border-background flex items-center justify-center">
               <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+            </div>
+          ) : null}
+          {/* Studio starburst seal on the logo. Same corner badge
+              treatment as the public detail page hero. */}
+          {studioVerified ? (
+            <div
+              className="absolute -right-1.5 -top-1.5 rounded-full bg-white p-[2px]"
+              style={{ boxShadow: "0 4px 10px -2px rgba(29,109,222,0.35)" }}
+              aria-hidden
+            >
+              <StudioVerifiedBadge />
             </div>
           ) : null}
         </div>
