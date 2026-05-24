@@ -11,6 +11,7 @@ import {
 import { useSearchParams } from "react-router-dom";
 import {
   Archive,
+  ArrowLeft,
   BellOff,
   Bell,
   Flag,
@@ -954,6 +955,11 @@ export default function VendorPartnersPage() {
                 otherVendorLogo={otherVendorLogo}
                 activeNow={activeNow}
                 muted={muted}
+                onBack={() => {
+                  const next = new URLSearchParams(searchParams);
+                  next.delete("thread");
+                  setSearchParams(next, { replace: true });
+                }}
                 onToggleMute={toggleMute}
                 onArchive={archiveThread}
                 onReport={reportThread}
@@ -1018,6 +1024,7 @@ function PartnerChatPane(props: {
   otherVendorLogo: string | null;
   activeNow: boolean;
   muted: boolean;
+  onBack: () => void;
   onToggleMute: () => void;
   onArchive: () => void;
   onReport: () => void;
@@ -1065,6 +1072,7 @@ function PartnerChatPane(props: {
     otherVendorLogo,
     activeNow,
     muted,
+    onBack,
     onToggleMute,
     onArchive,
     onReport,
@@ -1111,15 +1119,26 @@ function PartnerChatPane(props: {
 
   return (
     <div className="flex flex-col h-full min-h-0">
-      {/* Liquid-glass header */}
+      {/* Liquid-glass header — mirrors InquiryDetailPage so the
+          vendor sees the same chrome across all chat surfaces:
+          sticky, pill back button, avatar with online dot, name +
+          chip, sub-line, pill info button. */}
       <div
-        className="px-4 md:px-6 py-3 backdrop-blur-md"
+        className="sticky top-0 z-40 px-4 md:px-6 py-3 backdrop-blur-md"
         style={{
           background: "rgba(255,253,250,0.85)",
           borderBottom: "0.5px solid rgba(255,138,76,0.18)",
         }}
       >
         <div className="flex items-center gap-3 max-w-3xl mx-auto">
+          <button
+            type="button"
+            onClick={onBack}
+            aria-label="Back to threads"
+            className="shrink-0 inline-flex items-center justify-center w-10 h-10 rounded-full bg-white/95 shadow-sm border border-border/40 text-foreground/80 hover:bg-white"
+          >
+            <ArrowLeft className="w-4 h-4" />
+          </button>
           <div className="relative shrink-0">
             {otherVendorLogo ? (
               <img
@@ -1148,11 +1167,22 @@ function PartnerChatPane(props: {
             ) : null}
           </div>
           <div className="min-w-0 flex-1 leading-tight">
-            <p className="font-medium text-foreground truncate">
-              {otherVendorName}
-            </p>
+            <div className="flex items-center gap-2 min-w-0">
+              <p className="font-medium text-foreground truncate">
+                {otherVendorName}
+              </p>
+              <span
+                className="shrink-0 inline-flex items-center text-[10px] uppercase tracking-wider font-medium px-1.5 py-0.5 rounded-full"
+                style={{
+                  background: "rgba(99,102,241,0.12)",
+                  color: "rgb(67,56,202)",
+                }}
+              >
+                Partner
+              </span>
+            </div>
             <p className="text-[11px] text-muted-foreground truncate">
-              {activeNow ? "Active now" : "Partner DM"}
+              {activeNow ? "Active now" : "Vendor-to-vendor chat"}
             </p>
           </div>
           <DropdownMenu>
