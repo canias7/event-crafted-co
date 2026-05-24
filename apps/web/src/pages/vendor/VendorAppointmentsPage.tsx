@@ -19,6 +19,7 @@ import {
   ChevronLeft,
   ChevronRight,
   ImagePlus,
+  Pencil,
   Plus,
   X as XIcon,
 } from "lucide-react";
@@ -474,6 +475,31 @@ export default function VendorAppointmentsPage() {
     loadCalendar();
   }
 
+  // Edit the title of an already-blocked date. UPDATE the reason
+  // on vendor_unavailable_dates. Optimistic local update so the
+  // input doesn't flicker while waiting for the round trip.
+  async function editBlockTitle(ymd: string, newTitle: string) {
+    if (!selectedListingId) return;
+    const trimmed = newTitle.trim();
+    const reasonForDb = trimmed.length > 0 ? trimmed : "Blocked manually";
+    setManualBlocks((prev) => {
+      const next = new Map(prev);
+      next.set(ymd, reasonForDb);
+      return next;
+    });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error } = await (supabase as any)
+      .from("vendor_unavailable_dates")
+      .update({ reason: reasonForDb })
+      .eq("vendor_id", selectedListingId)
+      .eq("date", ymd);
+    if (error) {
+      toast.error(`Couldn't update title: ${error.message}`);
+      // Roll the local map back by reloading from the server.
+      void loadCalendar();
+    }
+  }
+
   function shiftMonth(delta: number) {
     const next = new Date(viewMonth);
     next.setMonth(next.getMonth() + delta);
@@ -600,9 +626,17 @@ export default function VendorAppointmentsPage() {
                 </div>
               ) : (
                 <div className="space-y-2">
-                  {selectedItems.map((it, idx) => (
-                    <BookingRow key={idx} item={it} />
-                  ))}
+                  {selectedItems.map((it, idx) =>
+                    it.kind === "busy" && selectedYmd ? (
+                      <BlockedDayCard
+                        key={idx}
+                        title={it.title}
+                        onSave={(newTitle) => editBlockTitle(selectedYmd, newTitle)}
+                      />
+                    ) : (
+                      <BookingRow key={idx} item={it} />
+                    ),
+                  )}
                 </div>
               )}
             </div>
@@ -1107,6 +1141,81 @@ function LegendDot({
         <span className={`w-3 h-3 rounded-sm ${swatchClass}`} />
       )}
       <span className="text-foreground">{label}</span>
+    </div>
+  );
+}
+
+// Busy/blocked day card with inline-editable title. Clicking the
+// title (or the pencil) swaps it for an Input; Enter/blur saves,
+// Escape reverts. Save calls back to the parent's editBlockTitle
+// which UPDATE-s the vendor_unavailable_dates.reason column.
+function BlockedDayCard({
+  title,
+  onSave,
+}: {
+  title: string;
+  onSave: (newTitle: string) => Promise<void> | void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(title);
+  // Keep draft in sync if the parent prop changes (e.g. realtime
+  // update from another tab). Doesn't fire while editing so the
+  // vendor's keystrokes aren't stomped mid-edit.
+  useEffect(() => {
+    if (!editing) setDraft(title);
+  }, [title, editing]);
+
+  function commit() {
+    setEditing(false);
+    const trimmed = draft.trim();
+    // No-op if unchanged so we don't fire a useless UPDATE round
+    // trip every time the vendor opens + closes the input.
+    if (trimmed === title.trim()) return;
+    void onSave(trimmed);
+  }
+
+  return (
+    <div className="card-soft p-4">
+      <div className="flex items-center gap-3">
+        <span className="w-1.5 h-10 rounded-full bg-muted-foreground/40" />
+        <div className="flex-1 min-w-0">
+          {editing ? (
+            <Input
+              autoFocus
+              value={draft}
+              maxLength={80}
+              onChange={(e) => setDraft(e.target.value)}
+              onBlur={commit}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  commit();
+                } else if (e.key === "Escape") {
+                  e.preventDefault();
+                  setDraft(title);
+                  setEditing(false);
+                }
+              }}
+              placeholder="Christian's birthday…"
+              className="h-8 text-sm"
+            />
+          ) : (
+            <button
+              type="button"
+              onClick={() => setEditing(true)}
+              className="group flex items-center gap-1.5 font-medium text-foreground hover:text-foreground/70 transition-colors text-left max-w-full"
+              aria-label="Edit title"
+            >
+              <span className="truncate">{title}</span>
+              <Pencil className="h-3 w-3 opacity-0 group-hover:opacity-60 shrink-0" />
+            </button>
+          )}
+          <p className="text-xs text-muted-foreground truncate">
+            Marked unavailable
+          </p>
+        </div>
+        <span className="text-xs text-muted-foreground">All day</span>
+      </div>
     </div>
   );
 }
