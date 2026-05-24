@@ -236,7 +236,17 @@ export default function VendorUsagePage() {
     [dailyTotals],
   );
 
-  const usedThisPeriod = Math.max(0, credits.monthlyGrant - credits.balance);
+  // Audit #4: "monthlyGrant − balance" clamps to 0 once a vendor
+  // carries credits across renewals or buys a top-up (balance >
+  // grant). Compute period usage from actual consume rows since
+  // periodStartedAt instead.
+  const usedThisPeriod = useMemo(() => {
+    if (!credits.periodStartedAt) return 0;
+    const since = credits.periodStartedAt;
+    return consume30
+      .filter((r) => r.created_at >= since)
+      .reduce((s, r) => s + Math.abs(r.delta), 0);
+  }, [consume30, credits.periodStartedAt]);
   const usagePct = useMemo(() => {
     return credits.monthlyGrant > 0
       ? Math.min(100, Math.round((usedThisPeriod / credits.monthlyGrant) * 100))
@@ -331,24 +341,29 @@ export default function VendorUsagePage() {
                 </p>
               )}
 
-              <Button
-                onClick={openPortal}
-                disabled={!vendorId || actingId !== null}
-                variant="outline"
-                size="sm"
-                className="rounded-full shrink-0"
-                style={{
-                  background: "rgba(255,255,255,0.6)",
-                  borderColor: "rgba(255,138,76,0.3)",
-                }}
-              >
-                {actingId === "portal" ? (
-                  <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
-                ) : (
-                  <ExternalLink className="w-3.5 h-3.5 mr-1.5" />
-                )}
-                Manage billing
-              </Button>
+              {/* Audit #6: only show Manage billing when the vendor
+                  has a Stripe customer to manage. Free/never-topped-
+                  up vendors hitting the portal got a raw 400 toast. */}
+              {credits.monthlyGrant > 0 || credits.lifetimeToppedUp > 0 ? (
+                <Button
+                  onClick={openPortal}
+                  disabled={!vendorId || actingId !== null}
+                  variant="outline"
+                  size="sm"
+                  className="rounded-full shrink-0"
+                  style={{
+                    background: "rgba(255,255,255,0.6)",
+                    borderColor: "rgba(255,138,76,0.3)",
+                  }}
+                >
+                  {actingId === "portal" ? (
+                    <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
+                  ) : (
+                    <ExternalLink className="w-3.5 h-3.5 mr-1.5" />
+                  )}
+                  Manage billing
+                </Button>
+              ) : null}
             </div>
           </Card>
 

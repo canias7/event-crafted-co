@@ -149,6 +149,9 @@ export default function InquiryDetailPage() {
   const [threadId, setThreadId] = useState<string | null>(null);
   const [hiluxPaused, setHiluxPaused] = useState(false);
   const [hiluxToggling, setHiluxToggling] = useState(false);
+  // Tracks the message_id currently being regenerated so a fast
+  // double-click on Regenerate doesn't fire two consumes.
+  const [regeneratingId, setRegeneratingId] = useState<string | null>(null);
   const [composer, setComposer] = useState("");
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);

@@ -3,18 +3,34 @@ project_id = "pahpjjubhbcbwqjpamwv"
 [functions]
   [functions.auth-email-hook]
     verify_jwt = false
+  [functions.axion-generate]
+    verify_jwt = true
   [functions.geocode-vendor]
     verify_jwt = true
   [functions.hilux-archive-cold]
     verify_jwt = false
+  [functions.hilux-draft-reply]
+    verify_jwt = true
   [functions.hilux-follow-up]
     verify_jwt = false
+  [functions.hilux-preview-prompt]
+    verify_jwt = true
   [functions.hilux-regenerate]
     verify_jwt = true
   [functions.hilux-respond]
     verify_jwt = false
   [functions.hilux-sandbox]
     verify_jwt = true
+  [functions.stripe-customer-portal]
+    verify_jwt = true
+  [functions.stripe-subscription-checkout]
+    verify_jwt = true
+  [functions.stripe-sync-subscription]
+    verify_jwt = true
+  [functions.stripe-topup-checkout]
+    verify_jwt = true
+  [functions.stripe-webhook]
+    verify_jwt = false
   [functions.process-email-queue]
     verify_jwt = true
   [functions.scan-daily-digests]

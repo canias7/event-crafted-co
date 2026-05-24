@@ -68,29 +68,26 @@ serve(async (req: Request) => {
     // Caller's primary listing — same ranking the cap functions use
     // (studio > pro > starter > free), then any listing with a
     // stripe customer wins ties.
+    // Audit #2: vendor_profiles.subscription_tier + stripe_customer_id
+    // were deprecated by the per-user state-to-profiles migration.
+    // Both columns are NULL for any vendor onboarded after that
+    // migration, so the old "highest-tier first" ranking always fell
+    // through to created_at anyway. Pick the oldest listing
+    // explicitly — that's the most likely "primary" one anyway, and
+    // doesn't depend on dead columns.
     const { data: listingsRaw } = await admin
       .from("vendor_profiles")
-      .select("id, subscription_tier, stripe_customer_id, created_at")
-      .eq("user_id", userData.user.id);
+      .select("id, created_at")
+      .eq("user_id", userData.user.id)
+      .order("created_at", { ascending: true })
+      .limit(1);
     const listings = (listingsRaw ?? []) as Array<{
       id: string;
-      subscription_tier: string | null;
-      stripe_customer_id: string | null;
       created_at: string | null;
     }>;
     if (listings.length === 0) {
       return json(404, { error: "no_listing" });
     }
-    const tierRank: Record<string, number> = { studio: 4, pro: 3, starter: 2, free: 1 };
-    listings.sort((a, b) => {
-      const ar = tierRank[a.subscription_tier ?? "free"] ?? 0;
-      const br = tierRank[b.subscription_tier ?? "free"] ?? 0;
-      if (br !== ar) return br - ar;
-      const ac = a.stripe_customer_id ? 1 : 0;
-      const bc = b.stripe_customer_id ? 1 : 0;
-      if (bc !== ac) return bc - ac;
-      return (b.created_at ?? "").localeCompare(a.created_at ?? "");
-    });
     const vendorId = listings[0].id;
 
     const ctx = await loadVendorContext(admin, vendorId);
