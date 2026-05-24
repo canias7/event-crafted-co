@@ -653,6 +653,11 @@ export default function InquiryDetailPage() {
   }
 
   async function regenerateHilux(messageId: string) {
+    // Audit #6: gate against double-click. The function consumes 2
+    // credits before the latest-message check; a fast second click
+    // would burn credits then 409-refund — racy and ugly.
+    if (regeneratingId) return;
+    setRegeneratingId(messageId);
     const optimisticToast = toast.loading("HILUX is rewriting…");
     try {
       const { data, error } = await supabase.functions.invoke(
@@ -701,6 +706,8 @@ export default function InquiryDetailPage() {
       toast.error(friendly ? msg : `Couldn't regenerate: ${msg}`, {
         id: optimisticToast,
       });
+    } finally {
+      setRegeneratingId(null);
     }
   }
 

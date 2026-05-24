@@ -94,6 +94,41 @@ export default function VendorUsagePage() {
     Array<{ created_at: string; delta: number; action_type: string | null }>
   >([]);
   const [actingId, setActingId] = useState<string | null>(null);
+  // Hover targets for the chart previews. Indices into dailyTotals
+  // for the bar chart; action key for the donut.
+  const [hoveredBarIdx, setHoveredBarIdx] = useState<number | null>(null);
+  const [hoveredAction, setHoveredAction] = useState<string | null>(null);
+  // Recent activity defaults to a 10-row preview. Show more flips
+  // to a max-h scrollable container so the page itself stays put.
+  const [activityExpanded, setActivityExpanded] = useState(false);
+
+  // Fetcher pulled out of the mount effect so the realtime subscription
+  // below can call it on every insert without duplicating the queries.
+  const fetchAll = useCallback(async () => {
+    if (!user?.id) return;
+    const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+    const [{ data: recent }, { data: spend }] = await Promise.all([
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (supabase as any)
+        .from("vendor_credit_transactions")
+        .select("created_at, delta, kind, action_type, balance_after, note")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false })
+        .limit(25),
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (supabase as any)
+        .from("vendor_credit_transactions")
+        .select("created_at, delta, action_type")
+        .eq("user_id", user.id)
+        .eq("kind", "consume")
+        .gte("created_at", since)
+        .order("created_at", { ascending: true }),
+    ]);
+    setLedger((recent as LedgerRow[] | null) ?? []);
+    setConsume30(
+      (spend as Array<{ created_at: string; delta: number; action_type: string | null }> | null) ?? [],
+    );
+  }, [user?.id]);
 
   // Fetcher pulled out of the mount effect so the realtime subscription
   // below can call it on every insert without duplicating the queries.
@@ -359,27 +394,85 @@ export default function VendorUsagePage() {
                   </div>
                 }
               />
-              <div className="flex items-end gap-[3px] h-44 mt-5">
-                {dailyTotals.map((d) => {
-                  const heightPct = maxDaily === 0 ? 0 : (d.credits / maxDaily) * 100;
+              <div className="relative h-44 mt-5">
+                <div className="flex items-end gap-[3px] h-full">
+                  {dailyTotals.map((d, idx) => {
+                    const heightPct = maxDaily === 0 ? 0 : (d.credits / maxDaily) * 100;
+                    const active = hoveredBarIdx === idx;
+                    return (
+                      <div
+                        key={d.date}
+                        onMouseEnter={() => setHoveredBarIdx(idx)}
+                        onMouseLeave={() => setHoveredBarIdx((prev) => (prev === idx ? null : prev))}
+                        className="flex-1 rounded-t-[2px] cursor-default transition-all"
+                        style={{
+                          height: d.credits > 0 ? `${Math.max(heightPct, 4)}%` : "4px",
+                          background: d.credits > 0
+                            ? "linear-gradient(180deg, #ff8a4c 0%, #c4541e 100%)"
+                            : "rgba(20,15,10,0.08)",
+                          opacity: hoveredBarIdx === null || active ? 1 : 0.55,
+                        }}
+                      />
+                    );
+                  })}
+                </div>
+                {hoveredBarIdx !== null && dailyTotals[hoveredBarIdx] ? (
+                  <div
+                    className="pointer-events-none absolute -top-2 -translate-y-full rounded-lg bg-foreground text-background px-2.5 py-1.5 text-[11px] shadow-lg whitespace-nowrap z-10"
+                    style={{
+                      left: `${(hoveredBarIdx / 29) * 100}%`,
+                      transform: `translate(${hoveredBarIdx <= 2 ? "0" : hoveredBarIdx >= 27 ? "-100%" : "-50%"}, -100%)`,
+                    }}
+                  >
+                    <div className="font-medium">
+                      {new Date(dailyTotals[hoveredBarIdx].date + "T00:00:00Z").toLocaleDateString(undefined, {
+                        weekday: "short", month: "short", day: "numeric", timeZone: "UTC",
+                      })}
+                    </div>
+                    <div className="tnum opacity-80">
+                      {dailyTotals[hoveredBarIdx].credits === 0
+                        ? "no spend"
+                        : `${dailyTotals[hoveredBarIdx].credits.toLocaleString()} credit${dailyTotals[hoveredBarIdx].credits === 1 ? "" : "s"}`}
+                    </div>
+                  </div>
+                ) : null}
+              </div>
+              {/* Date markers — 5 evenly-spaced labels along the
+                  30-day x-axis. Anchors the bars to actual calendar
+                  days so vendors can see "spike on May 22" not just
+                  "spike somewhere late". */}
+              <div className="relative h-4 mt-2 text-[10px] uppercase tracking-wider text-muted-foreground">
+                {[0, 7, 14, 21, 29].map((idx) => {
+                  const row = dailyTotals[idx];
+                  if (!row) return null;
+                  const d = new Date(row.date + "T00:00:00Z");
+                  const label = d.toLocaleDateString(undefined, {
+                    month: "short",
+                    day: "numeric",
+                    timeZone: "UTC",
+                  });
+                  const leftPct = (idx / 29) * 100;
                   return (
-                    <div
-                      key={d.date}
-                      className="flex-1 rounded-t-[2px] transition-colors hover:opacity-80"
-                      title={`${new Date(d.date).toLocaleDateString(undefined, {
-                        month: "short", day: "numeric",
-                      })}: ${d.credits.toLocaleString()} cr`}
+                    <span
+                      key={row.date}
+                      className="absolute tnum"
                       style={{
-                        height: d.credits > 0 ? `${Math.max(heightPct, 4)}%` : "4px",
-                        background: d.credits > 0
-                          ? "linear-gradient(180deg, #ff8a4c 0%, #c4541e 100%)"
-                          : "rgba(20,15,10,0.08)",
+                        left: `${leftPct}%`,
+                        transform:
+                          idx === 0
+                            ? "translateX(0)"
+                            : idx === 29
+                              ? "translateX(-100%)"
+                              : "translateX(-50%)",
                       }}
-                    />
+                    >
+                      {label}
+                    </span>
                   );
                 })}
               </div>
-              <div className="flex justify-between mt-2 text-[10px] uppercase tracking-wider text-muted-foreground">
+              {/* hidden anchors so layout doesn't collapse if dailyTotals empty */}
+              <div className="hidden">
                 <span>30 days ago</span>
                 <span>Today</span>
               </div>
@@ -398,20 +491,35 @@ export default function VendorUsagePage() {
                     label: formatActionType(r.action) ?? r.action,
                   }))}
                 centerTotal={totalSpent30}
+                hoveredKey={hoveredAction}
+                hoveredLabel={hoveredAction ? formatActionType(hoveredAction) ?? hoveredAction : null}
+                hoveredValue={hoveredAction ? (actionBreakdown.find((r) => r.action === hoveredAction)?.credits ?? 0) : null}
+                onHover={setHoveredAction}
               />
-              <ul className="mt-5 space-y-2.5">
+              <ul
+                className="mt-5 space-y-2.5"
+                onMouseLeave={() => setHoveredAction(null)}
+              >
                 {actionBreakdown.map((row) => {
                   const idle = row.credits === 0;
                   const pct = totalSpent30 === 0 ? 0 : (row.credits / totalSpent30) * 100;
+                  const active = hoveredAction === row.action;
                   return (
-                    <li key={row.action} className="flex items-center gap-2.5">
+                    <li
+                      key={row.action}
+                      onMouseEnter={() => !idle && setHoveredAction(row.action)}
+                      className={`flex items-center gap-2.5 rounded px-1.5 -mx-1.5 py-1 transition-colors ${
+                        active ? "bg-foreground/5" : ""
+                      } ${!idle ? "cursor-default" : ""}`}
+                    >
                       <span
-                        className="w-2.5 h-2.5 rounded-sm shrink-0"
+                        className="w-2.5 h-2.5 rounded-sm shrink-0 transition-transform"
                         style={{
                           background: idle ? "rgba(20,15,10,0.12)" : colorFor(row.action),
+                          transform: active ? "scale(1.25)" : undefined,
                         }}
                       />
-                      <span className={`text-xs flex-1 truncate ${idle ? "text-muted-foreground" : ""}`}>
+                      <span className={`text-xs flex-1 truncate ${idle ? "text-muted-foreground" : active ? "font-medium" : ""}`}>
                         {formatActionType(row.action) ?? row.action}
                       </span>
                       <span className="text-xs text-muted-foreground tnum shrink-0">
@@ -453,9 +561,23 @@ export default function VendorUsagePage() {
               </ul>
             </Card>
 
-            {/* Recent activity — spans 3 cols on desktop */}
+            {/* Recent activity — spans 3 cols on desktop. Shows the
+                first 10 by default; "Show more" expands the box into
+                a scrollable container so the rest of the page stays
+                put. */}
             <Card className="lg:col-span-3">
-              <SectionHeader title="Recent activity" />
+              <SectionHeader
+                title="Recent activity"
+                rightSlot={ledger.length > 10 ? (
+                  <button
+                    type="button"
+                    onClick={() => setActivityExpanded((v) => !v)}
+                    className="text-xs text-foreground/70 hover:text-foreground font-medium"
+                  >
+                    {activityExpanded ? "Show less" : `Show all (${ledger.length})`}
+                  </button>
+                ) : undefined}
+              />
               {ledgerLoading ? (
                 <p className="text-sm text-muted-foreground mt-4">Loading…</p>
               ) : ledger.length === 0 ? (
@@ -463,8 +585,12 @@ export default function VendorUsagePage() {
                   No activity yet. Once you use HILUX or Axion, entries land here.
                 </p>
               ) : (
-                <ul className="mt-3 divide-y divide-foreground/8">
-                  {ledger.map((row, i) => {
+                <ul
+                  className={`mt-3 divide-y divide-foreground/8 ${
+                    activityExpanded ? "max-h-[480px] overflow-y-auto pr-1 -mr-1" : ""
+                  }`}
+                >
+                  {(activityExpanded ? ledger : ledger.slice(0, 10)).map((row, i) => {
                     const positive = row.delta >= 0;
                     const swatch = row.action_type ? colorFor(row.action_type) : "#cbd5e1";
                     return (
@@ -546,38 +672,68 @@ function SectionHeader({
 }
 
 interface Segment { key: string; value: number; color: string; label: string }
-function Donut({ segments, centerTotal }: { segments: Segment[]; centerTotal: number }) {
+function Donut({
+  segments, centerTotal,
+  hoveredKey, hoveredLabel, hoveredValue, onHover,
+}: {
+  segments: Segment[]; centerTotal: number;
+  hoveredKey?: string | null;
+  hoveredLabel?: string | null;
+  hoveredValue?: number | null;
+  onHover?: (key: string | null) => void;
+}) {
   const total = segments.reduce((s, x) => s + x.value, 0);
-  // r=70, circumference=2π·70≈439.82
   const C = 2 * Math.PI * 70;
   let offset = 0;
+  const hoveredSeg = hoveredKey ? segments.find((s) => s.key === hoveredKey) : null;
+  const hoveredPct = hoveredSeg && total > 0 ? (hoveredSeg.value / total) * 100 : null;
   return (
     <div className="relative mt-5 mx-auto" style={{ width: 180, height: 180 }}>
       <svg viewBox="0 0 200 200" className="w-full h-full -rotate-90">
-        {/* Track ring (always visible so empty state still looks like a donut) */}
         <circle cx="100" cy="100" r="70" fill="none" stroke="rgba(20,15,10,0.06)" strokeWidth="22" />
         {segments.map((seg) => {
           const segLen = total > 0 ? (seg.value / total) * C : 0;
           const dash = `${segLen} ${C - segLen}`;
           const dashOffset = -offset;
           offset += segLen;
+          const dimmed = hoveredKey != null && hoveredKey !== seg.key;
           return (
             <circle
               key={seg.key}
               cx="100" cy="100" r="70"
               fill="none"
               stroke={seg.color}
-              strokeWidth="22"
+              strokeWidth={hoveredKey === seg.key ? 26 : 22}
               strokeDasharray={dash}
               strokeDashoffset={dashOffset}
               strokeLinecap="butt"
+              opacity={dimmed ? 0.35 : 1}
+              onMouseEnter={() => onHover?.(seg.key)}
+              onMouseLeave={() => onHover?.(null)}
+              style={{ cursor: onHover ? "pointer" : "default", transition: "stroke-width 120ms, opacity 120ms" }}
             />
           );
         })}
       </svg>
-      <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-        <span className="text-2xl font-semibold tracking-tight tnum">{centerTotal.toLocaleString()}</span>
-        <span className="text-[10px] uppercase tracking-wider text-muted-foreground">credits · 30d</span>
+      <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none px-2 text-center">
+        {hoveredSeg ? (
+          <>
+            <span className="text-[10px] uppercase tracking-wider text-muted-foreground truncate max-w-full">
+              {hoveredLabel ?? hoveredSeg.key}
+            </span>
+            <span className="text-xl font-semibold tracking-tight tnum mt-0.5">
+              {(hoveredValue ?? hoveredSeg.value).toLocaleString()}
+            </span>
+            <span className="text-[10px] tnum text-muted-foreground">
+              {hoveredPct != null ? `${hoveredPct.toFixed(1)}%` : ""}
+            </span>
+          </>
+        ) : (
+          <>
+            <span className="text-2xl font-semibold tracking-tight tnum">{centerTotal.toLocaleString()}</span>
+            <span className="text-[10px] uppercase tracking-wider text-muted-foreground">credits · 30d</span>
+          </>
+        )}
       </div>
     </div>
   );
