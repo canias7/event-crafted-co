@@ -120,30 +120,48 @@ serve(async (req: Request) => {
     console.warn("[stripe-billing-info] card lookup failed:", err);
   }
 
-  // Recent invoices (up to 20). Map to the minimum the UI needs:
-  // invoice number for display, created timestamp, amount paid in
-  // cents, status, and the Stripe-hosted URL so View opens the
-  // actual receipt without needing the Customer Portal.
+  // Recent invoices (up to 30 raw, capped to 10 useful). Drop:
+  //   - draft invoices (not finalized, not customer-facing)
+  //   - zero-amount invoices (Stripe creates these as a side-effect
+  //     of subscription updates with billing_cycle_anchor: 'now' +
+  //     proration_behavior: 'none' — cycle-reset placeholders with
+  //     no line items. They look like '$0.00 Paid' noise in the UI
+  //     even though they're technically real Stripe records.)
+  // Surface line-item summary so the UI can distinguish e.g. "Pro
+  // monthly" from "Studio first month (tier change)".
   let invoices: Array<Record<string, unknown>> = [];
   try {
     const list = await stripe.invoices.list({
       customer: customerId,
-      limit: 20,
+      limit: 30,
       status: undefined,
+      expand: ["data.lines"],
     });
     invoices = list.data
       .filter((inv) => inv.status !== "draft")
-      .map((inv) => ({
-        id: inv.id,
-        number: inv.number ?? null,
-        created: inv.created,
-        amount_paid: inv.amount_paid ?? 0,
-        amount_due: inv.amount_due ?? 0,
-        currency: inv.currency ?? "usd",
-        status: inv.status ?? "open",
-        hosted_invoice_url: inv.hosted_invoice_url ?? null,
-        invoice_pdf: inv.invoice_pdf ?? null,
-      }));
+      .filter((inv) => (inv.amount_paid ?? 0) > 0 || (inv.amount_due ?? 0) > 0)
+      .slice(0, 10)
+      .map((inv) => {
+        const firstLine = inv.lines?.data?.[0];
+        const summary =
+          inv.description ??
+          firstLine?.description ??
+          (inv.lines?.data?.length
+            ? `${inv.lines.data.length} line item${inv.lines.data.length === 1 ? "" : "s"}`
+            : null);
+        return {
+          id: inv.id,
+          number: inv.number ?? null,
+          created: inv.created,
+          amount_paid: inv.amount_paid ?? 0,
+          amount_due: inv.amount_due ?? 0,
+          currency: inv.currency ?? "usd",
+          status: inv.status ?? "open",
+          summary,
+          hosted_invoice_url: inv.hosted_invoice_url ?? null,
+          invoice_pdf: inv.invoice_pdf ?? null,
+        };
+      });
   } catch (err) {
     console.warn("[stripe-billing-info] invoice list failed:", err);
   }

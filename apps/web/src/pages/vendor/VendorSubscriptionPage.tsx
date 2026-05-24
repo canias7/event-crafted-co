@@ -363,6 +363,7 @@ export default function VendorSubscriptionPage() {
       amount_due: number;
       currency: string;
       status: string;
+      summary: string | null;
       hosted_invoice_url: string | null;
       invoice_pdf: string | null;
     }>;
@@ -877,6 +878,7 @@ function BillingPanel({
       amount_due: number;
       currency: string;
       status: string;
+      summary: string | null;
       hosted_invoice_url: string | null;
     }>;
   } | null;
@@ -978,7 +980,10 @@ function BillingPanel({
                 <li key={inv.id} className="flex items-center justify-between gap-2 px-1 py-2">
                   <div className="min-w-0">
                     <p className="text-sm tnum">{date}</p>
-                    <p className={`text-[11px] capitalize tnum ${paidStyle}`}>
+                    <p className="text-[11px] text-muted-foreground truncate">
+                      {inv.summary ?? inv.number ?? `Invoice ${inv.id.slice(-6)}`}
+                    </p>
+                    <p className={`text-[11px] capitalize tnum mt-0.5 ${paidStyle}`}>
                       {inv.status}
                     </p>
                   </div>
