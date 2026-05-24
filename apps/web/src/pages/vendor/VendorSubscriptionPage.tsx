@@ -350,6 +350,47 @@ export default function VendorSubscriptionPage() {
   // to the rest of the app's styling).
   const [pendingTier, setPendingTier] = useState<TierRow | null>(null);
 
+  // Billing summary (card on file + recent invoices) rendered in the
+  // right-side panel next to the launch-offer hero. Fetched lazily
+  // from stripe-billing-info edge fn on mount + after any tier change.
+  interface BillingInfo {
+    card: { brand: string | null; last4: string | null; exp_month: number | null; exp_year: number | null } | null;
+    invoices: Array<{
+      id: string;
+      number: string | null;
+      created: number;
+      amount_paid: number;
+      amount_due: number;
+      currency: string;
+      status: string;
+      hosted_invoice_url: string | null;
+      invoice_pdf: string | null;
+    }>;
+  }
+  const [billing, setBilling] = useState<BillingInfo | null>(null);
+  const [billingLoading, setBillingLoading] = useState(true);
+  const refreshBilling = useCallback(async () => {
+    if (!user?.id) {
+      setBilling(null);
+      setBillingLoading(false);
+      return;
+    }
+    setBillingLoading(true);
+    try {
+      const { data } = await supabase.functions.invoke("stripe-billing-info", {
+        body: {},
+      });
+      if (data) setBilling(data as BillingInfo);
+    } catch (err) {
+      console.warn("[VendorSubscriptionPage] billing fetch failed", err);
+    } finally {
+      setBillingLoading(false);
+    }
+  }, [user?.id]);
+  useEffect(() => {
+    void refreshBilling();
+  }, [refreshBilling]);
+
   async function upgradeTo(tier: TierRow) {
     // Audit #5: don't gate on vendorId — a freshly-signed-up vendor
     // with no listings yet still needs to subscribe. Edge functions
@@ -428,6 +469,7 @@ export default function VendorSubscriptionPage() {
       }
       await load();
       await credits.refresh();
+      void refreshBilling();
     } catch (err) {
       toast.error("Couldn't switch plan", {
         description: err instanceof Error ? err.message : "Unknown error",
@@ -485,15 +527,16 @@ export default function VendorSubscriptionPage() {
           </p>
         </div>
 
-        <div className="p-4 md:p-8 max-w-5xl space-y-5">
-          {/* Launch-pricing hero banner — Higgsfield-style. Dark warm
-              gradient, neon-amber headline, bordered countdown tiles
-              on the right. Only renders while the launch offer is
-              live; when offerActive flips false the whole block
-              disappears and the tier cards step down to fill. */}
+        <div className="p-4 md:p-8 max-w-6xl space-y-5">
+          {/* Top row: launch-pricing hero on the left, billing panel
+              (card on file + recent invoices) on the right. Stacks
+              on small screens; side-by-side at lg. If the launch
+              offer has expired (offerActive false) the billing panel
+              expands to fill the row. */}
+          <div className="flex flex-col lg:flex-row gap-5 items-stretch">
           {offerActive && countdown && (
             <div
-              className="rounded-2xl px-6 md:px-8 py-6 md:py-7 relative overflow-hidden"
+              className="flex-1 min-w-0 rounded-2xl px-6 md:px-8 py-6 md:py-7 relative overflow-hidden"
               style={{
                 background:
                   "linear-gradient(135deg, #2a1810 0%, #3d1f1a 45%, #4a2620 100%)",
@@ -557,6 +600,18 @@ export default function VendorSubscriptionPage() {
               </div>
             </div>
           )}
+
+            {/* Billing panel — card on file + recent invoices. Renders
+                next to the hero on lg, full-width below the title on
+                mobile. */}
+            <BillingPanel
+              loading={billingLoading}
+              billing={billing}
+              actingId={actingId}
+              setActingId={setActingId}
+              vendorId={vendorId ?? null}
+            />
+          </div>
 
           {/* Current-plan and AI-credits cards moved to /vendor/usage. */}
 
@@ -798,6 +853,174 @@ export default function VendorSubscriptionPage() {
 // Boxed countdown tile for the Higgsfield-style hero banner. Large
 // number, small uppercase label underneath, hairline border around
 // it so each unit reads as its own card.
+// Side-panel for the subscription page: card on file (with Update
+// link via the customer portal), recent invoices (View opens the
+// Stripe-hosted PDF), and a Cancel plan affordance. Pulls its data
+// from the stripe-billing-info edge function; refreshes after any
+// tier change. Renders to the right of the launch-offer hero on lg,
+// stacks below on mobile.
+function BillingPanel({
+  loading,
+  billing,
+  actingId,
+  setActingId,
+  vendorId,
+}: {
+  loading: boolean;
+  billing: {
+    card: { brand: string | null; last4: string | null; exp_month: number | null; exp_year: number | null } | null;
+    invoices: Array<{
+      id: string;
+      number: string | null;
+      created: number;
+      amount_paid: number;
+      amount_due: number;
+      currency: string;
+      status: string;
+      hosted_invoice_url: string | null;
+    }>;
+  } | null;
+  actingId: string | null;
+  setActingId: (id: string | null) => void;
+  vendorId: string | null;
+}) {
+  async function openPortal(action: "update" | "cancel") {
+    if (actingId) return;
+    setActingId(`portal_${action}`);
+    try {
+      const { data, error } = await supabase.functions.invoke(
+        "stripe-customer-portal",
+        { body: { vendor_id: vendorId ?? null } },
+      );
+      if (error || !data?.url) {
+        toast.error("Couldn't open billing portal", {
+          description: error?.message ?? "Please try again in a moment.",
+        });
+        return;
+      }
+      window.location.href = data.url as string;
+    } finally {
+      setActingId(null);
+    }
+  }
+
+  const cardLabel = billing?.card
+    ? `${(billing.card.brand ?? "card").replace(/^./, (c) => c.toUpperCase())} •••• ${billing.card.last4}`
+    : "No card on file";
+  const cardExp = billing?.card?.exp_month && billing?.card?.exp_year
+    ? `Exp ${String(billing.card.exp_month).padStart(2, "0")}/${String(billing.card.exp_year).slice(-2)}`
+    : null;
+  const recentInvoices = (billing?.invoices ?? []).slice(0, 5);
+
+  return (
+    <div
+      className="w-full lg:w-[360px] shrink-0 rounded-2xl p-5 md:p-6 flex flex-col"
+      style={{
+        background: "rgba(255,253,250,0.72)",
+        border: "0.5px solid rgba(255,138,76,0.22)",
+        backdropFilter: "blur(12px)",
+        WebkitBackdropFilter: "blur(12px)",
+        boxShadow: "0 6px 24px -12px rgba(20,15,10,0.08)",
+      }}
+    >
+      <h3 className="text-base font-semibold tracking-tight font-sans">
+        Billing
+      </h3>
+
+      <div className="mt-4">
+        <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">
+          Payment method
+        </p>
+        <div className="mt-1.5 flex items-center justify-between gap-2">
+          <div className="min-w-0">
+            <p className="text-sm font-medium tnum truncate">{cardLabel}</p>
+            {cardExp ? (
+              <p className="text-[11px] text-muted-foreground tnum">{cardExp}</p>
+            ) : null}
+          </div>
+          <button
+            type="button"
+            onClick={() => openPortal("update")}
+            disabled={actingId !== null}
+            className="text-xs font-medium text-foreground/70 hover:text-foreground rounded-full px-2.5 py-1 border border-foreground/15 hover:border-foreground/40 transition-colors disabled:opacity-50"
+          >
+            Update
+          </button>
+        </div>
+      </div>
+
+      <div className="mt-5 flex-1 min-h-0 flex flex-col">
+        <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">
+          Invoices
+        </p>
+        {loading ? (
+          <p className="text-xs text-muted-foreground mt-2">Loading…</p>
+        ) : recentInvoices.length === 0 ? (
+          <p className="text-xs text-muted-foreground mt-2">
+            No invoices yet. Once your first month is paid, receipts land here.
+          </p>
+        ) : (
+          <ul className="mt-2 divide-y divide-foreground/8 -mx-1">
+            {recentInvoices.map((inv) => {
+              const amount = (inv.amount_paid || inv.amount_due) / 100;
+              const date = new Date(inv.created * 1000).toLocaleDateString(undefined, {
+                month: "short",
+                day: "numeric",
+                year: "numeric",
+              });
+              const paidStyle =
+                inv.status === "paid"
+                  ? "text-emerald-700"
+                  : inv.status === "open"
+                    ? "text-amber-700"
+                    : "text-muted-foreground";
+              return (
+                <li key={inv.id} className="flex items-center justify-between gap-2 px-1 py-2">
+                  <div className="min-w-0">
+                    <p className="text-sm tnum">{date}</p>
+                    <p className={`text-[11px] capitalize tnum ${paidStyle}`}>
+                      {inv.status}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <span className="text-sm font-semibold tnum">
+                      ${amount.toFixed(2)}
+                    </span>
+                    {inv.hosted_invoice_url ? (
+                      <a
+                        href={inv.hosted_invoice_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xs font-medium text-foreground/70 hover:text-foreground"
+                      >
+                        View
+                      </a>
+                    ) : null}
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </div>
+
+      <div className="mt-5 pt-4 border-t border-foreground/8">
+        <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">
+          Cancellation
+        </p>
+        <button
+          type="button"
+          onClick={() => openPortal("cancel")}
+          disabled={actingId !== null}
+          className="mt-1.5 text-xs font-medium text-destructive hover:text-destructive/80 disabled:opacity-50"
+        >
+          Cancel plan
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function CountdownTile({
   n,
   label,

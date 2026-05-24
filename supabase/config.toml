@@ -21,6 +21,8 @@ project_id = "pahpjjubhbcbwqjpamwv"
     verify_jwt = false
   [functions.hilux-sandbox]
     verify_jwt = true
+  [functions.stripe-billing-info]
+    verify_jwt = true
   [functions.stripe-change-tier]
     verify_jwt = true
   [functions.stripe-customer-portal]
