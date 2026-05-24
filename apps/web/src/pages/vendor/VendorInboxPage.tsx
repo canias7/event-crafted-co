@@ -226,8 +226,23 @@ export default function VendorInboxPage() {
         ((data as { hilux_enabled?: boolean } | null)?.hilux_enabled) === true,
       );
     })();
+    // Audit #9: subscribe to profile updates so flipping HILUX from
+    // the AI Super Agents page reflects in the inbox chip without a
+    // manual refresh.
+    const channel = supabase
+      .channel(`profile-hilux-toggle:${user.id}`)
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "profiles", filter: `id=eq.${user.id}` },
+        (payload) => {
+          const next = (payload.new as { hilux_enabled?: boolean } | null)?.hilux_enabled;
+          if (typeof next === "boolean") setHiluxEnabled(next);
+        },
+      )
+      .subscribe();
     return () => {
       cancelled = true;
+      supabase.removeChannel(channel);
     };
   }, [user?.id]);
 

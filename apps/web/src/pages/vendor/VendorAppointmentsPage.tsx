@@ -305,6 +305,27 @@ export default function VendorAppointmentsPage() {
   );
   useRealtime(realtimeAppointments, () => loadAppointments());
 
+  // Audit #10: refresh the BOOKED/BLOCKED overlays when an inquiry
+  // is won/lost (changes the booked-date set) or a teammate adds a
+  // block on vendor_unavailable_dates. Without these, the calendar
+  // shows stale state until the vendor manually reloads.
+  const realtimeInquiries = useMemo(
+    () =>
+      selectedListingId
+        ? { table: "inquiries", filter: `vendor_id=eq.${selectedListingId}` }
+        : null,
+    [selectedListingId],
+  );
+  useRealtime(realtimeInquiries, () => loadAppointments());
+  const realtimeUnavailable = useMemo(
+    () =>
+      selectedListingId
+        ? { table: "vendor_unavailable_dates", filter: `vendor_id=eq.${selectedListingId}` }
+        : null,
+    [selectedListingId],
+  );
+  useRealtime(realtimeUnavailable, () => loadAppointments());
+
   const dayState = useMemo(() => {
     const m = new Map<string, DayState>();
     for (const i of inquiries) {
