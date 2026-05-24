@@ -228,7 +228,39 @@ export default function ListingScreen() {
     });
     if (result.canceled || result.assets.length === 0) return;
 
-    const assets = result.assets;
+    // Reject HEIC/HEIF assets up-front. iPhone photos default to
+    // .HEIC and the "Most Compatible" toggle in iOS Camera settings
+    // is off by default. Supabase storage accepts the upload but
+    // most browsers can't render HEIC, so the photo would land on
+    // the public listing as a broken image. Web modal does the
+    // same thing in validateListingPhotos.
+    const heicCount = result.assets.filter((a) => {
+      const mime = (a.mimeType ?? "").toLowerCase();
+      const uri = (a.uri ?? "").toLowerCase();
+      return (
+        mime === "image/heic" ||
+        mime === "image/heif" ||
+        uri.endsWith(".heic") ||
+        uri.endsWith(".heif")
+      );
+    }).length;
+    const assets = result.assets.filter((a) => {
+      const mime = (a.mimeType ?? "").toLowerCase();
+      const uri = (a.uri ?? "").toLowerCase();
+      return !(
+        mime === "image/heic" ||
+        mime === "image/heif" ||
+        uri.endsWith(".heic") ||
+        uri.endsWith(".heif")
+      );
+    });
+    if (heicCount > 0) {
+      Alert.alert(
+        "Some photos were skipped",
+        `${heicCount} HEIC photo${heicCount === 1 ? "" : "s"} skipped. Open the Photos app → Settings → Camera → Formats → Most Compatible to upload as JPEG instead.`,
+      );
+    }
+    if (assets.length === 0) return;
     setPhotoUploading(true);
     setUploadProgress({ done: 0, total: assets.length });
 
@@ -359,6 +391,61 @@ export default function ListingScreen() {
     }
     await supabase.storage.from("vendor-portfolios").remove([p.storage_path]);
     setPhotos((curr) => curr.filter((x) => x.id !== p.id));
+  }
+
+  // Promote a photo to position 0 ("Make cover"). Persists by
+  // UPDATE-ing display_order on the picked photo to one less than
+  // the current minimum, then re-fetching the ordered list. We
+  // don't try to compact display_orders to 0..N-1 — the public
+  // detail page sorts by display_order and only cares about
+  // relative ordering, so leaving gaps is fine.
+  async function makeCover(target: PortfolioRow) {
+    if (!profile?.id) return;
+    if (photos.length === 0) return;
+    const minOrder = Math.min(...photos.map((p) => p.display_order));
+    const newOrder = minOrder - 1;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error } = await (supabase as any)
+      .from("vendor_portfolio_images")
+      .update({ display_order: newOrder })
+      .eq("id", target.id);
+    if (error) {
+      Alert.alert("Couldn't update cover", error.message);
+      return;
+    }
+    setPhotos((curr) =>
+      curr
+        .map((p) => (p.id === target.id ? { ...p, display_order: newOrder } : p))
+        .sort((a, b) => a.display_order - b.display_order),
+    );
+  }
+
+  // Long-press now opens an action sheet instead of jumping
+  // straight to delete. Vendors finally have a way to swap the
+  // cover photo without deleting + re-uploading.
+  function photoMenu(p: PortfolioRow) {
+    const isCover = photos[0]?.id === p.id;
+    const options: Array<{
+      text: string;
+      style?: "default" | "cancel" | "destructive";
+      onPress?: () => void;
+    }> = [{ text: "Cancel", style: "cancel" }];
+    if (!isCover) {
+      options.unshift({
+        text: "Make cover",
+        onPress: () => {
+          void makeCover(p);
+        },
+      });
+    }
+    options.push({
+      text: "Delete",
+      style: "destructive",
+      onPress: () => {
+        void deletePhoto(p);
+      },
+    });
+    Alert.alert("Photo options", undefined, options);
   }
 
   function buildPayload(): Record<string, unknown> {
@@ -599,8 +686,45 @@ export default function ListingScreen() {
               photos={photos}
               onAdd={pickAndUploadPhoto}
               uploading={photoUploading}
-              onLongPress={deletePhoto}
+              onLongPress={photoMenu}
             />
+            {/* Overflow grid for photos beyond the hero 5. Without
+                this the vendor literally couldn't see (let alone
+                manage) photos 6..N after MAX_PHOTOS was bumped from
+                5 to 100. Tap-and-hold any tile to open the same
+                action menu (Make cover / Delete). */}
+            {photos.length > 5 ? (
+              <View style={{ marginTop: 12 }}>
+                <Text
+                  style={{
+                    fontFamily: SERIF,
+                    fontSize: 13,
+                    color: INK_DIM,
+                    marginBottom: 8,
+                  }}
+                >
+                  +{photos.length - 5} more
+                </Text>
+                <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+                  {photos.slice(5).map((p) => (
+                    <Pressable
+                      key={p.id}
+                      onLongPress={() => photoMenu(p)}
+                      style={{
+                        width: "31.5%",
+                        aspectRatio: 1,
+                      }}
+                    >
+                      <Image
+                        source={{ uri: p.url }}
+                        style={{ flex: 1, borderRadius: 10 }}
+                        resizeMode="cover"
+                      />
+                    </Pressable>
+                  ))}
+                </View>
+              </View>
+            ) : null}
           </SectionBlock>
 
           {/* The basics — business name + bio come from the vendor's
