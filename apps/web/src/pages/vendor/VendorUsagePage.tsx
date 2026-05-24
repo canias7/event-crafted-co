@@ -84,6 +84,13 @@ function colorFor(action: string): string {
   return ACTION_COLOR[action] ?? "#94a3b8";
 }
 
+const DAY_SHORT = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+function fmtHour(h: number): string {
+  if (h === 0) return "12am";
+  if (h === 12) return "12pm";
+  return h < 12 ? `${h}am` : `${h - 12}pm`;
+}
+
 export default function VendorUsagePage() {
   const { ownListing, user } = useAuth();
   const vendorId = ownListing?.id ?? null;
@@ -236,6 +243,33 @@ export default function VendorUsagePage() {
     [dailyTotals],
   );
 
+  // Hour-of-day × day-of-week heatmap. Uses local time (not UTC) so
+  // "I burn most on Saturday nights" reflects the vendor's clock, not
+  // the server's. Week starts Monday — shift JS getDay (Sun=0..Sat=6)
+  // by 1 so Mon=0..Sun=6.
+  const hourlyActivity = useMemo(() => {
+    const cells: number[][] = Array.from({ length: 7 }, () => new Array(24).fill(0));
+    for (const row of consume30) {
+      const d = new Date(row.created_at);
+      const dayIdx = (d.getDay() + 6) % 7;
+      cells[dayIdx][d.getHours()] += Math.abs(row.delta);
+    }
+    return cells;
+  }, [consume30]);
+  const maxHourly = useMemo(
+    () => hourlyActivity.reduce((m, row) => Math.max(m, ...row), 0),
+    [hourlyActivity],
+  );
+  const peakCell = useMemo(() => {
+    let best = { day: -1, hour: -1, value: 0 };
+    hourlyActivity.forEach((row, day) =>
+      row.forEach((v, hour) => {
+        if (v > best.value) best = { day, hour, value: v };
+      }),
+    );
+    return best.value > 0 ? best : null;
+  }, [hourlyActivity]);
+
   // Audit #4: "monthlyGrant − balance" clamps to 0 once a vendor
   // carries credits across renewals or buys a top-up (balance >
   // grant). Compute period usage from actual consume rows since
@@ -289,44 +323,66 @@ export default function VendorUsagePage() {
         </div>
 
         <div className="p-4 md:p-8 max-w-[1400px] space-y-5">
-          {/* Hero strip + daily-spend chart sit side-by-side: the
-              credits chip on the left (w-fit), the bar chart fills
-              the rest of the row. */}
-          <div className="flex flex-col lg:flex-row gap-5 items-start">
-          <Card className="w-fit max-w-full !p-3 md:!px-5 md:!py-3 shrink-0">
-            <div className="flex items-center gap-3">
-              <p className="font-label text-muted-foreground shrink-0 hidden sm:inline">
-                Credits
-              </p>
-              <span className="text-xl md:text-2xl font-semibold tracking-tight tnum leading-none mr-4">
-                {credits.initialized ? credits.balance.toLocaleString() : "—"}
-              </span>
+          {/* Hero column (left): credits chip on top, hourly activity
+              heatmap beneath. The chip stays w-fit so it doesn't
+              stretch; the heatmap card flex-1's down to match the
+              bar chart's height on the right. */}
+          <div className="flex flex-col lg:flex-row gap-5 items-stretch">
+            <div className="flex flex-col gap-5 shrink-0 w-full lg:w-[400px]">
+              <Card className="w-fit max-w-full !p-3 md:!px-5 md:!py-3">
+                <div className="flex items-center gap-3">
+                  <p className="font-label text-muted-foreground shrink-0 hidden sm:inline">
+                    Credits
+                  </p>
+                  <span className="text-xl md:text-2xl font-semibold tracking-tight tnum leading-none mr-4">
+                    {credits.initialized ? credits.balance.toLocaleString() : "—"}
+                  </span>
 
-              {/* Audit #6: only show Manage billing when the vendor
-                  has a Stripe customer to manage. Free/never-topped-
-                  up vendors hitting the portal got a raw 400 toast. */}
-              {credits.monthlyGrant > 0 || credits.lifetimeToppedUp > 0 ? (
-                <Button
-                  onClick={openPortal}
-                  disabled={!vendorId || actingId !== null}
-                  variant="outline"
-                  size="sm"
-                  className="rounded-full shrink-0"
-                  style={{
-                    background: "rgba(255,255,255,0.6)",
-                    borderColor: "rgba(255,138,76,0.3)",
-                  }}
-                >
-                  {actingId === "portal" ? (
-                    <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
-                  ) : (
-                    <ExternalLink className="w-3.5 h-3.5 mr-1.5" />
-                  )}
-                  Manage billing
-                </Button>
-              ) : null}
+                  {/* Audit #6: only show Manage billing when the vendor
+                      has a Stripe customer to manage. Free/never-topped-
+                      up vendors hitting the portal got a raw 400 toast. */}
+                  {credits.monthlyGrant > 0 || credits.lifetimeToppedUp > 0 ? (
+                    <Button
+                      onClick={openPortal}
+                      disabled={!vendorId || actingId !== null}
+                      variant="outline"
+                      size="sm"
+                      className="rounded-full shrink-0"
+                      style={{
+                        background: "rgba(255,255,255,0.6)",
+                        borderColor: "rgba(255,138,76,0.3)",
+                      }}
+                    >
+                      {actingId === "portal" ? (
+                        <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
+                      ) : (
+                        <ExternalLink className="w-3.5 h-3.5 mr-1.5" />
+                      )}
+                      Manage billing
+                    </Button>
+                  ) : null}
+                </div>
+              </Card>
+
+              <Card className="flex-1 flex flex-col">
+                <SectionHeader
+                  title="Activity heatmap"
+                  rightSlot={
+                    peakCell ? (
+                      <span className="text-xs text-muted-foreground">
+                        Peak{" "}
+                        <span className="text-foreground font-medium tnum">
+                          {DAY_SHORT[peakCell.day]} {fmtHour(peakCell.hour)}
+                        </span>
+                      </span>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">Local · 30d</span>
+                    )
+                  }
+                />
+                <HourHeatmap data={hourlyActivity} max={maxHourly} />
+              </Card>
             </div>
-          </Card>
 
           {/* Daily spend bar chart — sits to the right of the hero. */}
             <Card className="flex-1 min-w-0">
@@ -613,6 +669,78 @@ function SectionHeader({
     <div className="flex items-center justify-between gap-3">
       <h3 className="text-base font-semibold tracking-tight">{title}</h3>
       {rightSlot}
+    </div>
+  );
+}
+
+// 7 rows (Mon–Sun) × 24 cols (00–23h) heatmap of credit consumption.
+// Cells flex-1 so the grid auto-sizes to the card width; aspect-square
+// keeps them square at every breakpoint. Color ramp matches the bar
+// chart's orange palette so the two panels feel like a set.
+function HourHeatmap({ data, max }: { data: number[][]; max: number }) {
+  const DAYS = ["M", "T", "W", "T", "F", "S", "S"];
+  const HOUR_LABELS: Record<number, string> = { 0: "12a", 6: "6a", 12: "12p", 18: "6p" };
+  const cellColor = (v: number) => {
+    if (v === 0 || max === 0) return "rgba(20,15,10,0.05)";
+    const ratio = v / max;
+    if (ratio > 0.75) return "#c4541e";
+    if (ratio > 0.5) return "#ff8a4c";
+    if (ratio > 0.25) return "rgba(255,138,76,0.55)";
+    return "rgba(255,138,76,0.28)";
+  };
+  const swatches = [
+    "rgba(20,15,10,0.05)",
+    "rgba(255,138,76,0.28)",
+    "rgba(255,138,76,0.55)",
+    "#ff8a4c",
+    "#c4541e",
+  ];
+  return (
+    <div className="mt-4 flex-1 flex flex-col">
+      <div className="flex pl-5 mb-1.5">
+        {Array.from({ length: 24 }, (_, h) => (
+          <div
+            key={h}
+            className="flex-1 text-[9px] uppercase tracking-wider text-muted-foreground text-center tnum"
+          >
+            {HOUR_LABELS[h] ?? ""}
+          </div>
+        ))}
+      </div>
+      <div className="space-y-[3px]">
+        {DAYS.map((label, dayIdx) => (
+          <div key={dayIdx} className="flex items-center gap-1.5">
+            <div className="w-4 text-[10px] text-muted-foreground text-center font-medium">
+              {label}
+            </div>
+            <div className="flex gap-[3px] flex-1">
+              {data[dayIdx].map((value, hour) => (
+                <div
+                  key={hour}
+                  className="flex-1 aspect-square rounded-[2px] transition-colors"
+                  style={{ background: cellColor(value) }}
+                  title={
+                    value > 0
+                      ? `${DAY_SHORT[dayIdx]} ${fmtHour(hour)} · ${value} credit${value === 1 ? "" : "s"}`
+                      : undefined
+                  }
+                />
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+      <div className="flex items-center justify-end gap-1.5 mt-auto pt-3 text-[10px] text-muted-foreground">
+        <span>less</span>
+        {swatches.map((c, i) => (
+          <span
+            key={i}
+            className="w-2.5 h-2.5 rounded-[2px]"
+            style={{ background: c }}
+          />
+        ))}
+        <span>more</span>
+      </div>
     </div>
   );
 }
