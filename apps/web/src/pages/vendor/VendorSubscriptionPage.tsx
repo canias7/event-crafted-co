@@ -227,8 +227,22 @@ export default function VendorSubscriptionPage() {
     if (upgraded || cancelled || topup || topupCancelled) {
       if (upgraded) toast.success("Thanks for upgrading — plan is active.");
       if (topup) toast.success("Credits added to your balance.");
-      void load();
-      void credits.refresh();
+      // On an upgrade, force a Stripe → DB reconcile BEFORE the local
+      // refetch. Without it the page would re-pull stale tier state
+      // while waiting on the webhook to catch up — fine when the
+      // webhook is healthy, broken when STRIPE_WEBHOOK_SECRET drifts.
+      const refresh = async () => {
+        if (upgraded) {
+          try {
+            await supabase.functions.invoke("stripe-sync-subscription", { body: {} });
+          } catch (err) {
+            console.warn("[VendorSubscriptionPage] sync failed", err);
+          }
+        }
+        void load();
+        void credits.refresh();
+      };
+      void refresh();
       const next = new URLSearchParams(search);
       ["upgraded", "cancelled", "topup", "topup_cancelled"].forEach((k) => next.delete(k));
       setSearch(next, { replace: true });
