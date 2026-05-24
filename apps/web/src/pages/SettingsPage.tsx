@@ -102,7 +102,7 @@ export default function SettingsPage() {
                   <SettingRow
                     Icon={Plug}
                     title="Integrations"
-                    subtitle="Connect your Vendora account to Claude (MCP), CLI, and Skill clients"
+                    subtitle="Connect your Vendora account to Claude (MCP)"
                     right={
                       <Button
                         variant="outline"
