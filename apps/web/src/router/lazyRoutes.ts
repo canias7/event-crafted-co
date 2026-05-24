@@ -67,6 +67,9 @@ export const PrivacyPage = lazyWithReload(importPrivacy);
 const importTerms = () => import("@/pages/TermsPage");
 export const TermsPage = lazyWithReload(importTerms);
 
+const importHelp = () => import("@/pages/HelpPage");
+export const HelpPage = lazyWithReload(importHelp);
+
 const importChangelog = () => import("@/pages/ChangelogPage");
 export const ChangelogPage = lazyWithReload(importChangelog);
 
@@ -168,6 +171,7 @@ const ROUTE_IMPORTERS: Array<{ pattern: string; importer: () => Promise<unknown>
   { pattern: "/vendors/locations", importer: importVendorLocations },
   { pattern: "/privacy", importer: importPrivacy },
   { pattern: "/terms", importer: importTerms },
+  { pattern: "/help", importer: importHelp },
   { pattern: "/changelog", importer: importChangelog },
   { pattern: "/status", importer: importStatus },
   { pattern: "/press", importer: importPress },

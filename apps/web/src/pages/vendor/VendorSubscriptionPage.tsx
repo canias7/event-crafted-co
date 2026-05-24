@@ -935,6 +935,7 @@ function BillingPanel({
       subtotal?: number;
       tax?: number;
       hosted_invoice_url: string | null;
+      invoice_pdf?: string | null;
     }>;
   } | null;
   actingId: string | null;
@@ -1045,6 +1046,7 @@ function BillingPanel({
                   status: inv.status,
                   paidStyle,
                   hostedUrl: inv.hosted_invoice_url,
+                  pdfUrl: inv.invoice_pdf ?? null,
                 }];
               }
               return lines.map((line, lIdx) => ({
@@ -1055,6 +1057,7 @@ function BillingPanel({
                 status: inv.status,
                 paidStyle,
                 hostedUrl: inv.hosted_invoice_url,
+                pdfUrl: inv.invoice_pdf ?? null,
               }));
             });
             const hasMore = rows.length > INVOICES_COLLAPSED;
@@ -1098,6 +1101,19 @@ function BillingPanel({
                               className="text-xs font-medium text-foreground/70 hover:text-foreground"
                             >
                               View
+                            </a>
+                          ) : null}
+                          {row.pdfUrl ? (
+                            <a
+                              href={row.pdfUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              download
+                              className="text-xs font-medium text-foreground/50 hover:text-foreground"
+                              aria-label="Download PDF"
+                              title="Download PDF"
+                            >
+                              PDF
                             </a>
                           ) : null}
                         </div>
