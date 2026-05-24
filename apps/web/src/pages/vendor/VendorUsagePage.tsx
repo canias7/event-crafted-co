@@ -348,7 +348,7 @@ export default function VendorUsagePage() {
 
           {/* CHARTS ROW — full-width 3-col grid on desktop:
               daily-spend (spans 2 cols) + donut breakdown (1 col). */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 items-start">
             {/* Daily spend bar chart — spans 2 cols on desktop */}
             <Card className="lg:col-span-2">
               <SectionHeader
@@ -501,7 +501,7 @@ export default function VendorUsagePage() {
           </div>
 
           {/* COST REFERENCE + RECENT ACTIVITY — full-width 2-col */}
-          <div className="grid grid-cols-1 lg:grid-cols-5 gap-5">
+          <div className="grid grid-cols-1 lg:grid-cols-5 gap-5 items-start">
             {/* Cost reference — what each action costs in credits.
                 Reads from ACTION_COST (in sync with credits.ts on
                 the server). Lets vendors see the price tag before
