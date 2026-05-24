@@ -36,44 +36,74 @@ Deno.serve(async (req: Request) => {
     { auth: { persistSession: false } },
   );
 
-  // RPC returns an array of orphan storage paths. Older-than
-  // window comes from the SQL function's default (60 minutes); we
-  // could pass an override here if we ever want to be more
-  // aggressive but the default is the right safety margin.
-  const { data, error } = await supabase.rpc("find_portfolio_orphans");
-  if (error) {
+  // RPC #1: orphan STORAGE objects in vendor-portfolios. Older-
+  // than window comes from the SQL function's default (60 min);
+  // good safety margin against catching active uploads.
+  const { data: storageData, error: storageErr } = await supabase.rpc(
+    "find_portfolio_orphans",
+  );
+  if (storageErr) {
     return new Response(
-      JSON.stringify({ error: "rpc_failed", detail: error.message }),
+      JSON.stringify({ error: "rpc_failed", detail: storageErr.message }),
       { status: 500, headers: { "content-type": "application/json" } },
     );
   }
-  const orphans = (data ?? []) as string[] | null;
-  if (!orphans || orphans.length === 0) {
-    return new Response(JSON.stringify({ deleted: 0 }), {
-      headers: { "content-type": "application/json" },
-    });
-  }
+  const orphanPaths = (storageData ?? []) as string[];
 
-  // storage.remove takes an array of paths; batch into chunks so a
-  // single big sweep doesn't hit any unstated per-request cap.
-  let deleted = 0;
+  // RPC #2: orphan DRAFT vendor_profiles rows with 0 photos. The
+  // wizard creates rows as 'draft' and only flips to 'pending'
+  // after photos + FAQs commit. A draft with 0 photos older than
+  // 1 hour means the vendor closed the tab mid-submit.
+  const { data: listingData, error: listingErr } = await supabase.rpc(
+    "find_orphan_draft_listings",
+  );
+  if (listingErr) {
+    return new Response(
+      JSON.stringify({ error: "rpc_failed", detail: listingErr.message }),
+      { status: 500, headers: { "content-type": "application/json" } },
+    );
+  }
+  const orphanListingIds = (listingData ?? []) as string[];
+
+  // Storage cleanup: batch storage.remove since the single-request
+  // cap is unspecified.
+  let storageDeleted = 0;
   const errors: string[] = [];
-  for (let i = 0; i < orphans.length; i += REMOVE_BATCH_SIZE) {
-    const batch = orphans.slice(i, i + REMOVE_BATCH_SIZE);
+  for (let i = 0; i < orphanPaths.length; i += REMOVE_BATCH_SIZE) {
+    const batch = orphanPaths.slice(i, i + REMOVE_BATCH_SIZE);
     const { error: rmErr } = await supabase.storage
       .from("vendor-portfolios")
       .remove(batch);
     if (rmErr) {
-      errors.push(rmErr.message);
+      errors.push(`storage: ${rmErr.message}`);
       continue;
     }
-    deleted += batch.length;
+    storageDeleted += batch.length;
+  }
+
+  // Listing cleanup: a single DELETE handles all of them. RLS
+  // bypassed via service role; the find_orphan_draft_listings RPC
+  // already enforced the safety filters (status=draft, no photos,
+  // >1h old).
+  let listingsDeleted = 0;
+  if (orphanListingIds.length > 0) {
+    const { error: delErr, count } = await supabase
+      .from("vendor_profiles")
+      .delete({ count: "exact" })
+      .in("id", orphanListingIds);
+    if (delErr) {
+      errors.push(`listings: ${delErr.message}`);
+    } else {
+      listingsDeleted = count ?? orphanListingIds.length;
+    }
   }
 
   return new Response(
     JSON.stringify({
-      deleted,
-      scanned: orphans.length,
+      storage_deleted: storageDeleted,
+      storage_scanned: orphanPaths.length,
+      listings_deleted: listingsDeleted,
+      listings_scanned: orphanListingIds.length,
       errors: errors.length > 0 ? errors : undefined,
     }),
     { headers: { "content-type": "application/json" } },
