@@ -4,6 +4,7 @@ import {
   Briefcase,
   ChevronLeft,
   ChevronRight,
+  DollarSign,
   FileCheck2,
   LayoutDashboard,
   Star,
@@ -24,6 +25,7 @@ const NAV: Array<{
   { to: "/users", label: "Users", icon: Users },
   { to: "/listings", label: "Vendor listings", icon: Store },
   { to: "/reviews", label: "Reviews", icon: Star },
+  { to: "/costs", label: "Costs", icon: DollarSign },
   { to: "/workspace", label: "Workspace", icon: Briefcase },
 ];
 
