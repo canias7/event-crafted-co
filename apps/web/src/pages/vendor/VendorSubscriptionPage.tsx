@@ -643,9 +643,9 @@ export default function VendorSubscriptionPage() {
               })}
             </div>
             <p className="text-[11px] text-muted-foreground mt-2 px-1">
-              To switch between paid tiers, open the billing portal — that keeps
-              your card on file and prorates the change. New paid subscribers
-              checkout fresh here.
+              Switching plans charges the new tier today and starts a fresh
+              30-day cycle. Time you already paid for stays with you, plus the
+              new tier's credits get added to your balance.
             </p>
           </div>
 

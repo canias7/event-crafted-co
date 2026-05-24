@@ -136,9 +136,12 @@ serve(async (req: Request) => {
   //   - swap to the new price
   //   - proration_behavior: 'none' so Stripe doesn't refund the
   //     unused old-tier portion (the vendor keeps that revenue)
-  //   - billing_cycle_anchor: 'now' resets the cycle to today,
-  //     which triggers Stripe to invoice the full new-tier amount
-  //     immediately and start a fresh 30-day cycle.
+  //   - billing_cycle_anchor: 'now' resets the cycle to today so
+  //     the NEXT auto-renewal is 30 days from today, then monthly.
+  //     Important: anchor reset by itself does NOT trigger an
+  //     immediate invoice — Stripe only auto-bills at the END of
+  //     each period. We invoice manually below to make the charge
+  //     happen today.
   let updated;
   try {
     updated = await stripe.subscriptions.update(sub.id, {
@@ -155,28 +158,56 @@ serve(async (req: Request) => {
     });
   }
 
-  // billing_cycle_anchor: 'now' tells Stripe to bill at the new
-  // anchor going forward — but Stripe's docs are not consistent
-  // about whether that auto-invoices today. Force an immediate
-  // invoice to be safe; auto_advance: true finalizes + attempts
-  // payment in one call. If there's nothing to invoice (Stripe
-  // already did it as part of the update), the create() raises
-  // and we swallow it.
+  // Manually create an invoice for the new tier's full monthly
+  // amount and pay it today. We bypass the subscription's normal
+  // billing cycle (which would fire 30 days from now) and bill the
+  // first month up-front, as the vendor explicitly opted in to via
+  // the confirmation alert.
+  const unitAmountCents = (newPkg as any).unit_amount_cents as number;
+  const displayName = (newPkg as any).display_name as string;
   let chargedNow = 0;
+  let chargeFailed: string | null = null;
   try {
+    await stripe.invoiceItems.create({
+      customer: profile.stripe_customer_id as string,
+      amount: unitAmountCents,
+      currency: "usd",
+      description: `${displayName} — first month (tier change)`,
+      metadata: {
+        kind: "tier_change_first_month",
+        user_id: userId,
+        new_tier: (newPkg as any).tier,
+        subscription_id: sub.id,
+      },
+    });
     const invoice = await stripe.invoices.create({
       customer: profile.stripe_customer_id as string,
-      subscription: sub.id,
       auto_advance: true,
+      collection_method: "charge_automatically",
+      description: `Tier change to ${displayName}`,
+      metadata: {
+        kind: "tier_change_first_month",
+        user_id: userId,
+        subscription_id: sub.id,
+        old_tier: oldTier,
+        new_tier: (newPkg as any).tier,
+      },
     });
-    if (invoice?.amount_due) chargedNow = invoice.amount_due;
-  } catch (err: any) {
-    // "Nothing to invoice" is fine — Stripe already invoiced as part
-    // of the update. Any other error is logged but doesn't fail the
-    // tier change (sub is already updated, payment will catch up).
-    if (!String(err?.message ?? "").toLowerCase().includes("nothing to invoice")) {
-      console.warn("[stripe-change-tier] immediate-invoice noop:", err?.message);
+    // auto_advance + charge_automatically finalizes and attempts
+    // payment; refetch the invoice to read the actual amount_paid.
+    if (invoice?.id) {
+      const fresh = await stripe.invoices.retrieve(invoice.id);
+      chargedNow = fresh.amount_paid ?? fresh.amount_due ?? unitAmountCents;
+      if (fresh.status && fresh.status !== "paid" && fresh.status !== "open") {
+        chargeFailed = `invoice ${fresh.status}`;
+      }
     }
+  } catch (err: any) {
+    console.warn(
+      "[stripe-change-tier] immediate invoice failed:",
+      err?.message,
+    );
+    chargeFailed = err?.message ?? "invoice_failed";
   }
 
   // Mirror Stripe's new state into profiles. Use the updated sub
@@ -221,6 +252,7 @@ serve(async (req: Request) => {
     monthly_grant: (newPkg as any).credits,
     granted_now: grantedNow,
     charged_now_cents: chargedNow,
+    charge_failed: chargeFailed,
     period_end: new Date(updated.current_period_end * 1000).toISOString(),
   });
 });
