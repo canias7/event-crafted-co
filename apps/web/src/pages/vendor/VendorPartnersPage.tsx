@@ -795,23 +795,39 @@ export default function VendorPartnersPage() {
         id="main-content"
         className="flex-1 flex flex-col overflow-hidden pb-20 lg:pb-0"
       >
-        <div className="backdrop-blur-sm px-4 md:px-8 py-5 space-y-3 shrink-0">
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <h1 className="font-editorial text-3xl">Inbox</h1>
-              <p className="text-sm text-muted-foreground">
-                Chat with other vendors directly — no host in the loop.
-              </p>
+        {/* When a thread is open, mirror the inquiry flow: hide the
+            Inbox header + tabs + threads list, render the chat full-
+            width. The chat's own back button (chrome header) clears
+            ?thread= and brings the list view back. */}
+        {!activeThreadId ? (
+          <div className="backdrop-blur-sm px-4 md:px-8 py-5 space-y-3 shrink-0">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <h1 className="font-editorial text-3xl">Inbox</h1>
+                <p className="text-sm text-muted-foreground">
+                  Chat with other vendors directly — no host in the loop.
+                </p>
+              </div>
+              <NotificationBell variant="light" />
             </div>
-            <NotificationBell variant="light" />
+            <SubNavTabs tabs={VENDOR_INBOX_HUB_TABS} />
           </div>
-          <SubNavTabs tabs={VENDOR_INBOX_HUB_TABS} />
-        </div>
+        ) : null}
 
-        {/* min-h-0 + flex-1 lets the inner overflow-y-auto scroller
-            actually scroll instead of pushing the page taller. */}
-        <div className="grid lg:grid-cols-[360px_1fr] flex-1 min-h-0">
-          <aside className="border-r border-border overflow-y-auto p-3">
+        <div
+          className={
+            activeThreadId
+              ? "flex-1 min-h-0 flex flex-col"
+              : "flex flex-1 min-h-0"
+          }
+        >
+          <aside
+            className={
+              activeThreadId
+                ? "hidden"
+                : "flex-1 overflow-y-auto p-3 max-w-2xl mx-auto w-full"
+            }
+          >
             {loadingThreads ? (
               <div className="space-y-2">
                 {[0, 1, 2].map((i) => (
@@ -940,15 +956,16 @@ export default function VendorPartnersPage() {
             )}
           </aside>
 
-          {/* min-h-0 lets the inner messages scroller actually
-              scroll. Without it, the section grows to fit the
-              messages and the scrollbar never appears. */}
-          <section className="flex flex-col min-h-0">
-            {!activeThreadId ? (
-              <div className="flex-1 flex items-center justify-center text-sm text-muted-foreground p-8 text-center">
-                Select a thread to view messages
-              </div>
-            ) : (
+          {/* Chat pane is full-width when a thread is active.
+              min-h-0 lets the inner messages scroller engage. */}
+          <section
+            className={
+              activeThreadId
+                ? "flex flex-col min-h-0 flex-1"
+                : "hidden"
+            }
+          >
+            {activeThreadId ? (
               <PartnerChatPane
                 activeThreadId={activeThreadId}
                 otherVendorName={otherVendorName}
@@ -1002,7 +1019,7 @@ export default function VendorPartnersPage() {
                 saveEdit={saveEdit}
                 deleteMessage={deleteMessage}
               />
-            )}
+            ) : null}
           </section>
         </div>
       </main>

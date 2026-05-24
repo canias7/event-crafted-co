@@ -296,21 +296,15 @@ export default function VendorUsagePage() {
               full ~1400px page width with empty middle. Tight vertical
               padding (py-4) so the card doesn't have empty space
               below the number row. */}
-          <Card className="max-w-3xl !p-3 md:!px-5 md:!py-3">
+          <Card className="w-fit max-w-full !p-3 md:!px-5 md:!py-3">
             <div className="flex items-center gap-3">
               <Sparkles className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
               <p className="font-label text-muted-foreground shrink-0 hidden sm:inline">
                 AI credits
               </p>
-              <span className="text-xl md:text-2xl font-semibold tracking-tight tnum leading-none">
+              <span className="text-xl md:text-2xl font-semibold tracking-tight tnum leading-none mr-4">
                 {credits.initialized ? credits.balance.toLocaleString() : "—"}
               </span>
-              {credits.monthlyGrant > 0 ? (
-                <span className="text-xs text-muted-foreground shrink-0">
-                  of {credits.monthlyGrant.toLocaleString()} / mo
-                </span>
-              ) : null}
-              <div className="flex-1" />
 
               {/* Audit #6: only show Manage billing when the vendor
                   has a Stripe customer to manage. Free/never-topped-
