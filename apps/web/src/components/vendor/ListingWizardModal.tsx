@@ -51,6 +51,24 @@ import {
 const MAX_PHOTOS = 100;
 const MIN_PHOTOS = 3;
 
+// localStorage key for the wizard's text-field draft. Scoped by
+// user-id so two vendors sharing a browser don't see each other's
+// drafts. Photos can't be serialized (File objects don't survive
+// JSON.stringify) so we only preserve typed content — picking
+// photos is faster than typing 5 FAQ answers, and vendors usually
+// pick photos last.
+function draftKey(userId: string) {
+  return `vendora.listing.draft.v1.${userId}`;
+}
+interface ListingDraft {
+  category: string;
+  location: string;
+  priceUsd: string;
+  attrs: Attrs;
+  faqs: FAQDraft[];
+  savedAt: number;
+}
+
 interface FAQDraft {
   question: string;
   answer: string;
@@ -89,6 +107,67 @@ export function ListingWizardModal({
       cancelledRef.current = true;
     };
   }, []);
+
+  // Restore the wizard's text-field draft on mount. Photos can't be
+  // serialized so they're not preserved — but everything the vendor
+  // typed (category, location, price, structured attrs, FAQs) comes
+  // back so a closed-tab or accidental-X doesn't burn 10 minutes of
+  // form-filling. Single-shot effect; we don't try to keep it
+  // synced with manual localStorage edits.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (!userId) return;
+    try {
+      const raw = localStorage.getItem(draftKey(userId));
+      if (!raw) return;
+      const draft = JSON.parse(raw) as ListingDraft;
+      if (draft.category) setCategory(draft.category);
+      if (draft.location) setLocation(draft.location);
+      if (draft.priceUsd) setPriceUsd(draft.priceUsd);
+      if (draft.attrs && typeof draft.attrs === "object") setAttrs(draft.attrs);
+      if (Array.isArray(draft.faqs) && draft.faqs.length > 0) setFaqs(draft.faqs);
+      const ageMin = Math.round((Date.now() - (draft.savedAt ?? 0)) / 60000);
+      toast(
+        ageMin < 60
+          ? "Restored your draft from earlier."
+          : `Restored your draft from ${Math.round(ageMin / 60)}h ago.`,
+      );
+    } catch {
+      // Ignore corrupt drafts — fall through to a fresh form.
+    }
+  }, []);
+
+  // Auto-save the draft on every text-field change. Photos still
+  // live in component memory only. Clearing the draft happens in
+  // handleSubmit after a successful insert (so re-opening the
+  // wizard after a finished submission starts fresh).
+  useEffect(() => {
+    if (!userId) return;
+    const hasContent =
+      !!category ||
+      !!location.trim() ||
+      !!priceUsd.trim() ||
+      Object.keys(attrs).length > 0 ||
+      faqs.length > 0;
+    const key = draftKey(userId);
+    if (!hasContent) {
+      localStorage.removeItem(key);
+      return;
+    }
+    const draft: ListingDraft = {
+      category,
+      location,
+      priceUsd,
+      attrs,
+      faqs,
+      savedAt: Date.now(),
+    };
+    try {
+      localStorage.setItem(key, JSON.stringify(draft));
+    } catch {
+      // localStorage full / private mode — silently skip.
+    }
+  }, [userId, category, location, priceUsd, attrs, faqs]);
 
   function attemptClose() {
     if (submitting) {
@@ -241,6 +320,15 @@ export function ListingWizardModal({
       void supabase.functions
         .invoke("geocode-vendor", { body: { vendorId } })
         .catch(() => undefined);
+
+      // Draft served its purpose — clear so the next New Listing
+      // open starts fresh instead of restoring this listing's
+      // already-saved fields.
+      try {
+        localStorage.removeItem(draftKey(userId));
+      } catch {
+        // ignore localStorage failures
+      }
 
       toast.success("Listing submitted for review.");
       onPublished();
