@@ -16,21 +16,22 @@ export type CreditAction =
   | "hilux_followup"
   | "hilux_regenerate"
   | "hilux_draft"
-  | "hilux_summary"
   | "axion_image"
   | "mux_minute"
   | "email_parse";
 
-// Per-action credit costs. 1 credit = $0.025 retail; avg cost-to-
-// serve ~$0.008/credit. Calibrated to ~65–85% gross margin per
-// action. Keep this table in sync with VendorSubscriptionPage so
-// vendors see the same cost in the UI that the server enforces.
+// Per-action credit costs. Calibrated for ~80%+ gross margin per
+// action at measured upstream prices (see ai_call_usage telemetry).
+// Keep in sync with VendorUsagePage.tsx::ACTION_COST.
+//
+// hilux_summary removed: the daily summary function is a deterministic
+// HTML email digest with zero AI call cost — listing it here surfaced
+// a "row that never moves" on the vendor's usage chart.
 export const CREDIT_COST: Record<CreditAction, number> = {
   hilux_reply: 2,
   hilux_followup: 2,
   hilux_regenerate: 2,
   hilux_draft: 2,
-  hilux_summary: 3,
   axion_image: 10,
   mux_minute: 1,
   email_parse: 1,

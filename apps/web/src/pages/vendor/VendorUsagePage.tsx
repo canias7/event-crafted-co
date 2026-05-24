@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { ExternalLink, Loader2, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -42,35 +42,28 @@ const ACTION_LABEL: Record<string, string> = {
   hilux_regenerate: "HILUX regenerate",
   hilux_draft: "HILUX draft reply",
   hilux_followup: "HILUX follow-up",
-  hilux_summary: "HILUX summary",
   axion_image: "Axion image",
   mux_minute: "Mux minute",
   email_parse: "Email parse",
 };
 
 // Per-action credit cost — mirrors _shared/credits.ts::CREDIT_COST.
-// Surfaced in the cost-reference card so vendors can see what each
-// action will charge them before they trigger it.
 const ACTION_COST: Record<string, number> = {
   hilux_reply: 2,
   hilux_regenerate: 2,
   hilux_draft: 2,
   hilux_followup: 2,
-  hilux_summary: 3,
   axion_image: 10,
   mux_minute: 1,
   email_parse: 1,
 };
 
-// Distinct colors per action for the donut + segment bars. HILUX
-// family stays in the orange palette so the brand-thread is obvious;
-// Axion/Mux/Email get their own hues so they pop in the breakdown.
+// Distinct colors per action for the donut + segment bars.
 const ACTION_COLOR: Record<string, string> = {
   hilux_reply: "#ff8a4c",
   hilux_regenerate: "#e0732e",
   hilux_draft: "#ffa570",
   hilux_followup: "#c4541e",
-  hilux_summary: "#f59e0b",
   axion_image: "#9333ea",
   mux_minute: "#06b6d4",
   email_parse: "#10b981",
@@ -102,6 +95,34 @@ export default function VendorUsagePage() {
   >([]);
   const [actingId, setActingId] = useState<string | null>(null);
 
+  // Fetcher pulled out of the mount effect so the realtime subscription
+  // below can call it on every insert without duplicating the queries.
+  const fetchAll = useCallback(async () => {
+    if (!user?.id) return;
+    const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+    const [{ data: recent }, { data: spend }] = await Promise.all([
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (supabase as any)
+        .from("vendor_credit_transactions")
+        .select("created_at, delta, kind, action_type, balance_after, note")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false })
+        .limit(25),
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (supabase as any)
+        .from("vendor_credit_transactions")
+        .select("created_at, delta, action_type")
+        .eq("user_id", user.id)
+        .eq("kind", "consume")
+        .gte("created_at", since)
+        .order("created_at", { ascending: true }),
+    ]);
+    setLedger((recent as LedgerRow[] | null) ?? []);
+    setConsume30(
+      (spend as Array<{ created_at: string; delta: number; action_type: string | null }> | null) ?? [],
+    );
+  }, [user?.id]);
+
   useEffect(() => {
     if (!user?.id) {
       setLedger([]);
@@ -111,37 +132,38 @@ export default function VendorUsagePage() {
     }
     let cancelled = false;
     setLedgerLoading(true);
-    const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
-    (async () => {
-      const [{ data: recent }, { data: spend }] = await Promise.all([
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (supabase as any)
-          .from("vendor_credit_transactions")
-          .select("created_at, delta, kind, action_type, balance_after, note")
-          .eq("user_id", user.id)
-          .order("created_at", { ascending: false })
-          .limit(25),
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (supabase as any)
-          .from("vendor_credit_transactions")
-          .select("created_at, delta, action_type")
-          .eq("user_id", user.id)
-          .eq("kind", "consume")
-          .gte("created_at", since)
-          .order("created_at", { ascending: true }),
-      ]);
-      if (cancelled) return;
-      setLedger((recent as LedgerRow[] | null) ?? []);
-      setConsume30(
-        (spend as Array<{ created_at: string; delta: number; action_type: string | null }> | null) ??
-          [],
-      );
-      setLedgerLoading(false);
-    })();
+    fetchAll().finally(() => {
+      if (!cancelled) setLedgerLoading(false);
+    });
+
+    // Realtime: every new credit transaction (consume / grant / topup
+    // / refund) triggers a refetch so the balance card + daily-spend
+    // bars + donut + recent activity all reflect the new state without
+    // a manual page refresh. Also refreshes the credit hook so the
+    // header counter ticks live.
+    const channel = supabase
+      .channel(`vendor-credit-ledger:${user.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "vendor_credit_transactions",
+          filter: `user_id=eq.${user.id}`,
+        },
+        () => {
+          void fetchAll();
+          void credits.refresh();
+        },
+      )
+      .subscribe();
+
     return () => {
       cancelled = true;
+      supabase.removeChannel(channel);
     };
-  }, [user?.id]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id, fetchAll]);
 
   // Daily spend buckets across the last 30 days. Keys are UTC dates
   // (yyyy-mm-dd) matching how consume30.created_at slices, so a

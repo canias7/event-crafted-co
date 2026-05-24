@@ -493,6 +493,15 @@ serve(async (req) => {
       .select("id")
       .single();
     if (insertErr) {
+      // Audit #1: refund the 2 credits we already debited. Without
+      // this, a transient DB write failure billed the vendor for a
+      // reply the host never saw.
+      await refundCredits(
+        ctx.vendor.user_id,
+        "hilux_reply",
+        messageId,
+        `insert_failed: ${insertErr.message ?? String(insertErr)}`,
+      );
       await clearTyping();
       throw insertErr;
     }
