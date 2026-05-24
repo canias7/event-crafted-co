@@ -78,7 +78,12 @@ export function AxionVendorControls() {
   const [prompt, setPrompt] = useState("");
   const [generating, setGenerating] = useState(false);
   const [variants, setVariants] = useState<string[]>(() => loadPersistedVariants(user?.id));
-  const [saved, setSaved] = useState<Record<number, "saving" | "saved">>({});
+  // Audit #8: saved-state map keyed by dataUrl, not array index.
+  // The × dismiss button mutates `variants` and reindexes everything;
+  // index-keyed state used to mean dismissing variant 0 made the
+  // "Saved" badge jump to a different image and let the same image
+  // get double-saved. Dataurls survive the shift.
+  const [saved, setSaved] = useState<Record<string, "saving" | "saved">>({});
   const [autosave, setAutosave] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -213,16 +218,15 @@ export function AxionVendorControls() {
     return (created?.id as string) ?? null;
   };
 
-  const saveToGallery = async (dataUrl: string, index: number) => {
-    if (!user?.id || saved[index]) return;
+  const saveToGallery = async (dataUrl: string, _index: number) => {
+    if (!user?.id || saved[dataUrl]) return;
     // Per-tier gallery cap pre-check. Without this a Free vendor
     // (cap = 0) saving an Axion image hits the storage RLS reject
     // and gets a cryptic "row violates row-level security policy"
-    // toast instead of the friendly upgrade prompt. ensureGalleryCapacity
-    // toasts the user itself when over cap and returns false.
+    // toast instead of the friendly upgrade prompt.
     const ok = await ensureGalleryCapacity(user.id, 1);
     if (!ok) return;
-    setSaved((s) => ({ ...s, [index]: "saving" }));
+    setSaved((s) => ({ ...s, [dataUrl]: "saving" }));
     // Track the uploaded storage path so we can clean it up if the
     // metadata insert later fails — otherwise the PNG is left orphaned
     // in the bucket with no row pointing at it.
@@ -253,19 +257,18 @@ export function AxionVendorControls() {
           file_size_bytes: blob.size,
         });
       if (insErr) throw insErr;
-      setSaved((s) => ({ ...s, [index]: "saved" }));
+      setSaved((s) => ({ ...s, [dataUrl]: "saved" }));
       toast.success("Saved to your gallery — “Axion” album.");
     } catch (err) {
       console.error("[Axion] save failed", err);
       if (uploadedPath) {
-        // Best-effort orphan cleanup.
         await supabase.storage
           .from("vendor-gallery")
           .remove([uploadedPath]);
       }
       setSaved((s) => {
         const next = { ...s };
-        delete next[index];
+        delete next[dataUrl];
         return next;
       });
       toast.error("Couldn't save to gallery. Try again.");
@@ -456,7 +459,7 @@ export function AxionVendorControls() {
                 }`}
               >
                 {variants.map((v, i) => {
-                  const state = saved[i];
+                  const state = saved[v];
                   return (
                     <div
                       key={i}

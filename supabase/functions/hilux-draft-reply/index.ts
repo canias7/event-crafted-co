@@ -46,6 +46,12 @@ function json(status: number, body: Record<string, unknown>) {
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
+  // Audit #3: track the consume so the outer catch can refund if any
+  // step AFTER consumeCredits throws (DB write, post-Claude work,
+  // etc). Without this, only the Claude call itself was refund-
+  // guarded — anything else silently burned 2 credits.
+  let chargedUserId: string | null = null;
+  let chargedRef: string | null = null;
   try {
     const authHeader = req.headers.get("Authorization") ?? "";
     const bearer = authHeader.replace(/^Bearer\s+/i, "").trim();
@@ -179,6 +185,8 @@ serve(async (req) => {
       }
       return json(503, { error: "credit_service_unavailable" });
     }
+    chargedUserId = userData.user.id;
+    chargedRef = threadId;
 
     let reply: string;
     try {
@@ -194,6 +202,7 @@ serve(async (req) => {
         threadId,
         `claude_error: ${claudeErr instanceof Error ? claudeErr.message : String(claudeErr)}`,
       );
+      chargedUserId = null;
       throw claudeErr;
     }
     // Strip ESCALATE token if HILUX would have escalated — vendor
@@ -206,6 +215,17 @@ serve(async (req) => {
       credits_remaining: consume.balance,
     });
   } catch (err) {
+    // Audit #3: refund any in-flight consume that wasn't already
+    // refunded by the inner Claude catch. Keeps a transient post-
+    // Claude failure from billing the vendor for an empty result.
+    if (chargedUserId) {
+      await refundCredits(
+        chargedUserId,
+        "hilux_draft",
+        chargedRef,
+        `outer_catch: ${err instanceof Error ? err.message : String(err)}`,
+      );
+    }
     console.error("[hilux-draft-reply] uncaught:", err);
     return json(500, {
       error: err instanceof Error ? err.message : String(err),
