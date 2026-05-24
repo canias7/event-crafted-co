@@ -316,7 +316,7 @@ export default function VendorUsagePage() {
           className="px-4 md:px-8 pt-8 pb-6"
           style={{ borderBottom: "0.5px solid rgba(255,138,76,0.18)" }}
         >
-          <h1 className="text-3xl md:text-4xl font-semibold tracking-tight">Usage</h1>
+          <h1 className="text-3xl md:text-4xl font-semibold tracking-tight font-sans">Usage</h1>
           <p className="text-sm text-muted-foreground mt-1">
             Your credit balance, AI activity, and billing portal.
           </p>
