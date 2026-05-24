@@ -163,51 +163,94 @@ serve(async (req: Request) => {
   // billing cycle (which would fire 30 days from now) and bill the
   // first month up-front, as the vendor explicitly opted in to via
   // the confirmation alert.
+  //
+  // Why the multi-step dance: stripe.invoices.create + auto_advance:
+  // true *finalizes* the invoice synchronously, but the payment
+  // attempt is enqueued async. By the time we retrieved the invoice
+  // we'd see amount_paid: 0 even though Stripe was about to charge
+  // the card. Switching to explicit finalizeInvoice → pay returns
+  // the actual payment result before we respond to the client.
+  //
+  // Payment-method resolution: ad-hoc invoices fall back to the
+  // customer's invoice_settings.default_payment_method, which is
+  // null for customers who only paid via Checkout (Checkout puts
+  // the PM on the SUBSCRIPTION's default_payment_method instead).
+  // Resolve in order: sub.default_payment_method →
+  // customer.invoice_settings.default_payment_method → fail with
+  // no_payment_method_on_file so the front end can prompt for a
+  // card update via the portal.
   const unitAmountCents = (newPkg as any).unit_amount_cents as number;
   const displayName = (newPkg as any).display_name as string;
   let chargedNow = 0;
   let chargeFailed: string | null = null;
-  try {
-    await stripe.invoiceItems.create({
-      customer: profile.stripe_customer_id as string,
-      amount: unitAmountCents,
-      currency: "usd",
-      description: `${displayName} — first month (tier change)`,
-      metadata: {
-        kind: "tier_change_first_month",
-        user_id: userId,
-        new_tier: (newPkg as any).tier,
-        subscription_id: sub.id,
-      },
-    });
-    const invoice = await stripe.invoices.create({
-      customer: profile.stripe_customer_id as string,
-      auto_advance: true,
-      collection_method: "charge_automatically",
-      description: `Tier change to ${displayName}`,
-      metadata: {
-        kind: "tier_change_first_month",
-        user_id: userId,
-        subscription_id: sub.id,
-        old_tier: oldTier,
-        new_tier: (newPkg as any).tier,
-      },
-    });
-    // auto_advance + charge_automatically finalizes and attempts
-    // payment; refetch the invoice to read the actual amount_paid.
-    if (invoice?.id) {
-      const fresh = await stripe.invoices.retrieve(invoice.id);
-      chargedNow = fresh.amount_paid ?? fresh.amount_due ?? unitAmountCents;
-      if (fresh.status && fresh.status !== "paid" && fresh.status !== "open") {
-        chargeFailed = `invoice ${fresh.status}`;
+
+  let paymentMethodId: string | null = null;
+  if (updated.default_payment_method) {
+    paymentMethodId = typeof updated.default_payment_method === "string"
+      ? updated.default_payment_method
+      : (updated.default_payment_method as { id: string }).id;
+  }
+  if (!paymentMethodId) {
+    try {
+      const customer = await stripe.customers.retrieve(
+        profile.stripe_customer_id as string,
+      );
+      if (!(customer as { deleted?: boolean }).deleted) {
+        const pm = (customer as any).invoice_settings?.default_payment_method;
+        if (pm) {
+          paymentMethodId = typeof pm === "string" ? pm : pm.id;
+        }
       }
+    } catch (err) {
+      console.warn("[stripe-change-tier] customer retrieve failed:", err);
     }
-  } catch (err: any) {
-    console.warn(
-      "[stripe-change-tier] immediate invoice failed:",
-      err?.message,
-    );
-    chargeFailed = err?.message ?? "invoice_failed";
+  }
+
+  if (!paymentMethodId) {
+    chargeFailed = "no_payment_method_on_file";
+  } else {
+    try {
+      await stripe.invoiceItems.create({
+        customer: profile.stripe_customer_id as string,
+        amount: unitAmountCents,
+        currency: "usd",
+        description: `${displayName} — first month (tier change)`,
+        metadata: {
+          kind: "tier_change_first_month",
+          user_id: userId,
+          new_tier: (newPkg as any).tier,
+          subscription_id: sub.id,
+        },
+      });
+      const draftInvoice = await stripe.invoices.create({
+        customer: profile.stripe_customer_id as string,
+        default_payment_method: paymentMethodId,
+        collection_method: "charge_automatically",
+        auto_advance: false,
+        description: `Tier change to ${displayName}`,
+        metadata: {
+          kind: "tier_change_first_month",
+          user_id: userId,
+          subscription_id: sub.id,
+          old_tier: oldTier,
+          new_tier: (newPkg as any).tier,
+        },
+      });
+      const finalized = await stripe.invoices.finalizeInvoice(draftInvoice.id);
+      const paid = await stripe.invoices.pay(finalized.id, {
+        payment_method: paymentMethodId,
+      });
+      chargedNow = paid.amount_paid ?? paid.amount_due ?? unitAmountCents;
+      if (paid.status && paid.status !== "paid") {
+        chargeFailed = `invoice_${paid.status}`;
+      }
+    } catch (err: any) {
+      console.warn(
+        "[stripe-change-tier] immediate invoice/pay failed:",
+        err?.message,
+      );
+      chargeFailed = err?.message ?? "invoice_failed";
+    }
   }
 
   // Mirror Stripe's new state into profiles. Use the updated sub
