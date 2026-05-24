@@ -364,6 +364,9 @@ export default function VendorSubscriptionPage() {
       currency: string;
       status: string;
       summary: string | null;
+      lines?: Array<{ description: string | null; amount: number }>;
+      subtotal?: number;
+      tax?: number;
       hosted_invoice_url: string | null;
       invoice_pdf: string | null;
     }>;
@@ -879,6 +882,9 @@ function BillingPanel({
       currency: string;
       status: string;
       summary: string | null;
+      lines?: Array<{ description: string | null; amount: number }>;
+      subtotal?: number;
+      tax?: number;
       hosted_invoice_url: string | null;
     }>;
   } | null;
@@ -976,32 +982,50 @@ function BillingPanel({
                   : inv.status === "open"
                     ? "text-amber-700"
                     : "text-muted-foreground";
+              const lines = inv.lines ?? [];
+              const lineTooltip = lines
+                .map((l) => `${l.description ?? "Line item"}: $${(l.amount / 100).toFixed(2)}`)
+                .join("\n");
               return (
-                <li key={inv.id} className="flex items-center justify-between gap-2 px-1 py-2">
-                  <div className="min-w-0">
-                    <p className="text-sm tnum">{date}</p>
-                    <p className="text-[11px] text-muted-foreground truncate">
-                      {inv.summary ?? inv.number ?? `Invoice ${inv.id.slice(-6)}`}
-                    </p>
-                    <p className={`text-[11px] capitalize tnum mt-0.5 ${paidStyle}`}>
-                      {inv.status}
-                    </p>
+                <li key={inv.id} className="px-1 py-2">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className="text-sm tnum">{date}</p>
+                      <p className={`text-[11px] capitalize tnum mt-0.5 ${paidStyle}`}>
+                        {inv.status}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <span className="text-sm font-semibold tnum" title={lineTooltip || undefined}>
+                        ${amount.toFixed(2)}
+                      </span>
+                      {inv.hosted_invoice_url ? (
+                        <a
+                          href={inv.hosted_invoice_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-xs font-medium text-foreground/70 hover:text-foreground"
+                        >
+                          View
+                        </a>
+                      ) : null}
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2 shrink-0">
-                    <span className="text-sm font-semibold tnum">
-                      ${amount.toFixed(2)}
-                    </span>
-                    {inv.hosted_invoice_url ? (
-                      <a
-                        href={inv.hosted_invoice_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-xs font-medium text-foreground/70 hover:text-foreground"
-                      >
-                        View
-                      </a>
-                    ) : null}
-                  </div>
+                  {lines.length > 0 ? (
+                    <ul className="mt-1.5 ml-0 space-y-0.5">
+                      {lines.map((line, lIdx) => (
+                        <li
+                          key={lIdx}
+                          className="flex items-center justify-between gap-2 text-[11px] text-muted-foreground"
+                        >
+                          <span className="truncate">{line.description ?? "Line item"}</span>
+                          <span className="tnum shrink-0">
+                            ${(line.amount / 100).toFixed(2)}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : null}
                 </li>
               );
             })}
