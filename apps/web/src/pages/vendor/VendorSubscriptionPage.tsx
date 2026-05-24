@@ -340,23 +340,69 @@ export default function VendorSubscriptionPage() {
     // accept missing vendor_id and treat the JWT user as the admin.
     if (!user || actingId || !tier.priceId) return;
     if (!requireVerified("upgrading your plan")) return;
-    setActingId(`tier_${tier.id}`);
     const alreadyPaid =
       (plan?.tier ?? "free") !== "free" &&
       (plan?.status === "active" || plan?.status === "trialing");
     if (alreadyPaid) {
-      await callStripeFunction(
-        "stripe-customer-portal",
-        { vendor_id: vendorId ?? null, price_id: tier.priceId },
-        "Couldn't open billing portal",
+      // Tier change for an existing subscriber. Goes through our
+      // custom stripe-change-tier endpoint so we can reset the
+      // billing cycle to today: vendor keeps any unused-old-tier
+      // value, the new tier's full $X is charged immediately, and
+      // the new tier's full monthly credits are added on top of the
+      // existing balance.
+      const ok = window.confirm(
+        `Switch to ${tier.name}? You'll be charged $${tier.priceMonthly} today, then $${tier.priceMonthly} every month after. Any unused time on your current plan stays with you.`,
       );
-    } else {
-      await callStripeFunction(
-        "stripe-subscription-checkout",
-        { vendor_id: vendorId ?? null, price_id: tier.priceId },
-        "Couldn't start checkout",
-      );
+      if (!ok) return;
+      setActingId(`tier_${tier.id}`);
+      try {
+        const { data, error } = await supabase.functions.invoke(
+          "stripe-change-tier",
+          { body: { price_id: tier.priceId } },
+        );
+        if (error) {
+          toast.error("Couldn't switch plan", {
+            description: error.message ?? "Please try again in a moment.",
+          });
+          return;
+        }
+        const result = (data ?? {}) as {
+          changed?: boolean;
+          new_tier?: string;
+          granted_now?: number;
+          charged_now_cents?: number;
+          reason?: string;
+        };
+        if (!result.changed) {
+          toast(
+            result.reason === "already_on_this_tier"
+              ? "You're already on this plan."
+              : "No changes made.",
+          );
+        } else {
+          const dollars = ((result.charged_now_cents ?? 0) / 100).toFixed(2);
+          const credits = (result.granted_now ?? 0).toLocaleString();
+          toast.success(
+            `Switched to ${tier.name} — $${dollars} charged today, +${credits} credits added.`,
+          );
+        }
+        await load();
+        await credits.refresh();
+      } catch (err) {
+        toast.error("Couldn't switch plan", {
+          description: err instanceof Error ? err.message : "Unknown error",
+        });
+      } finally {
+        setActingId(null);
+      }
+      return;
     }
+    setActingId(`tier_${tier.id}`);
+    await callStripeFunction(
+      "stripe-subscription-checkout",
+      { vendor_id: vendorId ?? null, price_id: tier.priceId },
+      "Couldn't start checkout",
+    );
     setActingId(null);
   }
 
