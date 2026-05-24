@@ -109,20 +109,32 @@ export function VendorBrandCard({ vendorId }: { vendorId: string }) {
               </span>
             </div>
           )}
+          {/* KYC verified mark (bottom-right) — admin-verified vendor. */}
           {verified ? (
             <div className="absolute -right-1 -bottom-1 w-7 h-7 rounded-full bg-[#b8472f] border-[3px] border-[#ffffff] flex items-center justify-center">
               <CheckCircle2 className="w-3 h-3 text-white" />
             </div>
           ) : null}
+          {/* Studio starburst seal (top-right) — paid tier verification.
+              Sits as a clear corner badge on the logo so it reads as
+              "this vendor is verified" at a glance, the way Instagram
+              and X put their blue checks. White ring punches it off
+              the dark logo backdrop. */}
+          {studioVerified ? (
+            <div
+              className="absolute -right-2 -top-2 rounded-full bg-white p-[2px]"
+              style={{ boxShadow: "0 4px 10px -2px rgba(29,109,222,0.35)" }}
+              aria-hidden
+            >
+              <StudioVerifiedBadge />
+            </div>
+          ) : null}
         </div>
 
         <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2 flex-wrap">
-            <h3 className="font-editorial text-3xl text-[#0a0a0a] leading-[1.05] tracking-tight">
-              {businessName}
-            </h3>
-            {studioVerified && <StudioVerifiedBadge size="lg" showLabel />}
-          </div>
+          <h3 className="font-editorial text-3xl text-[#0a0a0a] leading-[1.05] tracking-tight">
+            {businessName}
+          </h3>
           {row.location ? (
             <p className="mt-1 text-sm text-[#6b7280]">{row.location}</p>
           ) : null}
