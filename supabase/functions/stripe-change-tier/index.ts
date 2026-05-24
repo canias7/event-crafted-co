@@ -209,25 +209,35 @@ serve(async (req: Request) => {
   if (!paymentMethodId) {
     chargeFailed = "no_payment_method_on_file";
   } else {
+    // Use PaymentIntent with off_session + confirm for a synchronous
+    // card charge. The earlier invoice-item dance had two failure
+    // modes: (a) the pending-item-to-invoice attachment occasionally
+    // landed with amount_paid: 0 because the auto-pay path on
+    // finalizeInvoice raced with our explicit pay(), and (b) we
+    // surfaced 'invoice is already paid' as a fake failure even
+    // when the card did charge.
+    //
+    // PaymentIntent.create({ confirm: true, off_session: true })
+    // returns synchronously with the actual charge result — status
+    // 'succeeded' or one of 'requires_action' / 'requires_payment_
+    // method' / etc. when the card declines. amount on the response
+    // is the actual amount the card was hit for.
+    //
+    // Tradeoff vs invoices: PaymentIntents don't auto-email a
+    // receipt or appear in the customer's Invoices list. That's
+    // acceptable here — vendors see the charge in their bank
+    // statement and the subscription's normal monthly invoices
+    // (which will start 30 days from now) handle ongoing billing.
     try {
-      await stripe.invoiceItems.create({
-        customer: profile.stripe_customer_id as string,
+      const intent = await stripe.paymentIntents.create({
         amount: unitAmountCents,
         currency: "usd",
-        description: `${displayName} — first month (tier change)`,
-        metadata: {
-          kind: "tier_change_first_month",
-          user_id: userId,
-          new_tier: (newPkg as any).tier,
-          subscription_id: sub.id,
-        },
-      });
-      const draftInvoice = await stripe.invoices.create({
         customer: profile.stripe_customer_id as string,
-        default_payment_method: paymentMethodId,
-        collection_method: "charge_automatically",
-        auto_advance: false,
-        description: `Tier change to ${displayName}`,
+        payment_method: paymentMethodId,
+        off_session: true,
+        confirm: true,
+        description: `${displayName} — first month (tier change)`,
+        statement_descriptor_suffix: "Vendora",
         metadata: {
           kind: "tier_change_first_month",
           user_id: userId,
@@ -236,41 +246,23 @@ serve(async (req: Request) => {
           new_tier: (newPkg as any).tier,
         },
       });
-      const finalized = await stripe.invoices.finalizeInvoice(draftInvoice.id);
-      // Finalizing an invoice with collection_method:
-      // charge_automatically + a default_payment_method causes
-      // Stripe to attempt payment synchronously as part of the
-      // finalize call. If that attempt succeeded, the returned
-      // invoice is already 'paid' and calling pay() again raises
-      // 'Invoice is already paid'. So only call pay() if it's
-      // still 'open' (i.e. needs an explicit payment retry).
-      let settled = finalized;
-      if (finalized.status === "open") {
-        try {
-          settled = await stripe.invoices.pay(finalized.id, {
-            payment_method: paymentMethodId,
-          });
-        } catch (payErr: any) {
-          const msg = String(payErr?.message ?? "").toLowerCase();
-          // Race condition: pay() landed after auto-pay finished.
-          // Re-retrieve the invoice to read its real terminal state.
-          if (msg.includes("already paid")) {
-            settled = await stripe.invoices.retrieve(finalized.id);
-          } else {
-            throw payErr;
-          }
-        }
-      }
-      chargedNow = settled.amount_paid ?? settled.amount_due ?? unitAmountCents;
-      if (settled.status && settled.status !== "paid") {
-        chargeFailed = `invoice_${settled.status}`;
+      if (intent.status === "succeeded") {
+        chargedNow = intent.amount;
+      } else {
+        chargeFailed = `payment_${intent.status}`;
       }
     } catch (err: any) {
       console.warn(
-        "[stripe-change-tier] immediate invoice/pay failed:",
+        "[stripe-change-tier] paymentIntent failed:",
         err?.message,
       );
-      chargeFailed = err?.message ?? "invoice_failed";
+      // Stripe throws on declines with a structured error; surface
+      // the human-readable decline reason if present.
+      chargeFailed =
+        err?.raw?.decline_code ??
+        err?.code ??
+        err?.message ??
+        "payment_failed";
     }
   }
 
