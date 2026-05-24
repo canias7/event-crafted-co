@@ -209,35 +209,36 @@ serve(async (req: Request) => {
   if (!paymentMethodId) {
     chargeFailed = "no_payment_method_on_file";
   } else {
-    // Use PaymentIntent with off_session + confirm for a synchronous
-    // card charge. The earlier invoice-item dance had two failure
-    // modes: (a) the pending-item-to-invoice attachment occasionally
-    // landed with amount_paid: 0 because the auto-pay path on
-    // finalizeInvoice raced with our explicit pay(), and (b) we
-    // surfaced 'invoice is already paid' as a fake failure even
-    // when the card did charge.
+    // Create one invoice per tier swap so vendors get a proper
+    // receipt (Stripe auto-emails on paid invoices), the Billing
+    // panel shows a clean separate row, and the Stripe Dashboard
+    // → Invoices list mirrors what actually happened.
     //
-    // PaymentIntent.create({ confirm: true, off_session: true })
-    // returns synchronously with the actual charge result — status
-    // 'succeeded' or one of 'requires_action' / 'requires_payment_
-    // method' / etc. when the card declines. amount on the response
-    // is the actual amount the card was hit for.
+    // Pattern (avoids the v2-v4 bundling bug):
+    //   1. Create the draft invoice FIRST with
+    //      pending_invoice_items_behavior: 'exclude' so any
+    //      stray pending items on the customer don't get swept in.
+    //   2. Add ONE invoice item attached to that specific invoice
+    //      via invoiceItems.create({ customer, invoice: <id> }).
+    //   3. Finalize the invoice. Stripe auto-pays (charge_
+    //      automatically + default_payment_method) synchronously
+    //      as part of finalize; we read amount_paid from the
+    //      returned object.
     //
-    // Tradeoff vs invoices: PaymentIntents don't auto-email a
-    // receipt or appear in the customer's Invoices list. That's
-    // acceptable here — vendors see the charge in their bank
-    // statement and the subscription's normal monthly invoices
-    // (which will start 30 days from now) handle ongoing billing.
+    // The earlier v2-v4 created items first (pending on the
+    // customer) then created invoices that swept them up — which
+    // meant a quick burst of swaps bundled multiple line items
+    // into one invoice. Attaching items to a known invoice ID
+    // makes 1 invoice == 1 charge by construction.
     try {
-      const intent = await stripe.paymentIntents.create({
-        amount: unitAmountCents,
-        currency: "usd",
+      const draft = await stripe.invoices.create({
         customer: profile.stripe_customer_id as string,
-        payment_method: paymentMethodId,
-        off_session: true,
-        confirm: true,
+        default_payment_method: paymentMethodId,
+        collection_method: "charge_automatically",
+        pending_invoice_items_behavior: "exclude",
+        auto_advance: false,
         description: `${displayName} — first month (tier change)`,
-        statement_descriptor_suffix: "Vendora",
+        statement_descriptor: "Vendora",
         metadata: {
           kind: "tier_change_first_month",
           user_id: userId,
@@ -246,23 +247,51 @@ serve(async (req: Request) => {
           new_tier: (newPkg as any).tier,
         },
       });
-      if (intent.status === "succeeded") {
-        chargedNow = intent.amount;
-      } else {
-        chargeFailed = `payment_${intent.status}`;
+      await stripe.invoiceItems.create({
+        customer: profile.stripe_customer_id as string,
+        invoice: draft.id,
+        amount: unitAmountCents,
+        currency: "usd",
+        description: `${displayName} — first month`,
+      });
+      const finalized = await stripe.invoices.finalizeInvoice(draft.id);
+      // Same race handling as PR #832: finalize with charge_
+      // automatically + default_payment_method auto-pays
+      // synchronously; explicit pay() after only needed if status
+      // is still 'open' and would error with "Invoice is already
+      // paid" if Stripe finished before us.
+      let settled = finalized;
+      if (finalized.status === "open") {
+        try {
+          settled = await stripe.invoices.pay(finalized.id, {
+            payment_method: paymentMethodId,
+          });
+        } catch (payErr: any) {
+          const msg = String(payErr?.message ?? "").toLowerCase();
+          if (msg.includes("already paid")) {
+            settled = await stripe.invoices.retrieve(finalized.id);
+          } else {
+            throw payErr;
+          }
+        }
+      }
+      chargedNow =
+        (settled.amount_paid && settled.amount_paid > 0
+          ? settled.amount_paid
+          : settled.amount_due) || unitAmountCents;
+      if (settled.status && settled.status !== "paid") {
+        chargeFailed = `invoice_${settled.status}`;
       }
     } catch (err: any) {
       console.warn(
-        "[stripe-change-tier] paymentIntent failed:",
+        "[stripe-change-tier] invoice flow failed:",
         err?.message,
       );
-      // Stripe throws on declines with a structured error; surface
-      // the human-readable decline reason if present.
       chargeFailed =
         err?.raw?.decline_code ??
         err?.code ??
         err?.message ??
-        "payment_failed";
+        "invoice_failed";
     }
   }
 
