@@ -863,7 +863,7 @@ export default function VendorSubscriptionPage() {
 // from the stripe-billing-info edge function; refreshes after any
 // tier change. Renders to the right of the launch-offer hero on lg,
 // stacks below on mobile.
-const INVOICES_COLLAPSED = 5;
+const INVOICES_COLLAPSED = 3;
 
 function BillingPanel({
   loading,
