@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ChevronRight, Globe, Loader2, LogOut, Mail, Plug, Trash2 } from "lucide-react";
+import { ChevronRight, FileText, Globe, HelpCircle, Loader2, LogOut, Lock, Mail, Plug, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -117,6 +117,61 @@ export default function SettingsPage() {
                   />
                 </>
               ) : null}
+              <RowDivider />
+              {/* Help / legal — three lightweight rows. Help opens
+                  the FAQ + support email; Terms and Privacy link
+                  the legal pages the user already accepted on
+                  signup so they're a click away if needed. */}
+              <SettingRow
+                Icon={HelpCircle}
+                title="Help & support"
+                subtitle="FAQ + email us if you're stuck"
+                right={
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="rounded-full"
+                    onClick={() => navigate("/help")}
+                  >
+                    Open
+                    <ChevronRight className="w-3.5 h-3.5 ml-1" />
+                  </Button>
+                }
+              />
+              <RowDivider />
+              <SettingRow
+                Icon={FileText}
+                title="Terms of Service"
+                subtitle="What you agreed to when you signed up"
+                right={
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="rounded-full"
+                    onClick={() => navigate("/terms")}
+                  >
+                    View
+                    <ChevronRight className="w-3.5 h-3.5 ml-1" />
+                  </Button>
+                }
+              />
+              <RowDivider />
+              <SettingRow
+                Icon={Lock}
+                title="Privacy Policy"
+                subtitle="How we handle your data"
+                right={
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="rounded-full"
+                    onClick={() => navigate("/privacy")}
+                  >
+                    View
+                    <ChevronRight className="w-3.5 h-3.5 ml-1" />
+                  </Button>
+                }
+              />
               <RowDivider />
               <SettingRow
                 Icon={LogOut}

@@ -41,6 +41,7 @@ import {
   VendorCategoryPage,
   PrivacyPage,
   TermsPage,
+  HelpPage,
   ChangelogPage,
   StatusPage,
   PressPage,
@@ -130,6 +131,7 @@ const App = () => (
               <Route path="/accept-planning-invite/:token" element={<Navigate to="/" replace />} />
               <Route path="/privacy" element={<PrivacyPage />} />
               <Route path="/terms" element={<TermsPage />} />
+              <Route path="/help" element={<HelpPage />} />
               <Route path="/changelog" element={<ChangelogPage />} />
               <Route path="/status" element={<StatusPage />} />
               <Route path="/press" element={<PressPage />} />
