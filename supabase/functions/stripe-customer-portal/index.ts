@@ -22,6 +22,91 @@ const APP_URL = Deno.env.get("APP_URL") ?? "https://eventvendora.com";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 
+// Marker we stamp on portal configurations we create, so we can find
+// + reuse the same config across invocations instead of cluttering
+// the Stripe Dashboard with one config per portal open.
+const CONFIG_MARKER_KEY = "vendora_managed";
+const CONFIG_MARKER_VAL = "v1";
+
+// Warm-cache the configuration id across invocations of the same
+// Deno isolate. Cold starts hit Stripe to list/create.
+let cachedPortalConfigId: string | null = null;
+
+// Builds (or finds) a Stripe Billing Portal configuration that has
+// subscription_update enabled, with our 3 tier prices in the
+// allowlist. Without this, the default portal config typically has
+// subscription_update DISABLED, so passing flow_data.subscription_
+// update_confirm gets silently rejected and the vendor lands on
+// portal home — exactly the bug PR #802 fixed half of.
+async function getOrCreatePortalConfig(
+  stripe: Stripe,
+  db: any, // deno-lint-ignore no-explicit-any
+): Promise<string | null> {
+  if (cachedPortalConfigId) return cachedPortalConfigId;
+
+  // Pull subscription prices from our catalog so the function stays
+  // in sync with whatever's live (no hardcoded price IDs to drift).
+  const { data: pkgs } = await db
+    .from("vendor_credit_packages")
+    .select("stripe_price_id")
+    .eq("kind", "subscription")
+    .eq("active", true);
+  const priceIds = ((pkgs ?? []) as Array<{ stripe_price_id: string | null }>)
+    .map((p) => p.stripe_price_id)
+    .filter((id): id is string => typeof id === "string" && id.length > 0);
+  if (priceIds.length === 0) return null;
+
+  // Each portal product config needs the product id + the prices it
+  // exposes. Resolve product id from each price.
+  const prices = await Promise.all(priceIds.map((id) => stripe.prices.retrieve(id)));
+  const productMap = new Map<string, string[]>();
+  for (const pr of prices) {
+    const prodId = typeof pr.product === "string" ? pr.product : pr.product.id;
+    const list = productMap.get(prodId) ?? [];
+    list.push(pr.id);
+    productMap.set(prodId, list);
+  }
+  const portalProducts = Array.from(productMap.entries()).map(
+    ([product, pricesArr]) => ({ product, prices: pricesArr }),
+  );
+
+  // Reuse the existing config (by metadata marker) if we already
+  // made one — avoids cluttering Stripe with a new config per cold
+  // start.
+  const existing = await stripe.billingPortal.configurations.list({ limit: 100 });
+  const match = existing.data.find(
+    (c) => c.metadata?.[CONFIG_MARKER_KEY] === CONFIG_MARKER_VAL && c.active === true,
+  );
+  if (match) {
+    cachedPortalConfigId = match.id;
+    return match.id;
+  }
+
+  const created = await stripe.billingPortal.configurations.create({
+    business_profile: {
+      headline: "Manage your Vendora subscription",
+    },
+    features: {
+      payment_method_update: { enabled: true },
+      invoice_history: { enabled: true },
+      customer_update: {
+        enabled: true,
+        allowed_updates: ["email", "address", "name", "tax_id"],
+      },
+      subscription_cancel: { enabled: true, mode: "at_period_end" },
+      subscription_update: {
+        enabled: true,
+        default_allowed_updates: ["price", "quantity"],
+        proration_behavior: "create_prorations",
+        products: portalProducts,
+      },
+    },
+    metadata: { [CONFIG_MARKER_KEY]: CONFIG_MARKER_VAL },
+  });
+  cachedPortalConfigId = created.id;
+  return created.id;
+}
+
 const cors = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
@@ -120,6 +205,16 @@ serve(async (req: Request) => {
     customer: profile.stripe_customer_id as string,
     return_url: `${APP_URL}/vendor/subscription`,
   };
+
+  // Attach our managed portal configuration so subscription_update
+  // is guaranteed enabled. Without this, Stripe falls back to the
+  // dashboard "default" config, which typically has plan switching
+  // off → flow_data.subscription_update_confirm gets rejected → the
+  // vendor lands on portal home instead of the plan-confirm screen.
+  const portalConfigId = await getOrCreatePortalConfig(stripe, db);
+  if (portalConfigId) {
+    sessionArgs.configuration = portalConfigId;
+  }
 
   // Deep link into the plan-change confirm screen when the caller
   // passed a target price. Needs the subscription id + the
