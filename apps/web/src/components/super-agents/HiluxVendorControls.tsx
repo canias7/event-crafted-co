@@ -94,6 +94,12 @@ export function HiluxVendorControls() {
   const [savingKey, setSavingKey] = useState<string | null>(null);
   const [query, setQuery] = useState("");
   const [resetting, setResetting] = useState(false);
+  // Live HILUX system prompt for the vendor's primary listing.
+  // Lazy-fetched the first time the panel expands so the page load
+  // stays light when vendors don't open the panel.
+  const [hiluxPrompt, setHiluxPrompt] = useState<string | null>(null);
+  const [promptLoading, setPromptLoading] = useState(false);
+  const [promptError, setPromptError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     if (!user?.id) return;
@@ -126,6 +132,35 @@ export function HiluxVendorControls() {
   useEffect(() => {
     load();
   }, [load]);
+
+  // Fetch the live system prompt on first expand. Re-fetches when
+  // toggles change since several rules in the prompt are gated by
+  // actions.detectFrustration / declineNegotiation / etc.
+  useEffect(() => {
+    if (!expanded || !user?.id) return;
+    let cancelled = false;
+    setPromptLoading(true);
+    setPromptError(null);
+    (async () => {
+      const { data, error } = await supabase.functions.invoke("hilux-preview-prompt", {
+        body: {},
+      });
+      if (cancelled) return;
+      if (error) {
+        setPromptError(error.message ?? "Couldn't load prompt.");
+        setHiluxPrompt(null);
+      } else {
+        const text = (data as { prompt?: string } | null)?.prompt ?? null;
+        setHiluxPrompt(text);
+      }
+      setPromptLoading(false);
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // Re-run when toggles or listing change so the preview stays
+    // in sync with the live prompt HILUX would actually send.
+  }, [expanded, user?.id, profile?.hilux_action_use_calendar, profile?.hilux_action_detect_frustration, profile?.hilux_action_decline_negotiation, profile?.hilux_action_offer_call]);
 
   const persist = async (patch: Partial<HiluxProfileRow>, key: string) => {
     if (!user?.id) return;
@@ -191,7 +226,7 @@ export function HiluxVendorControls() {
 
   return (
     <div className="relative z-10 px-6 md:px-10 pt-24 md:pt-28">
-      <div className="max-w-3xl mx-auto rounded-2xl border border-white/10 bg-white/[0.04] backdrop-blur-xl shadow-[0_8px_40px_-12px_rgba(0,0,0,0.4)] overflow-hidden">
+      <div className="max-w-6xl mx-auto rounded-2xl border border-white/10 bg-white/[0.04] backdrop-blur-xl shadow-[0_8px_40px_-12px_rgba(0,0,0,0.4)] overflow-hidden">
         {/* Header — click to expand. Master toggle on the right. */}
         <div className="flex items-center gap-4 p-5 md:p-6">
           <button
@@ -242,7 +277,9 @@ export function HiluxVendorControls() {
         </div>
 
         {expanded ? (
-          <div className="border-t border-black/10 p-5 md:p-6 space-y-6 bg-white/30">
+          <div className="border-t border-black/10 p-5 md:p-6 bg-white/30 grid grid-cols-1 lg:grid-cols-[1fr_1fr] gap-6">
+            {/* LEFT COLUMN — tool permissions toggle stack. */}
+            <div className="space-y-6">
             {/* Tool permissions — connector-style. Header + subtitle
                 like Sentry/Stripe connector panels, then sub-groups
                 with a count chip and a search field above. */}
@@ -358,6 +395,44 @@ export function HiluxVendorControls() {
                   Flip HILUX on above to use these.
                 </p>
               ) : null}
+            </div>
+            </div>
+            {/* RIGHT COLUMN — live system prompt preview. Shows the
+                exact text HILUX is told before every reply, built
+                from the vendor's listing context + toggle state.
+                Re-fetches when toggles change. */}
+            <div className="lg:border-l lg:border-black/10 lg:pl-6 flex flex-col min-h-0">
+              <div className="flex items-baseline justify-between gap-3 mb-2">
+                <div>
+                  <p className="text-sm font-medium text-black mb-0.5">
+                    What HILUX is told
+                  </p>
+                  <p className="text-xs text-black/55">
+                    The exact system prompt used to reply on your behalf — updates with your toggles.
+                  </p>
+                </div>
+              </div>
+              <div className="rounded-lg border border-black/10 bg-white/70 overflow-hidden flex-1 min-h-[280px] max-h-[640px] flex flex-col">
+                {promptLoading && !hiluxPrompt ? (
+                  <div className="flex-1 flex items-center justify-center gap-2 text-[11px] text-black/45">
+                    <Loader2 className="w-3 h-3 animate-spin" />
+                    Loading prompt…
+                  </div>
+                ) : promptError ? (
+                  <div className="flex-1 flex items-center justify-center text-[11px] text-red-600 p-4 text-center">
+                    {promptError}
+                  </div>
+                ) : !hiluxPrompt ? (
+                  <div className="flex-1 flex items-center justify-center text-[11px] text-black/40 p-4 text-center">
+                    No listing yet — the prompt will appear once you publish one.
+                  </div>
+                ) : (
+                  <pre className="flex-1 overflow-auto p-3 text-[11px] leading-relaxed text-black/80 font-mono whitespace-pre-wrap">{hiluxPrompt}</pre>
+                )}
+              </div>
+              <p className="mt-2 text-[10px] text-black/40">
+                {hiluxPrompt ? `${hiluxPrompt.length.toLocaleString()} chars · sent as a cached system prompt on every reply` : " "}
+              </p>
             </div>
           </div>
         ) : null}
