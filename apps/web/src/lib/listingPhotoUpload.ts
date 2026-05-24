@@ -83,11 +83,23 @@ export interface UploadedPhoto {
 // in parallel with a concurrency cap. The index field on each
 // result mirrors the input order so the caller can preserve
 // display_order when inserting vendor_portfolio_images rows.
+// Sentinel error thrown by uploadListingPhotos when shouldCancel
+// returns true between files. Distinct from network/storage errors
+// so the modal catch block can suppress the scary "Submit failed"
+// toast on a deliberate user abort.
+export class UploadCancelledError extends Error {
+  constructor() {
+    super("upload_cancelled");
+    this.name = "UploadCancelledError";
+  }
+}
+
 export async function uploadListingPhotos(
   vendorId: string,
   files: File[],
   startIndex: number,
   onProgress?: (p: UploadProgress) => void,
+  shouldCancel?: () => boolean,
 ): Promise<{ paths: string[]; results: UploadedPhoto[] }> {
   if (files.length === 0) return { paths: [], results: [] };
   const results: UploadedPhoto[] = new Array(files.length);
@@ -97,6 +109,11 @@ export async function uploadListingPhotos(
   let cursor = 0;
   async function worker() {
     while (true) {
+      // Bail before grabbing the next file when the modal has been
+      // closed mid-upload. Each worker checks per iteration so an
+      // abort signaled while one file is in flight still stops the
+      // remaining files from queueing.
+      if (shouldCancel?.()) throw new UploadCancelledError();
       const myIndex = cursor++;
       if (myIndex >= files.length) return;
       const file = files[myIndex];

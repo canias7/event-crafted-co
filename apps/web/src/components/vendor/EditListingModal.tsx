@@ -33,6 +33,7 @@ import { getCategorySchema } from "@/data/categoryAttributes";
 import { supabase } from "@/integrations/supabase/client";
 import { vendorImageUrl } from "@/lib/storage";
 import {
+  UploadCancelledError,
   describeRejected,
   uploadListingPhotos,
   validateListingPhotos,
@@ -83,6 +84,33 @@ export function EditListingModal({
   } | null>(null);
   const [photosExpanded, setPhotosExpanded] = useState(false);
   const fileRef = useRef<HTMLInputElement | null>(null);
+
+  // Set true when the modal is being closed mid-save so the upload
+  // helper bails between files. The catch block then runs the
+  // rollback path that removes any partially-committed new uploads;
+  // existing photos are never deleted before all new uploads
+  // commit, so an aborted save leaves the listing in its pre-edit
+  // state plus zero orphan storage objects.
+  const cancelledRef = useRef(false);
+  useEffect(() => {
+    return () => {
+      cancelledRef.current = true;
+    };
+  }, []);
+
+  function attemptClose() {
+    if (saving) {
+      if (
+        !window.confirm(
+          "Photos are still uploading. Cancel and discard your changes?",
+        )
+      ) {
+        return;
+      }
+      cancelledRef.current = true;
+    }
+    onClose();
+  }
 
   // PointerSensor with a 6px activation distance so the drag gesture
   // doesn't fire on accidental taps — vendors clicking the X to
@@ -292,6 +320,7 @@ export function EditListingModal({
           newPhotosWithFinalIdx.map((x) => x.p.file),
           0,
           (pr) => setUploadProgress(pr),
+          () => cancelledRef.current,
         );
         uploadedPaths.push(...upload.paths);
         const inserts = upload.results.map((r, i) => ({
@@ -416,11 +445,16 @@ export function EditListingModal({
       toast.success("Listing updated.");
       onSaved();
     } catch (err) {
+      const cancelled = err instanceof UploadCancelledError;
       const msg = (err as { message?: string })?.message ?? "Try again.";
       if (uploadedPaths.length > 0) {
         await supabase.storage.from("vendor-portfolios").remove(uploadedPaths);
       }
-      toast.error(`Save failed: ${msg}`);
+      if (cancelled) {
+        toast("Save cancelled — changes discarded.");
+      } else {
+        toast.error(`Save failed: ${msg}`);
+      }
       setSaving(false);
       setUploadProgress(null);
     }
@@ -430,7 +464,7 @@ export function EditListingModal({
     <div className="fixed inset-0 z-50 flex flex-col vendor-canvas">
       <header className="flex items-center justify-between border-b border-border/60 px-5 py-4">
         <button
-          onClick={onClose}
+          onClick={attemptClose}
           className="rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
           aria-label="Close"
         >
