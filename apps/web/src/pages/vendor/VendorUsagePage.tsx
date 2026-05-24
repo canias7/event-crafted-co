@@ -296,30 +296,20 @@ export default function VendorUsagePage() {
               full ~1400px page width with empty middle. Tight vertical
               padding (py-4) so the card doesn't have empty space
               below the number row. */}
-          <Card className="max-w-3xl !py-4 md:!py-5">
-            <div className="flex flex-col md:flex-row md:items-center gap-5">
-              <div className="flex items-center gap-5 min-w-0">
-                <div className="min-w-0">
-                  <p className="font-label text-muted-foreground inline-flex items-center gap-1.5">
-                    <Sparkles className="w-3.5 h-3.5" />
-                    AI credits
-                  </p>
-                  <div className="flex items-baseline gap-3 mt-1">
-                    <span className="text-3xl md:text-4xl font-semibold tracking-tight tnum leading-none">
-                      {credits.initialized ? credits.balance.toLocaleString() : "—"}
-                    </span>
-                    {credits.monthlyGrant > 0 ? (
-                      <span className="text-xs text-muted-foreground">
-                        of {credits.monthlyGrant.toLocaleString()} / mo
-                      </span>
-                    ) : null}
-                  </div>
-                </div>
-              </div>
-
-              {/* "Used this period" + progress bar removed per
-                  request — the donut + bar chart below already show
-                  spend; redundant on this card. */}
+          <Card className="max-w-3xl !p-3 md:!px-5 md:!py-3">
+            <div className="flex items-center gap-3">
+              <Sparkles className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+              <p className="font-label text-muted-foreground shrink-0 hidden sm:inline">
+                AI credits
+              </p>
+              <span className="text-xl md:text-2xl font-semibold tracking-tight tnum leading-none">
+                {credits.initialized ? credits.balance.toLocaleString() : "—"}
+              </span>
+              {credits.monthlyGrant > 0 ? (
+                <span className="text-xs text-muted-foreground shrink-0">
+                  of {credits.monthlyGrant.toLocaleString()} / mo
+                </span>
+              ) : null}
               <div className="flex-1" />
 
               {/* Audit #6: only show Manage billing when the vendor
