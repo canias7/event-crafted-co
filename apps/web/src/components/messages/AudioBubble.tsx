@@ -33,11 +33,38 @@ export function AudioBubble({ src, filename }: Props) {
   useEffect(() => {
     const el = audioRef.current;
     if (!el) return;
+    const isUsableDuration = (d: number) =>
+      Number.isFinite(d) && d > 0;
     const onTime = () => {
       setCurrentTime(el.currentTime);
-      setProgress(el.duration ? el.currentTime / el.duration : 0);
+      setProgress(isUsableDuration(el.duration) ? el.currentTime / el.duration : 0);
     };
-    const onDur = () => setDuration(el.duration);
+    const onDur = () => {
+      // MediaRecorder webm/opus blobs ship without a duration header
+      // — el.duration reports Infinity until the playhead reaches the
+      // end. Force the browser to compute it by seeking to a huge
+      // time; the seek clamps to the real end and a durationchange
+      // event fires with the actual length. Then we seek back to 0.
+      if (!isUsableDuration(el.duration)) {
+        const onProbeDur = () => {
+          if (isUsableDuration(el.duration)) {
+            setDuration(el.duration);
+            el.removeEventListener("durationchange", onProbeDur);
+            try { el.currentTime = 0; } catch { /* ignore */ }
+          }
+        };
+        el.addEventListener("durationchange", onProbeDur);
+        try {
+          el.currentTime = 1e101;
+        } catch {
+          // some browsers throw on out-of-range seeks; ignore — the
+          // probe is best-effort. The seek bar may still show 0% but
+          // playback still works.
+        }
+      } else {
+        setDuration(el.duration);
+      }
+    };
     const onPlay = () => setPlaying(true);
     const onPause = () => setPlaying(false);
     const onEnd = () => {
