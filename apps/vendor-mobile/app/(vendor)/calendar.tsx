@@ -319,11 +319,14 @@ export default function CalendarScreen() {
   );
 
   const isSelectedBlocked = !!selectedYmd && manualBlocks.has(selectedYmd);
-  // Title input for the block flow. Modal opens on the Block tap;
-  // closed by Cancel or Block. Alert.prompt is iOS-only so a
-  // custom Modal is the cross-platform path.
+  // Title input for the block flow. Modal opens on the Block tap
+  // (create mode, editingBlockDate=null) or on tapping an already-
+  // blocked day-info card (edit mode, editingBlockDate=YYYY-MM-DD).
+  // Alert.prompt is iOS-only so a custom Modal is the cross-
+  // platform path.
   const [blockTitleModalOpen, setBlockTitleModalOpen] = useState(false);
   const [blockTitleInput, setBlockTitleInput] = useState("");
+  const [editingBlockDate, setEditingBlockDate] = useState<string | null>(null);
 
   // Block / unblock the selected day. Block path opens a Modal
   // with an optional title input ('Christian's birthday', etc).
@@ -331,28 +334,65 @@ export default function CalendarScreen() {
   // needed. Writes one vendor_unavailable_dates row per
   // vendor_profile (or deletes them all if currently blocked).
   const commitBlock = useCallback(async () => {
-    if (!selectedYmd || vendorIds.length === 0 || blocking) return;
+    const targetDate = editingBlockDate ?? selectedYmd;
+    if (!targetDate || vendorIds.length === 0 || blocking) return;
     setBlocking(true);
     const trimmed = blockTitleInput.trim();
     const reason = trimmed.length > 0 ? trimmed : "Blocked manually";
-    const rows = vendorIds.map((vid) => ({
-      vendor_id: vid,
-      date: selectedYmd,
-      reason,
-    }));
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error } = await (supabase as any)
-      .from("vendor_unavailable_dates")
-      .upsert(rows, { onConflict: "vendor_id,date" });
+    let error;
+    if (editingBlockDate) {
+      // Edit mode: UPDATE the reason on every listing's row for
+      // this date. No insert — the rows already exist.
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const res = await (supabase as any)
+        .from("vendor_unavailable_dates")
+        .update({ reason })
+        .in("vendor_id", vendorIds)
+        .eq("date", editingBlockDate);
+      error = res.error;
+    } else {
+      // Create mode: upsert one row per listing.
+      const rows = vendorIds.map((vid) => ({
+        vendor_id: vid,
+        date: targetDate,
+        reason,
+      }));
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const res = await (supabase as any)
+        .from("vendor_unavailable_dates")
+        .upsert(rows, { onConflict: "vendor_id,date" });
+      error = res.error;
+    }
     setBlocking(false);
     setBlockTitleModalOpen(false);
     setBlockTitleInput("");
+    setEditingBlockDate(null);
     if (error) {
-      Alert.alert("Couldn't block", error.message);
+      Alert.alert(
+        editingBlockDate ? "Couldn't update title" : "Couldn't block",
+        error.message,
+      );
       return;
     }
     load(false);
-  }, [selectedYmd, vendorIds, blocking, blockTitleInput, load]);
+  }, [
+    selectedYmd,
+    vendorIds,
+    blocking,
+    blockTitleInput,
+    editingBlockDate,
+    load,
+  ]);
+
+  function openEditBlock(date: string) {
+    const current = manualBlocks.get(date) ?? "";
+    // Don't pre-fill the legacy fallback — it'd nudge vendors to
+    // keep that awkward literal as their title.
+    const initial = current === "Blocked manually" ? "" : current;
+    setBlockTitleInput(initial);
+    setEditingBlockDate(date);
+    setBlockTitleModalOpen(true);
+  }
 
   const commitUnblock = useCallback(async () => {
     if (!selectedYmd || vendorIds.length === 0 || blocking) return;
@@ -728,7 +768,9 @@ export default function CalendarScreen() {
                     onPress={
                       it.kind === "inquiry" && it.inquiryId
                         ? () => openBooking(it.inquiryId as string)
-                        : undefined
+                        : it.kind === "busy" && selectedYmd
+                          ? () => openEditBlock(selectedYmd)
+                          : undefined
                     }
                   />
                 ))
@@ -749,6 +791,7 @@ export default function CalendarScreen() {
         onRequestClose={() => {
           setBlockTitleModalOpen(false);
           setBlockTitleInput("");
+          setEditingBlockDate(null);
         }}
       >
         <KeyboardAvoidingView
@@ -759,6 +802,7 @@ export default function CalendarScreen() {
             onPress={() => {
               setBlockTitleModalOpen(false);
               setBlockTitleInput("");
+              setEditingBlockDate(null);
             }}
             style={{
               position: "absolute",
@@ -780,12 +824,14 @@ export default function CalendarScreen() {
             <Text
               style={{ fontFamily: SERIF, fontSize: 22, color: INK }}
             >
-              Block {selectedYmd ? prettyDay(selectedYmd) : "this day"}?
+              {editingBlockDate
+                ? `Edit title — ${prettyDay(editingBlockDate)}`
+                : `Block ${selectedYmd ? prettyDay(selectedYmd) : "this day"}?`}
             </Text>
             <Text style={{ fontSize: 13, color: INK_DIM, lineHeight: 18 }}>
-              Add an optional title so you remember why ("Christian's
-              birthday"). Only you see it — hosts just see the day as
-              unavailable.
+              {editingBlockDate
+                ? "Change the title for this blocked day. Leave blank to clear it."
+                : 'Add an optional title so you remember why ("Christian\'s birthday"). Only you see it — hosts just see the day as unavailable.'}
             </Text>
             <TextInput
               value={blockTitleInput}
@@ -817,6 +863,7 @@ export default function CalendarScreen() {
                 onPress={() => {
                   setBlockTitleModalOpen(false);
                   setBlockTitleInput("");
+                  setEditingBlockDate(null);
                 }}
                 disabled={blocking}
                 style={{
@@ -841,7 +888,11 @@ export default function CalendarScreen() {
                 }}
               >
                 <Text style={{ color: CREAM, fontWeight: "700" }}>
-                  {blocking ? "Saving…" : "Block"}
+                  {blocking
+                    ? "Saving…"
+                    : editingBlockDate
+                      ? "Save"
+                      : "Block"}
                 </Text>
               </Pressable>
             </View>
