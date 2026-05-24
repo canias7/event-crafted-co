@@ -939,7 +939,10 @@ export default function VendorPartnersPage() {
             )}
           </aside>
 
-          <section className="flex flex-col">
+          {/* min-h-0 lets the inner messages scroller actually
+              scroll. Without it, the section grows to fit the
+              messages and the scrollbar never appears. */}
+          <section className="flex flex-col min-h-0">
             {!activeThreadId ? (
               <div className="flex-1 flex items-center justify-center text-sm text-muted-foreground p-8 text-center">
                 Select a thread to view messages
@@ -1107,7 +1110,7 @@ function PartnerChatPane(props: {
   const initial = (otherVendorName?.trim()?.charAt(0) ?? "V").toUpperCase();
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full min-h-0">
       {/* Liquid-glass header */}
       <div
         className="px-4 md:px-6 py-3 backdrop-blur-md"
