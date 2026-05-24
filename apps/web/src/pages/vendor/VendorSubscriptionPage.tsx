@@ -227,6 +227,11 @@ export default function VendorSubscriptionPage() {
     if (upgraded || cancelled || topup || topupCancelled) {
       if (upgraded) toast.success("Thanks for upgrading — plan is active.");
       if (topup) toast.success("Credits added to your balance.");
+      // Audit #11: silent cancels confused vendors ("did I buy or
+      // not?"). Acknowledge the abort so the page change isn't a
+      // ghost interaction.
+      if (cancelled) toast("Checkout cancelled — no changes made.");
+      if (topupCancelled) toast("Top-up cancelled — no changes made.");
       // On an upgrade, force a Stripe → DB reconcile BEFORE the local
       // refetch. Without it the page would re-pull stale tier state
       // while waiting on the webhook to catch up — fine when the
@@ -254,10 +259,11 @@ export default function VendorSubscriptionPage() {
     body: Record<string, unknown>,
     fallbackError: string,
   ): Promise<string | null> {
-    const popup = window.open("about:blank", "_blank");
-    const { data, error } = await supabase.functions.invoke(functionName, {
-      body,
-    });
+    // Audit #11: skip the optimistic window.open — Safari blocks it
+    // because the call happens after `await`. Same-tab navigation is
+    // simpler and works everywhere; the Stripe page returns to us
+    // via the configured return_url anyway.
+    const { data, error } = await supabase.functions.invoke(functionName, { body });
     if (error) {
       let msg = error.message ?? fallbackError;
       const ctx = (error as { context?: Response }).context;
@@ -270,49 +276,37 @@ export default function VendorSubscriptionPage() {
           // body wasn't json
         }
       }
-      if (popup && !popup.closed) popup.close();
       toast.error(msg);
       return null;
     }
     const url = (data as { url?: string } | null)?.url;
     if (!url) {
-      if (popup && !popup.closed) popup.close();
       toast.error("Stripe didn't return a URL");
       return null;
-    }
-    if (popup && !popup.closed) {
-      popup.location.href = url;
-      return url;
     }
     window.location.href = url;
     return url;
   }
 
   async function upgradeTo(tier: TierRow) {
-    if (!vendorId || actingId || !tier.priceId) return;
+    // Audit #5: don't gate on vendorId — a freshly-signed-up vendor
+    // with no listings yet still needs to subscribe. Edge functions
+    // accept missing vendor_id and treat the JWT user as the admin.
+    if (!user || actingId || !tier.priceId) return;
     setActingId(`tier_${tier.id}`);
-    // If the vendor already has a paid subscription, stripe-subscription-
-    // checkout rejects with "already subscribed — use the portal." Route
-    // them straight to the Stripe customer portal in that case so the
-    // tier switch + proration happens server-side without the user
-    // having to hunt for "Manage billing" themselves.
     const alreadyPaid =
       (plan?.tier ?? "free") !== "free" &&
       (plan?.status === "active" || plan?.status === "trialing");
     if (alreadyPaid) {
-      // Deep-link the portal to subscription_update_confirm for the
-      // chosen tier — lands on a "confirm Pro" screen pre-filled
-      // with the price diff, instead of the portal home (which leads
-      // with Cancel and buries the plan switch under "Update plan").
       await callStripeFunction(
         "stripe-customer-portal",
-        { vendor_id: vendorId, price_id: tier.priceId },
+        { vendor_id: vendorId ?? null, price_id: tier.priceId },
         "Couldn't open billing portal",
       );
     } else {
       await callStripeFunction(
         "stripe-subscription-checkout",
-        { vendor_id: vendorId, price_id: tier.priceId },
+        { vendor_id: vendorId ?? null, price_id: tier.priceId },
         "Couldn't start checkout",
       );
     }
@@ -320,11 +314,11 @@ export default function VendorSubscriptionPage() {
   }
 
   async function buyTopup(pack: TopupRow) {
-    if (!vendorId || actingId) return;
+    if (!user || actingId) return;
     setActingId(`topup_${pack.id}`);
     await callStripeFunction(
       "stripe-topup-checkout",
-      { vendor_id: vendorId, price_id: pack.priceId },
+      { vendor_id: vendorId ?? null, price_id: pack.priceId },
       "Couldn't start top-up checkout",
     );
     setActingId(null);

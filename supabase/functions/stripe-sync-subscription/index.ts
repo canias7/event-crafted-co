@@ -108,15 +108,22 @@ serve(async (req: Request) => {
     }).eq("id", userId);
 
     let granted = 0;
-    if (oldTier && oldTier !== "free" && pkg.tier && oldTier !== pkg.tier) {
-      const reconcileKey = `reconcile_tier_change_${sub.id}_${sub.current_period_start}_${oldTier}_${pkg.tier}`;
+    // Audit #12: also grant on free→paid first checkout. The webhook
+    // would normally fire checkout.session.completed and grant the
+    // initial month; when STRIPE_WEBHOOK_SECRET drifts that path is
+    // dead and the vendor pays but gets 0 credits. Idempotency key
+    // includes old+new so a checkout.session.completed catching up
+    // later hits the existing 23505-protected grant_credits call.
+    if (pkg.tier && oldTier !== pkg.tier) {
+      const oldKey = oldTier ?? "free";
+      const reconcileKey = `reconcile_tier_change_${sub.id}_${sub.current_period_start}_${oldKey}_${pkg.tier}`;
       const { error: gerr } = await db.rpc("grant_credits", {
         p_user_id: userId,
         p_n: pkg.credits,
         p_kind: "monthly_grant",
         p_stripe_event_id: reconcileKey,
         p_stripe_invoice_id: null,
-        p_note: `tier change reconcile: ${oldTier} → ${pkg.tier} (+${pkg.credits})`,
+        p_note: `tier change reconcile: ${oldKey} → ${pkg.tier} (+${pkg.credits})`,
       });
       if (!gerr) granted = pkg.credits;
     }

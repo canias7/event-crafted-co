@@ -137,33 +137,36 @@ export function HiluxVendorControls() {
     load();
   }, [load]);
 
-  // Fetch the live system prompt on first expand. Re-fetches when
-  // toggles change since several rules in the prompt are gated by
-  // actions.detectFrustration / declineNegotiation / etc.
+  // Fetch the live system prompt on first expand, and re-fetch when
+  // toggles change. Audit #13: debounce 400ms so rapid toggle flips
+  // don't fire one preview-prompt request per click — each rebuild
+  // is multiple DB roundtrips + a full system prompt construction.
   useEffect(() => {
     if (!expanded || !user?.id) return;
     let cancelled = false;
-    setPromptLoading(true);
-    setPromptError(null);
-    (async () => {
-      const { data, error } = await supabase.functions.invoke("hilux-preview-prompt", {
-        body: {},
-      });
+    const t = setTimeout(() => {
       if (cancelled) return;
-      if (error) {
-        setPromptError(error.message ?? "Couldn't load prompt.");
-        setHiluxPrompt(null);
-      } else {
-        const text = (data as { prompt?: string } | null)?.prompt ?? null;
-        setHiluxPrompt(text);
-      }
-      setPromptLoading(false);
-    })();
+      setPromptLoading(true);
+      setPromptError(null);
+      (async () => {
+        const { data, error } = await supabase.functions.invoke("hilux-preview-prompt", {
+          body: {},
+        });
+        if (cancelled) return;
+        if (error) {
+          setPromptError(error.message ?? "Couldn't load prompt.");
+          setHiluxPrompt(null);
+        } else {
+          const text = (data as { prompt?: string } | null)?.prompt ?? null;
+          setHiluxPrompt(text);
+        }
+        setPromptLoading(false);
+      })();
+    }, 400);
     return () => {
       cancelled = true;
+      clearTimeout(t);
     };
-    // Re-run when toggles or listing change so the preview stays
-    // in sync with the live prompt HILUX would actually send.
   }, [expanded, user?.id, profile?.hilux_action_use_calendar, profile?.hilux_action_use_first_name, profile?.hilux_action_detect_frustration, profile?.hilux_action_decline_negotiation, profile?.hilux_action_offer_call]);
 
   const persist = async (patch: Partial<HiluxProfileRow>, key: string) => {

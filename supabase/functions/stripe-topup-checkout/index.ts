@@ -50,14 +50,19 @@ serve(async (req: Request) => {
   const body = await req.json().catch(() => ({}));
   const vendorId = body?.vendor_id as string | undefined;
   const priceId = body?.price_id as string | undefined;
-  if (!vendorId) return json({ error: "vendor_id required" }, 400);
   if (!priceId) return json({ error: "price_id required" }, 400);
 
-  // Top-ups are admin-only too — they cost real money.
-  const { data: isAdmin } = await userClient.rpc("is_vendor_team_admin", {
-    _vendor_id: vendorId,
-  });
-  if (!isAdmin) return json({ error: "vendor admin role required" }, 403);
+  // Audit #5: vendor_id is OPTIONAL now. When the vendor has no
+  // listings yet (just signed up, or had all listings rejected),
+  // ownListing is null on the frontend and they'd previously be
+  // stuck. With no vendor_id, treat them as the admin of their
+  // own user-level Stripe customer — the JWT alone proves identity.
+  if (vendorId) {
+    const { data: isAdmin } = await userClient.rpc("is_vendor_team_admin", {
+      _vendor_id: vendorId,
+    });
+    if (!isAdmin) return json({ error: "vendor admin role required" }, 403);
+  }
 
   const db = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!, {
     auth: { persistSession: false },

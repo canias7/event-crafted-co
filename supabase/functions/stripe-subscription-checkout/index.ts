@@ -63,15 +63,17 @@ serve(async (req: Request) => {
   const body = await req.json().catch(() => ({}));
   const vendorId = body?.vendor_id as string | undefined;
   const requestedPriceId = (body?.price_id as string | undefined) ?? STRIPE_PRO_PRICE_ID;
-  if (!vendorId) return json({ error: "vendor_id required" }, 400);
   if (!requestedPriceId) return json({ error: "price_id required (and STRIPE_PRO_PRICE_ID fallback unset)" }, 400);
 
-  // Admin-only — billing changes (upgrading, attaching a card) are
-  // financial decisions on the org's behalf.
-  const { data: isAdmin } = await userClient.rpc("is_vendor_team_admin", {
-    _vendor_id: vendorId,
-  });
-  if (!isAdmin) return json({ error: "vendor admin role required" }, 403);
+  // Audit #5: vendor_id is OPTIONAL. A vendor with no listings yet
+  // still needs to be able to subscribe — the JWT alone proves
+  // identity for their own user-level Stripe customer.
+  if (vendorId) {
+    const { data: isAdmin } = await userClient.rpc("is_vendor_team_admin", {
+      _vendor_id: vendorId,
+    });
+    if (!isAdmin) return json({ error: "vendor admin role required" }, 403);
+  }
 
   const db = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!, {
     auth: { persistSession: false },

@@ -198,10 +198,14 @@ serve(async (req: Request) => {
   const body = await req.json().catch(() => ({}));
   const vendorId = body?.vendor_id as string | undefined;
   const targetPriceId = body?.price_id as string | undefined;
-  if (!vendorId) return json({ error: "vendor_id required" }, 400);
 
-  const { data: isAdmin } = await userClient.rpc("is_vendor_team_admin", { _vendor_id: vendorId });
-  if (!isAdmin) return json({ error: "vendor admin role required" }, 403);
+  // Audit #5: vendor_id is OPTIONAL. A vendor with no listings yet
+  // still needs to manage billing. JWT proves identity for their own
+  // user-level Stripe customer.
+  if (vendorId) {
+    const { data: isAdmin } = await userClient.rpc("is_vendor_team_admin", { _vendor_id: vendorId });
+    if (!isAdmin) return json({ error: "vendor admin role required" }, 403);
+  }
 
   const db = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!, { auth: { persistSession: false } });
   const { data: profile } = await db.from("profiles").select("id, stripe_customer_id, stripe_subscription_id").eq("id", userId).maybeSingle();

@@ -254,22 +254,23 @@ export default function VendorUsagePage() {
   }, [credits.monthlyGrant, usedThisPeriod]);
 
   async function openPortal() {
-    if (!vendorId || actingId) return;
+    // Audit #5: portal works without a listing too (vendor_id optional).
+    // Audit #11: don't open the popup BEFORE the async call — Safari's
+    // popup blocker only allows window.open synchronously from a click
+    // handler, not after an await. Use a regular navigation instead.
+    if (!user || actingId) return;
     setActingId("portal");
-    const popup = window.open("about:blank", "_blank");
     const { data, error } = await supabase.functions.invoke("stripe-customer-portal", {
-      body: { vendor_id: vendorId },
+      body: { vendor_id: vendorId ?? null },
     });
     if (error || !data?.url) {
-      if (popup && !popup.closed) popup.close();
       toast.error("Couldn't open billing portal", {
         description: error?.message ?? "Please try again in a moment.",
       });
       setActingId(null);
       return;
     }
-    if (popup) popup.location.href = data.url as string;
-    else window.location.href = data.url as string;
+    window.location.href = data.url as string;
     setActingId(null);
   }
 
@@ -314,32 +315,10 @@ export default function VendorUsagePage() {
                 </div>
               </div>
 
-              {usagePct !== null ? (
-                <div className="flex-1 min-w-0 max-w-md">
-                  <div className="flex justify-between text-[11px] text-muted-foreground mb-1.5">
-                    <span>{usedThisPeriod.toLocaleString()} used this period</span>
-                    <span className="tnum">{usagePct}%</span>
-                  </div>
-                  <div className="h-1.5 rounded-full bg-foreground/8 overflow-hidden">
-                    <div
-                      className="h-full rounded-full transition-all"
-                      style={{
-                        width: `${usagePct}%`,
-                        background:
-                          usagePct >= 90
-                            ? "#dc2626"
-                            : usagePct >= 70
-                              ? "#f59e0b"
-                              : "linear-gradient(90deg, #ff8a4c, #c4541e)",
-                      }}
-                    />
-                  </div>
-                </div>
-              ) : (
-                <p className="text-xs text-muted-foreground flex-1">
-                  Credits never expire. Top up any time from Subscription.
-                </p>
-              )}
+              {/* "Used this period" + progress bar removed per
+                  request — the donut + bar chart below already show
+                  spend; redundant on this card. */}
+              <div className="flex-1" />
 
               {/* Audit #6: only show Manage billing when the vendor
                   has a Stripe customer to manage. Free/never-topped-
