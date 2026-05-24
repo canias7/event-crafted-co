@@ -237,12 +237,33 @@ serve(async (req: Request) => {
         },
       });
       const finalized = await stripe.invoices.finalizeInvoice(draftInvoice.id);
-      const paid = await stripe.invoices.pay(finalized.id, {
-        payment_method: paymentMethodId,
-      });
-      chargedNow = paid.amount_paid ?? paid.amount_due ?? unitAmountCents;
-      if (paid.status && paid.status !== "paid") {
-        chargeFailed = `invoice_${paid.status}`;
+      // Finalizing an invoice with collection_method:
+      // charge_automatically + a default_payment_method causes
+      // Stripe to attempt payment synchronously as part of the
+      // finalize call. If that attempt succeeded, the returned
+      // invoice is already 'paid' and calling pay() again raises
+      // 'Invoice is already paid'. So only call pay() if it's
+      // still 'open' (i.e. needs an explicit payment retry).
+      let settled = finalized;
+      if (finalized.status === "open") {
+        try {
+          settled = await stripe.invoices.pay(finalized.id, {
+            payment_method: paymentMethodId,
+          });
+        } catch (payErr: any) {
+          const msg = String(payErr?.message ?? "").toLowerCase();
+          // Race condition: pay() landed after auto-pay finished.
+          // Re-retrieve the invoice to read its real terminal state.
+          if (msg.includes("already paid")) {
+            settled = await stripe.invoices.retrieve(finalized.id);
+          } else {
+            throw payErr;
+          }
+        }
+      }
+      chargedNow = settled.amount_paid ?? settled.amount_due ?? unitAmountCents;
+      if (settled.status && settled.status !== "paid") {
+        chargeFailed = `invoice_${settled.status}`;
       }
     } catch (err: any) {
       console.warn(
