@@ -94,6 +94,24 @@ serve(async (req) => {
     if (!userPrompt) return json(400, { error: "missing_prompt" });
     const direction = userPrompt.slice(0, 1000);
 
+    // VALIDATE BEFORE CONSUME. Audit #3: previously the size + decode
+    // checks ran AFTER consumeCredits, so a malformed edit request
+    // burned 10 credits before the outer catch could refund (the
+    // early returns don't throw). Pull the validation up.
+    let decodedEdit: { bytes: Uint8Array; mime: string } | null = null;
+    if (mode === "edit") {
+      const rawInput = String(payload?.image ?? "");
+      if (rawInput.length > 28 * 1024 * 1024) {
+        return json(413, { error: "image_too_large" });
+      }
+      const decoded = decodeImage(rawInput);
+      if (!decoded) return json(400, { error: "invalid_image" });
+      if (decoded.bytes.length > 20 * 1024 * 1024) {
+        return json(413, { error: "image_too_large" });
+      }
+      decodedEdit = decoded;
+    }
+
     // Charge credits BEFORE the OpenAI call. 10 credits per Axion
     // request — single 1024×1024 medium-quality image from
     // gpt-image-1, cost-to-serve ≈ $0.042 vs $0.24+ retail
@@ -134,20 +152,8 @@ serve(async (req) => {
       });
     } else {
       // Image-to-image: restyle the vendor's uploaded photo.
-      const rawInput = String(payload?.image ?? "");
-      // Reject oversize base64 BEFORE atob — base64 expands by
-      // ~4/3, so a 20MB byte budget caps the encoded string at
-      // ~28MB. atob would otherwise allocate the entire decoded
-      // buffer in one shot, opening a DoS surface.
-      if (rawInput.length > 28 * 1024 * 1024) {
-        return json(413, { error: "image_too_large" });
-      }
-      const decoded = decodeImage(rawInput);
-      if (!decoded) return json(400, { error: "invalid_image" });
-      // Defense in depth (smaller actual byte budget post-decode).
-      if (decoded.bytes.length > 20 * 1024 * 1024) {
-        return json(413, { error: "image_too_large" });
-      }
+      // decodedEdit was validated + decoded above the consume.
+      const decoded = decodedEdit!;
       const prompt =
         "Edit this event-vendor listing photo. Apply the direction below while keeping the real subject, composition, and details intact — keep it photorealistic and natural, never artificial or AI-looking. Direction: " +
         direction;
