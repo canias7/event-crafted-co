@@ -228,33 +228,13 @@ export function EditListingModal({
         .eq("id", vendorId);
       if (vpErr) throw vpErr;
 
-      // 2. Delete photos the vendor removed (DB row + storage object).
-      const keptPhotoIds = new Set(
-        photos
-          .filter((p): p is ExistingPhoto => p.kind === "existing")
-          .map((p) => p.id),
-      );
-      const removedPhotos = originalPhotosRef.current.filter(
-        (o) => !keptPhotoIds.has(o.id),
-      );
-      if (removedPhotos.length > 0) {
-        const { error: delErr } = await supabase
-          .from("vendor_portfolio_images")
-          .delete()
-          .in(
-            "id",
-            removedPhotos.map((r) => r.id),
-          );
-        if (delErr) throw delErr;
-        await supabase.storage
-          .from("vendor-portfolios")
-          .remove(removedPhotos.map((r) => r.path));
-      }
-
-      // 3. Upload + insert new photos, appended after the highest
-      //    existing display_order. Parallel-with-concurrency-cap
-      //    so a vendor adding 50 new photos to an existing listing
-      //    finishes in ~5s instead of several minutes.
+      // 2. Upload + insert NEW photos FIRST, before any destructive
+      //    delete of existing ones. Earlier order was delete-then-
+      //    upload; if step 3 (upload) failed, the vendor permanently
+      //    lost the deleted photos with no recovery path. This new
+      //    order guarantees the vendor's portfolio is never strictly
+      //    smaller than what they had at modal open until every new
+      //    upload has committed.
       const newPhotos = photos.filter((p): p is NewPhoto => p.kind === "new");
       if (newPhotos.length > 0) {
         const baseOrder =
@@ -276,6 +256,35 @@ export function EditListingModal({
           .from("vendor_portfolio_images")
           .insert(inserts);
         if (insErr) throw insErr;
+      }
+
+      // 3. NOW delete photos the vendor removed. By this point any
+      //    new uploads are safely committed, so even if the delete
+      //    fails partway the vendor still has at least their pre-
+      //    edit photos plus the new ones — never a strictly-shorter
+      //    portfolio. Storage cleanup AFTER the DB delete because
+      //    the on-delete trigger handles bucket removal too; the
+      //    explicit .remove() is belt-and-braces for legacy rows.
+      const keptPhotoIds = new Set(
+        photos
+          .filter((p): p is ExistingPhoto => p.kind === "existing")
+          .map((p) => p.id),
+      );
+      const removedPhotos = originalPhotosRef.current.filter(
+        (o) => !keptPhotoIds.has(o.id),
+      );
+      if (removedPhotos.length > 0) {
+        const { error: delErr } = await supabase
+          .from("vendor_portfolio_images")
+          .delete()
+          .in(
+            "id",
+            removedPhotos.map((r) => r.id),
+          );
+        if (delErr) throw delErr;
+        await supabase.storage
+          .from("vendor-portfolios")
+          .remove(removedPhotos.map((r) => r.path));
       }
 
       // 4. FAQs — delete removed, update kept in place, append new.
