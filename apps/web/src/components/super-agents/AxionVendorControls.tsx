@@ -6,7 +6,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Check, Download, Loader2, Sparkles, Upload } from "lucide-react";
+import { Check, Download, Loader2, Sparkles, Upload, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Switch } from "@/components/ui/switch";
 import { useAuth } from "@/hooks/useAuth";
@@ -41,6 +41,35 @@ function StepLabel({ n, children }: { n: number; children: string }) {
   );
 }
 
+// SessionStorage key for hydrating generated variants across tab
+// switches + sidebar navigation. Variants persist until the vendor
+// explicitly dismisses one via the × button or starts a new
+// generation. Cleared per-user via key suffix so two accounts on
+// the same browser don't see each other's last batch.
+const AXION_VARIANTS_KEY = "vendora.axion.variants";
+
+function loadPersistedVariants(userId: string | undefined | null): string[] {
+  if (!userId || typeof window === "undefined") return [];
+  try {
+    const raw = window.sessionStorage.getItem(`${AXION_VARIANTS_KEY}:${userId}`);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed.filter((x) => typeof x === "string") : [];
+  } catch {
+    return [];
+  }
+}
+function savePersistedVariants(userId: string | undefined | null, variants: string[]) {
+  if (!userId || typeof window === "undefined") return;
+  try {
+    const key = `${AXION_VARIANTS_KEY}:${userId}`;
+    if (variants.length === 0) window.sessionStorage.removeItem(key);
+    else window.sessionStorage.setItem(key, JSON.stringify(variants));
+  } catch {
+    // Quota exceeded or storage disabled — silently drop.
+  }
+}
+
 export function AxionVendorControls() {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -48,10 +77,26 @@ export function AxionVendorControls() {
   const [sourceDataUrl, setSourceDataUrl] = useState<string | null>(null);
   const [prompt, setPrompt] = useState("");
   const [generating, setGenerating] = useState(false);
-  const [variants, setVariants] = useState<string[]>([]);
+  const [variants, setVariants] = useState<string[]>(() => loadPersistedVariants(user?.id));
   const [saved, setSaved] = useState<Record<number, "saving" | "saved">>({});
   const [autosave, setAutosave] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+
+  // Hydrate after user resolves (initial render may have null user).
+  useEffect(() => {
+    if (!user?.id) return;
+    const persisted = loadPersistedVariants(user.id);
+    if (persisted.length > 0 && variants.length === 0) {
+      setVariants(persisted);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]);
+
+  // Persist every variants change so the panel survives tab switches
+  // + sidebar navigation. Cleared on dismiss or new generation.
+  useEffect(() => {
+    savePersistedVariants(user?.id, variants);
+  }, [user?.id, variants]);
 
   // Load the vendor's Axion settings.
   useEffect(() => {
@@ -415,8 +460,21 @@ export function AxionVendorControls() {
                   return (
                     <div
                       key={i}
-                      className="rounded-xl overflow-hidden border border-black/10 bg-white"
+                      className="relative rounded-xl overflow-hidden border border-black/10 bg-white"
                     >
+                      {/* Dismiss button — top-right corner. Removes this
+                          variant from the panel (and from sessionStorage
+                          via the persistence effect). */}
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setVariants((prev) => prev.filter((_, idx) => idx !== i))
+                        }
+                        aria-label={`Dismiss variant ${i + 1}`}
+                        className="absolute top-2 right-2 z-10 w-7 h-7 rounded-full bg-black/55 hover:bg-black/75 text-white flex items-center justify-center backdrop-blur-sm shadow-md"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
                       <img src={v} alt={`Variant ${i + 1}`} className="w-full" />
                       <div className="flex items-center gap-1.5 p-1.5">
                         <button
