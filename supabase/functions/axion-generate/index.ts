@@ -15,6 +15,7 @@ import {
   refundCredits,
   insufficientCreditsResponse,
 } from "../_shared/credits.ts";
+import { logImageUsage } from "../_shared/ai-usage.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
@@ -176,6 +177,16 @@ serve(async (req) => {
       // debugging but do NOT return them to the client.
       const detail = await res.text();
       console.error("[axion-generate] openai error", mode, res.status, detail);
+      void logImageUsage({
+        userId: chargedUserId,
+        actionType: "axion_image",
+        model: "gpt-image-1",
+        spec: "gpt-image-1:1024x1024:medium",
+        imageCount: 0,
+        refId: chargedRef,
+        success: false,
+        errorMessage: `openai_${res.status}`,
+      });
       await refundCredits(
         chargedUserId,
         "axion_image",
@@ -191,10 +202,31 @@ serve(async (req) => {
       .filter((b): b is string => typeof b === "string" && b.length > 0)
       .map((b) => `data:image/png;base64,${b}`);
     if (variants.length === 0) {
+      void logImageUsage({
+        userId: chargedUserId,
+        actionType: "axion_image",
+        model: "gpt-image-1",
+        spec: "gpt-image-1:1024x1024:medium",
+        imageCount: 0,
+        refId: chargedRef,
+        success: false,
+        errorMessage: "no_variants",
+      });
       await refundCredits(chargedUserId, "axion_image", chargedRef, "no_variants");
       chargedUserId = null;
       return json(502, { error: "no_variants" });
     }
+
+    // Successful path: log the actual variant count returned by
+    // OpenAI (n=2 in the request body, but log the realized number).
+    void logImageUsage({
+      userId: chargedUserId,
+      actionType: "axion_image",
+      model: "gpt-image-1",
+      spec: "gpt-image-1:1024x1024:medium",
+      imageCount: variants.length,
+      refId: chargedRef,
+    });
 
     return json(200, { variants, credits_remaining: consume.balance });
   } catch (err) {

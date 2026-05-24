@@ -5,6 +5,8 @@
 
 // deno-lint-ignore-file no-explicit-any
 
+import { logClaudeUsage } from "./ai-usage.ts";
+
 export const MODEL = "claude-sonnet-4-6";
 
 export interface PackageCtx {
@@ -330,6 +332,12 @@ export function buildSystemPrompt(ctx: HiluxPromptCtx): string {
   return lines.join("\n");
 }
 
+export interface UsageMeta {
+  userId: string | null;
+  actionType: string;
+  refId?: string | null;
+}
+
 export async function scoreLead(
   apiKey: string,
   ctx: {
@@ -338,6 +346,7 @@ export async function scoreLead(
     inquiry: InquiryCtx | null;
     transcript: Array<{ role: "user" | "assistant"; content: string }>;
   },
+  meta?: UsageMeta,
 ): Promise<LeadScoreResult & { usage?: ClaudeUsage }> {
   if (!apiKey) return { score: "unknown", reason: "no_api_key" };
   const lines: string[] = [];
@@ -389,6 +398,15 @@ export async function scoreLead(
       cache_creation_tokens: Number(u.cache_creation_input_tokens) || 0,
       cache_read_tokens: Number(u.cache_read_input_tokens) || 0,
     };
+    if (meta) {
+      void logClaudeUsage({
+        userId: meta.userId,
+        actionType: `${meta.actionType}_lead_score`,
+        model: MODEL,
+        tokens: usage,
+        refId: meta.refId ?? null,
+      });
+    }
     const jsonish = raw.replace(/^```(?:json)?/, "").replace(/```$/, "").trim();
     const parsed = JSON.parse(jsonish);
     const score = String(parsed?.score ?? "").toLowerCase();
@@ -414,8 +432,9 @@ export async function callClaude(
   apiKey: string,
   systemText: string,
   messages: Array<{ role: "user" | "assistant"; content: string }>,
+  meta?: UsageMeta,
 ): Promise<string> {
-  const { text } = await callClaudeWithUsage(apiKey, systemText, messages);
+  const { text } = await callClaudeWithUsage(apiKey, systemText, messages, meta);
   return text;
 }
 
@@ -427,6 +446,7 @@ export async function callClaudeWithUsage(
   apiKey: string,
   systemText: string,
   messages: Array<{ role: "user" | "assistant"; content: string }>,
+  meta?: UsageMeta,
 ): Promise<{ text: string; usage: ClaudeUsage }> {
   if (!apiKey) throw new Error("ANTHROPIC_API_KEY not set in edge function env");
   const res = await fetch("https://api.anthropic.com/v1/messages", {
@@ -441,11 +461,21 @@ export async function callClaudeWithUsage(
   });
   if (!res.ok) {
     const errText = await res.text();
+    if (meta) {
+      void logClaudeUsage({
+        userId: meta.userId,
+        actionType: meta.actionType,
+        model: MODEL,
+        tokens: { input_tokens: 0, output_tokens: 0, cache_creation_tokens: 0, cache_read_tokens: 0 },
+        refId: meta.refId ?? null,
+        success: false,
+        errorMessage: `anthropic ${res.status}: ${errText.slice(0, 240)}`,
+      });
+    }
     throw new Error(`anthropic ${res.status}: ${errText.slice(0, 500)}`);
   }
   const body = (await res.json()) as any;
   const text = (body.content ?? []).filter((b: any) => b.type === "text").map((b: any) => b.text).join("\n").trim();
-  if (!text) throw new Error("empty reply from claude");
   const u = body.usage ?? {};
   const usage: ClaudeUsage = {
     input_tokens: Number(u.input_tokens) || 0,
@@ -453,6 +483,18 @@ export async function callClaudeWithUsage(
     cache_creation_tokens: Number(u.cache_creation_input_tokens) || 0,
     cache_read_tokens: Number(u.cache_read_input_tokens) || 0,
   };
+  if (meta) {
+    void logClaudeUsage({
+      userId: meta.userId,
+      actionType: meta.actionType,
+      model: MODEL,
+      tokens: usage,
+      refId: meta.refId ?? null,
+      success: text.length > 0,
+      errorMessage: text.length > 0 ? null : "empty_reply",
+    });
+  }
+  if (!text) throw new Error("empty reply from claude");
   return { text, usage };
 }
 

@@ -193,7 +193,11 @@ serve(async (req) => {
 
     let reply: string;
     try {
-      reply = await callClaude(ANTHROPIC_API_KEY, seasoned, claudeMessages);
+      reply = await callClaude(ANTHROPIC_API_KEY, seasoned, claudeMessages, {
+        userId: userData.user.id,
+        actionType: "hilux_regenerate",
+        refId: messageId,
+      });
     } catch (claudeErr) {
       await refundCredits(
         userData.user.id,
