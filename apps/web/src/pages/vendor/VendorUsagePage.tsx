@@ -667,7 +667,7 @@ function SectionHeader({
 }: { title: string; rightSlot?: React.ReactNode }) {
   return (
     <div className="flex items-center justify-between gap-3">
-      <h3 className="text-base font-semibold tracking-tight">{title}</h3>
+      <h3 className="text-base font-semibold tracking-tight font-sans">{title}</h3>
       {rightSlot}
     </div>
   );
