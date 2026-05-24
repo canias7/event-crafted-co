@@ -16,11 +16,14 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  KeyboardAvoidingView,
+  Modal,
   Platform,
   Pressable,
   RefreshControl,
   ScrollView,
   Text,
+  TextInput,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -123,7 +126,13 @@ export default function CalendarScreen() {
   // of their listings. Kept separate from `busy` (google-calendar
   // sync) since they're a different model + the rest of the marketplace
   // (e.g. the host explore filter) joins on this table directly.
-  const [manualBlocks, setManualBlocks] = useState<string[]>([]);
+  // Map<date, reason> so the day-info card can render the vendor's
+  // typed title ("Christian's birthday") instead of generic
+  // "Blocked". Reason is private to the vendor side — public
+  // availability surface only reads `date`.
+  const [manualBlocks, setManualBlocks] = useState<Map<string, string | null>>(
+    () => new Map(),
+  );
   const [viewMonth, setViewMonth] = useState(() => {
     const d = new Date();
     return new Date(d.getFullYear(), d.getMonth(), 1);
@@ -173,7 +182,7 @@ export default function CalendarScreen() {
           .lt("event_date", endYmd),
         supabase
           .from("vendor_unavailable_dates")
-          .select("date")
+          .select("date, reason")
           .in("vendor_id", vendorIds)
           .gte("date", startYmd)
           .lt("date", endYmd),
@@ -183,7 +192,12 @@ export default function CalendarScreen() {
       else {
         setInquiries((inqRes.data ?? []) as InquiryRow[]);
         setManualBlocks(
-          ((blockRes.data ?? []) as { date: string }[]).map((r) => r.date),
+          new Map(
+            ((blockRes.data ?? []) as Array<{
+              date: string;
+              reason: string | null;
+            }>).map((r) => [r.date, r.reason]),
+          ),
         );
       }
       if (isRefresh) setRefreshing(false);
@@ -212,7 +226,7 @@ export default function CalendarScreen() {
       )
         m.set(key, "pending");
     }
-    for (const key of manualBlocks) {
+    for (const key of manualBlocks.keys()) {
       const prev = m.get(key);
       if (prev !== "booked" && prev !== "pending") m.set(key, "blocked");
     }
@@ -266,11 +280,16 @@ export default function CalendarScreen() {
         timeLabel: null,
       });
     }
-    if (manualBlocks.includes(selectedYmd)) {
+    if (manualBlocks.has(selectedYmd)) {
+      const reason = (manualBlocks.get(selectedYmd) ?? "").trim();
+      // 'Blocked manually' is the legacy hardcoded fallback before
+      // the title input existed. Treat as no-title so old rows
+      // render cleanly as 'Blocked'.
+      const isLegacyFallback = reason === "Blocked manually";
       out.push({
         kind: "busy",
         inquiryId: null,
-        title: "Blocked",
+        title: reason && !isLegacyFallback ? reason : "Blocked",
         subtitle: "Marked unavailable",
         amountCents: null,
         accent: INK_DIM,
@@ -299,67 +318,88 @@ export default function CalendarScreen() {
     [router],
   );
 
-  const isSelectedBlocked = !!selectedYmd && manualBlocks.includes(selectedYmd);
+  const isSelectedBlocked = !!selectedYmd && manualBlocks.has(selectedYmd);
+  // Title input for the block flow. Modal opens on the Block tap;
+  // closed by Cancel or Block. Alert.prompt is iOS-only so a
+  // custom Modal is the cross-platform path.
+  const [blockTitleModalOpen, setBlockTitleModalOpen] = useState(false);
+  const [blockTitleInput, setBlockTitleInput] = useState("");
 
-  // Block / unblock the selected day across every listing this user
-  // owns. Writes one vendor_unavailable_dates row per vendor_profile
-  // (or deletes them all if currently blocked).
+  // Block / unblock the selected day. Block path opens a Modal
+  // with an optional title input ('Christian's birthday', etc).
+  // Unblock path stays a plain Alert.alert confirm — no input
+  // needed. Writes one vendor_unavailable_dates row per
+  // vendor_profile (or deletes them all if currently blocked).
+  const commitBlock = useCallback(async () => {
+    if (!selectedYmd || vendorIds.length === 0 || blocking) return;
+    setBlocking(true);
+    const trimmed = blockTitleInput.trim();
+    const reason = trimmed.length > 0 ? trimmed : "Blocked manually";
+    const rows = vendorIds.map((vid) => ({
+      vendor_id: vid,
+      date: selectedYmd,
+      reason,
+    }));
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error } = await (supabase as any)
+      .from("vendor_unavailable_dates")
+      .upsert(rows, { onConflict: "vendor_id,date" });
+    setBlocking(false);
+    setBlockTitleModalOpen(false);
+    setBlockTitleInput("");
+    if (error) {
+      Alert.alert("Couldn't block", error.message);
+      return;
+    }
+    load(false);
+  }, [selectedYmd, vendorIds, blocking, blockTitleInput, load]);
+
+  const commitUnblock = useCallback(async () => {
+    if (!selectedYmd || vendorIds.length === 0 || blocking) return;
+    setBlocking(true);
+    const { error } = await supabase
+      .from("vendor_unavailable_dates")
+      .delete()
+      .in("vendor_id", vendorIds)
+      .eq("date", selectedYmd);
+    setBlocking(false);
+    if (error) {
+      Alert.alert("Couldn't unblock", error.message);
+      return;
+    }
+    load(false);
+  }, [selectedYmd, vendorIds, blocking, load]);
+
   const toggleSelectedDayBlock = useCallback(() => {
     if (!selectedYmd || vendorIds.length === 0 || blocking) return;
-    const willBlock = !isSelectedBlocked;
-    Alert.alert(
-      willBlock ? "Block this day?" : "Unblock this day?",
-      willBlock
-        ? `Mark ${prettyDay(selectedYmd)} unavailable across ${
-            vendorIds.length === 1
-              ? "your listing"
-              : `your ${vendorIds.length} listings`
-          }. Hosts won't see you as bookable for that date.`
-        : `Re-open ${prettyDay(selectedYmd)} across ${
-            vendorIds.length === 1
-              ? "your listing"
-              : `your ${vendorIds.length} listings`
-          }.`,
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: willBlock ? "Block" : "Unblock",
-          style: willBlock ? "destructive" : "default",
-          onPress: async () => {
-            setBlocking(true);
-            if (willBlock) {
-              const rows = vendorIds.map((vid) => ({
-                vendor_id: vid,
-                date: selectedYmd,
-                reason: "Blocked manually",
-              }));
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              const { error } = await (supabase as any)
-                .from("vendor_unavailable_dates")
-                .upsert(rows, { onConflict: "vendor_id,date" });
-              setBlocking(false);
-              if (error) {
-                Alert.alert("Couldn't block", error.message);
-                return;
-              }
-            } else {
-              const { error } = await supabase
-                .from("vendor_unavailable_dates")
-                .delete()
-                .in("vendor_id", vendorIds)
-                .eq("date", selectedYmd);
-              setBlocking(false);
-              if (error) {
-                Alert.alert("Couldn't unblock", error.message);
-                return;
-              }
-            }
-            load(false);
-          },
-        },
-      ],
-    );
-  }, [selectedYmd, vendorIds, blocking, isSelectedBlocked, load]);
+    if (isSelectedBlocked) {
+      Alert.alert(
+        "Unblock this day?",
+        `Re-open ${prettyDay(selectedYmd)} across ${
+          vendorIds.length === 1
+            ? "your listing"
+            : `your ${vendorIds.length} listings`
+        }.`,
+        [
+          { text: "Cancel", style: "cancel" },
+          { text: "Unblock", onPress: commitUnblock },
+        ],
+      );
+    } else {
+      // Block path: open the title-input Modal. Title is optional;
+      // hitting Block with an empty input falls back to the legacy
+      // "Blocked manually" reason and renders as plain "Blocked"
+      // in the day-info area.
+      setBlockTitleInput("");
+      setBlockTitleModalOpen(true);
+    }
+  }, [
+    selectedYmd,
+    vendorIds,
+    blocking,
+    isSelectedBlocked,
+    commitUnblock,
+  ]);
 
   function shiftMonth(delta: number) {
     const next = new Date(viewMonth);
@@ -697,6 +737,117 @@ export default function CalendarScreen() {
           ) : null}
         </ScrollView>
       </SafeAreaView>
+
+      {/* Block-title modal. Opens when the vendor taps Block on
+          an open day. Optional input — empty Block falls back to
+          the legacy 'Blocked manually' reason which displays as
+          plain 'Blocked' on the web day-info card. */}
+      <Modal
+        visible={blockTitleModalOpen}
+        animationType="fade"
+        transparent
+        onRequestClose={() => {
+          setBlockTitleModalOpen(false);
+          setBlockTitleInput("");
+        }}
+      >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : undefined}
+          style={{ flex: 1, justifyContent: "center", padding: 24 }}
+        >
+          <Pressable
+            onPress={() => {
+              setBlockTitleModalOpen(false);
+              setBlockTitleInput("");
+            }}
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: "rgba(0,0,0,0.45)",
+            }}
+          />
+          <View
+            style={{
+              backgroundColor: CREAM,
+              borderRadius: 20,
+              padding: 22,
+              gap: 14,
+            }}
+          >
+            <Text
+              style={{ fontFamily: SERIF, fontSize: 22, color: INK }}
+            >
+              Block {selectedYmd ? prettyDay(selectedYmd) : "this day"}?
+            </Text>
+            <Text style={{ fontSize: 13, color: INK_DIM, lineHeight: 18 }}>
+              Add an optional title so you remember why ("Christian's
+              birthday"). Only you see it — hosts just see the day as
+              unavailable.
+            </Text>
+            <TextInput
+              value={blockTitleInput}
+              onChangeText={setBlockTitleInput}
+              placeholder="What is it? (optional)"
+              placeholderTextColor={INK_DIM}
+              autoFocus
+              maxLength={80}
+              returnKeyType="done"
+              onSubmitEditing={commitBlock}
+              style={{
+                borderWidth: 1,
+                borderColor: BORDER,
+                borderRadius: 12,
+                paddingHorizontal: 14,
+                paddingVertical: 12,
+                fontSize: 15,
+                color: INK,
+              }}
+            />
+            <View
+              style={{
+                flexDirection: "row",
+                justifyContent: "flex-end",
+                gap: 10,
+              }}
+            >
+              <Pressable
+                onPress={() => {
+                  setBlockTitleModalOpen(false);
+                  setBlockTitleInput("");
+                }}
+                disabled={blocking}
+                style={{
+                  paddingHorizontal: 16,
+                  paddingVertical: 10,
+                  borderRadius: 999,
+                }}
+              >
+                <Text style={{ color: INK_DIM, fontWeight: "600" }}>
+                  Cancel
+                </Text>
+              </Pressable>
+              <Pressable
+                onPress={commitBlock}
+                disabled={blocking}
+                style={{
+                  paddingHorizontal: 18,
+                  paddingVertical: 10,
+                  borderRadius: 999,
+                  backgroundColor: INK,
+                  opacity: blocking ? 0.5 : 1,
+                }}
+              >
+                <Text style={{ color: CREAM, fontWeight: "700" }}>
+                  {blocking ? "Saving…" : "Block"}
+                </Text>
+              </Pressable>
+            </View>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
     </View>
   );
 }
