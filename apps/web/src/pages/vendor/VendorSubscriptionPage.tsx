@@ -65,6 +65,11 @@ interface TierRow {
   monthlyCredits: number;
   listings: string;
   highlights: string[];
+  // 'month' for the monthly versions of Starter/Pro/Studio (and
+  // Free, which is always free regardless), 'year' for the yearly
+  // alternates we toggle to via the Monthly/Yearly switch. Same
+  // tier slug can have one row per interval in vendor_credit_packages.
+  billingInterval: "month" | "year";
 }
 
 interface TopupRow {
@@ -83,6 +88,7 @@ const FREE_TIER: TierRow = {
   monthlyCredits: 0,
   listings: "1 listing",
   highlights: ["100 trial credits on signup"],
+  billingInterval: "month",
 };
 
 // Maps the DB display_name -> the short label used on top-up cards
@@ -129,6 +135,13 @@ export default function VendorSubscriptionPage() {
   // so first paint still shows something while the DB fetch lands.
   const [tiers, setTiers] = useState<TierRow[]>([FREE_TIER]);
   const [topups, setTopups] = useState<TopupRow[]>([]);
+  // Monthly / Yearly toggle. Defaults to monthly since that's
+  // what's been live; yearly tiers get seeded into
+  // vendor_credit_packages with billing_interval='year' once the
+  // Stripe yearly prices are created.
+  const [billingInterval, setBillingInterval] = useState<"month" | "year">(
+    "month",
+  );
 
   // Load the live catalog from vendor_credit_packages. Goes live cut-
   // over = reseed that table; this page picks up the new IDs on next
@@ -140,7 +153,7 @@ export default function VendorSubscriptionPage() {
       const { data, error } = await (supabase as any)
         .from("vendor_credit_packages")
         .select(
-          "stripe_price_id, kind, tier, credits, display_name, unit_amount_cents, was_monthly_cents, listings_copy, highlights, display_order",
+          "stripe_price_id, kind, tier, credits, display_name, unit_amount_cents, was_monthly_cents, listings_copy, highlights, display_order, billing_interval",
         )
         .eq("active", true)
         .order("display_order", { ascending: true });
@@ -155,6 +168,7 @@ export default function VendorSubscriptionPage() {
         was_monthly_cents: number | null;
         listings_copy: string | null;
         highlights: string[] | null;
+        billing_interval: "month" | "year" | null;
       }>)
         .filter((r) => r.kind === "subscription" && r.tier)
         .map((r) => ({
@@ -166,6 +180,7 @@ export default function VendorSubscriptionPage() {
           monthlyCredits: r.credits,
           listings: r.listings_copy ?? "",
           highlights: Array.isArray(r.highlights) ? r.highlights : [],
+          billingInterval: (r.billing_interval ?? "month") as "month" | "year",
         }));
       const packs: TopupRow[] = (data as Array<{
         stripe_price_id: string;
@@ -621,9 +636,27 @@ export default function VendorSubscriptionPage() {
 
           {/* ===== Tier grid ===== */}
           <div>
-            <h3 className="font-editorial text-2xl mb-3">Choose a plan</h3>
+            <div className="flex items-center justify-between gap-3 mb-3 flex-wrap">
+              <h3 className="font-editorial text-2xl">Choose a plan</h3>
+              <BillingIntervalToggle
+                value={billingInterval}
+                onChange={setBillingInterval}
+              />
+            </div>
+            {/* Free always shows. Paid tiers filter by the selected
+                interval. Yearly rows get seeded into
+                vendor_credit_packages with billing_interval='year'
+                when those Stripe prices exist; until then the
+                toggle's Yearly side shows just Free + a 'coming
+                soon' notice. */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
-              {tiers.map((tier) => {
+              {tiers
+                .filter(
+                  (t) =>
+                    t.id === "free" ||
+                    t.billingInterval === billingInterval,
+                )
+                .map((tier) => {
                 const isCurrent = plan?.tier === tier.id;
                 const isAct = actingId === `tier_${tier.id}`;
                 return (
@@ -732,10 +765,24 @@ export default function VendorSubscriptionPage() {
                 );
               })}
             </div>
+            {/* If the vendor flipped to Yearly but we haven't seeded
+                any yearly rows yet, paid-tier filter returns 0 cards
+                (only Free shows). Surface a friendly notice so the
+                section doesn't look empty. */}
+            {billingInterval === "year" &&
+            !tiers.some(
+              (t) => t.id !== "free" && t.billingInterval === "year",
+            ) ? (
+              <div className="mt-3 rounded-2xl border border-dashed border-foreground/15 bg-secondary/30 p-6 text-center text-sm text-muted-foreground">
+                Yearly plans coming soon — switch back to monthly to pick a
+                plan today.
+              </div>
+            ) : null}
             <p className="text-[11px] text-muted-foreground mt-2 px-1">
               Switching plans charges the new tier today and starts a fresh
-              30-day cycle. Time you already paid for stays with you, plus the
-              new tier's credits get added to your balance.
+              {billingInterval === "year" ? " 12-month" : " 30-day"} cycle.
+              Time you already paid for stays with you, plus the new tier's
+              credits get added to your balance.
             </p>
           </div>
 
@@ -1088,6 +1135,53 @@ function BillingPanel({
           Cancel plan
         </button>
       </div>
+    </div>
+  );
+}
+
+// Monthly / Yearly toggle that sits next to the Choose-a-plan
+// heading. Pill with two segments; the active one gets the dark
+// fill. Keyboard-accessible — both segments are real buttons.
+// The 'Save N%' badge on Yearly only renders when there's at
+// least one yearly tier in the catalog, so we don't promise a
+// discount that doesn't exist yet.
+function BillingIntervalToggle({
+  value,
+  onChange,
+}: {
+  value: "month" | "year";
+  onChange: (next: "month" | "year") => void;
+}) {
+  const cls = (active: boolean) =>
+    `rounded-full px-3.5 py-1.5 text-xs font-semibold tracking-wide transition-colors ${
+      active
+        ? "bg-foreground text-background"
+        : "text-foreground/70 hover:text-foreground"
+    }`;
+  return (
+    <div
+      role="radiogroup"
+      aria-label="Billing interval"
+      className="inline-flex items-center gap-1 rounded-full p-1 border border-foreground/12 bg-secondary/40"
+    >
+      <button
+        type="button"
+        role="radio"
+        aria-checked={value === "month"}
+        onClick={() => onChange("month")}
+        className={cls(value === "month")}
+      >
+        Monthly
+      </button>
+      <button
+        type="button"
+        role="radio"
+        aria-checked={value === "year"}
+        onClick={() => onChange("year")}
+        className={cls(value === "year")}
+      >
+        Yearly
+      </button>
     </div>
   );
 }
