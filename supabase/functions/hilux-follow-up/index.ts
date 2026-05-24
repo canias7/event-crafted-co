@@ -195,7 +195,11 @@ serve(async (req) => {
 
         let reply: string;
         try {
-          reply = await callClaude(ANTHROPIC_API_KEY, systemText, claudeMessages);
+          reply = await callClaude(ANTHROPIC_API_KEY, systemText, claudeMessages, {
+            userId: ctx.vendor.user_id,
+            actionType: "hilux_followup",
+            refId: thread.id,
+          });
         } catch (claudeErr) {
           await refundCredits(
             ctx.vendor.user_id,

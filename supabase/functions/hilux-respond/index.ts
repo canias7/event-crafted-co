@@ -276,6 +276,7 @@ serve(async (req) => {
         ANTHROPIC_API_KEY,
         systemText,
         claudeMessages,
+        { userId: ctx.vendor.user_id, actionType: "hilux_reply", refId: messageId },
       );
       reply = out.text;
       replyUsage = out.usage;
@@ -340,12 +341,16 @@ serve(async (req) => {
           .maybeSingle();
         const priorScore = (priorRow as { lead_score?: string } | null)?.lead_score ?? null;
 
-        const result = await scoreLead(ANTHROPIC_API_KEY, {
-          businessName: ctx.vendor!.business_name ?? "this vendor",
-          category: ctx.vendor!.category,
-          inquiry: inquiryCtx,
-          transcript: claudeMessages,
-        });
+        const result = await scoreLead(
+          ANTHROPIC_API_KEY,
+          {
+            businessName: ctx.vendor!.business_name ?? "this vendor",
+            category: ctx.vendor!.category,
+            inquiry: inquiryCtx,
+            transcript: claudeMessages,
+          },
+          { userId: ctx.vendor!.user_id, actionType: "hilux_reply", refId: thread.inquiry_id ?? null },
+        );
         addUsage(result.usage);
         const { error: scoreErr } = await admin
           .from("inquiry_scores")
