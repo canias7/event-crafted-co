@@ -252,9 +252,17 @@ export function ListingWizardModal({
     let createdVendorId: string | null = null;
     const uploadedPaths: string[] = [];
     try {
-      // 1. Insert the listing row. The vendor_profiles_add_owner trigger
-      //    backfills vendor_team_members so subsequent uploads pass
-      //    the is_vendor_member() storage check.
+      // 1. Insert the listing row as a draft. The
+      //    vendor_profiles_add_owner trigger backfills
+      //    vendor_team_members so subsequent uploads pass the
+      //    is_vendor_member() storage check.
+      //
+      // Status stays 'draft' until step 5, which flips it to
+      // 'pending' AFTER photos + FAQs are in. This way a tab-
+      // closed mid-upload leaves a draft row instead of a pending
+      // row with no photos sitting in admin's review queue. The
+      // hourly cleanup (PR #845 extended below) garbage-collects
+      // stale drafts with zero photos.
       const { data: vp, error: vpErr } = await supabase
         .from("vendor_profiles")
         .insert({
@@ -263,7 +271,7 @@ export function ListingWizardModal({
           location: trimmedLocation,
           base_price_cents: priceCents,
           category_attributes: attrs,
-          application_status: "pending",
+          application_status: "draft",
         })
         .select("id")
         .single();
@@ -308,15 +316,28 @@ export function ListingWizardModal({
         if (error) throw error;
       }
 
-      // 4. Notify admin (fire-and-forget — the listing exists either way).
+      // 4. Flip status from 'draft' → 'pending' now that photos +
+      //    FAQs are committed. If this UPDATE fails, the listing
+      //    stays a draft and the catch-block rollback removes
+      //    everything — vendor sees an error and can retry. If
+      //    the tab closed before this UPDATE, the draft sits in
+      //    place and the hourly orphan sweep cleans it up.
+      const { error: pubErr } = await supabase
+        .from("vendor_profiles")
+        .update({ application_status: "pending" })
+        .eq("id", vendorId);
+      if (pubErr) throw pubErr;
+
+      // 5. Notify admin (fire-and-forget — the listing is now in
+      //    the queue either way).
       void supabase.functions
         .invoke("send-transactional-email", {
           body: { kind: "listing_submitted", vendorProfileId: vendorId },
         })
         .catch(() => undefined);
 
-      // 5. Geocode the listing's location in the background so map /
-      //    distance features have coordinates. Best-effort.
+      // 6. Geocode the listing's location in the background so map
+      //    / distance features have coordinates. Best-effort.
       void supabase.functions
         .invoke("geocode-vendor", { body: { vendorId } })
         .catch(() => undefined);
