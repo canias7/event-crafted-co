@@ -968,68 +968,86 @@ function BillingPanel({
             No invoices yet. Once your first month is paid, receipts land here.
           </p>
         ) : (
-          <ul className="mt-2 divide-y divide-foreground/8 -mx-1">
-            {recentInvoices.map((inv) => {
-              const amount = (inv.amount_paid || inv.amount_due) / 100;
-              const date = new Date(inv.created * 1000).toLocaleDateString(undefined, {
-                month: "short",
-                day: "numeric",
-                year: "numeric",
-              });
+          (() => {
+            // Render one row per LINE ITEM, not per invoice. Some
+            // historical invoices were bundled by the older
+            // stripe-change-tier v2-v4 flow (pending invoice items
+            // pooled on the customer and got swept into one invoice
+            // on the next invoices.create call). Splitting per line
+            // here gives vendors the "one charge = one row" view
+            // they expect. Each row links back to the same Stripe-
+            // hosted receipt for the full breakdown.
+            const rows = recentInvoices.flatMap((inv) => {
+              const date = new Date(inv.created * 1000);
               const paidStyle =
                 inv.status === "paid"
                   ? "text-emerald-700"
                   : inv.status === "open"
                     ? "text-amber-700"
                     : "text-muted-foreground";
-              const lines = inv.lines ?? [];
-              const lineTooltip = lines
-                .map((l) => `${l.description ?? "Line item"}: $${(l.amount / 100).toFixed(2)}`)
-                .join("\n");
-              return (
-                <li key={inv.id} className="px-1 py-2">
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="min-w-0">
-                      <p className="text-sm tnum">{date}</p>
-                      <p className={`text-[11px] capitalize tnum mt-0.5 ${paidStyle}`}>
-                        {inv.status}
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-2 shrink-0">
-                      <span className="text-sm font-semibold tnum" title={lineTooltip || undefined}>
-                        ${amount.toFixed(2)}
-                      </span>
-                      {inv.hosted_invoice_url ? (
-                        <a
-                          href={inv.hosted_invoice_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-xs font-medium text-foreground/70 hover:text-foreground"
-                        >
-                          View
-                        </a>
-                      ) : null}
-                    </div>
-                  </div>
-                  {lines.length > 0 ? (
-                    <ul className="mt-1.5 ml-0 space-y-0.5">
-                      {lines.map((line, lIdx) => (
-                        <li
-                          key={lIdx}
-                          className="flex items-center justify-between gap-2 text-[11px] text-muted-foreground"
-                        >
-                          <span className="truncate">{line.description ?? "Line item"}</span>
-                          <span className="tnum shrink-0">
-                            ${(line.amount / 100).toFixed(2)}
-                          </span>
-                        </li>
-                      ))}
-                    </ul>
-                  ) : null}
-                </li>
-              );
-            })}
-          </ul>
+              const lines = (inv.lines ?? []).filter((l) => l.amount > 0);
+              if (lines.length === 0) {
+                return [{
+                  key: inv.id,
+                  date,
+                  description: inv.summary ?? `Invoice ${inv.id.slice(-6)}`,
+                  amount: inv.amount_paid || inv.amount_due,
+                  status: inv.status,
+                  paidStyle,
+                  hostedUrl: inv.hosted_invoice_url,
+                }];
+              }
+              return lines.map((line, lIdx) => ({
+                key: `${inv.id}_${lIdx}`,
+                date,
+                description: line.description ?? inv.summary ?? "Line item",
+                amount: line.amount,
+                status: inv.status,
+                paidStyle,
+                hostedUrl: inv.hosted_invoice_url,
+              }));
+            });
+            const visible = rows.slice(0, 10);
+            return (
+              <ul className="mt-2 divide-y divide-foreground/8 -mx-1">
+                {visible.map((row) => {
+                  const dateLabel = row.date.toLocaleDateString(undefined, {
+                    month: "short",
+                    day: "numeric",
+                    year: "numeric",
+                  });
+                  return (
+                    <li key={row.key} className="flex items-center justify-between gap-2 px-1 py-2">
+                      <div className="min-w-0">
+                        <p className="text-sm tnum">{dateLabel}</p>
+                        <p className="text-[11px] text-muted-foreground truncate">
+                          {row.description}
+                        </p>
+                        <p className={`text-[11px] capitalize tnum mt-0.5 ${row.paidStyle}`}>
+                          {row.status}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <span className="text-sm font-semibold tnum">
+                          ${(row.amount / 100).toFixed(2)}
+                        </span>
+                        {row.hostedUrl ? (
+                          <a
+                            href={row.hostedUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-xs font-medium text-foreground/70 hover:text-foreground"
+                          >
+                            View
+                          </a>
+                        ) : null}
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            );
+          })()
         )}
       </div>
 
