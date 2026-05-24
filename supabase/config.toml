@@ -5,6 +5,8 @@ project_id = "pahpjjubhbcbwqjpamwv"
     verify_jwt = false
   [functions.axion-generate]
     verify_jwt = true
+  [functions.cleanup-portfolio-orphans]
+    verify_jwt = false
   [functions.geocode-vendor]
     verify_jwt = true
   [functions.hilux-archive-cold]
