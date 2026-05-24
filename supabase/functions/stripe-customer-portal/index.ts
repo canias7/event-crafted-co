@@ -26,7 +26,10 @@ const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 // + reuse the same config across invocations instead of cluttering
 // the Stripe Dashboard with one config per portal open.
 const CONFIG_MARKER_KEY = "vendora_managed";
-const CONFIG_MARKER_VAL = "v1";
+// v2: drop "quantity" from default_allowed_updates — vendors should
+// only see plan-switching, not a +/- quantity control (subscriptions
+// are 1-per-user; bumping quantity would just double-bill).
+const CONFIG_MARKER_VAL = "v2";
 
 // Warm-cache the configuration id across invocations of the same
 // Deno isolate. Cold starts hit Stripe to list/create.
@@ -96,7 +99,8 @@ async function getOrCreatePortalConfig(
       subscription_cancel: { enabled: true, mode: "at_period_end" },
       subscription_update: {
         enabled: true,
-        default_allowed_updates: ["price", "quantity"],
+        // No "quantity" — Vendora is 1 sub per user.
+        default_allowed_updates: ["price"],
         proration_behavior: "create_prorations",
         products: portalProducts,
       },

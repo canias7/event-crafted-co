@@ -405,7 +405,11 @@ export function AxionVendorControls() {
                 </span>
               </div>
             ) : variants.length > 0 ? (
-              <div className="grid grid-cols-2 gap-3">
+              <div
+                className={`grid gap-3 ${
+                  variants.length === 1 ? "grid-cols-1" : "grid-cols-2"
+                }`}
+              >
                 {variants.map((v, i) => {
                   const state = saved[i];
                   return (
