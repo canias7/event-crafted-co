@@ -6,8 +6,23 @@
 // untouched, so an already-live listing stays live.
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Crown, Loader2, Plus, Trash2, Upload, X } from "lucide-react";
+import { Crown, GripVertical, Loader2, Plus, Trash2, Upload, X } from "lucide-react";
 import { toast } from "sonner";
+import {
+  DndContext,
+  PointerSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  arrayMove,
+  rectSortingStrategy,
+  useSortable,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -25,6 +40,11 @@ import {
 
 const MAX_PHOTOS = 100;
 const MIN_PHOTOS = 3;
+// Tile-render cap for the photo grid. With 100 photos the modal
+// renders 100 img tags + drag handles, which can stutter on lower-
+// end hardware (mobile Safari especially). Show 30 by default and
+// let the vendor flip to all when they need to reach a deeper tile.
+const PHOTO_GRID_CAP = 30;
 
 type AttrValue = string | number | boolean | string[] | null | undefined;
 type Attrs = Record<string, AttrValue>;
@@ -61,7 +81,27 @@ export function EditListingModal({
     done: number;
     total: number;
   } | null>(null);
+  const [photosExpanded, setPhotosExpanded] = useState(false);
   const fileRef = useRef<HTMLInputElement | null>(null);
+
+  // PointerSensor with a 6px activation distance so the drag gesture
+  // doesn't fire on accidental taps — vendors clicking the X to
+  // remove a photo were drag-and-dropping it instead before this.
+  const dragSensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+  );
+
+  function handleDragEnd(event: DragEndEvent) {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    setPhotos((prev) => {
+      const ids = prev.map((p, i) => (p.kind === "existing" ? p.id : `new-${i}`));
+      const fromIdx = ids.indexOf(active.id as string);
+      const toIdx = ids.indexOf(over.id as string);
+      if (fromIdx === -1 || toIdx === -1) return prev;
+      return arrayMove(prev, fromIdx, toIdx);
+    });
+  }
 
   // Revoke any blob URLs the user uploaded in this session when the
   // modal unmounts. Without this, picking 100 fresh photos and
@@ -332,26 +372,40 @@ export function EditListingModal({
           .in("id", removedFaqIds);
         if (delErr) throw delErr;
       }
+      // FAQ writes — updates and inserts run in parallel so a save
+      // with 10 FAQs finishes in one round trip instead of 10. Bail
+      // on the first error; partial saves are still a possibility
+      // since these aren't wrapped in a transaction, but the vendor
+      // will see the failure and can retry idempotently.
       let nextFaqOrder =
         originalFaqsRef.current.reduce((m, o) => Math.max(m, o.order), -1) + 1;
+      const faqOps: Array<Promise<{ error: unknown }>> = [];
       for (const f of faqs) {
         if (f.id) {
-          const { error } = await supabase
-            .from("vendor_faqs")
-            .update({ question: f.question.trim(), answer: f.answer.trim() })
-            .eq("id", f.id);
-          if (error) throw error;
+          faqOps.push(
+            supabase
+              .from("vendor_faqs")
+              .update({
+                question: f.question.trim(),
+                answer: f.answer.trim(),
+              })
+              .eq("id", f.id),
+          );
         } else {
-          const { error } = await supabase.from("vendor_faqs").insert({
-            vendor_id: vendorId,
-            question: f.question.trim(),
-            answer: f.answer.trim(),
-            display_order: nextFaqOrder,
-          });
-          if (error) throw error;
+          faqOps.push(
+            supabase.from("vendor_faqs").insert({
+              vendor_id: vendorId,
+              question: f.question.trim(),
+              answer: f.answer.trim(),
+              display_order: nextFaqOrder,
+            }),
+          );
           nextFaqOrder++;
         }
       }
+      const faqResults = await Promise.all(faqOps);
+      const firstFaqErr = faqResults.find((r) => r.error);
+      if (firstFaqErr) throw firstFaqErr.error;
 
       // Refresh geocoding off the (possibly changed) location —
       // best-effort; geocode-vendor no-ops when it is unchanged.
@@ -414,40 +468,82 @@ export function EditListingModal({
                   e.target.value = "";
                 }}
               />
-              <div className="grid grid-cols-3 gap-2">
-                {photos.map((p, i) => (
-                  <PhotoTile
-                    key={p.kind === "existing" ? p.id : `new-${i}`}
-                    url={p.url}
-                    isCover={i === 0}
-                    onRemove={() => {
-                      if (p.kind === "new") URL.revokeObjectURL(p.url);
-                      setPhotos((prev) => prev.filter((_, j) => j !== i));
-                    }}
-                    onMakeCover={
-                      i === 0
-                        ? undefined
-                        : () =>
-                            setPhotos((prev) => {
-                              const next = [...prev];
-                              const [moved] = next.splice(i, 1);
-                              next.unshift(moved);
-                              return next;
-                            })
-                    }
-                  />
-                ))}
-                {photos.length < MAX_PHOTOS ? (
-                  <button
-                    type="button"
-                    onClick={() => fileRef.current?.click()}
-                    className="flex aspect-square flex-col items-center justify-center gap-1 rounded-md border-2 border-dashed border-border bg-card/40 text-muted-foreground hover:bg-card hover:text-foreground"
-                  >
-                    <Upload className="h-5 w-5" />
-                    <span className="text-xs">Add photo</span>
-                  </button>
-                ) : null}
-              </div>
+              {(() => {
+                const photoIds = photos.map((p, i) =>
+                  p.kind === "existing" ? p.id : `new-${i}`,
+                );
+                const visibleCount = photosExpanded
+                  ? photos.length
+                  : Math.min(photos.length, PHOTO_GRID_CAP);
+                const visible = photos.slice(0, visibleCount);
+                const visibleIds = photoIds.slice(0, visibleCount);
+                return (
+                  <>
+                    <DndContext
+                      sensors={dragSensors}
+                      collisionDetection={closestCenter}
+                      onDragEnd={handleDragEnd}
+                    >
+                      <SortableContext
+                        items={visibleIds}
+                        strategy={rectSortingStrategy}
+                      >
+                        <div className="grid grid-cols-3 gap-2">
+                          {visible.map((p, i) => (
+                            <SortablePhotoTile
+                              key={photoIds[i]}
+                              id={photoIds[i]}
+                              url={p.url}
+                              isCover={i === 0}
+                              onRemove={() => {
+                                if (p.kind === "new") URL.revokeObjectURL(p.url);
+                                setPhotos((prev) =>
+                                  prev.filter((_, j) => j !== i),
+                                );
+                              }}
+                              onMakeCover={
+                                i === 0
+                                  ? undefined
+                                  : () =>
+                                      setPhotos((prev) => {
+                                        const next = [...prev];
+                                        const [moved] = next.splice(i, 1);
+                                        next.unshift(moved);
+                                        return next;
+                                      })
+                              }
+                            />
+                          ))}
+                          {photos.length < MAX_PHOTOS ? (
+                            <button
+                              type="button"
+                              onClick={() => fileRef.current?.click()}
+                              className="flex aspect-square flex-col items-center justify-center gap-1 rounded-md border-2 border-dashed border-border bg-card/40 text-muted-foreground hover:bg-card hover:text-foreground"
+                            >
+                              <Upload className="h-5 w-5" />
+                              <span className="text-xs">Add photo</span>
+                            </button>
+                          ) : null}
+                        </div>
+                      </SortableContext>
+                    </DndContext>
+                    {photos.length > PHOTO_GRID_CAP ? (
+                      <button
+                        type="button"
+                        onClick={() => setPhotosExpanded((v) => !v)}
+                        className="mt-3 text-xs font-medium text-foreground/70 hover:text-foreground"
+                      >
+                        {photosExpanded
+                          ? `Show first ${PHOTO_GRID_CAP}`
+                          : `Show all ${photos.length} photos`}
+                      </button>
+                    ) : null}
+                    <p className="mt-2 text-xs text-muted-foreground italic">
+                      Drag tiles to reorder. The first photo is your cover.
+                    </p>
+                  </>
+                );
+              })()}
             </section>
 
             {/* BASICS */}
@@ -639,24 +735,76 @@ export function EditListingModal({
   );
 }
 
-function PhotoTile({
-  url,
-  isCover,
-  onRemove,
-  onMakeCover,
-}: {
+// Drag-sortable wrapper around PhotoTile. @dnd-kit's useSortable
+// supplies the transform/transition CSS that moves the tile while
+// dragging and the listeners we expose via a small grip handle in
+// the top-left corner of each tile. Whole tile isn't draggable so
+// the X / Cover buttons inside stay clickable without a long-press
+// vs click disambiguation.
+function SortablePhotoTile(props: {
+  id: string;
   url: string;
   isCover: boolean;
   onRemove: () => void;
   onMakeCover?: () => void;
 }) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: props.id });
+  return (
+    <div
+      ref={setNodeRef}
+      style={{
+        transform: CSS.Transform.toString(transform),
+        transition,
+        zIndex: isDragging ? 10 : "auto",
+        opacity: isDragging ? 0.8 : 1,
+      }}
+    >
+      <PhotoTile
+        {...props}
+        dragHandle={{ attributes, listeners }}
+      />
+    </div>
+  );
+}
+
+function PhotoTile({
+  url,
+  isCover,
+  onRemove,
+  onMakeCover,
+  dragHandle,
+}: {
+  url: string;
+  isCover: boolean;
+  onRemove: () => void;
+  onMakeCover?: () => void;
+  dragHandle?: { attributes: Record<string, unknown>; listeners: Record<string, unknown> };
+}) {
   return (
     <div className="relative aspect-square overflow-hidden rounded-md bg-secondary/40 group">
-      <img src={url} alt="" className="h-full w-full object-cover" />
+      <img src={url} alt="" className="h-full w-full object-cover pointer-events-none select-none" />
       {isCover ? (
         <span className="absolute left-1 top-1 rounded-full bg-foreground/90 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-background">
           Cover
         </span>
+      ) : null}
+      {dragHandle ? (
+        <button
+          type="button"
+          {...dragHandle.attributes}
+          {...dragHandle.listeners}
+          className="absolute left-1 bottom-1 inline-flex items-center justify-center w-6 h-6 rounded-full bg-black/55 text-white opacity-0 group-hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing"
+          aria-label="Drag to reorder"
+        >
+          <GripVertical className="h-3.5 w-3.5" />
+        </button>
       ) : null}
       <button
         type="button"
@@ -670,7 +818,7 @@ function PhotoTile({
         <button
           type="button"
           onClick={onMakeCover}
-          className="absolute bottom-1 left-1 inline-flex items-center gap-1 rounded-full bg-black/60 px-2 py-0.5 text-[10px] font-medium text-white opacity-0 group-hover:opacity-100 transition-opacity hover:bg-black/80"
+          className="absolute right-1 bottom-1 inline-flex items-center gap-1 rounded-full bg-black/60 px-2 py-0.5 text-[10px] font-medium text-white opacity-0 group-hover:opacity-100 transition-opacity hover:bg-black/80"
           aria-label="Make cover photo"
         >
           <Crown className="h-2.5 w-2.5" />
