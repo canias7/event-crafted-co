@@ -33,6 +33,7 @@ import {
   type Appointment,
 } from "@/components/appointments/AppointmentsList";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
+import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   AlertDialog,
@@ -146,7 +147,14 @@ export default function VendorAppointmentsPage() {
   const [listingPickerOpen, setListingPickerOpen] = useState(false);
 
   const [inquiries, setInquiries] = useState<InquiryRow[]>([]);
-  const [manualBlocks, setManualBlocks] = useState<string[]>([]);
+  // Blocked-date map: date string → optional reason/title the vendor
+  // typed when adding the block ("Christian's birthday", "Vacation",
+  // etc). The reason is private to the vendor side — the public
+  // availability surface only selects `date` from this table, so
+  // hosts never see the title.
+  const [manualBlocks, setManualBlocks] = useState<Map<string, string | null>>(
+    () => new Map(),
+  );
   const [loading, setLoading] = useState(true);
   const [blocking, setBlocking] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -210,7 +218,7 @@ export default function VendorAppointmentsPage() {
   const loadCalendar = useCallback(async () => {
     if (!selectedListingId || !user?.id) {
       setInquiries([]);
-      setManualBlocks([]);
+      setManualBlocks(new Map());
       setLoading(false);
       return;
     }
@@ -225,7 +233,7 @@ export default function VendorAppointmentsPage() {
       !listings.some((l) => l.id === selectedListingId)
     ) {
       setInquiries([]);
-      setManualBlocks([]);
+      setManualBlocks(new Map());
       setLoading(false);
       return;
     }
@@ -244,14 +252,19 @@ export default function VendorAppointmentsPage() {
         .lt("event_date", endYmd),
       supabase
         .from("vendor_unavailable_dates")
-        .select("date")
+        .select("date, reason")
         .eq("vendor_id", selectedListingId)
         .gte("date", startYmd)
         .lt("date", endYmd),
     ]);
     setInquiries((inqRes.data ?? []) as InquiryRow[]);
     setManualBlocks(
-      ((blockRes.data ?? []) as { date: string }[]).map((r) => r.date),
+      new Map(
+        ((blockRes.data ?? []) as Array<{
+          date: string;
+          reason: string | null;
+        }>).map((r) => [r.date, r.reason]),
+      ),
     );
     setLoading(false);
   }, [selectedListingId, user?.id, monthBounds, listings, listingsLoading]);
@@ -380,11 +393,15 @@ export default function VendorAppointmentsPage() {
         timeLabel: null,
       });
     }
-    if (manualBlocks.includes(selectedYmd)) {
+    if (manualBlocks.has(selectedYmd)) {
+      const reason = manualBlocks.get(selectedYmd);
       out.push({
         kind: "busy",
         inquiryId: null,
-        title: "Blocked",
+        // If the vendor typed a title ("Christian's birthday")
+        // when blocking, use it. Otherwise fall back to the
+        // generic "Blocked" header.
+        title: reason && reason.trim() ? reason.trim() : "Blocked",
         subtitle: "Marked unavailable",
         amountCents: null,
         accent: "muted",
@@ -395,7 +412,11 @@ export default function VendorAppointmentsPage() {
   }, [selectedYmd, inquiries, manualBlocks]);
 
   const isSelectedBlocked =
-    !!selectedYmd && manualBlocks.includes(selectedYmd);
+    !!selectedYmd && manualBlocks.has(selectedYmd);
+  // Title input state for the block dialog. Reset to blank on each
+  // open; if the vendor is opening a date that's already blocked
+  // (i.e. they're about to unblock) we don't show the input.
+  const [blockTitle, setBlockTitle] = useState("");
 
   async function commitSelectedDayBlock() {
     if (!selectedYmd || !selectedListingId || blocking) return;
@@ -404,6 +425,7 @@ export default function VendorAppointmentsPage() {
     setConfirmOpen(false);
     setBlocking(true);
     if (willBlock) {
+      const trimmedTitle = blockTitle.trim();
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { error } = await (supabase as any)
         .from("vendor_unavailable_dates")
@@ -412,12 +434,13 @@ export default function VendorAppointmentsPage() {
             {
               vendor_id: selectedListingId,
               date: selectedYmd,
-              reason: "Blocked manually",
+              reason: trimmedTitle.length > 0 ? trimmedTitle : "Blocked manually",
             },
           ],
           { onConflict: "vendor_id,date" },
         );
       setBlocking(false);
+      setBlockTitle("");
       if (error) {
         toast.error(`Couldn't ${verb.toLowerCase()}: ${error.message}`);
         return;
@@ -593,7 +616,16 @@ export default function VendorAppointmentsPage() {
 
       <MobileNav items={navItems} />
 
-      <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+      <AlertDialog
+        open={confirmOpen}
+        onOpenChange={(open) => {
+          setConfirmOpen(open);
+          // Reset the title input when the dialog closes (cancel or
+          // commit) so the next open starts fresh — otherwise the
+          // previous block's title would linger.
+          if (!open) setBlockTitle("");
+        }}
+      >
         <AlertDialogContent className="rounded-2xl">
           <AlertDialogHeader>
             <AlertDialogTitle className="font-editorial text-3xl">
@@ -616,6 +648,32 @@ export default function VendorAppointmentsPage() {
               ) : null}
             </AlertDialogDescription>
           </AlertDialogHeader>
+          {!isSelectedBlocked ? (
+            <div className="mt-2">
+              <label
+                htmlFor="block-title"
+                className="block text-xs font-medium text-muted-foreground mb-1.5"
+              >
+                What is it? <span className="text-muted-foreground/70">(optional)</span>
+              </label>
+              <Input
+                id="block-title"
+                value={blockTitle}
+                onChange={(e) => setBlockTitle(e.target.value)}
+                placeholder="Christian's birthday, vacation…"
+                maxLength={80}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    commitSelectedDayBlock();
+                  }
+                }}
+              />
+              <p className="text-[11px] text-muted-foreground mt-1.5">
+                Only you see this. Hosts just see the day as unavailable.
+              </p>
+            </div>
+          ) : null}
           <AlertDialogFooter className="gap-2 sm:gap-0">
             <AlertDialogCancel disabled={blocking} className="rounded-full">
               Cancel
