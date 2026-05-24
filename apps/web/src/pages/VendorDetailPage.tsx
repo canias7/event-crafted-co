@@ -174,6 +174,12 @@ export default function VendorDetailPage() {
   // attributes to the package, not the vendor as a whole.
   const [inquiryPackageId, setInquiryPackageId] = useState<string | null>(null);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+  // Portfolio grid starts collapsed once a vendor has more than the
+  // initial-render cap. Without this, listings with 100 photos would
+  // render 100 motion.button nodes in one shot — heavy initial paint
+  // + the i*0.05 stagger meant the last few photos didn't appear
+  // until ~5s after viewport intersection. Show-all expands inline.
+  const [portfolioExpanded, setPortfolioExpanded] = useState(false);
 
   const vendor = id
     ? vendors.find((v) => v.id === id) ?? vendors.find((v) => v.slug === id)
@@ -750,39 +756,66 @@ export default function VendorDetailPage() {
                 <p className="font-label text-accent mb-4">Portfolio</p>
                 <h2 className="font-editorial text-4xl mb-8">Recent work</h2>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                  {portfolioItems.map((item, i) => {
-                    const altText =
-                      item.caption ?? `${vendor.name} portfolio ${i + 1}`;
-                    return (
-                    <motion.button
-                      type="button"
-                      key={`${item.src}-${i}`}
-                      initial={{ opacity: 0, y: 16 }}
-                      whileInView={{ opacity: 1, y: 0 }}
-                      viewport={{ once: true }}
-                      transition={{ ...spring, delay: i * 0.05 }}
-                      onClick={() => setLightboxIndex(i)}
-                      // Cover spans 2 cols × 2 rows; thumbs are squares.
-                      // Cover stays aspect-square (not 4:3) on desktop
-                      // too so 2*col_width tall matches the two stacked
-                      // thumbs to its right exactly — eliminates the
-                      // empty block under the cover the 4:3 ratio
-                      // produced.
-                      className={`group overflow-hidden rounded-sm bg-muted block aspect-square ${
-                        i === 0 ? "col-span-2 row-span-2" : ""
-                      }`}
-                      aria-label={`Open ${altText}`}
-                    >
-                      <img
-                        src={item.src}
-                        alt={altText}
-                        loading="lazy"
-                        className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-700"
-                      />
-                    </motion.button>
-                    );
-                  })}
+                  {(() => {
+                    // Cap initial render at 13 (cover + 12 thumbs =
+                    // ~4-5 rows on desktop). Vendors who uploaded
+                    // 100 photos shouldn't trigger 100 motion nodes
+                    // + a 5s stagger on first paint.
+                    const CAP = 13;
+                    const visible = portfolioExpanded
+                      ? portfolioItems
+                      : portfolioItems.slice(0, CAP);
+                    return visible.map((item, i) => {
+                      const altText =
+                        item.caption ?? `${vendor.name} portfolio ${i + 1}`;
+                      // Clamp the stagger delay so photo #13 still
+                      // animates in within ~600ms even when 100 are
+                      // visible — otherwise i * 0.05 puts photo #100
+                      // at a 5-second delay and reads as broken.
+                      const animDelay = Math.min(i * 0.05, 0.6);
+                      return (
+                        <motion.button
+                          type="button"
+                          key={`${item.src}-${i}`}
+                          initial={{ opacity: 0, y: 16 }}
+                          whileInView={{ opacity: 1, y: 0 }}
+                          viewport={{ once: true }}
+                          transition={{ ...spring, delay: animDelay }}
+                          onClick={() => setLightboxIndex(i)}
+                          // Cover spans 2 cols × 2 rows; thumbs are squares.
+                          className={`group overflow-hidden rounded-sm bg-muted block aspect-square ${
+                            i === 0 ? "col-span-2 row-span-2" : ""
+                          }`}
+                          aria-label={`Open ${altText}`}
+                        >
+                          <img
+                            src={item.src}
+                            alt={altText}
+                            loading="lazy"
+                            className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-700"
+                          />
+                        </motion.button>
+                      );
+                    });
+                  })()}
                 </div>
+                {portfolioItems.length > 13 ? (
+                  <div className="mt-6 flex justify-center">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        portfolioExpanded
+                          ? setPortfolioExpanded(false)
+                          : setPortfolioExpanded(true)
+                      }
+                      className="rounded-full border border-foreground/20 px-5 py-2 text-sm font-medium text-foreground/80 hover:text-foreground hover:border-foreground/40 transition-colors"
+                    >
+                      {portfolioExpanded
+                        ? "Show fewer photos"
+                        : `Show all ${portfolioItems.length} photos`}
+                    </button>
+                  </div>
+                ) : null}
               </div>
               )}
 
