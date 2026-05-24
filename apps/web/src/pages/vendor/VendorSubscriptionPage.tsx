@@ -223,6 +223,47 @@ export default function VendorSubscriptionPage() {
     void load();
   }, [load]);
 
+  // Belt-and-braces reconcile: fire stripe-sync-subscription on every
+  // mount, not just on ?upgraded=1. The customer portal's default
+  // return_url is /vendor/subscription (no query string), so a vendor
+  // who changes their plan in the portal and clicks "Done" lands here
+  // without the upgraded flag — without this effect the DB would stay
+  // on the old tier (and the new tier's credit grant would never
+  // fire) until either the webhook caught up (broken when the signing
+  // secret drifts) or they routed back through the ?upgraded=1 success
+  // URL. Sync is idempotent server-side: the grant is keyed on
+  // sub.id + period_start + old→new tier, so repeated mounts can't
+  // double-credit.
+  useEffect(() => {
+    if (!user?.id) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const { data, error } = await supabase.functions.invoke(
+          "stripe-sync-subscription",
+          { body: {} },
+        );
+        if (cancelled || error) return;
+        const result = (data ?? {}) as { synced?: boolean; granted_now?: number };
+        if (result.synced) {
+          if ((result.granted_now ?? 0) > 0) {
+            toast.success(`+${(result.granted_now ?? 0).toLocaleString()} credits — plan synced.`);
+          }
+          await load();
+          await credits.refresh();
+        }
+      } catch (err) {
+        console.warn("[VendorSubscriptionPage] mount sync failed", err);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // load + credits are stable enough; we only want to fire once per
+    // user session on this page.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]);
+
   // Refetch on Stripe redirects (?upgraded=1, ?topup=1, etc.).
   useEffect(() => {
     const upgraded = search.get("upgraded");
