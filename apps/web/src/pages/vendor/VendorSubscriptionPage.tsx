@@ -863,6 +863,8 @@ export default function VendorSubscriptionPage() {
 // from the stripe-billing-info edge function; refreshes after any
 // tier change. Renders to the right of the launch-offer hero on lg,
 // stacks below on mobile.
+const INVOICES_COLLAPSED = 5;
+
 function BillingPanel({
   loading,
   billing,
@@ -892,6 +894,8 @@ function BillingPanel({
   setActingId: (id: string | null) => void;
   vendorId: string | null;
 }) {
+  const [invoicesExpanded, setInvoicesExpanded] = useState(false);
+
   async function openPortal(action: "update" | "cancel") {
     if (actingId) return;
     setActingId(`portal_${action}`);
@@ -958,9 +962,11 @@ function BillingPanel({
       </div>
 
       <div className="mt-5 flex-1 min-h-0 flex flex-col">
-        <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">
-          Invoices
-        </p>
+        <div className="flex items-center justify-between gap-2">
+          <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">
+            Invoices
+          </p>
+        </div>
         {loading ? (
           <p className="text-xs text-muted-foreground mt-2">Loading…</p>
         ) : recentInvoices.length === 0 ? (
@@ -971,12 +977,9 @@ function BillingPanel({
           (() => {
             // Render one row per LINE ITEM, not per invoice. Some
             // historical invoices were bundled by the older
-            // stripe-change-tier v2-v4 flow (pending invoice items
-            // pooled on the customer and got swept into one invoice
-            // on the next invoices.create call). Splitting per line
-            // here gives vendors the "one charge = one row" view
-            // they expect. Each row links back to the same Stripe-
-            // hosted receipt for the full breakdown.
+            // stripe-change-tier v2-v4 flow. Splitting per line here
+            // gives vendors the "one charge = one row" view; each
+            // row links back to the same Stripe-hosted receipt.
             const rows = recentInvoices.flatMap((inv) => {
               const date = new Date(inv.created * 1000);
               const paidStyle =
@@ -1007,45 +1010,66 @@ function BillingPanel({
                 hostedUrl: inv.hosted_invoice_url,
               }));
             });
-            const visible = rows.slice(0, 10);
+            const hasMore = rows.length > INVOICES_COLLAPSED;
+            // Collapsed shows the first INVOICES_COLLAPSED rows;
+            // expanded shows all in a scrollable container so the
+            // panel never pushes past the hero on the left.
+            const visible = invoicesExpanded ? rows : rows.slice(0, INVOICES_COLLAPSED);
             return (
-              <ul className="mt-2 divide-y divide-foreground/8 -mx-1">
-                {visible.map((row) => {
-                  const dateLabel = row.date.toLocaleDateString(undefined, {
-                    month: "short",
-                    day: "numeric",
-                    year: "numeric",
-                  });
-                  return (
-                    <li key={row.key} className="flex items-center justify-between gap-2 px-1 py-2">
-                      <div className="min-w-0">
-                        <p className="text-sm tnum">{dateLabel}</p>
-                        <p className="text-[11px] text-muted-foreground truncate">
-                          {row.description}
-                        </p>
-                        <p className={`text-[11px] capitalize tnum mt-0.5 ${row.paidStyle}`}>
-                          {row.status}
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-2 shrink-0">
-                        <span className="text-sm font-semibold tnum">
-                          ${(row.amount / 100).toFixed(2)}
-                        </span>
-                        {row.hostedUrl ? (
-                          <a
-                            href={row.hostedUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-xs font-medium text-foreground/70 hover:text-foreground"
-                          >
-                            View
-                          </a>
-                        ) : null}
-                      </div>
-                    </li>
-                  );
-                })}
-              </ul>
+              <>
+                <ul
+                  className={`mt-2 divide-y divide-foreground/8 -mx-1 ${
+                    invoicesExpanded ? "max-h-[420px] overflow-y-auto pr-1" : ""
+                  }`}
+                >
+                  {visible.map((row) => {
+                    const dateLabel = row.date.toLocaleDateString(undefined, {
+                      month: "short",
+                      day: "numeric",
+                      year: "numeric",
+                    });
+                    return (
+                      <li key={row.key} className="flex items-center justify-between gap-2 px-1 py-2">
+                        <div className="min-w-0">
+                          <p className="text-sm tnum">{dateLabel}</p>
+                          <p className="text-[11px] text-muted-foreground truncate">
+                            {row.description}
+                          </p>
+                          <p className={`text-[11px] capitalize tnum mt-0.5 ${row.paidStyle}`}>
+                            {row.status}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0">
+                          <span className="text-sm font-semibold tnum">
+                            ${(row.amount / 100).toFixed(2)}
+                          </span>
+                          {row.hostedUrl ? (
+                            <a
+                              href={row.hostedUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-xs font-medium text-foreground/70 hover:text-foreground"
+                            >
+                              View
+                            </a>
+                          ) : null}
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ul>
+                {hasMore ? (
+                  <button
+                    type="button"
+                    onClick={() => setInvoicesExpanded((v) => !v)}
+                    className="mt-2 self-start text-xs font-medium text-foreground/70 hover:text-foreground"
+                  >
+                    {invoicesExpanded
+                      ? "Show less"
+                      : `Show all (${rows.length})`}
+                  </button>
+                ) : null}
+              </>
             );
           })()
         )}
