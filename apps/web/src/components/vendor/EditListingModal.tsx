@@ -17,6 +17,11 @@ import { CATEGORY_GROUPS } from "@/data/categoryTaxonomy";
 import { getCategorySchema } from "@/data/categoryAttributes";
 import { supabase } from "@/integrations/supabase/client";
 import { vendorImageUrl } from "@/lib/storage";
+import {
+  describeRejected,
+  uploadListingPhotos,
+  validateListingPhotos,
+} from "@/lib/listingPhotoUpload";
 
 const MAX_PHOTOS = 100;
 const MIN_PHOTOS = 3;
@@ -52,7 +57,23 @@ export function EditListingModal({
   const [faqs, setFaqs] = useState<FAQRow[]>([]);
   const [photos, setPhotos] = useState<PhotoItem[]>([]);
   const [saving, setSaving] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<{
+    done: number;
+    total: number;
+  } | null>(null);
   const fileRef = useRef<HTMLInputElement | null>(null);
+
+  // Revoke any blob URLs the user uploaded in this session when the
+  // modal unmounts. Without this, picking 100 fresh photos and
+  // closing the modal leaves ~300 MB of blob data pinned in the tab.
+  useEffect(() => {
+    return () => {
+      photos.forEach((p) => {
+        if (p.kind === "new") URL.revokeObjectURL(p.url);
+      });
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Snapshot of what was loaded, used to diff on save (which rows to
   // delete, what display_order new rows should append after).
@@ -170,10 +191,22 @@ export function EditListingModal({
 
   function onPickFiles(files: FileList | null) {
     if (!files) return;
-    const incoming: NewPhoto[] = Array.from(files)
-      .filter((f) => f.type.startsWith("image/"))
-      .map((f) => ({ kind: "new", file: f, url: URL.createObjectURL(f) }));
-    setPhotos((prev) => [...prev, ...incoming].slice(0, MAX_PHOTOS));
+    const incoming = Array.from(files);
+    const { accepted, rejected } = validateListingPhotos(
+      incoming,
+      photos.length,
+      MAX_PHOTOS,
+    );
+    if (accepted.length > 0) {
+      const wrapped: NewPhoto[] = accepted.map((f) => ({
+        kind: "new",
+        file: f,
+        url: URL.createObjectURL(f),
+      }));
+      setPhotos((prev) => [...prev, ...wrapped].slice(0, MAX_PHOTOS));
+    }
+    const skip = describeRejected(rejected);
+    if (skip) toast.warning(skip);
   }
 
   async function handleSave() {
@@ -219,36 +252,26 @@ export function EditListingModal({
       }
 
       // 3. Upload + insert new photos, appended after the highest
-      //    existing display_order.
+      //    existing display_order. Parallel-with-concurrency-cap
+      //    so a vendor adding 50 new photos to an existing listing
+      //    finishes in ~5s instead of several minutes.
       const newPhotos = photos.filter((p): p is NewPhoto => p.kind === "new");
       if (newPhotos.length > 0) {
         const baseOrder =
           originalPhotosRef.current.reduce((m, o) => Math.max(m, o.order), -1) + 1;
-        const inserts: Array<{
-          vendor_id: string;
-          storage_path: string;
-          display_order: number;
-        }> = [];
-        for (let i = 0; i < newPhotos.length; i++) {
-          const f = newPhotos[i].file;
-          const ext =
-            f.name.split(".").pop()?.toLowerCase().replace(/[^a-z0-9]/g, "") ||
-            "jpg";
-          const storagePath = `${vendorId}/${Date.now()}-${i}.${ext}`;
-          const { error: upErr } = await supabase.storage
-            .from("vendor-portfolios")
-            .upload(storagePath, f, {
-              contentType: f.type || "image/jpeg",
-              upsert: false,
-            });
-          if (upErr) throw upErr;
-          uploadedPaths.push(storagePath);
-          inserts.push({
-            vendor_id: vendorId,
-            storage_path: storagePath,
-            display_order: baseOrder + i,
-          });
-        }
+        setUploadProgress({ done: 0, total: newPhotos.length });
+        const upload = await uploadListingPhotos(
+          vendorId,
+          newPhotos.map((p) => p.file),
+          baseOrder,
+          (p) => setUploadProgress(p),
+        );
+        uploadedPaths.push(...upload.paths);
+        const inserts = upload.results.map((r) => ({
+          vendor_id: vendorId,
+          storage_path: r.storagePath,
+          display_order: r.index,
+        }));
         const { error: insErr } = await supabase
           .from("vendor_portfolio_images")
           .insert(inserts);
@@ -305,6 +328,7 @@ export function EditListingModal({
       }
       toast.error(`Save failed: ${msg}`);
       setSaving(false);
+      setUploadProgress(null);
     }
   }
 
@@ -356,9 +380,10 @@ export function EditListingModal({
                     key={p.kind === "existing" ? p.id : `new-${i}`}
                     url={p.url}
                     isCover={i === 0}
-                    onRemove={() =>
-                      setPhotos((prev) => prev.filter((_, j) => j !== i))
-                    }
+                    onRemove={() => {
+                      if (p.kind === "new") URL.revokeObjectURL(p.url);
+                      setPhotos((prev) => prev.filter((_, j) => j !== i));
+                    }}
                   />
                 ))}
                 {photos.length < MAX_PHOTOS ? (
@@ -549,7 +574,9 @@ export function EditListingModal({
             {saving ? (
               <>
                 <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
-                Saving…
+                {uploadProgress && uploadProgress.total > 0
+                  ? `Uploading ${uploadProgress.done}/${uploadProgress.total}…`
+                  : "Saving…"}
               </>
             ) : (
               "Save changes"
