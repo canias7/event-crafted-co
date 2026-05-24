@@ -5,6 +5,7 @@ import { StudioVerifiedBadge } from "@/components/vendor/StudioVerifiedBadge";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useRequireVerifiedEmail } from "@/hooks/useRequireVerifiedEmail";
 import { useVendorCredits } from "@/hooks/useVendorCredits";
 import { DashboardSidebar } from "@/components/shared/DashboardSidebar";
 import { MobileNav } from "@/components/shared/MobileNav";
@@ -181,6 +182,10 @@ export default function VendorSubscriptionPage() {
 
   const vendorId = ownListing?.id ?? null;
   const credits = useVendorCredits(user?.id ?? null);
+  // Audit #14: gate paid actions on email verification so vendors
+  // can't drop money on a subscription before they've confirmed
+  // the email Stripe will send receipts to.
+  const requireVerified = useRequireVerifiedEmail();
 
   const load = useCallback(async () => {
     if (!user?.id) {
@@ -293,6 +298,7 @@ export default function VendorSubscriptionPage() {
     // with no listings yet still needs to subscribe. Edge functions
     // accept missing vendor_id and treat the JWT user as the admin.
     if (!user || actingId || !tier.priceId) return;
+    if (!requireVerified("upgrading your plan")) return;
     setActingId(`tier_${tier.id}`);
     const alreadyPaid =
       (plan?.tier ?? "free") !== "free" &&
@@ -315,6 +321,7 @@ export default function VendorSubscriptionPage() {
 
   async function buyTopup(pack: TopupRow) {
     if (!user || actingId) return;
+    if (!requireVerified("buying a top-up")) return;
     setActingId(`topup_${pack.id}`);
     await callStripeFunction(
       "stripe-topup-checkout",

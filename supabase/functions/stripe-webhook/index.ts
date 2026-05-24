@@ -260,11 +260,15 @@ serve(async (req: Request) => {
               typeof session.invoice === "string" ? session.invoice : null,
               `topup: ${pkg.display_name} x${qty}`,
             );
-            // Stamp payment_intent_id on the just-granted row. Skip
-            // when the grant was an idempotent replay (sentinel
-            // balance: -1 from grantCredits) — the row already has
-            // the payment_intent from the first run.
-            if (result.ok && result.balance !== -1 && paymentIntentId) {
+            // Stamp payment_intent_id on the topup row. Audit #15:
+            // we used to skip the stamp on idempotent replays
+            // (balance === -1), but the first run could have crashed
+            // BETWEEN grant_credits and this UPDATE — leaving a row
+            // with NULL stripe_payment_intent_id that charge.refunded
+            // can never reconcile. Stamping unconditionally is
+            // safe (UPDATE is a no-op if the column is already set
+            // to the same value).
+            if (result.ok && paymentIntentId) {
               await db
                 .from("vendor_credit_transactions")
                 .update({ stripe_payment_intent_id: paymentIntentId })
