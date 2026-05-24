@@ -130,34 +130,6 @@ export default function VendorUsagePage() {
     );
   }, [user?.id]);
 
-  // Fetcher pulled out of the mount effect so the realtime subscription
-  // below can call it on every insert without duplicating the queries.
-  const fetchAll = useCallback(async () => {
-    if (!user?.id) return;
-    const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
-    const [{ data: recent }, { data: spend }] = await Promise.all([
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (supabase as any)
-        .from("vendor_credit_transactions")
-        .select("created_at, delta, kind, action_type, balance_after, note")
-        .eq("user_id", user.id)
-        .order("created_at", { ascending: false })
-        .limit(25),
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (supabase as any)
-        .from("vendor_credit_transactions")
-        .select("created_at, delta, action_type")
-        .eq("user_id", user.id)
-        .eq("kind", "consume")
-        .gte("created_at", since)
-        .order("created_at", { ascending: true }),
-    ]);
-    setLedger((recent as LedgerRow[] | null) ?? []);
-    setConsume30(
-      (spend as Array<{ created_at: string; delta: number; action_type: string | null }> | null) ?? [],
-    );
-  }, [user?.id]);
-
   useEffect(() => {
     if (!user?.id) {
       setLedger([]);
