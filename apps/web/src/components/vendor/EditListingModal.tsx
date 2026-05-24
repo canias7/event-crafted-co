@@ -147,6 +147,11 @@ export function EditListingModal({
   // delete, what display_order new rows should append after).
   const originalPhotosRef = useRef<Array<{ id: string; path: string; order: number }>>([]);
   const originalFaqsRef = useRef<Array<{ id: string; order: number }>>([]);
+  // Snapshot of the loaded category + application_status so handleSave
+  // can detect "approved listing's category was changed" and flip
+  // status back to pending for admin re-review.
+  const originalCategoryRef = useRef<string>("");
+  const originalStatusRef = useRef<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -156,7 +161,9 @@ export function EditListingModal({
       const [vpRes, faqRes, photoRes] = await Promise.all([
         supabase
           .from("vendor_profiles")
-          .select("category, location, base_price_cents, category_attributes")
+          .select(
+            "category, location, base_price_cents, category_attributes, application_status",
+          )
           .eq("id", vendorId)
           .maybeSingle(),
         supabase
@@ -182,6 +189,7 @@ export function EditListingModal({
         location: string | null;
         base_price_cents: number | null;
         category_attributes: Attrs | null;
+        application_status: string | null;
       };
       setCategory(vp.category ?? "");
       setLocation(vp.location ?? "");
@@ -189,6 +197,8 @@ export function EditListingModal({
         vp.base_price_cents != null ? String(vp.base_price_cents / 100) : "",
       );
       setAttrs(vp.category_attributes ?? {});
+      originalCategoryRef.current = vp.category ?? "";
+      originalStatusRef.current = vp.application_status ?? null;
 
       const faqRows = (faqRes.data ?? []) as Array<{
         id: string;
@@ -279,12 +289,29 @@ export function EditListingModal({
 
   async function handleSave() {
     if (!canSave) return;
+    // Critical-edit re-review gate. If the vendor is changing the
+    // category on an APPROVED listing, the listing has effectively
+    // changed verticals (Photography → Wedding Officiant is a real
+    // case from the audit) and admin needs to re-review. Flip back
+    // to status='pending' on save. Warn the vendor first so they're
+    // not surprised when their public listing goes dark.
+    const categoryChanged =
+      category !== originalCategoryRef.current && originalCategoryRef.current !== "";
+    const wasApproved = originalStatusRef.current === "approved";
+    const triggerReview = categoryChanged && wasApproved;
+    if (triggerReview) {
+      const ok = window.confirm(
+        "Changing the category on an approved listing sends it back to admin review. Your listing will be temporarily hidden from hosts until re-approved. Continue?",
+      );
+      if (!ok) return;
+    }
     setSaving(true);
     // New storage objects uploaded this run — removed on failure so a
     // partial save doesn't leave orphan files behind.
     const uploadedPaths: string[] = [];
     try {
-      // 1. Listing fields.
+      // 1. Listing fields. Conditionally include application_status
+      //    when a critical change triggers re-review.
       const { error: vpErr } = await supabase
         .from("vendor_profiles")
         .update({
@@ -292,6 +319,7 @@ export function EditListingModal({
           location: trimmedLocation,
           base_price_cents: priceCents,
           category_attributes: attrs,
+          ...(triggerReview ? { application_status: "pending" } : {}),
         })
         .eq("id", vendorId);
       if (vpErr) throw vpErr;
@@ -442,7 +470,11 @@ export function EditListingModal({
         .invoke("geocode-vendor", { body: { vendorId } })
         .catch(() => undefined);
 
-      toast.success("Listing updated.");
+      toast.success(
+        triggerReview
+          ? "Listing updated — sent back to admin review (category change)."
+          : "Listing updated.",
+      );
       onSaved();
     } catch (err) {
       const cancelled = err instanceof UploadCancelledError;
