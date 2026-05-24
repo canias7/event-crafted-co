@@ -289,14 +289,11 @@ export default function VendorUsagePage() {
         </div>
 
         <div className="p-4 md:p-8 max-w-[1400px] space-y-5">
-          {/* COMPACT HERO STRIP — one row: number + progress + button.
-              No oversized vertical padding, no decorative glow eating
-              space. Designed to take ~120px instead of the old 220px.
-              Also capped to max-w-3xl so it doesn't stretch across the
-              full ~1400px page width with empty middle. Tight vertical
-              padding (py-4) so the card doesn't have empty space
-              below the number row. */}
-          <Card className="w-fit max-w-full !p-3 md:!px-5 md:!py-3">
+          {/* Hero strip + daily-spend chart sit side-by-side: the
+              credits chip on the left (w-fit), the bar chart fills
+              the rest of the row. */}
+          <div className="flex flex-col lg:flex-row gap-5 items-stretch">
+          <Card className="w-fit max-w-full !p-3 md:!px-5 md:!py-3 shrink-0">
             <div className="flex items-center gap-3">
               <p className="font-label text-muted-foreground shrink-0 hidden sm:inline">
                 Credits
@@ -331,11 +328,8 @@ export default function VendorUsagePage() {
             </div>
           </Card>
 
-          {/* CHARTS ROW — full-width 3-col grid on desktop:
-              daily-spend (spans 2 cols) + donut breakdown (1 col). */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 items-start">
-            {/* Daily spend bar chart — spans 2 cols on desktop */}
-            <Card className="lg:col-span-2">
+          {/* Daily spend bar chart — sits to the right of the hero. */}
+            <Card className="flex-1 min-w-0">
               <SectionHeader
                 title="Credits used per day"
                 rightSlot={
@@ -430,9 +424,11 @@ export default function VendorUsagePage() {
                 <span>Today</span>
               </div>
             </Card>
+          </div>
 
-            {/* Donut breakdown — 1 col on desktop */}
-            <Card>
+          {/* Donut breakdown row on its own. */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 items-start">
+            <Card className="lg:col-span-1">
               <SectionHeader title="Where credits went" />
               <Donut
                 segments={actionBreakdown
