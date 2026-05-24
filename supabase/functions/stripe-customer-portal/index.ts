@@ -85,6 +85,36 @@ serve(async (req: Request) => {
     return json({ error: "no stripe customer on this account" }, 400);
   }
 
+  // Self-heal: profile has a customer id but no subscription id
+  // (a sub created before the state-to-profiles migration backfill,
+  // or any drift since). Look up the active sub from Stripe and
+  // write it back — without this, the deep-link branch below would
+  // silently skip and the vendor lands on portal home.
+  if (!profile.stripe_subscription_id) {
+    try {
+      const subs = await stripe.subscriptions.list({
+        customer: profile.stripe_customer_id as string,
+        status: "active",
+        limit: 1,
+      });
+      const found = subs.data[0]?.id ?? null;
+      if (found) {
+        profile.stripe_subscription_id = found;
+        await db
+          .from("profiles")
+          .update({ stripe_subscription_id: found })
+          .eq("id", userId);
+      }
+    } catch (err) {
+      // Don't fail the portal open on a Stripe list hiccup — fall
+      // through to the no-deep-link path.
+      console.warn(
+        "[stripe-customer-portal] subscription self-heal lookup failed",
+        err,
+      );
+    }
+  }
+
   // Default portal session (no deep link).
   const sessionArgs: Stripe.BillingPortal.SessionCreateParams = {
     customer: profile.stripe_customer_id as string,
