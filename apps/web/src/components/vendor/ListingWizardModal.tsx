@@ -12,8 +12,23 @@
 // stay byte-identical to the mobile listing builder.
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Crown, Loader2, Plus, Trash2, Upload, X } from "lucide-react";
+import { Crown, GripVertical, Loader2, Plus, Trash2, Upload, X } from "lucide-react";
 import { toast } from "sonner";
+import {
+  DndContext,
+  PointerSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  arrayMove,
+  rectSortingStrategy,
+  useSortable,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -63,6 +78,20 @@ export function ListingWizardModal({
     total: number;
   } | null>(null);
   const fileRef = useRef<HTMLInputElement | null>(null);
+
+  const dragSensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+  );
+  function handleDragEnd(event: DragEndEvent) {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    setPhotos((prev) => {
+      const fromIdx = Number(String(active.id).replace("photo-", ""));
+      const toIdx = Number(String(over.id).replace("photo-", ""));
+      if (Number.isNaN(fromIdx) || Number.isNaN(toIdx)) return prev;
+      return arrayMove(prev, fromIdx, toIdx);
+    });
+  }
 
   const hasDetailsSchema = useMemo(
     () => (category ? getCategorySchema(category) !== null : false),
@@ -273,42 +302,54 @@ export function ListingWizardModal({
                 }}
               />
 
-              <div className="grid grid-cols-3 gap-2">
-                {photos.map((f, i) => (
-                  <PhotoTile
-                    key={i}
-                    file={f}
-                    isCover={i === 0}
-                    onRemove={() =>
-                      setPhotos((prev) => prev.filter((_, j) => j !== i))
-                    }
-                    onMakeCover={
-                      i === 0
-                        ? undefined
-                        : () =>
-                            setPhotos((prev) => {
-                              const next = [...prev];
-                              const [moved] = next.splice(i, 1);
-                              next.unshift(moved);
-                              return next;
-                            })
-                    }
-                  />
-                ))}
-                {photos.length < MAX_PHOTOS ? (
-                  <button
-                    onClick={() => fileRef.current?.click()}
-                    className="flex aspect-square flex-col items-center justify-center gap-1 rounded-md border-2 border-dashed border-border bg-card/40 text-muted-foreground hover:bg-card hover:text-foreground"
-                  >
-                    <Upload className="h-5 w-5" />
-                    <span className="text-xs">
-                      {photos.length === 0 ? "Add cover" : "Add photo"}
-                    </span>
-                  </button>
-                ) : null}
-              </div>
+              <DndContext
+                sensors={dragSensors}
+                collisionDetection={closestCenter}
+                onDragEnd={handleDragEnd}
+              >
+                <SortableContext
+                  items={photos.map((_, i) => `photo-${i}`)}
+                  strategy={rectSortingStrategy}
+                >
+                  <div className="grid grid-cols-3 gap-2">
+                    {photos.map((f, i) => (
+                      <SortablePhotoTile
+                        key={i}
+                        id={`photo-${i}`}
+                        file={f}
+                        isCover={i === 0}
+                        onRemove={() =>
+                          setPhotos((prev) => prev.filter((_, j) => j !== i))
+                        }
+                        onMakeCover={
+                          i === 0
+                            ? undefined
+                            : () =>
+                                setPhotos((prev) => {
+                                  const next = [...prev];
+                                  const [moved] = next.splice(i, 1);
+                                  next.unshift(moved);
+                                  return next;
+                                })
+                        }
+                      />
+                    ))}
+                    {photos.length < MAX_PHOTOS ? (
+                      <button
+                        onClick={() => fileRef.current?.click()}
+                        className="flex aspect-square flex-col items-center justify-center gap-1 rounded-md border-2 border-dashed border-border bg-card/40 text-muted-foreground hover:bg-card hover:text-foreground"
+                      >
+                        <Upload className="h-5 w-5" />
+                        <span className="text-xs">
+                          {photos.length === 0 ? "Add cover" : "Add photo"}
+                        </span>
+                      </button>
+                    ) : null}
+                  </div>
+                </SortableContext>
+              </DndContext>
               <p className="mt-2 text-xs text-muted-foreground">
-                Bright, recent photos work best.
+                Bright, recent photos work best. Drag tiles to reorder.
               </p>
             </div>
 
@@ -520,16 +561,48 @@ function StepLabel({ n, kind }: { n: number; kind: string }) {
   );
 }
 
+function SortablePhotoTile(props: {
+  id: string;
+  file: File;
+  isCover: boolean;
+  onRemove: () => void;
+  onMakeCover?: () => void;
+}) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: props.id });
+  return (
+    <div
+      ref={setNodeRef}
+      style={{
+        transform: CSS.Transform.toString(transform),
+        transition,
+        zIndex: isDragging ? 10 : "auto",
+        opacity: isDragging ? 0.8 : 1,
+      }}
+    >
+      <PhotoTile {...props} dragHandle={{ attributes, listeners }} />
+    </div>
+  );
+}
+
 function PhotoTile({
   file,
   isCover,
   onRemove,
   onMakeCover,
+  dragHandle,
 }: {
   file: File;
   isCover: boolean;
   onRemove: () => void;
   onMakeCover?: () => void;
+  dragHandle?: { attributes: Record<string, unknown>; listeners: Record<string, unknown> };
 }) {
   // Revoke the object URL on unmount / file change. The previous
   // useMemo created the URL once and held it forever — with 100
@@ -544,11 +617,22 @@ function PhotoTile({
   }, [file]);
   return (
     <div className="relative aspect-square overflow-hidden rounded-md bg-secondary/40 group">
-      <img src={url} alt="" className="h-full w-full object-cover" />
+      <img src={url} alt="" className="h-full w-full object-cover pointer-events-none select-none" />
       {isCover ? (
         <span className="absolute left-1 top-1 rounded-full bg-foreground/90 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-background">
           Cover
         </span>
+      ) : null}
+      {dragHandle ? (
+        <button
+          type="button"
+          {...dragHandle.attributes}
+          {...dragHandle.listeners}
+          className="absolute left-1 bottom-1 inline-flex items-center justify-center w-6 h-6 rounded-full bg-black/55 text-white opacity-0 group-hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing"
+          aria-label="Drag to reorder"
+        >
+          <GripVertical className="h-3.5 w-3.5" />
+        </button>
       ) : null}
       <button
         onClick={onRemove}
@@ -561,7 +645,7 @@ function PhotoTile({
         <button
           type="button"
           onClick={onMakeCover}
-          className="absolute bottom-1 left-1 inline-flex items-center gap-1 rounded-full bg-black/60 px-2 py-0.5 text-[10px] font-medium text-white opacity-0 group-hover:opacity-100 transition-opacity hover:bg-black/80"
+          className="absolute right-1 bottom-1 inline-flex items-center gap-1 rounded-full bg-black/60 px-2 py-0.5 text-[10px] font-medium text-white opacity-0 group-hover:opacity-100 transition-opacity hover:bg-black/80"
           aria-label="Make cover photo"
         >
           <Crown className="h-2.5 w-2.5" />
