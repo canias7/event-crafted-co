@@ -47,6 +47,17 @@ const SERIF = Platform.OS === "ios" ? "Times New Roman" : "serif";
 
 // Vendor cap is 5 listings — the "1 of 5" indicator at the top right.
 const LISTING_LIMIT = 5;
+// Per-listing photo cap matches web (ListingWizardModal MAX_PHOTOS).
+// Bumped from the original 5 once the public detail page learned how
+// to overflow into the "All photos" modal — vendors with portfolios
+// shouldn't have to pick their best 5 anymore.
+const MAX_PHOTOS = 100;
+// Parallel-upload concurrency cap. expo-image-picker hands us all
+// assets at once; we run 5 uploads in parallel so a 100-photo pick
+// finishes in ~10s instead of several minutes of one-at-a-time
+// .upload() round trips. Keep in sync with apps/web's
+// listingPhotoUpload.ts UPLOAD_CONCURRENCY.
+const UPLOAD_CONCURRENCY = 5;
 
 type ProfileRow = {
   id: string;
@@ -81,6 +92,10 @@ export default function ListingScreen() {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [photoUploading, setPhotoUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<{
+    done: number;
+    total: number;
+  } | null>(null);
   const [categoryPickerOpen, setCategoryPickerOpen] = useState(false);
 
   // Form state
@@ -194,57 +209,133 @@ export default function ListingScreen() {
       );
       return;
     }
+    const remaining = MAX_PHOTOS - photos.length;
+    if (remaining <= 0) {
+      Alert.alert(
+        "Photo limit reached",
+        `Listings cap at ${MAX_PHOTOS} photos. Delete a photo to add a new one.`,
+      );
+      return;
+    }
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       quality: 0.9,
+      // Match web's multi-pick behavior. selectionLimit caps to the
+      // remaining slots so the user can't pick 50 photos then be
+      // told 30 of them were rejected.
+      allowsMultipleSelection: true,
+      selectionLimit: remaining,
     });
-    if (result.canceled || !result.assets[0]) return;
-    const asset = result.assets[0];
-    setPhotoUploading(true);
-    try {
-      const ext = (asset.uri.split(".").pop() ?? "jpg")
-        .toLowerCase()
-        .replace(/[^a-z0-9]/g, "");
-      const path = `${profile.id}/${Date.now()}.${ext}`;
-      const arrayBuffer = await (await fetch(asset.uri)).arrayBuffer();
-      const bytes = new Uint8Array(arrayBuffer);
-      if (bytes.byteLength === 0) {
-        throw new Error("Couldn't read the picked photo. Try a different image.");
-      }
-      const up = await supabase.storage
-        .from("vendor-portfolios")
-        .upload(path, bytes, {
-          contentType: asset.mimeType ?? "image/jpeg",
-          upsert: false,
-        });
-      if (up.error) throw up.error;
+    if (result.canceled || result.assets.length === 0) return;
 
-      const nextOrder =
-        photos.length === 0
-          ? 0
-          : Math.max(...photos.map((p) => p.display_order)) + 1;
+    const assets = result.assets;
+    setPhotoUploading(true);
+    setUploadProgress({ done: 0, total: assets.length });
+
+    // Compute display_order base from CURRENT state, then assign
+    // each asset baseOrder + index so a parallel insert preserves
+    // pick order regardless of which upload finishes first.
+    const baseOrder =
+      photos.length === 0
+        ? 0
+        : Math.max(...photos.map((p) => p.display_order)) + 1;
+
+    // Per-asset upload result; pre-allocated so worker writes by
+    // index and we keep pick order in the final insert.
+    const uploaded: Array<
+      { vendor_id: string; storage_path: string; display_order: number } | null
+    > = new Array(assets.length).fill(null);
+    let cursor = 0;
+    let doneCount = 0;
+    let firstError: { message?: string } | null = null;
+
+    async function worker() {
+      while (true) {
+        const myIdx = cursor++;
+        if (myIdx >= assets.length) return;
+        const asset = assets[myIdx];
+        try {
+          const ext = (asset.uri.split(".").pop() ?? "jpg")
+            .toLowerCase()
+            .replace(/[^a-z0-9]/g, "");
+          // Date.now() + baseOrder + myIdx keeps paths unique even
+          // when workers fire within the same millisecond.
+          const path = `${profile!.id}/${Date.now()}-${baseOrder + myIdx}-${myIdx}.${ext}`;
+          const arrayBuffer = await (await fetch(asset.uri)).arrayBuffer();
+          const bytes = new Uint8Array(arrayBuffer);
+          if (bytes.byteLength === 0) {
+            throw new Error("Empty file");
+          }
+          const up = await supabase.storage
+            .from("vendor-portfolios")
+            .upload(path, bytes, {
+              contentType: asset.mimeType ?? "image/jpeg",
+              upsert: false,
+            });
+          if (up.error) throw up.error;
+          uploaded[myIdx] = {
+            vendor_id: profile!.id,
+            storage_path: path,
+            display_order: baseOrder + myIdx,
+          };
+        } catch (err) {
+          // Don't bail the whole batch on a single bad asset — keep
+          // the others moving and report the partial at the end.
+          if (!firstError) {
+            firstError = (err as { message?: string }) ?? { message: "upload failed" };
+          }
+          // eslint-disable-next-line no-console
+          console.warn("[listing] photo upload failed", myIdx, err);
+        } finally {
+          doneCount++;
+          setUploadProgress({ done: doneCount, total: assets.length });
+        }
+      }
+    }
+
+    try {
+      await Promise.all(
+        Array.from(
+          { length: Math.min(UPLOAD_CONCURRENCY, assets.length) },
+          () => worker(),
+        ),
+      );
+      const successful = uploaded.filter(
+        (r): r is { vendor_id: string; storage_path: string; display_order: number } =>
+          r !== null,
+      );
+      if (successful.length === 0) {
+        throw firstError ?? new Error("Upload failed");
+      }
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data: ins, error } = await (supabase as any)
         .from("vendor_portfolio_images")
-        .insert({
-          vendor_id: profile.id,
-          storage_path: path,
-          display_order: nextOrder,
-        })
-        .select("id, storage_path, display_order")
-        .single();
+        .insert(successful)
+        .select("id, storage_path, display_order");
       if (error) throw error;
-      const url = supabase.storage
-        .from("vendor-portfolios")
-        .getPublicUrl(path).data.publicUrl;
-      setPhotos((curr) => [...curr, { ...(ins as PortfolioRow), url }]);
+      const enriched = ((ins ?? []) as Omit<PortfolioRow, "url">[]).map((r) => ({
+        ...r,
+        url: supabase.storage
+          .from("vendor-portfolios")
+          .getPublicUrl(r.storage_path).data.publicUrl,
+      }));
+      setPhotos((curr) =>
+        [...curr, ...enriched].sort((a, b) => a.display_order - b.display_order),
+      );
+      if (successful.length < assets.length) {
+        Alert.alert(
+          "Partial upload",
+          `${successful.length} of ${assets.length} photos uploaded. Try again for the rest.`,
+        );
+      }
     } catch (err) {
       Alert.alert(
-        "Couldn't upload photo",
+        "Couldn't upload photos",
         (err as { message?: string })?.message ?? "Try again in a moment.",
       );
     } finally {
       setPhotoUploading(false);
+      setUploadProgress(null);
     }
   }
 
@@ -497,8 +588,12 @@ export default function ListingScreen() {
           {/* Listing photos */}
           <SectionBlock
             title="Listing photos"
-            subtitle="3–5 photos. Your first becomes the cover."
-            footnote="Bright, recent photos work best. Drag to reorder once uploaded."
+            subtitle={`3–${MAX_PHOTOS} photos. Your first becomes the cover.`}
+            footnote={
+              uploadProgress
+                ? `Uploading ${uploadProgress.done}/${uploadProgress.total}…`
+                : "Bright, recent photos work best. Drag to reorder once uploaded."
+            }
           >
             <PhotoGrid
               photos={photos}
