@@ -124,7 +124,26 @@ serve(async (req: Request) => {
     }
   }
 
-  const portal = await stripe.billingPortal.sessions.create(sessionArgs);
+  // Audit H2: when the portal config doesn't have "Customers can
+  // switch plans" enabled (or the target product isn't registered),
+  // Stripe rejects flow_data and the create throws. Retry without
+  // the deep link so the vendor at least lands on the portal home
+  // instead of getting stuck on a 500.
+  let portal;
+  try {
+    portal = await stripe.billingPortal.sessions.create(sessionArgs);
+  } catch (err) {
+    if (sessionArgs.flow_data) {
+      console.warn(
+        "[stripe-customer-portal] flow_data rejected, falling back to default portal",
+        err,
+      );
+      const { flow_data: _drop, ...fallback } = sessionArgs;
+      portal = await stripe.billingPortal.sessions.create(fallback);
+    } else {
+      throw err;
+    }
+  }
 
   return json({ url: portal.url });
 });

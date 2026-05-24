@@ -229,10 +229,17 @@ export function AxionVendorControls() {
 
   // Auto-save freshly generated variants when the setting is on.
   // Keyed off the variants change so `saved` is freshly reset first.
+  //
+  // Audit H4: pre-check capacity for the WHOLE batch up front so a
+  // vendor at cap-1 saving 2 variants either gets both or sees one
+  // toast for the batch — never a half-saved set with one orphaned
+  // success + one toast for the rejection.
   useEffect(() => {
-    if (!autosave || variants.length === 0) return;
+    if (!autosave || variants.length === 0 || !user?.id) return;
     let cancelled = false;
     (async () => {
+      const ok = await ensureGalleryCapacity(user.id, variants.length);
+      if (cancelled || !ok) return;
       for (let i = 0; i < variants.length; i++) {
         if (cancelled) break;
         await saveToGallery(variants[i], i);

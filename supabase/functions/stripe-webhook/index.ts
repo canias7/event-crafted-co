@@ -49,17 +49,36 @@ interface PackageRow {
   display_name: string;
 }
 
+// Audit H3: filtering on active=true means a deactivated package
+// silently kills renewal grants for vendors still subscribed to that
+// price. Fall back to a no-active-filter lookup so renewals always
+// find their package; log loudly when we're rescuing an inactive
+// row so ops sees the drift.
 async function lookupPackage(
   db: any,
   priceId: string,
 ): Promise<PackageRow | null> {
-  const { data } = await db
+  const { data: active } = await db
     .from("vendor_credit_packages")
     .select("stripe_price_id, kind, tier, credits, display_name")
     .eq("stripe_price_id", priceId)
     .eq("active", true)
     .maybeSingle();
-  return (data as PackageRow | null) ?? null;
+  if (active) return active as PackageRow;
+
+  const { data: any_row } = await db
+    .from("vendor_credit_packages")
+    .select("stripe_price_id, kind, tier, credits, display_name")
+    .eq("stripe_price_id", priceId)
+    .maybeSingle();
+  if (any_row) {
+    console.warn(
+      "[stripe-webhook] package row is inactive but still in use",
+      priceId,
+    );
+    return any_row as PackageRow;
+  }
+  return null;
 }
 
 // Resolve a user_id from the Stripe customer id via profiles. The
@@ -312,6 +331,10 @@ serve(async (req: Request) => {
             // reuses the existing Stripe Customer (preserves card
             // on file + invoice history under one record).
             subscription_cancel_at_period_end: false,
+            // Null the period end too (audit M2) so a stale value
+            // doesn't leak into "your plan ends on..." surfaces
+            // after the sub is gone.
+            subscription_current_period_end: null,
             monthly_grant: 0,
             period_started_at: null,
             period_ends_at: null,
@@ -513,11 +536,28 @@ async function applySubscription(
   pkg: PackageRow | null,
 ) {
   const active = sub.status === "active" || sub.status === "trialing";
-  // Tier picks the package's tier when active, else 'free'. Falls
-  // back to 'pro' for active subs whose price isn't in the catalog
-  // (so we don't accidentally downgrade a real customer if a price
-  // row is missing).
-  const tier = active ? (pkg?.tier ?? "pro") : "free";
+  // Tier picks the package's tier when active, else 'free'. If
+  // package lookup misses (rare: price row dropped while a sub
+  // still active), fall back to the user's CURRENT tier on
+  // profiles — never silently flip a paying Starter to "pro" just
+  // because the catalog row went missing (audit M1).
+  let tier: string;
+  if (!active) {
+    tier = "free";
+  } else if (pkg?.tier) {
+    tier = pkg.tier;
+  } else {
+    const { data: current } = await db
+      .from("profiles")
+      .select("subscription_tier")
+      .eq("id", userId)
+      .maybeSingle();
+    tier = (current?.subscription_tier as string) ?? "free";
+    console.warn(
+      "[stripe-webhook] applySubscription: pkg.tier missing, preserving current tier",
+      { userId, tier },
+    );
+  }
   const monthlyGrant = active && pkg?.kind === "subscription" ? pkg.credits : 0;
   const update: Record<string, unknown> = {
     subscription_status: sub.status,
@@ -527,10 +567,6 @@ async function applySubscription(
       sub.current_period_end * 1000,
     ).toISOString(),
     subscription_cancel_at_period_end: sub.cancel_at_period_end ?? false,
-    // Period bookkeeping is on profiles too now — the usage page
-    // reads these to render the "X used of Y this period" bar.
-    // Audit #3 in the launch report: grant_credits never wrote
-    // these, so the bar was always blank.
     monthly_grant: monthlyGrant,
     period_started_at: new Date(sub.current_period_start * 1000).toISOString(),
     period_ends_at: new Date(sub.current_period_end * 1000).toISOString(),

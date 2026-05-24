@@ -29,7 +29,9 @@ const KIND_LABEL: Record<string, string> = {
   topup: "Top-up",
   consume: "AI action",
   refund: "Refund",
-  admin_adjust: "Admin adjustment",
+  admin_grant: "Admin grant",
+  admin_revoke: "Admin clawback",
+  rollover: "Rollover",
 };
 
 // Snake-case action_types come from the edge functions verbatim

@@ -133,14 +133,27 @@ export function useVendorCredits(userId: string | null | undefined): VendorCredi
       return;
     }
     setState((s) => ({ ...s, loading: true }));
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data } = await (supabase as any)
-      .from("vendor_credit_balances")
-      .select(
-        "balance, monthly_grant, period_started_at, period_ends_at, lifetime_granted, lifetime_consumed, lifetime_topped_up",
-      )
-      .eq("user_id", userId)
-      .maybeSingle();
+    // Balance + lifetime totals live on vendor_credit_balances; the
+    // period bookkeeping (monthly_grant + period_started_at +
+    // period_ends_at) moved to profiles in migration
+    // 20260524000000_subscription_state_to_profiles. The webhook
+    // writes period state on every applySubscription run. Fetch both
+    // and stitch the response together.
+    const [{ data: balData }, { data: profData }] = await Promise.all([
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (supabase as any)
+        .from("vendor_credit_balances")
+        .select("balance, lifetime_granted, lifetime_consumed, lifetime_topped_up")
+        .eq("user_id", userId)
+        .maybeSingle(),
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (supabase as any)
+        .from("profiles")
+        .select("monthly_grant, period_started_at, period_ends_at")
+        .eq("id", userId)
+        .maybeSingle(),
+    ]);
+    const data = { ...(balData ?? {}), ...(profData ?? {}) };
     setState({
       balance: data?.balance ?? 0,
       monthlyGrant: data?.monthly_grant ?? 0,
