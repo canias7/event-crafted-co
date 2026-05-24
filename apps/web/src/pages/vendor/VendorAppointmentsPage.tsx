@@ -19,6 +19,7 @@ import {
   ChevronLeft,
   ChevronRight,
   ImagePlus,
+  Loader2,
   Pencil,
   Plus,
   X as XIcon,
@@ -156,6 +157,15 @@ export default function VendorAppointmentsPage() {
   const [manualBlocks, setManualBlocks] = useState<Map<string, string | null>>(
     () => new Map(),
   );
+  // Recurring weekly rules — vendor sets "I never work Sundays" /
+  // "Mondays are off" once and the calendar applies that pattern
+  // forever. Keyed by day_of_week (0=Sun..6=Sat). Value true means
+  // "vendor is unavailable this weekday". Backed by
+  // vendor_availability_rules; one row per (vendor, weekday).
+  const [recurringOff, setRecurringOff] = useState<Set<number>>(
+    () => new Set(),
+  );
+  const [savingRecurring, setSavingRecurring] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [blocking, setBlocking] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -241,7 +251,7 @@ export default function VendorAppointmentsPage() {
     setLoading(true);
     const startYmd = ymdKey(monthBounds.start);
     const endYmd = ymdKey(monthBounds.end);
-    const [inqRes, blockRes] = await Promise.all([
+    const [inqRes, blockRes, recurringRes] = await Promise.all([
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (supabase as any)
         .from("inquiries")
@@ -257,6 +267,13 @@ export default function VendorAppointmentsPage() {
         .eq("vendor_id", selectedListingId)
         .gte("date", startYmd)
         .lt("date", endYmd),
+      // Recurring weekday rules (vendor never works Mondays etc).
+      // Scoped to the selected listing; same vendor's other listings
+      // may have different recurring schedules.
+      supabase
+        .from("vendor_availability_rules")
+        .select("day_of_week, is_unavailable")
+        .eq("vendor_id", selectedListingId),
     ]);
     setInquiries((inqRes.data ?? []) as InquiryRow[]);
     setManualBlocks(
@@ -267,8 +284,52 @@ export default function VendorAppointmentsPage() {
         }>).map((r) => [r.date, r.reason]),
       ),
     );
+    setRecurringOff(
+      new Set(
+        ((recurringRes.data ?? []) as Array<{
+          day_of_week: number;
+          is_unavailable: boolean;
+        }>)
+          .filter((r) => r.is_unavailable)
+          .map((r) => r.day_of_week),
+      ),
+    );
     setLoading(false);
   }, [selectedListingId, user?.id, monthBounds, listings, listingsLoading]);
+
+  async function toggleRecurring(dow: number, willBeOff: boolean) {
+    if (!selectedListingId || savingRecurring !== null) return;
+    setSavingRecurring(dow);
+    // Optimistic local update so the switch flips instantly.
+    setRecurringOff((prev) => {
+      const next = new Set(prev);
+      if (willBeOff) next.add(dow);
+      else next.delete(dow);
+      return next;
+    });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error } = await (supabase as any)
+      .from("vendor_availability_rules")
+      .upsert(
+        {
+          vendor_id: selectedListingId,
+          day_of_week: dow,
+          is_unavailable: willBeOff,
+        },
+        { onConflict: "vendor_id,day_of_week" },
+      );
+    setSavingRecurring(null);
+    if (error) {
+      // Roll back the local state on failure.
+      setRecurringOff((prev) => {
+        const next = new Set(prev);
+        if (willBeOff) next.delete(dow);
+        else next.add(dow);
+        return next;
+      });
+      toast.error(`Couldn't update: ${error.message}`);
+    }
+  }
 
   useEffect(() => {
     loadCalendar();
@@ -369,12 +430,32 @@ export default function VendorAppointmentsPage() {
         m.set(key, "pending");
       }
     }
-    for (const key of manualBlocks) {
-      const prev = m.get(key);
-      if (prev !== "booked" && prev !== "pending") m.set(key, "blocked");
+    // Recurring weekday-off rules paint every matching weekday in
+    // the visible month as blocked (unless already booked / pending).
+    // Walking the month bounds is cheaper than rebuilding the whole
+    // dayState on every render; we already know the start/end.
+    if (recurringOff.size > 0) {
+      const cursor = new Date(monthBounds.start);
+      const end = new Date(monthBounds.end);
+      while (cursor < end) {
+        if (recurringOff.has(cursor.getDay())) {
+          const k = ymdKey(cursor);
+          const prev = m.get(k);
+          if (prev !== "booked" && prev !== "pending") m.set(k, "blocked");
+        }
+        cursor.setDate(cursor.getDate() + 1);
+      }
+    }
+    // One-off manual blocks layer on top. Iterating .keys() (not the
+    // Map directly) so we get the date strings — `for ... of` on a
+    // Map yields [k, v] tuples by default which would set Map entries
+    // with array keys and never match the public day-cell lookup.
+    for (const ymd of manualBlocks.keys()) {
+      const prev = m.get(ymd);
+      if (prev !== "booked" && prev !== "pending") m.set(ymd, "blocked");
     }
     return m;
-  }, [inquiries, manualBlocks]);
+  }, [inquiries, manualBlocks, recurringOff, monthBounds]);
 
   // Header stats (booked/pending/earnings) were removed — vendors
   // don't transact through the app, so the dollar value is misleading.
@@ -640,6 +721,21 @@ export default function VendorAppointmentsPage() {
                 </div>
               )}
             </div>
+          ) : null}
+
+          {/* Recurring blocks — vendor sets "I never work Sundays"
+              once and every Sunday on every future month is marked
+              blocked automatically. Lives under the day-info panel
+              and above Upcoming appointments. Free + paid vendors
+              both get this; storage is keyed per-listing so a
+              vendor with two listings can have different recurring
+              schedules. */}
+          {selectedListingId ? (
+            <RecurringBlocksSection
+              recurringOff={recurringOff}
+              savingDow={savingRecurring}
+              onToggle={toggleRecurring}
+            />
           ) : null}
 
           {appointments.length > 0 || appointmentsLoading ? (
@@ -1065,6 +1161,64 @@ function MonthGrid({
         })}
       </div>
     </div>
+  );
+}
+
+// 7-day toggle strip for the vendor's recurring weekly off-days.
+// Tap any day pill to flip its row in vendor_availability_rules
+// between is_unavailable=true and =false. Pure UI — the page-level
+// toggleRecurring handler does the DB upsert and the optimistic
+// state update.
+function RecurringBlocksSection({
+  recurringOff,
+  savingDow,
+  onToggle,
+}: {
+  recurringOff: Set<number>;
+  savingDow: number | null;
+  onToggle: (dow: number, willBeOff: boolean) => void;
+}) {
+  const DAYS = ["S", "M", "T", "W", "T", "F", "S"];
+  const FULL = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  return (
+    <section className="card-soft p-4">
+      <div className="flex items-baseline justify-between mb-1">
+        <h2 className="font-display text-lg">Recurring blocks</h2>
+        <p className="text-xs text-muted-foreground">
+          {recurringOff.size > 0
+            ? `${recurringOff.size}× weekly`
+            : "Off-days repeat every week"}
+        </p>
+      </div>
+      <p className="text-xs text-muted-foreground mb-3">
+        Tap a day to mark it permanently unavailable on every future week.
+        Hosts won't see you as bookable on that weekday.
+      </p>
+      <div className="flex items-center gap-1.5 flex-wrap">
+        {DAYS.map((short, dow) => {
+          const isOff = recurringOff.has(dow);
+          const saving = savingDow === dow;
+          return (
+            <button
+              key={dow}
+              type="button"
+              onClick={() => onToggle(dow, !isOff)}
+              disabled={savingDow !== null}
+              aria-pressed={isOff}
+              aria-label={`${FULL[dow]} ${isOff ? "off" : "on"}`}
+              title={FULL[dow]}
+              className={`inline-flex items-center justify-center w-9 h-9 rounded-full text-xs font-semibold transition-colors disabled:opacity-50 ${
+                isOff
+                  ? "bg-foreground text-background"
+                  : "bg-secondary/60 text-foreground/70 hover:bg-secondary"
+              }`}
+            >
+              {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : short}
+            </button>
+          );
+        })}
+      </div>
+    </section>
   );
 }
 
