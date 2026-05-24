@@ -293,8 +293,10 @@ export default function VendorUsagePage() {
               No oversized vertical padding, no decorative glow eating
               space. Designed to take ~120px instead of the old 220px.
               Also capped to max-w-3xl so it doesn't stretch across the
-              full ~1400px page width with empty middle. */}
-          <Card className="max-w-3xl">
+              full ~1400px page width with empty middle. Tight vertical
+              padding (py-4) so the card doesn't have empty space
+              below the number row. */}
+          <Card className="max-w-3xl !py-4 md:!py-5">
             <div className="flex flex-col md:flex-row md:items-center gap-5">
               <div className="flex items-center gap-5 min-w-0">
                 <div className="min-w-0">
@@ -303,7 +305,7 @@ export default function VendorUsagePage() {
                     AI credits
                   </p>
                   <div className="flex items-baseline gap-3 mt-1">
-                    <span className="text-4xl md:text-5xl font-semibold tracking-tight tnum leading-none">
+                    <span className="text-3xl md:text-4xl font-semibold tracking-tight tnum leading-none">
                       {credits.initialized ? credits.balance.toLocaleString() : "—"}
                     </span>
                     {credits.monthlyGrant > 0 ? (
