@@ -18,7 +18,7 @@ import { getCategorySchema } from "@/data/categoryAttributes";
 import { supabase } from "@/integrations/supabase/client";
 import { vendorImageUrl } from "@/lib/storage";
 
-const MAX_PHOTOS = 6;
+const MAX_PHOTOS = 100;
 const MIN_PHOTOS = 3;
 
 type AttrValue = string | number | boolean | string[] | null | undefined;

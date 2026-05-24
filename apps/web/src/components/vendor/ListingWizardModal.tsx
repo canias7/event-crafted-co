@@ -23,11 +23,11 @@ import { CATEGORY_GROUPS } from "@/data/categoryTaxonomy";
 import { getCategorySchema } from "@/data/categoryAttributes";
 import { supabase } from "@/integrations/supabase/client";
 
-// 6 photos = perfect fill on the public listing's 3-col Recent
-// work grid (cover spans 2×2, leaving exactly 4 thumb slots; total
-// = 5 with cover. 6th photo slot fills the bottom-right corner that
-// was previously empty white space).
-const MAX_PHOTOS = 6;
+// Up to 100 photos per listing. Public listing pages render the
+// first 6 in the hero grid (cover spans 2×2, 4 thumbs around it,
+// 6th fills the corner) and surface the rest in the "All photos"
+// modal. Minimum 3 so a fresh listing always has something to show.
+const MAX_PHOTOS = 100;
 const MIN_PHOTOS = 3;
 
 interface FAQDraft {
@@ -242,7 +242,7 @@ export function ListingWizardModal({
             <div className="mt-6">
               <Label className="font-semibold">Listing photos</Label>
               <p className="text-sm text-muted-foreground italic mb-3">
-                3–6 photos. Your first becomes the cover.
+                {MIN_PHOTOS}&ndash;{MAX_PHOTOS} photos. Your first becomes the cover.
               </p>
 
               <input

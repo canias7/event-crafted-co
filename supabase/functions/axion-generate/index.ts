@@ -95,9 +95,9 @@ serve(async (req) => {
     const direction = userPrompt.slice(0, 1000);
 
     // Charge credits BEFORE the OpenAI call. 10 credits per Axion
-    // request (each request returns n=2 variants for the vendor to
-    // pick from; cost-to-serve ≈ 2 × $0.042 = $0.084 vs $0.25
-    // retail = 66% margin).
+    // request — single 1024×1024 medium-quality image from
+    // gpt-image-1, cost-to-serve ≈ $0.042 vs $0.24+ retail
+    // (~83% margin at the lowest top-up tier).
     const consume = await consumeCredits(
       userData.user.id,
       "axion_image",
@@ -127,7 +127,7 @@ serve(async (req) => {
         body: JSON.stringify({
           model: "gpt-image-1",
           prompt,
-          n: 2,
+          n: 1,
           size: "1024x1024",
           quality: "medium",
         }),
@@ -161,7 +161,7 @@ serve(async (req) => {
         `source.${ext}`,
       );
       form.append("prompt", prompt);
-      form.append("n", "2");
+      form.append("n", "1");
       form.append("size", "1024x1024");
       form.append("quality", "medium");
       res = await fetch("https://api.openai.com/v1/images/edits", {
@@ -217,8 +217,8 @@ serve(async (req) => {
       return json(502, { error: "no_variants" });
     }
 
-    // Successful path: log the actual variant count returned by
-    // OpenAI (n=2 in the request body, but log the realized number).
+    // Successful path: log the realized image count from OpenAI
+    // (we send n=1; log whatever came back).
     void logImageUsage({
       userId: chargedUserId,
       actionType: "axion_image",
