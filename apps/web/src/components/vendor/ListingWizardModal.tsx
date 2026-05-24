@@ -38,6 +38,7 @@ import { CATEGORY_GROUPS } from "@/data/categoryTaxonomy";
 import { getCategorySchema } from "@/data/categoryAttributes";
 import { supabase } from "@/integrations/supabase/client";
 import {
+  UploadCancelledError,
   describeRejected,
   uploadListingPhotos,
   validateListingPhotos,
@@ -78,6 +79,30 @@ export function ListingWizardModal({
     total: number;
   } | null>(null);
   const fileRef = useRef<HTMLInputElement | null>(null);
+
+  // Set true when the modal is being closed mid-upload so the
+  // upload helper bails between files and the rollback path
+  // removes any partially-committed state.
+  const cancelledRef = useRef(false);
+  useEffect(() => {
+    return () => {
+      cancelledRef.current = true;
+    };
+  }, []);
+
+  function attemptClose() {
+    if (submitting) {
+      if (
+        !window.confirm(
+          "Photos are still uploading. Cancel and discard this listing?",
+        )
+      ) {
+        return;
+      }
+      cancelledRef.current = true;
+    }
+    onClose();
+  }
 
   const dragSensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
@@ -178,6 +203,7 @@ export function ListingWizardModal({
         photos,
         0,
         (p) => setUploadProgress(p),
+        () => cancelledRef.current,
       );
       uploadedPaths.push(...upload.paths);
       const portfolio = upload.results.map((r) => ({
@@ -219,6 +245,7 @@ export function ListingWizardModal({
       toast.success("Listing submitted for review.");
       onPublished();
     } catch (err) {
+      const cancelled = err instanceof UploadCancelledError;
       const msg = (err as { message?: string })?.message ?? "Try again.";
       // Rollback any partial state so retry starts from a clean slate
       // instead of stacking duplicates. Deleting the vendor_profile
@@ -251,7 +278,11 @@ export function ListingWizardModal({
           );
         }
       }
-      toast.error(`Submit failed: ${msg}`);
+      if (cancelled) {
+        toast("Upload cancelled — nothing saved.");
+      } else {
+        toast.error(`Submit failed: ${msg}`);
+      }
       setSubmitting(false);
       setUploadProgress(null);
     }
@@ -261,7 +292,7 @@ export function ListingWizardModal({
     <div className="fixed inset-0 z-50 flex flex-col vendor-canvas">
       <header className="flex items-center justify-between border-b border-border/60 px-5 py-4">
         <button
-          onClick={onClose}
+          onClick={attemptClose}
           className="rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
           aria-label="Close"
         >
