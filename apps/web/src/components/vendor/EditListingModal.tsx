@@ -6,7 +6,7 @@
 // untouched, so an already-live listing stays live.
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Loader2, Plus, Trash2, Upload, X } from "lucide-react";
+import { Crown, Loader2, Plus, Trash2, Upload, X } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -235,27 +235,58 @@ export function EditListingModal({
       //    order guarantees the vendor's portfolio is never strictly
       //    smaller than what they had at modal open until every new
       //    upload has committed.
-      const newPhotos = photos.filter((p): p is NewPhoto => p.kind === "new");
-      if (newPhotos.length > 0) {
-        const baseOrder =
-          originalPhotosRef.current.reduce((m, o) => Math.max(m, o.order), -1) + 1;
-        setUploadProgress({ done: 0, total: newPhotos.length });
+      //
+      // display_order comes from each photo's FINAL index in the
+      // photos[] array — that way 'Make cover' (which moves a tile
+      // to index 0) persists correctly even though we don't drag-
+      // reorder yet.
+      const newPhotosWithFinalIdx = photos
+        .map((p, idx) => ({ p, idx }))
+        .filter(
+          (x): x is { p: NewPhoto; idx: number } => x.p.kind === "new",
+        );
+      if (newPhotosWithFinalIdx.length > 0) {
+        setUploadProgress({ done: 0, total: newPhotosWithFinalIdx.length });
         const upload = await uploadListingPhotos(
           vendorId,
-          newPhotos.map((p) => p.file),
-          baseOrder,
-          (p) => setUploadProgress(p),
+          newPhotosWithFinalIdx.map((x) => x.p.file),
+          0,
+          (pr) => setUploadProgress(pr),
         );
         uploadedPaths.push(...upload.paths);
-        const inserts = upload.results.map((r) => ({
+        const inserts = upload.results.map((r, i) => ({
           vendor_id: vendorId,
           storage_path: r.storagePath,
-          display_order: r.index,
+          display_order: newPhotosWithFinalIdx[i].idx,
         }));
         const { error: insErr } = await supabase
           .from("vendor_portfolio_images")
           .insert(inserts);
         if (insErr) throw insErr;
+      }
+
+      // 2b. Persist reorders on existing photos. 'Make cover' moves
+      //     a tile to index 0 in state; without this step the new
+      //     order wouldn't survive a save. Only fire an UPDATE on
+      //     photos whose display_order actually changed — at 100
+      //     photos with a single cover swap we typically touch 2-3
+      //     rows, not all 100.
+      const reorderUpdates = photos
+        .map((p, idx) => ({ p, idx }))
+        .filter(
+          (x): x is { p: ExistingPhoto; idx: number } =>
+            x.p.kind === "existing",
+        )
+        .filter((x) => {
+          const orig = originalPhotosRef.current.find((o) => o.id === x.p.id);
+          return orig ? orig.order !== x.idx : false;
+        });
+      for (const { p, idx } of reorderUpdates) {
+        const { error: uErr } = await supabase
+          .from("vendor_portfolio_images")
+          .update({ display_order: idx })
+          .eq("id", p.id);
+        if (uErr) throw uErr;
       }
 
       // 3. NOW delete photos the vendor removed. By this point any
@@ -393,6 +424,17 @@ export function EditListingModal({
                       if (p.kind === "new") URL.revokeObjectURL(p.url);
                       setPhotos((prev) => prev.filter((_, j) => j !== i));
                     }}
+                    onMakeCover={
+                      i === 0
+                        ? undefined
+                        : () =>
+                            setPhotos((prev) => {
+                              const next = [...prev];
+                              const [moved] = next.splice(i, 1);
+                              next.unshift(moved);
+                              return next;
+                            })
+                    }
                   />
                 ))}
                 {photos.length < MAX_PHOTOS ? (
@@ -601,13 +643,15 @@ function PhotoTile({
   url,
   isCover,
   onRemove,
+  onMakeCover,
 }: {
   url: string;
   isCover: boolean;
   onRemove: () => void;
+  onMakeCover?: () => void;
 }) {
   return (
-    <div className="relative aspect-square overflow-hidden rounded-md bg-secondary/40">
+    <div className="relative aspect-square overflow-hidden rounded-md bg-secondary/40 group">
       <img src={url} alt="" className="h-full w-full object-cover" />
       {isCover ? (
         <span className="absolute left-1 top-1 rounded-full bg-foreground/90 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-background">
@@ -622,6 +666,17 @@ function PhotoTile({
       >
         <X className="h-3 w-3" />
       </button>
+      {onMakeCover ? (
+        <button
+          type="button"
+          onClick={onMakeCover}
+          className="absolute bottom-1 left-1 inline-flex items-center gap-1 rounded-full bg-black/60 px-2 py-0.5 text-[10px] font-medium text-white opacity-0 group-hover:opacity-100 transition-opacity hover:bg-black/80"
+          aria-label="Make cover photo"
+        >
+          <Crown className="h-2.5 w-2.5" />
+          Cover
+        </button>
+      ) : null}
     </div>
   );
 }

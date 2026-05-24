@@ -23,7 +23,21 @@ export const UPLOAD_CONCURRENCY = 5;
 
 export interface FileValidationResult {
   accepted: File[];
-  rejected: Array<{ file: File; reason: "size" | "type" }>;
+  rejected: Array<{ file: File; reason: "size" | "type" | "heic" }>;
+}
+
+function looksLikeHeic(file: File): boolean {
+  // iPhone photos default to .HEIC (or .HEIF). The MIME is often
+  // 'image/heic' / 'image/heif' but Safari sometimes reports empty
+  // type for them. Fall back to the extension on the filename when
+  // the MIME is missing. Supabase storage accepts the upload but
+  // most browsers can't render HEIC, so the photo would look broken
+  // on the public listing page — better to reject up front with a
+  // clear hint than ship a "broken image" UX.
+  const t = (file.type || "").toLowerCase();
+  if (t === "image/heic" || t === "image/heif") return true;
+  const name = (file.name || "").toLowerCase();
+  return name.endsWith(".heic") || name.endsWith(".heif");
 }
 
 export function validateListingPhotos(
@@ -35,7 +49,13 @@ export function validateListingPhotos(
   const rejected: FileValidationResult["rejected"] = [];
   const remaining = Math.max(0, cap - alreadyAccepted);
   for (const file of incoming) {
-    if (!file.type.startsWith("image/")) {
+    if (looksLikeHeic(file)) {
+      rejected.push({ file, reason: "heic" });
+      continue;
+    }
+    // Allow empty-MIME files only if the extension says image (a few
+    // older Safari versions strip MIME on .jpg from camera roll).
+    if (!file.type.startsWith("image/") && file.type !== "") {
       rejected.push({ file, reason: "type" });
       continue;
     }
@@ -113,14 +133,14 @@ export function describeRejected(rejected: FileValidationResult["rejected"]): st
   if (rejected.length === 0) return null;
   const tooBig = rejected.filter((r) => r.reason === "size").length;
   const wrongType = rejected.filter((r) => r.reason === "type").length;
+  const heic = rejected.filter((r) => r.reason === "heic").length;
   const parts: string[] = [];
-  if (tooBig > 0) {
+  if (tooBig > 0) parts.push(`${tooBig} over 10 MB`);
+  if (wrongType > 0) parts.push(`${wrongType} not images`);
+  if (heic > 0) {
     parts.push(
-      `${tooBig} over 10 MB`,
+      `${heic} HEIC (iPhone) — convert to JPEG in the Photos app share menu`,
     );
   }
-  if (wrongType > 0) {
-    parts.push(`${wrongType} not images`);
-  }
-  return `Skipped ${parts.join(", ")}.`;
+  return `Skipped ${parts.join("; ")}.`;
 }
