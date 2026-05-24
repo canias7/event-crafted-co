@@ -142,12 +142,16 @@ serve(async (req: Request) => {
       .filter((inv) => (inv.amount_paid ?? 0) > 0 || (inv.amount_due ?? 0) > 0)
       .slice(0, 10)
       .map((inv) => {
-        const firstLine = inv.lines?.data?.[0];
+        const lines = (inv.lines?.data ?? []).map((line) => ({
+          description: line.description ?? null,
+          amount: line.amount ?? 0,
+        }));
+        const firstLine = lines[0];
         const summary =
           inv.description ??
           firstLine?.description ??
-          (inv.lines?.data?.length
-            ? `${inv.lines.data.length} line item${inv.lines.data.length === 1 ? "" : "s"}`
+          (lines.length
+            ? `${lines.length} line item${lines.length === 1 ? "" : "s"}`
             : null);
         return {
           id: inv.id,
@@ -155,9 +159,12 @@ serve(async (req: Request) => {
           created: inv.created,
           amount_paid: inv.amount_paid ?? 0,
           amount_due: inv.amount_due ?? 0,
+          subtotal: inv.subtotal ?? 0,
+          tax: inv.tax ?? 0,
           currency: inv.currency ?? "usd",
           status: inv.status ?? "open",
           summary,
+          lines,
           hosted_invoice_url: inv.hosted_invoice_url ?? null,
           invoice_pdf: inv.invoice_pdf ?? null,
         };
