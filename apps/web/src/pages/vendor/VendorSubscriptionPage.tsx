@@ -10,6 +10,16 @@ import { useVendorCredits } from "@/hooks/useVendorCredits";
 import { DashboardSidebar } from "@/components/shared/DashboardSidebar";
 import { MobileNav } from "@/components/shared/MobileNav";
 import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { vendorNavItems as navItems } from "@/data/navItems";
 
 // Subscription + AI credits surface for the vendor.
@@ -334,6 +344,12 @@ export default function VendorSubscriptionPage() {
     return url;
   }
 
+  // Modal state for the "switch plan?" confirmation. Lifted out of
+  // the click handler so we can render a proper AlertDialog instead
+  // of the browser-native window.confirm (which looks broken next
+  // to the rest of the app's styling).
+  const [pendingTier, setPendingTier] = useState<TierRow | null>(null);
+
   async function upgradeTo(tier: TierRow) {
     // Audit #5: don't gate on vendorId — a freshly-signed-up vendor
     // with no listings yet still needs to subscribe. Edge functions
@@ -344,57 +360,10 @@ export default function VendorSubscriptionPage() {
       (plan?.tier ?? "free") !== "free" &&
       (plan?.status === "active" || plan?.status === "trialing");
     if (alreadyPaid) {
-      // Tier change for an existing subscriber. Goes through our
-      // custom stripe-change-tier endpoint so we can reset the
-      // billing cycle to today: vendor keeps any unused-old-tier
-      // value, the new tier's full $X is charged immediately, and
-      // the new tier's full monthly credits are added on top of the
-      // existing balance.
-      const ok = window.confirm(
-        `Switch to ${tier.name}? You'll be charged $${tier.priceMonthly} today, then $${tier.priceMonthly} every month after. Any unused time on your current plan stays with you.`,
-      );
-      if (!ok) return;
-      setActingId(`tier_${tier.id}`);
-      try {
-        const { data, error } = await supabase.functions.invoke(
-          "stripe-change-tier",
-          { body: { price_id: tier.priceId } },
-        );
-        if (error) {
-          toast.error("Couldn't switch plan", {
-            description: error.message ?? "Please try again in a moment.",
-          });
-          return;
-        }
-        const result = (data ?? {}) as {
-          changed?: boolean;
-          new_tier?: string;
-          granted_now?: number;
-          charged_now_cents?: number;
-          reason?: string;
-        };
-        if (!result.changed) {
-          toast(
-            result.reason === "already_on_this_tier"
-              ? "You're already on this plan."
-              : "No changes made.",
-          );
-        } else {
-          const dollars = ((result.charged_now_cents ?? 0) / 100).toFixed(2);
-          const credits = (result.granted_now ?? 0).toLocaleString();
-          toast.success(
-            `Switched to ${tier.name} — $${dollars} charged today, +${credits} credits added.`,
-          );
-        }
-        await load();
-        await credits.refresh();
-      } catch (err) {
-        toast.error("Couldn't switch plan", {
-          description: err instanceof Error ? err.message : "Unknown error",
-        });
-      } finally {
-        setActingId(null);
-      }
+      // Open the themed confirmation modal. The actual call to
+      // stripe-change-tier fires from confirmTierSwitch below when
+      // the user clicks "Confirm switch".
+      setPendingTier(tier);
       return;
     }
     setActingId(`tier_${tier.id}`);
@@ -404,6 +373,68 @@ export default function VendorSubscriptionPage() {
       "Couldn't start checkout",
     );
     setActingId(null);
+  }
+
+  async function confirmTierSwitch() {
+    const tier = pendingTier;
+    if (!tier || !tier.priceId || !user) return;
+    setPendingTier(null);
+    setActingId(`tier_${tier.id}`);
+    try {
+      const { data, error } = await supabase.functions.invoke(
+        "stripe-change-tier",
+        { body: { price_id: tier.priceId } },
+      );
+      if (error) {
+        toast.error("Couldn't switch plan", {
+          description: error.message ?? "Please try again in a moment.",
+        });
+        return;
+      }
+      const result = (data ?? {}) as {
+        changed?: boolean;
+        new_tier?: string;
+        granted_now?: number;
+        charged_now_cents?: number;
+        charge_failed?: string | null;
+        reason?: string;
+      };
+      if (!result.changed) {
+        toast(
+          result.reason === "already_on_this_tier"
+            ? "You're already on this plan."
+            : "No changes made.",
+        );
+      } else if (result.charge_failed) {
+        // Tier did swap + credits did land — but the card charge
+        // failed. Surface that honestly so the vendor can update
+        // their card via "Manage billing" instead of seeing a fake
+        // success.
+        toast.warning(
+          `Switched to ${tier.name}, but the card charge failed.`,
+          {
+            description:
+              result.charge_failed === "no_payment_method_on_file"
+                ? "No card on file. Open Manage billing to add one."
+                : `Stripe: ${result.charge_failed}`,
+          },
+        );
+      } else {
+        const dollars = ((result.charged_now_cents ?? 0) / 100).toFixed(2);
+        const credits = (result.granted_now ?? 0).toLocaleString();
+        toast.success(
+          `Switched to ${tier.name} — $${dollars} charged today, +${credits} credits added.`,
+        );
+      }
+      await load();
+      await credits.refresh();
+    } catch (err) {
+      toast.error("Couldn't switch plan", {
+        description: err instanceof Error ? err.message : "Unknown error",
+      });
+    } finally {
+      setActingId(null);
+    }
   }
 
   async function buyTopup(pack: TopupRow) {
@@ -714,6 +745,52 @@ export default function VendorSubscriptionPage() {
       </main>
 
       <MobileNav items={navItems} />
+
+      <AlertDialog
+        open={pendingTier !== null}
+        onOpenChange={(open) => {
+          if (!open) setPendingTier(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              Switch to {pendingTier?.name}?
+            </AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-2 text-sm">
+                <p>
+                  You'll be charged{" "}
+                  <span className="font-semibold text-foreground tnum">
+                    ${pendingTier?.priceMonthly}
+                  </span>{" "}
+                  today, then{" "}
+                  <span className="font-semibold text-foreground tnum">
+                    ${pendingTier?.priceMonthly}
+                  </span>{" "}
+                  every month after.
+                </p>
+                <p>
+                  Any unused time on your current plan stays with you, and{" "}
+                  <span className="font-semibold text-foreground tnum">
+                    +{(pendingTier?.monthlyCredits ?? 0).toLocaleString()}
+                  </span>{" "}
+                  credits get added to your balance right away.
+                </p>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmTierSwitch}
+              className="bg-foreground text-background hover:bg-foreground/90"
+            >
+              Confirm switch
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
