@@ -143,14 +143,19 @@ export default function VendorUsagePage() {
     };
   }, [user?.id]);
 
-  // Daily spend buckets across the last 30 days.
+  // Daily spend buckets across the last 30 days. Keys are UTC dates
+  // (yyyy-mm-dd) matching how consume30.created_at slices, so a
+  // consume row from late-night local time never gets dropped because
+  // its UTC date falls on the next day relative to the local-midnight
+  // bucket map. That mismatch was the cause of the donut showing
+  // >100% (totalSpent30 missed rows that actionBreakdown counted).
   const dailyTotals = useMemo(() => {
     const buckets = new Map<string, number>();
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    const todayUtc = new Date();
+    todayUtc.setUTCHours(0, 0, 0, 0);
     for (let i = 29; i >= 0; i--) {
-      const d = new Date(today);
-      d.setDate(today.getDate() - i);
+      const d = new Date(todayUtc);
+      d.setUTCDate(todayUtc.getUTCDate() - i);
       buckets.set(d.toISOString().slice(0, 10), 0);
     }
     for (const row of consume30) {
@@ -186,9 +191,12 @@ export default function VendorUsagePage() {
       });
   }, [consume30]);
 
+  // Sum directly from consume30 (not dailyTotals) so a future
+  // bucket-misalignment can never make this drift from the action
+  // breakdown — keeps the donut percentages bounded at 100%.
   const totalSpent30 = useMemo(
-    () => dailyTotals.reduce((s, d) => s + d.credits, 0),
-    [dailyTotals],
+    () => consume30.reduce((s, r) => s + Math.abs(r.delta), 0),
+    [consume30],
   );
   const maxDaily = useMemo(
     () => dailyTotals.reduce((m, d) => Math.max(m, d.credits), 0),
