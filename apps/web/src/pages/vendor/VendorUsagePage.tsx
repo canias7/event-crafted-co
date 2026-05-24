@@ -298,9 +298,8 @@ export default function VendorUsagePage() {
               below the number row. */}
           <Card className="w-fit max-w-full !p-3 md:!px-5 md:!py-3">
             <div className="flex items-center gap-3">
-              <Sparkles className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
               <p className="font-label text-muted-foreground shrink-0 hidden sm:inline">
-                AI credits
+                Credits
               </p>
               <span className="text-xl md:text-2xl font-semibold tracking-tight tnum leading-none mr-4">
                 {credits.initialized ? credits.balance.toLocaleString() : "—"}
