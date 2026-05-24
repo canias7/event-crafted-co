@@ -429,40 +429,35 @@ export function EditListingModal({
           .in("id", removedFaqIds);
         if (delErr) throw delErr;
       }
-      // FAQ writes — updates and inserts run in parallel so a save
-      // with 10 FAQs finishes in one round trip instead of 10. Bail
-      // on the first error; partial saves are still a possibility
-      // since these aren't wrapped in a transaction, but the vendor
-      // will see the failure and can retry idempotently.
+      // FAQ writes go through a single transactional RPC. The
+      // previous Promise.all loop committed each FAQ in its own
+      // transaction — if write #3 of 5 failed, writes #1 and #2
+      // were already persisted and the vendor saw a misleading
+      // "Save failed" toast on top of partially-updated FAQs.
+      // upsert_vendor_faqs (migration 20260524120000) wraps the
+      // whole array in one plpgsql function call so any failure
+      // rolls back the entire batch.
       let nextFaqOrder =
         originalFaqsRef.current.reduce((m, o) => Math.max(m, o.order), -1) + 1;
-      const faqOps: Array<Promise<{ error: unknown }>> = [];
-      for (const f of faqs) {
+      const faqPayload = faqs.map((f) => {
+        const row: Record<string, unknown> = {
+          question: f.question.trim(),
+          answer: f.answer.trim(),
+        };
         if (f.id) {
-          faqOps.push(
-            supabase
-              .from("vendor_faqs")
-              .update({
-                question: f.question.trim(),
-                answer: f.answer.trim(),
-              })
-              .eq("id", f.id),
-          );
+          row.id = f.id;
         } else {
-          faqOps.push(
-            supabase.from("vendor_faqs").insert({
-              vendor_id: vendorId,
-              question: f.question.trim(),
-              answer: f.answer.trim(),
-              display_order: nextFaqOrder,
-            }),
-          );
-          nextFaqOrder++;
+          row.display_order = nextFaqOrder++;
         }
+        return row;
+      });
+      if (faqPayload.length > 0) {
+        const { error: faqErr } = await supabase.rpc("upsert_vendor_faqs", {
+          p_vendor_id: vendorId,
+          p_faqs: faqPayload,
+        });
+        if (faqErr) throw faqErr;
       }
-      const faqResults = await Promise.all(faqOps);
-      const firstFaqErr = faqResults.find((r) => r.error);
-      if (firstFaqErr) throw firstFaqErr.error;
 
       // Refresh geocoding off the (possibly changed) location —
       // best-effort; geocode-vendor no-ops when it is unchanged.
@@ -855,7 +850,13 @@ function PhotoTile({
 }) {
   return (
     <div className="relative aspect-square overflow-hidden rounded-md bg-secondary/40 group">
-      <img src={url} alt="" className="h-full w-full object-cover pointer-events-none select-none" />
+      <img
+        src={url}
+        alt=""
+        loading="lazy"
+        decoding="async"
+        className="h-full w-full object-cover pointer-events-none select-none"
+      />
       {isCover ? (
         <span className="absolute left-1 top-1 rounded-full bg-foreground/90 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-background">
           Cover

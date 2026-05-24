@@ -736,7 +736,13 @@ function PhotoTile({
   }, [file]);
   return (
     <div className="relative aspect-square overflow-hidden rounded-md bg-secondary/40 group">
-      <img src={url} alt="" className="h-full w-full object-cover pointer-events-none select-none" />
+      <img
+        src={url}
+        alt=""
+        loading="lazy"
+        decoding="async"
+        className="h-full w-full object-cover pointer-events-none select-none"
+      />
       {isCover ? (
         <span className="absolute left-1 top-1 rounded-full bg-foreground/90 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-background">
           Cover
