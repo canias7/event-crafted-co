@@ -280,8 +280,10 @@ export default function VendorUsagePage() {
         <div className="p-4 md:p-8 max-w-[1400px] space-y-5">
           {/* COMPACT HERO STRIP — one row: number + progress + button.
               No oversized vertical padding, no decorative glow eating
-              space. Designed to take ~120px instead of the old 220px. */}
-          <Card>
+              space. Designed to take ~120px instead of the old 220px.
+              Also capped to max-w-3xl so it doesn't stretch across the
+              full ~1400px page width with empty middle. */}
+          <Card className="max-w-3xl">
             <div className="flex flex-col md:flex-row md:items-center gap-5">
               <div className="flex items-center gap-5 min-w-0">
                 <div className="min-w-0">

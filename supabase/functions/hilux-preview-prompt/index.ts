@@ -49,6 +49,18 @@ serve(async (req: Request) => {
     const { data: userData, error: userErr } = await userClient.auth.getUser();
     if (userErr || !userData?.user) return json(401, { error: "invalid_session" });
 
+    // Audit #13: gate on vendor role. Logged-in hosts shouldn't
+    // be able to hit this — they'd just get a "no listing" 404
+    // anyway, but each call still does multiple DB roundtrips.
+    const { data: profileRow } = await userClient
+      .from("profiles")
+      .select("role")
+      .eq("id", userData.user.id)
+      .maybeSingle();
+    if ((profileRow as { role?: string } | null)?.role !== "vendor") {
+      return json(403, { error: "vendor_only" });
+    }
+
     const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
       auth: { autoRefreshToken: false, persistSession: false },
     });
