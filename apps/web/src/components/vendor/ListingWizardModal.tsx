@@ -12,7 +12,7 @@
 // stay byte-identical to the mobile listing builder.
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Loader2, Plus, Trash2, Upload, X } from "lucide-react";
+import { Crown, Loader2, Plus, Trash2, Upload, X } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -282,6 +282,17 @@ export function ListingWizardModal({
                     onRemove={() =>
                       setPhotos((prev) => prev.filter((_, j) => j !== i))
                     }
+                    onMakeCover={
+                      i === 0
+                        ? undefined
+                        : () =>
+                            setPhotos((prev) => {
+                              const next = [...prev];
+                              const [moved] = next.splice(i, 1);
+                              next.unshift(moved);
+                              return next;
+                            })
+                    }
                   />
                 ))}
                 {photos.length < MAX_PHOTOS ? (
@@ -513,10 +524,12 @@ function PhotoTile({
   file,
   isCover,
   onRemove,
+  onMakeCover,
 }: {
   file: File;
   isCover: boolean;
   onRemove: () => void;
+  onMakeCover?: () => void;
 }) {
   // Revoke the object URL on unmount / file change. The previous
   // useMemo created the URL once and held it forever — with 100
@@ -530,7 +543,7 @@ function PhotoTile({
     return () => URL.revokeObjectURL(next);
   }, [file]);
   return (
-    <div className="relative aspect-square overflow-hidden rounded-md bg-secondary/40">
+    <div className="relative aspect-square overflow-hidden rounded-md bg-secondary/40 group">
       <img src={url} alt="" className="h-full w-full object-cover" />
       {isCover ? (
         <span className="absolute left-1 top-1 rounded-full bg-foreground/90 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-background">
@@ -544,6 +557,17 @@ function PhotoTile({
       >
         <X className="h-3 w-3" />
       </button>
+      {onMakeCover ? (
+        <button
+          type="button"
+          onClick={onMakeCover}
+          className="absolute bottom-1 left-1 inline-flex items-center gap-1 rounded-full bg-black/60 px-2 py-0.5 text-[10px] font-medium text-white opacity-0 group-hover:opacity-100 transition-opacity hover:bg-black/80"
+          aria-label="Make cover photo"
+        >
+          <Crown className="h-2.5 w-2.5" />
+          Cover
+        </button>
+      ) : null}
     </div>
   );
 }
