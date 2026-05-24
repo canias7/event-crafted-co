@@ -17,6 +17,7 @@
 // rejected files in a single toast.
 
 import { supabase } from "@/integrations/supabase/client";
+import { compressImageIfNeeded } from "@/lib/imageCompress";
 
 export const MAX_PHOTO_BYTES = 10 * 1024 * 1024;
 export const UPLOAD_CONCURRENCY = 5;
@@ -116,7 +117,12 @@ export async function uploadListingPhotos(
       if (shouldCancel?.()) throw new UploadCancelledError();
       const myIndex = cursor++;
       if (myIndex >= files.length) return;
-      const file = files[myIndex];
+      // Compress (resize + re-encode JPEG) before upload. Best-
+      // effort: helper returns the original file unchanged if
+      // compression isn't worth it (small file, small dimensions)
+      // or fails (decode error, OOM). Typical iPhone photo: 4 MB
+      // → ~400 KB, ~10× upload + storage win.
+      const file = await compressImageIfNeeded(files[myIndex]);
       const ext =
         file.name.split(".").pop()?.toLowerCase().replace(/[^a-z0-9]/g, "") ||
         "jpg";
