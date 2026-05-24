@@ -57,6 +57,12 @@ serve(async (req: Request) => {
 
   const body = await req.json().catch(() => ({}));
   const vendorId = body?.vendor_id as string | undefined;
+  // Optional. When present, deep-link the portal to the
+  // subscription_update_confirm flow with this price pre-selected
+  // — so clicking "Switch to Pro" on the page lands the vendor
+  // straight on the "confirm Pro" step instead of the portal home
+  // (which leads with Cancel and hides the plan-change UI).
+  const targetPriceId = body?.price_id as string | undefined;
   if (!vendorId) return json({ error: "vendor_id required" }, 400);
 
   const { data: isAdmin } = await userClient.rpc("is_vendor_team_admin", {
@@ -67,22 +73,58 @@ serve(async (req: Request) => {
   const db = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!, {
     auth: { persistSession: false },
   });
-  // Stripe customer lives on profiles per-user now. vendor_id is
-  // still the admin-check key (so a team admin on listing X can open
-  // billing for the owning user's Stripe Customer).
+  // Stripe customer + subscription live on profiles per-user. vendor_id
+  // is still the admin-check key (so a team admin on listing X can
+  // open billing for the owning user's Stripe Customer).
   const { data: profile } = await db
     .from("profiles")
-    .select("id, stripe_customer_id")
+    .select("id, stripe_customer_id, stripe_subscription_id")
     .eq("id", userId)
     .maybeSingle();
   if (!profile?.stripe_customer_id) {
     return json({ error: "no stripe customer on this account" }, 400);
   }
 
-  const portal = await stripe.billingPortal.sessions.create({
+  // Default portal session (no deep link).
+  const sessionArgs: Stripe.BillingPortal.SessionCreateParams = {
     customer: profile.stripe_customer_id as string,
     return_url: `${APP_URL}/vendor/subscription`,
-  });
+  };
+
+  // Deep link into the plan-change confirm screen when the caller
+  // passed a target price. Needs the subscription id + the
+  // subscription's first item id (Stripe's subscription_update_confirm
+  // requires both — there's no shorthand for "swap the only item").
+  if (targetPriceId && profile.stripe_subscription_id) {
+    try {
+      const sub = await stripe.subscriptions.retrieve(
+        profile.stripe_subscription_id as string,
+      );
+      const item = sub.items.data[0];
+      if (item && item.price?.id !== targetPriceId) {
+        sessionArgs.flow_data = {
+          type: "subscription_update_confirm",
+          subscription_update_confirm: {
+            subscription: sub.id,
+            items: [{ id: item.id, price: targetPriceId, quantity: 1 }],
+          },
+          after_completion: {
+            type: "redirect",
+            redirect: { return_url: `${APP_URL}/vendor/subscription?upgraded=1` },
+          },
+        };
+      }
+      // If item.price.id === targetPriceId the user is asking to
+      // "switch" to the tier they're already on — fall through to the
+      // default portal so they see context instead of a no-op confirm.
+    } catch (err) {
+      // Don't fail the open — fall back to default portal if Stripe
+      // hiccups on the subscription retrieve.
+      console.warn("[stripe-customer-portal] subscription_update_confirm setup failed", err);
+    }
+  }
+
+  const portal = await stripe.billingPortal.sessions.create(sessionArgs);
 
   return json({ url: portal.url });
 });

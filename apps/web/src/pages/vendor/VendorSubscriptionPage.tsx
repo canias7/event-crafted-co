@@ -286,9 +286,13 @@ export default function VendorSubscriptionPage() {
       (plan?.tier ?? "free") !== "free" &&
       (plan?.status === "active" || plan?.status === "trialing");
     if (alreadyPaid) {
+      // Deep-link the portal to subscription_update_confirm for the
+      // chosen tier — lands on a "confirm Pro" screen pre-filled
+      // with the price diff, instead of the portal home (which leads
+      // with Cancel and buries the plan switch under "Update plan").
       await callStripeFunction(
         "stripe-customer-portal",
-        { vendor_id: vendorId },
+        { vendor_id: vendorId, price_id: tier.priceId },
         "Couldn't open billing portal",
       );
     } else {
