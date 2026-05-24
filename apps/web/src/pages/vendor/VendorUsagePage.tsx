@@ -292,7 +292,7 @@ export default function VendorUsagePage() {
           {/* Hero strip + daily-spend chart sit side-by-side: the
               credits chip on the left (w-fit), the bar chart fills
               the rest of the row. */}
-          <div className="flex flex-col lg:flex-row gap-5 items-stretch">
+          <div className="flex flex-col lg:flex-row gap-5 items-start">
           <Card className="w-fit max-w-full !p-3 md:!px-5 md:!py-3 shrink-0">
             <div className="flex items-center gap-3">
               <p className="font-label text-muted-foreground shrink-0 hidden sm:inline">
@@ -426,8 +426,9 @@ export default function VendorUsagePage() {
             </Card>
           </div>
 
-          {/* Donut breakdown row on its own. */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 items-start">
+          {/* Donut + Cost per action + Recent activity all in one
+              row — donut narrow, cost narrow, recent activity wider. */}
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-5 items-start">
             <Card className="lg:col-span-1">
               <SectionHeader title="Where credits went" />
               <Donut
@@ -479,15 +480,11 @@ export default function VendorUsagePage() {
                 })}
               </ul>
             </Card>
-          </div>
 
-          {/* COST REFERENCE + RECENT ACTIVITY — full-width 2-col */}
-          <div className="grid grid-cols-1 lg:grid-cols-5 gap-5 items-start">
             {/* Cost reference — what each action costs in credits.
                 Reads from ACTION_COST (in sync with credits.ts on
-                the server). Lets vendors see the price tag before
-                they pull the trigger. */}
-            <Card className="lg:col-span-2">
+                the server). */}
+            <Card className="lg:col-span-1">
               <SectionHeader
                 title="Cost per action"
                 rightSlot={<span className="text-xs text-muted-foreground">Credits charged per call</span>}
@@ -510,11 +507,11 @@ export default function VendorUsagePage() {
               </ul>
             </Card>
 
-            {/* Recent activity — spans 3 cols on desktop. Shows the
-                first 10 by default; "Show more" expands the box into
-                a scrollable container so the rest of the page stays
-                put. */}
-            <Card className="lg:col-span-3">
+            {/* Recent activity — takes the remaining 2 cols in the
+                4-col row. Shows the first 10 by default; "Show more"
+                expands into a scrollable container so the rest of
+                the page stays put. */}
+            <Card className="lg:col-span-2">
               <SectionHeader
                 title="Recent activity"
                 rightSlot={ledger.length > 10 ? (
