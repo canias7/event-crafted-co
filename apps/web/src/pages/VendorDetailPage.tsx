@@ -12,6 +12,7 @@ import {
   Calendar,
   Share2,
   Mail,
+  Grid3X3,
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -174,12 +175,6 @@ export default function VendorDetailPage() {
   // attributes to the package, not the vendor as a whole.
   const [inquiryPackageId, setInquiryPackageId] = useState<string | null>(null);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
-  // Portfolio grid starts collapsed once a vendor has more than the
-  // initial-render cap. Without this, listings with 100 photos would
-  // render 100 motion.button nodes in one shot — heavy initial paint
-  // + the i*0.05 stagger meant the last few photos didn't appear
-  // until ~5s after viewport intersection. Show-all expands inline.
-  const [portfolioExpanded, setPortfolioExpanded] = useState(false);
 
   const vendor = id
     ? vendors.find((v) => v.id === id) ?? vendors.find((v) => v.slug === id)
@@ -755,24 +750,89 @@ export default function VendorDetailPage() {
               <div>
                 <p className="font-label text-accent mb-4">Portfolio</p>
                 <h2 className="font-editorial text-4xl mb-8">Recent work</h2>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                  {(() => {
-                    // Cap initial render at 13 (cover + 12 thumbs =
-                    // ~4-5 rows on desktop). Vendors who uploaded
-                    // 100 photos shouldn't trigger 100 motion nodes
-                    // + a 5s stagger on first paint.
-                    const CAP = 13;
-                    const visible = portfolioExpanded
-                      ? portfolioItems
-                      : portfolioItems.slice(0, CAP);
-                    return visible.map((item, i) => {
+                {portfolioItems.length > 6 ? (
+                  // Airbnb-style hero: 1 wide cover + 2 stacked
+                  // middle thumbs + 2 tall right columns. "See all
+                  // (N)" pill overlaid on the bottom-right opens
+                  // the lightbox at index 0. Only kicks in past 6
+                  // photos so listings with small portfolios still
+                  // get the spacious editorial grid.
+                  //
+                  // Mobile collapses to a single cover with a See
+                  // all button — the 5-tile layout doesn't survive
+                  // sub-md widths.
+                  <div className="relative">
+                    {/* Mobile cover */}
+                    <button
+                      type="button"
+                      onClick={() => setLightboxIndex(0)}
+                      className="md:hidden block w-full aspect-[16/10] overflow-hidden rounded-xl bg-muted group"
+                      aria-label={`Open portfolio (${portfolioItems.length} photos)`}
+                    >
+                      <img
+                        src={portfolioItems[0].src}
+                        alt={portfolioItems[0].caption ?? `${vendor.name} portfolio cover`}
+                        className="w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-700"
+                      />
+                    </button>
+                    {/* Desktop 5-tile Airbnb hero */}
+                    <div className="hidden md:grid grid-cols-4 grid-rows-2 gap-2 aspect-[2.4/1] rounded-xl overflow-hidden">
+                      {portfolioItems.slice(0, 5).map((item, i) => {
+                        const altText =
+                          item.caption ?? `${vendor.name} portfolio ${i + 1}`;
+                        // Cover spans 2 cols × 2 rows on the left.
+                        // i=1 top-middle thumb, i=2 bottom-middle
+                        // thumb, i=3 tall right column. The 4th
+                        // grid slot gets a separate row below so
+                        // we render only 4 tiles here and let the
+                        // See-all overlay sit on top of #3.
+                        const positionClass =
+                          i === 0
+                            ? "col-span-2 row-span-2"
+                            : i === 1
+                              ? "col-start-3 row-start-1"
+                              : i === 2
+                                ? "col-start-3 row-start-2"
+                                : i === 3
+                                  ? "col-start-4 row-span-2"
+                                  : "hidden";
+                        return (
+                          <button
+                            type="button"
+                            key={`hero-${item.src}-${i}`}
+                            onClick={() => setLightboxIndex(i)}
+                            className={`group overflow-hidden bg-muted relative ${positionClass}`}
+                            aria-label={`Open ${altText}`}
+                          >
+                            <img
+                              src={item.src}
+                              alt={altText}
+                              loading={i === 0 ? "eager" : "lazy"}
+                              className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-700"
+                            />
+                          </button>
+                        );
+                      })}
+                    </div>
+                    {/* See all (N) pill — bottom-right, both layouts */}
+                    <button
+                      type="button"
+                      onClick={() => setLightboxIndex(0)}
+                      className="absolute bottom-3 right-3 md:bottom-4 md:right-4 inline-flex items-center gap-1.5 rounded-full bg-white text-foreground px-3.5 py-2 md:px-4 md:py-2.5 text-sm font-medium shadow-lg ring-1 ring-foreground/10 hover:bg-white/90 transition-colors"
+                    >
+                      <Grid3X3 className="w-4 h-4" />
+                      See all ({portfolioItems.length})
+                    </button>
+                  </div>
+                ) : (
+                  // 6 or fewer: keep the original editorial grid
+                  // with cover spanning 2×2. No See-all overlay
+                  // needed since everything is visible inline.
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                    {portfolioItems.map((item, i) => {
                       const altText =
                         item.caption ?? `${vendor.name} portfolio ${i + 1}`;
-                      // Clamp the stagger delay so photo #13 still
-                      // animates in within ~600ms even when 100 are
-                      // visible — otherwise i * 0.05 puts photo #100
-                      // at a 5-second delay and reads as broken.
-                      const animDelay = Math.min(i * 0.05, 0.6);
+                      const animDelay = Math.min(i * 0.05, 0.4);
                       return (
                         <motion.button
                           type="button"
@@ -782,7 +842,6 @@ export default function VendorDetailPage() {
                           viewport={{ once: true }}
                           transition={{ ...spring, delay: animDelay }}
                           onClick={() => setLightboxIndex(i)}
-                          // Cover spans 2 cols × 2 rows; thumbs are squares.
                           className={`group overflow-hidden rounded-sm bg-muted block aspect-square ${
                             i === 0 ? "col-span-2 row-span-2" : ""
                           }`}
@@ -796,26 +855,9 @@ export default function VendorDetailPage() {
                           />
                         </motion.button>
                       );
-                    });
-                  })()}
-                </div>
-                {portfolioItems.length > 13 ? (
-                  <div className="mt-6 flex justify-center">
-                    <button
-                      type="button"
-                      onClick={() =>
-                        portfolioExpanded
-                          ? setPortfolioExpanded(false)
-                          : setPortfolioExpanded(true)
-                      }
-                      className="rounded-full border border-foreground/20 px-5 py-2 text-sm font-medium text-foreground/80 hover:text-foreground hover:border-foreground/40 transition-colors"
-                    >
-                      {portfolioExpanded
-                        ? "Show fewer photos"
-                        : `Show all ${portfolioItems.length} photos`}
-                    </button>
+                    })}
                   </div>
-                ) : null}
+                )}
               </div>
               )}
 
