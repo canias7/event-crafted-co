@@ -12,6 +12,12 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 
 const MAX_SECONDS = 30;
+// Anything smaller is almost certainly an empty MediaRecorder
+// container (header bytes only — happens when start/stop race in
+// under ~100ms or the mic returns a silent track). Treat as a
+// failed capture instead of uploading silence the recipient can't
+// play back.
+const MIN_USEFUL_BYTES = 5 * 1024;
 
 const PREFERRED_MIMES = [
   "audio/webm;codecs=opus",
@@ -106,8 +112,8 @@ export function VoiceRecorder({
         }
         const blob = new Blob(chunksRef.current, { type: mime });
         chunksRef.current = [];
-        if (blob.size === 0) {
-          toast.error("No audio captured");
+        if (blob.size < MIN_USEFUL_BYTES) {
+          toast.error("No audio captured — hold to record");
           return;
         }
         const ts = new Date()
