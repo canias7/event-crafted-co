@@ -509,16 +509,33 @@ async function newInquiryEmails(p: NewInquiryPayload) {
     <p style="margin:0;font-size:13px;color:#777;">Hosts on Vendora typically expect a reply within 24 hours.</p>`,
   );
 
-  // Resolve every team member's email via auth.users.
+  // Resolve every team member's email via auth.users. Filter by
+  // notification_prefs.new_inquiry so a team member who opted out
+  // via Settings doesn't get the email — keeps email/push/in-app
+  // in sync (push and in-app are gated by the same pref via
+  // is_notif_enabled in notify_inquiry_created).
   const { data: members } = await admin
     .from("vendor_team_members")
     .select("user_id")
     .eq("vendor_id", (inquiry as any).vendor_id);
-  const userIds = ((members as any[] | null) ?? []).map((m) => m.user_id);
-  if (userIds.length === 0) return [];
+  const allUserIds = ((members as any[] | null) ?? []).map((m) => m.user_id);
+  if (allUserIds.length === 0) return [];
+
+  const { data: prefRows } = await admin
+    .from("profiles")
+    .select("id, notification_prefs")
+    .in("id", allUserIds);
+  const optedInIds = ((prefRows as any[] | null) ?? [])
+    .filter((p) => {
+      // Missing key → default true (matches is_notif_enabled
+      // semantics). Explicit false → filter out.
+      const pref = p?.notification_prefs?.new_inquiry;
+      return pref === undefined || pref === null || pref === true;
+    })
+    .map((p) => p.id as string);
 
   const out: { to: string; subject: string; html: string }[] = [];
-  for (const uid of userIds) {
+  for (const uid of optedInIds) {
     const { data: u } = await admin.auth.admin.getUserById(uid);
     const email = u?.user?.email;
     if (email) {
