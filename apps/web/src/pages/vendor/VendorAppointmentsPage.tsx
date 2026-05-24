@@ -329,7 +329,12 @@ export default function VendorAppointmentsPage() {
         : null,
     [selectedListingId],
   );
-  useRealtime(realtimeInquiries, () => loadAppointments());
+  useRealtime(realtimeInquiries, () => {
+    // Inquiries change → calendar grid needs new dot colors AND
+    // the appointments list might gain/lose a row. Refresh both.
+    void loadCalendar();
+    void loadAppointments();
+  });
   const realtimeUnavailable = useMemo(
     () =>
       selectedListingId
@@ -337,7 +342,14 @@ export default function VendorAppointmentsPage() {
         : null,
     [selectedListingId],
   );
-  useRealtime(realtimeUnavailable, () => loadAppointments());
+  useRealtime(realtimeUnavailable, () => {
+    // Blocked-date rows only affect the calendar grid + the day
+    // info panel (which both read from manualBlocks). loadCalendar
+    // covers both. Previously this called loadAppointments() which
+    // only refreshes the bottom list — vendors on a second tab
+    // never saw the hatch update from another tab's block.
+    void loadCalendar();
+  });
 
   const dayState = useMemo(() => {
     const m = new Map<string, DayState>();
@@ -394,14 +406,16 @@ export default function VendorAppointmentsPage() {
       });
     }
     if (manualBlocks.has(selectedYmd)) {
-      const reason = manualBlocks.get(selectedYmd);
+      const reason = manualBlocks.get(selectedYmd)?.trim() ?? "";
+      // 'Blocked manually' is the legacy hardcoded fallback from
+      // before the title input existed (PR #852). Treat it as
+      // no-title so older blocks display as plain "Blocked"
+      // instead of the awkward "Blocked manually" string.
+      const isLegacyFallback = reason === "Blocked manually";
       out.push({
         kind: "busy",
         inquiryId: null,
-        // If the vendor typed a title ("Christian's birthday")
-        // when blocking, use it. Otherwise fall back to the
-        // generic "Blocked" header.
-        title: reason && reason.trim() ? reason.trim() : "Blocked",
+        title: reason && !isLegacyFallback ? reason : "Blocked",
         subtitle: "Marked unavailable",
         amountCents: null,
         accent: "muted",
