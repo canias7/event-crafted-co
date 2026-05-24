@@ -329,14 +329,12 @@ function HeaderCard({
               <CheckCircle2 className="h-4 w-4 text-emerald-500" />
             </div>
           ) : null}
-          {/* Studio starburst seal on the logo. Same corner badge
-              treatment as the public detail page hero. */}
+          {/* Studio starburst seal — floating just outside the logo,
+              no white background. The badge's own blue seal carries
+              the visual weight; wrapping it in a white ring made it
+              look like a separate UI element. */}
           {studioVerified ? (
-            <div
-              className="absolute -right-1.5 -top-1.5 rounded-full bg-white p-[2px]"
-              style={{ boxShadow: "0 4px 10px -2px rgba(29,109,222,0.35)" }}
-              aria-hidden
-            >
+            <div className="absolute -right-2 -top-2" aria-hidden>
               <StudioVerifiedBadge />
             </div>
           ) : null}

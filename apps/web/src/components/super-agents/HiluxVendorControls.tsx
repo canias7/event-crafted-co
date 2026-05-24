@@ -18,6 +18,7 @@ import {
   Phone,
   RotateCcw,
   Search as SearchIcon,
+  UserCircle2,
   ShieldOff,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -34,6 +35,7 @@ import { HiluxLogo } from "./AgentLogos";
 
 type ActionKey =
   | "hilux_action_use_calendar"
+  | "hilux_action_use_first_name"
   | "hilux_action_detect_frustration"
   | "hilux_action_decline_negotiation"
   | "hilux_action_offer_call"
@@ -63,6 +65,7 @@ const ACTION_GROUPS: ActionGroup[] = [
     title: "Conversation",
     actions: [
       { key: "hilux_action_use_calendar", label: "Use my calendar for date answers", blurb: "Read live availability so HILUX can answer \"are you free on Sept 12?\" directly.", Icon: Calendar },
+      { key: "hilux_action_use_first_name", label: "Address host by first name", blurb: "Open the reply with the host's first name when it's on their profile (e.g. \"Hi Jessica —\").", Icon: UserCircle2 },
       { key: "hilux_action_decline_negotiation", label: "Decline price negotiation", blurb: "If the host asks for a discount, politely decline. No haggling.", Icon: ShieldOff },
       { key: "hilux_action_offer_call", label: "Offer to schedule a call", blurb: "Once the lead warms up, offer a quick call to walk through details.", Icon: Phone },
     ],
@@ -106,7 +109,7 @@ export function HiluxVendorControls() {
     const { data, error } = await supabase
       .from("profiles")
       .select(
-        "hilux_enabled, hilux_action_use_calendar, hilux_action_detect_frustration, hilux_action_decline_negotiation, hilux_action_offer_call, hilux_action_notify_on_reply, hilux_action_notify_on_hot_lead, hilux_action_daily_summary, hilux_action_cap_replies_per_inquiry",
+        "hilux_enabled, hilux_action_use_calendar, hilux_action_use_first_name, hilux_action_detect_frustration, hilux_action_decline_negotiation, hilux_action_offer_call, hilux_action_notify_on_reply, hilux_action_notify_on_hot_lead, hilux_action_daily_summary, hilux_action_cap_replies_per_inquiry",
       )
       .eq("id", user.id)
       .maybeSingle();
@@ -118,6 +121,7 @@ export function HiluxVendorControls() {
     const row = (data as HiluxProfileRow | null) ?? ({
       hilux_enabled: false,
       hilux_action_use_calendar: true,
+      hilux_action_use_first_name: true,
       hilux_action_detect_frustration: true,
       hilux_action_decline_negotiation: true,
       hilux_action_offer_call: true,
@@ -160,7 +164,7 @@ export function HiluxVendorControls() {
     };
     // Re-run when toggles or listing change so the preview stays
     // in sync with the live prompt HILUX would actually send.
-  }, [expanded, user?.id, profile?.hilux_action_use_calendar, profile?.hilux_action_detect_frustration, profile?.hilux_action_decline_negotiation, profile?.hilux_action_offer_call]);
+  }, [expanded, user?.id, profile?.hilux_action_use_calendar, profile?.hilux_action_use_first_name, profile?.hilux_action_detect_frustration, profile?.hilux_action_decline_negotiation, profile?.hilux_action_offer_call]);
 
   const persist = async (patch: Partial<HiluxProfileRow>, key: string) => {
     if (!user?.id) return;
@@ -198,6 +202,7 @@ export function HiluxVendorControls() {
     setResetting(true);
     const patch: Partial<HiluxProfileRow> = {
       hilux_action_use_calendar: true,
+      hilux_action_use_first_name: true,
       hilux_action_detect_frustration: true,
       hilux_action_decline_negotiation: true,
       hilux_action_offer_call: true,

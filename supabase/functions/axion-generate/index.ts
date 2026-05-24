@@ -128,7 +128,11 @@ serve(async (req) => {
       return json(503, { error: "credit_service_unavailable" });
     }
     chargedUserId = userData.user.id;
-    chargedRef = mode;
+    // Audit #15: per-call unique ref so vendor_credit_transactions
+    // and ai_call_usage join 1:1 in the admin Costs page. Old
+    // behavior used the mode string ("generate"/"edit") which made
+    // every axion row in the ledger collide with every other.
+    chargedRef = `axion_${mode}_${crypto.randomUUID()}`;
 
     let res: Response;
     if (mode === "generate") {

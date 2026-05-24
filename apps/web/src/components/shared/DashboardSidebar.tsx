@@ -21,6 +21,19 @@ const TIER_LABEL: Record<VendorTier, string> = {
   studio: "Studio plan",
 };
 
+// Per-tier accent colors for the chip + glow. Red for the top tier
+// (Studio) so it pops; orange for Pro (matches the brand-thread);
+// amber for Starter; soft slate for Free.
+const TIER_CHIP: Record<VendorTier, { bg: string; ring: string; text: string; shadow: string }> = {
+  free:    { bg: "rgba(100,116,139,0.12)", ring: "rgba(100,116,139,0.35)", text: "rgb(71,85,105)",    shadow: "0 0 8px rgba(100,116,139,0.25)" },
+  starter: { bg: "rgba(245,158,11,0.15)",  ring: "rgba(245,158,11,0.45)",  text: "rgb(180,83,9)",     shadow: "0 0 8px rgba(245,158,11,0.45)" },
+  pro:     { bg: "rgba(255,138,76,0.18)",  ring: "rgba(255,138,76,0.5)",   text: "rgb(196,84,30)",    shadow: "0 0 10px rgba(255,138,76,0.55)" },
+  studio:  { bg: "rgba(220,38,38,0.15)",   ring: "rgba(220,38,38,0.5)",    text: "rgb(185,28,28)",    shadow: "0 0 12px rgba(220,38,38,0.55)" },
+};
+const TIER_NAME: Record<VendorTier, string> = {
+  free: "Free", starter: "Starter", pro: "Pro", studio: "Studio",
+};
+
 interface NavItem {
   labelKey: string;
   path: string;
@@ -246,9 +259,26 @@ export function DashboardSidebar({
             <Link to={backPath} aria-label="Vendora — Events, simplified">
               <VendoraLogo size="md" color="currentColor" />
             </Link>
-            <p className="font-label text-muted-foreground mt-2 truncate">
-              {subLabel}
-            </p>
+            {isVendorSide ? (
+              <p className="mt-2 flex items-center gap-1.5 text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+                <span
+                  className="inline-block px-1.5 py-0.5 rounded-full text-[10px] font-semibold tracking-wider"
+                  style={{
+                    background: TIER_CHIP[tier].bg,
+                    color: TIER_CHIP[tier].text,
+                    border: `1px solid ${TIER_CHIP[tier].ring}`,
+                    boxShadow: TIER_CHIP[tier].shadow,
+                  }}
+                >
+                  {TIER_NAME[tier]}
+                </span>
+                <span>plan</span>
+              </p>
+            ) : (
+              <p className="font-label text-muted-foreground mt-2 truncate">
+                {subLabel}
+              </p>
+            )}
           </div>
           <button
             type="button"

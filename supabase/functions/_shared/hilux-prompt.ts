@@ -387,6 +387,20 @@ export async function scoreLead(
     if (!res.ok) {
       const errText = await res.text();
       console.error("[scoreLead] anthropic non-ok", res.status, errText.slice(0, 300));
+      // Audit #12: failures used to vanish from ai_call_usage. Log a
+      // zero-token, success=false row so cost dashboards count the
+      // failure rate alongside the wins.
+      if (meta) {
+        void logClaudeUsage({
+          userId: meta.userId,
+          actionType: `${meta.actionType}_lead_score`,
+          model: MODEL,
+          tokens: { input_tokens: 0, output_tokens: 0, cache_creation_tokens: 0, cache_read_tokens: 0 },
+          refId: meta.refId ?? null,
+          success: false,
+          errorMessage: `anthropic ${res.status}: ${errText.slice(0, 240)}`,
+        });
+      }
       return { score: "unknown", reason: "scoring_api_error" };
     }
     const body = (await res.json()) as any;
