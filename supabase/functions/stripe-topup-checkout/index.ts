@@ -82,29 +82,37 @@ serve(async (req: Request) => {
   // Stripe customer lives on profiles (per-user). Listing's
   // business_name is still pulled from vendor_profiles for the
   // Stripe Customer display name.
+  //
+  // vendorId optional — same fix as stripe-subscription-checkout.
+  // A vendor with no approved listing can still buy a top-up.
   const [{ data: profile }, { data: listing }] = await Promise.all([
     db
       .from("profiles")
-      .select("id, stripe_customer_id")
+      .select("id, stripe_customer_id, display_name")
       .eq("id", userId)
       .maybeSingle(),
-    db
-      .from("vendor_profiles")
-      .select("id, business_name")
-      .eq("id", vendorId)
-      .maybeSingle(),
+    vendorId
+      ? db
+          .from("vendor_profiles")
+          .select("id, business_name")
+          .eq("id", vendorId)
+          .maybeSingle()
+      : Promise.resolve({ data: null as { id: string; business_name: string | null } | null }),
   ]);
   if (!profile) return json({ error: "profile not found" }, 404);
-  if (!listing) return json({ error: "vendor not found" }, 404);
 
   // Top-ups need a Stripe Customer too — webhook resolves the user
   // from the customer id when granting credits.
   let customerId = profile.stripe_customer_id as string | null;
   if (!customerId) {
+    const displayName =
+      (listing as { business_name?: string | null } | null)?.business_name ??
+      (profile as { display_name?: string | null }).display_name ??
+      undefined;
     const customer = await stripe.customers.create({
       email: userEmail ?? undefined,
-      name: listing.business_name ?? undefined,
-      metadata: { user_id: userId, vendor_id: vendorId },
+      name: displayName ?? undefined,
+      metadata: { user_id: userId, vendor_id: vendorId ?? "" },
     });
     customerId = customer.id;
     await db
