@@ -73,12 +73,11 @@ export const vendorNavItems: NavItem[] = [
   { labelKey: "sidebar.vendor.gallery", path: "/vendor/gallery", icon: Images },
   // Subscription — the vendor's Vendora plan + billing.
   { labelKey: "sidebar.vendor.subscription", path: "/vendor/subscription", icon: Crown },
-  // VendoraPay — accept card payments + payouts. Sits in the money
-  // cluster (Subscription / VendoraPay / Usage). Points at the
-  // Integrations page for now since that's where Connect/Disconnect
-  // lives; re-point to /vendor/payments when the Phase 2 dashboard
-  // (balance + transactions) ships.
-  { labelKey: "sidebar.vendor.vendorapay", path: "/vendor/integrations", icon: CreditCard },
+  // VendoraPay — the vendor's money cockpit (status, balance,
+  // transactions). Connect / KYC continuation runs through here too
+  // so vendors never have to leave to set up. Sits in the money
+  // cluster (Subscription / VendoraPay / Usage).
+  { labelKey: "sidebar.vendor.vendorapay", path: "/vendor/payments", icon: CreditCard },
   // Usage — credit balance, ledger, billing portal. Lives next to
   // Subscription so the two billing-adjacent surfaces sit together.
   { labelKey: "sidebar.vendor.usage", path: "/vendor/usage", icon: Gauge },
