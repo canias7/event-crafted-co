@@ -164,9 +164,24 @@ export default function VendorIntegrationsPage() {
       { body: { business_id: vendorId } },
     );
     if (error || !(data as { url?: string })?.url) {
-      toast.error("Couldn't open VendoraPay onboarding", {
-        description: error?.message ?? "Try again in a moment.",
-      });
+      // supabase-js wraps non-2xx as FunctionsHttpError with the
+      // response body on .context. Surface the server's detail so
+      // operators see WHY onboarding bounced instead of the generic
+      // "Edge Function returned a non-2xx status code".
+      let detail = "Try again in a moment.";
+      const ctx = (error as { context?: Response } | null)?.context;
+      if (ctx && typeof ctx.json === "function") {
+        try {
+          const body = await ctx.clone().json();
+          detail = (body?.detail || body?.error || error?.message) ?? detail;
+        } catch {
+          detail = error?.message ?? detail;
+        }
+      } else if (error?.message) {
+        detail = error.message;
+      }
+      console.error("[vendorapay-onboard] failed", { error, data });
+      toast.error("Couldn't open VendoraPay onboarding", { description: detail });
       setActingId(null);
       return;
     }
