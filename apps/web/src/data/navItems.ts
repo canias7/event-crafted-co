@@ -5,6 +5,7 @@ import {
   Gauge,
   Inbox,
   User,
+  Users,
   Settings,
   Sparkles,
   CreditCard,
@@ -47,6 +48,12 @@ export const vendorNavItems: NavItem[] = [
   // (Vendor Home — global feed + composers — removed: vendors land on
   // /vendor/me now, and the global feed lives only on the host side.)
   { labelKey: "sidebar.vendor.inbox", path: "/vendor/inbox", icon: Inbox },
+  // Leads — CRM roll-up of every host who's ever inquired. One row per
+  // host with status / last contact / total budget. Sits next to Inbox
+  // because the two answer adjacent questions ("what's new now" vs
+  // "who do I know"). Click-through deep-links into the latest inquiry
+  // chat, so it's an entry point not a parallel surface.
+  { labelKey: "sidebar.vendor.leads", path: "/vendor/leads", icon: Users },
   // Calendar — single page that surfaces both upcoming appointments
   // (inquiries with event_date set) and the per-day block-out grid for
   // marking dates unavailable.

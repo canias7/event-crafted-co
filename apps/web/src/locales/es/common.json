@@ -183,6 +183,7 @@
     "vendor": {
       "dashboard": "Panel",
       "inbox": "Bandeja",
+      "leads": "Prospectos",
       "messages": "Mensajes",
       "analytics": "Analíticas",
       "calendar": "Calendario",
