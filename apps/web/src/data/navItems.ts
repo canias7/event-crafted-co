@@ -8,7 +8,6 @@ import {
   Users,
   Settings,
   Sparkles,
-  CreditCard,
   Images,
   type LucideIcon,
 } from "lucide-react";
@@ -70,12 +69,8 @@ export const vendorNavItems: NavItem[] = [
   // for now). URL kept as /vendor/ai-superagents so bookmarks and any
   // legacy links keep resolving; only the user-facing label changed.
   { labelKey: "sidebar.vendor.my_space", path: "/vendor/ai-superagents", icon: Sparkles },
-  { labelKey: "sidebar.vendor.pay", path: "/vendor/pay", icon: CreditCard },
   { labelKey: "sidebar.vendor.gallery", path: "/vendor/gallery", icon: Images },
-  // Subscription — the vendor's Vendora plan + billing. Separate
-  // from Vendora Pay (which is the host-payment-processing surface)
-  // because they're different concerns: one is "the vendor pays
-  // Vendora," the other is "hosts pay the vendor."
+  // Subscription — the vendor's Vendora plan + billing.
   { labelKey: "sidebar.vendor.subscription", path: "/vendor/subscription", icon: Crown },
   // Usage — credit balance, ledger, billing portal. Lives next to
   // Subscription so the two billing-adjacent surfaces sit together.
