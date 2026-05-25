@@ -307,10 +307,12 @@ export default function VendorPaymentsPage() {
   }, [refresh]);
 
   const handleConnect = useCallback(async () => {
-    if (!vendorId || connecting) return;
+    if (connecting) return;
     setConnecting(true);
+    // Server auto-creates a vendor_profile if business_id is omitted,
+    // so the connect button works even before the vendor has a listing.
     const { data, error } = await supabase.functions.invoke("vendorapay-onboard", {
-      body: { business_id: vendorId },
+      body: vendorId ? { business_id: vendorId } : {},
     });
     if (error || !(data as { url?: string })?.url) {
       let detail = "Try again in a moment.";
@@ -468,10 +470,10 @@ export default function VendorPaymentsPage() {
             </section>
           ) : null}
 
-          {/* Inline banner when the vendor has no listing yet. The
-              dashboard still renders below with empty/zero data so
-              they get a feel for the product before they create the
-              listing — matches the "verify identity" banner pattern. */}
+          {/* Inline banner when the vendor has no listing yet. Skips
+              the "set up profile" step — the connect handler will
+              auto-create a draft vendor_profile on the server so the
+              user can jump straight to Stripe Express. */}
           {!vendorId && !loading ? (
             <section
               className="rounded-2xl p-5"
@@ -488,15 +490,19 @@ export default function VendorPaymentsPage() {
                   <CreditCard className="w-5 h-5" style={{ color: "#c4541e" }} />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <h2 className="text-base font-semibold">Set up your vendor profile to start using VendoraPay</h2>
+                  <h2 className="text-base font-semibold">Connect VendoraPay to start accepting payments</h2>
                   <p className="text-sm text-muted-foreground mt-0.5">
-                    Payments attach to your vendor listing. Create one first,
-                    then come back to connect your bank.
+                    Verify your identity + bank account with Stripe (3 min).
+                    No need to finish your full vendor profile first.
                   </p>
                 </div>
-                <Button onClick={() => navigate("/vendor/me")} className="rounded-full">
-                  <ExternalLink className="w-4 h-4 mr-1.5" />
-                  Set up profile
+                <Button onClick={handleConnect} disabled={connecting} className="rounded-full">
+                  {connecting ? (
+                    <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />
+                  ) : (
+                    <ExternalLink className="w-4 h-4 mr-1.5" />
+                  )}
+                  Connect VendoraPay
                 </Button>
               </div>
             </section>
