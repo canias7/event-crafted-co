@@ -66,7 +66,10 @@ export const vendorNavItems: NavItem[] = [
   // Three forward-looking tools that used to live under a single
   // "Studio" tab. Each ships as a Coming Soon placeholder for now;
   // sidebar entries exist so the future work has stable URLs.
-  { labelKey: "sidebar.vendor.ai_superagents", path: "/vendor/ai-superagents", icon: Sparkles },
+  // "My Space" — the vendor's personal AI / tools shelf (HILUX + Axion
+  // for now). URL kept as /vendor/ai-superagents so bookmarks and any
+  // legacy links keep resolving; only the user-facing label changed.
+  { labelKey: "sidebar.vendor.my_space", path: "/vendor/ai-superagents", icon: Sparkles },
   { labelKey: "sidebar.vendor.pay", path: "/vendor/pay", icon: CreditCard },
   { labelKey: "sidebar.vendor.gallery", path: "/vendor/gallery", icon: Images },
   // Subscription — the vendor's Vendora plan + billing. Separate
