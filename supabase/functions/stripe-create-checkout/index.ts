@@ -98,12 +98,18 @@ serve(async (req: Request) => {
   });
   const { data: secret } = await dbAdmin
     .from("vendor_payment_secrets")
-    .select("stripe_account_id")
+    .select("stripe_account_id, charges_enabled")
     .eq("vendor_id", proposal.vendor_id)
     .maybeSingle();
-  const stripeAccountId =
-    (secret as { stripe_account_id?: string | null } | null)?.stripe_account_id ?? null;
-  if (!stripeAccountId) {
+  const secretRow = secret as
+    | { stripe_account_id?: string | null; charges_enabled?: boolean | null }
+    | null;
+  const stripeAccountId = secretRow?.stripe_account_id ?? null;
+  // Gate on charges_enabled (set by the account.updated webhook).
+  // stripe_account_id alone just means "vendor clicked Connect" —
+  // KYC may still be pending, and Stripe will reject the checkout
+  // session creation with a confusing 400 if charges aren't enabled.
+  if (!stripeAccountId || !secretRow?.charges_enabled) {
     return json(
       { error: "vendor has not finished Stripe onboarding" },
       400,

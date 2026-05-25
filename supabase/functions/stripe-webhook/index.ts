@@ -509,6 +509,34 @@ serve(async (req: Request) => {
         break;
       }
 
+      case "account.updated": {
+        // Connect onboarding state changes. Stripe fires this when
+        // a vendor finishes (or partially finishes) KYC: charges /
+        // payouts get flipped enabled, details_submitted goes true,
+        // capabilities turn active. We mirror those bools onto
+        // vendor_payment_secrets so the host-pay path can gate on
+        // "actually ready to receive money" instead of "Connect
+        // button was clicked at some point."
+        const account = event.data.object as Stripe.Account;
+        const { error } = await db
+          .from("vendor_payment_secrets")
+          .update({
+            charges_enabled: Boolean(account.charges_enabled),
+            payouts_enabled: Boolean(account.payouts_enabled),
+            details_submitted: Boolean(account.details_submitted),
+            updated_at: new Date().toISOString(),
+          })
+          .eq("stripe_account_id", account.id);
+        if (error) {
+          console.error(
+            "[stripe-webhook] account.updated update failed",
+            account.id,
+            error.code,
+          );
+        }
+        break;
+      }
+
       default:
         break;
     }
