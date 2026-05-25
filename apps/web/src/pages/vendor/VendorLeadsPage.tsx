@@ -25,6 +25,7 @@ import { Filter, ImagePlus, Inbox, Plus, Search } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useRealtime } from "@/lib/realtime";
+import { BusinessSubNav } from "@/components/shared/BusinessSubNav";
 import { DashboardSidebar } from "@/components/shared/DashboardSidebar";
 import { MobileNav } from "@/components/shared/MobileNav";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
@@ -319,15 +320,22 @@ export default function VendorLeadsPage() {
     <div className="flex min-h-screen vendor-canvas">
       <DashboardSidebar items={navItems} title="Vendor Portal" backPath="/" />
       <main id="main-content" className="flex-1 min-w-0 pb-20 lg:pb-0">
-        <div className="backdrop-blur-sm px-4 md:px-8 py-5 sticky top-0 z-40 flex items-start justify-between gap-4">
-          <div>
-            <h1 className="font-editorial text-3xl">Leads</h1>
-            <p className="text-sm text-muted-foreground">
-              Every host who's reached out — past, present, and pipeline.
-            </p>
+        <div className="backdrop-blur-sm px-4 md:px-8 py-5 sticky top-0 z-40">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <h1 className="font-editorial text-3xl">My Vendora</h1>
+              <p className="text-sm text-muted-foreground">
+                Every host who's reached out — past, present, and pipeline.
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <NotificationBell variant="light" />
+            </div>
           </div>
-          <div className="flex items-center gap-2">
-            <NotificationBell variant="light" />
+          {/* Sibling-page strip so leads/calendar/payments feel like
+              one surface even though they're separate routes. */}
+          <div className="mt-4">
+            <BusinessSubNav />
           </div>
         </div>
 

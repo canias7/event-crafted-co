@@ -39,6 +39,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useVendorPlan, type VendorTier } from "@/hooks/useVendorPlan";
+import { BusinessSubNav } from "@/components/shared/BusinessSubNav";
 import { DashboardSidebar } from "@/components/shared/DashboardSidebar";
 import { MobileNav } from "@/components/shared/MobileNav";
 import { Button } from "@/components/ui/button";
@@ -380,14 +381,6 @@ export default function VendorPaymentsPage() {
       <DashboardSidebar items={vendorNavItems} title="Vendor Portal" backPath="/settings" />
       <main className="flex-1 pb-20 lg:pb-0">
         <div className="backdrop-blur-sm px-4 md:px-8 py-5 sticky top-0 z-40">
-          <button
-            type="button"
-            onClick={() => navigate("/vendor/me")}
-            className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors mb-2"
-          >
-            <ChevronLeft className="w-3 h-3" />
-            Profile
-          </button>
           <div className="flex items-center justify-between gap-4 flex-wrap">
             <div>
               <h1 className="font-editorial text-3xl">VendoraPay</h1>
@@ -411,7 +404,13 @@ export default function VendorPaymentsPage() {
             </Button>
           </div>
 
-          {/* Tab strip */}
+          {/* Sibling-page strip (My Vendora / Calendar / VendoraPay)
+              so the three feel like one surface. */}
+          <div className="mt-4">
+            <BusinessSubNav />
+          </div>
+
+          {/* Internal VendoraPay tab strip (Overview / Payments / etc.) */}
           <nav className="mt-4 -mb-px flex gap-1 overflow-x-auto">
             {TABS.map((t) => {
               const active = tab === t.id;

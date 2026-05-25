@@ -26,6 +26,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useRealtime } from "@/lib/realtime";
 import { useAuth } from "@/hooks/useAuth";
+import { BusinessSubNav } from "@/components/shared/BusinessSubNav";
 import { DashboardSidebar } from "@/components/shared/DashboardSidebar";
 import { MobileNav } from "@/components/shared/MobileNav";
 import {
@@ -585,15 +586,20 @@ export default function VendorAppointmentsPage() {
       <DashboardSidebar items={navItems} title="Vendor Portal" backPath="/" />
 
       <main id="main-content" className="flex-1 pb-20 lg:pb-0">
-        <div className="backdrop-blur-sm px-4 md:px-8 py-5 sticky top-0 z-40 flex items-start justify-between gap-4">
-          <div>
-            <h1 className="font-editorial text-3xl">Calendar</h1>
-            <p className="text-sm text-muted-foreground">
-              Manage your bookings &amp; availability
-            </p>
+        <div className="backdrop-blur-sm px-4 md:px-8 py-5 sticky top-0 z-40">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <h1 className="font-editorial text-3xl">Calendar</h1>
+              <p className="text-sm text-muted-foreground">
+                Manage your bookings &amp; availability
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <NotificationBell variant="light" />
+            </div>
           </div>
-          <div className="flex items-center gap-2">
-            <NotificationBell variant="light" />
+          <div className="mt-4">
+            <BusinessSubNav />
           </div>
         </div>
 

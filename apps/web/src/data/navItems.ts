@@ -45,14 +45,12 @@ export const customerNavItems: NavItem[] = [
 export const vendorNavItems: NavItem[] = [
   // Inbox hub — sub-tabs: Inquiries (default), Hosts (DMs), Partners.
   { labelKey: "sidebar.vendor.inbox", path: "/vendor/inbox", icon: Inbox },
-  // ---- Business operations cluster ----
-  // My Vendora / Calendar / VendoraPay all answer the day-to-day
-  // "what's happening with my business" question. Grouped together
-  // so the vendor can flip between leads, bookings, and money in
-  // adjacent clicks.
+  // My Vendora — single sidebar entry for the business-operations
+  // cluster. Lands on /vendor/leads, and from there a top sub-nav
+  // (<BusinessSubNav>) lets the vendor flip to Calendar or VendoraPay
+  // without leaving the section. Keeps the rail short while making
+  // the three feel like one unified tab.
   { labelKey: "sidebar.vendor.leads", path: "/vendor/leads", icon: Users },
-  { labelKey: "sidebar.vendor.calendar", path: "/vendor/appointments", icon: CalendarDays },
-  { labelKey: "sidebar.vendor.vendorapay", path: "/vendor/payments", icon: CreditCard },
   // ---- Identity + creative tools ----
   { labelKey: "sidebar.vendor.my_profile", path: "/vendor/me", icon: User },
   { labelKey: "sidebar.vendor.my_space", path: "/vendor/ai-superagents", icon: Sparkles },
