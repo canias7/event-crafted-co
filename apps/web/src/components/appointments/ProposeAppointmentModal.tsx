@@ -113,11 +113,49 @@ export function ProposeAppointmentModal({
       proposed_by: proposedBy,
       status: "proposed",
     });
-    setSubmitting(false);
     if (error) {
+      setSubmitting(false);
       toast.error(error.message);
       return;
     }
+
+    // Drop a system-style chat message into the thread so the OTHER
+    // side actually sees the appointment was proposed. Without this
+    // step the appointment row exists but the host's chat view has
+    // no UI for it — was silent on the host side until now.
+    if (inquiryId) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: threadId } = await (supabase as any).rpc(
+        "ensure_inquiry_thread",
+        { p_inquiry_id: inquiryId },
+      );
+      if (threadId) {
+        const dt = new Date(scheduledAt);
+        const when = dt.toLocaleString(undefined, {
+          weekday: "short",
+          month: "short",
+          day: "numeric",
+          hour: "numeric",
+          minute: "2-digit",
+        });
+        const kindLabel =
+          KIND_OPTIONS.find((o) => o.value === kind)?.label.toLowerCase() ??
+          kind;
+        const parts = [
+          `📅 Proposed a ${duration}-min ${kindLabel} for ${when}`,
+        ];
+        if (location.trim()) parts.push(`Where: ${location.trim()}`);
+        if (notes.trim()) parts.push(`Notes: ${notes.trim()}`);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        await (supabase as any).from("direct_messages").insert({
+          thread_id: threadId,
+          sender_role: proposedBy,
+          body: parts.join("\n\n"),
+        });
+      }
+    }
+
+    setSubmitting(false);
     toast.success("Appointment proposed");
     onOpenChange(false);
     onSuccess?.();

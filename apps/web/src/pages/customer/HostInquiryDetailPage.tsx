@@ -1254,17 +1254,17 @@ export default function HostInquiryDetailPage() {
       (inquiry.status === "lost" ||
         inquiry.status === "expired" ||
         inquiry.status === "cancelled") ? (
-        <div className="sticky bottom-20 lg:bottom-0 px-4 md:px-6 py-3 backdrop-blur-md text-center text-sm text-muted-foreground"
+        <div className="sticky bottom-20 lg:bottom-0 px-4 md:px-6 py-3 backdrop-blur-md text-center text-sm font-medium text-muted-foreground"
           style={{
             background: "rgba(255,253,250,0.92)",
             borderTop: "0.5px solid rgba(255,138,76,0.18)",
           }}
         >
           {inquiry.status === "lost"
-            ? "This inquiry is closed."
+            ? "Conversation ended."
             : inquiry.status === "expired"
-              ? "This inquiry expired and is no longer accepting messages."
-              : "This inquiry was cancelled."}
+              ? "Conversation ended — inquiry expired."
+              : "Conversation ended — inquiry cancelled."}
         </div>
       ) : (
       <div

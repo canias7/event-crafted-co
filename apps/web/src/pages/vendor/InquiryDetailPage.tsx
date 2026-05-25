@@ -63,7 +63,6 @@ import {
   type Proposal,
 } from "@/components/proposals/ProposalCard";
 import { ProposalShareToggle } from "@/components/proposals/ProposalShareToggle";
-import { ProposeAppointmentModal } from "@/components/appointments/ProposeAppointmentModal";
 import { MessageAttachments } from "@/components/messages/MessageAttachments";
 import {
   uploadAttachments,
@@ -72,7 +71,7 @@ import {
   MAX_FILES,
   type MessageAttachment,
 } from "@/lib/messageAttachments";
-import { FileText, Paperclip, CalendarDays, Eye } from "lucide-react";
+import { FileText, Paperclip, Eye } from "lucide-react";
 import { toast } from "sonner";
 
 interface Inquiry {
@@ -301,7 +300,6 @@ export default function InquiryDetailPage() {
   const [review, setReview] = useState<ReviewWithResponse | null>(null);
   const [proposals, setProposals] = useState<Proposal[]>([]);
   const [proposalModalOpen, setProposalModalOpen] = useState(false);
-  const [appointmentModalOpen, setAppointmentModalOpen] = useState(false);
   const [pinLocationOpen, setPinLocationOpen] = useState(false);
   // Inquiry preview sheet — opened from the "..." menu, shows the
   // full original inquiry on a blurred backdrop. Tap the close arrow
@@ -1285,6 +1283,21 @@ export default function InquiryDetailPage() {
             </div>
           ))}
 
+          {/* Off-platform booking handshake. Now rendered ABOVE the
+              messages stream so it doesn't pop below newer chat
+              messages — was previously at the bottom which felt
+              out of order when the vendor confirmed booking and then
+              sent a follow-up chat message. Hidden when an accepted
+              proposal exists. */}
+          {inquiry ? (
+            <BookingConfirmationCard
+              inquiryId={inquiry.id}
+              selfRole="vendor"
+              otherPartyName={hostName}
+              hasAcceptedProposal={proposals.some((p) => p.status === "accepted")}
+            />
+          ) : null}
+
           {/* Messages. The "No messages yet" empty state only fires
               when there's genuinely no activity in the thread —
               proposals + intake_answers count as activity, so a
@@ -1564,6 +1577,21 @@ export default function InquiryDetailPage() {
             </div>
           )}
 
+          {/* In-thread "Conversation ended" marker — sits at the
+              bottom of the message stream so the chat history visually
+              terminates when the inquiry is closed. The sticky banner
+              below the chat carries the same copy for accessibility +
+              focus. */}
+          {inquiry.status === "lost" ||
+          inquiry.status === "expired" ||
+          inquiry.status === "cancelled" ? (
+            <div className="flex items-center justify-center py-4">
+              <span className="inline-flex items-center text-[11px] font-semibold uppercase tracking-wider text-muted-foreground bg-background/80 backdrop-blur-sm rounded-full px-3 py-1 border border-border/40 shadow-sm">
+                Conversation ended
+              </span>
+            </div>
+          ) : null}
+
           <div ref={messagesEndRef} aria-hidden />
         </div>
       </div>
@@ -1573,17 +1601,17 @@ export default function InquiryDetailPage() {
       inquiry.status === "expired" ||
       inquiry.status === "cancelled" ? (
         <div
-          className="sticky bottom-0 px-4 md:px-6 py-3 backdrop-blur-md text-center text-sm text-muted-foreground"
+          className="sticky bottom-0 px-4 md:px-6 py-3 backdrop-blur-md text-center text-sm font-medium text-muted-foreground"
           style={{
             background: "rgba(255,253,250,0.92)",
             borderTop: "0.5px solid rgba(255,138,76,0.18)",
           }}
         >
           {inquiry.status === "lost"
-            ? "This inquiry is closed."
+            ? "Conversation ended."
             : inquiry.status === "expired"
-              ? "This inquiry expired and is no longer accepting messages."
-              : "This inquiry was cancelled."}
+              ? "Conversation ended — inquiry expired."
+              : "Conversation ended — inquiry cancelled."}
         </div>
       ) : (
       <div
@@ -1619,14 +1647,6 @@ export default function InquiryDetailPage() {
             >
               <FileText className="w-3.5 h-3.5 text-foreground/70" />
               Send quote
-            </button>
-            <button
-              type="button"
-              onClick={() => setAppointmentModalOpen(true)}
-              className="inline-flex items-center gap-1.5 text-xs font-medium bg-background/95 border border-border/40 shadow-sm rounded-full px-3 py-1.5 hover:bg-background"
-            >
-              <CalendarDays className="w-3.5 h-3.5 text-foreground/70" />
-              Share availability
             </button>
             <button
               type="button"
@@ -1878,14 +1898,6 @@ export default function InquiryDetailPage() {
               />
             </Suspense>
           )}
-          <ProposeAppointmentModal
-            open={appointmentModalOpen}
-            onOpenChange={setAppointmentModalOpen}
-            inquiryId={inquiry.id}
-            vendorId={inquiry.vendor_id}
-            hostId={inquiry.host_id}
-            proposedBy="vendor"
-          />
           <PinLocationDialog
             open={pinLocationOpen}
             onOpenChange={setPinLocationOpen}
