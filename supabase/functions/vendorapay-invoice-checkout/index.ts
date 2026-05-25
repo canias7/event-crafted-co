@@ -77,11 +77,16 @@ serve(async (req) => {
 
     const { data: vp } = await admin
       .from("vendor_profiles")
-      .select("subscription_tier, business_name")
+      .select("business_name")
       .eq("id", inv.vendor_id)
       .maybeSingle();
-    const vpRow = vp as { subscription_tier?: string | null; business_name?: string | null } | null;
-    const tier = normalizeTier(vpRow?.subscription_tier);
+    const vpRow = vp as { business_name?: string | null } | null;
+    // subscription_tier lives on profiles, not vendor_profiles (per
+    // migration 20260524000000). Use the RPC that joins them.
+    const { data: tierRaw } = await admin.rpc("get_vendor_subscription_tier", {
+      p_vendor_id: inv.vendor_id,
+    });
+    const tier = normalizeTier(tierRaw as string | null);
     const feeCents = computePlatformFeeCents(tier, inv.total_cents as number);
 
     const items = (inv.line_items as unknown as LineItem[]) ?? [];

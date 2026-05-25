@@ -121,17 +121,14 @@ serve(async (req) => {
             : 0);
     if (amountCents < 50) return json(400, { error: "amount too small" });
 
-    // Look up the vendor's subscription tier so VendoraPay's cut
-    // matches the per-tier fee schedule (free/starter 5% all-in,
-    // pro 4%, studio = Stripe pass-through with no Vendora fee).
-    const { data: vp } = await admin
-      .from("vendor_profiles")
-      .select("subscription_tier")
-      .eq("id", proposal.vendor_id)
-      .maybeSingle();
-    const tier = normalizeTier(
-      (vp as { subscription_tier?: string | null } | null)?.subscription_tier,
-    );
+    // Look up the vendor's subscription tier via the RPC that joins
+    // vendor_profiles -> profiles. (subscription_tier lives on
+    // profiles per migration 20260524000000; the old vendor_profiles
+    // column is stale.)
+    const { data: tierRaw } = await admin.rpc("get_vendor_subscription_tier", {
+      p_vendor_id: proposal.vendor_id,
+    });
+    const tier = normalizeTier(tierRaw as string | null);
     const applicationFeeCents = computePlatformFeeCents(tier, amountCents);
 
     const result = await charge({

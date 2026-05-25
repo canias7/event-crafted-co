@@ -59,6 +59,12 @@ interface Transaction {
   status: string;
   created_at: string;
   description: string | null;
+  /**
+   * PaymentIntent id when the underlying source is a charge.
+   * Required for refunds — `id` is a balance-txn id which
+   * Stripe's refunds.create rejects.
+   */
+  payment_intent_id: string | null;
 }
 
 interface Payout {
@@ -599,7 +605,11 @@ function TransactionsTab({
         </div>
         {transactions.map((t) => {
           const meta = kindLabel(t.kind);
-          const canRefund = (t.kind === "charge" || t.kind === "payment") && t.amount_cents > 0;
+          // Only refund actual card charges that resolved to a PI.
+          // Adjustments / fees / payouts don't refund through this
+          // flow, and a charge without an exposed PI id (legacy or
+          // not-yet-resolved) can't be refunded either.
+          const canRefund = t.kind === "charge" && t.amount_cents > 0 && Boolean(t.payment_intent_id);
           return (
             <div
               key={t.id}
@@ -674,15 +684,12 @@ function RefundModal({
   const [reason, setReason] = useState<"requested_by_customer" | "duplicate" | "fraudulent">("requested_by_customer");
   const [submitting, setSubmitting] = useState(false);
 
-  // Balance transactions in the list expose the balance txn id, not
-  // the PI id. We pass it as payment_intent_id — the refund fn handles
-  // PI ids; balance-txn-ids start with "txn_" or "py_" and won't work.
-  // Stripe's listTransactions IDs starting with "txn_" map to a charge
-  // via `source` — but our simplified Transaction type doesn't expose
-  // the source. For now we pass tx.id and let Stripe surface the right
-  // error if it's not a PI.
+  // Use the resolved PI id from listTransactions (server-side
+  // expansion of balance-txn.source.payment_intent). The Transaction
+  // .id field is a balance-txn id (txn_*), which refunds.create
+  // rejects with resource_missing.
   const handle = useCallback(async () => {
-    if (!vendorId || submitting) return;
+    if (!vendorId || submitting || !tx.payment_intent_id) return;
     const cents = Math.round(parseFloat(amountDollars) * 100);
     if (!Number.isFinite(cents) || cents < 50 || cents > tx.amount_cents) {
       toast.error("Enter a valid amount up to the original charge.");
@@ -692,7 +699,7 @@ function RefundModal({
     const { data, error } = await supabase.functions.invoke("vendorapay-refund", {
       body: {
         business_id: vendorId,
-        payment_intent_id: tx.id,
+        payment_intent_id: tx.payment_intent_id,
         amount_cents: cents === tx.amount_cents ? undefined : cents,
         reason,
       },

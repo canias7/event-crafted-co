@@ -106,6 +106,9 @@ serve(async (req: Request) => {
         let descriptionForNotify = pi.description ?? "VendoraPay charge";
         let hostEmailForNotify: string | null = pi.receipt_email ?? null;
 
+        // Else-if chain: one PaymentIntent maps to exactly one
+        // record. Without this guard a future double-tagged PI
+        // (proposal_id + payment_link_id) would credit both records.
         if (proposalId) {
           const nextStatus = mode === "deposit" ? "deposit_paid" : "paid_in_full";
           const { data: prop } = await db
@@ -121,8 +124,7 @@ serve(async (req: Request) => {
             const { data: userRow } = await db.auth.admin.getUserById(propRow.host_id);
             hostEmailForNotify = userRow?.user?.email ?? null;
           }
-        }
-        if (paymentLinkId) {
+        } else if (paymentLinkId) {
           const { data: linkRow } = await db
             .from("payment_links")
             .update({
@@ -138,8 +140,7 @@ serve(async (req: Request) => {
           const lRow = linkRow as { vendor_id?: string; title?: string } | null;
           if (lRow?.vendor_id) vendorIdForNotify = lRow.vendor_id;
           if (lRow?.title) descriptionForNotify = lRow.title;
-        }
-        if (invoiceId) {
+        } else if (invoiceId) {
           const { data: invRow } = await db
             .from("invoices")
             .update({
@@ -212,22 +213,24 @@ serve(async (req: Request) => {
           amount_refunded: number;
         };
         if (!ch.payment_intent) break;
-        // Find the proposal we charged earlier (we stamped the
-        // PaymentIntent id onto stripe_checkout_session_id at
-        // charge time — same column, different semantic).
-        const { data: proposal } = await db
-          .from("proposals")
-          .select("id, payment_status")
-          .eq("stripe_checkout_session_id", ch.payment_intent)
-          .maybeSingle();
-        if (!proposal) break;
         const isFullRefund = ch.amount_refunded >= ch.amount;
+        const nextStatus = isFullRefund ? "refunded" : "partial_refund";
+
+        // Try each of the three record types — at most one should
+        // match because the PI is uniquely owned. Each branch is
+        // a no-op if the row doesn't exist.
         await db
           .from("proposals")
-          .update({
-            payment_status: isFullRefund ? "refunded" : "partial_refund",
-          })
-          .eq("id", proposal.id);
+          .update({ payment_status: nextStatus })
+          .eq("stripe_checkout_session_id", ch.payment_intent);
+        await db
+          .from("payment_links")
+          .update({ status: nextStatus, updated_at: new Date().toISOString() })
+          .eq("paid_payment_intent_id", ch.payment_intent);
+        await db
+          .from("invoices")
+          .update({ status: nextStatus, updated_at: new Date().toISOString() })
+          .eq("paid_payment_intent_id", ch.payment_intent);
         break;
       }
 
@@ -248,10 +251,12 @@ serve(async (req: Request) => {
       }
     }
   } catch (err) {
-    console.error("[vendorapay-webhook] handler error", event.kind, err);
-    // Roll back the dedupe row so the provider retries.
-    await db.from("stripe_events").delete().eq("id", event.id);
-    return new Response("handler error", { status: 500 });
+    // Don't roll back the dedupe row — partial writes in this
+    // handler have already committed, so a Stripe retry would
+    // re-run the work and fire duplicate notification emails.
+    // Log loud, ack 200, leave it to ops to reconcile manually.
+    console.error("[vendorapay-webhook] handler error (NOT retried)", event.kind, event.id, err);
+    return new Response("ok (partial: handler error)", { status: 200 });
   }
 
   return new Response("ok", { status: 200 });
