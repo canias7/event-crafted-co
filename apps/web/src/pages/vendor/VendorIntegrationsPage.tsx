@@ -38,7 +38,7 @@ import { Input } from "@/components/ui/input";
 import { vendorNavItems } from "@/data/navItems";
 import { VendoraMcpPanel } from "@/components/super-agents/VendoraMcpPanel";
 
-type ConnectorKind = "mcp" | "stripe_connect" | "handle";
+type ConnectorKind = "mcp" | "stripe_connect" | "stripe_mcp" | "handle";
 type PaymentHandleKey = "square" | "paypal" | "venmo" | "cashapp" | "zelle";
 
 interface BaseConnector {
@@ -54,6 +54,12 @@ interface McpConnector extends BaseConnector {
 }
 interface StripeConnector extends BaseConnector {
   kind: "stripe_connect";
+}
+interface StripeMcpConnector extends BaseConnector {
+  // "Stripe AI" — vendor pastes a Stripe Restricted API key; we
+  // forward it to Anthropic's mcp_servers parameter so My Space can
+  // call any Stripe API on the vendor's behalf.
+  kind: "stripe_mcp";
 }
 interface HandleConnector extends BaseConnector {
   kind: "handle";
@@ -72,7 +78,11 @@ interface HandleConnector extends BaseConnector {
   toUrl?: (handle: string) => string | null;
 }
 
-type Connector = McpConnector | StripeConnector | HandleConnector;
+type Connector =
+  | McpConnector
+  | StripeConnector
+  | StripeMcpConnector
+  | HandleConnector;
 
 function BrandMark({
   children,
@@ -114,6 +124,19 @@ const CONNECTORS: Connector[] = [
       </BrandMark>
     ),
     kind: "mcp",
+  },
+  {
+    id: "stripe-mcp",
+    name: "Stripe AI",
+    category: "AI assistants",
+    description:
+      "Let My Space call Stripe on your behalf — balance, charges, refunds, payment links, invoices. Read or write, scoped to whatever your Stripe restricted key allows.",
+    brand: (
+      <BrandMark bg="#635bff">
+        <span className="text-white font-bold text-lg tracking-tight">S</span>
+      </BrandMark>
+    ),
+    kind: "stripe_mcp",
   },
   {
     id: "stripe",
@@ -253,12 +276,77 @@ export default function VendorIntegrationsPage() {
 
   const [stripeConnected, setStripeConnected] = useState(false);
   const [handles, setHandles] = useState<HandleMap>({});
+  // Stripe MCP (AI access) — separate from Stripe Connect. Read via
+  // the gated get_my_stripe_mcp_status RPC; the actual key value
+  // never reaches the client.
+  const [stripeMcpConnected, setStripeMcpConnected] = useState(false);
+  const [stripeMcpLast4, setStripeMcpLast4] = useState<string | null>(null);
   // Start collapsed — every card (including the Vendora MCP / Claude
   // panel) renders as just the logo + Manage button. Clicking expands.
   // The Claude panel used to default-expanded, which pushed the rest
   // of the connector grid below the fold.
   const [expanded, setExpanded] = useState<string | null>(null);
   const [actingId, setActingId] = useState<string | null>(null);
+
+  // Stripe MCP status — fetched once on mount, refreshed after
+  // connect/disconnect.
+  const refreshStripeMcpStatus = useCallback(async () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data } = await (supabase as any).rpc("get_my_stripe_mcp_status");
+    const row = data as {
+      connected?: boolean;
+      last4?: string | null;
+    } | null;
+    setStripeMcpConnected(Boolean(row?.connected));
+    setStripeMcpLast4(row?.last4 ?? null);
+  }, []);
+  useEffect(() => {
+    void refreshStripeMcpStatus();
+  }, [refreshStripeMcpStatus]);
+
+  const handleStripeMcpConnect = useCallback(
+    async (apiKey: string) => {
+      if (actingId) return;
+      setActingId("stripe-mcp");
+      const { data, error } = await supabase.functions.invoke(
+        "vendor-stripe-mcp-connect",
+        { body: { api_key: apiKey } },
+      );
+      setActingId(null);
+      const result = data as
+        | { connected?: boolean; last4?: string; error?: string; detail?: string }
+        | null;
+      if (error || result?.error) {
+        toast.error("Couldn't connect Stripe AI", {
+          description:
+            result?.detail ?? error?.message ?? "Try again in a moment.",
+        });
+        return;
+      }
+      await refreshStripeMcpStatus();
+      setExpanded(null);
+      toast.success("Stripe AI connected", {
+        description: `My Space can now call your Stripe account · ending in ${result?.last4 ?? "••••"}.`,
+      });
+    },
+    [actingId, refreshStripeMcpStatus],
+  );
+
+  const handleStripeMcpDisconnect = useCallback(async () => {
+    if (actingId) return;
+    setActingId("stripe-mcp");
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error } = await (supabase as any).rpc(
+      "disconnect_my_stripe_mcp",
+    );
+    setActingId(null);
+    if (error) {
+      toast.error("Couldn't disconnect", { description: error.message });
+      return;
+    }
+    await refreshStripeMcpStatus();
+    toast.success("Stripe AI disconnected");
+  }, [actingId, refreshStripeMcpStatus]);
 
   useEffect(() => {
     if (!vendorId) return;
@@ -345,6 +433,9 @@ export default function VendorIntegrationsPage() {
     if (c.kind === "stripe_connect") {
       return stripeConnected ? "connected" : "available";
     }
+    if (c.kind === "stripe_mcp") {
+      return stripeMcpConnected ? "connected" : "available";
+    }
     return handles[c.handleKey] ? "connected" : "available";
   }
 
@@ -421,6 +512,15 @@ export default function VendorIntegrationsPage() {
                         <div className="border-t border-foreground/10 p-4 md:p-5">
                           <VendoraMcpPanel />
                         </div>
+                      ) : null}
+                      {isExpanded && c.kind === "stripe_mcp" ? (
+                        <StripeMcpEditor
+                          connected={stripeMcpConnected}
+                          last4={stripeMcpLast4}
+                          acting={actingId === "stripe-mcp"}
+                          onConnect={handleStripeMcpConnect}
+                          onDisconnect={handleStripeMcpDisconnect}
+                        />
                       ) : null}
                       {isExpanded && c.kind === "handle" ? (
                         <HandleEditor
@@ -504,6 +604,18 @@ function ConnectorActionButton({
       </Button>
     );
   }
+  if (connector.kind === "stripe_mcp") {
+    return (
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={onExpand}
+        className="rounded-full"
+      >
+        {expanded ? "Hide" : status === "connected" ? "Manage" : "Connect"}
+      </Button>
+    );
+  }
   return (
     <Button
       variant="outline"
@@ -513,6 +625,108 @@ function ConnectorActionButton({
     >
       {expanded ? "Hide" : status === "connected" ? "Edit" : "Add"}
     </Button>
+  );
+}
+
+function StripeMcpEditor({
+  connected,
+  last4,
+  acting,
+  onConnect,
+  onDisconnect,
+}: {
+  connected: boolean;
+  last4: string | null;
+  acting: boolean;
+  onConnect: (apiKey: string) => Promise<void>;
+  onDisconnect: () => Promise<void>;
+}) {
+  const [draft, setDraft] = useState("");
+  return (
+    <div className="border-t border-foreground/10 p-4 md:p-5 space-y-4">
+      {connected ? (
+        <div className="space-y-3">
+          <div className="flex items-center justify-between gap-3">
+            <div className="min-w-0">
+              <p className="text-sm font-medium text-foreground">
+                Connected
+              </p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Restricted key ending in <span className="font-mono">{last4 ?? "••••"}</span>. My Space can now call your Stripe account for any operation this key has scopes for.
+              </p>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              className="rounded-full text-destructive hover:text-destructive"
+              onClick={() => void onDisconnect()}
+              disabled={acting}
+            >
+              {acting ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              ) : (
+                "Disconnect"
+              )}
+            </Button>
+          </div>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          <div className="text-xs text-muted-foreground leading-relaxed space-y-2">
+            <p>
+              <strong className="text-foreground">How to set this up:</strong>
+            </p>
+            <ol className="list-decimal pl-5 space-y-1">
+              <li>
+                Go to{" "}
+                <a
+                  href="https://dashboard.stripe.com/apikeys/create?name=Vendora+My+Space&permissions[]=rak_balance_read&permissions[]=rak_charge_read&permissions[]=rak_charge_write&permissions[]=rak_customer_read&permissions[]=rak_customer_write&permissions[]=rak_invoice_read&permissions[]=rak_invoice_write&permissions[]=rak_payment_link_write&permissions[]=rak_refund_write&permissions[]=rak_subscription_read&permissions[]=rak_subscription_write"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="underline text-foreground hover:text-[#c4541e]"
+                >
+                  Stripe Dashboard → Create restricted key
+                </a>
+                {" "}(pre-filled with sensible AI scopes).
+              </li>
+              <li>Copy the key (starts with <span className="font-mono">rk_live_</span> or <span className="font-mono">rk_test_</span>).</li>
+              <li>Paste it below and Connect.</li>
+            </ol>
+            <p>
+              The key never leaves Vendora's server. You can revoke it anytime in Stripe.
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <Input
+              type="password"
+              autoComplete="off"
+              value={draft}
+              onChange={(e) => setDraft(e.target.value)}
+              placeholder="rk_live_…"
+              className="font-mono text-sm flex-1"
+              disabled={acting}
+            />
+            <Button
+              size="sm"
+              className="rounded-full shrink-0"
+              onClick={async () => {
+                const v = draft.trim();
+                if (!v) return;
+                await onConnect(v);
+                setDraft("");
+              }}
+              disabled={acting || draft.trim().length === 0}
+            >
+              {acting ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              ) : (
+                "Connect"
+              )}
+            </Button>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
 
