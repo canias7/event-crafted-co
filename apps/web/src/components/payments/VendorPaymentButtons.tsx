@@ -54,6 +54,45 @@ function stripDollar(s: string) {
   return s.replace(/^\$+/, "");
 }
 
+// Strip URL-unsafe + path-bumping chars from a handle. Used when
+// constructing service-deep-link URLs from raw vendor input so
+// e.g. a vendor can't enter "evil/path?injected" as their Venmo
+// handle and have it land hosts somewhere unexpected. Keeps
+// letters, digits, dot, underscore, hyphen — covers every legit
+// Venmo / Cash App / PayPal username pattern.
+function sanitizeHandleSlug(s: string): string {
+  return s.replace(/[^a-zA-Z0-9_.\-]/g, "");
+}
+
+// Whitelist of payment-processor hostnames a vendor is allowed to
+// pass through as a raw URL. Prevents vendors from typing
+// "https://my-phishing-site.example" into PayPal / Square and
+// having the host's Pay button send them there.
+const ALLOWED_PAYMENT_HOSTS: Record<string, RegExp[]> = {
+  paypal: [/^paypal\.me$/i, /^www\.paypal\.com$/i, /^paypal\.com$/i],
+  square: [/^square\.link$/i, /^squareup\.com$/i, /^cash\.app$/i],
+};
+
+function safeUrlFor(
+  serviceKey: keyof typeof ALLOWED_PAYMENT_HOSTS,
+  raw: string,
+): string | null {
+  let parsed: URL;
+  try {
+    parsed = new URL(raw);
+  } catch {
+    return null;
+  }
+  if (parsed.protocol !== "https:" && parsed.protocol !== "http:") {
+    return null;
+  }
+  const allowed = ALLOWED_PAYMENT_HOSTS[serviceKey] ?? [];
+  if (!allowed.some((re) => re.test(parsed.host))) return null;
+  // Force https — http on a payments processor is wrong anyway.
+  parsed.protocol = "https:";
+  return parsed.toString();
+}
+
 function buildButtons(info: VendorPaymentInfo): ButtonSpec[] {
   const out: ButtonSpec[] = [];
   const h = info.payment_handles ?? {};
@@ -69,11 +108,14 @@ function buildButtons(info: VendorPaymentInfo): ButtonSpec[] {
 
   if (h.square) {
     const s = h.square.trim();
-    const href = /^https?:\/\//i.test(s)
-      ? s
-      : /^square\.link\//i.test(s)
-        ? `https://${s}`
-        : undefined;
+    let href: string | undefined;
+    if (/^https?:\/\//i.test(s)) {
+      // Vendor entered a full URL. Pass through only if it points
+      // at a real Square host.
+      href = safeUrlFor("square", s) ?? undefined;
+    } else if (/^square\.link\//i.test(s)) {
+      href = safeUrlFor("square", `https://${s}`) ?? undefined;
+    }
     out.push({
       key: "square",
       label: "Pay with Square",
@@ -88,10 +130,18 @@ function buildButtons(info: VendorPaymentInfo): ButtonSpec[] {
   if (h.paypal) {
     const p = h.paypal.trim();
     let href: string | undefined;
-    if (/^https?:\/\//i.test(p)) href = p;
-    else if (/^paypal\.me\//i.test(p)) href = `https://${p}`;
-    else if (/@/.test(p))
-      href = `https://www.paypal.com/paypalme/${p.split("@")[0]}`;
+    if (/^https?:\/\//i.test(p)) {
+      href = safeUrlFor("paypal", p) ?? undefined;
+    } else if (/^paypal\.me\//i.test(p)) {
+      href = safeUrlFor("paypal", `https://${p}`) ?? undefined;
+    } else if (/@/.test(p)) {
+      // Vendor entered an email. PayPal.me handles are typically
+      // the username portion; sanitize the slug to letters/digits
+      // only so a clever email like "foo'><script@x" can't
+      // smuggle anything into the constructed URL.
+      const slug = sanitizeHandleSlug(p.split("@")[0]);
+      if (slug) href = `https://www.paypal.com/paypalme/${slug}`;
+    }
     out.push({
       key: "paypal",
       label: "Pay with PayPal",
@@ -104,25 +154,29 @@ function buildButtons(info: VendorPaymentInfo): ButtonSpec[] {
   }
 
   if (h.venmo) {
-    const v = stripAt(h.venmo.trim());
-    out.push({
-      key: "venmo",
-      label: `Pay on Venmo @${v}`,
-      bg: "#3D95CE",
-      fg: "#ffffff",
-      href: `https://venmo.com/${v}`,
-    });
+    const v = sanitizeHandleSlug(stripAt(h.venmo.trim()));
+    if (v) {
+      out.push({
+        key: "venmo",
+        label: `Pay on Venmo @${v}`,
+        bg: "#3D95CE",
+        fg: "#ffffff",
+        href: `https://venmo.com/${v}`,
+      });
+    }
   }
 
   if (h.cashapp) {
-    const c = stripDollar(h.cashapp.trim());
-    out.push({
-      key: "cashapp",
-      label: `Pay on Cash App $${c}`,
-      bg: "#00D632",
-      fg: "#ffffff",
-      href: `https://cash.app/$${c}`,
-    });
+    const c = sanitizeHandleSlug(stripDollar(h.cashapp.trim()));
+    if (c) {
+      out.push({
+        key: "cashapp",
+        label: `Pay on Cash App $${c}`,
+        bg: "#00D632",
+        fg: "#ffffff",
+        href: `https://cash.app/$${c}`,
+      });
+    }
   }
 
   if (h.zelle) {
