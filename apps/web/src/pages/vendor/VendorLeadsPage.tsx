@@ -28,6 +28,10 @@ import { useRealtime } from "@/lib/realtime";
 import { DashboardSidebar } from "@/components/shared/DashboardSidebar";
 import { MobileNav } from "@/components/shared/MobileNav";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
+import {
+  ListingPicker,
+  type ListingOpt,
+} from "@/components/vendor/ListingPicker";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { vendorNavItems as navItems } from "@/data/navItems";
@@ -108,24 +112,54 @@ function formatMoney(cents: number): string {
 type StatusFilter = "all" | "active" | "won" | "lost";
 
 export default function VendorLeadsPage() {
-  const { user, vendorMemberships } = useAuth();
-  // Match VendorInboxPage: surface leads across EVERY listing the
-  // vendor has access to (own + team memberships), not just the first
-  // approved one. Using ownListing here would have:
-  //   - Hidden leads on the vendor's second/third listings entirely.
-  //   - Returned empty for team-member-only accounts (no own listing).
-  const vendorIds = useMemo(
-    () => vendorMemberships.map((m) => m.vendor_id),
-    [vendorMemberships],
+  const { user } = useAuth();
+
+  // Listing picker — scopes the page to ONE of the vendor's listings
+  // at a time, mirroring the Calendar page. Pulled directly from
+  // vendor_profiles (rather than vendorMemberships) so we get the
+  // logo / category / location columns the picker UI needs. Preselects
+  // the first APPROVED listing on mount; pending listings render in
+  // the dropdown so the vendor sees them but can't pick them.
+  const [listings, setListings] = useState<ListingOpt[]>([]);
+  const [listingsLoading, setListingsLoading] = useState(true);
+  const [selectedListingId, setSelectedListingId] = useState<string | null>(
+    null,
   );
-  const vendorIdsKey = vendorIds.join(",");
+  const [listingPickerOpen, setListingPickerOpen] = useState(false);
+
   const [rows, setRows] = useState<InquiryRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
 
+  useEffect(() => {
+    if (!user?.id) return;
+    let cancelled = false;
+    (async () => {
+      setListingsLoading(true);
+      const { data } = await supabase
+        .from("vendor_profiles")
+        .select(
+          "id, business_name, category, location, application_status, logo_url",
+        )
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: true });
+      if (cancelled) return;
+      const rows = (data ?? []) as ListingOpt[];
+      setListings(rows);
+      const firstApproved = rows.find(
+        (l) => l.application_status === "approved",
+      );
+      setSelectedListingId((prev) => prev ?? firstApproved?.id ?? null);
+      setListingsLoading(false);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.id]);
+
   const load = useCallback(async () => {
-    if (!user || vendorIds.length === 0) {
+    if (!user || !selectedListingId) {
       setRows([]);
       setLoading(false);
       return;
@@ -141,26 +175,26 @@ export default function VendorLeadsPage() {
       .select(
         "id, host_id, event_type, event_date, budget_min_cents, budget_max_cents, status, created_at, last_message_at, host:profiles!inquiries_host_id_fkey(display_name, avatar_url)",
       )
-      .in("vendor_id", vendorIds)
+      .eq("vendor_id", selectedListingId)
       .order("last_message_at", { ascending: false, nullsFirst: false })
       .limit(200);
     setRows((data as unknown as InquiryRow[]) ?? []);
     setLoading(false);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, vendorIdsKey]);
+  }, [user, selectedListingId]);
 
   useEffect(() => {
     void load();
   }, [load]);
 
-  // Realtime: refetch when ANY inquiry visible to this vendor
-  // changes. RLS filters the user-scoped channel so we don't need
-  // a per-vendor subscription. Matches VendorInboxPage's approach so
-  // both surfaces stay in sync without a manual refresh.
+  // Realtime: refetch when an inquiry on THE SELECTED listing changes.
+  // Server-side filter keeps us from being woken up by events on the
+  // vendor's other listings.
   const realtimeConfig = useMemo(
-    () => (vendorIds.length > 0 ? { table: "inquiries" } : null),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [vendorIdsKey],
+    () =>
+      selectedListingId
+        ? { table: "inquiries", filter: `vendor_id=eq.${selectedListingId}` }
+        : null,
+    [selectedListingId],
   );
   useRealtime(realtimeConfig, () => {
     void load();
@@ -260,6 +294,20 @@ export default function VendorLeadsPage() {
         </div>
 
         <div className="p-4 md:p-8 max-w-5xl space-y-5">
+          {/* Listing picker — mirrors the Calendar page. Every query
+              below is scoped to whichever listing is selected here. */}
+          <ListingPicker
+            listings={listings}
+            loading={listingsLoading}
+            selectedId={selectedListingId}
+            onSelect={(id) => {
+              setSelectedListingId(id);
+              setListingPickerOpen(false);
+            }}
+            open={listingPickerOpen}
+            onOpenChange={setListingPickerOpen}
+          />
+
           {/* Filter strip — segmented chip control on the left, search
               on the right. Keeps the controls inline so the table
               starts above the fold. */}
