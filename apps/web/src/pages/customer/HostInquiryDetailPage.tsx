@@ -13,6 +13,7 @@ import { TypingBubble } from "@/components/messages/TypingBubble";
 import { RatingPromptStrip } from "@/components/reviews/RatingPromptStrip";
 import { SubmittedReviewStatusCard } from "@/components/reviews/SubmittedReviewStatusCard";
 import { BookingConfirmationCard } from "@/components/inquiries/BookingConfirmationCard";
+import { VendorPaymentButtons } from "@/components/payments/VendorPaymentButtons";
 import { InquiryReviewCard } from "@/components/inquiries/InquiryReviewCard";
 import { Link, useParams } from "react-router-dom";
 import {
@@ -75,6 +76,14 @@ interface Inquiry {
     business_name: string;
     category: string;
     logo_url?: string | null;
+    stripe_account_id?: string | null;
+    payment_handles?: Partial<{
+      square: string;
+      paypal: string;
+      venmo: string;
+      cashapp: string;
+      zelle: string;
+    }> | null;
   } | null;
 }
 
@@ -208,7 +217,7 @@ export default function HostInquiryDetailPage() {
       supabase
         .from("inquiries")
         .select(
-          "id, vendor_id, event_type, event_date, guest_count, location, budget_min_cents, budget_max_cents, special_requests, status, created_at, vendor_read_at, host_read_at, vendor:vendor_profiles!inquiries_vendor_id_fkey(business_name, category, logo_url)",
+          "id, vendor_id, event_type, event_date, guest_count, location, budget_min_cents, budget_max_cents, special_requests, status, created_at, vendor_read_at, host_read_at, vendor:vendor_profiles!inquiries_vendor_id_fkey(business_name, category, logo_url, stripe_account_id, payment_handles)",
         )
         .eq("id", inquiryId)
         .maybeSingle(),
@@ -1184,6 +1193,23 @@ export default function HostInquiryDetailPage() {
               selfRole="host"
               otherPartyName={vendorName}
               hasAcceptedProposal={proposals.some((p) => p.status === "accepted")}
+            />
+          ) : null}
+
+          {/* Vendor's connected payment methods — Stripe, Venmo,
+              Cash App, etc. Component returns null when the vendor
+              hasn't configured anything, so we don't render an
+              empty "Pay this vendor" header on cold inquiries.
+              Rendered after BookingConfirmationCard so the
+              payment options sit right next to the booking flow,
+              not buried below the rating prompt. */}
+          {inquiry?.vendor ? (
+            <VendorPaymentButtons
+              info={{
+                stripe_account_id: inquiry.vendor.stripe_account_id ?? null,
+                payment_handles: inquiry.vendor.payment_handles ?? null,
+              }}
+              className="card-soft p-4"
             />
           ) : null}
 
