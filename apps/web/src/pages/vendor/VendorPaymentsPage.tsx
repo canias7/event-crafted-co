@@ -247,43 +247,57 @@ export default function VendorPaymentsPage() {
 
   const refresh = useCallback(
     async (silent = false) => {
-      if (!vendorId) return;
+      if (!vendorId) {
+        // No listing yet — flip loading off so the empty state shows
+        // instead of an infinite spinner. (Vendor without a listing
+        // can't use VendoraPay; render the "set up your profile" prompt.)
+        setLoading(false);
+        return;
+      }
       if (!silent) setRefreshing(true);
-      const [statusRes, balanceRes, txRes, payoutRes, linksRes, invoicesRes] = await Promise.all([
-        supabase.functions.invoke("vendorapay-status", { body: { business_id: vendorId } }),
-        supabase.functions.invoke("vendorapay-balance", { body: { business_id: vendorId } }),
-        supabase.functions.invoke("vendorapay-transactions", { body: { business_id: vendorId, limit: 50 } }),
-        supabase.functions.invoke("vendorapay-payouts", { body: { business_id: vendorId } }),
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (supabase as any)
-          .from("payment_links")
-          .select("id, vendor_id, slug, title, description, amount_cents, currency, status, paid_at, expires_at, activate_at, parent_link_id, created_at")
-          .eq("vendor_id", vendorId)
-          .order("created_at", { ascending: false })
-          .limit(50),
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (supabase as any)
-          .from("invoices")
-          .select("id, vendor_id, slug, invoice_number, bill_to_name, bill_to_email, issue_date, due_date, notes, line_items, subtotal_cents, tax_rate_bps, tax_cents, total_cents, currency, status, sent_at, paid_at, created_at")
-          .eq("vendor_id", vendorId)
-          .order("created_at", { ascending: false })
-          .limit(50),
-      ]);
-      if (statusRes.data) setStatus(statusRes.data as Status);
-      if (balanceRes.data) setBalance(balanceRes.data as Balance);
-      if (txRes.data) {
-        const list = (txRes.data as { transactions?: Transaction[] }).transactions ?? [];
-        setTransactions(list);
+      try {
+        const [statusRes, balanceRes, txRes, payoutRes, linksRes, invoicesRes] = await Promise.all([
+          supabase.functions.invoke("vendorapay-status", { body: { business_id: vendorId } }),
+          supabase.functions.invoke("vendorapay-balance", { body: { business_id: vendorId } }),
+          supabase.functions.invoke("vendorapay-transactions", { body: { business_id: vendorId, limit: 50 } }),
+          supabase.functions.invoke("vendorapay-payouts", { body: { business_id: vendorId } }),
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          (supabase as any)
+            .from("payment_links")
+            .select("id, vendor_id, slug, title, description, amount_cents, currency, status, paid_at, expires_at, activate_at, parent_link_id, created_at")
+            .eq("vendor_id", vendorId)
+            .order("created_at", { ascending: false })
+            .limit(50),
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          (supabase as any)
+            .from("invoices")
+            .select("id, vendor_id, slug, invoice_number, bill_to_name, bill_to_email, issue_date, due_date, notes, line_items, subtotal_cents, tax_rate_bps, tax_cents, total_cents, currency, status, sent_at, paid_at, created_at")
+            .eq("vendor_id", vendorId)
+            .order("created_at", { ascending: false })
+            .limit(50),
+        ]);
+        if (statusRes.data) setStatus(statusRes.data as Status);
+        if (balanceRes.data) setBalance(balanceRes.data as Balance);
+        if (txRes.data) {
+          const list = (txRes.data as { transactions?: Transaction[] }).transactions ?? [];
+          setTransactions(list);
+        }
+        if (payoutRes.data) setPayouts(payoutRes.data as PayoutsResponse);
+        if (linksRes && !linksRes.error) {
+          setPaymentLinks((linksRes.data ?? []) as PaymentLink[]);
+        }
+        if (invoicesRes && !invoicesRes.error) {
+          setInvoices((invoicesRes.data ?? []) as Invoice[]);
+        }
+      } catch (err) {
+        // One bad fetch shouldn't trap the page in loading state.
+        // Log and let the UI render with whatever we have (likely empty
+        // states for the failing sections).
+        console.error("[vendor-payments] refresh failed", err);
+      } finally {
+        setLoading(false);
+        setRefreshing(false);
       }
-      if (payoutRes.data) setPayouts(payoutRes.data as PayoutsResponse);
-      if (linksRes && !linksRes.error) {
-        setPaymentLinks((linksRes.data ?? []) as PaymentLink[]);
-      }
-      if (invoicesRes && !invoicesRes.error) {
-        setInvoices((invoicesRes.data ?? []) as Invoice[]);
-      }
-      setLoading(false);
-      setRefreshing(false);
     },
     [vendorId],
   );
@@ -458,6 +472,22 @@ export default function VendorPaymentsPage() {
             <div className="flex items-center justify-center py-20">
               <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
             </div>
+          ) : !vendorId ? (
+            // Vendor has no listing yet — VendoraPay is keyed to the
+            // listing id, so there's nothing to render. Send them to
+            // create one rather than show empty stat cards.
+            <Card>
+              <div className="p-8 text-center">
+                <h3 className="text-base font-semibold mb-2">Set up your vendor profile first</h3>
+                <p className="text-sm text-muted-foreground mb-4">
+                  VendoraPay needs a vendor listing to attach payments to.
+                  Finish creating your profile and come back.
+                </p>
+                <Button onClick={() => navigate("/vendor/me")} className="rounded-full">
+                  Go to my profile
+                </Button>
+              </div>
+            </Card>
           ) : tab === "overview" ? (
             <OverviewTab
               balance={balance}
