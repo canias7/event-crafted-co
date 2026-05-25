@@ -1759,12 +1759,25 @@ function FindVendorPanel({ meId }: { meId: string | null }) {
         <Input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
+          onKeyDown={(e) => {
+            // Standard search-bar UX: Enter starts a thread with the
+            // first result so a vendor can type → enter without
+            // reaching for the mouse.
+            if (e.key === "Enter" && !searching && results.length > 0) {
+              e.preventDefault();
+              void startThread(results[0]);
+            }
+          }}
           placeholder="Search vendors…"
           aria-label="Search vendors by business name"
           className="pl-9 rounded-full"
         />
       </div>
-      <div className="flex-1 overflow-y-auto -mr-2 pr-2">
+      <div
+        className="flex-1 overflow-y-auto -mr-2 pr-2"
+        aria-live="polite"
+        aria-busy={searching}
+      >
         {searching ? (
           <div className="space-y-2">
             {[0, 1, 2].map((i) => (
@@ -1792,7 +1805,7 @@ function FindVendorPanel({ meId }: { meId: string | null }) {
                     type="button"
                     disabled={isStarting}
                     onClick={() => void startThread(r)}
-                    className="w-full text-left rounded-xl px-3 py-2.5 flex items-center gap-3 transition-colors hover:bg-secondary/40 disabled:opacity-50"
+                    className="w-full text-left rounded-xl px-3 py-2.5 flex items-center gap-3 transition-colors hover:bg-secondary/40 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#c4541e]/40"
                     style={{
                       background: "rgba(255,253,250,0.7)",
                       border: "0.5px solid rgba(255,138,76,0.18)",
