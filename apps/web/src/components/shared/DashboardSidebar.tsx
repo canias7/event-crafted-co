@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { PrefetchLink as Link } from "@/components/shared/PrefetchLink";
 import { VendoraLogo, VendoraMark } from "@/components/shared/VendoraLogo";
 import {
+  ChevronDown,
   LucideIcon,
   PanelLeftClose,
   PanelLeftOpen,
@@ -111,6 +112,13 @@ export function DashboardSidebar({
     );
     const isActive = selfActive || anyChildActive;
     const label = t(item.labelKey);
+    const hasChildren = !!item.children && item.children.length > 0;
+    // Disclosure: children are hidden until the section becomes
+    // active (user navigates into the parent or any child route).
+    // Tapping the parent navigates to its own path → makes it
+    // active → children animate in. Leaves the section → children
+    // collapse again.
+    const showChildren = hasChildren && !collapsed && isActive;
 
     // Usage row gets a live balance chip on the right.
     const showBalance =
@@ -122,6 +130,7 @@ export function DashboardSidebar({
           to={item.path}
           className="relative block"
           aria-current={selfActive ? "page" : undefined}
+          aria-expanded={hasChildren ? isActive : undefined}
           title={collapsed ? label : undefined}
         >
           <div
@@ -143,13 +152,19 @@ export function DashboardSidebar({
                 {liveBalance.toLocaleString()}
               </span>
             )}
+            {hasChildren && !collapsed && (
+              <ChevronDown
+                className={`w-3.5 h-3.5 shrink-0 text-muted-foreground/70 transition-transform duration-200 ${
+                  isActive ? "" : "-rotate-90"
+                }`}
+                aria-hidden="true"
+              />
+            )}
           </div>
         </Link>
-        {/* Children render indented when expanded. Hidden when sidebar
-            is collapsed (no horizontal room for an indent column). */}
-        {!collapsed && item.children && item.children.length > 0 ? (
+        {showChildren ? (
           <div className="mt-0.5 ml-3 pl-3 border-l border-foreground/10 flex flex-col gap-0.5">
-            {item.children.map((child) => {
+            {item.children!.map((child) => {
               const childActive = isPathActive(child.path);
               return (
                 <Link
