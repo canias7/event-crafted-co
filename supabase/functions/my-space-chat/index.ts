@@ -16,13 +16,29 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.7";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
+const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY") ?? "";
 const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY") ?? "";
 
 const SONNET_MODEL = "claude-sonnet-4-6";
 const IMAGE_MODEL = "gpt-image-1";
+// Stripe's hosted MCP server. Vendors connect their account via
+// vendor-stripe-mcp-connect (Restricted API key paste); on each chat
+// call we forward that key here so Sonnet can call any Stripe API.
+const STRIPE_MCP_URL = "https://mcp.stripe.com/";
 
-const SYSTEM_PROMPT = `You are My Space, the in-app AI assistant for an event vendor on the Vendora platform.
+function buildSystemPrompt(stripeConnected: boolean): string {
+  const stripeBlock = stripeConnected
+    ? `
+
+You have access to the vendor's connected Stripe account via tools (the "stripe" MCP server). Use them whenever the vendor asks about money: balance, charges, customers, invoices, refunds, payment links, subscriptions, etc.
+- For read-only questions, just call the tool and report.
+- For anything that creates or modifies (payment link, refund, invoice, etc.), call the tool and tell the vendor what was created with a one-line summary.`
+    : `
+
+The vendor has NOT connected their Stripe account to My Space yet. If they ask Stripe questions (balance, charges, refunds, payment links), tell them they can enable this on Settings → Integrations → Stripe AI.`;
+
+  return `You are My Space, the in-app AI assistant for an event vendor on the Vendora platform.
 
 You help the vendor:
 - Draft replies to host inquiries (warm, professional, concise)
@@ -35,7 +51,8 @@ Style:
 - When drafting a reply to a host, write the reply text itself — don't preface with "here's a draft."
 - If you need more info to do the job, ask one specific follow-up question instead of guessing.
 
-You are NOT writing on the vendor's behalf to a host in this thread — you are talking to the vendor themselves.`;
+You are NOT writing on the vendor's behalf to a host in this thread — you are talking to the vendor themselves.${stripeBlock}`;
+}
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -71,39 +88,80 @@ interface ChatMessage {
   content: string;
 }
 
-async function callClaude(messages: ChatMessage[]): Promise<string> {
+async function callClaude(
+  messages: ChatMessage[],
+  stripeMcpKey: string | null,
+): Promise<string> {
   if (!ANTHROPIC_API_KEY) throw new Error("anthropic_key_missing");
+  const systemText = buildSystemPrompt(Boolean(stripeMcpKey));
+
+  // Anthropic's MCP connector lets us pass remote MCP servers in the
+  // request — Anthropic handles the tool-use loop server-side and we
+  // just get a final text answer back. The beta header is required
+  // while the feature is in preview.
+  const headers: Record<string, string> = {
+    "x-api-key": ANTHROPIC_API_KEY,
+    "anthropic-version": "2023-06-01",
+    "content-type": "application/json",
+  };
+  if (stripeMcpKey) {
+    headers["anthropic-beta"] = "mcp-client-2025-04-04";
+  }
+
+  const body: Record<string, unknown> = {
+    model: SONNET_MODEL,
+    max_tokens: 2048,
+    system: [
+      {
+        type: "text",
+        text: systemText,
+        cache_control: { type: "ephemeral" },
+      },
+    ],
+    messages,
+  };
+  if (stripeMcpKey) {
+    body.mcp_servers = [
+      {
+        type: "url",
+        url: STRIPE_MCP_URL,
+        name: "stripe",
+        authorization_token: stripeMcpKey,
+      },
+    ];
+  }
+
   const res = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
-    headers: {
-      "x-api-key": ANTHROPIC_API_KEY,
-      "anthropic-version": "2023-06-01",
-      "content-type": "application/json",
-    },
-    body: JSON.stringify({
-      model: SONNET_MODEL,
-      max_tokens: 1024,
-      system: [
-        {
-          type: "text",
-          text: SYSTEM_PROMPT,
-          cache_control: { type: "ephemeral" },
-        },
-      ],
-      messages,
-    }),
+    headers,
+    body: JSON.stringify(body),
   });
   if (!res.ok) {
     const t = await res.text();
     throw new Error(`anthropic ${res.status}: ${t.slice(0, 240)}`);
   }
-  const body = (await res.json()) as any;
-  const text = (body.content ?? [])
+  const parsed = (await res.json()) as any;
+  const text = (parsed.content ?? [])
     .filter((b: any) => b.type === "text")
     .map((b: any) => b.text)
     .join("\n")
     .trim();
   return text || "(no response)";
+}
+
+async function loadStripeMcpKey(userId: string): Promise<string | null> {
+  const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  });
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data } = await (admin as any)
+    .from("profiles")
+    .select("stripe_mcp_api_key")
+    .eq("id", userId)
+    .maybeSingle();
+  const key = (data as { stripe_mcp_api_key?: string | null } | null)
+    ?.stripe_mcp_api_key;
+  return key && key.length > 0 ? key : null;
 }
 
 async function callOpenAIImage(
@@ -178,7 +236,11 @@ serve(async (req) => {
       });
     }
 
-    const text = await callClaude(messages);
+    // Stripe MCP key lookup — service_role bypass, never reaches the
+    // client. If the vendor hasn't connected, Sonnet still answers
+    // (it just can't reach Stripe).
+    const stripeMcpKey = await loadStripeMcpKey(userData.user.id);
+    const text = await callClaude(messages, stripeMcpKey);
     return json(200, { type: "text", text });
   } catch (err) {
     console.error("[my-space-chat] error", err);
