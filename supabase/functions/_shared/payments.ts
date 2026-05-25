@@ -25,7 +25,16 @@ import Stripe from "https://esm.sh/stripe@14.21.0?target=deno";
 // ---- env + singleton client -------------------------------------
 
 const STRIPE_SECRET_KEY = Deno.env.get("STRIPE_SECRET_KEY") ?? "";
-const STRIPE_WEBHOOK_SECRET = Deno.env.get("STRIPE_WEBHOOK_SECRET") ?? "";
+// VendoraPay webhook secret. Prefer a dedicated value when set —
+// this lets you register vendorapay-webhook as a SEPARATE endpoint
+// in the Stripe dashboard with its own whsec_... while the legacy
+// stripe-webhook keeps using STRIPE_WEBHOOK_SECRET. Falls back to
+// STRIPE_WEBHOOK_SECRET so a single shared endpoint also works
+// (you'd add the Phase 1 events to the existing endpoint).
+const WEBHOOK_SECRET =
+  Deno.env.get("VENDORAPAY_WEBHOOK_SECRET") ??
+  Deno.env.get("STRIPE_WEBHOOK_SECRET") ??
+  "";
 // Platform fee on every charge — basis points (500 = 5.00%) plus
 // optional fixed cents. Source of truth so VendoraPay's pricing can
 // be tuned in one place (env, not code).
@@ -271,13 +280,13 @@ export async function handleWebhookEvent(
   rawBody: string,
   signature: string,
 ): Promise<NormalizedWebhookEvent | null> {
-  if (!STRIPE_WEBHOOK_SECRET) {
+  if (!WEBHOOK_SECRET) {
     throw new Error("VendoraPay webhook not configured (missing secret)");
   }
   const event = await client().webhooks.constructEventAsync(
     rawBody,
     signature,
-    STRIPE_WEBHOOK_SECRET,
+    WEBHOOK_SECRET,
   );
   const kind = normalizeEventType(event.type);
   if (!kind) return null;
