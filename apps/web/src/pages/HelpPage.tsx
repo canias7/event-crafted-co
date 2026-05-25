@@ -49,18 +49,18 @@ const HOST_FAQ: FAQ[] = [
   },
   {
     q: "Is my payment information shared with vendors?",
-    a: "No. Vendors never see your card or bank details. Payments (when we're handling them) flow through Stripe.",
+    a: "No. Vendors never see your card or bank details. Payments flow through VendoraPay, our white-labeled processor.",
   },
 ];
 
 const BILLING_FAQ: FAQ[] = [
   {
     q: "How do I download an invoice?",
-    a: "Vendor Subscription page → Billing panel → click View next to any invoice to open the Stripe-hosted PDF. Right-click → Save to download.",
+    a: "Vendor Subscription page → Billing panel → click View next to any invoice to open the secure invoice PDF. Right-click → Save to download.",
   },
   {
     q: "Where do I update my card?",
-    a: "Subscription page → Billing panel → Update. Opens the Stripe-secure payment-method page.",
+    a: "Subscription page → Billing panel → Update. Opens the secure payment-method page.",
   },
 ];
 

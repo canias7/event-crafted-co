@@ -42,6 +42,7 @@ import {
   PrivacyPage,
   TermsPage,
   HelpPage,
+  VendoraPayCheckoutPage,
   ChangelogPage,
   StatusPage,
   PressPage,
@@ -133,6 +134,7 @@ const App = () => (
               <Route path="/privacy" element={<PrivacyPage />} />
               <Route path="/terms" element={<TermsPage />} />
               <Route path="/help" element={<HelpPage />} />
+              <Route path="/pay/:proposalId" element={<RequireRole role={["host", "vendor"]}><VendoraPayCheckoutPage /></RequireRole>} />
               <Route path="/changelog" element={<ChangelogPage />} />
               <Route path="/status" element={<StatusPage />} />
               <Route path="/press" element={<PressPage />} />
