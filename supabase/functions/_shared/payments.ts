@@ -201,11 +201,21 @@ export async function createAccount(args: {
         entity_type: "individual",
       },
       configuration: {
+        // recipient = the account can receive money (transfers,
+        // payouts to its bank). Required for destination charges.
         recipient: {
           capabilities: {
             stripe_balance: {
               stripe_transfers: { requested: true },
             },
+          },
+        },
+        // merchant = the account can accept money (charges its own
+        // customers' cards). v2 requires this whenever stripe_transfers
+        // is requested, even when we only use destination charges.
+        merchant: {
+          capabilities: {
+            card_payments: { requested: true },
           },
         },
       },
@@ -229,7 +239,9 @@ export async function createOnboardingLink(args: {
     use_case: {
       type: "account_onboarding",
       account_onboarding: {
-        configurations: ["recipient"],
+        // Onboard for both configurations so the vendor's KYC covers
+        // receiving transfers AND being a merchant of record.
+        configurations: ["recipient", "merchant"],
         refresh_url: args.refresh_url,
         return_url: args.return_url,
       },
