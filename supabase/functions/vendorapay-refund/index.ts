@@ -70,7 +70,9 @@ serve(async (req) => {
     // the platform owns regardless of which vendor's admin asked).
     let pi: Stripe.PaymentIntent;
     try {
-      pi = await client().paymentIntents.retrieve(paymentIntentId);
+      pi = await client().paymentIntents.retrieve(paymentIntentId, {
+        expand: ["latest_charge"],
+      });
     } catch (err) {
       console.error("[vendorapay-refund] PI retrieve failed", err);
       return json(404, { error: "payment not found" });
@@ -78,6 +80,23 @@ serve(async (req) => {
     const piVendorId = (pi.metadata?.vendor_id as string | undefined) ?? null;
     if (piVendorId && piVendorId !== businessId) {
       return json(403, { error: "payment does not belong to this vendor" });
+    }
+    // Server-side cap: never refund more than what's left.
+    // Stripe would reject too, but bouncing the request here keeps
+    // the error path clean and avoids exposing Stripe error messages
+    // to the frontend.
+    const charge = pi.latest_charge as { amount?: number; amount_refunded?: number } | string | null;
+    const chargeAmount = (typeof charge === "object" && charge ? charge.amount : null) ?? pi.amount;
+    const alreadyRefunded = (typeof charge === "object" && charge ? charge.amount_refunded : 0) ?? 0;
+    const refundableCents = chargeAmount - alreadyRefunded;
+    if (refundableCents <= 0) {
+      return json(400, { error: "payment already fully refunded" });
+    }
+    if (amountCents !== undefined && amountCents > refundableCents) {
+      return json(400, {
+        error: "refund amount exceeds remaining balance",
+        max_refundable_cents: refundableCents,
+      });
     }
 
     const refund = await client().refunds.create({

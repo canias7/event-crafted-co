@@ -217,7 +217,7 @@ export default function VendorPaymentsPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const { ownListing, user } = useAuth();
   const vendorId = ownListing?.id ?? null;
-  const { tier } = useVendorPlan(user?.id ?? null);
+  const { tier, loading: tierLoading } = useVendorPlan(user?.id ?? null);
 
   const tab = ((searchParams.get("tab") as TabId | null) ?? "overview") as TabId;
   const setTab = (next: TabId) => {
@@ -483,7 +483,7 @@ export default function VendorPaymentsPage() {
           ) : tab === "payouts" ? (
             <PayoutsTab data={payouts} status={status} />
           ) : (
-            <SettingsTab status={status} tier={tier} />
+            <SettingsTab status={status} tier={tier} tierLoading={tierLoading} />
           )}
         </div>
       </main>
@@ -1706,9 +1706,11 @@ function LinkStatusPill({ status }: { status: PaymentLink["status"] }) {
 function SettingsTab({
   status,
   tier,
+  tierLoading,
 }: {
   status: Status | null;
   tier: VendorTier;
+  tierLoading: boolean;
 }) {
   const fee = TIER_FEE_COPY[tier];
   return (
@@ -1719,9 +1721,9 @@ function SettingsTab({
         sub="What your customers see on their card statement."
       />
       <SettingRow
-        label={`Your fee (${tier} plan)`}
-        value={fee.rate}
-        sub={`${fee.vendoraCut}. ${fee.sub}`}
+        label={tierLoading ? "Your fee" : `Your fee (${tier} plan)`}
+        value={tierLoading ? "—" : fee.rate}
+        sub={tierLoading ? "Loading your subscription tier…" : `${fee.vendoraCut}. ${fee.sub}`}
       />
       <SettingRow
         label="Payout cadence"

@@ -65,7 +65,29 @@ serve(async (req) => {
       .eq("vendor_id", linkRow.vendor_id)
       .maybeSingle();
     const sRow = secret as { stripe_account_id?: string | null; charges_enabled?: boolean | null } | null;
-    if (!sRow?.stripe_account_id || !sRow.charges_enabled) {
+    if (!sRow?.stripe_account_id) {
+      return json(400, { error: "vendor not ready to receive payments" });
+    }
+    // Cached charges_enabled can be stale if account.updated webhook
+    // didn't fire (e.g. account got locked by Stripe). Re-verify live
+    // and refresh the cache before minting a checkout session — money
+    // would otherwise sit in platform funds limbo on a dead account.
+    let charges_live = Boolean(sRow.charges_enabled);
+    try {
+      const fresh = await client().accounts.retrieve(sRow.stripe_account_id);
+      charges_live = Boolean(fresh.charges_enabled);
+      if (charges_live !== Boolean(sRow.charges_enabled)) {
+        await admin.from("vendor_payment_secrets").update({
+          charges_enabled: charges_live,
+          payouts_enabled: Boolean(fresh.payouts_enabled),
+          details_submitted: Boolean(fresh.details_submitted),
+          updated_at: new Date().toISOString(),
+        }).eq("stripe_account_id", sRow.stripe_account_id);
+      }
+    } catch (err) {
+      console.error("[vendorapay-link-checkout] account verify failed", err);
+    }
+    if (!charges_live) {
       return json(400, { error: "vendor not ready to receive payments" });
     }
 

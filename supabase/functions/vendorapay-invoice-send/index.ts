@@ -70,6 +70,12 @@ serve(async (req) => {
       .maybeSingle();
     if (!inv) return json(404, { error: "invoice not found" });
     if (!inv.bill_to_email) return json(400, { error: "bill_to_email required to send" });
+    // Status guard: don't email an invoice that's already paid,
+    // cancelled, or refunded. Resending a draft / sent / overdue
+    // invoice is fine (vendor nudge).
+    if (!["draft", "sent", "overdue"].includes(inv.status as string)) {
+      return json(400, { error: `cannot send invoice with status '${inv.status}'` });
+    }
 
     const { data: isAdmin } = await userClient.rpc("is_vendor_team_admin", { _vendor_id: inv.vendor_id });
     if (!isAdmin) return json(403, { error: "admin role required" });
