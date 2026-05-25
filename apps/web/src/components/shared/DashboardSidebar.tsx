@@ -37,6 +37,8 @@ interface NavItem {
   labelKey: string;
   path: string;
   icon: LucideIcon;
+  /** Optional nested sub-items shown indented below the parent row. */
+  children?: NavItem[];
 }
 
 interface DashboardSidebarProps {
@@ -93,48 +95,85 @@ export function DashboardSidebar({
     window.localStorage.setItem(COLLAPSE_KEY, collapsed ? "1" : "0");
   }, [collapsed]);
 
+  function isPathActive(path: string): boolean {
+    return (
+      location.pathname === path ||
+      location.pathname.startsWith(`${path}/`)
+    );
+  }
+
   function renderItem(item: NavItem) {
-    // Highlight the parent hub when sub-pages are open. The "starts with"
-    // check covers e.g. /customer/event/details under /customer/event.
-    const isActive =
-      location.pathname === item.path ||
-      location.pathname.startsWith(`${item.path}/`);
+    const selfActive = isPathActive(item.path);
+    // Parent stays highlighted when ANY child route is open — keeps
+    // the visual "you are inside this section" anchor.
+    const anyChildActive = (item.children ?? []).some((c) =>
+      isPathActive(c.path),
+    );
+    const isActive = selfActive || anyChildActive;
     const label = t(item.labelKey);
 
-    // Usage row gets a live balance chip on the right so the vendor
-    // can see their credits without opening the page.
+    // Usage row gets a live balance chip on the right.
     const showBalance =
       isVendorSide && !collapsed && item.path === "/vendor/usage" && balanceReady;
 
     return (
-      <Link
-        key={item.path}
-        to={item.path}
-        className="relative block"
-        aria-current={isActive ? "page" : undefined}
-        title={collapsed ? label : undefined}
-      >
-        <div
-          className={`flex items-center gap-3 rounded-lg text-sm font-medium transition-colors duration-200 ${
-            collapsed ? "justify-center px-0 py-2.5" : "px-3 py-2.5"
-          } ${
-            isActive
-              ? "text-foreground bg-secondary"
-              : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
-          }`}
+      <div key={item.path}>
+        <Link
+          to={item.path}
+          className="relative block"
+          aria-current={selfActive ? "page" : undefined}
+          title={collapsed ? label : undefined}
         >
-          <item.icon className="w-4 h-4 shrink-0" aria-hidden="true" />
-          {!collapsed && <span className="truncate flex-1">{label}</span>}
-          {showBalance && (
-            <span
-              className="text-[11px] font-medium tnum shrink-0 text-foreground/70"
-              aria-label={`${liveBalance.toLocaleString()} credits`}
-            >
-              {liveBalance.toLocaleString()}
-            </span>
-          )}
-        </div>
-      </Link>
+          <div
+            className={`flex items-center gap-3 rounded-lg text-sm font-medium transition-colors duration-200 ${
+              collapsed ? "justify-center px-0 py-2.5" : "px-3 py-2.5"
+            } ${
+              isActive
+                ? "text-foreground bg-secondary"
+                : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
+            }`}
+          >
+            <item.icon className="w-4 h-4 shrink-0" aria-hidden="true" />
+            {!collapsed && <span className="truncate flex-1">{label}</span>}
+            {showBalance && (
+              <span
+                className="text-[11px] font-medium tnum shrink-0 text-foreground/70"
+                aria-label={`${liveBalance.toLocaleString()} credits`}
+              >
+                {liveBalance.toLocaleString()}
+              </span>
+            )}
+          </div>
+        </Link>
+        {/* Children render indented when expanded. Hidden when sidebar
+            is collapsed (no horizontal room for an indent column). */}
+        {!collapsed && item.children && item.children.length > 0 ? (
+          <div className="mt-0.5 ml-3 pl-3 border-l border-foreground/10 flex flex-col gap-0.5">
+            {item.children.map((child) => {
+              const childActive = isPathActive(child.path);
+              return (
+                <Link
+                  key={child.path}
+                  to={child.path}
+                  className="relative block"
+                  aria-current={childActive ? "page" : undefined}
+                >
+                  <div
+                    className={`flex items-center gap-3 rounded-lg text-[13px] font-medium transition-colors duration-200 px-2.5 py-1.5 ${
+                      childActive
+                        ? "text-foreground bg-secondary"
+                        : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
+                    }`}
+                  >
+                    <child.icon className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
+                    <span className="truncate flex-1">{t(child.labelKey)}</span>
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        ) : null}
+      </div>
     );
   }
 

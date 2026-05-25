@@ -18,6 +18,13 @@ export interface NavItem {
   labelKey: string;
   path: string;
   icon: LucideIcon;
+  /**
+   * Optional sub-items rendered indented beneath this item in the
+   * sidebar. The parent itself is still navigable (clicking goes to
+   * its own `path`); children just give the section a "tab strip
+   * inside the sidebar" feel for tightly related surfaces.
+   */
+  children?: NavItem[];
 }
 
 // Sidebar layout philosophy: keep the main nav at ≤10 items so the
@@ -45,12 +52,18 @@ export const customerNavItems: NavItem[] = [
 export const vendorNavItems: NavItem[] = [
   // Inbox hub — sub-tabs: Inquiries (default), Hosts (DMs), Partners.
   { labelKey: "sidebar.vendor.inbox", path: "/vendor/inbox", icon: Inbox },
-  // My Vendora — single sidebar entry for the business-operations
-  // cluster. Lands on /vendor/leads, and from there a top sub-nav
-  // (<BusinessSubNav>) lets the vendor flip to Calendar or VendoraPay
-  // without leaving the section. Keeps the rail short while making
-  // the three feel like one unified tab.
-  { labelKey: "sidebar.vendor.leads", path: "/vendor/leads", icon: Users },
+  // My Vendora — the business-operations cluster. Parent navigates to
+  // /vendor/leads (the "Leads" view = the My Vendora home). Calendar
+  // and VendoraPay render indented as sidebar sub-tabs.
+  {
+    labelKey: "sidebar.vendor.leads",
+    path: "/vendor/leads",
+    icon: Users,
+    children: [
+      { labelKey: "sidebar.vendor.calendar", path: "/vendor/appointments", icon: CalendarDays },
+      { labelKey: "sidebar.vendor.vendorapay", path: "/vendor/payments", icon: CreditCard },
+    ],
+  },
   // ---- Identity + creative tools ----
   { labelKey: "sidebar.vendor.my_profile", path: "/vendor/me", icon: User },
   { labelKey: "sidebar.vendor.my_space", path: "/vendor/ai-superagents", icon: Sparkles },

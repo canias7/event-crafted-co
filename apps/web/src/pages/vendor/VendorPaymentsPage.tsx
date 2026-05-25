@@ -39,7 +39,6 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useVendorPlan, type VendorTier } from "@/hooks/useVendorPlan";
-import { BusinessSubNav } from "@/components/shared/BusinessSubNav";
 import { DashboardSidebar } from "@/components/shared/DashboardSidebar";
 import { MobileNav } from "@/components/shared/MobileNav";
 import { Button } from "@/components/ui/button";
@@ -402,12 +401,6 @@ export default function VendorPaymentsPage() {
               )}
               Refresh
             </Button>
-          </div>
-
-          {/* Sibling-page strip (My Vendora / Calendar / VendoraPay)
-              so the three feel like one surface. */}
-          <div className="mt-4">
-            <BusinessSubNav />
           </div>
 
           {/* Internal VendoraPay tab strip (Overview / Payments / etc.) */}

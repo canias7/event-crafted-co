@@ -26,7 +26,6 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useRealtime } from "@/lib/realtime";
 import { useAuth } from "@/hooks/useAuth";
-import { BusinessSubNav } from "@/components/shared/BusinessSubNav";
 import { DashboardSidebar } from "@/components/shared/DashboardSidebar";
 import { MobileNav } from "@/components/shared/MobileNav";
 import {
@@ -597,9 +596,6 @@ export default function VendorAppointmentsPage() {
             <div className="flex items-center gap-2">
               <NotificationBell variant="light" />
             </div>
-          </div>
-          <div className="mt-4">
-            <BusinessSubNav />
           </div>
         </div>
 
