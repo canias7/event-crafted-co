@@ -21,7 +21,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { Calendar, Filter, Inbox, Search } from "lucide-react";
+import { Calendar, Filter, ImagePlus, Inbox, Plus, Search } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useRealtime } from "@/lib/realtime";
@@ -295,19 +295,31 @@ export default function VendorLeadsPage() {
 
         <div className="p-4 md:p-8 max-w-5xl space-y-5">
           {/* Listing picker — mirrors the Calendar page. Every query
-              below is scoped to whichever listing is selected here. */}
-          <ListingPicker
-            listings={listings}
-            loading={listingsLoading}
-            selectedId={selectedListingId}
-            onSelect={(id) => {
-              setSelectedListingId(id);
-              setListingPickerOpen(false);
-            }}
-            open={listingPickerOpen}
-            onOpenChange={setListingPickerOpen}
-          />
+              below is scoped to whichever listing is selected here.
+              Two empty states handle the cases where the picker would
+              be useless: no listings at all (brand-new vendor) and
+              listings-but-none-approved (waiting on review). */}
+          {!listingsLoading && listings.length === 0 ? (
+            <NoListingsEmptyState />
+          ) : !listingsLoading &&
+            !listings.some((l) => l.application_status === "approved") ? (
+            <PendingApprovalEmptyState />
+          ) : (
+            <ListingPicker
+              listings={listings}
+              loading={listingsLoading}
+              selectedId={selectedListingId}
+              onSelect={(id) => {
+                setSelectedListingId(id);
+                setListingPickerOpen(false);
+              }}
+              open={listingPickerOpen}
+              onOpenChange={setListingPickerOpen}
+            />
+          )}
 
+          {selectedListingId && (
+            <>
           {/* Filter strip — segmented chip control on the left, search
               on the right. Keeps the controls inline so the table
               starts above the fold. */}
@@ -434,9 +446,81 @@ export default function VendorLeadsPage() {
               ))}
             </ul>
           )}
+            </>
+          )}
         </div>
       </main>
       <MobileNav items={navItems} />
+    </div>
+  );
+}
+
+function NoListingsEmptyState() {
+  return (
+    <div
+      className="rounded-2xl p-10 md:p-14 text-center"
+      style={{
+        background: "rgba(255,253,250,0.6)",
+        border: "0.5px solid rgba(255,138,76,0.22)",
+        backdropFilter: "blur(10px)",
+        WebkitBackdropFilter: "blur(10px)",
+      }}
+    >
+      <div
+        className="w-14 h-14 mx-auto rounded-full inline-flex items-center justify-center mb-5"
+        style={{ background: "rgba(255,138,76,0.18)", color: "#c4541e" }}
+      >
+        <ImagePlus className="w-6 h-6" />
+      </div>
+      <h2 className="font-editorial italic text-3xl mb-2">
+        Upload your first listing
+      </h2>
+      <p className="text-sm text-muted-foreground max-w-md mx-auto mb-6 leading-relaxed">
+        Leads live per listing. Once you publish your first listing,
+        hosts who inquire will start showing up here so you can track
+        every conversation in one place.
+      </p>
+      <Link
+        to="/vendor/me"
+        className="inline-flex items-center gap-2 rounded-full bg-foreground text-background px-5 py-2.5 text-sm font-medium hover:opacity-90 transition-opacity"
+      >
+        <Plus className="w-4 h-4" />
+        Create a listing
+      </Link>
+    </div>
+  );
+}
+
+function PendingApprovalEmptyState() {
+  return (
+    <div
+      className="rounded-2xl p-10 md:p-14 text-center"
+      style={{
+        background: "rgba(255,253,250,0.6)",
+        border: "0.5px solid rgba(255,138,76,0.22)",
+        backdropFilter: "blur(10px)",
+        WebkitBackdropFilter: "blur(10px)",
+      }}
+    >
+      <div
+        className="w-14 h-14 mx-auto rounded-full inline-flex items-center justify-center mb-5"
+        style={{ background: "rgba(255,138,76,0.18)", color: "#c4541e" }}
+      >
+        <ImagePlus className="w-6 h-6" />
+      </div>
+      <h2 className="font-editorial italic text-3xl mb-2">
+        Your listings are under review
+      </h2>
+      <p className="text-sm text-muted-foreground max-w-md mx-auto mb-6 leading-relaxed">
+        Leads live per listing. Once one of your listings is approved
+        hosts will be able to inquire and they'll start showing up here.
+      </p>
+      <Link
+        to="/vendor/me"
+        className="inline-flex items-center gap-2 rounded-full bg-foreground text-background px-5 py-2.5 text-sm font-medium hover:opacity-90 transition-opacity"
+      >
+        Review my listings
+      </Link>
     </div>
   );
 }
