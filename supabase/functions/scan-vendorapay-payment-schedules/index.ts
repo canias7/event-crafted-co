@@ -1,13 +1,12 @@
-// VendoraPay: scheduled-balance activator + reminder.
+// VendoraPay daily cron (8am UTC). Two jobs:
 //
-// Runs daily via pg_cron (8am UTC). Finds payment_links where
-// status='scheduled' AND activate_at <= now(), flips them to
-// status='active', and emails the host (host_email pulled from the
-// parent deposit link) a "balance due" reminder with the URL to pay.
+//   1. Promote scheduled balance links whose activate_at has passed,
+//      then email the host a "balance due" reminder.
+//   2. Mark invoices whose due_date has passed as 'overdue'.
 //
-// Idempotent: status flip is gated on status='scheduled' so a re-run
-// on the same day doesn't double-email. Each promoted link counts as
-// one email per run.
+// Idempotent on both (status filters prevent re-flips). Skips
+// balance promotion when the parent deposit was cancelled or
+// refunded — vendor backed out, don't pursue the balance.
 
 // deno-lint-ignore-file no-explicit-any
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
@@ -32,10 +31,7 @@ function button(href: string, label: string): string {
   return `<a href="${href}" style="display:inline-block;background:#1a1a1a;color:#ffffff;text-decoration:none;padding:12px 28px;border-radius:999px;font-size:14px;font-weight:500;">${label}</a>`;
 }
 async function sendEmail(to: string, subject: string, html: string): Promise<boolean> {
-  if (!RESEND_API_KEY) {
-    console.warn("[scan-vendorapay-payment-schedules] RESEND_API_KEY not set", to);
-    return false;
-  }
+  if (!RESEND_API_KEY) return false;
   const r = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: { Authorization: `Bearer ${RESEND_API_KEY}`, "Content-Type": "application/json" },
@@ -52,16 +48,17 @@ serve(async () => {
   const db = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, { auth: { persistSession: false } });
   try {
     const nowIso = new Date().toISOString();
-    const { data: due, error: dueErr } = await db
+    let promoted = 0;
+    let emailed = 0;
+    let invoicesMarkedOverdue = 0;
+
+    // 1) Promote scheduled balance links whose activate_at has passed.
+    const { data: due } = await db
       .from("payment_links")
       .select("id, vendor_id, slug, title, amount_cents, currency, parent_link_id")
       .eq("status", "scheduled")
       .lte("activate_at", nowIso)
       .limit(200);
-    if (dueErr) {
-      console.error("[scan-vendorapay-payment-schedules] query failed", dueErr);
-      return new Response(JSON.stringify({ ok: false, error: dueErr.message }), { status: 500 });
-    }
     const rows = (due ?? []) as Array<{
       id: string;
       vendor_id: string;
@@ -72,10 +69,25 @@ serve(async () => {
       parent_link_id: string | null;
     }>;
 
-    let promoted = 0;
-    let emailed = 0;
-
     for (const r of rows) {
+      // Skip + cancel if the parent (deposit) was cancelled or
+      // refunded — vendor backed out, don't pursue balance.
+      if (r.parent_link_id) {
+        const { data: parent } = await db
+          .from("payment_links")
+          .select("status, host_email")
+          .eq("id", r.parent_link_id)
+          .maybeSingle();
+        const parentStatus = (parent as { status?: string } | null)?.status;
+        if (parentStatus && ["cancelled", "refunded", "partial_refund"].includes(parentStatus)) {
+          await db
+            .from("payment_links")
+            .update({ status: "cancelled", updated_at: nowIso })
+            .eq("id", r.id)
+            .eq("status", "scheduled");
+          continue;
+        }
+      }
       const { data: updated } = await db
         .from("payment_links")
         .update({ status: "active", updated_at: nowIso })
@@ -115,14 +127,31 @@ serve(async () => {
         : "";
       const html = shellHtml(
         `Balance due: ${amount}`,
-        `${logoHtml}<p style="margin:0 0 16px;">The remaining balance for <strong>${escapeHtml(r.title)}</strong> with ${escapeHtml(businessName)} is now due.</p><p style="margin:0 0 24px;font-size:28px;font-weight:600;">${amount}</p><p style="margin:0 0 24px;">${button(payUrl, `Pay ${amount}`)}</p><p style="margin:0;font-size:13px;color:#777;">Card payments processed securely via VendoraPay. "VENDORAPAY" will appear on your statement.</p>`,
+        `${logoHtml}<p style="margin:0 0 16px;">The remaining balance for <strong>${escapeHtml(r.title)}</strong> with ${escapeHtml(businessName)} is now due.</p><p style="margin:0 0 24px;font-size:28px;font-weight:600;">${amount}</p><p style="margin:0 0 24px;">${button(payUrl, `Pay ${amount}`)}</p><p style="margin:0;font-size:13px;color:#777;">Card payments processed securely via VendoraPay.</p>`,
       );
       const ok = await sendEmail(hostEmail, `Balance due (${amount}) — ${businessName}`, html);
       if (ok) emailed++;
     }
 
+    // 2) Mark invoices overdue when due_date has passed.
+    const today = new Date().toISOString().slice(0, 10);
+    const { data: overdueUpd, error: overdueErr } = await db
+      .from("invoices")
+      .update({ status: "overdue", updated_at: nowIso })
+      .eq("status", "sent")
+      .lt("due_date", today)
+      .select("id");
+    if (overdueErr) console.error("[scan-vendorapay-payment-schedules] invoice overdue failed", overdueErr);
+    invoicesMarkedOverdue = (overdueUpd ?? []).length;
+
     return new Response(
-      JSON.stringify({ ok: true, candidates: rows.length, promoted, emailed }),
+      JSON.stringify({
+        ok: true,
+        candidates: rows.length,
+        promoted,
+        emailed,
+        invoices_marked_overdue: invoicesMarkedOverdue,
+      }),
       { status: 200, headers: { "Content-Type": "application/json" } },
     );
   } catch (err) {

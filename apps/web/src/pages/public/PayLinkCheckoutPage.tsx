@@ -108,12 +108,12 @@ export default function PayLinkCheckoutPage() {
   if (notFound || !link) {
     return (
       <Shell>
-        <Centered title="Link not found" sub="This pay link doesn't exist or has been cancelled by the vendor." />
+        <Centered title="Link not found" sub="This pay link doesn't exist." />
       </Shell>
     );
   }
 
-  if (flow === "success") {
+  if (flow === "success" || link.status === "paid") {
     return (
       <Shell>
         <Centered
@@ -125,6 +125,40 @@ export default function PayLinkCheckoutPage() {
     );
   }
 
+  if (link.status === "cancelled") {
+    return (
+      <Shell>
+        <Centered
+          title="Link cancelled"
+          sub={`${link.vendor_business_name ?? "The vendor"} cancelled this payment request. Please reach out if you have questions.`}
+        />
+      </Shell>
+    );
+  }
+
+  if (link.status === "expired") {
+    return (
+      <Shell>
+        <Centered
+          title="Link expired"
+          sub={`This payment request expired. Reach out to ${link.vendor_business_name ?? "the vendor"} for a fresh one.`}
+        />
+      </Shell>
+    );
+  }
+
+  if (link.status === "scheduled") {
+    return (
+      <Shell>
+        <Centered
+          title="Not yet due"
+          sub="This payment isn't due yet. We'll email you a reminder on the scheduled date."
+        />
+      </Shell>
+    );
+  }
+
+  // active — render checkout
   const expired = link.status !== "active";
 
   return (

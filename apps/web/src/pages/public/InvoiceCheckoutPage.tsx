@@ -129,18 +129,51 @@ export default function InvoiceCheckoutPage() {
   if (notFound || !invoice) {
     return (
       <Shell>
-        <Centered title="Invoice not found" sub="This invoice doesn't exist, has been cancelled, or hasn't been sent yet." />
+        <Centered title="Invoice not found" sub="This invoice doesn't exist." />
       </Shell>
     );
   }
 
-  if (flow === "success") {
+  if (flow === "success" || invoice.status === "paid") {
     return (
       <Shell>
         <Centered
           icon={<Check className="w-7 h-7 text-emerald-600" />}
           title="Payment received"
           sub={`Thanks. ${invoice.vendor_business_name ?? "Your vendor"} will be in touch.`}
+        />
+      </Shell>
+    );
+  }
+
+  if (invoice.status === "cancelled") {
+    return (
+      <Shell>
+        <Centered
+          title="Invoice cancelled"
+          sub={`${invoice.vendor_business_name ?? "The vendor"} cancelled this invoice. Please reach out if you have questions.`}
+        />
+      </Shell>
+    );
+  }
+
+  if (invoice.status === "draft") {
+    return (
+      <Shell>
+        <Centered
+          title="Invoice not yet ready"
+          sub="This invoice hasn't been sent yet. Check back once your vendor finalizes it."
+        />
+      </Shell>
+    );
+  }
+
+  if (invoice.status === "refunded" || invoice.status === "partial_refund") {
+    return (
+      <Shell>
+        <Centered
+          title="Already refunded"
+          sub={`${invoice.vendor_business_name ?? "Your vendor"} has refunded this invoice.`}
         />
       </Shell>
     );

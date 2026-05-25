@@ -56,7 +56,7 @@ serve(async (req) => {
     const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, { auth: { persistSession: false } });
     const { data: inv, error: invErr } = await admin
       .from("invoices")
-      .select("id, vendor_id, invoice_number, line_items, subtotal_cents, tax_cents, tax_rate_bps, total_cents, currency, status, bill_to_email")
+      .select("id, vendor_id, invoice_number, line_items, subtotal_cents, tax_cents, tax_rate_bps, total_cents, currency, status, bill_to_email, vendor_tier_snapshot")
       .eq("slug", slug)
       .maybeSingle();
     if (invErr || !inv) return json(404, { error: "invoice not found" });
@@ -81,12 +81,19 @@ serve(async (req) => {
       .eq("id", inv.vendor_id)
       .maybeSingle();
     const vpRow = vp as { business_name?: string | null } | null;
-    // subscription_tier lives on profiles, not vendor_profiles (per
-    // migration 20260524000000). Use the RPC that joins them.
-    const { data: tierRaw } = await admin.rpc("get_vendor_subscription_tier", {
-      p_vendor_id: inv.vendor_id,
-    });
-    const tier = normalizeTier(tierRaw as string | null);
+    // Snapshot tier captured at send time (trigger). Falls back to
+    // live tier for legacy rows. Plan changes after sending don't
+    // affect the fee.
+    const snapshotTier = (inv as { vendor_tier_snapshot?: string | null }).vendor_tier_snapshot;
+    let tier;
+    if (snapshotTier) {
+      tier = normalizeTier(snapshotTier);
+    } else {
+      const { data: tierRaw } = await admin.rpc("get_vendor_subscription_tier", {
+        p_vendor_id: inv.vendor_id,
+      });
+      tier = normalizeTier(tierRaw as string | null);
+    }
     const feeCents = computePlatformFeeCents(tier, inv.total_cents as number);
 
     const items = (inv.line_items as unknown as LineItem[]) ?? [];

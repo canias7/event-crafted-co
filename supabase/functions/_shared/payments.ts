@@ -304,6 +304,36 @@ export async function listTransactions(
 }
 
 /**
+ * Resolve the host's email for a PaymentIntent.
+ *
+ * receipt_email on the PI is only set when WE pass it upfront —
+ * Stripe Checkout collects the email on the hosted page and stamps
+ * it onto charge.billing_details.email, not receipt_email. This
+ * helper retrieves the PI with the latest_charge expanded and
+ * returns the first email it finds.
+ *
+ * Used by vendorapay-webhook to populate payment_links.host_email
+ * for the scheduled-balance reminder flow.
+ */
+export async function getReceiptEmailForPI(
+  pi_id: string,
+): Promise<string | null> {
+  const pi = await client().paymentIntents.retrieve(pi_id, {
+    expand: ["latest_charge"],
+  });
+  if (pi.receipt_email) return pi.receipt_email;
+  const charge = pi.latest_charge as unknown;
+  if (charge && typeof charge === "object") {
+    const ch = charge as {
+      billing_details?: { email?: string | null };
+      receipt_email?: string | null;
+    };
+    return ch.billing_details?.email ?? ch.receipt_email ?? null;
+  }
+  return null;
+}
+
+/**
  * Verify webhook signature + normalize into a VendoraPay event.
  * Returns null when the event isn't one we care about (so handlers
  * can drop it without branching on every type).
