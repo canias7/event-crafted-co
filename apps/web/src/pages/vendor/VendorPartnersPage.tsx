@@ -8,7 +8,7 @@ import {
   type MutableRefObject,
   type SetStateAction,
 } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   Archive,
   ArrowLeft,
@@ -20,8 +20,10 @@ import {
   MapPin,
   MessageSquare,
   Paperclip,
+  Search,
   Send,
   Smile,
+  UserPlus,
   X,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -33,6 +35,7 @@ import { DashboardSidebar } from "@/components/shared/DashboardSidebar";
 import { MobileNav } from "@/components/shared/MobileNav";
 import { SubNavTabs } from "@/components/shared/SubNavTabs";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
@@ -961,6 +964,14 @@ export default function VendorPartnersPage() {
             )}
           </aside>
 
+          {/* Right-side find-a-vendor panel. Hidden when a thread is
+              open so the chat can take the full width. Lets a vendor
+              search for another vendor by business name and start
+              (or resume) a partner thread without leaving the page. */}
+          {!activeThreadId ? (
+            <FindVendorPanel meId={user?.id ?? null} />
+          ) : null}
+
           {/* Chat pane is full-width when a thread is active.
               min-h-0 lets the inner messages scroller engage. */}
           <section
@@ -1653,5 +1664,182 @@ function PartnerChatPane(props: {
         onSend={(body) => sendBody(body)}
       />
     </div>
+  );
+}
+
+// Right-side panel: search any approved vendor by business name and
+// open a partner thread with them. Uses the same find_or_create_partner_thread
+// RPC that "Message vendor" on a public vendor profile uses, so an
+// existing thread is reused instead of duplicated.
+interface VendorSearchResult {
+  id: string;
+  user_id: string | null;
+  business_name: string | null;
+  category: string | null;
+  location: string | null;
+  logo_url: string | null;
+}
+
+function FindVendorPanel({ meId }: { meId: string | null }) {
+  const navigate = useNavigate();
+  const [query, setQuery] = useState("");
+  const [results, setResults] = useState<VendorSearchResult[]>([]);
+  const [searching, setSearching] = useState(false);
+  const [starting, setStarting] = useState<string | null>(null);
+
+  // Debounce so each keystroke doesn't fire a query — 200ms is the
+  // sweet spot for "feels live" without spamming Supabase.
+  useEffect(() => {
+    const q = query.trim();
+    if (q.length < 2) {
+      setResults([]);
+      return;
+    }
+    let cancelled = false;
+    setSearching(true);
+    const t = setTimeout(async () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data } = await (supabase as any)
+        .from("vendor_profiles")
+        .select("id, user_id, business_name, category, location, logo_url")
+        .eq("application_status", "approved")
+        .ilike("business_name", `%${q}%`)
+        .order("business_name", { ascending: true })
+        .limit(15);
+      if (cancelled) return;
+      const rows = ((data ?? []) as VendorSearchResult[]).filter(
+        (r) => r.user_id && r.user_id !== meId,
+      );
+      setResults(rows);
+      setSearching(false);
+    }, 200);
+    return () => {
+      cancelled = true;
+      clearTimeout(t);
+    };
+  }, [query, meId]);
+
+  async function startThread(r: VendorSearchResult) {
+    if (!r.user_id || starting) return;
+    setStarting(r.id);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data, error } = await (supabase as any).rpc(
+      "find_or_create_partner_thread",
+      { p_other_user_id: r.user_id },
+    );
+    setStarting(null);
+    if (error || !data) {
+      toast.error(error?.message ?? "Couldn't start the thread.");
+      return;
+    }
+    navigate(`/vendor/partners?thread=${data}`);
+  }
+
+  const showEmpty = query.trim().length >= 2 && !searching && results.length === 0;
+
+  return (
+    <aside
+      className="hidden lg:flex flex-col w-80 shrink-0 border-l p-4 gap-3 overflow-hidden"
+      style={{
+        borderColor: "rgba(255,138,76,0.18)",
+        background: "rgba(255,253,250,0.4)",
+      }}
+    >
+      <div>
+        <p className="text-sm font-semibold text-foreground">Find a vendor</p>
+        <p className="text-xs text-muted-foreground mt-0.5">
+          Search any approved vendor by business name to start a chat.
+        </p>
+      </div>
+      <div className="relative">
+        <Search
+          className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+          aria-hidden
+        />
+        <Input
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Search vendors…"
+          aria-label="Search vendors by business name"
+          className="pl-9 rounded-full"
+        />
+      </div>
+      <div className="flex-1 overflow-y-auto -mr-2 pr-2">
+        {searching ? (
+          <div className="space-y-2">
+            {[0, 1, 2].map((i) => (
+              <Skeleton key={i} className="h-14 w-full rounded-xl" />
+            ))}
+          </div>
+        ) : showEmpty ? (
+          <p className="text-xs text-muted-foreground py-4 px-2">
+            No vendors match "{query.trim()}".
+          </p>
+        ) : results.length === 0 ? (
+          <p className="text-xs text-muted-foreground py-4 px-2 leading-relaxed">
+            Start typing — results show up after 2 characters.
+          </p>
+        ) : (
+          <ul className="space-y-1.5">
+            {results.map((r) => {
+              const label = r.business_name?.trim() || "Unnamed vendor";
+              const sub = [r.category, r.location].filter(Boolean).join(" · ");
+              const initial = (label[0] ?? "?").toUpperCase();
+              const isStarting = starting === r.id;
+              return (
+                <li key={r.id}>
+                  <button
+                    type="button"
+                    disabled={isStarting}
+                    onClick={() => void startThread(r)}
+                    className="w-full text-left rounded-xl px-3 py-2.5 flex items-center gap-3 transition-colors hover:bg-secondary/40 disabled:opacity-50"
+                    style={{
+                      background: "rgba(255,253,250,0.7)",
+                      border: "0.5px solid rgba(255,138,76,0.18)",
+                    }}
+                  >
+                    {r.logo_url ? (
+                      <img
+                        src={r.logo_url}
+                        alt=""
+                        className="w-9 h-9 rounded-full object-cover shrink-0"
+                      />
+                    ) : (
+                      <span
+                        className="w-9 h-9 rounded-full inline-flex items-center justify-center font-semibold shrink-0 text-sm"
+                        style={{
+                          background: "rgba(255,138,76,0.18)",
+                          color: "#c4541e",
+                        }}
+                      >
+                        {initial}
+                      </span>
+                    )}
+                    <span className="min-w-0 flex-1">
+                      <span className="block text-sm font-medium text-foreground truncate">
+                        {label}
+                      </span>
+                      {sub ? (
+                        <span className="block text-[11px] text-muted-foreground truncate">
+                          {sub}
+                        </span>
+                      ) : null}
+                    </span>
+                    {isStarting ? (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin text-muted-foreground shrink-0" />
+                    ) : (
+                      <UserPlus
+                        className="w-4 h-4 text-muted-foreground shrink-0"
+                        aria-hidden
+                      />
+                    )}
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </div>
+    </aside>
   );
 }
