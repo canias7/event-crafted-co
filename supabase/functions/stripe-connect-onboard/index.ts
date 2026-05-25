@@ -114,9 +114,6 @@ serve(async (req: Request) => {
     const { data: owner } = await db.auth.admin.getUserById(vendor.user_id);
     const account = await stripe.accounts.create({
       type: "express",
-      // Country defaults to US; Stripe Express requires a country at
-      // creation. For a multi-country marketplace we'd derive this
-      // from the vendor's profile location — punt for now.
       country: "US",
       email: owner?.user?.email ?? undefined,
       capabilities: {
@@ -127,12 +124,43 @@ serve(async (req: Request) => {
       metadata: { vendor_id: vendorId },
     });
     accountId = account.id;
+    // Stamp the initial state from the create response so we don't
+    // have to wait for the first account.updated webhook (will be
+    // all-false for a fresh account anyway, but keeps the row
+    // consistent).
     await db
       .from("vendor_payment_secrets")
       .upsert(
-        { vendor_id: vendorId, stripe_account_id: accountId },
+        {
+          vendor_id: vendorId,
+          stripe_account_id: accountId,
+          charges_enabled: Boolean(account.charges_enabled),
+          payouts_enabled: Boolean(account.payouts_enabled),
+          details_submitted: Boolean(account.details_submitted),
+        },
         { onConflict: "vendor_id" },
       );
+  } else {
+    // Existing account — sync state from Stripe. This is the
+    // self-healing backfill for vendors who connected before the
+    // account.updated webhook was wired up (PR #884), or for any
+    // case where the webhook missed an event.
+    try {
+      const account = await stripe.accounts.retrieve(accountId);
+      await db
+        .from("vendor_payment_secrets")
+        .update({
+          charges_enabled: Boolean(account.charges_enabled),
+          payouts_enabled: Boolean(account.payouts_enabled),
+          details_submitted: Boolean(account.details_submitted),
+          updated_at: new Date().toISOString(),
+        })
+        .eq("vendor_id", vendorId);
+    } catch (err) {
+      // Don't fail the onboard flow over a sync error — the vendor
+      // still wants their fresh onboarding link.
+      console.error("[stripe-connect-onboard] sync failed", err);
+    }
   }
 
   // Account Link is the time-bound URL the vendor opens to complete
