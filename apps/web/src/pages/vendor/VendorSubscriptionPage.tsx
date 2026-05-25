@@ -352,7 +352,7 @@ export default function VendorSubscriptionPage() {
     }
     const url = (data as { url?: string } | null)?.url;
     if (!url) {
-      toast.error("Stripe didn't return a URL");
+      toast.error("Couldn't open the billing portal — try again in a moment.");
       return null;
     }
     window.location.href = url;
