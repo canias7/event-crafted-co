@@ -88,6 +88,23 @@ interface ChatMessage {
   content: string;
 }
 
+async function postToAnthropic(
+  body: Record<string, unknown>,
+  beta: string | null,
+): Promise<Response> {
+  const headers: Record<string, string> = {
+    "x-api-key": ANTHROPIC_API_KEY,
+    "anthropic-version": "2023-06-01",
+    "content-type": "application/json",
+  };
+  if (beta) headers["anthropic-beta"] = beta;
+  return await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers,
+    body: JSON.stringify(body),
+  });
+}
+
 async function callClaude(
   messages: ChatMessage[],
   stripeMcpKey: string | null,
@@ -95,20 +112,7 @@ async function callClaude(
   if (!ANTHROPIC_API_KEY) throw new Error("anthropic_key_missing");
   const systemText = buildSystemPrompt(Boolean(stripeMcpKey));
 
-  // Anthropic's MCP connector lets us pass remote MCP servers in the
-  // request — Anthropic handles the tool-use loop server-side and we
-  // just get a final text answer back. The beta header is required
-  // while the feature is in preview.
-  const headers: Record<string, string> = {
-    "x-api-key": ANTHROPIC_API_KEY,
-    "anthropic-version": "2023-06-01",
-    "content-type": "application/json",
-  };
-  if (stripeMcpKey) {
-    headers["anthropic-beta"] = "mcp-client-2025-04-04";
-  }
-
-  const body: Record<string, unknown> = {
+  const baseBody: Record<string, unknown> = {
     model: SONNET_MODEL,
     max_tokens: 2048,
     system: [
@@ -120,27 +124,47 @@ async function callClaude(
     ],
     messages,
   };
+
+  // Try with MCP attached first when we have a key. If Anthropic
+  // rejects (unknown beta, malformed mcp_servers, etc.), fall back
+  // to a plain call so the chatbox at least stays functional —
+  // Sonnet will reply but won't have Stripe tool access.
   if (stripeMcpKey) {
-    body.mcp_servers = [
-      {
-        type: "url",
-        url: STRIPE_MCP_URL,
-        name: "stripe",
-        authorization_token: stripeMcpKey,
-      },
-    ];
+    const bodyWithMcp = {
+      ...baseBody,
+      mcp_servers: [
+        {
+          type: "url",
+          url: STRIPE_MCP_URL,
+          name: "stripe",
+          authorization_token: stripeMcpKey,
+        },
+      ],
+    };
+    const res = await postToAnthropic(bodyWithMcp, "mcp-client-2025-04-04");
+    if (res.ok) {
+      const parsed = (await res.json()) as any;
+      return extractText(parsed);
+    }
+    const errText = await res.text();
+    console.warn(
+      "[my-space-chat] MCP call failed, falling back to plain Sonnet",
+      res.status,
+      errText.slice(0, 240),
+    );
+    // fall through to the plain call below
   }
 
-  const res = await fetch("https://api.anthropic.com/v1/messages", {
-    method: "POST",
-    headers,
-    body: JSON.stringify(body),
-  });
+  const res = await postToAnthropic(baseBody, null);
   if (!res.ok) {
     const t = await res.text();
     throw new Error(`anthropic ${res.status}: ${t.slice(0, 240)}`);
   }
   const parsed = (await res.json()) as any;
+  return extractText(parsed);
+}
+
+function extractText(parsed: any): string {
   const text = (parsed.content ?? [])
     .filter((b: any) => b.type === "text")
     .map((b: any) => b.text)
