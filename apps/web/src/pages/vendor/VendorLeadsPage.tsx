@@ -21,7 +21,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { Calendar, Filter, ImagePlus, Inbox, Plus, Search } from "lucide-react";
+import { Filter, ImagePlus, Inbox, Plus, Search } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useRealtime } from "@/lib/realtime";
@@ -56,6 +56,10 @@ interface Lead {
   hostId: string;
   hostName: string;
   hostAvatarUrl: string | null;
+  hostEmail: string | null;
+  // Synthetic "LD-XXXXXX" id derived from host_id so vendors have a
+  // stable, scannable reference per lead (matches CRM convention).
+  leadId: string;
   inquiriesCount: number;
   status: "won" | "active" | "new" | "lost";
   // The latest inquiry's id — used as the click-through target.
@@ -63,7 +67,28 @@ interface Lead {
   latestEventType: string | null;
   latestEventDate: string | null;
   lastContactAt: string; // ISO
+  // First-contact date — earliest inquiry created_at across all of
+  // this host's inquiries with this listing. "Created" in CRM language.
+  createdAt: string; // ISO
   budgetTotalCents: number;
+}
+
+function leadIdFromHostId(hostId: string): string {
+  // First 6 hex chars of the host's UUID, uppercased. Stable across
+  // sessions, looks like LD-A3F2C9.
+  const hex = hostId.replace(/-/g, "").slice(0, 6).toUpperCase();
+  return `LD-${hex}`;
+}
+
+function formatCreated(iso: string): string {
+  const d = new Date(iso);
+  const now = new Date();
+  const sameYear = d.getFullYear() === now.getFullYear();
+  return d.toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+    year: sameYear ? undefined : "numeric",
+  });
 }
 
 // Ordered by priority: a host with at least one won inquiry is
@@ -86,29 +111,6 @@ function midBudget(min: number | null, max: number | null): number {
   return 0;
 }
 
-function formatRelative(iso: string): string {
-  const then = new Date(iso).getTime();
-  const now = Date.now();
-  const diff = Math.max(0, now - then);
-  const min = Math.floor(diff / 60000);
-  if (min < 1) return "just now";
-  if (min < 60) return `${min}m ago`;
-  const hr = Math.floor(min / 60);
-  if (hr < 24) return `${hr}h ago`;
-  const d = Math.floor(hr / 24);
-  if (d < 7) return `${d}d ago`;
-  const w = Math.floor(d / 7);
-  if (w < 5) return `${w}w ago`;
-  const mo = Math.floor(d / 30);
-  if (mo < 12) return `${mo}mo ago`;
-  return `${Math.floor(d / 365)}y ago`;
-}
-
-function formatMoney(cents: number): string {
-  if (cents <= 0) return "—";
-  return `$${Math.round(cents / 100).toLocaleString()}`;
-}
-
 type StatusFilter = "all" | "active" | "won" | "lost";
 
 export default function VendorLeadsPage() {
@@ -128,6 +130,10 @@ export default function VendorLeadsPage() {
   const [listingPickerOpen, setListingPickerOpen] = useState(false);
 
   const [rows, setRows] = useState<InquiryRow[]>([]);
+  // Map of host_id → email. Filled from get_vendor_lead_emails RPC
+  // alongside the inquiry fetch. Email lives on auth.users which
+  // isn't RLS-readable, so the RPC is the only client-side path.
+  const [emails, setEmails] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
@@ -161,6 +167,7 @@ export default function VendorLeadsPage() {
   const load = useCallback(async () => {
     if (!user || !selectedListingId) {
       setRows([]);
+      setEmails({});
       setLoading(false);
       return;
     }
@@ -169,16 +176,32 @@ export default function VendorLeadsPage() {
     // inquiry on each load" guard, but a little higher because Leads
     // aggregates by host — a vendor with many repeat customers gains
     // more by seeing more inquiries per page load than the inbox does.
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data } = await (supabase as any)
-      .from("inquiries")
-      .select(
-        "id, host_id, event_type, event_date, budget_min_cents, budget_max_cents, status, created_at, last_message_at, host:profiles!inquiries_host_id_fkey(display_name, avatar_url)",
-      )
-      .eq("vendor_id", selectedListingId)
-      .order("last_message_at", { ascending: false, nullsFirst: false })
-      .limit(200);
-    setRows((data as unknown as InquiryRow[]) ?? []);
+    // Inquiries + emails fetched in parallel — emails come from a
+    // gated SECURITY DEFINER RPC since auth.users isn't RLS-readable.
+    const [inqRes, emailRes] = await Promise.all([
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (supabase as any)
+        .from("inquiries")
+        .select(
+          "id, host_id, event_type, event_date, budget_min_cents, budget_max_cents, status, created_at, last_message_at, host:profiles!inquiries_host_id_fkey(display_name, avatar_url)",
+        )
+        .eq("vendor_id", selectedListingId)
+        .order("last_message_at", { ascending: false, nullsFirst: false })
+        .limit(200),
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (supabase as any).rpc("get_vendor_lead_emails", {
+        p_vendor_id: selectedListingId,
+      }),
+    ]);
+    setRows((inqRes.data as unknown as InquiryRow[]) ?? []);
+    const emailRows = (emailRes.data as
+      | Array<{ host_id: string; email: string }>
+      | null) ?? [];
+    const emailMap: Record<string, string> = {};
+    for (const r of emailRows) {
+      if (r.host_id && r.email) emailMap[r.host_id] = r.email;
+    }
+    setEmails(emailMap);
     setLoading(false);
   }, [user, selectedListingId]);
 
@@ -224,6 +247,11 @@ export default function VendorLeadsPage() {
       const latest = sorted[0];
       const status = pickAggregateStatus(sorted.map((r) => r.status));
       const lastContactAt = latest.last_message_at ?? latest.created_at;
+      // First-contact = earliest created_at across this host's inquiries.
+      const createdAt = sorted.reduce(
+        (min, r) => (r.created_at < min ? r.created_at : min),
+        latest.created_at,
+      );
       const budgetTotalCents = sorted.reduce(
         (acc, r) => acc + midBudget(r.budget_min_cents, r.budget_max_cents),
         0,
@@ -232,12 +260,15 @@ export default function VendorLeadsPage() {
         hostId,
         hostName: latest.host?.display_name?.trim() || "Host",
         hostAvatarUrl: latest.host?.avatar_url ?? null,
+        hostEmail: emails[hostId] ?? null,
+        leadId: leadIdFromHostId(hostId),
         inquiriesCount: sorted.length,
         status,
         latestInquiryId: latest.id,
         latestEventType: latest.event_type,
         latestEventDate: latest.event_date,
         lastContactAt,
+        createdAt,
         budgetTotalCents,
       });
     }
@@ -247,7 +278,7 @@ export default function VendorLeadsPage() {
         new Date(a.lastContactAt).getTime(),
     );
     return list;
-  }, [rows]);
+  }, [rows, emails]);
 
   const filteredLeads = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -261,7 +292,14 @@ export default function VendorLeadsPage() {
       } else if (statusFilter !== "all" && l.status !== statusFilter) {
         return false;
       }
-      if (q && !l.hostName.toLowerCase().includes(q)) return false;
+      if (q) {
+        const hay = [
+          l.hostName,
+          l.hostEmail ?? "",
+          l.leadId,
+        ].join(" ").toLowerCase();
+        if (!hay.includes(q)) return false;
+      }
       return true;
     });
   }, [leads, query, statusFilter]);
@@ -358,18 +396,19 @@ export default function VendorLeadsPage() {
               <Input
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                placeholder="Search host…"
-                aria-label="Search leads by host name"
+                placeholder="Search name, email, or LD-…"
+                aria-label="Search leads by name, email, or Lead ID"
                 className="pl-9 rounded-full"
               />
             </div>
           </div>
 
-          {/* Leads list */}
+          {/* CRM-style table: Lead ID · Name · Email · Status · Created.
+              Row click → opens the latest inquiry chat. */}
           {loading ? (
             <div className="space-y-2.5">
               {[0, 1, 2, 3].map((i) => (
-                <Skeleton key={i} className="h-20 w-full rounded-2xl" />
+                <Skeleton key={i} className="h-12 w-full rounded-lg" />
               ))}
             </div>
           ) : filteredLeads.length === 0 ? (
@@ -379,72 +418,82 @@ export default function VendorLeadsPage() {
               query={query}
             />
           ) : (
-            <ul className="space-y-2.5">
-              {filteredLeads.map((lead) => (
-                <li key={lead.hostId}>
-                  <Link
-                    to={`/vendor/inbox/${lead.latestInquiryId}`}
-                    className="block rounded-2xl p-4 md:p-5 transition-colors hover:bg-secondary/40"
-                    style={{
-                      background: "rgba(255,253,250,0.7)",
-                      border: "0.5px solid rgba(255,138,76,0.22)",
-                    }}
-                  >
-                    <div className="flex items-center gap-3 md:gap-4">
-                      <Avatar
-                        name={lead.hostName}
-                        url={lead.hostAvatarUrl}
-                      />
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <p className="font-semibold text-foreground truncate">
-                            {lead.hostName}
-                          </p>
+            <div
+              className="rounded-2xl overflow-hidden"
+              style={{
+                background: "rgba(255,253,250,0.7)",
+                border: "0.5px solid rgba(255,138,76,0.22)",
+              }}
+            >
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="text-left text-[10px] uppercase tracking-[0.12em] text-muted-foreground font-semibold">
+                      <th className="px-4 md:px-5 py-3 font-semibold">Lead</th>
+                      <th className="px-4 md:px-5 py-3 font-semibold">Name</th>
+                      <th className="px-4 md:px-5 py-3 font-semibold">Email</th>
+                      <th className="px-4 md:px-5 py-3 font-semibold">Status</th>
+                      <th className="px-4 md:px-5 py-3 font-semibold">Created</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredLeads.map((lead) => (
+                      <tr
+                        key={lead.hostId}
+                        className="border-t cursor-pointer transition-colors hover:bg-secondary/40"
+                        style={{ borderColor: "rgba(255,138,76,0.12)" }}
+                        onClick={() =>
+                          window.location.assign(
+                            `/vendor/inbox/${lead.latestInquiryId}`,
+                          )
+                        }
+                      >
+                        <td className="px-4 md:px-5 py-3 font-mono text-xs text-[#c4541e]">
+                          {lead.leadId}
+                        </td>
+                        <td className="px-4 md:px-5 py-3">
+                          <div className="flex items-center gap-2.5">
+                            <Avatar
+                              name={lead.hostName}
+                              url={lead.hostAvatarUrl}
+                            />
+                            <div className="min-w-0">
+                              <p className="font-semibold text-foreground truncate">
+                                {lead.hostName}
+                              </p>
+                              {lead.inquiriesCount > 1 ? (
+                                <p className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                                  {lead.inquiriesCount} inquiries
+                                </p>
+                              ) : null}
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-4 md:px-5 py-3 text-foreground/80">
+                          {lead.hostEmail ? (
+                            <a
+                              href={`mailto:${lead.hostEmail}`}
+                              onClick={(e) => e.stopPropagation()}
+                              className="hover:text-foreground hover:underline"
+                            >
+                              {lead.hostEmail}
+                            </a>
+                          ) : (
+                            <span className="text-muted-foreground">—</span>
+                          )}
+                        </td>
+                        <td className="px-4 md:px-5 py-3">
                           <StatusBadge status={lead.status} />
-                          {lead.inquiriesCount > 1 ? (
-                            <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">
-                              {lead.inquiriesCount} inquiries
-                            </span>
-                          ) : null}
-                        </div>
-                        <p className="text-xs text-muted-foreground mt-0.5 flex items-center gap-1.5 flex-wrap">
-                          {lead.latestEventType ? (
-                            <span className="capitalize">
-                              {lead.latestEventType.replace(/_/g, " ")}
-                            </span>
-                          ) : null}
-                          {lead.latestEventDate ? (
-                            <>
-                              <span aria-hidden>·</span>
-                              <span className="inline-flex items-center gap-1">
-                                <Calendar className="w-3 h-3" />
-                                {new Date(
-                                  lead.latestEventDate + "T00:00:00",
-                                ).toLocaleDateString(undefined, {
-                                  month: "short",
-                                  day: "numeric",
-                                  year: "numeric",
-                                })}
-                              </span>
-                            </>
-                          ) : null}
-                          <span aria-hidden>·</span>
-                          <span>{formatRelative(lead.lastContactAt)}</span>
-                        </p>
-                      </div>
-                      <div className="text-right shrink-0">
-                        <p className="text-sm font-semibold tnum">
-                          {formatMoney(lead.budgetTotalCents)}
-                        </p>
-                        <p className="text-[10px] uppercase tracking-wider text-muted-foreground">
-                          {lead.inquiriesCount > 1 ? "Total" : "Budget"}
-                        </p>
-                      </div>
-                    </div>
-                  </Link>
-                </li>
-              ))}
-            </ul>
+                        </td>
+                        <td className="px-4 md:px-5 py-3 text-foreground/80 tnum whitespace-nowrap">
+                          {formatCreated(lead.createdAt)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
           )}
             </>
           )}
