@@ -183,6 +183,7 @@
     "vendor": {
       "dashboard": "Dashboard",
       "inbox": "Inbox",
+      "leads": "Leads",
       "messages": "Messages",
       "analytics": "Analytics",
       "calendar": "Calendar",
