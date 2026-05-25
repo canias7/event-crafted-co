@@ -20,9 +20,12 @@ import {
   ArrowUpRight,
   Banknote,
   ChevronLeft,
+  Copy,
   CreditCard,
   ExternalLink,
+  Link2,
   Loader2,
+  Plus,
   RefreshCw,
   Settings as SettingsIcon,
   Wallet,
@@ -79,14 +82,29 @@ interface Status {
   details_submitted: boolean;
 }
 
-type TabId = "overview" | "transactions" | "payouts" | "settings";
+type TabId = "overview" | "transactions" | "links" | "payouts" | "settings";
 
 const TABS: Array<{ id: TabId; label: string; icon: typeof Wallet }> = [
   { id: "overview", label: "Overview", icon: Wallet },
   { id: "transactions", label: "Payments", icon: CreditCard },
+  { id: "links", label: "Pay Links", icon: Link2 },
   { id: "payouts", label: "Payouts", icon: Banknote },
   { id: "settings", label: "Settings", icon: SettingsIcon },
 ];
+
+interface PaymentLink {
+  id: string;
+  vendor_id: string;
+  slug: string;
+  title: string;
+  description: string | null;
+  amount_cents: number;
+  currency: string;
+  status: "active" | "paid" | "cancelled" | "expired";
+  paid_at: string | null;
+  expires_at: string | null;
+  created_at: string;
+}
 
 function formatMoney(cents: number, currency = "usd"): string {
   return new Intl.NumberFormat("en-US", {
@@ -171,6 +189,7 @@ export default function VendorPaymentsPage() {
   const [balance, setBalance] = useState<Balance | null>(null);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [payouts, setPayouts] = useState<PayoutsResponse | null>(null);
+  const [paymentLinks, setPaymentLinks] = useState<PaymentLink[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [connecting, setConnecting] = useState(false);
@@ -179,11 +198,18 @@ export default function VendorPaymentsPage() {
     async (silent = false) => {
       if (!vendorId) return;
       if (!silent) setRefreshing(true);
-      const [statusRes, balanceRes, txRes, payoutRes] = await Promise.all([
+      const [statusRes, balanceRes, txRes, payoutRes, linksRes] = await Promise.all([
         supabase.functions.invoke("vendorapay-status", { body: { business_id: vendorId } }),
         supabase.functions.invoke("vendorapay-balance", { body: { business_id: vendorId } }),
         supabase.functions.invoke("vendorapay-transactions", { body: { business_id: vendorId, limit: 50 } }),
         supabase.functions.invoke("vendorapay-payouts", { body: { business_id: vendorId } }),
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (supabase as any)
+          .from("payment_links")
+          .select("id, vendor_id, slug, title, description, amount_cents, currency, status, paid_at, expires_at, created_at")
+          .eq("vendor_id", vendorId)
+          .order("created_at", { ascending: false })
+          .limit(50),
       ]);
       if (statusRes.data) setStatus(statusRes.data as Status);
       if (balanceRes.data) setBalance(balanceRes.data as Balance);
@@ -192,6 +218,9 @@ export default function VendorPaymentsPage() {
         setTransactions(list);
       }
       if (payoutRes.data) setPayouts(payoutRes.data as PayoutsResponse);
+      if (linksRes && !linksRes.error) {
+        setPaymentLinks((linksRes.data ?? []) as PaymentLink[]);
+      }
       setLoading(false);
       setRefreshing(false);
     },
@@ -379,6 +408,13 @@ export default function VendorPaymentsPage() {
             />
           ) : tab === "transactions" ? (
             <TransactionsTab transactions={transactions} status={status} />
+          ) : tab === "links" ? (
+            <PayLinksTab
+              vendorId={vendorId}
+              links={paymentLinks}
+              status={status}
+              onChanged={() => refresh(true)}
+            />
           ) : tab === "payouts" ? (
             <PayoutsTab data={payouts} status={status} />
           ) : (
@@ -599,6 +635,241 @@ function PayoutsTab({ data, status }: { data: PayoutsResponse | null; status: St
         )}
       </section>
     </div>
+  );
+}
+
+function PayLinksTab({
+  vendorId,
+  links,
+  status,
+  onChanged,
+}: {
+  vendorId: string | null;
+  links: PaymentLink[];
+  status: Status | null;
+  onChanged: () => void;
+}) {
+  const [creating, setCreating] = useState(false);
+  const [title, setTitle] = useState("");
+  const [amountDollars, setAmountDollars] = useState("");
+  const [description, setDescription] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+
+  const create = useCallback(async () => {
+    if (!vendorId || submitting) return;
+    const cents = Math.round(parseFloat(amountDollars) * 100);
+    if (!title.trim()) {
+      toast.error("Title required");
+      return;
+    }
+    if (!Number.isFinite(cents) || cents < 50) {
+      toast.error("Amount must be at least $0.50");
+      return;
+    }
+    setSubmitting(true);
+    const { data: userData } = await supabase.auth.getUser();
+    if (!userData?.user) {
+      toast.error("Sign in required");
+      setSubmitting(false);
+      return;
+    }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error } = await (supabase as any)
+      .from("payment_links")
+      .insert({
+        vendor_id: vendorId,
+        title: title.trim(),
+        description: description.trim() || null,
+        amount_cents: cents,
+        created_by: userData.user.id,
+      });
+    setSubmitting(false);
+    if (error) {
+      toast.error("Couldn't create link", { description: error.message });
+      return;
+    }
+    toast.success("Pay link created");
+    setTitle("");
+    setAmountDollars("");
+    setDescription("");
+    setCreating(false);
+    onChanged();
+  }, [vendorId, title, amountDollars, description, submitting, onChanged]);
+
+  const copyLink = useCallback((slug: string) => {
+    const url = `${window.location.origin}/pay/link/${slug}`;
+    navigator.clipboard.writeText(url);
+    toast.success("Link copied", { description: url });
+  }, []);
+
+  const cancel = useCallback(
+    async (id: string) => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error } = await (supabase as any)
+        .from("payment_links")
+        .update({ status: "cancelled", updated_at: new Date().toISOString() })
+        .eq("id", id);
+      if (error) {
+        toast.error("Couldn't cancel", { description: error.message });
+        return;
+      }
+      toast.success("Link cancelled");
+      onChanged();
+    },
+    [onChanged],
+  );
+
+  return (
+    <div className="space-y-4">
+      {/* Create form */}
+      {creating ? (
+        <Card>
+          <div className="p-5 space-y-3">
+            <h3 className="text-sm font-semibold">New pay link</h3>
+            <input
+              type="text"
+              placeholder="What's this charge for? (e.g. Deposit for Aug 14 wedding)"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              className="w-full rounded-lg border-0 px-3 py-2 text-sm bg-background/60 ring-1 ring-foreground/10 focus:ring-foreground/30 outline-none"
+            />
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-muted-foreground">$</span>
+              <input
+                type="number"
+                inputMode="decimal"
+                step="0.01"
+                min="0.50"
+                placeholder="500.00"
+                value={amountDollars}
+                onChange={(e) => setAmountDollars(e.target.value)}
+                className="flex-1 rounded-lg border-0 px-3 py-2 text-sm bg-background/60 ring-1 ring-foreground/10 focus:ring-foreground/30 outline-none"
+              />
+            </div>
+            <textarea
+              placeholder="Optional note for the host"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              rows={2}
+              className="w-full rounded-lg border-0 px-3 py-2 text-sm bg-background/60 ring-1 ring-foreground/10 focus:ring-foreground/30 outline-none resize-none"
+            />
+            <div className="flex gap-2">
+              <Button onClick={create} disabled={submitting} className="rounded-full">
+                {submitting ? (
+                  <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
+                ) : null}
+                Create link
+              </Button>
+              <Button
+                variant="ghost"
+                onClick={() => {
+                  setCreating(false);
+                  setTitle("");
+                  setAmountDollars("");
+                  setDescription("");
+                }}
+                className="rounded-full"
+              >
+                Cancel
+              </Button>
+            </div>
+          </div>
+        </Card>
+      ) : (
+        <div className="flex items-center justify-between">
+          <p className="text-sm text-muted-foreground">
+            {status?.charges_enabled
+              ? "Send a shareable link. Hosts pay via card; money lands in your account."
+              : "Compose links now — they'll go live the moment your account is verified."}
+          </p>
+          <Button onClick={() => setCreating(true)} className="rounded-full">
+            <Plus className="w-4 h-4 mr-1.5" />
+            New pay link
+          </Button>
+        </div>
+      )}
+
+      {/* Existing links */}
+      {links.length === 0 ? (
+        <EmptyCard>No pay links yet. Click "New pay link" to create one.</EmptyCard>
+      ) : (
+        <Card>
+          {links.map((l, idx) => (
+            <div
+              key={l.id}
+              className={`p-5 ${idx > 0 ? "border-t border-foreground/5" : ""}`}
+            >
+              <div className="flex items-start gap-4 flex-wrap">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h3 className="text-sm font-semibold truncate">{l.title}</h3>
+                    <LinkStatusPill status={l.status} />
+                  </div>
+                  {l.description ? (
+                    <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{l.description}</p>
+                  ) : null}
+                  <p className="text-[11px] text-muted-foreground mt-1.5">
+                    Created {formatDate(l.created_at)}
+                    {l.paid_at ? ` · Paid ${formatDate(l.paid_at)}` : ""}
+                  </p>
+                </div>
+                <div className="text-right shrink-0">
+                  <div className="text-lg font-editorial">{formatMoney(l.amount_cents, l.currency)}</div>
+                  <div className="text-[10px] uppercase tracking-wider text-muted-foreground mt-0.5">
+                    {l.slug}
+                  </div>
+                </div>
+              </div>
+              {l.status === "active" ? (
+                <div className="flex items-center gap-2 mt-3">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => copyLink(l.slug)}
+                    className="rounded-full"
+                  >
+                    <Copy className="w-3.5 h-3.5 mr-1" />
+                    Copy link
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => window.open(`/pay/link/${l.slug}`, "_blank")}
+                    className="rounded-full"
+                  >
+                    <ExternalLink className="w-3.5 h-3.5 mr-1" />
+                    Preview
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => cancel(l.id)}
+                    className="rounded-full text-muted-foreground hover:text-destructive ml-auto"
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              ) : null}
+            </div>
+          ))}
+        </Card>
+      )}
+    </div>
+  );
+}
+
+function LinkStatusPill({ status }: { status: PaymentLink["status"] }) {
+  const map: Record<PaymentLink["status"], { label: string; className: string }> = {
+    active: { label: "Active", className: "bg-emerald-100 text-emerald-700" },
+    paid: { label: "Paid", className: "bg-sky-100 text-sky-700" },
+    cancelled: { label: "Cancelled", className: "bg-slate-100 text-slate-700" },
+    expired: { label: "Expired", className: "bg-amber-100 text-amber-800" },
+  };
+  const m = map[status];
+  return (
+    <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${m.className}`}>
+      {m.label}
+    </span>
   );
 }
 

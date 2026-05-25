@@ -92,19 +92,36 @@ serve(async (req: Request) => {
         const pi = event.raw.data.object as {
           id: string;
           amount: number;
+          receipt_email?: string | null;
           metadata?: Record<string, string>;
         };
         const proposalId = pi.metadata?.proposal_id;
+        const paymentLinkId = pi.metadata?.payment_link_id;
         const mode = pi.metadata?.mode;
-        if (!proposalId) break;
-        // Mark deposit-paid vs paid-in-full based on the mode the
-        // client requested. The charge endpoint validated the
-        // amount, so we trust the mode coming through metadata.
-        const nextStatus = mode === "deposit" ? "deposit_paid" : "paid_in_full";
-        await db
-          .from("proposals")
-          .update({ payment_status: nextStatus })
-          .eq("id", proposalId);
+        if (proposalId) {
+          // Proposal-based charge — flip the proposal's payment_status.
+          const nextStatus = mode === "deposit" ? "deposit_paid" : "paid_in_full";
+          await db
+            .from("proposals")
+            .update({ payment_status: nextStatus })
+            .eq("id", proposalId);
+        }
+        if (paymentLinkId) {
+          // Pay-link charge — mark the link paid + stamp the PI id so
+          // refunds can map back. Stripe Checkout doesn't surface the
+          // host's email on the PI directly, but if receipt_email is
+          // set, capture it for the vendor's CRM.
+          await db
+            .from("payment_links")
+            .update({
+              status: "paid",
+              paid_at: new Date().toISOString(),
+              paid_payment_intent_id: pi.id,
+              host_email: pi.receipt_email ?? null,
+              updated_at: new Date().toISOString(),
+            })
+            .eq("id", paymentLinkId);
+        }
         break;
       }
 
