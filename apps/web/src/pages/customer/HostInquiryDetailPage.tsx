@@ -13,7 +13,6 @@ import { TypingBubble } from "@/components/messages/TypingBubble";
 import { RatingPromptStrip } from "@/components/reviews/RatingPromptStrip";
 import { SubmittedReviewStatusCard } from "@/components/reviews/SubmittedReviewStatusCard";
 import { BookingConfirmationCard } from "@/components/inquiries/BookingConfirmationCard";
-import { VendorPaymentButtons } from "@/components/payments/VendorPaymentButtons";
 import { InquiryReviewCard } from "@/components/inquiries/InquiryReviewCard";
 import { Link, useParams } from "react-router-dom";
 import {
@@ -124,22 +123,6 @@ export default function HostInquiryDetailPage() {
   const { inquiryId } = useParams();
   const { user } = useAuth();
   const [inquiry, setInquiry] = useState<Inquiry | null>(null);
-  // Vendor's payment connectors. Loaded via get_vendor_payment_info
-  // RPC (which gates by caller relationship) instead of joining
-  // vendor_profiles directly — the payment_handles +
-  // stripe_account_id columns are now revoked from the authenticated
-  // role, so a direct .select() can't read them. The RPC returns
-  // {} when the caller isn't the owner or a host with an inquiry.
-  const [vendorPaymentInfo, setVendorPaymentInfo] = useState<{
-    stripe_account_id: string | null;
-    payment_handles: Partial<{
-      square: string;
-      paypal: string;
-      venmo: string;
-      cashapp: string;
-      zelle: string;
-    }> | null;
-  } | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [composer, setComposer] = useState("");
   // Track whether we've already rehydrated the draft for the active
@@ -264,20 +247,6 @@ export default function HostInquiryDetailPage() {
       return;
     }
     setInquiry(iRes.data as unknown as Inquiry);
-    // Fire-and-forget: load vendor's payment connectors via the
-    // gated RPC. Failure is non-fatal — VendorPaymentButtons just
-    // renders nothing.
-    const vendorIdForPayments = (iRes.data as { vendor_id?: string })?.vendor_id;
-    if (vendorIdForPayments) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (supabase as any)
-        .rpc("get_vendor_payment_info", { p_vendor_id: vendorIdForPayments })
-        .then(({ data: piData }: { data: unknown }) => {
-          if (piData && typeof piData === "object") {
-            setVendorPaymentInfo(piData as typeof vendorPaymentInfo);
-          }
-        });
-    }
 
     // Stamp host_read_at every time the host opens the inquiry so
     // the inbox unread dot resets correctly. The unread predicate is
@@ -1218,20 +1187,14 @@ export default function HostInquiryDetailPage() {
             />
           ) : null}
 
-          {/* Vendor's connected payment methods — Stripe, Venmo,
-              Cash App, etc. Loaded via get_vendor_payment_info RPC
-              (column-level grants on payment_handles + stripe_
-              account_id are revoked from authenticated to prevent
-              scraping; the RPC re-grants access scoped to caller
-              relationship). Component returns null when the vendor
-              hasn't configured anything, so cold inquiries don't
-              render an empty "Pay this vendor" header. */}
-          {vendorPaymentInfo ? (
-            <VendorPaymentButtons
-              info={vendorPaymentInfo}
-              className="card-soft p-4"
-            />
-          ) : null}
+          {/* Pay-this-vendor used to auto-render here on every
+              inquiry. UX correction (per vendor feedback): payment
+              is vendor-initiated. The vendor sends payment links
+              into the chat from their own composer when they
+              decide to collect — sometimes that's immediately,
+              sometimes after the gig, sometimes never (cash in
+              person). The host-side surface is just the chat
+              messages the vendor sends; no automatic Pay buttons. */}
 
           {/* Rating discovery + status — RatingPromptStrip surfaces
               the CTA when eligible; SubmittedReviewStatusCard shows

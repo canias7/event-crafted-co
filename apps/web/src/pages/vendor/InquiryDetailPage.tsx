@@ -22,6 +22,7 @@ import {
   ArrowLeft,
   Sparkles,
   CheckCheck,
+  CreditCard,
   Info,
   MapPin,
   X,
@@ -140,6 +141,104 @@ function fmtMoney(c: number | null) {
   return c == null ? "—" : `$${(c / 100).toLocaleString()}`;
 }
 
+// Builds the list of payment-link options the composer shows in
+// its CreditCard popover. One entry per connected payment method
+// the vendor has saved. `message` is the chat-message text that
+// gets inserted into the composer when the vendor picks an option.
+//
+// Stripe shows up only when the vendor has gone through Connect;
+// the message in that case asks the host to wait for an invoice
+// (since Stripe charge-link generation isn't wired yet — vendor
+// either uses their own Stripe dashboard to send an invoice, or
+// the team adds checkout-link generation later).
+function paymentLinkOptions(
+  info: {
+    stripe_account_id: string | null;
+    payment_handles: Partial<
+      Record<"square" | "paypal" | "venmo" | "cashapp" | "zelle", string>
+    > | null;
+  } | null,
+): Array<{ key: string; label: string; preview: string; message: string }> {
+  if (!info) return [];
+  const out: Array<{
+    key: string;
+    label: string;
+    preview: string;
+    message: string;
+  }> = [];
+  const h = info.payment_handles ?? {};
+  const strip = (s: string, c: "@" | "$") =>
+    s.replace(new RegExp(`^[${c}]+`), "");
+
+  if (h.venmo) {
+    const v = strip(h.venmo.trim(), "@");
+    out.push({
+      key: "venmo",
+      label: "Venmo",
+      preview: `@${v}`,
+      message: `Easiest way to pay me is Venmo: https://venmo.com/${v}`,
+    });
+  }
+  if (h.cashapp) {
+    const c = strip(h.cashapp.trim(), "$");
+    out.push({
+      key: "cashapp",
+      label: "Cash App",
+      preview: `$${c}`,
+      message: `Pay me on Cash App: https://cash.app/$${c}`,
+    });
+  }
+  if (h.paypal) {
+    const p = h.paypal.trim();
+    let url = "";
+    if (/^https?:\/\//i.test(p)) url = p;
+    else if (/^paypal\.me\//i.test(p)) url = `https://${p}`;
+    else if (/@/.test(p))
+      url = `https://www.paypal.com/paypalme/${p.split("@")[0]}`;
+    out.push({
+      key: "paypal",
+      label: "PayPal",
+      preview: p,
+      message: url
+        ? `PayPal works too: ${url}`
+        : `PayPal: ${p}`,
+    });
+  }
+  if (h.square) {
+    const s = h.square.trim();
+    const url = /^https?:\/\//i.test(s)
+      ? s
+      : /^square\.link\//i.test(s)
+        ? `https://${s}`
+        : "";
+    out.push({
+      key: "square",
+      label: "Square",
+      preview: s,
+      message: url ? `Pay via Square: ${url}` : `Square handle: ${s}`,
+    });
+  }
+  if (h.zelle) {
+    const z = h.zelle.trim();
+    out.push({
+      key: "zelle",
+      label: "Zelle",
+      preview: z,
+      message: `Zelle works too — send to ${z}`,
+    });
+  }
+  if (info.stripe_account_id) {
+    out.push({
+      key: "stripe",
+      label: "Card (Stripe)",
+      preview: "Send an invoice from Stripe",
+      message:
+        "I can send you a card invoice via Stripe — let me know and I'll email it over.",
+    });
+  }
+  return out;
+}
+
 export default function InquiryDetailPage() {
   const { inquiryId } = useParams();
   const navigate = useNavigate();
@@ -168,6 +267,19 @@ export default function InquiryDetailPage() {
   const [inquiryPreviewOpen, setInquiryPreviewOpen] = useState(false);
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
   const [emojiOpen, setEmojiOpen] = useState(false);
+  // Vendor's own payment connectors. Loaded on mount via the
+  // gated get_vendor_payment_info RPC (owner path returns the
+  // vendor's own data). Used by the payment-link composer button:
+  // click → popover → tap method → inserts a payment-link
+  // message into the composer for the vendor to send.
+  type PaymentInfo = {
+    stripe_account_id: string | null;
+    payment_handles: Partial<
+      Record<"square" | "paypal" | "venmo" | "cashapp" | "zelle", string>
+    > | null;
+  };
+  const [paymentInfo, setPaymentInfo] = useState<PaymentInfo | null>(null);
+  const [paymentOpen, setPaymentOpen] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
   // reactionsByMsg: map of message_id → array of {user_id, emoji}.
   // Refetched whenever messages reload + on the realtime sub below.
@@ -334,6 +446,21 @@ export default function InquiryDetailPage() {
           } as unknown as Inquiry)
         : null,
     );
+
+    // Vendor's payment connectors for the composer payment-link
+    // popover. Fire-and-forget — composer button just won't have
+    // any options if the RPC fails or returns empty.
+    const vendorIdForPayments = (i as { vendor_id?: string } | null)?.vendor_id;
+    if (vendorIdForPayments) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (supabase as any)
+        .rpc("get_vendor_payment_info", { p_vendor_id: vendorIdForPayments })
+        .then(({ data: piData }: { data: unknown }) => {
+          if (piData && typeof piData === "object") {
+            setPaymentInfo(piData as PaymentInfo);
+          }
+        });
+    }
 
     // Stamp vendor_read_at every time the vendor opens the inquiry
     // so the inbox unread dot resets correctly. The unread predicate
@@ -1588,6 +1715,55 @@ export default function InquiryDetailPage() {
                   </div>
                 </PopoverContent>
               </Popover>
+              {/* Payment-link popover. Only renders when the vendor
+                  has at least one connected method. Click a method
+                  → inserts a templated "Pay me on X: <link>" line
+                  into the composer at the end. Vendor edits the
+                  amount / wording then hits Send. Doesn't auto-
+                  send — vendor stays in control of the message. */}
+              {paymentLinkOptions(paymentInfo).length > 0 ? (
+                <Popover open={paymentOpen} onOpenChange={setPaymentOpen}>
+                  <PopoverTrigger asChild>
+                    <button
+                      type="button"
+                      disabled={sending}
+                      aria-label="Insert payment link"
+                      className="shrink-0 inline-flex items-center justify-center w-9 h-9 rounded-full hover:bg-black/5 text-muted-foreground disabled:opacity-50"
+                    >
+                      <CreditCard className="w-4 h-4" />
+                    </button>
+                  </PopoverTrigger>
+                  <PopoverContent side="top" align="start" className="w-64 p-2">
+                    <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold px-2 pt-1 pb-2">
+                      Send payment link
+                    </p>
+                    <div className="space-y-0.5">
+                      {paymentLinkOptions(paymentInfo).map((opt) => (
+                        <button
+                          key={opt.key}
+                          type="button"
+                          onClick={() => {
+                            const line = opt.message;
+                            setComposer((v) =>
+                              v.length === 0 ? line : `${v.trimEnd()}\n${line}`,
+                            );
+                            setPaymentOpen(false);
+                            composerRef.current?.focus();
+                          }}
+                          className="w-full text-left rounded-md px-2 py-2 hover:bg-secondary transition-colors"
+                        >
+                          <p className="text-sm font-medium text-foreground">
+                            {opt.label}
+                          </p>
+                          <p className="text-[11px] text-muted-foreground truncate">
+                            {opt.preview}
+                          </p>
+                        </button>
+                      ))}
+                    </div>
+                  </PopoverContent>
+                </Popover>
+              ) : null}
               <Textarea
                 ref={composerRef}
                 value={composer}
