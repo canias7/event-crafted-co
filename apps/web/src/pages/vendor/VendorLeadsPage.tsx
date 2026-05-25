@@ -30,6 +30,7 @@ import {
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useRealtime } from "@/lib/realtime";
 import { DashboardSidebar } from "@/components/shared/DashboardSidebar";
 import { MobileNav } from "@/components/shared/MobileNav";
 import { Input } from "@/components/ui/input";
@@ -68,15 +69,13 @@ interface Lead {
 
 // Ordered by priority: a host with at least one won inquiry is
 // 'won' regardless of any other inquiries they have; otherwise
-// any active (replied/drafted/pending) inquiry tags them 'active';
+// any active (replied/drafted) inquiry tags them 'active';
 // otherwise 'new' if any inquiry is in the new state; otherwise
-// 'lost'. Lets the UI surface the most-interesting status per
-// host without losing the worst case.
+// 'lost' (covers both 'lost' and 'expired'). Statuses come from the
+// inquiries_status_check constraint: new/drafted/replied/won/lost/expired.
 function pickAggregateStatus(statuses: string[]): Lead["status"] {
   if (statuses.includes("won")) return "won";
-  if (statuses.some((s) => s === "replied" || s === "drafted" || s === "pending")) {
-    return "active";
-  }
+  if (statuses.some((s) => s === "replied" || s === "drafted")) return "active";
   if (statuses.includes("new")) return "new";
   return "lost";
 }
@@ -144,16 +143,30 @@ export default function VendorLeadsPage() {
     void load();
   }, [load]);
 
+  // Realtime: refetch when ANY inquiry visible to this vendor
+  // changes. RLS filters the user-scoped channel so we don't need
+  // a per-vendor subscription. Matches VendorInboxPage's approach so
+  // both surfaces stay in sync without a manual refresh.
+  const realtimeConfig = useMemo(
+    () => (vendorId ? { table: "inquiries" } : null),
+    [vendorId],
+  );
+  useRealtime(realtimeConfig, () => {
+    void load();
+  });
+
   // Roll up inquiries into one Lead per host. Sort by most recent
   // contact (last_message_at falls back to created_at when the
   // inquiry has no messages yet).
   const leads = useMemo<Lead[]>(() => {
     const byHost = new Map<string, InquiryRow[]>();
     for (const r of rows) {
-      if (!r.host_id) continue;
-      (byHost.get(r.host_id) ?? byHost.set(r.host_id, []).get(r.host_id)!).push(
-        r,
-      );
+      let bucket = byHost.get(r.host_id);
+      if (!bucket) {
+        bucket = [];
+        byHost.set(r.host_id, bucket);
+      }
+      bucket.push(r);
     }
     const list: Lead[] = [];
     for (const [hostId, hostRows] of byHost) {
@@ -193,7 +206,15 @@ export default function VendorLeadsPage() {
   const filteredLeads = useMemo(() => {
     const q = query.trim().toLowerCase();
     return leads.filter((l) => {
-      if (statusFilter !== "all" && l.status !== statusFilter) return false;
+      // "Active" is a shortcut bucket — covers in-flight conversations
+      // ('active' = replied/drafted) AND brand-new ones the vendor
+      // hasn't touched yet. The chip count combines both, so the
+      // filter has to as well or the row count won't match the chip.
+      if (statusFilter === "active") {
+        if (l.status !== "active" && l.status !== "new") return false;
+      } else if (statusFilter !== "all" && l.status !== statusFilter) {
+        return false;
+      }
       if (q && !l.hostName.toLowerCase().includes(q)) return false;
       return true;
     });
