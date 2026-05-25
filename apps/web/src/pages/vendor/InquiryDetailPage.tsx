@@ -146,11 +146,47 @@ function fmtMoney(c: number | null) {
 // the vendor has saved. `message` is the chat-message text that
 // gets inserted into the composer when the vendor picks an option.
 //
+// URL construction mirrors VendorPaymentButtons (PR #863):
+//   • Per-service hostname allowlist for PayPal / Square so a
+//     vendor can't accidentally send hosts to a non-payment URL
+//   • sanitizeHandleSlug strips URL-unsafe chars (?, #, /, etc)
+//     from Venmo / Cash App / PayPal slugs so the constructed
+//     URL can't smuggle in path segments or query strings
+//
 // Stripe shows up only when the vendor has gone through Connect;
 // the message in that case asks the host to wait for an invoice
-// (since Stripe charge-link generation isn't wired yet — vendor
-// either uses their own Stripe dashboard to send an invoice, or
-// the team adds checkout-link generation later).
+// (charge-link generation isn't wired yet — vendor uses their own
+// Stripe dashboard to send an invoice, or the team adds checkout-
+// link generation later).
+
+const PAY_ALLOWED_HOSTS: Record<string, RegExp[]> = {
+  paypal: [/^paypal\.me$/i, /^www\.paypal\.com$/i, /^paypal\.com$/i],
+  square: [/^square\.link$/i, /^squareup\.com$/i, /^cash\.app$/i],
+};
+
+function paySafeUrl(
+  serviceKey: keyof typeof PAY_ALLOWED_HOSTS,
+  raw: string,
+): string | null {
+  let parsed: URL;
+  try {
+    parsed = new URL(raw);
+  } catch {
+    return null;
+  }
+  if (parsed.protocol !== "https:" && parsed.protocol !== "http:") {
+    return null;
+  }
+  const allowed = PAY_ALLOWED_HOSTS[serviceKey] ?? [];
+  if (!allowed.some((re) => re.test(parsed.host))) return null;
+  parsed.protocol = "https:";
+  return parsed.toString();
+}
+
+function paySanitizeSlug(s: string): string {
+  return s.replace(/[^a-zA-Z0-9_.\-]/g, "");
+}
+
 function paymentLinkOptions(
   info: {
     stripe_account_id: string | null;
@@ -171,46 +207,53 @@ function paymentLinkOptions(
     s.replace(new RegExp(`^[${c}]+`), "");
 
   if (h.venmo) {
-    const v = strip(h.venmo.trim(), "@");
-    out.push({
-      key: "venmo",
-      label: "Venmo",
-      preview: `@${v}`,
-      message: `Easiest way to pay me is Venmo: https://venmo.com/${v}`,
-    });
+    const v = paySanitizeSlug(strip(h.venmo.trim(), "@"));
+    if (v) {
+      out.push({
+        key: "venmo",
+        label: "Venmo",
+        preview: `@${v}`,
+        message: `Easiest way to pay me is Venmo: https://venmo.com/${v}`,
+      });
+    }
   }
   if (h.cashapp) {
-    const c = strip(h.cashapp.trim(), "$");
-    out.push({
-      key: "cashapp",
-      label: "Cash App",
-      preview: `$${c}`,
-      message: `Pay me on Cash App: https://cash.app/$${c}`,
-    });
+    const c = paySanitizeSlug(strip(h.cashapp.trim(), "$"));
+    if (c) {
+      out.push({
+        key: "cashapp",
+        label: "Cash App",
+        preview: `$${c}`,
+        message: `Pay me on Cash App: https://cash.app/$${c}`,
+      });
+    }
   }
   if (h.paypal) {
     const p = h.paypal.trim();
     let url = "";
-    if (/^https?:\/\//i.test(p)) url = p;
-    else if (/^paypal\.me\//i.test(p)) url = `https://${p}`;
-    else if (/@/.test(p))
-      url = `https://www.paypal.com/paypalme/${p.split("@")[0]}`;
+    if (/^https?:\/\//i.test(p)) {
+      url = paySafeUrl("paypal", p) ?? "";
+    } else if (/^paypal\.me\//i.test(p)) {
+      url = paySafeUrl("paypal", `https://${p}`) ?? "";
+    } else if (/@/.test(p)) {
+      const slug = paySanitizeSlug(p.split("@")[0]);
+      if (slug) url = `https://www.paypal.com/paypalme/${slug}`;
+    }
     out.push({
       key: "paypal",
       label: "PayPal",
       preview: p,
-      message: url
-        ? `PayPal works too: ${url}`
-        : `PayPal: ${p}`,
+      message: url ? `PayPal works too: ${url}` : `PayPal: ${p}`,
     });
   }
   if (h.square) {
     const s = h.square.trim();
-    const url = /^https?:\/\//i.test(s)
-      ? s
-      : /^square\.link\//i.test(s)
-        ? `https://${s}`
-        : "";
+    let url = "";
+    if (/^https?:\/\//i.test(s)) {
+      url = paySafeUrl("square", s) ?? "";
+    } else if (/^square\.link\//i.test(s)) {
+      url = paySafeUrl("square", `https://${s}`) ?? "";
+    }
     out.push({
       key: "square",
       label: "Square",
@@ -448,8 +491,11 @@ export default function InquiryDetailPage() {
     );
 
     // Vendor's payment connectors for the composer payment-link
-    // popover. Fire-and-forget — composer button just won't have
-    // any options if the RPC fails or returns empty.
+    // popover. Clear immediately so the popover doesn't briefly
+    // show the previous inquiry's vendor handles while the new
+    // RPC is in flight (the page is reused across inquiries via
+    // the route param, so state otherwise persists across nav).
+    setPaymentInfo(null);
     const vendorIdForPayments = (i as { vendor_id?: string } | null)?.vendor_id;
     if (vendorIdForPayments) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
