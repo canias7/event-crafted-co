@@ -1,32 +1,27 @@
 // Vendor integrations hub. Card grid of connectors grouped by
 // category. Three patterns are live:
 //
-//   1. Vendora MCP — inline PAT panel (existing VendoraMcpPanel)
-//   2. Stripe — OAuth onboarding via stripe-connect-onboard edge fn
-//   3. Square / PayPal / Venmo / Cash App / Zelle — handle storage
-//      in vendor_profiles.payment_handles JSONB. Per service, the
-//      vendor types their username / link / phone / email; we save
-//      it to the JSONB row and show "Connected" once filled. Hosts
-//      see these on the public vendor profile as "Pay on Venmo @x"
-//      style links.
-//
-// Why handles instead of OAuth for the latter five: Venmo / Cash
-// App / Zelle are peer-to-peer with no merchant-OAuth model, and
-// Square / PayPal OAuth would each be a multi-week native build
-// not justified by current launch demand. Handles cover 100% of
-// the actual use case ("how does the host pay me?") today, and
-// can be upgraded to real OAuth per-service later without changing
-// the vendor-facing surface.
+//   1. Vendora MCP — inline PAT panel (existing VendoraMcpPanel).
+//   2. VendoraPay — KYC onboarding via vendorapay-onboard edge fn.
+//      White-labeled Stripe Connect — vendors never see the word
+//      "Stripe" on Vendora. VendoraPay is the sole payment
+//      integration; per-merchant handle cards (Square / PayPal /
+//      Venmo / Cash App / Zelle) were removed in favor of routing
+//      every host payment through our own rails.
+//   3. Stripe AI (MCP) — vendor pastes a Restricted API key from
+//      their own external Stripe account; we forward it to
+//      Anthropic mcp_servers so My Space can call the Stripe API
+//      on the vendor's behalf. NOT a payment rail — purely an AI
+//      integration with the vendor's external accounting tool.
 
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useCallback, useEffect, useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   ChevronLeft,
   Check,
   ExternalLink,
   Loader2,
   Sparkles,
-  Save,
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -38,8 +33,7 @@ import { Input } from "@/components/ui/input";
 import { vendorNavItems } from "@/data/navItems";
 import { VendoraMcpPanel } from "@/components/super-agents/VendoraMcpPanel";
 
-type ConnectorKind = "mcp" | "stripe_connect" | "stripe_mcp" | "handle";
-type PaymentHandleKey = "square" | "paypal" | "venmo" | "cashapp" | "zelle";
+type ConnectorKind = "mcp" | "vendorapay" | "stripe_mcp";
 
 interface BaseConnector {
   id: string;
@@ -52,8 +46,10 @@ interface BaseConnector {
 interface McpConnector extends BaseConnector {
   kind: "mcp";
 }
-interface StripeConnector extends BaseConnector {
-  kind: "stripe_connect";
+interface VendorapayConnector extends BaseConnector {
+  // VendoraPay — white-labeled Stripe Connect onboarding. Calls
+  // vendorapay-onboard which lives behind the payments.ts module.
+  kind: "vendorapay";
 }
 interface StripeMcpConnector extends BaseConnector {
   // "Stripe AI" — vendor pastes a Stripe Restricted API key; we
@@ -61,28 +57,8 @@ interface StripeMcpConnector extends BaseConnector {
   // call any Stripe API on the vendor's behalf.
   kind: "stripe_mcp";
 }
-interface HandleConnector extends BaseConnector {
-  kind: "handle";
-  handleKey: PaymentHandleKey;
-  placeholder: string;
-  // Quick non-strict normalizer — adds @ / $ prefixes when
-  // missing, leaves URLs and emails alone. Validation is
-  // intentionally light; vendors enter all kinds of weird formats
-  // and we don't want to reject anything that's plausibly correct.
-  normalize: (raw: string) => string;
-  // Builds a tappable payment URL from the saved handle. Used on
-  // the public vendor profile so hosts can launch the right app
-  // with a one-click. Returns null if no canonical URL exists
-  // (Zelle has none — hosts paste the handle into their bank's
-  // Zelle screen manually).
-  toUrl?: (handle: string) => string | null;
-}
 
-type Connector =
-  | McpConnector
-  | StripeConnector
-  | StripeMcpConnector
-  | HandleConnector;
+type Connector = McpConnector | VendorapayConnector | StripeMcpConnector;
 
 function BrandMark({
   children,
@@ -101,17 +77,25 @@ function BrandMark({
   );
 }
 
-// Normalizers per handle-style service. Keep these forgiving —
-// vendors paste @, $, plain, URL, email; we want all of them to
-// land in a useful shape without being told no.
-function stripAt(s: string): string {
-  return s.replace(/^@+/, "");
-}
-function stripDollar(s: string): string {
-  return s.replace(/^\$+/, "");
-}
-
 const CONNECTORS: Connector[] = [
+  {
+    id: "vendorapay",
+    name: "VendoraPay",
+    category: "Payments",
+    description:
+      "Accept card payments and payouts straight to your bank. Vendora's white-label processor handles KYC and money movement.",
+    brand: (
+      <BrandMark bg="rgba(255,138,76,0.18)">
+        <span
+          className="font-bold text-lg tracking-tight"
+          style={{ color: "#c4541e" }}
+        >
+          V
+        </span>
+      </BrandMark>
+    ),
+    kind: "vendorapay",
+  },
   {
     id: "vendora-mcp",
     name: "Claude (MCP)",
@@ -130,7 +114,7 @@ const CONNECTORS: Connector[] = [
     name: "Stripe AI",
     category: "AI assistants",
     description:
-      "Let My Space call Stripe on your behalf — balance, charges, refunds, payment links, invoices. Read or write, scoped to whatever your Stripe restricted key allows.",
+      "Connect your own external Stripe account so My Space can read balance, charges, refunds, payment links, and invoices. Scoped to whatever your restricted key allows.",
     brand: (
       <BrandMark bg="#635bff">
         <span className="text-white font-bold text-lg tracking-tight">S</span>
@@ -138,163 +122,30 @@ const CONNECTORS: Connector[] = [
     ),
     kind: "stripe_mcp",
   },
-  {
-    id: "stripe",
-    name: "Stripe",
-    category: "Payments",
-    description:
-      "Accept card payments and payouts directly to your bank. KYC handled by Stripe.",
-    brand: (
-      <BrandMark bg="#635bff">
-        <span className="text-white font-bold text-lg tracking-tight">S</span>
-      </BrandMark>
-    ),
-    kind: "stripe_connect",
-  },
-  {
-    id: "square",
-    name: "Square",
-    category: "Payments",
-    description:
-      "Vendors with a Square account can drop their checkout URL or username so hosts see a Pay-with-Square button.",
-    brand: (
-      <BrandMark bg="#000000">
-        <span className="text-white font-bold text-lg tracking-tight">□</span>
-      </BrandMark>
-    ),
-    kind: "handle",
-    handleKey: "square",
-    placeholder: "square.link/u/yourname or @username",
-    normalize: (raw) => raw.trim(),
-    toUrl: (h) => {
-      const trimmed = h.trim();
-      if (!trimmed) return null;
-      if (/^https?:\/\//i.test(trimmed)) return trimmed;
-      // Square Checkout vanity URLs look like square.link/u/<name>.
-      // Plain @handle isn't a public URL on Square; surface as text
-      // only by returning null.
-      if (trimmed.startsWith("@")) return null;
-      if (/^square\.link\//i.test(trimmed)) return `https://${trimmed}`;
-      return null;
-    },
-  },
-  {
-    id: "paypal",
-    name: "PayPal",
-    category: "Payments",
-    description:
-      "PayPal.me link or email — hosts get a Pay-with-PayPal button that pre-fills your handle.",
-    brand: (
-      <BrandMark bg="#003087">
-        <span className="text-white font-bold text-sm tracking-tight">PP</span>
-      </BrandMark>
-    ),
-    kind: "handle",
-    handleKey: "paypal",
-    placeholder: "paypal.me/yourname or you@email.com",
-    normalize: (raw) => raw.trim(),
-    toUrl: (h) => {
-      const trimmed = h.trim();
-      if (!trimmed) return null;
-      if (/^https?:\/\//i.test(trimmed)) return trimmed;
-      if (/^paypal\.me\//i.test(trimmed)) return `https://${trimmed}`;
-      if (/@/.test(trimmed)) {
-        return `https://www.paypal.com/paypalme/${trimmed.split("@")[0]}`;
-      }
-      return null;
-    },
-  },
-  {
-    id: "venmo",
-    name: "Venmo",
-    category: "Payments",
-    description:
-      "Your @username — hosts on mobile get a one-tap link that opens the Venmo app.",
-    brand: (
-      <BrandMark bg="#3D95CE">
-        <span className="text-white font-bold text-lg italic">V</span>
-      </BrandMark>
-    ),
-    kind: "handle",
-    handleKey: "venmo",
-    placeholder: "@yourname",
-    normalize: (raw) => {
-      const t = raw.trim();
-      if (!t) return "";
-      return "@" + stripAt(t);
-    },
-    toUrl: (h) =>
-      h ? `https://venmo.com/${stripAt(h.trim())}` : null,
-  },
-  {
-    id: "cashapp",
-    name: "Cash App",
-    category: "Payments",
-    description:
-      "Your $cashtag — hosts get a one-tap link that opens the Cash App and pre-fills your tag.",
-    brand: (
-      <BrandMark bg="#00D632">
-        <span className="text-white font-bold text-lg">$</span>
-      </BrandMark>
-    ),
-    kind: "handle",
-    handleKey: "cashapp",
-    placeholder: "$yourtag",
-    normalize: (raw) => {
-      const t = raw.trim();
-      if (!t) return "";
-      return "$" + stripDollar(t);
-    },
-    toUrl: (h) =>
-      h ? `https://cash.app/${stripDollar(h.trim()) ? "$" + stripDollar(h.trim()) : ""}` : null,
-  },
-  {
-    id: "zelle",
-    name: "Zelle",
-    category: "Payments",
-    description:
-      "Email or phone number on your bank's Zelle. Hosts paste it into their bank's Zelle screen to pay.",
-    brand: (
-      <BrandMark bg="#6D1ED4">
-        <span className="text-white font-bold text-lg">Z</span>
-      </BrandMark>
-    ),
-    kind: "handle",
-    handleKey: "zelle",
-    placeholder: "you@email.com or (555) 555-5555",
-    normalize: (raw) => raw.trim(),
-    // No canonical Zelle URL — host pastes into their own bank's app.
-  },
 ];
-
-type HandleMap = Partial<Record<PaymentHandleKey, string>>;
 
 export default function VendorIntegrationsPage() {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { ownListing } = useAuth();
   const vendorId = ownListing?.id ?? null;
 
-  const [stripeConnected, setStripeConnected] = useState(false);
-  // charges_enabled tracks whether Stripe Connect KYC is complete.
-  // stripeConnected = "we have an account_id"; chargesEnabled =
-  // "Stripe has flipped charges/transfers on after KYC review."
-  // Both flow from the gated get_vendor_payment_info RPC.
+  const [vendorapayConnected, setVendorapayConnected] = useState(false);
+  // charges_enabled tracks whether VendoraPay KYC is complete.
+  // vendorapayConnected = "we have a connected account on file";
+  // chargesEnabled = "the processor has flipped charges/transfers on
+  // after KYC review." Both flow from get_vendor_payment_info RPC.
   const [chargesEnabled, setChargesEnabled] = useState(false);
-  const [handles, setHandles] = useState<HandleMap>({});
-  // Stripe MCP (AI access) — separate from Stripe Connect. Read via
-  // the gated get_my_stripe_mcp_status RPC; the actual key value
-  // never reaches the client.
+  // Stripe MCP (AI access) — separate from VendoraPay. Read via the
+  // gated get_my_stripe_mcp_status RPC; the key value never reaches
+  // the client.
   const [stripeMcpConnected, setStripeMcpConnected] = useState(false);
   const [stripeMcpLast4, setStripeMcpLast4] = useState<string | null>(null);
   // Start collapsed — every card (including the Vendora MCP / Claude
   // panel) renders as just the logo + Manage button. Clicking expands.
-  // The Claude panel used to default-expanded, which pushed the rest
-  // of the connector grid below the fold.
   const [expanded, setExpanded] = useState<string | null>(null);
   const [actingId, setActingId] = useState<string | null>(null);
 
-  // Stripe MCP status — fetched once on mount, refreshed after
-  // connect/disconnect.
   const refreshStripeMcpStatus = useCallback(async () => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data } = await (supabase as any).rpc("get_my_stripe_mcp_status");
@@ -353,7 +204,10 @@ export default function VendorIntegrationsPage() {
     toast.success("Stripe AI disconnected");
   }, [actingId, refreshStripeMcpStatus]);
 
-  // Hoisted so the disconnect handler can re-fetch after clearing.
+  // VendoraPay status — reuses the existing get_vendor_payment_info
+  // RPC (column names still say "stripe_*" under the hood because the
+  // payment provider is Stripe Connect, but the vendor only ever sees
+  // "VendoraPay" in the UI).
   const refreshPaymentInfo = useCallback(async () => {
     if (!vendorId) return;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -363,27 +217,46 @@ export default function VendorIntegrationsPage() {
     );
     const row = data as {
       stripe_account_id?: string | null;
-      payment_handles?: HandleMap | null;
       stripe_charges_enabled?: boolean | null;
     } | null;
-    setStripeConnected(Boolean(row?.stripe_account_id));
+    setVendorapayConnected(Boolean(row?.stripe_account_id));
     setChargesEnabled(Boolean(row?.stripe_charges_enabled));
-    setHandles({ ...(row?.payment_handles ?? {}) });
   }, [vendorId]);
 
   useEffect(() => {
     void refreshPaymentInfo();
   }, [refreshPaymentInfo]);
 
-  const handleStripeConnect = useCallback(async () => {
+  // After KYC, vendorapay-onboard sends the vendor back to
+  // /vendor/integrations?vendorapay=return. Toast + re-pull status,
+  // then strip the param so a refresh doesn't replay the toast.
+  useEffect(() => {
+    const flag = searchParams.get("vendorapay");
+    if (!flag) return;
+    if (flag === "return") {
+      toast.success("Welcome back from VendoraPay", {
+        description: "Refreshing your account status…",
+      });
+      void refreshPaymentInfo();
+    } else if (flag === "refresh") {
+      toast.info("Onboarding link expired", {
+        description: "Click Manage to generate a fresh one.",
+      });
+    }
+    const next = new URLSearchParams(searchParams);
+    next.delete("vendorapay");
+    setSearchParams(next, { replace: true });
+  }, [searchParams, setSearchParams, refreshPaymentInfo]);
+
+  const handleVendorapayConnect = useCallback(async () => {
     if (!vendorId || actingId) return;
-    setActingId("stripe");
+    setActingId("vendorapay");
     const { data, error } = await supabase.functions.invoke(
-      "stripe-connect-onboard",
-      { body: { vendor_id: vendorId } },
+      "vendorapay-onboard",
+      { body: { business_id: vendorId } },
     );
     if (error || !(data as { url?: string })?.url) {
-      toast.error("Couldn't open Stripe onboarding", {
+      toast.error("Couldn't open VendoraPay onboarding", {
         description: error?.message ?? "Try again in a moment.",
       });
       setActingId(null);
@@ -392,16 +265,19 @@ export default function VendorIntegrationsPage() {
     window.location.href = (data as { url: string }).url;
   }, [vendorId, actingId]);
 
-  const handleStripeDisconnect = useCallback(async () => {
+  const handleVendorapayDisconnect = useCallback(async () => {
     if (!vendorId || actingId) return;
     if (
       !window.confirm(
-        "Disconnect Stripe Connect? Your Stripe account stays open on Stripe's side — Vendora just stops referencing it. You can re-connect anytime.",
+        "Disconnect VendoraPay? Your processor account stays open — Vendora just stops referencing it. You can re-connect anytime.",
       )
     ) {
       return;
     }
-    setActingId("stripe");
+    setActingId("vendorapay");
+    // disconnect_my_stripe_connect — RPC name is legacy; it just
+    // clears stripe_account_id on vendor_payment_secrets, which is
+    // the same column vendorapay-onboard writes.
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { error } = await (supabase as any).rpc(
       "disconnect_my_stripe_connect",
@@ -413,57 +289,21 @@ export default function VendorIntegrationsPage() {
       return;
     }
     await refreshPaymentInfo();
-    toast.success("Stripe Connect disconnected");
+    toast.success("VendoraPay disconnected");
   }, [vendorId, actingId, refreshPaymentInfo]);
 
-  async function saveHandle(key: PaymentHandleKey, raw: string) {
-    if (!vendorId || actingId) return;
-    const normalized = (CONNECTORS.find(
-      (c) => c.kind === "handle" && (c as HandleConnector).handleKey === key,
-    ) as HandleConnector | undefined)?.normalize(raw) ?? raw.trim();
-    setActingId(key);
-    // Optimistic local update — keystrokes feel instant.
-    const next: HandleMap = { ...handles };
-    if (normalized) next[key] = normalized;
-    else delete next[key];
-    setHandles(next);
-    // payment_handles moved to the locked-down vendor_payment_secrets
-    // table (audit PR #883). Owner-only write goes through the
-    // set_vendor_payment_handles RPC instead of a direct UPDATE.
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error } = await (supabase as any).rpc(
-      "set_vendor_payment_handles",
-      { p_vendor_id: vendorId, p_handles: next },
-    );
-    setActingId(null);
-    if (error) {
-      // Roll back the local map so the input doesn't lie about
-      // persisted state.
-      setHandles(handles);
-      toast.error("Couldn't save", { description: error.message });
-      return;
-    }
-    toast.success(
-      normalized ? `${key.toUpperCase()} updated` : `${key.toUpperCase()} cleared`,
-    );
-  }
-
-  const grouped = useMemo(() => {
-    return CONNECTORS.reduce<Record<string, Connector[]>>((acc, c) => {
-      (acc[c.category] ||= []).push(c);
-      return acc;
-    }, {});
-  }, []);
+  // Group connectors by category for the section headings.
+  const grouped = CONNECTORS.reduce<Record<string, Connector[]>>((acc, c) => {
+    (acc[c.category] ||= []).push(c);
+    return acc;
+  }, {});
 
   function statusOf(c: Connector): "connected" | "available" {
     if (c.kind === "mcp") return "connected";
-    if (c.kind === "stripe_connect") {
-      return stripeConnected ? "connected" : "available";
+    if (c.kind === "vendorapay") {
+      return vendorapayConnected ? "connected" : "available";
     }
-    if (c.kind === "stripe_mcp") {
-      return stripeMcpConnected ? "connected" : "available";
-    }
-    return handles[c.handleKey] ? "connected" : "available";
+    return stripeMcpConnected ? "connected" : "available";
   }
 
   return (
@@ -516,8 +356,8 @@ export default function VendorIntegrationsPage() {
                               {c.name}
                             </h3>
                             <StatusPill status={status} />
-                            {c.kind === "stripe_connect" &&
-                            stripeConnected &&
+                            {c.kind === "vendorapay" &&
+                            vendorapayConnected &&
                             !chargesEnabled ? (
                               <span className="inline-flex items-center rounded-full bg-amber-100 text-amber-800 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide">
                                 Pending KYC
@@ -525,29 +365,26 @@ export default function VendorIntegrationsPage() {
                             ) : null}
                           </div>
                           <p className="text-xs text-muted-foreground mt-0.5 leading-snug">
-                            {c.kind === "stripe_connect" &&
-                            stripeConnected &&
+                            {c.kind === "vendorapay" &&
+                            vendorapayConnected &&
                             !chargesEnabled
-                              ? "Finish onboarding on Stripe before hosts can pay you here."
+                              ? "Finish KYC on the next step before hosts can pay you here."
                               : c.description}
                           </p>
                         </div>
                         <ConnectorActionButton
                           connector={c}
                           status={status}
-                          acting={actingId === c.id || actingId === (c.kind === "handle" ? c.handleKey : "")}
+                          acting={actingId === c.id}
                           expanded={isExpanded}
                           onExpand={() =>
                             setExpanded(isExpanded ? null : c.id)
                           }
-                          onStripeConnect={handleStripeConnect}
-                          onStripeDisconnect={handleStripeDisconnect}
-                          stripeConnected={stripeConnected}
+                          onVendorapayConnect={handleVendorapayConnect}
+                          onVendorapayDisconnect={handleVendorapayDisconnect}
+                          vendorapayConnected={vendorapayConnected}
                         />
                       </div>
-                      {/* Inline expand panel — MCP renders its full
-                          token UI, handle-style processors render a
-                          tiny input + Save row. */}
                       {isExpanded && c.kind === "mcp" ? (
                         <div className="border-t border-foreground/10 p-4 md:p-5">
                           <VendoraMcpPanel />
@@ -560,14 +397,6 @@ export default function VendorIntegrationsPage() {
                           acting={actingId === "stripe-mcp"}
                           onConnect={handleStripeMcpConnect}
                           onDisconnect={handleStripeMcpDisconnect}
-                        />
-                      ) : null}
-                      {isExpanded && c.kind === "handle" ? (
-                        <HandleEditor
-                          connector={c}
-                          value={handles[c.handleKey] ?? ""}
-                          saving={actingId === c.handleKey}
-                          onSave={(next) => saveHandle(c.handleKey, next)}
                         />
                       ) : null}
                     </div>
@@ -605,18 +434,18 @@ function ConnectorActionButton({
   acting,
   expanded,
   onExpand,
-  onStripeConnect,
-  onStripeDisconnect,
-  stripeConnected,
+  onVendorapayConnect,
+  onVendorapayDisconnect,
+  vendorapayConnected,
 }: {
   connector: Connector;
   status: "connected" | "available";
   acting: boolean;
   expanded: boolean;
   onExpand: () => void;
-  onStripeConnect: () => void;
-  onStripeDisconnect: () => void;
-  stripeConnected: boolean;
+  onVendorapayConnect: () => void;
+  onVendorapayDisconnect: () => void;
+  vendorapayConnected: boolean;
 }) {
   if (connector.kind === "mcp") {
     return (
@@ -630,18 +459,16 @@ function ConnectorActionButton({
       </Button>
     );
   }
-  if (connector.kind === "stripe_connect") {
-    // When connected, show two buttons side-by-side: Manage (re-opens
-    // a fresh onboarding link in case the vendor wants to finish KYC
-    // or update payout info) + Disconnect (clears Vendora's pointer
-    // so the vendor can switch Stripe accounts).
-    if (stripeConnected) {
+  if (connector.kind === "vendorapay") {
+    if (vendorapayConnected) {
+      // When connected, show Manage (re-opens onboarding to finish or
+      // update KYC) + Disconnect.
       return (
         <div className="flex items-center gap-2 shrink-0">
           <Button
             variant="outline"
             size="sm"
-            onClick={onStripeConnect}
+            onClick={onVendorapayConnect}
             disabled={acting}
             className="rounded-full"
           >
@@ -655,7 +482,7 @@ function ConnectorActionButton({
           <Button
             variant="outline"
             size="sm"
-            onClick={onStripeDisconnect}
+            onClick={onVendorapayDisconnect}
             disabled={acting}
             className="rounded-full text-destructive hover:text-destructive"
           >
@@ -668,7 +495,7 @@ function ConnectorActionButton({
       <Button
         variant="outline"
         size="sm"
-        onClick={onStripeConnect}
+        onClick={onVendorapayConnect}
         disabled={acting}
         className="rounded-full"
       >
@@ -681,18 +508,7 @@ function ConnectorActionButton({
       </Button>
     );
   }
-  if (connector.kind === "stripe_mcp") {
-    return (
-      <Button
-        variant="outline"
-        size="sm"
-        onClick={onExpand}
-        className="rounded-full"
-      >
-        {expanded ? "Hide" : status === "connected" ? "Manage" : "Connect"}
-      </Button>
-    );
-  }
+  // stripe_mcp
   return (
     <Button
       variant="outline"
@@ -700,7 +516,7 @@ function ConnectorActionButton({
       onClick={onExpand}
       className="rounded-full"
     >
-      {expanded ? "Hide" : status === "connected" ? "Edit" : "Add"}
+      {expanded ? "Hide" : status === "connected" ? "Manage" : "Connect"}
     </Button>
   );
 }
@@ -803,80 +619,6 @@ function StripeMcpEditor({
           </div>
         </div>
       )}
-    </div>
-  );
-}
-
-function HandleEditor({
-  connector,
-  value,
-  saving,
-  onSave,
-}: {
-  connector: HandleConnector;
-  value: string;
-  saving: boolean;
-  onSave: (next: string) => void;
-}) {
-  const [draft, setDraft] = useState(value);
-  // Sync draft if the parent prop changes (e.g., a fresh load
-  // after navigation). Doesn't clobber while user is typing.
-  useEffect(() => {
-    if (!saving) setDraft(value);
-  }, [value, saving]);
-
-  const previewUrl = connector.toUrl?.(connector.normalize(draft));
-  const changed = draft.trim() !== value.trim();
-
-  return (
-    <div className="border-t border-foreground/10 p-4 md:p-5 space-y-3">
-      <div className="flex items-center gap-2">
-        <Input
-          value={draft}
-          onChange={(e) => setDraft(e.target.value)}
-          placeholder={connector.placeholder}
-          maxLength={120}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") {
-              e.preventDefault();
-              if (changed) onSave(draft);
-            }
-          }}
-          className="flex-1"
-        />
-        <Button
-          type="button"
-          size="sm"
-          onClick={() => onSave(draft)}
-          disabled={saving || !changed}
-          className="rounded-full"
-        >
-          {saving ? (
-            <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" />
-          ) : (
-            <Save className="w-3.5 h-3.5 mr-1" />
-          )}
-          Save
-        </Button>
-      </div>
-      {previewUrl ? (
-        <p className="text-[11px] text-muted-foreground">
-          Hosts will see:{" "}
-          <a
-            href={previewUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-foreground/80 hover:text-foreground underline underline-offset-2"
-          >
-            {previewUrl.replace(/^https?:\/\//, "")}
-          </a>
-        </p>
-      ) : value ? (
-        <p className="text-[11px] text-muted-foreground">
-          Saved as:{" "}
-          <span className="text-foreground/80 font-mono">{value}</span>
-        </p>
-      ) : null}
     </div>
   );
 }
