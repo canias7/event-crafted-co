@@ -53,6 +53,12 @@ export function ProposalFormModal({
     "50% deposit due on signing. Balance due 14 days before event. Cancellations within 60 days forfeit deposit.",
   );
   const [submitting, setSubmitting] = useState(false);
+  // Optional "suggest a meeting" fields, embedded in the proposal flow
+  // so the vendor can quote + ask for a consultation in one shot.
+  // Empty datetime means "skip" — we don't create an appointment.
+  const [meetingAt, setMeetingAt] = useState("");
+  const [meetingDuration, setMeetingDuration] = useState("60");
+  const [meetingLocation, setMeetingLocation] = useState("");
   const [contractTemplateId, setContractTemplateId] = useState<string | null>(
     null,
   );
@@ -170,14 +176,70 @@ export function ProposalFormModal({
       }
     }
 
-    setSubmitting(false);
     if (error) {
+      setSubmitting(false);
       toast.error(error.message);
       return;
     }
+
+    // Optional meeting suggestion — if the vendor filled in a date,
+    // insert an appointment row AND drop a system-style chat message
+    // in the thread so the host sees both the quote and the proposed
+    // meeting in one go. Failures here are non-fatal: the proposal
+    // already landed; we just log a console error so a Sentry signal
+    // would surface.
+    if (meetingAt) {
+      try {
+        await supabase.from("appointments").insert({
+          vendor_id: vendorId,
+          host_id: hostId,
+          inquiry_id: inquiryId,
+          kind: "consultation",
+          scheduled_at: new Date(meetingAt).toISOString(),
+          duration_minutes: Number.parseInt(meetingDuration, 10) || 60,
+          location: meetingLocation.trim() || null,
+          proposed_by: "vendor",
+          status: "proposed",
+        });
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { data: threadId } = await (supabase as any).rpc(
+          "ensure_inquiry_thread",
+          { p_inquiry_id: inquiryId },
+        );
+        if (threadId) {
+          const dt = new Date(meetingAt);
+          const when = dt.toLocaleString(undefined, {
+            weekday: "short",
+            month: "short",
+            day: "numeric",
+            hour: "numeric",
+            minute: "2-digit",
+          });
+          const parts = [
+            `📅 Proposed a ${meetingDuration}-min consultation for ${when}`,
+          ];
+          if (meetingLocation.trim()) {
+            parts.push(`Where: ${meetingLocation.trim()}`);
+          }
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          await (supabase as any).from("direct_messages").insert({
+            thread_id: threadId,
+            sender_role: "vendor",
+            body: parts.join("\n\n"),
+          });
+        }
+      } catch (err) {
+        console.error("[ProposalFormModal] meeting insert failed", err);
+      }
+    }
+
+    setSubmitting(false);
     toast.success("Proposal sent");
     setItems([{ ...blank }]);
     setDeposit("");
+    setMeetingAt("");
+    setMeetingDuration("60");
+    setMeetingLocation("");
     onOpenChange(false);
     onSuccess?.();
   }
@@ -325,6 +387,70 @@ export function ProposalFormModal({
               rows={3}
               placeholder="Deposit timing, cancellation policy, anything legal."
             />
+          </div>
+
+          {/* Optional meeting suggestion. The vendor can attach a
+              proposed consultation time to the proposal in one shot —
+              replaces the old standalone Share availability chip in
+              the chat composer. Leaving the datetime empty skips
+              creating an appointment. */}
+          <div
+            className="space-y-3 rounded-2xl p-4"
+            style={{
+              background: "rgba(255,253,250,0.6)",
+              border: "0.5px solid rgba(255,138,76,0.18)",
+            }}
+          >
+            <div>
+              <p className="text-sm font-medium">
+                Suggest a meeting{" "}
+                <span className="text-muted-foreground font-normal">
+                  (optional)
+                </span>
+              </p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Propose a consultation date/time alongside this quote.
+                The host gets a chat message with the suggested slot.
+              </p>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-[1fr_120px] gap-2">
+              <div className="space-y-1">
+                <Label htmlFor="prop-meeting-at" className="text-xs text-muted-foreground">
+                  When
+                </Label>
+                <Input
+                  id="prop-meeting-at"
+                  type="datetime-local"
+                  value={meetingAt}
+                  onChange={(e) => setMeetingAt(e.target.value)}
+                />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="prop-meeting-dur" className="text-xs text-muted-foreground">
+                  Duration (min)
+                </Label>
+                <Input
+                  id="prop-meeting-dur"
+                  type="number"
+                  min={15}
+                  step={15}
+                  value={meetingDuration}
+                  onChange={(e) => setMeetingDuration(e.target.value)}
+                />
+              </div>
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="prop-meeting-loc" className="text-xs text-muted-foreground">
+                Where (address, Zoom link, or phone number)
+              </Label>
+              <Input
+                id="prop-meeting-loc"
+                value={meetingLocation}
+                onChange={(e) => setMeetingLocation(e.target.value)}
+                placeholder="Optional"
+                disabled={!meetingAt}
+              />
+            </div>
           </div>
 
           {templates.length > 0 && (
