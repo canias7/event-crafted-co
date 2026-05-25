@@ -20,7 +20,7 @@
 // Routes never trust the body until this function returns ok.
 
 // deno-lint-ignore-file no-explicit-any
-import Stripe from "https://esm.sh/stripe@14.21.0?target=deno";
+import Stripe from "https://esm.sh/stripe@18.0.0?target=deno";
 
 // ---- env + singleton client -------------------------------------
 
@@ -57,7 +57,10 @@ function client(): Stripe {
       throw new Error("VendoraPay not configured (missing platform secret)");
     }
     _client = new Stripe(STRIPE_SECRET_KEY, {
-      apiVersion: "2024-06-20",
+      // dahlia is the API release that activates v2 Accounts. Existing
+      // v1 endpoints (PaymentIntents, Charges, Refunds, Checkout) keep
+      // working under this version — only Accounts moves to v2.
+      apiVersion: "2026-04-22.dahlia" as any,
       httpClient: Stripe.createFetchHttpClient(),
     });
   }
@@ -140,61 +143,81 @@ export type WebhookEventKind =
 // ---- public API -------------------------------------------------
 
 /**
- * Create a connected account for a business + return its id.
+ * Create a connected account for a business via the v2 Accounts API.
+ * v1 accounts.create({type:"express"}) fails on platforms set up
+ * through the new Connect wizard (Stripe rejects with "Connect not
+ * signed up" even when Connect is fully active).
  *
- * @param idempotencyKey  REQUIRED. Caller-supplied dedupe key so a
- *                        retried POST /vendorapay/onboard doesn't
- *                        spawn duplicate accounts on the provider.
+ * @param idempotencyKey  REQUIRED — dedupe key.
  */
 export async function createAccount(args: {
   email?: string | null;
   business_id: string;
   idempotency_key: string;
 }): Promise<ConnectedAccount> {
-  const account = await client().accounts.create(
+  const account = await (client() as any).v2.core.accounts.create(
     {
-      type: "express",
-      country: "US",
-      email: args.email ?? undefined,
-      capabilities: {
-        card_payments: { requested: true },
-        transfers: { requested: true },
+      dashboard: "express",
+      contact_email: args.email ?? undefined,
+      display_name: args.email ?? undefined,
+      defaults: {
+        responsibilities: {
+          fees_collector: "application",
+          losses_collector: "application",
+        },
       },
-      business_type: "individual",
+      identity: {
+        country: "US",
+        entity_type: "individual",
+      },
+      configuration: {
+        recipient: {
+          capabilities: {
+            stripe_balance: {
+              stripe_transfers: { requested: true },
+            },
+          },
+        },
+      },
       metadata: { business_id: args.business_id },
     },
     { idempotencyKey: args.idempotency_key },
   );
-  return normalizeAccount(account);
+  return normalizeAccountV2(account);
 }
 
 /**
- * Mint a fresh onboarding link the vendor opens to complete KYC.
- * Time-bound by the provider — always mint a new one, don't cache.
+ * Mint a fresh onboarding link via v2 accountLinks.
  */
 export async function createOnboardingLink(args: {
   account_id: string;
   return_url: string;
   refresh_url: string;
 }): Promise<{ url: string }> {
-  const link = await client().accountLinks.create({
+  const link = await (client() as any).v2.core.accountLinks.create({
     account: args.account_id,
-    return_url: args.return_url,
-    refresh_url: args.refresh_url,
-    type: "account_onboarding",
+    use_case: {
+      type: "account_onboarding",
+      account_onboarding: {
+        configurations: ["recipient"],
+        refresh_url: args.refresh_url,
+        return_url: args.return_url,
+      },
+    },
   });
   return { url: link.url };
 }
 
 /**
- * Current onboarding/capability state of a connected account.
- * Source of truth for "can this business receive money yet?"
+ * Current onboarding/capability state via v2 accounts.retrieve.
  */
 export async function getAccountStatus(
   account_id: string,
 ): Promise<ConnectedAccount> {
-  const account = await client().accounts.retrieve(account_id);
-  return normalizeAccount(account);
+  const account = await (client() as any).v2.core.accounts.retrieve(account_id, {
+    include: ["requirements", "configuration.recipient"],
+  });
+  return normalizeAccountV2(account);
 }
 
 /**
@@ -373,6 +396,37 @@ export async function handleWebhookEvent(
 function computePlatformFee(amount_cents: number): number {
   const pct = Math.round((amount_cents * PLATFORM_FEE_BPS) / 10_000);
   return pct + PLATFORM_FEE_FIXED_CENTS;
+}
+
+/**
+ * v2 account shape: capability status lives under
+ * configuration.recipient.capabilities.stripe_balance.*. Map it to
+ * our flat ConnectedAccount shape so consumers don't need to know
+ * about v1 vs v2.
+ */
+function normalizeAccountV2(account: any): ConnectedAccount {
+  const caps =
+    account?.configuration?.recipient?.capabilities?.stripe_balance ?? {};
+  const charges_enabled = caps?.stripe_transfers?.status === "active";
+  const payouts_enabled = caps?.payouts?.status === "active";
+  const summary_status =
+    account?.requirements?.summary?.minimum_deadline?.status;
+  // v2 details_submitted maps from requirements.summary: null status =
+  // submitted; "eventually_due" = submitted but more later; anything
+  // else (currently_due, past_due) = incomplete.
+  const details_submitted =
+    summary_status == null || summary_status === "eventually_due";
+  // Bank info: v2 nests external_accounts differently — for V1 we
+  // expanded external_accounts; v2 has it on configuration.recipient.
+  // Return null for now; the Integrations tab will fall back to
+  // "configured in Stripe Express" copy.
+  return {
+    id: account.id,
+    charges_enabled,
+    payouts_enabled,
+    details_submitted,
+    bank: null,
+  };
 }
 
 function normalizeAccount(account: Stripe.Account): ConnectedAccount {
