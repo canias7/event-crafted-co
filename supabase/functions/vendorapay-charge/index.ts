@@ -85,6 +85,13 @@ serve(async (req) => {
     if (proposal.payment_status === "paid_in_full") {
       return json(400, { error: "proposal already paid in full" });
     }
+    // Block a second deposit charge once the deposit has cleared. The
+    // host should be in "pay balance" mode at that point — calling
+    // /charge with mode=deposit when payment_status is already
+    // deposit_paid would charge the deposit twice.
+    if (mode === "deposit" && proposal.payment_status === "deposit_paid") {
+      return json(400, { error: "deposit already paid" });
+    }
 
     // Source vendor's connected account via the locked-down secrets
     // table (service_role only).
