@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { Inbox, Loader2, Search, Sparkles } from "lucide-react";
+import { Bot, Inbox, Loader2, Search, Sparkles } from "lucide-react";
 import { HiluxLogo } from "@/components/super-agents/AgentLogos";
 import { toast } from "sonner";
 import { useRealtime } from "@/lib/realtime";
@@ -10,6 +10,14 @@ import { DashboardSidebar } from "@/components/shared/DashboardSidebar";
 import { MobileNav } from "@/components/shared/MobileNav";
 import { Input } from "@/components/ui/input";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
+import { MySpaceToolToggles } from "@/components/super-agents/MySpaceToolToggles";
 import { vendorNavItems as navItems } from "@/data/navItems";
 import { SubNavTabs } from "@/components/shared/SubNavTabs";
 import { VENDOR_INBOX_HUB_TABS } from "@/data/hubTabs";
@@ -306,7 +314,37 @@ export default function VendorInboxPage() {
                 Conversations with hosts — every message in one place
               </p>
             </div>
-            <NotificationBell variant="light" />
+            <div className="flex items-center gap-1">
+              {/* Auto-reply settings — used to live on the My Space
+                  page; moved here because the toggles are about inbox
+                  behavior, not the chatbox. Sheet trigger keeps the
+                  inbox surface uncluttered. */}
+              <Sheet>
+                <SheetTrigger asChild>
+                  <button
+                    type="button"
+                    aria-label="Auto-reply settings"
+                    className="shrink-0 inline-flex items-center justify-center w-9 h-9 rounded-full hover:bg-secondary/60 text-foreground/70 hover:text-foreground transition-colors"
+                  >
+                    <Bot className="w-4.5 h-4.5" />
+                  </button>
+                </SheetTrigger>
+                <SheetContent
+                  side="right"
+                  className="w-full sm:max-w-md overflow-y-auto"
+                >
+                  <SheetHeader>
+                    <SheetTitle className="font-editorial text-2xl">
+                      Auto-reply
+                    </SheetTitle>
+                  </SheetHeader>
+                  <div className="mt-4">
+                    <MySpaceToolToggles />
+                  </div>
+                </SheetContent>
+              </Sheet>
+              <NotificationBell variant="light" />
+            </div>
           </div>
           <SubNavTabs tabs={VENDOR_INBOX_HUB_TABS} />
         </div>

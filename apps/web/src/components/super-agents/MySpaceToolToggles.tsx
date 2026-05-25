@@ -161,6 +161,14 @@ export function MySpaceToolToggles() {
   const [savingKey, setSavingKey] = useState<string | null>(null);
   const [query, setQuery] = useState("");
   const [resetting, setResetting] = useState(false);
+  // System-prompt preview lives in its own collapsible section under
+  // the toggles. Lazy-fetched the first time the vendor opens it so
+  // the panel mount isn't slowed down by a Claude-prompt build for
+  // vendors who never look at it.
+  const [showPrompt, setShowPrompt] = useState(false);
+  const [prompt, setPrompt] = useState<string | null>(null);
+  const [promptLoading, setPromptLoading] = useState(false);
+  const [promptError, setPromptError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     if (!user?.id) return;
@@ -185,6 +193,47 @@ export function MySpaceToolToggles() {
   useEffect(() => {
     void load();
   }, [load]);
+
+  // Fetch the live system prompt the first time the vendor opens the
+  // preview, and re-fetch when toggles change since they change the
+  // prompt text. 400ms debounce so rapid toggle flips don't fire one
+  // preview-prompt request per click.
+  useEffect(() => {
+    if (!showPrompt || !user?.id) return;
+    let cancelled = false;
+    const t = setTimeout(() => {
+      if (cancelled) return;
+      setPromptLoading(true);
+      setPromptError(null);
+      (async () => {
+        const { data, error } = await supabase.functions.invoke(
+          "hilux-preview-prompt",
+          { body: {} },
+        );
+        if (cancelled) return;
+        if (error) {
+          setPromptError(error.message ?? "Couldn't load prompt.");
+          setPrompt(null);
+        } else {
+          const text = (data as { prompt?: string } | null)?.prompt ?? null;
+          setPrompt(text);
+        }
+        setPromptLoading(false);
+      })();
+    }, 400);
+    return () => {
+      cancelled = true;
+      clearTimeout(t);
+    };
+  }, [
+    showPrompt,
+    user?.id,
+    profile?.hilux_action_use_calendar,
+    profile?.hilux_action_use_first_name,
+    profile?.hilux_action_detect_frustration,
+    profile?.hilux_action_decline_negotiation,
+    profile?.hilux_action_offer_call,
+  ]);
 
   const persist = async (patch: Partial<ProfileRow>, key: string) => {
     if (!user?.id) return false;
@@ -402,6 +451,65 @@ export function MySpaceToolToggles() {
         {!enabled ? (
           <p className="mt-3 text-[11px] text-muted-foreground italic">
             Flip the auto-reply on above to use these.
+          </p>
+        ) : null}
+      </div>
+
+      {/* Prompt preview — shows the exact system prompt the AI sees
+          before replying on the vendor's behalf, built from their
+          listing context + the toggle state above. Collapsed by
+          default so the panel mounts fast. */}
+      <div
+        className="border-t p-4"
+        style={{ borderColor: "rgba(255,138,76,0.18)" }}
+      >
+        <button
+          type="button"
+          onClick={() => setShowPrompt((v) => !v)}
+          className="flex items-center justify-between w-full text-left"
+          aria-expanded={showPrompt}
+        >
+          <div>
+            <p className="text-sm font-medium text-foreground">
+              What My Space is told
+            </p>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              The exact system prompt — updates with your toggles above.
+            </p>
+          </div>
+          <ChevronRight
+            className={`w-4 h-4 text-muted-foreground transition-transform ${
+              showPrompt ? "rotate-90" : ""
+            }`}
+            aria-hidden
+          />
+        </button>
+        {showPrompt ? (
+          <div
+            className="mt-3 rounded-lg border overflow-hidden max-h-[420px] flex flex-col"
+            style={{ borderColor: "rgba(255,138,76,0.18)", background: "rgba(255,255,255,0.7)" }}
+          >
+            {promptLoading && !prompt ? (
+              <div className="flex-1 flex items-center justify-center gap-2 text-[11px] text-muted-foreground py-8">
+                <Loader2 className="w-3 h-3 animate-spin" />
+                Loading prompt…
+              </div>
+            ) : promptError ? (
+              <div className="flex-1 flex items-center justify-center text-[11px] text-red-600 p-4 text-center">
+                {promptError}
+              </div>
+            ) : !prompt ? (
+              <div className="flex-1 flex items-center justify-center text-[11px] text-muted-foreground p-4 text-center">
+                No listing yet — the prompt will appear once you publish one.
+              </div>
+            ) : (
+              <pre className="flex-1 overflow-auto p-3 text-[11px] leading-relaxed text-foreground/80 font-mono whitespace-pre-wrap">{prompt}</pre>
+            )}
+          </div>
+        ) : null}
+        {showPrompt && prompt ? (
+          <p className="mt-2 text-[10px] text-muted-foreground">
+            {prompt.length.toLocaleString()} chars · cached as the system prompt on every reply
           </p>
         ) : null}
       </div>
