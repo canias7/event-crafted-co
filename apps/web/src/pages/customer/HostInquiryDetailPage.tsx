@@ -14,7 +14,7 @@ import { RatingPromptStrip } from "@/components/reviews/RatingPromptStrip";
 import { SubmittedReviewStatusCard } from "@/components/reviews/SubmittedReviewStatusCard";
 import { BookingConfirmationCard } from "@/components/inquiries/BookingConfirmationCard";
 import { InquiryReviewCard } from "@/components/inquiries/InquiryReviewCard";
-import { Link, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import {
   ArrowLeft,
   Send,
@@ -121,6 +121,7 @@ function draftKey(inquiryId: string | undefined): string | null {
 
 export default function HostInquiryDetailPage() {
   const { inquiryId } = useParams();
+  const navigate = useNavigate();
   const { user } = useAuth();
   const [inquiry, setInquiry] = useState<Inquiry | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -220,7 +221,7 @@ export default function HostInquiryDetailPage() {
       (supabase as any)
         .from("proposals")
         .select(
-          "id, title, line_items, subtotal_cents, deposit_cents, terms, contract_body, status, sent_at, signed_at, signed_name, first_viewed_at, last_viewed_at, view_count",
+          "id, title, line_items, subtotal_cents, deposit_cents, terms, contract_body, status, payment_status, sent_at, signed_at, signed_name, first_viewed_at, last_viewed_at, view_count",
         )
         .eq("inquiry_id", inquiryId)
         .order("created_at", { ascending: false }),
@@ -971,6 +972,7 @@ export default function HostInquiryDetailPage() {
                 acting={acting}
                 onAccept={(sig) => respondProposal(p, "accepted", sig)}
                 onReject={() => respondProposal(p, "rejected")}
+                onPay={() => navigate(`/pay/${p.id}`)}
               />
             </div>
           ))}

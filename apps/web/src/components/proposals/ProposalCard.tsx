@@ -36,6 +36,8 @@ export interface Proposal {
   terms: string | null;
   contract_body: string | null;
   status: "pending" | "accepted" | "rejected" | "withdrawn";
+  /** "pending" | "deposit_paid" | "paid_in_full" | "refunded" | "partial_refund" */
+  payment_status?: string | null;
   sent_at: string | null;
   signed_at?: string | null;
   signed_name?: string | null;
@@ -52,6 +54,12 @@ interface Props {
   /** When the proposal needs a signature, this is called with sig payload. */
   onAccept?: (signature?: SignaturePayload) => void;
   onReject?: () => void;
+  /**
+   * Host-side only — when provided AND the proposal is accepted +
+   * not yet paid in full, the card renders a "Pay" CTA that routes
+   * to the VendoraPay checkout (/pay/:proposalId).
+   */
+  onPay?: () => void;
 }
 
 const statusStyles: Record<Proposal["status"], string> = {
@@ -90,6 +98,7 @@ export function ProposalCard({
   acting,
   onAccept,
   onReject,
+  onPay,
 }: Props) {
   const [signOpen, setSignOpen] = useState(false);
   const requiresSignature =
@@ -235,6 +244,26 @@ export function ProposalCard({
           </p>
         </div>
       )}
+
+      {/* Pay button — host-side, accepted proposal, not yet paid.
+          Routes to /pay/:proposalId where the in-app Stripe Elements
+          checkout lives. The payment_status check covers both never-
+          paid and deposit-paid (deposit_paid still owes the balance). */}
+      {onPay &&
+        proposal.status === "accepted" &&
+        proposal.payment_status !== "paid_in_full" && (
+          <div className="flex gap-2 mt-6 pt-5 border-t border-border">
+            <Button
+              onClick={onPay}
+              className="rounded-full bg-foreground text-background hover:bg-foreground/90 flex-1"
+            >
+              <Check className="w-4 h-4 mr-2" />
+              {proposal.payment_status === "deposit_paid"
+                ? "Pay balance"
+                : "Pay now"}
+            </Button>
+          </div>
+        )}
 
       {canRespond && proposal.status === "pending" && (
         <div className="flex gap-2 mt-6 pt-5 border-t border-border">
