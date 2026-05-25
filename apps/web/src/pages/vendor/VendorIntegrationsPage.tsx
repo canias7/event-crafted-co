@@ -253,7 +253,11 @@ export default function VendorIntegrationsPage() {
 
   const [stripeConnected, setStripeConnected] = useState(false);
   const [handles, setHandles] = useState<HandleMap>({});
-  const [expanded, setExpanded] = useState<string | null>("vendora-mcp");
+  // Start collapsed — every card (including the Vendora MCP / Claude
+  // panel) renders as just the logo + Manage button. Clicking expands.
+  // The Claude panel used to default-expanded, which pushed the rest
+  // of the connector grid below the fold.
+  const [expanded, setExpanded] = useState<string | null>(null);
   const [actingId, setActingId] = useState<string | null>(null);
 
   useEffect(() => {
