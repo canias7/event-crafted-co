@@ -198,11 +198,19 @@ export async function charge(args: {
   description?: string;
   metadata?: Record<string, string>;
   idempotency_key: string;
+  /**
+   * Override the env-based platform fee. When set, this value is
+   * used directly as application_fee_amount and computePlatformFee
+   * is bypassed. Callers that know the vendor's tier should compute
+   * via _shared/platformFees.ts and pass the result here.
+   */
+  application_fee_cents?: number;
 }): Promise<ChargeResult> {
   if (!Number.isInteger(args.amount_cents) || args.amount_cents < 50) {
     throw new Error("amount_cents must be an integer >= 50");
   }
-  const feeCents = computePlatformFee(args.amount_cents);
+  const feeCents =
+    args.application_fee_cents ?? computePlatformFee(args.amount_cents);
   const intent = await client().paymentIntents.create(
     {
       amount: args.amount_cents,

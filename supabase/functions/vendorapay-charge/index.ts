@@ -18,6 +18,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.7";
 import { charge } from "../_shared/payments.ts";
+import { computePlatformFeeCents, normalizeTier } from "../_shared/platformFees.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
@@ -120,6 +121,19 @@ serve(async (req) => {
             : 0);
     if (amountCents < 50) return json(400, { error: "amount too small" });
 
+    // Look up the vendor's subscription tier so VendoraPay's cut
+    // matches the per-tier fee schedule (free/starter 5% all-in,
+    // pro 4%, studio = Stripe pass-through with no Vendora fee).
+    const { data: vp } = await admin
+      .from("vendor_profiles")
+      .select("subscription_tier")
+      .eq("id", proposal.vendor_id)
+      .maybeSingle();
+    const tier = normalizeTier(
+      (vp as { subscription_tier?: string | null } | null)?.subscription_tier,
+    );
+    const applicationFeeCents = computePlatformFeeCents(tier, amountCents);
+
     const result = await charge({
       account_id: sRow.stripe_account_id,
       amount_cents: amountCents,
@@ -134,8 +148,10 @@ serve(async (req) => {
         mode,
         host_id: proposal.host_id,
         vendor_id: proposal.vendor_id,
+        vendor_tier: tier,
       },
       idempotency_key: idempotencyKey,
+      application_fee_cents: applicationFeeCents,
     });
 
     // Stamp the proposal so we can correlate the webhook later.
