@@ -453,6 +453,12 @@ export default function HostInquiryDetailPage() {
   // anchored near the bottom. If they've scrolled up to read
   // history, hold their position so the next realtime tick doesn't
   // yank them back down.
+  //
+  // Deliberately NOT depending on otherTyping anymore: typing pulses
+  // re-fired the smooth scroll, stacking animations and visibly
+  // vibrating the page on busy threads. The typing bubble itself
+  // layout-shifts by ~30px on toggle, which is enough — we don't
+  // need to also scroll for it.
   useEffect(() => {
     if (!messagesEndRef.current) return;
     if (!wasAtBottomRef.current && hasLoadedRef.current) return;
@@ -460,7 +466,7 @@ export default function HostInquiryDetailPage() {
       behavior: hasLoadedRef.current ? "smooth" : "auto",
       block: "end",
     });
-  }, [messages.length, otherTyping]);
+  }, [messages.length]);
 
   // Live updates: re-fetch when this thread's messages or this inquiry's
   // status change. Routed through the shared user-scoped channel.
@@ -956,7 +962,9 @@ export default function HostInquiryDetailPage() {
             </div>
           ))}
 
-          {messages.length === 0 && !inquiry.special_requests ? (
+          {messages.length === 0 &&
+          !inquiry.special_requests &&
+          proposals.length === 0 ? (
             <p className="text-sm text-muted-foreground py-12 text-center">
               No messages yet — the vendor will reply soon.
             </p>

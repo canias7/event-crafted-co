@@ -414,6 +414,12 @@ export default function InquiryDetailPage() {
   // near the bottom. If they've scrolled up to read history, hold
   // their position so the next realtime tick doesn't yank them
   // back. First paint always anchors at the bottom.
+  //
+  // Deliberately NOT depending on otherTyping anymore: every typing
+  // pulse used to re-fire a smooth scroll, which on a busy thread
+  // made the page visibly vibrate as smooth animations stacked. The
+  // typing bubble layout-shifts by ~30px on toggle, which felt like
+  // a bug. Scroll only when a real message lands.
   useEffect(() => {
     if (!messagesEndRef.current) return;
     if (!wasAtBottomRef.current && hasLoadedRef.current) return;
@@ -421,7 +427,7 @@ export default function InquiryDetailPage() {
       behavior: hasLoadedRef.current ? "smooth" : "auto",
       block: "end",
     });
-  }, [messages.length, otherTyping]);
+  }, [messages.length]);
 
   // useCallback so the realtime hook below sees a stable reference
   // across renders; without this, every render replaces the realtime
@@ -1279,8 +1285,14 @@ export default function InquiryDetailPage() {
             </div>
           ))}
 
-          {/* Messages */}
-          {messages.length === 0 && !inquiry.special_requests ? (
+          {/* Messages. The "No messages yet" empty state only fires
+              when there's genuinely no activity in the thread —
+              proposals + intake_answers count as activity, so a
+              fresh inquiry with a proposal sent doesn't get a
+              misleading "Say hi" subtitle below the proposal card. */}
+          {messages.length === 0 &&
+          !inquiry.special_requests &&
+          proposals.length === 0 ? (
             <p className="text-sm text-muted-foreground py-12 text-center">
               No messages yet. Say hi.
             </p>
