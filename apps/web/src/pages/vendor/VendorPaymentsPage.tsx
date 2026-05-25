@@ -468,26 +468,44 @@ export default function VendorPaymentsPage() {
             </section>
           ) : null}
 
+          {/* Inline banner when the vendor has no listing yet. The
+              dashboard still renders below with empty/zero data so
+              they get a feel for the product before they create the
+              listing — matches the "verify identity" banner pattern. */}
+          {!vendorId && !loading ? (
+            <section
+              className="rounded-2xl p-5"
+              style={{
+                background: "linear-gradient(135deg, rgba(255,138,76,0.1), rgba(217,119,87,0.08))",
+                border: "0.5px solid rgba(255,138,76,0.3)",
+              }}
+            >
+              <div className="flex items-start gap-4 flex-wrap">
+                <div
+                  className="shrink-0 w-11 h-11 rounded-xl inline-flex items-center justify-center"
+                  style={{ background: "rgba(255,138,76,0.18)" }}
+                >
+                  <CreditCard className="w-5 h-5" style={{ color: "#c4541e" }} />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h2 className="text-base font-semibold">Set up your vendor profile to start using VendoraPay</h2>
+                  <p className="text-sm text-muted-foreground mt-0.5">
+                    Payments attach to your vendor listing. Create one first,
+                    then come back to connect your bank.
+                  </p>
+                </div>
+                <Button onClick={() => navigate("/vendor/me")} className="rounded-full">
+                  <ExternalLink className="w-4 h-4 mr-1.5" />
+                  Set up profile
+                </Button>
+              </div>
+            </section>
+          ) : null}
+
           {loading ? (
             <div className="flex items-center justify-center py-20">
               <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
             </div>
-          ) : !vendorId ? (
-            // Vendor has no listing yet — VendoraPay is keyed to the
-            // listing id, so there's nothing to render. Send them to
-            // create one rather than show empty stat cards.
-            <Card>
-              <div className="p-8 text-center">
-                <h3 className="text-base font-semibold mb-2">Set up your vendor profile first</h3>
-                <p className="text-sm text-muted-foreground mb-4">
-                  VendoraPay needs a vendor listing to attach payments to.
-                  Finish creating your profile and come back.
-                </p>
-                <Button onClick={() => navigate("/vendor/me")} className="rounded-full">
-                  Go to my profile
-                </Button>
-              </div>
-            </Card>
           ) : tab === "overview" ? (
             <OverviewTab
               balance={balance}
