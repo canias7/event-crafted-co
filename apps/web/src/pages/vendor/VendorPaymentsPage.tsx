@@ -100,9 +100,11 @@ interface PaymentLink {
   description: string | null;
   amount_cents: number;
   currency: string;
-  status: "active" | "paid" | "cancelled" | "expired";
+  status: "active" | "paid" | "cancelled" | "expired" | "scheduled";
   paid_at: string | null;
   expires_at: string | null;
+  activate_at: string | null;
+  parent_link_id: string | null;
   created_at: string;
 }
 
@@ -206,7 +208,7 @@ export default function VendorPaymentsPage() {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (supabase as any)
           .from("payment_links")
-          .select("id, vendor_id, slug, title, description, amount_cents, currency, status, paid_at, expires_at, created_at")
+          .select("id, vendor_id, slug, title, description, amount_cents, currency, status, paid_at, expires_at, activate_at, parent_link_id, created_at")
           .eq("vendor_id", vendorId)
           .order("created_at", { ascending: false })
           .limit(50),
@@ -816,19 +818,45 @@ function PayLinksTab({
   const [title, setTitle] = useState("");
   const [amountDollars, setAmountDollars] = useState("");
   const [description, setDescription] = useState("");
+  const [splitDeposit, setSplitDeposit] = useState(false);
+  const [depositDollars, setDepositDollars] = useState("");
+  const [balanceDueDate, setBalanceDueDate] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
   const create = useCallback(async () => {
     if (!vendorId || submitting) return;
-    const cents = Math.round(parseFloat(amountDollars) * 100);
+    const totalCents = Math.round(parseFloat(amountDollars) * 100);
     if (!title.trim()) {
       toast.error("Title required");
       return;
     }
-    if (!Number.isFinite(cents) || cents < 50) {
+    if (!Number.isFinite(totalCents) || totalCents < 50) {
       toast.error("Amount must be at least $0.50");
       return;
     }
+
+    let depositCents: number | null = null;
+    let balanceCents: number | null = null;
+    let balanceDueIso: string | null = null;
+    if (splitDeposit) {
+      depositCents = Math.round(parseFloat(depositDollars) * 100);
+      if (!Number.isFinite(depositCents) || depositCents < 50 || depositCents >= totalCents) {
+        toast.error("Deposit must be between $0.50 and less than the total");
+        return;
+      }
+      if (!balanceDueDate) {
+        toast.error("Pick a balance due date");
+        return;
+      }
+      const due = new Date(balanceDueDate);
+      if (Number.isNaN(due.getTime()) || due.getTime() <= Date.now()) {
+        toast.error("Balance due date must be in the future");
+        return;
+      }
+      balanceCents = totalCents - depositCents;
+      balanceDueIso = due.toISOString();
+    }
+
     setSubmitting(true);
     const { data: userData } = await supabase.auth.getUser();
     if (!userData?.user) {
@@ -836,28 +864,82 @@ function PayLinksTab({
       setSubmitting(false);
       return;
     }
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error } = await (supabase as any)
-      .from("payment_links")
-      .insert({
+
+    if (!splitDeposit) {
+      // Single charge — original behavior.
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error } = await (supabase as any).from("payment_links").insert({
         vendor_id: vendorId,
         title: title.trim(),
         description: description.trim() || null,
-        amount_cents: cents,
+        amount_cents: totalCents,
         created_by: userData.user.id,
       });
-    setSubmitting(false);
-    if (error) {
-      toast.error("Couldn't create link", { description: error.message });
-      return;
+      setSubmitting(false);
+      if (error) {
+        toast.error("Couldn't create link", { description: error.message });
+        return;
+      }
+      toast.success("Pay link created");
+    } else {
+      // Two-stage schedule: deposit (active now) + balance (scheduled
+      // for the due date, daily cron flips it to active + emails host).
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: depositRow, error: depErr } = await (supabase as any)
+        .from("payment_links")
+        .insert({
+          vendor_id: vendorId,
+          title: `${title.trim()} — deposit`,
+          description: description.trim() || null,
+          amount_cents: depositCents,
+          created_by: userData.user.id,
+        })
+        .select("id")
+        .single();
+      if (depErr || !depositRow) {
+        setSubmitting(false);
+        toast.error("Couldn't create deposit link", { description: depErr?.message });
+        return;
+      }
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error: balErr } = await (supabase as any).from("payment_links").insert({
+        vendor_id: vendorId,
+        title: `${title.trim()} — balance`,
+        description: description.trim() || null,
+        amount_cents: balanceCents,
+        status: "scheduled",
+        activate_at: balanceDueIso,
+        parent_link_id: depositRow.id,
+        created_by: userData.user.id,
+      });
+      setSubmitting(false);
+      if (balErr) {
+        toast.error("Couldn't create balance link", { description: balErr.message });
+        return;
+      }
+      toast.success("Payment schedule created", {
+        description: "Deposit link is live; balance link emails on the due date.",
+      });
     }
-    toast.success("Pay link created");
     setTitle("");
     setAmountDollars("");
     setDescription("");
+    setSplitDeposit(false);
+    setDepositDollars("");
+    setBalanceDueDate("");
     setCreating(false);
     onChanged();
-  }, [vendorId, title, amountDollars, description, submitting, onChanged]);
+  }, [
+    vendorId,
+    title,
+    amountDollars,
+    description,
+    splitDeposit,
+    depositDollars,
+    balanceDueDate,
+    submitting,
+    onChanged,
+  ]);
 
   const copyLink = useCallback((slug: string) => {
     const url = `${window.location.origin}/pay/link/${slug}`;
@@ -916,12 +998,55 @@ function PayLinksTab({
               rows={2}
               className="w-full rounded-lg border-0 px-3 py-2 text-sm bg-background/60 ring-1 ring-foreground/10 focus:ring-foreground/30 outline-none resize-none"
             />
+
+            {/* Split into deposit + balance */}
+            <label className="flex items-center gap-2 text-sm text-foreground/80">
+              <input
+                type="checkbox"
+                checked={splitDeposit}
+                onChange={(e) => setSplitDeposit(e.target.checked)}
+                className="rounded"
+              />
+              Split into deposit + balance
+            </label>
+            {splitDeposit ? (
+              <div className="space-y-2 rounded-lg p-3" style={{ background: "rgba(255,138,76,0.06)" }}>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-muted-foreground w-20 shrink-0">Deposit</span>
+                  <span className="text-sm text-muted-foreground">$</span>
+                  <input
+                    type="number"
+                    inputMode="decimal"
+                    step="0.01"
+                    min="0.50"
+                    placeholder="e.g. 500.00 (host pays now)"
+                    value={depositDollars}
+                    onChange={(e) => setDepositDollars(e.target.value)}
+                    className="flex-1 rounded-md border-0 px-2.5 py-1.5 text-sm bg-background ring-1 ring-foreground/10 focus:ring-foreground/30 outline-none"
+                  />
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-muted-foreground w-20 shrink-0">Balance due</span>
+                  <input
+                    type="date"
+                    value={balanceDueDate}
+                    onChange={(e) => setBalanceDueDate(e.target.value)}
+                    min={new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().slice(0, 10)}
+                    className="flex-1 rounded-md border-0 px-2.5 py-1.5 text-sm bg-background ring-1 ring-foreground/10 focus:ring-foreground/30 outline-none"
+                  />
+                </div>
+                <p className="text-[11px] text-muted-foreground">
+                  The deposit link is live immediately. The balance link auto-activates on the due date and emails the host a reminder.
+                </p>
+              </div>
+            ) : null}
+
             <div className="flex gap-2">
               <Button onClick={create} disabled={submitting} className="rounded-full">
                 {submitting ? (
                   <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
                 ) : null}
-                Create link
+                {splitDeposit ? "Create schedule" : "Create link"}
               </Button>
               <Button
                 variant="ghost"
@@ -930,6 +1055,9 @@ function PayLinksTab({
                   setTitle("");
                   setAmountDollars("");
                   setDescription("");
+                  setSplitDeposit(false);
+                  setDepositDollars("");
+                  setBalanceDueDate("");
                 }}
                 className="rounded-full"
               >
@@ -974,6 +1102,9 @@ function PayLinksTab({
                   <p className="text-[11px] text-muted-foreground mt-1.5">
                     Created {formatDate(l.created_at)}
                     {l.paid_at ? ` · Paid ${formatDate(l.paid_at)}` : ""}
+                    {l.status === "scheduled" && l.activate_at
+                      ? ` · Activates ${formatDate(l.activate_at)}`
+                      : ""}
                   </p>
                 </div>
                 <div className="text-right shrink-0">
@@ -1012,6 +1143,17 @@ function PayLinksTab({
                     Cancel
                   </Button>
                 </div>
+              ) : l.status === "scheduled" ? (
+                <div className="flex items-center gap-2 mt-3">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => cancel(l.id)}
+                    className="rounded-full text-muted-foreground hover:text-destructive ml-auto"
+                  >
+                    Cancel
+                  </Button>
+                </div>
               ) : null}
             </div>
           ))}
@@ -1027,6 +1169,7 @@ function LinkStatusPill({ status }: { status: PaymentLink["status"] }) {
     paid: { label: "Paid", className: "bg-sky-100 text-sky-700" },
     cancelled: { label: "Cancelled", className: "bg-slate-100 text-slate-700" },
     expired: { label: "Expired", className: "bg-amber-100 text-amber-800" },
+    scheduled: { label: "Scheduled", className: "bg-violet-100 text-violet-700" },
   };
   const m = map[status];
   return (
