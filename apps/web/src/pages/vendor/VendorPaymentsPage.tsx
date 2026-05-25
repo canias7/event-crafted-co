@@ -24,9 +24,11 @@ import {
   CreditCard,
   ExternalLink,
   FileText,
+  Landmark,
   Link2,
   Loader2,
   Mail,
+  Plug,
   Plus,
   RefreshCw,
   Settings as SettingsIcon,
@@ -89,9 +91,14 @@ interface Status {
   charges_enabled: boolean;
   payouts_enabled: boolean;
   details_submitted: boolean;
+  bank?: {
+    bank_name: string | null;
+    last4: string | null;
+    currency: string | null;
+  } | null;
 }
 
-type TabId = "overview" | "transactions" | "invoices" | "links" | "payouts" | "settings";
+type TabId = "overview" | "transactions" | "invoices" | "links" | "payouts" | "integrations" | "settings";
 
 const TABS: Array<{ id: TabId; label: string; icon: typeof Wallet }> = [
   { id: "overview", label: "Overview", icon: Wallet },
@@ -99,6 +106,7 @@ const TABS: Array<{ id: TabId; label: string; icon: typeof Wallet }> = [
   { id: "invoices", label: "Invoices", icon: FileText },
   { id: "links", label: "Pay Links", icon: Link2 },
   { id: "payouts", label: "Payouts", icon: Banknote },
+  { id: "integrations", label: "Integrations", icon: Plug },
   { id: "settings", label: "Settings", icon: SettingsIcon },
 ];
 
@@ -482,6 +490,8 @@ export default function VendorPaymentsPage() {
             />
           ) : tab === "payouts" ? (
             <PayoutsTab data={payouts} status={status} />
+          ) : tab === "integrations" ? (
+            <IntegrationsTab status={status} vendorId={vendorId} />
           ) : (
             <SettingsTab status={status} tier={tier} tierLoading={tierLoading} />
           )}
@@ -1700,6 +1710,185 @@ function LinkStatusPill({ status }: { status: PaymentLink["status"] }) {
     <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${m.className}`}>
       {m.label}
     </span>
+  );
+}
+
+function IntegrationsTab({
+  status,
+  vendorId,
+}: {
+  status: Status | null;
+  vendorId: string | null;
+}) {
+  const [opening, setOpening] = useState(false);
+
+  const openDashboard = useCallback(async () => {
+    if (!vendorId || opening) return;
+    setOpening(true);
+    const { data, error } = await supabase.functions.invoke("vendorapay-dashboard-link", {
+      body: { business_id: vendorId },
+    });
+    setOpening(false);
+    if (error || !(data as { url?: string })?.url) {
+      let detail = "Try again in a moment.";
+      const ctx = (error as { context?: Response } | null)?.context;
+      if (ctx && typeof ctx.json === "function") {
+        try {
+          const body = await ctx.clone().json();
+          detail = (body?.detail || body?.error || error?.message) ?? detail;
+        } catch {
+          detail = error?.message ?? detail;
+        }
+      } else if (error?.message) {
+        detail = error.message;
+      }
+      toast.error("Couldn't open Stripe Express", { description: detail });
+      return;
+    }
+    window.open((data as { url: string }).url, "_blank", "noopener,noreferrer");
+  }, [vendorId, opening]);
+
+  return (
+    <div className="space-y-4">
+      <h2 className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground font-semibold mb-1">
+        Money in / money out
+      </h2>
+
+      {/* Bank account */}
+      <Card>
+        <div className="p-5 flex items-start gap-4 flex-wrap">
+          <div className="shrink-0 w-11 h-11 rounded-xl inline-flex items-center justify-center bg-sky-50 text-sky-700">
+            <Landmark className="w-5 h-5" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <h3 className="text-sm font-semibold">Bank account</h3>
+              {status?.bank?.last4 ? (
+                <span className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide bg-emerald-100 text-emerald-700">
+                  Connected
+                </span>
+              ) : status?.onboarded ? (
+                <span className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide bg-amber-100 text-amber-800">
+                  Pending
+                </span>
+              ) : (
+                <span className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide bg-slate-100 text-slate-700">
+                  Not connected
+                </span>
+              )}
+            </div>
+            {status?.bank?.last4 ? (
+              <p className="text-sm text-foreground mt-1">
+                {status.bank.bank_name ?? "Bank"} ····{status.bank.last4}
+                {status.bank.currency ? (
+                  <span className="text-xs text-muted-foreground ml-2 uppercase">
+                    {status.bank.currency}
+                  </span>
+                ) : null}
+              </p>
+            ) : (
+              <p className="text-sm text-muted-foreground mt-1">
+                {status?.onboarded
+                  ? "Add your bank account in the VendoraPay Express dashboard to receive payouts."
+                  : "Connect VendoraPay first to add a bank account."}
+              </p>
+            )}
+            <p className="text-[11px] text-muted-foreground mt-2">
+              Payouts settle to this account 2 business days after each charge.
+            </p>
+          </div>
+          {status?.onboarded ? (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={openDashboard}
+              disabled={opening}
+              className="rounded-full"
+            >
+              {opening ? (
+                <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" />
+              ) : (
+                <ExternalLink className="w-3.5 h-3.5 mr-1" />
+              )}
+              {status?.bank?.last4 ? "Manage bank" : "Add bank"}
+            </Button>
+          ) : null}
+        </div>
+      </Card>
+
+      {/* Identity / tax info */}
+      <Card>
+        <div className="p-5 flex items-start gap-4 flex-wrap">
+          <div className="shrink-0 w-11 h-11 rounded-xl inline-flex items-center justify-center bg-violet-50 text-violet-700">
+            <FileText className="w-5 h-5" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <h3 className="text-sm font-semibold">Identity & tax info</h3>
+              {status?.details_submitted ? (
+                <span className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide bg-emerald-100 text-emerald-700">
+                  Verified
+                </span>
+              ) : (
+                <span className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide bg-amber-100 text-amber-800">
+                  Incomplete
+                </span>
+              )}
+            </div>
+            <p className="text-sm text-muted-foreground mt-1">
+              Legal name, EIN/SSN, address. Required for tax forms (1099-K) and payouts.
+            </p>
+          </div>
+          {status?.onboarded ? (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={openDashboard}
+              disabled={opening}
+              className="rounded-full"
+            >
+              {opening ? (
+                <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" />
+              ) : (
+                <ExternalLink className="w-3.5 h-3.5 mr-1" />
+              )}
+              Update info
+            </Button>
+          ) : null}
+        </div>
+      </Card>
+
+      {/* Coming soon */}
+      <h2 className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground font-semibold mb-1 mt-6">
+        Coming soon
+      </h2>
+      <Card>
+        <div className="p-5 flex items-start gap-4">
+          <div className="shrink-0 w-11 h-11 rounded-xl inline-flex items-center justify-center bg-foreground/5 text-muted-foreground">
+            <Banknote className="w-5 h-5" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <h3 className="text-sm font-semibold">QuickBooks &amp; Xero sync</h3>
+            <p className="text-sm text-muted-foreground mt-1">
+              Push every VendoraPay transaction to your bookkeeper automatically. On the roadmap.
+            </p>
+          </div>
+        </div>
+      </Card>
+      <Card>
+        <div className="p-5 flex items-start gap-4">
+          <div className="shrink-0 w-11 h-11 rounded-xl inline-flex items-center justify-center bg-foreground/5 text-muted-foreground">
+            <CreditCard className="w-5 h-5" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <h3 className="text-sm font-semibold">ACH bank transfers</h3>
+            <p className="text-sm text-muted-foreground mt-1">
+              Accept low-fee bank transfers for big bookings (0.8% capped at $5 vs 2.9% on cards).
+            </p>
+          </div>
+        </div>
+      </Card>
+    </div>
   );
 }
 
