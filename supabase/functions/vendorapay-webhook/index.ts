@@ -99,6 +99,7 @@ serve(async (req: Request) => {
         };
         const proposalId = pi.metadata?.proposal_id;
         const paymentLinkId = pi.metadata?.payment_link_id;
+        const invoiceId = pi.metadata?.invoice_id;
         const vendorIdMeta = pi.metadata?.vendor_id;
         const mode = pi.metadata?.mode;
         let vendorIdForNotify: string | null = vendorIdMeta ?? null;
@@ -137,6 +138,23 @@ serve(async (req: Request) => {
           const lRow = linkRow as { vendor_id?: string; title?: string } | null;
           if (lRow?.vendor_id) vendorIdForNotify = lRow.vendor_id;
           if (lRow?.title) descriptionForNotify = lRow.title;
+        }
+        if (invoiceId) {
+          const { data: invRow } = await db
+            .from("invoices")
+            .update({
+              status: "paid",
+              paid_at: new Date().toISOString(),
+              paid_payment_intent_id: pi.id,
+              updated_at: new Date().toISOString(),
+            })
+            .eq("id", invoiceId)
+            .select("vendor_id, invoice_number, bill_to_email")
+            .maybeSingle();
+          const iRow = invRow as { vendor_id?: string; invoice_number?: string; bill_to_email?: string | null } | null;
+          if (iRow?.vendor_id) vendorIdForNotify = iRow.vendor_id;
+          if (iRow?.invoice_number) descriptionForNotify = `Invoice ${iRow.invoice_number}`;
+          if (!hostEmailForNotify && iRow?.bill_to_email) hostEmailForNotify = iRow.bill_to_email;
         }
 
         // Fire notification side-effect. Best-effort; failures here
