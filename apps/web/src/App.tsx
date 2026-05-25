@@ -66,6 +66,7 @@ import {
   VendorPartnersPage,
   VendorAiSuperagentsPage,
   VendorIntegrationsPage,
+  VendorPaymentsPage,
   VendorSubscriptionPage,
   VendorUsagePage,
   VendorGalleryPage,
@@ -232,6 +233,7 @@ const App = () => (
               <Route path="/vendor/partners" element={<RequireRole role="vendor"><VendorPartnersPage /></RequireRole>} />
               <Route path="/vendor/ai-superagents" element={<RequireRole role="vendor"><VendorAiSuperagentsPage /></RequireRole>} />
               <Route path="/vendor/integrations" element={<RequireRole role="vendor"><VendorIntegrationsPage /></RequireRole>} />
+              <Route path="/vendor/payments" element={<RequireRole role="vendor"><VendorPaymentsPage /></RequireRole>} />
               <Route path="/vendor/subscription" element={<RequireRole role="vendor"><VendorSubscriptionPage /></RequireRole>} />
               <Route path="/vendor/usage" element={<RequireRole role="vendor"><VendorUsagePage /></RequireRole>} />
               <Route path="/vendor/gallery" element={<RequireRole role="vendor"><VendorGalleryPage /></RequireRole>} />
