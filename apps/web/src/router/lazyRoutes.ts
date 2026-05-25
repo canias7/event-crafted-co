@@ -73,6 +73,9 @@ export const HelpPage = lazyWithReload(importHelp);
 const importVendoraPayCheckout = () => import("@/pages/VendoraPayCheckoutPage");
 export const VendoraPayCheckoutPage = lazyWithReload(importVendoraPayCheckout);
 
+const importPayLinkCheckout = () => import("@/pages/public/PayLinkCheckoutPage");
+export const PayLinkCheckoutPage = lazyWithReload(importPayLinkCheckout);
+
 const importChangelog = () => import("@/pages/ChangelogPage");
 export const ChangelogPage = lazyWithReload(importChangelog);
 
@@ -184,6 +187,7 @@ const ROUTE_IMPORTERS: Array<{ pattern: string; importer: () => Promise<unknown>
   { pattern: "/privacy", importer: importPrivacy },
   { pattern: "/terms", importer: importTerms },
   { pattern: "/help", importer: importHelp },
+  { pattern: "/pay/link/:slug", importer: importPayLinkCheckout },
   { pattern: "/pay/:proposalId", importer: importVendoraPayCheckout },
   { pattern: "/changelog", importer: importChangelog },
   { pattern: "/status", importer: importStatus },

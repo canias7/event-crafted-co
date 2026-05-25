@@ -65,6 +65,7 @@ import {
   VendorAppointmentsPage,
   VendorPartnersPage,
   VendorAiSuperagentsPage,
+  PayLinkCheckoutPage,
   VendorIntegrationsPage,
   VendorPaymentsPage,
   VendorSubscriptionPage,
@@ -135,6 +136,7 @@ const App = () => (
               <Route path="/privacy" element={<PrivacyPage />} />
               <Route path="/terms" element={<TermsPage />} />
               <Route path="/help" element={<HelpPage />} />
+              <Route path="/pay/link/:slug" element={<PayLinkCheckoutPage />} />
               <Route path="/pay/:proposalId" element={<RequireRole role={["host", "vendor"]}><VendoraPayCheckoutPage /></RequireRole>} />
               <Route path="/changelog" element={<ChangelogPage />} />
               <Route path="/status" element={<StatusPage />} />
