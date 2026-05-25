@@ -86,17 +86,30 @@ serve(async (req) => {
       auth: { autoRefreshToken: false, persistSession: false },
     });
     const last4 = apiKey.slice(-4);
+    // vendor_stripe_mcp_secrets is locked down — RLS with no policies,
+    // table-level grants revoked from everyone except service_role.
+    // The audit (PR #882) found that the previous storage (a column
+    // on profiles with column-level REVOKE) didn't actually block
+    // SELECTs because PostgreSQL silently no-ops column-level REVOKE
+    // when no column-level GRANT exists.
     const { error } = await admin
-      .from("profiles")
-      .update({
-        stripe_mcp_api_key: apiKey,
-        stripe_mcp_key_last4: last4,
-        stripe_mcp_connected_at: new Date().toISOString(),
-      })
-      .eq("id", userId);
+      .from("vendor_stripe_mcp_secrets")
+      .upsert(
+        {
+          user_id: userId,
+          api_key: apiKey,
+          last4,
+          connected_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: "user_id" },
+      );
     if (error) {
-      console.error("[vendor-stripe-mcp-connect] store failed", error);
-      return json(500, { error: "store_failed", detail: error.message });
+      // Don't echo error.message back to the client — Postgres errors
+      // can include the row value on constraint violations, and the
+      // row here contains the API key.
+      console.error("[vendor-stripe-mcp-connect] store failed", error.code);
+      return json(500, { error: "store_failed" });
     }
 
     return json(200, {

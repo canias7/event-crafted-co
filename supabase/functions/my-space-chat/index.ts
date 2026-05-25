@@ -153,14 +153,15 @@ async function loadStripeMcpKey(userId: string): Promise<string | null> {
   const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
     auth: { autoRefreshToken: false, persistSession: false },
   });
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data } = await (admin as any)
-    .from("profiles")
-    .select("stripe_mcp_api_key")
-    .eq("id", userId)
+  // vendor_stripe_mcp_secrets is locked down — only service_role can
+  // read. Audit PR #882 moved the key here after finding the original
+  // column-on-profiles storage was readable by inquiry counterparties.
+  const { data } = await admin
+    .from("vendor_stripe_mcp_secrets")
+    .select("api_key")
+    .eq("user_id", userId)
     .maybeSingle();
-  const key = (data as { stripe_mcp_api_key?: string | null } | null)
-    ?.stripe_mcp_api_key;
+  const key = (data as { api_key?: string | null } | null)?.api_key;
   return key && key.length > 0 ? key : null;
 }
 
