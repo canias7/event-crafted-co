@@ -297,7 +297,6 @@ export default function InquiryDetailPage() {
   const [composer, setComposer] = useState("");
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
-  const [drafting, setDrafting] = useState(false);
   const [statusUpdating, setStatusUpdating] = useState(false);
   const [review, setReview] = useState<ReviewWithResponse | null>(null);
   const [proposals, setProposals] = useState<Proposal[]>([]);
@@ -962,38 +961,6 @@ export default function InquiryDetailPage() {
     await transitionToReplied();
   }
 
-  async function draftWithHilux() {
-    if (!threadId || drafting) return;
-    setDrafting(true);
-    try {
-      const { data, error } = await supabase.functions.invoke(
-        "hilux-draft-reply",
-        { body: { thread_id: threadId } },
-      );
-      if (error) throw error;
-      const body = data as { draft?: string; error?: string };
-      if (body?.error) throw new Error(body.error);
-      if (!body?.draft) throw new Error("empty draft");
-      // Populate the composer with HILUX's draft so the vendor can
-      // edit it before sending. Doesn't auto-send.
-      setComposer(body.draft);
-      composerRef.current?.focus();
-      toast.success("HILUX drafted a reply — review and send.");
-    } catch (err) {
-      console.error("[hilux-draft-reply]", err);
-      if (await handleInsufficientCredits(err, navigate)) return;
-      const msg = err instanceof Error ? err.message : String(err);
-      // Common case: the last message in the thread is from the vendor
-      // (or HILUX), not the host. Show a friendlier note.
-      toast.error(
-        msg === "no_host_message_to_reply_to"
-          ? "Wait for the host's next message — HILUX drafts replies to host messages."
-          : "Couldn't draft a reply.",
-      );
-    } finally {
-      setDrafting(false);
-    }
-  }
 
   async function sendMessage() {
     if (
@@ -1863,20 +1830,6 @@ export default function InquiryDetailPage() {
                   e.target.value = "";
                 }}
               />
-              <button
-                type="button"
-                onClick={draftWithHilux}
-                disabled={drafting || sending}
-                aria-label="Draft with HILUX"
-                title="Draft with HILUX"
-                className="shrink-0 inline-flex items-center justify-center w-9 h-9 rounded-full hover:bg-orange-100/60 text-orange-700 disabled:opacity-50"
-              >
-                {drafting ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <Sparkles className="w-4 h-4" />
-                )}
-              </button>
               <Button
                 onClick={sendMessage}
                 disabled={
