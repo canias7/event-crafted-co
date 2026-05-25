@@ -275,6 +275,11 @@ export default function VendorIntegrationsPage() {
   const vendorId = ownListing?.id ?? null;
 
   const [stripeConnected, setStripeConnected] = useState(false);
+  // charges_enabled tracks whether Stripe Connect KYC is complete.
+  // stripeConnected = "we have an account_id"; chargesEnabled =
+  // "Stripe has flipped charges/transfers on after KYC review."
+  // Both flow from the gated get_vendor_payment_info RPC.
+  const [chargesEnabled, setChargesEnabled] = useState(false);
   const [handles, setHandles] = useState<HandleMap>({});
   // Stripe MCP (AI access) — separate from Stripe Connect. Read via
   // the gated get_my_stripe_mcp_status RPC; the actual key value
@@ -348,32 +353,27 @@ export default function VendorIntegrationsPage() {
     toast.success("Stripe AI disconnected");
   }, [actingId, refreshStripeMcpStatus]);
 
-  useEffect(() => {
+  // Hoisted so the disconnect handler can re-fetch after clearing.
+  const refreshPaymentInfo = useCallback(async () => {
     if (!vendorId) return;
-    let cancelled = false;
-    (async () => {
-      // The vendor reads their OWN payment info via the gated RPC,
-      // not direct table select. The two columns
-      // (payment_handles + stripe_account_id) are revoked from
-      // authenticated to block scraping; the RPC re-grants by
-      // caller relationship (owner OR has-inquiry-with-vendor).
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data } = await (supabase as any).rpc(
-        "get_vendor_payment_info",
-        { p_vendor_id: vendorId },
-      );
-      if (cancelled) return;
-      const row = data as {
-        stripe_account_id?: string | null;
-        payment_handles?: HandleMap | null;
-      } | null;
-      setStripeConnected(Boolean(row?.stripe_account_id));
-      setHandles({ ...(row?.payment_handles ?? {}) });
-    })();
-    return () => {
-      cancelled = true;
-    };
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data } = await (supabase as any).rpc(
+      "get_vendor_payment_info",
+      { p_vendor_id: vendorId },
+    );
+    const row = data as {
+      stripe_account_id?: string | null;
+      payment_handles?: HandleMap | null;
+      stripe_charges_enabled?: boolean | null;
+    } | null;
+    setStripeConnected(Boolean(row?.stripe_account_id));
+    setChargesEnabled(Boolean(row?.stripe_charges_enabled));
+    setHandles({ ...(row?.payment_handles ?? {}) });
   }, [vendorId]);
+
+  useEffect(() => {
+    void refreshPaymentInfo();
+  }, [refreshPaymentInfo]);
 
   const handleStripeConnect = useCallback(async () => {
     if (!vendorId || actingId) return;
@@ -391,6 +391,30 @@ export default function VendorIntegrationsPage() {
     }
     window.location.href = (data as { url: string }).url;
   }, [vendorId, actingId]);
+
+  const handleStripeDisconnect = useCallback(async () => {
+    if (!vendorId || actingId) return;
+    if (
+      !window.confirm(
+        "Disconnect Stripe Connect? Your Stripe account stays open on Stripe's side — Vendora just stops referencing it. You can re-connect anytime.",
+      )
+    ) {
+      return;
+    }
+    setActingId("stripe");
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error } = await (supabase as any).rpc(
+      "disconnect_my_stripe_connect",
+      { p_vendor_id: vendorId },
+    );
+    setActingId(null);
+    if (error) {
+      toast.error("Couldn't disconnect", { description: error.message });
+      return;
+    }
+    await refreshPaymentInfo();
+    toast.success("Stripe Connect disconnected");
+  }, [vendorId, actingId, refreshPaymentInfo]);
 
   async function saveHandle(key: PaymentHandleKey, raw: string) {
     if (!vendorId || actingId) return;
@@ -492,9 +516,20 @@ export default function VendorIntegrationsPage() {
                               {c.name}
                             </h3>
                             <StatusPill status={status} />
+                            {c.kind === "stripe_connect" &&
+                            stripeConnected &&
+                            !chargesEnabled ? (
+                              <span className="inline-flex items-center rounded-full bg-amber-100 text-amber-800 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide">
+                                Pending KYC
+                              </span>
+                            ) : null}
                           </div>
                           <p className="text-xs text-muted-foreground mt-0.5 leading-snug">
-                            {c.description}
+                            {c.kind === "stripe_connect" &&
+                            stripeConnected &&
+                            !chargesEnabled
+                              ? "Finish onboarding on Stripe before hosts can pay you here."
+                              : c.description}
                           </p>
                         </div>
                         <ConnectorActionButton
@@ -506,6 +541,8 @@ export default function VendorIntegrationsPage() {
                             setExpanded(isExpanded ? null : c.id)
                           }
                           onStripeConnect={handleStripeConnect}
+                          onStripeDisconnect={handleStripeDisconnect}
+                          stripeConnected={stripeConnected}
                         />
                       </div>
                       {/* Inline expand panel — MCP renders its full
@@ -569,6 +606,8 @@ function ConnectorActionButton({
   expanded,
   onExpand,
   onStripeConnect,
+  onStripeDisconnect,
+  stripeConnected,
 }: {
   connector: Connector;
   status: "connected" | "available";
@@ -576,6 +615,8 @@ function ConnectorActionButton({
   expanded: boolean;
   onExpand: () => void;
   onStripeConnect: () => void;
+  onStripeDisconnect: () => void;
+  stripeConnected: boolean;
 }) {
   if (connector.kind === "mcp") {
     return (
@@ -590,6 +631,39 @@ function ConnectorActionButton({
     );
   }
   if (connector.kind === "stripe_connect") {
+    // When connected, show two buttons side-by-side: Manage (re-opens
+    // a fresh onboarding link in case the vendor wants to finish KYC
+    // or update payout info) + Disconnect (clears Vendora's pointer
+    // so the vendor can switch Stripe accounts).
+    if (stripeConnected) {
+      return (
+        <div className="flex items-center gap-2 shrink-0">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onStripeConnect}
+            disabled={acting}
+            className="rounded-full"
+          >
+            {acting ? (
+              <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" />
+            ) : (
+              <ExternalLink className="w-3.5 h-3.5 mr-1" />
+            )}
+            Manage
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onStripeDisconnect}
+            disabled={acting}
+            className="rounded-full text-destructive hover:text-destructive"
+          >
+            Disconnect
+          </Button>
+        </div>
+      );
+    }
     return (
       <Button
         variant="outline"
@@ -603,7 +677,7 @@ function ConnectorActionButton({
         ) : (
           <ExternalLink className="w-3.5 h-3.5 mr-1" />
         )}
-        {status === "connected" ? "Manage" : "Connect"}
+        Connect
       </Button>
     );
   }
