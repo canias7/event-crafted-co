@@ -76,6 +76,9 @@ export const VendoraPayCheckoutPage = lazyWithReload(importVendoraPayCheckout);
 const importPayLinkCheckout = () => import("@/pages/public/PayLinkCheckoutPage");
 export const PayLinkCheckoutPage = lazyWithReload(importPayLinkCheckout);
 
+const importInvoiceCheckout = () => import("@/pages/public/InvoiceCheckoutPage");
+export const InvoiceCheckoutPage = lazyWithReload(importInvoiceCheckout);
+
 const importChangelog = () => import("@/pages/ChangelogPage");
 export const ChangelogPage = lazyWithReload(importChangelog);
 
@@ -188,6 +191,7 @@ const ROUTE_IMPORTERS: Array<{ pattern: string; importer: () => Promise<unknown>
   { pattern: "/terms", importer: importTerms },
   { pattern: "/help", importer: importHelp },
   { pattern: "/pay/link/:slug", importer: importPayLinkCheckout },
+  { pattern: "/pay/invoice/:slug", importer: importInvoiceCheckout },
   { pattern: "/pay/:proposalId", importer: importVendoraPayCheckout },
   { pattern: "/changelog", importer: importChangelog },
   { pattern: "/status", importer: importStatus },
