@@ -16,28 +16,13 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.7";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
-const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY") ?? "";
 const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY") ?? "";
 
 const SONNET_MODEL = "claude-sonnet-4-6";
 const IMAGE_MODEL = "gpt-image-1";
-// Stripe's hosted MCP server. Vendors connect their account via
-// vendor-stripe-mcp-connect (Restricted API key paste); on each chat
-// call we forward that key here so Sonnet can call any Stripe API.
-const STRIPE_MCP_URL = "https://mcp.stripe.com/";
 
-function buildSystemPrompt(stripeConnected: boolean): string {
-  const stripeBlock = stripeConnected
-    ? `
-
-You have access to the vendor's connected Stripe account via tools (the "stripe" MCP server). Use them whenever the vendor asks about money: balance, charges, customers, invoices, refunds, payment links, subscriptions, etc.
-- For read-only questions, just call the tool and report.
-- For anything that creates or modifies (payment link, refund, invoice, etc.), call the tool and tell the vendor what was created with a one-line summary.`
-    : `
-
-The vendor has NOT connected their Stripe account to My Space yet. If they ask Stripe questions (balance, charges, refunds, payment links), tell them they can enable this on Settings → Integrations → Stripe AI.`;
-
+function buildSystemPrompt(): string {
   return `You are My Space, the in-app AI assistant for an event vendor on the Vendora platform.
 
 You help the vendor:
@@ -51,7 +36,7 @@ Style:
 - When drafting a reply to a host, write the reply text itself — don't preface with "here's a draft."
 - If you need more info to do the job, ask one specific follow-up question instead of guessing.
 
-You are NOT writing on the vendor's behalf to a host in this thread — you are talking to the vendor themselves.${stripeBlock}`;
+You are NOT writing on the vendor's behalf to a host in this thread — you are talking to the vendor themselves.`;
 }
 
 const cors = {
@@ -88,105 +73,39 @@ interface ChatMessage {
   content: string;
 }
 
-async function postToAnthropic(
-  body: Record<string, unknown>,
-  beta: string | null,
-): Promise<Response> {
-  const headers: Record<string, string> = {
-    "x-api-key": ANTHROPIC_API_KEY,
-    "anthropic-version": "2023-06-01",
-    "content-type": "application/json",
-  };
-  if (beta) headers["anthropic-beta"] = beta;
-  return await fetch("https://api.anthropic.com/v1/messages", {
-    method: "POST",
-    headers,
-    body: JSON.stringify(body),
-  });
-}
-
-async function callClaude(
-  messages: ChatMessage[],
-  stripeMcpKey: string | null,
-): Promise<string> {
+async function callClaude(messages: ChatMessage[]): Promise<string> {
   if (!ANTHROPIC_API_KEY) throw new Error("anthropic_key_missing");
-  const systemText = buildSystemPrompt(Boolean(stripeMcpKey));
-
-  const baseBody: Record<string, unknown> = {
-    model: SONNET_MODEL,
-    max_tokens: 2048,
-    system: [
-      {
-        type: "text",
-        text: systemText,
-        cache_control: { type: "ephemeral" },
-      },
-    ],
-    messages,
-  };
-
-  // Try with MCP attached first when we have a key. If Anthropic
-  // rejects (unknown beta, malformed mcp_servers, etc.), fall back
-  // to a plain call so the chatbox at least stays functional —
-  // Sonnet will reply but won't have Stripe tool access.
-  if (stripeMcpKey) {
-    const bodyWithMcp = {
-      ...baseBody,
-      mcp_servers: [
+  const res = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: {
+      "x-api-key": ANTHROPIC_API_KEY,
+      "anthropic-version": "2023-06-01",
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({
+      model: SONNET_MODEL,
+      max_tokens: 2048,
+      system: [
         {
-          type: "url",
-          url: STRIPE_MCP_URL,
-          name: "stripe",
-          authorization_token: stripeMcpKey,
+          type: "text",
+          text: buildSystemPrompt(),
+          cache_control: { type: "ephemeral" },
         },
       ],
-    };
-    const res = await postToAnthropic(bodyWithMcp, "mcp-client-2025-04-04");
-    if (res.ok) {
-      const parsed = (await res.json()) as any;
-      return extractText(parsed);
-    }
-    const errText = await res.text();
-    console.warn(
-      "[my-space-chat] MCP call failed, falling back to plain Sonnet",
-      res.status,
-      errText.slice(0, 240),
-    );
-    // fall through to the plain call below
-  }
-
-  const res = await postToAnthropic(baseBody, null);
+      messages,
+    }),
+  });
   if (!res.ok) {
     const t = await res.text();
     throw new Error(`anthropic ${res.status}: ${t.slice(0, 240)}`);
   }
   const parsed = (await res.json()) as any;
-  return extractText(parsed);
-}
-
-function extractText(parsed: any): string {
   const text = (parsed.content ?? [])
     .filter((b: any) => b.type === "text")
     .map((b: any) => b.text)
     .join("\n")
     .trim();
   return text || "(no response)";
-}
-
-async function loadStripeMcpKey(userId: string): Promise<string | null> {
-  const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
-    auth: { autoRefreshToken: false, persistSession: false },
-  });
-  // vendor_stripe_mcp_secrets is locked down — only service_role can
-  // read. Audit PR #882 moved the key here after finding the original
-  // column-on-profiles storage was readable by inquiry counterparties.
-  const { data } = await admin
-    .from("vendor_stripe_mcp_secrets")
-    .select("api_key")
-    .eq("user_id", userId)
-    .maybeSingle();
-  const key = (data as { api_key?: string | null } | null)?.api_key;
-  return key && key.length > 0 ? key : null;
 }
 
 async function callOpenAIImage(
@@ -261,11 +180,7 @@ serve(async (req) => {
       });
     }
 
-    // Stripe MCP key lookup — service_role bypass, never reaches the
-    // client. If the vendor hasn't connected, Sonnet still answers
-    // (it just can't reach Stripe).
-    const stripeMcpKey = await loadStripeMcpKey(userData.user.id);
-    const text = await callClaude(messages, stripeMcpKey);
+    const text = await callClaude(messages);
     return json(200, { type: "text", text });
   } catch (err) {
     console.error("[my-space-chat] error", err);
@@ -273,3 +188,4 @@ serve(async (req) => {
     return json(500, { error: "chat_failed", detail: message.slice(0, 240) });
   }
 });
+
