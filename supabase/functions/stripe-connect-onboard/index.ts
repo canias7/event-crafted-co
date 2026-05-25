@@ -89,16 +89,24 @@ serve(async (req: Request) => {
   // Look up the existing connected account (if any) plus profile
   // metadata we'll pre-fill on first create. service-role client
   // bypasses RLS so we always get the row.
+  //
+  // stripe_account_id moved out of vendor_profiles into the
+  // vendor_payment_secrets side table in PR #883 (audit follow-up).
   const db = admin();
   const { data: vendor } = await db
     .from("vendor_profiles")
-    .select("id, business_name, stripe_account_id, user_id")
+    .select("id, business_name, user_id")
     .eq("id", vendorId)
     .maybeSingle();
 
   if (!vendor) return json({ error: "vendor not found" }, 404);
 
-  let accountId = vendor.stripe_account_id as string | null;
+  const { data: secret } = await db
+    .from("vendor_payment_secrets")
+    .select("stripe_account_id")
+    .eq("vendor_id", vendorId)
+    .maybeSingle();
+  let accountId = (secret?.stripe_account_id as string | null) ?? null;
 
   if (!accountId) {
     // Pull the owner's email for prefill. Best-effort — the Stripe
@@ -120,9 +128,11 @@ serve(async (req: Request) => {
     });
     accountId = account.id;
     await db
-      .from("vendor_profiles")
-      .update({ stripe_account_id: accountId })
-      .eq("id", vendorId);
+      .from("vendor_payment_secrets")
+      .upsert(
+        { vendor_id: vendorId, stripe_account_id: accountId },
+        { onConflict: "vendor_id" },
+      );
   }
 
   // Account Link is the time-bound URL the vendor opens to complete

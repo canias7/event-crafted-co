@@ -68,13 +68,12 @@ serve(async (req: Request) => {
     return json({ error: "mode must be 'deposit' or 'full'" }, 400);
   }
 
-  // Read the proposal under the caller's RLS — this both validates
-  // ownership (only the host on the inquiry can pay) and gives us
-  // the connected-account state on the vendor side via the join.
+  // Read the proposal under the caller's RLS — this validates
+  // ownership (only the host on the inquiry can pay).
   const { data: proposal, error: pErr } = await userClient
     .from("proposals")
     .select(
-      "id, host_id, vendor_id, title, subtotal_cents, deposit_cents, payment_status, status, vendor:vendor_profiles!proposals_vendor_id_fkey(business_name, stripe_account_id, stripe_charges_enabled)",
+      "id, host_id, vendor_id, title, subtotal_cents, deposit_cents, payment_status, status, vendor:vendor_profiles!proposals_vendor_id_fkey(business_name)",
     )
     .eq("id", proposalId)
     .maybeSingle();
@@ -92,10 +91,19 @@ serve(async (req: Request) => {
     return json({ error: "proposal already paid in full" }, 400);
   }
 
-  const vendor = Array.isArray(proposal.vendor)
-    ? proposal.vendor[0]
-    : proposal.vendor;
-  if (!vendor?.stripe_account_id || !vendor?.stripe_charges_enabled) {
+  // stripe_account_id moved to vendor_payment_secrets (audit PR #883).
+  // It's RLS-locked from clients; we use service_role to read.
+  const dbAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  });
+  const { data: secret } = await dbAdmin
+    .from("vendor_payment_secrets")
+    .select("stripe_account_id")
+    .eq("vendor_id", proposal.vendor_id)
+    .maybeSingle();
+  const stripeAccountId =
+    (secret as { stripe_account_id?: string | null } | null)?.stripe_account_id ?? null;
+  if (!stripeAccountId) {
     return json(
       { error: "vendor has not finished Stripe onboarding" },
       400,
@@ -143,7 +151,7 @@ serve(async (req: Request) => {
       ],
       payment_intent_data: {
         application_fee_amount: applicationFeeCents,
-        transfer_data: { destination: vendor.stripe_account_id },
+        transfer_data: { destination: stripeAccountId },
         metadata: {
           proposal_id: proposal.id,
           mode,
