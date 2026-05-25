@@ -103,6 +103,14 @@ export interface Transaction {
   status: string;
   created_at: string; // ISO
   description: string | null;
+  /**
+   * PaymentIntent id when this txn is sourced by a charge. Resolved
+   * server-side via `expand: ['data.source']` on the listTransactions
+   * call. Required for the refund flow — Transaction.id is a
+   * balance-txn id (txn_*), not a PI id, so `refunds.create` rejects
+   * it. Use payment_intent_id when refunding.
+   */
+  payment_intent_id: string | null;
 }
 
 export interface NormalizedWebhookEvent {
@@ -260,21 +268,39 @@ export async function listTransactions(
   account_id: string,
   args: { limit?: number; starting_after?: string } = {},
 ): Promise<Transaction[]> {
+  // Expand `source` so we can pull the underlying charge's
+  // payment_intent for refund routing. Without this, the frontend
+  // only sees a `txn_*` id which Stripe rejects on refunds.create.
   const list = await client().balanceTransactions.list(
-    { limit: args.limit ?? 25, starting_after: args.starting_after },
+    {
+      limit: args.limit ?? 25,
+      starting_after: args.starting_after,
+      expand: ["data.source"],
+    },
     { stripeAccount: account_id },
   );
-  return list.data.map((t) => ({
-    id: t.id,
-    kind: t.type,
-    amount_cents: t.amount,
-    fee_cents: t.fee,
-    net_cents: t.net,
-    currency: t.currency,
-    status: t.status,
-    created_at: new Date(t.created * 1000).toISOString(),
-    description: t.description,
-  }));
+  return list.data.map((t) => {
+    let paymentIntentId: string | null = null;
+    const src = t.source as unknown;
+    if (src && typeof src === "object" && "object" in src) {
+      const obj = src as { object?: string; payment_intent?: string | null };
+      if (obj.object === "charge" && obj.payment_intent) {
+        paymentIntentId = obj.payment_intent as string;
+      }
+    }
+    return {
+      id: t.id,
+      kind: t.type,
+      amount_cents: t.amount,
+      fee_cents: t.fee,
+      net_cents: t.net,
+      currency: t.currency,
+      status: t.status,
+      created_at: new Date(t.created * 1000).toISOString(),
+      description: t.description,
+      payment_intent_id: paymentIntentId,
+    };
+  });
 }
 
 /**

@@ -9,9 +9,11 @@
 // Self-contained — doesn't depend on send-transactional-email so the
 // payment flow can ship/iterate without touching that 700-line file.
 //
-// Caller (vendorapay-webhook) trusts our auth model: the webhook
-// already verified the Stripe signature, so this endpoint runs with
-// verify_jwt=false and uses service-role for all writes.
+// Caller (vendorapay-webhook) sends Authorization: Bearer
+// ${SUPABASE_SERVICE_ROLE_KEY} on every call. This endpoint runs
+// with verify_jwt=false (Supabase JWT verifier off) BUT enforces
+// service-role bearer manually so anonymous callers can't spoof
+// "$X received" emails impersonating any vendor.
 
 // deno-lint-ignore-file no-explicit-any
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
@@ -90,6 +92,14 @@ interface PaymentReceivedPayload {
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
   if (req.method !== "POST") return json(405, { error: "method_not_allowed" });
+  // Service-role bearer required (matches what vendorapay-webhook
+  // sends). Anything else is a spoof attempt — log and drop.
+  const authHeader = req.headers.get("Authorization") ?? "";
+  const expected = `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`;
+  if (authHeader !== expected) {
+    console.warn("[vendorapay-notify] unauthorized call rejected");
+    return json(401, { error: "unauthorized" });
+  }
   try {
     const body = (await req.json().catch(() => ({}))) as PaymentReceivedPayload;
     if (body.kind !== "payment_received") return json(400, { error: "unknown kind" });
