@@ -411,12 +411,6 @@ export default function VendorLeadsPage() {
                 <Skeleton key={i} className="h-12 w-full rounded-lg" />
               ))}
             </div>
-          ) : filteredLeads.length === 0 ? (
-            <EmptyState
-              hasAnyLeads={leads.length > 0}
-              statusFilter={statusFilter}
-              query={query}
-            />
           ) : (
             <div
               className="rounded-2xl overflow-hidden"
@@ -437,6 +431,23 @@ export default function VendorLeadsPage() {
                     </tr>
                   </thead>
                   <tbody>
+                    {filteredLeads.length === 0 ? (
+                      <tr
+                        className="border-t"
+                        style={{ borderColor: "rgba(255,138,76,0.12)" }}
+                      >
+                        <td
+                          colSpan={5}
+                          className="px-4 md:px-5 py-16 text-center"
+                        >
+                          <EmptyState
+                            hasAnyLeads={leads.length > 0}
+                            statusFilter={statusFilter}
+                            query={query}
+                          />
+                        </td>
+                      </tr>
+                    ) : null}
                     {filteredLeads.map((lead) => (
                       <tr
                         key={lead.hostId}
