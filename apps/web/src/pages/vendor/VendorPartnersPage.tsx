@@ -825,7 +825,12 @@ export default function VendorPartnersPage() {
             className={
               activeThreadId
                 ? "hidden"
-                : "flex-1 overflow-y-auto p-3 max-w-2xl mx-auto w-full"
+                : // Left-aligned thread list — was centered with
+                  // mx-auto + max-w-2xl, which made an empty page
+                  // look pulled to the middle. Now anchors left and
+                  // grows up to 3xl so it stays readable on wide
+                  // monitors without floating.
+                  "flex-1 overflow-y-auto p-3 md:p-4 max-w-3xl w-full"
             }
           >
             {loadingThreads ? (
