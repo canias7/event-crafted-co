@@ -85,6 +85,12 @@ export const SuperAgentsPage = lazyWithReload(importSuperAgents);
 const importSettings = () => import("@/pages/SettingsPage");
 export const SettingsPage = lazyWithReload(importSettings);
 
+const importNotificationSettings = () =>
+  import("@/pages/NotificationSettingsPage");
+export const NotificationSettingsPage = lazyWithReload(
+  importNotificationSettings,
+);
+
 const importNotFound = () => import("@/pages/NotFound");
 export const NotFound = lazyWithReload(importNotFound);
 
@@ -181,6 +187,7 @@ const ROUTE_IMPORTERS: Array<{ pattern: string; importer: () => Promise<unknown>
   { pattern: "/super-agents", importer: importSuperAgents },
   { pattern: "/g/:token", importer: importPublicGalleryShare },
   { pattern: "/settings", importer: importSettings },
+  { pattern: "/settings/notifications", importer: importNotificationSettings },
   // Dynamic public
   { pattern: "/vendors/in/:citySlug", importer: importVendorCity },
   { pattern: "/vendors/category/:slug", importer: importVendorCategory },

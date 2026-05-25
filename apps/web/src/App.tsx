@@ -47,6 +47,7 @@ import {
   PressPage,
   SuperAgentsPage,
   SettingsPage,
+  NotificationSettingsPage,
   NotFound,
   InquiriesPage,
   HostInquiryDetailPage,
@@ -152,6 +153,7 @@ const App = () => (
               <Route path="/forgot-password" element={<ForgotPasswordPage />} />
               <Route path="/reset-password" element={<ResetPasswordPage />} />
               <Route path="/settings" element={<RequireRole role={["host", "vendor"]}><SettingsPage /></RequireRole>} />
+              <Route path="/settings/notifications" element={<RequireRole role={["host", "vendor"]}><NotificationSettingsPage /></RequireRole>} />
 
               {/* Customer — mirrors mobile host app (4 tabs + settings).
                   Mobile only exposes Explore / Inbox / Events / Profile,
