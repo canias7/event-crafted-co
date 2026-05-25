@@ -97,22 +97,32 @@ serve(async (req: Request) => {
   // pull the listing's business_name from vendor_profiles for the
   // Stripe Customer display name (whichever listing the vendor
   // launched checkout from).
+  //
+  // vendorId can legitimately be null when the caller has no
+  // approved listing yet — subscription is per-user, not per-listing,
+  // so we shouldn't gate on it. Previously we'd fail with "vendor
+  // not found" because `.eq("id", null)` matches zero rows in
+  // Postgres, blocking the vendor from subscribing at all.
   const [{ data: profile }, { data: listing }] = await Promise.all([
     db
       .from("profiles")
       .select(
-        "id, stripe_customer_id, subscription_tier, subscription_status",
+        "id, stripe_customer_id, subscription_tier, subscription_status, display_name",
       )
       .eq("id", userId)
       .maybeSingle(),
-    db
-      .from("vendor_profiles")
-      .select("id, business_name")
-      .eq("id", vendorId)
-      .maybeSingle(),
+    vendorId
+      ? db
+          .from("vendor_profiles")
+          .select("id, business_name")
+          .eq("id", vendorId)
+          .maybeSingle()
+      : Promise.resolve({ data: null as { id: string; business_name: string | null } | null }),
   ]);
   if (!profile) return json({ error: "profile not found" }, 404);
-  if (!listing) return json({ error: "vendor not found" }, 404);
+  // listing being null is fine when vendorId was null. If vendorId
+  // WAS supplied and lookup still failed, it's a stale id (deleted
+  // listing) — fall back to subscription without a business name.
 
   // Block double-checkout when an active subscription already exists.
   // For tier changes (upgrade/downgrade) the vendor uses the portal,
@@ -128,10 +138,16 @@ serve(async (req: Request) => {
 
   let customerId = profile.stripe_customer_id as string | null;
   if (!customerId) {
+    // Display name picks the listing's business name when we have
+    // one; falls back to the user's display name, then empty.
+    const displayName =
+      (listing as { business_name?: string | null } | null)?.business_name ??
+      (profile as { display_name?: string | null }).display_name ??
+      undefined;
     const customer = await stripe.customers.create({
       email: userEmail ?? undefined,
-      name: listing.business_name ?? undefined,
-      metadata: { user_id: userId, vendor_id: vendorId },
+      name: displayName ?? undefined,
+      metadata: { user_id: userId, vendor_id: vendorId ?? "" },
     });
     customerId = customer.id;
     await db
