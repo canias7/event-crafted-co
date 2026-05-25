@@ -50,7 +50,7 @@ serve(async (req) => {
 
     const { data: linkRow, error: linkErr } = await admin
       .from("payment_links")
-      .select("id, vendor_id, title, description, amount_cents, currency, status, expires_at")
+      .select("id, vendor_id, title, description, amount_cents, currency, status, expires_at, vendor_tier_snapshot")
       .eq("slug", slug)
       .maybeSingle();
     if (linkErr || !linkRow) return json(404, { error: "link not found" });
@@ -75,12 +75,20 @@ serve(async (req) => {
       .eq("id", linkRow.vendor_id)
       .maybeSingle();
     const vpRow = vp as { business_name?: string | null } | null;
-    // subscription_tier lives on profiles, not vendor_profiles (per
-    // migration 20260524000000). Use the RPC that joins them.
-    const { data: tierRaw } = await admin.rpc("get_vendor_subscription_tier", {
-      p_vendor_id: linkRow.vendor_id,
-    });
-    const tier = normalizeTier(tierRaw as string | null);
+    // Snapshot tier captured at link creation (trigger). Falls back
+    // to live tier for legacy rows without the snapshot. This means
+    // a vendor changing plans AFTER sharing the link doesn't change
+    // the fee the host pays.
+    const snapshotTier = (linkRow as { vendor_tier_snapshot?: string | null }).vendor_tier_snapshot;
+    let tier;
+    if (snapshotTier) {
+      tier = normalizeTier(snapshotTier);
+    } else {
+      const { data: tierRaw } = await admin.rpc("get_vendor_subscription_tier", {
+        p_vendor_id: linkRow.vendor_id,
+      });
+      tier = normalizeTier(tierRaw as string | null);
+    }
     const feeCents = computePlatformFeeCents(tier, linkRow.amount_cents as number);
 
     const session = await client().checkout.sessions.create({

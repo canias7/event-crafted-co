@@ -22,7 +22,7 @@
 // deno-lint-ignore-file no-explicit-any
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.7";
-import { handleWebhookEvent } from "../_shared/payments.ts";
+import { getReceiptEmailForPI, handleWebhookEvent } from "../_shared/payments.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -125,13 +125,22 @@ serve(async (req: Request) => {
             hostEmailForNotify = userRow?.user?.email ?? null;
           }
         } else if (paymentLinkId) {
+          // receipt_email is null when Stripe Checkout collected the
+          // email (rather than us setting it upfront). Pull from
+          // latest_charge.billing_details so the scheduled-balance
+          // reminder flow has a recipient.
+          let hostEmailForLink = pi.receipt_email ?? null;
+          if (!hostEmailForLink) {
+            try { hostEmailForLink = await getReceiptEmailForPI(pi.id); }
+            catch (err) { console.error("[vendorapay-webhook] PI email lookup failed", err); }
+          }
           const { data: linkRow } = await db
             .from("payment_links")
             .update({
               status: "paid",
               paid_at: new Date().toISOString(),
               paid_payment_intent_id: pi.id,
-              host_email: pi.receipt_email ?? null,
+              host_email: hostEmailForLink,
               updated_at: new Date().toISOString(),
             })
             .eq("id", paymentLinkId)
@@ -140,6 +149,7 @@ serve(async (req: Request) => {
           const lRow = linkRow as { vendor_id?: string; title?: string } | null;
           if (lRow?.vendor_id) vendorIdForNotify = lRow.vendor_id;
           if (lRow?.title) descriptionForNotify = lRow.title;
+          if (!hostEmailForNotify) hostEmailForNotify = hostEmailForLink;
         } else if (invoiceId) {
           const { data: invRow } = await db
             .from("invoices")
