@@ -16,10 +16,23 @@ interface NavItem {
   labelKey: string;
   path: string;
   icon: LucideIcon;
+  children?: NavItem[];
 }
 
 interface MobileNavProps {
   items: NavItem[];
+}
+
+// Mobile nav doesn't have room for nested groups — flatten parent +
+// children into a single sequential list (parent first, then its
+// children right after).
+function flattenItems(items: NavItem[]): NavItem[] {
+  const out: NavItem[] = [];
+  for (const item of items) {
+    out.push(item);
+    if (item.children) out.push(...item.children);
+  }
+  return out;
 }
 
 // Mobile bottom nav. Surfaces the four most-used items plus a "More"
@@ -41,8 +54,9 @@ export function MobileNav({ items }: MobileNavProps) {
   // navigate there from a non-dashboard page.
   const isInbox = (path: string) =>
     path === "/vendor/inbox" || path === "/customer/inquiries";
-  const primaryItems = items.filter((it) => !isInbox(it.path)).slice(0, 4);
-  const overflowItems = items.filter(
+  const flatItems = flattenItems(items);
+  const primaryItems = flatItems.filter((it) => !isInbox(it.path)).slice(0, 4);
+  const overflowItems = flatItems.filter(
     (it) => !primaryItems.some((p) => p.path === it.path),
   );
 

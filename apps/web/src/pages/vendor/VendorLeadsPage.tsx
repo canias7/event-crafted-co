@@ -25,7 +25,6 @@ import { Filter, ImagePlus, Inbox, Plus, Search } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useRealtime } from "@/lib/realtime";
-import { BusinessSubNav } from "@/components/shared/BusinessSubNav";
 import { DashboardSidebar } from "@/components/shared/DashboardSidebar";
 import { MobileNav } from "@/components/shared/MobileNav";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
@@ -331,11 +330,6 @@ export default function VendorLeadsPage() {
             <div className="flex items-center gap-2">
               <NotificationBell variant="light" />
             </div>
-          </div>
-          {/* Sibling-page strip so leads/calendar/payments feel like
-              one surface even though they're separate routes. */}
-          <div className="mt-4">
-            <BusinessSubNav />
           </div>
         </div>
 
