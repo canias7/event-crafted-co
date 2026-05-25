@@ -468,6 +468,19 @@ export default function HostInquiryDetailPage() {
     });
   }, [messages.length]);
 
+  // Debounced load() — see InquiryDetailPage for the rationale.
+  // Multiple realtime subs all calling load() back-to-back caused
+  // a visible page reflow vibration. Coalesce to one fetch per
+  // 250ms window.
+  const loadDebounceRef = useRef<number | null>(null);
+  const debouncedLoad = useCallback(() => {
+    if (loadDebounceRef.current) window.clearTimeout(loadDebounceRef.current);
+    loadDebounceRef.current = window.setTimeout(() => {
+      loadDebounceRef.current = null;
+      load();
+    }, 250);
+  }, [load]);
+
   // Live updates: re-fetch when this thread's messages or this inquiry's
   // status change. Routed through the shared user-scoped channel.
   const messagesConfig = useMemo(
@@ -477,7 +490,7 @@ export default function HostInquiryDetailPage() {
         : null,
     [threadId],
   );
-  useRealtime(messagesConfig, () => load());
+  useRealtime(messagesConfig, debouncedLoad);
 
   // Subscribe to this thread's row so the typing indicator updates
   // when HILUX flips hilux_typing_until on/off. We only need this
@@ -658,7 +671,7 @@ export default function HostInquiryDetailPage() {
         : null,
     [inquiryId],
   );
-  useRealtime(inquiryConfig, () => load());
+  useRealtime(inquiryConfig, debouncedLoad);
 
   // Proposals: vendor can withdraw or revise after the host opens the
   // page. Without a sub the bubble shows the stale state until manual
@@ -670,7 +683,7 @@ export default function HostInquiryDetailPage() {
         : null,
     [inquiryId],
   );
-  useRealtime(proposalsConfig, () => load());
+  useRealtime(proposalsConfig, debouncedLoad);
 
   function pickFiles(list: FileList) {
     const accepted: File[] = [];

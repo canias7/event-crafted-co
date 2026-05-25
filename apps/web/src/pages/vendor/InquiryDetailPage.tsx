@@ -602,6 +602,21 @@ export default function InquiryDetailPage() {
     load();
   }, [load]);
 
+  // Debounced wrapper around load() — 4 different realtime subs
+  // (messages, inquiry, score, proposals) all triggered load() back-
+  // to-back when a message arrived, causing ~3 setStates in
+  // overlapping micro-ticks and a visible page reflow vibration.
+  // Coalescing to one load() per 250ms window keeps the page
+  // settled when chats are active.
+  const loadDebounceRef = useRef<number | null>(null);
+  const debouncedLoad = useCallback(() => {
+    if (loadDebounceRef.current) window.clearTimeout(loadDebounceRef.current);
+    loadDebounceRef.current = window.setTimeout(() => {
+      loadDebounceRef.current = null;
+      load();
+    }, 250);
+  }, [load]);
+
   // Realtime: re-fetch on direct_messages for this thread + inquiry
   // status changes. Mobile uses the same model — see ensure_inquiry_thread.
   const messagesConfig = useMemo(
@@ -611,7 +626,7 @@ export default function InquiryDetailPage() {
         : null,
     [threadId],
   );
-  useRealtime(messagesConfig, load);
+  useRealtime(messagesConfig, debouncedLoad);
 
   // Reactions live in their own table. When something changes, refetch
   // ONLY the reactions for this thread's messages — not the full
@@ -658,7 +673,7 @@ export default function InquiryDetailPage() {
         : null,
     [inquiryId],
   );
-  useRealtime(inquiryConfig, load);
+  useRealtime(inquiryConfig, debouncedLoad);
 
   // Lead score / booking intent live on inquiry_scores now; subscribe
   // so the chip refreshes when HILUX flips us hot or detects intent.
@@ -669,7 +684,7 @@ export default function InquiryDetailPage() {
         : null,
     [inquiryId],
   );
-  useRealtime(inquiryScoreConfig, load);
+  useRealtime(inquiryScoreConfig, debouncedLoad);
 
   // Proposals can be withdrawn / accepted / declined from either side
   // after first load. Without a sub, the bubble shows "pending" until
@@ -682,7 +697,7 @@ export default function InquiryDetailPage() {
         : null,
     [inquiryId],
   );
-  useRealtime(proposalsConfig, load);
+  useRealtime(proposalsConfig, debouncedLoad);
 
   // Toggle a reaction on a message: if I already reacted with this
   // emoji, remove it; otherwise insert. Optimistic local update keeps
@@ -1226,46 +1241,13 @@ export default function InquiryDetailPage() {
               is empty, so legacy inquiries stay clean. */}
           <HiluxThreadActivity inquiryId={inquiry.id} />
 
-          {/* Pinned: the original inquiry, rendered as the host's
-              "opening message" so the thread starts with their ask. A
-              small NEW INQUIRY chip sits above the bubble to flag that
-              this is the host's original brief, not a regular reply. */}
-          {inquiry.special_requests && (
-            <div className="space-y-1.5">
-              <div className="flex items-center gap-1.5">
-                <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider bg-background/90 backdrop-blur-sm border border-border/40 text-foreground/70 rounded-full px-2.5 py-1 shadow-sm">
-                  <Sparkles className="w-3 h-3 text-accent" />
-                  New inquiry
-                </span>
-              </div>
-              <div className="flex items-end gap-2">
-                {inquiry.host?.avatar_url ? (
-                  <img
-                    src={inquiry.host.avatar_url}
-                    alt=""
-                    className="shrink-0 w-6 h-6 rounded-full object-cover"
-                    aria-hidden
-                  />
-                ) : (
-                  <span
-                    className="shrink-0 w-6 h-6 rounded-full inline-flex items-center justify-center text-[10px] font-semibold"
-                    style={{
-                      background: "rgba(255,138,76,0.18)",
-                      color: "#c4541e",
-                    }}
-                    aria-hidden
-                  >
-                    {initial}
-                  </span>
-                )}
-                <div className="max-w-md px-3.5 py-2.5 text-sm leading-relaxed whitespace-pre-wrap rounded-2xl rounded-bl-sm bg-white/55 backdrop-blur-md text-foreground border border-white/60 shadow-sm">
-                  <p>
-                    <MessageBody body={inquiry.special_requests} />
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
+          {/* Pinned inquiry intake card. ALWAYS rendered so a vendor
+              opening a fresh inquiry sees the event details (type,
+              date, guests, location, budget) before they see the
+              empty chat — the previous render only showed the host's
+              special_requests bubble, which left a brand-new inquiry
+              looking like 'No messages yet. Say hi.' with no context. */}
+          <InquiryIntakeCard inquiry={inquiry} hostInitial={initial} />
 
           {/* Proposals as system bubbles in-thread */}
           {proposals.map((p) => (
@@ -1303,12 +1285,11 @@ export default function InquiryDetailPage() {
               proposals + intake_answers count as activity, so a
               fresh inquiry with a proposal sent doesn't get a
               misleading "Say hi" subtitle below the proposal card. */}
-          {messages.length === 0 &&
-          !inquiry.special_requests &&
-          proposals.length === 0 ? (
-            <p className="text-sm text-muted-foreground py-12 text-center">
-              No messages yet. Say hi.
-            </p>
+          {messages.length === 0 && proposals.length === 0 ? (
+            // The intake card already sits above this; no extra "Say hi"
+            // copy needed (it doubled with the intake card and felt
+            // redundant). Keep the empty state quiet.
+            null
           ) : (
             groupedItems.map((it) => {
               if (it.kind === "sep") {
@@ -1922,6 +1903,131 @@ export default function InquiryDetailPage() {
 // Full-inquiry preview rendered on a blurred backdrop. Opened from
 // the "..." menu on the chat header. The chat stays alive underneath
 // (visible but softened); the back arrow in the top-left dismisses.
+// Structured intake card pinned at the top of the chat — gives the
+// vendor the event details up front so a brand-new inquiry doesn't
+// look like an empty chat with no context.
+function InquiryIntakeCard({
+  inquiry,
+  hostInitial,
+}: {
+  inquiry: Inquiry;
+  hostInitial: string;
+}) {
+  const eventLabel = inquiry.event_type
+    ? inquiry.event_type
+        .replace(/_/g, " ")
+        .replace(/\b\w/g, (c) => c.toUpperCase())
+    : "Event";
+  const dateStr = inquiry.event_date
+    ? new Date(inquiry.event_date + "T00:00:00").toLocaleDateString(undefined, {
+        weekday: "short",
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      })
+    : null;
+  const budgetStr =
+    inquiry.budget_min_cents && inquiry.budget_max_cents
+      ? `${fmtMoney(inquiry.budget_min_cents)} – ${fmtMoney(inquiry.budget_max_cents)}`
+      : fmtMoney(inquiry.budget_min_cents ?? inquiry.budget_max_cents ?? 0);
+  // intake_answers is a free-form JSONB. Render only the entries
+  // with truthy values, formatting arrays as comma-joined strings.
+  const intakeEntries = (() => {
+    const a = inquiry.intake_answers;
+    if (!a || typeof a !== "object") return [] as Array<[string, string]>;
+    return Object.entries(a)
+      .map(([k, v]): [string, string] | null => {
+        if (v == null || v === "" || v === false) return null;
+        const val = Array.isArray(v) ? v.join(", ") : String(v);
+        if (!val) return null;
+        const label = k.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+        return [label, val];
+      })
+      .filter((x): x is [string, string] => x !== null);
+  })();
+
+  return (
+    <div className="space-y-1.5">
+      <div className="flex items-center gap-1.5">
+        <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider bg-background/90 backdrop-blur-sm border border-border/40 text-foreground/70 rounded-full px-2.5 py-1 shadow-sm">
+          <Sparkles className="w-3 h-3 text-accent" />
+          New inquiry
+        </span>
+      </div>
+      <div className="flex items-start gap-2">
+        {inquiry.host?.avatar_url ? (
+          <img
+            src={inquiry.host.avatar_url}
+            alt=""
+            className="shrink-0 w-6 h-6 rounded-full object-cover mt-2"
+            aria-hidden
+          />
+        ) : (
+          <span
+            className="shrink-0 w-6 h-6 rounded-full inline-flex items-center justify-center text-[10px] font-semibold mt-2"
+            style={{
+              background: "rgba(255,138,76,0.18)",
+              color: "#c4541e",
+            }}
+            aria-hidden
+          >
+            {hostInitial}
+          </span>
+        )}
+        <div
+          className="flex-1 max-w-xl rounded-2xl rounded-bl-sm p-4 bg-white/55 backdrop-blur-md text-foreground border border-white/60 shadow-sm space-y-3"
+        >
+          <div>
+            <p className="font-semibold text-base leading-tight">
+              {eventLabel}
+            </p>
+            {dateStr ? (
+              <p className="text-xs text-muted-foreground mt-0.5">{dateStr}</p>
+            ) : null}
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            {inquiry.guest_count ? (
+              <Field label="Guests" value={`${inquiry.guest_count}`} />
+            ) : null}
+            {inquiry.location ? (
+              <Field label="Location" value={inquiry.location} />
+            ) : null}
+            {(inquiry.budget_min_cents || inquiry.budget_max_cents) ? (
+              <Field label="Budget" value={budgetStr} />
+            ) : null}
+          </div>
+          {intakeEntries.length > 0 ? (
+            <div className="border-t pt-3 space-y-1.5" style={{ borderColor: "rgba(20,15,10,0.08)" }}>
+              {intakeEntries.map(([label, val]) => (
+                <div key={label} className="flex items-start gap-2 text-xs">
+                  <span className="text-muted-foreground shrink-0">{label}:</span>
+                  <span className="text-foreground/90">{val}</span>
+                </div>
+              ))}
+            </div>
+          ) : null}
+          {inquiry.special_requests ? (
+            <div className="border-t pt-3 text-sm leading-relaxed whitespace-pre-wrap" style={{ borderColor: "rgba(20,15,10,0.08)" }}>
+              <MessageBody body={inquiry.special_requests} />
+            </div>
+          ) : null}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Field({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="min-w-0">
+      <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">
+        {label}
+      </p>
+      <p className="text-sm font-medium text-foreground truncate">{value}</p>
+    </div>
+  );
+}
+
 function InquiryPreviewSheet({
   inquiry,
   hostName,
