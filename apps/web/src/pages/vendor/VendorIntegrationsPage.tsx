@@ -403,11 +403,14 @@ export default function VendorIntegrationsPage() {
     if (normalized) next[key] = normalized;
     else delete next[key];
     setHandles(next);
+    // payment_handles moved to the locked-down vendor_payment_secrets
+    // table (audit PR #883). Owner-only write goes through the
+    // set_vendor_payment_handles RPC instead of a direct UPDATE.
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error } = await (supabase as any)
-      .from("vendor_profiles")
-      .update({ payment_handles: next })
-      .eq("id", vendorId);
+    const { error } = await (supabase as any).rpc(
+      "set_vendor_payment_handles",
+      { p_vendor_id: vendorId, p_handles: next },
+    );
     setActingId(null);
     if (error) {
       // Roll back the local map so the input doesn't lie about
