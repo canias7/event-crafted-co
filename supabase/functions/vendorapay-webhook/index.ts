@@ -92,26 +92,37 @@ serve(async (req: Request) => {
         const pi = event.raw.data.object as {
           id: string;
           amount: number;
+          currency?: string;
+          description?: string | null;
           receipt_email?: string | null;
           metadata?: Record<string, string>;
         };
         const proposalId = pi.metadata?.proposal_id;
         const paymentLinkId = pi.metadata?.payment_link_id;
+        const vendorIdMeta = pi.metadata?.vendor_id;
         const mode = pi.metadata?.mode;
+        let vendorIdForNotify: string | null = vendorIdMeta ?? null;
+        let descriptionForNotify = pi.description ?? "VendoraPay charge";
+        let hostEmailForNotify: string | null = pi.receipt_email ?? null;
+
         if (proposalId) {
-          // Proposal-based charge — flip the proposal's payment_status.
           const nextStatus = mode === "deposit" ? "deposit_paid" : "paid_in_full";
-          await db
+          const { data: prop } = await db
             .from("proposals")
             .update({ payment_status: nextStatus })
-            .eq("id", proposalId);
+            .eq("id", proposalId)
+            .select("vendor_id, host_id, title")
+            .maybeSingle();
+          const propRow = prop as { vendor_id?: string; host_id?: string; title?: string } | null;
+          if (propRow?.vendor_id) vendorIdForNotify = propRow.vendor_id;
+          if (propRow?.title) descriptionForNotify = `${propRow.title} — ${mode === "deposit" ? "deposit" : "balance"}`;
+          if (!hostEmailForNotify && propRow?.host_id) {
+            const { data: userRow } = await db.auth.admin.getUserById(propRow.host_id);
+            hostEmailForNotify = userRow?.user?.email ?? null;
+          }
         }
         if (paymentLinkId) {
-          // Pay-link charge — mark the link paid + stamp the PI id so
-          // refunds can map back. Stripe Checkout doesn't surface the
-          // host's email on the PI directly, but if receipt_email is
-          // set, capture it for the vendor's CRM.
-          await db
+          const { data: linkRow } = await db
             .from("payment_links")
             .update({
               status: "paid",
@@ -120,7 +131,38 @@ serve(async (req: Request) => {
               host_email: pi.receipt_email ?? null,
               updated_at: new Date().toISOString(),
             })
-            .eq("id", paymentLinkId);
+            .eq("id", paymentLinkId)
+            .select("vendor_id, title")
+            .maybeSingle();
+          const lRow = linkRow as { vendor_id?: string; title?: string } | null;
+          if (lRow?.vendor_id) vendorIdForNotify = lRow.vendor_id;
+          if (lRow?.title) descriptionForNotify = lRow.title;
+        }
+
+        // Fire notification side-effect. Best-effort; failures here
+        // don't roll back the payment-status write.
+        if (vendorIdForNotify) {
+          try {
+            await fetch(`${SUPABASE_URL}/functions/v1/vendorapay-notify`, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+              },
+              body: JSON.stringify({
+                kind: "payment_received",
+                vendor_id: vendorIdForNotify,
+                amount_cents: pi.amount,
+                currency: pi.currency ?? "usd",
+                description: descriptionForNotify,
+                host_email: hostEmailForNotify,
+                payment_link_id: paymentLinkId ?? null,
+                proposal_id: proposalId ?? null,
+              }),
+            });
+          } catch (err) {
+            console.error("[vendorapay-webhook] notify dispatch failed", err);
+          }
         }
         break;
       }

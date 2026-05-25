@@ -407,7 +407,12 @@ export default function VendorPaymentsPage() {
               onSeeAllTransactions={() => setTab("transactions")}
             />
           ) : tab === "transactions" ? (
-            <TransactionsTab transactions={transactions} status={status} />
+            <TransactionsTab
+              transactions={transactions}
+              status={status}
+              vendorId={vendorId}
+              onRefunded={() => refresh(false)}
+            />
           ) : tab === "links" ? (
             <PayLinksTab
               vendorId={vendorId}
@@ -510,10 +515,15 @@ function OverviewTab({
 function TransactionsTab({
   transactions,
   status,
+  vendorId,
+  onRefunded,
 }: {
   transactions: Transaction[];
   status: Status | null;
+  vendorId: string | null;
+  onRefunded: () => void;
 }) {
+  const [refundFor, setRefundFor] = useState<Transaction | null>(null);
   if (transactions.length === 0) {
     return (
       <EmptyCard>
@@ -524,47 +534,200 @@ function TransactionsTab({
     );
   }
   return (
-    <Card>
-      <div className="hidden md:grid md:grid-cols-[1fr_120px_120px_140px] gap-4 px-5 py-3 border-b border-foreground/5 text-[10px] uppercase tracking-[0.14em] text-muted-foreground font-semibold">
-        <div>Description</div>
-        <div>Type</div>
-        <div>Date</div>
-        <div className="text-right">Amount</div>
-      </div>
-      {transactions.map((t) => {
-        const meta = kindLabel(t.kind);
-        return (
-          <div
-            key={t.id}
-            className="grid grid-cols-1 md:grid-cols-[1fr_120px_120px_140px] gap-4 px-5 py-4 border-b border-foreground/5 last:border-b-0 items-center"
-          >
-            <div className="min-w-0">
-              <div className="text-sm font-medium truncate">{t.description ?? meta.label}</div>
-              <div className="text-[11px] text-muted-foreground md:hidden">
-                {meta.label} · {formatDate(t.created_at)} · {t.status}
+    <>
+      <Card>
+        <div className="hidden md:grid md:grid-cols-[1fr_120px_120px_140px_100px] gap-4 px-5 py-3 border-b border-foreground/5 text-[10px] uppercase tracking-[0.14em] text-muted-foreground font-semibold">
+          <div>Description</div>
+          <div>Type</div>
+          <div>Date</div>
+          <div className="text-right">Amount</div>
+          <div className="text-right">Action</div>
+        </div>
+        {transactions.map((t) => {
+          const meta = kindLabel(t.kind);
+          const canRefund = (t.kind === "charge" || t.kind === "payment") && t.amount_cents > 0;
+          return (
+            <div
+              key={t.id}
+              className="grid grid-cols-1 md:grid-cols-[1fr_120px_120px_140px_100px] gap-4 px-5 py-4 border-b border-foreground/5 last:border-b-0 items-center"
+            >
+              <div className="min-w-0">
+                <div className="text-sm font-medium truncate">{t.description ?? meta.label}</div>
+                <div className="text-[11px] text-muted-foreground md:hidden">
+                  {meta.label} · {formatDate(t.created_at)} · {t.status}
+                </div>
+              </div>
+              <div className="text-xs text-muted-foreground hidden md:block">{meta.label}</div>
+              <div className="text-xs text-muted-foreground hidden md:block">{formatDate(t.created_at)}</div>
+              <div className="text-right">
+                <div
+                  className={`text-sm font-semibold ${
+                    meta.tone === "in" ? "text-emerald-700" : meta.tone === "out" ? "text-rose-700" : "text-foreground"
+                  }`}
+                >
+                  {meta.tone === "out" ? "-" : "+"}
+                  {formatMoney(Math.abs(t.amount_cents), t.currency)}
+                </div>
+                {t.fee_cents > 0 ? (
+                  <div className="text-[10px] text-muted-foreground">
+                    Net {formatMoney(t.net_cents, t.currency)}
+                  </div>
+                ) : null}
+              </div>
+              <div className="text-right">
+                {canRefund ? (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setRefundFor(t)}
+                    className="rounded-full text-xs text-muted-foreground hover:text-destructive"
+                  >
+                    Refund
+                  </Button>
+                ) : null}
               </div>
             </div>
-            <div className="text-xs text-muted-foreground hidden md:block">{meta.label}</div>
-            <div className="text-xs text-muted-foreground hidden md:block">{formatDate(t.created_at)}</div>
-            <div className="text-right">
-              <div
-                className={`text-sm font-semibold ${
-                  meta.tone === "in" ? "text-emerald-700" : meta.tone === "out" ? "text-rose-700" : "text-foreground"
-                }`}
-              >
-                {meta.tone === "out" ? "-" : "+"}
-                {formatMoney(Math.abs(t.amount_cents), t.currency)}
-              </div>
-              {t.fee_cents > 0 ? (
-                <div className="text-[10px] text-muted-foreground">
-                  Net {formatMoney(t.net_cents, t.currency)}
-                </div>
-              ) : null}
+          );
+        })}
+      </Card>
+      {refundFor ? (
+        <RefundModal
+          tx={refundFor}
+          vendorId={vendorId}
+          onClose={() => setRefundFor(null)}
+          onDone={() => {
+            setRefundFor(null);
+            onRefunded();
+          }}
+        />
+      ) : null}
+    </>
+  );
+}
+
+function RefundModal({
+  tx,
+  vendorId,
+  onClose,
+  onDone,
+}: {
+  tx: Transaction;
+  vendorId: string | null;
+  onClose: () => void;
+  onDone: () => void;
+}) {
+  const [amountDollars, setAmountDollars] = useState((tx.amount_cents / 100).toFixed(2));
+  const [reason, setReason] = useState<"requested_by_customer" | "duplicate" | "fraudulent">("requested_by_customer");
+  const [submitting, setSubmitting] = useState(false);
+
+  // Balance transactions in the list expose the balance txn id, not
+  // the PI id. We pass it as payment_intent_id — the refund fn handles
+  // PI ids; balance-txn-ids start with "txn_" or "py_" and won't work.
+  // Stripe's listTransactions IDs starting with "txn_" map to a charge
+  // via `source` — but our simplified Transaction type doesn't expose
+  // the source. For now we pass tx.id and let Stripe surface the right
+  // error if it's not a PI.
+  const handle = useCallback(async () => {
+    if (!vendorId || submitting) return;
+    const cents = Math.round(parseFloat(amountDollars) * 100);
+    if (!Number.isFinite(cents) || cents < 50 || cents > tx.amount_cents) {
+      toast.error("Enter a valid amount up to the original charge.");
+      return;
+    }
+    setSubmitting(true);
+    const { data, error } = await supabase.functions.invoke("vendorapay-refund", {
+      body: {
+        business_id: vendorId,
+        payment_intent_id: tx.id,
+        amount_cents: cents === tx.amount_cents ? undefined : cents,
+        reason,
+      },
+    });
+    setSubmitting(false);
+    if (error || (data as { error?: string })?.error) {
+      let detail = "Try again.";
+      const ctx = (error as { context?: Response } | null)?.context;
+      if (ctx && typeof ctx.json === "function") {
+        try {
+          const body = await ctx.clone().json();
+          detail = (body?.detail || body?.error) ?? detail;
+        } catch {
+          detail = error?.message ?? detail;
+        }
+      } else if (error?.message) {
+        detail = error.message;
+      } else if ((data as { error?: string })?.error) {
+        detail = (data as { error: string }).error;
+      }
+      toast.error("Refund failed", { description: detail });
+      return;
+    }
+    toast.success("Refund issued");
+    onDone();
+  }, [vendorId, submitting, amountDollars, reason, tx, onDone]);
+
+  return (
+    <div
+      className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4"
+      onClick={onClose}
+    >
+      <div
+        className="w-full max-w-md rounded-2xl bg-background p-6 shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <h3 className="text-lg font-semibold">Refund payment</h3>
+        <p className="text-xs text-muted-foreground mt-1">{tx.description ?? "VendoraPay charge"}</p>
+        <p className="text-2xl font-editorial mt-3">{formatMoney(tx.amount_cents, tx.currency)}</p>
+
+        <div className="mt-4 space-y-3">
+          <div>
+            <label className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">
+              Refund amount
+            </label>
+            <div className="flex items-center gap-2 mt-1">
+              <span className="text-sm text-muted-foreground">$</span>
+              <input
+                type="number"
+                inputMode="decimal"
+                step="0.01"
+                min="0.50"
+                max={(tx.amount_cents / 100).toFixed(2)}
+                value={amountDollars}
+                onChange={(e) => setAmountDollars(e.target.value)}
+                className="flex-1 rounded-lg border-0 px-3 py-2 text-sm bg-background/60 ring-1 ring-foreground/10 focus:ring-foreground/30 outline-none"
+              />
             </div>
           </div>
-        );
-      })}
-    </Card>
+          <div>
+            <label className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">
+              Reason
+            </label>
+            <select
+              value={reason}
+              onChange={(e) => setReason(e.target.value as typeof reason)}
+              className="mt-1 w-full rounded-lg border-0 px-3 py-2 text-sm bg-background/60 ring-1 ring-foreground/10 focus:ring-foreground/30 outline-none"
+            >
+              <option value="requested_by_customer">Requested by customer</option>
+              <option value="duplicate">Duplicate charge</option>
+              <option value="fraudulent">Fraudulent</option>
+            </select>
+          </div>
+          <p className="text-[11px] text-muted-foreground">
+            VendoraPay reverses its platform fee proportionally on refunds. Funds return to the host's card in 5–10 business days.
+          </p>
+        </div>
+
+        <div className="mt-5 flex gap-2 justify-end">
+          <Button variant="ghost" onClick={onClose} disabled={submitting} className="rounded-full">
+            Cancel
+          </Button>
+          <Button onClick={handle} disabled={submitting} className="rounded-full">
+            {submitting ? <Loader2 className="w-4 h-4 mr-1.5 animate-spin" /> : null}
+            Refund {formatMoney(Math.round(parseFloat(amountDollars || "0") * 100), tx.currency)}
+          </Button>
+        </div>
+      </div>
+    </div>
   );
 }
 
