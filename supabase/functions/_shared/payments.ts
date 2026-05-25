@@ -143,19 +143,49 @@ export type WebhookEventKind =
 // ---- public API -------------------------------------------------
 
 /**
- * Create a connected account for a business via the v2 Accounts API.
- * v1 accounts.create({type:"express"}) fails on platforms set up
- * through the new Connect wizard (Stripe rejects with "Connect not
- * signed up" even when Connect is fully active).
- *
- * @param idempotencyKey  REQUIRED — dedupe key.
+ * Direct fetch to Stripe v2 REST API. Bypasses the SDK because the
+ * Deno esm.sh build of stripe@18 doesn't tree-shake the v2 namespace
+ * (stripe.v2.core.accounts is undefined at runtime).
+ */
+async function stripeV2(
+  method: "GET" | "POST",
+  path: string,
+  body?: Record<string, unknown>,
+  idempotencyKey?: string,
+): Promise<any> {
+  if (!STRIPE_SECRET_KEY) {
+    throw new Error("VendoraPay not configured (missing platform secret)");
+  }
+  const headers: Record<string, string> = {
+    Authorization: `Bearer ${STRIPE_SECRET_KEY}`,
+    "Content-Type": "application/json",
+    "Stripe-Version": "2026-04-22.dahlia",
+  };
+  if (idempotencyKey) headers["Idempotency-Key"] = idempotencyKey;
+  const res = await fetch(`https://api.stripe.com${path}`, {
+    method,
+    headers,
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  const json = await res.json();
+  if (!res.ok) {
+    const message = json?.error?.message ?? json?.message ?? `Stripe ${res.status}`;
+    throw new Error(message);
+  }
+  return json;
+}
+
+/**
+ * Create a connected account via the v2 Accounts API.
  */
 export async function createAccount(args: {
   email?: string | null;
   business_id: string;
   idempotency_key: string;
 }): Promise<ConnectedAccount> {
-  const account = await (client() as any).v2.core.accounts.create(
+  const account = await stripeV2(
+    "POST",
+    "/v2/core/accounts",
     {
       dashboard: "express",
       contact_email: args.email ?? undefined,
@@ -181,20 +211,20 @@ export async function createAccount(args: {
       },
       metadata: { business_id: args.business_id },
     },
-    { idempotencyKey: args.idempotency_key },
+    args.idempotency_key,
   );
   return normalizeAccountV2(account);
 }
 
 /**
- * Mint a fresh onboarding link via v2 accountLinks.
+ * Mint a fresh onboarding link via v2 account_links.
  */
 export async function createOnboardingLink(args: {
   account_id: string;
   return_url: string;
   refresh_url: string;
 }): Promise<{ url: string }> {
-  const link = await (client() as any).v2.core.accountLinks.create({
+  const link = await stripeV2("POST", "/v2/core/account_links", {
     account: args.account_id,
     use_case: {
       type: "account_onboarding",
@@ -210,13 +240,18 @@ export async function createOnboardingLink(args: {
 
 /**
  * Current onboarding/capability state via v2 accounts.retrieve.
+ * `include` query params layer additional fields onto the response.
  */
 export async function getAccountStatus(
   account_id: string,
 ): Promise<ConnectedAccount> {
-  const account = await (client() as any).v2.core.accounts.retrieve(account_id, {
-    include: ["requirements", "configuration.recipient"],
-  });
+  const q = new URLSearchParams();
+  q.append("include", "requirements");
+  q.append("include", "configuration.recipient");
+  const account = await stripeV2(
+    "GET",
+    `/v2/core/accounts/${encodeURIComponent(account_id)}?${q.toString()}`,
+  );
   return normalizeAccountV2(account);
 }
 
