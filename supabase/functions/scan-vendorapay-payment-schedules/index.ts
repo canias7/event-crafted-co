@@ -144,6 +144,78 @@ serve(async () => {
     if (overdueErr) console.error("[scan-vendorapay-payment-schedules] invoice overdue failed", overdueErr);
     invoicesMarkedOverdue = (overdueUpd ?? []).length;
 
+    // 3) Email overdue-invoice reminders. Up to 3 per invoice:
+    //    - reminder_count=0: send immediately (the day it goes overdue)
+    //    - reminder_count>=1: send if last_reminder_at was more than
+    //      72 hours ago (~3-day cadence)
+    //    Stops after 3 reminders — vendor handles further follow-up.
+    let invoiceRemindersSent = 0;
+    const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString();
+    const { data: overdueInvoices } = await db
+      .from("invoices")
+      .select("id, vendor_id, slug, invoice_number, bill_to_name, bill_to_email, total_cents, currency, due_date, reminder_count, last_reminder_at")
+      .eq("status", "overdue")
+      .lt("reminder_count", 3)
+      .or(`last_reminder_at.is.null,last_reminder_at.lt.${threeDaysAgo}`)
+      .limit(200);
+    const overdueRows = (overdueInvoices ?? []) as Array<{
+      id: string;
+      vendor_id: string;
+      slug: string;
+      invoice_number: string;
+      bill_to_name: string | null;
+      bill_to_email: string | null;
+      total_cents: number;
+      currency: string;
+      due_date: string | null;
+      reminder_count: number;
+      last_reminder_at: string | null;
+    }>;
+    for (const inv of overdueRows) {
+      if (!inv.bill_to_email) continue;
+      const { data: vp } = await db
+        .from("vendor_profiles")
+        .select("business_name, logo_url")
+        .eq("id", inv.vendor_id)
+        .maybeSingle();
+      const vpRow = vp as { business_name?: string | null; logo_url?: string | null } | null;
+      const businessName = vpRow?.business_name ?? "your vendor";
+      const logoUrl = vpRow?.logo_url ?? null;
+      const amount = formatMoney(inv.total_cents, inv.currency);
+      const payUrl = `${APP_URL}/pay/invoice/${inv.slug}`;
+      const daysOverdue = inv.due_date
+        ? Math.max(1, Math.floor((Date.now() - new Date(inv.due_date).getTime()) / (24 * 60 * 60 * 1000)))
+        : null;
+      const greeting = inv.bill_to_name ? `Hi ${escapeHtml(inv.bill_to_name)}` : "Hi";
+      const intent =
+        inv.reminder_count === 0
+          ? `Just a friendly nudge — invoice ${inv.invoice_number} is past due.`
+          : `This is a follow-up: invoice ${inv.invoice_number} is now ${daysOverdue ? `${daysOverdue} days` : "several days"} past due.`;
+      const logoHtml = logoUrl
+        ? `<div style="margin:0 0 16px;"><img src="${logoUrl}" alt="${escapeHtml(businessName)}" width="44" height="44" style="display:block;border:0;border-radius:8px;object-fit:cover;" /></div>`
+        : "";
+      const html = shellHtml(
+        `Invoice ${inv.invoice_number} is past due`,
+        `${logoHtml}<p style="margin:0 0 12px;">${greeting},</p><p style="margin:0 0 16px;">${intent}</p><p style="margin:0 0 24px;font-size:28px;font-weight:600;">${amount}</p><p style="margin:0 0 24px;">${button(payUrl, `Pay ${amount} now`)}</p><p style="margin:0;font-size:13px;color:#777;">Reply to this email if you have questions about the invoice from ${escapeHtml(businessName)}.</p>`,
+      );
+      const ok = await sendEmail(
+        inv.bill_to_email,
+        `${inv.invoice_number} past due (${amount}) — ${businessName}`,
+        html,
+      );
+      if (ok) {
+        invoiceRemindersSent++;
+        await db
+          .from("invoices")
+          .update({
+            reminder_count: inv.reminder_count + 1,
+            last_reminder_at: nowIso,
+            updated_at: nowIso,
+          })
+          .eq("id", inv.id);
+      }
+    }
+
     return new Response(
       JSON.stringify({
         ok: true,
@@ -151,6 +223,7 @@ serve(async () => {
         promoted,
         emailed,
         invoices_marked_overdue: invoicesMarkedOverdue,
+        invoice_reminders_sent: invoiceRemindersSent,
       }),
       { status: 200, headers: { "Content-Type": "application/json" } },
     );
