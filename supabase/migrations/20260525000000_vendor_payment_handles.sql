@@ -1,0 +1,22 @@
+-- Vendor-side payment handles for non-Stripe processors.
+-- Stripe lives on its own stripe_account_id column (OAuth-backed
+-- Connect Express account). The other processors don't have a
+-- merchant-OAuth model that fits — Venmo / Cash App / Zelle are
+-- peer-to-peer apps and Square / PayPal OAuth would each be a
+-- multi-week build. So we store the vendor's handle / URL per
+-- service and surface them on the public profile so hosts can
+-- pay directly.
+--
+-- Shape:
+--   payment_handles = {
+--     "square":  "@handle"                 | URL,
+--     "paypal":  "paypal.me/xxx"           | "email@example.com",
+--     "venmo":   "@username",
+--     "cashapp": "$cashtag",
+--     "zelle":   "email@example.com"       | "(555) 555-5555"
+--   }
+--
+-- All keys optional. Empty string = treat as not-set (the UI
+-- normalizes on save).
+alter table public.vendor_profiles
+  add column if not exists payment_handles jsonb not null default '{}'::jsonb;
