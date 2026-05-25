@@ -21,18 +21,13 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import {
-  Calendar,
-  Filter,
-  Inbox,
-  Search,
-  Users,
-} from "lucide-react";
+import { Calendar, Filter, Inbox, Search } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useRealtime } from "@/lib/realtime";
 import { DashboardSidebar } from "@/components/shared/DashboardSidebar";
 import { MobileNav } from "@/components/shared/MobileNav";
+import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { vendorNavItems as navItems } from "@/data/navItems";
@@ -249,22 +244,19 @@ export default function VendorLeadsPage() {
   }, [leads]);
 
   return (
-    <div className="min-h-screen flex relative bg-[var(--vendor-canvas)]">
+    <div className="flex min-h-screen vendor-canvas">
       <DashboardSidebar items={navItems} title="Vendor Portal" backPath="/" />
-      <main className="flex-1 min-w-0 pb-20 lg:pb-0">
-        <div
-          className="px-4 md:px-8 pt-8 pb-6"
-          style={{ borderBottom: "0.5px solid rgba(255,138,76,0.18)" }}
-        >
-          <div className="flex items-center gap-3 mb-1">
-            <Users className="w-6 h-6 text-foreground/70" />
-            <h1 className="text-3xl md:text-4xl font-semibold tracking-tight">
-              Leads
-            </h1>
+      <main id="main-content" className="flex-1 min-w-0 pb-20 lg:pb-0">
+        <div className="backdrop-blur-sm px-4 md:px-8 py-5 sticky top-0 z-40 flex items-start justify-between gap-4">
+          <div>
+            <h1 className="font-editorial text-3xl">Leads</h1>
+            <p className="text-sm text-muted-foreground">
+              Every host who's reached out — past, present, and pipeline.
+            </p>
           </div>
-          <p className="text-sm text-muted-foreground">
-            Every host who's reached out — past, present, and pipeline.
-          </p>
+          <div className="flex items-center gap-2">
+            <NotificationBell variant="light" />
+          </div>
         </div>
 
         <div className="p-4 md:p-8 max-w-5xl space-y-5">
