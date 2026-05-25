@@ -30,6 +30,7 @@ import {
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useVendorPlan, type VendorTier } from "@/hooks/useVendorPlan";
 import { DashboardSidebar } from "@/components/shared/DashboardSidebar";
 import { MobileNav } from "@/components/shared/MobileNav";
 import { Button } from "@/components/ui/button";
@@ -122,11 +123,41 @@ function kindLabel(kind: string): { label: string; tone: "in" | "out" | "neutral
   }
 }
 
+// Tier → all-in fee description for the Settings tab. Mirrors the
+// server-side mapping in supabase/functions/_shared/platformFees.ts —
+// keep them in sync if you change one.
+const TIER_FEE_COPY: Record<
+  VendorTier,
+  { rate: string; vendoraCut: string; sub: string }
+> = {
+  free: {
+    rate: "5.0% + $0.30 all-in",
+    vendoraCut: "~2.1% to Vendora",
+    sub: "Free plan rate. Upgrade to Pro or Studio to lower the per-charge fee.",
+  },
+  starter: {
+    rate: "5.0% + $0.30 all-in",
+    vendoraCut: "~2.1% to Vendora",
+    sub: "Starter plan rate. Upgrade to Pro or Studio to lower the per-charge fee.",
+  },
+  pro: {
+    rate: "4.0% + $0.30 all-in",
+    vendoraCut: "~1.1% to Vendora",
+    sub: "Pro plan rate. Upgrade to Studio for Stripe-only pricing.",
+  },
+  studio: {
+    rate: "2.9% + $0.30 (Stripe pass-through)",
+    vendoraCut: "$0 to Vendora",
+    sub: "Studio plan perk: you pay only the processor's cost. Vendora takes nothing on top.",
+  },
+};
+
 export default function VendorPaymentsPage() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const { ownListing } = useAuth();
+  const { ownListing, user } = useAuth();
   const vendorId = ownListing?.id ?? null;
+  const { tier } = useVendorPlan(user?.id ?? null);
 
   const tab = ((searchParams.get("tab") as TabId | null) ?? "overview") as TabId;
   const setTab = (next: TabId) => {
@@ -351,7 +382,7 @@ export default function VendorPaymentsPage() {
           ) : tab === "payouts" ? (
             <PayoutsTab data={payouts} status={status} />
           ) : (
-            <SettingsTab status={status} />
+            <SettingsTab status={status} tier={tier} />
           )}
         </div>
       </main>
@@ -571,7 +602,14 @@ function PayoutsTab({ data, status }: { data: PayoutsResponse | null; status: St
   );
 }
 
-function SettingsTab({ status }: { status: Status | null }) {
+function SettingsTab({
+  status,
+  tier,
+}: {
+  status: Status | null;
+  tier: VendorTier;
+}) {
+  const fee = TIER_FEE_COPY[tier];
   return (
     <div className="space-y-4">
       <SettingRow
@@ -580,9 +618,9 @@ function SettingsTab({ status }: { status: Status | null }) {
         sub="What your customers see on their card statement."
       />
       <SettingRow
-        label="Platform fee"
-        value="5.0%"
-        sub="VendoraPay's flat fee on every successful charge. Taken off the top automatically — you never invoice it."
+        label={`Your fee (${tier} plan)`}
+        value={fee.rate}
+        sub={`${fee.vendoraCut}. ${fee.sub}`}
       />
       <SettingRow
         label="Payout cadence"
