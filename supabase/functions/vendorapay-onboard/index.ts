@@ -10,8 +10,10 @@
 //
 // The frontend gets back { url, account_id } and redirects the
 // user to the URL. After they complete KYC, Stripe redirects to
-// /vendorapay/return which prompts the frontend to re-fetch
-// /vendorapay/status.
+// /vendor/integrations?vendorapay=return where the Integrations
+// page reads the query param, toasts "Welcome back", and re-pulls
+// status. /vendor/integrations?vendorapay=refresh handles expired
+// onboarding links (Stripe redirects there if the link timed out).
 
 // deno-lint-ignore-file no-explicit-any
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
@@ -103,8 +105,8 @@ serve(async (req) => {
 
     const { url } = await createOnboardingLink({
       account_id: accountId,
-      return_url: `${APP_URL}/vendorapay/return`,
-      refresh_url: `${APP_URL}/vendorapay/refresh`,
+      return_url: `${APP_URL}/vendor/integrations?vendorapay=return`,
+      refresh_url: `${APP_URL}/vendor/integrations?vendorapay=refresh`,
     });
 
     return json(200, { url, account_id: accountId });
