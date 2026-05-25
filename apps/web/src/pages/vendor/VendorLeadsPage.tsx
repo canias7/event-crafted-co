@@ -113,31 +113,46 @@ function formatMoney(cents: number): string {
 type StatusFilter = "all" | "active" | "won" | "lost";
 
 export default function VendorLeadsPage() {
-  const { user, ownListing } = useAuth();
-  const vendorId = ownListing?.id ?? null;
+  const { user, vendorMemberships } = useAuth();
+  // Match VendorInboxPage: surface leads across EVERY listing the
+  // vendor has access to (own + team memberships), not just the first
+  // approved one. Using ownListing here would have:
+  //   - Hidden leads on the vendor's second/third listings entirely.
+  //   - Returned empty for team-member-only accounts (no own listing).
+  const vendorIds = useMemo(
+    () => vendorMemberships.map((m) => m.vendor_id),
+    [vendorMemberships],
+  );
+  const vendorIdsKey = vendorIds.join(",");
   const [rows, setRows] = useState<InquiryRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
 
   const load = useCallback(async () => {
-    if (!user || !vendorId) {
+    if (!user || vendorIds.length === 0) {
       setRows([]);
       setLoading(false);
       return;
     }
     setLoading(true);
+    // Cap at 200 to match VendorInboxPage's "don't pull every historical
+    // inquiry on each load" guard, but a little higher because Leads
+    // aggregates by host — a vendor with many repeat customers gains
+    // more by seeing more inquiries per page load than the inbox does.
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data } = await (supabase as any)
       .from("inquiries")
       .select(
         "id, host_id, event_type, event_date, budget_min_cents, budget_max_cents, status, created_at, last_message_at, host:profiles!inquiries_host_id_fkey(display_name, avatar_url)",
       )
-      .eq("vendor_id", vendorId)
-      .order("last_message_at", { ascending: false, nullsFirst: false });
+      .in("vendor_id", vendorIds)
+      .order("last_message_at", { ascending: false, nullsFirst: false })
+      .limit(200);
     setRows((data as unknown as InquiryRow[]) ?? []);
     setLoading(false);
-  }, [user, vendorId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, vendorIdsKey]);
 
   useEffect(() => {
     void load();
@@ -148,8 +163,9 @@ export default function VendorLeadsPage() {
   // a per-vendor subscription. Matches VendorInboxPage's approach so
   // both surfaces stay in sync without a manual refresh.
   const realtimeConfig = useMemo(
-    () => (vendorId ? { table: "inquiries" } : null),
-    [vendorId],
+    () => (vendorIds.length > 0 ? { table: "inquiries" } : null),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [vendorIdsKey],
   );
   useRealtime(realtimeConfig, () => {
     void load();
@@ -160,6 +176,7 @@ export default function VendorLeadsPage() {
   // inquiry has no messages yet).
   const leads = useMemo<Lead[]>(() => {
     const byHost = new Map<string, InquiryRow[]>();
+    // host_id is NOT NULL on inquiries — no defensive null guard needed.
     for (const r of rows) {
       let bucket = byHost.get(r.host_id);
       if (!bucket) {
@@ -282,11 +299,15 @@ export default function VendorLeadsPage() {
               />
             </div>
             <div className="relative md:w-72">
-              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+              <Search
+                className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+                aria-hidden
+              />
               <Input
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Search host…"
+                aria-label="Search leads by host name"
                 className="pl-9 rounded-full"
               />
             </div>
