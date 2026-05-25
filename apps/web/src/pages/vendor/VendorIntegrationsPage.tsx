@@ -260,12 +260,16 @@ export default function VendorIntegrationsPage() {
     if (!vendorId) return;
     let cancelled = false;
     (async () => {
+      // The vendor reads their OWN payment info via the gated RPC,
+      // not direct table select. The two columns
+      // (payment_handles + stripe_account_id) are revoked from
+      // authenticated to block scraping; the RPC re-grants by
+      // caller relationship (owner OR has-inquiry-with-vendor).
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data } = await (supabase as any)
-        .from("vendor_profiles")
-        .select("stripe_account_id, payment_handles")
-        .eq("id", vendorId)
-        .maybeSingle();
+      const { data } = await (supabase as any).rpc(
+        "get_vendor_payment_info",
+        { p_vendor_id: vendorId },
+      );
       if (cancelled) return;
       const row = data as {
         stripe_account_id?: string | null;
