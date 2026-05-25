@@ -43,43 +43,22 @@ export const customerNavItems: NavItem[] = [
 ];
 
 export const vendorNavItems: NavItem[] = [
-  // Inbox hub — sub-tabs: Inquiries (default), Hosts (DMs), Partners
-  // (vendor-to-vendor). The standalone Messages entry merged in here.
-  // (Vendor Home — global feed + composers — removed: vendors land on
-  // /vendor/me now, and the global feed lives only on the host side.)
+  // Inbox hub — sub-tabs: Inquiries (default), Hosts (DMs), Partners.
   { labelKey: "sidebar.vendor.inbox", path: "/vendor/inbox", icon: Inbox },
-  // Leads — CRM roll-up of every host who's ever inquired. One row per
-  // host with status / last contact / total budget. Sits next to Inbox
-  // because the two answer adjacent questions ("what's new now" vs
-  // "who do I know"). Click-through deep-links into the latest inquiry
-  // chat, so it's an entry point not a parallel surface.
+  // ---- Business operations cluster ----
+  // My Vendora / Calendar / VendoraPay all answer the day-to-day
+  // "what's happening with my business" question. Grouped together
+  // so the vendor can flip between leads, bookings, and money in
+  // adjacent clicks.
   { labelKey: "sidebar.vendor.leads", path: "/vendor/leads", icon: Users },
-  // Calendar — single page that surfaces both upcoming appointments
-  // (inquiries with event_date set) and the per-day block-out grid for
-  // marking dates unavailable.
   { labelKey: "sidebar.vendor.calendar", path: "/vendor/appointments", icon: CalendarDays },
-  // Profile — the vendor's IG-style identity surface (posts, reels,
-  // buzz, listings, edit identity). Replaces the old separate
-  // "Profile (listing builder)" entry under Calendar — that page is
-  // now reached from the Edit listing CTA on this profile.
+  { labelKey: "sidebar.vendor.vendorapay", path: "/vendor/payments", icon: CreditCard },
+  // ---- Identity + creative tools ----
   { labelKey: "sidebar.vendor.my_profile", path: "/vendor/me", icon: User },
-  // Three forward-looking tools that used to live under a single
-  // "Studio" tab. Each ships as a Coming Soon placeholder for now;
-  // sidebar entries exist so the future work has stable URLs.
-  // "My Space" — the vendor's personal AI / tools shelf (HILUX + Axion
-  // for now). URL kept as /vendor/ai-superagents so bookmarks and any
-  // legacy links keep resolving; only the user-facing label changed.
   { labelKey: "sidebar.vendor.my_space", path: "/vendor/ai-superagents", icon: Sparkles },
   { labelKey: "sidebar.vendor.gallery", path: "/vendor/gallery", icon: Images },
-  // Subscription — the vendor's Vendora plan + billing.
+  // ---- Billing for the Vendora subscription itself ----
   { labelKey: "sidebar.vendor.subscription", path: "/vendor/subscription", icon: Crown },
-  // VendoraPay — the vendor's money cockpit (status, balance,
-  // transactions). Connect / KYC continuation runs through here too
-  // so vendors never have to leave to set up. Sits in the money
-  // cluster (Subscription / VendoraPay / Usage).
-  { labelKey: "sidebar.vendor.vendorapay", path: "/vendor/payments", icon: CreditCard },
-  // Usage — credit balance, ledger, billing portal. Lives next to
-  // Subscription so the two billing-adjacent surfaces sit together.
   { labelKey: "sidebar.vendor.usage", path: "/vendor/usage", icon: Gauge },
   // Settings — pulled out of the separate bottom group so the rail
   // reads as one continuous list. Log out lives on /settings now.
