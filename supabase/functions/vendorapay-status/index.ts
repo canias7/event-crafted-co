@@ -112,6 +112,7 @@ serve(async (req) => {
         charges_enabled: fresh.charges_enabled,
         payouts_enabled: fresh.payouts_enabled,
         details_submitted: fresh.details_submitted,
+        bank: fresh.bank ?? null,
       });
     } catch (err) {
       console.error("[vendorapay-status] provider sync failed", err);
@@ -122,6 +123,7 @@ serve(async (req) => {
         charges_enabled: Boolean(row.charges_enabled),
         payouts_enabled: Boolean(row.payouts_enabled),
         details_submitted: Boolean(row.details_submitted),
+        bank: null,
       });
     }
   } catch (err) {

@@ -72,6 +72,12 @@ export interface ConnectedAccount {
   charges_enabled: boolean;
   payouts_enabled: boolean;
   details_submitted: boolean;
+  /** Default external account (bank) summary for the Integrations tab. */
+  bank?: {
+    bank_name: string | null;
+    last4: string | null;
+    currency: string | null;
+  } | null;
 }
 
 export interface ChargeResult {
@@ -370,11 +376,29 @@ function computePlatformFee(amount_cents: number): number {
 }
 
 function normalizeAccount(account: Stripe.Account): ConnectedAccount {
+  // external_accounts is included on accounts.retrieve by default
+  // but expand is required to get the full bank object. The default
+  // bank is the first one marked default_for_currency=true (or the
+  // first one if none).
+  let bank: ConnectedAccount["bank"] = null;
+  const exts = (account as unknown as { external_accounts?: { data?: any[] } })
+    .external_accounts?.data ?? [];
+  const defaultBank = exts.find((e: any) => e?.object === "bank_account" && e?.default_for_currency)
+    ?? exts.find((e: any) => e?.object === "bank_account")
+    ?? null;
+  if (defaultBank) {
+    bank = {
+      bank_name: (defaultBank.bank_name as string | null) ?? null,
+      last4: (defaultBank.last4 as string | null) ?? null,
+      currency: (defaultBank.currency as string | null) ?? null,
+    };
+  }
   return {
     id: account.id,
     charges_enabled: Boolean(account.charges_enabled),
     payouts_enabled: Boolean(account.payouts_enabled),
     details_submitted: Boolean(account.details_submitted),
+    bank,
   };
 }
 
