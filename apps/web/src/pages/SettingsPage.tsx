@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Bell, ChevronRight, FileText, Globe, HelpCircle, Loader2, LogOut, Lock, Mail, Plug, Trash2 } from "lucide-react";
 import { toast } from "sonner";
@@ -6,7 +6,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Switch } from "@/components/ui/switch";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -32,69 +31,6 @@ export default function SettingsPage() {
   const navigate = useNavigate();
 
   const [deleting, setDeleting] = useState(false);
-
-  // Notification preferences. Backed by profiles.notification_prefs
-  // (JSONB column, defaults to all-on per migration 20260504200000).
-  // Server-side notify_* triggers already honor every key via the
-  // is_notif_enabled() helper, so a flipped toggle silences in-app
-  // notifications + push + email immediately.
-  type NotifPrefs = {
-    new_inquiry: boolean;
-    proposal_accepted: boolean;
-    review_received: boolean;
-    weekly_digest: boolean;
-    daily_digest: boolean;
-    marketing: boolean;
-  };
-  const DEFAULT_PREFS: NotifPrefs = {
-    new_inquiry: true,
-    proposal_accepted: true,
-    review_received: true,
-    weekly_digest: true,
-    daily_digest: true,
-    marketing: false,
-  };
-  const [prefs, setPrefs] = useState<NotifPrefs>(DEFAULT_PREFS);
-  const [prefsLoaded, setPrefsLoaded] = useState(false);
-
-  useEffect(() => {
-    if (!user?.id) return;
-    let cancelled = false;
-    (async () => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data } = await (supabase as any)
-        .from("profiles")
-        .select("notification_prefs")
-        .eq("id", user.id)
-        .maybeSingle();
-      if (cancelled) return;
-      const incoming = (data?.notification_prefs ?? {}) as Partial<NotifPrefs>;
-      setPrefs({ ...DEFAULT_PREFS, ...incoming });
-      setPrefsLoaded(true);
-    })();
-    return () => {
-      cancelled = true;
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.id]);
-
-  async function togglePref(key: keyof NotifPrefs, next: boolean) {
-    if (!user?.id) return;
-    // Optimistic local update so the switch flips instantly.
-    const optimistic = { ...prefs, [key]: next };
-    setPrefs(optimistic);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error } = await (supabase as any)
-      .from("profiles")
-      .update({ notification_prefs: optimistic })
-      .eq("id", user.id);
-    if (error) {
-      // Roll back the switch + surface the failure. Keep the toast
-      // short — vendors flicking switches don't want an essay.
-      setPrefs(prefs);
-      toast.error("Couldn't update preference");
-    }
-  }
 
   const lastSide = getLastDashboardSide();
   const useVendorNav =
@@ -181,80 +117,26 @@ export default function SettingsPage() {
                   />
                 </>
               ) : null}
-              {/* Notification preferences. Backing keys map to the
-                  same JSON keys notify_* triggers check via
-                  is_notif_enabled(). Flipping a switch silences
-                  all three channels (in-app bell, push, email)
-                  for that kind. Marketing default-off (per migration
-                  20260504200000); everything else default-on. */}
+              {/* Notifications — collapsed into a single row that links
+                  to the dedicated /settings/notifications page. Five
+                  Bell rows inline made the surface dense; this keeps
+                  Settings scannable. The toggles + backing storage are
+                  unchanged — see NotificationSettingsPage. */}
               <RowDivider />
               <SettingRow
                 Icon={Bell}
-                title="New inquiry"
-                subtitle="Email + push + in-app when a host asks about your listing"
+                title="Notifications"
+                subtitle="Pick which emails, pushes, and in-app alerts you get"
                 right={
-                  <Switch
-                    checked={prefs.new_inquiry}
-                    disabled={!prefsLoaded}
-                    onCheckedChange={(v) => togglePref("new_inquiry", v)}
-                    aria-label="New inquiry notifications"
-                  />
-                }
-              />
-              <RowDivider />
-              <SettingRow
-                Icon={Bell}
-                title="Proposal accepted"
-                subtitle="When a host accepts a proposal you sent"
-                right={
-                  <Switch
-                    checked={prefs.proposal_accepted}
-                    disabled={!prefsLoaded}
-                    onCheckedChange={(v) => togglePref("proposal_accepted", v)}
-                    aria-label="Proposal accepted notifications"
-                  />
-                }
-              />
-              <RowDivider />
-              <SettingRow
-                Icon={Bell}
-                title="New review"
-                subtitle="When a host leaves you a rating"
-                right={
-                  <Switch
-                    checked={prefs.review_received}
-                    disabled={!prefsLoaded}
-                    onCheckedChange={(v) => togglePref("review_received", v)}
-                    aria-label="Review notifications"
-                  />
-                }
-              />
-              <RowDivider />
-              <SettingRow
-                Icon={Bell}
-                title="Weekly digest"
-                subtitle="Monday summary of last week's activity"
-                right={
-                  <Switch
-                    checked={prefs.weekly_digest}
-                    disabled={!prefsLoaded}
-                    onCheckedChange={(v) => togglePref("weekly_digest", v)}
-                    aria-label="Weekly digest"
-                  />
-                }
-              />
-              <RowDivider />
-              <SettingRow
-                Icon={Bell}
-                title="Marketing"
-                subtitle="Product news, tips, and occasional offers (opt-in)"
-                right={
-                  <Switch
-                    checked={prefs.marketing}
-                    disabled={!prefsLoaded}
-                    onCheckedChange={(v) => togglePref("marketing", v)}
-                    aria-label="Marketing emails"
-                  />
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="rounded-full"
+                    onClick={() => navigate("/settings/notifications")}
+                  >
+                    Manage
+                    <ChevronRight className="w-3.5 h-3.5 ml-1" />
+                  </Button>
                 }
               />
               <RowDivider />
