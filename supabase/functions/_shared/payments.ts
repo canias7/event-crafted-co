@@ -337,6 +337,59 @@ export async function getBalance(account_id: string): Promise<Balance> {
 }
 
 /**
+ * Aggregate Stripe fees + gross + net for a connected account over
+ * a date range. Walks balance_transactions paginated until exhausted
+ * so the totals reflect every relevant txn (not just the last 25 of
+ * listTransactions). Filtered to type='charge' so refund + payout
+ * + adjustment entries aren't double-counted into the gross.
+ *
+ * Used by the Reports surface in My Vendora to show Stripe fees as
+ * a discrete line and net-to-bank for an arbitrary window.
+ */
+export async function aggregateFeesForPeriod(args: {
+  account_id: string;
+  since: Date;
+  until: Date;
+}): Promise<{ fees_cents: number; gross_cents: number; net_cents: number; currency: string; count: number }> {
+  let fees_cents = 0;
+  let gross_cents = 0;
+  let net_cents = 0;
+  let count = 0;
+  let currency = "usd";
+  let starting_after: string | undefined = undefined;
+  // Hard cap on pages so a runaway loop can't bill us into oblivion.
+  // 50 pages × 100 rows = 5000 transactions per period — enough for
+  // any realistic month / quarter / year for a single vendor.
+  for (let page = 0; page < 50; page++) {
+    // deno-lint-ignore no-explicit-any
+    const list: any = await client().balanceTransactions.list(
+      {
+        limit: 100,
+        starting_after,
+        type: "charge",
+        created: {
+          gte: Math.floor(args.since.getTime() / 1000),
+          lt: Math.floor(args.until.getTime() / 1000),
+        },
+      },
+      { stripeAccount: args.account_id },
+    );
+    for (const t of list.data) {
+      gross_cents += t.amount;
+      fees_cents += t.fee;
+      net_cents += t.net;
+      currency = t.currency;
+      count++;
+    }
+    if (!list.has_more) break;
+    const lastId = list.data[list.data.length - 1]?.id as string | undefined;
+    if (!lastId) break;
+    starting_after = lastId;
+  }
+  return { fees_cents, gross_cents, net_cents, currency, count };
+}
+
+/**
  * Recent balance transactions on a connected account. Used to render
  * the VendoraPay transaction history (Phase 2 dashboard).
  */

@@ -1196,11 +1196,13 @@ function ReportsTab({ vendorId }: { vendorId: string | null }) {
   // against bank deposits.
   const [paidInRange, setPaidInRange] = useState<Invoice[]>([]);
   const [refundedInRange, setRefundedInRange] = useState<Invoice[]>([]);
+  const [stripeFees, setStripeFees] = useState<{ fees_cents: number; gross_cents: number; net_cents: number; count: number } | null>(null);
   const [loading, setLoading] = useState(false);
   useEffect(() => {
     if (!vendorId) {
       setPaidInRange([]);
       setRefundedInRange([]);
+      setStripeFees(null);
       return;
     }
     let cancelled = false;
@@ -1210,7 +1212,7 @@ function ReportsTab({ vendorId }: { vendorId: string | null }) {
       const db = supabase as any;
       const cols =
         "id, vendor_id, slug, invoice_number, bill_to_name, bill_to_email, issue_date, due_date, notes, line_items, subtotal_cents, tax_rate_bps, tax_cents, total_cents, currency, status, sent_at, paid_at, refunded_at, refunded_amount_cents, created_at";
-      const [paidRes, refundedRes] = await Promise.all([
+      const [paidRes, refundedRes, feesRes] = await Promise.all([
         db
           .from("invoices")
           .select(cols)
@@ -1229,10 +1231,33 @@ function ReportsTab({ vendorId }: { vendorId: string | null }) {
           .lt("refunded_at", range.end.toISOString())
           .order("refunded_at", { ascending: false })
           .limit(5000),
+        supabase.functions
+          .invoke("vendorapay-fees-report", {
+            body: {
+              business_id: vendorId,
+              since: range.start.toISOString(),
+              until: range.end.toISOString(),
+            },
+          })
+          .catch((err: unknown) => {
+            console.error("[reports] fees fetch failed", err);
+            return { data: null };
+          }),
       ]);
       if (cancelled) return;
       setPaidInRange((paidRes.data ?? []) as Invoice[]);
       setRefundedInRange((refundedRes.data ?? []) as Invoice[]);
+      const feesData = (feesRes as { data?: { fees_cents?: number; gross_cents?: number; net_cents?: number; count?: number } }).data;
+      setStripeFees(
+        feesData && typeof feesData.fees_cents === "number"
+          ? {
+              fees_cents: feesData.fees_cents,
+              gross_cents: feesData.gross_cents ?? 0,
+              net_cents: feesData.net_cents ?? 0,
+              count: feesData.count ?? 0,
+            }
+          : null,
+      );
       setLoading(false);
     })();
     return () => {
@@ -1259,6 +1284,13 @@ function ReportsTab({ vendorId }: { vendorId: string | null }) {
       refunds += inv.refunded_amount_cents ?? inv.total_cents;
     }
     const net = gross - refunds;
+    const fees = stripeFees?.fees_cents ?? 0;
+    // Net to bank: what actually lands after Stripe's processor cut.
+    // We use the invoice-derived gross/refunds (cash-basis cleaner)
+    // and just subtract the Stripe-derived fees, instead of using
+    // stripeFees.net_cents which only reflects type='charge' txns
+    // and wouldn't account for refunds we're tracking separately.
+    const netToBank = net - fees;
     const currency = paidInRange[0]?.currency ?? refundedInRange[0]?.currency ?? "usd";
     return {
       gross,
@@ -1266,12 +1298,40 @@ function ReportsTab({ vendorId }: { vendorId: string | null }) {
       subtotal,
       refunds,
       net,
+      fees,
+      netToBank,
       customers: customers.size,
       count: paidInRange.length,
       refundCount: refundedInRange.length,
       currency,
     };
-  }, [paidInRange, refundedInRange]);
+  }, [paidInRange, refundedInRange, stripeFees]);
+
+  // Bucket paid invoices by day for the sparkline. For ranges
+  // shorter than ~60 days we bucket per day; longer windows go
+  // weekly so a year-long view stays readable.
+  const sparkline = useMemo(() => {
+    const rangeMs = range.end.getTime() - range.start.getTime();
+    const bucketMs =
+      rangeMs > 60 * 24 * 60 * 60 * 1000 ? 7 * 24 * 60 * 60 * 1000 : 24 * 60 * 60 * 1000;
+    const buckets = Math.min(
+      Math.max(1, Math.ceil(rangeMs / bucketMs)),
+      120, // hard cap so all-time doesn't blow up
+    );
+    const values = new Array<number>(buckets).fill(0);
+    for (const inv of paidInRange) {
+      if (!inv.paid_at) continue;
+      const t = Date.parse(inv.paid_at);
+      if (Number.isNaN(t)) continue;
+      const idx = Math.min(
+        buckets - 1,
+        Math.floor((t - range.start.getTime()) / bucketMs),
+      );
+      if (idx >= 0) values[idx] += inv.total_cents;
+    }
+    const max = values.reduce((m, v) => (v > m ? v : m), 0);
+    return { values, max, buckets, weekly: bucketMs !== 24 * 60 * 60 * 1000 };
+  }, [paidInRange, range]);
 
   const downloadCsv = useCallback(() => {
     const headers = [
@@ -1372,7 +1432,7 @@ function ReportsTab({ vendorId }: { vendorId: string | null }) {
         <h2 className="text-[10px] uppercase tracking-[0.22em] text-muted-foreground font-semibold mb-3 pb-2 border-b border-foreground/[0.06]">
           Sales ({range.label.toLowerCase()})
         </h2>
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           <StatCard
             label="Gross"
             sub="Total invoiced + paid"
@@ -1388,9 +1448,18 @@ function ReportsTab({ vendorId }: { vendorId: string | null }) {
             value={`-${formatMoney(totals.refunds, totals.currency)}`}
           />
           <StatCard
-            label="Net"
-            sub="Gross − refunds"
-            value={formatMoney(totals.net, totals.currency)}
+            label="Stripe fees"
+            sub={
+              stripeFees == null
+                ? "Not connected"
+                : `${stripeFees.count.toLocaleString()} charge${stripeFees.count === 1 ? "" : "s"}`
+            }
+            value={`-${formatMoney(totals.fees, totals.currency)}`}
+          />
+          <StatCard
+            label="Net to bank"
+            sub="Gross − refunds − fees"
+            value={formatMoney(totals.netToBank, totals.currency)}
           />
           <StatCard
             label="Subtotal"
@@ -1407,7 +1476,23 @@ function ReportsTab({ vendorId }: { vendorId: string | null }) {
             sub={`${totals.customers} unique buyer${totals.customers === 1 ? "" : "s"}`}
             value={totals.count.toLocaleString()}
           />
+          <StatCard
+            label="Net (pre-fees)"
+            sub="Gross − refunds"
+            value={formatMoney(totals.net, totals.currency)}
+          />
         </div>
+      </section>
+
+      <section>
+        <h2 className="text-[10px] uppercase tracking-[0.22em] text-muted-foreground font-semibold mb-3 pb-2 border-b border-foreground/[0.06]">
+          Revenue trend ({sparkline.weekly ? "weekly" : "daily"})
+        </h2>
+        <Card>
+          <div className="p-5">
+            <RevenueSparkline data={sparkline} currency={totals.currency} />
+          </div>
+        </Card>
       </section>
 
       <section>
@@ -1467,6 +1552,66 @@ function ReportsTab({ vendorId }: { vendorId: string | null }) {
           </p>
         ) : null}
       </section>
+    </div>
+  );
+}
+
+// Lightweight SVG bar chart of revenue per bucket. No charting
+// library — straight rects so it stays tiny in the bundle and
+// composes with the editorial / soft-beige palette.
+function RevenueSparkline({
+  data,
+  currency,
+}: {
+  data: { values: number[]; max: number; buckets: number; weekly: boolean };
+  currency: string;
+}) {
+  const { values, max } = data;
+  if (max <= 0) {
+    return (
+      <div className="text-sm text-muted-foreground text-center py-6">
+        No paid invoices in this window yet.
+      </div>
+    );
+  }
+  const W = 600;
+  const H = 80;
+  const barW = W / values.length;
+  const gap = Math.min(barW * 0.2, 3);
+  return (
+    <div className="flex items-end gap-4 flex-wrap">
+      <div className="flex-1 min-w-[240px]">
+        <svg
+          viewBox={`0 0 ${W} ${H}`}
+          preserveAspectRatio="none"
+          className="w-full h-20"
+          aria-hidden
+        >
+          {values.map((v, i) => {
+            const h = (v / max) * (H - 2);
+            return (
+              <rect
+                key={i}
+                x={i * barW + gap / 2}
+                y={H - h}
+                width={Math.max(1, barW - gap)}
+                height={Math.max(1, h)}
+                fill="currentColor"
+                opacity={0.85}
+                className="text-foreground/70"
+              />
+            );
+          })}
+        </svg>
+      </div>
+      <div className="text-right">
+        <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground font-semibold">
+          Peak bucket
+        </div>
+        <div className="text-base font-editorial mt-1">
+          {formatMoney(max, currency)}
+        </div>
+      </div>
     </div>
   );
 }
