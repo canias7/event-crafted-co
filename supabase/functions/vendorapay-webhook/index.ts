@@ -276,6 +276,7 @@ serve(async (req: Request) => {
         if (!ch.payment_intent) break;
         const isFullRefund = ch.amount_refunded >= ch.amount;
         const nextStatus = isFullRefund ? "refunded" : "partial_refund";
+        const nowIso = new Date().toISOString();
 
         // Try each of the three record types — at most one should
         // match because the PI is uniquely owned. Each branch is
@@ -286,11 +287,19 @@ serve(async (req: Request) => {
           .eq("stripe_checkout_session_id", ch.payment_intent);
         await db
           .from("payment_links")
-          .update({ status: nextStatus, updated_at: new Date().toISOString() })
+          .update({ status: nextStatus, updated_at: nowIso })
           .eq("paid_payment_intent_id", ch.payment_intent);
+        // Invoices: also stamp refunded_amount_cents (cumulative
+        // per Stripe) and refunded_at so the Reports tab can show
+        // refunds as a discrete line and compute Net = Gross − Refunds.
         await db
           .from("invoices")
-          .update({ status: nextStatus, updated_at: new Date().toISOString() })
+          .update({
+            status: nextStatus,
+            refunded_amount_cents: ch.amount_refunded,
+            refunded_at: nowIso,
+            updated_at: nowIso,
+          })
           .eq("paid_payment_intent_id", ch.payment_intent);
         break;
       }
