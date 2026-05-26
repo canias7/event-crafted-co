@@ -13,7 +13,7 @@
 // them into vendorapay-onboard. No tab is hidden behind a gate —
 // the software is "there", even pre-verify.
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   ArrowDownRight,
@@ -1220,68 +1220,46 @@ function DocTemplateGallery({
   );
 }
 
-// Inline-editable invoice document. Renders the same layout vendors
-// will see in the downloaded PDF — business name + logo header, four-
-// column meta (Bill from / Bill to / Issued / Due), line items table,
-// totals, notes — with bare inputs over the styled chrome so it feels
-// like editing the document itself, not filling out a form.
+// Brand-only invoice template. Renders the full invoice document
+// (header + meta + items + totals + notes + footer) as a preview of
+// what'll land on the real PDF, with three editable controls:
+// business name, city, and logo. Everything else is static
+// placeholder text so the vendor can see the document shape without
+// having to fill anything in here — actual invoice creation happens
+// elsewhere.
 function InvoiceCanvas({
-  listing,
-  savedDefault,
-  billToName,
-  setBillToName,
-  billToEmail,
-  setBillToEmail,
-  issueDate,
-  setIssueDate,
-  dueDate,
-  setDueDate,
-  items,
-  updateRow,
-  addRow,
-  removeRow,
-  notes,
-  setNotes,
-  taxPct,
-  setTaxPct,
-  subtotalCents,
-  taxCents,
-  totalCents,
+  brandName,
+  setBrandName,
+  brandLocation,
+  setBrandLocation,
+  brandLogoUrl,
+  category,
+  onPickLogo,
+  uploadingLogo,
 }: {
-  listing: ListingOpt | null;
-  savedDefault: unknown;
-  billToName: string;
-  setBillToName: (v: string) => void;
-  billToEmail: string;
-  setBillToEmail: (v: string) => void;
-  issueDate: string;
-  setIssueDate: (v: string) => void;
-  dueDate: string;
-  setDueDate: (v: string) => void;
-  items: Array<{ name: string; qty: string; price: string }>;
-  updateRow: (i: number, k: "name" | "qty" | "price", v: string) => void;
-  addRow: () => void;
-  removeRow: (i: number) => void;
-  notes: string;
-  setNotes: (v: string) => void;
-  taxPct: string;
-  setTaxPct: (v: string) => void;
-  subtotalCents: number;
-  taxCents: number;
-  totalCents: number;
+  brandName: string;
+  setBrandName: (v: string) => void;
+  brandLocation: string;
+  setBrandLocation: (v: string) => void;
+  brandLogoUrl: string;
+  category: string | null;
+  onPickLogo: (file: File) => void | Promise<void>;
+  uploadingLogo: boolean;
 }) {
-  const businessName = listing?.business_name?.trim() || "[Your Business Name]";
   const accent = "rgb(30,80,180)";
-  // Inline input — looks like document text, only reveals an underline
-  // on hover/focus so the surface feels like a doc, not a form.
-  const inlineCls =
-    "bg-transparent border-0 outline-none rounded px-1 -mx-1 transition-colors hover:bg-foreground/[0.04] focus:bg-foreground/[0.05]";
+  const displayName = brandName.trim() || "[Your Business Name]";
+  const displayLocation = brandLocation.trim() || "[City, State]";
+  // Editable: bare input with a subtle hover/focus highlight so the
+  // vendor can tell it's interactive without it looking like a form.
+  const editableCls =
+    "bg-transparent border-0 outline-none rounded px-1 -mx-1 transition-colors hover:bg-foreground/[0.05] focus:bg-foreground/[0.08]";
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   return (
     <Card>
       <div className="px-4 pt-3 pb-2 flex items-center justify-between border-b border-foreground/5">
         <p className="text-[10px] uppercase tracking-[0.22em] font-semibold text-muted-foreground">
-          {savedDefault ? "Your invoice" : "New invoice"}
+          Invoice template
         </p>
         <span
           className="text-[10px] uppercase tracking-wider font-medium rounded-full px-2 py-0.5"
@@ -1296,32 +1274,57 @@ function InvoiceCanvas({
       </div>
 
       <div className="bg-white px-6 sm:px-10 py-8 sm:py-10">
-        {/* Header — business name + logo on the left, INVOICE on the right */}
         <header className="flex items-start justify-between gap-6 flex-wrap">
           <div className="flex items-center gap-4 min-w-0">
-            {listing?.logo_url ? (
-              <img
-                src={listing.logo_url}
-                alt={businessName}
-                className="w-14 h-14 rounded-xl object-cover ring-1 ring-foreground/10 shrink-0"
-              />
-            ) : (
-              <div
-                className="w-14 h-14 rounded-xl inline-flex items-center justify-center shrink-0"
-                style={{ background: "rgba(30,80,180,0.10)" }}
-              >
-                <CreditCard className="w-6 h-6" style={{ color: accent }} />
-              </div>
-            )}
-            <div className="min-w-0">
-              <h2 className="text-xl font-bold tracking-tight">{businessName}</h2>
-              {listing?.category || listing?.location ? (
-                <p className="text-[11px] mt-0.5 font-semibold text-muted-foreground tracking-wider">
-                  {[listing.category, listing.location].filter(Boolean).join(" · ")}
-                </p>
+            {/* Editable logo — click the avatar to pick a new image */}
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploadingLogo}
+              className="relative group w-14 h-14 rounded-xl ring-1 ring-foreground/10 shrink-0 overflow-hidden disabled:opacity-60"
+              title="Change logo"
+              aria-label="Change logo"
+            >
+              {brandLogoUrl ? (
+                <img
+                  src={brandLogoUrl}
+                  alt={displayName}
+                  className="w-full h-full object-cover"
+                />
               ) : (
-                <p className="text-[11px] mt-0.5 text-muted-foreground">
-                  Set your business details on /vendor/me
+                <div
+                  className="w-full h-full inline-flex items-center justify-center"
+                  style={{ background: "rgba(30,80,180,0.10)" }}
+                >
+                  <CreditCard className="w-6 h-6" style={{ color: accent }} />
+                </div>
+              )}
+              <span className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors flex items-center justify-center text-white text-[10px] font-semibold opacity-0 group-hover:opacity-100">
+                {uploadingLogo ? "…" : "Change"}
+              </span>
+            </button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                if (f) void onPickLogo(f);
+                e.target.value = "";
+              }}
+            />
+            <div className="min-w-0">
+              <input
+                type="text"
+                value={brandName}
+                onChange={(e) => setBrandName(e.target.value)}
+                placeholder="[Your Business Name]"
+                className={`block w-full text-xl font-bold tracking-tight ${editableCls}`}
+              />
+              {category && (
+                <p className="text-[11px] mt-1 font-semibold text-muted-foreground tracking-wider">
+                  {category}
                 </p>
               )}
               <div className="mt-2" style={{ width: 36, height: 2, background: accent }} />
@@ -1335,70 +1338,35 @@ function InvoiceCanvas({
               INVOICE
             </p>
             <p className="text-base font-bold mt-1 tabular-nums text-muted-foreground">
-              Draft
+              VND-XXXX
             </p>
           </div>
         </header>
 
-        {/* Meta — Bill from / Bill to / Issued / Due */}
+        {/* Meta — Bill from is editable; rest is static placeholder */}
         <section className="mt-8 grid grid-cols-1 sm:grid-cols-4 gap-5">
           <div>
             <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">
               Bill from
             </p>
-            <p className="text-sm font-medium mt-1.5">{businessName}</p>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              {listing?.location ?? "[Address on file]"}
-            </p>
-          </div>
-          <div>
-            <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">
-              Bill to
-            </p>
+            <p className="text-sm font-medium mt-1.5">{displayName}</p>
             <input
               type="text"
-              placeholder="Client name"
-              value={billToName}
-              onChange={(e) => setBillToName(e.target.value)}
-              className={`block w-full mt-1.5 text-sm font-medium ${inlineCls}`}
-            />
-            <input
-              type="email"
-              placeholder="client@email.com"
-              value={billToEmail}
-              onChange={(e) => setBillToEmail(e.target.value)}
-              className={`block w-full mt-0.5 text-xs text-muted-foreground ${inlineCls}`}
+              value={brandLocation}
+              onChange={(e) => setBrandLocation(e.target.value)}
+              placeholder="[City, State]"
+              className={`block w-full mt-0.5 text-xs text-muted-foreground ${editableCls}`}
             />
           </div>
-          <div>
-            <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">
-              Issued
-            </p>
-            <input
-              type="date"
-              value={issueDate}
-              onChange={(e) => setIssueDate(e.target.value)}
-              className={`block w-full mt-1.5 text-sm ${inlineCls}`}
-            />
-          </div>
-          <div>
-            <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">
-              Due
-            </p>
-            <input
-              type="date"
-              value={dueDate}
-              onChange={(e) => setDueDate(e.target.value)}
-              className={`block w-full mt-1.5 text-sm ${inlineCls}`}
-              placeholder="mm/dd/yyyy"
-            />
-          </div>
+          <StaticMeta label="Bill to" value="[Client name]" sub="[client@email.com]" />
+          <StaticMeta label="Issued" value="[Today]" />
+          <StaticMeta label="Due" value="[Due date]" />
         </section>
 
-        {/* Items table */}
+        {/* Items — static placeholder rows */}
         <section className="mt-10">
           <div
-            className="grid grid-cols-[1fr_64px_120px_120px_28px] gap-2 pb-2"
+            className="grid grid-cols-[1fr_64px_120px_120px] gap-2 pb-2"
             style={{ borderBottom: "1px solid #e8e3dd" }}
           >
             {(["Item", "Qty", "Unit price", "Amount"] as const).map((h, i) => (
@@ -1414,92 +1382,31 @@ function InvoiceCanvas({
                 {h}
               </div>
             ))}
-            <div />
           </div>
-          {items.map((row, idx) => {
-            const qty = parseInt(row.qty || "0", 10);
-            const price = parseFloat(row.price || "0");
-            const line = Number.isFinite(qty) && Number.isFinite(price) ? qty * price : 0;
-            return (
-              <div
-                key={idx}
-                className="grid grid-cols-[1fr_64px_120px_120px_28px] gap-2 py-2.5 items-center"
-                style={{ borderBottom: "1px solid rgba(232,227,221,0.6)" }}
-              >
-                <input
-                  type="text"
-                  placeholder="Service or item"
-                  value={row.name}
-                  onChange={(e) => updateRow(idx, "name", e.target.value)}
-                  className={`text-sm ${inlineCls}`}
-                />
-                <input
-                  type="number"
-                  min="1"
-                  step="1"
-                  value={row.qty}
-                  onChange={(e) => updateRow(idx, "qty", e.target.value)}
-                  className={`text-sm text-right tabular-nums ${inlineCls}`}
-                />
-                <div className="flex items-center justify-end gap-0.5 tabular-nums">
-                  <span className="text-sm text-muted-foreground">$</span>
-                  <input
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    placeholder="0.00"
-                    value={row.price}
-                    onChange={(e) => updateRow(idx, "price", e.target.value)}
-                    className={`text-sm text-right tabular-nums w-24 ${inlineCls}`}
-                  />
-                </div>
-                <div className="text-sm font-semibold text-right tabular-nums">
-                  ${line.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                </div>
-                <button
-                  type="button"
-                  onClick={() => removeRow(idx)}
-                  disabled={items.length === 1}
-                  className="text-muted-foreground hover:text-destructive disabled:opacity-30 disabled:cursor-not-allowed"
-                  title="Remove row"
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                </button>
-              </div>
-            );
-          })}
-          <button
-            type="button"
-            onClick={addRow}
-            className="mt-3 text-xs font-medium text-muted-foreground hover:text-foreground inline-flex items-center gap-1.5"
-          >
-            <Plus className="w-3.5 h-3.5" />
-            Add line item
-          </button>
+          {[1, 2, 3].map((n) => (
+            <div
+              key={n}
+              className="grid grid-cols-[1fr_64px_120px_120px] gap-2 py-2.5 items-center text-muted-foreground"
+              style={{ borderBottom: "1px solid rgba(232,227,221,0.6)" }}
+            >
+              <span className="text-sm">[Service or product {n}]</span>
+              <span className="text-sm text-right tabular-nums">1</span>
+              <span className="text-sm text-right tabular-nums">$0.00</span>
+              <span className="text-sm text-right tabular-nums font-semibold">$0.00</span>
+            </div>
+          ))}
         </section>
 
-        {/* Totals */}
+        {/* Totals — static */}
         <section className="mt-6 flex justify-end">
           <div className="w-full sm:w-[280px] text-sm space-y-1.5">
             <div className="flex justify-between text-muted-foreground">
               <span>Subtotal</span>
-              <span className="tabular-nums">{formatMoney(subtotalCents)}</span>
+              <span className="tabular-nums">$0.00</span>
             </div>
-            <div className="flex justify-between items-center text-muted-foreground">
-              <span className="flex items-center gap-1.5">
-                <span>Tax</span>
-                <input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  placeholder="0"
-                  value={taxPct}
-                  onChange={(e) => setTaxPct(e.target.value)}
-                  className={`w-12 text-right tabular-nums ${inlineCls}`}
-                />
-                <span>%</span>
-              </span>
-              <span className="tabular-nums">{formatMoney(taxCents)}</span>
+            <div className="flex justify-between text-muted-foreground">
+              <span>Tax</span>
+              <span className="tabular-nums">$0.00</span>
             </div>
             <div
               className="flex items-center justify-between pt-3 mt-2"
@@ -1515,24 +1422,20 @@ function InvoiceCanvas({
                 className="font-bold tabular-nums text-lg"
                 style={{ color: accent }}
               >
-                {formatMoney(totalCents)}
+                $0.00
               </span>
             </div>
           </div>
         </section>
 
-        {/* Notes */}
+        {/* Notes — static placeholder */}
         <section className="mt-10 pt-6" style={{ borderTop: "1px solid #e8e3dd" }}>
           <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">
             Notes
           </p>
-          <textarea
-            placeholder="Scope, delivery details, payment schedule…"
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-            rows={2}
-            className={`block w-full mt-2 text-sm leading-relaxed resize-none ${inlineCls}`}
-          />
+          <p className="text-sm leading-relaxed mt-2 text-muted-foreground">
+            [Add any scope details, delivery notes, or schedule expectations here so the recipient knows what's included.]
+          </p>
         </section>
 
         <footer
@@ -1549,11 +1452,30 @@ function InvoiceCanvas({
   );
 }
 
+function StaticMeta({
+  label,
+  value,
+  sub,
+}: {
+  label: string;
+  value: string;
+  sub?: string;
+}) {
+  return (
+    <div>
+      <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">
+        {label}
+      </p>
+      <p className="text-sm mt-1.5 text-muted-foreground">{value}</p>
+      {sub && <p className="text-xs text-muted-foreground mt-0.5">{sub}</p>}
+    </div>
+  );
+}
+
 function InvoicesTab({
   vendorId,
   listing,
   invoices,
-  status,
   onChanged,
 }: {
   vendorId: string | null;
@@ -1562,214 +1484,104 @@ function InvoicesTab({
   status: Status | null;
   onChanged: () => void;
 }) {
-  const [billToName, setBillToName] = useState("");
-  const [billToEmail, setBillToEmail] = useState("");
-  const [issueDate, setIssueDate] = useState(new Date().toISOString().slice(0, 10));
-  const [dueDate, setDueDate] = useState("");
-  const [notes, setNotes] = useState("");
-  const [taxPct, setTaxPct] = useState("");
-  const [items, setItems] = useState<Array<{ name: string; qty: string; price: string }>>([
-    { name: "", qty: "1", price: "" },
-  ]);
-  const [submitting, setSubmitting] = useState(false);
   const [sendingId, setSendingId] = useState<string | null>(null);
 
-  // Vendor's saved default invoice (lineItems + notes + taxPct).
-  // null until the initial fetch completes; the composer is
-  // hydrated from this when defaultsLoaded flips true.
-  interface SavedDefault {
-    lineItems: Array<{ name: string; qty: number; price: number }>;
-    notes: string;
-    taxPct: number;
-  }
-  const [savedDefault, setSavedDefault] = useState<SavedDefault | null>(null);
-  const [savingDefault, setSavingDefault] = useState(false);
+  // Brand fields — the only editable parts of the invoice template
+  // surface today. Initialized from the selected listing; saving
+  // upserts back into vendor_profiles so future invoices (and any
+  // public invoice page) read the new values.
+  const [brandName, setBrandName] = useState(listing?.business_name ?? "");
+  const [brandLocation, setBrandLocation] = useState(listing?.location ?? "");
+  const [brandLogoUrl, setBrandLogoUrl] = useState(listing?.logo_url ?? "");
+  const [savingBrand, setSavingBrand] = useState(false);
+  const [uploadingLogo, setUploadingLogo] = useState(false);
+  const initialBrandRef = useRef({
+    name: listing?.business_name ?? "",
+    location: listing?.location ?? "",
+    logoUrl: listing?.logo_url ?? "",
+  });
 
-  // After savedDefault has loaded, hydrate the always-visible
-  // composer with it (or the blank placeholder if the vendor has
-  // never saved one). Runs once on initial load and again whenever
-  // the saved default changes (e.g. after the vendor saves a new
-  // one for this listing).
-  const [defaultsLoaded, setDefaultsLoaded] = useState(false);
+  // Resync when the vendor picks a different listing.
   useEffect(() => {
-    if (!vendorId) {
-      setSavedDefault(null);
-      setDefaultsLoaded(false);
+    setBrandName(listing?.business_name ?? "");
+    setBrandLocation(listing?.location ?? "");
+    setBrandLogoUrl(listing?.logo_url ?? "");
+    initialBrandRef.current = {
+      name: listing?.business_name ?? "",
+      location: listing?.location ?? "",
+      logoUrl: listing?.logo_url ?? "",
+    };
+  }, [listing?.id, listing?.business_name, listing?.location, listing?.logo_url]);
+
+  const brandDirty =
+    brandName !== initialBrandRef.current.name ||
+    brandLocation !== initialBrandRef.current.location ||
+    brandLogoUrl !== initialBrandRef.current.logoUrl;
+
+  const uploadLogo = useCallback(
+    async (file: File) => {
+      if (!vendorId) {
+        toast.error("Pick a listing first.");
+        return;
+      }
+      if (!file.type.startsWith("image/")) {
+        toast.error("Logo must be an image file.");
+        return;
+      }
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error("Logo must be under 5 MB.");
+        return;
+      }
+      setUploadingLogo(true);
+      const ext = file.name.split(".").pop() ?? "jpg";
+      const path = `${vendorId}/logo-${Date.now()}.${ext}`;
+      const { error: upErr } = await supabase.storage
+        .from("vendor-portfolios")
+        .upload(path, file, { upsert: true, contentType: file.type });
+      if (upErr) {
+        setUploadingLogo(false);
+        toast.error("Couldn't upload logo", { description: upErr.message });
+        return;
+      }
+      const { data: pub } = supabase.storage.from("vendor-portfolios").getPublicUrl(path);
+      setBrandLogoUrl(pub.publicUrl);
+      setUploadingLogo(false);
+      toast.success("Logo updated", { description: "Click Save to apply." });
+    },
+    [vendorId],
+  );
+
+  const saveBrand = useCallback(async () => {
+    if (!vendorId || savingBrand || !brandDirty) return;
+    setSavingBrand(true);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error } = await (supabase as any)
+      .from("vendor_profiles")
+      .update({
+        business_name: brandName.trim() || null,
+        location: brandLocation.trim() || null,
+        logo_url: brandLogoUrl || null,
+      })
+      .eq("id", vendorId);
+    setSavingBrand(false);
+    if (error) {
+      toast.error("Couldn't save", { description: error.message });
       return;
     }
-    let cancelled = false;
-    setDefaultsLoaded(false);
-    (async () => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data, error } = await (supabase as any)
-        .from("vendor_invoice_defaults")
-        .select("template_data")
-        .eq("vendor_id", vendorId)
-        .maybeSingle();
-      if (cancelled) return;
-      setSavedDefault(!error && data?.template_data ? (data.template_data as SavedDefault) : null);
-      setDefaultsLoaded(true);
-    })();
-    return () => {
-      cancelled = true;
+    initialBrandRef.current = {
+      name: brandName,
+      location: brandLocation,
+      logoUrl: brandLogoUrl,
     };
-  }, [vendorId]);
+    toast.success("Business info saved");
+    onChanged();
+  }, [vendorId, savingBrand, brandDirty, brandName, brandLocation, brandLogoUrl, onChanged]);
 
-  // Reset helper — drops bill-to / dates, refills items + notes +
-  // tax from the saved default if any, otherwise from the blank
-  // placeholder so the canvas always shows a starting structure.
-  const resetToDefault = useCallback(() => {
-    setBillToName("");
-    setBillToEmail("");
-    setIssueDate(new Date().toISOString().slice(0, 10));
-    setDueDate("");
-    if (savedDefault) {
-      setItems(
-        savedDefault.lineItems.map((it) => ({
-          name: it.name,
-          qty: String(it.qty),
-          price: it.price ? String(it.price) : "",
-        })),
-      );
-      setTaxPct(savedDefault.taxPct ? String(savedDefault.taxPct) : "");
-      setNotes(savedDefault.notes ?? "");
-    } else {
-      const tpl = INVOICE_TEMPLATES[0];
-      setItems(
-        tpl.lineItems.map((it) => ({
-          name: it.name,
-          qty: String(it.qty),
-          price: it.price ? String(it.price) : "",
-        })),
-      );
-      setTaxPct(tpl.taxPct ? String(tpl.taxPct) : "");
-      setNotes(tpl.notes ?? "");
-    }
-  }, [savedDefault]);
-
-  // Hydrate the form once on first load (and on listing switch).
-  useEffect(() => {
-    if (!defaultsLoaded) return;
-    resetToDefault();
-    // We intentionally only re-run when defaultsLoaded flips, not
-    // on every resetToDefault identity change — avoids stomping the
-    // vendor's in-progress edits when savedDefault updates after a
-    // "Save as default" click.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [defaultsLoaded, vendorId]);
-
-  const subtotalCents = items.reduce((sum, it) => {
-    const q = parseInt(it.qty || "0", 10);
-    const p = Math.round(parseFloat(it.price || "0") * 100);
-    return sum + (Number.isFinite(q) && Number.isFinite(p) ? q * p : 0);
-  }, 0);
-  const taxRateBps = Math.round(parseFloat(taxPct || "0") * 100);
-  const taxCents = Math.round((subtotalCents * taxRateBps) / 10_000);
-  const totalCents = subtotalCents + taxCents;
-
-  const addRow = () => setItems((r) => [...r, { name: "", qty: "1", price: "" }]);
-  const removeRow = (i: number) => setItems((r) => r.filter((_, idx) => idx !== i));
-  const updateRow = (i: number, key: "name" | "qty" | "price", v: string) =>
-    setItems((r) => r.map((row, idx) => (idx === i ? { ...row, [key]: v } : row)));
-
-
-  const create = useCallback(
-    async (alsoSend: boolean) => {
-      if (!vendorId || submitting) return;
-      if (totalCents < 50) {
-        toast.error("Invoice total must be at least $0.50");
-        return;
-      }
-      if (alsoSend && !billToEmail.trim()) {
-        toast.error("Bill-to email required to send");
-        return;
-      }
-      const parsedItems: InvoiceLineItem[] = items
-        .map((it) => ({
-          name: it.name.trim(),
-          qty: parseInt(it.qty || "0", 10),
-          unit_price_cents: Math.round(parseFloat(it.price || "0") * 100),
-        }))
-        .filter((it) => it.name && it.qty > 0 && it.unit_price_cents > 0)
-        .map((it) => ({
-          name: it.name,
-          qty: it.qty,
-          unit_price_cents: it.unit_price_cents,
-          total_cents: it.qty * it.unit_price_cents,
-        }));
-      if (parsedItems.length === 0) {
-        toast.error("Add at least one line item");
-        return;
-      }
-
-      setSubmitting(true);
-      const { data: userData } = await supabase.auth.getUser();
-      if (!userData?.user) {
-        toast.error("Sign in required");
-        setSubmitting(false);
-        return;
-      }
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data: newRow, error } = await (supabase as any)
-        .from("invoices")
-        .insert({
-          vendor_id: vendorId,
-          bill_to_name: billToName.trim() || null,
-          bill_to_email: billToEmail.trim() || null,
-          issue_date: issueDate,
-          due_date: dueDate || null,
-          notes: notes.trim() || null,
-          line_items: parsedItems,
-          subtotal_cents: subtotalCents,
-          tax_rate_bps: taxRateBps,
-          tax_cents: taxCents,
-          total_cents: totalCents,
-          status: alsoSend ? "sent" : "draft",
-          sent_at: alsoSend ? new Date().toISOString() : null,
-          invoice_number: "",
-          created_by: userData.user.id,
-        })
-        .select("id, slug")
-        .single();
-      if (error || !newRow) {
-        setSubmitting(false);
-        toast.error("Couldn't create invoice", { description: error?.message });
-        return;
-      }
-      if (alsoSend) {
-        const { error: sendErr } = await supabase.functions.invoke("vendorapay-invoice-send", {
-          body: { invoice_id: newRow.id },
-        });
-        if (sendErr) {
-          toast.warning("Invoice saved but email failed", { description: sendErr.message });
-        } else {
-          toast.success("Invoice sent", {
-            description: `Emailed to ${billToEmail.trim()}.`,
-          });
-        }
-      } else {
-        toast.success("Invoice draft saved");
-      }
-      setSubmitting(false);
-      resetToDefault();
-      onChanged();
-    },
-    [
-      vendorId,
-      submitting,
-      totalCents,
-      billToEmail,
-      billToName,
-      items,
-      issueDate,
-      dueDate,
-      notes,
-      subtotalCents,
-      taxRateBps,
-      taxCents,
-      onChanged,
-    ],
-  );
+  const resetBrand = useCallback(() => {
+    setBrandName(initialBrandRef.current.name);
+    setBrandLocation(initialBrandRef.current.location);
+    setBrandLogoUrl(initialBrandRef.current.logoUrl);
+  }, []);
 
   const sendInvoice = useCallback(async (id: string) => {
     setSendingId(id);
@@ -1806,104 +1618,51 @@ function InvoicesTab({
   }, []);
 
   // Persist current composer state as the vendor's default for this
-  // listing. Bill-to / dates intentionally excluded — those are
-  // per-invoice, not per-vendor. Upserts so repeated saves overwrite.
-  const saveAsDefault = useCallback(async () => {
-    if (!vendorId || savingDefault) return;
-    setSavingDefault(true);
-    const payload: SavedDefault = {
-      lineItems: items
-        .map((it) => ({
-          name: it.name.trim(),
-          qty: parseInt(it.qty || "0", 10) || 0,
-          price: parseFloat(it.price || "0") || 0,
-        }))
-        .filter((it) => it.name.length > 0),
-      notes: notes.trim(),
-      taxPct: parseFloat(taxPct || "0") || 0,
-    };
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error } = await (supabase as any)
-      .from("vendor_invoice_defaults")
-      .upsert({ vendor_id: vendorId, template_data: payload });
-    setSavingDefault(false);
-    if (error) {
-      toast.error("Couldn't save default", { description: error.message });
-      return;
-    }
-    setSavedDefault(payload);
-    toast.success("Default saved", {
-      description: "Your next invoice will start from this template.",
-    });
-  }, [vendorId, items, notes, taxPct, savingDefault]);
-
   return (
     <div className="space-y-4">
-      {/* Always-visible composer — the invoice is the page, ready
-          to edit on land. Pre-filled from the vendor's saved default
-          (if any) or the blank placeholder. AI builder badge in the
-          header keeps the roadmap visible while we work toward
-          per-field inline editing on the styled canvas. */}
+      {/* Brand-editable invoice template — only the Bill From block
+          (business name + city) and the Logo are interactive. The
+          rest is a static visual reference for the vendor so they
+          can see how their saved branding will land on the real
+          document. Saving writes back to vendor_profiles so the
+          public invoice page picks it up next time. */}
       <InvoiceCanvas
-        listing={listing}
-        savedDefault={savedDefault}
-        billToName={billToName}
-        setBillToName={setBillToName}
-        billToEmail={billToEmail}
-        setBillToEmail={setBillToEmail}
-        issueDate={issueDate}
-        setIssueDate={setIssueDate}
-        dueDate={dueDate}
-        setDueDate={setDueDate}
-        items={items}
-        updateRow={updateRow}
-        addRow={addRow}
-        removeRow={removeRow}
-        notes={notes}
-        setNotes={setNotes}
-        taxPct={taxPct}
-        setTaxPct={setTaxPct}
-        subtotalCents={subtotalCents}
-        taxCents={taxCents}
-        totalCents={totalCents}
+        brandName={brandName}
+        setBrandName={setBrandName}
+        brandLocation={brandLocation}
+        setBrandLocation={setBrandLocation}
+        brandLogoUrl={brandLogoUrl}
+        category={listing?.category ?? null}
+        onPickLogo={uploadLogo}
+        uploadingLogo={uploadingLogo}
       />
       <Card>
-        <div className="p-4">
-          <div className="flex gap-2 flex-wrap">
-              <Button onClick={() => create(true)} disabled={submitting} className="rounded-full">
-                {submitting ? (
-                  <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
-                ) : (
-                  <Mail className="w-3.5 h-3.5 mr-1.5" />
-                )}
-                Save & send
-              </Button>
-              <Button
-                variant="outline"
-                onClick={() => create(false)}
-                disabled={submitting}
-                className="rounded-full"
-              >
-                Save draft
-              </Button>
-              <Button
-                variant="outline"
-                onClick={saveAsDefault}
-                disabled={savingDefault || !vendorId}
-                className="rounded-full ml-auto"
-                title="Save current items, notes, and tax as the starting point for future invoices"
-              >
-                {savingDefault ? (
-                  <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
-                ) : null}
-                {savedDefault ? "Update my default" : "Save as my default"}
-              </Button>
-              <Button variant="ghost" onClick={resetToDefault} className="rounded-full">
-                Reset
-              </Button>
-            </div>
+        <div className="p-4 flex items-center justify-between flex-wrap gap-3">
+          <p className="text-xs text-muted-foreground">
+            Only your business name, city, and logo are editable here. They show up on every invoice you send.
+          </p>
+          <div className="flex gap-2">
+            <Button
+              variant="ghost"
+              onClick={resetBrand}
+              disabled={!brandDirty}
+              className="rounded-full"
+            >
+              Reset
+            </Button>
+            <Button
+              onClick={saveBrand}
+              disabled={savingBrand || !brandDirty || !vendorId}
+              className="rounded-full"
+            >
+              {savingBrand ? (
+                <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
+              ) : null}
+              Save business info
+            </Button>
           </div>
-        </Card>
+        </div>
+      </Card>
 
       {/* Invoice list */}
       {invoices.length === 0 ? (
