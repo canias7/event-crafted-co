@@ -44,11 +44,25 @@ import { useVendorPlan, type VendorTier } from "@/hooks/useVendorPlan";
 import { DashboardSidebar } from "@/components/shared/DashboardSidebar";
 import { MobileNav } from "@/components/shared/MobileNav";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { vendorNavItems } from "@/data/navItems";
 import {
   ListingPicker,
   type ListingOpt,
 } from "@/components/vendor/ListingPicker";
+import {
+  CONTRACT_TEMPLATES,
+  INVOICE_TEMPLATES,
+  PROPOSAL_TEMPLATES,
+  type DocTemplate,
+  type InvoiceTemplate,
+} from "@/data/vendorapayTemplates";
 
 interface Balance {
   available_cents: number;
@@ -1065,45 +1079,240 @@ function FilesTab(props: {
 
       {fileTab === "invoices" ? (
         <InvoicesTab {...props} />
-      ) : (
-        <FilesComingSoon label={meta.label} description={meta.description} icon={meta.icon} />
-      )}
+      ) : fileTab === "contracts" ? (
+        <DocTemplateGallery
+          kind="Contract"
+          templates={CONTRACT_TEMPLATES}
+          intro={meta.description}
+        />
+      ) : fileTab === "proposals" ? (
+        <DocTemplateGallery
+          kind="Proposal"
+          templates={PROPOSAL_TEMPLATES}
+          intro={meta.description}
+        />
+      ) : null}
     </div>
   );
 }
 
-function FilesComingSoon({
-  label,
-  description,
-  icon: Icon,
+// Picker shown above the invoice list. Five starter templates that
+// the vendor can drop into the composer in one click — pre-fills
+// line items, tax rate, and notes. The AI generator slots in here
+// later; the data shape doesn't have to change.
+function InvoiceTemplatePicker({
+  onPick,
 }: {
-  label: string;
-  description: string;
-  icon: typeof Wallet;
+  onPick: (tpl: InvoiceTemplate) => void;
 }) {
+  const [preview, setPreview] = useState<InvoiceTemplate | null>(null);
   return (
-    <Card>
-      <div className="flex flex-col items-center text-center py-10 px-6">
-        <div
-          className="w-12 h-12 rounded-2xl inline-flex items-center justify-center mb-4"
-          style={{ background: "rgba(255,138,76,0.15)" }}
-        >
-          <Icon className="w-5 h-5" style={{ color: "#c4541e" }} />
+    <>
+      <Card>
+        <div className="p-5">
+          <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
+            <div>
+              <h3 className="text-sm font-semibold">Start from a template</h3>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Five starter invoices for common event services. Pick one to skip the blank page.
+              </p>
+            </div>
+            <span
+              className="text-[10px] uppercase tracking-wider font-medium rounded-full px-2 py-0.5"
+              style={{
+                background: "rgba(255,138,76,0.12)",
+                color: "#c4541e",
+                border: "0.5px solid rgba(255,138,76,0.3)",
+              }}
+            >
+              AI builder soon
+            </span>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2.5">
+            {INVOICE_TEMPLATES.map((tpl) => (
+              <button
+                key={tpl.id}
+                type="button"
+                onClick={() => setPreview(tpl)}
+                className="text-left rounded-xl px-3.5 py-3 transition-colors hover:bg-foreground/5"
+                style={{ border: "0.5px solid rgba(0,0,0,0.08)" }}
+              >
+                <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">
+                  {tpl.category}
+                </p>
+                <p className="text-sm font-semibold mt-1 truncate">{tpl.title}</p>
+                <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                  {tpl.summary}
+                </p>
+              </button>
+            ))}
+          </div>
         </div>
-        <h3 className="text-base font-semibold">{label}</h3>
-        <p className="text-sm text-muted-foreground mt-1 max-w-md">{description}</p>
+      </Card>
+
+      <Dialog open={!!preview} onOpenChange={(o) => !o && setPreview(null)}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>{preview?.title}</DialogTitle>
+            <DialogDescription>{preview?.summary}</DialogDescription>
+          </DialogHeader>
+          {preview ? (
+            <div className="space-y-4">
+              <div className="rounded-xl overflow-hidden" style={{ border: "0.5px solid rgba(0,0,0,0.08)" }}>
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="text-left text-[11px] uppercase tracking-wider text-muted-foreground bg-foreground/5">
+                      <th className="px-3 py-2 font-medium">Item</th>
+                      <th className="px-3 py-2 font-medium text-right w-16">Qty</th>
+                      <th className="px-3 py-2 font-medium text-right w-24">Unit</th>
+                      <th className="px-3 py-2 font-medium text-right w-24">Total</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {preview.lineItems.map((it, i) => (
+                      <tr key={i} className="border-t border-foreground/5">
+                        <td className="px-3 py-2">{it.name}</td>
+                        <td className="px-3 py-2 text-right tnum">{it.qty}</td>
+                        <td className="px-3 py-2 text-right tnum">${it.price.toLocaleString()}</td>
+                        <td className="px-3 py-2 text-right tnum font-medium">
+                          ${(it.qty * it.price).toLocaleString()}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              {preview.notes ? (
+                <div className="text-xs text-muted-foreground">
+                  <span className="font-medium text-foreground">Notes:</span> {preview.notes}
+                </div>
+              ) : null}
+              <div className="flex justify-end gap-2 pt-1">
+                <Button variant="outline" onClick={() => setPreview(null)} className="rounded-full">
+                  Close
+                </Button>
+                <Button
+                  onClick={() => {
+                    onPick(preview);
+                    setPreview(null);
+                  }}
+                  className="rounded-full"
+                >
+                  Use this template
+                </Button>
+              </div>
+            </div>
+          ) : null}
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+}
+
+// Long-form template gallery used by Contracts and Proposals. The
+// vendor previews any template in a modal and copies the body to
+// their own document for now — the dedicated builders are still
+// upstream. AI generation lands here next.
+function DocTemplateGallery({
+  kind,
+  templates,
+  intro,
+}: {
+  kind: "Contract" | "Proposal";
+  templates: DocTemplate[];
+  intro: string;
+}) {
+  const [preview, setPreview] = useState<DocTemplate | null>(null);
+  const [copied, setCopied] = useState(false);
+
+  const copyContent = useCallback(async (content: string) => {
+    try {
+      await navigator.clipboard.writeText(content);
+      setCopied(true);
+      toast.success("Template copied to clipboard");
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      toast.error("Couldn't copy to clipboard");
+    }
+  }, []);
+
+  return (
+    <>
+      <div className="flex items-center justify-between flex-wrap gap-2">
+        <p className="text-sm text-muted-foreground">{intro}</p>
         <span
-          className="mt-4 inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-medium tracking-wider uppercase"
+          className="text-[10px] uppercase tracking-wider font-medium rounded-full px-2 py-0.5"
           style={{
             background: "rgba(255,138,76,0.12)",
             color: "#c4541e",
             border: "0.5px solid rgba(255,138,76,0.3)",
           }}
         >
-          Coming soon
+          AI builder soon
         </span>
       </div>
-    </Card>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+        {templates.map((tpl) => (
+          <button
+            key={tpl.id}
+            type="button"
+            onClick={() => setPreview(tpl)}
+            className="text-left rounded-2xl p-4 transition-colors hover:bg-foreground/5"
+            style={{
+              background: "rgba(255,253,250,0.7)",
+              border: "0.5px solid rgba(255,138,76,0.22)",
+            }}
+          >
+            <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">
+              {tpl.category}
+            </p>
+            <p className="text-sm font-semibold mt-1">{tpl.title}</p>
+            <p className="text-xs text-muted-foreground mt-1.5 line-clamp-3">
+              {tpl.summary}
+            </p>
+            <p className="text-[11px] font-medium text-foreground/70 mt-3">
+              Preview →
+            </p>
+          </button>
+        ))}
+      </div>
+
+      <Dialog open={!!preview} onOpenChange={(o) => !o && setPreview(null)}>
+        <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{preview?.title}</DialogTitle>
+            <DialogDescription>
+              {kind} template · {preview?.category}
+            </DialogDescription>
+          </DialogHeader>
+          {preview ? (
+            <div className="space-y-4">
+              <pre
+                className="text-xs leading-relaxed font-mono whitespace-pre-wrap rounded-xl p-4 bg-foreground/[0.03]"
+                style={{ border: "0.5px solid rgba(0,0,0,0.06)" }}
+              >
+                {preview.content}
+              </pre>
+              <div className="flex justify-end gap-2 pt-1">
+                <Button
+                  variant="outline"
+                  onClick={() => setPreview(null)}
+                  className="rounded-full"
+                >
+                  Close
+                </Button>
+                <Button
+                  onClick={() => copyContent(preview.content)}
+                  className="rounded-full"
+                >
+                  {copied ? "Copied" : "Copy template"}
+                </Button>
+              </div>
+            </div>
+          ) : null}
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
 
@@ -1288,8 +1497,25 @@ function InvoicesTab({
     toast.success("Link copied", { description: url });
   }, []);
 
+  // Drop a template into the composer. Opens the form and prefills
+  // line items, tax rate, and notes; the vendor fills in the
+  // bill-to and (optionally) tweaks before sending.
+  const applyTemplate = useCallback((tpl: InvoiceTemplate) => {
+    setItems(
+      tpl.lineItems.map((it) => ({
+        name: it.name,
+        qty: String(it.qty),
+        price: it.price ? String(it.price) : "",
+      })),
+    );
+    setTaxPct(tpl.taxPct ? String(tpl.taxPct) : "");
+    setNotes(tpl.notes ?? "");
+    setCreating(true);
+  }, []);
+
   return (
     <div className="space-y-4">
+      {!creating && <InvoiceTemplatePicker onPick={applyTemplate} />}
       {creating ? (
         <Card>
           <div className="p-5 space-y-3">
