@@ -2415,15 +2415,22 @@ function CustomersTab({
     void refresh();
   }, [refresh]);
 
-  // Switching listings has to invalidate every open dialog state —
-  // otherwise a Send invoice / Edit / Recurring panel opened under
-  // listing A would submit against listing B's vendor_id, creating
-  // phantom customers or re-parenting rows.
+  // Switching listings has to invalidate every open dialog state
+  // AND clear the displayed rows — otherwise a Send invoice / Edit
+  // / Recurring panel opened under listing A would submit against
+  // listing B's vendor_id, creating phantom customers or re-
+  // parenting rows. Clearing rows/recurringRules also closes the
+  // refresh-in-flight window where row-level action buttons would
+  // still operate on A's data while vendorId has already flipped
+  // to B.
   useEffect(() => {
     setEditing(null);
     setSendTarget(null);
     setRecurringTarget(null);
     setExpandedId(null);
+    setRows([]);
+    setRecurringRules([]);
+    setLoading(true);
   }, [vendorId]);
 
   const startNew = () => {
@@ -3201,9 +3208,20 @@ function SendInvoiceDialog({
       email: normalizedEmail,
     };
     if (trimmedName) customerPayload.name = trimmedName;
-    await db.from("vendor_customers").upsert(customerPayload, {
-      onConflict: "vendor_id,email",
-    });
+    // Surface upsert failures rather than discarding them — if the
+    // customer-directory write fails (RLS edge case, unique race,
+    // network) and we silently proceed, the invoice is created with
+    // a normalized email that won't join to any customer row, so
+    // the CustomersTab per-customer invoice list misses it (exactly
+    // the symptom the lowercase normalization was added to prevent).
+    const { error: custErr } = await db
+      .from("vendor_customers")
+      .upsert(customerPayload, { onConflict: "vendor_id,email" });
+    if (custErr) {
+      setSubmitting(false);
+      toast.error("Couldn't save customer", { description: custErr.message });
+      return;
+    }
     // Insert the invoice — invoice_number is filled in by a DB
     // trigger when status flips to 'sent'.
     const { data: newRow, error } = await db
@@ -3238,6 +3256,17 @@ function SendInvoiceDialog({
     );
     setSubmitting(false);
     if (sendErr) {
+      // Roll the invoice back to a true draft so the toast doesn't
+      // lie: the DB-side trigger already burned an INV-#### number
+      // and stamped status='sent'/sent_at=now on the insert, so we
+      // need to undo that. The number itself stays (trigger doesn't
+      // reverse), but the vendor's invoice list now correctly shows
+      // a draft they can resend manually instead of a Sent row that
+      // never reached the buyer.
+      await db
+        .from("invoices")
+        .update({ status: "draft", sent_at: null })
+        .eq("id", newRow.id);
       toast.warning("Saved as draft — email failed", { description: sendErr.message });
     } else {
       toast.success("Invoice sent", {

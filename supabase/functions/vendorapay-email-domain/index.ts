@@ -156,11 +156,14 @@ serve(async (req: Request) => {
       if (!isValidDomain(domain)) {
         return json(400, { error: "invalid_domain" });
       }
-      // If the vendor already has a domain registered, clean up
-      // the previous Resend resource before adding the new one —
-      // otherwise the old domain keeps consuming our Resend quota
-      // forever (the upsert overwrites the row but the Resend-side
-      // domain stays registered with no DB pointer).
+      // Snapshot the previously-installed resend_domain_id so we
+      // can clean it up AFTER the new domain is fully provisioned.
+      // Order matters: deleting the old one first opens a window
+      // where the DB still points at a deleted resource AND
+      // vendorapay-notify reading status='verified' would build
+      // From: noreply@<deleted-domain> and Resend would reject the
+      // send. Also, if the new POST fails we'd be left with
+      // nothing.
       const { data: existing } = await adminClient
         .from("vendor_email_domains")
         .select("resend_domain_id")
@@ -168,10 +171,6 @@ serve(async (req: Request) => {
         .maybeSingle();
       const existingId = (existing as { resend_domain_id?: string } | null)
         ?.resend_domain_id;
-      if (existingId) {
-        // Best-effort — if Resend 404s the row is already gone.
-        await resend("DELETE", `/domains/${existingId}`);
-      }
 
       // Hand off to Resend. Their API is idempotent by name in the
       // sense that re-adding an existing domain returns 422 with
@@ -184,17 +183,37 @@ serve(async (req: Request) => {
         });
       }
       const d = r.data as ResendDomain;
-      await adminClient.from("vendor_email_domains").upsert(
-        {
-          vendor_id,
-          domain: d.name,
-          resend_domain_id: d.id,
-          dns_records: d.records ?? [],
-          status: d.status ?? "pending",
-          verified_at: null,
-        },
-        { onConflict: "vendor_id" },
-      );
+      const { error: upsertErr } = await adminClient
+        .from("vendor_email_domains")
+        .upsert(
+          {
+            vendor_id,
+            domain: d.name,
+            resend_domain_id: d.id,
+            dns_records: d.records ?? [],
+            status: d.status ?? "pending",
+            verified_at: null,
+          },
+          { onConflict: "vendor_id" },
+        );
+      if (upsertErr) {
+        // Roll back the Resend create so we don't leak a domain
+        // with no DB pointer — otherwise the vendor can't see or
+        // manage it and we permanently consume Resend quota.
+        await resend("DELETE", `/domains/${d.id}`);
+        return json(500, {
+          error: "internal",
+          detail: `upsert_failed: ${upsertErr.message?.slice(0, 200)}`,
+        });
+      }
+
+      // Only AFTER the DB swap commits do we tear down the old
+      // Resend resource. Best-effort — if it 404s the row was
+      // already gone.
+      if (existingId && existingId !== d.id) {
+        await resend("DELETE", `/domains/${existingId}`);
+      }
+
       return json(200, {
         ok: true,
         domain: d.name,
