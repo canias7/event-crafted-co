@@ -422,7 +422,14 @@ export default function VendorPaymentsPage({ embedded = false }: { embedded?: bo
     return () => {
       void supabase.removeChannel(channel);
     };
-  }, [vendorId, refresh]);
+    // Deliberately depend only on vendorId, not refresh. The
+    // callback captures refresh by closure; even though refresh
+    // is recreated whenever vendorId changes (the useCallback
+    // also depends on it), we'd tear down and re-build the
+    // channel on the same render. Listing only vendorId keeps the
+    // subscription stable for the lifetime of one selected vendor.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [vendorId]);
 
   // Fetch all listings owned by this vendor for the picker. Auto-
   // selects the first approved one; otherwise leaves selection null

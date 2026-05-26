@@ -149,12 +149,17 @@ serve(async (req: Request) => {
               updated_at: new Date().toISOString(),
             })
             .eq("id", paymentLinkId)
-            .select("vendor_id, title")
+            .select("vendor_id, title, currency")
             .maybeSingle();
-          const lRow = linkRow as { vendor_id?: string; title?: string } | null;
+          const lRow = linkRow as { vendor_id?: string; title?: string; currency?: string | null } | null;
           if (lRow?.vendor_id) vendorIdForNotify = lRow.vendor_id;
           if (lRow?.title) descriptionForNotify = lRow.title;
           if (!hostEmailForNotify) hostEmailForNotify = hostEmailForLink;
+          // Same currency-of-record override as the invoice branch:
+          // prefer the link's stored currency over the PI's so a
+          // PI without currency (test fixture, edge case) still
+          // renders the receipt in the buyer's actual currency.
+          if (lRow?.currency) currencyForNotify = lRow.currency;
         } else if (invoiceId) {
           const { data: invRow } = await db
             .from("invoices")
