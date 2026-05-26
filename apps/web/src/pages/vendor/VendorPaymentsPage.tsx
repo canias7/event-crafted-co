@@ -46,6 +46,13 @@ import { useVendorPlan, type VendorTier } from "@/hooks/useVendorPlan";
 import { DashboardSidebar } from "@/components/shared/DashboardSidebar";
 import { MobileNav } from "@/components/shared/MobileNav";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { vendorNavItems } from "@/data/navItems";
 import {
   ListingPicker,
@@ -680,7 +687,11 @@ export default function VendorPaymentsPage() {
               onChanged={() => refresh(true)}
             />
           ) : tab === "customers" ? (
-            <CustomersTab vendorId={vendorId} />
+            <CustomersTab
+              vendorId={vendorId}
+              listing={listings.find((l) => l.id === selectedListingId) ?? null}
+              onChanged={() => refresh(true)}
+            />
           ) : tab === "links" ? (
             <PayLinksTab
               vendorId={vendorId}
@@ -2193,7 +2204,15 @@ interface Customer {
 // remove client records here; later flows (re-bill, send a new
 // invoice from a customer card) read from this table. Bare CRUD —
 // no edge function needed because RLS gates writes by vendor_id.
-function CustomersTab({ vendorId }: { vendorId: string | null }) {
+function CustomersTab({
+  vendorId,
+  listing,
+  onChanged,
+}: {
+  vendorId: string | null;
+  listing: ListingOpt | null;
+  onChanged?: () => void;
+}) {
   const [rows, setRows] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState<Customer | "new" | null>(null);
@@ -2205,6 +2224,7 @@ function CustomersTab({ vendorId }: { vendorId: string | null }) {
   });
   const [saving, setSaving] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [sendTarget, setSendTarget] = useState<Customer | null>(null);
 
   const refresh = useCallback(async () => {
     if (!vendorId) {
@@ -2393,6 +2413,14 @@ function CustomersTab({ vendorId }: { vendorId: string | null }) {
                 </div>
                 <div className="flex gap-1 shrink-0">
                   <Button
+                    size="sm"
+                    onClick={() => setSendTarget(c)}
+                    className="rounded-full"
+                  >
+                    <Mail className="w-3.5 h-3.5 mr-1" />
+                    Send invoice
+                  </Button>
+                  <Button
                     variant="outline"
                     size="sm"
                     onClick={() => startEdit(c)}
@@ -2419,7 +2447,360 @@ function CustomersTab({ vendorId }: { vendorId: string | null }) {
           ))}
         </Card>
       )}
+
+      <SendInvoiceDialog
+        open={!!sendTarget}
+        onOpenChange={(v) => !v && setSendTarget(null)}
+        vendorId={vendorId}
+        listing={listing}
+        customer={sendTarget}
+        onSent={onChanged}
+      />
     </div>
+  );
+}
+
+// Compose and send an invoice in one step. Bill-to defaults from the
+// passed customer; line items, notes, and dates the vendor fills in
+// each time. Tax rate auto-pulls from the listing's saved default.
+// On submit: inserts the invoice row, upserts the customer (in case
+// the vendor edited name/phone), then calls vendorapay-invoice-send
+// which emails the buyer via the existing branded receipt path.
+function SendInvoiceDialog({
+  open,
+  onOpenChange,
+  vendorId,
+  listing,
+  customer,
+  onSent,
+}: {
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+  vendorId: string | null;
+  listing: ListingOpt | null;
+  customer: Customer | null;
+  onSent?: () => void;
+}) {
+  const defaultTax = listing?.default_tax_pct
+    ? Number(listing.default_tax_pct).toString()
+    : "";
+  const [billToName, setBillToName] = useState(customer?.name ?? "");
+  const [billToEmail, setBillToEmail] = useState(customer?.email ?? "");
+  const [issueDate, setIssueDate] = useState(
+    new Date().toISOString().slice(0, 10),
+  );
+  const [dueDate, setDueDate] = useState("");
+  const [notes, setNotes] = useState("");
+  const [taxPct, setTaxPct] = useState(defaultTax);
+  const [items, setItems] = useState<
+    Array<{ name: string; qty: string; price: string }>
+  >([{ name: "", qty: "1", price: "" }]);
+  const [submitting, setSubmitting] = useState(false);
+
+  // Resync prefills when the modal reopens for a different customer.
+  useEffect(() => {
+    if (!open) return;
+    setBillToName(customer?.name ?? "");
+    setBillToEmail(customer?.email ?? "");
+    setIssueDate(new Date().toISOString().slice(0, 10));
+    setDueDate("");
+    setNotes("");
+    setTaxPct(defaultTax);
+    setItems([{ name: "", qty: "1", price: "" }]);
+  }, [open, customer?.id, customer?.name, customer?.email, defaultTax]);
+
+  const subtotalCents = items.reduce((sum, it) => {
+    const q = parseInt(it.qty || "0", 10);
+    const p = Math.round(parseFloat(it.price || "0") * 100);
+    return sum + (Number.isFinite(q) && Number.isFinite(p) ? q * p : 0);
+  }, 0);
+  const taxRateBps = Math.round(parseFloat(taxPct || "0") * 100);
+  const taxCents = Math.round((subtotalCents * taxRateBps) / 10_000);
+  const totalCents = subtotalCents + taxCents;
+
+  const updateRow = (i: number, key: "name" | "qty" | "price", v: string) =>
+    setItems((r) => r.map((row, idx) => (idx === i ? { ...row, [key]: v } : row)));
+  const addRow = () =>
+    setItems((r) => [...r, { name: "", qty: "1", price: "" }]);
+  const removeRow = (i: number) =>
+    setItems((r) => r.filter((_, idx) => idx !== i));
+
+  const send = useCallback(async () => {
+    if (!vendorId || submitting) return;
+    if (!billToEmail.trim()) {
+      toast.error("Bill-to email required");
+      return;
+    }
+    if (totalCents < 50) {
+      toast.error("Invoice total must be at least $0.50");
+      return;
+    }
+    const parsedItems = items
+      .map((it) => ({
+        name: it.name.trim(),
+        qty: parseInt(it.qty || "0", 10),
+        unit_price_cents: Math.round(parseFloat(it.price || "0") * 100),
+      }))
+      .filter(
+        (it) => it.name && it.qty > 0 && it.unit_price_cents > 0,
+      )
+      .map((it) => ({
+        name: it.name,
+        qty: it.qty,
+        unit_price_cents: it.unit_price_cents,
+        total_cents: it.qty * it.unit_price_cents,
+      }));
+    if (parsedItems.length === 0) {
+      toast.error("Add at least one line item");
+      return;
+    }
+    setSubmitting(true);
+    const { data: userData } = await supabase.auth.getUser();
+    if (!userData?.user) {
+      setSubmitting(false);
+      toast.error("Sign in required");
+      return;
+    }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const db = supabase as any;
+    // Upsert the customer record so the vendor's directory stays
+    // in sync even when they send to a new email from this dialog.
+    await db.from("vendor_customers").upsert(
+      {
+        vendor_id: vendorId,
+        email: billToEmail.trim().toLowerCase(),
+        name: billToName.trim() || null,
+      },
+      { onConflict: "vendor_id,email" },
+    );
+    // Insert the invoice — invoice_number is filled in by a DB
+    // trigger when status flips to 'sent'.
+    const { data: newRow, error } = await db
+      .from("invoices")
+      .insert({
+        vendor_id: vendorId,
+        bill_to_name: billToName.trim() || null,
+        bill_to_email: billToEmail.trim() || null,
+        issue_date: issueDate,
+        due_date: dueDate || null,
+        notes: notes.trim() || null,
+        line_items: parsedItems,
+        subtotal_cents: subtotalCents,
+        tax_rate_bps: taxRateBps,
+        tax_cents: taxCents,
+        total_cents: totalCents,
+        status: "sent",
+        sent_at: new Date().toISOString(),
+        invoice_number: "",
+        created_by: userData.user.id,
+      })
+      .select("id")
+      .single();
+    if (error || !newRow) {
+      setSubmitting(false);
+      toast.error("Couldn't create invoice", { description: error?.message });
+      return;
+    }
+    const { error: sendErr } = await supabase.functions.invoke(
+      "vendorapay-invoice-send",
+      { body: { invoice_id: newRow.id } },
+    );
+    setSubmitting(false);
+    if (sendErr) {
+      toast.warning("Saved as draft — email failed", { description: sendErr.message });
+    } else {
+      toast.success("Invoice sent", {
+        description: `Emailed to ${billToEmail.trim()}.`,
+      });
+    }
+    onOpenChange(false);
+    onSent?.();
+  }, [
+    vendorId,
+    submitting,
+    billToEmail,
+    billToName,
+    items,
+    issueDate,
+    dueDate,
+    notes,
+    totalCents,
+    subtotalCents,
+    taxRateBps,
+    taxCents,
+    onOpenChange,
+    onSent,
+  ]);
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Send invoice</DialogTitle>
+          <DialogDescription>
+            Bill-to + line items go out to the buyer with your saved brand and tax rate.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+            <input
+              type="text"
+              placeholder="Bill to name (optional)"
+              value={billToName}
+              onChange={(e) => setBillToName(e.target.value)}
+              className="rounded-lg border-0 px-3 py-2 text-sm bg-background/60 ring-1 ring-foreground/10 focus:ring-foreground/30 outline-none"
+            />
+            <input
+              type="email"
+              placeholder="Bill to email (required)"
+              value={billToEmail}
+              onChange={(e) => setBillToEmail(e.target.value)}
+              className="rounded-lg border-0 px-3 py-2 text-sm bg-background/60 ring-1 ring-foreground/10 focus:ring-foreground/30 outline-none"
+            />
+            <div className="flex items-center gap-2">
+              <span className="text-[11px] text-muted-foreground w-20 shrink-0">
+                Issued
+              </span>
+              <input
+                type="date"
+                value={issueDate}
+                onChange={(e) => setIssueDate(e.target.value)}
+                className="flex-1 rounded-lg border-0 px-3 py-2 text-sm bg-background/60 ring-1 ring-foreground/10 focus:ring-foreground/30 outline-none"
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-[11px] text-muted-foreground w-20 shrink-0">
+                Due
+              </span>
+              <input
+                type="date"
+                value={dueDate}
+                onChange={(e) => setDueDate(e.target.value)}
+                className="flex-1 rounded-lg border-0 px-3 py-2 text-sm bg-background/60 ring-1 ring-foreground/10 focus:ring-foreground/30 outline-none"
+              />
+            </div>
+          </div>
+
+          <div
+            className="rounded-lg p-3 space-y-2"
+            style={{ background: "rgba(255,138,76,0.06)" }}
+          >
+            <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">
+              Line items
+            </div>
+            {items.map((row, idx) => (
+              <div
+                key={idx}
+                className="grid grid-cols-[1fr_56px_96px_24px] gap-2 items-center"
+              >
+                <input
+                  type="text"
+                  placeholder="Service / item"
+                  value={row.name}
+                  onChange={(e) => updateRow(idx, "name", e.target.value)}
+                  className="rounded-md border-0 px-2.5 py-1.5 text-sm bg-background ring-1 ring-foreground/10 focus:ring-foreground/30 outline-none"
+                />
+                <input
+                  type="number"
+                  min="1"
+                  step="1"
+                  placeholder="Qty"
+                  value={row.qty}
+                  onChange={(e) => updateRow(idx, "qty", e.target.value)}
+                  className="rounded-md border-0 px-2.5 py-1.5 text-sm bg-background ring-1 ring-foreground/10 focus:ring-foreground/30 outline-none"
+                />
+                <div className="flex items-center gap-1">
+                  <span className="text-xs text-muted-foreground">$</span>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    placeholder="Price"
+                    value={row.price}
+                    onChange={(e) => updateRow(idx, "price", e.target.value)}
+                    className="flex-1 rounded-md border-0 px-2.5 py-1.5 text-sm bg-background ring-1 ring-foreground/10 focus:ring-foreground/30 outline-none"
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={() => removeRow(idx)}
+                  disabled={items.length === 1}
+                  className="text-muted-foreground hover:text-destructive disabled:opacity-30"
+                  title="Remove"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            ))}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={addRow}
+              className="rounded-full text-xs"
+            >
+              <Plus className="w-3.5 h-3.5 mr-1" />
+              Add line item
+            </Button>
+            <div className="border-t border-foreground/5 pt-3 space-y-1 text-sm">
+              <div className="flex items-center justify-between text-muted-foreground">
+                <span>Subtotal</span>
+                <span className="tabular-nums">{formatMoney(subtotalCents)}</span>
+              </div>
+              <div className="flex items-center justify-between gap-2 text-muted-foreground">
+                <span className="flex items-center gap-1.5">
+                  Tax
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    placeholder="0"
+                    value={taxPct}
+                    onChange={(e) => setTaxPct(e.target.value)}
+                    className="w-12 rounded-md border-0 px-1.5 py-0.5 text-xs bg-background ring-1 ring-foreground/10 focus:ring-foreground/30 outline-none text-right tabular-nums"
+                  />
+                  <span className="text-xs">%</span>
+                </span>
+                <span className="tabular-nums">{formatMoney(taxCents)}</span>
+              </div>
+              <div className="flex items-center justify-between font-semibold pt-1 border-t border-foreground/5">
+                <span>Total</span>
+                <span className="tabular-nums">{formatMoney(totalCents)}</span>
+              </div>
+            </div>
+          </div>
+
+          <textarea
+            placeholder="Optional note (terms, thanks, etc.)"
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            rows={2}
+            className="w-full rounded-lg border-0 px-3 py-2 text-sm bg-background/60 ring-1 ring-foreground/10 focus:ring-foreground/30 outline-none resize-none"
+          />
+
+          <div className="flex justify-end gap-2 pt-1">
+            <Button
+              variant="ghost"
+              onClick={() => onOpenChange(false)}
+              className="rounded-full"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={send}
+              disabled={submitting || !vendorId}
+              className="rounded-full"
+            >
+              {submitting ? (
+                <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
+              ) : (
+                <Mail className="w-3.5 h-3.5 mr-1.5" />
+              )}
+              Send invoice
+            </Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }
 
