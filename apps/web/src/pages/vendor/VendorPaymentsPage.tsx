@@ -674,6 +674,8 @@ export default function VendorPaymentsPage() {
               balance={balance}
               transactions={transactions.slice(0, 10)}
               status={status}
+              invoices={invoices}
+              vendorId={vendorId}
               totalGross={totalGross}
               totalFees={totalFees}
               onSeeAllTransactions={() => setTab("transactions")}
@@ -729,6 +731,8 @@ function OverviewTab({
   balance,
   transactions,
   status,
+  invoices,
+  vendorId,
   totalGross,
   totalFees,
   onSeeAllTransactions,
@@ -736,12 +740,105 @@ function OverviewTab({
   balance: Balance | null;
   transactions: Transaction[];
   status: Status | null;
+  invoices: Invoice[];
+  vendorId: string | null;
   totalGross: number;
   totalFees: number;
   onSeeAllTransactions: () => void;
 }) {
+  // Business pulse: derived KPIs that read the data already loaded
+  // plus a tiny extra fetch for customer count + active recurring
+  // rules so MRR + audience size show alongside Stripe balance.
+  const outstandingCents = useMemo(
+    () =>
+      invoices
+        .filter((i) => (i.status === "sent" || i.status === "overdue") && !i.paid_at)
+        .reduce((s, i) => s + i.total_cents, 0),
+    [invoices],
+  );
+
+  const [customerCount, setCustomerCount] = useState<number | null>(null);
+  const [mrrCents, setMrrCents] = useState<number | null>(null);
+  useEffect(() => {
+    if (!vendorId) {
+      setCustomerCount(null);
+      setMrrCents(null);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const db = supabase as any;
+      const [{ count: cc }, { data: rrs }] = await Promise.all([
+        db
+          .from("vendor_customers")
+          .select("id", { count: "exact", head: true })
+          .eq("vendor_id", vendorId),
+        db
+          .from("vendor_recurring_invoices")
+          .select("interval, line_items, tax_pct")
+          .eq("vendor_id", vendorId)
+          .eq("active", true),
+      ]);
+      if (cancelled) return;
+      setCustomerCount(typeof cc === "number" ? cc : 0);
+      // Normalize each cadence to a monthly-equivalent so MRR
+      // gives a single comparable number across intervals.
+      const monthly = (rrs ?? []).reduce((sum: number, r: { interval: string; line_items: Array<{ qty: number; unit_price_cents: number; total_cents?: number }>; tax_pct: number }) => {
+        const subtotal = (r.line_items ?? []).reduce(
+          (s, it) => s + (it.total_cents ?? it.qty * it.unit_price_cents),
+          0,
+        );
+        const taxBps = Math.round((r.tax_pct ?? 0) * 100);
+        const total = subtotal + Math.round((subtotal * taxBps) / 10_000);
+        const perMonth =
+          r.interval === "weekly"
+            ? (total * 52) / 12
+            : r.interval === "biweekly"
+              ? (total * 26) / 12
+              : r.interval === "monthly"
+                ? total
+                : r.interval === "quarterly"
+                  ? total / 3
+                  : r.interval === "yearly"
+                    ? total / 12
+                    : 0;
+        return sum + perMonth;
+      }, 0);
+      setMrrCents(Math.round(monthly));
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [vendorId]);
+
   return (
     <>
+      <section>
+        <h2 className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground font-semibold mb-3">
+          Business pulse
+        </h2>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
+          <StatCard
+            label="Outstanding"
+            sub={`${invoices.filter((i) => (i.status === "sent" || i.status === "overdue") && !i.paid_at).length} unpaid invoice${
+              invoices.filter((i) => (i.status === "sent" || i.status === "overdue") && !i.paid_at).length === 1 ? "" : "s"
+            }`}
+            value={formatMoney(outstandingCents, balance?.currency)}
+          />
+          <StatCard
+            label="MRR forecast"
+            sub="From active recurring rules"
+            value={mrrCents == null ? "—" : formatMoney(mrrCents, balance?.currency)}
+          />
+          <StatCard
+            label="Customers"
+            sub="Saved on your list"
+            value={customerCount == null ? "—" : customerCount.toLocaleString()}
+          />
+        </div>
+      </section>
+
       <section>
         <h2 className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground font-semibold mb-3">
           Balance
