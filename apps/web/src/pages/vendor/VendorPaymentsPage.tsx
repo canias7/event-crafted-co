@@ -238,6 +238,8 @@ interface Invoice {
   paid_at: string | null;
   refunded_at?: string | null;
   refunded_amount_cents?: number;
+  /** Last automated overdue reminder timestamp from scan-vendorapay-overdue. */
+  reminder_sent_at?: string | null;
   /** Latest decline reason from Stripe, when buyer's last attempt failed. */
   payment_failure_message?: string | null;
   /** Cleared on successful payment; non-null means a failed attempt is pending retry. */
@@ -412,7 +414,7 @@ export default function VendorPaymentsPage({ embedded = false }: { embedded?: bo
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           (supabase as any)
             .from("invoices")
-            .select("id, vendor_id, slug, invoice_number, bill_to_name, bill_to_email, issue_date, due_date, notes, line_items, subtotal_cents, tax_rate_bps, tax_cents, total_cents, currency, status, sent_at, paid_at, refunded_at, refunded_amount_cents, payment_failure_message, payment_failed_at, payment_attempts, created_at")
+            .select("id, vendor_id, slug, invoice_number, bill_to_name, bill_to_email, issue_date, due_date, notes, line_items, subtotal_cents, tax_rate_bps, tax_cents, total_cents, currency, status, sent_at, paid_at, refunded_at, refunded_amount_cents, reminder_sent_at, payment_failure_message, payment_failed_at, payment_attempts, created_at")
             .eq("vendor_id", vendorId)
             .order("created_at", { ascending: false })
             .limit(50),
@@ -2983,6 +2985,9 @@ function InvoicesTab({
                     {inv.line_items.length} line{inv.line_items.length === 1 ? "" : "s"} ·{" "}
                     Issued {formatDate(inv.issue_date)}
                     {inv.due_date ? ` · Due ${formatDate(inv.due_date)}` : ""}
+                    {inv.reminder_sent_at && (inv.status === "sent" || inv.status === "overdue")
+                      ? ` · Reminder sent ${formatDate(inv.reminder_sent_at)}`
+                      : ""}
                   </p>
                   {inv.payment_failed_at && !inv.paid_at && inv.payment_failure_message && (
                     <p className="text-xs text-rose-700 mt-1">
