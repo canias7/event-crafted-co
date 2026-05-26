@@ -5,11 +5,29 @@
 // invoice composer (Invoices) or opens a preview that the vendor
 // can copy from (Contracts, Proposals).
 
+/**
+ * Visual style for the invoice. Each template ships with a distinct
+ * design so vendors can pick the one that matches their brand.
+ *
+ * - editorial  — serif title, generous whitespace, warm peach accent
+ * - bold       — full-bleed dark header with the total inverted on it
+ * - minimal    — hairline rules, no color, all-cap headings
+ * - colorblock — accented sidebar column with the bill-to + meta block
+ * - modern     — sans-serif, monoline typography, blue accent bar
+ */
+export type InvoiceStyle =
+  | "editorial"
+  | "bold"
+  | "minimal"
+  | "colorblock"
+  | "modern";
+
 export interface InvoiceTemplate {
   id: string;
   title: string;
   category: string;
   summary: string;
+  style: InvoiceStyle;
   /** Suggested tax percentage to prefill (e.g. 7.25 for 7.25%). */
   taxPct: number;
   notes: string;
@@ -38,6 +56,7 @@ export const INVOICE_TEMPLATES: InvoiceTemplate[] = [
     title: "Wedding Photography — Full Day",
     category: "Photography",
     summary: "8 hours of coverage, second shooter, edited gallery, engagement session.",
+    style: "editorial",
     taxPct: 7.25,
     notes:
       "50% deposit due to reserve the date. Balance due 14 days before the event. Edited gallery delivered within 6 weeks.",
@@ -54,6 +73,7 @@ export const INVOICE_TEMPLATES: InvoiceTemplate[] = [
     title: "DJ + Lighting Setup",
     category: "Entertainment",
     summary: "6 hours of DJ, uplighting, dance floor wash, wireless mics.",
+    style: "bold",
     taxPct: 7.25,
     notes:
       "Includes consultation call and music timeline planning. Setup begins 90 minutes before guest arrival.",
@@ -70,6 +90,7 @@ export const INVOICE_TEMPLATES: InvoiceTemplate[] = [
     title: "Plated Dinner — 75 Guests",
     category: "Catering",
     summary: "3-course plated dinner, passed apps, full service staff and bar.",
+    style: "colorblock",
     taxPct: 8.0,
     notes:
       "Final headcount due 7 days before the event. Pricing assumes one venue and one delivery window.",
@@ -86,6 +107,7 @@ export const INVOICE_TEMPLATES: InvoiceTemplate[] = [
     title: "Wedding Florals & Installation",
     category: "Florals",
     summary: "Bridal party flowers, centerpieces, ceremony arch installation.",
+    style: "minimal",
     taxPct: 7.25,
     notes:
       "Pricing assumes one delivery and one teardown. Additional drives billed separately.",
@@ -102,6 +124,7 @@ export const INVOICE_TEMPLATES: InvoiceTemplate[] = [
     title: "Day-of Coordination — Premium",
     category: "Planning",
     summary: "8 hours of day-of management, vendor liaison, timeline execution.",
+    style: "modern",
     taxPct: 0,
     notes:
       "Includes one venue walkthrough 30 days before the event and three planning calls.",
