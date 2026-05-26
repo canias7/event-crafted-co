@@ -1578,6 +1578,255 @@ function DocumentCanvas({
   );
 }
 
+interface DomainDnsRecord {
+  record?: string;
+  name: string;
+  type: string;
+  value: string;
+  priority?: number;
+  ttl?: string | number;
+  status?: string;
+}
+
+interface DomainRow {
+  domain: string;
+  status: string;
+  verified_at: string | null;
+  dns_records: DomainDnsRecord[];
+}
+
+// Lets a vendor connect their own email domain so buyer receipts go
+// out from noreply@<their-domain> instead of the platform default.
+// Talks to vendorapay-email-domain (which proxies Resend) and to
+// vendor_email_domains (RLS-gated reads).
+function SenderDomainCard({ vendorId }: { vendorId: string | null }) {
+  const [row, setRow] = useState<DomainRow | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [submittingDomain, setSubmittingDomain] = useState("");
+  const [busy, setBusy] = useState<"create" | "verify" | "remove" | null>(null);
+
+  const refresh = useCallback(async () => {
+    if (!vendorId) {
+      setRow(null);
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data } = await (supabase as any)
+      .from("vendor_email_domains")
+      .select("domain, status, verified_at, dns_records")
+      .eq("vendor_id", vendorId)
+      .maybeSingle();
+    setRow((data as DomainRow | null) ?? null);
+    setLoading(false);
+  }, [vendorId]);
+
+  useEffect(() => {
+    void refresh();
+  }, [refresh]);
+
+  const callDomain = useCallback(
+    async (action: "create" | "verify" | "remove", domain?: string) => {
+      if (!vendorId) return;
+      setBusy(action);
+      const { data, error } = await supabase.functions.invoke(
+        "vendorapay-email-domain",
+        { body: { action, vendor_id: vendorId, domain } },
+      );
+      setBusy(null);
+      if (error || !(data as { ok?: boolean })?.ok) {
+        const detail =
+          (error as { context?: Response } | null)?.context &&
+          typeof (error as { context: Response }).context.json === "function"
+            ? await (error as { context: Response }).context
+                .clone()
+                .json()
+                .then((b) => b?.detail ?? b?.error)
+                .catch(() => null)
+            : (data as { detail?: string; error?: string })?.detail ??
+              (data as { error?: string })?.error;
+        toast.error(
+          action === "create"
+            ? "Couldn't connect domain"
+            : action === "verify"
+              ? "Couldn't verify domain"
+              : "Couldn't remove domain",
+          { description: detail ?? error?.message ?? undefined },
+        );
+        return;
+      }
+      if (action === "create") {
+        setSubmittingDomain("");
+        toast.success("Domain added", {
+          description: "Set the DNS records below, then click Verify.",
+        });
+      } else if (action === "verify") {
+        const verified = (data as { verified?: boolean }).verified;
+        if (verified) {
+          toast.success("Domain verified");
+        } else {
+          toast.message("Still pending", {
+            description: "DNS hasn't propagated yet. Try again in a minute.",
+          });
+        }
+      } else {
+        toast.success("Domain removed");
+      }
+      await refresh();
+    },
+    [vendorId, refresh],
+  );
+
+  const onConnect = () => {
+    if (!submittingDomain.trim()) return;
+    void callDomain("create", submittingDomain.trim());
+  };
+
+  if (loading) {
+    return (
+      <Card>
+        <div className="p-5 text-sm text-muted-foreground">Loading sender domain…</div>
+      </Card>
+    );
+  }
+
+  const verified = row?.status === "verified";
+
+  return (
+    <Card>
+      <div className="p-5 space-y-4">
+        <div className="flex items-start justify-between gap-3 flex-wrap">
+          <div>
+            <h3 className="text-sm font-semibold">Send from your own domain</h3>
+            <p className="text-xs text-muted-foreground mt-0.5 max-w-md">
+              {row
+                ? verified
+                  ? "Buyer receipts now go out from your domain."
+                  : "Add the DNS records below to verify. Until then, emails fall back to the VendoraPay sender."
+                : "Hook up a domain you own (e.g. yourbusiness.com) so receipts send from noreply@yourbusiness.com instead of the platform default."}
+            </p>
+          </div>
+          {row ? (
+            <span
+              className="text-[10px] uppercase tracking-wider font-medium rounded-full px-2 py-0.5"
+              style={
+                verified
+                  ? {
+                      background: "rgba(34,197,94,0.14)",
+                      color: "#0a7c4a",
+                      border: "0.5px solid rgba(34,197,94,0.35)",
+                    }
+                  : {
+                      background: "rgba(255,138,76,0.14)",
+                      color: "#c4541e",
+                      border: "0.5px solid rgba(255,138,76,0.35)",
+                    }
+              }
+            >
+              {verified ? "Verified" : row.status || "Pending"}
+            </span>
+          ) : null}
+        </div>
+
+        {row ? (
+          <div className="space-y-3">
+            <div className="flex items-center justify-between gap-3 rounded-lg px-3 py-2 bg-foreground/[0.03]">
+              <span className="text-sm font-medium tnum">{row.domain}</span>
+              <div className="flex gap-2">
+                {!verified && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="rounded-full"
+                    onClick={() => callDomain("verify")}
+                    disabled={busy === "verify"}
+                  >
+                    {busy === "verify" ? (
+                      <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" />
+                    ) : null}
+                    Check verification
+                  </Button>
+                )}
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="rounded-full text-muted-foreground hover:text-destructive"
+                  onClick={() => {
+                    if (confirm(`Remove ${row.domain}?`)) void callDomain("remove");
+                  }}
+                  disabled={busy === "remove"}
+                >
+                  {busy === "remove" ? (
+                    <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" />
+                  ) : null}
+                  Remove
+                </Button>
+              </div>
+            </div>
+
+            {!verified && row.dns_records.length > 0 && (
+              <div className="rounded-lg overflow-hidden" style={{ border: "0.5px solid rgba(0,0,0,0.08)" }}>
+                <div className="px-3 py-2 text-[10px] uppercase tracking-wider font-semibold text-muted-foreground bg-foreground/[0.03]">
+                  Add these DNS records at your domain registrar
+                </div>
+                <div className="divide-y divide-foreground/5">
+                  {row.dns_records.map((r, i) => (
+                    <div key={i} className="px-3 py-2.5 text-xs space-y-1">
+                      <div className="flex items-center gap-3 flex-wrap">
+                        <span className="font-semibold uppercase tracking-wider text-[10px] text-muted-foreground">
+                          {r.type}
+                        </span>
+                        {r.record && (
+                          <span className="text-[10px] text-muted-foreground">
+                            ({r.record})
+                          </span>
+                        )}
+                      </div>
+                      <div className="grid grid-cols-[60px_1fr] gap-x-3 gap-y-1 font-mono">
+                        <span className="text-muted-foreground">Name</span>
+                        <span className="break-all">{r.name}</span>
+                        <span className="text-muted-foreground">Value</span>
+                        <span className="break-all">{r.value}</span>
+                        {r.priority != null && (
+                          <>
+                            <span className="text-muted-foreground">Priority</span>
+                            <span>{r.priority}</span>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="flex items-center gap-2 flex-wrap">
+            <input
+              type="text"
+              placeholder="yourbusiness.com"
+              value={submittingDomain}
+              onChange={(e) => setSubmittingDomain(e.target.value)}
+              className="flex-1 min-w-[200px] rounded-lg border-0 px-3 py-2 text-sm bg-background/60 ring-1 ring-foreground/10 focus:ring-foreground/30 outline-none"
+            />
+            <Button
+              onClick={onConnect}
+              disabled={busy === "create" || !submittingDomain.trim() || !vendorId}
+              className="rounded-full"
+            >
+              {busy === "create" ? (
+                <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
+              ) : null}
+              Connect domain
+            </Button>
+          </div>
+        )}
+      </div>
+    </Card>
+  );
+}
+
 function InvoicesTab({
   vendorId,
   listing,
@@ -1768,6 +2017,8 @@ function InvoicesTab({
           </Button>
         </div>
       </Card>
+
+      <SenderDomainCard vendorId={vendorId} />
 
       {/* Invoice list */}
       {invoices.length === 0 ? (
