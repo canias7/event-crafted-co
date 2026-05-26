@@ -514,9 +514,9 @@ export function downloadDocTemplatePdf(
   doc.setDrawColor(...RULE).setLineWidth(0.5);
   doc.line(left, 132, right, 132);
 
-  doc.setFont("courier", "normal").setFontSize(10).setTextColor(42, 36, 31);
+  doc.setFont("times", "normal").setFontSize(11).setTextColor(42, 36, 31);
   const bodyLines = doc.splitTextToSize(t.content, width);
-  const lineHeight = 14;
+  const lineHeight = 16;
   let y = 154;
   for (const line of bodyLines) {
     if (y > PAGE_H - 72) {
