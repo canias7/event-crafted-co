@@ -586,38 +586,27 @@ export default function VendorPaymentsPage({ embedded = false }: { embedded?: bo
   const body = (
     <main className="flex-1 pb-20 lg:pb-0">
         <div
-          className={`backdrop-blur-sm px-4 md:px-8 ${
-            embedded
-              ? // When embedded, the wrapper's own tab strip is
-                // pinned at top-0 (z-40). Stick this header just
-                // below it so the Overview/Files/Disputes sub-tabs
-                // stay visible while the page content scrolls. The
-                // numeric offset (top-14 = 56px) matches the
-                // approximate height of the wrapper's tab row.
-                "py-2 sticky top-14 z-30"
-              : "py-5 sticky top-0 z-40"
+          className={`backdrop-blur-md px-4 md:px-8 sticky top-0 z-40 border-b border-foreground/[0.06] ${
+            embedded ? "pt-5 pb-3" : "py-5"
           }`}
         >
-          {/* Hide the h1 + description when embedded — the
-              MyVendoraPage wrapper already shows "VendoraPay" via
-              its tab strip. Keep the Refresh button accessible. */}
-          <div
-            className={`flex items-center gap-4 flex-wrap ${embedded ? "justify-end" : "justify-between"}`}
-          >
-            {!embedded && (
-              <div>
-                <h1 className="font-editorial text-3xl">VendoraPay</h1>
-                <p className="text-sm text-muted-foreground">
-                  Accept card payments and track payouts from one place.
-                </p>
-              </div>
-            )}
+          <div className="flex items-start justify-between gap-4 flex-wrap">
+            <div className="min-w-0">
+              <h1 className="font-editorial text-3xl md:text-[2rem] leading-[1.05] tracking-tight">
+                {embedded ? "My Vendora" : "VendoraPay"}
+              </h1>
+              <p className="text-sm text-muted-foreground mt-1.5">
+                {embedded
+                  ? "Leads, calendar, and payments — one place to run the business."
+                  : "Accept card payments and track payouts from one place."}
+              </p>
+            </div>
             <Button
               variant="outline"
               size="sm"
               onClick={() => refresh(false)}
               disabled={refreshing || loading}
-              className="rounded-full"
+              className="rounded-full h-8"
             >
               {refreshing ? (
                 <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" />
@@ -628,28 +617,38 @@ export default function VendorPaymentsPage({ embedded = false }: { embedded?: bo
             </Button>
           </div>
 
-          {/* Internal VendoraPay tab strip (Overview / Payments / etc.) */}
-          <nav className="mt-4 -mb-px flex gap-1 overflow-x-auto">
-            {TABS.map((t) => {
-              const active = tab === t.id;
-              const Icon = t.icon;
-              return (
-                <button
-                  key={t.id}
-                  type="button"
-                  onClick={() => setTab(t.id)}
-                  className={`inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-medium transition-colors whitespace-nowrap ${
-                    active
-                      ? "bg-foreground text-background"
-                      : "text-muted-foreground hover:text-foreground hover:bg-foreground/5"
-                  }`}
-                >
-                  <Icon className="w-3.5 h-3.5" />
-                  {t.label}
-                </button>
-              );
-            })}
-          </nav>
+          {/* Internal tab strip — the primary navigation inside
+              My Vendora. 11 tabs overflow horizontally on most
+              viewports; the right-edge gradient is a visual cue
+              that more tabs exist past the fold. */}
+          <div className="relative mt-5 -mx-4 md:-mx-8">
+            <nav className="flex gap-1 overflow-x-auto scrollbar-hide px-4 md:px-8 pr-12 md:pr-16">
+              {TABS.map((t) => {
+                const active = tab === t.id;
+                const Icon = t.icon;
+                return (
+                  <button
+                    key={t.id}
+                    type="button"
+                    onClick={() => setTab(t.id)}
+                    className={`inline-flex items-center gap-1.5 rounded-full px-4 h-9 text-[13px] font-medium transition-all whitespace-nowrap ${
+                      active
+                        ? "bg-foreground text-background shadow-[0_4px_12px_-4px_rgba(26,20,16,0.35)]"
+                        : "text-muted-foreground hover:text-foreground hover:bg-foreground/[0.04]"
+                    }`}
+                  >
+                    <Icon className="w-3.5 h-3.5" />
+                    {t.label}
+                  </button>
+                );
+              })}
+            </nav>
+            {/* Right-edge fade so users notice the strip is scrollable. */}
+            <div
+              aria-hidden
+              className="pointer-events-none absolute top-0 right-0 h-full w-12 md:w-16 bg-gradient-to-l from-[#fefdfb] to-transparent"
+            />
+          </div>
         </div>
 
         <div className="p-4 md:p-8 max-w-5xl space-y-6">
@@ -770,11 +769,11 @@ export default function VendorPaymentsPage({ embedded = false }: { embedded?: bo
             />
           ) : tab === "leads" ? (
             <Suspense fallback={<TabSkeleton />}>
-              <VendorLeadsPageLazy embedded />
+              <VendorLeadsPageLazy embedded listingId={selectedListingId} />
             </Suspense>
           ) : tab === "calendar" ? (
             <Suspense fallback={<TabSkeleton />}>
-              <VendorAppointmentsPageLazy embedded />
+              <VendorAppointmentsPageLazy embedded listingId={selectedListingId} />
             </Suspense>
           ) : tab === "transactions" ? (
             <TransactionsTab
@@ -919,7 +918,7 @@ function OverviewTab({
   return (
     <>
       <section>
-        <h2 className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground font-semibold mb-3">
+        <h2 className="text-[10px] uppercase tracking-[0.22em] text-muted-foreground font-semibold mb-3 pb-2 border-b border-foreground/[0.06]">
           Business pulse
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
@@ -944,7 +943,7 @@ function OverviewTab({
       </section>
 
       <section>
-        <h2 className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground font-semibold mb-3">
+        <h2 className="text-[10px] uppercase tracking-[0.22em] text-muted-foreground font-semibold mb-3 pb-2 border-b border-foreground/[0.06]">
           Balance
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
@@ -973,7 +972,7 @@ function OverviewTab({
 
       <section>
         <div className="flex items-center justify-between mb-3">
-          <h2 className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground font-semibold">
+          <h2 className="text-[10px] uppercase tracking-[0.22em] text-muted-foreground font-semibold">
             Recent activity
           </h2>
           {transactions.length > 0 ? (
@@ -989,7 +988,7 @@ function OverviewTab({
         {transactions.length === 0 ? (
           <EmptyCard>
             {status?.charges_enabled
-              ? "No transactions yet. When hosts pay you, they'll show up here."
+              ? "No transactions yet. When buyers pay you, they'll show up here."
               : "Transactions appear after your first payment."}
           </EmptyCard>
         ) : (
@@ -1020,7 +1019,7 @@ function TransactionsTab({
     return (
       <EmptyCard>
         {status?.charges_enabled
-          ? "No transactions yet. When hosts pay you, they'll show up here."
+          ? "No transactions yet. When buyers pay you, they'll show up here."
           : "Transactions appear after your first payment."}
       </EmptyCard>
     );
@@ -1229,7 +1228,7 @@ function PayoutsTab({ data, status }: { data: PayoutsResponse | null; status: St
   return (
     <div className="space-y-4">
       <section>
-        <h2 className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground font-semibold mb-3">
+        <h2 className="text-[10px] uppercase tracking-[0.22em] text-muted-foreground font-semibold mb-3 pb-2 border-b border-foreground/[0.06]">
           Payout schedule
         </h2>
         <Card>
@@ -1255,7 +1254,7 @@ function PayoutsTab({ data, status }: { data: PayoutsResponse | null; status: St
       </section>
 
       <section>
-        <h2 className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground font-semibold mb-3">
+        <h2 className="text-[10px] uppercase tracking-[0.22em] text-muted-foreground font-semibold mb-3 pb-2 border-b border-foreground/[0.06]">
           Recent payouts
         </h2>
         {!data?.payouts || data.payouts.length === 0 ? (
@@ -4387,8 +4386,8 @@ function Card({ children }: { children: React.ReactNode }) {
     <div
       className="rounded-2xl overflow-hidden"
       style={{
-        background: "rgba(255,253,250,0.7)",
-        border: "0.5px solid rgba(255,138,76,0.22)",
+        background: "rgba(255,253,250,0.85)",
+        border: "1px solid rgba(255,138,76,0.18)",
       }}
     >
       {children}
@@ -4407,17 +4406,17 @@ function EmptyCard({ children }: { children: React.ReactNode }) {
 function StatCard({ label, sub, value }: { label: string; sub: string; value: string }) {
   return (
     <div
-      className="rounded-2xl p-5"
+      className="rounded-2xl p-5 transition-shadow hover:shadow-[0_10px_30px_-12px_rgba(26,20,16,0.18)]"
       style={{
-        background: "rgba(255,253,250,0.7)",
-        border: "0.5px solid rgba(255,138,76,0.22)",
+        background: "rgba(255,253,250,0.85)",
+        border: "1px solid rgba(255,138,76,0.18)",
       }}
     >
       <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground font-semibold">
         {label}
       </div>
-      <div className="text-2xl font-editorial mt-1">{value}</div>
-      <div className="text-[11px] text-muted-foreground mt-1">{sub}</div>
+      <div className="text-[28px] leading-none font-editorial mt-2 tracking-tight">{value}</div>
+      <div className="text-[11px] text-muted-foreground mt-2 pt-2 border-t border-foreground/[0.05]">{sub}</div>
     </div>
   );
 }

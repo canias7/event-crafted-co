@@ -118,16 +118,22 @@ function prettyDay(ymd: string): string {
   });
 }
 
-export default function VendorAppointmentsPage({ embedded = false }: { embedded?: boolean } = {}) {
+export default function VendorAppointmentsPage({
+  embedded = false,
+  listingId: listingIdProp,
+}: { embedded?: boolean; listingId?: string | null } = {}) {
   const { user } = useAuth();
 
   // All listings this vendor owns (up to 5). The calendar scopes to ONE
   // listing at a time — selectedListingId drives every query + write.
   const [listings, setListings] = useState<ListingOpt[]>([]);
   const [listingsLoading, setListingsLoading] = useState(true);
-  const [selectedListingId, setSelectedListingId] = useState<string | null>(
+  const [localSelectedListingId, setLocalSelectedListingId] = useState<string | null>(
     null,
   );
+  // Embedded mode: parent owns the listing selection.
+  const selectedListingId = listingIdProp !== undefined ? listingIdProp : localSelectedListingId;
+  const setSelectedListingId = setLocalSelectedListingId;
   const [listingPickerOpen, setListingPickerOpen] = useState(false);
 
   const [inquiries, setInquiries] = useState<InquiryRow[]>([]);
@@ -600,27 +606,27 @@ export default function VendorAppointmentsPage({ embedded = false }: { embedded?
         )}
 
         <div className="p-4 md:p-8 max-w-4xl space-y-6">
-          {/* Listing picker — every block / inquiry on the grid is
-              scoped to whichever listing the vendor picks here. Only
-              approved listings are selectable; pending / rejected ones
-              render in the picker for visibility but can't be chosen. */}
-          {!listingsLoading && listings.length === 0 ? (
-            <NoListingsEmptyState />
-          ) : !listingsLoading &&
-            !listings.some((l) => l.application_status === "approved") ? (
-            <PendingApprovalEmptyState />
-          ) : (
-            <ListingPicker
-              listings={listings}
-              loading={listingsLoading}
-              selectedId={selectedListingId}
-              onSelect={(id) => {
-                setSelectedListingId(id);
-                setListingPickerOpen(false);
-              }}
-              open={listingPickerOpen}
-              onOpenChange={setListingPickerOpen}
-            />
+          {/* Listing picker — suppressed in embedded mode (My Vendora
+              dashboard owns the listing selection and passes it down). */}
+          {!embedded && (
+            !listingsLoading && listings.length === 0 ? (
+              <NoListingsEmptyState />
+            ) : !listingsLoading &&
+              !listings.some((l) => l.application_status === "approved") ? (
+              <PendingApprovalEmptyState />
+            ) : (
+              <ListingPicker
+                listings={listings}
+                loading={listingsLoading}
+                selectedId={selectedListingId}
+                onSelect={(id) => {
+                  setSelectedListingId(id);
+                  setListingPickerOpen(false);
+                }}
+                open={listingPickerOpen}
+                onOpenChange={setListingPickerOpen}
+              />
+            )
           )}
 
           {selectedListingId && (
