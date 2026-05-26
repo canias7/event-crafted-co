@@ -162,12 +162,13 @@ const TABS: Array<{ id: TabId; label: string; icon: typeof Wallet }> = [
 ];
 
 // Sub-tabs inside the Payments tab.
-type PaymentsTabId = "incoming" | "payouts" | "disputes";
+type PaymentsTabId = "incoming" | "payouts" | "disputes" | "reports";
 
 const PAYMENTS_TABS: Array<{ id: PaymentsTabId; label: string; icon: typeof Wallet }> = [
   { id: "incoming", label: "Incoming", icon: CreditCard },
   { id: "payouts", label: "Payouts", icon: Banknote },
   { id: "disputes", label: "Disputes", icon: AlertTriangle },
+  { id: "reports", label: "Reports", icon: ScrollText },
 ];
 
 // Sub-tabs inside the Files tab. Only Invoices is fully implemented
@@ -1036,11 +1037,11 @@ function OverviewTab({
   );
 }
 
-// Payments hub. Three sub-tabs covering the full money lifecycle:
-// incoming charges, bank payouts, and disputes. Previously each
-// was a top-level My Vendora tab, but they're all answers to one
-// vendor question ("where's my money?") — folding them under one
-// header reduces the tab strip and clusters related work.
+// Payments hub. Four sub-tabs covering the full money lifecycle:
+// incoming charges, bank payouts, disputes, and a Reports surface
+// for date-range sales totals + CSV export. They're all answers
+// to "where's my money?" — folding them under one parent reduces
+// the top-level strip and clusters related work.
 function PaymentsTab({
   transactions,
   payouts,
@@ -1057,7 +1058,9 @@ function PaymentsTab({
   const [searchParams, setSearchParams] = useSearchParams();
   const rawSub = searchParams.get("sub");
   const sub: PaymentsTabId =
-    rawSub === "payouts" || rawSub === "disputes" ? rawSub : "incoming";
+    rawSub === "payouts" || rawSub === "disputes" || rawSub === "reports"
+      ? rawSub
+      : "incoming";
   const setSub = (next: PaymentsTabId) => {
     const params = new URLSearchParams(searchParams);
     if (next === "incoming") params.delete("sub");
@@ -1098,9 +1101,307 @@ function PaymentsTab({
         />
       ) : sub === "payouts" ? (
         <PayoutsTab data={payouts} status={status} />
-      ) : (
+      ) : sub === "disputes" ? (
         <DisputesTab vendorId={vendorId} />
+      ) : (
+        <ReportsTab vendorId={vendorId} />
       )}
+    </div>
+  );
+}
+
+// Reports — sales totals + CSV export over a date range. Powered
+// by the invoices table (full vendor history, no Stripe API
+// pagination cap), so the totals reflect everything the vendor
+// has billed regardless of how old. The Stripe transactions feed
+// stays the source of truth for fees + payouts; this surface is
+// the "invoiced revenue" view a bookkeeper / CPA needs at tax
+// time, plus a "give me a CSV" handoff for spreadsheet work.
+type ReportRangeId = "this_month" | "last_month" | "this_quarter" | "ytd" | "last_year" | "all_time";
+
+const REPORT_RANGES: Array<{ id: ReportRangeId; label: string }> = [
+  { id: "this_month", label: "This month" },
+  { id: "last_month", label: "Last month" },
+  { id: "this_quarter", label: "This quarter" },
+  { id: "ytd", label: "Year to date" },
+  { id: "last_year", label: "Last year" },
+  { id: "all_time", label: "All time" },
+];
+
+function computeReportRange(id: ReportRangeId): { start: Date; end: Date; label: string } {
+  const now = new Date();
+  const y = now.getUTCFullYear();
+  const m = now.getUTCMonth();
+  switch (id) {
+    case "this_month":
+      return {
+        start: new Date(Date.UTC(y, m, 1)),
+        end: new Date(Date.UTC(y, m + 1, 1)),
+        label: "This month",
+      };
+    case "last_month":
+      return {
+        start: new Date(Date.UTC(y, m - 1, 1)),
+        end: new Date(Date.UTC(y, m, 1)),
+        label: "Last month",
+      };
+    case "this_quarter": {
+      const qStart = Math.floor(m / 3) * 3;
+      return {
+        start: new Date(Date.UTC(y, qStart, 1)),
+        end: new Date(Date.UTC(y, qStart + 3, 1)),
+        label: "This quarter",
+      };
+    }
+    case "ytd":
+      return {
+        start: new Date(Date.UTC(y, 0, 1)),
+        end: new Date(Date.UTC(y + 1, 0, 1)),
+        label: "Year to date",
+      };
+    case "last_year":
+      return {
+        start: new Date(Date.UTC(y - 1, 0, 1)),
+        end: new Date(Date.UTC(y, 0, 1)),
+        label: "Last year",
+      };
+    case "all_time":
+      return {
+        start: new Date(0),
+        end: new Date(Date.UTC(y + 100, 0, 1)),
+        label: "All time",
+      };
+  }
+}
+
+function csvEscape(value: string | number | null | undefined): string {
+  if (value === null || value === undefined) return "";
+  const s = String(value);
+  if (/[,"\n\r]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
+  return s;
+}
+
+function ReportsTab({ vendorId }: { vendorId: string | null }) {
+  const [rangeId, setRangeId] = useState<ReportRangeId>("this_month");
+  const range = useMemo(() => computeReportRange(rangeId), [rangeId]);
+
+  // Fetch paid invoices in the chosen window directly from Supabase
+  // rather than slicing the parent's 50-row cache — the parent cap
+  // would silently understate "YTD" or "All time" totals. Use paid_at
+  // (cash-basis accounting) so revenue is recognized when the money
+  // actually arrived, matching how a CPA reconciles against bank
+  // deposits.
+  const [paidInRange, setPaidInRange] = useState<Invoice[]>([]);
+  const [loading, setLoading] = useState(false);
+  useEffect(() => {
+    if (!vendorId) {
+      setPaidInRange([]);
+      return;
+    }
+    let cancelled = false;
+    setLoading(true);
+    (async () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const db = supabase as any;
+      const { data } = await db
+        .from("invoices")
+        .select(
+          "id, vendor_id, slug, invoice_number, bill_to_name, bill_to_email, issue_date, due_date, notes, line_items, subtotal_cents, tax_rate_bps, tax_cents, total_cents, currency, status, sent_at, paid_at, created_at",
+        )
+        .eq("vendor_id", vendorId)
+        .eq("status", "paid")
+        .gte("paid_at", range.start.toISOString())
+        .lt("paid_at", range.end.toISOString())
+        .order("paid_at", { ascending: false })
+        .limit(5000);
+      if (cancelled) return;
+      setPaidInRange((data ?? []) as Invoice[]);
+      setLoading(false);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [vendorId, range]);
+
+  const totals = useMemo(() => {
+    let gross = 0;
+    let tax = 0;
+    let subtotal = 0;
+    const customers = new Set<string>();
+    for (const inv of paidInRange) {
+      gross += inv.total_cents;
+      tax += inv.tax_cents;
+      subtotal += inv.subtotal_cents;
+      if (inv.bill_to_email) customers.add(inv.bill_to_email.toLowerCase());
+    }
+    const currency = paidInRange[0]?.currency ?? "usd";
+    return { gross, tax, subtotal, customers: customers.size, count: paidInRange.length, currency };
+  }, [paidInRange]);
+
+  const downloadCsv = useCallback(() => {
+    const headers = [
+      "invoice_number",
+      "issue_date",
+      "paid_at",
+      "bill_to_name",
+      "bill_to_email",
+      "subtotal_cents",
+      "tax_cents",
+      "total_cents",
+      "currency",
+      "status",
+    ];
+    const rows = paidInRange
+      .slice()
+      .sort((a, b) => (a.paid_at && b.paid_at ? a.paid_at.localeCompare(b.paid_at) : 0))
+      .map((inv) =>
+        [
+          inv.invoice_number,
+          inv.issue_date,
+          inv.paid_at,
+          inv.bill_to_name,
+          inv.bill_to_email,
+          inv.subtotal_cents,
+          inv.tax_cents,
+          inv.total_cents,
+          inv.currency,
+          inv.status,
+        ]
+          .map(csvEscape)
+          .join(","),
+      );
+    const csv = [headers.join(","), ...rows].join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    const stamp = new Date().toISOString().slice(0, 10);
+    a.download = `vendorapay-sales-${rangeId}-${stamp}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }, [paidInRange, rangeId]);
+
+  return (
+    <div className="space-y-5">
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        <div className="flex items-center gap-2 flex-wrap">
+          {REPORT_RANGES.map((r) => {
+            const active = rangeId === r.id;
+            return (
+              <button
+                key={r.id}
+                type="button"
+                onClick={() => setRangeId(r.id)}
+                className={`text-xs px-3 h-8 rounded-full transition-colors whitespace-nowrap ${
+                  active
+                    ? "bg-foreground text-background"
+                    : "text-muted-foreground hover:text-foreground hover:bg-foreground/[0.04]"
+                }`}
+              >
+                {r.label}
+              </button>
+            );
+          })}
+        </div>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={downloadCsv}
+          disabled={paidInRange.length === 0}
+          className="rounded-full"
+        >
+          <Download className="w-3.5 h-3.5 mr-1" />
+          Export CSV
+        </Button>
+      </div>
+
+      <section>
+        <h2 className="text-[10px] uppercase tracking-[0.22em] text-muted-foreground font-semibold mb-3 pb-2 border-b border-foreground/[0.06]">
+          Sales ({range.label.toLowerCase()})
+        </h2>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <StatCard
+            label="Gross"
+            sub="Total invoiced + paid"
+            value={formatMoney(totals.gross, totals.currency)}
+          />
+          <StatCard
+            label="Subtotal"
+            sub="Before tax"
+            value={formatMoney(totals.subtotal, totals.currency)}
+          />
+          <StatCard
+            label="Tax collected"
+            sub="Itemized on invoices"
+            value={formatMoney(totals.tax, totals.currency)}
+          />
+          <StatCard
+            label="Invoices paid"
+            sub={`${totals.customers} unique buyer${totals.customers === 1 ? "" : "s"}`}
+            value={totals.count.toLocaleString()}
+          />
+        </div>
+      </section>
+
+      <section>
+        <h2 className="text-[10px] uppercase tracking-[0.22em] text-muted-foreground font-semibold mb-3 pb-2 border-b border-foreground/[0.06]">
+          Paid invoices ({range.label.toLowerCase()})
+        </h2>
+        {loading ? (
+          <EmptyCard>
+            <Loader2 className="w-4 h-4 mr-2 inline animate-spin" />
+            Loading…
+          </EmptyCard>
+        ) : paidInRange.length === 0 ? (
+          <EmptyCard>
+            No invoices paid in this range. Try widening the window or check the All time view.
+          </EmptyCard>
+        ) : (
+          <Card>
+            <div className="divide-y divide-foreground/[0.05]">
+              {paidInRange
+                .slice()
+                .sort((a, b) =>
+                  a.paid_at && b.paid_at ? b.paid_at.localeCompare(a.paid_at) : 0,
+                )
+                .slice(0, 50)
+                .map((inv) => (
+                  <div
+                    key={inv.id}
+                    className="p-4 flex items-start justify-between gap-3 flex-wrap"
+                  >
+                    <div className="min-w-0">
+                      <div className="text-sm font-medium">
+                        {inv.invoice_number}
+                        <span className="text-muted-foreground"> · {inv.bill_to_name ?? inv.bill_to_email ?? "—"}</span>
+                      </div>
+                      <div className="text-xs text-muted-foreground mt-0.5">
+                        Paid {inv.paid_at ? new Date(inv.paid_at).toLocaleDateString() : "—"}
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-sm font-semibold font-variant-numeric tabular-nums">
+                        {formatMoney(inv.total_cents, inv.currency)}
+                      </div>
+                      {inv.tax_cents > 0 ? (
+                        <div className="text-[11px] text-muted-foreground">
+                          incl. {formatMoney(inv.tax_cents, inv.currency)} tax
+                        </div>
+                      ) : null}
+                    </div>
+                  </div>
+                ))}
+            </div>
+          </Card>
+        )}
+        {paidInRange.length > 50 ? (
+          <p className="text-xs text-muted-foreground mt-2">
+            Showing 50 most recent. Export the CSV for the full list.
+          </p>
+        ) : null}
+      </section>
     </div>
   );
 }
