@@ -1610,14 +1610,14 @@ function InvoicesTab({
       const ext = file.name.split(".").pop() ?? "jpg";
       const path = `${vendorId}/logo-${Date.now()}.${ext}`;
       const { error: upErr } = await supabase.storage
-        .from("vendor-portfolios")
+        .from("vendor-logos")
         .upload(path, file, { upsert: true, contentType: file.type });
       if (upErr) {
         setUploadingLogo(false);
         toast.error("Couldn't upload logo", { description: upErr.message });
         return;
       }
-      const { data: pub } = supabase.storage.from("vendor-portfolios").getPublicUrl(path);
+      const { data: pub } = supabase.storage.from("vendor-logos").getPublicUrl(path);
       setBrandLogoUrl(pub.publicUrl);
       setUploadingLogo(false);
       toast.success("Logo updated", { description: "Click Save to apply." });
