@@ -113,7 +113,7 @@ function midBudget(min: number | null, max: number | null): number {
 
 type StatusFilter = "all" | "active" | "won" | "lost";
 
-export default function VendorLeadsPage() {
+export default function VendorLeadsPage({ embedded = false }: { embedded?: boolean } = {}) {
   const { user } = useAuth();
 
   // Listing picker — scopes the page to ONE of the vendor's listings
@@ -315,10 +315,8 @@ export default function VendorLeadsPage() {
     return c;
   }, [leads]);
 
-  return (
-    <div className="flex min-h-screen vendor-canvas">
-      <DashboardSidebar items={navItems} title="Vendor Portal" backPath="/" />
-      <main id="main-content" className="flex-1 min-w-0 pb-20 lg:pb-0">
+  const inner = (
+    <main id="main-content" className="flex-1 min-w-0 pb-20 lg:pb-0">
         <div className="backdrop-blur-sm px-4 md:px-8 py-5 sticky top-0 z-40">
           <div className="flex items-start justify-between gap-4">
             <div>
@@ -512,6 +510,14 @@ export default function VendorLeadsPage() {
           )}
         </div>
       </main>
+  );
+
+  if (embedded) return inner;
+
+  return (
+    <div className="flex min-h-screen vendor-canvas">
+      <DashboardSidebar items={navItems} title="Vendor Portal" backPath="/" />
+      {inner}
       <MobileNav items={navItems} />
     </div>
   );
