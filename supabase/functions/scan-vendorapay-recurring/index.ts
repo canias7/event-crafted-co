@@ -1,15 +1,18 @@
-// Cron-driven recurring invoice emitter. Wakes up (typically every
-// hour), finds active vendor_recurring_invoices rows whose
-// next_run_at has passed, and emits a fresh invoice for each one
-// using the same path as a manual send (invoice insert + invoke
+// Cron-driven recurring invoice emitter. Wakes up daily, finds
+// active vendor_recurring_invoices rows whose next_run_at has
+// passed, and emits a fresh invoice for each one using the same
+// path as a manual send (invoice insert + invoke
 // vendorapay-invoice-send → branded buyer email).
 //
 // next_run_at is advanced by one cadence after a successful send.
 // last_run_at + last_invoice_id are stamped so the vendor can
 // trace which invoice corresponds to which cycle.
 //
-// Auth: service-role bearer. No JWT user — this is meant to be
-// triggered by an external cron / Supabase scheduled task.
+// Auth: deployed with verify_jwt=false and called from pg_cron
+// via net.http_post — same pattern as scan-vendorapay-payment-
+// schedules. The function only acts on due rows so accidental
+// triggers just advance the schedule slightly early; no security-
+// sensitive surface.
 
 // deno-lint-ignore-file no-explicit-any
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
@@ -77,14 +80,6 @@ serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
   if (req.method !== "POST") {
     return new Response("method", { status: 405, headers: cors });
-  }
-
-  const auth = req.headers.get("Authorization") ?? "";
-  if (auth !== `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`) {
-    return new Response(
-      JSON.stringify({ error: "unauthorized" }),
-      { status: 401, headers: { ...cors, "Content-Type": "application/json" } },
-    );
   }
 
   const db = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
