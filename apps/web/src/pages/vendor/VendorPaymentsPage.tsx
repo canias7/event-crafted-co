@@ -15,12 +15,9 @@
 
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-// Lazy-load the Leads + Calendar panels — they're nontrivial bundles
-// that most VendoraPay sessions don't open, so deferring their
-// download keeps the dashboard's initial paint snappy.
-const VendorLeadsPageLazy = lazy(
-  () => import("@/pages/vendor/VendorLeadsPage"),
-);
+// Lazy-load the Calendar panel — nontrivial bundle that most
+// VendoraPay sessions don't open, so deferring its download keeps
+// the dashboard's initial paint snappy.
 const VendorAppointmentsPageLazy = lazy(
   () => import("@/pages/vendor/VendorAppointmentsPage"),
 );
@@ -144,17 +141,21 @@ interface Status {
   } | null;
 }
 
-type TabId = "overview" | "leads" | "calendar" | "transactions" | "files" | "customers" | "links" | "payouts" | "disputes" | "integrations" | "settings";
+type TabId = "overview" | "calendar" | "transactions" | "files" | "customers" | "links" | "payouts" | "disputes" | "integrations" | "settings";
 
 const TABS: Array<{ id: TabId; label: string; icon: typeof Wallet }> = [
   { id: "overview", label: "Overview", icon: Wallet },
-  { id: "leads", label: "Leads", icon: Users },
   { id: "calendar", label: "Calendar", icon: CalendarDays },
   { id: "transactions", label: "Payments", icon: CreditCard },
   // "Files" rolls up Invoices, Contracts, Proposals, Scheduling,
   // Services, and Questionnaires under a single tab with its own
   // internal sub-nav (HoneyBook-style "All files" surface).
   { id: "files", label: "Files", icon: FileText },
+  // Customers IS the people list. Leads (inquiry-stage prospects)
+  // used to be a separate tab here but duplicated the Inbox
+  // sidebar entry, which is the canonical place to triage
+  // inquiries. /vendor/leads still resolves for deep-links — it
+  // redirects to /vendor/inbox now.
   { id: "customers", label: "Customers", icon: Users },
   { id: "links", label: "Pay Links", icon: Link2 },
   { id: "payouts", label: "Payouts", icon: Banknote },
@@ -802,10 +803,6 @@ export default function VendorPaymentsPage({ embedded = false }: { embedded?: bo
               totalFees={totalFees}
               onSeeAllTransactions={() => setTab("transactions")}
             />
-          ) : tab === "leads" ? (
-            <Suspense fallback={<TabSkeleton />}>
-              <VendorLeadsPageLazy embedded listingId={selectedListingId} />
-            </Suspense>
           ) : tab === "calendar" ? (
             <Suspense fallback={<TabSkeleton />}>
               <VendorAppointmentsPageLazy embedded listingId={selectedListingId} />
