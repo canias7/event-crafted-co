@@ -91,13 +91,15 @@ function advance(
   // Normalize month overflow into year via Date.UTC arithmetic.
   const normYear = targetYear + Math.floor(targetMonthRaw / 12);
   const normMonth = ((targetMonthRaw % 12) + 12) % 12;
-  // Defense-in-depth: even with the new DB CHECK constraint
-  // ensuring day_of_month is in [1, 31], clamp to >= 1 here so a
-  // legacy row written before the constraint can't hang the
-  // catch-up loop (Date.UTC(y, m, 0) returns the previous month's
-  // last day, producing a non-advancing nextRun).
+  // Defense-in-depth: clamp the anchor to a finite integer in
+  // [1, 31] before feeding Date.UTC. Math.max(1, NaN) === NaN
+  // propagates — without Number.isFinite a NaN day_of_month would
+  // produce Date.UTC(y, m, NaN) = Invalid Date, the catch-up loop
+  // would exit immediately (Invalid Date <= now is false), then
+  // nextRun.toISOString() would throw and wedge the row forever.
   const rawAnchor = dayOfMonth ?? from.getUTCDate();
-  const anchor = Math.max(1, rawAnchor);
+  const safeAnchor = Number.isFinite(rawAnchor) ? rawAnchor : from.getUTCDate();
+  const anchor = Math.max(1, Math.min(31, safeAnchor));
   const day = Math.min(anchor, lastDayOfMonth(normYear, normMonth));
   return new Date(
     Date.UTC(
@@ -206,11 +208,13 @@ serve(async (req: Request) => {
         while (skipNext <= now) {
           skipNext = advance(skipNext, row.interval, row.day_of_month);
         }
+        // Don't stamp last_run_at — that column means "time of last
+        // SUCCESSFUL send" (matches the send-failure pin policy).
+        // Misconfigured rules shouldn't show as recently-billed.
         const { error: skipAdvErr } = await (db as any)
           .from("vendor_recurring_invoices")
           .update({
             next_run_at: skipNext.toISOString(),
-            last_run_at: now.toISOString(),
           })
           .eq("id", row.id);
         if (skipAdvErr) {
@@ -265,6 +269,13 @@ serve(async (req: Request) => {
             bill_to_name: custRow.name,
             bill_to_email: custRow.email,
             issue_date: issueDate,
+            // Clear due_date — it was computed off the FAILED
+            // cycle's issue_date and would otherwise email out as
+            // "Issued today, Due weeks ago." If the rule needs a
+            // due_date in the future we can derive it from the
+            // current cycle's issue_date + payment terms; for now,
+            // null keeps the email honest.
+            due_date: null,
             notes: row.notes,
             line_items: parsedItems,
             subtotal_cents: subtotal,
@@ -401,6 +412,23 @@ serve(async (req: Request) => {
             row.id,
             pinErr,
           );
+          // The draft we just created/refreshed can never be found
+          // by the next tick's idempotency check (last_invoice_id
+          // still points at the prior cycle's invoice, which is in
+          // 'sent' state). Without cleanup, the draft becomes an
+          // orphan in the vendor's invoice list — consuming a
+          // trigger-assigned INV-NNNN slot, never resendable. Best-
+          // effort delete keeps the list clean even if the pin path
+          // is broken. We only delete drafts we just inserted this
+          // tick (not reused ones, since those represent real
+          // billing intent the vendor wants to retry manually).
+          if (!reusingDraft) {
+            await (db as any)
+              .from("invoices")
+              .delete()
+              .eq("id", invoiceIdToSend)
+              .eq("status", "draft");
+          }
         }
         failed++;
         continue;
