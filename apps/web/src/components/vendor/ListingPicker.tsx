@@ -30,6 +30,12 @@ export interface ListingOpt {
   location: string | null;
   application_status: "pending" | "approved" | "rejected" | null;
   logo_url: string | null;
+  /**
+   * Default sales tax percentage for this listing's invoice
+   * template. Optional on the type so older code paths that select
+   * fewer columns still compile.
+   */
+  default_tax_pct?: number | null;
 }
 
 function statusBadge(s: ListingOpt["application_status"]) {
