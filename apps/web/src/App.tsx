@@ -61,8 +61,6 @@ import {
   VendorMyProfilePage,
   VendorEditProfilePage,
   VendorInboxPage,
-  VendorLeadsPage,
-  VendorAppointmentsPage,
   VendorPartnersPage,
   VendorAiSuperagentsPage,
   InvoiceCheckoutPage,
@@ -232,14 +230,15 @@ const App = () => (
               <Route path="/vendor/edit-profile" element={<RequireRole role="vendor"><VendorEditProfilePage /></RequireRole>} />
               <Route path="/vendor/inbox" element={<RequireRole role="vendor"><VendorInboxPage /></RequireRole>} />
               <Route path="/vendor/inbox/:inquiryId" element={<RequireRole role="vendor"><InquiryDetailPage /></RequireRole>} />
-              {/* /vendor/my-vendora IS the VendoraPay dashboard
-                  now, so /vendor/payments redirects there. Leads
-                  and Calendar are standalone pages again — they
-                  live at their own URLs and don't appear in the
-                  sidebar until the user explicitly wants them
-                  surfaced somewhere. */}
-              <Route path="/vendor/leads" element={<RequireRole role="vendor"><VendorLeadsPage /></RequireRole>} />
-              <Route path="/vendor/appointments" element={<RequireRole role="vendor"><VendorAppointmentsPage /></RequireRole>} />
+              {/* /vendor/my-vendora hosts the VendoraPay dashboard
+                  and now also embeds Leads + Calendar as sub-tabs
+                  in the same tab strip. The standalone URLs
+                  redirect to the right sub-tab so bookmarks and
+                  in-app links still land on what the user expects.
+                  /vendor/payments is the legacy alias for the
+                  dashboard's default Overview tab. */}
+              <Route path="/vendor/leads" element={<Navigate to="/vendor/my-vendora?tab=leads" replace />} />
+              <Route path="/vendor/appointments" element={<Navigate to="/vendor/my-vendora?tab=calendar" replace />} />
               <Route path="/vendor/payments" element={<Navigate to="/vendor/my-vendora" replace />} />
               <Route path="/vendor/partners" element={<RequireRole role="vendor"><VendorPartnersPage /></RequireRole>} />
               <Route path="/vendor/ai-superagents" element={<RequireRole role="vendor"><VendorAiSuperagentsPage /></RequireRole>} />
