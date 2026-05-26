@@ -22,7 +22,11 @@
 // deno-lint-ignore-file no-explicit-any
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.7";
-import { getReceiptEmailForPI, handleWebhookEvent } from "../_shared/payments.ts";
+import {
+  getBillingStateForPI,
+  getReceiptEmailForPI,
+  handleWebhookEvent,
+} from "../_shared/payments.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -161,12 +165,32 @@ serve(async (req: Request) => {
           // renders the receipt in the buyer's actual currency.
           if (lRow?.currency) currencyForNotify = lRow.currency;
         } else if (invoiceId) {
+          // Pull the buyer's billing-address state off the Charge so
+          // we can group tax_cents by state on the Reports tab. ACH /
+          // wire / older PIs without address collection return null;
+          // those land under "Unknown" in the report. Best-effort —
+          // any failure here is logged but doesn't block the paid
+          // status write or the receipt email.
+          let billToState: string | null = null;
+          try {
+            billToState = await getBillingStateForPI(pi.id);
+          } catch (err) {
+            console.error(
+              "[vendorapay-webhook] state lookup failed",
+              pi.id,
+              err,
+            );
+          }
+
           const { data: invRow } = await db
             .from("invoices")
             .update({
               status: "paid",
               paid_at: new Date().toISOString(),
               paid_payment_intent_id: pi.id,
+              // Stamp state alongside paid_at so the per-quarter
+              // sales-tax breakdown picks up the same row.
+              bill_to_state: billToState,
               // Clear any prior decline state so the UI doesn't
               // keep showing "card declined" on a now-paid invoice.
               payment_failure_message: null,

@@ -463,6 +463,35 @@ export async function getReceiptEmailForPI(
 }
 
 /**
+ * Resolve the buyer's billing-address state for a PaymentIntent.
+ *
+ * Used by vendorapay-webhook to stamp invoices.bill_to_state on
+ * payment.succeeded so the Reports tab can break tax_cents down by
+ * state. We upper-case the 2-letter result so the aggregate keys
+ * are consistent ("ca", "CA" both land under CA in the group-by).
+ *
+ * Returns null when Stripe didn't collect an address (ACH, wire,
+ * older PIs without address collection enabled). The Reports UI
+ * lumps these under "Unknown" rather than dropping them.
+ */
+export async function getBillingStateForPI(
+  pi_id: string,
+): Promise<string | null> {
+  const pi = await client().paymentIntents.retrieve(pi_id, {
+    expand: ["latest_charge"],
+  });
+  const charge = pi.latest_charge as unknown;
+  if (!charge || typeof charge !== "object") return null;
+  const ch = charge as {
+    billing_details?: { address?: { state?: string | null } | null } | null;
+  };
+  const state = ch.billing_details?.address?.state ?? null;
+  if (!state) return null;
+  const trimmed = state.trim();
+  return trimmed.length ? trimmed.toUpperCase() : null;
+}
+
+/**
  * Verify webhook signature + normalize into a VendoraPay event.
  * Returns null when the event isn't one we care about (so handlers
  * can drop it without branching on every type).
