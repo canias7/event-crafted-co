@@ -425,6 +425,24 @@ export default function VendorPaymentsPage() {
     window.location.href = (data as { url: string }).url;
   }, [vendorId, connecting]);
 
+  // Open the vendor's Stripe Express dashboard in a new tab. Used by
+  // the "payouts gated" verify banner (the vendor finishes the
+  // missing requirement on Stripe's side, not ours).
+  const openExpressDashboard = useCallback(async () => {
+    if (!vendorId) return;
+    const { data, error } = await supabase.functions.invoke(
+      "vendorapay-dashboard-link",
+      { body: { business_id: vendorId } },
+    );
+    if (error || !(data as { url?: string })?.url) {
+      toast.error("Couldn't open Stripe dashboard", {
+        description: error?.message ?? "Try again in a moment.",
+      });
+      return;
+    }
+    window.open((data as { url: string }).url, "_blank", "noopener,noreferrer");
+  }, [vendorId]);
+
   const verifyBanner = useMemo(() => {
     if (!status || loading) return null;
     if (!status.onboarded) {
@@ -446,6 +464,18 @@ export default function VendorPaymentsPage() {
         title: "We're reviewing your submission",
         sub: "Verification usually clears within a few minutes. We'll email you the moment you can accept payments.",
         cta: null,
+      };
+    }
+    // Charges work, payouts don't — Stripe needs one more thing
+    // (often the SSN's last 4 or a business address) before money
+    // can settle to the bank. Surface it loudly so vendors don't
+    // wonder why their balance is stuck.
+    if (!status.payouts_enabled) {
+      return {
+        title: "One more step before payouts can land",
+        sub: "You're accepting payments, but Stripe needs a final detail before they settle to your bank. Finish in the Stripe dashboard.",
+        cta: "Open Stripe dashboard",
+        action: "dashboard" as const,
       };
     }
     return null;
@@ -560,7 +590,15 @@ export default function VendorPaymentsPage() {
                   <p className="text-sm text-muted-foreground mt-0.5">{verifyBanner.sub}</p>
                 </div>
                 {verifyBanner.cta ? (
-                  <Button onClick={handleConnect} disabled={connecting} className="rounded-full">
+                  <Button
+                    onClick={
+                      verifyBanner.action === "dashboard"
+                        ? openExpressDashboard
+                        : handleConnect
+                    }
+                    disabled={connecting}
+                    className="rounded-full"
+                  >
                     {connecting ? (
                       <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />
                     ) : (
