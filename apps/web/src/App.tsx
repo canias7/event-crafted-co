@@ -231,13 +231,13 @@ const App = () => (
               <Route path="/vendor/inbox" element={<RequireRole role="vendor"><VendorInboxPage /></RequireRole>} />
               <Route path="/vendor/inbox/:inquiryId" element={<RequireRole role="vendor"><InquiryDetailPage /></RequireRole>} />
               {/* /vendor/my-vendora hosts the VendoraPay dashboard
-                  and now also embeds Leads + Calendar as sub-tabs
-                  in the same tab strip. The standalone URLs
-                  redirect to the right sub-tab so bookmarks and
-                  in-app links still land on what the user expects.
-                  /vendor/payments is the legacy alias for the
-                  dashboard's default Overview tab. */}
-              <Route path="/vendor/leads" element={<Navigate to="/vendor/my-vendora?tab=leads" replace />} />
+                  with Calendar embedded as a sub-tab.
+                  /vendor/leads is no longer a tab — inquiries are
+                  triaged in /vendor/inbox, which is the canonical
+                  hub for prospect conversations. The Leads tab in
+                  My Vendora duplicated that surface, so the
+                  redirect now goes to inbox. */}
+              <Route path="/vendor/leads" element={<Navigate to="/vendor/inbox" replace />} />
               <Route path="/vendor/appointments" element={<Navigate to="/vendor/my-vendora?tab=calendar" replace />} />
               <Route path="/vendor/payments" element={<Navigate to="/vendor/my-vendora" replace />} />
               <Route path="/vendor/partners" element={<RequireRole role="vendor"><VendorPartnersPage /></RequireRole>} />
