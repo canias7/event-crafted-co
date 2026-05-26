@@ -238,6 +238,8 @@ interface Invoice {
   paid_at: string | null;
   refunded_at?: string | null;
   refunded_amount_cents?: number;
+  /** Buyer's billing-address state (US 2-letter), stamped on payment. */
+  bill_to_state?: string | null;
   /** Last automated overdue reminder timestamp from scan-vendorapay-overdue. */
   reminder_sent_at?: string | null;
   /** Latest decline reason from Stripe, when buyer's last attempt failed. */
@@ -1213,7 +1215,7 @@ function ReportsTab({ vendorId }: { vendorId: string | null }) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const db = supabase as any;
       const cols =
-        "id, vendor_id, slug, invoice_number, bill_to_name, bill_to_email, issue_date, due_date, notes, line_items, subtotal_cents, tax_rate_bps, tax_cents, total_cents, currency, status, sent_at, paid_at, refunded_at, refunded_amount_cents, created_at";
+        "id, vendor_id, slug, invoice_number, bill_to_name, bill_to_email, bill_to_state, issue_date, due_date, notes, line_items, subtotal_cents, tax_rate_bps, tax_cents, total_cents, currency, status, sent_at, paid_at, refunded_at, refunded_amount_cents, created_at";
       const [paidRes, refundedRes, feesRes] = await Promise.all([
         db
           .from("invoices")
@@ -1272,11 +1274,25 @@ function ReportsTab({ vendorId }: { vendorId: string | null }) {
     let tax = 0;
     let subtotal = 0;
     const customers = new Set<string>();
+    // Per-state breakdown for the sales-tax-owed table. Invoices
+    // without a billing state (ACH, wire, legacy rows from before
+    // we started stamping) bucket under "Unknown" so they're
+    // visible to the vendor — better than silently dropping them.
+    const taxByStateMap = new Map<string, { taxCents: number; grossCents: number; count: number }>();
     for (const inv of paidInRange) {
       gross += inv.total_cents;
       tax += inv.tax_cents;
       subtotal += inv.subtotal_cents;
       if (inv.bill_to_email) customers.add(inv.bill_to_email.toLowerCase());
+      if (inv.tax_cents > 0) {
+        const key = inv.bill_to_state?.trim().toUpperCase() || "—";
+        const prev = taxByStateMap.get(key) ?? { taxCents: 0, grossCents: 0, count: 0 };
+        taxByStateMap.set(key, {
+          taxCents: prev.taxCents + inv.tax_cents,
+          grossCents: prev.grossCents + inv.total_cents,
+          count: prev.count + 1,
+        });
+      }
     }
     let refunds = 0;
     for (const inv of refundedInRange) {
@@ -1294,6 +1310,9 @@ function ReportsTab({ vendorId }: { vendorId: string | null }) {
     // and wouldn't account for refunds we're tracking separately.
     const netToBank = net - fees;
     const currency = paidInRange[0]?.currency ?? refundedInRange[0]?.currency ?? "usd";
+    const taxByState = Array.from(taxByStateMap.entries())
+      .map(([state, agg]) => ({ state, ...agg }))
+      .sort((a, b) => b.taxCents - a.taxCents);
     return {
       gross,
       tax,
@@ -1305,6 +1324,7 @@ function ReportsTab({ vendorId }: { vendorId: string | null }) {
       customers: customers.size,
       count: paidInRange.length,
       refundCount: refundedInRange.length,
+      taxByState,
       currency,
     };
   }, [paidInRange, refundedInRange, stripeFees]);
@@ -1343,6 +1363,7 @@ function ReportsTab({ vendorId }: { vendorId: string | null }) {
       "event_at",
       "bill_to_name",
       "bill_to_email",
+      "bill_to_state",
       "subtotal_cents",
       "tax_cents",
       "total_cents",
@@ -1373,6 +1394,7 @@ function ReportsTab({ vendorId }: { vendorId: string | null }) {
         eventAt,
         inv.bill_to_name,
         inv.bill_to_email,
+        inv.bill_to_state ?? "",
         inv.subtotal_cents,
         inv.tax_cents,
         inv.total_cents,
@@ -1496,6 +1518,42 @@ function ReportsTab({ vendorId }: { vendorId: string | null }) {
           </div>
         </Card>
       </section>
+
+      {totals.taxByState.length > 0 && (
+        <section>
+          <h2 className="text-[10px] uppercase tracking-[0.22em] text-muted-foreground font-semibold mb-3 pb-2 border-b border-foreground/[0.06]">
+            Sales tax owed by state
+          </h2>
+          <Card>
+            <div className="grid grid-cols-[1fr_auto_auto_auto] gap-x-6 gap-y-1 p-5 text-sm">
+              <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground font-semibold pb-2 border-b border-foreground/[0.06]">
+                State
+              </div>
+              <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground font-semibold text-right pb-2 border-b border-foreground/[0.06]">
+                Invoices
+              </div>
+              <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground font-semibold text-right pb-2 border-b border-foreground/[0.06]">
+                Taxable sales
+              </div>
+              <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground font-semibold text-right pb-2 border-b border-foreground/[0.06]">
+                Tax owed
+              </div>
+              {totals.taxByState.map((row) => (
+                <div key={row.state} className="contents">
+                  <div className="py-2 font-medium tabular-nums">{row.state === "—" ? "Unknown" : row.state}</div>
+                  <div className="py-2 text-right tabular-nums text-muted-foreground">{row.count}</div>
+                  <div className="py-2 text-right tabular-nums">{formatMoney(row.grossCents, totals.currency)}</div>
+                  <div className="py-2 text-right tabular-nums font-semibold">{formatMoney(row.taxCents, totals.currency)}</div>
+                </div>
+              ))}
+            </div>
+          </Card>
+          <p className="text-[11px] text-muted-foreground mt-2">
+            States are pulled from the buyer's billing address at payment time. "Unknown" covers ACH/wire and any
+            payments collected before billing-state stamping was wired up.
+          </p>
+        </section>
+      )}
 
       <section>
         <h2 className="text-[10px] uppercase tracking-[0.22em] text-muted-foreground font-semibold mb-3 pb-2 border-b border-foreground/[0.06]">
