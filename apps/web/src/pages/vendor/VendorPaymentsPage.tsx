@@ -379,7 +379,7 @@ export default function VendorPaymentsPage() {
       const { data } = await supabase
         .from("vendor_profiles")
         .select(
-          "id, business_name, category, location, application_status, logo_url",
+          "id, business_name, category, location, application_status, logo_url, default_tax_pct",
         )
         .eq("user_id", user.id)
         .order("created_at", { ascending: true });
@@ -1114,6 +1114,8 @@ function InvoiceCanvas({
   brandLocation,
   setBrandLocation,
   brandLogoUrl,
+  brandTaxPct,
+  setBrandTaxPct,
   category,
   onPickLogo,
   uploadingLogo,
@@ -1123,6 +1125,8 @@ function InvoiceCanvas({
   brandLocation: string;
   setBrandLocation: (v: string) => void;
   brandLogoUrl: string;
+  brandTaxPct: string;
+  setBrandTaxPct: (v: string) => void;
   category: string | null;
   onPickLogo: (file: File) => void | Promise<void>;
   uploadingLogo: boolean;
@@ -1299,8 +1303,20 @@ function InvoiceCanvas({
               <span>Subtotal</span>
               <span className="tabular-nums">$0.00</span>
             </div>
-            <div className="flex justify-between text-muted-foreground">
-              <span>Tax</span>
+            <div className="flex justify-between items-center text-muted-foreground">
+              <span className="flex items-center gap-1.5">
+                <span>Tax</span>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  placeholder="0"
+                  value={brandTaxPct}
+                  onChange={(e) => setBrandTaxPct(e.target.value)}
+                  className={`w-12 text-right tabular-nums ${editableCls}`}
+                />
+                <span>%</span>
+              </span>
               <span className="tabular-nums">$0.00</span>
             </div>
             <div
@@ -1579,15 +1595,19 @@ function InvoicesTab({
   // surface today. Initialized from the selected listing; saving
   // upserts back into vendor_profiles so future invoices (and any
   // public invoice page) read the new values.
+  const taxPctToString = (n: number | null | undefined) =>
+    n ? String(n) : "";
   const [brandName, setBrandName] = useState(listing?.business_name ?? "");
   const [brandLocation, setBrandLocation] = useState(listing?.location ?? "");
   const [brandLogoUrl, setBrandLogoUrl] = useState(listing?.logo_url ?? "");
+  const [brandTaxPct, setBrandTaxPct] = useState(taxPctToString(listing?.default_tax_pct));
   const [savingBrand, setSavingBrand] = useState(false);
   const [uploadingLogo, setUploadingLogo] = useState(false);
   const initialBrandRef = useRef({
     name: listing?.business_name ?? "",
     location: listing?.location ?? "",
     logoUrl: listing?.logo_url ?? "",
+    taxPct: taxPctToString(listing?.default_tax_pct),
   });
 
   // Resync when the vendor picks a different listing.
@@ -1595,16 +1615,25 @@ function InvoicesTab({
     setBrandName(listing?.business_name ?? "");
     setBrandLocation(listing?.location ?? "");
     setBrandLogoUrl(listing?.logo_url ?? "");
+    setBrandTaxPct(taxPctToString(listing?.default_tax_pct));
     initialBrandRef.current = {
       name: listing?.business_name ?? "",
       location: listing?.location ?? "",
       logoUrl: listing?.logo_url ?? "",
+      taxPct: taxPctToString(listing?.default_tax_pct),
     };
-  }, [listing?.id, listing?.business_name, listing?.location, listing?.logo_url]);
+  }, [
+    listing?.id,
+    listing?.business_name,
+    listing?.location,
+    listing?.logo_url,
+    listing?.default_tax_pct,
+  ]);
 
   const brandDirty =
     brandName !== initialBrandRef.current.name ||
     brandLocation !== initialBrandRef.current.location ||
+    brandTaxPct !== initialBrandRef.current.taxPct ||
     brandLogoUrl !== initialBrandRef.current.logoUrl;
 
   const uploadLogo = useCallback(
@@ -1643,6 +1672,7 @@ function InvoicesTab({
   const saveBrand = useCallback(async () => {
     if (!vendorId || savingBrand || !brandDirty) return;
     setSavingBrand(true);
+    const parsedTax = parseFloat(brandTaxPct);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { error } = await (supabase as any)
       .from("vendor_profiles")
@@ -1650,6 +1680,7 @@ function InvoicesTab({
         business_name: brandName.trim() || null,
         location: brandLocation.trim() || null,
         logo_url: brandLogoUrl || null,
+        default_tax_pct: Number.isFinite(parsedTax) && parsedTax >= 0 ? parsedTax : 0,
       })
       .eq("id", vendorId);
     setSavingBrand(false);
@@ -1661,10 +1692,11 @@ function InvoicesTab({
       name: brandName,
       location: brandLocation,
       logoUrl: brandLogoUrl,
+      taxPct: brandTaxPct,
     };
     toast.success("Business info saved");
     onChanged();
-  }, [vendorId, savingBrand, brandDirty, brandName, brandLocation, brandLogoUrl, onChanged]);
+  }, [vendorId, savingBrand, brandDirty, brandName, brandLocation, brandLogoUrl, brandTaxPct, onChanged]);
 
   const sendInvoice = useCallback(async (id: string) => {
     setSendingId(id);
@@ -1715,6 +1747,8 @@ function InvoicesTab({
         brandLocation={brandLocation}
         setBrandLocation={setBrandLocation}
         brandLogoUrl={brandLogoUrl}
+        brandTaxPct={brandTaxPct}
+        setBrandTaxPct={setBrandTaxPct}
         category={listing?.category ?? null}
         onPickLogo={uploadLogo}
         uploadingLogo={uploadingLogo}
