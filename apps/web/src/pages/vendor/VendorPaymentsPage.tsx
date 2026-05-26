@@ -45,13 +45,6 @@ import { useVendorPlan, type VendorTier } from "@/hooks/useVendorPlan";
 import { DashboardSidebar } from "@/components/shared/DashboardSidebar";
 import { MobileNav } from "@/components/shared/MobileNav";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { vendorNavItems } from "@/data/navItems";
 import {
   ListingPicker,
@@ -1084,16 +1077,18 @@ function FilesTab(props: {
       {fileTab === "invoices" ? (
         <InvoicesTab {...props} />
       ) : fileTab === "contracts" ? (
-        <DocTemplateGallery
-          kind="Contract"
-          templates={CONTRACT_TEMPLATES}
-          intro={meta.description}
+        <DocumentCanvas
+          vendorId={props.vendorId}
+          listing={props.listing}
+          kind="contract"
+          starter={CONTRACT_TEMPLATES[0]}
         />
       ) : fileTab === "proposals" ? (
-        <DocTemplateGallery
-          kind="Proposal"
-          templates={PROPOSAL_TEMPLATES}
-          intro={meta.description}
+        <DocumentCanvas
+          vendorId={props.vendorId}
+          listing={props.listing}
+          kind="proposal"
+          starter={PROPOSAL_TEMPLATES[0]}
         />
       ) : null}
     </div>
@@ -1104,121 +1099,6 @@ function FilesTab(props: {
 // vendor previews any template in a modal and copies the body to
 // their own document for now — the dedicated builders are still
 // upstream. AI generation lands here next.
-function DocTemplateGallery({
-  kind,
-  templates,
-  intro,
-}: {
-  kind: "Contract" | "Proposal";
-  templates: DocTemplate[];
-  intro: string;
-}) {
-  const [preview, setPreview] = useState<DocTemplate | null>(null);
-  const [copied, setCopied] = useState(false);
-
-  const copyContent = useCallback(async (content: string) => {
-    try {
-      await navigator.clipboard.writeText(content);
-      setCopied(true);
-      toast.success("Template copied to clipboard");
-      setTimeout(() => setCopied(false), 1500);
-    } catch {
-      toast.error("Couldn't copy to clipboard");
-    }
-  }, []);
-
-  return (
-    <>
-      <div className="flex items-center justify-between flex-wrap gap-2">
-        <p className="text-sm text-muted-foreground">{intro}</p>
-        <span
-          className="text-[10px] uppercase tracking-wider font-medium rounded-full px-2 py-0.5"
-          style={{
-            background: "rgba(255,138,76,0.12)",
-            color: "#c4541e",
-            border: "0.5px solid rgba(255,138,76,0.3)",
-          }}
-        >
-          AI builder soon
-        </span>
-      </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-        {templates.map((tpl) => (
-          <button
-            key={tpl.id}
-            type="button"
-            onClick={() => setPreview(tpl)}
-            className="text-left rounded-2xl p-4 transition-colors hover:bg-foreground/5"
-            style={{
-              background: "rgba(255,253,250,0.7)",
-              border: "0.5px solid rgba(255,138,76,0.22)",
-            }}
-          >
-            <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">
-              {tpl.category}
-            </p>
-            <p className="text-sm font-semibold mt-1">{tpl.title}</p>
-            <p className="text-xs text-muted-foreground mt-1.5 line-clamp-3">
-              {tpl.summary}
-            </p>
-            <p className="text-[11px] font-medium text-foreground/70 mt-3">
-              Preview →
-            </p>
-          </button>
-        ))}
-      </div>
-
-      <Dialog open={!!preview} onOpenChange={(o) => !o && setPreview(null)}>
-        <DialogContent className="max-w-4xl max-h-[95vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>{preview?.title}</DialogTitle>
-            <DialogDescription>
-              {kind} template · {preview?.category}
-            </DialogDescription>
-          </DialogHeader>
-          {preview ? (
-            <div className="space-y-4">
-              <pre
-                className="text-xs leading-relaxed font-mono whitespace-pre-wrap rounded-xl p-4 bg-foreground/[0.03]"
-                style={{ border: "0.5px solid rgba(0,0,0,0.06)" }}
-              >
-                {preview.content}
-              </pre>
-              <div className="flex justify-end gap-2 pt-1 flex-wrap">
-                <Button
-                  variant="outline"
-                  onClick={() => setPreview(null)}
-                  className="rounded-full"
-                >
-                  Close
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={async () => {
-                    const { downloadDocTemplatePdf } = await import(
-                      "@/lib/invoicePdf"
-                    );
-                    downloadDocTemplatePdf(preview, kind);
-                  }}
-                  className="rounded-full"
-                >
-                  <Download className="w-3.5 h-3.5 mr-1.5" />
-                  Save as PDF
-                </Button>
-                <Button
-                  onClick={() => copyContent(preview.content)}
-                  className="rounded-full"
-                >
-                  {copied ? "Copied" : "Copy template"}
-                </Button>
-              </div>
-            </div>
-          ) : null}
-        </DialogContent>
-      </Dialog>
-    </>
-  );
-}
 
 // Brand-only invoice template. Renders the full invoice document
 // (header + meta + items + totals + notes + footer) as a preview of
@@ -1468,6 +1348,200 @@ function StaticMeta({
       </p>
       <p className="text-sm mt-1.5 text-muted-foreground">{value}</p>
       {sub && <p className="text-xs text-muted-foreground mt-0.5">{sub}</p>}
+    </div>
+  );
+}
+
+// Single editable contract / proposal template. Vendor types title +
+// body inline; Save persists to vendor_document_defaults keyed by
+// (vendor_id, kind). First-time vendors get the starter content
+// from CONTRACT_TEMPLATES[0] / PROPOSAL_TEMPLATES[0] as a seed.
+function DocumentCanvas({
+  vendorId,
+  listing,
+  kind,
+  starter,
+}: {
+  vendorId: string | null;
+  listing: ListingOpt | null;
+  kind: "contract" | "proposal";
+  starter: DocTemplate;
+}) {
+  const [title, setTitle] = useState(starter.title);
+  const [body, setBody] = useState(starter.content);
+  const [loaded, setLoaded] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const initialRef = useRef({ title: starter.title, body: starter.content });
+
+  // Fetch the vendor's saved default for this kind. If they have
+  // one, hydrate the canvas from it; otherwise leave the starter
+  // seed in place.
+  useEffect(() => {
+    if (!vendorId) {
+      setTitle(starter.title);
+      setBody(starter.content);
+      initialRef.current = { title: starter.title, body: starter.content };
+      setLoaded(false);
+      return;
+    }
+    let cancelled = false;
+    setLoaded(false);
+    (async () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data } = await (supabase as any)
+        .from("vendor_document_defaults")
+        .select("template_data")
+        .eq("vendor_id", vendorId)
+        .eq("kind", kind)
+        .maybeSingle();
+      if (cancelled) return;
+      if (data?.template_data) {
+        const d = data.template_data as { title?: string; body?: string };
+        const t = d.title ?? starter.title;
+        const b = d.body ?? starter.content;
+        setTitle(t);
+        setBody(b);
+        initialRef.current = { title: t, body: b };
+      } else {
+        setTitle(starter.title);
+        setBody(starter.content);
+        initialRef.current = { title: starter.title, body: starter.content };
+      }
+      setLoaded(true);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [vendorId, kind, starter.title, starter.content]);
+
+  const dirty = title !== initialRef.current.title || body !== initialRef.current.body;
+
+  const save = useCallback(async () => {
+    if (!vendorId || saving || !dirty) return;
+    setSaving(true);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error } = await (supabase as any)
+      .from("vendor_document_defaults")
+      .upsert(
+        {
+          vendor_id: vendorId,
+          kind,
+          template_data: { title, body },
+        },
+        { onConflict: "vendor_id,kind" },
+      );
+    setSaving(false);
+    if (error) {
+      toast.error("Couldn't save template", { description: error.message });
+      return;
+    }
+    initialRef.current = { title, body };
+    toast.success(`${kind === "contract" ? "Contract" : "Proposal"} template saved`);
+  }, [vendorId, saving, dirty, kind, title, body]);
+
+  const displayName = listing?.business_name?.trim() || "[Your Business Name]";
+  const displayLocation = listing?.location?.trim() || "[City, State]";
+  const editableCls =
+    "bg-transparent border-0 outline-none rounded px-1 -mx-1 transition-colors hover:bg-foreground/[0.05] focus:bg-foreground/[0.08]";
+
+  return (
+    <div className="space-y-4">
+      <Card>
+        <div className="px-4 pt-3 pb-2 flex items-center justify-between border-b border-foreground/5">
+          <p className="text-[10px] uppercase tracking-[0.22em] font-semibold text-muted-foreground">
+            {kind === "contract" ? "Contract template" : "Proposal template"}
+          </p>
+          <span
+            className="text-[10px] uppercase tracking-wider font-medium rounded-full px-2 py-0.5"
+            style={{
+              background: "rgba(255,138,76,0.12)",
+              color: "#c4541e",
+              border: "0.5px solid rgba(255,138,76,0.3)",
+            }}
+          >
+            AI builder soon
+          </span>
+        </div>
+
+        <div className="bg-white px-6 sm:px-10 py-8 sm:py-10">
+          <header className="flex items-start justify-between gap-6 flex-wrap">
+            <div className="flex items-center gap-4 min-w-0">
+              {listing?.logo_url ? (
+                <img
+                  src={listing.logo_url}
+                  alt={displayName}
+                  className="w-14 h-14 rounded-xl object-cover ring-1 ring-foreground/10 shrink-0"
+                />
+              ) : (
+                <div className="w-14 h-14 rounded-xl bg-foreground/5 inline-flex items-center justify-center shrink-0">
+                  <FileText className="w-6 h-6 text-muted-foreground" />
+                </div>
+              )}
+              <div className="min-w-0">
+                <h2 className="text-xl font-bold tracking-tight">{displayName}</h2>
+                <p className="text-[11px] mt-0.5 text-muted-foreground tracking-wider">
+                  {displayLocation}
+                </p>
+              </div>
+            </div>
+            <div className="text-right">
+              <p
+                className="text-[10px] font-bold text-muted-foreground"
+                style={{ letterSpacing: "0.22em" }}
+              >
+                {kind === "contract" ? "CONTRACT" : "PROPOSAL"}
+              </p>
+              <p className="text-[11px] mt-1 text-muted-foreground">
+                Template
+              </p>
+            </div>
+          </header>
+
+          <hr className="my-7 border-foreground/10" />
+
+          <div className="space-y-6">
+            <input
+              type="text"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder={`${kind === "contract" ? "Contract" : "Proposal"} title`}
+              disabled={!loaded}
+              className={`block w-full text-2xl font-bold tracking-tight ${editableCls}`}
+            />
+            <textarea
+              value={body}
+              onChange={(e) => setBody(e.target.value)}
+              placeholder="Type your template body here…"
+              disabled={!loaded}
+              rows={Math.max(18, body.split("\n").length + 2)}
+              className={`block w-full text-sm font-mono leading-relaxed resize-none ${editableCls}`}
+            />
+          </div>
+
+          <footer
+            className="mt-10 pt-5 flex items-center justify-between text-[11px] text-muted-foreground flex-wrap gap-2"
+            style={{ borderTop: "1px solid #e8e3dd" }}
+          >
+            <span>{displayName}</span>
+            <span>
+              Powered by <span className="font-semibold text-foreground/70">VendoraPay</span>
+            </span>
+          </footer>
+        </div>
+      </Card>
+
+      <Card>
+        <div className="p-4 flex justify-end">
+          <Button
+            onClick={save}
+            disabled={saving || !dirty || !vendorId}
+            className="rounded-full"
+          >
+            {saving ? <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> : null}
+            Save template
+          </Button>
+        </div>
+      </Card>
     </div>
   );
 }
