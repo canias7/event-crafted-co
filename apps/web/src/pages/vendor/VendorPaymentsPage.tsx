@@ -13,13 +13,34 @@
 // them into vendorapay-onboard. No tab is hidden behind a gate —
 // the software is "there", even pre-verify.
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
+
+// Lazy-load the Leads + Calendar panels — they're nontrivial bundles
+// that most VendoraPay sessions don't open, so deferring their
+// download keeps the dashboard's initial paint snappy.
+const VendorLeadsPageLazy = lazy(
+  () => import("@/pages/vendor/VendorLeadsPage"),
+);
+const VendorAppointmentsPageLazy = lazy(
+  () => import("@/pages/vendor/VendorAppointmentsPage"),
+);
+
+function TabSkeleton() {
+  return (
+    <div className="p-4 md:p-8 max-w-5xl space-y-4">
+      <div className="h-8 w-48 rounded-full bg-foreground/5 animate-pulse" />
+      <div className="h-32 rounded-2xl bg-foreground/5 animate-pulse" />
+      <div className="h-32 rounded-2xl bg-foreground/5 animate-pulse" />
+    </div>
+  );
+}
 import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   AlertTriangle,
   ArrowDownRight,
   ArrowUpRight,
   Banknote,
+  CalendarDays,
   ChevronLeft,
   Copy,
   CreditCard,
@@ -123,10 +144,12 @@ interface Status {
   } | null;
 }
 
-type TabId = "overview" | "transactions" | "files" | "customers" | "links" | "payouts" | "disputes" | "integrations" | "settings";
+type TabId = "overview" | "leads" | "calendar" | "transactions" | "files" | "customers" | "links" | "payouts" | "disputes" | "integrations" | "settings";
 
 const TABS: Array<{ id: TabId; label: string; icon: typeof Wallet }> = [
   { id: "overview", label: "Overview", icon: Wallet },
+  { id: "leads", label: "Leads", icon: Users },
+  { id: "calendar", label: "Calendar", icon: CalendarDays },
   { id: "transactions", label: "Payments", icon: CreditCard },
   // "Files" rolls up Invoices, Contracts, Proposals, Scheduling,
   // Services, and Questionnaires under a single tab with its own
@@ -745,6 +768,14 @@ export default function VendorPaymentsPage({ embedded = false }: { embedded?: bo
               totalFees={totalFees}
               onSeeAllTransactions={() => setTab("transactions")}
             />
+          ) : tab === "leads" ? (
+            <Suspense fallback={<TabSkeleton />}>
+              <VendorLeadsPageLazy embedded />
+            </Suspense>
+          ) : tab === "calendar" ? (
+            <Suspense fallback={<TabSkeleton />}>
+              <VendorAppointmentsPageLazy embedded />
+            </Suspense>
           ) : tab === "transactions" ? (
             <TransactionsTab
               transactions={transactions}
