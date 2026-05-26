@@ -49,7 +49,6 @@ import {
   Link2,
   Loader2,
   Mail,
-  Plug,
   Plus,
   RefreshCw,
   ScrollText,
@@ -141,23 +140,34 @@ interface Status {
   } | null;
 }
 
-type TabId = "overview" | "calendar" | "transactions" | "files" | "customers" | "payouts" | "disputes" | "integrations" | "settings";
+type TabId = "overview" | "calendar" | "transactions" | "files" | "customers" | "settings";
 
 const TABS: Array<{ id: TabId; label: string; icon: typeof Wallet }> = [
   { id: "overview", label: "Overview", icon: Wallet },
   { id: "calendar", label: "Calendar", icon: CalendarDays },
+  // "Payments" now hosts Incoming charges, Payouts (bank transfers),
+  // and Disputes as sub-tabs — they're all parts of the same money
+  // lifecycle ("where's my money?") and lived as separate top-level
+  // tabs before, which fragmented the surface unnecessarily.
   { id: "transactions", label: "Payments", icon: CreditCard },
   // "Files" rolls up Invoices, Pay Links, Contracts, and Proposals
   // under a single tab with its own internal sub-nav. Pay Links
-  // moved here from the top-level strip because they're the same
-  // act as invoices to a vendor ("send a URL to get paid"), just
-  // flat-amount instead of itemized.
+  // moved here because they're the same act as invoices to a vendor
+  // ("send a URL to get paid"), just flat-amount instead of itemized.
   { id: "files", label: "Files", icon: FileText },
   { id: "customers", label: "Customers", icon: Users },
+  // Settings now also hosts the Stripe Connect / bank / identity
+  // surfaces that lived under a separate "Integrations" tab.
+  { id: "settings", label: "Settings", icon: SettingsIcon },
+];
+
+// Sub-tabs inside the Payments tab.
+type PaymentsTabId = "incoming" | "payouts" | "disputes";
+
+const PAYMENTS_TABS: Array<{ id: PaymentsTabId; label: string; icon: typeof Wallet }> = [
+  { id: "incoming", label: "Incoming", icon: CreditCard },
   { id: "payouts", label: "Payouts", icon: Banknote },
   { id: "disputes", label: "Disputes", icon: AlertTriangle },
-  { id: "integrations", label: "Integrations", icon: Plug },
-  { id: "settings", label: "Settings", icon: SettingsIcon },
 ];
 
 // Sub-tabs inside the Files tab. Only Invoices is fully implemented
@@ -810,8 +820,9 @@ export default function VendorPaymentsPage({ embedded = false }: { embedded?: bo
               <VendorAppointmentsPageLazy embedded listingId={selectedListingId} />
             </Suspense>
           ) : tab === "transactions" ? (
-            <TransactionsTab
+            <PaymentsTab
               transactions={transactions}
+              payouts={payouts}
               status={status}
               vendorId={vendorId}
               onRefunded={() => refresh(false)}
@@ -832,14 +843,8 @@ export default function VendorPaymentsPage({ embedded = false }: { embedded?: bo
               invoices={invoices}
               onChanged={() => refresh(true)}
             />
-          ) : tab === "payouts" ? (
-            <PayoutsTab data={payouts} status={status} />
-          ) : tab === "disputes" ? (
-            <DisputesTab vendorId={vendorId} />
-          ) : tab === "integrations" ? (
-            <IntegrationsTab status={status} vendorId={vendorId} />
           ) : (
-            <SettingsTab status={status} tier={tier} tierLoading={tierLoading} />
+            <SettingsTab status={status} vendorId={vendorId} tier={tier} tierLoading={tierLoading} />
           )}
         </div>
       </main>
@@ -1028,6 +1033,75 @@ function OverviewTab({
         )}
       </section>
     </>
+  );
+}
+
+// Payments hub. Three sub-tabs covering the full money lifecycle:
+// incoming charges, bank payouts, and disputes. Previously each
+// was a top-level My Vendora tab, but they're all answers to one
+// vendor question ("where's my money?") — folding them under one
+// header reduces the tab strip and clusters related work.
+function PaymentsTab({
+  transactions,
+  payouts,
+  status,
+  vendorId,
+  onRefunded,
+}: {
+  transactions: Transaction[];
+  payouts: PayoutsResponse | null;
+  status: Status | null;
+  vendorId: string | null;
+  onRefunded: () => void;
+}) {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const rawSub = searchParams.get("sub");
+  const sub: PaymentsTabId =
+    rawSub === "payouts" || rawSub === "disputes" ? rawSub : "incoming";
+  const setSub = (next: PaymentsTabId) => {
+    const params = new URLSearchParams(searchParams);
+    if (next === "incoming") params.delete("sub");
+    else params.set("sub", next);
+    setSearchParams(params, { replace: true });
+  };
+
+  return (
+    <div className="space-y-5">
+      <nav className="flex gap-1 overflow-x-auto scrollbar-hide -mt-1">
+        {PAYMENTS_TABS.map((t) => {
+          const active = sub === t.id;
+          const Icon = t.icon;
+          return (
+            <button
+              key={t.id}
+              type="button"
+              onClick={() => setSub(t.id)}
+              className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-colors whitespace-nowrap ${
+                active
+                  ? "bg-foreground text-background"
+                  : "text-muted-foreground hover:text-foreground hover:bg-foreground/5"
+              }`}
+            >
+              <Icon className="w-3.5 h-3.5" />
+              {t.label}
+            </button>
+          );
+        })}
+      </nav>
+
+      {sub === "incoming" ? (
+        <TransactionsTab
+          transactions={transactions}
+          status={status}
+          vendorId={vendorId}
+          onRefunded={onRefunded}
+        />
+      ) : sub === "payouts" ? (
+        <PayoutsTab data={payouts} status={status} />
+      ) : (
+        <DisputesTab vendorId={vendorId} />
+      )}
+    </div>
   );
 }
 
@@ -4191,13 +4265,18 @@ function LinkStatusPill({ status }: { status: PaymentLink["status"] }) {
   );
 }
 
-function IntegrationsTab({
+function SettingsTab({
   status,
   vendorId,
+  tier,
+  tierLoading,
 }: {
   status: Status | null;
   vendorId: string | null;
+  tier: VendorTier;
+  tierLoading: boolean;
 }) {
+  const fee = TIER_FEE_COPY[tier];
   const [opening, setOpening] = useState(false);
 
   const openDashboard = useCallback(async () => {
@@ -4227,196 +4306,163 @@ function IntegrationsTab({
   }, [vendorId, opening]);
 
   return (
-    <div className="space-y-4">
-      <h2 className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground font-semibold mb-1">
-        Money in / money out
-      </h2>
-
-      {/* Bank account */}
-      <Card>
-        <div className="p-5 flex items-start gap-4 flex-wrap">
-          <div className="shrink-0 w-11 h-11 rounded-xl inline-flex items-center justify-center bg-sky-50 text-sky-700">
-            <Landmark className="w-5 h-5" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 flex-wrap">
-              <h3 className="text-sm font-semibold">Bank account</h3>
-              {status?.bank?.last4 ? (
-                <span className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide bg-emerald-100 text-emerald-700">
-                  Connected
-                </span>
-              ) : status?.onboarded ? (
-                <span className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide bg-amber-100 text-amber-800">
-                  Pending
-                </span>
-              ) : (
-                <span className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide bg-slate-100 text-slate-700">
-                  Not connected
-                </span>
-              )}
+    <div className="space-y-6">
+      {/* Connection — verification + bank state pulled in from the
+          old Integrations tab. The two block cards (bank account,
+          identity/tax) replace the previous standalone tab; the
+          "Coming soon" placeholders that lived there were dropped
+          as informational fluff. */}
+      <section>
+        <h2 className="text-[10px] uppercase tracking-[0.22em] text-muted-foreground font-semibold mb-3 pb-2 border-b border-foreground/[0.06]">
+          Connection
+        </h2>
+        <div className="space-y-3">
+          <Card>
+            <div className="p-5 flex items-start gap-4 flex-wrap">
+              <div className="shrink-0 w-11 h-11 rounded-xl inline-flex items-center justify-center bg-sky-50 text-sky-700">
+                <Landmark className="w-5 h-5" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h3 className="text-sm font-semibold">Bank account</h3>
+                  {status?.bank?.last4 ? (
+                    <span className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide bg-emerald-100 text-emerald-700">
+                      Connected
+                    </span>
+                  ) : status?.onboarded ? (
+                    <span className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide bg-amber-100 text-amber-800">
+                      Pending
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide bg-slate-100 text-slate-700">
+                      Not connected
+                    </span>
+                  )}
+                </div>
+                {status?.bank?.last4 ? (
+                  <p className="text-sm text-foreground mt-1">
+                    {status.bank.bank_name ?? "Bank"} ····{status.bank.last4}
+                    {status.bank.currency ? (
+                      <span className="text-xs text-muted-foreground ml-2 uppercase">
+                        {status.bank.currency}
+                      </span>
+                    ) : null}
+                  </p>
+                ) : (
+                  <p className="text-sm text-muted-foreground mt-1">
+                    {status?.onboarded
+                      ? "Add your bank account in the VendoraPay Express dashboard to receive payouts."
+                      : "Connect VendoraPay first to add a bank account."}
+                  </p>
+                )}
+                <p className="text-[11px] text-muted-foreground mt-2">
+                  Payouts settle to this account 2 business days after each charge.
+                </p>
+              </div>
+              {status?.onboarded ? (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={openDashboard}
+                  disabled={opening}
+                  className="rounded-full"
+                >
+                  {opening ? (
+                    <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" />
+                  ) : (
+                    <ExternalLink className="w-3.5 h-3.5 mr-1" />
+                  )}
+                  {status?.bank?.last4 ? "Manage bank" : "Add bank"}
+                </Button>
+              ) : null}
             </div>
-            {status?.bank?.last4 ? (
-              <p className="text-sm text-foreground mt-1">
-                {status.bank.bank_name ?? "Bank"} ····{status.bank.last4}
-                {status.bank.currency ? (
-                  <span className="text-xs text-muted-foreground ml-2 uppercase">
-                    {status.bank.currency}
-                  </span>
-                ) : null}
-              </p>
-            ) : (
-              <p className="text-sm text-muted-foreground mt-1">
-                {status?.onboarded
-                  ? "Add your bank account in the VendoraPay Express dashboard to receive payouts."
-                  : "Connect VendoraPay first to add a bank account."}
-              </p>
-            )}
-            <p className="text-[11px] text-muted-foreground mt-2">
-              Payouts settle to this account 2 business days after each charge.
-            </p>
-          </div>
-          {status?.onboarded ? (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={openDashboard}
-              disabled={opening}
-              className="rounded-full"
-            >
-              {opening ? (
-                <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" />
-              ) : (
-                <ExternalLink className="w-3.5 h-3.5 mr-1" />
-              )}
-              {status?.bank?.last4 ? "Manage bank" : "Add bank"}
-            </Button>
-          ) : null}
-        </div>
-      </Card>
+          </Card>
 
-      {/* Identity / tax info */}
-      <Card>
-        <div className="p-5 flex items-start gap-4 flex-wrap">
-          <div className="shrink-0 w-11 h-11 rounded-xl inline-flex items-center justify-center bg-violet-50 text-violet-700">
-            <FileText className="w-5 h-5" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 flex-wrap">
-              <h3 className="text-sm font-semibold">Identity & tax info</h3>
-              {status?.details_submitted ? (
-                <span className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide bg-emerald-100 text-emerald-700">
-                  Verified
-                </span>
-              ) : (
-                <span className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide bg-amber-100 text-amber-800">
-                  Incomplete
-                </span>
-              )}
+          <Card>
+            <div className="p-5 flex items-start gap-4 flex-wrap">
+              <div className="shrink-0 w-11 h-11 rounded-xl inline-flex items-center justify-center bg-violet-50 text-violet-700">
+                <FileText className="w-5 h-5" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h3 className="text-sm font-semibold">Identity &amp; tax info</h3>
+                  {status?.details_submitted ? (
+                    <span className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide bg-emerald-100 text-emerald-700">
+                      Verified
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide bg-amber-100 text-amber-800">
+                      Incomplete
+                    </span>
+                  )}
+                </div>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Legal name, EIN/SSN, address. Required for tax forms (1099-K) and payouts.
+                </p>
+              </div>
+              {status?.onboarded ? (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={openDashboard}
+                  disabled={opening}
+                  className="rounded-full"
+                >
+                  {opening ? (
+                    <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" />
+                  ) : (
+                    <ExternalLink className="w-3.5 h-3.5 mr-1" />
+                  )}
+                  Update info
+                </Button>
+              ) : null}
             </div>
-            <p className="text-sm text-muted-foreground mt-1">
-              Legal name, EIN/SSN, address. Required for tax forms (1099-K) and payouts.
-            </p>
-          </div>
-          {status?.onboarded ? (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={openDashboard}
-              disabled={opening}
-              className="rounded-full"
-            >
-              {opening ? (
-                <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" />
-              ) : (
-                <ExternalLink className="w-3.5 h-3.5 mr-1" />
-              )}
-              Update info
-            </Button>
-          ) : null}
+          </Card>
         </div>
-      </Card>
+      </section>
 
-      {/* Coming soon */}
-      <h2 className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground font-semibold mb-1 mt-6">
-        Coming soon
-      </h2>
-      <Card>
-        <div className="p-5 flex items-start gap-4">
-          <div className="shrink-0 w-11 h-11 rounded-xl inline-flex items-center justify-center bg-foreground/5 text-muted-foreground">
-            <Banknote className="w-5 h-5" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <h3 className="text-sm font-semibold">QuickBooks &amp; Xero sync</h3>
-            <p className="text-sm text-muted-foreground mt-1">
-              Push every VendoraPay transaction to your bookkeeper automatically. On the roadmap.
-            </p>
-          </div>
+      <section>
+        <h2 className="text-[10px] uppercase tracking-[0.22em] text-muted-foreground font-semibold mb-3 pb-2 border-b border-foreground/[0.06]">
+          Account
+        </h2>
+        <div className="space-y-4">
+          <SettingRow
+            label="Statement descriptor"
+            value="VENDORAPAY"
+            sub="What your customers see on their card statement."
+          />
+          <SettingRow
+            label={tierLoading ? "Your fee" : `Your fee (${tier} plan)`}
+            value={tierLoading ? "—" : fee.rate}
+            sub={tierLoading ? "Loading your subscription tier…" : `${fee.vendoraCut}. ${fee.sub}`}
+          />
+          <SettingRow
+            label="Payout cadence"
+            value="Standard (2 business days)"
+            sub="Funds settle to your bank 2 business days after each charge clears. Faster options are coming."
+          />
+          <SettingRow
+            label="Currency"
+            value="USD"
+            sub="VendoraPay charges and pays out in US dollars."
+          />
+          <SettingRow
+            label="Account status"
+            value={
+              !status
+                ? "—"
+                : !status.onboarded
+                  ? "Not connected"
+                  : !status.details_submitted
+                    ? "KYC incomplete"
+                    : !status.charges_enabled
+                      ? "Review pending"
+                      : "Active"
+            }
+            sub="Verification + capability state from the payments processor."
+          />
         </div>
-      </Card>
-      <Card>
-        <div className="p-5 flex items-start gap-4">
-          <div className="shrink-0 w-11 h-11 rounded-xl inline-flex items-center justify-center bg-foreground/5 text-muted-foreground">
-            <CreditCard className="w-5 h-5" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <h3 className="text-sm font-semibold">ACH bank transfers</h3>
-            <p className="text-sm text-muted-foreground mt-1">
-              Accept low-fee bank transfers for big bookings (0.8% capped at $5 vs 2.9% on cards).
-            </p>
-          </div>
-        </div>
-      </Card>
-    </div>
-  );
-}
-
-function SettingsTab({
-  status,
-  tier,
-  tierLoading,
-}: {
-  status: Status | null;
-  tier: VendorTier;
-  tierLoading: boolean;
-}) {
-  const fee = TIER_FEE_COPY[tier];
-  return (
-    <div className="space-y-4">
-      <SettingRow
-        label="Statement descriptor"
-        value="VENDORAPAY"
-        sub="What your customers see on their card statement."
-      />
-      <SettingRow
-        label={tierLoading ? "Your fee" : `Your fee (${tier} plan)`}
-        value={tierLoading ? "—" : fee.rate}
-        sub={tierLoading ? "Loading your subscription tier…" : `${fee.vendoraCut}. ${fee.sub}`}
-      />
-      <SettingRow
-        label="Payout cadence"
-        value="Standard (2 business days)"
-        sub="Funds settle to your bank 2 business days after each charge clears. Faster options are coming."
-      />
-      <SettingRow
-        label="Currency"
-        value="USD"
-        sub="VendoraPay charges and pays out in US dollars."
-      />
-      <SettingRow
-        label="Account status"
-        value={
-          !status
-            ? "—"
-            : !status.onboarded
-              ? "Not connected"
-              : !status.details_submitted
-                ? "KYC incomplete"
-                : !status.charges_enabled
-                  ? "Review pending"
-                  : "Active"
-        }
-        sub="Verification + capability state from the payments processor."
-      />
+      </section>
     </div>
   );
 }
