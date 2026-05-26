@@ -18,6 +18,7 @@
 // deno-lint-ignore-file no-explicit-any
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.7";
+import { senderFrom } from "../_shared/sender.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -71,90 +72,58 @@ async function sendEmail(
     console.warn("[vendorapay-notify] RESEND_API_KEY not set; skipping email", to);
     return false;
   }
-  const r = await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: { Authorization: `Bearer ${RESEND_API_KEY}`, "Content-Type": "application/json" },
-    body: JSON.stringify({
-      from: opts.from ?? FROM_ADDRESS,
-      to,
-      subject,
-      html,
-      reply_to: opts.replyTo,
-    }),
+  const payload = JSON.stringify({
+    from: opts.from ?? FROM_ADDRESS,
+    to,
+    subject,
+    html,
+    reply_to: opts.replyTo,
   });
-  if (!r.ok) {
-    console.error("[vendorapay-notify] resend error", to, await r.text());
-    return false;
-  }
-  return true;
-}
 
-// Build the From header for buyer-facing email.
-//
-// Default path: "<Business Name> via VendoraPay <invoices@eventvendora.com>"
-//   — the mailbox stays on our verified Resend domain so the email
-//   delivers, the display name is the vendor's brand.
-//
-// Verified-domain path: if the vendor has hooked up their own domain
-// via vendorapay-email-domain (status="verified"), send from
-// "<Business Name> <noreply@vendor-domain.com>" so the buyer's
-// mail client shows the vendor's actual domain in the From.
-function senderFrom(businessName: string, verifiedDomain: string | null): string {
-  // Strip header-control characters that would let a vendor inject
-  // extra headers via their business_name or trip mail relays:
-  //   - C0 (U+0000-U+001F) and DEL (U+007F)
-  //   - BIDI overrides (U+202A-U+202E) and isolates (U+2066-U+2069)
-  //     which Gmail/Apple Mail render and can be used to spoof
-  //     display names (e.g. RLO flips "Acme" -> "emcA").
-  const stripped = businessName
-    .replace(/[\x00-\x1f\x7f\u202a-\u202e\u2066-\u2069]/g, "")
-    .trim();
-  const baseDisplay = stripped.length ? stripped : "Vendor";
-
-  // Bake the "via VendoraPay" disclosure INTO the display string
-  // before quoting/encoding so it survives quoting. The previous
-  // code concatenated the suffix OUTSIDE the quoted-string, which
-  // Gmail/Apple Mail rendered as just the quoted portion (dropping
-  // the disclosure).
-  const fullDisplay = verifiedDomain
-    ? baseDisplay
-    : `${baseDisplay} via VendoraPay`;
-
-  // RFC 5322 / RFC 2047:
-  //   - pure ASCII with no specials → bare phrase
-  //   - ASCII with specials → quoted-string
-  //   - any non-ASCII → MIME encoded-word (RFC 2047)
-  // Dot is included in the specials regex: while interior dots in
-  // dot-atom are valid, trailing dots like "Acme Inc." trip
-  // strict RFC 5322 parsers in some relays (postfix-strict, some
-  // bank/government inbound filters). Quoting in this case is
-  // safe and the suffix-loss bug is already prevented by baking
-  // " via VendoraPay" INTO fullDisplay above.
-  const isAscii = /^[\x20-\x7e]*$/.test(fullDisplay);
-  let displayEncoded: string;
-  if (!isAscii) {
-    // UTF-8 bytes → base64 → =?utf-8?B?...?=
-    const utf8 = new TextEncoder().encode(fullDisplay);
-    let binary = "";
-    for (let i = 0; i < utf8.length; i++) binary += String.fromCharCode(utf8[i]);
-    displayEncoded = `=?utf-8?B?${btoa(binary)}?=`;
-  } else {
-    const needsQuoting = /[,;:()<>@\[\]\\."]/.test(fullDisplay);
-    if (needsQuoting) {
-      const escaped = fullDisplay
-        .replace(/\\/g, "\\\\")
-        .replace(/"/g, '\\"');
-      displayEncoded = `"${escaped}"`;
-    } else {
-      displayEncoded = fullDisplay;
+  // Retry the Resend POST a few times with exponential backoff so a
+  // transient blip (network drop, brief 5xx) doesn't silently lose
+  // the buyer receipt. Resend's typical SLA recovers within a few
+  // hundred ms — 3 attempts spread over ~2.6s catches most of them.
+  // Skip retry on 4xx (caller mistake — won't get better) but retry
+  // on 5xx and network failures.
+  const delays = [200, 600, 1800];
+  let lastErr: string | null = null;
+  for (let attempt = 0; attempt < delays.length + 1; attempt++) {
+    if (attempt > 0) {
+      await new Promise((resolve) => setTimeout(resolve, delays[attempt - 1]));
+    }
+    try {
+      const r = await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${RESEND_API_KEY}`, "Content-Type": "application/json" },
+        body: payload,
+      });
+      if (r.ok) return true;
+      const body = await r.text();
+      lastErr = `${r.status} ${body.slice(0, 200)}`;
+      if (r.status < 500 && r.status !== 429) {
+        // 4xx (other than rate limit) — won't recover. Log + bail.
+        console.error("[vendorapay-notify] resend 4xx (no retry)", to, lastErr);
+        return false;
+      }
+      console.warn(
+        "[vendorapay-notify] resend transient",
+        attempt + 1,
+        to,
+        lastErr,
+      );
+    } catch (err) {
+      lastErr = err instanceof Error ? err.message : String(err);
+      console.warn("[vendorapay-notify] resend network error", attempt + 1, to, lastErr);
     }
   }
-
-  const mailbox = verifiedDomain
-    ? `noreply@${verifiedDomain}`
-    : "invoices@eventvendora.com";
-  return `${displayEncoded} <${mailbox}>`;
+  console.error("[vendorapay-notify] resend FAILED after retries", to, lastErr);
+  return false;
 }
+
+// senderFrom() lives in _shared/sender.ts so vendorapay-invoice-send
+// can use the same logic — keeps the From header identical on the
+// initial invoice email and the post-payment receipt.
 
 interface PaymentReceivedPayload {
   kind: "payment_received";
@@ -301,11 +270,25 @@ serve(async (req) => {
     const adminRows = (members ?? []) as Array<{ user_id: string; role: string }>;
 
     if (adminRows.length > 0) {
+      // Pack richer context into the admin notification so the
+      // bell-badge preview ("$X received — INV-0042 from buyer@…")
+      // tells the vendor what happened without having to click in.
+      const invoiceLabel = invoiceCtx?.number
+        ? `Invoice ${invoiceCtx.number}`
+        : null;
+      const buyerLabel = body.host_email ?? null;
+      const notifBodyBits = [
+        body.description,
+        invoiceLabel && invoiceLabel !== body.description ? invoiceLabel : null,
+        buyerLabel ? `from ${buyerLabel}` : null,
+      ].filter(Boolean) as string[];
+      const notifBody = notifBodyBits.join(" · ");
+
       const notifRows = adminRows.map((m) => ({
         user_id: m.user_id,
         type: "vendorapay_payment_received",
         title: `${amount} received`,
-        body: body.description,
+        body: notifBody,
         link,
       }));
       const { error: notifErr } = await db.from("notifications").insert(notifRows);
@@ -318,14 +301,23 @@ serve(async (req) => {
         const fromCopy = body.host_email
           ? `from <strong>${escapeHtml(body.host_email)}</strong>`
           : "from a host";
+        const invoiceLine = invoiceLabel
+          ? `<p style="margin:0 0 16px;font-size:13px;color:#6b6259;">${escapeHtml(invoiceLabel)}</p>`
+          : "";
         const html = shellHtml(
           `${amount} arrived in VendoraPay`,
           `<p style="margin:0 0 16px;">Good news — a payment of <strong>${amount}</strong> just landed in your ${escapeHtml(businessName)} account ${fromCopy}.</p>
+           ${invoiceLine}
            <p style="margin:0 0 24px;color:#3a3a3a;">${escapeHtml(body.description)}</p>
            <p style="margin:0 0 24px;">${button(link, "Open VendoraPay")}</p>
            <p style="margin:0;font-size:13px;color:#777;">Funds settle to your bank in 2 business days.</p>`,
         );
-        await sendEmail(email, `${amount} received — ${body.description}`, html);
+        const subjectSuffix = invoiceLabel ? ` — ${invoiceLabel}` : "";
+        await sendEmail(
+          email,
+          `${amount} received${subjectSuffix} — ${body.description}`,
+          html,
+        );
       }
     }
 
@@ -452,7 +444,9 @@ serve(async (req) => {
       );
       await sendEmail(
         body.host_email,
-        `Receipt from ${businessName} — ${amount}`,
+        invoiceCtx?.number
+          ? `Receipt from ${businessName} — Invoice ${invoiceCtx.number} (${amount})`
+          : `Receipt from ${businessName} — ${amount}`,
         html,
         {
           from: senderFrom(businessName, verifiedDomain),

@@ -138,12 +138,36 @@ export default function InvoiceCheckoutPage() {
   }
 
   if (flow === "success" || invoice.status === "paid") {
+    const amountPaid = formatMoney(invoice.total_cents, invoice.currency);
+    const vendorName = invoice.vendor_business_name ?? "Your vendor";
     return (
       <Shell>
         <Centered
           icon={<Check className="w-7 h-7 text-emerald-600" />}
           title="Payment received"
-          sub={`Thanks. ${invoice.vendor_business_name ?? "Your vendor"} will be in touch.`}
+          sub={
+            <span>
+              You paid{" "}
+              <strong className="font-semibold text-foreground">{amountPaid}</strong>{" "}
+              {invoice.invoice_number ? (
+                <>
+                  for Invoice{" "}
+                  <span className="font-medium text-foreground">
+                    {invoice.invoice_number}
+                  </span>
+                  .{" "}
+                </>
+              ) : (
+                ". "
+              )}
+              A receipt is on its way to{" "}
+              <span className="font-medium text-foreground">
+                {invoice.bill_to_email ?? "your email"}
+              </span>
+              . {vendorName} will be in touch — funds settle to their account
+              within 2 business days.
+            </span>
+          }
         />
       </Shell>
     );
@@ -404,7 +428,7 @@ function Centered({
 }: {
   icon?: React.ReactNode;
   title: string;
-  sub: string;
+  sub: React.ReactNode;
 }) {
   return (
     <div className="max-w-md mx-auto px-4 py-24 text-center">

@@ -12,6 +12,7 @@
 // deno-lint-ignore-file no-explicit-any
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.7";
+import { senderFrom } from "../_shared/sender.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
@@ -115,12 +116,39 @@ serve(async (req) => {
 
     const { data: vp } = await admin
       .from("vendor_profiles")
-      .select("business_name, logo_url")
+      .select("user_id, business_name, logo_url")
       .eq("id", inv.vendor_id)
       .maybeSingle();
-    const vpRow = vp as { business_name?: string | null; logo_url?: string | null } | null;
+    const vpRow = vp as {
+      user_id?: string | null;
+      business_name?: string | null;
+      logo_url?: string | null;
+    } | null;
     const businessName = vpRow?.business_name ?? "your vendor";
     const logoUrl = vpRow?.logo_url ?? null;
+
+    // Look up the vendor's verified sending domain (if hooked up
+    // via vendorapay-email-domain) so the invoice email comes from
+    // their brand. Without this, the initial invoice arrives from
+    // invoices@eventvendora.com while the receipt later comes from
+    // noreply@<their-domain> — inconsistent branding.
+    let verifiedDomain: string | null = null;
+    const { data: dom } = await admin
+      .from("vendor_email_domains")
+      .select("domain, status")
+      .eq("vendor_id", inv.vendor_id)
+      .maybeSingle();
+    const domRow = dom as { domain?: string; status?: string } | null;
+    if (domRow?.status === "verified" && domRow.domain) {
+      verifiedDomain = domRow.domain;
+    }
+
+    // Vendor's account email for Reply-To routing.
+    let vendorEmail: string | null = null;
+    if (vpRow?.user_id) {
+      const { data: vu } = await admin.auth.admin.getUserById(vpRow.user_id);
+      vendorEmail = vu?.user?.email ?? null;
+    }
 
     const items = ((inv.line_items as any[]) ?? []) as Array<{ name: string; qty: number; unit_price_cents: number; total_cents?: number }>;
     const currency = (inv.currency as string) ?? "usd";
@@ -143,11 +171,16 @@ serve(async (req) => {
       `${logoHtml}<p style="margin:0 0 8px;font-size:13px;color:#777;">From ${escapeHtml(businessName)}</p><p style="margin:0 0 4px;font-size:14px;">Issued ${formatDate(inv.issue_date as any)}${inv.due_date ? ` · Due ${formatDate(inv.due_date as any)}` : ""}</p><p style="margin:0 0 24px;font-size:32px;font-weight:600;line-height:1.2;">${formatMoney(inv.total_cents as number, currency)}</p><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-top:1px solid #ececec;border-bottom:1px solid #ececec;padding:8px 0;margin:0 0 16px;">${rowsHtml}<tr><td style="padding-top:12px;font-size:13px;color:#777;">Subtotal</td><td style="padding-top:12px;font-size:13px;color:#777;text-align:right;">${formatMoney(inv.subtotal_cents as number, currency)}</td></tr>${taxRow}<tr><td style="padding:6px 0;font-size:15px;font-weight:600;">Total</td><td style="padding:6px 0;font-size:15px;font-weight:600;text-align:right;">${formatMoney(inv.total_cents as number, currency)}</td></tr></table>${inv.notes ? `<p style="margin:0 0 24px;font-size:13px;color:#555;">${escapeHtml(inv.notes as string)}</p>` : ""}<p style="margin:0 0 24px;">${button(payUrl, `Pay ${formatMoney(inv.total_cents as number, currency)}`)}</p><p style="margin:0;font-size:13px;color:#777;">Card payments processed securely via VendoraPay. "VENDORAPAY" will appear on your statement.</p>`,
     );
 
+    // From header mirrors the buyer receipt — verified domain when
+    // hooked up, platform fallback otherwise. Reply-To routes to
+    // the vendor's account email so a buyer hitting Reply lands in
+    // the vendor's inbox instead of /dev/null.
     const r = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: { Authorization: `Bearer ${RESEND_API_KEY}`, "Content-Type": "application/json" },
       body: JSON.stringify({
-        from: FROM_ADDRESS,
+        from: senderFrom(businessName, verifiedDomain),
+        reply_to: vendorEmail ?? undefined,
         to: inv.bill_to_email,
         subject: `Invoice ${inv.invoice_number} from ${businessName} — ${formatMoney(inv.total_cents as number, currency)}`,
         html,
