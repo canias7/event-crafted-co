@@ -43,6 +43,10 @@ import { DashboardSidebar } from "@/components/shared/DashboardSidebar";
 import { MobileNav } from "@/components/shared/MobileNav";
 import { Button } from "@/components/ui/button";
 import { vendorNavItems } from "@/data/navItems";
+import {
+  ListingPicker,
+  type ListingOpt,
+} from "@/components/vendor/ListingPicker";
 
 interface Balance {
   available_cents: number;
@@ -223,9 +227,19 @@ const TIER_FEE_COPY: Record<
 export default function VendorPaymentsPage() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const { ownListing, user } = useAuth();
-  const vendorId = ownListing?.id ?? null;
+  const { user } = useAuth();
   const { tier, loading: tierLoading } = useVendorPlan(user?.id ?? null);
+
+  // Per-listing scope (mirrors Calendar + Leads). Each vendor_profile
+  // has its own stripe_account_id, so switching listings switches the
+  // Stripe data shown here. Auto-selects the first approved listing.
+  const [listings, setListings] = useState<ListingOpt[]>([]);
+  const [listingsLoading, setListingsLoading] = useState(true);
+  const [selectedListingId, setSelectedListingId] = useState<string | null>(
+    null,
+  );
+  const [listingPickerOpen, setListingPickerOpen] = useState(false);
+  const vendorId = selectedListingId;
 
   const tab = ((searchParams.get("tab") as TabId | null) ?? "overview") as TabId;
   const setTab = (next: TabId) => {
@@ -305,6 +319,36 @@ export default function VendorPaymentsPage() {
   useEffect(() => {
     void refresh(true);
   }, [refresh]);
+
+  // Fetch all listings owned by this vendor for the picker. Auto-
+  // selects the first approved one; otherwise leaves selection null
+  // so the "connect VendoraPay" path still works for a pre-approval
+  // vendor (the connect handler tolerates a missing business_id).
+  useEffect(() => {
+    if (!user?.id) return;
+    let cancelled = false;
+    (async () => {
+      setListingsLoading(true);
+      const { data } = await supabase
+        .from("vendor_profiles")
+        .select(
+          "id, business_name, category, location, application_status, logo_url",
+        )
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: true });
+      if (cancelled) return;
+      const rows = (data ?? []) as ListingOpt[];
+      setListings(rows);
+      const firstApproved = rows.find(
+        (l) => l.application_status === "approved",
+      );
+      setSelectedListingId((prev) => prev ?? firstApproved?.id ?? null);
+      setListingsLoading(false);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.id]);
 
   const handleConnect = useCallback(async () => {
     if (connecting) return;
@@ -428,6 +472,26 @@ export default function VendorPaymentsPage() {
         </div>
 
         <div className="p-4 md:p-8 max-w-5xl space-y-6">
+          {/* Listing picker — every Stripe query is scoped to whichever
+              listing the vendor picks here. Each vendor_profile has its
+              own stripe_account_id so the picker swaps the entire money
+              view (balance / transactions / payouts). Hidden when the
+              vendor hasn't created any listings yet (the "no listing"
+              banner below handles that case). */}
+          {(listings.length > 0 || listingsLoading) && (
+            <ListingPicker
+              listings={listings}
+              loading={listingsLoading}
+              selectedId={selectedListingId}
+              onSelect={(id) => {
+                setSelectedListingId(id);
+                setListingPickerOpen(false);
+              }}
+              open={listingPickerOpen}
+              onOpenChange={setListingPickerOpen}
+            />
+          )}
+
           {/* Verify banner — appears on every tab when KYC isn't complete */}
           {verifyBanner ? (
             <section
