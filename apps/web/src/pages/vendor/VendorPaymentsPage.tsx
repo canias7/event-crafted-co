@@ -57,6 +57,7 @@ import {
   ListingPicker,
   type ListingOpt,
 } from "@/components/vendor/ListingPicker";
+import { InvoicePreview } from "@/components/vendor/InvoicePreview";
 import {
   CONTRACT_TEMPLATES,
   INVOICE_TEMPLATES,
@@ -1153,42 +1154,17 @@ function InvoiceTemplatePicker({
       </Card>
 
       <Dialog open={!!preview} onOpenChange={(o) => !o && setPreview(null)}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl max-h-[88vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{preview?.title}</DialogTitle>
             <DialogDescription>{preview?.summary}</DialogDescription>
           </DialogHeader>
           {preview ? (
             <div className="space-y-4">
-              <div className="rounded-xl overflow-hidden" style={{ border: "0.5px solid rgba(0,0,0,0.08)" }}>
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="text-left text-[11px] uppercase tracking-wider text-muted-foreground bg-foreground/5">
-                      <th className="px-3 py-2 font-medium">Item</th>
-                      <th className="px-3 py-2 font-medium text-right w-16">Qty</th>
-                      <th className="px-3 py-2 font-medium text-right w-24">Unit</th>
-                      <th className="px-3 py-2 font-medium text-right w-24">Total</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {preview.lineItems.map((it, i) => (
-                      <tr key={i} className="border-t border-foreground/5">
-                        <td className="px-3 py-2">{it.name}</td>
-                        <td className="px-3 py-2 text-right tnum">{it.qty}</td>
-                        <td className="px-3 py-2 text-right tnum">${it.price.toLocaleString()}</td>
-                        <td className="px-3 py-2 text-right tnum font-medium">
-                          ${(it.qty * it.price).toLocaleString()}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-              {preview.notes ? (
-                <div className="text-xs text-muted-foreground">
-                  <span className="font-medium text-foreground">Notes:</span> {preview.notes}
-                </div>
-              ) : null}
+              {/* Styled preview — mirrors the PDF layout for this
+                  template's `style` so the vendor sees the actual
+                  look before downloading. */}
+              <InvoicePreview template={preview} />
               <div className="flex justify-end gap-2 pt-1 flex-wrap">
                 <Button variant="outline" onClick={() => setPreview(null)} className="rounded-full">
                   Close
