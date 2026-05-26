@@ -1,4 +1,5 @@
 import {
+  Briefcase,
   CalendarDays,
   Compass,
   CreditCard,
@@ -16,13 +17,17 @@ import {
 export interface NavItem {
   /** i18n key resolved by the rendering component via useTranslation. */
   labelKey: string;
-  path: string;
+  /**
+   * Route this item navigates to. Optional — items without a path
+   * are section headers that only expand/collapse their children
+   * (e.g. "My Vendora" → Leads / Calendar / VendoraPay).
+   */
+  path?: string;
   icon: LucideIcon;
   /**
    * Optional sub-items rendered indented beneath this item in the
-   * sidebar. The parent itself is still navigable (clicking goes to
-   * its own `path`); children just give the section a "tab strip
-   * inside the sidebar" feel for tightly related surfaces.
+   * sidebar. When the parent has a `path` it stays navigable; when
+   * it doesn't, the row only toggles the section open/closed.
    */
   children?: NavItem[];
 }
@@ -52,14 +57,14 @@ export const customerNavItems: NavItem[] = [
 export const vendorNavItems: NavItem[] = [
   // Inbox hub — sub-tabs: Inquiries (default), Hosts (DMs), Partners.
   { labelKey: "sidebar.vendor.inbox", path: "/vendor/inbox", icon: Inbox },
-  // My Vendora — the business-operations cluster. Parent navigates to
-  // /vendor/leads (the "Leads" view = the My Vendora home). Calendar
-  // and VendoraPay render indented as sidebar sub-tabs.
+  // My Vendora — business-operations cluster. The parent row itself
+  // doesn't navigate (no own page) — it's a section header that
+  // expands to reveal Leads / Calendar / VendoraPay underneath.
   {
-    labelKey: "sidebar.vendor.leads",
-    path: "/vendor/leads",
-    icon: Users,
+    labelKey: "sidebar.vendor.my_vendora",
+    icon: Briefcase,
     children: [
+      { labelKey: "sidebar.vendor.leads", path: "/vendor/leads", icon: Users },
       { labelKey: "sidebar.vendor.calendar", path: "/vendor/appointments", icon: CalendarDays },
       { labelKey: "sidebar.vendor.vendorapay", path: "/vendor/payments", icon: CreditCard },
     ],

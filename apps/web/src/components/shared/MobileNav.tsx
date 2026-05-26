@@ -14,23 +14,33 @@ import { useAuth } from "@/hooks/useAuth";
 
 interface NavItem {
   labelKey: string;
-  path: string;
+  /** Optional — pathless items are section headers, skipped on mobile. */
+  path?: string;
   icon: LucideIcon;
   children?: NavItem[];
 }
+
+// Navigable item — narrows away the optional path for the rendering
+// path below (mobile only ever renders things you can navigate to).
+type NavigableItem = NavItem & { path: string };
 
 interface MobileNavProps {
   items: NavItem[];
 }
 
 // Mobile nav doesn't have room for nested groups — flatten parent +
-// children into a single sequential list (parent first, then its
-// children right after).
-function flattenItems(items: NavItem[]): NavItem[] {
-  const out: NavItem[] = [];
+// children into a single sequential list. Pathless section headers
+// (e.g. "My Vendora") get dropped; only their navigable children
+// surface in the More drawer.
+function flattenItems(items: NavItem[]): NavigableItem[] {
+  const out: NavigableItem[] = [];
   for (const item of items) {
-    out.push(item);
-    if (item.children) out.push(...item.children);
+    if (item.path) out.push(item as NavigableItem);
+    if (item.children) {
+      for (const child of item.children) {
+        if (child.path) out.push(child as NavigableItem);
+      }
+    }
   }
   return out;
 }
