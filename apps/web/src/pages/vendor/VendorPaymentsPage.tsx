@@ -50,6 +50,7 @@ import {
   ListingPicker,
   type ListingOpt,
 } from "@/components/vendor/ListingPicker";
+import { LogoCropperModal } from "@/components/vendor/LogoCropperModal";
 import { InvoicePreview } from "@/components/vendor/InvoicePreview";
 import {
   CONTRACT_TEMPLATES,
@@ -1134,6 +1135,10 @@ function InvoiceCanvas({
   const editableCls =
     "bg-transparent border-0 outline-none rounded px-1 -mx-1 transition-colors hover:bg-foreground/[0.05] focus:bg-foreground/[0.08]";
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  // Crop step — file picked → opens LogoCropperModal; only after
+  // the user confirms a crop do we hand the (cropped) JPEG to the
+  // upload handler. Cancel discards.
+  const [pendingFile, setPendingFile] = useState<File | null>(null);
 
   return (
     <Card>
@@ -1190,10 +1195,20 @@ function InvoiceCanvas({
               className="hidden"
               onChange={(e) => {
                 const f = e.target.files?.[0];
-                if (f) void onPickLogo(f);
+                if (f) setPendingFile(f);
                 e.target.value = "";
               }}
             />
+            {pendingFile && (
+              <LogoCropperModal
+                file={pendingFile}
+                onCancel={() => setPendingFile(null)}
+                onApply={(cropped) => {
+                  setPendingFile(null);
+                  void onPickLogo(cropped);
+                }}
+              />
+            )}
             <div className="min-w-0">
               <input
                 type="text"
