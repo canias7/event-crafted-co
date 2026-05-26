@@ -44,6 +44,7 @@ interface RecurringRow {
   notes: string | null;
   tax_pct: number;
   next_run_at: string;
+  last_invoice_id: string | null;
 }
 
 interface CustomerRow {
@@ -55,18 +56,54 @@ interface VendorRow {
   user_id: string;
 }
 
-// Move a UTC timestamp forward by one cadence period. Months are
-// calendar-aware (Date#setMonth handles overflow into the next
-// month, e.g. Jan 31 + 1 month -> Mar 3, which is fine for our
-// "approximately monthly" intent).
-function advance(from: Date, interval: RecurringRow["interval"]): Date {
-  const d = new Date(from.getTime());
-  if (interval === "weekly") d.setUTCDate(d.getUTCDate() + 7);
-  else if (interval === "biweekly") d.setUTCDate(d.getUTCDate() + 14);
-  else if (interval === "monthly") d.setUTCMonth(d.getUTCMonth() + 1);
-  else if (interval === "quarterly") d.setUTCMonth(d.getUTCMonth() + 3);
-  else if (interval === "yearly") d.setUTCFullYear(d.getUTCFullYear() + 1);
-  return d;
+// Move a UTC timestamp forward by one cadence period.
+//
+// For month/quarter/year cadences we re-anchor on day_of_month so a
+// rule configured for the 31st doesn't drift to the 3rd via
+// setUTCMonth's overflow (Jan 31 + 1 month -> Mar 3). When the
+// target month has fewer days than the anchor (e.g. Feb 31 doesn't
+// exist), we clamp to the last day of that month — same intent as
+// "last calendar day" billing.
+function lastDayOfMonth(year: number, monthZeroIdx: number): number {
+  return new Date(Date.UTC(year, monthZeroIdx + 1, 0)).getUTCDate();
+}
+function advance(
+  from: Date,
+  interval: RecurringRow["interval"],
+  dayOfMonth: number | null,
+): Date {
+  if (interval === "weekly") {
+    const d = new Date(from.getTime());
+    d.setUTCDate(d.getUTCDate() + 7);
+    return d;
+  }
+  if (interval === "biweekly") {
+    const d = new Date(from.getTime());
+    d.setUTCDate(d.getUTCDate() + 14);
+    return d;
+  }
+  const monthDelta =
+    interval === "monthly" ? 1 : interval === "quarterly" ? 3 : 12;
+  const yearDelta = interval === "yearly" ? 1 : 0;
+  const targetYear = from.getUTCFullYear() + yearDelta;
+  const targetMonthRaw =
+    from.getUTCMonth() + (interval === "yearly" ? 0 : monthDelta);
+  // Normalize month overflow into year via Date.UTC arithmetic.
+  const normYear = targetYear + Math.floor(targetMonthRaw / 12);
+  const normMonth = ((targetMonthRaw % 12) + 12) % 12;
+  const anchor = dayOfMonth ?? from.getUTCDate();
+  const day = Math.min(anchor, lastDayOfMonth(normYear, normMonth));
+  return new Date(
+    Date.UTC(
+      normYear,
+      normMonth,
+      day,
+      from.getUTCHours(),
+      from.getUTCMinutes(),
+      from.getUTCSeconds(),
+      from.getUTCMilliseconds(),
+    ),
+  );
 }
 
 function sumCents(items: LineItem[]): number {
@@ -92,7 +129,7 @@ serve(async (req: Request) => {
   const { data: due, error: dueErr } = await (db as any)
     .from("vendor_recurring_invoices")
     .select(
-      "id, vendor_id, customer_id, interval, day_of_month, line_items, notes, tax_pct, next_run_at",
+      "id, vendor_id, customer_id, interval, day_of_month, line_items, notes, tax_pct, next_run_at, last_invoice_id",
     )
     .eq("active", true)
     .lte("next_run_at", now.toISOString())
@@ -153,52 +190,92 @@ serve(async (req: Request) => {
           total_cents: it.qty * it.unit_price_cents,
         }));
 
+      // Compute the next scheduled run upfront so all branches use
+      // the same value. Catch-up: walk past now() so a long outage
+      // doesn't fire one invoice per cron tick.
+      let nextRun = advance(new Date(row.next_run_at), row.interval, row.day_of_month);
+      while (nextRun <= now) {
+        nextRun = advance(nextRun, row.interval, row.day_of_month);
+      }
+
       if (parsedItems.length === 0) {
         console.warn("[scan-vendorapay-recurring] no line items, skipping", row.id);
         // Still advance next_run_at so we don't loop on this row.
-        await (db as any)
+        // Error-checked: if the UPDATE fails the row is wedged on
+        // the next tick (re-selected by .lte(next_run_at, now)),
+        // so surface the failure rather than swallowing it.
+        const { error: skipAdvErr } = await (db as any)
           .from("vendor_recurring_invoices")
           .update({
-            next_run_at: advance(new Date(row.next_run_at), row.interval).toISOString(),
+            next_run_at: nextRun.toISOString(),
             last_run_at: now.toISOString(),
           })
           .eq("id", row.id);
+        if (skipAdvErr) {
+          console.error(
+            "[scan-vendorapay-recurring] skip-path advance failed",
+            row.id,
+            skipAdvErr,
+          );
+        }
         failed++;
         continue;
       }
 
-      const subtotal = sumCents(parsedItems);
-      const taxBps = Math.round((row.tax_pct ?? 0) * 100);
-      const taxCents = Math.round((subtotal * taxBps) / 10_000);
-      const total = subtotal + taxCents;
+      // Idempotency: if the previous cycle's invoice is still a
+      // draft (e.g. send failed and was rolled back), reuse it
+      // instead of emitting a new numbered invoice. Without this,
+      // a multi-day Resend outage stacks N orphan drafts (each
+      // consuming an INV-NNNN slot from the trigger-assigned
+      // counter) for one cadence's worth of intended sends.
+      let invoiceIdToSend: string | null = null;
+      if (row.last_invoice_id) {
+        const { data: prevInv } = await (db as any)
+          .from("invoices")
+          .select("id, status")
+          .eq("id", row.last_invoice_id)
+          .maybeSingle();
+        const prev = prevInv as { id: string; status: string } | null;
+        if (prev && prev.status === "draft") {
+          invoiceIdToSend = prev.id;
+        }
+      }
 
-      const issueDate = now.toISOString().slice(0, 10);
+      if (!invoiceIdToSend) {
+        const subtotal = sumCents(parsedItems);
+        const taxBps = Math.round((row.tax_pct ?? 0) * 100);
+        const taxCents = Math.round((subtotal * taxBps) / 10_000);
+        const total = subtotal + taxCents;
 
-      const { data: newInv, error: insErr } = await (db as any)
-        .from("invoices")
-        .insert({
-          vendor_id: row.vendor_id,
-          bill_to_name: custRow.name,
-          bill_to_email: custRow.email,
-          issue_date: issueDate,
-          notes: row.notes,
-          line_items: parsedItems,
-          subtotal_cents: subtotal,
-          tax_rate_bps: taxBps,
-          tax_cents: taxCents,
-          total_cents: total,
-          status: "sent",
-          sent_at: now.toISOString(),
-          invoice_number: "",
-          created_by: vpRow.user_id,
-        })
-        .select("id")
-        .single();
+        const issueDate = now.toISOString().slice(0, 10);
 
-      if (insErr || !newInv) {
-        console.error("[scan-vendorapay-recurring] insert failed", row.id, insErr);
-        failed++;
-        continue;
+        const { data: newInv, error: insErr } = await (db as any)
+          .from("invoices")
+          .insert({
+            vendor_id: row.vendor_id,
+            bill_to_name: custRow.name,
+            bill_to_email: custRow.email,
+            issue_date: issueDate,
+            notes: row.notes,
+            line_items: parsedItems,
+            subtotal_cents: subtotal,
+            tax_rate_bps: taxBps,
+            tax_cents: taxCents,
+            total_cents: total,
+            status: "sent",
+            sent_at: now.toISOString(),
+            invoice_number: "",
+            created_by: vpRow.user_id,
+          })
+          .select("id")
+          .single();
+
+        if (insErr || !newInv) {
+          console.error("[scan-vendorapay-recurring] insert failed", row.id, insErr);
+          failed++;
+          continue;
+        }
+        invoiceIdToSend = (newInv as { id: string }).id;
       }
 
       // Send via the existing invoice-send edge fn (uses the
@@ -211,14 +288,15 @@ serve(async (req: Request) => {
             "Content-Type": "application/json",
             Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
           },
-          body: JSON.stringify({ invoice_id: (newInv as { id: string }).id }),
+          body: JSON.stringify({ invoice_id: invoiceIdToSend }),
         },
       );
       if (!sendRes.ok) {
         // Send failed — DON'T advance next_run_at or the schedule
         // silently progresses while no email goes out. Mark the
-        // invoice as draft so a manual resend from the UI picks it
-        // up, count the row as failed, retry on the next cron tick.
+        // invoice as draft so the next tick's idempotency check
+        // reuses it, count the row as failed, retry on the next
+        // cron tick.
         const errText = await sendRes.text();
         console.error(
           "[scan-vendorapay-recurring] send failed (rolling back)",
@@ -226,30 +304,87 @@ serve(async (req: Request) => {
           sendRes.status,
           errText,
         );
-        await (db as any)
+        const { error: rollbackErr } = await (db as any)
           .from("invoices")
           .update({ status: "draft", sent_at: null })
-          .eq("id", (newInv as { id: string }).id);
+          .eq("id", invoiceIdToSend);
+        if (rollbackErr) {
+          // The invoice is now stuck status='sent' with no email
+          // delivered. Loud log; ops needs to investigate before
+          // the vendor sees a phantom-sent row.
+          console.error(
+            "[scan-vendorapay-recurring] rollback UPDATE failed (phantom sent)",
+            invoiceIdToSend,
+            rollbackErr,
+          );
+        }
+        // Pin last_invoice_id to this draft so the next tick reuses
+        // it instead of emitting a fresh INV-NNNN.
+        const { error: pinErr } = await (db as any)
+          .from("vendor_recurring_invoices")
+          .update({ last_invoice_id: invoiceIdToSend, last_run_at: now.toISOString() })
+          .eq("id", row.id);
+        if (pinErr) {
+          console.error(
+            "[scan-vendorapay-recurring] last_invoice_id pin failed",
+            row.id,
+            pinErr,
+          );
+        }
         failed++;
         continue;
       }
 
-      // Advance the cycle. We walk forward until next_run_at lands
-      // in the future so a long cron outage doesn't queue up one
-      // catch-up invoice per cron tick (an 8-week pause on a
-      // weekly rule would otherwise fire 8 invoices on 8 days).
-      let nextRun = advance(new Date(row.next_run_at), row.interval);
-      while (nextRun <= now) {
-        nextRun = advance(nextRun, row.interval);
-      }
-      await (db as any)
+      const { error: advErr } = await (db as any)
         .from("vendor_recurring_invoices")
         .update({
           next_run_at: nextRun.toISOString(),
           last_run_at: now.toISOString(),
-          last_invoice_id: (newInv as { id: string }).id,
+          last_invoice_id: invoiceIdToSend,
         })
         .eq("id", row.id);
+      if (advErr) {
+        // Send succeeded (buyer got the email) but the schedule
+        // UPDATE didn't land. Don't roll back the invoice — the
+        // buyer already received it. The next cron tick will re-
+        // select this row (next_run_at still in past); the
+        // idempotency check above will see last_invoice_id pointing
+        // at a 'sent' (not 'draft') invoice and emit a fresh one,
+        // so we WILL double-bill unless this UPDATE eventually
+        // lands. Mark the invoice for ops visibility and try once
+        // more before giving up.
+        console.error(
+          "[scan-vendorapay-recurring] post-send advance failed (retrying once)",
+          row.id,
+          invoiceIdToSend,
+          advErr,
+        );
+        const { error: retryErr } = await (db as any)
+          .from("vendor_recurring_invoices")
+          .update({
+            next_run_at: nextRun.toISOString(),
+            last_run_at: now.toISOString(),
+            last_invoice_id: invoiceIdToSend,
+          })
+          .eq("id", row.id);
+        if (retryErr) {
+          console.error(
+            "[scan-vendorapay-recurring] post-send advance FAILED PERMANENTLY",
+            row.id,
+            invoiceIdToSend,
+            retryErr,
+          );
+          // Tag the invoice notes so ops finds it. Best-effort.
+          await (db as any)
+            .from("invoices")
+            .update({
+              notes:
+                "(internal) recurring schedule UPDATE failed after send — " +
+                "manual review needed before next cron tick",
+            })
+            .eq("id", invoiceIdToSend);
+        }
+      }
 
       succeeded++;
     } catch (err) {

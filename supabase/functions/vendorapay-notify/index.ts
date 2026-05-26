@@ -100,21 +100,52 @@ async function sendEmail(
 // "<Business Name> <noreply@vendor-domain.com>" so the buyer's
 // mail client shows the vendor's actual domain in the From.
 function senderFrom(businessName: string, verifiedDomain: string | null): string {
-  // Strip header-control characters that could let a vendor inject
-  // additional headers via their business_name. Quoting follows
-  // RFC 5322: if the display name contains any "specials" (commas,
-  // semicolons, parens, dots in some positions, etc), wrap it in
-  // double quotes and escape any internal " or \.
-  const stripped = businessName.replace(/[\r\n]/g, "").trim();
-  const display = stripped.length ? stripped : "Vendor";
-  const needsQuoting = /[,;:()<>@\[\]\\."]/.test(display);
-  const escaped = display.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
-  const safeDisplay = needsQuoting ? `"${escaped}"` : display;
-  const baseMailbox = verifiedDomain
+  // Strip ALL C0 control characters (CR, LF, TAB, NUL, etc.) and
+  // DEL. These would let a vendor inject extra headers via their
+  // business_name or trip mail relay parsers. Trim leftover space.
+  const stripped = businessName.replace(/[\x00-\x1f\x7f]/g, "").trim();
+  const baseDisplay = stripped.length ? stripped : "Vendor";
+
+  // Bake the "via VendoraPay" disclosure INTO the display string
+  // before quoting/encoding so it survives quoting. The previous
+  // code concatenated the suffix OUTSIDE the quoted-string, which
+  // Gmail/Apple Mail rendered as just the quoted portion (dropping
+  // the disclosure).
+  const fullDisplay = verifiedDomain
+    ? baseDisplay
+    : `${baseDisplay} via VendoraPay`;
+
+  // RFC 5322 / RFC 2047:
+  //   - pure ASCII with no specials → bare phrase
+  //   - ASCII with specials (comma, semicolon, paren, etc.) → quoted-string
+  //   - any non-ASCII → MIME encoded-word (RFC 2047)
+  // Note: dot is legal in dot-atom display names ("Acme Inc.") so
+  // it's NOT in the specials list — over-quoting only multiplies
+  // the chance of suffix-loss bugs.
+  const isAscii = /^[\x20-\x7e]*$/.test(fullDisplay);
+  let displayEncoded: string;
+  if (!isAscii) {
+    // UTF-8 bytes → base64 → =?utf-8?B?...?=
+    const utf8 = new TextEncoder().encode(fullDisplay);
+    let binary = "";
+    for (let i = 0; i < utf8.length; i++) binary += String.fromCharCode(utf8[i]);
+    displayEncoded = `=?utf-8?B?${btoa(binary)}?=`;
+  } else {
+    const needsQuoting = /[,;:()<>@\[\]\\"]/.test(fullDisplay);
+    if (needsQuoting) {
+      const escaped = fullDisplay
+        .replace(/\\/g, "\\\\")
+        .replace(/"/g, '\\"');
+      displayEncoded = `"${escaped}"`;
+    } else {
+      displayEncoded = fullDisplay;
+    }
+  }
+
+  const mailbox = verifiedDomain
     ? `noreply@${verifiedDomain}`
     : "invoices@eventvendora.com";
-  const suffix = verifiedDomain ? "" : " via VendoraPay";
-  return `${safeDisplay}${suffix} <${baseMailbox}>`;
+  return `${displayEncoded} <${mailbox}>`;
 }
 
 interface PaymentReceivedPayload {
@@ -151,10 +182,14 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
   if (req.method !== "POST") return json(405, { error: "method_not_allowed" });
   // Service-role bearer required (matches what vendorapay-webhook
-  // sends). Anything else is a spoof attempt — log and drop.
+  // sends). Anything else is a spoof attempt — log and drop. The
+  // length>0 guard prevents a `Bearer undefined` request from
+  // matching when the env var is somehow unset.
   const authHeader = req.headers.get("Authorization") ?? "";
-  const expected = `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`;
-  if (authHeader !== expected) {
+  if (
+    SUPABASE_SERVICE_ROLE_KEY.length === 0 ||
+    authHeader !== `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`
+  ) {
     console.warn("[vendorapay-notify] unauthorized call rejected");
     return json(401, { error: "unauthorized" });
   }

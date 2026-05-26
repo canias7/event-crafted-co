@@ -60,12 +60,31 @@ serve(async (req) => {
     //      emitting. They've done their own ownership checks.
     //      Without this branch, cron-driven recurring invoices
     //      can't reach the email path at all.
+    //
+    // Guard against an empty SUPABASE_SERVICE_ROLE_KEY (env unset /
+    // rotation race): comparing against `Bearer ${undefined}` would
+    // accept the literal "Bearer undefined" header otherwise.
     const isServiceRole =
+      SUPABASE_SERVICE_ROLE_KEY.length > 0 &&
       authHeader === `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`;
 
     const body = await req.json().catch(() => ({}));
     const invoiceId = body?.invoice_id as string | undefined;
     if (!invoiceId) return json(400, { error: "invoice_id required" });
+
+    // Resolve the calling user up-front for non-service-role paths.
+    // Doing this BEFORE the invoice lookup prevents an unauthenticated
+    // caller from probing invoice IDs and learning existence/status
+    // via differentiated 404/400 response codes.
+    let userClient: ReturnType<typeof createClient> | null = null;
+    if (!isServiceRole) {
+      userClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+        global: { headers: { Authorization: authHeader } },
+        auth: { autoRefreshToken: false, persistSession: false },
+      });
+      const { data: userData } = await userClient.auth.getUser();
+      if (!userData?.user) return json(401, { error: "unauthorized" });
+    }
 
     const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, { auth: { persistSession: false } });
     const { data: inv } = await admin
@@ -73,27 +92,25 @@ serve(async (req) => {
       .select("id, vendor_id, slug, invoice_number, bill_to_name, bill_to_email, issue_date, due_date, line_items, subtotal_cents, tax_cents, tax_rate_bps, total_cents, currency, status, notes")
       .eq("id", invoiceId)
       .maybeSingle();
+
+    // For user-JWT callers we collapse "not found" and "not your
+    // invoice" into one 404 response so an authenticated caller
+    // can't enumerate another vendor's invoice ids.
+    if (!isServiceRole) {
+      if (!inv) return json(404, { error: "invoice not found" });
+      const { data: isAdmin } = await userClient!.rpc("is_vendor_team_admin", {
+        _vendor_id: inv.vendor_id,
+      });
+      if (!isAdmin) return json(404, { error: "invoice not found" });
+    }
     if (!inv) return json(404, { error: "invoice not found" });
+
     if (!inv.bill_to_email) return json(400, { error: "bill_to_email required to send" });
     // Status guard: don't email an invoice that's already paid,
     // cancelled, or refunded. Resending a draft / sent / overdue
     // invoice is fine (vendor nudge).
     if (!["draft", "sent", "overdue"].includes(inv.status as string)) {
       return json(400, { error: `cannot send invoice with status '${inv.status}'` });
-    }
-
-    if (!isServiceRole) {
-      // User-JWT path: resolve caller and verify admin membership.
-      const userClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-        global: { headers: { Authorization: authHeader } },
-        auth: { autoRefreshToken: false, persistSession: false },
-      });
-      const { data: userData } = await userClient.auth.getUser();
-      if (!userData?.user) return json(401, { error: "unauthorized" });
-      const { data: isAdmin } = await userClient.rpc("is_vendor_team_admin", {
-        _vendor_id: inv.vendor_id,
-      });
-      if (!isAdmin) return json(403, { error: "admin role required" });
     }
 
     const { data: vp } = await admin

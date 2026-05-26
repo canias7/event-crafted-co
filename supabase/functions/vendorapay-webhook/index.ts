@@ -219,10 +219,22 @@ serve(async (req: Request) => {
         // same PI don't both read N and both write N+1.
         if (invoiceId) {
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          await (db as any).rpc("invoice_record_payment_failure", {
-            p_invoice_id: invoiceId,
-            p_message: failureMessage,
-          });
+          const { error: rpcErr } = await (db as any).rpc(
+            "invoice_record_payment_failure",
+            { p_invoice_id: invoiceId, p_message: failureMessage },
+          );
+          if (rpcErr) {
+            // Don't swallow — the RPC failing means payment_attempts
+            // didn't increment and the failure message isn't on the
+            // invoice. Most likely cause is the RPC missing on a
+            // freshly-deployed environment (migration ordering) or
+            // a permissions issue.
+            console.error(
+              "[vendorapay-webhook] invoice_record_payment_failure failed",
+              invoiceId,
+              rpcErr,
+            );
+          }
         }
 
         if (proposalId) {
@@ -308,57 +320,34 @@ serve(async (req: Request) => {
           }
         }
 
-        // Upsert carefully: a follow-up dispute event (e.g.
-        // dispute.closed) may not be able to re-resolve vendor_id
-        // if the source invoice has since been deleted. We must
-        // NOT let a null vendor_id overwrite a previously-resolved
-        // one, or the dispute disappears from the vendor's tab
-        // (RLS filters on `vendor_id is not null`).
-        if (vendorIdForDispute) {
-          // We have a vendor — full upsert is safe.
-          await db.from("vendor_disputes").upsert(
-            {
-              stripe_dispute_id: d.id,
-              vendor_id: vendorIdForDispute,
-              charge_id: d.charge,
-              payment_intent_id: d.payment_intent ?? null,
-              amount_cents: d.amount,
-              currency: d.currency ?? "usd",
-              reason: d.reason ?? null,
-              status: d.status,
-              raw_payload: event.raw as unknown as Record<string, unknown>,
-              updated_at: new Date().toISOString(),
-            },
-            { onConflict: "stripe_dispute_id" },
+        // Atomic upsert via RPC. The RPC's ON CONFLICT clause
+        // COALESCEs vendor_id so a follow-up event that can't
+        // re-resolve doesn't blank a previously-set value, and
+        // it always refreshes status/amount/payment_intent so
+        // later events overwrite stale fields. Using one INSERT
+        // ... ON CONFLICT statement also eliminates the
+        // check-then-act race that two non-atomic UPDATE/INSERT
+        // calls suffered from.
+        const { error: dispErr } = await (db as any).rpc(
+          "vendor_dispute_upsert",
+          {
+            p_stripe_dispute_id: d.id,
+            p_vendor_id: vendorIdForDispute,
+            p_charge_id: d.charge,
+            p_payment_intent_id: d.payment_intent ?? null,
+            p_amount_cents: d.amount,
+            p_currency: d.currency ?? "usd",
+            p_reason: d.reason ?? null,
+            p_status: d.status,
+            p_raw_payload: event.raw as unknown as Record<string, unknown>,
+          },
+        );
+        if (dispErr) {
+          console.error(
+            "[vendorapay-webhook] vendor_dispute_upsert failed",
+            d.id,
+            dispErr,
           );
-        } else {
-          // No vendor resolved. Try UPDATE first (preserves any
-          // vendor_id already on the row); if the row doesn't
-          // exist, insert with vendor_id=null.
-          const { data: existing } = await db
-            .from("vendor_disputes")
-            .update({
-              status: d.status,
-              reason: d.reason ?? null,
-              raw_payload: event.raw as unknown as Record<string, unknown>,
-              updated_at: new Date().toISOString(),
-            })
-            .eq("stripe_dispute_id", d.id)
-            .select("stripe_dispute_id")
-            .maybeSingle();
-          if (!existing) {
-            await db.from("vendor_disputes").insert({
-              stripe_dispute_id: d.id,
-              vendor_id: null,
-              charge_id: d.charge,
-              payment_intent_id: d.payment_intent ?? null,
-              amount_cents: d.amount,
-              currency: d.currency ?? "usd",
-              reason: d.reason ?? null,
-              status: d.status,
-              raw_payload: event.raw as unknown as Record<string, unknown>,
-            });
-          }
         }
         break;
       }
