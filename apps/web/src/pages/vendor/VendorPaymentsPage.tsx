@@ -1577,12 +1577,6 @@ function InvoicesTab({
     onChanged();
   }, [vendorId, savingBrand, brandDirty, brandName, brandLocation, brandLogoUrl, onChanged]);
 
-  const resetBrand = useCallback(() => {
-    setBrandName(initialBrandRef.current.name);
-    setBrandLocation(initialBrandRef.current.location);
-    setBrandLogoUrl(initialBrandRef.current.logoUrl);
-  }, []);
-
   const sendInvoice = useCallback(async (id: string) => {
     setSendingId(id);
     const { error } = await supabase.functions.invoke("vendorapay-invoice-send", {
@@ -1637,30 +1631,17 @@ function InvoicesTab({
         uploadingLogo={uploadingLogo}
       />
       <Card>
-        <div className="p-4 flex items-center justify-between flex-wrap gap-3">
-          <p className="text-xs text-muted-foreground">
-            Only your business name, city, and logo are editable here. They show up on every invoice you send.
-          </p>
-          <div className="flex gap-2">
-            <Button
-              variant="ghost"
-              onClick={resetBrand}
-              disabled={!brandDirty}
-              className="rounded-full"
-            >
-              Reset
-            </Button>
-            <Button
-              onClick={saveBrand}
-              disabled={savingBrand || !brandDirty || !vendorId}
-              className="rounded-full"
-            >
-              {savingBrand ? (
-                <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
-              ) : null}
-              Save business info
-            </Button>
-          </div>
+        <div className="p-4 flex justify-end">
+          <Button
+            onClick={saveBrand}
+            disabled={savingBrand || !brandDirty || !vendorId}
+            className="rounded-full"
+          >
+            {savingBrand ? (
+              <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
+            ) : null}
+            Save template
+          </Button>
         </div>
       </Card>
 
