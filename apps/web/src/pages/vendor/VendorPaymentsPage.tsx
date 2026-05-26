@@ -1111,47 +1111,52 @@ function InvoiceTemplatePicker({
   const [preview, setPreview] = useState<InvoiceTemplate | null>(null);
   return (
     <>
-      <Card>
-        <div className="p-5">
-          <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
-            <div>
-              <h3 className="text-sm font-semibold">Start from a template</h3>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                Five starter invoices for common event services. Pick one to skip the blank page.
+      {/* Single blank starter — the vendor picks this, gets a clean
+          professional layout, and fills in the real details
+          themselves. AI-generated per-service starters will land
+          here later, but for now it's bring-your-own-content. */}
+      {INVOICE_TEMPLATES.length > 0 && (
+        <Card>
+          <div className="p-5 flex items-center justify-between gap-4 flex-wrap">
+            <div className="min-w-0">
+              <div className="flex items-center gap-2">
+                <h3 className="text-sm font-semibold">Start with a clean template</h3>
+                <span
+                  className="text-[10px] uppercase tracking-wider font-medium rounded-full px-2 py-0.5"
+                  style={{
+                    background: "rgba(255,138,76,0.12)",
+                    color: "#c4541e",
+                    border: "0.5px solid rgba(255,138,76,0.3)",
+                  }}
+                >
+                  AI builder soon
+                </span>
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                Open the professionally-formatted shell — Bill from, Bill to, line items, notes, payment terms — and fill in the details yourself.
               </p>
             </div>
-            <span
-              className="text-[10px] uppercase tracking-wider font-medium rounded-full px-2 py-0.5"
-              style={{
-                background: "rgba(255,138,76,0.12)",
-                color: "#c4541e",
-                border: "0.5px solid rgba(255,138,76,0.3)",
-              }}
-            >
-              AI builder soon
-            </span>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2.5">
-            {INVOICE_TEMPLATES.map((tpl) => (
-              <button
-                key={tpl.id}
-                type="button"
-                onClick={() => setPreview(tpl)}
-                className="text-left rounded-xl px-3.5 py-3 transition-colors hover:bg-foreground/5"
-                style={{ border: "0.5px solid rgba(0,0,0,0.08)" }}
+            <div className="flex gap-2 shrink-0">
+              <Button
+                variant="outline"
+                size="sm"
+                className="rounded-full"
+                onClick={() => setPreview(INVOICE_TEMPLATES[0])}
               >
-                <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">
-                  {tpl.category}
-                </p>
-                <p className="text-sm font-semibold mt-1 truncate">{tpl.title}</p>
-                <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
-                  {tpl.summary}
-                </p>
-              </button>
-            ))}
+                Preview
+              </Button>
+              <Button
+                size="sm"
+                className="rounded-full"
+                onClick={() => onPick(INVOICE_TEMPLATES[0])}
+              >
+                <Plus className="w-3.5 h-3.5 mr-1.5" />
+                Use template
+              </Button>
+            </div>
           </div>
-        </div>
-      </Card>
+        </Card>
+      )}
 
       <Dialog open={!!preview} onOpenChange={(o) => !o && setPreview(null)}>
         <DialogContent className="max-w-4xl max-h-[95vh] overflow-y-auto">

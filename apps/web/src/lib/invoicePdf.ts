@@ -64,7 +64,8 @@ function drawClassic(doc: jsPDF, t: InvoiceTemplate, c: Computed) {
   doc.line(MARGIN, 124, PAGE_W - MARGIN, 124);
 
   drawMetaRow(doc, 154);
-  drawItemsTable(doc, t, 210, { headBold: false, amountSerif: true });
+  drawProjectLine(doc, t, 230);
+  drawItemsTable(doc, t, 274, { headBold: false, amountSerif: true });
   drawTotals(doc, t, c, { variant: "serif" });
   drawNotes(doc, t);
   drawFooter(doc);
@@ -98,7 +99,8 @@ function drawLetterhead(doc: jsPDF, t: InvoiceTemplate, c: Computed) {
   doc.text(money(c.total), PAGE_W - MARGIN, 172, { align: "right" });
 
   drawMetaRow(doc, 210);
-  drawItemsTable(doc, t, 266, { headBold: true, amountSerif: false });
+  drawProjectLine(doc, t, 286);
+  drawItemsTable(doc, t, 330, { headBold: true, amountSerif: false });
   drawTotals(doc, t, c, { variant: "bold" });
   drawNotes(doc, t);
   drawFooter(doc);
@@ -118,7 +120,8 @@ function drawMinimal(doc: jsPDF, t: InvoiceTemplate, c: Computed) {
   doc.text("[Your Business Name]", MARGIN, 118);
 
   drawMetaRow(doc, 160);
-  drawItemsTable(doc, t, 216, { headBold: false, amountSerif: false });
+  drawProjectLine(doc, t, 236);
+  drawItemsTable(doc, t, 280, { headBold: false, amountSerif: false });
   drawTotals(doc, t, c, { variant: "plain" });
   drawNotes(doc, t);
   drawFooter(doc);
@@ -151,6 +154,13 @@ function drawSidebar(doc: jsPDF, t: InvoiceTemplate, c: Computed) {
     y += 18;
   };
 
+  sideLabel("Bill from");
+  sideValue("[Your Business Name]");
+  doc.setFont("helvetica", "normal").setFontSize(9).setTextColor(...MUTED);
+  doc.text("[Street address]", 32, y - 6);
+  doc.text("[City, ST 00000]", 32, y + 6);
+  y += 22;
+
   sideLabel("Bill to");
   sideValue("[Client Name]");
   doc.setFont("helvetica", "normal").setFontSize(9).setTextColor(...MUTED);
@@ -168,7 +178,8 @@ function drawSidebar(doc: jsPDF, t: InvoiceTemplate, c: Computed) {
   doc.setFont("helvetica", "bold").setFontSize(20).setTextColor(...TEXT);
   doc.text("[Your Business Name]", SIDE_W + 32, 92);
 
-  drawItemsTable(doc, t, 140, {
+  drawProjectLine(doc, t, 110, SIDE_W + 32);
+  drawItemsTable(doc, t, 156, {
     headBold: false,
     amountSerif: false,
     left: SIDE_W + 32,
@@ -197,7 +208,8 @@ function drawModern(doc: jsPDF, t: InvoiceTemplate, c: Computed) {
   doc.text("VND-0001", PAGE_W - MARGIN, 98, { align: "right" });
 
   drawMetaRow(doc, 150);
-  drawItemsTable(doc, t, 206, { headBold: false, amountSerif: false });
+  drawProjectLine(doc, t, 226);
+  drawItemsTable(doc, t, 270, { headBold: false, amountSerif: false });
   drawTotals(doc, t, c, { variant: "accent", accent: ACCENT_COOL });
   drawNotes(doc, t);
   drawFooter(doc);
@@ -206,20 +218,53 @@ function drawModern(doc: jsPDF, t: InvoiceTemplate, c: Computed) {
 // ----- Shared chunks -------------------------------------------------
 
 function drawMetaRow(doc: jsPDF, y: number) {
-  const colW = (PAGE_W - 2 * MARGIN) / 3;
-  const writeBlock = (label: string, value: string, sub: string | null, x: number) => {
+  const colW = (PAGE_W - 2 * MARGIN) / 4;
+  const writeLabel = (label: string, x: number) => {
     doc.setFont("helvetica", "bold").setFontSize(7).setTextColor(...MUTED);
     doc.text(label.toUpperCase(), x, y);
-    doc.setFont("helvetica", "normal").setFontSize(10).setTextColor(...TEXT);
-    doc.text(value, x, y + 16);
-    if (sub) {
-      doc.setFont("helvetica", "normal").setFontSize(9).setTextColor(...MUTED);
-      doc.text(sub, x, y + 30);
-    }
   };
-  writeBlock("Bill to", "[Client Name]", "[client@email.com]", MARGIN);
-  writeBlock("Issued", "[Today]", null, MARGIN + colW);
-  writeBlock("Due", "[Due date]", null, MARGIN + colW * 2);
+  const writeValue = (txt: string, x: number, dy: number, muted = false) => {
+    doc.setFont("helvetica", "normal").setFontSize(muted ? 9 : 10);
+    if (muted) doc.setTextColor(...MUTED);
+    else doc.setTextColor(...TEXT);
+    doc.text(txt, x, y + dy);
+  };
+
+  // Bill from
+  writeLabel("Bill from", MARGIN);
+  writeValue("[Your Business Name]", MARGIN, 16);
+  writeValue("[Street address]", MARGIN, 30, true);
+  writeValue("[City, ST 00000]", MARGIN, 42, true);
+  writeValue("[you@business.com]", MARGIN, 54, true);
+
+  // Bill to
+  writeLabel("Bill to", MARGIN + colW);
+  writeValue("[Client Name]", MARGIN + colW, 16);
+  writeValue("[client@email.com]", MARGIN + colW, 30, true);
+  writeValue("[Phone]", MARGIN + colW, 42, true);
+
+  // Issued
+  writeLabel("Issued", MARGIN + colW * 2);
+  writeValue("[Today]", MARGIN + colW * 2, 16);
+
+  // Due
+  writeLabel("Due", MARGIN + colW * 3);
+  writeValue("[Due date]", MARGIN + colW * 3, 16);
+}
+
+// Subject / project line between the meta block and the items table.
+// Light background card, "PROJECT" label + value, matches preview.
+function drawProjectLine(doc: jsPDF, t: InvoiceTemplate, y: number, left = MARGIN) {
+  const right = PAGE_W - MARGIN;
+  const height = 26;
+  doc.setFillColor(250, 247, 243);
+  doc.setDrawColor(...RULE).setLineWidth(0.4);
+  doc.roundedRect(left, y, right - left, height, 4, 4, "FD");
+
+  doc.setFont("helvetica", "bold").setFontSize(7).setTextColor(...MUTED);
+  doc.text("PROJECT", left + 10, y + 16);
+  doc.setFont("helvetica", "normal").setFontSize(10).setTextColor(...TEXT);
+  doc.text(t.projectTitle, left + 70, y + 16);
 }
 
 interface TableOpts {
@@ -243,8 +288,12 @@ function drawItemsTable(
     margin: { left, right: PAGE_W - right },
     tableWidth: width,
     head: [["ITEM", "QTY", "UNIT PRICE", "AMOUNT"]],
+    // Two-line cells: item name on top, optional description below.
+    // Joining with "\n" lets autotable wrap them in the same cell;
+    // the description is styled via didDrawCell so it appears smaller
+    // and muted.
     body: t.lineItems.map((it) => [
-      it.name,
+      { content: it.name, _description: it.description ?? "" },
       String(it.qty),
       money(it.price),
       money(it.qty * it.price),
@@ -254,9 +303,10 @@ function drawItemsTable(
       font: "helvetica",
       fontSize: 10,
       textColor: TEXT,
-      cellPadding: { top: 9, right: 6, bottom: 9, left: 6 },
+      cellPadding: { top: 10, right: 6, bottom: 10, left: 6 },
       lineColor: RULE,
       lineWidth: { bottom: 0.4 },
+      valign: "top",
     },
     headStyles: {
       fillColor: [255, 255, 255],
@@ -276,6 +326,37 @@ function drawItemsTable(
         fontStyle: "bold",
         font: opts.amountSerif ? "times" : "helvetica",
       },
+    },
+    // Render the description as a second muted line under the item
+    // name inside the same row — keeps the item + context together
+    // without exploding the table into two rows.
+    didParseCell: (data) => {
+      if (data.section === "body" && data.column.index === 0) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const raw = data.cell.raw as any;
+        if (raw && raw._description) {
+          data.cell.text = [raw.content, raw._description];
+        }
+      }
+    },
+    didDrawCell: (data) => {
+      if (data.section === "body" && data.column.index === 0) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const raw = data.cell.raw as any;
+        if (raw && raw._description) {
+          // Cover the second line autotable drew at default size,
+          // then redraw it small + muted.
+          const lineH = 12;
+          const descY = data.cell.y + data.cell.padding("top") + lineH;
+          const cellX = data.cell.x + data.cell.padding("left");
+          const cellW = data.cell.width - data.cell.padding("horizontal");
+          doc.setFillColor(255, 255, 255);
+          doc.rect(cellX, descY - 2, cellW, lineH + 2, "F");
+          doc.setFont("helvetica", "normal").setFontSize(8.5).setTextColor(...MUTED);
+          const wrapped = doc.splitTextToSize(raw._description, cellW);
+          doc.text(wrapped, cellX, descY + 6);
+        }
+      }
     },
   });
 }
@@ -348,22 +429,36 @@ function drawTotals(
 }
 
 function drawNotes(doc: jsPDF, t: InvoiceTemplate, opts: { left?: number } = {}) {
-  if (!t.notes) return;
+  if (!t.notes && !t.paymentTerms) return;
   const left = opts.left ?? MARGIN;
   const right = PAGE_W - MARGIN;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const afterTable = (doc as any).lastAutoTable?.finalY ?? 400;
-  const y = afterTable + 120;
+  const y = afterTable + 130;
 
   doc.setDrawColor(...RULE).setLineWidth(0.4);
-  doc.line(left, y - 14, right, y - 14);
+  doc.line(left, y - 16, right, y - 16);
 
-  doc.setFont("helvetica", "bold").setFontSize(7).setTextColor(...MUTED);
-  doc.text("NOTES", left, y);
+  // Two-column layout: Notes on the left, Payment Terms on the right.
+  const gap = 16;
+  const colW = (right - left - gap) / 2;
 
-  doc.setFont("helvetica", "normal").setFontSize(9).setTextColor(...TEXT);
-  const lines = doc.splitTextToSize(t.notes, right - left);
-  doc.text(lines, left, y + 14);
+  if (t.notes) {
+    doc.setFont("helvetica", "bold").setFontSize(7).setTextColor(...MUTED);
+    doc.text("NOTES", left, y);
+    doc.setFont("helvetica", "normal").setFontSize(9).setTextColor(...TEXT);
+    const lines = doc.splitTextToSize(t.notes, colW);
+    doc.text(lines, left, y + 14);
+  }
+
+  if (t.paymentTerms) {
+    const rx = left + colW + gap;
+    doc.setFont("helvetica", "bold").setFontSize(7).setTextColor(...MUTED);
+    doc.text("PAYMENT TERMS", rx, y);
+    doc.setFont("helvetica", "normal").setFontSize(9).setTextColor(...TEXT);
+    const lines = doc.splitTextToSize(t.paymentTerms, colW);
+    doc.text(lines, rx, y + 14);
+  }
 }
 
 function drawFooter(doc: jsPDF) {
