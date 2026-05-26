@@ -157,6 +157,10 @@ serve(async (req: Request) => {
               status: "paid",
               paid_at: new Date().toISOString(),
               paid_payment_intent_id: pi.id,
+              // Clear any prior decline state so the UI doesn't
+              // keep showing "card declined" on a now-paid invoice.
+              payment_failure_message: null,
+              payment_failed_at: null,
               updated_at: new Date().toISOString(),
             })
             .eq("id", invoiceId)
@@ -204,15 +208,43 @@ serve(async (req: Request) => {
           metadata?: Record<string, string>;
         };
         const proposalId = pi.metadata?.proposal_id;
-        if (!proposalId) break;
-        console.warn(
-          "[vendorapay-webhook] payment.failed",
-          proposalId,
-          pi.last_payment_error?.message,
-        );
-        // Don't flip payment_status — the host can retry. Just
-        // log; a future "failed payments" surface can read
-        // stripe_events.
+        const invoiceId = pi.metadata?.invoice_id;
+        const failureMessage = pi.last_payment_error?.message ?? null;
+
+        // Invoices: record the decline so the vendor sees the
+        // invoice is stalled. We don't move status off "sent"
+        // because the buyer can still retry by reopening the link.
+        if (invoiceId) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const dbAny = db as any;
+          const { data: cur } = await dbAny
+            .from("invoices")
+            .select("payment_attempts")
+            .eq("id", invoiceId)
+            .maybeSingle();
+          const nextAttempts =
+            ((cur as { payment_attempts?: number } | null)?.payment_attempts ??
+              0) + 1;
+          await dbAny
+            .from("invoices")
+            .update({
+              payment_failure_message: failureMessage,
+              payment_failed_at: new Date().toISOString(),
+              payment_attempts: nextAttempts,
+              updated_at: new Date().toISOString(),
+            })
+            .eq("id", invoiceId);
+        }
+
+        if (proposalId) {
+          // Proposals: still just log. Future work can promote
+          // failed proposal payments to the same row-level flag.
+          console.warn(
+            "[vendorapay-webhook] payment.failed (proposal)",
+            proposalId,
+            failureMessage,
+          );
+        }
         break;
       }
 
