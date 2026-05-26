@@ -1,70 +1,28 @@
 // Direct PDF generation for invoice templates via jsPDF + autotable.
-// Each template style maps to a distinct visual treatment so vendors
-// can pick the one that matches their brand:
+// Each style maps to a distinct professional document treatment —
+// quiet, restrained, real business stationery (no loud color bars).
 //
-//   editorial   serif title, generous whitespace, peach accent line
-//   bold        full-bleed dark header with white total on accent
-//   minimal     hairline rules, no color, all-cap headings
-//   colorblock  accented sidebar column carrying the bill-to + meta
-//   modern      sans-serif body, blue accent bar over the totals
+//   editorial   classic serif letterhead with a single dark rule
+//   bold        centered "letterhead" with a thick + thin double rule
+//   minimal     hairline rules only, no chrome
+//   colorblock  neutral two-column sidebar layout
+//   modern      sans-serif with a single tick of accent under the name
 //
-// Lazy-loaded by the template picker — keeps jsPDF out of the
+// Lazy-loaded by the template picker — jsPDF stays out of the
 // initial bundle until the vendor actually clicks "Save as PDF".
 
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import type { InvoiceStyle, InvoiceTemplate } from "@/data/vendorapayTemplates";
 
-// Page geometry — Letter-sized in points (jsPDF default unit).
 const PAGE_W = 612;
 const PAGE_H = 792;
-const MARGIN = 48;
+const MARGIN = 56;
 
-interface Palette {
-  bg: [number, number, number] | null;
-  accent: [number, number, number];
-  text: [number, number, number];
-  muted: [number, number, number];
-  rule: [number, number, number];
-}
-
-const PALETTES: Record<InvoiceStyle, Palette> = {
-  editorial: {
-    bg: null,
-    accent: [196, 84, 30],
-    text: [26, 20, 16],
-    muted: [107, 98, 89],
-    rule: [240, 238, 235],
-  },
-  bold: {
-    bg: null,
-    accent: [26, 20, 16],
-    text: [26, 20, 16],
-    muted: [107, 98, 89],
-    rule: [216, 210, 203],
-  },
-  minimal: {
-    bg: null,
-    accent: [26, 20, 16],
-    text: [26, 20, 16],
-    muted: [125, 119, 110],
-    rule: [216, 210, 203],
-  },
-  colorblock: {
-    bg: null,
-    accent: [180, 83, 9],
-    text: [26, 20, 16],
-    muted: [107, 98, 89],
-    rule: [240, 238, 235],
-  },
-  modern: {
-    bg: null,
-    accent: [30, 80, 180],
-    text: [20, 24, 40],
-    muted: [110, 116, 130],
-    rule: [225, 228, 235],
-  },
-};
+const TEXT: [number, number, number] = [26, 20, 16];
+const MUTED: [number, number, number] = [107, 98, 89];
+const RULE: [number, number, number] = [232, 227, 221];
+const ACCENT_COOL: [number, number, number] = [30, 40, 64];
 
 function money(n: number): string {
   return (
@@ -88,112 +46,116 @@ function compute(t: InvoiceTemplate): Computed {
   return { subtotal, tax, total: subtotal + tax };
 }
 
-// ----- Styles --------------------------------------------------------
+// ----- 1. Classic ----------------------------------------------------
 
-function drawEditorial(doc: jsPDF, t: InvoiceTemplate, c: Computed) {
-  const p = PALETTES.editorial;
-
-  // Header: serif title left, INVOICE block right.
-  doc.setFont("times", "normal").setFontSize(22).setTextColor(...p.text);
+function drawClassic(doc: jsPDF, t: InvoiceTemplate, c: Computed) {
+  doc.setFont("times", "normal").setFontSize(22).setTextColor(...TEXT);
   doc.text("[Your Business Name]", MARGIN, 80);
 
-  doc.setFont("helvetica", "normal").setFontSize(9).setTextColor(...p.muted);
-  doc.text(`Template preview · ${t.category}`, MARGIN, 96);
+  doc.setFont("helvetica", "normal").setFontSize(9).setTextColor(...MUTED);
+  doc.text(t.category, MARGIN, 96);
 
-  doc.setFont("helvetica", "bold").setFontSize(8).setTextColor(...p.muted);
-  doc.text("INVOICE", PAGE_W - MARGIN, 80, { align: "right" });
-  doc.setFont("times", "italic").setFontSize(22).setTextColor(...p.text);
-  doc.text("VND-0001", PAGE_W - MARGIN, 100, { align: "right" });
+  doc.setFont("helvetica", "bold").setFontSize(8).setTextColor(...MUTED);
+  doc.text("INVOICE", PAGE_W - MARGIN, 78, { align: "right" });
+  doc.setFont("times", "italic").setFontSize(22).setTextColor(...TEXT);
+  doc.text("VND-0001", PAGE_W - MARGIN, 102, { align: "right" });
 
-  // Accent rule
-  doc.setDrawColor(...p.accent).setLineWidth(0.6);
+  doc.setDrawColor(...TEXT).setLineWidth(0.8);
+  doc.line(MARGIN, 124, PAGE_W - MARGIN, 124);
+
+  drawMetaRow(doc, 154);
+  drawItemsTable(doc, t, 210, { headBold: false, amountSerif: true });
+  drawTotals(doc, t, c, { variant: "serif" });
+  drawNotes(doc, t);
+  drawFooter(doc);
+}
+
+// ----- 2. Letterhead -------------------------------------------------
+
+function drawLetterhead(doc: jsPDF, t: InvoiceTemplate, c: Computed) {
+  doc.setFont("helvetica", "bold").setFontSize(26).setTextColor(...TEXT);
+  doc.text("[Your Business Name]", PAGE_W / 2, 84, { align: "center" });
+
+  doc.setFont("helvetica", "bold").setFontSize(8).setTextColor(...MUTED);
+  // Letter-spaced category line
+  doc.text(t.category.toUpperCase().split("").join(" "), PAGE_W / 2, 102, { align: "center" });
+
+  // Double rule
+  doc.setDrawColor(...TEXT).setLineWidth(1.5);
   doc.line(MARGIN, 120, PAGE_W - MARGIN, 120);
+  doc.setLineWidth(0.5);
+  doc.line(MARGIN, 124, PAGE_W - MARGIN, 124);
 
-  drawMetaBlock(doc, p, 144);
-  drawItemsTable(doc, p, t, 220, { style: "editorial" });
-  drawTotals(doc, p, t, c, { style: "editorial" });
-  drawNotes(doc, p, t);
-  drawFooter(doc, p);
+  // Two-up: invoice number left, amount due right
+  doc.setFont("helvetica", "bold").setFontSize(8).setTextColor(...MUTED);
+  doc.text("INVOICE", MARGIN, 150);
+  doc.setFont("helvetica", "bold").setFontSize(16).setTextColor(...TEXT);
+  doc.text("VND-0001", MARGIN, 170);
+
+  doc.setFont("helvetica", "bold").setFontSize(8).setTextColor(...MUTED);
+  doc.text("AMOUNT DUE", PAGE_W - MARGIN, 150, { align: "right" });
+  doc.setFont("helvetica", "bold").setFontSize(20).setTextColor(...TEXT);
+  doc.text(money(c.total), PAGE_W - MARGIN, 172, { align: "right" });
+
+  drawMetaRow(doc, 210);
+  drawItemsTable(doc, t, 266, { headBold: true, amountSerif: false });
+  drawTotals(doc, t, c, { variant: "bold" });
+  drawNotes(doc, t);
+  drawFooter(doc);
 }
 
-function drawBold(doc: jsPDF, t: InvoiceTemplate, c: Computed) {
-  const p = PALETTES.bold;
-
-  // Full-width dark header band
-  doc.setFillColor(...p.accent);
-  doc.rect(0, 0, PAGE_W, 130, "F");
-
-  doc.setTextColor(255, 255, 255);
-  doc.setFont("helvetica", "bold").setFontSize(10);
-  doc.text("INVOICE", MARGIN, 50);
-  doc.setFont("helvetica", "bold").setFontSize(22);
-  doc.text("[Your Business Name]", MARGIN, 80);
-  doc.setFont("helvetica", "normal").setFontSize(9);
-  doc.text(`${t.category.toUpperCase()} · VND-0001`, MARGIN, 100);
-
-  doc.setFont("helvetica", "normal").setFontSize(8);
-  doc.text("AMOUNT DUE", PAGE_W - MARGIN, 60, { align: "right" });
-  doc.setFont("helvetica", "bold").setFontSize(26);
-  doc.text(money(c.total), PAGE_W - MARGIN, 88, { align: "right" });
-
-  drawMetaBlock(doc, p, 170);
-  drawItemsTable(doc, p, t, 240, { style: "bold" });
-  drawTotals(doc, p, t, c, { style: "bold" });
-  drawNotes(doc, p, t);
-  drawFooter(doc, p);
-}
+// ----- 3. Minimal ----------------------------------------------------
 
 function drawMinimal(doc: jsPDF, t: InvoiceTemplate, c: Computed) {
-  const p = PALETTES.minimal;
+  doc.setFont("helvetica", "bold").setFontSize(8).setTextColor(...MUTED);
+  doc.text("INVOICE · VND-0001", MARGIN, 70);
+  doc.text(t.category.toUpperCase(), PAGE_W - MARGIN, 70, { align: "right" });
 
-  // Tiny meta strip + huge title, no logo block, no colors.
-  doc.setFont("helvetica", "normal").setFontSize(8).setTextColor(...p.muted);
-  doc.text("INVOICE  ·  VND-0001", MARGIN, 70);
-  doc.text(`${t.category.toUpperCase()}`, PAGE_W - MARGIN, 70, { align: "right" });
+  doc.setDrawColor(...RULE).setLineWidth(0.5);
+  doc.line(MARGIN, 84, PAGE_W - MARGIN, 84);
 
-  doc.setDrawColor(...p.rule).setLineWidth(0.4);
-  doc.line(MARGIN, 80, PAGE_W - MARGIN, 80);
+  doc.setFont("helvetica", "bold").setFontSize(22).setTextColor(...TEXT);
+  doc.text("[Your Business Name]", MARGIN, 118);
 
-  doc.setFont("helvetica", "bold").setFontSize(20).setTextColor(...p.text);
-  doc.text("[Your Business Name]", MARGIN, 112);
-
-  drawMetaBlock(doc, p, 150);
-  drawItemsTable(doc, p, t, 220, { style: "minimal" });
-  drawTotals(doc, p, t, c, { style: "minimal" });
-  drawNotes(doc, p, t);
-  drawFooter(doc, p);
+  drawMetaRow(doc, 160);
+  drawItemsTable(doc, t, 216, { headBold: false, amountSerif: false });
+  drawTotals(doc, t, c, { variant: "plain" });
+  drawNotes(doc, t);
+  drawFooter(doc);
 }
 
-function drawColorblock(doc: jsPDF, t: InvoiceTemplate, c: Computed) {
-  const p = PALETTES.colorblock;
-  const SIDEBAR_W = 200;
+// ----- 4. Sidebar (neutral two-column) -------------------------------
 
-  // Left sidebar with accent fill, holding bill-to + meta
-  doc.setFillColor(248, 240, 232);
-  doc.rect(0, 0, SIDEBAR_W, PAGE_H, "F");
+function drawSidebar(doc: jsPDF, t: InvoiceTemplate, c: Computed) {
+  const SIDE_W = 196;
 
-  doc.setFont("helvetica", "bold").setFontSize(9).setTextColor(...p.accent);
+  // Soft neutral sidebar fill
+  doc.setFillColor(246, 242, 237);
+  doc.rect(0, 0, SIDE_W, PAGE_H, "F");
+
+  // Sidebar content
+  doc.setFont("helvetica", "bold").setFontSize(8).setTextColor(...MUTED);
   doc.text("INVOICE", 32, 64);
-  doc.setFont("times", "italic").setFontSize(20).setTextColor(...p.text);
+  doc.setFont("times", "italic").setFontSize(18).setTextColor(...TEXT);
   doc.text("VND-0001", 32, 86);
 
-  let y = 130;
-  const sideLabel = (label: string) => {
-    doc.setFont("helvetica", "bold").setFontSize(7).setTextColor(...p.muted);
-    doc.text(label.toUpperCase(), 32, y);
+  let y = 132;
+  const sideLabel = (txt: string) => {
+    doc.setFont("helvetica", "bold").setFontSize(7).setTextColor(...MUTED);
+    doc.text(txt.toUpperCase(), 32, y);
     y += 12;
   };
-  const sideValue = (val: string) => {
-    doc.setFont("helvetica", "normal").setFontSize(10).setTextColor(...p.text);
-    doc.text(val, 32, y);
+  const sideValue = (txt: string) => {
+    doc.setFont("helvetica", "normal").setFontSize(10).setTextColor(...TEXT);
+    doc.text(txt, 32, y);
     y += 18;
   };
 
   sideLabel("Bill to");
   sideValue("[Client Name]");
-  doc.setFont("helvetica", "normal").setFontSize(9).setTextColor(...p.muted);
+  doc.setFont("helvetica", "normal").setFontSize(9).setTextColor(...MUTED);
   doc.text("[client@email.com]", 32, y - 6);
-  y += 12;
+  y += 14;
 
   sideLabel("Issued");
   sideValue("[Today]");
@@ -202,110 +164,79 @@ function drawColorblock(doc: jsPDF, t: InvoiceTemplate, c: Computed) {
   sideLabel("Category");
   sideValue(t.category);
 
-  // Main column header
-  doc.setFont("helvetica", "bold").setFontSize(18).setTextColor(...p.text);
-  doc.text("[Your Business Name]", SIDEBAR_W + 32, 80);
+  // Main column
+  doc.setFont("helvetica", "bold").setFontSize(20).setTextColor(...TEXT);
+  doc.text("[Your Business Name]", SIDE_W + 32, 92);
 
-  drawItemsTable(doc, p, t, 130, { style: "colorblock", left: SIDEBAR_W + 32 });
-  drawTotals(doc, p, t, c, { style: "colorblock", left: SIDEBAR_W + 32 });
-  drawNotes(doc, p, t, { left: SIDEBAR_W + 32 });
-  drawFooter(doc, p);
+  drawItemsTable(doc, t, 140, {
+    headBold: false,
+    amountSerif: false,
+    left: SIDE_W + 32,
+  });
+  drawTotals(doc, t, c, { variant: "bold", left: SIDE_W + 32 });
+  drawNotes(doc, t, { left: SIDE_W + 32 });
+  drawFooter(doc);
 }
 
+// ----- 5. Modern -----------------------------------------------------
+
 function drawModern(doc: jsPDF, t: InvoiceTemplate, c: Computed) {
-  const p = PALETTES.modern;
+  doc.setFont("helvetica", "bold").setFontSize(22).setTextColor(...ACCENT_COOL);
+  doc.text("[Your Business Name]", MARGIN, 80);
 
-  // Thin colored bar across the top
-  doc.setFillColor(...p.accent);
-  doc.rect(0, 0, PAGE_W, 4, "F");
+  doc.setFont("helvetica", "bold").setFontSize(9).setTextColor(...MUTED);
+  doc.text(t.category, MARGIN, 96);
 
-  doc.setFont("helvetica", "bold").setFontSize(20).setTextColor(...p.text);
-  doc.text("[Your Business Name]", MARGIN, 72);
+  // 40pt accent tick under the name
+  doc.setDrawColor(...ACCENT_COOL).setLineWidth(2);
+  doc.line(MARGIN, 108, MARGIN + 40, 108);
 
-  doc.setFont("helvetica", "normal").setFontSize(8).setTextColor(...p.muted);
-  doc.text(`${t.category.toUpperCase()}`, MARGIN, 88);
+  doc.setFont("helvetica", "bold").setFontSize(8).setTextColor(...ACCENT_COOL);
+  doc.text("INVOICE", PAGE_W - MARGIN, 78, { align: "right" });
+  doc.setFont("helvetica", "bold").setFontSize(16).setTextColor(...TEXT);
+  doc.text("VND-0001", PAGE_W - MARGIN, 98, { align: "right" });
 
-  // Right block
-  doc.setFont("helvetica", "bold").setFontSize(8).setTextColor(...p.accent);
-  doc.text("INVOICE", PAGE_W - MARGIN, 64, { align: "right" });
-  doc.setFont("helvetica", "bold").setFontSize(16).setTextColor(...p.text);
-  doc.text("VND-0001", PAGE_W - MARGIN, 84, { align: "right" });
-
-  drawMetaBlock(doc, p, 130);
-  drawItemsTable(doc, p, t, 200, { style: "modern" });
-  drawTotals(doc, p, t, c, { style: "modern" });
-  drawNotes(doc, p, t);
-  drawFooter(doc, p);
+  drawMetaRow(doc, 150);
+  drawItemsTable(doc, t, 206, { headBold: false, amountSerif: false });
+  drawTotals(doc, t, c, { variant: "accent", accent: ACCENT_COOL });
+  drawNotes(doc, t);
+  drawFooter(doc);
 }
 
 // ----- Shared chunks -------------------------------------------------
 
-function drawMetaBlock(doc: jsPDF, p: Palette, y: number) {
-  const label = (txt: string, x: number) => {
-    doc.setFont("helvetica", "bold").setFontSize(7).setTextColor(...p.muted);
-    doc.text(txt.toUpperCase(), x, y);
+function drawMetaRow(doc: jsPDF, y: number) {
+  const colW = (PAGE_W - 2 * MARGIN) / 3;
+  const writeBlock = (label: string, value: string, sub: string | null, x: number) => {
+    doc.setFont("helvetica", "bold").setFontSize(7).setTextColor(...MUTED);
+    doc.text(label.toUpperCase(), x, y);
+    doc.setFont("helvetica", "normal").setFontSize(10).setTextColor(...TEXT);
+    doc.text(value, x, y + 16);
+    if (sub) {
+      doc.setFont("helvetica", "normal").setFontSize(9).setTextColor(...MUTED);
+      doc.text(sub, x, y + 30);
+    }
   };
-  const value = (txt: string, x: number) => {
-    doc.setFont("helvetica", "normal").setFontSize(10).setTextColor(p.text[0], p.text[1], p.text[2]);
-    doc.text(txt, x, y + 14);
-  };
-  label("Bill to", MARGIN);
-  value("[Client Name]", MARGIN);
-  doc.setFont("helvetica", "normal").setFontSize(9).setTextColor(...p.muted);
-  doc.text("[client@email.com]", MARGIN, y + 28);
-
-  label("Issued", PAGE_W / 2 + 20);
-  value("[Today]", PAGE_W / 2 + 20);
-
-  label("Due", PAGE_W - MARGIN - 80);
-  value("[Due date]", PAGE_W - MARGIN - 80);
+  writeBlock("Bill to", "[Client Name]", "[client@email.com]", MARGIN);
+  writeBlock("Issued", "[Today]", null, MARGIN + colW);
+  writeBlock("Due", "[Due date]", null, MARGIN + colW * 2);
 }
 
-interface SectionOpts {
-  style: InvoiceStyle;
+interface TableOpts {
+  headBold: boolean;
+  amountSerif: boolean;
   left?: number;
 }
 
 function drawItemsTable(
   doc: jsPDF,
-  p: Palette,
   t: InvoiceTemplate,
   startY: number,
-  opts: SectionOpts,
+  opts: TableOpts,
 ) {
   const left = opts.left ?? MARGIN;
   const right = PAGE_W - MARGIN;
   const width = right - left;
-
-  const headStyles: Parameters<typeof autoTable>[1] extends infer A
-    ? A extends { headStyles?: infer H }
-      ? H
-      : never
-    : never =
-    opts.style === "bold"
-      ? {
-          fillColor: p.accent,
-          textColor: [255, 255, 255],
-          fontSize: 8,
-          fontStyle: "bold",
-        }
-      : opts.style === "minimal"
-        ? {
-            fillColor: [255, 255, 255],
-            textColor: p.muted,
-            fontSize: 7,
-            fontStyle: "bold",
-            lineColor: p.text,
-            lineWidth: { bottom: 0.8 },
-          }
-        : {
-            fillColor: [255, 255, 255],
-            textColor: p.muted,
-            fontSize: 8,
-            fontStyle: "bold",
-            lineColor: p.rule,
-            lineWidth: { bottom: 0.5 },
-          };
 
   autoTable(doc, {
     startY,
@@ -320,94 +251,148 @@ function drawItemsTable(
     ]),
     theme: "plain",
     styles: {
-      font: opts.style === "editorial" ? "times" : "helvetica",
+      font: "helvetica",
       fontSize: 10,
-      textColor: p.text,
-      cellPadding: { top: 8, right: 6, bottom: 8, left: 6 },
-      lineColor: p.rule,
+      textColor: TEXT,
+      cellPadding: { top: 9, right: 6, bottom: 9, left: 6 },
+      lineColor: RULE,
       lineWidth: { bottom: 0.4 },
     },
-    headStyles,
+    headStyles: {
+      fillColor: [255, 255, 255],
+      textColor: opts.headBold ? TEXT : MUTED,
+      fontStyle: opts.headBold ? "bold" : "bold",
+      fontSize: 8,
+      lineColor: opts.headBold ? TEXT : MUTED,
+      lineWidth: { bottom: opts.headBold ? 1.2 : 0.6 },
+    },
     columnStyles: {
       0: { cellWidth: "auto" },
-      1: { halign: "right", cellWidth: 50 },
+      1: { halign: "right", cellWidth: 48 },
       2: { halign: "right", cellWidth: 80 },
-      3: { halign: "right", cellWidth: 80, fontStyle: "bold" },
+      3: {
+        halign: "right",
+        cellWidth: 80,
+        fontStyle: "bold",
+        font: opts.amountSerif ? "times" : "helvetica",
+      },
     },
   });
 }
 
+interface TotalsOpts {
+  variant: "plain" | "bold" | "serif" | "accent";
+  accent?: [number, number, number];
+  left?: number;
+}
+
 function drawTotals(
   doc: jsPDF,
-  p: Palette,
   t: InvoiceTemplate,
   c: Computed,
-  opts: SectionOpts,
+  opts: TotalsOpts,
 ) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const afterTable = (doc as any).lastAutoTable?.finalY ?? 400;
   const right = PAGE_W - MARGIN;
-  const left = (opts.left ?? MARGIN) + (PAGE_W - (opts.left ?? MARGIN) - MARGIN - 220);
+  const rowL = right - 240;
 
-  let y = afterTable + 16;
-  doc.setFont("helvetica", "normal").setFontSize(10).setTextColor(...p.muted);
-  doc.text("Subtotal", left, y);
+  let y = afterTable + 20;
+  doc.setFont("helvetica", "normal").setFontSize(10).setTextColor(...MUTED);
+  doc.text("Subtotal", rowL, y);
   doc.text(money(c.subtotal), right, y, { align: "right" });
   y += 16;
 
   if (c.tax > 0) {
-    doc.text(`Tax (${t.taxPct}%)`, left, y);
+    doc.text(`Tax (${t.taxPct}%)`, rowL, y);
     doc.text(money(c.tax), right, y, { align: "right" });
     y += 16;
   }
+  y += 4;
 
-  // Total Due row with style-specific emphasis
-  if (opts.style === "bold" || opts.style === "modern") {
-    doc.setFillColor(...p.accent);
-    doc.rect(left - 8, y - 4, right - left + 16, 28, "F");
-    doc.setTextColor(255, 255, 255).setFont("helvetica", "bold").setFontSize(11);
-    doc.text("TOTAL DUE", left, y + 14);
-    doc.setFontSize(14);
-    doc.text(money(c.total), right, y + 14, { align: "right" });
+  if (opts.variant === "serif") {
+    doc.setDrawColor(...TEXT).setLineWidth(0.8);
+    doc.line(rowL, y, right, y);
+    y += 18;
+    doc.setFont("helvetica", "bold").setFontSize(8).setTextColor(...MUTED);
+    doc.text("TOTAL DUE", rowL, y);
+    doc.setFont("times", "normal").setFontSize(20).setTextColor(...TEXT);
+    doc.text(money(c.total), right, y + 2, { align: "right" });
+  } else if (opts.variant === "bold") {
+    doc.setDrawColor(...TEXT).setLineWidth(1.2);
+    doc.line(rowL, y, right, y);
+    y += 18;
+    doc.setFont("helvetica", "bold").setFontSize(8).setTextColor(...TEXT);
+    doc.text("TOTAL DUE", rowL, y);
+    doc.setFont("helvetica", "bold").setFontSize(16).setTextColor(...TEXT);
+    doc.text(money(c.total), right, y + 1, { align: "right" });
+  } else if (opts.variant === "accent") {
+    const a = opts.accent ?? TEXT;
+    doc.setDrawColor(...a).setLineWidth(1.5);
+    doc.line(rowL, y, right, y);
+    y += 18;
+    doc.setFont("helvetica", "bold").setFontSize(8).setTextColor(...a);
+    doc.text("TOTAL DUE", rowL, y);
+    doc.setFont("helvetica", "bold").setFontSize(16).setTextColor(...a);
+    doc.text(money(c.total), right, y + 1, { align: "right" });
   } else {
-    doc.setDrawColor(...p.text).setLineWidth(0.6);
-    doc.line(left, y, right, y);
-    y += 16;
-    doc.setFont("helvetica", "bold").setFontSize(8).setTextColor(...p.muted);
-    doc.text("TOTAL DUE", left, y);
-    doc.setFont(opts.style === "editorial" ? "times" : "helvetica", "bold")
-      .setFontSize(opts.style === "editorial" ? 18 : 14)
-      .setTextColor(...p.text);
+    // plain
+    doc.setDrawColor(...RULE).setLineWidth(0.5);
+    doc.line(rowL, y, right, y);
+    y += 18;
+    doc.setFont("helvetica", "bold").setFontSize(8).setTextColor(...MUTED);
+    doc.text("TOTAL DUE", rowL, y);
+    doc.setFont("helvetica", "bold").setFontSize(13).setTextColor(...TEXT);
     doc.text(money(c.total), right, y, { align: "right" });
   }
 }
 
-function drawNotes(doc: jsPDF, p: Palette, t: InvoiceTemplate, opts: { left?: number } = {}) {
+function drawNotes(doc: jsPDF, t: InvoiceTemplate, opts: { left?: number } = {}) {
   if (!t.notes) return;
   const left = opts.left ?? MARGIN;
   const right = PAGE_W - MARGIN;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const afterTable = (doc as any).lastAutoTable?.finalY ?? 400;
-  const y = afterTable + 110;
+  const y = afterTable + 120;
 
-  doc.setFont("helvetica", "bold").setFontSize(7).setTextColor(...p.muted);
+  doc.setDrawColor(...RULE).setLineWidth(0.4);
+  doc.line(left, y - 14, right, y - 14);
+
+  doc.setFont("helvetica", "bold").setFontSize(7).setTextColor(...MUTED);
   doc.text("NOTES", left, y);
 
-  doc.setFont("helvetica", "normal").setFontSize(9).setTextColor(p.text[0], p.text[1], p.text[2]);
+  doc.setFont("helvetica", "normal").setFontSize(9).setTextColor(...TEXT);
   const lines = doc.splitTextToSize(t.notes, right - left);
   doc.text(lines, left, y + 14);
 }
 
-function drawFooter(doc: jsPDF, p: Palette) {
-  const y = PAGE_H - 36;
-  doc.setDrawColor(...p.rule).setLineWidth(0.4);
-  doc.line(MARGIN, y - 10, PAGE_W - MARGIN, y - 10);
-  doc.setFont("helvetica", "normal").setFontSize(8).setTextColor(...p.muted);
+function drawFooter(doc: jsPDF) {
+  const y = PAGE_H - 40;
+  doc.setDrawColor(...RULE).setLineWidth(0.4);
+  doc.line(MARGIN, y - 12, PAGE_W - MARGIN, y - 12);
+  doc.setFont("helvetica", "normal").setFontSize(8).setTextColor(...MUTED);
   doc.text("Thank you for your business.", MARGIN, y);
   doc.text("Powered by VendoraPay", PAGE_W - MARGIN, y, { align: "right" });
 }
 
 // ----- Public API ----------------------------------------------------
+
+export function downloadInvoiceTemplatePdf(t: InvoiceTemplate) {
+  const doc = new jsPDF({ unit: "pt", format: "letter" });
+  const c = compute(t);
+
+  const renderers: Record<InvoiceStyle, (d: jsPDF, t: InvoiceTemplate, c: Computed) => void> = {
+    editorial: drawClassic,
+    bold: drawLetterhead,
+    minimal: drawMinimal,
+    colorblock: drawSidebar,
+    modern: drawModern,
+  };
+  renderers[t.style](doc, t, c);
+
+  const safeName = t.title.replace(/[^a-z0-9]+/gi, "-").toLowerCase();
+  doc.save(`vendorapay-${safeName}.pdf`);
+}
 
 // Long-form document (contract / proposal). Single column, body
 // renders the template content with paragraph wrapping; jsPDF
@@ -421,21 +406,19 @@ export function downloadDocTemplatePdf(
   const right = PAGE_W - MARGIN;
   const width = right - left;
 
-  // Header
-  doc.setFont("helvetica", "bold").setFontSize(8).setTextColor(125, 119, 110);
+  doc.setFont("helvetica", "bold").setFontSize(8).setTextColor(...MUTED);
   doc.text(`${kind.toUpperCase()} TEMPLATE  ·  ${t.category.toUpperCase()}`, left, 64);
 
-  doc.setFont("times", "normal").setFontSize(22).setTextColor(26, 20, 16);
+  doc.setFont("times", "normal").setFontSize(22).setTextColor(...TEXT);
   doc.text(t.title, left, 92);
 
-  doc.setFont("helvetica", "normal").setFontSize(10).setTextColor(107, 98, 89);
+  doc.setFont("helvetica", "normal").setFontSize(10).setTextColor(...MUTED);
   const summaryLines = doc.splitTextToSize(t.summary, width);
   doc.text(summaryLines, left, 112);
 
-  doc.setDrawColor(216, 210, 203).setLineWidth(0.5);
+  doc.setDrawColor(...RULE).setLineWidth(0.5);
   doc.line(left, 132, right, 132);
 
-  // Body — use a monospaced-ish layout so headings/bullets stay aligned.
   doc.setFont("courier", "normal").setFontSize(10).setTextColor(42, 36, 31);
   const bodyLines = doc.splitTextToSize(t.content, width);
   const lineHeight = 14;
@@ -449,41 +432,14 @@ export function downloadDocTemplatePdf(
     y += lineHeight;
   }
 
-  // Footer
   const totalPages = doc.getNumberOfPages();
   for (let i = 1; i <= totalPages; i++) {
     doc.setPage(i);
-    doc.setDrawColor(240, 238, 235).setLineWidth(0.4);
+    doc.setDrawColor(...RULE).setLineWidth(0.4);
     doc.line(left, PAGE_H - 46, right, PAGE_H - 46);
-    doc.setFont("helvetica", "normal").setFontSize(8).setTextColor(107, 98, 89);
+    doc.setFont("helvetica", "normal").setFontSize(8).setTextColor(...MUTED);
     doc.text("Powered by VendoraPay", right, PAGE_H - 32, { align: "right" });
     doc.text(`Page ${i} of ${totalPages}`, left, PAGE_H - 32);
-  }
-
-  const safeName = t.title.replace(/[^a-z0-9]+/gi, "-").toLowerCase();
-  doc.save(`vendorapay-${safeName}.pdf`);
-}
-
-export function downloadInvoiceTemplatePdf(t: InvoiceTemplate) {
-  const doc = new jsPDF({ unit: "pt", format: "letter" });
-  const c = compute(t);
-
-  switch (t.style) {
-    case "editorial":
-      drawEditorial(doc, t, c);
-      break;
-    case "bold":
-      drawBold(doc, t, c);
-      break;
-    case "minimal":
-      drawMinimal(doc, t, c);
-      break;
-    case "colorblock":
-      drawColorblock(doc, t, c);
-      break;
-    case "modern":
-      drawModern(doc, t, c);
-      break;
   }
 
   const safeName = t.title.replace(/[^a-z0-9]+/gi, "-").toLowerCase();
