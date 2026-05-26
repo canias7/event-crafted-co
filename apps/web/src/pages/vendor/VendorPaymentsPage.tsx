@@ -19,9 +19,7 @@ import {
   ArrowDownRight,
   ArrowUpRight,
   Banknote,
-  CalendarClock,
   ChevronLeft,
-  ClipboardList,
   Copy,
   CreditCard,
   ExternalLink,
@@ -31,7 +29,6 @@ import {
   Link2,
   Loader2,
   Mail,
-  Package,
   Plug,
   Plus,
   RefreshCw,
@@ -126,13 +123,7 @@ const TABS: Array<{ id: TabId; label: string; icon: typeof Wallet }> = [
 // today — the rest render a "coming soon" placeholder. URL state
 // uses `?tab=files&file=<id>` (the default Invoices is omitted from
 // the URL to keep links clean).
-type FileTabId =
-  | "invoices"
-  | "contracts"
-  | "proposals"
-  | "scheduling"
-  | "services"
-  | "questionnaires";
+type FileTabId = "invoices" | "contracts" | "proposals";
 
 const FILES_TABS: Array<{
   id: FileTabId;
@@ -157,24 +148,6 @@ const FILES_TABS: Array<{
     label: "Proposals",
     icon: FileEdit,
     description: "Pitch packages with line-items and let hosts accept in one click.",
-  },
-  {
-    id: "scheduling",
-    label: "Scheduling",
-    icon: CalendarClock,
-    description: "Share booking links so hosts pick a slot from your calendar.",
-  },
-  {
-    id: "services",
-    label: "Services",
-    icon: Package,
-    description: "Maintain a reusable catalog of packages and add-ons.",
-  },
-  {
-    id: "questionnaires",
-    label: "Questionnaires",
-    icon: ClipboardList,
-    description: "Send intake forms and collect host responses before the event.",
   },
 ];
 
