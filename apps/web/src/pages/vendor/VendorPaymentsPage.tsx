@@ -199,6 +199,11 @@ interface Invoice {
   status: "draft" | "sent" | "paid" | "cancelled" | "overdue";
   sent_at: string | null;
   paid_at: string | null;
+  /** Latest decline reason from Stripe, when buyer's last attempt failed. */
+  payment_failure_message?: string | null;
+  /** Cleared on successful payment; non-null means a failed attempt is pending retry. */
+  payment_failed_at?: string | null;
+  payment_attempts?: number;
   created_at: string;
 }
 
@@ -343,7 +348,7 @@ export default function VendorPaymentsPage() {
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           (supabase as any)
             .from("invoices")
-            .select("id, vendor_id, slug, invoice_number, bill_to_name, bill_to_email, issue_date, due_date, notes, line_items, subtotal_cents, tax_rate_bps, tax_cents, total_cents, currency, status, sent_at, paid_at, created_at")
+            .select("id, vendor_id, slug, invoice_number, bill_to_name, bill_to_email, issue_date, due_date, notes, line_items, subtotal_cents, tax_rate_bps, tax_cents, total_cents, currency, status, sent_at, paid_at, payment_failure_message, payment_failed_at, payment_attempts, created_at")
             .eq("vendor_id", vendorId)
             .order("created_at", { ascending: false })
             .limit(50),
@@ -2090,6 +2095,11 @@ function InvoicesTab({
                   <div className="flex items-center gap-2 flex-wrap">
                     <h3 className="text-sm font-semibold">{inv.invoice_number}</h3>
                     <InvoiceStatusPill status={inv.status} />
+                    {inv.payment_failed_at && !inv.paid_at && (
+                      <span className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide bg-rose-100 text-rose-700">
+                        Card declined
+                      </span>
+                    )}
                   </div>
                   <p className="text-xs text-muted-foreground mt-1">
                     {inv.bill_to_name || inv.bill_to_email || "No recipient"} ·{" "}
@@ -2097,6 +2107,11 @@ function InvoicesTab({
                     Issued {formatDate(inv.issue_date)}
                     {inv.due_date ? ` · Due ${formatDate(inv.due_date)}` : ""}
                   </p>
+                  {inv.payment_failed_at && !inv.paid_at && inv.payment_failure_message && (
+                    <p className="text-xs text-rose-700 mt-1">
+                      Buyer's last attempt failed: {inv.payment_failure_message}
+                    </p>
+                  )}
                 </div>
                 <div className="text-right shrink-0">
                   <div className="text-lg font-editorial">{formatMoney(inv.total_cents, inv.currency)}</div>
@@ -2504,11 +2519,21 @@ function CustomersTab({
                               {inv.invoice_number || "—"}
                             </span>
                             <InvoiceStatusPill status={inv.status} />
+                            {inv.payment_failed_at && !inv.paid_at && (
+                              <span className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide bg-rose-100 text-rose-700">
+                                Card declined
+                              </span>
+                            )}
                           </div>
                           <span className="text-muted-foreground">
                             {formatDate(inv.issue_date)}
                             {inv.due_date ? ` · due ${formatDate(inv.due_date)}` : ""}
                           </span>
+                          {inv.payment_failed_at && !inv.paid_at && inv.payment_failure_message && (
+                            <p className="text-[11px] text-rose-700 mt-1">
+                              {inv.payment_failure_message}
+                            </p>
+                          )}
                         </div>
                         <div className="flex items-center gap-2 shrink-0">
                           <span className="font-semibold tnum">
