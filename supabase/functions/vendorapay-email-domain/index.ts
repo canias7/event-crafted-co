@@ -172,10 +172,21 @@ serve(async (req: Request) => {
       const existingId = (existing as { resend_domain_id?: string } | null)
         ?.resend_domain_id;
 
-      // Hand off to Resend. Their API is idempotent by name in the
-      // sense that re-adding an existing domain returns 422 with
-      // a useful message — we surface that to the caller.
-      const r = await resend("POST", "/domains", { name: domain });
+      // Hand off to Resend. Their API returns 422 when re-adding a
+      // domain name that already exists in our Resend account.
+      // Special case: when the vendor's existing row points at a
+      // Resend resource AND we get a duplicate-name 422, fall back
+      // to the pre-PR-960 "reset stuck" behavior — DELETE the
+      // existing Resend resource and retry the POST. This
+      // preserves the self-service workflow for vendors whose
+      // Resend domain is wedged in pending state.
+      let r = await resend("POST", "/domains", { name: domain });
+      if (!r.ok && r.status === 422 && existingId) {
+        const { ok: delOk } = await resend("DELETE", `/domains/${existingId}`);
+        if (delOk) {
+          r = await resend("POST", "/domains", { name: domain });
+        }
+      }
       if (!r.ok) {
         return json(r.status, {
           error: "resend_create_failed",
@@ -198,9 +209,19 @@ serve(async (req: Request) => {
         );
       if (upsertErr) {
         // Roll back the Resend create so we don't leak a domain
-        // with no DB pointer — otherwise the vendor can't see or
-        // manage it and we permanently consume Resend quota.
-        await resend("DELETE", `/domains/${d.id}`);
+        // with no DB pointer. Error-check the rollback — if Resend
+        // 5xx's, we have an orphaned domain on the Resend side
+        // with no DB pointer and no recovery path. Loud log so ops
+        // can manually delete it via the Resend dashboard.
+        const rollback = await resend("DELETE", `/domains/${d.id}`);
+        if (!rollback.ok) {
+          console.error(
+            "[vendorapay-email-domain] rollback DELETE failed; orphaned Resend domain",
+            d.id,
+            rollback.status,
+            rollback.text.slice(0, 200),
+          );
+        }
         return json(500, {
           error: "internal",
           detail: `upsert_failed: ${upsertErr.message?.slice(0, 200)}`,
@@ -209,7 +230,9 @@ serve(async (req: Request) => {
 
       // Only AFTER the DB swap commits do we tear down the old
       // Resend resource. Best-effort — if it 404s the row was
-      // already gone.
+      // already gone. Skip when the reset-stuck retry above
+      // already deleted it (existingId === d.id is rare but
+      // safer to guard against).
       if (existingId && existingId !== d.id) {
         await resend("DELETE", `/domains/${existingId}`);
       }

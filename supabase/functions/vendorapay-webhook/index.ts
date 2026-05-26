@@ -321,13 +321,15 @@ serve(async (req: Request) => {
         }
 
         // Atomic upsert via RPC. The RPC's ON CONFLICT clause
-        // COALESCEs vendor_id so a follow-up event that can't
-        // re-resolve doesn't blank a previously-set value, and
-        // it always refreshes status/amount/payment_intent so
-        // later events overwrite stale fields. Using one INSERT
-        // ... ON CONFLICT statement also eliminates the
-        // check-then-act race that two non-atomic UPDATE/INSERT
-        // calls suffered from.
+        // takes the LATER vendor_id when a follow-up event has one
+        // (so misattribution from a brittle first-event lookup can
+        // be corrected by a later event), AND gates the whole
+        // update on `excluded.last_event_created_at >= existing` so
+        // Stripe webhook re-delivery of an OLDER event doesn't
+        // revert a resolved dispute back to needs_response.
+        const eventCreatedAt = new Date(
+          ((event.raw as { created?: number }).created ?? Math.floor(Date.now() / 1000)) * 1000,
+        ).toISOString();
         const { error: dispErr } = await (db as any).rpc(
           "vendor_dispute_upsert",
           {
@@ -340,6 +342,7 @@ serve(async (req: Request) => {
             p_reason: d.reason ?? null,
             p_status: d.status,
             p_raw_payload: event.raw as unknown as Record<string, unknown>,
+            p_event_created_at: eventCreatedAt,
           },
         );
         if (dispErr) {

@@ -2873,11 +2873,22 @@ function RecurringDialog({
       return;
     }
     setSubmitting(true);
+    // For monthly/quarterly/yearly cadences we persist the calendar
+    // day from the next-run picker as day_of_month so the scanner's
+    // advance() function re-anchors to it instead of drifting after
+    // the first month-overflow (e.g. Jan 31 -> Feb 28 then stuck on
+    // the 28th forever).
+    const nextRunDate = new Date(`${nextRun}T09:00:00Z`);
+    const dayOfMonth =
+      interval === "monthly" || interval === "quarterly" || interval === "yearly"
+        ? nextRunDate.getUTCDate()
+        : null;
     const payload = {
       vendor_id: vendorId,
       customer_id: customer.id,
       interval,
-      next_run_at: new Date(`${nextRun}T09:00:00Z`).toISOString(),
+      day_of_month: dayOfMonth,
+      next_run_at: nextRunDate.toISOString(),
       line_items: parsedItems,
       notes: notes.trim() || null,
       tax_pct: parseFloat(taxPct || "0") || 0,
@@ -3259,15 +3270,22 @@ function SendInvoiceDialog({
       // Roll the invoice back to a true draft so the toast doesn't
       // lie: the DB-side trigger already burned an INV-#### number
       // and stamped status='sent'/sent_at=now on the insert, so we
-      // need to undo that. The number itself stays (trigger doesn't
-      // reverse), but the vendor's invoice list now correctly shows
-      // a draft they can resend manually instead of a Sent row that
-      // never reached the buyer.
-      await db
+      // need to undo that. Error-check the rollback — if it fails
+      // (RLS edge, network), surface the discrepancy so the user
+      // doesn't trust the "Saved as draft" message and assume they
+      // can resend later from the list.
+      const { error: rollbackErr } = await db
         .from("invoices")
         .update({ status: "draft", sent_at: null })
         .eq("id", newRow.id);
-      toast.warning("Saved as draft — email failed", { description: sendErr.message });
+      if (rollbackErr) {
+        toast.error("Email failed and rollback failed", {
+          description:
+            "Invoice may be stuck as Sent. Refresh and verify the row's status before resending.",
+        });
+      } else {
+        toast.warning("Saved as draft — email failed", { description: sendErr.message });
+      }
     } else {
       toast.success("Invoice sent", {
         description: `Emailed to ${billToEmail.trim()}.`,

@@ -100,10 +100,15 @@ async function sendEmail(
 // "<Business Name> <noreply@vendor-domain.com>" so the buyer's
 // mail client shows the vendor's actual domain in the From.
 function senderFrom(businessName: string, verifiedDomain: string | null): string {
-  // Strip ALL C0 control characters (CR, LF, TAB, NUL, etc.) and
-  // DEL. These would let a vendor inject extra headers via their
-  // business_name or trip mail relay parsers. Trim leftover space.
-  const stripped = businessName.replace(/[\x00-\x1f\x7f]/g, "").trim();
+  // Strip header-control characters that would let a vendor inject
+  // extra headers via their business_name or trip mail relays:
+  //   - C0 (U+0000-U+001F) and DEL (U+007F)
+  //   - BIDI overrides (U+202A-U+202E) and isolates (U+2066-U+2069)
+  //     which Gmail/Apple Mail render and can be used to spoof
+  //     display names (e.g. RLO flips "Acme" -> "emcA").
+  const stripped = businessName
+    .replace(/[\x00-\x1f\x7f\u202a-\u202e\u2066-\u2069]/g, "")
+    .trim();
   const baseDisplay = stripped.length ? stripped : "Vendor";
 
   // Bake the "via VendoraPay" disclosure INTO the display string
@@ -117,11 +122,14 @@ function senderFrom(businessName: string, verifiedDomain: string | null): string
 
   // RFC 5322 / RFC 2047:
   //   - pure ASCII with no specials → bare phrase
-  //   - ASCII with specials (comma, semicolon, paren, etc.) → quoted-string
+  //   - ASCII with specials → quoted-string
   //   - any non-ASCII → MIME encoded-word (RFC 2047)
-  // Note: dot is legal in dot-atom display names ("Acme Inc.") so
-  // it's NOT in the specials list — over-quoting only multiplies
-  // the chance of suffix-loss bugs.
+  // Dot is included in the specials regex: while interior dots in
+  // dot-atom are valid, trailing dots like "Acme Inc." trip
+  // strict RFC 5322 parsers in some relays (postfix-strict, some
+  // bank/government inbound filters). Quoting in this case is
+  // safe and the suffix-loss bug is already prevented by baking
+  // " via VendoraPay" INTO fullDisplay above.
   const isAscii = /^[\x20-\x7e]*$/.test(fullDisplay);
   let displayEncoded: string;
   if (!isAscii) {
@@ -131,7 +139,7 @@ function senderFrom(businessName: string, verifiedDomain: string | null): string
     for (let i = 0; i < utf8.length; i++) binary += String.fromCharCode(utf8[i]);
     displayEncoded = `=?utf-8?B?${btoa(binary)}?=`;
   } else {
-    const needsQuoting = /[,;:()<>@\[\]\\"]/.test(fullDisplay);
+    const needsQuoting = /[,;:()<>@\[\]\\."]/.test(fullDisplay);
     if (needsQuoting) {
       const escaped = fullDisplay
         .replace(/\\/g, "\\\\")
