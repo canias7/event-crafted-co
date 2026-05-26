@@ -1105,8 +1105,12 @@ function FilesTab(props: {
 // later; the data shape doesn't have to change.
 function InvoiceTemplatePicker({
   onPick,
+  hasSavedDefault,
+  onUseDefault,
 }: {
   onPick: (tpl: InvoiceTemplate) => void;
+  hasSavedDefault: boolean;
+  onUseDefault: () => void;
 }) {
   const [preview, setPreview] = useState<InvoiceTemplate | null>(null);
   return (
@@ -1120,7 +1124,9 @@ function InvoiceTemplatePicker({
           <div className="p-5 flex items-center justify-between gap-4 flex-wrap">
             <div className="min-w-0">
               <div className="flex items-center gap-2">
-                <h3 className="text-sm font-semibold">Start with a clean template</h3>
+                <h3 className="text-sm font-semibold">
+                  {hasSavedDefault ? "Use your saved invoice" : "Start with a clean template"}
+                </h3>
                 <span
                   className="text-[10px] uppercase tracking-wider font-medium rounded-full px-2 py-0.5"
                   style={{
@@ -1133,7 +1139,9 @@ function InvoiceTemplatePicker({
                 </span>
               </div>
               <p className="text-xs text-muted-foreground mt-1">
-                Open the professionally-formatted shell — Bill from, Bill to, line items, notes, payment terms — and fill in the details yourself.
+                {hasSavedDefault
+                  ? "Start from the invoice you saved as default — edit the bill-to and dates, send, repeat."
+                  : "Open the professionally-formatted shell — Bill from, Bill to, line items, notes, payment terms — and fill in the details yourself."}
               </p>
             </div>
             <div className="flex gap-2 shrink-0">
@@ -1143,15 +1151,15 @@ function InvoiceTemplatePicker({
                 className="rounded-full"
                 onClick={() => setPreview(INVOICE_TEMPLATES[0])}
               >
-                Preview
+                Preview shell
               </Button>
               <Button
                 size="sm"
                 className="rounded-full"
-                onClick={() => onPick(INVOICE_TEMPLATES[0])}
+                onClick={hasSavedDefault ? onUseDefault : () => onPick(INVOICE_TEMPLATES[0])}
               >
                 <Plus className="w-3.5 h-3.5 mr-1.5" />
-                Use template
+                {hasSavedDefault ? "New invoice" : "Use template"}
               </Button>
             </div>
           </div>
@@ -1349,6 +1357,44 @@ function InvoicesTab({
   const [submitting, setSubmitting] = useState(false);
   const [sendingId, setSendingId] = useState<string | null>(null);
 
+  // Vendor's saved default invoice — populated from
+  // vendor_invoice_defaults. When present, the picker card and
+  // "Use template" both source from this instead of the blank
+  // placeholder. Stored shape mirrors the composer state so a save
+  // can roundtrip without translation.
+  interface SavedDefault {
+    lineItems: Array<{ name: string; qty: number; price: number }>;
+    notes: string;
+    taxPct: number;
+  }
+  const [savedDefault, setSavedDefault] = useState<SavedDefault | null>(null);
+  const [savingDefault, setSavingDefault] = useState(false);
+
+  useEffect(() => {
+    if (!vendorId) {
+      setSavedDefault(null);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data, error } = await (supabase as any)
+        .from("vendor_invoice_defaults")
+        .select("template_data")
+        .eq("vendor_id", vendorId)
+        .maybeSingle();
+      if (cancelled) return;
+      if (!error && data?.template_data) {
+        setSavedDefault(data.template_data as SavedDefault);
+      } else {
+        setSavedDefault(null);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [vendorId]);
+
   const subtotalCents = items.reduce((sum, it) => {
     const q = parseInt(it.qty || "0", 10);
     const p = Math.round(parseFloat(it.price || "0") * 100);
@@ -1522,9 +1568,67 @@ function InvoicesTab({
     setCreating(true);
   }, []);
 
+  // "Use template" entry point. Pulls the vendor's saved default if
+  // one exists; otherwise falls back to the blank starter so first-
+  // time vendors still have a clean shell to fill in.
+  const startFromDefault = useCallback(() => {
+    if (savedDefault) {
+      setItems(
+        savedDefault.lineItems.map((it) => ({
+          name: it.name,
+          qty: String(it.qty),
+          price: it.price ? String(it.price) : "",
+        })),
+      );
+      setTaxPct(savedDefault.taxPct ? String(savedDefault.taxPct) : "");
+      setNotes(savedDefault.notes ?? "");
+      setCreating(true);
+    } else {
+      applyTemplate(INVOICE_TEMPLATES[0]);
+    }
+  }, [savedDefault, applyTemplate]);
+
+  // Persist current composer state as the vendor's default for this
+  // listing. Bill-to / dates intentionally excluded — those are
+  // per-invoice, not per-vendor. Upserts so repeated saves overwrite.
+  const saveAsDefault = useCallback(async () => {
+    if (!vendorId || savingDefault) return;
+    setSavingDefault(true);
+    const payload: SavedDefault = {
+      lineItems: items
+        .map((it) => ({
+          name: it.name.trim(),
+          qty: parseInt(it.qty || "0", 10) || 0,
+          price: parseFloat(it.price || "0") || 0,
+        }))
+        .filter((it) => it.name.length > 0),
+      notes: notes.trim(),
+      taxPct: parseFloat(taxPct || "0") || 0,
+    };
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error } = await (supabase as any)
+      .from("vendor_invoice_defaults")
+      .upsert({ vendor_id: vendorId, template_data: payload });
+    setSavingDefault(false);
+    if (error) {
+      toast.error("Couldn't save default", { description: error.message });
+      return;
+    }
+    setSavedDefault(payload);
+    toast.success("Default saved", {
+      description: "Your next invoice will start from this template.",
+    });
+  }, [vendorId, items, notes, taxPct, savingDefault]);
+
   return (
     <div className="space-y-4">
-      {!creating && <InvoiceTemplatePicker onPick={applyTemplate} />}
+      {!creating && (
+        <InvoiceTemplatePicker
+          onPick={applyTemplate}
+          hasSavedDefault={!!savedDefault}
+          onUseDefault={startFromDefault}
+        />
+      )}
       {creating ? (
         <Card>
           <div className="p-5 space-y-3">
@@ -1652,7 +1756,7 @@ function InvoicesTab({
               className="w-full rounded-lg border-0 px-3 py-2 text-sm bg-background/60 ring-1 ring-foreground/10 focus:ring-foreground/30 outline-none resize-none"
             />
 
-            <div className="flex gap-2">
+            <div className="flex gap-2 flex-wrap">
               <Button onClick={() => create(true)} disabled={submitting} className="rounded-full">
                 {submitting ? (
                   <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
@@ -1668,6 +1772,18 @@ function InvoicesTab({
                 className="rounded-full"
               >
                 Save draft
+              </Button>
+              <Button
+                variant="outline"
+                onClick={saveAsDefault}
+                disabled={savingDefault || !vendorId}
+                className="rounded-full ml-auto"
+                title="Save current items, notes, and tax as the starting point for future invoices"
+              >
+                {savingDefault ? (
+                  <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
+                ) : null}
+                {savedDefault ? "Update my default" : "Save as my default"}
               </Button>
               <Button variant="ghost" onClick={resetForm} className="rounded-full">
                 Cancel
