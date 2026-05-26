@@ -187,6 +187,7 @@ serve(async (req: Request) => {
                 host_email: hostEmailForNotify,
                 payment_link_id: paymentLinkId ?? null,
                 proposal_id: proposalId ?? null,
+                invoice_id: invoiceId ?? null,
               }),
             });
           } catch (err) {
