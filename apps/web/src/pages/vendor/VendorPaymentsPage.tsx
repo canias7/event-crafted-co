@@ -328,6 +328,31 @@ export default function VendorPaymentsPage({ embedded = false }: { embedded?: bo
   const vendorId = selectedListingId;
 
   const tab = ((searchParams.get("tab") as TabId | null) ?? "overview") as TabId;
+
+  // Tab-strip overflow management. Two related concerns: (1) scroll
+  // the active tab into view when the user deep-links to a far-right
+  // tab like Settings, and (2) only render the right-edge fade when
+  // the strip actually overflows — otherwise on wide viewports the
+  // fade looks like abandoned decoration. We track overflow via a
+  // ResizeObserver so the fade reacts to window resizes.
+  const tabNavRef = useRef<HTMLElement | null>(null);
+  const [tabOverflow, setTabOverflow] = useState(false);
+  useEffect(() => {
+    const el = tabNavRef.current;
+    if (!el) return;
+    const update = () => setTabOverflow(el.scrollWidth > el.clientWidth + 1);
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+  useEffect(() => {
+    const el = tabNavRef.current;
+    if (!el) return;
+    const btn = el.querySelector<HTMLButtonElement>(`[data-tab="${tab}"]`);
+    if (btn) btn.scrollIntoView({ block: "nearest", inline: "nearest" });
+  }, [tab]);
+
   const setTab = (next: TabId) => {
     const params = new URLSearchParams(searchParams);
     if (next === "overview") params.delete("tab");
@@ -622,7 +647,12 @@ export default function VendorPaymentsPage({ embedded = false }: { embedded?: bo
               viewports; the right-edge gradient is a visual cue
               that more tabs exist past the fold. */}
           <div className="relative mt-5 -mx-4 md:-mx-8">
-            <nav className="flex gap-1 overflow-x-auto scrollbar-hide px-4 md:px-8 pr-12 md:pr-16">
+            <nav
+              ref={tabNavRef}
+              className={`flex gap-1 overflow-x-auto scrollbar-hide px-4 md:px-8 ${
+                tabOverflow ? "pr-12 md:pr-16" : ""
+              }`}
+            >
               {TABS.map((t) => {
                 const active = tab === t.id;
                 const Icon = t.icon;
@@ -630,6 +660,7 @@ export default function VendorPaymentsPage({ embedded = false }: { embedded?: bo
                   <button
                     key={t.id}
                     type="button"
+                    data-tab={t.id}
                     onClick={() => setTab(t.id)}
                     className={`inline-flex items-center gap-1.5 rounded-full px-4 h-9 text-[13px] font-medium transition-all whitespace-nowrap ${
                       active
@@ -643,11 +674,15 @@ export default function VendorPaymentsPage({ embedded = false }: { embedded?: bo
                 );
               })}
             </nav>
-            {/* Right-edge fade so users notice the strip is scrollable. */}
-            <div
-              aria-hidden
-              className="pointer-events-none absolute top-0 right-0 h-full w-12 md:w-16 bg-gradient-to-l from-[#fefdfb] to-transparent"
-            />
+            {/* Right-edge fade — only when the strip actually
+                overflows, so wide viewports (all 11 tabs fit) don't
+                see a phantom gradient with nothing being clipped. */}
+            {tabOverflow && (
+              <div
+                aria-hidden
+                className="pointer-events-none absolute top-0 right-0 h-full w-10 md:w-14 bg-gradient-to-l from-background via-background/70 to-transparent"
+              />
+            )}
           </div>
         </div>
 
@@ -1316,7 +1351,7 @@ function FilesTab(props: {
 
   return (
     <div className="space-y-5">
-      <nav className="flex gap-1 overflow-x-auto -mt-1">
+      <nav className="flex gap-1 overflow-x-auto scrollbar-hide -mt-1">
         {FILES_TABS.map((t) => {
           const active = fileTab === t.id;
           const Icon = t.icon;
