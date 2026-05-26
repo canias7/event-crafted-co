@@ -89,14 +89,22 @@ async function sendEmail(
   return true;
 }
 
-// Build a "<Business Name> <invoices@eventvendora.com>" From header
-// so the buyer's mail client shows the vendor's name as the sender.
-// The actual mailbox stays on our verified domain (Resend rejects
-// unverified senders). Replies are routed to the vendor's email via
-// Reply-To, set separately at the call site.
-function senderFrom(businessName: string): string {
+// Build the From header for buyer-facing email.
+//
+// Default path: "<Business Name> via VendoraPay <invoices@eventvendora.com>"
+//   — the mailbox stays on our verified Resend domain so the email
+//   delivers, the display name is the vendor's brand.
+//
+// Verified-domain path: if the vendor has hooked up their own domain
+// via vendorapay-email-domain (status="verified"), send from
+// "<Business Name> <noreply@vendor-domain.com>" so the buyer's
+// mail client shows the vendor's actual domain in the From.
+function senderFrom(businessName: string, verifiedDomain: string | null): string {
   const safe = businessName.replace(/[<>"\r\n]/g, "").trim();
   const display = safe.length ? safe : "Vendor";
+  if (verifiedDomain) {
+    return `${display} <noreply@${verifiedDomain}>`;
+  }
   return `${display} via VendoraPay <invoices@eventvendora.com>`;
 }
 
@@ -173,6 +181,21 @@ serve(async (req) => {
     if (vpRow?.user_id) {
       const { data: vu } = await db.auth.admin.getUserById(vpRow.user_id);
       vendorEmail = vu?.user?.email ?? null;
+    }
+
+    // Vendor's verified sending domain (if they've hooked one up
+    // via vendorapay-email-domain). When status='verified' we use
+    // noreply@<their-domain> as the From; otherwise we fall back
+    // to the platform's invoices@eventvendora.com.
+    let verifiedDomain: string | null = null;
+    const { data: dom } = await db
+      .from("vendor_email_domains")
+      .select("domain, status")
+      .eq("vendor_id", body.vendor_id)
+      .maybeSingle();
+    const domRow = dom as { domain?: string; status?: string } | null;
+    if (domRow?.status === "verified" && domRow.domain) {
+      verifiedDomain = domRow.domain;
     }
 
     // Pull the actual invoice (line items, totals, slug) if the
@@ -380,7 +403,7 @@ serve(async (req) => {
         `Receipt from ${businessName} — ${amount}`,
         html,
         {
-          from: senderFrom(businessName),
+          from: senderFrom(businessName, verifiedDomain),
           // Falls back to FROM_ADDRESS if the vendor has no
           // account email on file (shouldn't happen — vendors must
           // sign in — but defensive).
