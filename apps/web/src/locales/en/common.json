@@ -183,7 +183,8 @@
     "vendor": {
       "dashboard": "Dashboard",
       "inbox": "Inbox",
-      "leads": "My Vendora",
+      "leads": "Leads",
+      "my_vendora": "My Vendora",
       "messages": "Messages",
       "analytics": "Analytics",
       "calendar": "Calendar",
