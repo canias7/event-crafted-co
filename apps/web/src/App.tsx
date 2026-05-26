@@ -61,14 +61,11 @@ import {
   VendorMyProfilePage,
   VendorEditProfilePage,
   VendorInboxPage,
-  VendorLeadsPage,
-  VendorAppointmentsPage,
   VendorPartnersPage,
   VendorAiSuperagentsPage,
   InvoiceCheckoutPage,
   PayLinkCheckoutPage,
   VendorIntegrationsPage,
-  VendorPaymentsPage,
   MyVendoraPage,
   VendorSubscriptionPage,
   VendorUsagePage,
@@ -233,12 +230,17 @@ const App = () => (
               <Route path="/vendor/edit-profile" element={<RequireRole role="vendor"><VendorEditProfilePage /></RequireRole>} />
               <Route path="/vendor/inbox" element={<RequireRole role="vendor"><VendorInboxPage /></RequireRole>} />
               <Route path="/vendor/inbox/:inquiryId" element={<RequireRole role="vendor"><InquiryDetailPage /></RequireRole>} />
-              <Route path="/vendor/leads" element={<RequireRole role="vendor"><VendorLeadsPage /></RequireRole>} />
-              <Route path="/vendor/appointments" element={<RequireRole role="vendor"><VendorAppointmentsPage /></RequireRole>} />
+              {/* Old standalone routes redirect to the My Vendora
+                  wrapper with the right tab pre-selected. Keeps
+                  bookmarks + the mobile app's in-app links working,
+                  but every entry surfaces the new tab strip so
+                  users aren't stranded on a single view. */}
+              <Route path="/vendor/leads" element={<Navigate to="/vendor/my-vendora?view=leads" replace />} />
+              <Route path="/vendor/appointments" element={<Navigate to="/vendor/my-vendora?view=calendar" replace />} />
+              <Route path="/vendor/payments" element={<Navigate to="/vendor/my-vendora?view=vendorapay" replace />} />
               <Route path="/vendor/partners" element={<RequireRole role="vendor"><VendorPartnersPage /></RequireRole>} />
               <Route path="/vendor/ai-superagents" element={<RequireRole role="vendor"><VendorAiSuperagentsPage /></RequireRole>} />
               <Route path="/vendor/integrations" element={<RequireRole role="vendor"><VendorIntegrationsPage /></RequireRole>} />
-              <Route path="/vendor/payments" element={<RequireRole role="vendor"><VendorPaymentsPage /></RequireRole>} />
               <Route path="/vendor/my-vendora" element={<RequireRole role="vendor"><MyVendoraPage /></RequireRole>} />
               <Route path="/vendor/subscription" element={<RequireRole role="vendor"><VendorSubscriptionPage /></RequireRole>} />
               <Route path="/vendor/usage" element={<RequireRole role="vendor"><VendorUsagePage /></RequireRole>} />

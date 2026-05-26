@@ -583,19 +583,21 @@ export default function VendorAppointmentsPage({ embedded = false }: { embedded?
   const body = (
     <>
       <main id="main-content" className="flex-1 pb-20 lg:pb-0">
-        <div className="backdrop-blur-sm px-4 md:px-8 py-5 sticky top-0 z-40">
-          <div className="flex items-start justify-between gap-4">
-            <div>
-              <h1 className="font-editorial text-3xl">Calendar</h1>
-              <p className="text-sm text-muted-foreground">
-                Manage your bookings &amp; availability
-              </p>
-            </div>
-            <div className="flex items-center gap-2">
-              <NotificationBell variant="light" />
+        {!embedded && (
+          <div className="backdrop-blur-sm px-4 md:px-8 py-5 sticky top-0 z-40">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h1 className="font-editorial text-3xl">Calendar</h1>
+                <p className="text-sm text-muted-foreground">
+                  Manage your bookings &amp; availability
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <NotificationBell variant="light" />
+              </div>
             </div>
           </div>
-        </div>
+        )}
 
         <div className="p-4 md:p-8 max-w-4xl space-y-6">
           {/* Listing picker — every block / inquiry on the grid is

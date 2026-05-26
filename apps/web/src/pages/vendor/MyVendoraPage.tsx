@@ -1,13 +1,21 @@
-import { useMemo } from "react";
+import { lazy, Suspense, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
 
 import { DashboardSidebar } from "@/components/shared/DashboardSidebar";
 import { MobileNav } from "@/components/shared/MobileNav";
 import { vendorNavItems } from "@/data/navItems";
 
-import VendorLeadsPage from "@/pages/vendor/VendorLeadsPage";
-import VendorAppointmentsPage from "@/pages/vendor/VendorAppointmentsPage";
-import VendorPaymentsPage from "@/pages/vendor/VendorPaymentsPage";
+// Lazy-load each sub-page so we don't ship the Calendar and
+// VendoraPay bundles to a user who only ever looks at Leads.
+// Suspense fallback renders below the always-present tab strip so
+// the user can still switch tabs while a panel is loading.
+const VendorLeadsPage = lazy(() => import("@/pages/vendor/VendorLeadsPage"));
+const VendorAppointmentsPage = lazy(
+  () => import("@/pages/vendor/VendorAppointmentsPage"),
+);
+const VendorPaymentsPage = lazy(
+  () => import("@/pages/vendor/VendorPaymentsPage"),
+);
 
 type Tab = "leads" | "calendar" | "vendorapay";
 
@@ -22,11 +30,14 @@ const TABS: Array<{ id: Tab; label: string }> = [
 // page component in embedded mode (sidebar/mobile-nav suppressed)
 // so we don't double-stack the chrome.
 //
-// The active tab is reflected in `?tab=` so refreshes and shared
-// links land on the same view. Default is leads.
+// The active tab is reflected in `?view=` so refreshes and shared
+// links land on the same view. Default is leads. The param name
+// is `view` (not `tab`) deliberately — VendorPaymentsPage uses
+// `?tab=` internally for its OWN sub-tabs (Overview/Files/Disputes/
+// Settings), and the two would clash if they shared the param.
 export default function MyVendoraPage() {
   const [params, setParams] = useSearchParams();
-  const rawTab = params.get("tab");
+  const rawTab = params.get("view");
   const tab: Tab = useMemo(() => {
     return rawTab === "calendar" || rawTab === "vendorapay" ? rawTab : "leads";
   }, [rawTab]);
@@ -35,7 +46,13 @@ export default function MyVendoraPage() {
     setParams(
       (prev) => {
         const out = new URLSearchParams(prev);
-        out.set("tab", next);
+        out.set("view", next);
+        // Switching wrapper tabs should drop any sub-page query
+        // state — otherwise stale params from one panel survive
+        // into the next (e.g. VendoraPay's `?tab=files&file=xyz`
+        // leaking into Leads' URL).
+        out.delete("tab");
+        out.delete("file");
         return out;
       },
       { replace: true },
@@ -72,9 +89,11 @@ export default function MyVendoraPage() {
             })}
           </div>
         </div>
-        {tab === "leads" && <VendorLeadsPage embedded />}
-        {tab === "calendar" && <VendorAppointmentsPage embedded />}
-        {tab === "vendorapay" && <VendorPaymentsPage embedded />}
+        <Suspense fallback={<div className="p-8 text-sm text-muted-foreground">Loading…</div>}>
+          {tab === "leads" && <VendorLeadsPage embedded />}
+          {tab === "calendar" && <VendorAppointmentsPage embedded />}
+          {tab === "vendorapay" && <VendorPaymentsPage embedded />}
+        </Suspense>
       </div>
       <MobileNav items={vendorNavItems} />
     </div>

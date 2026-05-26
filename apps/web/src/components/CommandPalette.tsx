@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import {
   CalendarDays,
   Compass,
+  CreditCard,
   Inbox,
   MessageSquare,
   Search,
@@ -10,6 +11,7 @@ import {
   Sparkles,
   Store,
   User,
+  Users,
   type LucideIcon,
 } from "lucide-react";
 import {
@@ -48,13 +50,16 @@ const HOST_NAV: NavTarget[] = [
 ];
 
 // Mirrors live vendor portal routes — only surfaces that still resolve.
-// Availability is a tab inside /vendor/appointments now, not a top-level
-// route. /vendor/listing, /vendor/team, /vendor/availability were all
-// eliminated; don't list them here or the palette routes the user to NotFound.
+// Leads / Calendar / VendoraPay are tabs inside the My Vendora wrapper
+// (the standalone routes redirect to it). Listing /vendor/leads etc. as
+// separate entries would still work via the redirect, but using the
+// wrapper URL directly keeps the URL pretty and the tab pre-selected.
 const VENDOR_NAV: NavTarget[] = [
   { label: "Profile", path: "/vendor/me", icon: User },
   { label: "Inquiry inbox", path: "/vendor/inbox", icon: Inbox },
-  { label: "Appointments", path: "/vendor/appointments", icon: CalendarDays },
+  { label: "Leads", path: "/vendor/my-vendora?view=leads", icon: Users },
+  { label: "Calendar", path: "/vendor/my-vendora?view=calendar", icon: CalendarDays },
+  { label: "VendoraPay", path: "/vendor/my-vendora?view=vendorapay", icon: CreditCard },
   { label: "Partners", path: "/vendor/partners", icon: MessageSquare },
   { label: "Studio", path: "/vendor/studio", icon: Store },
 ];
