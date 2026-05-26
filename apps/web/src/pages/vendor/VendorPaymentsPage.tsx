@@ -19,18 +19,23 @@ import {
   ArrowDownRight,
   ArrowUpRight,
   Banknote,
+  CalendarClock,
   ChevronLeft,
+  ClipboardList,
   Copy,
   CreditCard,
   ExternalLink,
+  FileEdit,
   FileText,
   Landmark,
   Link2,
   Loader2,
   Mail,
+  Package,
   Plug,
   Plus,
   RefreshCw,
+  ScrollText,
   Settings as SettingsIcon,
   Trash2,
   Wallet,
@@ -102,16 +107,75 @@ interface Status {
   } | null;
 }
 
-type TabId = "overview" | "transactions" | "invoices" | "links" | "payouts" | "integrations" | "settings";
+type TabId = "overview" | "transactions" | "files" | "links" | "payouts" | "integrations" | "settings";
 
 const TABS: Array<{ id: TabId; label: string; icon: typeof Wallet }> = [
   { id: "overview", label: "Overview", icon: Wallet },
   { id: "transactions", label: "Payments", icon: CreditCard },
-  { id: "invoices", label: "Invoices", icon: FileText },
+  // "Files" rolls up Invoices, Contracts, Proposals, Scheduling,
+  // Services, and Questionnaires under a single tab with its own
+  // internal sub-nav (HoneyBook-style "All files" surface).
+  { id: "files", label: "Files", icon: FileText },
   { id: "links", label: "Pay Links", icon: Link2 },
   { id: "payouts", label: "Payouts", icon: Banknote },
   { id: "integrations", label: "Integrations", icon: Plug },
   { id: "settings", label: "Settings", icon: SettingsIcon },
+];
+
+// Sub-tabs inside the Files tab. Only Invoices is fully implemented
+// today — the rest render a "coming soon" placeholder. URL state
+// uses `?tab=files&file=<id>` (the default Invoices is omitted from
+// the URL to keep links clean).
+type FileTabId =
+  | "invoices"
+  | "contracts"
+  | "proposals"
+  | "scheduling"
+  | "services"
+  | "questionnaires";
+
+const FILES_TABS: Array<{
+  id: FileTabId;
+  label: string;
+  icon: typeof Wallet;
+  description: string;
+}> = [
+  {
+    id: "invoices",
+    label: "Invoices",
+    icon: FileText,
+    description: "Build a multi-line invoice, email it to the host, get paid via card.",
+  },
+  {
+    id: "contracts",
+    label: "Contracts",
+    icon: ScrollText,
+    description: "Send signable contracts and track e-signatures.",
+  },
+  {
+    id: "proposals",
+    label: "Proposals",
+    icon: FileEdit,
+    description: "Pitch packages with line-items and let hosts accept in one click.",
+  },
+  {
+    id: "scheduling",
+    label: "Scheduling",
+    icon: CalendarClock,
+    description: "Share booking links so hosts pick a slot from your calendar.",
+  },
+  {
+    id: "services",
+    label: "Services",
+    icon: Package,
+    description: "Maintain a reusable catalog of packages and add-ons.",
+  },
+  {
+    id: "questionnaires",
+    label: "Questionnaires",
+    icon: ClipboardList,
+    description: "Send intake forms and collect host responses before the event.",
+  },
 ];
 
 interface InvoiceLineItem {
@@ -584,8 +648,8 @@ export default function VendorPaymentsPage() {
               vendorId={vendorId}
               onRefunded={() => refresh(false)}
             />
-          ) : tab === "invoices" ? (
-            <InvoicesTab
+          ) : tab === "files" ? (
+            <FilesTab
               vendorId={vendorId}
               invoices={invoices}
               status={status}
@@ -979,6 +1043,94 @@ function PayoutsTab({ data, status }: { data: PayoutsResponse | null; status: St
         )}
       </section>
     </div>
+  );
+}
+
+// Wrapper for the Files tab — owns the secondary nav and dispatches
+// to the right sub-surface. Today only Invoices is wired up; the rest
+// render a friendly "coming soon" card with the same shape so the IA
+// is visible to vendors and ready to fill in.
+function FilesTab(props: {
+  vendorId: string | null;
+  invoices: Invoice[];
+  status: Status | null;
+  onChanged: () => void;
+}) {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const fileTab = ((searchParams.get("file") as FileTabId | null) ?? "invoices") as FileTabId;
+  const setFileTab = (next: FileTabId) => {
+    const params = new URLSearchParams(searchParams);
+    if (next === "invoices") params.delete("file");
+    else params.set("file", next);
+    setSearchParams(params, { replace: true });
+  };
+  const meta = FILES_TABS.find((t) => t.id === fileTab) ?? FILES_TABS[0];
+
+  return (
+    <div className="space-y-5">
+      <nav className="flex gap-1 overflow-x-auto -mt-1">
+        {FILES_TABS.map((t) => {
+          const active = fileTab === t.id;
+          const Icon = t.icon;
+          return (
+            <button
+              key={t.id}
+              type="button"
+              onClick={() => setFileTab(t.id)}
+              className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-colors whitespace-nowrap ${
+                active
+                  ? "bg-foreground text-background"
+                  : "text-muted-foreground hover:text-foreground hover:bg-foreground/5"
+              }`}
+            >
+              <Icon className="w-3.5 h-3.5" />
+              {t.label}
+            </button>
+          );
+        })}
+      </nav>
+
+      {fileTab === "invoices" ? (
+        <InvoicesTab {...props} />
+      ) : (
+        <FilesComingSoon label={meta.label} description={meta.description} icon={meta.icon} />
+      )}
+    </div>
+  );
+}
+
+function FilesComingSoon({
+  label,
+  description,
+  icon: Icon,
+}: {
+  label: string;
+  description: string;
+  icon: typeof Wallet;
+}) {
+  return (
+    <Card>
+      <div className="flex flex-col items-center text-center py-10 px-6">
+        <div
+          className="w-12 h-12 rounded-2xl inline-flex items-center justify-center mb-4"
+          style={{ background: "rgba(255,138,76,0.15)" }}
+        >
+          <Icon className="w-5 h-5" style={{ color: "#c4541e" }} />
+        </div>
+        <h3 className="text-base font-semibold">{label}</h3>
+        <p className="text-sm text-muted-foreground mt-1 max-w-md">{description}</p>
+        <span
+          className="mt-4 inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-medium tracking-wider uppercase"
+          style={{
+            background: "rgba(255,138,76,0.12)",
+            color: "#c4541e",
+            border: "0.5px solid rgba(255,138,76,0.3)",
+          }}
+        >
+          Coming soon
+        </span>
+      </div>
+    </Card>
   );
 }
 
