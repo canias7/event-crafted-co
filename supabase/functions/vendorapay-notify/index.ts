@@ -61,7 +61,12 @@ function button(href: string, label: string): string {
   return `<a href="${href}" style="display:inline-block;background:#1a1a1a;color:#ffffff;text-decoration:none;padding:12px 28px;border-radius:999px;font-size:14px;font-weight:500;">${label}</a>`;
 }
 
-async function sendEmail(to: string, subject: string, html: string): Promise<boolean> {
+async function sendEmail(
+  to: string,
+  subject: string,
+  html: string,
+  opts: { from?: string; replyTo?: string } = {},
+): Promise<boolean> {
   if (!RESEND_API_KEY) {
     console.warn("[vendorapay-notify] RESEND_API_KEY not set; skipping email", to);
     return false;
@@ -69,13 +74,30 @@ async function sendEmail(to: string, subject: string, html: string): Promise<boo
   const r = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: { Authorization: `Bearer ${RESEND_API_KEY}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ from: FROM_ADDRESS, to, subject, html }),
+    body: JSON.stringify({
+      from: opts.from ?? FROM_ADDRESS,
+      to,
+      subject,
+      html,
+      reply_to: opts.replyTo,
+    }),
   });
   if (!r.ok) {
     console.error("[vendorapay-notify] resend error", to, await r.text());
     return false;
   }
   return true;
+}
+
+// Build a "<Business Name> <invoices@eventvendora.com>" From header
+// so the buyer's mail client shows the vendor's name as the sender.
+// The actual mailbox stays on our verified domain (Resend rejects
+// unverified senders). Replies are routed to the vendor's email via
+// Reply-To, set separately at the call site.
+function senderFrom(businessName: string): string {
+  const safe = businessName.replace(/[<>"\r\n]/g, "").trim();
+  const display = safe.length ? safe : "Vendor";
+  return `${display} via VendoraPay <invoices@eventvendora.com>`;
 }
 
 interface PaymentReceivedPayload {
@@ -87,6 +109,25 @@ interface PaymentReceivedPayload {
   host_email?: string | null;
   payment_link_id?: string | null;
   proposal_id?: string | null;
+  invoice_id?: string | null;
+}
+
+interface InvoiceLineItem {
+  name: string;
+  qty: number;
+  unit_price_cents: number;
+  total_cents?: number;
+}
+
+interface InvoiceContext {
+  number: string | null;
+  slug: string | null;
+  lineItems: InvoiceLineItem[];
+  subtotal_cents: number;
+  tax_rate_bps: number;
+  tax_cents: number;
+  total_cents: number;
+  notes: string | null;
 }
 
 serve(async (req) => {
@@ -112,12 +153,64 @@ serve(async (req) => {
 
     const { data: vp } = await db
       .from("vendor_profiles")
-      .select("business_name, logo_url")
+      .select("user_id, business_name, logo_url, location, default_tax_pct")
       .eq("id", body.vendor_id)
       .maybeSingle();
-    const vpRow = vp as { business_name?: string | null; logo_url?: string | null } | null;
+    const vpRow = vp as {
+      user_id?: string | null;
+      business_name?: string | null;
+      logo_url?: string | null;
+      location?: string | null;
+      default_tax_pct?: number | null;
+    } | null;
     const businessName = vpRow?.business_name ?? "Your business";
     const logoUrl = vpRow?.logo_url ?? null;
+    const businessLocation = vpRow?.location ?? null;
+    // Vendor's account email — used as Reply-To so buyer replies
+    // route to the vendor's inbox (Resend From stays on the
+    // verified domain).
+    let vendorEmail: string | null = null;
+    if (vpRow?.user_id) {
+      const { data: vu } = await db.auth.admin.getUserById(vpRow.user_id);
+      vendorEmail = vu?.user?.email ?? null;
+    }
+
+    // Pull the actual invoice (line items, totals, slug) if the
+    // payment came through an invoice. Pay-link payments don't
+    // have one — we fall back to a single-line synthesized row
+    // using the description + amount.
+    let invoiceCtx: InvoiceContext | null = null;
+    if (body.invoice_id) {
+      const { data: inv } = await db
+        .from("invoices")
+        .select(
+          "invoice_number, slug, line_items, subtotal_cents, tax_rate_bps, tax_cents, total_cents, notes",
+        )
+        .eq("id", body.invoice_id)
+        .maybeSingle();
+      const iRow = inv as {
+        invoice_number?: string | null;
+        slug?: string | null;
+        line_items?: InvoiceLineItem[];
+        subtotal_cents?: number;
+        tax_rate_bps?: number;
+        tax_cents?: number;
+        total_cents?: number;
+        notes?: string | null;
+      } | null;
+      if (iRow) {
+        invoiceCtx = {
+          number: iRow.invoice_number ?? null,
+          slug: iRow.slug ?? null,
+          lineItems: Array.isArray(iRow.line_items) ? iRow.line_items : [],
+          subtotal_cents: iRow.subtotal_cents ?? body.amount_cents,
+          tax_rate_bps: iRow.tax_rate_bps ?? 0,
+          tax_cents: iRow.tax_cents ?? 0,
+          total_cents: iRow.total_cents ?? body.amount_cents,
+          notes: iRow.notes ?? null,
+        };
+      }
+    }
 
     const amount = formatMoney(body.amount_cents, body.currency);
     const link = body.payment_link_id
@@ -161,28 +254,139 @@ serve(async (req) => {
       }
     }
 
-    // 2) Host — branded receipt if we have an email.
+    // 2) Buyer — branded paid invoice. Uses the vendor's saved
+    //    template (logo / business name / city / tax rate) plus the
+    //    actual line items from the sale. From-name is the vendor's
+    //    business so the buyer's inbox shows their brand; replies
+    //    route to the vendor's account email via Reply-To.
     if (body.host_email) {
-      const paidAt = new Date().toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
-      const logoHtml = logoUrl
-        ? `<div style="margin:0 0 16px;"><img src="${logoUrl}" alt="${escapeHtml(businessName)}" width="44" height="44" style="display:block;border:0;border-radius:8px;object-fit:cover;" /></div>`
+      const paidAt = new Date().toLocaleDateString("en-US", {
+        month: "long", day: "numeric", year: "numeric",
+      });
+      const taxPct = invoiceCtx
+        ? (invoiceCtx.tax_rate_bps / 100).toFixed(2)
+        : (vpRow?.default_tax_pct ?? 0).toFixed(2);
+      const lineItems: InvoiceLineItem[] = invoiceCtx?.lineItems?.length
+        ? invoiceCtx.lineItems
+        : [{
+            name: body.description || "Payment",
+            qty: 1,
+            unit_price_cents: body.amount_cents,
+            total_cents: body.amount_cents,
+          }];
+      const subtotalCents = invoiceCtx?.subtotal_cents ?? body.amount_cents;
+      const taxCents = invoiceCtx?.tax_cents ?? 0;
+      const totalCents = invoiceCtx?.total_cents ?? body.amount_cents;
+      const invoiceNumber = invoiceCtx?.number ?? "—";
+      const hostedInvoiceUrl = invoiceCtx?.slug
+        ? `${APP_URL}/pay/invoice/${invoiceCtx.slug}`
+        : null;
+      const notes = invoiceCtx?.notes ?? null;
+
+      const lineRowsHtml = lineItems.map((li) => {
+        const total = li.total_cents ?? li.qty * li.unit_price_cents;
+        return `<tr>
+          <td style="padding:10px 6px 10px 0;font-size:13px;color:#1a1a1a;border-bottom:1px solid #f0eeeb;">${escapeHtml(li.name)}</td>
+          <td style="padding:10px 6px;font-size:13px;color:#1a1a1a;text-align:right;font-variant-numeric:tabular-nums;border-bottom:1px solid #f0eeeb;">${li.qty}</td>
+          <td style="padding:10px 6px;font-size:13px;color:#1a1a1a;text-align:right;font-variant-numeric:tabular-nums;border-bottom:1px solid #f0eeeb;">${formatMoney(li.unit_price_cents, body.currency)}</td>
+          <td style="padding:10px 0 10px 6px;font-size:13px;font-weight:600;color:#1a1a1a;text-align:right;font-variant-numeric:tabular-nums;border-bottom:1px solid #f0eeeb;">${formatMoney(total, body.currency)}</td>
+        </tr>`;
+      }).join("");
+
+      const taxRowHtml = taxCents > 0
+        ? `<tr>
+            <td style="padding:4px 0;font-size:13px;color:#6b6259;">Tax (${taxPct}%)</td>
+            <td style="padding:4px 0;font-size:13px;color:#6b6259;text-align:right;font-variant-numeric:tabular-nums;">${formatMoney(taxCents, body.currency)}</td>
+          </tr>`
         : "";
+
+      const notesHtml = notes
+        ? `<div style="margin:24px 0 0;padding-top:16px;border-top:1px solid #f0eeeb;">
+            <p style="margin:0 0 6px;font-size:10px;font-weight:700;letter-spacing:0.22em;color:#6b6259;text-transform:uppercase;">Notes</p>
+            <p style="margin:0;font-size:13px;color:#3a342f;line-height:1.6;white-space:pre-wrap;">${escapeHtml(notes)}</p>
+          </div>`
+        : "";
+
+      const ctaHtml = hostedInvoiceUrl
+        ? `<p style="margin:24px 0 0;">${button(hostedInvoiceUrl, "View invoice online")}</p>`
+        : "";
+
+      const logoHtml = logoUrl
+        ? `<img src="${logoUrl}" alt="${escapeHtml(businessName)}" width="48" height="48" style="display:block;border:0;border-radius:999px;object-fit:cover;" />`
+        : `<div style="width:48px;height:48px;border-radius:999px;background:#f0eeeb;display:inline-block;"></div>`;
+
       const html = shellHtml(
         "Payment received",
-        `${logoHtml}
-         <p style="margin:0 0 8px;font-size:13px;color:#777;">Receipt from ${escapeHtml(businessName)}</p>
-         <p style="margin:0 0 24px;font-size:32px;font-weight:600;line-height:1.2;">${amount}</p>
-         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-top:1px solid #ececec;border-bottom:1px solid #ececec;padding:16px 0;margin:0 0 24px;">
-           <tr>
-             <td style="padding:8px 0;font-size:14px;color:#3a3a3a;">${escapeHtml(body.description)}</td>
-             <td style="padding:8px 0;font-size:14px;color:#3a3a3a;text-align:right;">${amount}</td>
-           </tr>
-         </table>
-         <p style="margin:0 0 8px;font-size:13px;color:#777;">Paid on ${escapeHtml(paidAt)}</p>
-         <p style="margin:0 0 8px;font-size:13px;color:#777;">"VENDORAPAY" will appear on your card statement.</p>
-         <p style="margin:24px 0 0;font-size:13px;color:#777;">Questions about this charge? Reply to this email and we'll connect you with ${escapeHtml(businessName)}.</p>`,
+        `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 20px;">
+          <tr>
+            <td style="vertical-align:middle;">
+              <table role="presentation" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td style="padding-right:12px;">${logoHtml}</td>
+                  <td style="vertical-align:middle;">
+                    <p style="margin:0;font-size:16px;font-weight:600;color:#1a1410;">${escapeHtml(businessName)}</p>
+                    ${businessLocation ? `<p style="margin:2px 0 0;font-size:12px;color:#6b6259;">${escapeHtml(businessLocation)}</p>` : ""}
+                  </td>
+                </tr>
+              </table>
+            </td>
+            <td style="vertical-align:top;text-align:right;">
+              <span style="display:inline-block;padding:4px 10px;border-radius:999px;background:#dcf2e2;color:#0a7c4a;font-size:11px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;">Paid</span>
+              <p style="margin:6px 0 0;font-size:11px;color:#6b6259;letter-spacing:0.18em;text-transform:uppercase;">Invoice ${escapeHtml(invoiceNumber)}</p>
+            </td>
+          </tr>
+        </table>
+
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 20px;border-collapse:collapse;">
+          <thead>
+            <tr>
+              <th style="text-align:left;padding:8px 6px 8px 0;font-size:10px;letter-spacing:0.08em;text-transform:uppercase;color:#6b6259;border-bottom:1px solid #d8d2cb;">Item</th>
+              <th style="text-align:right;padding:8px 6px;font-size:10px;letter-spacing:0.08em;text-transform:uppercase;color:#6b6259;border-bottom:1px solid #d8d2cb;">Qty</th>
+              <th style="text-align:right;padding:8px 6px;font-size:10px;letter-spacing:0.08em;text-transform:uppercase;color:#6b6259;border-bottom:1px solid #d8d2cb;">Unit</th>
+              <th style="text-align:right;padding:8px 0 8px 6px;font-size:10px;letter-spacing:0.08em;text-transform:uppercase;color:#6b6259;border-bottom:1px solid #d8d2cb;">Amount</th>
+            </tr>
+          </thead>
+          <tbody>${lineRowsHtml}</tbody>
+        </table>
+
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 16px;">
+          <tr>
+            <td style="text-align:right;">
+              <table role="presentation" cellpadding="0" cellspacing="0" style="display:inline-block;min-width:240px;">
+                <tr>
+                  <td style="padding:4px 12px 4px 0;font-size:13px;color:#6b6259;">Subtotal</td>
+                  <td style="padding:4px 0;font-size:13px;color:#6b6259;text-align:right;font-variant-numeric:tabular-nums;">${formatMoney(subtotalCents, body.currency)}</td>
+                </tr>
+                ${taxRowHtml}
+                <tr>
+                  <td style="padding:10px 12px 0 0;font-size:11px;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:#1e2840;border-top:2px solid #1e2840;">Total paid</td>
+                  <td style="padding:10px 0 0;font-size:18px;font-weight:700;color:#1e2840;text-align:right;font-variant-numeric:tabular-nums;border-top:2px solid #1e2840;">${formatMoney(totalCents, body.currency)}</td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+        </table>
+
+        <p style="margin:0 0 6px;font-size:13px;color:#6b6259;">Paid on ${escapeHtml(paidAt)}</p>
+        <p style="margin:0;font-size:13px;color:#6b6259;">"VENDORAPAY" will appear on your card statement.</p>
+
+        ${notesHtml}
+        ${ctaHtml}
+
+        <p style="margin:24px 0 0;font-size:12px;color:#6b6259;">Questions about this charge? Reply to this email — it goes straight to ${escapeHtml(businessName)}.</p>`,
       );
-      await sendEmail(body.host_email, `${amount} receipt — ${businessName}`, html);
+      await sendEmail(
+        body.host_email,
+        `Receipt from ${businessName} — ${amount}`,
+        html,
+        {
+          from: senderFrom(businessName),
+          // Falls back to FROM_ADDRESS if the vendor has no
+          // account email on file (shouldn't happen — vendors must
+          // sign in — but defensive).
+          replyTo: vendorEmail ?? undefined,
+        },
+      );
     }
 
     return json(200, { ok: true, admins_notified: adminRows.length, host_emailed: Boolean(body.host_email) });
