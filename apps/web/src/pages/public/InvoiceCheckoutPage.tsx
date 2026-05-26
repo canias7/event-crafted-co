@@ -1,13 +1,16 @@
 // VendoraPay public invoice checkout. Hosts land here from the email
 // the vendor sent (/pay/invoice/<slug>). No auth required.
 //
-// Shows the full invoice (vendor brand, bill-to, line items, totals)
-// and a single Pay button that calls vendorapay-invoice-checkout to
-// mint a Stripe Checkout Session and redirect.
+// Renders a professional, print-ready invoice document — vendor brand
+// at the top, bill-to + meta side-by-side, line items in a clean
+// table, totals, terms. A "Save as PDF" button kicks off the browser
+// print dialog (with print CSS that hides nav and the pay CTA, so
+// the printout is just the document itself). The Pay button stays
+// on-screen for the recipient.
 
 import { useCallback, useEffect, useState } from "react";
 import { useParams, useSearchParams } from "react-router-dom";
-import { Check, CreditCard, Loader2 } from "lucide-react";
+import { Check, CreditCard, Download, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -179,150 +182,216 @@ export default function InvoiceCheckoutPage() {
     );
   }
 
+  const businessName = invoice.vendor_business_name ?? "VendoraPay";
+  const totalDue = formatMoney(invoice.total_cents, invoice.currency);
+
   return (
     <Shell>
-      <div className="max-w-xl mx-auto px-4 py-12">
-        {/* Vendor brand */}
-        <div className="flex items-center gap-3 mb-8">
-          {invoice.vendor_logo_url ? (
-            <img
-              src={invoice.vendor_logo_url}
-              alt={invoice.vendor_business_name ?? ""}
-              className="w-12 h-12 rounded-full object-cover ring-1 ring-foreground/10"
-            />
-          ) : (
-            <div className="w-12 h-12 rounded-full bg-foreground/5 inline-flex items-center justify-center">
-              <CreditCard className="w-5 h-5 text-muted-foreground" />
-            </div>
-          )}
-          <div className="min-w-0">
-            <div className="text-sm font-semibold truncate">
-              {invoice.vendor_business_name ?? "VendoraPay"}
-            </div>
-            <div className="text-[11px] text-muted-foreground">Powered by VendoraPay</div>
-          </div>
-        </div>
+      {/* Print CSS — strips the page background + action bar so the
+          printout is just the document itself; sets clean page margins. */}
+      <style>{PRINT_CSS}</style>
 
-        <div
-          className="rounded-2xl p-6 mb-4"
-          style={{
-            background: "rgba(255,253,250,0.7)",
-            border: "0.5px solid rgba(255,138,76,0.22)",
-          }}
+      {/* Action bar (hidden on print). Print/PDF on the left, Pay on
+          the right. Both feel like first-class actions on the page. */}
+      <div className="print:hidden sticky top-0 z-30 backdrop-blur-md bg-background/70 border-b border-foreground/5">
+        <div className="max-w-3xl mx-auto px-4 sm:px-8 py-3 flex items-center justify-between gap-3">
+          <Button
+            variant="outline"
+            onClick={() => window.print()}
+            className="rounded-full"
+            size="sm"
+          >
+            <Download className="w-3.5 h-3.5 mr-1.5" />
+            Save as PDF
+          </Button>
+          <Button
+            onClick={handlePay}
+            disabled={paying}
+            className="rounded-full"
+            size="sm"
+          >
+            {paying ? (
+              <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
+            ) : (
+              <CreditCard className="w-3.5 h-3.5 mr-1.5" />
+            )}
+            Pay {totalDue}
+          </Button>
+        </div>
+      </div>
+
+      {/* Document — A4-friendly width, white card on the canvas. */}
+      <div className="max-w-3xl mx-auto px-4 sm:px-8 py-8 print:py-0 print:px-0 print:max-w-none">
+        <article
+          className="invoice-doc bg-white rounded-2xl print:rounded-none shadow-[0_24px_60px_-30px_rgba(26,20,16,0.25)] print:shadow-none p-8 sm:p-12 print:p-0"
+          style={{ border: "0.5px solid rgba(0,0,0,0.06)" }}
         >
-          {/* Header */}
-          <div className="flex items-baseline justify-between flex-wrap gap-2 mb-4">
-            <div>
-              <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground font-semibold">
-                Invoice
+          {/* Header — vendor brand on the left, INVOICE block on the right */}
+          <header className="flex items-start justify-between gap-6 flex-wrap">
+            <div className="flex items-center gap-4 min-w-0">
+              {invoice.vendor_logo_url ? (
+                <img
+                  src={invoice.vendor_logo_url}
+                  alt={businessName}
+                  className="w-14 h-14 rounded-xl object-cover ring-1 ring-foreground/10 shrink-0"
+                />
+              ) : (
+                <div className="w-14 h-14 rounded-xl bg-foreground/5 inline-flex items-center justify-center shrink-0">
+                  <CreditCard className="w-6 h-6 text-muted-foreground" />
+                </div>
+              )}
+              <div className="min-w-0">
+                <h1 className="text-xl font-semibold tracking-tight truncate">{businessName}</h1>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Issued via VendoraPay
+                </p>
               </div>
-              <div className="text-xl font-editorial mt-0.5">{invoice.invoice_number}</div>
             </div>
             <div className="text-right">
-              <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground font-semibold">
-                Amount due
-              </div>
-              <div className="text-2xl font-editorial mt-0.5">
-                {formatMoney(invoice.total_cents, invoice.currency)}
-              </div>
+              <p className="text-[10px] uppercase tracking-[0.22em] text-muted-foreground font-semibold">
+                Invoice
+              </p>
+              <p className="text-2xl font-editorial mt-0.5 tabular-nums">
+                {invoice.invoice_number || "—"}
+              </p>
             </div>
-          </div>
+          </header>
 
-          {/* Dates */}
-          <div className="grid grid-cols-2 gap-4 text-xs text-muted-foreground mb-4">
+          <hr className="my-8 border-foreground/10" />
+
+          {/* Bill-to and meta side by side */}
+          <section className="grid grid-cols-1 sm:grid-cols-2 gap-6">
             <div>
-              <div className="text-[10px] uppercase tracking-wider font-semibold">Issued</div>
-              <div className="text-foreground mt-0.5">{formatDate(invoice.issue_date)}</div>
-            </div>
-            {invoice.due_date ? (
-              <div>
-                <div className="text-[10px] uppercase tracking-wider font-semibold">Due</div>
-                <div className="text-foreground mt-0.5">{formatDate(invoice.due_date)}</div>
-              </div>
-            ) : null}
-          </div>
-
-          {invoice.bill_to_name || invoice.bill_to_email ? (
-            <div className="text-xs mb-4">
-              <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">
+              <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">
                 Bill to
+              </p>
+              <p className="text-sm font-medium mt-1">
+                {invoice.bill_to_name ?? "—"}
+              </p>
+              {invoice.bill_to_email ? (
+                <p className="text-sm text-muted-foreground mt-0.5">
+                  {invoice.bill_to_email}
+                </p>
+              ) : null}
+            </div>
+            <div className="grid grid-cols-2 gap-4 text-sm">
+              <div>
+                <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">
+                  Issued
+                </p>
+                <p className="mt-1">{formatDate(invoice.issue_date)}</p>
               </div>
-              <div className="text-foreground mt-0.5">
-                {invoice.bill_to_name}
-                {invoice.bill_to_name && invoice.bill_to_email ? " · " : ""}
-                {invoice.bill_to_email}
+              <div>
+                <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">
+                  Due
+                </p>
+                <p className="mt-1">{formatDate(invoice.due_date)}</p>
               </div>
             </div>
-          ) : null}
+          </section>
 
-          {/* Line items */}
-          <div className="border-t border-foreground/10 pt-4 mt-2">
-            {invoice.line_items.map((li, idx) => (
-              <div
-                key={idx}
-                className={`flex items-start justify-between gap-3 py-2 ${idx > 0 ? "border-t border-foreground/5" : ""}`}
-              >
-                <div className="min-w-0">
-                  <div className="text-sm font-medium">{li.name}</div>
-                  {li.description ? (
-                    <div className="text-[11px] text-muted-foreground">{li.description}</div>
-                  ) : null}
-                  <div className="text-[11px] text-muted-foreground mt-0.5">
-                    {li.qty} × {formatMoney(li.unit_price_cents, invoice.currency)}
-                  </div>
-                </div>
-                <div className="text-sm font-medium">
-                  {formatMoney(li.total_cents ?? li.qty * li.unit_price_cents, invoice.currency)}
-                </div>
-              </div>
-            ))}
-          </div>
+          {/* Line items table */}
+          <section className="mt-10">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-left text-[10px] uppercase tracking-wider text-muted-foreground font-semibold border-b border-foreground/15">
+                  <th className="py-2.5 pr-2 font-semibold">Item</th>
+                  <th className="py-2.5 px-2 font-semibold text-right w-16">Qty</th>
+                  <th className="py-2.5 px-2 font-semibold text-right w-28">Unit price</th>
+                  <th className="py-2.5 pl-2 font-semibold text-right w-28">Amount</th>
+                </tr>
+              </thead>
+              <tbody>
+                {invoice.line_items.map((li, idx) => (
+                  <tr key={idx} className="border-b border-foreground/5 align-top">
+                    <td className="py-3 pr-2">
+                      <div className="font-medium">{li.name}</div>
+                      {li.description ? (
+                        <div className="text-xs text-muted-foreground mt-0.5">
+                          {li.description}
+                        </div>
+                      ) : null}
+                    </td>
+                    <td className="py-3 px-2 text-right tabular-nums">{li.qty}</td>
+                    <td className="py-3 px-2 text-right tabular-nums">
+                      {formatMoney(li.unit_price_cents, invoice.currency)}
+                    </td>
+                    <td className="py-3 pl-2 text-right tabular-nums font-medium">
+                      {formatMoney(
+                        li.total_cents ?? li.qty * li.unit_price_cents,
+                        invoice.currency,
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </section>
 
-          {/* Totals */}
-          <div className="border-t border-foreground/10 mt-3 pt-3 space-y-1 text-sm">
-            <div className="flex items-center justify-between text-muted-foreground">
-              <span>Subtotal</span>
-              <span>{formatMoney(invoice.subtotal_cents, invoice.currency)}</span>
-            </div>
-            {invoice.tax_cents > 0 ? (
+          {/* Totals — right-aligned, with Total Due emphasized */}
+          <section className="mt-6 flex justify-end">
+            <div className="w-full max-w-xs space-y-1.5 text-sm">
               <div className="flex items-center justify-between text-muted-foreground">
-                <span>Tax ({(invoice.tax_rate_bps / 100).toFixed(2)}%)</span>
-                <span>{formatMoney(invoice.tax_cents, invoice.currency)}</span>
+                <span>Subtotal</span>
+                <span className="tabular-nums">
+                  {formatMoney(invoice.subtotal_cents, invoice.currency)}
+                </span>
               </div>
-            ) : null}
-            <div className="flex items-center justify-between font-semibold pt-1 border-t border-foreground/5">
-              <span>Total</span>
-              <span>{formatMoney(invoice.total_cents, invoice.currency)}</span>
+              {invoice.tax_cents > 0 ? (
+                <div className="flex items-center justify-between text-muted-foreground">
+                  <span>Tax ({(invoice.tax_rate_bps / 100).toFixed(2)}%)</span>
+                  <span className="tabular-nums">
+                    {formatMoney(invoice.tax_cents, invoice.currency)}
+                  </span>
+                </div>
+              ) : null}
+              <div className="flex items-center justify-between pt-2 mt-1 border-t border-foreground/15">
+                <span className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">
+                  Total due
+                </span>
+                <span className="text-lg font-editorial tabular-nums">
+                  {totalDue}
+                </span>
+              </div>
             </div>
-          </div>
+          </section>
 
+          {/* Notes / terms */}
           {invoice.notes ? (
-            <p className="text-xs text-muted-foreground mt-4 whitespace-pre-wrap">
-              {invoice.notes}
-            </p>
+            <section className="mt-10">
+              <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">
+                Notes
+              </p>
+              <p className="text-sm text-foreground/80 mt-1 whitespace-pre-wrap leading-relaxed">
+                {invoice.notes}
+              </p>
+            </section>
           ) : null}
-        </div>
 
-        <Button
-          onClick={handlePay}
-          disabled={paying}
-          className="w-full rounded-full h-12 text-base"
-        >
-          {paying ? (
-            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-          ) : (
-            <CreditCard className="w-4 h-4 mr-2" />
-          )}
-          Pay {formatMoney(invoice.total_cents, invoice.currency)}
-        </Button>
+          {/* Footer */}
+          <footer className="mt-12 pt-6 border-t border-foreground/10 flex items-center justify-between gap-4 flex-wrap text-[11px] text-muted-foreground">
+            <span>Thank you for your business.</span>
+            <span>
+              Powered by <span className="font-semibold text-foreground/70">VendoraPay</span>
+            </span>
+          </footer>
+        </article>
 
-        <p className="text-[11px] text-muted-foreground text-center mt-4">
-          Card payments processed securely. "VENDORAPAY" will appear on your statement.
+        <p className="text-[11px] text-muted-foreground text-center mt-6 print:hidden">
+          Card payments processed securely. &quot;VENDORAPAY&quot; will appear on your statement.
         </p>
       </div>
     </Shell>
   );
 }
+
+const PRINT_CSS = `
+@media print {
+  @page { size: Letter; margin: 0.5in; }
+  html, body { background: white !important; }
+  .invoice-doc { box-shadow: none !important; border: none !important; }
+}
+`;
 
 function Shell({ children }: { children: React.ReactNode }) {
   return <div className="min-h-screen vendor-canvas">{children}</div>;
