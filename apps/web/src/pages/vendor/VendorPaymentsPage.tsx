@@ -640,6 +640,7 @@ export default function VendorPaymentsPage() {
           ) : tab === "files" ? (
             <FilesTab
               vendorId={vendorId}
+              listing={listings.find((l) => l.id === selectedListingId) ?? null}
               invoices={invoices}
               status={status}
               onChanged={() => refresh(true)}
@@ -1041,6 +1042,7 @@ function PayoutsTab({ data, status }: { data: PayoutsResponse | null; status: St
 // is visible to vendors and ready to fill in.
 function FilesTab(props: {
   vendorId: string | null;
+  listing: ListingOpt | null;
   invoices: Invoice[];
   status: Status | null;
   onChanged: () => void;
@@ -1218,13 +1220,344 @@ function DocTemplateGallery({
   );
 }
 
+// Inline-editable invoice document. Renders the same layout vendors
+// will see in the downloaded PDF — business name + logo header, four-
+// column meta (Bill from / Bill to / Issued / Due), line items table,
+// totals, notes — with bare inputs over the styled chrome so it feels
+// like editing the document itself, not filling out a form.
+function InvoiceCanvas({
+  listing,
+  savedDefault,
+  billToName,
+  setBillToName,
+  billToEmail,
+  setBillToEmail,
+  issueDate,
+  setIssueDate,
+  dueDate,
+  setDueDate,
+  items,
+  updateRow,
+  addRow,
+  removeRow,
+  notes,
+  setNotes,
+  taxPct,
+  setTaxPct,
+  subtotalCents,
+  taxCents,
+  totalCents,
+}: {
+  listing: ListingOpt | null;
+  savedDefault: unknown;
+  billToName: string;
+  setBillToName: (v: string) => void;
+  billToEmail: string;
+  setBillToEmail: (v: string) => void;
+  issueDate: string;
+  setIssueDate: (v: string) => void;
+  dueDate: string;
+  setDueDate: (v: string) => void;
+  items: Array<{ name: string; qty: string; price: string }>;
+  updateRow: (i: number, k: "name" | "qty" | "price", v: string) => void;
+  addRow: () => void;
+  removeRow: (i: number) => void;
+  notes: string;
+  setNotes: (v: string) => void;
+  taxPct: string;
+  setTaxPct: (v: string) => void;
+  subtotalCents: number;
+  taxCents: number;
+  totalCents: number;
+}) {
+  const businessName = listing?.business_name?.trim() || "[Your Business Name]";
+  const accent = "rgb(30,80,180)";
+  // Inline input — looks like document text, only reveals an underline
+  // on hover/focus so the surface feels like a doc, not a form.
+  const inlineCls =
+    "bg-transparent border-0 outline-none rounded px-1 -mx-1 transition-colors hover:bg-foreground/[0.04] focus:bg-foreground/[0.05]";
+
+  return (
+    <Card>
+      <div className="px-4 pt-3 pb-2 flex items-center justify-between border-b border-foreground/5">
+        <p className="text-[10px] uppercase tracking-[0.22em] font-semibold text-muted-foreground">
+          {savedDefault ? "Your invoice" : "New invoice"}
+        </p>
+        <span
+          className="text-[10px] uppercase tracking-wider font-medium rounded-full px-2 py-0.5"
+          style={{
+            background: "rgba(255,138,76,0.12)",
+            color: "#c4541e",
+            border: "0.5px solid rgba(255,138,76,0.3)",
+          }}
+        >
+          AI builder soon
+        </span>
+      </div>
+
+      <div className="bg-white px-6 sm:px-10 py-8 sm:py-10">
+        {/* Header — business name + logo on the left, INVOICE on the right */}
+        <header className="flex items-start justify-between gap-6 flex-wrap">
+          <div className="flex items-center gap-4 min-w-0">
+            {listing?.logo_url ? (
+              <img
+                src={listing.logo_url}
+                alt={businessName}
+                className="w-14 h-14 rounded-xl object-cover ring-1 ring-foreground/10 shrink-0"
+              />
+            ) : (
+              <div
+                className="w-14 h-14 rounded-xl inline-flex items-center justify-center shrink-0"
+                style={{ background: "rgba(30,80,180,0.10)" }}
+              >
+                <CreditCard className="w-6 h-6" style={{ color: accent }} />
+              </div>
+            )}
+            <div className="min-w-0">
+              <h2 className="text-xl font-bold tracking-tight">{businessName}</h2>
+              {listing?.category || listing?.location ? (
+                <p className="text-[11px] mt-0.5 font-semibold text-muted-foreground tracking-wider">
+                  {[listing.category, listing.location].filter(Boolean).join(" · ")}
+                </p>
+              ) : (
+                <p className="text-[11px] mt-0.5 text-muted-foreground">
+                  Set your business details on /vendor/me
+                </p>
+              )}
+              <div className="mt-2" style={{ width: 36, height: 2, background: accent }} />
+            </div>
+          </div>
+          <div className="text-right">
+            <p
+              className="text-[10px] font-bold"
+              style={{ color: accent, letterSpacing: "0.22em" }}
+            >
+              INVOICE
+            </p>
+            <p className="text-base font-bold mt-1 tabular-nums text-muted-foreground">
+              Draft
+            </p>
+          </div>
+        </header>
+
+        {/* Meta — Bill from / Bill to / Issued / Due */}
+        <section className="mt-8 grid grid-cols-1 sm:grid-cols-4 gap-5">
+          <div>
+            <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">
+              Bill from
+            </p>
+            <p className="text-sm font-medium mt-1.5">{businessName}</p>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              {listing?.location ?? "[Address on file]"}
+            </p>
+          </div>
+          <div>
+            <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">
+              Bill to
+            </p>
+            <input
+              type="text"
+              placeholder="Client name"
+              value={billToName}
+              onChange={(e) => setBillToName(e.target.value)}
+              className={`block w-full mt-1.5 text-sm font-medium ${inlineCls}`}
+            />
+            <input
+              type="email"
+              placeholder="client@email.com"
+              value={billToEmail}
+              onChange={(e) => setBillToEmail(e.target.value)}
+              className={`block w-full mt-0.5 text-xs text-muted-foreground ${inlineCls}`}
+            />
+          </div>
+          <div>
+            <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">
+              Issued
+            </p>
+            <input
+              type="date"
+              value={issueDate}
+              onChange={(e) => setIssueDate(e.target.value)}
+              className={`block w-full mt-1.5 text-sm ${inlineCls}`}
+            />
+          </div>
+          <div>
+            <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">
+              Due
+            </p>
+            <input
+              type="date"
+              value={dueDate}
+              onChange={(e) => setDueDate(e.target.value)}
+              className={`block w-full mt-1.5 text-sm ${inlineCls}`}
+              placeholder="mm/dd/yyyy"
+            />
+          </div>
+        </section>
+
+        {/* Items table */}
+        <section className="mt-10">
+          <div
+            className="grid grid-cols-[1fr_64px_120px_120px_28px] gap-2 pb-2"
+            style={{ borderBottom: "1px solid #e8e3dd" }}
+          >
+            {(["Item", "Qty", "Unit price", "Amount"] as const).map((h, i) => (
+              <div
+                key={h}
+                className="text-[10px] font-semibold text-muted-foreground"
+                style={{
+                  letterSpacing: "0.08em",
+                  textTransform: "uppercase",
+                  textAlign: i === 0 ? "left" : "right",
+                }}
+              >
+                {h}
+              </div>
+            ))}
+            <div />
+          </div>
+          {items.map((row, idx) => {
+            const qty = parseInt(row.qty || "0", 10);
+            const price = parseFloat(row.price || "0");
+            const line = Number.isFinite(qty) && Number.isFinite(price) ? qty * price : 0;
+            return (
+              <div
+                key={idx}
+                className="grid grid-cols-[1fr_64px_120px_120px_28px] gap-2 py-2.5 items-center"
+                style={{ borderBottom: "1px solid rgba(232,227,221,0.6)" }}
+              >
+                <input
+                  type="text"
+                  placeholder="Service or item"
+                  value={row.name}
+                  onChange={(e) => updateRow(idx, "name", e.target.value)}
+                  className={`text-sm ${inlineCls}`}
+                />
+                <input
+                  type="number"
+                  min="1"
+                  step="1"
+                  value={row.qty}
+                  onChange={(e) => updateRow(idx, "qty", e.target.value)}
+                  className={`text-sm text-right tabular-nums ${inlineCls}`}
+                />
+                <div className="flex items-center justify-end gap-0.5 tabular-nums">
+                  <span className="text-sm text-muted-foreground">$</span>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    placeholder="0.00"
+                    value={row.price}
+                    onChange={(e) => updateRow(idx, "price", e.target.value)}
+                    className={`text-sm text-right tabular-nums w-24 ${inlineCls}`}
+                  />
+                </div>
+                <div className="text-sm font-semibold text-right tabular-nums">
+                  ${line.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => removeRow(idx)}
+                  disabled={items.length === 1}
+                  className="text-muted-foreground hover:text-destructive disabled:opacity-30 disabled:cursor-not-allowed"
+                  title="Remove row"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            );
+          })}
+          <button
+            type="button"
+            onClick={addRow}
+            className="mt-3 text-xs font-medium text-muted-foreground hover:text-foreground inline-flex items-center gap-1.5"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            Add line item
+          </button>
+        </section>
+
+        {/* Totals */}
+        <section className="mt-6 flex justify-end">
+          <div className="w-full sm:w-[280px] text-sm space-y-1.5">
+            <div className="flex justify-between text-muted-foreground">
+              <span>Subtotal</span>
+              <span className="tabular-nums">{formatMoney(subtotalCents)}</span>
+            </div>
+            <div className="flex justify-between items-center text-muted-foreground">
+              <span className="flex items-center gap-1.5">
+                <span>Tax</span>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  placeholder="0"
+                  value={taxPct}
+                  onChange={(e) => setTaxPct(e.target.value)}
+                  className={`w-12 text-right tabular-nums ${inlineCls}`}
+                />
+                <span>%</span>
+              </span>
+              <span className="tabular-nums">{formatMoney(taxCents)}</span>
+            </div>
+            <div
+              className="flex items-center justify-between pt-3 mt-2"
+              style={{ borderTop: `2px solid ${accent}` }}
+            >
+              <span
+                className="text-[10px] font-semibold uppercase"
+                style={{ letterSpacing: "0.18em", color: accent }}
+              >
+                Total due
+              </span>
+              <span
+                className="font-bold tabular-nums text-lg"
+                style={{ color: accent }}
+              >
+                {formatMoney(totalCents)}
+              </span>
+            </div>
+          </div>
+        </section>
+
+        {/* Notes */}
+        <section className="mt-10 pt-6" style={{ borderTop: "1px solid #e8e3dd" }}>
+          <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">
+            Notes
+          </p>
+          <textarea
+            placeholder="Scope, delivery details, payment schedule…"
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            rows={2}
+            className={`block w-full mt-2 text-sm leading-relaxed resize-none ${inlineCls}`}
+          />
+        </section>
+
+        <footer
+          className="mt-10 pt-5 flex items-center justify-between text-[11px] text-muted-foreground flex-wrap gap-2"
+          style={{ borderTop: "1px solid #e8e3dd" }}
+        >
+          <span>Thank you for your business.</span>
+          <span>
+            Powered by <span className="font-semibold text-foreground/70">VendoraPay</span>
+          </span>
+        </footer>
+      </div>
+    </Card>
+  );
+}
+
 function InvoicesTab({
   vendorId,
+  listing,
   invoices,
   status,
   onChanged,
 }: {
   vendorId: string | null;
+  listing: ListingOpt | null;
   invoices: Invoice[];
   status: Status | null;
   onChanged: () => void;
@@ -1511,154 +1844,32 @@ function InvoicesTab({
           (if any) or the blank placeholder. AI builder badge in the
           header keeps the roadmap visible while we work toward
           per-field inline editing on the styled canvas. */}
+      <InvoiceCanvas
+        listing={listing}
+        savedDefault={savedDefault}
+        billToName={billToName}
+        setBillToName={setBillToName}
+        billToEmail={billToEmail}
+        setBillToEmail={setBillToEmail}
+        issueDate={issueDate}
+        setIssueDate={setIssueDate}
+        dueDate={dueDate}
+        setDueDate={setDueDate}
+        items={items}
+        updateRow={updateRow}
+        addRow={addRow}
+        removeRow={removeRow}
+        notes={notes}
+        setNotes={setNotes}
+        taxPct={taxPct}
+        setTaxPct={setTaxPct}
+        subtotalCents={subtotalCents}
+        taxCents={taxCents}
+        totalCents={totalCents}
+      />
       <Card>
-        <div className="p-5 space-y-3">
-          <div className="flex items-center justify-between gap-3 flex-wrap">
-            <div>
-              <h3 className="text-sm font-semibold">
-                {savedDefault ? "Your invoice" : "New invoice"}
-              </h3>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                {savedDefault
-                  ? "Pre-filled from your saved default — edit anything, then send."
-                  : "Fill in the line items, notes, and tax, then send. Save it as your default to reuse next time."}
-              </p>
-            </div>
-            <span
-              className="text-[10px] uppercase tracking-wider font-medium rounded-full px-2 py-0.5"
-              style={{
-                background: "rgba(255,138,76,0.12)",
-                color: "#c4541e",
-                border: "0.5px solid rgba(255,138,76,0.3)",
-              }}
-            >
-              AI builder soon
-            </span>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-              <input
-                type="text"
-                placeholder="Bill to name (optional)"
-                value={billToName}
-                onChange={(e) => setBillToName(e.target.value)}
-                className="rounded-lg border-0 px-3 py-2 text-sm bg-background/60 ring-1 ring-foreground/10 focus:ring-foreground/30 outline-none"
-              />
-              <input
-                type="email"
-                placeholder="Bill to email (required to send)"
-                value={billToEmail}
-                onChange={(e) => setBillToEmail(e.target.value)}
-                className="rounded-lg border-0 px-3 py-2 text-sm bg-background/60 ring-1 ring-foreground/10 focus:ring-foreground/30 outline-none"
-              />
-              <div className="flex items-center gap-2">
-                <span className="text-[11px] text-muted-foreground w-20 shrink-0">Issued</span>
-                <input
-                  type="date"
-                  value={issueDate}
-                  onChange={(e) => setIssueDate(e.target.value)}
-                  className="flex-1 rounded-lg border-0 px-3 py-2 text-sm bg-background/60 ring-1 ring-foreground/10 focus:ring-foreground/30 outline-none"
-                />
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="text-[11px] text-muted-foreground w-20 shrink-0">Due</span>
-                <input
-                  type="date"
-                  value={dueDate}
-                  onChange={(e) => setDueDate(e.target.value)}
-                  className="flex-1 rounded-lg border-0 px-3 py-2 text-sm bg-background/60 ring-1 ring-foreground/10 focus:ring-foreground/30 outline-none"
-                />
-              </div>
-            </div>
-
-            {/* Line items */}
-            <div className="rounded-lg p-3" style={{ background: "rgba(255,138,76,0.06)" }}>
-              <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold mb-2">
-                Line items
-              </div>
-              {items.map((row, idx) => (
-                <div key={idx} className="grid grid-cols-[1fr_60px_100px_28px] gap-2 mb-2 items-center">
-                  <input
-                    type="text"
-                    placeholder="Service / item"
-                    value={row.name}
-                    onChange={(e) => updateRow(idx, "name", e.target.value)}
-                    className="rounded-md border-0 px-2.5 py-1.5 text-sm bg-background ring-1 ring-foreground/10 focus:ring-foreground/30 outline-none"
-                  />
-                  <input
-                    type="number"
-                    min="1"
-                    step="1"
-                    placeholder="Qty"
-                    value={row.qty}
-                    onChange={(e) => updateRow(idx, "qty", e.target.value)}
-                    className="rounded-md border-0 px-2.5 py-1.5 text-sm bg-background ring-1 ring-foreground/10 focus:ring-foreground/30 outline-none"
-                  />
-                  <div className="flex items-center gap-1">
-                    <span className="text-xs text-muted-foreground">$</span>
-                    <input
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      placeholder="Price"
-                      value={row.price}
-                      onChange={(e) => updateRow(idx, "price", e.target.value)}
-                      className="flex-1 rounded-md border-0 px-2.5 py-1.5 text-sm bg-background ring-1 ring-foreground/10 focus:ring-foreground/30 outline-none"
-                    />
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => removeRow(idx)}
-                    disabled={items.length === 1}
-                    className="text-muted-foreground hover:text-destructive disabled:opacity-30 disabled:cursor-not-allowed"
-                    title="Remove"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-              ))}
-              <Button variant="ghost" size="sm" onClick={addRow} className="rounded-full text-xs">
-                <Plus className="w-3.5 h-3.5 mr-1" />
-                Add line item
-              </Button>
-
-              {/* Totals */}
-              <div className="mt-3 pt-3 border-t border-foreground/5 space-y-1 text-sm">
-                <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">Subtotal</span>
-                  <span>{formatMoney(subtotalCents)}</span>
-                </div>
-                <div className="flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-2 flex-1">
-                    <span className="text-muted-foreground">Tax</span>
-                    <input
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      placeholder="%"
-                      value={taxPct}
-                      onChange={(e) => setTaxPct(e.target.value)}
-                      className="w-16 rounded-md border-0 px-2 py-1 text-xs bg-background ring-1 ring-foreground/10 focus:ring-foreground/30 outline-none"
-                    />
-                    <span className="text-xs text-muted-foreground">%</span>
-                  </div>
-                  <span>{formatMoney(taxCents)}</span>
-                </div>
-                <div className="flex items-center justify-between font-semibold pt-1 border-t border-foreground/5">
-                  <span>Total</span>
-                  <span>{formatMoney(totalCents)}</span>
-                </div>
-              </div>
-            </div>
-
-            <textarea
-              placeholder="Optional note for the host (terms, thanks, etc.)"
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              rows={2}
-              className="w-full rounded-lg border-0 px-3 py-2 text-sm bg-background/60 ring-1 ring-foreground/10 focus:ring-foreground/30 outline-none resize-none"
-            />
-
-            <div className="flex gap-2 flex-wrap">
+        <div className="p-4">
+          <div className="flex gap-2 flex-wrap">
               <Button onClick={() => create(true)} disabled={submitting} className="rounded-full">
                 {submitting ? (
                   <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
