@@ -690,6 +690,7 @@ export default function VendorPaymentsPage() {
             <CustomersTab
               vendorId={vendorId}
               listing={listings.find((l) => l.id === selectedListingId) ?? null}
+              invoices={invoices}
               onChanged={() => refresh(true)}
             />
           ) : tab === "links" ? (
@@ -2207,10 +2208,12 @@ interface Customer {
 function CustomersTab({
   vendorId,
   listing,
+  invoices,
   onChanged,
 }: {
   vendorId: string | null;
   listing: ListingOpt | null;
+  invoices: Invoice[];
   onChanged?: () => void;
 }) {
   const [rows, setRows] = useState<Customer[]>([]);
@@ -2225,6 +2228,23 @@ function CustomersTab({
   const [saving, setSaving] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [sendTarget, setSendTarget] = useState<Customer | null>(null);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+
+  // Group invoices by bill_to_email so each customer row can show
+  // count + total billed + a per-invoice list on expand. Cheaper
+  // than a second DB roundtrip and stays in sync with whatever
+  // the parent already has loaded.
+  const invoicesByEmail = useMemo(() => {
+    const map = new Map<string, Invoice[]>();
+    for (const inv of invoices) {
+      const k = (inv.bill_to_email ?? "").toLowerCase();
+      if (!k) continue;
+      const list = map.get(k) ?? [];
+      list.push(inv);
+      map.set(k, list);
+    }
+    return map;
+  }, [invoices]);
 
   const refresh = useCallback(async () => {
     if (!vendorId) {
@@ -2391,60 +2411,121 @@ function CustomersTab({
         <EmptyCard>No customers yet. Click "New customer" to add your first.</EmptyCard>
       ) : (
         <Card>
-          {rows.map((c, idx) => (
-            <div
-              key={c.id}
-              className={`p-4 ${idx > 0 ? "border-t border-foreground/5" : ""}`}
-            >
-              <div className="flex items-start justify-between gap-3 flex-wrap">
-                <div className="min-w-0">
-                  <p className="text-sm font-semibold">
-                    {c.name?.trim() || c.email}
-                  </p>
-                  {c.name && (
-                    <p className="text-xs text-muted-foreground">{c.email}</p>
-                  )}
-                  {c.phone && (
-                    <p className="text-xs text-muted-foreground">{c.phone}</p>
-                  )}
-                  {c.notes && (
-                    <p className="text-xs text-muted-foreground mt-1 max-w-md">{c.notes}</p>
-                  )}
-                </div>
-                <div className="flex gap-1 shrink-0">
-                  <Button
-                    size="sm"
-                    onClick={() => setSendTarget(c)}
-                    className="rounded-full"
+          {rows.map((c, idx) => {
+            const custInvoices = invoicesByEmail.get(c.email.toLowerCase()) ?? [];
+            const paidTotal = custInvoices
+              .filter((i) => i.status === "paid")
+              .reduce((s, i) => s + i.total_cents, 0);
+            const expanded = expandedId === c.id;
+            return (
+              <div
+                key={c.id}
+                className={`p-4 ${idx > 0 ? "border-t border-foreground/5" : ""}`}
+              >
+                <div className="flex items-start justify-between gap-3 flex-wrap">
+                  <button
+                    type="button"
+                    onClick={() => setExpandedId(expanded ? null : c.id)}
+                    className="text-left min-w-0 flex-1 hover:opacity-80 transition-opacity"
                   >
-                    <Mail className="w-3.5 h-3.5 mr-1" />
-                    Send invoice
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => startEdit(c)}
-                    className="rounded-full"
-                  >
-                    Edit
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => void remove(c)}
-                    disabled={deletingId === c.id}
-                    className="rounded-full text-muted-foreground hover:text-destructive"
-                  >
-                    {deletingId === c.id ? (
-                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                    ) : (
-                      <Trash2 className="w-3.5 h-3.5" />
+                    <p className="text-sm font-semibold">
+                      {c.name?.trim() || c.email}
+                    </p>
+                    {c.name && (
+                      <p className="text-xs text-muted-foreground">{c.email}</p>
                     )}
-                  </Button>
+                    {c.phone && (
+                      <p className="text-xs text-muted-foreground">{c.phone}</p>
+                    )}
+                    {c.notes && (
+                      <p className="text-xs text-muted-foreground mt-1 max-w-md">{c.notes}</p>
+                    )}
+                    {custInvoices.length > 0 && (
+                      <p className="text-[11px] mt-1 text-muted-foreground">
+                        {custInvoices.length} invoice{custInvoices.length === 1 ? "" : "s"}
+                        {paidTotal > 0 ? ` · ${formatMoney(paidTotal)} paid` : ""}
+                        <span className="ml-2 text-[10px] uppercase tracking-wider">
+                          {expanded ? "▾" : "▸"}
+                        </span>
+                      </p>
+                    )}
+                  </button>
+                  <div className="flex gap-1 shrink-0">
+                    <Button
+                      size="sm"
+                      onClick={() => setSendTarget(c)}
+                      className="rounded-full"
+                    >
+                      <Mail className="w-3.5 h-3.5 mr-1" />
+                      Send invoice
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => startEdit(c)}
+                      className="rounded-full"
+                    >
+                      Edit
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => void remove(c)}
+                      disabled={deletingId === c.id}
+                      className="rounded-full text-muted-foreground hover:text-destructive"
+                    >
+                      {deletingId === c.id ? (
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      ) : (
+                        <Trash2 className="w-3.5 h-3.5" />
+                      )}
+                    </Button>
+                  </div>
                 </div>
+                {expanded && custInvoices.length > 0 && (
+                  <div
+                    className="mt-3 rounded-lg overflow-hidden"
+                    style={{ border: "0.5px solid rgba(0,0,0,0.06)" }}
+                  >
+                    {custInvoices.map((inv, ii) => (
+                      <div
+                        key={inv.id}
+                        className={`px-3 py-2 flex items-center justify-between gap-2 text-xs ${
+                          ii > 0 ? "border-t border-foreground/5" : ""
+                        }`}
+                      >
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="font-semibold tnum">
+                              {inv.invoice_number || "—"}
+                            </span>
+                            <InvoiceStatusPill status={inv.status} />
+                          </div>
+                          <span className="text-muted-foreground">
+                            {formatDate(inv.issue_date)}
+                            {inv.due_date ? ` · due ${formatDate(inv.due_date)}` : ""}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0">
+                          <span className="font-semibold tnum">
+                            {formatMoney(inv.total_cents, inv.currency)}
+                          </span>
+                          <a
+                            href={`/pay/invoice/${inv.slug}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-[11px] font-medium text-foreground/70 hover:text-foreground"
+                          >
+                            View
+                          </a>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
-            </div>
-          ))}
+            );
+          })}
         </Card>
       )}
 
