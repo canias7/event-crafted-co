@@ -1166,7 +1166,7 @@ function InvoiceCanvas({
               type="button"
               onClick={() => fileInputRef.current?.click()}
               disabled={uploadingLogo}
-              className="relative group w-14 h-14 rounded-xl ring-1 ring-foreground/10 shrink-0 overflow-hidden disabled:opacity-60"
+              className="relative group w-14 h-14 rounded-full ring-1 ring-foreground/10 shrink-0 overflow-hidden disabled:opacity-60"
               title="Change logo"
               aria-label="Change logo"
             >
@@ -1485,10 +1485,10 @@ function DocumentCanvas({
                 <img
                   src={listing.logo_url}
                   alt={displayName}
-                  className="w-14 h-14 rounded-xl object-cover ring-1 ring-foreground/10 shrink-0"
+                  className="w-14 h-14 rounded-full object-cover ring-1 ring-foreground/10 shrink-0"
                 />
               ) : (
-                <div className="w-14 h-14 rounded-xl bg-foreground/5 inline-flex items-center justify-center shrink-0">
+                <div className="w-14 h-14 rounded-full bg-foreground/5 inline-flex items-center justify-center shrink-0">
                   <FileText className="w-6 h-6 text-muted-foreground" />
                 </div>
               )}

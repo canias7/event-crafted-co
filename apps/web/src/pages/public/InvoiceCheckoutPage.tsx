@@ -233,10 +233,10 @@ export default function InvoiceCheckoutPage() {
                 <img
                   src={invoice.vendor_logo_url}
                   alt={businessName}
-                  className="w-14 h-14 rounded-xl object-cover ring-1 ring-foreground/10 shrink-0"
+                  className="w-14 h-14 rounded-full object-cover ring-1 ring-foreground/10 shrink-0"
                 />
               ) : (
-                <div className="w-14 h-14 rounded-xl bg-foreground/5 inline-flex items-center justify-center shrink-0">
+                <div className="w-14 h-14 rounded-full bg-foreground/5 inline-flex items-center justify-center shrink-0">
                   <CreditCard className="w-6 h-6 text-muted-foreground" />
                 </div>
               )}
