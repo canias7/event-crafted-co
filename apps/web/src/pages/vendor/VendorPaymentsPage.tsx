@@ -514,14 +514,23 @@ export default function VendorPaymentsPage({ embedded = false }: { embedded?: bo
 
   const body = (
     <main className="flex-1 pb-20 lg:pb-0">
-        <div className="backdrop-blur-sm px-4 md:px-8 py-5 sticky top-0 z-40">
-          <div className="flex items-center justify-between gap-4 flex-wrap">
-            <div>
-              <h1 className="font-editorial text-3xl">VendoraPay</h1>
-              <p className="text-sm text-muted-foreground">
-                Accept card payments and track payouts from one place.
-              </p>
-            </div>
+        <div
+          className={`backdrop-blur-sm px-4 md:px-8 ${embedded ? "py-2" : "py-5 sticky top-0 z-40"}`}
+        >
+          {/* Hide the h1 + description when embedded — the
+              MyVendoraPage wrapper already shows "VendoraPay" via
+              its tab strip. Keep the Refresh button accessible. */}
+          <div
+            className={`flex items-center gap-4 flex-wrap ${embedded ? "justify-end" : "justify-between"}`}
+          >
+            {!embedded && (
+              <div>
+                <h1 className="font-editorial text-3xl">VendoraPay</h1>
+                <p className="text-sm text-muted-foreground">
+                  Accept card payments and track payouts from one place.
+                </p>
+              </div>
+            )}
             <Button
               variant="outline"
               size="sm"

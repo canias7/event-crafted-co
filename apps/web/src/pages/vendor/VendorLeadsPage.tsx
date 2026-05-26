@@ -317,19 +317,24 @@ export default function VendorLeadsPage({ embedded = false }: { embedded?: boole
 
   const inner = (
     <main id="main-content" className="flex-1 min-w-0 pb-20 lg:pb-0">
-        <div className="backdrop-blur-sm px-4 md:px-8 py-5 sticky top-0 z-40">
-          <div className="flex items-start justify-between gap-4">
-            <div>
-              <h1 className="font-editorial text-3xl">My Vendora</h1>
-              <p className="text-sm text-muted-foreground">
-                Every host who's reached out — past, present, and pipeline.
-              </p>
-            </div>
-            <div className="flex items-center gap-2">
-              <NotificationBell variant="light" />
+        {/* Embedded inside MyVendoraPage the wrapper already shows
+            "Leads" via its tab strip, so the inner h1 + description
+            would just be visual noise. Suppress when embedded. */}
+        {!embedded && (
+          <div className="backdrop-blur-sm px-4 md:px-8 py-5 sticky top-0 z-40">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h1 className="font-editorial text-3xl">My Vendora</h1>
+                <p className="text-sm text-muted-foreground">
+                  Every host who's reached out — past, present, and pipeline.
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <NotificationBell variant="light" />
+              </div>
             </div>
           </div>
-        </div>
+        )}
 
         <div className="p-4 md:p-8 max-w-5xl space-y-5">
           {/* Listing picker — mirrors the Calendar page. Every query

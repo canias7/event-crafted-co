@@ -181,23 +181,12 @@
       "profile": "Perfil"
     },
     "vendor": {
-      "dashboard": "Panel",
       "inbox": "Bandeja",
-      "leads": "Leads",
       "my_vendora": "My Vendora",
-      "messages": "Mensajes",
-      "analytics": "Analíticas",
-      "calendar": "Calendario",
-      "listing": "Perfil",
-      "team": "Equipo",
-      "payments": "Pagos",
-      "ai_agent": "Agente IA",
-      "studio": "Estudio",
       "my_profile": "Mi Perfil",
       "my_space": "Mi espacio",
       "gallery": "Galería",
       "subscription": "Suscripción",
-      "vendorapay": "VendoraPay",
       "usage": "Uso"
     },
     "bottom": {
