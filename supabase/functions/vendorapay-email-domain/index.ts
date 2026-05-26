@@ -156,35 +156,55 @@ serve(async (req: Request) => {
       if (!isValidDomain(domain)) {
         return json(400, { error: "invalid_domain" });
       }
-      // Snapshot the previously-installed resend_domain_id so we
-      // can clean it up AFTER the new domain is fully provisioned.
-      // Order matters: deleting the old one first opens a window
-      // where the DB still points at a deleted resource AND
-      // vendorapay-notify reading status='verified' would build
-      // From: noreply@<deleted-domain> and Resend would reject the
-      // send. Also, if the new POST fails we'd be left with
-      // nothing.
+      // Snapshot the previously-installed Resend resource + domain
+      // name so we can: (a) clean it up AFTER the new domain is
+      // fully provisioned, and (b) gate the 422 "reset stuck"
+      // affordance on whether the caller is actually re-submitting
+      // the SAME name. Selecting only resend_domain_id (as the
+      // previous version did) made the retry path destructive when
+      // the 422 came from any unrelated cause (invalid TLD, account
+      // collision with another tenant): we'd DELETE the vendor's
+      // still-working old resource, then fail the retry POST, then
+      // the vendor's verified domain is gone.
       const { data: existing } = await adminClient
         .from("vendor_email_domains")
-        .select("resend_domain_id")
+        .select("resend_domain_id, domain")
         .eq("vendor_id", vendor_id)
         .maybeSingle();
-      const existingId = (existing as { resend_domain_id?: string } | null)
-        ?.resend_domain_id;
+      const existingRow = existing as
+        | { resend_domain_id?: string; domain?: string }
+        | null;
+      const existingId = existingRow?.resend_domain_id;
+      const existingDomain = existingRow?.domain;
 
       // Hand off to Resend. Their API returns 422 when re-adding a
       // domain name that already exists in our Resend account.
-      // Special case: when the vendor's existing row points at a
-      // Resend resource AND we get a duplicate-name 422, fall back
-      // to the pre-PR-960 "reset stuck" behavior — DELETE the
-      // existing Resend resource and retry the POST. This
-      // preserves the self-service workflow for vendors whose
-      // Resend domain is wedged in pending state.
+      // Only fall back to the "reset stuck" DELETE + retry when the
+      // incoming domain is the SAME as the existing row's — that's
+      // the only case where a duplicate-name 422 is plausible AND
+      // the destructive DELETE is recoverable (we're re-creating
+      // the same name).
       let r = await resend("POST", "/domains", { name: domain });
-      if (!r.ok && r.status === 422 && existingId) {
+      if (
+        !r.ok &&
+        r.status === 422 &&
+        existingId &&
+        existingDomain === domain
+      ) {
         const { ok: delOk } = await resend("DELETE", `/domains/${existingId}`);
         if (delOk) {
           r = await resend("POST", "/domains", { name: domain });
+          // If the retry POST ALSO fails, our DB row's
+          // resend_domain_id now points at a resource we just
+          // deleted. Null it out so subsequent create attempts
+          // don't get stuck in the same DELETE-and-retry loop
+          // against a stale id.
+          if (!r.ok) {
+            await adminClient
+              .from("vendor_email_domains")
+              .update({ resend_domain_id: null, status: "pending" })
+              .eq("vendor_id", vendor_id);
+          }
         }
       }
       if (!r.ok) {

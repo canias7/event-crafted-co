@@ -327,10 +327,18 @@ serve(async (req: Request) => {
         // update on `excluded.last_event_created_at >= existing` so
         // Stripe webhook re-delivery of an OLDER event doesn't
         // revert a resolved dispute back to needs_response.
+        //
+        // Fail-closed when event.raw.created is missing: stamp 1970
+        // so the row's existing timestamp will (almost) always be
+        // newer and the WHERE clause SKIPs the update. Better to
+        // drop a malformed event than to overwrite a real state.
+        const rawCreatedSec = (event.raw as { created?: number }).created;
         const eventCreatedAt = new Date(
-          ((event.raw as { created?: number }).created ?? Math.floor(Date.now() / 1000)) * 1000,
+          (typeof rawCreatedSec === "number" && Number.isFinite(rawCreatedSec)
+            ? rawCreatedSec
+            : 0) * 1000,
         ).toISOString();
-        const { error: dispErr } = await (db as any).rpc(
+        const { data: dispApplied, error: dispErr } = await (db as any).rpc(
           "vendor_dispute_upsert",
           {
             p_stripe_dispute_id: d.id,
@@ -350,6 +358,18 @@ serve(async (req: Request) => {
             "[vendorapay-webhook] vendor_dispute_upsert failed",
             d.id,
             dispErr,
+          );
+        } else if (dispApplied === false) {
+          // The RPC's WHERE clause filtered out the upsert because
+          // this event's timestamp was older than what's already
+          // recorded. Stripe webhook re-delivery is the expected
+          // trigger. Log so ops can confirm out-of-order protection
+          // is working (or notice if it's filtering real events).
+          console.warn(
+            "[vendorapay-webhook] dispute event SKIPPED as stale",
+            d.id,
+            d.status,
+            eventCreatedAt,
           );
         }
         break;

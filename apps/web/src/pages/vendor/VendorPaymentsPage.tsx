@@ -2873,35 +2873,52 @@ function RecurringDialog({
       return;
     }
     setSubmitting(true);
-    // For monthly/quarterly/yearly cadences we persist the calendar
-    // day from the next-run picker as day_of_month so the scanner's
-    // advance() function re-anchors to it instead of drifting after
-    // the first month-overflow (e.g. Jan 31 -> Feb 28 then stuck on
-    // the 28th forever).
     const nextRunDate = new Date(`${nextRun}T09:00:00Z`);
-    const dayOfMonth =
-      interval === "monthly" || interval === "quarterly" || interval === "yearly"
-        ? nextRunDate.getUTCDate()
-        : null;
-    const payload = {
-      vendor_id: vendorId,
-      customer_id: customer.id,
-      interval,
-      day_of_month: dayOfMonth,
-      next_run_at: nextRunDate.toISOString(),
-      line_items: parsedItems,
-      notes: notes.trim() || null,
-      tax_pct: parseFloat(taxPct || "0") || 0,
-      active,
-    };
+    if (!Number.isFinite(nextRunDate.getTime())) {
+      setSubmitting(false);
+      toast.error("Pick a valid next-run date");
+      return;
+    }
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const db = supabase as any;
-    const { error } = existing
-      ? await db
-          .from("vendor_recurring_invoices")
-          .update(payload)
-          .eq("id", existing.id)
-      : await db.from("vendor_recurring_invoices").insert(payload);
+    let error: { message?: string } | null = null;
+    if (existing) {
+      // On EDIT: DON'T touch day_of_month. The vendor's original
+      // anchor (set on the first INSERT) is the authoritative
+      // intent. Recomputing from the picker would silently lock in
+      // any drift that's already happened to next_run_at (Jan 31
+      // -> Feb 28 -> setting day_of_month=28 forever).
+      ({ error } = await db
+        .from("vendor_recurring_invoices")
+        .update({
+          interval,
+          next_run_at: nextRunDate.toISOString(),
+          line_items: parsedItems,
+          notes: notes.trim() || null,
+          tax_pct: parseFloat(taxPct || "0") || 0,
+          active,
+        })
+        .eq("id", existing.id));
+    } else {
+      // On CREATE: for month-based cadences, snapshot the picker's
+      // calendar day as day_of_month so advance() can re-anchor
+      // instead of drifting after the first month-overflow.
+      const dayOfMonth =
+        interval === "monthly" || interval === "quarterly" || interval === "yearly"
+          ? nextRunDate.getUTCDate()
+          : null;
+      ({ error } = await db.from("vendor_recurring_invoices").insert({
+        vendor_id: vendorId,
+        customer_id: customer.id,
+        interval,
+        day_of_month: dayOfMonth,
+        next_run_at: nextRunDate.toISOString(),
+        line_items: parsedItems,
+        notes: notes.trim() || null,
+        tax_pct: parseFloat(taxPct || "0") || 0,
+        active,
+      }));
+    }
     setSubmitting(false);
     if (error) {
       toast.error("Couldn't save recurring", { description: error.message });
@@ -3280,8 +3297,7 @@ function SendInvoiceDialog({
         .eq("id", newRow.id);
       if (rollbackErr) {
         toast.error("Email failed and rollback failed", {
-          description:
-            "Invoice may be stuck as Sent. Refresh and verify the row's status before resending.",
+          description: `${sendErr.message} (Invoice may be stuck as Sent — refresh and verify before resending.)`,
         });
       } else {
         toast.warning("Saved as draft — email failed", { description: sendErr.message });
