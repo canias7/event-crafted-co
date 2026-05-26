@@ -100,12 +100,21 @@ async function sendEmail(
 // "<Business Name> <noreply@vendor-domain.com>" so the buyer's
 // mail client shows the vendor's actual domain in the From.
 function senderFrom(businessName: string, verifiedDomain: string | null): string {
-  const safe = businessName.replace(/[<>"\r\n]/g, "").trim();
-  const display = safe.length ? safe : "Vendor";
-  if (verifiedDomain) {
-    return `${display} <noreply@${verifiedDomain}>`;
-  }
-  return `${display} via VendoraPay <invoices@eventvendora.com>`;
+  // Strip header-control characters that could let a vendor inject
+  // additional headers via their business_name. Quoting follows
+  // RFC 5322: if the display name contains any "specials" (commas,
+  // semicolons, parens, dots in some positions, etc), wrap it in
+  // double quotes and escape any internal " or \.
+  const stripped = businessName.replace(/[\r\n]/g, "").trim();
+  const display = stripped.length ? stripped : "Vendor";
+  const needsQuoting = /[,;:()<>@\[\]\\."]/.test(display);
+  const escaped = display.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+  const safeDisplay = needsQuoting ? `"${escaped}"` : display;
+  const baseMailbox = verifiedDomain
+    ? `noreply@${verifiedDomain}`
+    : "invoices@eventvendora.com";
+  const suffix = verifiedDomain ? "" : " via VendoraPay";
+  return `${safeDisplay}${suffix} <${baseMailbox}>`;
 }
 
 interface PaymentReceivedPayload {
@@ -288,7 +297,7 @@ serve(async (req) => {
       });
       const taxPct = invoiceCtx
         ? (invoiceCtx.tax_rate_bps / 100).toFixed(2)
-        : (vpRow?.default_tax_pct ?? 0).toFixed(2);
+        : Number(vpRow?.default_tax_pct ?? 0).toFixed(2);
       const lineItems: InvoiceLineItem[] = invoiceCtx?.lineItems?.length
         ? invoiceCtx.lineItems
         : [{

@@ -156,6 +156,23 @@ serve(async (req: Request) => {
       if (!isValidDomain(domain)) {
         return json(400, { error: "invalid_domain" });
       }
+      // If the vendor already has a domain registered, clean up
+      // the previous Resend resource before adding the new one —
+      // otherwise the old domain keeps consuming our Resend quota
+      // forever (the upsert overwrites the row but the Resend-side
+      // domain stays registered with no DB pointer).
+      const { data: existing } = await adminClient
+        .from("vendor_email_domains")
+        .select("resend_domain_id")
+        .eq("vendor_id", vendor_id)
+        .maybeSingle();
+      const existingId = (existing as { resend_domain_id?: string } | null)
+        ?.resend_domain_id;
+      if (existingId) {
+        // Best-effort — if Resend 404s the row is already gone.
+        await resend("DELETE", `/domains/${existingId}`);
+      }
+
       // Hand off to Resend. Their API is idempotent by name in the
       // sense that re-adding an existing domain returns 422 with
       // a useful message — we surface that to the caller.
@@ -189,10 +206,13 @@ serve(async (req: Request) => {
     if (action === "verify") {
       const { data: row } = await adminClient
         .from("vendor_email_domains")
-        .select("resend_domain_id")
+        .select("resend_domain_id, verified_at")
         .eq("vendor_id", vendor_id)
         .maybeSingle();
-      const r0 = row as { resend_domain_id?: string } | null;
+      const r0 = row as {
+        resend_domain_id?: string;
+        verified_at?: string | null;
+      } | null;
       if (!r0?.resend_domain_id) {
         return json(404, { error: "no_domain_for_vendor" });
       }
@@ -205,12 +225,22 @@ serve(async (req: Request) => {
       }
       const d = r.data as ResendDomain;
       const verifiedNow = d.status === "verified";
+      // Preserve the original verified_at when a row was already
+      // verified — re-polling Resend shouldn't slide the audit
+      // timestamp forward. Only clear/set when the state actually
+      // transitions.
+      let newVerifiedAt: string | null;
+      if (verifiedNow) {
+        newVerifiedAt = r0.verified_at ?? new Date().toISOString();
+      } else {
+        newVerifiedAt = null;
+      }
       await adminClient
         .from("vendor_email_domains")
         .update({
           dns_records: d.records ?? [],
           status: d.status ?? "pending",
-          verified_at: verifiedNow ? new Date().toISOString() : null,
+          verified_at: newVerifiedAt,
         })
         .eq("vendor_id", vendor_id);
       return json(200, {

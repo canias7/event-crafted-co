@@ -51,12 +51,17 @@ serve(async (req) => {
   if (!RESEND_API_KEY) return json(500, { error: "resend_not_configured" });
   try {
     const authHeader = req.headers.get("Authorization") ?? "";
-    const userClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-      global: { headers: { Authorization: authHeader } },
-      auth: { autoRefreshToken: false, persistSession: false },
-    });
-    const { data: userData } = await userClient.auth.getUser();
-    if (!userData?.user) return json(401, { error: "unauthorized" });
+    // Two valid auth paths:
+    //   1. User JWT — vendor opens the app and clicks Send. We
+    //      resolve the user and confirm they're an admin of the
+    //      invoice's vendor team.
+    //   2. Service-role bearer — internal callers (scan-vendorapay-
+    //      recurring) that already know which invoice they're
+    //      emitting. They've done their own ownership checks.
+    //      Without this branch, cron-driven recurring invoices
+    //      can't reach the email path at all.
+    const isServiceRole =
+      authHeader === `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`;
 
     const body = await req.json().catch(() => ({}));
     const invoiceId = body?.invoice_id as string | undefined;
@@ -77,8 +82,19 @@ serve(async (req) => {
       return json(400, { error: `cannot send invoice with status '${inv.status}'` });
     }
 
-    const { data: isAdmin } = await userClient.rpc("is_vendor_team_admin", { _vendor_id: inv.vendor_id });
-    if (!isAdmin) return json(403, { error: "admin role required" });
+    if (!isServiceRole) {
+      // User-JWT path: resolve caller and verify admin membership.
+      const userClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+        global: { headers: { Authorization: authHeader } },
+        auth: { autoRefreshToken: false, persistSession: false },
+      });
+      const { data: userData } = await userClient.auth.getUser();
+      if (!userData?.user) return json(401, { error: "unauthorized" });
+      const { data: isAdmin } = await userClient.rpc("is_vendor_team_admin", {
+        _vendor_id: inv.vendor_id,
+      });
+      if (!isAdmin) return json(403, { error: "admin role required" });
+    }
 
     const { data: vp } = await admin
       .from("vendor_profiles")
