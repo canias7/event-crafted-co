@@ -287,7 +287,7 @@ const TIER_FEE_COPY: Record<
   },
 };
 
-export default function VendorPaymentsPage() {
+export default function VendorPaymentsPage({ embedded = false }: { embedded?: boolean } = {}) {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const { user } = useAuth();
@@ -512,10 +512,8 @@ export default function VendorPaymentsPage() {
     [transactions],
   );
 
-  return (
-    <div className="flex min-h-screen vendor-canvas">
-      <DashboardSidebar items={vendorNavItems} title="Vendor Portal" backPath="/settings" />
-      <main className="flex-1 pb-20 lg:pb-0">
+  const body = (
+    <main className="flex-1 pb-20 lg:pb-0">
         <div className="backdrop-blur-sm px-4 md:px-8 py-5 sticky top-0 z-40">
           <div className="flex items-center justify-between gap-4 flex-wrap">
             <div>
@@ -720,6 +718,14 @@ export default function VendorPaymentsPage() {
           )}
         </div>
       </main>
+  );
+
+  if (embedded) return body;
+
+  return (
+    <div className="flex min-h-screen vendor-canvas">
+      <DashboardSidebar items={vendorNavItems} title="Vendor Portal" backPath="/settings" />
+      {body}
       <MobileNav items={vendorNavItems} />
     </div>
   );

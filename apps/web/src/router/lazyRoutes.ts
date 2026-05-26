@@ -165,6 +165,9 @@ export const VendorIntegrationsPage = lazyWithReload(importVendorIntegrations);
 const importVendorPayments = () => import("@/pages/vendor/VendorPaymentsPage");
 export const VendorPaymentsPage = lazyWithReload(importVendorPayments);
 
+const importMyVendora = () => import("@/pages/vendor/MyVendoraPage");
+export const MyVendoraPage = lazyWithReload(importMyVendora);
+
 const importVendorSubscription = () => import("@/pages/vendor/VendorSubscriptionPage");
 export const VendorSubscriptionPage = lazyWithReload(importVendorSubscription);
 
@@ -233,6 +236,7 @@ const ROUTE_IMPORTERS: Array<{ pattern: string; importer: () => Promise<unknown>
   { pattern: "/vendor/ai-superagents", importer: importVendorAiSuperagents },
   { pattern: "/vendor/integrations", importer: importVendorIntegrations },
   { pattern: "/vendor/payments", importer: importVendorPayments },
+  { pattern: "/vendor/my-vendora", importer: importMyVendora },
   { pattern: "/vendor/subscription", importer: importVendorSubscription },
   { pattern: "/vendor/usage", importer: importVendorUsage },
   { pattern: "/vendor/gallery", importer: importVendorGallery },

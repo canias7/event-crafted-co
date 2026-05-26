@@ -2,7 +2,6 @@ import {
   Briefcase,
   CalendarDays,
   Compass,
-  CreditCard,
   Crown,
   Gauge,
   Images,
@@ -10,7 +9,6 @@ import {
   Settings,
   Sparkles,
   User,
-  Users,
   type LucideIcon,
 } from "lucide-react";
 
@@ -57,18 +55,12 @@ export const customerNavItems: NavItem[] = [
 export const vendorNavItems: NavItem[] = [
   // Inbox hub — sub-tabs: Inquiries (default), Hosts (DMs), Partners.
   { labelKey: "sidebar.vendor.inbox", path: "/vendor/inbox", icon: Inbox },
-  // My Vendora — business-operations cluster. The parent row itself
-  // doesn't navigate (no own page) — it's a section header that
-  // expands to reveal Leads / Calendar / VendoraPay underneath.
-  {
-    labelKey: "sidebar.vendor.my_vendora",
-    icon: Briefcase,
-    children: [
-      { labelKey: "sidebar.vendor.leads", path: "/vendor/leads", icon: Users },
-      { labelKey: "sidebar.vendor.calendar", path: "/vendor/appointments", icon: CalendarDays },
-      { labelKey: "sidebar.vendor.vendorapay", path: "/vendor/payments", icon: CreditCard },
-    ],
-  },
+  // My Vendora — single page that hosts Leads / Calendar /
+  // VendoraPay as switchable tabs (see MyVendoraPage). The
+  // standalone /vendor/leads, /vendor/appointments, /vendor/payments
+  // routes still resolve for deep-links but no longer appear in the
+  // sidebar — they're reached via the tab strip on the wrapper page.
+  { labelKey: "sidebar.vendor.my_vendora", path: "/vendor/my-vendora", icon: Briefcase },
   // ---- Identity + creative tools ----
   { labelKey: "sidebar.vendor.my_profile", path: "/vendor/me", icon: User },
   { labelKey: "sidebar.vendor.my_space", path: "/vendor/ai-superagents", icon: Sparkles },
