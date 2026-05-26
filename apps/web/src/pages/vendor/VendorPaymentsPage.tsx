@@ -16,6 +16,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import {
+  AlertTriangle,
   ArrowDownRight,
   ArrowUpRight,
   Banknote,
@@ -122,7 +123,7 @@ interface Status {
   } | null;
 }
 
-type TabId = "overview" | "transactions" | "files" | "customers" | "links" | "payouts" | "integrations" | "settings";
+type TabId = "overview" | "transactions" | "files" | "customers" | "links" | "payouts" | "disputes" | "integrations" | "settings";
 
 const TABS: Array<{ id: TabId; label: string; icon: typeof Wallet }> = [
   { id: "overview", label: "Overview", icon: Wallet },
@@ -134,6 +135,7 @@ const TABS: Array<{ id: TabId; label: string; icon: typeof Wallet }> = [
   { id: "customers", label: "Customers", icon: Users },
   { id: "links", label: "Pay Links", icon: Link2 },
   { id: "payouts", label: "Payouts", icon: Banknote },
+  { id: "disputes", label: "Disputes", icon: AlertTriangle },
   { id: "integrations", label: "Integrations", icon: Plug },
   { id: "settings", label: "Settings", icon: SettingsIcon },
 ];
@@ -702,6 +704,8 @@ export default function VendorPaymentsPage() {
             />
           ) : tab === "payouts" ? (
             <PayoutsTab data={payouts} status={status} />
+          ) : tab === "disputes" ? (
+            <DisputesTab vendorId={vendorId} />
           ) : tab === "integrations" ? (
             <IntegrationsTab status={status} vendorId={vendorId} />
           ) : (
@@ -2882,6 +2886,178 @@ function SendInvoiceDialog({
         </div>
       </DialogContent>
     </Dialog>
+  );
+}
+
+interface Dispute {
+  id: string;
+  stripe_dispute_id: string;
+  charge_id: string;
+  payment_intent_id: string | null;
+  amount_cents: number;
+  currency: string;
+  reason: string | null;
+  status: string;
+  created_at: string;
+  updated_at: string;
+}
+
+// Lifecycle states Stripe uses. Maps to a small pill summarizing
+// where the dispute is. "won" / "warning_closed" are essentially
+// resolved and net-positive for the vendor; "lost" / "charge_refunded"
+// mean the money went back. Others = action needed or pending.
+function disputeStatusPill(status: string): {
+  label: string;
+  className: string;
+} {
+  if (status === "won" || status === "warning_closed") {
+    return { label: "Won", className: "bg-emerald-100 text-emerald-700" };
+  }
+  if (status === "lost" || status === "charge_refunded") {
+    return { label: "Lost", className: "bg-rose-100 text-rose-700" };
+  }
+  if (status.startsWith("warning")) {
+    return { label: "Warning", className: "bg-amber-100 text-amber-700" };
+  }
+  if (status === "needs_response") {
+    return { label: "Needs response", className: "bg-orange-100 text-orange-700" };
+  }
+  if (status === "under_review") {
+    return { label: "Under review", className: "bg-sky-100 text-sky-700" };
+  }
+  return { label: status.replace(/_/g, " "), className: "bg-slate-100 text-slate-700" };
+}
+
+function DisputesTab({ vendorId }: { vendorId: string | null }) {
+  const [rows, setRows] = useState<Dispute[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [opening, setOpening] = useState(false);
+
+  const refresh = useCallback(async () => {
+    if (!vendorId) {
+      setRows([]);
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data } = await (supabase as any)
+      .from("vendor_disputes")
+      .select(
+        "id, stripe_dispute_id, charge_id, payment_intent_id, amount_cents, currency, reason, status, created_at, updated_at",
+      )
+      .eq("vendor_id", vendorId)
+      .order("created_at", { ascending: false });
+    setRows((data ?? []) as Dispute[]);
+    setLoading(false);
+  }, [vendorId]);
+
+  useEffect(() => {
+    void refresh();
+  }, [refresh]);
+
+  // Dispute responses happen on Stripe's side — we deep-link the
+  // vendor into their Express dashboard for any action.
+  const openExpress = useCallback(async () => {
+    if (!vendorId || opening) return;
+    setOpening(true);
+    const { data, error } = await supabase.functions.invoke(
+      "vendorapay-dashboard-link",
+      { body: { business_id: vendorId } },
+    );
+    setOpening(false);
+    if (error || !(data as { url?: string })?.url) {
+      toast.error("Couldn't open Stripe dashboard", {
+        description: error?.message ?? "Try again in a moment.",
+      });
+      return;
+    }
+    window.open((data as { url: string }).url, "_blank", "noopener,noreferrer");
+  }, [vendorId, opening]);
+
+  const openCount = rows.filter(
+    (r) =>
+      r.status === "needs_response" ||
+      r.status === "under_review" ||
+      r.status === "warning_needs_response" ||
+      r.status === "warning_under_review",
+  ).length;
+
+  return (
+    <div className="space-y-4">
+      <Card>
+        <div className="p-5 flex items-center justify-between flex-wrap gap-3">
+          <div>
+            <h3 className="text-sm font-semibold">Disputes & chargebacks</h3>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              {openCount > 0
+                ? `${openCount} dispute${openCount === 1 ? "" : "s"} need attention. Respond in Stripe Express.`
+                : "No open disputes right now. Stripe alerts you the moment a buyer challenges a charge."}
+            </p>
+          </div>
+          <Button
+            onClick={openExpress}
+            disabled={!vendorId || opening}
+            className="rounded-full"
+            size="sm"
+          >
+            {opening ? <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> : <ExternalLink className="w-3.5 h-3.5 mr-1.5" />}
+            Open Stripe Express
+          </Button>
+        </div>
+      </Card>
+
+      {loading ? (
+        <EmptyCard>Loading disputes…</EmptyCard>
+      ) : rows.length === 0 ? (
+        <EmptyCard>
+          No disputes yet. Chargebacks land here as soon as a card issuer raises one.
+        </EmptyCard>
+      ) : (
+        <Card>
+          {rows.map((d, idx) => {
+            const pill = disputeStatusPill(d.status);
+            return (
+              <div
+                key={d.id}
+                className={`p-4 ${idx > 0 ? "border-t border-foreground/5" : ""}`}
+              >
+                <div className="flex items-start justify-between gap-3 flex-wrap">
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <p className="text-sm font-semibold tnum">
+                        {formatMoney(d.amount_cents, d.currency)}
+                      </p>
+                      <span
+                        className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${pill.className}`}
+                      >
+                        {pill.label}
+                      </span>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Reason: {(d.reason ?? "unspecified").replace(/_/g, " ")}
+                    </p>
+                    <p className="text-[11px] text-muted-foreground mt-0.5">
+                      Opened {formatDate(d.created_at)}
+                      {d.charge_id ? ` · charge ${d.charge_id}` : ""}
+                    </p>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="rounded-full"
+                    onClick={openExpress}
+                  >
+                    <ExternalLink className="w-3.5 h-3.5 mr-1" />
+                    Respond
+                  </Button>
+                </div>
+              </div>
+            );
+          })}
+        </Card>
+      )}
+    </div>
   );
 }
 

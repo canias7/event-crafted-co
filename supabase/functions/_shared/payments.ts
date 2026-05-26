@@ -513,7 +513,14 @@ function normalizeEventType(type: string): WebhookEventKind | null {
       return "payment.failed";
     case "charge.refunded":
       return "charge.refunded";
+    // All dispute lifecycle events normalize to one kind — the
+    // webhook reads dispute.status off the payload to know which
+    // state to write.
     case "charge.dispute.created":
+    case "charge.dispute.updated":
+    case "charge.dispute.closed":
+    case "charge.dispute.funds_withdrawn":
+    case "charge.dispute.funds_reinstated":
       return "charge.disputed";
     default:
       return null;

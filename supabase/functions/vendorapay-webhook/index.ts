@@ -246,17 +246,61 @@ serve(async (req: Request) => {
       }
 
       case "charge.disputed": {
+        // Dispute lifecycle events all funnel through here — the
+        // shared mapper normalizes created/updated/closed/funds_*
+        // into one kind. dispute.status carries the actual state.
         const d = event.raw.data.object as {
+          id: string;
           charge: string;
+          payment_intent?: string | null;
           amount: number;
-          reason: string;
+          currency?: string;
+          reason?: string;
+          status: string;
         };
-        // Chargebacks: log + leave the proposal alone until the
-        // dispute resolves. If it's lost, the refund event flips
-        // payment_status; if won, no further action.
-        console.warn(
-          "[vendorapay-webhook] charge.disputed",
-          { charge: d.charge, amount: d.amount, reason: d.reason },
+
+        // Resolve which vendor owns the original charge so the
+        // dispute shows up under the right listing. Look it up via
+        // the payment_intent across all three record types.
+        let vendorIdForDispute: string | null = null;
+        if (d.payment_intent) {
+          for (const table of ["invoices", "payment_links"] as const) {
+            const { data } = await db
+              .from(table)
+              .select("vendor_id")
+              .eq("paid_payment_intent_id", d.payment_intent)
+              .maybeSingle();
+            const r = data as { vendor_id?: string } | null;
+            if (r?.vendor_id) {
+              vendorIdForDispute = r.vendor_id;
+              break;
+            }
+          }
+          if (!vendorIdForDispute) {
+            const { data: prop } = await db
+              .from("proposals")
+              .select("vendor_id")
+              .eq("stripe_checkout_session_id", d.payment_intent)
+              .maybeSingle();
+            const r = prop as { vendor_id?: string } | null;
+            if (r?.vendor_id) vendorIdForDispute = r.vendor_id;
+          }
+        }
+
+        await db.from("vendor_disputes").upsert(
+          {
+            stripe_dispute_id: d.id,
+            vendor_id: vendorIdForDispute,
+            charge_id: d.charge,
+            payment_intent_id: d.payment_intent ?? null,
+            amount_cents: d.amount,
+            currency: d.currency ?? "usd",
+            reason: d.reason ?? null,
+            status: d.status,
+            raw_payload: event.raw as unknown as Record<string, unknown>,
+            updated_at: new Date().toISOString(),
+          },
+          { onConflict: "stripe_dispute_id" },
         );
         break;
       }
