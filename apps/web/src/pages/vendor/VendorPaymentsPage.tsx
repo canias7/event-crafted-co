@@ -1545,7 +1545,8 @@ function DocumentCanvas({
               placeholder="Type your template body here…"
               disabled={!loaded}
               rows={Math.max(18, body.split("\n").length + 2)}
-              className={`block w-full text-sm font-mono leading-relaxed resize-none ${editableCls}`}
+              className={`block w-full text-[15px] leading-7 resize-none ${editableCls}`}
+              style={{ fontFamily: "ui-serif, Georgia, 'Times New Roman', serif" }}
             />
           </div>
 
