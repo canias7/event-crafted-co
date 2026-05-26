@@ -22,6 +22,7 @@ import {
   ChevronLeft,
   Copy,
   CreditCard,
+  Download,
   ExternalLink,
   FileEdit,
   FileText,
@@ -1096,6 +1097,186 @@ function FilesTab(props: {
   );
 }
 
+function escapeForHtml(s: string): string {
+  return s.replace(/[&<>"']/g, (c) =>
+    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c] ?? c,
+  );
+}
+
+// Build a fully self-contained, print-ready HTML document for one
+// invoice template. Used by "Save as PDF" — we open this in a new
+// window and trigger window.print() so the browser's print dialog
+// (with "Save as PDF" as a destination) handles the actual export.
+function templateToPrintableHtml(t: InvoiceTemplate): string {
+  const subtotal = t.lineItems.reduce((s, it) => s + it.qty * it.price, 0);
+  const tax = (subtotal * t.taxPct) / 100;
+  const total = subtotal + tax;
+  const fmt = (n: number) =>
+    "$" + n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+  const rows = t.lineItems
+    .map(
+      (it) => `
+      <tr>
+        <td style="padding:12px 8px 12px 0;border-bottom:1px solid #f0eeeb;">${escapeForHtml(it.name)}</td>
+        <td style="padding:12px 8px;border-bottom:1px solid #f0eeeb;text-align:right;font-variant-numeric:tabular-nums;">${it.qty}</td>
+        <td style="padding:12px 8px;border-bottom:1px solid #f0eeeb;text-align:right;font-variant-numeric:tabular-nums;">${fmt(it.price)}</td>
+        <td style="padding:12px 0 12px 8px;border-bottom:1px solid #f0eeeb;text-align:right;font-variant-numeric:tabular-nums;font-weight:500;">${fmt(it.qty * it.price)}</td>
+      </tr>`,
+    )
+    .join("");
+
+  const taxRow =
+    tax > 0
+      ? `<div style="display:flex;justify-content:space-between;color:#6b6259;padding:4px 0;">
+           <span>Tax (${t.taxPct}%)</span>
+           <span style="font-variant-numeric:tabular-nums;">${fmt(tax)}</span>
+         </div>`
+      : "";
+
+  const notesBlock = t.notes
+    ? `<section style="margin-top:40px;">
+         <p style="font-size:10px;text-transform:uppercase;letter-spacing:0.06em;color:#6b6259;font-weight:600;margin:0;">Notes</p>
+         <p style="font-size:13px;color:#3a342f;margin:4px 0 0;line-height:1.6;white-space:pre-wrap;">${escapeForHtml(t.notes)}</p>
+       </section>`
+    : "";
+
+  return `<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8">
+<title>${escapeForHtml(t.title)} — Invoice template</title>
+<style>
+  @page { size: Letter; margin: 0.5in; }
+  body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif; color: #1a1410; background: #f7f5f2; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .doc { max-width: 720px; margin: 32px auto; padding: 48px; background: #fff; border-radius: 16px; box-shadow: 0 24px 60px -30px rgba(26,20,16,0.25); }
+  @media print { body { background: #fff; } .doc { margin: 0; padding: 0; max-width: none; box-shadow: none; border-radius: 0; } }
+  h1 { font-size: 20px; font-weight: 600; letter-spacing: -0.01em; margin: 0; }
+  .label-sm { font-size: 10px; text-transform: uppercase; letter-spacing: 0.22em; color: #6b6259; font-weight: 600; margin: 0; }
+  .meta-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.06em; color: #6b6259; font-weight: 600; margin: 0; }
+  .editorial { font-family: ui-serif, Georgia, 'Times New Roman', serif; font-weight: 500; }
+</style>
+</head><body>
+  <div class="doc">
+    <header style="display:flex;align-items:flex-start;justify-content:space-between;gap:24px;flex-wrap:wrap;">
+      <div style="display:flex;align-items:center;gap:16px;min-width:0;">
+        <div style="width:56px;height:56px;border-radius:12px;background:rgba(255,138,76,0.15);display:inline-flex;align-items:center;justify-content:center;font-size:22px;color:#c4541e;font-weight:600;flex-shrink:0;">V</div>
+        <div style="min-width:0;">
+          <h1>[Your Business Name]</h1>
+          <p style="font-size:12px;color:#6b6259;margin:2px 0 0;">Template preview · ${escapeForHtml(t.category)}</p>
+        </div>
+      </div>
+      <div style="text-align:right;">
+        <p class="label-sm">Invoice</p>
+        <p class="editorial" style="font-size:24px;margin:2px 0 0;font-variant-numeric:tabular-nums;">VND-0001</p>
+      </div>
+    </header>
+    <hr style="border:none;border-top:1px solid #f0eeeb;margin:32px 0;">
+    <section style="display:grid;grid-template-columns:1fr 1fr;gap:24px;">
+      <div>
+        <p class="meta-label">Bill to</p>
+        <p style="font-size:14px;margin:4px 0 0;font-weight:500;">[Client Name]</p>
+        <p style="font-size:14px;color:#6b6259;margin:2px 0 0;">[client@email.com]</p>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;font-size:14px;">
+        <div>
+          <p class="meta-label">Issued</p>
+          <p style="margin:4px 0 0;">[Today]</p>
+        </div>
+        <div>
+          <p class="meta-label">Due</p>
+          <p style="margin:4px 0 0;">[Due date]</p>
+        </div>
+      </div>
+    </section>
+    <section style="margin-top:40px;">
+      <table style="width:100%;border-collapse:collapse;font-size:14px;">
+        <thead>
+          <tr style="border-bottom:1px solid #d8d2cb;">
+            <th style="padding:10px 8px 10px 0;text-align:left;" class="meta-label">Item</th>
+            <th style="padding:10px 8px;text-align:right;width:64px;" class="meta-label">Qty</th>
+            <th style="padding:10px 8px;text-align:right;width:112px;" class="meta-label">Unit price</th>
+            <th style="padding:10px 0 10px 8px;text-align:right;width:112px;" class="meta-label">Amount</th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </section>
+    <section style="margin-top:24px;display:flex;justify-content:flex-end;">
+      <div style="width:280px;font-size:14px;">
+        <div style="display:flex;justify-content:space-between;color:#6b6259;padding:4px 0;">
+          <span>Subtotal</span>
+          <span style="font-variant-numeric:tabular-nums;">${fmt(subtotal)}</span>
+        </div>
+        ${taxRow}
+        <div style="display:flex;justify-content:space-between;align-items:center;border-top:1px solid #d8d2cb;padding-top:10px;margin-top:6px;">
+          <span class="meta-label">Total due</span>
+          <span class="editorial" style="font-size:20px;font-variant-numeric:tabular-nums;">${fmt(total)}</span>
+        </div>
+      </div>
+    </section>
+    ${notesBlock}
+    <footer style="margin-top:48px;padding-top:24px;border-top:1px solid #f0eeeb;display:flex;justify-content:space-between;font-size:11px;color:#6b6259;flex-wrap:wrap;gap:8px;">
+      <span>Thank you for your business.</span>
+      <span>Powered by <strong style="color:#3a342f;">VendoraPay</strong></span>
+    </footer>
+  </div>
+</body></html>`;
+}
+
+// Same flow for long-form documents (contracts, proposals). Renders
+// the body content as preformatted text in a paper-style document.
+function docTemplateToPrintableHtml(t: DocTemplate, kind: "Contract" | "Proposal"): string {
+  return `<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8">
+<title>${escapeForHtml(t.title)} — ${kind} template</title>
+<style>
+  @page { size: Letter; margin: 0.75in; }
+  body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif; color: #1a1410; background: #f7f5f2; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .doc { max-width: 720px; margin: 32px auto; padding: 56px; background: #fff; border-radius: 16px; box-shadow: 0 24px 60px -30px rgba(26,20,16,0.25); }
+  @media print { body { background: #fff; } .doc { margin: 0; padding: 0; max-width: none; box-shadow: none; border-radius: 0; } }
+  h1 { font-family: ui-serif, Georgia, 'Times New Roman', serif; font-weight: 500; font-size: 26px; margin: 0; }
+  .meta { font-size: 11px; text-transform: uppercase; letter-spacing: 0.18em; color: #6b6259; font-weight: 600; margin: 0 0 8px; }
+  pre { font-family: 'SF Mono', Menlo, Consolas, monospace; font-size: 12.5px; line-height: 1.7; color: #2a241f; white-space: pre-wrap; margin: 0; }
+</style>
+</head><body>
+  <div class="doc">
+    <p class="meta">${kind} template · ${escapeForHtml(t.category)}</p>
+    <h1>${escapeForHtml(t.title)}</h1>
+    <p style="font-size:13px;color:#6b6259;margin:8px 0 32px;">${escapeForHtml(t.summary)}</p>
+    <hr style="border:none;border-top:1px solid #f0eeeb;margin:0 0 28px;">
+    <pre>${escapeForHtml(t.content)}</pre>
+    <footer style="margin-top:48px;padding-top:24px;border-top:1px solid #f0eeeb;font-size:11px;color:#6b6259;text-align:right;">
+      Powered by <strong style="color:#3a342f;">VendoraPay</strong>
+    </footer>
+  </div>
+</body></html>`;
+}
+
+// Open a print-ready document in a new tab and fire the browser's
+// print dialog so the user picks "Save as PDF" as the destination.
+// Falls back to a toast if a popup blocker swallows the window.
+function printTemplate(html: string) {
+  const w = window.open("", "_blank");
+  if (!w) {
+    toast.error("Pop-up blocked", { description: "Allow pop-ups to save as PDF." });
+    return;
+  }
+  w.document.open();
+  w.document.write(html);
+  w.document.close();
+  w.focus();
+  // Give the new doc a tick to lay out before invoking print, otherwise
+  // some browsers print a half-loaded page.
+  setTimeout(() => {
+    try {
+      w.print();
+    } catch {
+      /* user closed the window before we could print */
+    }
+  }, 300);
+}
+
 // Picker shown above the invoice list. Five starter templates that
 // the vendor can drop into the composer in one click — pre-fills
 // line items, tax rate, and notes. The AI generator slots in here
@@ -1187,9 +1368,17 @@ function InvoiceTemplatePicker({
                   <span className="font-medium text-foreground">Notes:</span> {preview.notes}
                 </div>
               ) : null}
-              <div className="flex justify-end gap-2 pt-1">
+              <div className="flex justify-end gap-2 pt-1 flex-wrap">
                 <Button variant="outline" onClick={() => setPreview(null)} className="rounded-full">
                   Close
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => printTemplate(templateToPrintableHtml(preview))}
+                  className="rounded-full"
+                >
+                  <Download className="w-3.5 h-3.5 mr-1.5" />
+                  Save as PDF
                 </Button>
                 <Button
                   onClick={() => {
@@ -1293,13 +1482,21 @@ function DocTemplateGallery({
               >
                 {preview.content}
               </pre>
-              <div className="flex justify-end gap-2 pt-1">
+              <div className="flex justify-end gap-2 pt-1 flex-wrap">
                 <Button
                   variant="outline"
                   onClick={() => setPreview(null)}
                   className="rounded-full"
                 >
                   Close
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => printTemplate(docTemplateToPrintableHtml(preview, kind))}
+                  className="rounded-full"
+                >
+                  <Download className="w-3.5 h-3.5 mr-1.5" />
+                  Save as PDF
                 </Button>
                 <Button
                   onClick={() => copyContent(preview.content)}
