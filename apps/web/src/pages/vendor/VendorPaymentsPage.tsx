@@ -515,7 +515,17 @@ export default function VendorPaymentsPage({ embedded = false }: { embedded?: bo
   const body = (
     <main className="flex-1 pb-20 lg:pb-0">
         <div
-          className={`backdrop-blur-sm px-4 md:px-8 ${embedded ? "py-2" : "py-5 sticky top-0 z-40"}`}
+          className={`backdrop-blur-sm px-4 md:px-8 ${
+            embedded
+              ? // When embedded, the wrapper's own tab strip is
+                // pinned at top-0 (z-40). Stick this header just
+                // below it so the Overview/Files/Disputes sub-tabs
+                // stay visible while the page content scrolls. The
+                // numeric offset (top-14 = 56px) matches the
+                // approximate height of the wrapper's tab row.
+                "py-2 sticky top-14 z-30"
+              : "py-5 sticky top-0 z-40"
+          }`}
         >
           {/* Hide the h1 + description when embedded — the
               MyVendoraPage wrapper already shows "VendoraPay" via
