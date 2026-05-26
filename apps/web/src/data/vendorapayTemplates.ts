@@ -30,9 +30,24 @@ export interface InvoiceTemplate {
   style: InvoiceStyle;
   /** Suggested tax percentage to prefill (e.g. 7.25 for 7.25%). */
   taxPct: number;
+  /** Notes / scope summary shown above the payment terms block. */
   notes: string;
+  /**
+   * Subject / project line shown between the meta block and the
+   * line-item table — gives the invoice context at a glance
+   * ("[Couple Names] Wedding", "Annual Gala 2026", etc).
+   */
+  projectTitle: string;
+  /**
+   * Payment schedule, accepted methods, and late-fee policy.
+   * Surfaced as a dedicated block under the totals so it reads
+   * as policy rather than a freeform note.
+   */
+  paymentTerms: string;
   lineItems: Array<{
     name: string;
+    /** Short subtext that gives the line item more context. */
+    description?: string;
     qty: number;
     /** Unit price in dollars (not cents) — converted by the composer. */
     price: number;
@@ -57,15 +72,43 @@ export const INVOICE_TEMPLATES: InvoiceTemplate[] = [
     category: "Photography",
     summary: "8 hours of coverage, second shooter, edited gallery, engagement session.",
     style: "editorial",
+    projectTitle: "[Couple Names] · Wedding photography",
     taxPct: 7.25,
     notes:
-      "50% deposit due to reserve the date. Balance due 14 days before the event. Edited gallery delivered within 6 weeks.",
+      "Edited gallery delivered within 6 weeks via online proofing. A 10-image sneak peek arrives within 72 hours of the event. Pricing assumes one continuous coverage window.",
+    paymentTerms:
+      "50% non-refundable retainer due to reserve the date. Balance due 14 days before the event. Card and bank transfer accepted; a 3% surcharge applies to balances paid more than 14 days past due.",
     lineItems: [
-      { name: "Wedding day photography (8 hours)", qty: 1, price: 3500 },
-      { name: "Second photographer", qty: 1, price: 800 },
-      { name: "Engagement session (1 hour)", qty: 1, price: 400 },
-      { name: "Edited digital gallery (400+ images)", qty: 1, price: 0 },
-      { name: "Online proofing & print release", qty: 1, price: 0 },
+      {
+        name: "Wedding day photography (8 hours)",
+        description: "Lead photographer · ceremony through reception · candid + posed coverage",
+        qty: 1,
+        price: 3500,
+      },
+      {
+        name: "Second photographer",
+        description: "8 hours of bridal-party, reception, and detail coverage",
+        qty: 1,
+        price: 800,
+      },
+      {
+        name: "Engagement session (1 hour)",
+        description: "Location of your choice · 30-minute pre-shoot consultation included",
+        qty: 1,
+        price: 400,
+      },
+      {
+        name: "Edited digital gallery",
+        description: "400+ retouched images via password-protected online gallery",
+        qty: 1,
+        price: 0,
+      },
+      {
+        name: "Print release & sneak peek",
+        description: "Personal print rights + 10-image teaser delivered within 72 hours",
+        qty: 1,
+        price: 0,
+      },
     ],
   },
   {
@@ -74,15 +117,43 @@ export const INVOICE_TEMPLATES: InvoiceTemplate[] = [
     category: "Entertainment",
     summary: "6 hours of DJ, uplighting, dance floor wash, wireless mics.",
     style: "bold",
+    projectTitle: "[Event Name] · DJ services + lighting",
     taxPct: 7.25,
     notes:
-      "Includes consultation call and music timeline planning. Setup begins 90 minutes before guest arrival.",
+      "Includes a 60-minute music timeline planning call scheduled 30 days before the event. Backup decks, controller, and speakers on hand for redundancy.",
+    paymentTerms:
+      "50% deposit secures the date. Balance due 7 days before the event. Cancellations within 30 days forfeit 50% of the balance.",
     lineItems: [
-      { name: "DJ services (6 hours)", qty: 1, price: 1500 },
-      { name: "Uplighting (12 fixtures)", qty: 1, price: 400 },
-      { name: "Dance floor wash", qty: 1, price: 250 },
-      { name: "Wireless microphones", qty: 2, price: 50 },
-      { name: "Setup & breakdown", qty: 1, price: 200 },
+      {
+        name: "DJ services (6 hours)",
+        description: "Cocktail hour through last dance · MC and announcements included",
+        qty: 1,
+        price: 1500,
+      },
+      {
+        name: "Uplighting (12 fixtures)",
+        description: "Wireless RGB fixtures · color-matched to your event palette",
+        qty: 1,
+        price: 400,
+      },
+      {
+        name: "Dance floor wash",
+        description: "Programmed lighting pattern over the dance floor",
+        qty: 1,
+        price: 250,
+      },
+      {
+        name: "Wireless microphones",
+        description: "Handheld or lavalier · for toasts, ceremony, announcements",
+        qty: 2,
+        price: 50,
+      },
+      {
+        name: "Setup & breakdown",
+        description: "90-minute pre-event setup · full breakdown post-event",
+        qty: 1,
+        price: 200,
+      },
     ],
   },
   {
@@ -91,15 +162,43 @@ export const INVOICE_TEMPLATES: InvoiceTemplate[] = [
     category: "Catering",
     summary: "3-course plated dinner, passed apps, full service staff and bar.",
     style: "colorblock",
+    projectTitle: "[Event Name] · Plated dinner service",
     taxPct: 8.0,
     notes:
-      "Final headcount due 7 days before the event. Pricing assumes one venue and one delivery window.",
+      "Final headcount and menu confirmation due 7 days before the event. Dietary accommodations honored with 14 days' notice. Pricing assumes one venue and one delivery window.",
+    paymentTerms:
+      "25% non-refundable deposit at signing. 50% due 60 days before the event. Balance plus any overages due day of the event. A 20% service charge is included in line pricing.",
     lineItems: [
-      { name: "Plated dinner per guest", qty: 75, price: 85 },
-      { name: "Passed appetizers (4 selections)", qty: 75, price: 18 },
-      { name: "Tableware (china, glass, flatware)", qty: 75, price: 12 },
-      { name: "Service staff (5 staff, 6 hours)", qty: 1, price: 1200 },
-      { name: "Open bar (4 hours)", qty: 1, price: 1800 },
+      {
+        name: "Plated dinner per guest",
+        description: "Three courses · choice of two entrées including one vegetarian",
+        qty: 75,
+        price: 85,
+      },
+      {
+        name: "Passed appetizers (4 selections)",
+        description: "75-minute cocktail-hour service · chef's seasonal selection",
+        qty: 75,
+        price: 18,
+      },
+      {
+        name: "Tableware",
+        description: "China, glassware, flatware per guest · linen rentals included",
+        qty: 75,
+        price: 12,
+      },
+      {
+        name: "Service staff (5 staff, 6 hours)",
+        description: "Captain, four servers, busser · setup through guest departure",
+        qty: 1,
+        price: 1200,
+      },
+      {
+        name: "Open bar (4 hours)",
+        description: "Beer, wine, signature cocktail · two bartenders included",
+        qty: 1,
+        price: 1800,
+      },
     ],
   },
   {
@@ -108,15 +207,43 @@ export const INVOICE_TEMPLATES: InvoiceTemplate[] = [
     category: "Florals",
     summary: "Bridal party flowers, centerpieces, ceremony arch installation.",
     style: "minimal",
+    projectTitle: "[Couple Names] · Wedding florals & install",
     taxPct: 7.25,
     notes:
-      "Pricing assumes one delivery and one teardown. Additional drives billed separately.",
+      "Final flower selections locked 30 days before the event subject to seasonal availability. Pricing assumes one delivery and one teardown. Additional drives billed at $75 each.",
+    paymentTerms:
+      "Non-refundable retainer of $500 due at booking. 50% balance due 30 days before. Final balance due day of installation.",
     lineItems: [
-      { name: "Bridal bouquet (premium)", qty: 1, price: 350 },
-      { name: "Bridesmaid bouquets", qty: 5, price: 95 },
-      { name: "Boutonnieres & corsages", qty: 8, price: 35 },
-      { name: "Ceremony arch florals", qty: 1, price: 850 },
-      { name: "Reception centerpieces", qty: 12, price: 125 },
+      {
+        name: "Bridal bouquet (premium)",
+        description: "Garden roses, peonies, seasonal accent flora · hand-tied with silk ribbon",
+        qty: 1,
+        price: 350,
+      },
+      {
+        name: "Bridesmaid bouquets",
+        description: "Coordinated palette · slightly smaller scale than bridal bouquet",
+        qty: 5,
+        price: 95,
+      },
+      {
+        name: "Boutonnieres & corsages",
+        description: "Wired stems · satin ribbon · pin or wrist-mount as required",
+        qty: 8,
+        price: 35,
+      },
+      {
+        name: "Ceremony arch florals",
+        description: "Asymmetric installation · install and strike included",
+        qty: 1,
+        price: 850,
+      },
+      {
+        name: "Reception centerpieces",
+        description: "Low arrangements · taper candles · footed bowl rentals included",
+        qty: 12,
+        price: 125,
+      },
     ],
   },
   {
@@ -125,15 +252,43 @@ export const INVOICE_TEMPLATES: InvoiceTemplate[] = [
     category: "Planning",
     summary: "8 hours of day-of management, vendor liaison, timeline execution.",
     style: "modern",
+    projectTitle: "[Couple Names] · Day-of coordination",
     taxPct: 0,
     notes:
-      "Includes one venue walkthrough 30 days before the event and three planning calls.",
+      "Includes one venue walkthrough 30 days before the event and three pre-event planning calls. Final timeline distributed to all vendors 7 days out.",
+    paymentTerms:
+      "Flat-fee package. 25% non-refundable deposit to secure the date. Balance due 14 days before the event. No additional charges for overtime up to 30 minutes past contracted end time.",
     lineItems: [
-      { name: "Lead coordinator (8 hours)", qty: 1, price: 1800 },
-      { name: "Assistant coordinator", qty: 1, price: 600 },
-      { name: "Pre-event planning calls", qty: 3, price: 100 },
-      { name: "Vendor liaison & timeline build", qty: 1, price: 400 },
-      { name: "Day-of emergency kit", qty: 1, price: 0 },
+      {
+        name: "Lead coordinator (8 hours)",
+        description: "Vendor liaison, timeline execution, on-site emergency response",
+        qty: 1,
+        price: 1800,
+      },
+      {
+        name: "Assistant coordinator",
+        description: "Supports the lead, manages secondary touchpoints and runner duties",
+        qty: 1,
+        price: 600,
+      },
+      {
+        name: "Pre-event planning calls",
+        description: "Three 60-minute calls within the 60 days before the event",
+        qty: 3,
+        price: 100,
+      },
+      {
+        name: "Vendor liaison & timeline build",
+        description: "Master timeline shared with all vendors 7 days before the event",
+        qty: 1,
+        price: 400,
+      },
+      {
+        name: "Day-of emergency kit",
+        description: "Stain remover, sewing kit, scissors, safety pins, snacks — on-site",
+        qty: 1,
+        price: 0,
+      },
     ],
   },
 ];

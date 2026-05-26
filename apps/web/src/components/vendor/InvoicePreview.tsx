@@ -89,6 +89,8 @@ function Classic({ tpl }: { tpl: InvoiceTemplate }) {
         <MetaRow />
       </div>
 
+      <ProjectLine tpl={tpl} />
+
       <ItemsTable
         tpl={tpl}
         head={{
@@ -102,7 +104,7 @@ function Classic({ tpl }: { tpl: InvoiceTemplate }) {
         c={c}
         totalEmphasis="serif"
       />
-      <NotesBlock tpl={tpl} />
+      <FooterBlocks tpl={tpl} />
     </Sheet>
   );
 }
@@ -148,6 +150,8 @@ function Letterhead({ tpl }: { tpl: InvoiceTemplate }) {
         <MetaRow />
       </div>
 
+      <ProjectLine tpl={tpl} />
+
       <ItemsTable
         tpl={tpl}
         head={{
@@ -157,7 +161,7 @@ function Letterhead({ tpl }: { tpl: InvoiceTemplate }) {
         }}
       />
       <TotalsBlock tpl={tpl} c={c} totalEmphasis="bold" />
-      <NotesBlock tpl={tpl} />
+      <FooterBlocks tpl={tpl} />
     </Sheet>
   );
 }
@@ -183,6 +187,8 @@ function Minimal({ tpl }: { tpl: InvoiceTemplate }) {
         <MetaRow allCaps />
       </div>
 
+      <ProjectLine tpl={tpl} />
+
       <ItemsTable
         tpl={tpl}
         head={{
@@ -191,7 +197,7 @@ function Minimal({ tpl }: { tpl: InvoiceTemplate }) {
         }}
       />
       <TotalsBlock tpl={tpl} c={c} totalEmphasis="plain" />
-      <NotesBlock tpl={tpl} />
+      <FooterBlocks tpl={tpl} />
     </Sheet>
   );
 }
@@ -229,7 +235,9 @@ function Sidebar({ tpl }: { tpl: InvoiceTemplate }) {
           <h2 className="text-xl font-bold tracking-tight" style={{ color: TEXT }}>
             [Your Business Name]
           </h2>
-          <div className="mt-6">
+          <ProjectLine tpl={tpl} />
+
+          <div className="mt-2">
             <ItemsTable
               tpl={tpl}
               head={{
@@ -238,7 +246,7 @@ function Sidebar({ tpl }: { tpl: InvoiceTemplate }) {
               }}
             />
             <TotalsBlock tpl={tpl} c={c} totalEmphasis="bold" />
-            <NotesBlock tpl={tpl} />
+            <FooterBlocks tpl={tpl} />
           </div>
         </div>
       </div>
@@ -283,6 +291,8 @@ function Modern({ tpl }: { tpl: InvoiceTemplate }) {
         <MetaRow />
       </div>
 
+      <ProjectLine tpl={tpl} />
+
       <ItemsTable
         tpl={tpl}
         head={{
@@ -296,7 +306,7 @@ function Modern({ tpl }: { tpl: InvoiceTemplate }) {
         totalEmphasis="accent"
         accent={ACCENT_COOL}
       />
-      <NotesBlock tpl={tpl} />
+      <FooterBlocks tpl={tpl} />
     </Sheet>
   );
 }
@@ -327,35 +337,71 @@ function MetaRow({ allCaps = false }: { allCaps?: boolean } = {}) {
   const labelCls = `text-[10px] font-semibold ${
     allCaps ? "tracking-[0.22em]" : "tracking-wider"
   }`;
+  const label = (txt: string) => (
+    <p className={labelCls} style={{ color: MUTED, textTransform: "uppercase" }}>
+      {txt}
+    </p>
+  );
   return (
-    <div className="grid grid-cols-3 gap-6 text-sm">
+    <div className="grid grid-cols-4 gap-5 text-sm">
       <div>
-        <p className={labelCls} style={{ color: MUTED, textTransform: "uppercase" }}>
-          Bill to
+        {label("Bill from")}
+        <p className="mt-1.5 font-medium" style={{ color: TEXT }}>
+          [Your Business Name]
         </p>
+        <p className="text-xs mt-0.5" style={{ color: MUTED }}>
+          [Street address]
+        </p>
+        <p className="text-xs" style={{ color: MUTED }}>
+          [City, ST 00000]
+        </p>
+        <p className="text-xs" style={{ color: MUTED }}>
+          [you@business.com]
+        </p>
+      </div>
+      <div>
+        {label("Bill to")}
         <p className="mt-1.5 font-medium" style={{ color: TEXT }}>
           [Client Name]
         </p>
         <p className="text-xs mt-0.5" style={{ color: MUTED }}>
           [client@email.com]
         </p>
+        <p className="text-xs" style={{ color: MUTED }}>
+          [Phone]
+        </p>
       </div>
       <div>
-        <p className={labelCls} style={{ color: MUTED, textTransform: "uppercase" }}>
-          Issued
-        </p>
+        {label("Issued")}
         <p className="mt-1.5" style={{ color: TEXT }}>
           [Today]
         </p>
       </div>
       <div>
-        <p className={labelCls} style={{ color: MUTED, textTransform: "uppercase" }}>
-          Due
-        </p>
+        {label("Due")}
         <p className="mt-1.5" style={{ color: TEXT }}>
           [Due date]
         </p>
       </div>
+    </div>
+  );
+}
+
+function ProjectLine({ tpl }: { tpl: InvoiceTemplate }) {
+  return (
+    <div
+      className="mt-6 py-3 px-4 rounded-lg flex items-center gap-3"
+      style={{ background: "#faf7f3", border: `0.5px solid ${RULE}` }}
+    >
+      <span
+        className="text-[10px] font-semibold shrink-0"
+        style={{ color: MUTED, letterSpacing: "0.18em" }}
+      >
+        PROJECT
+      </span>
+      <span className="text-sm" style={{ color: TEXT }}>
+        {tpl.projectTitle}
+      </span>
     </div>
   );
 }
@@ -400,17 +446,22 @@ function ItemsTable({
       <tbody>
         {tpl.lineItems.map((it, i) => (
           <tr key={i} style={{ borderBottom: `1px solid ${RULE}` }}>
-            <td className="py-3 px-2" style={{ color: TEXT }}>
-              {it.name}
+            <td className="py-3 px-2 align-top">
+              <p style={{ color: TEXT }}>{it.name}</p>
+              {it.description && (
+                <p className="text-[11px] mt-0.5 leading-relaxed" style={{ color: MUTED }}>
+                  {it.description}
+                </p>
+              )}
             </td>
-            <td className="py-3 px-2 text-right tabular-nums" style={{ color: TEXT }}>
+            <td className="py-3 px-2 text-right tabular-nums align-top" style={{ color: TEXT }}>
               {it.qty}
             </td>
-            <td className="py-3 px-2 text-right tabular-nums" style={{ color: TEXT }}>
+            <td className="py-3 px-2 text-right tabular-nums align-top" style={{ color: TEXT }}>
               {money(it.price)}
             </td>
             <td
-              className="py-3 px-2 text-right tabular-nums font-semibold"
+              className="py-3 px-2 text-right tabular-nums font-semibold align-top"
               style={{
                 color: TEXT,
                 fontFamily: amountSerif ? "ui-serif, Georgia, serif" : undefined,
@@ -528,19 +579,39 @@ function TotalsBlock({
   );
 }
 
-function NotesBlock({ tpl }: { tpl: InvoiceTemplate }) {
-  if (!tpl.notes) return null;
+function FooterBlocks({ tpl }: { tpl: InvoiceTemplate }) {
+  if (!tpl.notes && !tpl.paymentTerms) return null;
   return (
-    <div className="mt-7 pt-5" style={{ borderTop: `1px solid ${RULE}` }}>
-      <p
-        className="text-[10px] font-semibold"
-        style={{ color: MUTED, letterSpacing: "0.22em" }}
-      >
-        NOTES
-      </p>
-      <p className="text-[12px] mt-2 leading-relaxed" style={{ color: TEXT }}>
-        {tpl.notes}
-      </p>
+    <div
+      className="mt-8 pt-6 grid grid-cols-1 sm:grid-cols-2 gap-8"
+      style={{ borderTop: `1px solid ${RULE}` }}
+    >
+      {tpl.notes && (
+        <div>
+          <p
+            className="text-[10px] font-semibold"
+            style={{ color: MUTED, letterSpacing: "0.22em" }}
+          >
+            NOTES
+          </p>
+          <p className="text-[12px] mt-2 leading-relaxed" style={{ color: TEXT }}>
+            {tpl.notes}
+          </p>
+        </div>
+      )}
+      {tpl.paymentTerms && (
+        <div>
+          <p
+            className="text-[10px] font-semibold"
+            style={{ color: MUTED, letterSpacing: "0.22em" }}
+          >
+            PAYMENT TERMS
+          </p>
+          <p className="text-[12px] mt-2 leading-relaxed" style={{ color: TEXT }}>
+            {tpl.paymentTerms}
+          </p>
+        </div>
+      )}
     </div>
   );
 }
