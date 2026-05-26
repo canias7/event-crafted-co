@@ -30,9 +30,24 @@ export interface InvoiceTemplate {
   style: InvoiceStyle;
   /** Suggested tax percentage to prefill (e.g. 7.25 for 7.25%). */
   taxPct: number;
+  /** Notes / scope summary shown above the payment terms block. */
   notes: string;
+  /**
+   * Subject / project line shown between the meta block and the
+   * line-item table — gives the invoice context at a glance
+   * ("[Couple Names] Wedding", "Annual Gala 2026", etc).
+   */
+  projectTitle: string;
+  /**
+   * Payment schedule, accepted methods, and late-fee policy.
+   * Surfaced as a dedicated block under the totals so it reads
+   * as policy rather than a freeform note.
+   */
+  paymentTerms: string;
   lineItems: Array<{
     name: string;
+    /** Short subtext that gives the line item more context. */
+    description?: string;
     qty: number;
     /** Unit price in dollars (not cents) — converted by the composer. */
     price: number;
@@ -49,91 +64,46 @@ export interface DocTemplate {
 }
 
 // -- Invoices --------------------------------------------------------
+//
+// One blank starter template instead of a gallery of preset
+// services. The vendor picks this, gets a clean professionally-
+// formatted shell with Bill From / Bill To / Project / Items /
+// Notes / Payment Terms, and fills in the real details themselves.
+// Per-service starter content (photography, catering, etc) becomes
+// the job of the AI builder when it lands.
 
 export const INVOICE_TEMPLATES: InvoiceTemplate[] = [
   {
-    id: "wedding-photography",
-    title: "Wedding Photography — Full Day",
-    category: "Photography",
-    summary: "8 hours of coverage, second shooter, edited gallery, engagement session.",
-    style: "editorial",
-    taxPct: 7.25,
-    notes:
-      "50% deposit due to reserve the date. Balance due 14 days before the event. Edited gallery delivered within 6 weeks.",
-    lineItems: [
-      { name: "Wedding day photography (8 hours)", qty: 1, price: 3500 },
-      { name: "Second photographer", qty: 1, price: 800 },
-      { name: "Engagement session (1 hour)", qty: 1, price: 400 },
-      { name: "Edited digital gallery (400+ images)", qty: 1, price: 0 },
-      { name: "Online proofing & print release", qty: 1, price: 0 },
-    ],
-  },
-  {
-    id: "dj-lighting",
-    title: "DJ + Lighting Setup",
-    category: "Entertainment",
-    summary: "6 hours of DJ, uplighting, dance floor wash, wireless mics.",
-    style: "bold",
-    taxPct: 7.25,
-    notes:
-      "Includes consultation call and music timeline planning. Setup begins 90 minutes before guest arrival.",
-    lineItems: [
-      { name: "DJ services (6 hours)", qty: 1, price: 1500 },
-      { name: "Uplighting (12 fixtures)", qty: 1, price: 400 },
-      { name: "Dance floor wash", qty: 1, price: 250 },
-      { name: "Wireless microphones", qty: 2, price: 50 },
-      { name: "Setup & breakdown", qty: 1, price: 200 },
-    ],
-  },
-  {
-    id: "catering-plated",
-    title: "Plated Dinner — 75 Guests",
-    category: "Catering",
-    summary: "3-course plated dinner, passed apps, full service staff and bar.",
-    style: "colorblock",
-    taxPct: 8.0,
-    notes:
-      "Final headcount due 7 days before the event. Pricing assumes one venue and one delivery window.",
-    lineItems: [
-      { name: "Plated dinner per guest", qty: 75, price: 85 },
-      { name: "Passed appetizers (4 selections)", qty: 75, price: 18 },
-      { name: "Tableware (china, glass, flatware)", qty: 75, price: 12 },
-      { name: "Service staff (5 staff, 6 hours)", qty: 1, price: 1200 },
-      { name: "Open bar (4 hours)", qty: 1, price: 1800 },
-    ],
-  },
-  {
-    id: "florals-wedding",
-    title: "Wedding Florals & Installation",
-    category: "Florals",
-    summary: "Bridal party flowers, centerpieces, ceremony arch installation.",
-    style: "minimal",
-    taxPct: 7.25,
-    notes:
-      "Pricing assumes one delivery and one teardown. Additional drives billed separately.",
-    lineItems: [
-      { name: "Bridal bouquet (premium)", qty: 1, price: 350 },
-      { name: "Bridesmaid bouquets", qty: 5, price: 95 },
-      { name: "Boutonnieres & corsages", qty: 8, price: 35 },
-      { name: "Ceremony arch florals", qty: 1, price: 850 },
-      { name: "Reception centerpieces", qty: 12, price: 125 },
-    ],
-  },
-  {
-    id: "day-of-coordination",
-    title: "Day-of Coordination — Premium",
-    category: "Planning",
-    summary: "8 hours of day-of management, vendor liaison, timeline execution.",
+    id: "blank-invoice",
+    title: "Build your own invoice",
+    category: "Custom",
+    summary: "Start with a clean professional layout and fill in the details yourself.",
     style: "modern",
+    projectTitle: "[Project or event name]",
     taxPct: 0,
     notes:
-      "Includes one venue walkthrough 30 days before the event and three planning calls.",
+      "[Add any scope details, delivery notes, or schedule expectations here so the recipient knows what's included.]",
+    paymentTerms:
+      "[Outline your payment schedule, accepted methods, and any late-fee policy here. Example: 50% deposit due at booking, balance due 14 days before the event.]",
     lineItems: [
-      { name: "Lead coordinator (8 hours)", qty: 1, price: 1800 },
-      { name: "Assistant coordinator", qty: 1, price: 600 },
-      { name: "Pre-event planning calls", qty: 3, price: 100 },
-      { name: "Vendor liaison & timeline build", qty: 1, price: 400 },
-      { name: "Day-of emergency kit", qty: 1, price: 0 },
+      {
+        name: "[Service or product 1]",
+        description: "[Short description of what this includes]",
+        qty: 1,
+        price: 0,
+      },
+      {
+        name: "[Service or product 2]",
+        description: "[Short description of what this includes]",
+        qty: 1,
+        price: 0,
+      },
+      {
+        name: "[Service or product 3]",
+        description: "[Short description of what this includes]",
+        qty: 1,
+        price: 0,
+      },
     ],
   },
 ];
