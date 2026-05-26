@@ -1154,7 +1154,7 @@ function InvoiceTemplatePicker({
       </Card>
 
       <Dialog open={!!preview} onOpenChange={(o) => !o && setPreview(null)}>
-        <DialogContent className="max-w-2xl max-h-[88vh] overflow-y-auto">
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{preview?.title}</DialogTitle>
             <DialogDescription>{preview?.summary}</DialogDescription>
@@ -1269,7 +1269,7 @@ function DocTemplateGallery({
       </div>
 
       <Dialog open={!!preview} onOpenChange={(o) => !o && setPreview(null)}>
-        <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{preview?.title}</DialogTitle>
             <DialogDescription>
