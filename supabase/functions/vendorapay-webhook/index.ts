@@ -105,6 +105,11 @@ serve(async (req: Request) => {
         let vendorIdForNotify: string | null = vendorIdMeta ?? null;
         let descriptionForNotify = pi.description ?? "VendoraPay charge";
         let hostEmailForNotify: string | null = pi.receipt_email ?? null;
+        // Currency for the receipt. Default to the PI's currency
+        // (Stripe always sets this on a real charge) — the invoice
+        // branch below overrides with the invoice's recorded
+        // currency for an extra layer of safety.
+        let currencyForNotify = pi.currency ?? "usd";
 
         // Else-if chain: one PaymentIntent maps to exactly one
         // record. Without this guard a future double-tagged PI
@@ -164,12 +169,19 @@ serve(async (req: Request) => {
               updated_at: new Date().toISOString(),
             })
             .eq("id", invoiceId)
-            .select("vendor_id, invoice_number, bill_to_email")
+            .select("vendor_id, invoice_number, bill_to_email, currency")
             .maybeSingle();
-          const iRow = invRow as { vendor_id?: string; invoice_number?: string; bill_to_email?: string | null } | null;
+          const iRow = invRow as { vendor_id?: string; invoice_number?: string; bill_to_email?: string | null; currency?: string | null } | null;
           if (iRow?.vendor_id) vendorIdForNotify = iRow.vendor_id;
           if (iRow?.invoice_number) descriptionForNotify = `Invoice ${iRow.invoice_number}`;
           if (!hostEmailForNotify && iRow?.bill_to_email) hostEmailForNotify = iRow.bill_to_email;
+          // Prefer the invoice's recorded currency over Stripe's
+          // PaymentIntent currency. They should match in practice,
+          // but if the PI somehow lacks currency (legacy / edge
+          // case) we still want the receipt to render in the
+          // currency the invoice was issued in, not a hardcoded
+          // 'usd' fallback.
+          if (iRow?.currency) currencyForNotify = iRow.currency;
         }
 
         // Fire notification side-effect. Best-effort; failures here
@@ -186,7 +198,7 @@ serve(async (req: Request) => {
                 kind: "payment_received",
                 vendor_id: vendorIdForNotify,
                 amount_cents: pi.amount,
-                currency: pi.currency ?? "usd",
+                currency: currencyForNotify,
                 description: descriptionForNotify,
                 host_email: hostEmailForNotify,
                 payment_link_id: paymentLinkId ?? null,

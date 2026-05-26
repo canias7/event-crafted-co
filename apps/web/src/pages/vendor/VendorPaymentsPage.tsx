@@ -383,6 +383,47 @@ export default function VendorPaymentsPage({ embedded = false }: { embedded?: bo
     void refresh(true);
   }, [refresh]);
 
+  // Realtime: when a Stripe webhook lands and flips an invoice to
+  // paid (or marks a payment as failed), refresh the page so the
+  // vendor doesn't have to hit Refresh to see the new state. Same
+  // pattern for payment_links so refunds / paid-out states update
+  // live. We refresh the whole page rather than patching individual
+  // rows because the Overview KPIs / balance / transactions also
+  // need updating when a payment lands.
+  useEffect(() => {
+    if (!vendorId) return;
+    const channel = supabase
+      .channel(`vendorapay:${vendorId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "invoices",
+          filter: `vendor_id=eq.${vendorId}`,
+        },
+        () => {
+          void refresh(false);
+        },
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "payment_links",
+          filter: `vendor_id=eq.${vendorId}`,
+        },
+        () => {
+          void refresh(false);
+        },
+      )
+      .subscribe();
+    return () => {
+      void supabase.removeChannel(channel);
+    };
+  }, [vendorId, refresh]);
+
   // Fetch all listings owned by this vendor for the picker. Auto-
   // selects the first approved one; otherwise leaves selection null
   // so the "connect VendoraPay" path still works for a pre-approval
