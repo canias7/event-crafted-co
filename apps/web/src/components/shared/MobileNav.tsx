@@ -31,12 +31,16 @@ interface MobileNavProps {
 // Mobile nav doesn't have room for nested groups — flatten parent +
 // children into a single sequential list. Pathless section headers
 // (e.g. "My Vendora") get dropped; only their navigable children
-// surface in the More drawer.
-function flattenItems(items: NavItem[]): NavigableItem[] {
+// surface in the More drawer. Guards against a non-array `items`
+// (Sentry JAVASCRIPT-REACT-E saw `Cannot read properties of
+// undefined (reading 'filter')` from a stale bundle that passed
+// undefined here — returning [] is the safe no-op).
+function flattenItems(items: NavItem[] | null | undefined): NavigableItem[] {
+  if (!Array.isArray(items)) return [];
   const out: NavigableItem[] = [];
   for (const item of items) {
     if (item.path) out.push(item as NavigableItem);
-    if (item.children) {
+    if (Array.isArray(item.children)) {
       for (const child of item.children) {
         if (child.path) out.push(child as NavigableItem);
       }
