@@ -1089,33 +1089,42 @@ function BillingPanel({
                             {row.status}
                           </p>
                         </div>
-                        <div className="flex items-center gap-2 shrink-0">
-                          <span className="text-sm font-semibold tnum">
+                        <div className="text-right shrink-0">
+                          <p className="text-sm font-semibold tnum">
                             ${(row.amount / 100).toFixed(2)}
-                          </span>
-                          {row.hostedUrl ? (
-                            <a
-                              href={row.hostedUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-xs font-medium text-foreground/70 hover:text-foreground"
-                            >
-                              View
-                            </a>
-                          ) : null}
-                          {row.pdfUrl ? (
-                            <a
-                              href={row.pdfUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              download
-                              className="text-xs font-medium text-foreground/50 hover:text-foreground"
-                              aria-label="Download PDF"
-                              title="Download PDF"
-                            >
-                              PDF
-                            </a>
-                          ) : null}
+                          </p>
+                          {(row.hostedUrl || row.pdfUrl) && (
+                            <div className="mt-1 flex items-center justify-end gap-2 text-[11px] font-medium text-foreground/60">
+                              {row.hostedUrl ? (
+                                <a
+                                  href={row.hostedUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="hover:text-foreground"
+                                >
+                                  View
+                                </a>
+                              ) : null}
+                              {row.hostedUrl && row.pdfUrl ? (
+                                <span aria-hidden="true" className="text-foreground/30">
+                                  ·
+                                </span>
+                              ) : null}
+                              {row.pdfUrl ? (
+                                <a
+                                  href={row.pdfUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  download
+                                  className="hover:text-foreground"
+                                  aria-label="Download PDF"
+                                  title="Download PDF"
+                                >
+                                  PDF
+                                </a>
+                              ) : null}
+                            </div>
+                          )}
                         </div>
                       </li>
                     );
