@@ -214,26 +214,15 @@ serve(async (req: Request) => {
         // Invoices: record the decline so the vendor sees the
         // invoice is stalled. We don't move status off "sent"
         // because the buyer can still retry by reopening the link.
+        // Routed through an RPC that does an atomic SQL
+        // increment so concurrent payment_failed events for the
+        // same PI don't both read N and both write N+1.
         if (invoiceId) {
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const dbAny = db as any;
-          const { data: cur } = await dbAny
-            .from("invoices")
-            .select("payment_attempts")
-            .eq("id", invoiceId)
-            .maybeSingle();
-          const nextAttempts =
-            ((cur as { payment_attempts?: number } | null)?.payment_attempts ??
-              0) + 1;
-          await dbAny
-            .from("invoices")
-            .update({
-              payment_failure_message: failureMessage,
-              payment_failed_at: new Date().toISOString(),
-              payment_attempts: nextAttempts,
-              updated_at: new Date().toISOString(),
-            })
-            .eq("id", invoiceId);
+          await (db as any).rpc("invoice_record_payment_failure", {
+            p_invoice_id: invoiceId,
+            p_message: failureMessage,
+          });
         }
 
         if (proposalId) {
@@ -319,21 +308,58 @@ serve(async (req: Request) => {
           }
         }
 
-        await db.from("vendor_disputes").upsert(
-          {
-            stripe_dispute_id: d.id,
-            vendor_id: vendorIdForDispute,
-            charge_id: d.charge,
-            payment_intent_id: d.payment_intent ?? null,
-            amount_cents: d.amount,
-            currency: d.currency ?? "usd",
-            reason: d.reason ?? null,
-            status: d.status,
-            raw_payload: event.raw as unknown as Record<string, unknown>,
-            updated_at: new Date().toISOString(),
-          },
-          { onConflict: "stripe_dispute_id" },
-        );
+        // Upsert carefully: a follow-up dispute event (e.g.
+        // dispute.closed) may not be able to re-resolve vendor_id
+        // if the source invoice has since been deleted. We must
+        // NOT let a null vendor_id overwrite a previously-resolved
+        // one, or the dispute disappears from the vendor's tab
+        // (RLS filters on `vendor_id is not null`).
+        if (vendorIdForDispute) {
+          // We have a vendor — full upsert is safe.
+          await db.from("vendor_disputes").upsert(
+            {
+              stripe_dispute_id: d.id,
+              vendor_id: vendorIdForDispute,
+              charge_id: d.charge,
+              payment_intent_id: d.payment_intent ?? null,
+              amount_cents: d.amount,
+              currency: d.currency ?? "usd",
+              reason: d.reason ?? null,
+              status: d.status,
+              raw_payload: event.raw as unknown as Record<string, unknown>,
+              updated_at: new Date().toISOString(),
+            },
+            { onConflict: "stripe_dispute_id" },
+          );
+        } else {
+          // No vendor resolved. Try UPDATE first (preserves any
+          // vendor_id already on the row); if the row doesn't
+          // exist, insert with vendor_id=null.
+          const { data: existing } = await db
+            .from("vendor_disputes")
+            .update({
+              status: d.status,
+              reason: d.reason ?? null,
+              raw_payload: event.raw as unknown as Record<string, unknown>,
+              updated_at: new Date().toISOString(),
+            })
+            .eq("stripe_dispute_id", d.id)
+            .select("stripe_dispute_id")
+            .maybeSingle();
+          if (!existing) {
+            await db.from("vendor_disputes").insert({
+              stripe_dispute_id: d.id,
+              vendor_id: null,
+              charge_id: d.charge,
+              payment_intent_id: d.payment_intent ?? null,
+              amount_cents: d.amount,
+              currency: d.currency ?? "usd",
+              reason: d.reason ?? null,
+              status: d.status,
+              raw_payload: event.raw as unknown as Record<string, unknown>,
+            });
+          }
+        }
         break;
       }
     }

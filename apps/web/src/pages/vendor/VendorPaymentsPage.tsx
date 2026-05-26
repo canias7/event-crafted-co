@@ -2182,7 +2182,9 @@ function InvoicesTab({
 
       {/* Invoice list */}
       {invoices.length === 0 ? (
-        <EmptyCard>No invoices yet. Click "New invoice" to compose one.</EmptyCard>
+        <EmptyCard>
+          No invoices yet. Add a customer on the Customers tab and click Send invoice to compose your first one.
+        </EmptyCard>
       ) : (
         <Card>
           {invoices.map((inv, idx) => (
@@ -2413,6 +2415,17 @@ function CustomersTab({
     void refresh();
   }, [refresh]);
 
+  // Switching listings has to invalidate every open dialog state —
+  // otherwise a Send invoice / Edit / Recurring panel opened under
+  // listing A would submit against listing B's vendor_id, creating
+  // phantom customers or re-parenting rows.
+  useEffect(() => {
+    setEditing(null);
+    setSendTarget(null);
+    setRecurringTarget(null);
+    setExpandedId(null);
+  }, [vendorId]);
+
   const startNew = () => {
     setForm({ email: "", name: "", phone: "", notes: "" });
     setEditing("new");
@@ -2436,23 +2449,27 @@ function CustomersTab({
       return;
     }
     setSaving(true);
-    const payload = {
-      vendor_id: vendorId,
-      email,
-      name: form.name.trim() || null,
-      phone: form.phone.trim() || null,
-      notes: form.notes.trim() || null,
-    };
+    const name = form.name.trim() || null;
+    const phone = form.phone.trim() || null;
+    const notes = form.notes.trim() || null;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const db = supabase as any;
     const { error } =
       editing === "new"
-        ? await db
+        ? // New row: include vendor_id so RLS lets us insert.
+          await db
             .from("vendor_customers")
-            .upsert(payload, { onConflict: "vendor_id,email" })
-        : await db
+            .upsert(
+              { vendor_id: vendorId, email, name, phone, notes },
+              { onConflict: "vendor_id,email" },
+            )
+        : // Edit existing row: never overwrite vendor_id (would
+          // silently re-parent the customer if the listing picker
+          // changed while the dialog was open) or email (the
+          // unique key).
+          await db
             .from("vendor_customers")
-            .update(payload)
+            .update({ name, phone, notes })
             .eq("id", (editing as Customer).id);
     setSaving(false);
     if (error) {
@@ -3168,24 +3185,33 @@ function SendInvoiceDialog({
     }
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const db = supabase as any;
+    // Normalize the buyer's email so the customer directory and
+    // the invoice row use the same casing — otherwise joins by
+    // bill_to_email (e.g. CustomersTab's per-customer invoice
+    // list) silently miss the just-sent invoice when the vendor
+    // typed caps.
+    const normalizedEmail = billToEmail.trim().toLowerCase();
+    const trimmedName = billToName.trim();
     // Upsert the customer record so the vendor's directory stays
     // in sync even when they send to a new email from this dialog.
-    await db.from("vendor_customers").upsert(
-      {
-        vendor_id: vendorId,
-        email: billToEmail.trim().toLowerCase(),
-        name: billToName.trim() || null,
-      },
-      { onConflict: "vendor_id,email" },
-    );
+    // Only include `name` when the form has one — an empty name
+    // shouldn't overwrite an existing saved name.
+    const customerPayload: Record<string, unknown> = {
+      vendor_id: vendorId,
+      email: normalizedEmail,
+    };
+    if (trimmedName) customerPayload.name = trimmedName;
+    await db.from("vendor_customers").upsert(customerPayload, {
+      onConflict: "vendor_id,email",
+    });
     // Insert the invoice — invoice_number is filled in by a DB
     // trigger when status flips to 'sent'.
     const { data: newRow, error } = await db
       .from("invoices")
       .insert({
         vendor_id: vendorId,
-        bill_to_name: billToName.trim() || null,
-        bill_to_email: billToEmail.trim() || null,
+        bill_to_name: trimmedName || null,
+        bill_to_email: normalizedEmail || null,
         issue_date: issueDate,
         due_date: dueDate || null,
         notes: notes.trim() || null,

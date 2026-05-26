@@ -215,20 +215,37 @@ serve(async (req: Request) => {
         },
       );
       if (!sendRes.ok) {
-        console.warn(
-          "[scan-vendorapay-recurring] send failed (invoice still created)",
+        // Send failed — DON'T advance next_run_at or the schedule
+        // silently progresses while no email goes out. Mark the
+        // invoice as draft so a manual resend from the UI picks it
+        // up, count the row as failed, retry on the next cron tick.
+        const errText = await sendRes.text();
+        console.error(
+          "[scan-vendorapay-recurring] send failed (rolling back)",
           row.id,
-          await sendRes.text(),
+          sendRes.status,
+          errText,
         );
+        await (db as any)
+          .from("invoices")
+          .update({ status: "draft", sent_at: null })
+          .eq("id", (newInv as { id: string }).id);
+        failed++;
+        continue;
       }
 
-      // Advance the cycle. We base off the previous next_run_at,
-      // not "now", so cadences stay anchored (e.g. monthly invoices
-      // keep landing on the same calendar day each month).
+      // Advance the cycle. We walk forward until next_run_at lands
+      // in the future so a long cron outage doesn't queue up one
+      // catch-up invoice per cron tick (an 8-week pause on a
+      // weekly rule would otherwise fire 8 invoices on 8 days).
+      let nextRun = advance(new Date(row.next_run_at), row.interval);
+      while (nextRun <= now) {
+        nextRun = advance(nextRun, row.interval);
+      }
       await (db as any)
         .from("vendor_recurring_invoices")
         .update({
-          next_run_at: advance(new Date(row.next_run_at), row.interval).toISOString(),
+          next_run_at: nextRun.toISOString(),
           last_run_at: now.toISOString(),
           last_invoice_id: (newInv as { id: string }).id,
         })
