@@ -1098,121 +1098,6 @@ function FilesTab(props: {
   );
 }
 
-
-// Picker shown above the invoice list. Five starter templates that
-// the vendor can drop into the composer in one click — pre-fills
-// line items, tax rate, and notes. The AI generator slots in here
-// later; the data shape doesn't have to change.
-function InvoiceTemplatePicker({
-  onPick,
-  hasSavedDefault,
-  onUseDefault,
-}: {
-  onPick: (tpl: InvoiceTemplate) => void;
-  hasSavedDefault: boolean;
-  onUseDefault: () => void;
-}) {
-  const [preview, setPreview] = useState<InvoiceTemplate | null>(null);
-  return (
-    <>
-      {/* Single blank starter — the vendor picks this, gets a clean
-          professional layout, and fills in the real details
-          themselves. AI-generated per-service starters will land
-          here later, but for now it's bring-your-own-content. */}
-      {INVOICE_TEMPLATES.length > 0 && (
-        <Card>
-          <div className="p-5 flex items-center justify-between gap-4 flex-wrap">
-            <div className="min-w-0">
-              <div className="flex items-center gap-2">
-                <h3 className="text-sm font-semibold">
-                  {hasSavedDefault ? "Use your saved invoice" : "Start with a clean template"}
-                </h3>
-                <span
-                  className="text-[10px] uppercase tracking-wider font-medium rounded-full px-2 py-0.5"
-                  style={{
-                    background: "rgba(255,138,76,0.12)",
-                    color: "#c4541e",
-                    border: "0.5px solid rgba(255,138,76,0.3)",
-                  }}
-                >
-                  AI builder soon
-                </span>
-              </div>
-              <p className="text-xs text-muted-foreground mt-1">
-                {hasSavedDefault
-                  ? "Start from the invoice you saved as default — edit the bill-to and dates, send, repeat."
-                  : "Open the professionally-formatted shell — Bill from, Bill to, line items, notes, payment terms — and fill in the details yourself."}
-              </p>
-            </div>
-            <div className="flex gap-2 shrink-0">
-              <Button
-                variant="outline"
-                size="sm"
-                className="rounded-full"
-                onClick={() => setPreview(INVOICE_TEMPLATES[0])}
-              >
-                Preview shell
-              </Button>
-              <Button
-                size="sm"
-                className="rounded-full"
-                onClick={hasSavedDefault ? onUseDefault : () => onPick(INVOICE_TEMPLATES[0])}
-              >
-                <Plus className="w-3.5 h-3.5 mr-1.5" />
-                {hasSavedDefault ? "New invoice" : "Use template"}
-              </Button>
-            </div>
-          </div>
-        </Card>
-      )}
-
-      <Dialog open={!!preview} onOpenChange={(o) => !o && setPreview(null)}>
-        <DialogContent className="max-w-4xl max-h-[95vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>{preview?.title}</DialogTitle>
-            <DialogDescription>{preview?.summary}</DialogDescription>
-          </DialogHeader>
-          {preview ? (
-            <div className="space-y-4">
-              {/* Styled preview — mirrors the PDF layout for this
-                  template's `style` so the vendor sees the actual
-                  look before downloading. */}
-              <InvoicePreview template={preview} />
-              <div className="flex justify-end gap-2 pt-1 flex-wrap">
-                <Button variant="outline" onClick={() => setPreview(null)} className="rounded-full">
-                  Close
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={async () => {
-                    const { downloadInvoiceTemplatePdf } = await import(
-                      "@/lib/invoicePdf"
-                    );
-                    downloadInvoiceTemplatePdf(preview);
-                  }}
-                  className="rounded-full"
-                >
-                  <Download className="w-3.5 h-3.5 mr-1.5" />
-                  Save as PDF
-                </Button>
-                <Button
-                  onClick={() => {
-                    onPick(preview);
-                    setPreview(null);
-                  }}
-                  className="rounded-full"
-                >
-                  Use this template
-                </Button>
-              </div>
-            </div>
-          ) : null}
-        </DialogContent>
-      </Dialog>
-    </>
-  );
-}
-
 // Long-form template gallery used by Contracts and Proposals. The
 // vendor previews any template in a modal and copies the body to
 // their own document for now — the dedicated builders are still
@@ -1344,7 +1229,6 @@ function InvoicesTab({
   status: Status | null;
   onChanged: () => void;
 }) {
-  const [creating, setCreating] = useState(false);
   const [billToName, setBillToName] = useState("");
   const [billToEmail, setBillToEmail] = useState("");
   const [issueDate, setIssueDate] = useState(new Date().toISOString().slice(0, 10));
@@ -1357,11 +1241,9 @@ function InvoicesTab({
   const [submitting, setSubmitting] = useState(false);
   const [sendingId, setSendingId] = useState<string | null>(null);
 
-  // Vendor's saved default invoice — populated from
-  // vendor_invoice_defaults. When present, the picker card and
-  // "Use template" both source from this instead of the blank
-  // placeholder. Stored shape mirrors the composer state so a save
-  // can roundtrip without translation.
+  // Vendor's saved default invoice (lineItems + notes + taxPct).
+  // null until the initial fetch completes; the composer is
+  // hydrated from this when defaultsLoaded flips true.
   interface SavedDefault {
     lineItems: Array<{ name: string; qty: number; price: number }>;
     notes: string;
@@ -1370,12 +1252,20 @@ function InvoicesTab({
   const [savedDefault, setSavedDefault] = useState<SavedDefault | null>(null);
   const [savingDefault, setSavingDefault] = useState(false);
 
+  // After savedDefault has loaded, hydrate the always-visible
+  // composer with it (or the blank placeholder if the vendor has
+  // never saved one). Runs once on initial load and again whenever
+  // the saved default changes (e.g. after the vendor saves a new
+  // one for this listing).
+  const [defaultsLoaded, setDefaultsLoaded] = useState(false);
   useEffect(() => {
     if (!vendorId) {
       setSavedDefault(null);
+      setDefaultsLoaded(false);
       return;
     }
     let cancelled = false;
+    setDefaultsLoaded(false);
     (async () => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data, error } = await (supabase as any)
@@ -1384,16 +1274,56 @@ function InvoicesTab({
         .eq("vendor_id", vendorId)
         .maybeSingle();
       if (cancelled) return;
-      if (!error && data?.template_data) {
-        setSavedDefault(data.template_data as SavedDefault);
-      } else {
-        setSavedDefault(null);
-      }
+      setSavedDefault(!error && data?.template_data ? (data.template_data as SavedDefault) : null);
+      setDefaultsLoaded(true);
     })();
     return () => {
       cancelled = true;
     };
   }, [vendorId]);
+
+  // Reset helper — drops bill-to / dates, refills items + notes +
+  // tax from the saved default if any, otherwise from the blank
+  // placeholder so the canvas always shows a starting structure.
+  const resetToDefault = useCallback(() => {
+    setBillToName("");
+    setBillToEmail("");
+    setIssueDate(new Date().toISOString().slice(0, 10));
+    setDueDate("");
+    if (savedDefault) {
+      setItems(
+        savedDefault.lineItems.map((it) => ({
+          name: it.name,
+          qty: String(it.qty),
+          price: it.price ? String(it.price) : "",
+        })),
+      );
+      setTaxPct(savedDefault.taxPct ? String(savedDefault.taxPct) : "");
+      setNotes(savedDefault.notes ?? "");
+    } else {
+      const tpl = INVOICE_TEMPLATES[0];
+      setItems(
+        tpl.lineItems.map((it) => ({
+          name: it.name,
+          qty: String(it.qty),
+          price: it.price ? String(it.price) : "",
+        })),
+      );
+      setTaxPct(tpl.taxPct ? String(tpl.taxPct) : "");
+      setNotes(tpl.notes ?? "");
+    }
+  }, [savedDefault]);
+
+  // Hydrate the form once on first load (and on listing switch).
+  useEffect(() => {
+    if (!defaultsLoaded) return;
+    resetToDefault();
+    // We intentionally only re-run when defaultsLoaded flips, not
+    // on every resetToDefault identity change — avoids stomping the
+    // vendor's in-progress edits when savedDefault updates after a
+    // "Save as default" click.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [defaultsLoaded, vendorId]);
 
   const subtotalCents = items.reduce((sum, it) => {
     const q = parseInt(it.qty || "0", 10);
@@ -1409,16 +1339,6 @@ function InvoicesTab({
   const updateRow = (i: number, key: "name" | "qty" | "price", v: string) =>
     setItems((r) => r.map((row, idx) => (idx === i ? { ...row, [key]: v } : row)));
 
-  const resetForm = () => {
-    setCreating(false);
-    setBillToName("");
-    setBillToEmail("");
-    setIssueDate(new Date().toISOString().slice(0, 10));
-    setDueDate("");
-    setNotes("");
-    setTaxPct("");
-    setItems([{ name: "", qty: "1", price: "" }]);
-  };
 
   const create = useCallback(
     async (alsoSend: boolean) => {
@@ -1498,7 +1418,7 @@ function InvoicesTab({
         toast.success("Invoice draft saved");
       }
       setSubmitting(false);
-      resetForm();
+      resetToDefault();
       onChanged();
     },
     [
@@ -1552,42 +1472,6 @@ function InvoicesTab({
     toast.success("Link copied", { description: url });
   }, []);
 
-  // Drop a template into the composer. Opens the form and prefills
-  // line items, tax rate, and notes; the vendor fills in the
-  // bill-to and (optionally) tweaks before sending.
-  const applyTemplate = useCallback((tpl: InvoiceTemplate) => {
-    setItems(
-      tpl.lineItems.map((it) => ({
-        name: it.name,
-        qty: String(it.qty),
-        price: it.price ? String(it.price) : "",
-      })),
-    );
-    setTaxPct(tpl.taxPct ? String(tpl.taxPct) : "");
-    setNotes(tpl.notes ?? "");
-    setCreating(true);
-  }, []);
-
-  // "Use template" entry point. Pulls the vendor's saved default if
-  // one exists; otherwise falls back to the blank starter so first-
-  // time vendors still have a clean shell to fill in.
-  const startFromDefault = useCallback(() => {
-    if (savedDefault) {
-      setItems(
-        savedDefault.lineItems.map((it) => ({
-          name: it.name,
-          qty: String(it.qty),
-          price: it.price ? String(it.price) : "",
-        })),
-      );
-      setTaxPct(savedDefault.taxPct ? String(savedDefault.taxPct) : "");
-      setNotes(savedDefault.notes ?? "");
-      setCreating(true);
-    } else {
-      applyTemplate(INVOICE_TEMPLATES[0]);
-    }
-  }, [savedDefault, applyTemplate]);
-
   // Persist current composer state as the vendor's default for this
   // listing. Bill-to / dates intentionally excluded — those are
   // per-invoice, not per-vendor. Upserts so repeated saves overwrite.
@@ -1622,18 +1506,36 @@ function InvoicesTab({
 
   return (
     <div className="space-y-4">
-      {!creating && (
-        <InvoiceTemplatePicker
-          onPick={applyTemplate}
-          hasSavedDefault={!!savedDefault}
-          onUseDefault={startFromDefault}
-        />
-      )}
-      {creating ? (
-        <Card>
-          <div className="p-5 space-y-3">
-            <h3 className="text-sm font-semibold">New invoice</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+      {/* Always-visible composer — the invoice is the page, ready
+          to edit on land. Pre-filled from the vendor's saved default
+          (if any) or the blank placeholder. AI builder badge in the
+          header keeps the roadmap visible while we work toward
+          per-field inline editing on the styled canvas. */}
+      <Card>
+        <div className="p-5 space-y-3">
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <div>
+              <h3 className="text-sm font-semibold">
+                {savedDefault ? "Your invoice" : "New invoice"}
+              </h3>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                {savedDefault
+                  ? "Pre-filled from your saved default — edit anything, then send."
+                  : "Fill in the line items, notes, and tax, then send. Save it as your default to reuse next time."}
+              </p>
+            </div>
+            <span
+              className="text-[10px] uppercase tracking-wider font-medium rounded-full px-2 py-0.5"
+              style={{
+                background: "rgba(255,138,76,0.12)",
+                color: "#c4541e",
+                border: "0.5px solid rgba(255,138,76,0.3)",
+              }}
+            >
+              AI builder soon
+            </span>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
               <input
                 type="text"
                 placeholder="Bill to name (optional)"
@@ -1785,25 +1687,12 @@ function InvoicesTab({
                 ) : null}
                 {savedDefault ? "Update my default" : "Save as my default"}
               </Button>
-              <Button variant="ghost" onClick={resetForm} className="rounded-full">
-                Cancel
+              <Button variant="ghost" onClick={resetToDefault} className="rounded-full">
+                Reset
               </Button>
             </div>
           </div>
         </Card>
-      ) : (
-        <div className="flex items-center justify-between">
-          <p className="text-sm text-muted-foreground">
-            {status?.charges_enabled
-              ? "Build a multi-line invoice, email it to the host, get paid via card."
-              : "Compose invoices now — they'll be billable the moment your account is verified."}
-          </p>
-          <Button onClick={() => setCreating(true)} className="rounded-full">
-            <Plus className="w-4 h-4 mr-1.5" />
-            New invoice
-          </Button>
-        </div>
-      )}
 
       {/* Invoice list */}
       {invoices.length === 0 ? (
