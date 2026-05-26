@@ -233,9 +233,11 @@ interface Invoice {
   tax_cents: number;
   total_cents: number;
   currency: string;
-  status: "draft" | "sent" | "paid" | "cancelled" | "overdue";
+  status: "draft" | "sent" | "paid" | "cancelled" | "overdue" | "refunded" | "partial_refund";
   sent_at: string | null;
   paid_at: string | null;
+  refunded_at?: string | null;
+  refunded_amount_cents?: number;
   /** Latest decline reason from Stripe, when buyer's last attempt failed. */
   payment_failure_message?: string | null;
   /** Cleared on successful payment; non-null means a failed attempt is pending retry. */
@@ -1185,17 +1187,20 @@ function ReportsTab({ vendorId }: { vendorId: string | null }) {
   const [rangeId, setRangeId] = useState<ReportRangeId>("this_month");
   const range = useMemo(() => computeReportRange(rangeId), [rangeId]);
 
-  // Fetch paid invoices in the chosen window directly from Supabase
-  // rather than slicing the parent's 50-row cache — the parent cap
-  // would silently understate "YTD" or "All time" totals. Use paid_at
-  // (cash-basis accounting) so revenue is recognized when the money
-  // actually arrived, matching how a CPA reconciles against bank
-  // deposits.
+  // Fetch paid + refunded invoices in the chosen window directly
+  // from Supabase rather than slicing the parent's 50-row cache —
+  // the parent cap would silently understate "YTD" or "All time"
+  // totals. Use paid_at for revenue (cash-basis: recognized when
+  // money arrived) and refunded_at for refunds (when money left).
+  // Same period = cash-flow view, matching how a CPA reconciles
+  // against bank deposits.
   const [paidInRange, setPaidInRange] = useState<Invoice[]>([]);
+  const [refundedInRange, setRefundedInRange] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(false);
   useEffect(() => {
     if (!vendorId) {
       setPaidInRange([]);
+      setRefundedInRange([]);
       return;
     }
     let cancelled = false;
@@ -1203,19 +1208,31 @@ function ReportsTab({ vendorId }: { vendorId: string | null }) {
     (async () => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const db = supabase as any;
-      const { data } = await db
-        .from("invoices")
-        .select(
-          "id, vendor_id, slug, invoice_number, bill_to_name, bill_to_email, issue_date, due_date, notes, line_items, subtotal_cents, tax_rate_bps, tax_cents, total_cents, currency, status, sent_at, paid_at, created_at",
-        )
-        .eq("vendor_id", vendorId)
-        .eq("status", "paid")
-        .gte("paid_at", range.start.toISOString())
-        .lt("paid_at", range.end.toISOString())
-        .order("paid_at", { ascending: false })
-        .limit(5000);
+      const cols =
+        "id, vendor_id, slug, invoice_number, bill_to_name, bill_to_email, issue_date, due_date, notes, line_items, subtotal_cents, tax_rate_bps, tax_cents, total_cents, currency, status, sent_at, paid_at, refunded_at, refunded_amount_cents, created_at";
+      const [paidRes, refundedRes] = await Promise.all([
+        db
+          .from("invoices")
+          .select(cols)
+          .eq("vendor_id", vendorId)
+          .eq("status", "paid")
+          .gte("paid_at", range.start.toISOString())
+          .lt("paid_at", range.end.toISOString())
+          .order("paid_at", { ascending: false })
+          .limit(5000),
+        db
+          .from("invoices")
+          .select(cols)
+          .eq("vendor_id", vendorId)
+          .in("status", ["refunded", "partial_refund"])
+          .gte("refunded_at", range.start.toISOString())
+          .lt("refunded_at", range.end.toISOString())
+          .order("refunded_at", { ascending: false })
+          .limit(5000),
+      ]);
       if (cancelled) return;
-      setPaidInRange((data ?? []) as Invoice[]);
+      setPaidInRange((paidRes.data ?? []) as Invoice[]);
+      setRefundedInRange((refundedRes.data ?? []) as Invoice[]);
       setLoading(false);
     })();
     return () => {
@@ -1234,43 +1251,77 @@ function ReportsTab({ vendorId }: { vendorId: string | null }) {
       subtotal += inv.subtotal_cents;
       if (inv.bill_to_email) customers.add(inv.bill_to_email.toLowerCase());
     }
-    const currency = paidInRange[0]?.currency ?? "usd";
-    return { gross, tax, subtotal, customers: customers.size, count: paidInRange.length, currency };
-  }, [paidInRange]);
+    let refunds = 0;
+    for (const inv of refundedInRange) {
+      // refunded_amount_cents tracks the cumulative Stripe-reported
+      // refund. Fall back to total_cents for legacy rows that were
+      // refunded before the column existed.
+      refunds += inv.refunded_amount_cents ?? inv.total_cents;
+    }
+    const net = gross - refunds;
+    const currency = paidInRange[0]?.currency ?? refundedInRange[0]?.currency ?? "usd";
+    return {
+      gross,
+      tax,
+      subtotal,
+      refunds,
+      net,
+      customers: customers.size,
+      count: paidInRange.length,
+      refundCount: refundedInRange.length,
+      currency,
+    };
+  }, [paidInRange, refundedInRange]);
 
   const downloadCsv = useCallback(() => {
     const headers = [
+      "kind",
       "invoice_number",
       "issue_date",
-      "paid_at",
+      "event_at",
       "bill_to_name",
       "bill_to_email",
       "subtotal_cents",
       "tax_cents",
       "total_cents",
+      "refunded_amount_cents",
       "currency",
       "status",
     ];
-    const rows = paidInRange
-      .slice()
-      .sort((a, b) => (a.paid_at && b.paid_at ? a.paid_at.localeCompare(b.paid_at) : 0))
-      .map((inv) =>
-        [
-          inv.invoice_number,
-          inv.issue_date,
-          inv.paid_at,
-          inv.bill_to_name,
-          inv.bill_to_email,
-          inv.subtotal_cents,
-          inv.tax_cents,
-          inv.total_cents,
-          inv.currency,
-          inv.status,
-        ]
-          .map(csvEscape)
-          .join(","),
-      );
-    const csv = [headers.join(","), ...rows].join("\n");
+    type Row = { inv: Invoice; kind: "payment" | "refund"; eventAt: string | null };
+    const rows: Row[] = [
+      ...paidInRange.map((inv) => ({
+        inv,
+        kind: "payment" as const,
+        eventAt: inv.paid_at,
+      })),
+      ...refundedInRange.map((inv) => ({
+        inv,
+        kind: "refund" as const,
+        eventAt: inv.refunded_at ?? null,
+      })),
+    ].sort((a, b) =>
+      a.eventAt && b.eventAt ? a.eventAt.localeCompare(b.eventAt) : 0,
+    );
+    const lines = rows.map(({ inv, kind, eventAt }) =>
+      [
+        kind,
+        inv.invoice_number,
+        inv.issue_date,
+        eventAt,
+        inv.bill_to_name,
+        inv.bill_to_email,
+        inv.subtotal_cents,
+        inv.tax_cents,
+        inv.total_cents,
+        inv.refunded_amount_cents ?? 0,
+        inv.currency,
+        inv.status,
+      ]
+        .map(csvEscape)
+        .join(","),
+    );
+    const csv = [headers.join(","), ...lines].join("\n");
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -1281,7 +1332,7 @@ function ReportsTab({ vendorId }: { vendorId: string | null }) {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-  }, [paidInRange, rangeId]);
+  }, [paidInRange, refundedInRange, rangeId]);
 
   return (
     <div className="space-y-5">
@@ -1309,7 +1360,7 @@ function ReportsTab({ vendorId }: { vendorId: string | null }) {
           variant="outline"
           size="sm"
           onClick={downloadCsv}
-          disabled={paidInRange.length === 0}
+          disabled={paidInRange.length === 0 && refundedInRange.length === 0}
           className="rounded-full"
         >
           <Download className="w-3.5 h-3.5 mr-1" />
@@ -1321,11 +1372,25 @@ function ReportsTab({ vendorId }: { vendorId: string | null }) {
         <h2 className="text-[10px] uppercase tracking-[0.22em] text-muted-foreground font-semibold mb-3 pb-2 border-b border-foreground/[0.06]">
           Sales ({range.label.toLowerCase()})
         </h2>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
           <StatCard
             label="Gross"
             sub="Total invoiced + paid"
             value={formatMoney(totals.gross, totals.currency)}
+          />
+          <StatCard
+            label="Refunds"
+            sub={
+              totals.refundCount === 0
+                ? "None in range"
+                : `${totals.refundCount} invoice${totals.refundCount === 1 ? "" : "s"} refunded`
+            }
+            value={`-${formatMoney(totals.refunds, totals.currency)}`}
+          />
+          <StatCard
+            label="Net"
+            sub="Gross − refunds"
+            value={formatMoney(totals.net, totals.currency)}
           />
           <StatCard
             label="Subtotal"
