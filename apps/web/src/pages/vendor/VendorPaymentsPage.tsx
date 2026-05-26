@@ -141,23 +141,19 @@ interface Status {
   } | null;
 }
 
-type TabId = "overview" | "calendar" | "transactions" | "files" | "customers" | "links" | "payouts" | "disputes" | "integrations" | "settings";
+type TabId = "overview" | "calendar" | "transactions" | "files" | "customers" | "payouts" | "disputes" | "integrations" | "settings";
 
 const TABS: Array<{ id: TabId; label: string; icon: typeof Wallet }> = [
   { id: "overview", label: "Overview", icon: Wallet },
   { id: "calendar", label: "Calendar", icon: CalendarDays },
   { id: "transactions", label: "Payments", icon: CreditCard },
-  // "Files" rolls up Invoices, Contracts, Proposals, Scheduling,
-  // Services, and Questionnaires under a single tab with its own
-  // internal sub-nav (HoneyBook-style "All files" surface).
+  // "Files" rolls up Invoices, Pay Links, Contracts, and Proposals
+  // under a single tab with its own internal sub-nav. Pay Links
+  // moved here from the top-level strip because they're the same
+  // act as invoices to a vendor ("send a URL to get paid"), just
+  // flat-amount instead of itemized.
   { id: "files", label: "Files", icon: FileText },
-  // Customers IS the people list. Leads (inquiry-stage prospects)
-  // used to be a separate tab here but duplicated the Inbox
-  // sidebar entry, which is the canonical place to triage
-  // inquiries. /vendor/leads still resolves for deep-links — it
-  // redirects to /vendor/inbox now.
   { id: "customers", label: "Customers", icon: Users },
-  { id: "links", label: "Pay Links", icon: Link2 },
   { id: "payouts", label: "Payouts", icon: Banknote },
   { id: "disputes", label: "Disputes", icon: AlertTriangle },
   { id: "integrations", label: "Integrations", icon: Plug },
@@ -168,7 +164,7 @@ const TABS: Array<{ id: TabId; label: string; icon: typeof Wallet }> = [
 // today — the rest render a "coming soon" placeholder. URL state
 // uses `?tab=files&file=<id>` (the default Invoices is omitted from
 // the URL to keep links clean).
-type FileTabId = "invoices" | "contracts" | "proposals";
+type FileTabId = "invoices" | "links" | "contracts" | "proposals";
 
 const FILES_TABS: Array<{
   id: FileTabId;
@@ -181,6 +177,12 @@ const FILES_TABS: Array<{
     label: "Invoices",
     icon: FileText,
     description: "Build a multi-line invoice, email it to the host, get paid via card.",
+  },
+  {
+    id: "links",
+    label: "Pay Links",
+    icon: Link2,
+    description: "Drop a flat-amount charge URL anywhere — text, DM, email.",
   },
   {
     id: "contracts",
@@ -819,6 +821,7 @@ export default function VendorPaymentsPage({ embedded = false }: { embedded?: bo
               vendorId={vendorId}
               listing={listings.find((l) => l.id === selectedListingId) ?? null}
               invoices={invoices}
+              paymentLinks={paymentLinks}
               status={status}
               onChanged={() => refresh(true)}
             />
@@ -827,13 +830,6 @@ export default function VendorPaymentsPage({ embedded = false }: { embedded?: bo
               vendorId={vendorId}
               listing={listings.find((l) => l.id === selectedListingId) ?? null}
               invoices={invoices}
-              onChanged={() => refresh(true)}
-            />
-          ) : tab === "links" ? (
-            <PayLinksTab
-              vendorId={vendorId}
-              links={paymentLinks}
-              status={status}
               onChanged={() => refresh(true)}
             />
           ) : tab === "payouts" ? (
@@ -1333,6 +1329,7 @@ function FilesTab(props: {
   vendorId: string | null;
   listing: ListingOpt | null;
   invoices: Invoice[];
+  paymentLinks: PaymentLink[];
   status: Status | null;
   onChanged: () => void;
 }) {
@@ -1371,7 +1368,20 @@ function FilesTab(props: {
       </nav>
 
       {fileTab === "invoices" ? (
-        <InvoicesTab {...props} />
+        <InvoicesTab
+          vendorId={props.vendorId}
+          listing={props.listing}
+          invoices={props.invoices}
+          status={props.status}
+          onChanged={props.onChanged}
+        />
+      ) : fileTab === "links" ? (
+        <PayLinksTab
+          vendorId={props.vendorId}
+          links={props.paymentLinks}
+          status={props.status}
+          onChanged={props.onChanged}
+        />
       ) : fileTab === "contracts" ? (
         <DocumentCanvas
           vendorId={props.vendorId}
