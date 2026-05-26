@@ -36,6 +36,7 @@ import {
   ScrollText,
   Settings as SettingsIcon,
   Trash2,
+  Users,
   Wallet,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -114,7 +115,7 @@ interface Status {
   } | null;
 }
 
-type TabId = "overview" | "transactions" | "files" | "links" | "payouts" | "integrations" | "settings";
+type TabId = "overview" | "transactions" | "files" | "customers" | "links" | "payouts" | "integrations" | "settings";
 
 const TABS: Array<{ id: TabId; label: string; icon: typeof Wallet }> = [
   { id: "overview", label: "Overview", icon: Wallet },
@@ -123,6 +124,7 @@ const TABS: Array<{ id: TabId; label: string; icon: typeof Wallet }> = [
   // Services, and Questionnaires under a single tab with its own
   // internal sub-nav (HoneyBook-style "All files" surface).
   { id: "files", label: "Files", icon: FileText },
+  { id: "customers", label: "Customers", icon: Users },
   { id: "links", label: "Pay Links", icon: Link2 },
   { id: "payouts", label: "Payouts", icon: Banknote },
   { id: "integrations", label: "Integrations", icon: Plug },
@@ -677,6 +679,8 @@ export default function VendorPaymentsPage() {
               status={status}
               onChanged={() => refresh(true)}
             />
+          ) : tab === "customers" ? (
+            <CustomersTab vendorId={vendorId} />
           ) : tab === "links" ? (
             <PayLinksTab
               vendorId={vendorId}
@@ -2173,6 +2177,249 @@ function InvoiceStatusPill({ status }: { status: Invoice["status"] }) {
     <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${m.className}`}>
       {m.label}
     </span>
+  );
+}
+
+interface Customer {
+  id: string;
+  email: string;
+  name: string | null;
+  phone: string | null;
+  notes: string | null;
+  created_at: string;
+}
+
+// Customers list for the active listing. Vendors can add, edit, and
+// remove client records here; later flows (re-bill, send a new
+// invoice from a customer card) read from this table. Bare CRUD —
+// no edge function needed because RLS gates writes by vendor_id.
+function CustomersTab({ vendorId }: { vendorId: string | null }) {
+  const [rows, setRows] = useState<Customer[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [editing, setEditing] = useState<Customer | "new" | null>(null);
+  const [form, setForm] = useState<{ email: string; name: string; phone: string; notes: string }>({
+    email: "",
+    name: "",
+    phone: "",
+    notes: "",
+  });
+  const [saving, setSaving] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  const refresh = useCallback(async () => {
+    if (!vendorId) {
+      setRows([]);
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data, error } = await (supabase as any)
+      .from("vendor_customers")
+      .select("id, email, name, phone, notes, created_at")
+      .eq("vendor_id", vendorId)
+      .order("created_at", { ascending: false });
+    if (!error) setRows((data ?? []) as Customer[]);
+    setLoading(false);
+  }, [vendorId]);
+
+  useEffect(() => {
+    void refresh();
+  }, [refresh]);
+
+  const startNew = () => {
+    setForm({ email: "", name: "", phone: "", notes: "" });
+    setEditing("new");
+  };
+
+  const startEdit = (c: Customer) => {
+    setForm({
+      email: c.email,
+      name: c.name ?? "",
+      phone: c.phone ?? "",
+      notes: c.notes ?? "",
+    });
+    setEditing(c);
+  };
+
+  const save = useCallback(async () => {
+    if (!vendorId || saving) return;
+    const email = form.email.trim().toLowerCase();
+    if (!email || !email.includes("@")) {
+      toast.error("Valid email required");
+      return;
+    }
+    setSaving(true);
+    const payload = {
+      vendor_id: vendorId,
+      email,
+      name: form.name.trim() || null,
+      phone: form.phone.trim() || null,
+      notes: form.notes.trim() || null,
+    };
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const db = supabase as any;
+    const { error } =
+      editing === "new"
+        ? await db
+            .from("vendor_customers")
+            .upsert(payload, { onConflict: "vendor_id,email" })
+        : await db
+            .from("vendor_customers")
+            .update(payload)
+            .eq("id", (editing as Customer).id);
+    setSaving(false);
+    if (error) {
+      toast.error("Couldn't save", { description: error.message });
+      return;
+    }
+    setEditing(null);
+    toast.success(editing === "new" ? "Customer added" : "Customer updated");
+    await refresh();
+  }, [vendorId, saving, form, editing, refresh]);
+
+  const remove = useCallback(
+    async (c: Customer) => {
+      if (!confirm(`Remove ${c.name ?? c.email}?`)) return;
+      setDeletingId(c.id);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error } = await (supabase as any)
+        .from("vendor_customers")
+        .delete()
+        .eq("id", c.id);
+      setDeletingId(null);
+      if (error) {
+        toast.error("Couldn't remove", { description: error.message });
+        return;
+      }
+      toast.success("Customer removed");
+      await refresh();
+    },
+    [refresh],
+  );
+
+  return (
+    <div className="space-y-4">
+      <Card>
+        <div className="p-5 flex items-center justify-between flex-wrap gap-3">
+          <div>
+            <h3 className="text-sm font-semibold">Customers</h3>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Everyone you've billed. Save a customer once and reuse them on every invoice.
+            </p>
+          </div>
+          <Button onClick={startNew} disabled={!vendorId} className="rounded-full" size="sm">
+            <Plus className="w-3.5 h-3.5 mr-1.5" />
+            New customer
+          </Button>
+        </div>
+      </Card>
+
+      {editing && (
+        <Card>
+          <div className="p-5 space-y-3">
+            <h3 className="text-sm font-semibold">
+              {editing === "new" ? "New customer" : `Edit ${editing.name ?? editing.email}`}
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+              <input
+                type="email"
+                placeholder="email@example.com (required)"
+                value={form.email}
+                onChange={(e) => setForm({ ...form, email: e.target.value })}
+                disabled={editing !== "new"}
+                className="rounded-lg border-0 px-3 py-2 text-sm bg-background/60 ring-1 ring-foreground/10 focus:ring-foreground/30 outline-none disabled:opacity-60"
+              />
+              <input
+                type="text"
+                placeholder="Name (optional)"
+                value={form.name}
+                onChange={(e) => setForm({ ...form, name: e.target.value })}
+                className="rounded-lg border-0 px-3 py-2 text-sm bg-background/60 ring-1 ring-foreground/10 focus:ring-foreground/30 outline-none"
+              />
+              <input
+                type="tel"
+                placeholder="Phone (optional)"
+                value={form.phone}
+                onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                className="rounded-lg border-0 px-3 py-2 text-sm bg-background/60 ring-1 ring-foreground/10 focus:ring-foreground/30 outline-none md:col-span-2"
+              />
+            </div>
+            <textarea
+              placeholder="Notes (optional — venue contacts, dietary, preferences, …)"
+              value={form.notes}
+              onChange={(e) => setForm({ ...form, notes: e.target.value })}
+              rows={2}
+              className="w-full rounded-lg border-0 px-3 py-2 text-sm bg-background/60 ring-1 ring-foreground/10 focus:ring-foreground/30 outline-none resize-none"
+            />
+            <div className="flex gap-2">
+              <Button onClick={save} disabled={saving} className="rounded-full">
+                {saving ? <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> : null}
+                Save customer
+              </Button>
+              <Button variant="ghost" onClick={() => setEditing(null)} className="rounded-full">
+                Cancel
+              </Button>
+            </div>
+          </div>
+        </Card>
+      )}
+
+      {loading ? (
+        <EmptyCard>Loading customers…</EmptyCard>
+      ) : rows.length === 0 ? (
+        <EmptyCard>No customers yet. Click "New customer" to add your first.</EmptyCard>
+      ) : (
+        <Card>
+          {rows.map((c, idx) => (
+            <div
+              key={c.id}
+              className={`p-4 ${idx > 0 ? "border-t border-foreground/5" : ""}`}
+            >
+              <div className="flex items-start justify-between gap-3 flex-wrap">
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold">
+                    {c.name?.trim() || c.email}
+                  </p>
+                  {c.name && (
+                    <p className="text-xs text-muted-foreground">{c.email}</p>
+                  )}
+                  {c.phone && (
+                    <p className="text-xs text-muted-foreground">{c.phone}</p>
+                  )}
+                  {c.notes && (
+                    <p className="text-xs text-muted-foreground mt-1 max-w-md">{c.notes}</p>
+                  )}
+                </div>
+                <div className="flex gap-1 shrink-0">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => startEdit(c)}
+                    className="rounded-full"
+                  >
+                    Edit
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => void remove(c)}
+                    disabled={deletingId === c.id}
+                    className="rounded-full text-muted-foreground hover:text-destructive"
+                  >
+                    {deletingId === c.id ? (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    ) : (
+                      <Trash2 className="w-3.5 h-3.5" />
+                    )}
+                  </Button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </Card>
+      )}
+    </div>
   );
 }
 
