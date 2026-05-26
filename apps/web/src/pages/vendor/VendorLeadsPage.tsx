@@ -113,7 +113,10 @@ function midBudget(min: number | null, max: number | null): number {
 
 type StatusFilter = "all" | "active" | "won" | "lost";
 
-export default function VendorLeadsPage({ embedded = false }: { embedded?: boolean } = {}) {
+export default function VendorLeadsPage({
+  embedded = false,
+  listingId: listingIdProp,
+}: { embedded?: boolean; listingId?: string | null } = {}) {
   const { user } = useAuth();
 
   // Listing picker — scopes the page to ONE of the vendor's listings
@@ -124,9 +127,14 @@ export default function VendorLeadsPage({ embedded = false }: { embedded?: boole
   // the dropdown so the vendor sees them but can't pick them.
   const [listings, setListings] = useState<ListingOpt[]>([]);
   const [listingsLoading, setListingsLoading] = useState(true);
-  const [selectedListingId, setSelectedListingId] = useState<string | null>(
+  const [localSelectedListingId, setLocalSelectedListingId] = useState<string | null>(
     null,
   );
+  // When embedded inside My Vendora, the parent owns the listing
+  // selection — defer to its prop. Standalone use keeps the local
+  // state + picker.
+  const selectedListingId = listingIdProp !== undefined ? listingIdProp : localSelectedListingId;
+  const setSelectedListingId = setLocalSelectedListingId;
   const [listingPickerOpen, setListingPickerOpen] = useState(false);
 
   const [rows, setRows] = useState<InquiryRow[]>([]);
@@ -341,24 +349,28 @@ export default function VendorLeadsPage({ embedded = false }: { embedded?: boole
               below is scoped to whichever listing is selected here.
               Two empty states handle the cases where the picker would
               be useless: no listings at all (brand-new vendor) and
-              listings-but-none-approved (waiting on review). */}
-          {!listingsLoading && listings.length === 0 ? (
-            <NoListingsEmptyState />
-          ) : !listingsLoading &&
-            !listings.some((l) => l.application_status === "approved") ? (
-            <PendingApprovalEmptyState />
-          ) : (
-            <ListingPicker
-              listings={listings}
-              loading={listingsLoading}
-              selectedId={selectedListingId}
-              onSelect={(id) => {
-                setSelectedListingId(id);
-                setListingPickerOpen(false);
-              }}
-              open={listingPickerOpen}
-              onOpenChange={setListingPickerOpen}
-            />
+              listings-but-none-approved (waiting on review).
+              Suppressed in embedded mode — the My Vendora dashboard
+              owns the listing selection and passes it down. */}
+          {!embedded && (
+            !listingsLoading && listings.length === 0 ? (
+              <NoListingsEmptyState />
+            ) : !listingsLoading &&
+              !listings.some((l) => l.application_status === "approved") ? (
+              <PendingApprovalEmptyState />
+            ) : (
+              <ListingPicker
+                listings={listings}
+                loading={listingsLoading}
+                selectedId={selectedListingId}
+                onSelect={(id) => {
+                  setSelectedListingId(id);
+                  setListingPickerOpen(false);
+                }}
+                open={listingPickerOpen}
+                onOpenChange={setListingPickerOpen}
+              />
+            )
           )}
 
           {selectedListingId && (
