@@ -412,7 +412,7 @@ export default function VendorPaymentsPage({ embedded = false }: { embedded?: bo
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           (supabase as any)
             .from("invoices")
-            .select("id, vendor_id, slug, invoice_number, bill_to_name, bill_to_email, issue_date, due_date, notes, line_items, subtotal_cents, tax_rate_bps, tax_cents, total_cents, currency, status, sent_at, paid_at, payment_failure_message, payment_failed_at, payment_attempts, created_at")
+            .select("id, vendor_id, slug, invoice_number, bill_to_name, bill_to_email, issue_date, due_date, notes, line_items, subtotal_cents, tax_rate_bps, tax_cents, total_cents, currency, status, sent_at, paid_at, refunded_at, refunded_amount_cents, payment_failure_message, payment_failed_at, payment_attempts, created_at")
             .eq("vendor_id", vendorId)
             .order("created_at", { ascending: false })
             .limit(50),
@@ -2729,7 +2729,55 @@ function InvoicesTab({
   status: Status | null;
   onChanged: () => void;
 }) {
+  const { user } = useAuth();
   const [sendingId, setSendingId] = useState<string | null>(null);
+  const [downloadingId, setDownloadingId] = useState<string | null>(null);
+
+  // Lazy-imports jspdf + jspdf-autotable so the dashboard's initial
+  // bundle stays slim — vendors only ever click Download on demand.
+  const downloadPdf = useCallback(
+    async (inv: Invoice) => {
+      setDownloadingId(inv.id);
+      try {
+        const mod = await import("@/lib/invoiceReceiptPdf");
+        mod.downloadInvoicePdf(
+          {
+            invoice_number: inv.invoice_number,
+            bill_to_name: inv.bill_to_name,
+            bill_to_email: inv.bill_to_email,
+            issue_date: inv.issue_date,
+            due_date: inv.due_date,
+            notes: inv.notes,
+            line_items: inv.line_items.map((li) => ({
+              name: li.name,
+              qty: li.qty,
+              unit_price_cents: li.unit_price_cents,
+              total_cents: li.total_cents,
+            })),
+            subtotal_cents: inv.subtotal_cents,
+            tax_rate_bps: inv.tax_rate_bps,
+            tax_cents: inv.tax_cents,
+            total_cents: inv.total_cents,
+            currency: inv.currency,
+            status: inv.status,
+            paid_at: inv.paid_at,
+            refunded_amount_cents: inv.refunded_amount_cents,
+          },
+          {
+            business_name: listing?.business_name ?? null,
+            location: listing?.location ?? null,
+            email: user?.email ?? null,
+          },
+        );
+      } catch (err) {
+        console.error("[InvoicesTab] PDF download failed", err);
+        toast.error("Couldn't build the PDF. Try again in a moment.");
+      } finally {
+        setDownloadingId(null);
+      }
+    },
+    [listing, user],
+  );
 
   // Brand fields — the only editable parts of the invoice template
   // surface today. Initialized from the selected listing; saving
@@ -3003,6 +3051,22 @@ function InvoicesTab({
                   >
                     <ExternalLink className="w-3.5 h-3.5 mr-1" />
                     Preview
+                  </Button>
+                ) : null}
+                {inv.status !== "cancelled" ? (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => downloadPdf(inv)}
+                    disabled={downloadingId === inv.id}
+                    className="rounded-full"
+                  >
+                    {downloadingId === inv.id ? (
+                      <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" />
+                    ) : (
+                      <Download className="w-3.5 h-3.5 mr-1" />
+                    )}
+                    PDF
                   </Button>
                 ) : null}
                 {(inv.status === "draft" || inv.status === "sent" || inv.status === "overdue") ? (
