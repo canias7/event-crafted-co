@@ -324,7 +324,7 @@ export default function VendorLeadsPage({ embedded = false }: { embedded?: boole
           <div className="backdrop-blur-sm px-4 md:px-8 py-5 sticky top-0 z-40">
             <div className="flex items-start justify-between gap-4">
               <div>
-                <h1 className="font-editorial text-3xl">My Vendora</h1>
+                <h1 className="font-editorial text-3xl">Leads</h1>
                 <p className="text-sm text-muted-foreground">
                   Every host who's reached out — past, present, and pipeline.
                 </p>

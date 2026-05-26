@@ -50,16 +50,14 @@ const HOST_NAV: NavTarget[] = [
 ];
 
 // Mirrors live vendor portal routes — only surfaces that still resolve.
-// Leads / Calendar / VendoraPay are tabs inside the My Vendora wrapper
-// (the standalone routes redirect to it). Listing /vendor/leads etc. as
-// separate entries would still work via the redirect, but using the
-// wrapper URL directly keeps the URL pretty and the tab pre-selected.
+// /vendor/my-vendora is the VendoraPay dashboard; /vendor/leads and
+// /vendor/appointments are standalone pages again.
 const VENDOR_NAV: NavTarget[] = [
   { label: "Profile", path: "/vendor/me", icon: User },
   { label: "Inquiry inbox", path: "/vendor/inbox", icon: Inbox },
-  { label: "Leads", path: "/vendor/my-vendora?view=leads", icon: Users },
-  { label: "Calendar", path: "/vendor/my-vendora?view=calendar", icon: CalendarDays },
-  { label: "VendoraPay", path: "/vendor/my-vendora?view=vendorapay", icon: CreditCard },
+  { label: "My Vendora", path: "/vendor/my-vendora", icon: CreditCard },
+  { label: "Leads", path: "/vendor/leads", icon: Users },
+  { label: "Calendar", path: "/vendor/appointments", icon: CalendarDays },
   { label: "Partners", path: "/vendor/partners", icon: MessageSquare },
   { label: "Studio", path: "/vendor/studio", icon: Store },
 ];
