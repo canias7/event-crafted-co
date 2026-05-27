@@ -162,8 +162,12 @@ serve(async (req: Request) => {
       const payUrl = `${APP_URL}/pay/invoice/${inv.slug}`;
       const daysLate = daysBetween(now, new Date(inv.due_date));
       const isFollowUp = !!inv.reminder_sent_at;
+      // HTML-escape logoUrl (defense in depth): the column has no
+      // URL-shape constraint, and a hostile vendor can poison it
+      // with `x" onerror="…` via supabase-js. escapeHtml turns the
+      // `"` into `&quot;` so it can't break out of the src attr.
       const logoHtml = logoUrl
-        ? `<div style="margin:0 0 16px;"><img src="${logoUrl}" alt="${escapeHtml(businessName)}" width="44" height="44" style="display:block;border:0;border-radius:8px;object-fit:cover;" /></div>`
+        ? `<div style="margin:0 0 16px;"><img src="${escapeHtml(logoUrl)}" alt="${escapeHtml(businessName)}" width="44" height="44" style="display:block;border:0;border-radius:8px;object-fit:cover;" /></div>`
         : "";
       const greeting = inv.bill_to_name
         ? `Hi ${escapeHtml(inv.bill_to_name.split(/\s+/)[0])},`

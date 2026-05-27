@@ -1213,8 +1213,18 @@ function computeReportRange(id: ReportRangeId): { start: Date; end: Date; label:
 function csvEscape(value: string | number | null | undefined): string {
   if (value === null || value === undefined) return "";
   const s = String(value);
-  if (/[,"\n\r]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
-  return s;
+  // CSV formula injection guard. Excel/Sheets auto-evaluate any
+  // cell whose value starts with `= + - @ <tab> <CR>` as a formula
+  // — including `=cmd|'/c calc'!A1` style RCE on Windows Excel and
+  // `=HYPERLINK(…)` exfiltration. A buyer name typed as `=…` would
+  // run on the vendor's machine when they open the report CSV in
+  // their spreadsheet app. Prefix a single quote (the standard
+  // OWASP mitigation) so the cell stays a literal string.
+  // CWE-1236 / Formula Injection.
+  const needsFormulaGuard = /^[=+\-@\t\r]/.test(s);
+  const guarded = needsFormulaGuard ? `'${s}` : s;
+  if (/[,"\n\r]/.test(guarded)) return `"${guarded.replace(/"/g, '""')}"`;
+  return guarded;
 }
 
 function ReportsTab({ vendorId }: { vendorId: string | null }) {
@@ -3988,6 +3998,17 @@ function CustomersTab({
   const downloadStatement = useCallback(
     async (c: Customer) => {
       if (!vendorId) return;
+      // Snapshot the vendor id + brand at click time. If the vendor
+      // switches listings while the network fetch is in flight, the
+      // closure would otherwise read the NEW listing's brand and
+      // stamp it on the OLD listing's invoices — customer receives
+      // a PDF claiming to be from a vendor they never dealt with.
+      const snapVendorId = vendorId;
+      const snapBrand = {
+        business_name: listing?.business_name ?? null,
+        location: listing?.location ?? null,
+        email: user?.email ?? null,
+      };
       setStatementId(c.id);
       try {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -3997,7 +4018,7 @@ function CustomersTab({
           .select(
             "invoice_number, issue_date, due_date, paid_at, refunded_at, refunded_amount_cents, status, total_cents, currency",
           )
-          .eq("vendor_id", vendorId)
+          .eq("vendor_id", snapVendorId)
           .eq("bill_to_email", c.email)
           // Drafts haven't reached the customer — including them in
           // the statement leaks in-progress amounts the buyer never
@@ -4048,11 +4069,7 @@ function CustomersTab({
             })),
             currency: invoices[0]?.currency ?? "usd",
           },
-          {
-            business_name: listing?.business_name ?? null,
-            location: listing?.location ?? null,
-            email: user?.email ?? null,
-          },
+          snapBrand,
         );
       } catch (err) {
         console.error("[CustomersTab] statement build failed", err);
