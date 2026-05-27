@@ -155,7 +155,7 @@ serve(async (req) => {
 
   const { data, error } = await admin
     .from("ai_sites")
-    .select("slug, title, html, og_description, is_blocked, view_count")
+    .select("id, slug, title, html, og_description, is_blocked, view_count")
     .eq("slug", slug)
     .maybeSingle();
 
@@ -164,6 +164,7 @@ serve(async (req) => {
   }
 
   const site = data as {
+    id: string;
     slug: string;
     title: string;
     html: string;
@@ -190,6 +191,63 @@ serve(async (req) => {
     image: heroImage,
     canonical,
   });
+
+  // Personalized greeting. If the URL has ?g=<token>, look up the guest
+  // and inject their name into the __GUEST_NAME__ placeholder. The
+  // generated site is told (via the SAVE-THE-DATE / GUEST GREETING
+  // section of the design bible) to wrap the placeholder in a greeting
+  // block that's hidden by default and shown when a guest token is
+  // present. Server-side lookup means guest names never leak to other
+  // visitors.
+  const guestToken = url.searchParams.get("g")?.trim() ?? "";
+  let guestName: string | null = null;
+  if (guestToken && /^[a-z0-9]{6,32}$/i.test(guestToken)) {
+    const { data: guest } = await admin
+      .from("ai_site_guests")
+      .select("name")
+      .eq("site_id", site.id)
+      .eq("token", guestToken)
+      .maybeSingle();
+    if (guest) guestName = (guest as { name: string }).name;
+  }
+  if (html.includes("__GUEST_NAME__") || html.includes("__GUEST_BLOCK__")) {
+    if (guestName) {
+      html = html.replaceAll("__GUEST_NAME__", guestName);
+      html = html.replaceAll(
+        "__GUEST_BLOCK__",
+        `<div class="guest-greet" style="display:block">Welcome, ${guestName.replace(/[<>&"]/g, "")}.</div>`,
+      );
+    } else {
+      // No guest match — render a sensible default and remove the
+      // block so we don't show "Welcome, __GUEST_NAME__" literally.
+      html = html.replaceAll("__GUEST_NAME__", "friend");
+      html = html.replaceAll("__GUEST_BLOCK__", "");
+    }
+  }
+
+  // Live RSVP counter. If the generated site includes a __RSVP_COUNT__
+  // placeholder anywhere, swap it for the current attending tallies.
+  // Cheap aggregate query — count yes/maybe rows from ai_site_rsvps.
+  if (html.includes("__RSVP_COUNT__") || html.includes("__RSVP_YES__")) {
+    const { data: rsvps } = await admin
+      .from("ai_site_rsvps")
+      .select("attending")
+      .eq("site_id", site.id);
+    const rows = (rsvps ?? []) as Array<{ attending: string | null }>;
+    let yes = 0, maybe = 0, no = 0;
+    for (const r of rows) {
+      if (r.attending === "yes") yes++;
+      else if (r.attending === "maybe") maybe++;
+      else if (r.attending === "no") no++;
+    }
+    const blockHtml = (yes + maybe + no) === 0
+      ? `<span class="rsvp-empty" style="opacity:0.55;font-style:italic">Be the first to RSVP</span>`
+      : `<span class="rsvp-tally"><strong>${yes}</strong> yes${maybe ? ` · <strong>${maybe}</strong> maybe` : ""}${no ? ` · <strong>${no}</strong> can't` : ""} so far</span>`;
+    html = html.replaceAll("__RSVP_COUNT__", blockHtml);
+    html = html.replaceAll("__RSVP_YES__", String(yes));
+    html = html.replaceAll("__RSVP_MAYBE__", String(maybe));
+    html = html.replaceAll("__RSVP_NO__", String(no));
+  }
 
   return htmlResponse(200, html);
 });

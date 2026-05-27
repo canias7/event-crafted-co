@@ -59,11 +59,230 @@ export default function WebsiteBuilderPage() {
   const [imageBusy, setImageBusy] = useState(false);
   const [imageError, setImageError] = useState<string | null>(null);
   const [pendingImage, setPendingImage] = useState<File | null>(null);
+  const [listening, setListening] = useState(false);
+  const [versionsOpen, setVersionsOpen] = useState(false);
+  const [versions, setVersions] = useState<
+    Array<{ version_number: number; prompt: string | null; created_at: string }>
+  >([]);
+  const [versionsBusy, setVersionsBusy] = useState(false);
+  const [restoreBusy, setRestoreBusy] = useState<number | null>(null);
+  const [guestsOpen, setGuestsOpen] = useState(false);
+  const [guests, setGuests] = useState<
+    Array<{ id: string; name: string; email: string | null; token: string }>
+  >([]);
+  const [guestsBusy, setGuestsBusy] = useState(false);
+  const [guestImport, setGuestImport] = useState("");
+  const [copiedToken, setCopiedToken] = useState<string | null>(null);
+  const [editCount, setEditCount] = useState(0);
+
+  const QUICK_ACTIONS = [
+    "Make it more formal",
+    "Add a Travel & Stay section",
+    "Change the color palette",
+    "Swap the hero photo",
+    "Translate to Spanish",
+    "Make it shorter",
+    "Add a live RSVP count under the form",
+    "Add a guest greeting above the names",
+  ];
 
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const abortRef = useRef<AbortController | null>(null);
+  const recognitionRef = useRef<any>(null);
+
+  // Voice input via Web Speech API. Falls back gracefully on browsers
+  // that don't expose webkitSpeechRecognition / SpeechRecognition.
+  function toggleVoice() {
+    if (listening) {
+      recognitionRef.current?.stop();
+      setListening(false);
+      return;
+    }
+    const W: any = window;
+    const Ctor = W.SpeechRecognition || W.webkitSpeechRecognition;
+    if (!Ctor) {
+      setError("Voice input isn't supported in this browser. Try Chrome or Safari.");
+      return;
+    }
+    try {
+      const rec = new Ctor();
+      rec.continuous = false;
+      rec.interimResults = true;
+      rec.lang = "en-US";
+      rec.onresult = (e: any) => {
+        let transcript = "";
+        for (let i = 0; i < e.results.length; i++) {
+          transcript += e.results[i][0].transcript;
+        }
+        setInput((prev) => (prev ? prev + " " : "") + transcript.trim());
+      };
+      rec.onerror = () => setListening(false);
+      rec.onend = () => setListening(false);
+      rec.start();
+      recognitionRef.current = rec;
+      setListening(true);
+      setError(null);
+    } catch (e) {
+      console.error("speech recognition failed", e);
+      setError("Couldn't start voice input.");
+      setListening(false);
+    }
+  }
+
+  async function openVersions() {
+    if (!siteId) return;
+    setVersionsOpen(true);
+    setVersionsBusy(true);
+    try {
+      const headers: Record<string, string> = {
+        "Content-Type": "application/json",
+        apikey: SUPABASE_KEY,
+        Authorization: `Bearer ${session?.access_token ?? SUPABASE_KEY}`,
+      };
+      const res = await fetch(`${SUPABASE_URL}/functions/v1/ai-site-versions`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({ site_id: siteId, action: "list" }),
+      });
+      const body = await res.json().catch(() => ({}));
+      if (res.ok && Array.isArray(body?.versions)) {
+        setVersions(body.versions);
+      } else {
+        setVersions([]);
+      }
+    } finally {
+      setVersionsBusy(false);
+    }
+  }
+
+  async function openGuests() {
+    if (!siteId) return;
+    setGuestsOpen(true);
+    setGuestsBusy(true);
+    try {
+      const headers: Record<string, string> = {
+        "Content-Type": "application/json",
+        apikey: SUPABASE_KEY,
+        Authorization: `Bearer ${session?.access_token ?? SUPABASE_KEY}`,
+      };
+      const res = await fetch(`${SUPABASE_URL}/functions/v1/ai-site-guests`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({ site_id: siteId, action: "list" }),
+      });
+      const body = await res.json().catch(() => ({}));
+      if (res.ok && Array.isArray(body?.guests)) setGuests(body.guests);
+      else setGuests([]);
+    } finally {
+      setGuestsBusy(false);
+    }
+  }
+
+  async function importGuests() {
+    if (!siteId || !guestImport.trim() || guestsBusy) return;
+    // Parse pasted text: one guest per line, "Name, email" or just "Name".
+    const lines = guestImport.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+    const parsed = lines.map((l) => {
+      const m = l.match(/^([^,]+?)\s*[,;]\s*(\S+@\S+)/);
+      if (m) return { name: m[1].trim(), email: m[2].trim() };
+      return { name: l, email: undefined };
+    });
+    if (parsed.length === 0) return;
+    setGuestsBusy(true);
+    try {
+      const headers: Record<string, string> = {
+        "Content-Type": "application/json",
+        apikey: SUPABASE_KEY,
+        Authorization: `Bearer ${session?.access_token ?? SUPABASE_KEY}`,
+      };
+      const res = await fetch(`${SUPABASE_URL}/functions/v1/ai-site-guests`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+          site_id: siteId,
+          action: "bulk_create",
+          guests: parsed,
+        }),
+      });
+      const body = await res.json().catch(() => ({}));
+      if (res.ok && Array.isArray(body?.guests)) {
+        setGuests((prev) => [...prev, ...body.guests]);
+        setGuestImport("");
+      } else {
+        setError(body?.error ?? "Couldn't import guests.");
+      }
+    } finally {
+      setGuestsBusy(false);
+    }
+  }
+
+  async function deleteGuest(guestId: string) {
+    if (!siteId) return;
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+      apikey: SUPABASE_KEY,
+      Authorization: `Bearer ${session?.access_token ?? SUPABASE_KEY}`,
+    };
+    const res = await fetch(`${SUPABASE_URL}/functions/v1/ai-site-guests`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify({ site_id: siteId, action: "delete", guest_id: guestId }),
+    });
+    if (res.ok) setGuests((prev) => prev.filter((g) => g.id !== guestId));
+  }
+
+  function copyGuestLink(token: string) {
+    if (!slug) return;
+    const link = `${window.location.origin}/s/${slug}?g=${token}`;
+    navigator.clipboard?.writeText(link).then(() => {
+      setCopiedToken(token);
+      setTimeout(() => setCopiedToken(null), 1500);
+    });
+  }
+
+  async function restoreVersion(versionNumber: number) {
+    if (!siteId || restoreBusy !== null) return;
+    setRestoreBusy(versionNumber);
+    try {
+      const headers: Record<string, string> = {
+        "Content-Type": "application/json",
+        apikey: SUPABASE_KEY,
+        Authorization: `Bearer ${session?.access_token ?? SUPABASE_KEY}`,
+      };
+      const res = await fetch(`${SUPABASE_URL}/functions/v1/ai-site-versions`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+          site_id: siteId,
+          action: "restore",
+          version_number: versionNumber,
+        }),
+      });
+      const body = await res.json().catch(() => ({}));
+      if (res.ok && body?.html && iframeRef.current) {
+        const doc = iframeRef.current.contentDocument;
+        if (doc) {
+          doc.open();
+          doc.write(body.html);
+          doc.close();
+        }
+        setTitle(body.title ?? title);
+        setHasContent(true);
+        setVersionsOpen(false);
+        setConversation((prev) => [
+          ...prev,
+          { role: "user", content: `restore version ${versionNumber}` },
+          { role: "assistant", content: `Reverted to version ${versionNumber}.` },
+        ]);
+      } else {
+        setError(body?.error ?? "Couldn't restore that version.");
+      }
+    } finally {
+      setRestoreBusy(null);
+    }
+  }
 
   useEffect(() => {
     inputRef.current?.focus();
@@ -383,6 +602,9 @@ export default function WebsiteBuilderPage() {
               if (data.site_id) setSiteId(data.site_id);
               setSlug(data.slug ?? null);
               setTitle(data.title ?? null);
+              if (typeof data.version_number === "number") {
+                setEditCount(data.version_number);
+              }
               // Sync the streamed iframe's RSVP form action with the
               // real slug — Claude sometimes invents one in the
               // streamed bytes; the DB row is already corrected
@@ -639,6 +861,26 @@ export default function WebsiteBuilderPage() {
                   Rename
                 </button>
               )}
+              {siteId && (
+                <button
+                  onClick={openVersions}
+                  disabled={loading}
+                  className="text-[12px] text-white/70 hover:text-white border border-white/15 rounded-full px-3 py-1 transition-colors disabled:opacity-40"
+                  title="View past versions and restore"
+                >
+                  History
+                </button>
+              )}
+              {siteId && (
+                <button
+                  onClick={openGuests}
+                  disabled={loading}
+                  className="text-[12px] text-white/70 hover:text-white border border-white/15 rounded-full px-3 py-1 transition-colors disabled:opacity-40"
+                  title="Invite guests with personalized links"
+                >
+                  Guests
+                </button>
+              )}
               {ownsSite && renameOpen ? (
                 <div className="flex items-center gap-2 bg-white/5 border border-white/20 rounded-full pl-3 pr-1.5 py-1">
                   <span className="text-[12px] text-white/40">/s/</span>
@@ -761,7 +1003,30 @@ export default function WebsiteBuilderPage() {
             )}
           </div>
 
-          <div className="border-t border-white/10 p-3 bg-[#0a0a0b]">
+          {siteId && !loading && (
+            <div className="px-3 pt-2 pb-1 flex gap-1.5 overflow-x-auto whitespace-nowrap bg-[#0a0a0b] border-t border-white/10">
+              {QUICK_ACTIONS.map((a) => (
+                <button
+                  key={a}
+                  onClick={() => submit(a)}
+                  className="shrink-0 text-[11px] text-white/65 hover:text-white bg-white/5 hover:bg-white/10 border border-white/10 rounded-full px-2.5 py-1 transition-colors"
+                  title={`Send: ${a}`}
+                >
+                  {a}
+                </button>
+              ))}
+            </div>
+          )}
+
+          <div className={`p-3 bg-[#0a0a0b] ${siteId && !loading ? "" : "border-t border-white/10"}`}>
+            {siteId && editCount > 0 && (
+              <div className="flex items-center justify-between text-[10px] text-white/30 mb-2 px-1">
+                <span>
+                  {editCount} {editCount === 1 ? "edit" : "edits"} · ~${(editCount * 0.04).toFixed(2)} this site
+                </span>
+                <span className="text-white/40">claude-sonnet-4-6</span>
+              </div>
+            )}
             {pendingImage && (
               <div className="mb-2 inline-flex items-center gap-2 bg-white/10 border border-white/20 rounded-full pl-3 pr-1.5 py-1 text-[12px] text-white/80 max-w-full">
                 <span className="text-[14px]">📎</span>
@@ -831,6 +1096,35 @@ export default function WebsiteBuilderPage() {
                   />
                   <path
                     d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </button>
+              <button
+                onClick={toggleVoice}
+                disabled={loading}
+                aria-label={listening ? "Stop listening" : "Voice input"}
+                title={listening ? "Stop listening" : "Describe your event by voice"}
+                className={
+                  "absolute left-11 bottom-2 w-8 h-8 rounded-full flex items-center justify-center transition-colors disabled:opacity-30 disabled:cursor-not-allowed " +
+                  (listening
+                    ? "bg-red-500/20 text-red-300 ring-2 ring-red-400/60 animate-pulse"
+                    : "text-white/60 hover:text-white hover:bg-white/10")
+                }
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                  <path
+                    d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                  <path
+                    d="M19 10v2a7 7 0 0 1-14 0v-2M12 19v4M8 23h8"
                     stroke="currentColor"
                     strokeWidth="2"
                     strokeLinecap="round"
@@ -909,6 +1203,168 @@ export default function WebsiteBuilderPage() {
           )}
         </main>
       </div>
+
+      {guestsOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-5 bg-black/70 backdrop-blur-sm"
+          onClick={() => !guestsBusy && setGuestsOpen(false)}
+        >
+          <div
+            className="bg-[#0c0c0e] border border-white/15 rounded-2xl p-6 max-w-[640px] w-full max-h-[85vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="text-[16px] font-medium mb-1">Guest list</div>
+            <div className="text-[13px] text-white/50 mb-4 leading-relaxed">
+              Each guest gets a unique link. The site will greet them by
+              name. Paste names one per line — optionally "Name, email".
+            </div>
+
+            <textarea
+              value={guestImport}
+              onChange={(e) => setGuestImport(e.target.value)}
+              rows={4}
+              disabled={guestsBusy}
+              placeholder={"Eleanor Vance\nMarcus Aldridge, marcus@example.com\nSophia Chen\n…"}
+              className="w-full resize-none bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-[13px] text-white placeholder:text-white/40 focus:outline-none focus:border-white/30 disabled:opacity-50 mb-2 font-mono"
+            />
+            <div className="flex items-center justify-between mb-4">
+              <div className="text-[11px] text-white/40">
+                {guestImport.trim().split(/\r?\n/).filter((l) => l.trim()).length} to import
+              </div>
+              <button
+                onClick={importGuests}
+                disabled={guestsBusy || !guestImport.trim()}
+                className="text-[12px] bg-white text-black rounded-full px-3 py-1.5 hover:bg-white/90 transition-colors disabled:opacity-40"
+              >
+                {guestsBusy ? "Importing…" : "Add to list"}
+              </button>
+            </div>
+
+            <div className="text-[12px] text-white/40 uppercase tracking-wider mb-2">
+              Invited ({guests.length})
+            </div>
+            {guests.length === 0 ? (
+              <div className="text-[13px] text-white/50 py-4 text-center">
+                No guests yet. Paste names above to begin.
+              </div>
+            ) : (
+              <div className="space-y-2 mb-3">
+                {guests.map((g) => (
+                  <div
+                    key={g.id}
+                    className="flex items-center gap-3 bg-white/5 border border-white/10 rounded-xl p-2.5"
+                  >
+                    <div className="flex-1 min-w-0">
+                      <div className="text-[13px] text-white/90 font-medium truncate">
+                        {g.name}
+                      </div>
+                      {g.email && (
+                        <div className="text-[11px] text-white/40 truncate">{g.email}</div>
+                      )}
+                    </div>
+                    <button
+                      onClick={() => copyGuestLink(g.token)}
+                      className="text-[11px] text-white/70 hover:text-white border border-white/15 rounded-full px-2.5 py-1"
+                      title={`/s/${slug}?g=${g.token}`}
+                    >
+                      {copiedToken === g.token ? "Copied!" : "Copy link"}
+                    </button>
+                    <button
+                      onClick={() => deleteGuest(g.id)}
+                      className="text-[11px] text-red-400 hover:text-red-300 px-1"
+                      title="Remove"
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div className="text-[11px] text-white/40 mb-3 italic">
+              Tip: tell Claude to add "__GUEST_BLOCK__" near the top of the
+              site (e.g. "right above the couple names") so the greeting
+              shows up when guests open their link.
+            </div>
+
+            <div className="flex items-center justify-end">
+              <button
+                onClick={() => setGuestsOpen(false)}
+                disabled={guestsBusy}
+                className="text-[13px] text-white/60 hover:text-white px-3 py-2 disabled:opacity-50"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {versionsOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-5 bg-black/70 backdrop-blur-sm"
+          onClick={() => restoreBusy === null && setVersionsOpen(false)}
+        >
+          <div
+            className="bg-[#0c0c0e] border border-white/15 rounded-2xl p-6 max-w-[520px] w-full max-h-[80vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="text-[16px] font-medium mb-1">Version history</div>
+            <div className="text-[13px] text-white/50 mb-4 leading-relaxed">
+              Every edit is snapshotted. Pick any version to restore it.
+            </div>
+            {versionsBusy ? (
+              <div className="text-[13px] text-white/50 py-6 text-center">
+                Loading…
+              </div>
+            ) : versions.length === 0 ? (
+              <div className="text-[13px] text-white/50 py-6 text-center">
+                No saved versions yet.
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {versions.map((v) => (
+                  <div
+                    key={v.version_number}
+                    className="flex items-start gap-3 bg-white/5 border border-white/10 rounded-xl p-3"
+                  >
+                    <div className="flex-1 min-w-0">
+                      <div className="text-[13px] text-white/90 font-medium mb-0.5">
+                        Version {v.version_number}
+                      </div>
+                      <div className="text-[12px] text-white/40 mb-1">
+                        {new Date(v.created_at).toLocaleString()}
+                      </div>
+                      {v.prompt && (
+                        <div className="text-[12px] text-white/60 italic line-clamp-2">
+                          "{v.prompt.slice(0, 140)}
+                          {v.prompt.length > 140 ? "…" : ""}"
+                        </div>
+                      )}
+                    </div>
+                    <button
+                      onClick={() => restoreVersion(v.version_number)}
+                      disabled={restoreBusy !== null}
+                      className="text-[12px] bg-white text-black rounded-full px-3 py-1.5 hover:bg-white/90 transition-colors disabled:opacity-40 shrink-0"
+                    >
+                      {restoreBusy === v.version_number ? "Restoring…" : "Restore"}
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+            <div className="flex items-center justify-end mt-4">
+              <button
+                onClick={() => setVersionsOpen(false)}
+                disabled={restoreBusy !== null}
+                className="text-[13px] text-white/60 hover:text-white px-3 py-2 disabled:opacity-50"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {imageModalOpen && (
         <div
