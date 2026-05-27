@@ -1137,6 +1137,90 @@ The server can inject the live RSVP tally on the public site if you include __RS
 
   When zero, the server renders "Be the first to RSVP" automatically — your CSS already handles it.
 
+═══ STICKER LAYER (3-5 scattered accents for real-paper feel) ═══
+
+Scatter 3-5 CSS-only decorative stickers across the body. Gold leaf flake, postage stamp, wax drip, drink ring, tiny fingerprint. Pre-built patterns:
+- GOLD LEAF: width: 28px; clip-path: polygon(20% 0,80% 10%,100% 40%,90% 80%,50% 100%,10% 90%,0 60%,15% 20%); background: linear-gradient(135deg, var(--accent), #f8e29a); opacity: 0.8; transform: rotate(15deg);
+- POSTAGE STAMP: width: 70px; height: 90px; background: url(...sepia photo); border: 4px dotted rgba(0,0,0,0.18); transform: rotate(-8deg);
+- WAX DRIP: width: 40px; height: 50px; background: radial-gradient(ellipse at 50% 30%, #a83232, #5e1a1a); border-radius: 50% 50% 50% 50% / 70% 70% 30% 30%; box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+- DRINK RING: width: 50px; height: 50px; border: 2px solid rgba(139,69,19,0.4); border-radius: 50%; transform: rotate(8deg);
+Position absolute, low opacity 0.5–0.85, varied rotations −15° to +15°, scattered (not clustered). Skip on kid-themed / casual events.
+
+═══ PHOTO FILTER (one cohesive filter across every photo) ═══
+
+Apply ONE filter to every <img> + .photo-strip img + .polaroid img so photos feel curated, not picked-from-stock. Pick by mood:
+- VINTAGE WARM (anniversary, retirement): filter: sepia(0.3) contrast(1.1) saturate(0.9) brightness(1.05);
+- SOFT DREAMY (garden, romantic): filter: contrast(0.95) brightness(1.08) saturate(0.85);
+- MOODY EDITORIAL (black-tie, NYE, gala): filter: contrast(1.15) saturate(0.8) brightness(0.95);
+- BOHO FILM (beach, destination): filter: sepia(0.15) saturate(1.1) contrast(1.05);
+- CRISP MODERN (city, minimalist): filter: contrast(1.05) saturate(1.05);
+Apply globally to ALL photos — they should all share the same look.
+
+═══ PAPER STACK DEPTH (3D paper-stack on important cream cards) ═══
+
+Hero, RSVP, and Our Story cards get a layered paper-stack feel via ::before and ::after offset behind:
+  .card-stack { position: relative; }
+  .card-stack::before, .card-stack::after { content: ''; position: absolute; inset: 0; background: #f0e4cf; z-index: -1; box-shadow: 0 4px 12px rgba(0,0,0,0.08); border-radius: inherit; }
+  .card-stack::before { transform: rotate(-1.2deg) translate(-6px, 6px); }
+  .card-stack::after  { transform: rotate(0.9deg) translate(6px, -2px); background: #e8dabd; }
+Feels like a small stack of paper instead of a flat single rectangle.
+
+═══ CALLIGRAPHY NAMES (animated draw-in SVG path on cover reveal) ═══
+
+For the couple names on the hero, render as inline SVG <path> stroke with a draw-in animation triggered on cover reveal:
+  <svg class="names-script" viewBox="0 0 600 110" aria-label="Eleanor and Marcus">
+    <path d="M40,70 q15,-40 40,-10 q-5,15 -25,18 q20,5 30,-5 ..." stroke="var(--accent)" stroke-width="2.2" fill="none" stroke-linecap="round"/>
+  </svg>
+  .names-script path { stroke-dasharray: 1400; stroke-dashoffset: 1400; }
+  .opener-toggle:checked ~ .invitation-body .names-script path { animation: drawIn 2.8s ease 0.3s forwards; }
+  @keyframes drawIn { to { stroke-dashoffset: 0; } }
+For elegant events only. Names appear to be hand-written live as the cover opens. Use ONE per site.
+
+═══ ANIMATED MOTIFS (subtle ambient micro-movements) ═══
+
+Decorative elements should breathe. Apply gentle keyframes:
+- CANDLES: @keyframes flicker { 0%,100% { transform: scaleY(1); opacity: 0.95 } 50% { transform: scaleY(0.96) translateY(1px); opacity: 1 } } 1.8s ease-in-out infinite.
+- EUCALYPTUS / FOLIAGE: @keyframes sway { 0%,100% { transform: rotate(-1.5deg) } 50% { transform: rotate(1.5deg) } } 5s ease-in-out infinite.
+- FLOWER BLOOM: on scroll into view via @supports (animation-timeline: view()) { animation: bloom linear both; animation-timeline: view(); animation-range: entry 0% cover 30% } @keyframes bloom { from { transform: scale(0.7) rotate(-20deg); opacity: 0 } to { transform: scale(1); opacity: 1 } }.
+- HEART (anniversary, milestone): pulse 1.8s ease-in-out infinite { 50% { transform: scale(1.08) } }.
+Keep movement subtle (1–3px / 1–3°). Never jarring.
+
+═══ PARALLAX HERO (slower photo, faster overlay text) ═══
+
+Hero photo scrolls slower than its overlay for cinematic depth:
+  .parallax-hero { background-attachment: fixed; background-size: cover; background-position: center; }
+  @media (max-width: 768px) { .parallax-hero { background-attachment: scroll; } }
+For dramatic 3D parallax: wrap in .scene { perspective: 1px; overflow-y: auto; height: 100vh; transform-style: preserve-3d; } and bg layer { position: absolute; inset: 0; transform: translateZ(-1px) scale(2); }. Use on hero ONLY — overuse hurts perf.
+
+═══ MAGAZINE COVER TREATMENT (editorial / modern luxury) ═══
+
+For sites using EDITORIAL or MODERN LUXURY font pairings, treat the hero like a magazine cover instead of an invitation card:
+- Masthead: surname in HUGE tracked letters at top (Italiana or Bodoni Moda, clamp(3rem, 8vw, 5.5rem), letter-spacing -0.02em).
+- Issue line: "Issue No. 1 · September 2026" in small caps below the masthead.
+- Cover lines: 3-4 bullet items in small caps with bullet separators ("Inside: The Story · The Schedule · How to Get There").
+- Date-tag corner: a vertical "RSVP by Aug 1" rotated tag (transform: rotate(-90deg)) in a corner.
+- Full-bleed photo behind, dark gradient overlay, white text.
+
+═══ HOLIDAY ACCENTS (within 14 days of major holiday) ═══
+
+When the event date falls within 14 days of a major holiday (computed from TODAY's date), add a small themed accent — NOT a full overhaul:
+- HALLOWEEN (Oct 17-31): tiny pumpkin SVG in corner, warmer orange tweak.
+- THANKSGIVING (Nov 18-28): small wheat sprig accent.
+- CHRISTMAS (Dec 20-26): tiny holly sprig (red berries + green leaves).
+- NYE (Dec 28 - Jan 2): intensify gold sparkle particles.
+- VALENTINE (Feb 10-15): small heart accents in two corners.
+- 4TH OF JULY (Jul 1-5): tiny star bursts in red/blue.
+- MOTHER'S/FATHER'S DAY: small floral / tie SVG accent in a corner.
+Subtle bonus on top of the existing palette, never replacing it.
+
+═══ AMBIENT SOUND (opt-in, off by default) ═══
+
+For elegant events ONLY, add a small CSS-only audio toggle in the bottom-right corner. Use a free-tier royalty-free clip (e.g., https://cdn.pixabay.com/audio/2022/03/15/audio_1718f467a2.mp3 for soft piano):
+  <input type="checkbox" id="sound" hidden>
+  <label for="sound" class="sound-btn" aria-label="Toggle ambient music">♫</label>
+  <audio loop preload="none" src="..."></audio>
+  Note: browsers block autoplay; sound only plays when the user clicks. Style .sound-btn { position: fixed; bottom: 1rem; right: 1rem; width: 36px; height: 36px; border-radius: 50%; background: rgba(0,0,0,0.5); color: var(--accent); display: flex; align-items: center; justify-content: center; backdrop-filter: blur(8px); cursor: pointer; }. Skip for casual/kids events.
+
 === END PREMIUM DESIGN BIBLE ===`;
 
 function buildSystemPrompt(rsvpEndpoint: string, todayIso: string): string {
@@ -1201,6 +1285,15 @@ Style the form to match the site's palette. The action URL is the EXACT string a
 28. SAVE-THE-DATE MODE — if the prompt says "save the date" / "save-the-date" / "STD" / "announce", or the event is more than 6 months out, use the SAVE-THE-DATE MODE layout (3-4 sections only, no RSVP form, big countdown, "Formal invitation to follow"). Don't pad with empty sections.
 29. GUEST GREETING — for elegant events with couples (weddings, anniversaries, engagements, quinces), include ONE __GUEST_BLOCK__ placeholder ABOVE the couple names so guests opening their personalized /s/<slug>?g=<token> link see a hand-addressed welcome. Skip for casual events.
 30. LIVE RSVP COUNTER — when an RSVP form is present, include the __RSVP_COUNT__ placeholder either above the form ("Join 82 others") or below it ("82 yes so far"). The server fills in the live count on render.
+31. STICKER LAYER — for elegant events, scatter 3-5 CSS-only stickers (gold leaf, postage stamp, wax drip, drink ring, fingerprint) across the body for real-paper feel.
+32. PHOTO FILTER — apply ONE cohesive CSS filter to every photo on the site (vintage warm / soft dreamy / moody editorial / boho film / crisp modern) so they feel curated.
+33. PAPER STACK DEPTH — hero, RSVP, and Our Story cards get the 3-layer paper-stack ::before/::after effect.
+34. CALLIGRAPHY NAMES — for elegant events, render the couple names on the hero as inline SVG path with stroke-dasharray draw-in animation triggered on cover reveal.
+35. ANIMATED MOTIFS — candles flicker, eucalyptus sways, flowers bloom subtly on scroll into view. Subtle 1-3px / 1-3° movements only.
+36. PARALLAX HERO — hero photo uses background-attachment: fixed (with mobile fallback) for cinematic depth.
+37. MAGAZINE COVER — for sites using EDITORIAL or MODERN LUXURY font pairings, treat the hero as a magazine cover (masthead, issue line, cover bullets, vertical RSVP tag).
+38. HOLIDAY ACCENTS — when the event date is within 14 days of a major holiday (Halloween, Thanksgiving, Christmas, NYE, Valentine's, 4th of July), add a subtle themed accent.
+39. AMBIENT SOUND — elegant events MAY include a CSS-only ♫ audio toggle in the bottom-right with a royalty-free clip; off by default, only plays on click. Skip for casual events.
 
 After </html>, return NOTHING.
 
