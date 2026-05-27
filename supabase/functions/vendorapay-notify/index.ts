@@ -378,8 +378,12 @@ serve(async (req) => {
         ? `<p style="margin:24px 0 0;">${button(hostedInvoiceUrl, "View invoice online")}</p>`
         : "";
 
+      // HTML-escape logoUrl (defense in depth): the column has no
+      // URL-shape constraint, and a hostile vendor can poison it
+      // with `x" onerror="…` via supabase-js. escapeHtml turns the
+      // `"` into `&quot;` so it can't break out of the src attr.
       const logoHtml = logoUrl
-        ? `<img src="${logoUrl}" alt="${escapeHtml(businessName)}" width="48" height="48" style="display:block;border:0;border-radius:999px;object-fit:cover;" />`
+        ? `<img src="${escapeHtml(logoUrl)}" alt="${escapeHtml(businessName)}" width="48" height="48" style="display:block;border:0;border-radius:999px;object-fit:cover;" />`
         : `<div style="width:48px;height:48px;border-radius:999px;background:#f0eeeb;display:inline-block;"></div>`;
 
       const html = shellHtml(

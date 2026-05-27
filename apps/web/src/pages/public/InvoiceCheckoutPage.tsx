@@ -37,6 +37,9 @@ interface InvoiceDetails {
   tax_rate_bps: number;
   tax_cents: number;
   total_cents: number;
+  /** Vendor-added late fee, baked into total_cents. Rendered as
+   *  its own line so the buyer sees the breakdown adds up. */
+  late_fee_cents?: number | null;
   currency: string;
   status: string;
   vendor_business_name: string | null;
@@ -366,6 +369,14 @@ export default function InvoiceCheckoutPage() {
                   <span>Tax ({(invoice.tax_rate_bps / 100).toFixed(2)}%)</span>
                   <span className="tabular-nums">
                     {formatMoney(invoice.tax_cents, invoice.currency)}
+                  </span>
+                </div>
+              ) : null}
+              {invoice.late_fee_cents && invoice.late_fee_cents > 0 ? (
+                <div className="flex items-center justify-between text-muted-foreground">
+                  <span>Late fee</span>
+                  <span className="tabular-nums">
+                    {formatMoney(invoice.late_fee_cents, invoice.currency)}
                   </span>
                 </div>
               ) : null}

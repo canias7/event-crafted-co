@@ -90,7 +90,7 @@ serve(async (req) => {
     const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, { auth: { persistSession: false } });
     const { data: inv } = await admin
       .from("invoices")
-      .select("id, vendor_id, slug, invoice_number, bill_to_name, bill_to_email, issue_date, due_date, line_items, subtotal_cents, tax_cents, tax_rate_bps, total_cents, currency, status, notes")
+      .select("id, vendor_id, slug, invoice_number, bill_to_name, bill_to_email, issue_date, due_date, line_items, subtotal_cents, tax_cents, tax_rate_bps, total_cents, late_fee_cents, currency, status, notes")
       .eq("id", invoiceId)
       .maybeSingle();
 
@@ -153,8 +153,12 @@ serve(async (req) => {
     const items = ((inv.line_items as any[]) ?? []) as Array<{ name: string; qty: number; unit_price_cents: number; total_cents?: number }>;
     const currency = (inv.currency as string) ?? "usd";
     const payUrl = `${APP_URL}/pay/invoice/${inv.slug}`;
+    // HTML-escape logoUrl (defense in depth): the column has no
+    // URL-shape constraint, and a hostile vendor can poison it
+    // with `x" onerror="…` via supabase-js. escapeHtml turns the
+    // `"` into `&quot;` so it can't break out of the src attr.
     const logoHtml = logoUrl
-      ? `<div style="margin:0 0 16px;"><img src="${logoUrl}" alt="${escapeHtml(businessName)}" width="44" height="44" style="display:block;border:0;border-radius:8px;object-fit:cover;" /></div>`
+      ? `<div style="margin:0 0 16px;"><img src="${escapeHtml(logoUrl)}" alt="${escapeHtml(businessName)}" width="44" height="44" style="display:block;border:0;border-radius:8px;object-fit:cover;" /></div>`
       : "";
     const rowsHtml = items
       .map(
@@ -166,9 +170,17 @@ serve(async (req) => {
       (inv.tax_cents as number) > 0
         ? `<tr><td style="padding:6px 0;font-size:13px;color:#777;">Tax (${((inv.tax_rate_bps as number) / 100).toFixed(2)}%)</td><td style="padding:6px 0;font-size:13px;color:#777;text-align:right;">${formatMoney(inv.tax_cents as number, currency)}</td></tr>`
         : "";
+    // Late fee row — required when the vendor added a fee after
+    // the invoice was sent. Without this, the emailed Subtotal +
+    // Tax doesn't sum to Total and the buyer sees a math mismatch.
+    const lateFeeCents = (inv.late_fee_cents as number | null | undefined) ?? 0;
+    const lateFeeRow =
+      lateFeeCents > 0
+        ? `<tr><td style="padding:6px 0;font-size:13px;color:#777;">Late fee</td><td style="padding:6px 0;font-size:13px;color:#777;text-align:right;">${formatMoney(lateFeeCents, currency)}</td></tr>`
+        : "";
     const html = shellHtml(
       `Invoice ${inv.invoice_number} from ${businessName}`,
-      `${logoHtml}<p style="margin:0 0 8px;font-size:13px;color:#777;">From ${escapeHtml(businessName)}</p><p style="margin:0 0 4px;font-size:14px;">Issued ${formatDate(inv.issue_date as any)}${inv.due_date ? ` · Due ${formatDate(inv.due_date as any)}` : ""}</p><p style="margin:0 0 24px;font-size:32px;font-weight:600;line-height:1.2;">${formatMoney(inv.total_cents as number, currency)}</p><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-top:1px solid #ececec;border-bottom:1px solid #ececec;padding:8px 0;margin:0 0 16px;">${rowsHtml}<tr><td style="padding-top:12px;font-size:13px;color:#777;">Subtotal</td><td style="padding-top:12px;font-size:13px;color:#777;text-align:right;">${formatMoney(inv.subtotal_cents as number, currency)}</td></tr>${taxRow}<tr><td style="padding:6px 0;font-size:15px;font-weight:600;">Total</td><td style="padding:6px 0;font-size:15px;font-weight:600;text-align:right;">${formatMoney(inv.total_cents as number, currency)}</td></tr></table>${inv.notes ? `<p style="margin:0 0 24px;font-size:13px;color:#555;">${escapeHtml(inv.notes as string)}</p>` : ""}<p style="margin:0 0 24px;">${button(payUrl, `Pay ${formatMoney(inv.total_cents as number, currency)}`)}</p><p style="margin:0;font-size:13px;color:#777;">Card payments processed securely via VendoraPay. "VENDORAPAY" will appear on your statement.</p>`,
+      `${logoHtml}<p style="margin:0 0 8px;font-size:13px;color:#777;">From ${escapeHtml(businessName)}</p><p style="margin:0 0 4px;font-size:14px;">Issued ${formatDate(inv.issue_date as any)}${inv.due_date ? ` · Due ${formatDate(inv.due_date as any)}` : ""}</p><p style="margin:0 0 24px;font-size:32px;font-weight:600;line-height:1.2;">${formatMoney(inv.total_cents as number, currency)}</p><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-top:1px solid #ececec;border-bottom:1px solid #ececec;padding:8px 0;margin:0 0 16px;">${rowsHtml}<tr><td style="padding-top:12px;font-size:13px;color:#777;">Subtotal</td><td style="padding-top:12px;font-size:13px;color:#777;text-align:right;">${formatMoney(inv.subtotal_cents as number, currency)}</td></tr>${taxRow}${lateFeeRow}<tr><td style="padding:6px 0;font-size:15px;font-weight:600;">Total</td><td style="padding:6px 0;font-size:15px;font-weight:600;text-align:right;">${formatMoney(inv.total_cents as number, currency)}</td></tr></table>${inv.notes ? `<p style="margin:0 0 24px;font-size:13px;color:#555;">${escapeHtml(inv.notes as string)}</p>` : ""}<p style="margin:0 0 24px;">${button(payUrl, `Pay ${formatMoney(inv.total_cents as number, currency)}`)}</p><p style="margin:0;font-size:13px;color:#777;">Card payments processed securely via VendoraPay. "VENDORAPAY" will appear on your statement.</p>`,
     );
 
     // From header mirrors the buyer receipt — verified domain when
