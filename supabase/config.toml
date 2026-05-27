@@ -13,6 +13,10 @@ project_id = "pahpjjubhbcbwqjpamwv"
     verify_jwt = false
   [functions.ai-site-render]
     verify_jwt = false
+  [functions.ai-site-revert]
+    verify_jwt = false
+  [functions.ai-site-image-upload]
+    verify_jwt = false
   [functions.cleanup-portfolio-orphans]
     verify_jwt = false
   [functions.geocode-vendor]

@@ -476,7 +476,10 @@ serve(async (req) => {
       html = html.replaceAll("__SLUG__", slug);
 
       try {
+        let savedSiteId: string;
+        let newVersionNumber: number;
         if (currentSite) {
+          newVersionNumber = (currentSite.edit_count ?? 0) + 2;
           const { error: updateErr } = await admin
             .from("ai_sites")
             .update({
@@ -493,8 +496,9 @@ serve(async (req) => {
             controller.close();
             return;
           }
-          send({ type: "done", slug, title, site_id: currentSite.id });
+          savedSiteId = currentSite.id;
         } else {
+          newVersionNumber = 1;
           const { data: inserted, error: insertErr } = await admin
             .from("ai_sites")
             .insert({
@@ -513,13 +517,35 @@ serve(async (req) => {
             controller.close();
             return;
           }
-          send({
-            type: "done",
-            slug,
-            title,
-            site_id: (inserted as { id: string }).id,
-          });
+          savedSiteId = (inserted as { id: string }).id;
         }
+
+        // Snapshot this state so the user can "undo" back to it.
+        // Best-effort: a version-table failure shouldn't fail the
+        // user's edit (they already see the result in the iframe).
+        void admin
+          .from("ai_site_versions")
+          .insert({
+            site_id: savedSiteId,
+            version_number: newVersionNumber,
+            html,
+            title,
+            prompt: userPrompt,
+            og_description: ogDescription,
+          })
+          .then((r: { error: unknown }) => {
+            if (r.error) {
+              console.warn("[ai-site-generate] version snapshot failed", r.error);
+            }
+          });
+
+        send({
+          type: "done",
+          slug,
+          title,
+          site_id: savedSiteId,
+          version_number: newVersionNumber,
+        });
       } catch (e) {
         console.error("[ai-site-generate] save exception", e);
         send({ type: "error", message: "save_failed" });
