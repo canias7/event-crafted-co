@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Loader2, ArrowRight, Eye, EyeOff } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import * as Sentry from "@sentry/react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { GlassyAuthShell } from "@/components/auth/GlassyAuthShell";
@@ -78,6 +79,15 @@ export default function LoginPage({ role }: LoginPageProps = {}) {
     });
     setLoading(false);
     if (error) {
+      // Transport / non-2xx from signin-2fa. This is the class of bug
+      // that bites silently when something platform-side breaks (e.g.
+      // Supabase rolls out a new key format and the gateway rejects
+      // pre-signin calls). Capture so it doesn't slip past again.
+      Sentry.captureMessage("signin-2fa request failed", {
+        level: "error",
+        tags: { area: "auth", step: "request" },
+        extra: { message: error.message, role: role ?? "unknown" },
+      });
       toast.error(error.message);
       return;
     }
@@ -94,6 +104,11 @@ export default function LoginPage({ role }: LoginPageProps = {}) {
       } else if (r?.reason === "invalid_credentials") {
         toast.error("Email or password is incorrect.");
       } else {
+        Sentry.captureMessage("signin-2fa request returned unknown reason", {
+          level: "warning",
+          tags: { area: "auth", step: "request" },
+          extra: { reason: r?.reason ?? null, role: role ?? "unknown" },
+        });
         toast.error("Couldn't start sign-in. Please try again.");
       }
       return;
@@ -118,6 +133,11 @@ export default function LoginPage({ role }: LoginPageProps = {}) {
     });
     if (error) {
       setLoading(false);
+      Sentry.captureMessage("signin-2fa verify failed", {
+        level: "error",
+        tags: { area: "auth", step: "verify" },
+        extra: { message: error.message, role: role ?? "unknown" },
+      });
       toast.error(error.message);
       return;
     }
@@ -129,7 +149,14 @@ export default function LoginPage({ role }: LoginPageProps = {}) {
       else if (reason === "expired") toast.error("That code expired. Request a new one.");
       else if (reason === "too_many_attempts") toast.error("Too many attempts. Request a new code.");
       else if (reason === "no_pending_code") toast.error("No pending code. Start over.");
-      else toast.error("Couldn't verify code.");
+      else {
+        Sentry.captureMessage("signin-2fa verify returned unknown reason", {
+          level: "warning",
+          tags: { area: "auth", step: "verify" },
+          extra: { reason, role: role ?? "unknown" },
+        });
+        toast.error("Couldn't verify code.");
+      }
       return;
     }
     // Code verified — now actually sign in with password.
@@ -249,6 +276,15 @@ export default function LoginPage({ role }: LoginPageProps = {}) {
     });
     setLoading(false);
     if (error || !(data as { ok?: boolean })?.ok) {
+      Sentry.captureMessage("signin-2fa resend failed", {
+        level: "error",
+        tags: { area: "auth", step: "resend" },
+        extra: {
+          message: error?.message ?? null,
+          reason: (data as { reason?: string } | null)?.reason ?? null,
+          role: role ?? "unknown",
+        },
+      });
       toast.error("Couldn't resend the code. Try again.");
       return;
     }
