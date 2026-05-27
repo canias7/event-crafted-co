@@ -86,7 +86,7 @@ export default function PublicAiSitePage() {
       <iframe
         title={site.title}
         srcDoc={site.html}
-        sandbox=""
+        sandbox="allow-forms"
         className="w-full border-0 block"
         style={{ height: "100vh" }}
       />

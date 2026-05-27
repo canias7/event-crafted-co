@@ -1,17 +1,20 @@
-// AI Website Builder — generate a small event microsite from a chat
-// prompt. Claude Sonnet 4.6 returns one self-contained HTML document
-// (inline <style>, no external JS, no <script>) optimized for a
-// looks-first single-page event site.
+// AI Website Builder — generate OR edit a small event microsite.
+//
+// Two modes:
+//   • new      — POST {prompt, conversation?, owner_user_id?}
+//                → creates a new row, returns a slug.
+//   • edit     — POST {prompt, edit_site_id, conversation?}
+//                → loads current HTML, asks Claude for the modified
+//                  full HTML, UPDATEs the row in place. Same slug.
 //
 // Streaming: response is text/event-stream. Each Anthropic text_delta
-// arrives as a `data: {"type":"chunk","text":"..."}` SSE event so the
-// client can write tokens straight into the iframe's contentDocument
-// and the browser progressively renders as bytes arrive. After the
-// model finishes, we save to ai_sites and emit a final
-// `data: {"type":"done","slug":"...","title":"..."}` event.
+// becomes `data: {"type":"chunk","text":"..."}`. After the model
+// finishes we save and emit `data: {"type":"done","slug":"...","title":"..."}`.
 //
-// Auth: public (verify_jwt = false) — testing flow.
-// Inserts run with service role so RLS doesn't need an insert policy.
+// Auth: public (verify_jwt = false). Inserts/updates run with service
+// role; if owner_user_id is included in the request payload we trust
+// it (the frontend reads it from the user's session — see the
+// useAuth-gated builder page).
 
 // deno-lint-ignore-file no-explicit-any
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
@@ -19,12 +22,9 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.7";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
 const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY") ?? "";
 
-// Sonnet 4.6 — ~3x faster than Opus 4.7 on this workload, and the
-// quality gap on small one-page event sites is invisible to users.
-// Switch to claude-opus-4-7 here if you want max design fidelity at
-// the cost of latency.
 const MODEL = "claude-sonnet-4-6";
 
 const cors = {
@@ -41,127 +41,189 @@ function jsonResponse(status: number, body: Record<string, unknown>) {
   });
 }
 
+// Verified working Unsplash photo IDs. These are stable URLs that
+// returned 200 at the time of the playbook write. Claude is told to
+// pick FROM this list rather than invent IDs (which often 404).
+//
+// If you want to extend: HEAD-check first with
+// `curl -sk -o /dev/null -w "%{http_code}" https://images.unsplash.com/photo-<id>?w=400&q=80`.
+const VERIFIED_PHOTOS = `
+ROMANTIC / WEDDING / COUPLES:
+  photo-1519741497674-611481863552 (couple silhouette beach)
+  photo-1465495976277-4387d4b0b4c6 (couple sunset)
+  photo-1469371670807-013ccf25f16a (couple romantic)
+  photo-1464366400600-7168b8af9bc3 (couple twilight)
+  photo-1525772764200-be829a350797 (wedding florals)
+  photo-1519225421980-715cb0215aed (wedding decor)
+  photo-1511795409834-ef04bbd61622 (pink florals)
+  photo-1583939003579-730e3918a45a (rings)
+  photo-1478146896981-b80fe463b330 (elegant flowers)
+  photo-1487530811176-3780de880c2d (wedding flowers)
+
+PARTY / CELEBRATION:
+  photo-1530103862676-de8c9debad1d (birthday balloons)
+  photo-1530103043960-ef38714abb15 (cake)
+  photo-1492684223066-81342ee5ff30 (party balloons)
+  photo-1502635385003-ee1e6a1a742d (celebration scene)
+  photo-1606800052052-a08af7148866 (decor elegant)
+  photo-1565538810643-b5bdb714032a (party decor)
+  photo-1471520201477-47a62a269a87 (decor / atmosphere)
+  photo-1500076656116-558758c991c1 (event scene)
+  photo-1490822180406-880c226c150b (event atmosphere)
+  photo-1503424886307-b090341d25d1 (party scene)
+  photo-1543351611-58f69d7c1781 (party / decor)
+  photo-1517457373958-b7bdd4587205 (decor)
+  photo-1496843916299-590492c751f4 (celebration)
+
+FOOD / TABLE:
+  photo-1414235077428-338989a2e8c0 (set table)
+  photo-1555939594-58d7cb561ad1 (grill / bbq)
+  photo-1607706189992-eae578626c86 (florals + items)
+
+URL format: https://images.unsplash.com/photo-<id>?w=1600&auto=format&fit=crop
+`;
+
 const EVENT_PLAYBOOKS = `=== EVENT PLAYBOOKS ===
 
 Before generating, identify the event type from the user's prompt and apply the matching playbook. Use the playbook's expected sections, copy patterns, and palette guidance. Adapt to specifics the user provided (names, dates, vibe) — never override their explicit choices.
 
 — WEDDING (formal or casual)
-  Sections: Hero (couple names + date + location), Our Story (how they met / proposal), Wedding Party (optional — bridesmaids/groomsmen), Schedule (Ceremony → Cocktail Hour → Reception), Travel & Stay (hotel block, transport), Registry (link or "your presence is our present"), Dress Code, FAQs (kids welcome? plus-one? parking?), RSVP, Thank you.
-  RSVP wording — formal: "Kindly respond by [date]" / "Reply by [date] — your seat awaits". Casual: "Save us a seat by [date]" / "Let us know by [date]". Always include a deadline.
-  Dress codes (use exact phrasing): Black Tie, Black Tie Optional, Formal, Cocktail Attire, Semi-Formal, Garden Party, Beach Formal, Festive, Casual.
-  Registry phrasing if user didn't mention: "Your presence is the greatest gift, but if you'd like to contribute..." then list registries (Crate & Barrel, Amazon, Honeyfund are common — link as "registry link" placeholder).
-  Tone: warm, sincere, never crass or jokey. First-person plural ("we", "our").
-  Palette: deep jewel tones (emerald, burgundy, navy) for formal/elegant; dusty pastels (sage, blush, cream) for garden/spring; warm neutrals (terracotta, cream, gold) for boho/beach; ivory + black + gold for classic.
-  Default fonts: serif display (Georgia/Times) + sans body (system).
-  Photo subjects: couple portraits, venue exterior, florals, table settings — avoid stock that screams "stock photo".
+  Sections: Hero (couple names + date + location), Our Story (how they met / proposal), Wedding Party (optional), Schedule (Ceremony → Cocktail Hour → Reception), Travel & Stay, Registry, Dress Code, FAQs, RSVP, Thank you.
+  RSVP wording — formal: "Kindly respond by [date]". Casual: "Save us a seat by [date]". Always include a deadline.
+  Dress codes: Black Tie, Black Tie Optional, Formal, Cocktail Attire, Semi-Formal, Garden Party, Beach Formal, Festive, Casual.
+  Registry default phrasing: "Your presence is the greatest gift, but if you'd like to contribute..."
+  Tone: warm, sincere, never crass. First-person plural.
+  Palette: deep jewel tones for formal; dusty pastels for garden; warm neutrals for boho/beach; ivory + black + gold for classic.
 
 — KIDS BIRTHDAY (ages 1–12)
-  Sections: Hero (kid's name + age + theme — e.g. "Mila Turns 4 🦋"), Party Details (date, time start AND end, location with address), Activities ("What we'll do: cake, games, piñata, craft table"), What to Bring (often nothing, sometimes a swimsuit), Parking & Drop-off, RSVP (to PARENT's phone/email), Optional Gift Note.
-  RSVP wording: "RSVP to [parent name] at [phone/email] by [date]" — parents need contact, not the kid. ALWAYS include end time so other parents can plan pickup.
-  Dress code phrasing: "Wear your favorite [theme]!" or "Come in comfy play clothes" or "Costumes encouraged!" — never formal.
-  Tone: playful, energetic, plenty of emoji (🎉🎂🎈🦄🦖🌈), exclamation points are fine here, first-person from the parent ("Mila would love to celebrate with you!").
-  Palette: bright primaries, candy colors (cotton candy pink, sky blue, sunshine yellow), or theme-driven (jungle = sage+gold, mermaid = teal+coral+pearl, dinosaur = forest+orange).
-  Photos: AVOID identifiable kid photos (privacy). Use themed emoji decoration, illustrations, party-setup shots, or large CSS art instead.
+  Sections: Hero (kid's name + age + theme), Party Details (start AND end time, address), Activities, What to Bring, Parking/Drop-off, RSVP (to PARENT), Optional Gift Note.
+  RSVP wording: "RSVP to [parent name] at [phone/email] by [date]" — parents need contact, not the kid. ALWAYS include end time.
+  Dress code: "Wear your favorite [theme]!" / "Costumes encouraged!" — never formal.
+  Tone: playful, energetic, plenty of emoji (🎉🎂🎈🦄🦖🌈).
+  Palette: bright primaries, candy colors, or theme-driven.
+  Photos: AVOID identifiable kid photos. Use emoji decoration, illustrations, party-setup, or CSS art.
 
 — ADULT BIRTHDAY (milestone — 21, 30, 40, 50, 60+)
-  Sections: Hero (name + age — "Cheers to 40!" / "Fifty and Fabulous"), Details, Optional Memory Wall ("share a favorite memory" with a mailto:), No-Gifts Note (very common), Dress Code, RSVP.
-  Common header phrasings: "Cheers to [age]", "[Name] turns [age]", "[age] and Thriving", "Half a Century of [Name]".
-  Default "no gifts please" line if user didn't mention gifts: "Your presence is the only present needed. If you must, a memory or a bottle of [their favorite] is welcome."
-  Tone: warm, slightly nostalgic for milestones, lighthearted otherwise.
-  Palette: black/gold/champagne for elegant; bright fun colors for casual; speakeasy reds/golds for 1920s vibe.
+  Sections: Hero ("Cheers to [age]!"), Details, Optional Memory Wall, No-Gifts Note, Dress Code, RSVP.
+  Default no-gifts phrasing: "Your presence is the only present needed."
+  Tone: warm, slightly nostalgic for milestones.
+  Palette: black/gold/champagne for elegant; bright fun for casual; 1920s reds/golds for speakeasy.
 
 — BABY SHOWER
-  Sections: Hero ("Baby [Lastname] is on the way!" or "[Mom's name]'s Baby Shower"), Shower Details, Games (default list — see below), Registry (link), Diaper Raffle ("Bring a pack of diapers — any size — to enter a raffle"), Dress Code (often "pastel attire"), Wishes for Baby (mention a wish-card station), RSVP.
-  Default games to include unless user said no games: "Guess the Date Baby Arrives", "Baby Photo Match" (guests submit baby photos in advance, mom guesses), "Don't Say Baby" (clothespin game), "Write a Note to Baby" (advice/wishes for baby's future).
-  Tone: warm, sweet, sometimes sentimental. Second person to guest is fine.
-  Palette: SOFT pastels. Sage + cream + dusty rose for gender-neutral; dusty pink + cream + gold for girl; sky blue + cream + sand for boy; lavender + peach + butter yellow for "all the pastels". AVOID screaming pink or screaming blue.
-  Photos: ultrasound (if mom-to-be okay with sharing), nursery details, neutral baby-themed flat-lays (booties, blankets), florals.
+  Sections: Hero, Shower Details, Games (defaults below), Registry, Diaper Raffle, Dress Code ("pastel attire"), Wishes for Baby, RSVP.
+  Default games: "Guess the Date Baby Arrives", "Baby Photo Match", "Don't Say Baby", "Write a Note to Baby".
+  Tone: warm, sweet, sometimes sentimental.
+  Palette: SOFT pastels. Sage + cream + dusty rose for gender-neutral. AVOID screaming pink/blue.
 
 — GENDER REVEAL
-  Sections: Hero ("Boy or Girl?" with both pink and blue showing, NOT committed to one), Details, "Place Your Guess" (Team Blue / Team Pink poll vibe — even if not interactive), The Reveal (describe how — balloon pop, cake cut, etc.), Dress Code ("Wear your guess!"), RSVP.
-  Tone: anticipatory, playful, mysterious.
-  Palette: 50/50 pink + blue with white/cream, or use neutrals (sage, cream) until the reveal is hinted at. Big "?" graphic somewhere.
+  Sections: Hero ("Boy or Girl?" — both colors), Details, "Place Your Guess" (Team Blue / Team Pink), The Reveal description, Dress Code ("Wear your guess!"), RSVP.
+  Tone: anticipatory, playful.
+  Palette: 50/50 pink + blue with white/cream.
 
 — BRIDAL SHOWER
-  Sections: Hero ("[Bride]'s Bridal Shower"), Details, Games (default list below), Registry (link), Lingerie/Recipe Card station (optional, ask the user — default to recipe cards which are more universal), RSVP.
-  Default games: "How Well Do You Know the Bride", "Bridal Bingo", "Advice for the Bride" (note cards), "Two Truths and a Lie".
-  Tone: feminine, celebratory, sometimes cheeky but never crude.
-  Palette: blush + champagne + cream; white + sage + gold; dusty rose + ivory.
+  Sections: Hero, Details, Games (defaults below), Registry, Recipe Cards station, RSVP.
+  Default games: "How Well Do You Know the Bride", "Bridal Bingo", "Advice for the Bride", "Two Truths and a Lie".
+  Tone: feminine, celebratory.
+  Palette: blush + champagne + cream; white + sage + gold.
 
 — ENGAGEMENT PARTY
-  Sections: Hero (couple + "are engaged!" + date), Their Story (proposal, optionally how-they-met), Party Details, Dress Code, RSVP. Usually NO registry (that's for showers and weddings).
-  Tone: celebratory, romantic, often less formal than the wedding will be.
-  Palette: champagne + cream + soft pink for romantic; deep berry + cream for fall; navy + blush for classic.
+  Sections: Hero (couple + "are engaged!"), Their Story, Party Details, Dress Code, RSVP. NO registry.
+  Tone: celebratory, romantic, often less formal than the wedding.
+  Palette: champagne + cream + soft pink; navy + blush.
 
-— ANNIVERSARY (milestone — 10, 25, 50, etc.)
-  Sections: Hero (couple + which anniversary — "Celebrating 50 Years of Love"), Their Story (longer history — when married, kids, where lived), Party Details, Memory Wall ("Share a favorite memory of [them]" with mailto), Dress Code, RSVP. No gifts is standard wording.
-  Tone: nostalgic, warm, multi-generational.
-  Palette: traditional anniversary colors: 25th = silver+white, 50th = gold+ivory, others = soft warm neutrals.
+— ANNIVERSARY (10, 25, 50 etc.)
+  Sections: Hero, Their Story (longer history), Party Details, Memory Wall, Dress Code, RSVP. No gifts standard.
+  Tone: nostalgic, multi-generational.
+  Palette: 25th = silver+white, 50th = gold+ivory.
 
 — GRADUATION
-  Sections: Hero (grad name + degree/school + class year — "Marcus, Class of 2026"), Party Details, About the Grad (what's next — job, grad school, gap year), Photo Journey (optional — childhood to now), RSVP.
-  Tone: proud, celebratory, often parent-voiced.
-  Palette: school colors if known, otherwise navy + gold + cream for classic, or pop colors for a fun feel.
+  Sections: Hero (grad name + degree + class year), Party Details, About the Grad ("what's next"), Photo Journey (optional), RSVP.
+  Tone: proud, parent-voiced.
 
 — QUINCEAÑERA
-  Sections: Hero ("[Name]'s Quinceañera" + date — often Spanish/English bilingual feel), La Misa (Mass details — church, time), La Recepción (reception details — venue, time), Court of Honor (chambelanes y damas — list of names if user provides), El Vals (waltz mention), Dress Code (formal — often with color palette specified to match court), RSVP.
-  Tone: regal, family-centered, celebratory. Spanish phrases woven in are encouraged — "Con mucho cariño te invitamos…"
-  Palette: rich pinks + gold; deep purples + gold; tiffany blue + silver; coral + gold; royal blue + silver. Always a hint of metallic.
-  Photo subjects: tiara, ballgown, florals, mariachi.
+  Sections: Hero ("[Name]'s Quinceañera"), La Misa (Mass), La Recepción, Court of Honor (chambelanes y damas), El Vals, Dress Code, RSVP.
+  Tone: regal, family-centered. Bilingual phrases encouraged.
+  Palette: rich pinks + gold; deep purples + gold; royal blue + silver. Hint of metallic.
 
 — BAR/BAT MITZVAH
-  Sections: Hero (kid's English + Hebrew name + date + temple), Service Details (Saturday morning typically — temple, time, address), Party Details (Saturday evening typically — venue, time, theme), Mitzvah Project (the charity work the kid is doing — common section), RSVP.
-  Tone: warm, family, achievement-focused, multi-generational.
-  Palette: depends on theme — often bright/teen-driven for the party (neon, sports, music) and classic for the service mention.
+  Sections: Hero (English + Hebrew name + temple), Service Details, Party Details (often Saturday evening), Mitzvah Project, RSVP.
+  Tone: warm, achievement-focused.
 
 — HOLIDAY PARTY (Christmas, Hanukkah, NYE, Halloween, Thanksgiving)
-  Sections: Hero (date + theme), Party Details, Potluck Assignments (very common — divide guests by appetizer/main/dessert/drinks), Dress Code (often "festive" / "ugly sweater" / "cocktail attire" / "costumes encouraged"), RSVP.
-  Tone: warm + seasonal.
-  Palette: Christmas — forest green + cranberry + gold; Hanukkah — navy + silver + white; NYE — black + gold + champagne; Halloween — black + orange + purple, or moody dark + amber; Thanksgiving — terracotta + cream + amber.
+  Sections: Hero, Details, Potluck Assignments, Dress Code, RSVP.
+  Palette: Christmas — forest green + cranberry + gold; NYE — black + gold; Halloween — black + orange + purple.
 
 — BACKYARD BBQ / COOKOUT / 4TH OF JULY
-  Sections: Hero (date + "Backyard BBQ" / "Cookout"), Details (BYOC — bring a chair, kids welcome, etc), What We're Grilling (menu hint), Bring-a-Dish (potluck assignment), RSVP. Optional Yard Games mention (cornhole, ladder ball).
-  Tone: casual, fun, no-pressure. Lots of contractions, exclamation points OK.
-  Palette: 4th of July — red/white/blue + denim; generic BBQ — checkered + grass green + sunshine yellow; summer party — coral + cream + lemon.
+  Sections: Hero, Details (BYOC), What We're Grilling, Bring-a-Dish, RSVP.
+  Tone: casual, fun.
+  Palette: 4th of July — red/white/blue; generic — grass green + sunshine yellow.
 
 — DINNER PARTY (intimate)
-  Sections: Hero (host names + occasion), Details (time, address), Menu Tease (optional), Dietary Restrictions ask (mailto), Dress Code, RSVP.
-  Tone: intimate, elegant or casual depending on host vibe.
-  Palette: candlelight neutrals — cream + black + amber; or seasonal (spring greens, autumn rusts).
+  Sections: Hero, Details, Menu Tease, Dietary ask, Dress Code, RSVP.
+  Palette: candlelight neutrals — cream + black + amber.
 
 — RETIREMENT
-  Sections: Hero (retiree's name + years of service + company/field), Party Details, About Their Career (photos of their journey if user has them), Send-off (no gifts — just memories), RSVP.
-  Tone: warm, celebratory, multi-generational. Co-worker voice often.
-  Palette: classic + warm — navy + gold; sage + cream + bronze.
+  Sections: Hero (years of service), Party Details, About Their Career, Send-off, RSVP.
 
 — HOUSEWARMING
-  Sections: Hero (new address + host names + "we're home!"), Details, "No gifts please" or registry link if they want, How to Get There (address + parking), RSVP.
-  Tone: warm, welcoming, casual.
-  Palette: warm modern — terracotta + cream + olive; or fresh — sage + linen + white.
+  Sections: Hero ("we're home!"), Details, Gift policy, Directions, RSVP.
 
-— GENERIC / UNCLEAR EVENT TYPE
-  If you can't tell what kind of event it is, default to: warm and elegant. Use serif display + sans body, generous whitespace, soft warm neutrals. Sections: Hero, About, Details, RSVP, Thank You.
+— GENERIC / UNCLEAR
+  Default to warm and elegant. Serif display + sans body, warm neutrals.
 
 === END EVENT PLAYBOOKS ===`;
 
-const SYSTEM_PROMPT = `You design beautiful single-page event websites — weddings, birthday parties, baby showers, engagement parties, anniversaries, graduation parties, bridal showers, gender reveals, holiday parties, quinceañeras, bar/bat mitzvahs, and more. The vibe is small, cute, personal — not corporate.
+function buildSystemPrompt(rsvpEndpoint: string): string {
+  return `You design beautiful single-page event websites — weddings, birthdays, baby showers, engagement parties, anniversaries, graduations, bridal showers, gender reveals, holiday parties, quinceañeras, bar/bat mitzvahs, and more. The vibe is small, cute, personal — not corporate.
 
 ${EVENT_PLAYBOOKS}
 
-Output rules — these are strict:
-1. Reply with ONE complete HTML document and nothing else. No prose before or after, no markdown fences, no explanations. Start with <!DOCTYPE html> and end with </html>.
-2. ALL CSS goes in a single <style> tag in the <head>. No external CSS, no Tailwind, no Bootstrap, no Google Fonts <link> tags — system font stacks only.
-3. Absolutely NO <script> tags. NO JavaScript. NO inline event handlers. The page must work with JS disabled.
-4. Use real, working image URLs from images.unsplash.com (use the format https://images.unsplash.com/photo-XXXXXXXXXX?w=1600&auto=format&fit=crop — pick photo IDs you actually know exist; do not invent IDs that 404). When in doubt, prefer CSS gradients, large emoji as decoration, or SVG illustrations over photos.
-5. The page must feel handcrafted: thoughtful typography (serif display + sans body is a safe default), generous whitespace, warm color palette appropriate to the occasion. Add subtle CSS animations (fade-ins, gentle floating) where they add charm, but never gimmicky.
-6. Apply the matching EVENT PLAYBOOK above for sections, copy conventions, dress code wording, RSVP phrasing, default games (showers), color palette, and tone. If the user explicitly overrides any of these, honor the user.
-7. Be specific. If the user gives names, dates, locations — use them verbatim. If they don't, invent plausible placeholder details that match the vibe (e.g. "Sarah & James", "October 14th, 2026", "Casa Bella, Tulum") rather than leaving "[Your Name Here]" blanks.
-8. Mobile-first responsive. Use clamp() for font sizes, flexbox/grid for layout, max-width container 1200px.
-9. Keep total HTML under ~80KB. Don't pad with filler sections.
+=== IMAGES (CRITICAL — pick from this list, do NOT invent IDs) ===
+${VERIFIED_PHOTOS}
 
-After the HTML, return nothing. Just the document. The next line after </html> must be the end of your response.
+For decorative/filler photos when no themed option fits, use https://picsum.photos/seed/<unique-word>/1600/900 — these always work. CSS gradients + large emoji are also great alternatives. NEVER use a placeholder URL or a made-up Unsplash photo ID.
 
-Also, before generating the page, internally pick a short title (3-6 words) for the event. Include it as the <title> tag in <head> AND as an HTML comment on the very first line: <!-- TITLE: Your Chosen Title -->`;
+=== RSVP FORM (CRITICAL — include in EVERY site) ===
+Every site MUST include an RSVP <form> with this EXACT shape:
+
+<form method="POST" action="${rsvpEndpoint}">
+  <label>Your name<input type="text" name="name" required></label>
+  <label>Email (optional)<input type="email" name="email"></label>
+  <fieldset>
+    <legend>Will you make it?</legend>
+    <label><input type="radio" name="attending" value="yes" required> Yes, can't wait!</label>
+    <label><input type="radio" name="attending" value="maybe"> Maybe</label>
+    <label><input type="radio" name="attending" value="no"> Can't make it</label>
+  </fieldset>
+  <label>How many of you?<input type="number" name="guests" min="1" max="20" value="1"></label>
+  <label>A note (optional)<textarea name="message" rows="3"></textarea></label>
+  <button type="submit">Send RSVP</button>
+</form>
+
+Style the form to match the site's palette. The action URL is the EXACT string above — do not modify it, do not relativize it, do not add anchors. Keep field names exactly as shown ('name', 'email', 'attending', 'guests', 'message') — these are required for the backend to read them. You can rewrite the visible labels and the submit button text to match the site's voice ("Yes, I'll be there!", "Hold me a seat", "Going / Not going / Maybe"), but the input name attributes and the form's action+method must stay verbatim.
+
+=== OUTPUT RULES (STRICT) ===
+1. Reply with ONE complete HTML document and nothing else. No prose before or after, no markdown fences. Start with <!DOCTYPE html> and end with </html>.
+2. All CSS in a single <style> tag in <head>. No external CSS, no <link> tags to fonts/CSS, no Tailwind/Bootstrap — system font stacks only.
+3. Absolutely NO <script> tags. NO JavaScript. NO inline event handlers. The page MUST work with JS disabled (and indeed JS is blocked).
+4. Apply the matching EVENT PLAYBOOK for sections, copy conventions, RSVP wording, default games, palette, and tone. Honor explicit user overrides.
+5. Be specific. Use the user's names/dates/locations verbatim. If they didn't provide them, invent plausible specifics rather than leaving "[Your Name]" blanks.
+6. Mobile-first responsive. clamp() for fonts, flex/grid layout, max-width 1200px.
+7. Keep total HTML under ~80KB. No filler.
+8. Include the RSVP form exactly as specified above.
+
+After </html>, return NOTHING.
+
+Also, on the very first line of your reply, include a comment: <!-- TITLE: Your Chosen Title --> where the title is 3–6 words. Then on the next line start the <!DOCTYPE html>.`;
+}
+
+const EDIT_SUFFIX = `
+
+=== EDIT MODE ===
+The CURRENT site HTML follows. Apply the user's latest change request to it and return the FULL modified HTML document. Preserve sections the user didn't ask to change — only touch what they asked for. Same output rules: one HTML doc, no prose, no fences, start with the title comment then <!DOCTYPE html>.
+
+CURRENT SITE HTML:
+`;
 
 function extractTitle(html: string): string {
   const commentMatch = html.match(/<!--\s*TITLE:\s*([^>-]+?)\s*-->/i);
@@ -201,10 +263,35 @@ serve(async (req) => {
   } catch {
     return jsonResponse(400, { error: "invalid_json" });
   }
+
   const userPrompt = String(payload?.prompt ?? "").trim();
   if (!userPrompt) return jsonResponse(400, { error: "missing_prompt" });
   if (userPrompt.length > 4000) return jsonResponse(400, { error: "prompt_too_long" });
   if (!ANTHROPIC_API_KEY) return jsonResponse(500, { error: "ANTHROPIC_API_KEY not set" });
+
+  const editSiteId =
+    typeof payload?.edit_site_id === "string" && payload.edit_site_id.length > 0
+      ? payload.edit_site_id
+      : null;
+
+  // Resolve the signed-in user (if any) from the bearer header. We
+  // only honor owner_user_id from the JWT — never trust a client-
+  // provided field.
+  let authedUserId: string | null = null;
+  const authHeader = req.headers.get("Authorization") ?? "";
+  const bearer = authHeader.replace(/^Bearer\s+/i, "").trim();
+  if (bearer && bearer !== SUPABASE_ANON_KEY) {
+    try {
+      const userClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+        auth: { autoRefreshToken: false, persistSession: false },
+        global: { headers: { Authorization: `Bearer ${bearer}` } },
+      });
+      const { data } = await userClient.auth.getUser();
+      authedUserId = data?.user?.id ?? null;
+    } catch {
+      // anon — ignore
+    }
+  }
 
   const rawConv = Array.isArray(payload?.conversation) ? payload.conversation : [];
   const conversation = rawConv
@@ -218,9 +305,46 @@ serve(async (req) => {
       content: String(m.content).slice(0, 8000),
     }));
 
-  // Open Anthropic streaming response. We proxy each text_delta out
-  // to the client as an SSE event, and once the model finishes we
-  // save to DB and emit a `done` event with the slug.
+  const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  });
+
+  // For edit mode, load the current site and gate access.
+  let currentSite: {
+    id: string;
+    slug: string;
+    html: string;
+    owner_user_id: string | null;
+    edit_count: number;
+  } | null = null;
+  if (editSiteId) {
+    const { data, error } = await admin
+      .from("ai_sites")
+      .select("id, slug, html, owner_user_id, edit_count")
+      .eq("id", editSiteId)
+      .maybeSingle();
+    if (error || !data) {
+      return jsonResponse(404, { error: "site_not_found" });
+    }
+    currentSite = data as any;
+    // If the site has an owner, only the owner can edit. Anonymous
+    // sites (owner_user_id IS NULL) are editable by anyone during
+    // their builder session — slug isn't shared until they publish,
+    // and the testing flow needs this.
+    if (
+      currentSite!.owner_user_id &&
+      currentSite!.owner_user_id !== authedUserId
+    ) {
+      return jsonResponse(403, { error: "not_owner" });
+    }
+  }
+
+  const rsvpEndpoint = `${SUPABASE_URL}/functions/v1/ai-site-rsvp-submit?slug=__SLUG__`;
+  const baseSystem = buildSystemPrompt(rsvpEndpoint);
+  const systemText = currentSite
+    ? baseSystem + EDIT_SUFFIX + currentSite.html
+    : baseSystem;
+
   const anthropicRes = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
     headers: {
@@ -235,7 +359,7 @@ serve(async (req) => {
       system: [
         {
           type: "text",
-          text: SYSTEM_PROMPT,
+          text: systemText,
           cache_control: { type: "ephemeral" },
         },
       ],
@@ -268,7 +392,6 @@ serve(async (req) => {
           const { value, done } = await reader.read();
           if (done) break;
           buf += decoder.decode(value, { stream: true });
-          // Anthropic SSE events end with \n\n
           const events = buf.split("\n\n");
           buf = events.pop() ?? "";
           for (const evt of events) {
@@ -298,7 +421,7 @@ serve(async (req) => {
         return;
       }
 
-      const html = stripCodeFences(fullText);
+      let html = stripCodeFences(fullText);
       if (!html.toLowerCase().includes("<!doctype html")) {
         console.error("[ai-site-generate] non-html reply", html.slice(0, 200));
         send({ type: "error", message: "invalid_generation" });
@@ -307,31 +430,70 @@ serve(async (req) => {
       }
 
       const title = extractTitle(html);
-      const slug = slugify(title);
+      const slug = currentSite ? currentSite.slug : slugify(title);
+
+      // Force-correct the slug in the RSVP form action. Claude often
+      // ignores the __SLUG__ placeholder and invents a plausible slug
+      // from the event title — that would cause RSVPs to 404 against
+      // the real slug. We rewrite ANY slug= query param attached to
+      // ai-site-rsvp-submit URLs to the actual slug for this site.
+      html = html.replace(
+        /(ai-site-rsvp-submit[^"' ]*?[?&]slug=)([^"'&\s]*)/g,
+        (_m, prefix) => `${prefix}${slug}`,
+      );
+      // If Claude included the literal placeholder anywhere, fix it too.
+      html = html.replaceAll("__SLUG__", slug);
+
       try {
-        const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
-          auth: { autoRefreshToken: false, persistSession: false },
-        });
-        const { error: insertErr } = await admin.from("ai_sites").insert({
-          slug,
-          title,
-          prompt: userPrompt,
-          html,
-        });
-        if (insertErr) {
-          console.error("[ai-site-generate] insert error", insertErr);
-          send({ type: "error", message: "save_failed" });
-          controller.close();
-          return;
+        if (currentSite) {
+          const { error: updateErr } = await admin
+            .from("ai_sites")
+            .update({
+              title,
+              prompt: userPrompt,
+              html,
+              edit_count: (currentSite.edit_count ?? 0) + 1,
+            })
+            .eq("id", currentSite.id);
+          if (updateErr) {
+            console.error("[ai-site-generate] update error", updateErr);
+            send({ type: "error", message: "save_failed" });
+            controller.close();
+            return;
+          }
+          send({ type: "done", slug, title, site_id: currentSite.id });
+        } else {
+          const { data: inserted, error: insertErr } = await admin
+            .from("ai_sites")
+            .insert({
+              slug,
+              title,
+              prompt: userPrompt,
+              html,
+              owner_user_id: authedUserId,
+            })
+            .select("id")
+            .maybeSingle();
+          if (insertErr || !inserted) {
+            console.error("[ai-site-generate] insert error", insertErr);
+            send({ type: "error", message: "save_failed" });
+            controller.close();
+            return;
+          }
+          send({
+            type: "done",
+            slug,
+            title,
+            site_id: (inserted as { id: string }).id,
+          });
         }
       } catch (e) {
-        console.error("[ai-site-generate] insert exception", e);
+        console.error("[ai-site-generate] save exception", e);
         send({ type: "error", message: "save_failed" });
         controller.close();
         return;
       }
 
-      send({ type: "done", slug, title });
       controller.close();
     },
   });
@@ -341,7 +503,6 @@ serve(async (req) => {
       ...cors,
       "Content-Type": "text/event-stream",
       "Cache-Control": "no-cache",
-      // Disable proxy buffering so chunks reach the browser immediately.
       "X-Accel-Buffering": "no",
     },
   });

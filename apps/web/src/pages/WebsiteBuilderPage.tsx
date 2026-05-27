@@ -1,23 +1,21 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 import { VendoraLogo } from "@/components/shared/VendoraLogo";
 
 // AI Website Builder. Chat on the left, live HTML preview on the
-// right. The edge function returns text/event-stream — each token
-// arrives as a `data: {"type":"chunk","text":"..."}` SSE event and
-// gets written straight into the iframe's contentDocument via
-// document.open()/write()/close(). The browser progressively renders
-// as bytes arrive, which is why this feels instant compared to the
-// usual "wait then srcDoc swap" pattern.
+// right. First message creates a new site (slug minted server-side);
+// subsequent messages send `edit_site_id` so Claude rewrites the
+// existing HTML in place, same slug stays valid.
 //
-// Sandbox: allow-same-origin (no allow-scripts). That lets the parent
-// page access contentDocument to stream into it, while still
-// preventing any JS in the generated HTML from running.
+// SSE stream → iframe.contentDocument.write() so the browser renders
+// progressively as bytes arrive.
+//
+// Anonymous-friendly: works without sign-in. Signed-in users get
+// ownership stamped on the site (for /my-sites + slug rename).
 
-type ChatMessage = {
-  role: "user" | "assistant";
-  content: string;
-};
+type ChatMessage = { role: "user" | "assistant"; content: string };
 
 const EXAMPLE_PROMPTS = [
   "Make me a wedding website for Sarah & James in Tulum, Oct 14 2026, beachy boho vibe",
@@ -29,30 +27,45 @@ const EXAMPLE_PROMPTS = [
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
 const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string;
 
+// deno-lint-ignore-file no-explicit-any — supabase types not regenerated
+// for ai_sites yet. Local casts cover the gap.
+const sb = supabase as unknown as {
+  rpc: (fn: string, args?: Record<string, unknown>) => Promise<{
+    data: unknown;
+    error: { message?: string } | null;
+  }>;
+};
+
 export default function WebsiteBuilderPage() {
+  const { session } = useAuth();
   const [conversation, setConversation] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [siteId, setSiteId] = useState<string | null>(null);
   const [slug, setSlug] = useState<string | null>(null);
   const [title, setTitle] = useState<string | null>(null);
   const [hasContent, setHasContent] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [renameOpen, setRenameOpen] = useState(false);
+  const [renameValue, setRenameValue] = useState("");
+  const [renameBusy, setRenameBusy] = useState(false);
+  const [renameError, setRenameError] = useState<string | null>(null);
+
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
-  // Hold the in-flight reader so a rapid resubmit can cancel cleanly.
   const abortRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
     inputRef.current?.focus();
-    return () => {
-      abortRef.current?.abort();
-    };
+    return () => abortRef.current?.abort();
   }, []);
 
   const publicUrl =
     slug && typeof window !== "undefined"
       ? `${window.location.origin}/s/${slug}`
       : null;
+
+  const ownsSite = !!(session?.user?.id && siteId);
 
   function resetIframe(): Document | null {
     const iframe = iframeRef.current;
@@ -67,15 +80,12 @@ export default function WebsiteBuilderPage() {
     const trimmed = prompt.trim();
     if (!trimmed || loading) return;
 
-    // Cancel any prior stream before starting a new one.
     abortRef.current?.abort();
     const ac = new AbortController();
     abortRef.current = ac;
 
     setError(null);
     setLoading(true);
-    setSlug(null);
-    setTitle(null);
 
     const prevConv = conversation;
     const nextConv: ChatMessage[] = [
@@ -85,7 +95,6 @@ export default function WebsiteBuilderPage() {
     setConversation(nextConv);
     setInput("");
 
-    // Open a fresh iframe document — clears whatever was there.
     const doc = resetIframe();
     if (!doc) {
       setLoading(false);
@@ -98,16 +107,18 @@ export default function WebsiteBuilderPage() {
     let buf = "";
 
     try {
+      const accessToken = session?.access_token ?? SUPABASE_KEY;
       const res = await fetch(`${SUPABASE_URL}/functions/v1/ai-site-generate`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${SUPABASE_KEY}`,
+          Authorization: `Bearer ${accessToken}`,
           apikey: SUPABASE_KEY,
         },
         body: JSON.stringify({
           prompt: trimmed,
           conversation: prevConv,
+          edit_site_id: siteId,
         }),
         signal: ac.signal,
       });
@@ -129,37 +140,63 @@ export default function WebsiteBuilderPage() {
         for (const evt of events) {
           for (const line of evt.split("\n")) {
             if (!line.startsWith("data: ")) continue;
-            let data: { type: string; text?: string; slug?: string; title?: string; message?: string };
+            let data: {
+              type: string;
+              text?: string;
+              slug?: string;
+              title?: string;
+              site_id?: string;
+              message?: string;
+            };
             try {
               data = JSON.parse(line.slice(6));
             } catch {
               continue;
             }
             if (data.type === "chunk" && data.text) {
-              // First chunk often contains the title comment + <!DOCTYPE>.
-              // We strip the comment client-side so it doesn't render visibly.
               const text = receivedChunk
                 ? data.text
                 : data.text.replace(/<!--\s*TITLE:[^>]*-->\s*/i, "");
               receivedChunk = true;
               doc.write(text);
-              // Auto-scroll iframe to bottom as content arrives so the
-              // user always sees the newest section.
               try {
                 const win = iframeRef.current?.contentWindow;
                 win?.scrollTo(0, win.document.body?.scrollHeight ?? 0);
               } catch {
-                // sandboxed cases — ignore
+                // ignore
               }
             } else if (data.type === "done") {
               doc.close();
+              if (data.site_id) setSiteId(data.site_id);
               setSlug(data.slug ?? null);
               setTitle(data.title ?? null);
+              // Sync the streamed iframe's RSVP form action with the
+              // real slug — Claude sometimes invents one in the
+              // streamed bytes; the DB row is already corrected
+              // server-side. Without this fix-up, a user testing the
+              // form in the builder iframe would POST to the wrong
+              // slug.
+              if (data.slug && iframeRef.current?.contentDocument) {
+                const realSlug = data.slug;
+                iframeRef.current.contentDocument
+                  .querySelectorAll('form[action*="ai-site-rsvp-submit"]')
+                  .forEach((form) => {
+                    const action = (form as HTMLFormElement).getAttribute("action");
+                    if (action) {
+                      const fixed = action.replace(
+                        /([?&]slug=)[^"'&\s]*/,
+                        `$1${realSlug}`,
+                      );
+                      (form as HTMLFormElement).setAttribute("action", fixed);
+                    }
+                  });
+              }
+              const verb = siteId ? "Updated" : "Built";
               setConversation([
                 ...nextConv,
                 {
                   role: "assistant",
-                  content: `Built "${data.title ?? "your site"}". Tell me what to change, or copy the URL to share it.`,
+                  content: `${verb} "${data.title ?? "your site"}". Tell me what else to change.`,
                 },
               ]);
             } else if (data.type === "error") {
@@ -168,7 +205,6 @@ export default function WebsiteBuilderPage() {
           }
         }
       }
-      // Ensure the document is closed if the stream ended without a done event.
       try {
         doc.close();
       } catch {
@@ -185,9 +221,7 @@ export default function WebsiteBuilderPage() {
       setError(msg);
       setConversation(prevConv);
     } finally {
-      if (abortRef.current === ac) {
-        abortRef.current = null;
-      }
+      if (abortRef.current === ac) abortRef.current = null;
       setLoading(false);
       setTimeout(() => inputRef.current?.focus(), 0);
     }
@@ -205,40 +239,169 @@ export default function WebsiteBuilderPage() {
     try {
       await navigator.clipboard.writeText(publicUrl);
     } catch {
-      // older browsers — fall through silently; the URL is on screen.
+      // older browsers — URL still on screen
+    }
+  }
+
+  async function startNewSite() {
+    abortRef.current?.abort();
+    setConversation([]);
+    setSiteId(null);
+    setSlug(null);
+    setTitle(null);
+    setHasContent(false);
+    setError(null);
+    setRenameOpen(false);
+    const doc = resetIframe();
+    try {
+      doc?.close();
+    } catch {
+      // ignore
+    }
+    setTimeout(() => inputRef.current?.focus(), 0);
+  }
+
+  async function renameSlug() {
+    if (!siteId || !renameValue.trim() || renameBusy) return;
+    setRenameBusy(true);
+    setRenameError(null);
+    try {
+      const { data, error: rpcErr } = await sb.rpc("ai_sites_rename", {
+        p_site_id: siteId,
+        p_new_slug: renameValue.trim(),
+      });
+      if (rpcErr) {
+        setRenameError(rpcErr.message ?? "rename_failed");
+        return;
+      }
+      const result = data as { ok: boolean; slug?: string; error?: string } | null;
+      if (!result?.ok) {
+        const errMap: Record<string, string> = {
+          auth_required: "Sign in to rename.",
+          not_owner: "Only the site owner can rename.",
+          invalid_length: "Slug must be 3–50 characters.",
+          reserved: "That slug is reserved.",
+          slug_taken: "Already taken — try another.",
+        };
+        setRenameError(errMap[result?.error ?? ""] ?? "Couldn't rename.");
+        return;
+      }
+      setSlug(result.slug!);
+      setRenameOpen(false);
+      setRenameValue("");
+    } finally {
+      setRenameBusy(false);
     }
   }
 
   return (
     <div className="min-h-screen flex flex-col bg-[#0a0a0b] text-white">
-      <header className="flex items-center justify-between px-5 py-3.5 border-b border-white/10">
-        <Link to="/" className="flex items-center gap-3">
-          <VendoraLogo size="sm" color="#fff" />
-          <span className="text-[12px] uppercase tracking-[2px] text-white/50">
-            Website builder
-          </span>
-        </Link>
-        {publicUrl && (
-          <div className="flex items-center gap-3">
-            <code className="text-[12px] text-white/70 bg-white/5 px-3 py-1.5 rounded-full border border-white/10">
-              {publicUrl}
-            </code>
+      <header className="flex items-center justify-between px-5 py-3.5 border-b border-white/10 gap-3 flex-wrap">
+        <div className="flex items-center gap-4">
+          <Link to="/" className="flex items-center gap-3">
+            <VendoraLogo size="sm" color="#fff" />
+            <span className="text-[12px] uppercase tracking-[2px] text-white/50">
+              Website builder
+            </span>
+          </Link>
+          {siteId && (
             <button
-              onClick={copyUrl}
-              className="text-[12px] bg-white text-black px-4 py-1.5 rounded-full hover:bg-white/90 transition-colors"
+              onClick={startNewSite}
+              className="text-[12px] text-white/60 hover:text-white border border-white/15 rounded-full px-3 py-1 transition-colors"
             >
-              Copy link
+              + New site
             </button>
-            <a
-              href={publicUrl}
-              target="_blank"
-              rel="noreferrer noopener"
-              className="text-[12px] border border-white/20 px-4 py-1.5 rounded-full hover:bg-white/10 transition-colors"
+          )}
+        </div>
+
+        <div className="flex items-center gap-3 flex-wrap">
+          {session && (
+            <Link
+              to="/my-sites"
+              className="text-[12px] text-white/70 hover:text-white transition-colors"
             >
-              Open
-            </a>
-          </div>
-        )}
+              My sites
+            </Link>
+          )}
+          {!session && publicUrl && (
+            <Link
+              to="/login"
+              className="text-[12px] text-white/70 hover:text-white border border-white/15 rounded-full px-3 py-1 transition-colors"
+            >
+              Sign in to save
+            </Link>
+          )}
+          {publicUrl && (
+            <>
+              {ownsSite && !renameOpen && (
+                <button
+                  onClick={() => {
+                    setRenameOpen(true);
+                    setRenameValue(slug ?? "");
+                    setRenameError(null);
+                  }}
+                  className="text-[12px] text-white/70 hover:text-white border border-white/15 rounded-full px-3 py-1 transition-colors"
+                  title="Rename slug"
+                >
+                  Rename
+                </button>
+              )}
+              {ownsSite && renameOpen ? (
+                <div className="flex items-center gap-2 bg-white/5 border border-white/20 rounded-full pl-3 pr-1.5 py-1">
+                  <span className="text-[12px] text-white/40">/s/</span>
+                  <input
+                    autoFocus
+                    value={renameValue}
+                    onChange={(e) =>
+                      setRenameValue(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, "-"))
+                    }
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") renameSlug();
+                      if (e.key === "Escape") setRenameOpen(false);
+                    }}
+                    className="bg-transparent text-[12px] text-white outline-none w-44"
+                    placeholder="my-event-slug"
+                    disabled={renameBusy}
+                  />
+                  <button
+                    onClick={renameSlug}
+                    disabled={renameBusy || !renameValue.trim()}
+                    className="text-[11px] bg-white text-black px-2.5 py-1 rounded-full disabled:opacity-40"
+                  >
+                    Save
+                  </button>
+                  <button
+                    onClick={() => setRenameOpen(false)}
+                    className="text-[11px] text-white/50 px-1.5"
+                  >
+                    ×
+                  </button>
+                </div>
+              ) : (
+                <code className="text-[12px] text-white/70 bg-white/5 px-3 py-1.5 rounded-full border border-white/10 max-w-[320px] truncate">
+                  {publicUrl}
+                </code>
+              )}
+              {renameError && (
+                <span className="text-[11px] text-red-400">{renameError}</span>
+              )}
+              <button
+                onClick={copyUrl}
+                className="text-[12px] bg-white text-black px-4 py-1.5 rounded-full hover:bg-white/90 transition-colors"
+              >
+                Copy link
+              </button>
+              <a
+                href={publicUrl}
+                target="_blank"
+                rel="noreferrer noopener"
+                className="text-[12px] border border-white/20 px-4 py-1.5 rounded-full hover:bg-white/10 transition-colors"
+              >
+                Open
+              </a>
+            </>
+          )}
+        </div>
       </header>
 
       <div className="flex-1 flex flex-col md:flex-row min-h-0">
@@ -253,7 +416,8 @@ export default function WebsiteBuilderPage() {
                   </div>
                   <div className="text-[14px] text-white/60 mt-2 leading-relaxed">
                     Tell me what kind of event site you want. I'll make
-                    it pretty. Then tell me what to tweak.
+                    it pretty — and add an RSVP form so guests can reply.
+                    Then tell me what to tweak.
                   </div>
                 </div>
                 <div className="space-y-2">
@@ -291,7 +455,9 @@ export default function WebsiteBuilderPage() {
                 <span className="builder-dot" />
                 <span className="builder-dot" />
                 <span className="builder-dot" />
-                <span className="ml-2">Designing your site…</span>
+                <span className="ml-2">
+                  {siteId ? "Updating your site…" : "Designing your site…"}
+                </span>
               </div>
             )}
 
@@ -335,18 +501,23 @@ export default function WebsiteBuilderPage() {
                 </svg>
               </button>
             </div>
+            {!session && siteId && (
+              <div className="text-[11px] text-white/40 mt-2 px-1">
+                <Link to="/login" className="underline hover:text-white/60">
+                  Sign in
+                </Link>{" "}
+                to keep this site in your account and rename the URL.
+              </div>
+            )}
           </div>
         </aside>
 
         {/* Preview pane */}
         <main className="flex-1 bg-[#1a1a1c] flex items-center justify-center p-5 min-h-[60vh] relative">
-          {/* Iframe is always mounted so contentDocument is ready to
-              write into the moment a stream starts. Visibility toggled
-              by overlay so we don't lose the doc across submits. */}
           <iframe
             ref={iframeRef}
             title={title ?? "Site preview"}
-            sandbox="allow-same-origin"
+            sandbox="allow-same-origin allow-forms"
             className="w-full h-full max-w-[1400px] rounded-xl shadow-2xl bg-white"
             style={{
               minHeight: "70vh",
