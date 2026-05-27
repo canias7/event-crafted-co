@@ -1,9 +1,7 @@
 // AI Website Builder — OpenAI hero-image generation.
 //
-// POST {site_id, prompt} → calls OpenAI gpt-image-1, uploads to the
-// ai-site-images storage bucket, returns {image_url}. The frontend
-// then sends a separate edit prompt ("Replace the hero image with
-// this URL: ...") through ai-site-generate so Claude swaps it in.
+// POST {site_id, prompt} → calls OpenAI gpt-image-2, uploads to the
+// ai-site-images storage bucket, returns {image_url}.
 //
 // Auth: anyone editing the site (matches ai-site-generate's anonymous
 // flow). Owner-only when the site has owner_user_id.
@@ -12,8 +10,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.7";
 
-// Pre-flight content filter (inlined — see ai-site-generate for the
-// rationale).
 const BLOCKED_TERMS = [
   "porn", "pornographic", "xxx", "nude", "nudes", "nsfw", "erotic",
   "kill yourself", "kys", "school shooting", "make a bomb",
@@ -49,6 +45,42 @@ function json(status: number, body: Record<string, unknown>) {
   });
 }
 
+// Try gpt-image-2 first (OpenAI's latest image model — stronger
+// detail and composition than gpt-image-1). Fall back to
+// gpt-image-1 if the account isn't enabled for the newer model yet,
+// so we never hard-fail just because of a model rollout gap.
+async function callOpenAI(prompt: string): Promise<{ res: Response; modelUsed: string }> {
+  const body = (model: string) => JSON.stringify({
+    model,
+    prompt,
+    n: 1,
+    size: "1536x1024",
+    quality: "medium",
+  });
+  const headers = {
+    Authorization: `Bearer ${OPENAI_API_KEY}`,
+    "Content-Type": "application/json",
+  };
+  let res = await fetch("https://api.openai.com/v1/images/generations", {
+    method: "POST",
+    headers,
+    body: body("gpt-image-2"),
+  });
+  if (res.status === 400 || res.status === 404) {
+    const detail = await res.clone().text().catch(() => "");
+    if (/model_not_found|does not exist|invalid_model/i.test(detail)) {
+      console.warn("[ai-site-image-generate] gpt-image-2 unavailable, falling back to gpt-image-1");
+      res = await fetch("https://api.openai.com/v1/images/generations", {
+        method: "POST",
+        headers,
+        body: body("gpt-image-1"),
+      });
+      return { res, modelUsed: "gpt-image-1" };
+    }
+  }
+  return { res, modelUsed: "gpt-image-2" };
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
   if (req.method !== "POST") return json(405, { error: "method_not_allowed" });
@@ -68,13 +100,8 @@ serve(async (req) => {
   if (userPrompt.length > 1000) return json(400, { error: "prompt_too_long" });
 
   const moderation = moderatePrompt(userPrompt);
-  if (!moderation.ok) {
-    return json(400, { error: moderation.reason });
-  }
+  if (!moderation.ok) return json(400, { error: moderation.reason });
 
-  // Auth — match ai-site-generate semantics. Authed user is honored
-  // via JWT; sites without an owner are editable by anyone (testing
-  // flow).
   let authedUserId: string | null = null;
   const authHeader = req.headers.get("Authorization") ?? "";
   const bearer = authHeader.replace(/^Bearer\s+/i, "").trim();
@@ -106,35 +133,16 @@ serve(async (req) => {
     return json(403, { error: "not_owner" });
   }
 
-  // OpenAI image generation. gpt-image-1 returns the image as base64
-  // by default when b64_json is requested; we then upload to storage.
-  // Adding the photorealistic prefix matches the axion-generate
-  // pattern used elsewhere in this codebase for vendor photography.
   const fullPrompt =
     "Editorial photograph for an event website hero — beautiful, " +
     "warm lighting, professional composition, photorealistic. Subject: " +
     userPrompt;
 
-  const openaiRes = await fetch("https://api.openai.com/v1/images/generations", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${OPENAI_API_KEY}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      model: "gpt-image-1",
-      prompt: fullPrompt,
-      n: 1,
-      size: "1536x1024",
-      quality: "medium",
-    }),
-  });
+  const { res: openaiRes, modelUsed } = await callOpenAI(fullPrompt);
 
   if (!openaiRes.ok) {
     const detail = await openaiRes.text().catch(() => "");
     console.error("[ai-site-image-generate] openai error", openaiRes.status, detail);
-    // OpenAI returns 400 for content policy violations with a specific
-    // error code. Surface a user-friendly message.
     if (openaiRes.status === 400 && /content_policy|safety/i.test(detail)) {
       return json(400, { error: "content_blocked" });
     }
@@ -167,12 +175,10 @@ serve(async (req) => {
     .from("ai-site-images")
     .getPublicUrl(filename);
 
-  // Cache hero_image_url on the row so future regenerations or
-  // analytics can reference the latest hero without re-parsing HTML.
   await admin
     .from("ai_sites")
     .update({ hero_image_url: publicUrl.publicUrl })
     .eq("id", s.id);
 
-  return json(200, { image_url: publicUrl.publicUrl });
+  return json(200, { image_url: publicUrl.publicUrl, model: modelUsed });
 });
