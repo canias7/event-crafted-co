@@ -162,6 +162,16 @@ interface VendorSnapshot {
   // prompt so the AI personalizes ("always sign as Jamie", "reply
   // formally"). Null if the vendor never set it.
   preferences: string | null;
+  // Structured knowledge base — persistent facts about the vendor's
+  // business (pricing rules, services, brand voice, FAQs, policies).
+  // The AI uses these as authoritative truth on every turn, and can
+  // add/update/delete via tools when the vendor says "remember…".
+  knowledge: Array<{
+    id: string;
+    category: string;
+    title: string;
+    content: string;
+  }>;
 }
 
 async function buildVendorSnapshot(
@@ -187,6 +197,7 @@ async function buildVendorSnapshot(
     { data: counts },
     { data: hotLeads },
     { data: recentThreadRows },
+    { data: knowledgeRows },
   ] = await Promise.all([
     admin
       .from("vendor_profiles")
@@ -231,6 +242,13 @@ async function buildVendorSnapshot(
       if (excludeThreadId) q = q.neq("id", excludeThreadId);
       return q;
     })(),
+    admin
+      .from("my_space_knowledge")
+      .select("id, category, title, content")
+      .eq("user_id", userId)
+      .eq("is_active", true)
+      .order("category", { ascending: true })
+      .limit(60),
   ]);
 
   const busySet = new Set<string>();
@@ -281,6 +299,12 @@ async function buildVendorSnapshot(
       updated_at: t.updated_at,
     })),
     preferences: (vendor as any)?.my_space_preferences ?? null,
+    knowledge: ((knowledgeRows ?? []) as Array<any>).map((k) => ({
+      id: String(k.id),
+      category: String(k.category),
+      title: String(k.title),
+      content: String(k.content),
+    })),
   };
 }
 
@@ -347,6 +371,7 @@ Write tools (require an explicit go-ahead from the vendor before calling):
 - \`create_payment_link\` · \`send_email\`
 - \`toggle_auto_reply\` — flips inbox auto-reply settings
 - \`manage_faq\` · \`manage_package\` · \`update_profile\`
+- \`add_knowledge\` · \`update_knowledge\` · \`delete_knowledge\` — manage the persistent knowledge base (pricing, services, brand voice, FAQs, policies)
 
 Confirmation rule for writes:
 - If the vendor said the exact action AND the parameters in their last message ("yes send it", "reply to inquiry X saying we're free July 14", "block Aug 1 for me"), proceed without re-asking.
@@ -383,8 +408,44 @@ ${
         snap.preferences.trim()
       }`
       : ""
-  }
+  }${buildKnowledgeBlock(snap.knowledge)}
 ═══════════════════════════════════════════════════`;
+}
+
+const KNOWLEDGE_CATEGORY_LABELS: Record<string, string> = {
+  pricing: "PRICING",
+  services: "SERVICES",
+  brand_voice: "BRAND VOICE",
+  faq: "FAQ",
+  policies: "POLICIES",
+  other: "OTHER",
+};
+
+function buildKnowledgeBlock(
+  knowledge: VendorSnapshot["knowledge"],
+): string {
+  if (!knowledge.length) {
+    return `\n\nVendor knowledge base: (empty — when the vendor says "remember that…", "from now on…", or shares a durable fact about their pricing/services/brand voice/policies, call add_knowledge to save it for every future turn.)`;
+  }
+  const grouped = new Map<string, VendorSnapshot["knowledge"]>();
+  for (const k of knowledge) {
+    const arr = grouped.get(k.category) ?? [];
+    arr.push(k);
+    grouped.set(k.category, arr);
+  }
+  const order = ["pricing", "services", "brand_voice", "faq", "policies", "other"];
+  const sections: string[] = [];
+  for (const cat of order) {
+    const items = grouped.get(cat);
+    if (!items || items.length === 0) continue;
+    const lines = items
+      .map((k) => `  • ${k.title}: ${k.content}`)
+      .join("\n");
+    sections.push(`${KNOWLEDGE_CATEGORY_LABELS[cat] ?? cat.toUpperCase()}:\n${lines}`);
+  }
+  return `\n\n═══ VENDOR KNOWLEDGE BASE (authoritative facts — apply on every turn) ═══\n${
+    sections.join("\n\n")
+  }\n\nIf the vendor tells you a new durable fact about their business (pricing rule, service detail, brand voice preference, policy), call add_knowledge to save it. If they correct an existing entry, call update_knowledge. If they say "forget X" or "remove X", call delete_knowledge.`;
 }
 
 // ─── Tools ────────────────────────────────────────────────────────
@@ -960,6 +1021,75 @@ const TOOLS = [
       properties: {
         limit: { type: "integer", minimum: 1, maximum: 50 },
         tool_name: { type: "string", description: "Filter to one tool." },
+      },
+    },
+  },
+  // ─── Knowledge base ─────────────────────────────────────────────
+  {
+    name: "list_knowledge",
+    description:
+      "Return the vendor's persistent knowledge base entries (pricing rules, services, brand voice, FAQs, policies). Use when the vendor asks 'what do you know about my business?' or wants to review what's stored. Already auto-loaded into your system prompt every turn — only call this when the vendor explicitly wants to inspect/audit.",
+    input_schema: {
+      type: "object",
+      properties: {
+        category: {
+          type: "string",
+          enum: ["pricing", "services", "brand_voice", "faq", "policies", "other"],
+          description: "Optional filter to one category.",
+        },
+      },
+    },
+  },
+  {
+    name: "add_knowledge",
+    description:
+      "Save a new durable fact about the vendor's business that you should remember on every future turn. Use when the vendor says 'remember that…', 'from now on…', or shares pricing rules, services, brand voice, FAQs, or policies. Title is a short label (e.g. 'Hourly rate'), content is the full fact (e.g. '$150/hr for events under 4 hours, $125/hr above'). WRITE ACTION — confirm with the vendor before calling unless they used a clear 'remember…' / 'save…' phrase.",
+    input_schema: {
+      type: "object",
+      required: ["category", "title", "content"],
+      properties: {
+        category: {
+          type: "string",
+          enum: ["pricing", "services", "brand_voice", "faq", "policies", "other"],
+        },
+        title: {
+          type: "string",
+          description: "Short label, 1-200 chars (e.g. 'Hourly rate', 'Travel policy').",
+        },
+        content: {
+          type: "string",
+          description: "Full fact, 1-4000 chars.",
+        },
+      },
+    },
+  },
+  {
+    name: "update_knowledge",
+    description:
+      "Edit an existing knowledge-base entry. Use when the vendor corrects something you remembered, or wants to refine wording. WRITE ACTION.",
+    input_schema: {
+      type: "object",
+      required: ["id"],
+      properties: {
+        id: { type: "string", description: "UUID of the entry to update." },
+        category: {
+          type: "string",
+          enum: ["pricing", "services", "brand_voice", "faq", "policies", "other"],
+        },
+        title: { type: "string" },
+        content: { type: "string" },
+      },
+    },
+  },
+  {
+    name: "delete_knowledge",
+    description:
+      "Permanently delete a knowledge-base entry. Use when the vendor says 'forget that', 'remove…', or otherwise wants to discard a stored fact. WRITE ACTION — confirm the exact entry first.",
+    input_schema: {
+      type: "object",
+      required: ["id"],
+      properties: {
+        id: { type: "string", description: "UUID of the entry to delete." },
       },
     },
   },
@@ -2369,6 +2499,122 @@ async function toolSetChatPreferences(
   return { updated: true, preferences: text || null };
 }
 
+const KNOWLEDGE_CATEGORIES = new Set([
+  "pricing",
+  "services",
+  "brand_voice",
+  "faq",
+  "policies",
+  "other",
+]);
+
+async function toolListKnowledge(
+  admin: any,
+  userId: string,
+  input: any,
+): Promise<unknown> {
+  let q = admin
+    .from("my_space_knowledge")
+    .select("id, category, title, content, is_active, created_at, updated_at")
+    .eq("user_id", userId)
+    .eq("is_active", true)
+    .order("category", { ascending: true })
+    .order("created_at", { ascending: true });
+  const cat = typeof input?.category === "string" ? input.category : null;
+  if (cat && KNOWLEDGE_CATEGORIES.has(cat)) q = q.eq("category", cat);
+  const { data, error } = await q;
+  if (error) return { error: error.message };
+  return { entries: (data ?? []) as Array<any> };
+}
+
+async function toolAddKnowledge(
+  admin: any,
+  vendorId: string,
+  userId: string,
+  input: any,
+): Promise<unknown> {
+  const category = String(input?.category ?? "").trim();
+  if (!KNOWLEDGE_CATEGORIES.has(category)) {
+    return {
+      error: `invalid category — must be one of: ${
+        Array.from(KNOWLEDGE_CATEGORIES).join(", ")
+      }`,
+    };
+  }
+  const title = String(input?.title ?? "").trim().slice(0, 200);
+  const content = String(input?.content ?? "").trim().slice(0, 4000);
+  if (!title || !content) return { error: "title and content required" };
+  const { data, error } = await admin
+    .from("my_space_knowledge")
+    .insert({
+      user_id: userId,
+      vendor_id: vendorId || null,
+      category,
+      title,
+      content,
+    })
+    .select("id, category, title, content")
+    .single();
+  if (error) return { error: error.message };
+  return { added: true, entry: data };
+}
+
+async function toolUpdateKnowledge(
+  admin: any,
+  userId: string,
+  input: any,
+): Promise<unknown> {
+  const id = String(input?.id ?? "").trim();
+  if (!id) return { error: "id required" };
+  const patch: Record<string, unknown> = {};
+  if (typeof input?.category === "string") {
+    if (!KNOWLEDGE_CATEGORIES.has(input.category)) {
+      return { error: "invalid category" };
+    }
+    patch.category = input.category;
+  }
+  if (typeof input?.title === "string") {
+    const t = input.title.trim().slice(0, 200);
+    if (!t) return { error: "title cannot be empty" };
+    patch.title = t;
+  }
+  if (typeof input?.content === "string") {
+    const c = input.content.trim().slice(0, 4000);
+    if (!c) return { error: "content cannot be empty" };
+    patch.content = c;
+  }
+  if (Object.keys(patch).length === 0) {
+    return { error: "no fields to update" };
+  }
+  const { data, error } = await admin
+    .from("my_space_knowledge")
+    .update(patch)
+    .eq("id", id)
+    .eq("user_id", userId)
+    .select("id, category, title, content")
+    .maybeSingle();
+  if (error) return { error: error.message };
+  if (!data) return { error: "not_found_or_not_owned" };
+  return { updated: true, entry: data };
+}
+
+async function toolDeleteKnowledge(
+  admin: any,
+  userId: string,
+  input: any,
+): Promise<unknown> {
+  const id = String(input?.id ?? "").trim();
+  if (!id) return { error: "id required" };
+  const { error, count } = await admin
+    .from("my_space_knowledge")
+    .delete({ count: "exact" })
+    .eq("id", id)
+    .eq("user_id", userId);
+  if (error) return { error: error.message };
+  if (!count) return { error: "not_found_or_not_owned" };
+  return { deleted: true, id };
+}
+
 async function toolGetAuditLog(
   admin: any,
   userId: string,
@@ -3268,6 +3514,18 @@ async function executeTool(
     if (name === "get_audit_log") {
       return await toolGetAuditLog(admin, userId, input);
     }
+    if (name === "list_knowledge") {
+      return await toolListKnowledge(admin, userId, input);
+    }
+    if (name === "add_knowledge") {
+      return await toolAddKnowledge(admin, vendorId, userId, input);
+    }
+    if (name === "update_knowledge") {
+      return await toolUpdateKnowledge(admin, userId, input);
+    }
+    if (name === "delete_knowledge") {
+      return await toolDeleteKnowledge(admin, userId, input);
+    }
     if (name === "web_search") return await toolWebSearch(input);
     if (name === "get_sales_summary") {
       return await toolGetSalesSummary(admin, vendorId, input);
@@ -3372,6 +3630,9 @@ const WRITE_TOOL_NAMES = new Set([
   "create_invoice",
   "edit_image",
   "set_chat_preferences",
+  "add_knowledge",
+  "update_knowledge",
+  "delete_knowledge",
 ]);
 
 // Fire-and-forget — never block the chat reply on audit insert.

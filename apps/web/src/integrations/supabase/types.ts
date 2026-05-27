@@ -181,6 +181,7 @@ export type Database = {
           email: string | null
           id: string
           name: string
+          plus_one_allowed: boolean
           site_id: string
           token: string
         }
@@ -189,6 +190,7 @@ export type Database = {
           email?: string | null
           id?: string
           name: string
+          plus_one_allowed?: boolean
           site_id: string
           token: string
         }
@@ -197,12 +199,86 @@ export type Database = {
           email?: string | null
           id?: string
           name?: string
+          plus_one_allowed?: boolean
           site_id?: string
           token?: string
         }
         Relationships: [
           {
             foreignKeyName: "ai_site_guests_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "ai_sites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ai_site_messages: {
+        Row: {
+          approved: boolean
+          created_at: string
+          id: string
+          message: string
+          name: string
+          site_id: string
+        }
+        Insert: {
+          approved?: boolean
+          created_at?: string
+          id?: string
+          message: string
+          name: string
+          site_id: string
+        }
+        Update: {
+          approved?: boolean
+          created_at?: string
+          id?: string
+          message?: string
+          name?: string
+          site_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_site_messages_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "ai_sites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ai_site_photos: {
+        Row: {
+          approved: boolean
+          caption: string | null
+          id: string
+          photo_url: string
+          site_id: string
+          uploaded_at: string
+          uploader_name: string | null
+        }
+        Insert: {
+          approved?: boolean
+          caption?: string | null
+          id?: string
+          photo_url: string
+          site_id: string
+          uploaded_at?: string
+          uploader_name?: string | null
+        }
+        Update: {
+          approved?: boolean
+          caption?: string | null
+          id?: string
+          photo_url?: string
+          site_id?: string
+          uploaded_at?: string
+          uploader_name?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_site_photos_site_id_fkey"
             columns: ["site_id"]
             isOneToOne: false
             referencedRelation: "ai_sites"
@@ -218,7 +294,10 @@ export type Database = {
           guest_name: string
           guests_count: number
           id: string
+          meal_choice: string | null
           message: string | null
+          plus_one_meal: string | null
+          plus_one_name: string | null
           site_id: string
         }
         Insert: {
@@ -228,7 +307,10 @@ export type Database = {
           guest_name: string
           guests_count?: number
           id?: string
+          meal_choice?: string | null
           message?: string | null
+          plus_one_meal?: string | null
+          plus_one_name?: string | null
           site_id: string
         }
         Update: {
@@ -238,7 +320,10 @@ export type Database = {
           guest_name?: string
           guests_count?: number
           id?: string
+          meal_choice?: string | null
           message?: string | null
+          plus_one_meal?: string | null
+          plus_one_name?: string | null
           site_id?: string
         }
         Relationships: [
@@ -1959,6 +2044,50 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "my_space_custom_tools_vendor_id_fkey"
+            columns: ["vendor_id"]
+            isOneToOne: false
+            referencedRelation: "vendor_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      my_space_knowledge: {
+        Row: {
+          category: string
+          content: string
+          created_at: string
+          id: string
+          is_active: boolean
+          title: string
+          updated_at: string
+          user_id: string
+          vendor_id: string | null
+        }
+        Insert: {
+          category: string
+          content: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          title: string
+          updated_at?: string
+          user_id: string
+          vendor_id?: string | null
+        }
+        Update: {
+          category?: string
+          content?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          title?: string
+          updated_at?: string
+          user_id?: string
+          vendor_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "my_space_knowledge_vendor_id_fkey"
             columns: ["vendor_id"]
             isOneToOne: false
             referencedRelation: "vendor_profiles"
