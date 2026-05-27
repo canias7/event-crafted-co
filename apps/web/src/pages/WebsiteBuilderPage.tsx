@@ -84,6 +84,8 @@ export default function WebsiteBuilderPage() {
   const [modPhotos, setModPhotos] = useState<
     Array<{ id: string; photo_url: string; uploader_name: string | null; caption: string | null; approved: boolean; uploaded_at: string }>
   >([]);
+  const [requireMsgApproval, setRequireMsgApproval] = useState(false);
+  const [requirePhotoApproval, setRequirePhotoApproval] = useState(false);
   const [guestImport, setGuestImport] = useState("");
   const [copiedToken, setCopiedToken] = useState<string | null>(null);
   const [editCount, setEditCount] = useState(0);
@@ -257,7 +259,7 @@ export default function WebsiteBuilderPage() {
       Authorization: `Bearer ${session?.access_token ?? SUPABASE_KEY}`,
     };
     try {
-      const [mres, pres] = await Promise.all([
+      const [mres, pres, settings] = await Promise.all([
         fetch(`${SUPABASE_URL}/functions/v1/ai-site-messages`, {
           method: "POST",
           headers,
@@ -268,13 +270,47 @@ export default function WebsiteBuilderPage() {
           headers,
           body: JSON.stringify({ site_id: siteId, action: "list" }),
         }),
+        sb
+          .from("ai_sites")
+          .select("require_message_approval, require_photo_approval")
+          .eq("id", siteId)
+          .maybeSingle(),
       ]);
       const mbody = await mres.json().catch(() => ({}));
       const pbody = await pres.json().catch(() => ({}));
       setModMessages(Array.isArray(mbody?.messages) ? mbody.messages : []);
       setModPhotos(Array.isArray(pbody?.photos) ? pbody.photos : []);
+      const s = settings.data as
+        | { require_message_approval?: boolean; require_photo_approval?: boolean }
+        | null;
+      setRequireMsgApproval(!!s?.require_message_approval);
+      setRequirePhotoApproval(!!s?.require_photo_approval);
     } finally {
       setModBusy(false);
+    }
+  }
+
+  // Flip the per-site auto-approve toggles. Owners change these from
+  // the moderation modal. Inserts in ai-site-messages / ai-site-photos
+  // read the flag and set approved accordingly, so the change applies
+  // to future posts (existing posts keep their current approved state).
+  async function setApprovalRule(
+    kind: "messages" | "photos",
+    requireApproval: boolean,
+  ) {
+    if (!siteId) return;
+    const column = kind === "messages" ? "require_message_approval" : "require_photo_approval";
+    // Optimistic.
+    if (kind === "messages") setRequireMsgApproval(requireApproval);
+    else setRequirePhotoApproval(requireApproval);
+    const { error } = await (sb.from("ai_sites") as any)
+      .update({ [column]: requireApproval })
+      .eq("id", siteId);
+    if (error) {
+      // Roll back.
+      if (kind === "messages") setRequireMsgApproval(!requireApproval);
+      else setRequirePhotoApproval(!requireApproval);
+      setError("Couldn't save that setting.");
     }
   }
 
@@ -1902,6 +1938,25 @@ export default function WebsiteBuilderPage() {
                 Photos ({modPhotos.length})
               </button>
             </div>
+
+            {!modBusy && (
+              <label className="flex items-center gap-3 text-[12px] text-white/70 bg-white/[0.03] border border-white/10 rounded-xl px-3 py-2.5 mb-4 cursor-pointer hover:bg-white/[0.05] transition-colors">
+                <input
+                  type="checkbox"
+                  checked={modTab === "messages" ? requireMsgApproval : requirePhotoApproval}
+                  onChange={(e) =>
+                    setApprovalRule(modTab, e.target.checked)
+                  }
+                  className="accent-white"
+                />
+                <span className="flex-1">
+                  Require my approval before new {modTab === "messages" ? "messages" : "photos"} show on the site
+                </span>
+                <span className="text-[10px] uppercase tracking-wider text-white/40">
+                  {(modTab === "messages" ? requireMsgApproval : requirePhotoApproval) ? "On" : "Off"}
+                </span>
+              </label>
+            )}
 
             {modBusy && (
               <div className="text-center text-white/40 text-[13px] py-8">

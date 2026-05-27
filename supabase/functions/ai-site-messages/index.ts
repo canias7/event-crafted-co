@@ -133,17 +133,20 @@ serve(async (req) => {
 
     const { data: site } = await admin
       .from("ai_sites")
-      .select("id, slug, is_blocked")
+      .select("id, slug, is_blocked, require_message_approval")
       .eq("slug", slug)
       .maybeSingle();
     if (!site || (site as any).is_blocked) {
       return new Response("Site not found", { status: 404 });
     }
+    // Honor the per-site auto-approve toggle. Hidden messages still
+    // get inserted so the owner sees them in the moderation modal.
+    const approved = !(site as any).require_message_approval;
     await admin.from("ai_site_messages").insert({
       site_id: (site as any).id,
       name,
       message,
-      approved: true,
+      approved,
     });
     return new Response(thankYouPage((site as any).slug), {
       status: 200,
