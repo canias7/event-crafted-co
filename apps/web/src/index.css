@@ -641,4 +641,170 @@
     background: #0ea5e9;
     border-radius: 2px;
   }
+
+  /* Page header — Oracle Redwood-style page chrome. Lives at the
+     top of each tab and replaces the old simple section eyebrow.
+     Components: page title (h1), greeting/date sub, breadcrumbs,
+     primary action button slot on the right. */
+  .my-vendora-cockpit .cockpit-page-header {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    padding: 18px 20px;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  .my-vendora-cockpit .cockpit-breadcrumb {
+    font-size: 11px;
+    color: #64748b;
+    margin-bottom: 4px;
+  }
+  .my-vendora-cockpit .cockpit-breadcrumb span + span::before {
+    content: "/";
+    margin: 0 6px;
+    color: #cbd5e1;
+  }
+  .my-vendora-cockpit .cockpit-page-title {
+    font-size: 22px;
+    font-weight: 700;
+    color: #0f172a;
+    letter-spacing: -0.015em;
+    line-height: 1.2;
+  }
+  .my-vendora-cockpit .cockpit-page-sub {
+    font-size: 12px;
+    color: #64748b;
+    margin-top: 4px;
+  }
+
+  /* KPI row — 4 wide, denser than the old StatCard grid. Each
+     tile shows label / value / delta-chip / trend-sparkline-or-sub. */
+  .my-vendora-cockpit .cockpit-kpi-row {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+  @media (min-width: 768px) {
+    .my-vendora-cockpit .cockpit-kpi-row {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+  }
+  .my-vendora-cockpit .cockpit-kpi-tile {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    padding: 16px 16px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    transition: box-shadow 120ms ease;
+  }
+  .my-vendora-cockpit .cockpit-kpi-tile:hover {
+    box-shadow: 0 2px 6px rgba(15, 23, 42, 0.08);
+  }
+  .my-vendora-cockpit .cockpit-kpi-label {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: #64748b;
+  }
+  .my-vendora-cockpit .cockpit-kpi-value {
+    font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI",
+      Roboto, "Helvetica Neue", Arial, sans-serif;
+    font-variant-numeric: tabular-nums;
+    font-size: 26px;
+    font-weight: 700;
+    color: #0f172a;
+    letter-spacing: -0.02em;
+    line-height: 1.1;
+  }
+  .my-vendora-cockpit .cockpit-kpi-sub {
+    font-size: 11px;
+    color: #64748b;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 2px;
+  }
+
+  /* 2-column chart grid — Revenue line + A/R aging bars
+     side-by-side on Overview, similar layout on Reports. */
+  .my-vendora-cockpit .cockpit-chart-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+  @media (min-width: 900px) {
+    .my-vendora-cockpit .cockpit-chart-grid {
+      grid-template-columns: 1.4fr 1fr;
+    }
+  }
+
+  /* Real data table — sticky thead, hover rows, sortable
+     indicator on column headers. Built on top of native <table>
+     so screen readers + keyboard nav work properly. */
+  .my-vendora-cockpit table.cockpit-data-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: #ffffff;
+    font-size: 13px;
+  }
+  .my-vendora-cockpit table.cockpit-data-table thead th {
+    position: sticky;
+    top: 0;
+    background: #f8fafc;
+    color: #475569;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    text-align: left;
+    padding: 10px 12px;
+    border-bottom: 1px solid #e2e8f0;
+    white-space: nowrap;
+    z-index: 1;
+  }
+  .my-vendora-cockpit table.cockpit-data-table thead th.num {
+    text-align: right;
+  }
+  .my-vendora-cockpit table.cockpit-data-table tbody td {
+    padding: 11px 12px;
+    border-bottom: 1px solid #f1f5f9;
+    color: #0f172a;
+    vertical-align: middle;
+  }
+  .my-vendora-cockpit table.cockpit-data-table tbody td.num {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+  .my-vendora-cockpit table.cockpit-data-table tbody tr:hover td {
+    background: #f8fafc;
+  }
+  .my-vendora-cockpit table.cockpit-data-table tbody tr:last-child td {
+    border-bottom: 0;
+  }
+  /* Data-table card wrapper — adds a header row + scroll cap */
+  .my-vendora-cockpit .cockpit-data-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    overflow: hidden;
+  }
+  .my-vendora-cockpit .cockpit-data-card-header {
+    padding: 12px 16px;
+    border-bottom: 1px solid #e2e8f0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    background: #ffffff;
+  }
 }
