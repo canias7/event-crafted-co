@@ -45,6 +45,7 @@ const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
 const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY") ?? "";
+const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY") ?? "";
 
 const MODEL = "claude-sonnet-4-6";
 
@@ -840,6 +841,140 @@ The pattern uses two hidden radios + :has() to swap visible content. The inputs 
   • Light pill style on dark sites (rgba black background, white text). On cream/pastel sites flip it: white background, dark accent text.
   • Place the switch in the TOP-RIGHT corner of the cover page so it's visible without scrolling. It stays fixed across all sections.
 
+═══ MONOGRAM CREST — bespoke SVG badge for couples ═══
+
+For weddings, anniversaries, engagements, and any event with two named honorees, generate a hand-drawn-feel SVG monogram crest with their initials inside a botanical ring. This REPLACES the basic wax seal on the cover page (the seal stays for events with one honoree).
+
+  Recipe (Eleanor & Marcus → E & M):
+
+  <svg class="monogram" viewBox="0 0 220 220" xmlns="http://www.w3.org/2000/svg" aria-label="Eleanor and Marcus">
+    <!-- Twin botanical ring -->
+    <circle cx="110" cy="110" r="92" fill="none" stroke="var(--accent)" stroke-width="0.6" opacity="0.5"/>
+    <circle cx="110" cy="110" r="88" fill="none" stroke="var(--accent)" stroke-width="1"/>
+    <!-- Laurel sprigs on the sides -->
+    <g stroke="var(--accent)" stroke-width="0.7" fill="none" stroke-linecap="round">
+      <path d="M 22,110 Q 30,98 38,110 M 22,110 Q 30,122 38,110"/>
+      <path d="M 38,110 Q 46,98 54,110 M 38,110 Q 46,122 54,110"/>
+      <path d="M 54,110 Q 62,100 70,110 M 54,110 Q 62,120 70,110"/>
+      <path d="M 198,110 Q 190,98 182,110 M 198,110 Q 190,122 182,110"/>
+      <path d="M 182,110 Q 174,98 166,110 M 182,110 Q 174,122 166,110"/>
+      <path d="M 166,110 Q 158,100 150,110 M 166,110 Q 158,120 150,110"/>
+    </g>
+    <!-- Initials (script font, large) -->
+    <text x="110" y="135" font-family="'Allura', 'Pinyon Script', cursive" font-size="92" fill="var(--accent)" text-anchor="middle" font-weight="400">E&amp;M</text>
+    <!-- Tiny ornament dot at the bottom -->
+    <circle cx="110" cy="170" r="2" fill="var(--accent)"/>
+  </svg>
+
+  CSS:
+  .monogram { width: clamp(140px, 24vw, 220px); height: auto; display: block; margin: 0 auto; filter: drop-shadow(0 1px 2px rgba(0,0,0,0.18)); }
+
+  • Always pull color from --accent so it matches the site's chosen palette.
+  • The script font for the initials should match the site's romantic accent font (Allura, Pinyon Script, or Great Vibes).
+  • For two-letter combos use "E&M" or "E·M". For longer formal names use full surname initials.
+  • For the cover page, place the monogram ABOVE the couple names. The user taps the monogram (not the wax seal) to reveal the body.
+  • For non-couple events (single name, family, group), use the wax seal pattern instead.
+
+═══ SVG ORNAMENT LIBRARY — drop-in decorative dividers ═══
+
+Use these named ornaments instead of a generic gold line. Pick the one matching the event's mood. Always use color: var(--accent) so it picks up the palette automatically.
+
+ORNAMENT — CLASSIC ROMANCE (universal, default for weddings):
+  <svg class="ornament" viewBox="0 0 240 24" width="240" aria-hidden="true">
+    <line x1="0" y1="12" x2="90" y2="12" stroke="currentColor" stroke-width="0.5"/>
+    <path d="M 105,12 Q 110,4 115,12 Q 120,20 125,12 Q 130,4 135,12" stroke="currentColor" stroke-width="0.8" fill="none"/>
+    <circle cx="120" cy="12" r="2" fill="currentColor"/>
+    <line x1="150" y1="12" x2="240" y2="12" stroke="currentColor" stroke-width="0.5"/>
+  </svg>
+
+ORNAMENT — EUCALYPTUS SPRIG (gardens, romantic, botanical):
+  <svg class="ornament" viewBox="0 0 280 40" width="280" aria-hidden="true">
+    <line x1="0" y1="20" x2="100" y2="20" stroke="currentColor" stroke-width="0.5"/>
+    <g stroke="currentColor" stroke-width="0.7" fill="none" stroke-linecap="round">
+      <ellipse cx="120" cy="14" rx="6" ry="3" transform="rotate(-30 120 14)"/>
+      <ellipse cx="132" cy="10" rx="6" ry="3" transform="rotate(-20 132 10)"/>
+      <ellipse cx="148" cy="14" rx="6" ry="3" transform="rotate(20 148 14)"/>
+      <ellipse cx="160" cy="10" rx="6" ry="3" transform="rotate(30 160 10)"/>
+      <ellipse cx="120" cy="26" rx="6" ry="3" transform="rotate(30 120 26)"/>
+      <ellipse cx="132" cy="30" rx="6" ry="3" transform="rotate(20 132 30)"/>
+      <ellipse cx="148" cy="26" rx="6" ry="3" transform="rotate(-20 148 26)"/>
+      <ellipse cx="160" cy="30" rx="6" ry="3" transform="rotate(-30 160 30)"/>
+      <line x1="110" y1="20" x2="170" y2="20"/>
+    </g>
+    <line x1="180" y1="20" x2="280" y2="20" stroke="currentColor" stroke-width="0.5"/>
+  </svg>
+
+ORNAMENT — ART DECO FRAME (NYE, Gatsby, speakeasy, glam birthdays):
+  <svg class="ornament" viewBox="0 0 200 30" width="200" aria-hidden="true">
+    <g stroke="currentColor" stroke-width="0.8" fill="none">
+      <polyline points="0,15 60,15 70,5 80,15 100,15 110,5 120,15 140,15 130,25 120,15"/>
+      <polyline points="100,15 90,5 80,15"/>
+      <rect x="98" y="13" width="4" height="4" fill="currentColor" transform="rotate(45 100 15)"/>
+      <line x1="140" y1="15" x2="200" y2="15"/>
+    </g>
+  </svg>
+
+ORNAMENT — FLORAL WREATH (bridal showers, baby showers, garden parties):
+  <svg class="ornament" viewBox="0 0 60 60" width="60" aria-hidden="true">
+    <g stroke="currentColor" stroke-width="0.6" fill="none">
+      <circle cx="30" cy="30" r="22"/>
+      <circle cx="30" cy="8" r="3" fill="currentColor" opacity="0.4"/>
+      <circle cx="48" cy="20" r="2.5" fill="currentColor" opacity="0.4"/>
+      <circle cx="52" cy="40" r="3" fill="currentColor" opacity="0.4"/>
+      <circle cx="40" cy="54" r="2" fill="currentColor" opacity="0.4"/>
+      <circle cx="20" cy="54" r="3" fill="currentColor" opacity="0.4"/>
+      <circle cx="8" cy="40" r="2.5" fill="currentColor" opacity="0.4"/>
+      <circle cx="12" cy="20" r="3" fill="currentColor" opacity="0.4"/>
+    </g>
+  </svg>
+
+ORNAMENT — FLEUR-DE-LIS (heraldic, regal — quinces, formal galas, royal-themed):
+  <svg class="ornament" viewBox="0 0 240 36" width="240" aria-hidden="true">
+    <line x1="0" y1="18" x2="100" y2="18" stroke="currentColor" stroke-width="0.5"/>
+    <path d="M 120,4 Q 124,12 120,18 Q 116,12 120,4 Z M 110,12 Q 118,16 120,22 Q 122,16 130,12 M 120,18 L 120,32 M 112,30 L 128,30" stroke="currentColor" stroke-width="0.8" fill="none"/>
+    <line x1="140" y1="18" x2="240" y2="18" stroke="currentColor" stroke-width="0.5"/>
+  </svg>
+
+ORNAMENT — MINIMAL DOT TRIO (modern luxury, editorial, scandi):
+  <svg class="ornament" viewBox="0 0 80 8" width="80" aria-hidden="true">
+    <circle cx="20" cy="4" r="2" fill="currentColor" opacity="0.4"/>
+    <circle cx="40" cy="4" r="2.5" fill="currentColor"/>
+    <circle cx="60" cy="4" r="2" fill="currentColor" opacity="0.4"/>
+  </svg>
+
+  Apply with: .ornament { color: var(--accent); display: block; margin: 2rem auto; }
+
+  Use a different ornament for variety: one between hero and Our Story, a different one between Schedule and Travel, etc. Don't repeat the same ornament more than twice on a site.
+
+═══ HERO ILLUSTRATION — AI-generated custom hero (premium events) ═══
+
+For weddings, anniversaries, engagements, formal events, and any event where the cover-page calls for a hero image, you have a special option: emit a HERO_AI prompt comment and use the __HERO_AI__ placeholder URL. The server detects both, generates a custom watercolor illustration via gpt-image-2, uploads it, and replaces the placeholder before saving. The result is a one-of-a-kind painted hero (not a stock photo) tailored to the couple + venue + mood.
+
+  How to use it:
+
+  1. Emit a comment in the <head> section describing what the illustration should depict. Keep it 1-3 sentences, photographic/painterly, no text:
+
+     <!--HERO_AI_PROMPT: Watercolor painting of Villa Cipressi on Lake Como at golden hour, misty alpine mountains in the background, soft burgundy and gold palette, romantic atmospheric mood, hand-painted feel, no text or letters.-->
+
+  2. Reference the placeholder URL anywhere you'd normally put the hero image:
+
+     .cover-page { background: #1a1a1a url('__HERO_AI__') center/cover; }
+
+     OR an <img>:
+
+     <img class="hero-portrait" src="__HERO_AI__" alt="">
+
+  3. ALSO provide a stock Unsplash fallback in case the AI image fails:
+
+     .cover-page { background: #1a1a1a url('__HERO_AI__') center/cover, url('https://images.unsplash.com/photo-1503602642458-232111445657?w=2000&q=80') center/cover; }
+
+  Rules:
+  • Only use __HERO_AI__ when the event is elegant (weddings, anniversaries, engagements, quinces, formal birthdays, galas). For casual events (BBQ, kids birthday, housewarming) skip it — Unsplash is plenty.
+  • The HERO_AI_PROMPT should be SPECIFIC: include the venue type, color palette, time of day, mood. Don't say "wedding scene" — say "watercolor of a vineyard estate at sunset, dusty pink florals draping over stone arches, romantic burgundy palette."
+  • Use ONE __HERO_AI__ per site (it's slow / costs $$). Pick the most impactful spot — usually the cover-page background.
+  • If the user mentions a SPECIFIC real venue ("Villa Cipressi", "The Plaza"), describe it in the prompt so the illustration matches.
+  • NEVER ask for text or letters in the image (OpenAI will write garbled text).
+
 === END PREMIUM DESIGN BIBLE ===`;
 
 function buildSystemPrompt(rsvpEndpoint: string, todayIso: string): string {
@@ -894,6 +1029,9 @@ Style the form to match the site's palette. The action URL is the EXACT string a
 18. MULTI-LANGUAGE TOGGLE — REQUIRED for QUINCEAÑERAS (English/Spanish), BAR/BAT MITZVAHS (English/Hebrew with RTL), and destination weddings where the venue country speaks a language other than English (Italy → Italian, France → French, Mexico → Spanish, India → Hindi). Optional but encouraged whenever the user mentions bilingual families. Translate ALL guest-facing copy — never leave a half-translated page. Translations must read like a native speaker wrote them, not literal word-for-word. Use phrasing real invitations in that culture use ("Junto con sus familias" for Spanish, not "Together with their families" word-by-word).
 19. WEB SEARCH — when the user mentions a NAMED REAL venue ("Villa Cipressi", "The Plaza Hotel", "Marin Country Club"), CALL the web_search tool once to confirm: (a) full address, (b) approximate lat/lon for the map embed (NOT a generic city center), (c) one or two historical/architectural facts to weave into the Our Story or Venue section ("a 15th-century lakeside villa..."). For vague venues ("our backyard", "a friend's place") skip the search. Cap at 3 searches per generation. Use search results SILENTLY — never narrate "I searched for...", just emit the HTML.
 20. INSPIRATION IMAGE — if the user attached an image with their message, vision-read it FIRST and treat it as the design brief. Extract: dominant color palette (pick the 3 most prominent hex codes), font style (serif / sans / script / hand-drawn), mood (formal / playful / moody / airy), and any decorative motifs (florals / geometric / watercolor). Apply those exact choices to the generated site instead of defaulting to a stock palette. The image is the source of truth — match it.
+21. MONOGRAM CREST — for couples (weddings, anniversaries, engagements), use the MONOGRAM CREST SVG recipe with their initials in place of the basic wax seal. For single-honoree events (kids birthday, retirement, graduation) keep the wax seal.
+22. ORNAMENT VARIETY — between sections, use 2-3 different ornaments from the SVG ORNAMENT LIBRARY (classic romance, eucalyptus, art deco, floral wreath, fleur-de-lis, minimal dots) matched to the event mood. Don't reuse the same ornament more than twice per site.
+23. HERO ILLUSTRATION — for elegant events (weddings, anniversaries, engagements, quinces, formal galas), use the __HERO_AI__ placeholder with a HERO_AI_PROMPT comment so the server generates a custom watercolor hero. Always include an Unsplash fallback URL alongside it.
 
 After </html>, return NOTHING.
 
@@ -926,6 +1064,66 @@ function slugify(title: string): string {
     .slice(0, 40) || "site";
   const suffix = Math.random().toString(16).slice(2, 8);
   return `${base}-${suffix}`;
+}
+
+// Generate a custom watercolor hero illustration via OpenAI gpt-image-2
+// (with gpt-image-1 fallback). Uploads to ai-site-images bucket and
+// returns the public URL, or null on any failure (caller keeps the
+// Unsplash fallback baked into the generated CSS).
+async function generateHeroIllustration(
+  prompt: string,
+  slug: string,
+  admin: ReturnType<typeof createClient>,
+): Promise<string | null> {
+  if (!OPENAI_API_KEY) return null;
+  const fullPrompt =
+    "Watercolor illustration for an elegant event invitation hero. " +
+    "Soft painterly style, hand-painted feel, atmospheric, no text or " +
+    "letters anywhere in the image. Subject: " + prompt.slice(0, 800);
+
+  async function call(model: string) {
+    return await fetch("https://api.openai.com/v1/images/generations", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${OPENAI_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model,
+        prompt: fullPrompt,
+        n: 1,
+        size: "1536x1024",
+        quality: "medium",
+      }),
+    });
+  }
+
+  let res = await call("gpt-image-2");
+  if (!res.ok) {
+    const detail = await res.clone().text().catch(() => "");
+    if (/model_not_found|invalid_model|does not exist/i.test(detail)) {
+      res = await call("gpt-image-1");
+    }
+  }
+  if (!res.ok) {
+    console.warn("[ai-site-generate] hero illustration gen failed", res.status);
+    return null;
+  }
+  const body = await res.json().catch(() => null) as any;
+  const b64: string | undefined = body?.data?.[0]?.b64_json;
+  if (!b64) return null;
+
+  const bytes = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
+  const filename = `${slug}/hero-${crypto.randomUUID()}.png`;
+  const { error: upErr } = await admin.storage
+    .from("ai-site-images")
+    .upload(filename, bytes, { contentType: "image/png", upsert: false });
+  if (upErr) {
+    console.warn("[ai-site-generate] hero upload failed", upErr);
+    return null;
+  }
+  const { data } = admin.storage.from("ai-site-images").getPublicUrl(filename);
+  return data?.publicUrl ?? null;
 }
 
 function stripCodeFences(text: string): string {
@@ -1152,6 +1350,22 @@ serve(async (req) => {
       );
       // If Claude included the literal placeholder anywhere, fix it too.
       html = html.replaceAll("__SLUG__", slug);
+
+      // Custom watercolor hero. If Claude emitted a HERO_AI_PROMPT
+      // comment AND used the __HERO_AI__ placeholder URL, generate
+      // the illustration via OpenAI and swap the placeholder. Best-
+      // effort: if generation fails the Unsplash fallback that
+      // Claude was instructed to bake in stays in place.
+      const heroMatch = html.match(/<!--\s*HERO_AI_PROMPT:\s*([\s\S]*?)\s*-->/i);
+      if (heroMatch && html.includes("__HERO_AI__")) {
+        const heroPrompt = heroMatch[1].trim().slice(0, 800);
+        try {
+          const heroUrl = await generateHeroIllustration(heroPrompt, slug, admin);
+          if (heroUrl) html = html.replaceAll("__HERO_AI__", heroUrl);
+        } catch (e) {
+          console.warn("[ai-site-generate] hero pipeline error", e);
+        }
+      }
 
       try {
         let savedSiteId: string;
