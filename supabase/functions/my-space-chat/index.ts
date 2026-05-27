@@ -322,6 +322,7 @@ Write tools (require an explicit go-ahead from the vendor before calling):
 - \`update_inquiry_status\` — marks an inquiry replied / closed / declined
 - \`block_calendar_date\` / \`unblock_calendar_date\` — single-date calendar edits
 - \`mark_notifications_read\` — clears notification badges
+- \`create_payment_link\` — creates a VendoraPay link the vendor can share with a host
 
 Confirmation rule for writes:
 - If the vendor said the exact action AND the parameters in their last message ("yes send it", "reply to inquiry X saying we're free July 14", "block Aug 1 for me"), proceed without re-asking.
@@ -593,6 +594,44 @@ const TOOLS = [
           type: "boolean",
           description:
             "If true, mark every unread notification for this vendor as read.",
+        },
+      },
+    },
+  },
+  {
+    name: "create_payment_link",
+    description:
+      "Create a shareable VendoraPay payment link the vendor can send to a host (deposit, balance, retainer, etc.). Returns the public URL. WRITE ACTION — confirm amount + title with the vendor before calling.",
+    input_schema: {
+      type: "object",
+      required: ["title", "amount_usd"],
+      properties: {
+        title: {
+          type: "string",
+          description:
+            "Short label shown on the checkout page (e.g. 'Wedding photography deposit').",
+        },
+        amount_usd: {
+          type: "number",
+          description:
+            "Amount in US dollars (e.g. 2000 for $2,000). Will be converted to cents server-side.",
+        },
+        description: {
+          type: "string",
+          description:
+            "Optional longer description shown on the checkout page.",
+        },
+        host_email: {
+          type: "string",
+          description:
+            "Optional email for the host paying — pre-fills checkout.",
+        },
+        expires_in_days: {
+          type: "integer",
+          minimum: 1,
+          maximum: 365,
+          description:
+            "Optional expiry; link expires this many days from now.",
         },
       },
     },
@@ -1148,6 +1187,50 @@ async function toolUnblockCalendarDate(
   return { unblocked: true, date };
 }
 
+async function toolCreatePaymentLink(
+  admin: any,
+  vendorId: string,
+  userId: string,
+  input: any,
+): Promise<unknown> {
+  const title = String(input?.title ?? "").trim();
+  if (!title) return { error: "title required" };
+  const amountUsd = Number(input?.amount_usd);
+  if (!Number.isFinite(amountUsd) || amountUsd <= 0) {
+    return { error: "amount_usd must be a positive number" };
+  }
+  const amountCents = Math.round(amountUsd * 100);
+  let expiresAt: string | null = null;
+  if (input?.expires_in_days != null) {
+    const days = Math.min(Math.max(Number(input.expires_in_days), 1), 365);
+    expiresAt = new Date(Date.now() + days * 86400000).toISOString();
+  }
+  const { data, error } = await admin
+    .from("payment_links")
+    .insert({
+      vendor_id: vendorId,
+      title,
+      description: input?.description ? String(input.description) : null,
+      amount_cents: amountCents,
+      host_email: input?.host_email ? String(input.host_email) : null,
+      expires_at: expiresAt,
+      created_by: userId,
+    })
+    .select("id, slug, amount_cents, title")
+    .single();
+  if (error) return { error: error.message };
+  const slug = (data as any).slug as string;
+  return {
+    created: true,
+    payment_link: {
+      id: (data as any).id,
+      title: (data as any).title,
+      amount_usd: ((data as any).amount_cents as number) / 100,
+      checkout_url: `https://eventvendora.com/pay/link/${slug}`,
+    },
+  };
+}
+
 async function toolMarkNotificationsRead(
   admin: any,
   userId: string,
@@ -1227,6 +1310,9 @@ async function executeTool(
     }
     if (name === "mark_notifications_read") {
       return await toolMarkNotificationsRead(admin, userId, input);
+    }
+    if (name === "create_payment_link") {
+      return await toolCreatePaymentLink(admin, vendorId, userId, input);
     }
     return { error: `unknown_tool:${name}` };
   } catch (err) {
