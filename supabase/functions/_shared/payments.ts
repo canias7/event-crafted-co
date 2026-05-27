@@ -483,7 +483,15 @@ const US_STATE_NAME_TO_CODE: Record<string, string> = {
   TENNESSEE: "TN", TEXAS: "TX", UTAH: "UT", VERMONT: "VT",
   VIRGINIA: "VA", WASHINGTON: "WA", "WEST VIRGINIA": "WV",
   WISCONSIN: "WI", WYOMING: "WY",
+  // DC + US territories that Stripe accepts in billing addresses.
+  // Without these, "Guam" or "Virgin Islands" typed by the buyer
+  // would fall through and store full-name strings, splitting from
+  // any future 2-letter entries in the Reports per-state aggregate.
   "DISTRICT OF COLUMBIA": "DC", "PUERTO RICO": "PR",
+  GUAM: "GU", "U.S. VIRGIN ISLANDS": "VI", "VIRGIN ISLANDS": "VI",
+  "AMERICAN SAMOA": "AS", "NORTHERN MARIANA ISLANDS": "MP",
+  "MARSHALL ISLANDS": "MH", "FEDERATED STATES OF MICRONESIA": "FM",
+  PALAU: "PW",
 };
 
 /**
