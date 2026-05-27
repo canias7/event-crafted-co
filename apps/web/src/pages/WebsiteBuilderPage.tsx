@@ -303,15 +303,14 @@ export default function WebsiteBuilderPage() {
     setConversation(nextConv);
     setInput("");
 
-    const doc = resetIframe();
-    if (!doc) {
-      setLoading(false);
-      setError("Couldn't access preview frame");
-      return;
-    }
+    // Don't reset the iframe yet — we buffer the streamed HTML and
+    // only write it to the iframe after the "done" event arrives.
+    // (Live progressive rendering looked ugly during stream — layout
+    // shifts, half-loaded fonts, partial scrollbars.)
     setHasContent(true);
 
     let receivedChunk = false;
+    let bufferedHtml = "";
     let buf = "";
 
     try {
@@ -362,19 +361,25 @@ export default function WebsiteBuilderPage() {
               continue;
             }
             if (data.type === "chunk" && data.text) {
+              // Buffer rather than write directly to iframe — only
+              // render after "done".
               const text = receivedChunk
                 ? data.text
                 : data.text.replace(/<!--\s*TITLE:[^>]*-->\s*/i, "");
               receivedChunk = true;
-              doc.write(text);
-              try {
-                const win = iframeRef.current?.contentWindow;
-                win?.scrollTo(0, win.document.body?.scrollHeight ?? 0);
-              } catch {
-                // ignore
-              }
+              bufferedHtml += text;
             } else if (data.type === "done") {
-              doc.close();
+              // Stream finished. Write the entire buffered HTML to
+              // the iframe at once so the user sees a complete,
+              // polished render — no in-flight layout shifts or
+              // half-loaded fonts.
+              const iframe = iframeRef.current;
+              if (iframe?.contentDocument) {
+                const doc = iframe.contentDocument;
+                doc.open();
+                doc.write(bufferedHtml);
+                doc.close();
+              }
               if (data.site_id) setSiteId(data.site_id);
               setSlug(data.slug ?? null);
               setTitle(data.title ?? null);
@@ -413,15 +418,27 @@ export default function WebsiteBuilderPage() {
           }
         }
       }
-      try {
-        doc.close();
-      } catch {
-        // already closed
+      // If the stream ended without a `done` event, dump the
+      // accumulated buffer into the iframe so the user sees
+      // *something* instead of an empty preview.
+      if (bufferedHtml && iframeRef.current?.contentDocument) {
+        const fallbackDoc = iframeRef.current.contentDocument;
+        try {
+          fallbackDoc.open();
+          fallbackDoc.write(bufferedHtml);
+          fallbackDoc.close();
+        } catch {
+          // ignore
+        }
       }
     } catch (e) {
       if ((e as Error)?.name === "AbortError") return;
+      // Hide the iframe again on failure so the user doesn't see
+      // a stale half-rendered preview.
+      if (!receivedChunk) setHasContent(false);
       try {
-        doc.close();
+        // best-effort close; iframe may not have an open doc
+        iframeRef.current?.contentDocument?.close();
       } catch {
         // ignore
       }
@@ -858,10 +875,27 @@ export default function WebsiteBuilderPage() {
             className="w-full h-full max-w-[1400px] rounded-xl shadow-2xl bg-white"
             style={{
               minHeight: "70vh",
-              visibility: hasContent ? "visible" : "hidden",
+              visibility: hasContent && !loading ? "visible" : "hidden",
             }}
           />
-          {!hasContent && (
+          {loading && (
+            <div className="absolute inset-0 flex items-center justify-center text-center text-white/60 max-w-md mx-auto px-6 pointer-events-none">
+              <div className="builder-preview-loader">
+                <div className="text-[11px] uppercase tracking-[3px] text-white/40 mb-4">
+                  Designing
+                </div>
+                <div className="builder-preview-mark">
+                  <span className="builder-preview-letter">V</span>
+                </div>
+                <div className="text-[13px] text-white/50 mt-6 leading-relaxed">
+                  Composing your invitation…
+                  <br />
+                  <span className="text-white/30">This usually takes about a minute.</span>
+                </div>
+              </div>
+            </div>
+          )}
+          {!loading && !hasContent && (
             <div className="absolute inset-0 flex items-center justify-center text-center text-white/40 max-w-md mx-auto px-6 pointer-events-none">
               <div>
                 <div className="text-[14px] uppercase tracking-[2px] mb-3">
@@ -940,6 +974,51 @@ export default function WebsiteBuilderPage() {
         @keyframes builderPulse {
           0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
           40% { transform: scale(1); opacity: 1; }
+        }
+
+        .builder-preview-loader {
+          animation: builderFadeIn 0.4s ease;
+        }
+        .builder-preview-mark {
+          width: 64px;
+          height: 64px;
+          margin: 0 auto;
+          border-radius: 50%;
+          background: radial-gradient(circle at 32% 28%, rgba(255,255,255,0.18), rgba(255,255,255,0.04) 70%, transparent);
+          border: 0.5px solid rgba(255,255,255,0.18);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: rgba(255,255,255,0.7);
+          font-family: Georgia, 'Times New Roman', serif;
+          font-style: italic;
+          font-size: 28px;
+          letter-spacing: 0.02em;
+          position: relative;
+          animation: builderMarkPulse 3s ease-in-out infinite;
+        }
+        .builder-preview-mark::before {
+          content: '';
+          position: absolute;
+          inset: -12px;
+          border-radius: 50%;
+          border: 0.5px solid rgba(255,255,255,0.12);
+          animation: builderRingPulse 3s ease-in-out infinite;
+        }
+        .builder-preview-letter {
+          z-index: 1;
+        }
+        @keyframes builderMarkPulse {
+          0%, 100% { box-shadow: 0 0 0 0 rgba(255,255,255,0.15); }
+          50% { box-shadow: 0 0 24px 4px rgba(255,255,255,0.08); }
+        }
+        @keyframes builderRingPulse {
+          0%, 100% { transform: scale(1); opacity: 1; }
+          50% { transform: scale(1.15); opacity: 0; }
+        }
+        @keyframes builderFadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
         }
       `}</style>
     </div>
