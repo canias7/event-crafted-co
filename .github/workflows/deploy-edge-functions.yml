@@ -4,7 +4,8 @@ name: Deploy Supabase Edge Functions
 # changes. Also supports manual dispatch for redeploying one or all
 # functions on demand.
 #
-# Prereq: SUPABASE_ACCESS_TOKEN repo secret. Generate at
+# Prereq: SUPABASETOKEN repo secret (mapped to SUPABASE_ACCESS_TOKEN
+# in the job env, which is what the CLI reads). Generate at
 # https://supabase.com/dashboard/account/tokens and set under
 # Settings → Secrets and variables → Actions.
 #
@@ -31,7 +32,7 @@ jobs:
     name: Deploy edge functions
     runs-on: ubuntu-latest
     env:
-      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASETOKEN }}
       PROJECT_REF: pahpjjubhbcbwqjpamwv
     steps:
       - name: Checkout
