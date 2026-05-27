@@ -328,16 +328,29 @@ export function MySpaceChat() {
   }
 
   // ── Send message → SSE stream from edge function → live-update bubble.
-  async function send(promptText?: string, opts?: { regenerate?: boolean }) {
+  async function send(
+    promptText?: string,
+    opts?: { regenerate?: boolean; replaceMessageId?: string },
+  ) {
     const regenerate = opts?.regenerate === true;
+    const replaceMessageId = opts?.replaceMessageId ?? null;
     const text = regenerate ? "" : (promptText ?? input).trim();
     const attachments = regenerate ? [] : pendingAttachments;
     if (!regenerate && (!text && attachments.length === 0)) return;
     if (sending) return;
-    if (regenerate && !currentThreadId) return;
-    if (!regenerate) {
+    if ((regenerate || replaceMessageId) && !currentThreadId) return;
+    if (!regenerate && !replaceMessageId) {
       setInput("");
       setPendingAttachments([]);
+    }
+    // For edit-and-resend, optimistically remove the edited message
+    // and everything after it from the visible list before we start
+    // streaming the new reply.
+    if (replaceMessageId) {
+      setMessages((prev) => {
+        const idx = prev.findIndex((m) => m.id === replaceMessageId);
+        return idx >= 0 ? prev.slice(0, idx) : prev;
+      });
     }
 
     // Optimistic user bubble + a placeholder assistant bubble that
@@ -402,6 +415,7 @@ export function MySpaceChat() {
                 thread_id: currentThreadId,
                 attachments:
                   attachments.length > 0 ? attachments : undefined,
+                replace_message_id: replaceMessageId ?? undefined,
               },
           ),
         },
@@ -961,7 +975,12 @@ export function MySpaceChat() {
                 </div>
               )
               : messages.map((m, i) => (
-                <MessageBubble key={m.id ?? `idx-${i}`} message={m} />
+                <MessageBubble
+                  key={m.id ?? `idx-${i}`}
+                  message={m}
+                  onEditAndResend={(id, newText) =>
+                    void send(newText, { replaceMessageId: id })}
+                />
               ))}
             {/* Regenerate button under the last assistant text message
                 when we're idle and the message has actually been
@@ -1242,10 +1261,29 @@ function formatThreadTime(iso: string): string {
   return d.toLocaleDateString();
 }
 
-function MessageBubble({ message }: { message: ChatMessage }) {
+function MessageBubble(
+  {
+    message,
+    onEditAndResend,
+  }: {
+    message: ChatMessage;
+    onEditAndResend?: (messageId: string, newText: string) => void;
+  },
+) {
   const isUser = message.role === "user";
   const attachments = message.type === "text" ? message.attachments : null;
   const [copied, setCopied] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(
+    message.type === "text" ? message.content : "",
+  );
+  // Keep draft in sync if the message updates from props.
+  useEffect(() => {
+    if (!editing && message.type === "text") setDraft(message.content);
+  }, [message, editing]);
+
+  const canEdit = isUser && message.type === "text" && !!message.id &&
+    !!onEditAndResend;
 
   const copyText = () => {
     const text = message.type === "text"
@@ -1255,6 +1293,20 @@ function MessageBubble({ message }: { message: ChatMessage }) {
     void navigator.clipboard.writeText(text);
     setCopied(true);
     setTimeout(() => setCopied(false), 1500);
+  };
+
+  const commitEdit = () => {
+    const t = draft.trim();
+    if (!t || !message.id) {
+      setEditing(false);
+      return;
+    }
+    if (message.type === "text" && t === message.content) {
+      setEditing(false);
+      return;
+    }
+    setEditing(false);
+    onEditAndResend?.(message.id, t);
   };
 
   return (
@@ -1278,7 +1330,58 @@ function MessageBubble({ message }: { message: ChatMessage }) {
           : null}
         {message.type === "text"
           ? (
-            message.content
+            editing
+              ? (
+                <div className="min-w-[280px]">
+                  <textarea
+                    autoFocus
+                    value={draft}
+                    onChange={(e) => setDraft(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && !e.shiftKey) {
+                        e.preventDefault();
+                        commitEdit();
+                      } else if (e.key === "Escape") {
+                        e.preventDefault();
+                        setEditing(false);
+                        setDraft(message.content);
+                      }
+                    }}
+                    rows={Math.min(8, Math.max(2, draft.split("\n").length))}
+                    className={`w-full resize-none bg-transparent text-sm leading-relaxed outline-none ${
+                      isUser ? "text-background" : "text-foreground"
+                    }`}
+                  />
+                  <div className="flex items-center justify-end gap-2 mt-2 text-[10px]">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEditing(false);
+                        setDraft(message.content);
+                      }}
+                      className={`${
+                        isUser
+                          ? "text-background/70 hover:text-background"
+                          : "text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      onClick={commitEdit}
+                      className={`font-medium ${
+                        isUser
+                          ? "text-background"
+                          : "text-[#c4541e]"
+                      }`}
+                    >
+                      Save & resend
+                    </button>
+                  </div>
+                </div>
+              )
+              : message.content
               ? (
                 <div
                   className={`text-sm leading-relaxed prose prose-sm max-w-none prose-p:my-1 prose-headings:my-2 prose-ul:my-1 prose-ol:my-1 prose-li:my-0 prose-pre:my-2 prose-pre:bg-black/10 prose-code:text-[0.85em] prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-code:bg-black/10 prose-code:before:content-none prose-code:after:content-none ${
@@ -1332,6 +1435,19 @@ function MessageBubble({ message }: { message: ChatMessage }) {
               {copied
                 ? <Check className="w-3 h-3" />
                 : <Copy className="w-3 h-3" />}
+            </button>
+          )
+          : null}
+        {canEdit
+          ? (
+            <button
+              type="button"
+              onClick={() => setEditing(true)}
+              className="inline-flex items-center gap-0.5 hover:text-foreground transition-colors"
+              aria-label="Edit"
+              title="Edit and resend"
+            >
+              <Pencil className="w-3 h-3" />
             </button>
           )
           : null}

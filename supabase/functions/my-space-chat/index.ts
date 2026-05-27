@@ -835,6 +835,65 @@ const TOOLS = [
       },
     },
   },
+  {
+    name: "get_usage_stats",
+    description:
+      "Return the vendor's AI usage stats: total tokens + USD cost over the requested window, plus a per-model breakdown.",
+    input_schema: {
+      type: "object",
+      properties: {
+        since: {
+          type: "string",
+          enum: ["today", "week", "month", "all_time"],
+        },
+      },
+    },
+  },
+  {
+    name: "schedule_action",
+    description:
+      "Queue an action to run at a future time (\"at 5pm send Jamie the contract\"). Use kind=send_host_reply for vendor-to-host replies, kind=send_email for off-platform emails, kind=mark_notifications_read to clear badges. The args shape matches the corresponding immediate tool. WRITE ACTION — confirm everything (when, kind, content) with the vendor before scheduling.",
+    input_schema: {
+      type: "object",
+      required: ["run_at", "kind", "args"],
+      properties: {
+        run_at: {
+          type: "string",
+          description: "Full ISO datetime, e.g. 2026-05-27T17:00:00Z.",
+        },
+        kind: {
+          type: "string",
+          enum: ["send_host_reply", "send_email", "mark_notifications_read"],
+        },
+        args: {
+          type: "object",
+          description:
+            "Same input shape as the immediate version of the tool. e.g. for send_host_reply: { inquiry_id, body }.",
+        },
+      },
+    },
+  },
+  {
+    name: "list_scheduled_actions",
+    description:
+      "List the vendor's pending scheduled actions (so they can review or cancel them).",
+    input_schema: {
+      type: "object",
+      properties: {
+        limit: { type: "integer", minimum: 1, maximum: 50 },
+      },
+    },
+  },
+  {
+    name: "cancel_scheduled_action",
+    description:
+      "Cancel a pending scheduled action by id. WRITE ACTION.",
+    input_schema: {
+      type: "object",
+      required: ["id"],
+      properties: { id: { type: "string" } },
+    },
+  },
 ] as const;
 
 async function toolSearchInquiries(
@@ -1938,6 +1997,142 @@ async function toolSendEmail(
   return { sent: true, to, subject, resend_id: out?.id ?? null };
 }
 
+async function toolGetUsageStats(
+  admin: any,
+  userId: string,
+  input: any,
+): Promise<unknown> {
+  const since = String(input?.since ?? "month");
+  let gte: string | null = null;
+  const now = new Date();
+  if (since === "today") {
+    gte = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+      .toISOString();
+  } else if (since === "week") {
+    gte = new Date(now.getTime() - 7 * 86400000).toISOString();
+  } else if (since === "month") {
+    gte = new Date(now.getTime() - 30 * 86400000).toISOString();
+  }
+  let q = admin
+    .from("ai_call_usage")
+    .select("model, provider, input_tokens, output_tokens, cost_micros")
+    .eq("user_id", userId);
+  if (gte) q = q.gte("created_at", gte);
+  const { data, error } = await q;
+  if (error) return { error: error.message };
+  const rows = (data ?? []) as Array<any>;
+  let totalInputTokens = 0;
+  let totalOutputTokens = 0;
+  let totalCostMicros = 0;
+  const byModel: Record<string, {
+    calls: number;
+    input_tokens: number;
+    output_tokens: number;
+    cost_usd: number;
+  }> = {};
+  for (const r of rows) {
+    totalInputTokens += Number(r.input_tokens) || 0;
+    totalOutputTokens += Number(r.output_tokens) || 0;
+    totalCostMicros += Number(r.cost_micros) || 0;
+    const key = `${r.provider}:${r.model}`;
+    if (!byModel[key]) {
+      byModel[key] = {
+        calls: 0,
+        input_tokens: 0,
+        output_tokens: 0,
+        cost_usd: 0,
+      };
+    }
+    byModel[key].calls += 1;
+    byModel[key].input_tokens += Number(r.input_tokens) || 0;
+    byModel[key].output_tokens += Number(r.output_tokens) || 0;
+    byModel[key].cost_usd += (Number(r.cost_micros) || 0) / 1_000_000;
+  }
+  return {
+    since,
+    total_calls: rows.length,
+    total_input_tokens: totalInputTokens,
+    total_output_tokens: totalOutputTokens,
+    total_cost_usd: totalCostMicros / 1_000_000,
+    by_model: byModel,
+  };
+}
+
+async function toolScheduleAction(
+  admin: any,
+  vendorId: string,
+  userId: string,
+  input: any,
+): Promise<unknown> {
+  const runAt = String(input?.run_at ?? "");
+  const dt = new Date(runAt);
+  if (Number.isNaN(dt.getTime())) return { error: "run_at_unparseable" };
+  if (dt.getTime() < Date.now() - 60_000) {
+    return { error: "run_at_must_be_in_future" };
+  }
+  const kind = String(input?.kind ?? "");
+  if (
+    !["send_host_reply", "send_email", "mark_notifications_read"].includes(
+      kind,
+    )
+  ) {
+    return { error: "invalid_kind" };
+  }
+  const args = input?.args && typeof input.args === "object" ? input.args : {};
+  const { data, error } = await admin
+    .from("my_space_scheduled_actions")
+    .insert({
+      user_id: userId,
+      vendor_id: vendorId || null,
+      run_at: dt.toISOString(),
+      kind,
+      args,
+    })
+    .select("id, run_at, kind, status")
+    .single();
+  if (error) return { error: error.message };
+  return { scheduled: true, action: data };
+}
+
+async function toolListScheduledActions(
+  admin: any,
+  userId: string,
+  input: any,
+): Promise<unknown> {
+  const limit = Math.min(Math.max(Number(input?.limit) || 20, 1), 50);
+  const { data, error } = await admin
+    .from("my_space_scheduled_actions")
+    .select("id, run_at, kind, args, status, executed_at, error_message")
+    .eq("user_id", userId)
+    .order("run_at", { ascending: true })
+    .limit(limit);
+  if (error) return { error: error.message };
+  return { actions: (data ?? []) as Array<any> };
+}
+
+async function toolCancelScheduledAction(
+  admin: any,
+  userId: string,
+  input: any,
+): Promise<unknown> {
+  const id = String(input?.id ?? "");
+  if (!id) return { error: "id required" };
+  const { data, error } = await admin
+    .from("my_space_scheduled_actions")
+    .update({
+      status: "cancelled",
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", id)
+    .eq("user_id", userId)
+    .eq("status", "pending")
+    .select("id, status")
+    .maybeSingle();
+  if (error) return { error: error.message };
+  if (!data) return { error: "action_not_found_or_not_pending" };
+  return { cancelled: true };
+}
+
 async function executeTool(
   admin: any,
   vendorId: string,
@@ -2027,6 +2222,18 @@ async function executeTool(
     if (name === "send_email") {
       return await toolSendEmail(admin, vendorId, input);
     }
+    if (name === "get_usage_stats") {
+      return await toolGetUsageStats(admin, userId, input);
+    }
+    if (name === "schedule_action") {
+      return await toolScheduleAction(admin, vendorId, userId, input);
+    }
+    if (name === "list_scheduled_actions") {
+      return await toolListScheduledActions(admin, userId, input);
+    }
+    if (name === "cancel_scheduled_action") {
+      return await toolCancelScheduledAction(admin, userId, input);
+    }
     return { error: `unknown_tool:${name}` };
   } catch (err) {
     return { error: err instanceof Error ? err.message : String(err) };
@@ -2038,6 +2245,46 @@ async function executeTool(
 interface ClaudeMessage {
   role: "user" | "assistant";
   content: any;
+}
+
+// ─── Usage logging ────────────────────────────────────────────────
+
+interface ClaudeTokens {
+  input_tokens: number;
+  output_tokens: number;
+  cache_creation_tokens: number;
+  cache_read_tokens: number;
+}
+
+// Claude Sonnet 4.6 list pricing (May 2026, USD per million tokens).
+// Fire-and-forget — telemetry failure must never fail the chat.
+async function logChatUsage(
+  admin: any,
+  userId: string,
+  tokens: ClaudeTokens,
+): Promise<void> {
+  try {
+    const usd =
+      (tokens.input_tokens * 3.0 +
+        tokens.output_tokens * 15.0 +
+        tokens.cache_creation_tokens * 3.75 +
+        tokens.cache_read_tokens * 0.30) /
+      1_000_000;
+    await admin.from("ai_call_usage").insert({
+      user_id: userId,
+      action_type: "my_space_chat",
+      provider: "anthropic",
+      model: SONNET_MODEL,
+      input_tokens: tokens.input_tokens,
+      output_tokens: tokens.output_tokens,
+      cache_creation_tokens: tokens.cache_creation_tokens,
+      cache_read_tokens: tokens.cache_read_tokens,
+      cost_micros: Math.round(usd * 1_000_000),
+      success: true,
+    });
+  } catch (err) {
+    console.warn("[my-space-chat] usage log failed", err);
+  }
 }
 
 // Parse Anthropic's SSE format into a stream of typed events.
@@ -2087,6 +2334,12 @@ async function streamClaudeWithTools(
   if (!ANTHROPIC_API_KEY) throw new Error("anthropic_key_missing");
   let messages = [...initialMessages];
   let finalText = "";
+  const totalTokens: ClaudeTokens = {
+    input_tokens: 0,
+    output_tokens: 0,
+    cache_creation_tokens: 0,
+    cache_read_tokens: 0,
+  };
   for (let i = 0; i < MAX_TOOL_ITERATIONS; i++) {
     const res = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
@@ -2155,6 +2408,19 @@ async function streamClaudeWithTools(
         }
       } else if (ev.type === "message_delta") {
         if (ev.delta?.stop_reason) stopReason = ev.delta.stop_reason;
+        // Anthropic ships output_tokens here; input/cache live on
+        // message_start. Accumulate so we log one row at the end of
+        // the whole tool loop instead of one per iteration.
+        if (ev.usage?.output_tokens) {
+          totalTokens.output_tokens += Number(ev.usage.output_tokens) || 0;
+        }
+      } else if (ev.type === "message_start") {
+        const u = ev.message?.usage ?? {};
+        totalTokens.input_tokens += Number(u.input_tokens) || 0;
+        totalTokens.cache_creation_tokens +=
+          Number(u.cache_creation_input_tokens) || 0;
+        totalTokens.cache_read_tokens +=
+          Number(u.cache_read_input_tokens) || 0;
       }
     }
 
@@ -2191,8 +2457,12 @@ async function streamClaudeWithTools(
     }
 
     finalText = turnText.trim() || "(no response)";
+    // Fire-and-forget — we don't await so the user-visible reply
+    // doesn't wait on a telemetry insert.
+    void logChatUsage(admin, userId, totalTokens);
     return finalText;
   }
+  void logChatUsage(admin, userId, totalTokens);
   return "(I made too many tool calls without finishing. Try rephrasing.)";
 }
 
@@ -2371,8 +2641,18 @@ serve(async (req) => {
         .slice(0, 5)
     : [];
   const regenerate = payload?.regenerate === true;
+  // Edit-and-resend: replace an existing user message in-place and
+  // re-run Claude from that point. The server deletes the target
+  // message + every later message in the thread, then inserts a new
+  // user row with the new content and runs the normal flow.
+  const replaceMessageId = typeof payload?.replace_message_id === "string"
+    ? String(payload.replace_message_id)
+    : null;
   if (regenerate && !threadIdIn) {
     return json(400, { error: "regenerate_requires_thread_id" });
+  }
+  if (replaceMessageId && !threadIdIn) {
+    return json(400, { error: "replace_requires_thread_id" });
   }
   if (!regenerate && !userText && rawAttachments.length === 0) {
     return json(400, { error: "no_text_or_attachments" });
@@ -2440,6 +2720,30 @@ serve(async (req) => {
           }
           send({ type: "thread", thread_id: threadId, thread_is_new: false });
         } else {
+          // Edit-and-resend: drop the target message + all later
+          // messages first, so the user message we're about to insert
+          // takes its place.
+          if (replaceMessageId) {
+            const { data: target } = await admin
+              .from("my_space_messages")
+              .select("created_at, thread_id, user_id")
+              .eq("id", replaceMessageId)
+              .maybeSingle();
+            if (
+              !target ||
+              (target as any).user_id !== userId ||
+              (target as any).thread_id !== threadIdIn
+            ) {
+              send({ type: "error", message: "message_not_found" });
+              close();
+              return;
+            }
+            await admin
+              .from("my_space_messages")
+              .delete()
+              .eq("thread_id", threadIdIn)
+              .gte("created_at", (target as any).created_at);
+          }
           const ensured = await ensureThread(
             admin,
             userId,
@@ -2467,6 +2771,7 @@ serve(async (req) => {
             content: userText,
             attachments: rawAttachments.length > 0 ? rawAttachments : null,
             created_at: userMsg.created_at,
+            replaced: replaceMessageId,
           });
         }
 
