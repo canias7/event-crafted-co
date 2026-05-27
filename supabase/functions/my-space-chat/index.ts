@@ -1485,20 +1485,63 @@ async function streamClaudeWithTools(
 
 // ─── Persistence ──────────────────────────────────────────────────
 
+// Build the Claude content array for a persisted user message,
+// inlining any attachments as image / document blocks. Anthropic
+// fetches URL sources server-side, so the attachments bucket must be
+// publicly readable (it is — see message-attachments bucket).
+function userContentWithAttachments(
+  text: string,
+  attachments: Array<{ url: string; mime: string; name: string }> | null,
+): any {
+  if (!attachments || attachments.length === 0) return text;
+  const blocks: any[] = [];
+  if (text && text.trim().length > 0) {
+    blocks.push({ type: "text", text });
+  }
+  for (const a of attachments) {
+    const mime = (a.mime ?? "").toLowerCase();
+    if (mime.startsWith("image/")) {
+      blocks.push({
+        type: "image",
+        source: { type: "url", url: a.url },
+      });
+    } else if (mime === "application/pdf") {
+      blocks.push({
+        type: "document",
+        source: { type: "url", url: a.url },
+        title: a.name,
+      });
+    } else {
+      // Fall through with a text reference so Claude knows it exists
+      // even if it can't read the body directly.
+      blocks.push({
+        type: "text",
+        text: `[attachment: ${a.name} (${mime || "unknown type"}) → ${a.url}]`,
+      });
+    }
+  }
+  return blocks.length > 0 ? blocks : text;
+}
+
 async function loadThreadMessages(
   admin: any,
   threadId: string,
 ): Promise<ClaudeMessage[]> {
   const { data } = await admin
     .from("my_space_messages")
-    .select("role, type, content, image_prompt, created_at")
+    .select("role, type, content, image_prompt, attachments, created_at")
     .eq("thread_id", threadId)
     .order("created_at", { ascending: true })
     .limit(200);
   const rows = (data ?? []) as Array<any>;
   return rows
     .filter((r) => r.type === "text" && typeof r.content === "string")
-    .map((r) => ({ role: r.role, content: r.content }));
+    .map((r) => ({
+      role: r.role,
+      content: r.role === "user"
+        ? userContentWithAttachments(r.content, r.attachments)
+        : r.content,
+    }));
 }
 
 async function ensureThread(
@@ -1534,7 +1577,14 @@ async function insertMessage(
   userId: string,
   threadId: string,
   msg:
-    | { role: "user" | "assistant"; type: "text"; content: string }
+    | {
+      role: "user" | "assistant";
+      type: "text";
+      content: string;
+      attachments?:
+        | Array<{ url: string; mime: string; name: string; size?: number }>
+        | null;
+    }
     | {
       role: "assistant";
       type: "image";
@@ -1549,6 +1599,9 @@ async function insertMessage(
       role: msg.role,
       type: "text",
       content: msg.content,
+      attachments: msg.attachments && msg.attachments.length > 0
+        ? msg.attachments
+        : null,
     }
     : {
       user_id: userId,
@@ -1591,7 +1644,22 @@ serve(async (req) => {
   const payload = await req.json().catch(() => ({}));
   const userText = String(payload?.text ?? "").trim();
   const threadIdIn = payload?.thread_id ? String(payload.thread_id) : null;
-  if (!userText) return json(400, { error: "no_text" });
+  // Attachments are { url, mime, name, size? }. We trust the client
+  // to upload them to message-attachments first (RLS-gated bucket).
+  const rawAttachments = Array.isArray(payload?.attachments)
+    ? (payload.attachments as Array<any>)
+        .map((a) => ({
+          url: String(a?.url ?? ""),
+          mime: String(a?.mime ?? ""),
+          name: String(a?.name ?? "file"),
+          size: Number(a?.size) || undefined,
+        }))
+        .filter((a) => a.url.startsWith("http"))
+        .slice(0, 5)
+    : [];
+  if (!userText && rawAttachments.length === 0) {
+    return json(400, { error: "no_text_or_attachments" });
+  }
 
   // Open an SSE stream. Everything from here is best-effort: errors
   // are sent as `{ type: "error" }` events so the frontend can still
@@ -1631,6 +1699,7 @@ serve(async (req) => {
           role: "user",
           type: "text",
           content: userText,
+          attachments: rawAttachments.length > 0 ? rawAttachments : null,
         });
 
         send({
@@ -1644,11 +1713,14 @@ serve(async (req) => {
           role: "user",
           msg_type: "text",
           content: userText,
+          attachments: rawAttachments.length > 0 ? rawAttachments : null,
           created_at: userMsg.created_at,
         });
 
-        // Image dispatch — short-circuit before Claude.
-        if (looksLikeImageRequest(userText)) {
+        // Image dispatch — short-circuit before Claude. Skip if the
+        // vendor attached a file; in that case they likely want
+        // analysis ("what's this contract say?"), not generation.
+        if (rawAttachments.length === 0 && looksLikeImageRequest(userText)) {
           send({ type: "image_pending" });
           const { imageUrl } = await callOpenAIImage(userText);
           const assistantMsg = await insertMessage(admin, userId, threadId, {

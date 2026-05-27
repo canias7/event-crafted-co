@@ -17,21 +17,32 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowUp,
+  FileText,
   ImageIcon,
   Loader2,
   MessageSquarePlus,
+  Paperclip,
   Sparkles,
   Trash2,
+  X,
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+
+interface Attachment {
+  url: string;
+  mime: string;
+  name: string;
+  size?: number;
+}
 
 interface TextMessage {
   id?: string;
   role: "user" | "assistant";
   type: "text";
   content: string;
+  attachments?: Attachment[] | null;
   created_at?: string;
 }
 interface ImageMessage {
@@ -74,8 +85,14 @@ export function MySpaceChat() {
   // Name of the tool currently being executed by the AI, if any. Used
   // to swap the "Thinking…" indicator for something more specific.
   const [activeTool, setActiveTool] = useState<string | null>(null);
+  // Files staged for the NEXT send. Cleared after send or via the X.
+  const [pendingAttachments, setPendingAttachments] = useState<Attachment[]>(
+    [],
+  );
+  const [uploadingCount, setUploadingCount] = useState(0);
   const listRef = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   // ── Load threads on mount; pick the most recent as the default.
   const loadThreads = useCallback(async (): Promise<ThreadRow[]> => {
@@ -119,7 +136,9 @@ export function MySpaceChat() {
       setMessagesLoading(true);
       const { data, error } = await supabase
         .from("my_space_messages")
-        .select("id, role, type, content, image_url, image_prompt, created_at")
+        .select(
+          "id, role, type, content, image_url, image_prompt, attachments, created_at",
+        )
         .eq("thread_id", currentThreadId)
         .order("created_at", { ascending: true })
         .limit(200);
@@ -145,6 +164,7 @@ export function MySpaceChat() {
                 role: r.role,
                 type: "text",
                 content: r.content,
+                attachments: (r.attachments as Attachment[] | null) ?? null,
                 created_at: r.created_at,
               } as TextMessage)
           ),
@@ -164,11 +184,73 @@ export function MySpaceChat() {
     el.scrollTop = el.scrollHeight;
   }, [messages, sending]);
 
+  // ── Upload files (images / PDFs) to message-attachments bucket.
+  async function onPickFiles(files: FileList | null) {
+    if (!files || files.length === 0 || !user?.id) return;
+    const remaining = 5 - pendingAttachments.length;
+    if (remaining <= 0) {
+      toast.error("Up to 5 files per message.");
+      return;
+    }
+    const toUpload = Array.from(files).slice(0, remaining);
+    setUploadingCount((c) => c + toUpload.length);
+    for (const file of toUpload) {
+      try {
+        if (file.size > 10 * 1024 * 1024) {
+          toast.error(`${file.name} is over 10MB`);
+          continue;
+        }
+        if (
+          !file.type.startsWith("image/") &&
+          file.type !== "application/pdf" &&
+          !file.type.startsWith("text/")
+        ) {
+          toast.error(`${file.name}: unsupported type`);
+          continue;
+        }
+        const ext = file.name.split(".").pop() || "bin";
+        const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_").slice(
+          0,
+          60,
+        );
+        const path = `${user.id}/${
+          currentThreadId ?? "new"
+        }/${crypto.randomUUID()}-${safeName}`;
+        const { error: uploadError } = await supabase.storage
+          .from("message-attachments")
+          .upload(path, file, {
+            contentType: file.type,
+            upsert: false,
+          });
+        if (uploadError) {
+          toast.error(`Upload failed: ${file.name}`);
+          continue;
+        }
+        const { data: pub } = supabase.storage
+          .from("message-attachments")
+          .getPublicUrl(path);
+        setPendingAttachments((prev) => [
+          ...prev,
+          {
+            url: pub.publicUrl,
+            mime: file.type,
+            name: file.name,
+            size: file.size,
+          },
+        ]);
+      } finally {
+        setUploadingCount((c) => Math.max(0, c - 1));
+      }
+    }
+  }
+
   // ── Send message → SSE stream from edge function → live-update bubble.
   async function send(promptText?: string) {
     const text = (promptText ?? input).trim();
-    if (!text || sending) return;
+    const attachments = pendingAttachments;
+    if ((!text && attachments.length === 0) || sending) return;
     setInput("");
+    setPendingAttachments([]);
 
     // Optimistic user bubble + a placeholder assistant bubble that
     // gets filled in by `delta` events as Claude streams text. Using
@@ -177,6 +259,7 @@ export function MySpaceChat() {
       role: "user",
       type: "text",
       content: text,
+      attachments: attachments.length > 0 ? attachments : null,
     };
     const assistantPlaceholder: TextMessage = {
       role: "assistant",
@@ -207,7 +290,11 @@ export function MySpaceChat() {
             apikey: SUPABASE_PUBLISHABLE_KEY,
             accept: "text/event-stream",
           },
-          body: JSON.stringify({ text, thread_id: currentThreadId }),
+          body: JSON.stringify({
+            text,
+            thread_id: currentThreadId,
+            attachments: attachments.length > 0 ? attachments : undefined,
+          }),
         },
       );
       if (!res.ok || !res.body) {
@@ -256,6 +343,8 @@ export function MySpaceChat() {
                   role: "user",
                   type: "text",
                   content: ev.content,
+                  attachments:
+                    (ev.attachments as Attachment[] | null) ?? null,
                   created_at: ev.created_at,
                 } as TextMessage;
               }
@@ -530,7 +619,52 @@ export function MySpaceChat() {
           className="border-t px-3 md:px-4 py-3"
           style={{ borderColor: "rgba(255,138,76,0.18)" }}
         >
+          {pendingAttachments.length > 0 || uploadingCount > 0
+            ? (
+              <div className="flex flex-wrap items-center gap-2 mb-2 px-1">
+                {pendingAttachments.map((a, i) => (
+                  <AttachmentChip
+                    key={a.url}
+                    att={a}
+                    onRemove={() =>
+                      setPendingAttachments((prev) =>
+                        prev.filter((_, idx) => idx !== i)
+                      )}
+                  />
+                ))}
+                {uploadingCount > 0
+                  ? (
+                    <span className="inline-flex items-center gap-1.5 text-[11px] text-muted-foreground px-2 py-1">
+                      <Loader2 className="w-3 h-3 animate-spin" />
+                      Uploading {uploadingCount}…
+                    </span>
+                  )
+                  : null}
+              </div>
+            )
+            : null}
           <div className="flex items-end gap-2">
+            <input
+              ref={fileInputRef}
+              type="file"
+              multiple
+              accept="image/*,application/pdf,text/*"
+              hidden
+              onChange={(e) => {
+                void onPickFiles(e.target.files);
+                if (e.target) e.target.value = "";
+              }}
+            />
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={sending || pendingAttachments.length >= 5}
+              className="shrink-0 w-9 h-9 rounded-full inline-flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary/40 disabled:opacity-40 transition-colors"
+              aria-label="Attach file"
+              title="Attach an image or PDF (max 5)"
+            >
+              <Paperclip className="w-4 h-4" />
+            </button>
             <textarea
               ref={inputRef}
               value={input}
@@ -544,7 +678,9 @@ export function MySpaceChat() {
             <button
               type="button"
               onClick={() => void send()}
-              disabled={!input.trim() || sending}
+              disabled={(!input.trim() && pendingAttachments.length === 0) ||
+                sending ||
+                uploadingCount > 0}
               className="shrink-0 w-9 h-9 rounded-full inline-flex items-center justify-center bg-foreground text-background disabled:opacity-40 transition-opacity"
               aria-label="Send"
             >
@@ -654,6 +790,7 @@ function formatThreadTime(iso: string): string {
 
 function MessageBubble({ message }: { message: ChatMessage }) {
   const isUser = message.role === "user";
+  const attachments = message.type === "text" ? message.attachments : null;
   return (
     <div className={`flex ${isUser ? "justify-end" : "justify-start"}`}>
       <div
@@ -664,11 +801,22 @@ function MessageBubble({ message }: { message: ChatMessage }) {
           ? undefined
           : { border: "0.5px solid rgba(255,138,76,0.18)" }}
       >
+        {attachments && attachments.length > 0
+          ? (
+            <div className="flex flex-wrap gap-1.5 mb-2">
+              {attachments.map((a) => <AttachmentTile key={a.url} att={a} />)}
+            </div>
+          )
+          : null}
         {message.type === "text"
           ? (
-            <p className="text-sm leading-relaxed whitespace-pre-wrap">
-              {message.content}
-            </p>
+            message.content
+              ? (
+                <p className="text-sm leading-relaxed whitespace-pre-wrap">
+                  {message.content}
+                </p>
+              )
+              : null
           )
           : (
             <div>
@@ -688,4 +836,68 @@ function MessageBubble({ message }: { message: ChatMessage }) {
       </div>
     </div>
   );
+}
+
+function AttachmentChip(
+  { att, onRemove }: { att: Attachment; onRemove: () => void },
+) {
+  const isImage = att.mime.startsWith("image/");
+  return (
+    <span
+      className="inline-flex items-center gap-1.5 rounded-md text-[11px] px-2 py-1 bg-secondary/60"
+      title={`${att.name}${att.size ? ` · ${formatSize(att.size)}` : ""}`}
+    >
+      {isImage
+        ? (
+          <img
+            src={att.url}
+            alt=""
+            className="w-5 h-5 rounded-sm object-cover"
+          />
+        )
+        : <FileText className="w-3.5 h-3.5 text-muted-foreground" />}
+      <span className="max-w-[140px] truncate">{att.name}</span>
+      <button
+        type="button"
+        onClick={onRemove}
+        className="text-muted-foreground hover:text-foreground"
+        aria-label="Remove attachment"
+      >
+        <X className="w-3 h-3" />
+      </button>
+    </span>
+  );
+}
+
+function AttachmentTile({ att }: { att: Attachment }) {
+  const isImage = att.mime.startsWith("image/");
+  if (isImage) {
+    return (
+      <a
+        href={att.url}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="block rounded-lg overflow-hidden max-w-[180px]"
+      >
+        <img src={att.url} alt={att.name} className="block w-full h-auto" />
+      </a>
+    );
+  }
+  return (
+    <a
+      href={att.url}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="inline-flex items-center gap-1.5 rounded-md text-[11px] px-2 py-1 bg-white/40 hover:bg-white/60"
+    >
+      <FileText className="w-3.5 h-3.5" />
+      <span className="max-w-[180px] truncate">{att.name}</span>
+    </a>
+  );
+}
+
+function formatSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes}B`;
+  if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)}KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)}MB`;
 }
