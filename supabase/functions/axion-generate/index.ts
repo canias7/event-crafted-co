@@ -1,8 +1,8 @@
 // Axion image edge function. Two modes:
 //   generate — text-to-image: a prompt becomes brand-new listing
-//              photos (OpenAI gpt-image-1 generations).
+//              photos (OpenAI gpt-image-2, falls back to gpt-image-1).
 //   edit     — image-to-image: an uploaded photo is restyled per a
-//              prompt (gpt-image-1 edits).
+//              prompt (same model with same fallback).
 //
 // Stateless — variants are returned for the panel to show/save.
 // Auth: vendor JWT (verify_jwt=true).
@@ -134,26 +134,57 @@ serve(async (req) => {
     // every axion row in the ledger collide with every other.
     chargedRef = `axion_${mode}_${crypto.randomUUID()}`;
 
+    // Default to gpt-image-2 (OpenAI's latest image model). Falls
+    // back to gpt-image-1 if the account isn't yet enabled for the
+    // newer model, so this codepath never hard-fails on a rollout
+    // gap. The actual model that served the request is logged via
+    // logImageUsage and surfaced to the client for transparency.
+    const PRIMARY_MODEL = "gpt-image-2";
+    const FALLBACK_MODEL = "gpt-image-1";
+    let modelUsed = PRIMARY_MODEL;
+
+    function shouldFallback(status: number, body: string): boolean {
+      return (
+        (status === 400 || status === 404) &&
+        /model_not_found|does not exist|invalid_model/i.test(body)
+      );
+    }
+
     let res: Response;
     if (mode === "generate") {
       // Text-to-image: a brand-new listing photo from a description.
       const prompt =
         "Create a photorealistic, editorial-quality photo for an event vendor's marketplace listing. It must look like a real photograph — never an illustration, 3D render, or obviously AI-generated image. Subject: " +
         direction;
-      res = await fetch("https://api.openai.com/v1/images/generations", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${OPENAI_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: "gpt-image-1",
+      const generateBody = (model: string) =>
+        JSON.stringify({
+          model,
           prompt,
           n: 1,
           size: "1024x1024",
           quality: "medium",
-        }),
+        });
+      const generateHeaders = {
+        Authorization: `Bearer ${OPENAI_API_KEY}`,
+        "Content-Type": "application/json",
+      };
+      res = await fetch("https://api.openai.com/v1/images/generations", {
+        method: "POST",
+        headers: generateHeaders,
+        body: generateBody(PRIMARY_MODEL),
       });
+      if (!res.ok) {
+        const detail = await res.clone().text().catch(() => "");
+        if (shouldFallback(res.status, detail)) {
+          console.warn("[axion-generate] gpt-image-2 unavailable, falling back");
+          modelUsed = FALLBACK_MODEL;
+          res = await fetch("https://api.openai.com/v1/images/generations", {
+            method: "POST",
+            headers: generateHeaders,
+            body: generateBody(FALLBACK_MODEL),
+          });
+        }
+      }
     } else {
       // Image-to-image: restyle the vendor's uploaded photo.
       // decodedEdit was validated + decoded above the consume.
@@ -163,22 +194,38 @@ serve(async (req) => {
         direction;
       const subtype = decoded.mime.split("/")[1] ?? "png";
       const ext = subtype === "jpeg" ? "jpg" : subtype;
-      const form = new FormData();
-      form.append("model", "gpt-image-1");
-      form.append(
-        "image",
-        new Blob([decoded.bytes], { type: decoded.mime }),
-        `source.${ext}`,
-      );
-      form.append("prompt", prompt);
-      form.append("n", "1");
-      form.append("size", "1024x1024");
-      form.append("quality", "medium");
+      const buildEditForm = (model: string) => {
+        const form = new FormData();
+        form.append("model", model);
+        form.append(
+          "image",
+          new Blob([decoded.bytes], { type: decoded.mime }),
+          `source.${ext}`,
+        );
+        form.append("prompt", prompt);
+        form.append("n", "1");
+        form.append("size", "1024x1024");
+        form.append("quality", "medium");
+        return form;
+      };
+      const editHeaders = { Authorization: `Bearer ${OPENAI_API_KEY}` };
       res = await fetch("https://api.openai.com/v1/images/edits", {
         method: "POST",
-        headers: { Authorization: `Bearer ${OPENAI_API_KEY}` },
-        body: form,
+        headers: editHeaders,
+        body: buildEditForm(PRIMARY_MODEL),
       });
+      if (!res.ok) {
+        const detail = await res.clone().text().catch(() => "");
+        if (shouldFallback(res.status, detail)) {
+          console.warn("[axion-generate] gpt-image-2 unavailable (edit), falling back");
+          modelUsed = FALLBACK_MODEL;
+          res = await fetch("https://api.openai.com/v1/images/edits", {
+            method: "POST",
+            headers: editHeaders,
+            body: buildEditForm(FALLBACK_MODEL),
+          });
+        }
+      }
     }
 
     if (!res.ok) {
@@ -190,8 +237,8 @@ serve(async (req) => {
       void logImageUsage({
         userId: chargedUserId,
         actionType: "axion_image",
-        model: "gpt-image-1",
-        spec: "gpt-image-1:1024x1024:medium",
+        model: modelUsed,
+        spec: `${modelUsed}:1024x1024:medium`,
         imageCount: 0,
         refId: chargedRef,
         success: false,
@@ -215,8 +262,8 @@ serve(async (req) => {
       void logImageUsage({
         userId: chargedUserId,
         actionType: "axion_image",
-        model: "gpt-image-1",
-        spec: "gpt-image-1:1024x1024:medium",
+        model: modelUsed,
+        spec: `${modelUsed}:1024x1024:medium`,
         imageCount: 0,
         refId: chargedRef,
         success: false,
@@ -232,13 +279,13 @@ serve(async (req) => {
     void logImageUsage({
       userId: chargedUserId,
       actionType: "axion_image",
-      model: "gpt-image-1",
-      spec: "gpt-image-1:1024x1024:medium",
+      model: modelUsed,
+      spec: `${modelUsed}:1024x1024:medium`,
       imageCount: variants.length,
       refId: chargedRef,
     });
 
-    return json(200, { variants, credits_remaining: consume.balance });
+    return json(200, { variants, credits_remaining: consume.balance, model: modelUsed });
   } catch (err) {
     if (chargedUserId) {
       await refundCredits(

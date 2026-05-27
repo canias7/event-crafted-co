@@ -52,11 +52,19 @@ export function claudeCostMicros(model: string, t: ClaudeTokens): number {
 
 // OpenAI image pricing keyed by `model:size:quality`. gpt-image-1
 // medium 1024×1024 is currently ~$0.042/image (OpenAI cost calc).
+// gpt-image-2 entries mirror gpt-image-1 as a working estimate —
+// update with OpenAI's published list once it's fixed. The website
+// builder uses 1536×1024; axion uses 1024×1024.
 // Add entries here before changing axion's size/quality knobs.
 const IMAGE_PRICING_USD_PER_IMAGE: Record<string, number> = {
   "gpt-image-1:1024x1024:medium": 0.042,
   "gpt-image-1:1024x1024:high": 0.167,
   "gpt-image-1:1024x1024:low": 0.011,
+  "gpt-image-1:1536x1024:medium": 0.063,
+  "gpt-image-2:1024x1024:medium": 0.042,
+  "gpt-image-2:1024x1024:high": 0.167,
+  "gpt-image-2:1024x1024:low": 0.011,
+  "gpt-image-2:1536x1024:medium": 0.063,
 };
 
 export function imageCostMicros(spec: string, count: number): number {
