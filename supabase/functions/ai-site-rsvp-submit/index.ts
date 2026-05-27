@@ -25,6 +25,58 @@ const cors = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
+function clientIp(req: Request): string {
+  const xf = req.headers.get("x-forwarded-for") ?? "";
+  return xf.split(",")[0].trim()
+    || req.headers.get("cf-connecting-ip")
+    || req.headers.get("x-real-ip")
+    || "";
+}
+
+// Spam guard: at most `limit` hits per (ip, bucket) every `windowSec`.
+// Fails open on any DB error so a bad rate-limits table doesn't lock
+// the whole RSVP flow out.
+async function rateLimit(
+  admin: any,
+  ip: string,
+  bucket: string,
+  limit: number,
+  windowSec: number,
+): Promise<boolean> {
+  if (!ip) return true;
+  const now = Date.now();
+  try {
+    const { data } = await admin
+      .from("ai_site_rate_limits")
+      .select("hits, window_start")
+      .eq("ip", ip)
+      .eq("bucket", bucket)
+      .maybeSingle();
+    if (!data) {
+      await admin.from("ai_site_rate_limits").insert({ ip, bucket, hits: 1 });
+      return true;
+    }
+    const wsTime = new Date((data as any).window_start).getTime();
+    if (wsTime < now - windowSec * 1000) {
+      await admin
+        .from("ai_site_rate_limits")
+        .update({ hits: 1, window_start: new Date().toISOString() })
+        .eq("ip", ip)
+        .eq("bucket", bucket);
+      return true;
+    }
+    if ((data as any).hits >= limit) return false;
+    await admin
+      .from("ai_site_rate_limits")
+      .update({ hits: (data as any).hits + 1 })
+      .eq("ip", ip)
+      .eq("bucket", bucket);
+    return true;
+  } catch {
+    return true;
+  }
+}
+
 function htmlPage(opts: {
   status: number;
   title: string;
@@ -169,6 +221,23 @@ serve(async (req) => {
     });
   }
 
+  const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  });
+
+  // Throttle: max 8 RSVPs per IP per slug per minute. Lets a family
+  // submit a couple of cards back-to-back but stops bot floods.
+  const ip = clientIp(req);
+  const allowed = await rateLimit(admin, ip, `rsvp:${slug}`, 8, 60);
+  if (!allowed) {
+    return htmlPage({
+      status: 429,
+      title: "Slow down",
+      heading: "One sec",
+      body: "You've submitted a lot of RSVPs in the last minute. Try again shortly.",
+    });
+  }
+
   let form: FormData;
   try {
     form = await req.formData();
@@ -214,10 +283,6 @@ serve(async (req) => {
       body: "Please go back and select whether you can make it.",
     });
   }
-
-  const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
-    auth: { autoRefreshToken: false, persistSession: false },
-  });
 
   const { data: site, error: siteErr } = await admin
     .from("ai_sites")
