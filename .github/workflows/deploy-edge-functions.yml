@@ -1,0 +1,95 @@
+name: Deploy Supabase Edge Functions
+
+# Auto-deploys edge functions on push to main whenever their source
+# changes. Also supports manual dispatch for redeploying one or all
+# functions on demand.
+#
+# Prereq: SUPABASE_ACCESS_TOKEN repo secret. Generate at
+# https://supabase.com/dashboard/account/tokens and set under
+# Settings → Secrets and variables → Actions.
+#
+# verify_jwt is read from supabase/config.toml per function, so the
+# CLI deploy honors the same settings the MCP would.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "supabase/functions/**"
+      - "supabase/config.toml"
+      - ".github/workflows/deploy-edge-functions.yml"
+  workflow_dispatch:
+    inputs:
+      function:
+        description: 'Function name (or "all" to redeploy everything)'
+        required: true
+        default: "all"
+        type: string
+
+jobs:
+  deploy:
+    name: Deploy edge functions
+    runs-on: ubuntu-latest
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      PROJECT_REF: pahpjjubhbcbwqjpamwv
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Resolve functions to deploy
+        id: resolve
+        run: |
+          set -e
+          INPUT="${{ github.event.inputs.function }}"
+          FUNCTIONS=""
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ -n "$INPUT" ] && [ "$INPUT" != "all" ]; then
+            FUNCTIONS="$INPUT"
+          elif [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "$INPUT" = "all" ]; then
+            FUNCTIONS=$(find supabase/functions -mindepth 1 -maxdepth 1 -type d ! -name '_shared' -printf '%f\n' | sort | tr '\n' ' ')
+          else
+            # Push: deploy only functions whose files changed in this push
+            CHANGED=$(git diff --name-only ${{ github.event.before }} ${{ github.event.after }} 2>/dev/null \
+              | grep '^supabase/functions/' \
+              | awk -F/ '$3 != "_shared" { print $3 }' \
+              | sort -u \
+              | tr '\n' ' ' || true)
+            FUNCTIONS="$CHANGED"
+            # If config.toml changed, redeploy everything (verify_jwt flags may have moved)
+            if git diff --name-only ${{ github.event.before }} ${{ github.event.after }} 2>/dev/null | grep -q '^supabase/config.toml$'; then
+              FUNCTIONS=$(find supabase/functions -mindepth 1 -maxdepth 1 -type d ! -name '_shared' -printf '%f\n' | sort | tr '\n' ' ')
+            fi
+          fi
+          echo "Functions to deploy: $FUNCTIONS"
+          echo "functions=$FUNCTIONS" >> "$GITHUB_OUTPUT"
+
+      - name: Deploy
+        if: steps.resolve.outputs.functions != ''
+        run: |
+          set -e
+          for fn in ${{ steps.resolve.outputs.functions }}; do
+            echo "::group::Deploying $fn"
+            supabase functions deploy "$fn" --project-ref "$PROJECT_REF"
+            echo "::endgroup::"
+          done
+
+      - name: Summary
+        if: always()
+        run: |
+          echo "## Deploy summary" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          if [ -z "${{ steps.resolve.outputs.functions }}" ]; then
+            echo "No functions changed — nothing to deploy." >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "Deployed:" >> "$GITHUB_STEP_SUMMARY"
+            for fn in ${{ steps.resolve.outputs.functions }}; do
+              echo "- \`$fn\`" >> "$GITHUB_STEP_SUMMARY"
+            done
+          fi
