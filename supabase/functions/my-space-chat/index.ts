@@ -306,9 +306,15 @@ Style:
 - If you need more info to do the job, ask one specific follow-up question instead of guessing.
 - If you reference an inquiry, give the host's event date + event type so they can identify it.
 
-You have tools for deep lookups: use \`search_inquiries\` to find specific leads,
-\`get_inquiry\` for the full message thread, and \`check_availability\` for any date
-the vendor asks about (the snapshot below only covers the next 30 days).
+You have tools for deep lookups. Pick the right one:
+- \`search_inquiries\` — find specific leads (filter by status / lead score)
+- \`get_inquiry\` — full thread + budget + special requests + last 10 messages
+- \`check_availability\` — any future date (the snapshot below only covers 30 days)
+- \`list_faqs\` — the vendor's saved Q&A pairs (use when drafting host replies)
+- \`list_portfolio_images\` — vendor's portfolio photos with captions
+- \`list_appointments\` — upcoming consultations / walkthroughs / tastings / calls
+- \`list_recent_notifications\` — recent platform notifications for the vendor
+- \`search_messages\` — full-text search across the vendor's host conversations
 
 ═══ VENDOR SNAPSHOT (auto-refreshed each turn) ═══
 Business: ${v.business_name ?? "(unnamed)"}${
@@ -385,6 +391,90 @@ const TOOLS = [
         date: {
           type: "string",
           description: "Date to check, format YYYY-MM-DD.",
+        },
+      },
+    },
+  },
+  {
+    name: "list_faqs",
+    description:
+      "Return the vendor's saved FAQs (Q&A pairs the vendor has set up to help answer host questions). Use when drafting a reply where one of the FAQs is relevant.",
+    input_schema: { type: "object", properties: {} },
+  },
+  {
+    name: "list_portfolio_images",
+    description:
+      "Return the vendor's portfolio images (storage paths + captions, ordered by display_order). Use when the vendor asks about their portfolio or wants to reference a specific photo.",
+    input_schema: {
+      type: "object",
+      properties: {
+        limit: {
+          type: "integer",
+          minimum: 1,
+          maximum: 50,
+          description: "Max images to return. Default 12.",
+        },
+      },
+    },
+  },
+  {
+    name: "list_appointments",
+    description:
+      "List the vendor's appointments (consultations, walkthroughs, tastings, fittings, calls). Default returns upcoming ones in the next 30 days.",
+    input_schema: {
+      type: "object",
+      properties: {
+        days: {
+          type: "integer",
+          minimum: 1,
+          maximum: 180,
+          description: "Look-ahead window in days. Default 30.",
+        },
+        status: {
+          type: "string",
+          enum: ["proposed", "accepted", "declined", "cancelled", "completed", "any"],
+          description: "Filter by status. Default 'any' (excludes cancelled + declined).",
+        },
+      },
+    },
+  },
+  {
+    name: "list_recent_notifications",
+    description:
+      "Return the signed-in vendor's most recent notifications (new inquiries, hot-lead alerts, reply notifications, etc.).",
+    input_schema: {
+      type: "object",
+      properties: {
+        limit: {
+          type: "integer",
+          minimum: 1,
+          maximum: 30,
+          description: "Max notifications to return. Default 10.",
+        },
+        only_unread: {
+          type: "boolean",
+          description: "If true, return only notifications that haven't been read.",
+        },
+      },
+    },
+  },
+  {
+    name: "search_messages",
+    description:
+      "Full-text search across all of the vendor's host-conversation messages (both sides). Returns matching messages with surrounding context.",
+    input_schema: {
+      type: "object",
+      required: ["query"],
+      properties: {
+        query: {
+          type: "string",
+          description: "Free-text query. Matched case-insensitively against message bodies.",
+        },
+        limit: {
+          type: "integer",
+          minimum: 1,
+          maximum: 30,
+          description: "Max matches to return. Default 10.",
         },
       },
     },
@@ -584,9 +674,197 @@ async function toolCheckAvailability(
   return { date, available: true };
 }
 
+async function toolListFaqs(
+  admin: any,
+  vendorId: string,
+): Promise<unknown> {
+  const { data, error } = await admin
+    .from("vendor_faqs")
+    .select("question, answer, display_order")
+    .eq("vendor_id", vendorId)
+    .order("display_order", { ascending: true })
+    .limit(30);
+  if (error) return { error: error.message };
+  return {
+    faqs: ((data ?? []) as Array<any>).map((f) => ({
+      question: f.question,
+      answer: f.answer,
+    })),
+  };
+}
+
+async function toolListPortfolioImages(
+  admin: any,
+  vendorId: string,
+  input: any,
+): Promise<unknown> {
+  const limit = Math.min(Math.max(Number(input?.limit) || 12, 1), 50);
+  const { data, error } = await admin
+    .from("vendor_portfolio_images")
+    .select("id, storage_path, caption, display_order, created_at")
+    .eq("vendor_id", vendorId)
+    .order("display_order", { ascending: true })
+    .limit(limit);
+  if (error) return { error: error.message };
+  const rows = (data ?? []) as Array<any>;
+  // Convert storage paths to public URLs so the vendor can click
+  // through if they want to reference a specific image.
+  const images = rows.map((r) => {
+    const { data: pub } = admin.storage
+      .from("vendor-portfolios")
+      .getPublicUrl(r.storage_path);
+    return {
+      id: r.id,
+      caption: r.caption,
+      url: pub?.publicUrl ?? null,
+      order: r.display_order,
+    };
+  });
+  return { images, count: images.length };
+}
+
+async function toolListAppointments(
+  admin: any,
+  vendorId: string,
+  input: any,
+): Promise<unknown> {
+  const days = Math.min(Math.max(Number(input?.days) || 30, 1), 180);
+  const now = new Date();
+  const horizon = new Date(now.getTime() + days * 86400000);
+  let query = admin
+    .from("appointments")
+    .select(
+      "id, inquiry_id, host_id, kind, title, location, scheduled_at, duration_minutes, status, notes",
+    )
+    .eq("vendor_id", vendorId)
+    .gte("scheduled_at", now.toISOString())
+    .lte("scheduled_at", horizon.toISOString())
+    .order("scheduled_at", { ascending: true })
+    .limit(50);
+  const status = String(input?.status ?? "any");
+  if (status === "any") {
+    query = query.not("status", "in", "(cancelled,declined)");
+  } else if (
+    ["proposed", "accepted", "declined", "cancelled", "completed"].includes(
+      status,
+    )
+  ) {
+    query = query.eq("status", status);
+  }
+  const { data, error } = await query;
+  if (error) return { error: error.message };
+  const rows = (data ?? []) as Array<any>;
+  // Hydrate host display names.
+  const hostIds = Array.from(new Set(rows.map((r) => r.host_id))).filter(
+    Boolean,
+  );
+  const { data: hosts } = hostIds.length > 0
+    ? await admin.from("profiles").select("id, display_name").in("id", hostIds)
+    : { data: [] };
+  const hostMap = new Map(
+    ((hosts ?? []) as Array<any>).map((h) => [h.id, h.display_name]),
+  );
+  return {
+    appointments: rows.map((r) => ({
+      id: r.id,
+      inquiry_id: r.inquiry_id,
+      host_name: hostMap.get(r.host_id) ?? "(unknown host)",
+      kind: r.kind,
+      title: r.title,
+      location: r.location,
+      scheduled_at: r.scheduled_at,
+      duration_minutes: r.duration_minutes,
+      status: r.status,
+      notes: r.notes,
+    })),
+    count: rows.length,
+  };
+}
+
+async function toolListRecentNotifications(
+  admin: any,
+  userId: string,
+  input: any,
+): Promise<unknown> {
+  const limit = Math.min(Math.max(Number(input?.limit) || 10, 1), 30);
+  let query = admin
+    .from("notifications")
+    .select("id, type, title, body, link, read_at, created_at")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false })
+    .limit(limit);
+  if (input?.only_unread === true) query = query.is("read_at", null);
+  const { data, error } = await query;
+  if (error) return { error: error.message };
+  return {
+    notifications: ((data ?? []) as Array<any>).map((n) => ({
+      id: n.id,
+      type: n.type,
+      title: n.title,
+      body: n.body,
+      link: n.link,
+      is_read: n.read_at != null,
+      created_at: n.created_at,
+    })),
+  };
+}
+
+async function toolSearchMessages(
+  admin: any,
+  vendorId: string,
+  input: any,
+): Promise<unknown> {
+  const q = String(input?.query ?? "").trim();
+  if (!q) return { error: "query required" };
+  const limit = Math.min(Math.max(Number(input?.limit) || 10, 1), 30);
+  // Scope to threads owned by this vendor, then ILIKE the body.
+  const { data: threads } = await admin
+    .from("direct_threads")
+    .select("id, inquiry_id, host_id")
+    .eq("vendor_id", vendorId);
+  const threadRows = (threads ?? []) as Array<any>;
+  const threadIds = threadRows.map((t) => t.id);
+  if (threadIds.length === 0) return { matches: [], count: 0 };
+  const { data: msgs, error } = await admin
+    .from("direct_messages")
+    .select("id, thread_id, sender_role, body, created_at")
+    .in("thread_id", threadIds)
+    .ilike("body", `%${q.replace(/[%_]/g, (m) => `\\${m}`)}%`)
+    .is("deleted_at", null)
+    .order("created_at", { ascending: false })
+    .limit(limit);
+  if (error) return { error: error.message };
+  const threadMap = new Map(threadRows.map((t) => [t.id, t]));
+  // Hydrate host names.
+  const hostIds = Array.from(
+    new Set(threadRows.map((t) => t.host_id)),
+  ).filter(Boolean);
+  const { data: hosts } = hostIds.length > 0
+    ? await admin.from("profiles").select("id, display_name").in("id", hostIds)
+    : { data: [] };
+  const hostMap = new Map(
+    ((hosts ?? []) as Array<any>).map((h) => [h.id, h.display_name]),
+  );
+  return {
+    matches: ((msgs ?? []) as Array<any>).map((m) => {
+      const t = threadMap.get(m.thread_id);
+      return {
+        message_id: m.id,
+        inquiry_id: t?.inquiry_id ?? null,
+        host_name: hostMap.get(t?.host_id) ?? "(unknown host)",
+        from: m.sender_role,
+        at: m.created_at,
+        body: m.body,
+      };
+    }),
+    count: (msgs ?? []).length,
+  };
+}
+
 async function executeTool(
   admin: any,
   vendorId: string,
+  userId: string,
   name: string,
   input: any,
 ): Promise<unknown> {
@@ -599,6 +877,21 @@ async function executeTool(
     }
     if (name === "check_availability") {
       return await toolCheckAvailability(admin, vendorId, input);
+    }
+    if (name === "list_faqs") {
+      return await toolListFaqs(admin, vendorId);
+    }
+    if (name === "list_portfolio_images") {
+      return await toolListPortfolioImages(admin, vendorId, input);
+    }
+    if (name === "list_appointments") {
+      return await toolListAppointments(admin, vendorId, input);
+    }
+    if (name === "list_recent_notifications") {
+      return await toolListRecentNotifications(admin, userId, input);
+    }
+    if (name === "search_messages") {
+      return await toolSearchMessages(admin, vendorId, input);
     }
     return { error: `unknown_tool:${name}` };
   } catch (err) {
@@ -618,6 +911,7 @@ async function callClaudeWithTools(
   initialMessages: ClaudeMessage[],
   admin: any,
   vendorId: string,
+  userId: string,
 ): Promise<string> {
   if (!ANTHROPIC_API_KEY) throw new Error("anthropic_key_missing");
   let messages = [...initialMessages];
@@ -653,7 +947,13 @@ async function callClaudeWithTools(
       const toolUses = contentBlocks.filter((b: any) => b.type === "tool_use");
       const toolResults = await Promise.all(
         toolUses.map(async (tu: any) => {
-          const out = await executeTool(admin, vendorId, tu.name, tu.input);
+          const out = await executeTool(
+            admin,
+            vendorId,
+            userId,
+            tu.name,
+            tu.input,
+          );
           return {
             type: "tool_result",
             tool_use_id: tu.id,
@@ -854,6 +1154,7 @@ serve(async (req) => {
       history,
       admin,
       vendorId ?? "",
+      userId,
     );
     const assistantMsg = await insertMessage(admin, userId, threadId, {
       role: "assistant",
