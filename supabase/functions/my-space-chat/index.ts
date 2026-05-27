@@ -2368,7 +2368,11 @@ serve(async (req) => {
         .filter((a) => a.url.startsWith("http"))
         .slice(0, 5)
     : [];
-  if (!userText && rawAttachments.length === 0) {
+  const regenerate = payload?.regenerate === true;
+  if (regenerate && !threadIdIn) {
+    return json(400, { error: "regenerate_requires_thread_id" });
+  }
+  if (!regenerate && !userText && rawAttachments.length === 0) {
     return json(400, { error: "no_text_or_attachments" });
   }
 
@@ -2400,38 +2404,78 @@ serve(async (req) => {
       };
 
       try {
-        const { threadId, isNew } = await ensureThread(
-          admin,
-          userId,
-          threadIdIn,
-          userText,
-        );
-        const userMsg = await insertMessage(admin, userId, threadId, {
-          role: "user",
-          type: "text",
-          content: userText,
-          attachments: rawAttachments.length > 0 ? rawAttachments : null,
-        });
-
-        send({
-          type: "thread",
-          thread_id: threadId,
-          thread_is_new: isNew,
-        });
-        send({
-          type: "user_message",
-          id: userMsg.id,
-          role: "user",
-          msg_type: "text",
-          content: userText,
-          attachments: rawAttachments.length > 0 ? rawAttachments : null,
-          created_at: userMsg.created_at,
-        });
+        let threadId: string;
+        let isNew = false;
+        if (regenerate) {
+          // Verify ownership of the existing thread, then drop the
+          // most recent assistant message so we re-roll from the same
+          // history the user saw.
+          const { data: t } = await admin
+            .from("my_space_threads")
+            .select("id")
+            .eq("id", threadIdIn)
+            .eq("user_id", userId)
+            .maybeSingle();
+          if (!t) {
+            send({ type: "error", message: "thread_not_found" });
+            close();
+            return;
+          }
+          threadId = (t as any).id;
+          const { data: lastAssistant } = await admin
+            .from("my_space_messages")
+            .select("id")
+            .eq("thread_id", threadId)
+            .eq("role", "assistant")
+            .order("created_at", { ascending: false })
+            .limit(1)
+            .maybeSingle();
+          if ((lastAssistant as any)?.id) {
+            await admin
+              .from("my_space_messages")
+              .delete()
+              .eq("id", (lastAssistant as any).id);
+          }
+          send({ type: "thread", thread_id: threadId, thread_is_new: false });
+        } else {
+          const ensured = await ensureThread(
+            admin,
+            userId,
+            threadIdIn,
+            userText,
+          );
+          threadId = ensured.threadId;
+          isNew = ensured.isNew;
+          const userMsg = await insertMessage(admin, userId, threadId, {
+            role: "user",
+            type: "text",
+            content: userText,
+            attachments: rawAttachments.length > 0 ? rawAttachments : null,
+          });
+          send({
+            type: "thread",
+            thread_id: threadId,
+            thread_is_new: isNew,
+          });
+          send({
+            type: "user_message",
+            id: userMsg.id,
+            role: "user",
+            msg_type: "text",
+            content: userText,
+            attachments: rawAttachments.length > 0 ? rawAttachments : null,
+            created_at: userMsg.created_at,
+          });
+        }
 
         // Image dispatch — short-circuit before Claude. Skip if the
         // vendor attached a file; in that case they likely want
         // analysis ("what's this contract say?"), not generation.
-        if (rawAttachments.length === 0 && looksLikeImageRequest(userText)) {
+        if (
+          !regenerate &&
+          rawAttachments.length === 0 &&
+          looksLikeImageRequest(userText)
+        ) {
           send({ type: "image_pending" });
           const { imageUrl } = await callOpenAIImage(userText);
           const assistantMsg = await insertMessage(admin, userId, threadId, {
