@@ -392,12 +392,12 @@ Before generating, identify the event type from the user's prompt and apply the 
 
 — QUINCEAÑERA
   Sections: Hero ("[Name]'s Quinceañera"), La Misa (Mass), La Recepción, Court of Honor (chambelanes y damas), El Vals, Dress Code, RSVP.
-  Tone: regal, family-centered. Bilingual phrases encouraged.
+  Tone: regal, family-centered. REQUIRED: English/Spanish toggle per the MULTI-LANGUAGE TOGGLE recipe — translate every section.
   Palette: rich pinks + gold; deep purples + gold; royal blue + silver. Hint of metallic.
 
 — BAR/BAT MITZVAH
   Sections: Hero (English + Hebrew name + temple), Service Details, Party Details (often Saturday evening), Mitzvah Project, RSVP.
-  Tone: warm, achievement-focused.
+  Tone: warm, achievement-focused. REQUIRED: English/Hebrew toggle (RTL for Hebrew) per the MULTI-LANGUAGE TOGGLE recipe.
 
 — HOLIDAY PARTY (Christmas, Hanukkah, NYE, Halloween, Thanksgiving)
   Sections: Hero, Details, Potluck Assignments, Dress Code, RSVP.
@@ -651,7 +651,7 @@ Apply consistently. Display sizes are reserved for the couple names / event titl
 
 ═══ TEXT-ON-IMAGE OVERLAY — always required when text sits on a photo ═══
 
-Any time text overlays a photo (hero, cover page, full-bleed section), add a `::before` pseudo-element with a linear gradient overlay so the type stays readable:
+Any time text overlays a photo (hero, cover page, full-bleed section), add a ::before pseudo-element with a linear gradient overlay so the type stays readable:
 
   .photo-hero { position: relative; background: url('...') center/cover; }
   .photo-hero::before {
@@ -662,10 +662,190 @@ Any time text overlays a photo (hero, cover page, full-bleed section), add a `::
 
 Tune the opacity to match the photo brightness: 0.3–0.5 for naturally moody photos, 0.6–0.75 for bright/sunny photos. For light-text-on-photo always use a dark gradient; for dark-text-on-photo (rare) use a light gradient.
 
+═══ COUNTDOWN ROW — bake into the hero (premium events only) ═══
+
+For weddings, anniversaries, engagements, quinces, and milestone events, the hero must include a romantic 3-cell countdown row showing DAYS-UNTIL · DATE · YEAR. Compute the days from TODAY's date (passed at the top of this prompt) to the event date. Hardcode the result as a static number — no JS, no live ticker.
+
+  Example markup (Eleanor & Marcus, Sept 12 2026, today is May 27 2026 → 108 days):
+
+  <div class="countdown-row">
+    <div class="countdown-cell"><span class="countdown-num">108</span><span class="countdown-label">Days</span></div>
+    <div class="countdown-cell"><span class="countdown-num">9.12</span><span class="countdown-label">Date</span></div>
+    <div class="countdown-cell"><span class="countdown-num">2026</span><span class="countdown-label">Year</span></div>
+  </div>
+
+  CSS:
+  .countdown-row { display: flex; gap: clamp(2rem, 6vw, 4rem); justify-content: center; margin-top: 2rem; }
+  .countdown-cell { display: flex; flex-direction: column; align-items: center; gap: 0.4rem; }
+  .countdown-num  { font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: clamp(2rem, 5vw, 3.2rem); color: var(--accent); letter-spacing: -0.02em; line-height: 1; }
+  .countdown-label{ font-size: 0.65rem; letter-spacing: 0.3em; text-transform: uppercase; opacity: 0.55; }
+
+  If the event is < 30 days away, use "Days" anyway (e.g. "12 Days"). If event is THIS WEEK use "Day" (singular). If event is TODAY use the word "Today". For events in the past, show 0 in the days cell.
+
+═══ PHOTO STRIPS — CSS-only scroll-snap carousel (replace single-image sections with strips when 2+ photos fit) ═══
+
+Real luxury invitations have galleries, not just hero shots. Whenever a section calls for photos (engagement shots, venue tour, florals, family, food spread) and the photo bank has 3-5 themed options, render them as a horizontally-scrollable scroll-snap strip:
+
+  <div class="photo-strip">
+    <img src="https://images.unsplash.com/photo-XYZ?w=900&auto=format&fit=crop" alt="" loading="lazy">
+    <img src="..." alt="" loading="lazy">
+    <img src="..." alt="" loading="lazy">
+    <img src="..." alt="" loading="lazy">
+    <img src="..." alt="" loading="lazy">
+  </div>
+
+  CSS:
+  .photo-strip {
+    display: flex; gap: 1rem; overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    padding: 1.5rem; margin: 0 -1.5rem;
+    scrollbar-width: none;
+  }
+  .photo-strip::-webkit-scrollbar { display: none; }
+  .photo-strip img {
+    flex: 0 0 min(75%, 540px);
+    height: clamp(240px, 36vw, 380px);
+    object-fit: cover;
+    scroll-snap-align: center;
+    border-radius: 12px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.18);
+  }
+
+  Use this for: engagement gallery sections, venue tour sections, "details" lookbook, "food / menu" preview, "decor inspiration" boards. Pick 3-5 photos from the matching event bank — never all from the same close-up category (mix wide + close + people if available).
+
+═══ SCROLL ANIMATIONS — sections fade-in as they enter view (CSS-only) ═══
+
+Sites feel static when everything appears at once. Add a subtle slide-up + fade on every section as it scrolls into view. Use modern animation-timeline with @supports fallback so older browsers stay safe:
+
+  /* base: visible state (also the fallback for browsers without animation-timeline) */
+  section, .invitation-body > * { opacity: 1; transform: none; }
+
+  @supports (animation-timeline: view()) {
+    section, .invitation-body > * {
+      animation: section-enter linear both;
+      animation-timeline: view();
+      animation-range: entry 0% cover 35%;
+    }
+  }
+  @keyframes section-enter {
+    from { opacity: 0; transform: translateY(40px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+Apply to every top-level section. The hero / cover-page should NOT use this (it's the first paint). Effect is most pronounced in Chrome/Edge; Safari/Firefox no-op gracefully.
+
+═══ STATIC MAP — embed venue location for in-person events ═══
+
+For events with a real-world venue address, embed a static map in the venue / details section. Use the OpenStreetMap embed iframe (no API key needed):
+
+  <iframe
+    src="https://www.openstreetmap.org/export/embed.html?bbox=<minLon>,<minLat>,<maxLon>,<maxLat>&layer=mapnik&marker=<lat>,<lon>"
+    title="Venue location" loading="lazy"
+    style="width:100%;height:280px;border:1px solid rgba(0,0,0,0.1);border-radius:12px;display:block;"
+  ></iframe>
+
+  To pick the bbox: take the venue's lat/lon, subtract ~0.01 for min, add ~0.01 for max. Example for Villa Cipressi, Lake Como (~45.989, 9.275):
+    bbox=9.265,45.979,9.285,45.999&marker=45.989,9.275
+
+  For well-known landmarks Claude knows the approximate coordinates. For obscure venues, use the city center coordinates (Tulum center, Tuscany center, etc.) — a directionally correct map beats no map. For "our place" / private home addresses, SKIP the map (too small to be useful + privacy).
+
+  Place the map BELOW the venue address text, not above it. Add a small caption underneath: "View on map →" linking to https://www.openstreetmap.org/?mlat=<lat>&mlon=<lon>#map=14/<lat>/<lon>
+
+═══ SECTION RHYTHM — alternate templates for visual variety (CRITICAL — prevents "every section looks the same") ═══
+
+Real luxury invitations don't stack 8 cream-card sections. They alternate. Enforce this rhythm:
+
+  1. COVER PAGE (Pattern A — moody full-bleed photo with envelope/seal)
+  2. CREAM CARD HERO (couple names, date, location, countdown row, ornament)
+  3. FULL-BLEED PHOTO SECTION (the photo strip, or a single large photo with a quote/text overlay)
+  4. CREAM CARD (Our Story — narrative text, generous whitespace)
+  5. DARK MOODY QUOTE / PARALLAX (full-width dark section with a single italic pull-quote in cream, optional textured background)
+  6. CREAM CARD (Schedule / Details — bullets or stacked time-blocks)
+  7. PHOTO STRIP (venue / details lookbook)
+  8. MAP SECTION (cream card, address + static map)
+  9. CREAM CARD (Dress Code, FAQs, Registry)
+  10. CREAM CARD (RSVP form)
+  11. CREAM CARD (Thank You — short closing note, ornament)
+
+  Tweak the order per event type but ALWAYS alternate:
+    • Never 3 cream cards in a row without a photo / dark section between
+    • Use full-bleed photo or dark sections to break up rhythm at LEAST 2x in the body
+    • Dark sections look great as "quote interludes" — pull a line from the couple's story, format in serif italic ~2rem, center-aligned, on a dark background with subtle ornament
+
+  Each section gets the section-enter scroll animation (per the SCROLL ANIMATIONS recipe above).
+
+═══ MULTI-LANGUAGE TOGGLE — CSS-only English / second-language swap ═══
+
+Some events have bilingual guest lists. For QUINCEAÑERAS (English/Spanish), BAR-MITZVAHS / BAT-MITZVAHS (English/Hebrew), and destination weddings where many guests speak the venue's language (Italian for Italy, French for France, Spanish for Mexico, Hindi for India), include a CSS-only language toggle at the top-right of the page.
+
+The pattern uses two hidden radios + :has() to swap visible content. The inputs MUST be the very first elements inside <body>.
+
+  HTML pattern (English / Spanish):
+
+  <body>
+    <input id="lang-en" type="radio" name="lang" checked hidden>
+    <input id="lang-es" type="radio" name="lang" hidden>
+    <nav class="lang-switch" aria-label="Language">
+      <label for="lang-en">English</label>
+      <span class="lang-dot">·</span>
+      <label for="lang-es">Español</label>
+    </nav>
+
+    <!-- All content uses paired spans / divs with lang="en" and lang="es" -->
+    <h1>
+      <span lang="en">Eleanor &amp; Marcus</span>
+      <span lang="es">Eleanor y Marcus</span>
+    </h1>
+    <p>
+      <span lang="en">Together with their families, request the honor of your presence.</span>
+      <span lang="es">Junto con sus familias, solicitan el honor de su presencia.</span>
+    </p>
+
+  CSS:
+  [lang="es"], [lang="he"], [lang="it"], [lang="fr"], [lang="hi"] { display: none; }
+
+  :root:has(#lang-es:checked) [lang="en"] { display: none; }
+  :root:has(#lang-es:checked) [lang="es"] { display: revert; }
+  :root:has(#lang-he:checked) [lang="en"] { display: none; }
+  :root:has(#lang-he:checked) [lang="he"] { display: revert; direction: rtl; }
+  /* …same pattern for it / fr / hi as needed */
+
+  .lang-switch {
+    position: fixed; top: 1rem; right: 1rem;
+    display: inline-flex; gap: 0.5rem; align-items: center;
+    background: rgba(0,0,0,0.55);
+    padding: 0.4rem 0.9rem;
+    border-radius: 999px;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.62rem; letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.55);
+    backdrop-filter: blur(8px);
+    z-index: 100;
+  }
+  .lang-switch label { cursor: pointer; padding: 0.15rem 0.25rem; transition: color 0.2s; }
+  .lang-dot { opacity: 0.5; }
+  :root:has(#lang-en:checked) .lang-switch label[for="lang-en"],
+  :root:has(#lang-es:checked) .lang-switch label[for="lang-es"],
+  :root:has(#lang-he:checked) .lang-switch label[for="lang-he"] {
+    color: #fff; font-weight: 600;
+  }
+
+  RULES:
+  • Translate EVERYTHING the guest will read — headings, body copy, button text, RSVP labels, dress code, schedule items, FAQs. Don't leave half-English / half-translated copy.
+  • Keep names (Eleanor & Marcus, Villa Cipressi) untranslated. Translate only the surrounding copy.
+  • For Hebrew, use the Frank Ruhl Libre or Heebo Google Font alongside the English serif/sans pair. For Arabic/RTL languages, add direction: rtl to the lang container.
+  • For Spanish, use the same fonts (Cormorant Garamond etc. all support Spanish accents). Just translate the copy.
+  • The form labels translate too — but keep input name attributes in English ("name", "email", "attending") so the backend reads them correctly.
+  • Light pill style on dark sites (rgba black background, white text). On cream/pastel sites flip it: white background, dark accent text.
+  • Place the switch in the TOP-RIGHT corner of the cover page so it's visible without scrolling. It stays fixed across all sections.
+
 === END PREMIUM DESIGN BIBLE ===`;
 
-function buildSystemPrompt(rsvpEndpoint: string): string {
-  return `You design $1,000,000-quality single-page event microsites — weddings, birthdays, baby showers, engagement parties, anniversaries, graduations, bridal showers, gender reveals, holiday parties, quinceañeras, bar/bat mitzvahs, and more. Premium digital invitations, not generic webpages.
+function buildSystemPrompt(rsvpEndpoint: string, todayIso: string): string {
+  return `TODAY'S DATE (for countdown math, never reference this in copy): ${todayIso}
+
+You design $1,000,000-quality single-page event microsites — weddings, birthdays, baby showers, engagement parties, anniversaries, graduations, bridal showers, gender reveals, holiday parties, quinceañeras, bar/bat mitzvahs, and more. Premium digital invitations, not generic webpages.
 
 ${PREMIUM_DESIGN_BIBLE}
 
@@ -706,6 +886,14 @@ Style the form to match the site's palette. The action URL is the EXACT string a
 10. ALWAYS include the custom scrollbar CSS, the 5-step typography scale, and a darken overlay on any photo that has text on it.
 11. For elegant events, ALWAYS include a CSS-only ambient particle field (rose petals for weddings, snow for winter, stars for NYE, embers for Halloween, leaves for autumn). 12–18 spans, fixed-position, behind content.
 12. The cover-page seal MUST pulse (sealPulse + sealRing animations from the design bible) and the tap hint MUST gently bounce (tapBounce animation). Subtle invitations don't get clicked.
+13. For weddings, anniversaries, engagements, quinces, and milestone events, the hero MUST include the 3-cell COUNTDOWN ROW (Days · Date · Year). Compute days from TODAY's date.
+14. ALTERNATE SECTION TEMPLATES (per SECTION RHYTHM): never 3 cream cards in a row. Break with full-bleed photo sections, dark moody quote interludes, photo strips. At LEAST 2 non-cream sections in the body.
+15. ALWAYS include a static OpenStreetMap embed for events with a real venue address (skip for "our place" / private homes).
+16. ALWAYS include the scroll-entry animation (animation-timeline: view() with @supports fallback) on every body section.
+17. When 3+ themed photos fit a section's purpose, use the PHOTO STRIP scroll-snap pattern instead of a single image.
+18. MULTI-LANGUAGE TOGGLE — REQUIRED for QUINCEAÑERAS (English/Spanish), BAR/BAT MITZVAHS (English/Hebrew with RTL), and destination weddings where the venue country speaks a language other than English (Italy → Italian, France → French, Mexico → Spanish, India → Hindi). Optional but encouraged whenever the user mentions bilingual families. Translate ALL guest-facing copy — never leave a half-translated page. Translations must read like a native speaker wrote them, not literal word-for-word. Use phrasing real invitations in that culture use ("Junto con sus familias" for Spanish, not "Together with their families" word-by-word).
+19. WEB SEARCH — when the user mentions a NAMED REAL venue ("Villa Cipressi", "The Plaza Hotel", "Marin Country Club"), CALL the web_search tool once to confirm: (a) full address, (b) approximate lat/lon for the map embed (NOT a generic city center), (c) one or two historical/architectural facts to weave into the Our Story or Venue section ("a 15th-century lakeside villa..."). For vague venues ("our backyard", "a friend's place") skip the search. Cap at 3 searches per generation. Use search results SILENTLY — never narrate "I searched for...", just emit the HTML.
+20. INSPIRATION IMAGE — if the user attached an image with their message, vision-read it FIRST and treat it as the design brief. Extract: dominant color palette (pick the 3 most prominent hex codes), font style (serif / sans / script / hand-drawn), mood (formal / playful / moody / airy), and any decorative motifs (florals / geometric / watercolor). Apply those exact choices to the generated site instead of defaulting to a stock palette. The image is the source of truth — match it.
 
 After </html>, return NOTHING.
 
@@ -745,6 +933,14 @@ function stripCodeFences(text: string): string {
   if (t.startsWith("```")) {
     t = t.replace(/^```[a-zA-Z]*\n?/, "").replace(/```\s*$/, "");
   }
+  // With tools enabled, Claude sometimes prefaces the doc with a sentence
+  // ("Based on my search..."). Strip anything before the title comment or
+  // <!DOCTYPE html> so the iframe gets a clean document.
+  const titleIdx = t.search(/<!--\s*TITLE:/i);
+  const docIdx = t.search(/<!doctype html/i);
+  const startIdx =
+    titleIdx >= 0 && (docIdx < 0 || titleIdx < docIdx) ? titleIdx : docIdx;
+  if (startIdx > 0) t = t.slice(startIdx);
   return t.trim();
 }
 
@@ -837,7 +1033,8 @@ serve(async (req) => {
   }
 
   const rsvpEndpoint = `${SUPABASE_URL}/functions/v1/ai-site-rsvp-submit?slug=__SLUG__`;
-  const baseSystem = buildSystemPrompt(rsvpEndpoint);
+  const todayIso = new Date().toISOString().slice(0, 10);
+  const baseSystem = buildSystemPrompt(rsvpEndpoint, todayIso);
   const systemText = currentSite
     ? baseSystem + EDIT_SUFFIX + currentSite.html
     : baseSystem;
@@ -853,6 +1050,13 @@ serve(async (req) => {
       model: MODEL,
       max_tokens: 16000,
       stream: true,
+      tools: [
+        {
+          type: "web_search_20250305",
+          name: "web_search",
+          max_uses: 3,
+        },
+      ],
       system: [
         {
           type: "text",
