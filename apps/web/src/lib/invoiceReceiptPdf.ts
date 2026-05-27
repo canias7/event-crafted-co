@@ -37,6 +37,10 @@ export interface PdfInvoice {
   status: string;
   paid_at: string | null;
   refunded_amount_cents?: number;
+  /** Late fee added to this invoice after it was sent. Already
+   *  baked into total_cents by the late-fee RPC; we render it as a
+   *  separate line so the printed totals add up for the buyer. */
+  late_fee_cents?: number;
 }
 
 export interface PdfVendor {
@@ -225,6 +229,17 @@ export function buildInvoicePdf(invoice: PdfInvoice, vendor: PdfVendor): jsPDF {
     doc.text(`Tax (${(invoice.tax_rate_bps / 100).toFixed(2)}%)`, labelX, ty);
     doc.setTextColor(...TEXT);
     doc.text(money(invoice.tax_cents, currency), valueX, ty, { align: "right" });
+  }
+
+  // Late fee, when present, gets its own line so the printed totals
+  // add up. Without this, an invoice that's been late-fee'd shows
+  // Subtotal + Tax ≠ Total and the buyer sees an unexplained gap.
+  if (invoice.late_fee_cents && invoice.late_fee_cents > 0) {
+    ty += 16;
+    doc.setTextColor(...MUTED);
+    doc.text("Late fee", labelX, ty);
+    doc.setTextColor(...TEXT);
+    doc.text(money(invoice.late_fee_cents, currency), valueX, ty, { align: "right" });
   }
 
   // Rule above total

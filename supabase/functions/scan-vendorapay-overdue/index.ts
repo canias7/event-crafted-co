@@ -89,17 +89,22 @@ serve(async (req: Request) => {
   const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 3600 * 1000);
   const todayIso = now.toISOString().slice(0, 10);
 
-  // The query — overdue (status sent, due_date in the past) AND
+  // The query — overdue (due_date in the past, not yet paid) AND
   // (never nudged OR last nudge > 7 days ago). PostgREST or() with
   // a comma-separated argument list expresses the throttle clause.
-  // Batch cap = 100/run; a backlog of overdue rows trickles out
-  // across multiple cron ticks rather than blasting all at once.
+  //
+  // Status filter MUST include both 'sent' AND 'overdue': the older
+  // scan-vendorapay-payment-schedules cron runs at 08:00 UTC and
+  // promotes status sent → overdue for any row past due_date. This
+  // scanner then runs at 14:00 UTC. Filtering on 'sent' alone would
+  // miss every invoice the earlier cron already touched — i.e.
+  // every overdue invoice in practice.
   const { data: due, error: dueErr } = await (db as any)
     .from("invoices")
     .select(
       "id, vendor_id, slug, invoice_number, bill_to_name, bill_to_email, issue_date, due_date, total_cents, currency, reminder_sent_at",
     )
-    .eq("status", "sent")
+    .in("status", ["sent", "overdue"])
     .not("due_date", "is", null)
     .lt("due_date", todayIso)
     .not("bill_to_email", "is", null)
