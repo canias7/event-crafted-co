@@ -8,7 +8,15 @@
 // wording, prune entries. Most adds will happen through chat.
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Loader2, Pencil, Plus, Save, Trash2, X } from "lucide-react";
+import {
+  Loader2,
+  Pencil,
+  Plus,
+  Save,
+  Sparkles,
+  Trash2,
+  X,
+} from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -32,8 +40,88 @@ interface KnowledgeEntry {
   updated_at: string;
 }
 
+interface ImportCandidate {
+  category: Category;
+  title: string;
+  content: string;
+}
+
 function categoryLabel(key: string): string {
   return CATEGORIES.find((c) => c.key === key)?.label ?? key;
+}
+
+// Build the list of suggested KB entries from data the vendor already
+// has elsewhere — packages (pricing), FAQs, profile bio/category/
+// location (services), and standing chat preferences (brand voice).
+// Caller only renders this when the KB is otherwise empty.
+function buildImportCandidates(
+  profile: {
+    business_name: string | null;
+    category: string | null;
+    location: string | null;
+    bio: string | null;
+    my_space_preferences: string | null;
+  } | null,
+  faqs: Array<{ question: string | null; answer: string | null }>,
+  packages: Array<{
+    name: string | null;
+    description: string | null;
+    price_cents: number | null;
+  }>,
+): ImportCandidate[] {
+  const out: ImportCandidate[] = [];
+  if (profile) {
+    const overviewParts: string[] = [];
+    if (profile.business_name) overviewParts.push(profile.business_name);
+    if (profile.category) overviewParts.push(profile.category);
+    if (profile.location) overviewParts.push(`based in ${profile.location}`);
+    if (overviewParts.length >= 2) {
+      out.push({
+        category: "services",
+        title: "About the business",
+        content: overviewParts.join(" · "),
+      });
+    }
+    if (profile.bio && profile.bio.trim().length > 0) {
+      out.push({
+        category: "services",
+        title: "Business bio",
+        content: profile.bio.trim().slice(0, 4000),
+      });
+    }
+    if (
+      profile.my_space_preferences &&
+      profile.my_space_preferences.trim().length > 0
+    ) {
+      out.push({
+        category: "brand_voice",
+        title: "Tone & standing preferences",
+        content: profile.my_space_preferences.trim().slice(0, 4000),
+      });
+    }
+  }
+  for (const pkg of packages) {
+    if (!pkg.name) continue;
+    const priceStr = typeof pkg.price_cents === "number"
+      ? `$${(pkg.price_cents / 100).toLocaleString()}`
+      : "(no price set)";
+    out.push({
+      category: "pricing",
+      title: `${pkg.name.slice(0, 180)} pricing`,
+      content: pkg.description
+        ? `${priceStr} — ${pkg.description.slice(0, 3800)}`
+        : priceStr,
+    });
+  }
+  for (const faq of faqs) {
+    if (!faq.question || !faq.answer) continue;
+    out.push({
+      category: "faq",
+      title: faq.question.trim().slice(0, 200),
+      content: faq.answer.trim().slice(0, 4000),
+    });
+  }
+  return out;
 }
 
 export function MySpaceKnowledgePanel() {
@@ -55,6 +143,13 @@ export function MySpaceKnowledgePanel() {
   const [editCategory, setEditCategory] = useState<Category>("pricing");
   const [editSaving, setEditSaving] = useState(false);
 
+  // First-open auto-import — candidates pulled from existing vendor
+  // data (packages, FAQs, profile, preferences). Only surfaced as a
+  // banner when the KB is empty.
+  const [candidates, setCandidates] = useState<ImportCandidate[] | null>(null);
+  const [importing, setImporting] = useState(false);
+  const [dismissedImport, setDismissedImport] = useState(false);
+
   const load = useCallback(async () => {
     if (!user?.id) return;
     setLoading(true);
@@ -74,9 +169,66 @@ export function MySpaceKnowledgePanel() {
     setEntries((data ?? []) as KnowledgeEntry[]);
   }, [user?.id]);
 
+  const loadCandidates = useCallback(async () => {
+    if (!user?.id) return;
+    const { data: profile } = await supabase
+      .from("vendor_profiles")
+      .select("id, business_name, category, location, bio, my_space_preferences")
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (!profile) {
+      setCandidates([]);
+      return;
+    }
+    const [faqsResult, packagesResult] = await Promise.all([
+      supabase
+        .from("vendor_faqs")
+        .select("question, answer, display_order")
+        .eq("vendor_id", profile.id)
+        .order("display_order", { ascending: true })
+        .limit(30),
+      supabase
+        .from("vendor_packages")
+        .select("name, description, price_cents, display_order")
+        .eq("vendor_id", profile.id)
+        .eq("is_active", true)
+        .order("display_order", { ascending: true })
+        .limit(20),
+    ]);
+    setCandidates(
+      buildImportCandidates(
+        profile,
+        (faqsResult.data ?? []) as Array<any>,
+        (packagesResult.data ?? []) as Array<any>,
+      ),
+    );
+  }, [user?.id]);
+
   useEffect(() => {
     void load();
-  }, [load]);
+    void loadCandidates();
+  }, [load, loadCandidates]);
+
+  const handleImportAll = async () => {
+    if (!user?.id || !candidates || candidates.length === 0) return;
+    setImporting(true);
+    const rows = candidates.map((c) => ({
+      user_id: user.id,
+      category: c.category,
+      title: c.title.slice(0, 200),
+      content: c.content.slice(0, 4000),
+    }));
+    const { error } = await supabase.from("my_space_knowledge").insert(rows);
+    setImporting(false);
+    if (error) {
+      console.error("[MySpaceKnowledgePanel] import failed", error);
+      toast.error(error.message);
+      return;
+    }
+    toast.success(`Imported ${rows.length} ${rows.length === 1 ? "fact" : "facts"}.`);
+    setCandidates([]);
+    void load();
+  };
 
   const grouped = useMemo(() => {
     const map = new Map<Category, KnowledgeEntry[]>();
@@ -182,6 +334,20 @@ export function MySpaceKnowledgePanel() {
   };
 
   const totalCount = entries?.length ?? 0;
+  const candidateCount = candidates?.length ?? 0;
+  const showImportBanner = !loading
+    && totalCount === 0
+    && candidateCount > 0
+    && !dismissedImport;
+  const candidateBreakdown = useMemo(() => {
+    const counts = new Map<Category, number>();
+    for (const c of candidates ?? []) {
+      counts.set(c.category, (counts.get(c.category) ?? 0) + 1);
+    }
+    return Array.from(counts.entries())
+      .map(([cat, n]) => `${n} ${categoryLabel(cat).toLowerCase()}`)
+      .join(" · ");
+  }, [candidates]);
 
   return (
     <div className="flex flex-col gap-4">
@@ -192,6 +358,68 @@ export function MySpaceKnowledgePanel() {
         proposals, follow-ups. Most adds happen through chat ("remember that
         my hourly rate is $150"), but you can manage them here too.
       </div>
+
+      {/* First-open import banner — only when KB is empty and the
+          vendor already has packages / FAQs / profile data we can seed
+          from. Dismissable. */}
+      {showImportBanner ? (
+        <div
+          className="rounded-xl border p-4 space-y-3"
+          style={{
+            borderColor: "rgba(255,138,76,0.45)",
+            background: "rgba(255,138,76,0.08)",
+          }}
+        >
+          <div className="flex items-start gap-3">
+            <div
+              className="shrink-0 w-8 h-8 rounded-full inline-flex items-center justify-center"
+              style={{ background: "rgba(255,138,76,0.22)", color: "#c4541e" }}
+            >
+              <Sparkles className="w-4 h-4" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-medium">
+                Found {candidateCount}{" "}
+                {candidateCount === 1 ? "fact" : "facts"} from your profile
+              </p>
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                {candidateBreakdown || "Packages, FAQs, and bio."} — import to
+                give the AI an instant head start.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setDismissedImport(true)}
+              className="shrink-0 text-muted-foreground hover:text-foreground"
+              aria-label="Dismiss"
+              title="Dismiss"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+          <div className="flex items-center justify-end gap-2">
+            <button
+              type="button"
+              onClick={() => setDismissedImport(true)}
+              className="text-xs text-muted-foreground hover:text-foreground px-3 py-1.5"
+            >
+              Not now
+            </button>
+            <button
+              type="button"
+              onClick={handleImportAll}
+              disabled={importing}
+              className="inline-flex items-center gap-1.5 text-sm font-medium rounded-lg px-3 py-1.5 disabled:opacity-50"
+              style={{ background: "rgba(255,138,76,0.22)", color: "#c4541e" }}
+            >
+              {importing
+                ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                : <Sparkles className="w-3.5 h-3.5" />}
+              Import all
+            </button>
+          </div>
+        </div>
+      ) : null}
 
       {/* Add new entry */}
       {addOpen ? (
