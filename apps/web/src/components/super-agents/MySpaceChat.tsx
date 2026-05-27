@@ -425,6 +425,13 @@ export function MySpaceChat() {
 
       const ac = new AbortController();
       abortRef.current = ac;
+      const browserTz = (() => {
+        try {
+          return Intl.DateTimeFormat().resolvedOptions().timeZone || "";
+        } catch {
+          return "";
+        }
+      })();
       const res = await fetch(
         `${SUPABASE_URL}/functions/v1/my-space-chat`,
         {
@@ -434,6 +441,7 @@ export function MySpaceChat() {
             authorization: `Bearer ${accessToken}`,
             apikey: SUPABASE_PUBLISHABLE_KEY,
             accept: "text/event-stream",
+            ...(browserTz ? { "x-vendor-timezone": browserTz } : {}),
           },
           signal: ac.signal,
           body: JSON.stringify(
