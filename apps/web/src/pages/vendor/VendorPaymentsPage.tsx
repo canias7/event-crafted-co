@@ -3865,14 +3865,22 @@ function InvoicesTab({
 }
 
 function InvoiceStatusPill({ status }: { status: Invoice["status"] }) {
+  // Must cover every variant of Invoice["status"]. tsconfig.app
+  // has strict:false so Record<> exhaustiveness isn't enforced —
+  // a missing key would render `undefined.className` and crash
+  // the whole InvoicesTab row. Refunded statuses were missing
+  // before this hotfix; map them to the same rose-orange family
+  // already used for the PDF receipt + Reports refund column.
   const map: Record<Invoice["status"], { label: string; className: string }> = {
     draft: { label: "Draft", className: "bg-slate-100 text-slate-700" },
     sent: { label: "Sent", className: "bg-emerald-100 text-emerald-700" },
     paid: { label: "Paid", className: "bg-sky-100 text-sky-700" },
     cancelled: { label: "Cancelled", className: "bg-slate-100 text-slate-700" },
     overdue: { label: "Overdue", className: "bg-rose-100 text-rose-700" },
+    refunded: { label: "Refunded", className: "bg-orange-100 text-orange-800" },
+    partial_refund: { label: "Partial refund", className: "bg-orange-100 text-orange-800" },
   };
-  const m = map[status];
+  const m = map[status] ?? { label: status, className: "bg-slate-100 text-slate-700" };
   return (
     <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${m.className}`}>
       {m.label}
