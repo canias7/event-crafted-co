@@ -1327,15 +1327,53 @@ interface ClaudeMessage {
   content: any;
 }
 
-async function callClaudeWithTools(
+// Parse Anthropic's SSE format into a stream of typed events.
+async function* parseAnthropicSSE(
+  body: ReadableStream<Uint8Array>,
+): AsyncGenerator<any, void, unknown> {
+  const reader = body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    let nl: number;
+    while ((nl = buffer.indexOf("\n")) !== -1) {
+      const line = buffer.slice(0, nl);
+      buffer = buffer.slice(nl + 1);
+      const trimmed = line.trim();
+      if (!trimmed.startsWith("data: ")) continue;
+      const data = trimmed.slice(6);
+      if (data === "[DONE]") return;
+      try {
+        yield JSON.parse(data);
+      } catch {
+        // Ignore malformed lines.
+      }
+    }
+  }
+}
+
+// Streaming version of the tool loop. Calls `send` for each event:
+//   { type: "delta", text }
+//   { type: "tool_start", name }
+//   { type: "tool_done", name }
+// Returns the assembled final text. Uses Anthropic's streaming API on
+// every iteration so text shows up immediately, even on turns that
+// also call tools (Claude often emits a sentence before invoking a
+// tool — that should be visible to the vendor).
+async function streamClaudeWithTools(
   systemPrompt: string,
   initialMessages: ClaudeMessage[],
   admin: any,
   vendorId: string,
   userId: string,
+  send: (ev: Record<string, unknown>) => void,
 ): Promise<string> {
   if (!ANTHROPIC_API_KEY) throw new Error("anthropic_key_missing");
   let messages = [...initialMessages];
+  let finalText = "";
   for (let i = 0; i < MAX_TOOL_ITERATIONS; i++) {
     const res = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
@@ -1356,18 +1394,61 @@ async function callClaudeWithTools(
         ],
         tools: TOOLS,
         messages,
+        stream: true,
       }),
     });
-    if (!res.ok) {
-      const t = await res.text();
+    if (!res.ok || !res.body) {
+      const t = res.body ? await res.text() : "";
       throw new Error(`anthropic ${res.status}: ${t.slice(0, 240)}`);
     }
-    const parsed = (await res.json()) as any;
-    const contentBlocks = (parsed.content ?? []) as Array<any>;
-    if (parsed.stop_reason === "tool_use") {
-      const toolUses = contentBlocks.filter((b: any) => b.type === "tool_use");
+
+    // Reassemble content blocks as the stream arrives. We need them
+    // to round-trip back to Claude on tool-use turns.
+    const blocks: Array<any> = [];
+    let stopReason: string | null = null;
+    let turnText = "";
+
+    for await (const ev of parseAnthropicSSE(res.body)) {
+      if (ev.type === "content_block_start") {
+        const cb = { ...ev.content_block } as any;
+        if (cb.type === "tool_use") {
+          cb._jsonBuf = "";
+          send({ type: "tool_start", name: cb.name });
+        } else if (cb.type === "text") {
+          cb.text = cb.text ?? "";
+        }
+        blocks[ev.index] = cb;
+      } else if (ev.type === "content_block_delta") {
+        const cb = blocks[ev.index];
+        if (!cb) continue;
+        if (ev.delta?.type === "text_delta") {
+          const chunk = String(ev.delta.text ?? "");
+          turnText += chunk;
+          cb.text = (cb.text ?? "") + chunk;
+          send({ type: "delta", text: chunk });
+        } else if (ev.delta?.type === "input_json_delta") {
+          cb._jsonBuf = (cb._jsonBuf ?? "") +
+            String(ev.delta.partial_json ?? "");
+        }
+      } else if (ev.type === "content_block_stop") {
+        const cb = blocks[ev.index];
+        if (cb?.type === "tool_use") {
+          try {
+            cb.input = cb._jsonBuf ? JSON.parse(cb._jsonBuf) : {};
+          } catch {
+            cb.input = {};
+          }
+          delete cb._jsonBuf;
+        }
+      } else if (ev.type === "message_delta") {
+        if (ev.delta?.stop_reason) stopReason = ev.delta.stop_reason;
+      }
+    }
+
+    if (stopReason === "tool_use") {
+      const toolUses = blocks.filter((b) => b?.type === "tool_use");
       const toolResults = await Promise.all(
-        toolUses.map(async (tu: any) => {
+        toolUses.map(async (tu) => {
           const out = await executeTool(
             admin,
             vendorId,
@@ -1375,6 +1456,7 @@ async function callClaudeWithTools(
             tu.name,
             tu.input,
           );
+          send({ type: "tool_done", name: tu.name });
           return {
             type: "tool_result",
             tool_use_id: tu.id,
@@ -1382,19 +1464,21 @@ async function callClaudeWithTools(
           };
         }),
       );
+      // Strip internal scratch fields before sending back to Claude.
+      const cleanedBlocks = blocks.map((b) => {
+        const { _jsonBuf: _ignored, ...rest } = b ?? {};
+        return rest;
+      });
       messages = [
         ...messages,
-        { role: "assistant", content: contentBlocks },
+        { role: "assistant", content: cleanedBlocks },
         { role: "user", content: toolResults },
       ];
       continue;
     }
-    const text = contentBlocks
-      .filter((b: any) => b.type === "text")
-      .map((b: any) => b.text)
-      .join("\n")
-      .trim();
-    return text || "(no response)";
+
+    finalText = turnText.trim() || "(no response)";
+    return finalText;
   }
   return "(I made too many tool calls without finishing. Try rephrasing.)";
 }
@@ -1489,121 +1573,157 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
   if (req.method !== "POST") return json(405, { error: "method_not_allowed" });
 
-  try {
-    const authHeader = req.headers.get("Authorization") ?? "";
-    const userClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-      global: { headers: { Authorization: authHeader } },
-      auth: { autoRefreshToken: false, persistSession: false },
-    });
-    const { data: userData } = await userClient.auth.getUser();
-    if (!userData?.user) return json(401, { error: "unauthorized" });
-    const userId = userData.user.id;
+  // Auth + payload validation up-front so we can return a clean
+  // non-stream error instead of an empty SSE stream on bad requests.
+  const authHeader = req.headers.get("Authorization") ?? "";
+  const userClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    global: { headers: { Authorization: authHeader } },
+    auth: { autoRefreshToken: false, persistSession: false },
+  });
+  const { data: userData } = await userClient.auth.getUser();
+  if (!userData?.user) return json(401, { error: "unauthorized" });
+  const userId = userData.user.id;
 
-    const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
-      auth: { autoRefreshToken: false, persistSession: false },
-    });
+  const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  });
 
-    const payload = await req.json().catch(() => ({}));
-    const userText = String(payload?.text ?? "").trim();
-    const threadIdIn = payload?.thread_id
-      ? String(payload.thread_id)
-      : null;
-    if (!userText) return json(400, { error: "no_text" });
+  const payload = await req.json().catch(() => ({}));
+  const userText = String(payload?.text ?? "").trim();
+  const threadIdIn = payload?.thread_id ? String(payload.thread_id) : null;
+  if (!userText) return json(400, { error: "no_text" });
 
-    // Resolve thread (create one if new chat).
-    const { threadId, isNew } = await ensureThread(
-      admin,
-      userId,
-      threadIdIn,
-      userText,
-    );
+  // Open an SSE stream. Everything from here is best-effort: errors
+  // are sent as `{ type: "error" }` events so the frontend can still
+  // surface them after partial output.
+  const stream = new ReadableStream({
+    async start(controller) {
+      const encoder = new TextEncoder();
+      let closed = false;
+      const send = (data: Record<string, unknown>) => {
+        if (closed) return;
+        try {
+          controller.enqueue(
+            encoder.encode(`data: ${JSON.stringify(data)}\n\n`),
+          );
+        } catch {
+          // Controller may have been closed by the client disconnect.
+        }
+      };
+      const close = () => {
+        if (closed) return;
+        closed = true;
+        try {
+          controller.close();
+        } catch {
+          // Already closed.
+        }
+      };
 
-    // Persist the user message first so the conversation is durable
-    // even if the model call fails.
-    const userMsg = await insertMessage(admin, userId, threadId, {
-      role: "user",
-      type: "text",
-      content: userText,
-    });
-
-    // Image dispatch — short-circuit before Claude.
-    if (looksLikeImageRequest(userText)) {
-      const { imageUrl } = await callOpenAIImage(userText);
-      const assistantMsg = await insertMessage(admin, userId, threadId, {
-        role: "assistant",
-        type: "image",
-        image_url: imageUrl,
-        image_prompt: userText,
-      });
-      return json(200, {
-        thread_id: threadId,
-        thread_is_new: isNew,
-        user_message: {
-          id: userMsg.id,
+      try {
+        const { threadId, isNew } = await ensureThread(
+          admin,
+          userId,
+          threadIdIn,
+          userText,
+        );
+        const userMsg = await insertMessage(admin, userId, threadId, {
           role: "user",
           type: "text",
           content: userText,
+        });
+
+        send({
+          type: "thread",
+          thread_id: threadId,
+          thread_is_new: isNew,
+        });
+        send({
+          type: "user_message",
+          id: userMsg.id,
+          role: "user",
+          msg_type: "text",
+          content: userText,
           created_at: userMsg.created_at,
-        },
-        assistant_message: {
-          id: assistantMsg.id,
+        });
+
+        // Image dispatch — short-circuit before Claude.
+        if (looksLikeImageRequest(userText)) {
+          send({ type: "image_pending" });
+          const { imageUrl } = await callOpenAIImage(userText);
+          const assistantMsg = await insertMessage(admin, userId, threadId, {
+            role: "assistant",
+            type: "image",
+            image_url: imageUrl,
+            image_prompt: userText,
+          });
+          send({
+            type: "done",
+            assistant_message: {
+              id: assistantMsg.id,
+              role: "assistant",
+              type: "image",
+              image_url: imageUrl,
+              image_prompt: userText,
+              created_at: assistantMsg.created_at,
+            },
+          });
+          close();
+          return;
+        }
+
+        // Resolve vendor + build snapshot.
+        const vendorId = await findVendorIdForUser(admin, userId);
+        let systemPrompt: string;
+        if (vendorId) {
+          const snap = await buildVendorSnapshot(admin, vendorId);
+          systemPrompt = buildSystemPrompt(snap);
+        } else {
+          systemPrompt =
+            "You are My Space, the in-app AI assistant for an event vendor. The caller doesn't yet have a vendor profile, so you can answer general questions but can't reference their inquiries, calendar, or packages. Encourage them to finish setting up their vendor profile.";
+        }
+
+        const history = await loadThreadMessages(admin, threadId);
+        const text = await streamClaudeWithTools(
+          systemPrompt,
+          history,
+          admin,
+          vendorId ?? "",
+          userId,
+          send,
+        );
+        const assistantMsg = await insertMessage(admin, userId, threadId, {
           role: "assistant",
-          type: "image",
-          image_url: imageUrl,
-          image_prompt: userText,
-          created_at: assistantMsg.created_at,
-        },
-      });
-    }
+          type: "text",
+          content: text,
+        });
+        send({
+          type: "done",
+          assistant_message: {
+            id: assistantMsg.id,
+            role: "assistant",
+            type: "text",
+            content: text,
+            created_at: assistantMsg.created_at,
+          },
+        });
+        close();
+      } catch (err) {
+        console.error("[my-space-chat] stream error", err);
+        const message = err instanceof Error ? err.message : String(err);
+        send({ type: "error", message: message.slice(0, 240) });
+        close();
+      }
+    },
+  });
 
-    // Resolve vendor + build snapshot.
-    const vendorId = await findVendorIdForUser(admin, userId);
-    let systemPrompt: string;
-    if (vendorId) {
-      const snap = await buildVendorSnapshot(admin, vendorId);
-      systemPrompt = buildSystemPrompt(snap);
-    } else {
-      systemPrompt =
-        "You are My Space, the in-app AI assistant for an event vendor. The caller doesn't yet have a vendor profile, so you can answer general questions but can't reference their inquiries, calendar, or packages. Encourage them to finish setting up their vendor profile.";
-    }
-
-    // Load prior turns + run Claude.
-    const history = await loadThreadMessages(admin, threadId);
-    // history already includes the just-inserted user message.
-    const text = await callClaudeWithTools(
-      systemPrompt,
-      history,
-      admin,
-      vendorId ?? "",
-      userId,
-    );
-    const assistantMsg = await insertMessage(admin, userId, threadId, {
-      role: "assistant",
-      type: "text",
-      content: text,
-    });
-
-    return json(200, {
-      thread_id: threadId,
-      thread_is_new: isNew,
-      user_message: {
-        id: userMsg.id,
-        role: "user",
-        type: "text",
-        content: userText,
-        created_at: userMsg.created_at,
-      },
-      assistant_message: {
-        id: assistantMsg.id,
-        role: "assistant",
-        type: "text",
-        content: text,
-        created_at: assistantMsg.created_at,
-      },
-    });
-  } catch (err) {
-    console.error("[my-space-chat] error", err);
-    const message = err instanceof Error ? err.message : String(err);
-    return json(500, { error: "chat_failed", detail: message.slice(0, 240) });
-  }
+  return new Response(stream, {
+    headers: {
+      ...cors,
+      "content-type": "text/event-stream",
+      "cache-control": "no-cache",
+      // Prevent any intermediary (Cloudflare, etc.) from buffering.
+      "x-accel-buffering": "no",
+    },
+  });
 });
