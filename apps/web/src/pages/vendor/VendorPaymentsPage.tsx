@@ -686,10 +686,8 @@ export default function VendorPaymentsPage({ embedded = false }: { embedded?: bo
                     type="button"
                     data-tab={t.id}
                     onClick={() => setTab(t.id)}
-                    className={`inline-flex items-center gap-1.5 rounded-full px-4 h-9 text-[13px] font-medium transition-all whitespace-nowrap ${
-                      active
-                        ? "bg-foreground text-background shadow-[0_4px_12px_-4px_rgba(26,20,16,0.35)]"
-                        : "text-muted-foreground hover:text-foreground hover:bg-foreground/[0.04]"
+                    className={`cockpit-tab inline-flex items-center gap-1.5 px-4 h-9 text-[13px] font-medium transition-all whitespace-nowrap ${
+                      active ? "cockpit-tab--active" : ""
                     }`}
                   >
                     <Icon className="w-3.5 h-3.5" />
@@ -864,7 +862,7 @@ export default function VendorPaymentsPage({ embedded = false }: { embedded?: bo
   if (embedded) return body;
 
   return (
-    <div className="flex min-h-screen vendor-canvas">
+    <div className="flex min-h-screen vendor-canvas my-vendora-cockpit">
       <DashboardSidebar items={vendorNavItems} title="Vendor Portal" backPath="/settings" />
       {body}
       <MobileNav items={vendorNavItems} />
@@ -1108,10 +1106,8 @@ function PaymentsTab({
                 key={t.id}
                 type="button"
                 onClick={() => setSub(t.id)}
-                className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-colors whitespace-nowrap ${
-                  active
-                    ? "bg-foreground text-background"
-                    : "text-muted-foreground hover:text-foreground hover:bg-foreground/5"
+                className={`cockpit-tab inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium transition-colors whitespace-nowrap ${
+                  active ? "cockpit-tab--active" : ""
                 }`}
               >
                 <Icon className="w-3.5 h-3.5" />
@@ -2644,10 +2640,8 @@ function FilesTab(props: {
               key={t.id}
               type="button"
               onClick={() => setFileTab(t.id)}
-              className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-colors whitespace-nowrap ${
-                active
-                  ? "bg-foreground text-background"
-                  : "text-muted-foreground hover:text-foreground hover:bg-foreground/5"
+              className={`cockpit-tab inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium transition-colors whitespace-nowrap ${
+                active ? "cockpit-tab--active" : ""
               }`}
             >
               <Icon className="w-3.5 h-3.5" />
@@ -3910,24 +3904,23 @@ function InvoicesTab({
 }
 
 function InvoiceStatusPill({ status }: { status: Invoice["status"] }) {
-  // Must cover every variant of Invoice["status"]. tsconfig.app
-  // has strict:false so Record<> exhaustiveness isn't enforced —
+  // Each variant gets a cockpit-pill semantic + the legacy Tailwind
+  // classes for outside-cockpit contexts. tsconfig.app has
+  // strict:false so Record<> exhaustiveness isn't enforced —
   // a missing key would render `undefined.className` and crash
-  // the whole InvoicesTab row. Refunded statuses were missing
-  // before this hotfix; map them to the same rose-orange family
-  // already used for the PDF receipt + Reports refund column.
-  const map: Record<Invoice["status"], { label: string; className: string }> = {
-    draft: { label: "Draft", className: "bg-slate-100 text-slate-700" },
-    sent: { label: "Sent", className: "bg-emerald-100 text-emerald-700" },
-    paid: { label: "Paid", className: "bg-sky-100 text-sky-700" },
-    cancelled: { label: "Cancelled", className: "bg-slate-100 text-slate-700" },
-    overdue: { label: "Overdue", className: "bg-rose-100 text-rose-700" },
-    refunded: { label: "Refunded", className: "bg-orange-100 text-orange-800" },
-    partial_refund: { label: "Partial refund", className: "bg-orange-100 text-orange-800" },
+  // the InvoicesTab row.
+  const map: Record<Invoice["status"], { label: string; className: string; cockpit: string }> = {
+    draft: { label: "Draft", className: "bg-slate-100 text-slate-700", cockpit: "cockpit-pill--neutral" },
+    sent: { label: "Sent", className: "bg-emerald-100 text-emerald-700", cockpit: "cockpit-pill--info" },
+    paid: { label: "Paid", className: "bg-sky-100 text-sky-700", cockpit: "cockpit-pill--success" },
+    cancelled: { label: "Cancelled", className: "bg-slate-100 text-slate-700", cockpit: "cockpit-pill--neutral" },
+    overdue: { label: "Overdue", className: "bg-rose-100 text-rose-700", cockpit: "cockpit-pill--danger" },
+    refunded: { label: "Refunded", className: "bg-orange-100 text-orange-800", cockpit: "cockpit-pill--warning" },
+    partial_refund: { label: "Partial refund", className: "bg-orange-100 text-orange-800", cockpit: "cockpit-pill--warning" },
   };
-  const m = map[status] ?? { label: status, className: "bg-slate-100 text-slate-700" };
+  const m = map[status] ?? { label: status, className: "bg-slate-100 text-slate-700", cockpit: "cockpit-pill--neutral" };
   return (
-    <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${m.className}`}>
+    <span className={`cockpit-pill ${m.cockpit} inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${m.className}`}>
       {m.label}
     </span>
   );
@@ -6753,8 +6746,13 @@ function SettingsTab({
 // ---- Primitives --------------------------------------------------
 
 function Card({ children }: { children: React.ReactNode }) {
+  // data-cockpit-card lets the .my-vendora-cockpit stylesheet
+  // override these warm inline colors with the dense Xero/Oracle
+  // palette without touching every Card call site. Outside the
+  // cockpit (e.g. host pages), the original warm look is preserved.
   return (
     <div
+      data-cockpit-card
       className="rounded-2xl overflow-hidden"
       style={{
         background: "rgba(255,253,250,0.85)",
@@ -6775,19 +6773,22 @@ function EmptyCard({ children }: { children: React.ReactNode }) {
 }
 
 function StatCard({ label, sub, value }: { label: string; sub: string; value: string }) {
+  // .cockpit-stat picks up the dense Xero KPI styling when the
+  // ancestor has .my-vendora-cockpit. Outside that scope, the
+  // utility classes here keep the warm look (rounded-2xl, beige bg).
   return (
     <div
-      className="rounded-2xl p-5 transition-shadow hover:shadow-[0_10px_30px_-12px_rgba(26,20,16,0.18)]"
+      className="cockpit-stat rounded-2xl p-5 transition-shadow hover:shadow-[0_10px_30px_-12px_rgba(26,20,16,0.18)]"
       style={{
         background: "rgba(255,253,250,0.85)",
         border: "1px solid rgba(255,138,76,0.18)",
       }}
     >
-      <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground font-semibold">
+      <div className="cockpit-stat-label text-[10px] uppercase tracking-[0.18em] text-muted-foreground font-semibold">
         {label}
       </div>
-      <div className="text-[28px] leading-none font-editorial mt-2 tracking-tight">{value}</div>
-      <div className="text-[11px] text-muted-foreground mt-2 pt-2 border-t border-foreground/[0.05]">{sub}</div>
+      <div className="cockpit-stat-value text-[28px] leading-none font-editorial mt-2 tracking-tight">{value}</div>
+      <div className="cockpit-stat-sub text-[11px] text-muted-foreground mt-2 pt-2 border-t border-foreground/[0.05]">{sub}</div>
     </div>
   );
 }
