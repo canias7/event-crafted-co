@@ -47,6 +47,55 @@ function json(status: number, body: Record<string, unknown>) {
   });
 }
 
+function clientIp(req: Request): string {
+  const xf = req.headers.get("x-forwarded-for") ?? "";
+  return xf.split(",")[0].trim()
+    || req.headers.get("cf-connecting-ip")
+    || req.headers.get("x-real-ip")
+    || "";
+}
+
+async function rateLimit(
+  admin: any,
+  ip: string,
+  bucket: string,
+  limit: number,
+  windowSec: number,
+): Promise<boolean> {
+  if (!ip) return true;
+  const now = Date.now();
+  try {
+    const { data } = await admin
+      .from("ai_site_rate_limits")
+      .select("hits, window_start")
+      .eq("ip", ip)
+      .eq("bucket", bucket)
+      .maybeSingle();
+    if (!data) {
+      await admin.from("ai_site_rate_limits").insert({ ip, bucket, hits: 1 });
+      return true;
+    }
+    const wsTime = new Date((data as any).window_start).getTime();
+    if (wsTime < now - windowSec * 1000) {
+      await admin
+        .from("ai_site_rate_limits")
+        .update({ hits: 1, window_start: new Date().toISOString() })
+        .eq("ip", ip)
+        .eq("bucket", bucket);
+      return true;
+    }
+    if ((data as any).hits >= limit) return false;
+    await admin
+      .from("ai_site_rate_limits")
+      .update({ hits: (data as any).hits + 1 })
+      .eq("ip", ip)
+      .eq("bucket", bucket);
+    return true;
+  } catch {
+    return true;
+  }
+}
+
 function thankYouPage(slug: string): string {
   const safe = slug.replace(/[^a-z0-9-]/gi, "");
   return `<!DOCTYPE html>
@@ -93,6 +142,16 @@ serve(async (req) => {
     }
     if (!ALLOWED_TYPES.has(file.type)) {
       return new Response(errorPage("That file type isn't allowed.", slug), { status: 400, headers: { "Content-Type": "text/html; charset=utf-8", ...cors } });
+    }
+
+    // Throttle photo uploads: 6 per IP per slug per 10 minutes.
+    const ip = clientIp(req);
+    const allowed = await rateLimit(admin, ip, `photo:${slug}`, 6, 600);
+    if (!allowed) {
+      return new Response(
+        errorPage("You've uploaded a lot of photos in a short time. Try again in a few minutes.", slug),
+        { status: 429, headers: { "Content-Type": "text/html; charset=utf-8", ...cors } },
+      );
     }
 
     const { data: site } = await admin

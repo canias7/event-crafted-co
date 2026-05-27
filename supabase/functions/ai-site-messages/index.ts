@@ -36,6 +36,60 @@ function json(status: number, body: Record<string, unknown>) {
   });
 }
 
+function clientIp(req: Request): string {
+  const xf = req.headers.get("x-forwarded-for") ?? "";
+  return xf.split(",")[0].trim()
+    || req.headers.get("cf-connecting-ip")
+    || req.headers.get("x-real-ip")
+    || "";
+}
+
+async function rateLimit(
+  admin: any,
+  ip: string,
+  bucket: string,
+  limit: number,
+  windowSec: number,
+): Promise<boolean> {
+  if (!ip) return true;
+  const now = Date.now();
+  try {
+    const { data } = await admin
+      .from("ai_site_rate_limits")
+      .select("hits, window_start")
+      .eq("ip", ip)
+      .eq("bucket", bucket)
+      .maybeSingle();
+    if (!data) {
+      await admin.from("ai_site_rate_limits").insert({ ip, bucket, hits: 1 });
+      return true;
+    }
+    const wsTime = new Date((data as any).window_start).getTime();
+    if (wsTime < now - windowSec * 1000) {
+      await admin
+        .from("ai_site_rate_limits")
+        .update({ hits: 1, window_start: new Date().toISOString() })
+        .eq("ip", ip)
+        .eq("bucket", bucket);
+      return true;
+    }
+    if ((data as any).hits >= limit) return false;
+    await admin
+      .from("ai_site_rate_limits")
+      .update({ hits: (data as any).hits + 1 })
+      .eq("ip", ip)
+      .eq("bucket", bucket);
+    return true;
+  } catch {
+    return true;
+  }
+}
+
+function rateLimitedPage(slug: string): string {
+  const safe = slug.replace(/[^a-z0-9-]/gi, "");
+  return `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Slow down</title><style>body{font-family:Georgia,serif;background:#1a1a1a;color:#f5ead5;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:2rem;text-align:center}.c{max-width:380px}h1{font-style:italic;font-size:1.8rem;margin:0 0 0.75rem;color:#c9a86a}p{opacity:0.7;line-height:1.6;margin:0 0 1.5rem}a{display:inline-block;color:#c9a86a;border:1px solid #c9a86a;padding:0.6rem 1.4rem;border-radius:999px;text-decoration:none;font-size:0.85rem}</style></head><body><div class="c"><h1>One sec</h1><p>You've posted a lot of messages in the last couple minutes. Try again shortly.</p><a href="/s/${safe}">Back to the site</a></div></body></html>`;
+}
+
 function thankYouPage(slug: string): string {
   return `<!DOCTYPE html>
 <html><head><meta charset="UTF-8"><title>Message sent</title>
@@ -66,6 +120,17 @@ serve(async (req) => {
     if (!slug || !name || !message) {
       return new Response("Missing fields", { status: 400 });
     }
+
+    // Throttle comment posts: 4 per IP per slug per 2 minutes.
+    const ip = clientIp(req);
+    const allowed = await rateLimit(admin, ip, `msg:${slug}`, 4, 120);
+    if (!allowed) {
+      return new Response(rateLimitedPage(slug), {
+        status: 429,
+        headers: { "Content-Type": "text/html; charset=utf-8", ...cors },
+      });
+    }
+
     const { data: site } = await admin
       .from("ai_sites")
       .select("id, slug, is_blocked")
@@ -139,6 +204,19 @@ serve(async (req) => {
       .eq("site_id", siteId);
     if (error) return json(500, { error: "delete_failed" });
     return json(200, { deleted: true });
+  }
+
+  if (action === "moderate") {
+    const messageId = String(payload?.message_id ?? "").trim();
+    if (!messageId) return json(400, { error: "missing_message_id" });
+    const approved = !!payload?.approved;
+    const { error } = await admin
+      .from("ai_site_messages")
+      .update({ approved })
+      .eq("id", messageId)
+      .eq("site_id", siteId);
+    if (error) return json(500, { error: "moderate_failed" });
+    return json(200, { ok: true });
   }
 
   return json(400, { error: "invalid_action" });
