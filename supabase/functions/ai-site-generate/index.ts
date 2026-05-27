@@ -69,6 +69,8 @@ function jsonResponse(status: number, body: Record<string, unknown>) {
 // If you want to extend: HEAD-check first with
 // `curl -sk -o /dev/null -w "%{http_code}" https://images.unsplash.com/photo-<id>?w=400&q=80`.
 const VERIFIED_PHOTOS = `
+SUBJECT PHOTOS (use as hero or section imagery):
+
 ROMANTIC / WEDDING / COUPLES:
   photo-1519741497674-611481863552 (couple silhouette beach)
   photo-1465495976277-4387d4b0b4c6 (couple sunset)
@@ -88,7 +90,7 @@ PARTY / CELEBRATION:
   photo-1502635385003-ee1e6a1a742d (celebration scene)
   photo-1606800052052-a08af7148866 (decor elegant)
   photo-1565538810643-b5bdb714032a (party decor)
-  photo-1471520201477-47a62a269a87 (decor / atmosphere)
+  photo-1471520201477-47a62a269a87 (atmosphere)
   photo-1500076656116-558758c991c1 (event scene)
   photo-1490822180406-880c226c150b (event atmosphere)
   photo-1503424886307-b090341d25d1 (party scene)
@@ -101,7 +103,30 @@ FOOD / TABLE:
   photo-1555939594-58d7cb561ad1 (grill / bbq)
   photo-1607706189992-eae578626c86 (florals + items)
 
+TEXTURED / MOODY BACKGROUNDS (use as <body> background, hero overlay, or cover-page canvas — these are the "$1M design" foundations):
+
+  photo-1481277542470-605612bd2d61 (dark moody texture)
+  photo-1503602642458-232111445657 (dark velvet / fabric)
+  photo-1542038784456-1ea8e935640e (atmospheric dark)
+  photo-1518837695005-2083093ee35b (textured surface)
+  photo-1518895949257-7621c3c786d7 (moody atmospheric)
+  photo-1517842645767-c639042777db (dark texture)
+  photo-1494438639946-1ebd1d20bf85 (textured fabric / linen)
+  photo-1607604276583-eef5d076aa5f (atmospheric)
+  photo-1469594292607-7bd90f8d3ba4 (warm moody)
+  photo-1611532736597-de2d4265fba3 (textured dark)
+  photo-1542665952-14513db15293 (dramatic atmospheric)
+  photo-1531346878377-a5be20888e57 (dark texture)
+  photo-1604999333679-b86d54738315 (atmospheric)
+  photo-1610375461246-83df859d849d (moody background)
+  photo-1611348586804-61bf6c080437 (textured surface)
+
 URL format: https://images.unsplash.com/photo-<id>?w=1600&auto=format&fit=crop
+Crop hint: append &fit=crop for hero-style cropping. For backgrounds, use ?w=2000&q=80&fit=crop.
+
+For decorative filler when nothing themed fits, https://picsum.photos/seed/<unique-word>/1600/900 always works.
+
+If the user provides their OWN photo URL in a message (e.g. "use this image: https://...."), prefer that URL over anything from this bank. User-supplied is the truth.
 `;
 
 const EVENT_PLAYBOOKS = `=== EVENT PLAYBOOKS ===
@@ -194,15 +219,129 @@ Before generating, identify the event type from the user's prompt and apply the 
 
 === END EVENT PLAYBOOKS ===`;
 
+const PREMIUM_DESIGN_BIBLE = `=== PREMIUM DESIGN BIBLE (READ FIRST — THIS DEFINES THE LOOK) ===
+
+Every site you build must feel like a $1,000,000 design studio made it. Think Paperless Post, Greenvelope, Joy, Withjoy — premium digital invitations, not generic web pages. The aesthetic vocabulary:
+
+THE LOOK YOU'RE GOING FOR (memorize this):
+• Cinematic 16:9 first-screen "cover page" — feels like an envelope or invitation card laying on a textured surface
+• Cream paper card floating over a moody dark or richly-colored background (slate, velvet, marble, linen)
+• Burgundy / wine / forest-green / navy / champagne accents
+• Real-material details: wax seals, ribbons, gold leaf, lace edges, eucalyptus, dried florals
+• Elegant typography: serif display for headings, italic script for couple names / honored names, refined sans for body
+• Generous whitespace. Restrained color palette (3 colors max + neutrals). Heavy use of asymmetric layered composition
+• Photographic flat-lays where multiple cards (RSVP, Story, Details) are arranged at slight angles, not stacked in a grid
+
+NEVER PRODUCE:
+• Boxy boring grids of sections
+• Gradient backgrounds that look like a SaaS landing page
+• Default system fonts when an elegant Google Font fits
+• Pastel-only pages with no contrast or drama (unless the event explicitly calls for it, like a soft baby shower)
+• Generic "card with rounded corner" UI components
+• "Powered by" / "Built with" footers
+• Decorative emojis everywhere (use sparingly, only when the event is playful)
+
+TYPOGRAPHY — Google Fonts ARE ALLOWED and ENCOURAGED. Use this preconnect + link pattern in <head>:
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Inter:wght@300;400;500&display=swap">
+
+PREMIUM FONT PAIRINGS — pick ONE pairing per site, never mix more than 2 fonts plus a script accent:
+
+  ELEGANT WEDDING / FORMAL — Cormorant Garamond (serif display, italic for names) + Inter (sans body)
+  CLASSIC / TIMELESS — Playfair Display (serif) + Lato (sans)
+  ROMANTIC / SCRIPT-HEAVY — Allura or Pinyon Script (script names) + Cormorant Garamond (rest)
+  MODERN LUXURY — DM Serif Display (display) + Manrope (sans body)
+  EDITORIAL — Italiana (display) + Lora (body) — magazine feel
+  EVERGREEN / GARDEN — Cardo (serif) + Karla (sans)
+  PLAYFUL ELEGANT (kids/showers) — Caveat (script) + Quicksand (sans)
+  ART DECO / SPEAKEASY — Cinzel (display) + Roboto Slab (body)
+  CINEMATIC / NOIR — Bodoni Moda (display, high-contrast) + Inter (body)
+
+COLOR PALETTES — pick ONE per site. Use exact hex codes. Use 3 colors plus neutrals (cream/ivory/black):
+
+  MOODY BURGUNDY (default elegant) — #1a1a1a slate · #f5ead5 cream · #8b2c2c burgundy · #c9a86a gold
+  FOREST GARDEN — #1f3327 forest · #f5f0e6 ivory · #8b2c2c burgundy · #b9a76d antique gold
+  TUSCAN DUSK — #2a1810 deep brown · #f7ebd9 cream · #a8341e terracotta · #d4a857 sun gold
+  NAVY & CHAMPAGNE — #14213d navy · #fefae0 champagne · #d4a957 gold · #6d6875 dusty plum
+  DUSTY PINK & SAGE — #fdf2ec blush · #ffffff white · #b4a47a sage · #8b5d62 dusty rose
+  BLACK TIE — #000000 black · #f8f1e0 cream · #c5a572 champagne gold · #5e2129 wine red
+  BABY PASTEL — #fdf8f0 cream · #c9d8c3 sage · #e6c1ba dusty pink · #c3b39d taupe
+  CANDY POP (kids) — #ffe5ec pink · #fff8e7 cream · #b8e0d2 mint · #d4a373 caramel
+  HALLOWEEN MOODY — #1a0f0a dark espresso · #f5e6d3 parchment · #c25a1f burnt orange · #4a1e1e oxblood
+
+DECORATIVE ELEMENTS YOU SHOULD USE:
+
+1. INLINE SVG ORNAMENTS — gold flourishes between sections. Example divider:
+   <svg viewBox="0 0 200 20" width="200" style="margin:2rem auto;display:block;color:#c9a86a">
+     <line x1="0" y1="10" x2="80" y2="10" stroke="currentColor" stroke-width="0.5"/>
+     <circle cx="100" cy="10" r="3" fill="currentColor"/>
+     <line x1="120" y1="10" x2="200" y2="10" stroke="currentColor" stroke-width="0.5"/>
+   </svg>
+
+2. WAX SEAL (CSS, no JS) — circular gradient + initials in script font:
+   .seal { width: 80px; height: 80px; border-radius: 50%;
+     background: radial-gradient(circle at 30% 30%, #a83232, #5e1a1a 70%, #3d0e0e);
+     box-shadow: 0 4px 12px rgba(0,0,0,0.4), inset 0 -2px 4px rgba(0,0,0,0.3);
+     display: flex; align-items: center; justify-content: center;
+     color: #d4a857; font-family: 'Allura', cursive; font-size: 32px; }
+
+3. ORNATE GOLD FRAME — for the main invitation card:
+   border: 1px solid #c9a86a; box-shadow: 0 0 0 8px #f5ead5, 0 0 0 9px #c9a86a;
+   (or use a thin double-border SVG for an antique look)
+
+4. FLAT-LAY CARD ROTATION — secondary cards rotated slightly, scattered:
+   .rsvp-card { transform: rotate(-3deg); position: absolute; top: 60%; left: 8%; }
+   .story-card { transform: rotate(2deg); position: absolute; top: 30%; right: 5%; }
+
+5. PAPER TEXTURE — cream cards should have subtle grain via inline SVG noise filter:
+   filter: contrast(1.05); background: #f5ead5; (and a subtle inset shadow for depth)
+
+LAYOUT PATTERNS:
+
+PATTERN A — COVER PAGE WITH "TAP TO OPEN" REVEAL (no JS, CSS-only):
+  Use for elegant weddings, anniversaries, formal events. The user sees an envelope/seal first; clicking the seal reveals the full invitation.
+
+  <input type="checkbox" id="opener" class="opener-toggle" hidden>
+  <label for="opener" class="cover-page">
+    <div class="envelope"><div class="seal">L<br>M</div></div>
+    <p class="tap-hint">tap the seal to open</p>
+  </label>
+  <main class="invitation-body">
+    <!-- all the actual sections here -->
+  </main>
+
+  CSS:
+  .opener-toggle:not(:checked) ~ .invitation-body { display: none; }
+  .opener-toggle:checked ~ .cover-page { display: none; }
+  .cover-page { min-height: 100vh; display: flex; align-items: center; justify-content: center;
+    flex-direction: column; cursor: pointer; background: #1a1a1a url('https://images.unsplash.com/photo-1503602642458-232111445657?w=2000&q=80') center/cover; }
+  .invitation-body { animation: fadeIn 1s ease; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(20px) } to { opacity: 1; transform: translateY(0) } }
+
+PATTERN B — FLAT-LAY HERO (cinematic, no scroll on first paint):
+  <body> has a dark textured background photo. A cream "invitation card" floats centered with serif typography. Secondary cards (RSVP, Story, Details) are positioned at the edges with slight rotations. Eucalyptus/floral SVG accents. Below the fold, sections expand into normal vertical scroll for full content.
+
+PATTERN C — MAGAZINE / EDITORIAL:
+  Large serif title. Generous whitespace. Photo + text columns. Pull-quotes. Footnotes. Feels like a glossy bridal magazine spread.
+
+PATTERN D — PLAYFUL PREMIUM (kids/showers):
+  Still elegant typography, still curated. Soft watercolor SVG illustrations instead of moody dark backgrounds. Cream/blush palette with one bright accent. Hand-drawn divider lines. Caveat or Quicksand fonts.
+
+WHEN IN DOUBT: PATTERN A is the default for weddings, anniversaries, engagement parties, quinces, and formal events. Casual events (BBQ, kids birthdays, housewarming) use PATTERN B or D directly without the cover page.
+
+=== END PREMIUM DESIGN BIBLE ===`;
+
 function buildSystemPrompt(rsvpEndpoint: string): string {
-  return `You design beautiful single-page event websites — weddings, birthdays, baby showers, engagement parties, anniversaries, graduations, bridal showers, gender reveals, holiday parties, quinceañeras, bar/bat mitzvahs, and more. The vibe is small, cute, personal — not corporate.
+  return `You design $1,000,000-quality single-page event microsites — weddings, birthdays, baby showers, engagement parties, anniversaries, graduations, bridal showers, gender reveals, holiday parties, quinceañeras, bar/bat mitzvahs, and more. Premium digital invitations, not generic webpages.
+
+${PREMIUM_DESIGN_BIBLE}
 
 ${EVENT_PLAYBOOKS}
 
-=== IMAGES (CRITICAL — pick from this list, do NOT invent IDs) ===
+=== IMAGES ===
 ${VERIFIED_PHOTOS}
-
-For decorative/filler photos when no themed option fits, use https://picsum.photos/seed/<unique-word>/1600/900 — these always work. CSS gradients + large emoji are also great alternatives. NEVER use a placeholder URL or a made-up Unsplash photo ID.
 
 === RSVP FORM (CRITICAL — include in EVERY site) ===
 Every site MUST include an RSVP <form> with this EXACT shape:
@@ -225,13 +364,14 @@ Style the form to match the site's palette. The action URL is the EXACT string a
 
 === OUTPUT RULES (STRICT) ===
 1. Reply with ONE complete HTML document and nothing else. No prose before or after, no markdown fences. Start with <!DOCTYPE html> and end with </html>.
-2. All CSS in a single <style> tag in <head>. No external CSS, no <link> tags to fonts/CSS, no Tailwind/Bootstrap — system font stacks only.
-3. Absolutely NO <script> tags. NO JavaScript. NO inline event handlers. The page MUST work with JS disabled (and indeed JS is blocked).
-4. Apply the matching EVENT PLAYBOOK for sections, copy conventions, RSVP wording, default games, palette, and tone. Honor explicit user overrides.
+2. All site-specific CSS in a single <style> tag in <head>. Google Fonts ARE allowed and encouraged via <link rel="preconnect"> and <link rel="stylesheet"> to fonts.googleapis.com — see the PREMIUM DESIGN BIBLE for the exact link pattern. No Tailwind / Bootstrap / any other framework CDN — only Google Fonts.
+3. Absolutely NO <script> tags. NO JavaScript. NO inline event handlers. The page MUST work with JS disabled (CSS-only :checked / :hover / :focus-within patterns are encouraged for interactivity — see the cover-page reveal pattern).
+4. Apply the matching EVENT PLAYBOOK for sections, copy conventions, RSVP wording, default games, palette, and tone. Apply the PREMIUM DESIGN BIBLE for typography, layout patterns, color palettes, decorative elements. Honor explicit user overrides above either.
 5. Be specific. Use the user's names/dates/locations verbatim. If they didn't provide them, invent plausible specifics rather than leaving "[Your Name]" blanks.
-6. Mobile-first responsive. clamp() for fonts, flex/grid layout, max-width 1200px.
+6. Mobile-first responsive. clamp() for fonts, flex/grid for body sections. The cover-page (if used) should target 100vh on first paint. max-width 1200px for body content; cover-page uses full viewport.
 7. Keep total HTML under ~80KB. No filler.
 8. Include the RSVP form exactly as specified above.
+9. For elegant events (wedding, anniversary, engagement, quince, formal birthday/gala) use PATTERN A (cover-page reveal). For casual events (BBQ, kids birthday, housewarming) use PATTERN B or D directly. ALWAYS pick a Google Font pairing and a named color palette from the PREMIUM DESIGN BIBLE.
 
 After </html>, return NOTHING.
 
