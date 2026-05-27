@@ -45,16 +45,22 @@ export default function LandingPage() {
             Explore
           </Link>
           <Link
-            to="/super-agents"
+            to="/website-builder"
             className="inline-flex items-center gap-1.5 hover:opacity-70 transition-opacity"
           >
-            Super agents
+            Website builder
             <span
               className="text-[9px] tracking-widest rounded-full px-1.5 py-px text-black"
               style={{ border: "0.5px solid #000" }}
             >
               NEW
             </span>
+          </Link>
+          <Link
+            to="/super-agents"
+            className="hover:opacity-70 transition-opacity"
+          >
+            Super agents
           </Link>
         </nav>
         <div className="flex items-center gap-5 text-[13px]">

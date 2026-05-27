@@ -91,6 +91,15 @@ export const PressPage = lazyWithReload(importPress);
 const importSuperAgents = () => import("@/pages/SuperAgentsPage");
 export const SuperAgentsPage = lazyWithReload(importSuperAgents);
 
+const importWebsiteBuilder = () => import("@/pages/WebsiteBuilderPage");
+export const WebsiteBuilderPage = lazyWithReload(importWebsiteBuilder);
+
+const importPublicAiSite = () => import("@/pages/PublicAiSitePage");
+export const PublicAiSitePage = lazyWithReload(importPublicAiSite);
+
+const importMySites = () => import("@/pages/MySitesPage");
+export const MySitesPage = lazyWithReload(importMySites);
+
 const importSettings = () => import("@/pages/SettingsPage");
 export const SettingsPage = lazyWithReload(importSettings);
 
@@ -200,6 +209,9 @@ const ROUTE_IMPORTERS: Array<{ pattern: string; importer: () => Promise<unknown>
   { pattern: "/status", importer: importStatus },
   { pattern: "/press", importer: importPress },
   { pattern: "/super-agents", importer: importSuperAgents },
+  { pattern: "/website-builder", importer: importWebsiteBuilder },
+  { pattern: "/my-sites", importer: importMySites },
+  { pattern: "/s/:slug", importer: importPublicAiSite },
   { pattern: "/g/:token", importer: importPublicGalleryShare },
   { pattern: "/settings", importer: importSettings },
   { pattern: "/settings/notifications", importer: importNotificationSettings },

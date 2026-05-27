@@ -5,6 +5,10 @@ project_id = "pahpjjubhbcbwqjpamwv"
     verify_jwt = false
   [functions.axion-generate]
     verify_jwt = true
+  [functions.ai-site-generate]
+    verify_jwt = false
+  [functions.ai-site-rsvp-submit]
+    verify_jwt = false
   [functions.cleanup-portfolio-orphans]
     verify_jwt = false
   [functions.geocode-vendor]
