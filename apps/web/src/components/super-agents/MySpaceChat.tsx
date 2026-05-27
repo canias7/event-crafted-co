@@ -193,6 +193,65 @@ export function MySpaceChat() {
     el.scrollTop = el.scrollHeight;
   }, [messages, sending]);
 
+  // ── Realtime: toast when a new inquiry arrives for this vendor, so
+  // the AI's snapshot doesn't go stale mid-chat without the vendor
+  // noticing. Subscribes via supabase channels filtered to vendor_id.
+  useEffect(() => {
+    if (!user?.id) return;
+    let channel: ReturnType<typeof supabase.channel> | null = null;
+    let cancelled = false;
+    (async () => {
+      // Resolve the vendor_id for the current user; same lookup the
+      // edge function does (team membership first, then owner).
+      const { data: team } = await supabase
+        .from("vendor_team_members")
+        .select("vendor_id")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      let vendorId = (team as any)?.vendor_id as string | undefined;
+      if (!vendorId) {
+        const { data: owned } = await supabase
+          .from("vendor_profiles")
+          .select("id")
+          .eq("user_id", user.id)
+          .limit(1)
+          .maybeSingle();
+        vendorId = (owned as any)?.id as string | undefined;
+      }
+      if (!vendorId || cancelled) return;
+      channel = supabase
+        .channel(`my-space-inquiries-${vendorId}`)
+        .on(
+          "postgres_changes",
+          {
+            event: "INSERT",
+            schema: "public",
+            table: "inquiries",
+            filter: `vendor_id=eq.${vendorId}`,
+          },
+          (payload) => {
+            const row = (payload.new ?? {}) as any;
+            const summary = [row.event_type, row.event_date]
+              .filter(Boolean)
+              .join(" · ");
+            toast.info(
+              summary
+                ? `New inquiry: ${summary}`
+                : "New inquiry just arrived",
+              { duration: 8000 },
+            );
+          },
+        )
+        .subscribe();
+    })();
+    return () => {
+      cancelled = true;
+      if (channel) supabase.removeChannel(channel);
+    };
+  }, [user?.id]);
+
   // ── Upload files (images / PDFs) to message-attachments bucket.
   async function onPickFiles(files: FileList | null) {
     if (!files || files.length === 0 || !user?.id) return;
