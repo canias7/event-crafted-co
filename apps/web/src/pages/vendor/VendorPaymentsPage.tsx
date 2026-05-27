@@ -162,12 +162,13 @@ const TABS: Array<{ id: TabId; label: string; icon: typeof Wallet }> = [
 ];
 
 // Sub-tabs inside the Payments tab.
-type PaymentsTabId = "incoming" | "payouts" | "disputes" | "reports";
+type PaymentsTabId = "incoming" | "payouts" | "disputes" | "expenses" | "reports";
 
 const PAYMENTS_TABS: Array<{ id: PaymentsTabId; label: string; icon: typeof Wallet }> = [
   { id: "incoming", label: "Incoming", icon: CreditCard },
   { id: "payouts", label: "Payouts", icon: Banknote },
   { id: "disputes", label: "Disputes", icon: AlertTriangle },
+  { id: "expenses", label: "Expenses", icon: Wallet },
   { id: "reports", label: "Reports", icon: ScrollText },
 ];
 
@@ -1064,7 +1065,10 @@ function PaymentsTab({
   const [searchParams, setSearchParams] = useSearchParams();
   const rawSub = searchParams.get("sub");
   const sub: PaymentsTabId =
-    rawSub === "payouts" || rawSub === "disputes" || rawSub === "reports"
+    rawSub === "payouts" ||
+    rawSub === "disputes" ||
+    rawSub === "expenses" ||
+    rawSub === "reports"
       ? rawSub
       : "incoming";
   const setSub = (next: PaymentsTabId) => {
@@ -1109,6 +1113,8 @@ function PaymentsTab({
         <PayoutsTab data={payouts} status={status} />
       ) : sub === "disputes" ? (
         <DisputesTab vendorId={vendorId} />
+      ) : sub === "expenses" ? (
+        <ExpensesTab vendorId={vendorId} />
       ) : (
         <ReportsTab vendorId={vendorId} />
       )}
@@ -1206,6 +1212,9 @@ function ReportsTab({ vendorId }: { vendorId: string | null }) {
   // overdue right now" regardless of which window they're scoped
   // to for revenue analytics.
   const [unpaidNow, setUnpaidNow] = useState<Invoice[]>([]);
+  // Expenses for the chosen window — fed into Net Profit on the
+  // P&L block. Same window semantics as paid_at (cash-basis).
+  const [expensesInRange, setExpensesInRange] = useState<Expense[]>([]);
   const [loading, setLoading] = useState(false);
   useEffect(() => {
     if (!vendorId) {
@@ -1213,6 +1222,7 @@ function ReportsTab({ vendorId }: { vendorId: string | null }) {
       setRefundedInRange([]);
       setStripeFees(null);
       setUnpaidNow([]);
+      setExpensesInRange([]);
       return;
     }
     let cancelled = false;
@@ -1222,7 +1232,7 @@ function ReportsTab({ vendorId }: { vendorId: string | null }) {
       const db = supabase as any;
       const cols =
         "id, vendor_id, slug, invoice_number, bill_to_name, bill_to_email, bill_to_state, issue_date, due_date, notes, line_items, subtotal_cents, tax_rate_bps, tax_cents, total_cents, currency, status, sent_at, paid_at, refunded_at, refunded_amount_cents, created_at";
-      const [paidRes, refundedRes, feesRes, unpaidRes] = await Promise.all([
+      const [paidRes, refundedRes, feesRes, unpaidRes, expensesRes] = await Promise.all([
         db
           .from("invoices")
           .select(cols)
@@ -1265,11 +1275,24 @@ function ReportsTab({ vendorId }: { vendorId: string | null }) {
           .in("status", ["sent", "overdue"])
           .order("due_date", { ascending: true })
           .limit(5000),
+        // Expenses bucketed by occurred_on (cash-basis): when the
+        // vendor actually wrote the check or swiped the card. Range
+        // boundaries are inclusive of start, exclusive of end —
+        // mirroring paid_at filters above.
+        db
+          .from("vendor_expenses")
+          .select("id, vendor_id, occurred_on, amount_cents, currency, category, description, paid_to, notes, created_at")
+          .eq("vendor_id", vendorId)
+          .gte("occurred_on", range.start.toISOString().slice(0, 10))
+          .lt("occurred_on", range.end.toISOString().slice(0, 10))
+          .order("occurred_on", { ascending: false })
+          .limit(5000),
       ]);
       if (cancelled) return;
       setPaidInRange((paidRes.data ?? []) as Invoice[]);
       setRefundedInRange((refundedRes.data ?? []) as Invoice[]);
       setUnpaidNow((unpaidRes.data ?? []) as Invoice[]);
+      setExpensesInRange((expensesRes.data ?? []) as Expense[]);
       const feesData = (feesRes as { data?: { fees_cents?: number; gross_cents?: number; net_cents?: number; count?: number } }).data;
       setStripeFees(
         feesData && typeof feesData.fees_cents === "number"
@@ -1322,12 +1345,31 @@ function ReportsTab({ vendorId }: { vendorId: string | null }) {
     }
     const net = gross - refunds;
     const fees = stripeFees?.fees_cents ?? 0;
+    // Expenses + per-category breakdown for the P&L block.
+    let expenses = 0;
+    const expensesByCategoryMap = new Map<string, { cents: number; count: number }>();
+    for (const e of expensesInRange) {
+      expenses += e.amount_cents;
+      const prev = expensesByCategoryMap.get(e.category) ?? { cents: 0, count: 0 };
+      expensesByCategoryMap.set(e.category, {
+        cents: prev.cents + e.amount_cents,
+        count: prev.count + 1,
+      });
+    }
+    const expensesByCategory = Array.from(expensesByCategoryMap.entries())
+      .map(([category, agg]) => ({ category: category as ExpenseCategory, ...agg }))
+      .sort((a, b) => b.cents - a.cents);
     // Net to bank: what actually lands after Stripe's processor cut.
     // We use the invoice-derived gross/refunds (cash-basis cleaner)
     // and just subtract the Stripe-derived fees, instead of using
     // stripeFees.net_cents which only reflects type='charge' txns
     // and wouldn't account for refunds we're tracking separately.
     const netToBank = net - fees;
+    // Net profit goes one step further than netToBank: subtracts
+    // operating expenses (what the vendor actually spent to run the
+    // business), not just Stripe's cut. This is the number the
+    // vendor's CPA actually cares about at year-end.
+    const netProfit = netToBank - expenses;
     const currency = paidInRange[0]?.currency ?? refundedInRange[0]?.currency ?? "usd";
     const taxByState = Array.from(taxByStateMap.entries())
       .map(([state, agg]) => ({ state, ...agg }))
@@ -1340,13 +1382,17 @@ function ReportsTab({ vendorId }: { vendorId: string | null }) {
       net,
       fees,
       netToBank,
+      expenses,
+      expensesByCategory,
+      expenseCount: expensesInRange.length,
+      netProfit,
       customers: customers.size,
       count: paidInRange.length,
       refundCount: refundedInRange.length,
       taxByState,
       currency,
     };
-  }, [paidInRange, refundedInRange, stripeFees]);
+  }, [paidInRange, refundedInRange, stripeFees, expensesInRange]);
 
   // Bucket paid invoices by day for the sparkline. For ranges
   // A/R aging — bucket unpaid invoices by days past due. "Current"
@@ -1435,8 +1481,8 @@ function ReportsTab({ vendorId }: { vendorId: string | null }) {
       "currency",
       "status",
     ];
-    type Row = { inv: Invoice; kind: "payment" | "refund"; eventAt: string | null };
-    const rows: Row[] = [
+    type InvoiceRow = { inv: Invoice; kind: "payment" | "refund"; eventAt: string | null };
+    const invoiceRows: InvoiceRow[] = [
       ...paidInRange.map((inv) => ({
         inv,
         kind: "payment" as const,
@@ -1447,11 +1493,44 @@ function ReportsTab({ vendorId }: { vendorId: string | null }) {
         kind: "refund" as const,
         eventAt: inv.refunded_at ?? null,
       })),
+    ];
+    type ExpenseRow = { kind: "expense"; expense: Expense; eventAt: string };
+    const expenseRows: ExpenseRow[] = expensesInRange.map((e) => ({
+      kind: "expense",
+      expense: e,
+      eventAt: e.occurred_on,
+    }));
+    // Sort the union by event date so a CPA reading the CSV gets a
+    // chronological cashflow ledger: payment → expense → refund →
+    // expense, in whatever order they happened.
+    const allRows: Array<InvoiceRow | ExpenseRow> = [
+      ...invoiceRows,
+      ...expenseRows,
     ].sort((a, b) =>
       a.eventAt && b.eventAt ? a.eventAt.localeCompare(b.eventAt) : 0,
     );
-    const lines = rows.map(({ inv, kind, eventAt }) =>
-      [
+    const lines = allRows.map((row) => {
+      if (row.kind === "expense") {
+        return [
+          "expense",
+          "", // invoice_number
+          "", // issue_date
+          row.eventAt,
+          row.expense.paid_to ?? "",
+          "", // bill_to_email
+          "", // bill_to_state
+          "", // subtotal_cents
+          "", // tax_cents
+          -row.expense.amount_cents,
+          0, // refunded_amount_cents
+          row.expense.currency,
+          row.expense.category,
+        ]
+          .map(csvEscape)
+          .join(",");
+      }
+      const { inv, kind, eventAt } = row;
+      return [
         kind,
         inv.invoice_number,
         inv.issue_date,
@@ -1467,8 +1546,8 @@ function ReportsTab({ vendorId }: { vendorId: string | null }) {
         inv.status,
       ]
         .map(csvEscape)
-        .join(","),
-    );
+        .join(",");
+    });
     const csv = [headers.join(","), ...lines].join("\n");
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
     const url = URL.createObjectURL(blob);
@@ -1480,7 +1559,7 @@ function ReportsTab({ vendorId }: { vendorId: string | null }) {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-  }, [paidInRange, refundedInRange, rangeId]);
+  }, [paidInRange, refundedInRange, expensesInRange, rangeId]);
 
   return (
     <div className="space-y-5">
@@ -1508,7 +1587,7 @@ function ReportsTab({ vendorId }: { vendorId: string | null }) {
           variant="outline"
           size="sm"
           onClick={downloadCsv}
-          disabled={paidInRange.length === 0 && refundedInRange.length === 0}
+          disabled={paidInRange.length === 0 && refundedInRange.length === 0 && expensesInRange.length === 0}
           className="rounded-full"
         >
           <Download className="w-3.5 h-3.5 mr-1" />
@@ -1570,6 +1649,64 @@ function ReportsTab({ vendorId }: { vendorId: string | null }) {
             value={formatMoney(totals.net, totals.currency)}
           />
         </div>
+      </section>
+
+      <section>
+        <h2 className="text-[10px] uppercase tracking-[0.22em] text-muted-foreground font-semibold mb-3 pb-2 border-b border-foreground/[0.06]">
+          Profit & loss ({range.label.toLowerCase()})
+        </h2>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <StatCard
+            label="Revenue"
+            sub="Net to bank"
+            value={formatMoney(totals.netToBank, totals.currency)}
+          />
+          <StatCard
+            label="Expenses"
+            sub={
+              totals.expenseCount === 0
+                ? "None in range"
+                : `${totals.expenseCount} entr${totals.expenseCount === 1 ? "y" : "ies"}`
+            }
+            value={`-${formatMoney(totals.expenses, totals.currency)}`}
+          />
+          <StatCard
+            label="Net profit"
+            sub="Revenue − expenses"
+            value={formatMoney(totals.netProfit, totals.currency)}
+          />
+          <StatCard
+            label="Margin"
+            sub="Profit / revenue"
+            value={
+              totals.netToBank > 0
+                ? `${Math.round((totals.netProfit / totals.netToBank) * 100)}%`
+                : "—"
+            }
+          />
+        </div>
+        {totals.expensesByCategory.length > 0 && (
+          <Card>
+            <div className="grid grid-cols-[1fr_auto_auto] gap-x-6 gap-y-1 p-5 text-sm mt-4">
+              <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground font-semibold pb-2 border-b border-foreground/[0.06]">
+                Category
+              </div>
+              <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground font-semibold text-right pb-2 border-b border-foreground/[0.06]">
+                Entries
+              </div>
+              <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground font-semibold text-right pb-2 border-b border-foreground/[0.06]">
+                Spend
+              </div>
+              {totals.expensesByCategory.map((row) => (
+                <div key={row.category} className="contents">
+                  <div className="py-2 font-medium">{expenseCategoryLabel(row.category)}</div>
+                  <div className="py-2 text-right tabular-nums text-muted-foreground">{row.count}</div>
+                  <div className="py-2 text-right tabular-nums">{formatMoney(row.cents, totals.currency)}</div>
+                </div>
+              ))}
+            </div>
+          </Card>
+        )}
       </section>
 
       {aging.totalCount > 0 && (
@@ -3818,6 +3955,391 @@ function CustomersTab({
           void refresh();
         }}
       />
+    </div>
+  );
+}
+
+// ---- Expenses ---------------------------------------------------
+//
+// Manual bookkeeping ledger so Reports can compute Net Profit =
+// Revenue − Refunds − Stripe fees − Expenses. No automation; the
+// vendor types each entry. CRUD only, RLS-gated to vendor admins.
+
+interface Expense {
+  id: string;
+  vendor_id: string;
+  occurred_on: string;
+  amount_cents: number;
+  currency: string;
+  category: ExpenseCategory;
+  description: string;
+  paid_to: string | null;
+  notes: string | null;
+  created_at: string;
+}
+
+type ExpenseCategory =
+  | "rentals"
+  | "supplies"
+  | "labor"
+  | "mileage"
+  | "marketing"
+  | "software"
+  | "fees"
+  | "meals"
+  | "travel"
+  | "insurance"
+  | "other";
+
+const EXPENSE_CATEGORIES: Array<{ id: ExpenseCategory; label: string }> = [
+  { id: "rentals", label: "Rentals" },
+  { id: "supplies", label: "Supplies" },
+  { id: "labor", label: "Labor" },
+  { id: "mileage", label: "Mileage / gas" },
+  { id: "marketing", label: "Marketing" },
+  { id: "software", label: "Software / subscriptions" },
+  { id: "fees", label: "Fees / licenses" },
+  { id: "meals", label: "Meals" },
+  { id: "travel", label: "Travel" },
+  { id: "insurance", label: "Insurance" },
+  { id: "other", label: "Other" },
+];
+
+function expenseCategoryLabel(c: ExpenseCategory): string {
+  return EXPENSE_CATEGORIES.find((e) => e.id === c)?.label ?? c;
+}
+
+function ExpensesTab({ vendorId }: { vendorId: string | null }) {
+  const { user } = useAuth();
+  const [rows, setRows] = useState<Expense[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [editing, setEditing] = useState<Expense | "new" | null>(null);
+  const [form, setForm] = useState<{
+    occurred_on: string;
+    amount: string;
+    category: ExpenseCategory;
+    description: string;
+    paid_to: string;
+    notes: string;
+  }>({
+    occurred_on: new Date().toISOString().slice(0, 10),
+    amount: "",
+    category: "supplies",
+    description: "",
+    paid_to: "",
+    notes: "",
+  });
+  const [saving, setSaving] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  const refresh = useCallback(async () => {
+    if (!vendorId) {
+      setRows([]);
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const db = supabase as any;
+    const { data, error } = await db
+      .from("vendor_expenses")
+      .select("id, vendor_id, occurred_on, amount_cents, currency, category, description, paid_to, notes, created_at")
+      .eq("vendor_id", vendorId)
+      .order("occurred_on", { ascending: false })
+      .limit(500);
+    if (error) {
+      console.error("[ExpensesTab] fetch failed", error);
+      toast.error("Couldn't load expenses.");
+    } else {
+      setRows((data ?? []) as Expense[]);
+    }
+    setLoading(false);
+  }, [vendorId]);
+
+  useEffect(() => {
+    void refresh();
+  }, [refresh]);
+
+  const startNew = () => {
+    setForm({
+      occurred_on: new Date().toISOString().slice(0, 10),
+      amount: "",
+      category: "supplies",
+      description: "",
+      paid_to: "",
+      notes: "",
+    });
+    setEditing("new");
+  };
+
+  const startEdit = (e: Expense) => {
+    setForm({
+      occurred_on: e.occurred_on,
+      amount: (e.amount_cents / 100).toFixed(2),
+      category: e.category,
+      description: e.description,
+      paid_to: e.paid_to ?? "",
+      notes: e.notes ?? "",
+    });
+    setEditing(e);
+  };
+
+  const save = async () => {
+    if (!vendorId || !user) return;
+    const amountNum = Number(form.amount);
+    if (!Number.isFinite(amountNum) || amountNum <= 0) {
+      toast.error("Amount must be a positive number.");
+      return;
+    }
+    if (!form.description.trim()) {
+      toast.error("Description required.");
+      return;
+    }
+    setSaving(true);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const db = supabase as any;
+    const payload = {
+      vendor_id: vendorId,
+      occurred_on: form.occurred_on,
+      amount_cents: Math.round(amountNum * 100),
+      currency: "usd",
+      category: form.category,
+      description: form.description.trim(),
+      paid_to: form.paid_to.trim() || null,
+      notes: form.notes.trim() || null,
+      created_by: user.id,
+    };
+    let error;
+    if (editing === "new") {
+      ({ error } = await db.from("vendor_expenses").insert(payload));
+    } else if (editing) {
+      // omit created_by on update — it stays the original creator
+      const { created_by: _, ...updatePayload } = payload;
+      ({ error } = await db
+        .from("vendor_expenses")
+        .update(updatePayload)
+        .eq("id", editing.id));
+    }
+    setSaving(false);
+    if (error) {
+      console.error("[ExpensesTab] save failed", error);
+      toast.error("Couldn't save expense.");
+      return;
+    }
+    toast.success(editing === "new" ? "Expense added." : "Expense updated.");
+    setEditing(null);
+    void refresh();
+  };
+
+  const remove = async (e: Expense) => {
+    if (!confirm(`Delete this expense (${formatMoney(e.amount_cents, e.currency)} — ${e.description})?`)) return;
+    setDeletingId(e.id);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const db = supabase as any;
+    const { error } = await db.from("vendor_expenses").delete().eq("id", e.id);
+    setDeletingId(null);
+    if (error) {
+      console.error("[ExpensesTab] delete failed", error);
+      toast.error("Couldn't delete expense.");
+      return;
+    }
+    toast.success("Expense deleted.");
+    void refresh();
+  };
+
+  // YTD summary across categories — small at-a-glance block above
+  // the row list so the vendor sees their total spend without going
+  // to Reports.
+  const ytd = useMemo(() => {
+    const year = new Date().getFullYear();
+    const total = rows
+      .filter((r) => new Date(r.occurred_on).getFullYear() === year)
+      .reduce((s, r) => s + r.amount_cents, 0);
+    const byCategory = new Map<ExpenseCategory, number>();
+    for (const r of rows) {
+      if (new Date(r.occurred_on).getFullYear() !== year) continue;
+      byCategory.set(r.category, (byCategory.get(r.category) ?? 0) + r.amount_cents);
+    }
+    const top = Array.from(byCategory.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 3);
+    return { total, top };
+  }, [rows]);
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        <div>
+          <h2 className="text-sm font-semibold">Expenses</h2>
+          <p className="text-xs text-muted-foreground">
+            Manual ledger of business costs. Feeds into Net Profit on the Reports tab.
+          </p>
+        </div>
+        <Button onClick={startNew} size="sm" className="rounded-full" disabled={!vendorId}>
+          <Plus className="w-3.5 h-3.5 mr-1" />
+          New expense
+        </Button>
+      </div>
+
+      {rows.length > 0 && (
+        <Card>
+          <div className="p-5 flex items-center justify-between gap-4 flex-wrap">
+            <div>
+              <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground font-semibold">
+                Year-to-date spend
+              </div>
+              <div className="mt-1 text-2xl font-editorial tabular-nums">{formatMoney(ytd.total)}</div>
+            </div>
+            {ytd.top.length > 0 && (
+              <div className="flex gap-4 flex-wrap text-xs">
+                {ytd.top.map(([cat, cents]) => (
+                  <div key={cat}>
+                    <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+                      {expenseCategoryLabel(cat)}
+                    </div>
+                    <div className="tabular-nums">{formatMoney(cents)}</div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </Card>
+      )}
+
+      {editing && (
+        <Card>
+          <div className="p-5 space-y-3">
+            <h3 className="text-sm font-semibold">
+              {editing === "new" ? "New expense" : "Edit expense"}
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+              <input
+                type="date"
+                value={form.occurred_on}
+                onChange={(e) => setForm({ ...form, occurred_on: e.target.value })}
+                className="rounded-lg border-0 px-3 py-2 text-sm bg-background/60 ring-1 ring-foreground/10 focus:ring-foreground/30 outline-none"
+              />
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                placeholder="Amount (required)"
+                value={form.amount}
+                onChange={(e) => setForm({ ...form, amount: e.target.value })}
+                className="rounded-lg border-0 px-3 py-2 text-sm bg-background/60 ring-1 ring-foreground/10 focus:ring-foreground/30 outline-none"
+              />
+              <select
+                value={form.category}
+                onChange={(e) => setForm({ ...form, category: e.target.value as ExpenseCategory })}
+                className="rounded-lg border-0 px-3 py-2 text-sm bg-background/60 ring-1 ring-foreground/10 focus:ring-foreground/30 outline-none"
+              >
+                {EXPENSE_CATEGORIES.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.label}
+                  </option>
+                ))}
+              </select>
+              <input
+                type="text"
+                placeholder="Paid to (optional — Home Depot, U-Haul…)"
+                value={form.paid_to}
+                onChange={(e) => setForm({ ...form, paid_to: e.target.value })}
+                className="rounded-lg border-0 px-3 py-2 text-sm bg-background/60 ring-1 ring-foreground/10 focus:ring-foreground/30 outline-none"
+              />
+            </div>
+            <input
+              type="text"
+              placeholder="Description (required)"
+              value={form.description}
+              onChange={(e) => setForm({ ...form, description: e.target.value })}
+              className="w-full rounded-lg border-0 px-3 py-2 text-sm bg-background/60 ring-1 ring-foreground/10 focus:ring-foreground/30 outline-none"
+            />
+            <textarea
+              placeholder="Notes (optional)"
+              value={form.notes}
+              onChange={(e) => setForm({ ...form, notes: e.target.value })}
+              rows={2}
+              className="w-full rounded-lg border-0 px-3 py-2 text-sm bg-background/60 ring-1 ring-foreground/10 focus:ring-foreground/30 outline-none resize-none"
+            />
+            <div className="flex gap-2">
+              <Button onClick={() => void save()} disabled={saving} size="sm" className="rounded-full">
+                {saving ? <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" /> : null}
+                {editing === "new" ? "Add expense" : "Save"}
+              </Button>
+              <Button onClick={() => setEditing(null)} variant="ghost" size="sm" className="rounded-full">
+                Cancel
+              </Button>
+            </div>
+          </div>
+        </Card>
+      )}
+
+      {loading ? (
+        <EmptyCard>
+          <Loader2 className="w-4 h-4 mr-2 inline animate-spin" />
+          Loading…
+        </EmptyCard>
+      ) : rows.length === 0 ? (
+        <EmptyCard>
+          No expenses yet. Track rentals, supplies, gas, and any other business costs here so Net Profit
+          on the Reports tab subtracts them from revenue.
+        </EmptyCard>
+      ) : (
+        <Card>
+          {rows.map((e, idx) => (
+            <div
+              key={e.id}
+              className={`p-4 ${idx > 0 ? "border-t border-foreground/5" : ""}`}
+            >
+              <div className="flex items-start justify-between gap-3 flex-wrap">
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide bg-foreground/[0.06] text-foreground/70">
+                      {expenseCategoryLabel(e.category)}
+                    </span>
+                    <span className="text-xs text-muted-foreground tabular-nums">
+                      {formatDate(e.occurred_on)}
+                    </span>
+                    {e.paid_to && (
+                      <span className="text-xs text-muted-foreground">· {e.paid_to}</span>
+                    )}
+                  </div>
+                  <p className="text-sm font-medium mt-1">{e.description}</p>
+                  {e.notes && (
+                    <p className="text-xs text-muted-foreground mt-1 max-w-xl">{e.notes}</p>
+                  )}
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <div className="text-lg font-editorial tabular-nums">
+                    {formatMoney(e.amount_cents, e.currency)}
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => startEdit(e)}
+                    className="rounded-full"
+                  >
+                    Edit
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => void remove(e)}
+                    disabled={deletingId === e.id}
+                    className="rounded-full text-muted-foreground hover:text-destructive"
+                  >
+                    {deletingId === e.id ? (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    ) : (
+                      <Trash2 className="w-3.5 h-3.5" />
+                    )}
+                  </Button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </Card>
+      )}
     </div>
   );
 }
