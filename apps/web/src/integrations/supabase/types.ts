@@ -1052,6 +1052,74 @@ export type Database = {
         }
         Relationships: []
       }
+      host_event_live_recordings: {
+        Row: {
+          created_at: string
+          duration_seconds: number | null
+          ended_at: string | null
+          event_id: string
+          host_id: string
+          id: string
+          live_stream_id: string
+          mux_asset_id: string
+          mux_playback_id: string
+          started_at: string | null
+        }
+        Insert: {
+          created_at?: string
+          duration_seconds?: number | null
+          ended_at?: string | null
+          event_id: string
+          host_id: string
+          id?: string
+          live_stream_id: string
+          mux_asset_id: string
+          mux_playback_id: string
+          started_at?: string | null
+        }
+        Update: {
+          created_at?: string
+          duration_seconds?: number | null
+          ended_at?: string | null
+          event_id?: string
+          host_id?: string
+          id?: string
+          live_stream_id?: string
+          mux_asset_id?: string
+          mux_playback_id?: string
+          started_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "host_event_live_recordings_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "host_events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "host_event_live_recordings_host_id_fkey"
+            columns: ["host_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "host_event_live_recordings_host_id_fkey"
+            columns: ["host_id"]
+            isOneToOne: false
+            referencedRelation: "vendor_brands"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "host_event_live_recordings_live_stream_id_fkey"
+            columns: ["live_stream_id"]
+            isOneToOne: false
+            referencedRelation: "host_event_live_streams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       host_event_live_streams: {
         Row: {
           created_at: string
@@ -5880,6 +5948,17 @@ export type Database = {
           vendor_logo_url: string
         }[]
       }
+      get_live_recordings_by_token: {
+        Args: { p_token: string }
+        Returns: {
+          created_at: string
+          duration_seconds: number
+          ended_at: string
+          id: string
+          mux_playback_id: string
+          started_at: string
+        }[]
+      }
       get_live_stream_by_token: {
         Args: { p_token: string }
         Returns: {
@@ -5940,6 +6019,18 @@ export type Database = {
           cobookings: number
           location: string
           vendor_id: string
+        }[]
+      }
+      get_recording_by_token_and_id: {
+        Args: { p_id: string; p_token: string }
+        Returns: {
+          duration_seconds: number
+          ended_at: string
+          event_date: string
+          event_title: string
+          id: string
+          mux_playback_id: string
+          started_at: string
         }[]
       }
       get_referral_by_code: { Args: { p_code: string }; Returns: Json }
