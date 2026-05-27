@@ -66,6 +66,13 @@ export default function WebsiteBuilderPage() {
   >([]);
   const [versionsBusy, setVersionsBusy] = useState(false);
   const [restoreBusy, setRestoreBusy] = useState<number | null>(null);
+  const [guestsOpen, setGuestsOpen] = useState(false);
+  const [guests, setGuests] = useState<
+    Array<{ id: string; name: string; email: string | null; token: string }>
+  >([]);
+  const [guestsBusy, setGuestsBusy] = useState(false);
+  const [guestImport, setGuestImport] = useState("");
+  const [copiedToken, setCopiedToken] = useState<string | null>(null);
 
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -136,6 +143,91 @@ export default function WebsiteBuilderPage() {
     } finally {
       setVersionsBusy(false);
     }
+  }
+
+  async function openGuests() {
+    if (!siteId) return;
+    setGuestsOpen(true);
+    setGuestsBusy(true);
+    try {
+      const headers: Record<string, string> = {
+        "Content-Type": "application/json",
+        apikey: SUPABASE_KEY,
+        Authorization: `Bearer ${session?.access_token ?? SUPABASE_KEY}`,
+      };
+      const res = await fetch(`${SUPABASE_URL}/functions/v1/ai-site-guests`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({ site_id: siteId, action: "list" }),
+      });
+      const body = await res.json().catch(() => ({}));
+      if (res.ok && Array.isArray(body?.guests)) setGuests(body.guests);
+      else setGuests([]);
+    } finally {
+      setGuestsBusy(false);
+    }
+  }
+
+  async function importGuests() {
+    if (!siteId || !guestImport.trim() || guestsBusy) return;
+    // Parse pasted text: one guest per line, "Name, email" or just "Name".
+    const lines = guestImport.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+    const parsed = lines.map((l) => {
+      const m = l.match(/^([^,]+?)\s*[,;]\s*(\S+@\S+)/);
+      if (m) return { name: m[1].trim(), email: m[2].trim() };
+      return { name: l, email: undefined };
+    });
+    if (parsed.length === 0) return;
+    setGuestsBusy(true);
+    try {
+      const headers: Record<string, string> = {
+        "Content-Type": "application/json",
+        apikey: SUPABASE_KEY,
+        Authorization: `Bearer ${session?.access_token ?? SUPABASE_KEY}`,
+      };
+      const res = await fetch(`${SUPABASE_URL}/functions/v1/ai-site-guests`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+          site_id: siteId,
+          action: "bulk_create",
+          guests: parsed,
+        }),
+      });
+      const body = await res.json().catch(() => ({}));
+      if (res.ok && Array.isArray(body?.guests)) {
+        setGuests((prev) => [...prev, ...body.guests]);
+        setGuestImport("");
+      } else {
+        setError(body?.error ?? "Couldn't import guests.");
+      }
+    } finally {
+      setGuestsBusy(false);
+    }
+  }
+
+  async function deleteGuest(guestId: string) {
+    if (!siteId) return;
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+      apikey: SUPABASE_KEY,
+      Authorization: `Bearer ${session?.access_token ?? SUPABASE_KEY}`,
+    };
+    const res = await fetch(`${SUPABASE_URL}/functions/v1/ai-site-guests`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify({ site_id: siteId, action: "delete", guest_id: guestId }),
+    });
+    if (res.ok) setGuests((prev) => prev.filter((g) => g.id !== guestId));
+  }
+
+  function copyGuestLink(token: string) {
+    if (!slug) return;
+    const link = `${window.location.origin}/s/${slug}?g=${token}`;
+    navigator.clipboard?.writeText(link).then(() => {
+      setCopiedToken(token);
+      setTimeout(() => setCopiedToken(null), 1500);
+    });
   }
 
   async function restoreVersion(versionNumber: number) {
@@ -764,6 +856,16 @@ export default function WebsiteBuilderPage() {
                   History
                 </button>
               )}
+              {siteId && (
+                <button
+                  onClick={openGuests}
+                  disabled={loading}
+                  className="text-[12px] text-white/70 hover:text-white border border-white/15 rounded-full px-3 py-1 transition-colors disabled:opacity-40"
+                  title="Invite guests with personalized links"
+                >
+                  Guests
+                </button>
+              )}
               {ownsSite && renameOpen ? (
                 <div className="flex items-center gap-2 bg-white/5 border border-white/20 rounded-full pl-3 pr-1.5 py-1">
                   <span className="text-[12px] text-white/40">/s/</span>
@@ -1063,6 +1165,102 @@ export default function WebsiteBuilderPage() {
           )}
         </main>
       </div>
+
+      {guestsOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-5 bg-black/70 backdrop-blur-sm"
+          onClick={() => !guestsBusy && setGuestsOpen(false)}
+        >
+          <div
+            className="bg-[#0c0c0e] border border-white/15 rounded-2xl p-6 max-w-[640px] w-full max-h-[85vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="text-[16px] font-medium mb-1">Guest list</div>
+            <div className="text-[13px] text-white/50 mb-4 leading-relaxed">
+              Each guest gets a unique link. The site will greet them by
+              name. Paste names one per line — optionally "Name, email".
+            </div>
+
+            <textarea
+              value={guestImport}
+              onChange={(e) => setGuestImport(e.target.value)}
+              rows={4}
+              disabled={guestsBusy}
+              placeholder={"Eleanor Vance\nMarcus Aldridge, marcus@example.com\nSophia Chen\n…"}
+              className="w-full resize-none bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-[13px] text-white placeholder:text-white/40 focus:outline-none focus:border-white/30 disabled:opacity-50 mb-2 font-mono"
+            />
+            <div className="flex items-center justify-between mb-4">
+              <div className="text-[11px] text-white/40">
+                {guestImport.trim().split(/\r?\n/).filter((l) => l.trim()).length} to import
+              </div>
+              <button
+                onClick={importGuests}
+                disabled={guestsBusy || !guestImport.trim()}
+                className="text-[12px] bg-white text-black rounded-full px-3 py-1.5 hover:bg-white/90 transition-colors disabled:opacity-40"
+              >
+                {guestsBusy ? "Importing…" : "Add to list"}
+              </button>
+            </div>
+
+            <div className="text-[12px] text-white/40 uppercase tracking-wider mb-2">
+              Invited ({guests.length})
+            </div>
+            {guests.length === 0 ? (
+              <div className="text-[13px] text-white/50 py-4 text-center">
+                No guests yet. Paste names above to begin.
+              </div>
+            ) : (
+              <div className="space-y-2 mb-3">
+                {guests.map((g) => (
+                  <div
+                    key={g.id}
+                    className="flex items-center gap-3 bg-white/5 border border-white/10 rounded-xl p-2.5"
+                  >
+                    <div className="flex-1 min-w-0">
+                      <div className="text-[13px] text-white/90 font-medium truncate">
+                        {g.name}
+                      </div>
+                      {g.email && (
+                        <div className="text-[11px] text-white/40 truncate">{g.email}</div>
+                      )}
+                    </div>
+                    <button
+                      onClick={() => copyGuestLink(g.token)}
+                      className="text-[11px] text-white/70 hover:text-white border border-white/15 rounded-full px-2.5 py-1"
+                      title={`/s/${slug}?g=${g.token}`}
+                    >
+                      {copiedToken === g.token ? "Copied!" : "Copy link"}
+                    </button>
+                    <button
+                      onClick={() => deleteGuest(g.id)}
+                      className="text-[11px] text-red-400 hover:text-red-300 px-1"
+                      title="Remove"
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div className="text-[11px] text-white/40 mb-3 italic">
+              Tip: tell Claude to add "__GUEST_BLOCK__" near the top of the
+              site (e.g. "right above the couple names") so the greeting
+              shows up when guests open their link.
+            </div>
+
+            <div className="flex items-center justify-end">
+              <button
+                onClick={() => setGuestsOpen(false)}
+                disabled={guestsBusy}
+                className="text-[13px] text-white/60 hover:text-white px-3 py-2 disabled:opacity-50"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {versionsOpen && (
         <div

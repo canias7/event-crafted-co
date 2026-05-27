@@ -1085,6 +1085,58 @@ Default sections are "cream card + heading + body." Variety comes from named rec
 
   Pick recipes that fit the section content. Don't use a vinyl record for a baby shower or a polaroid scatter for a formal black-tie gala.
 
+═══ SAVE-THE-DATE MODE — simpler announcement layout (sent 6-12 months out) ═══
+
+If the user's prompt includes "save the date", "save-the-date", "STD", "announce", "early announcement", or the event is more than 6 months away, generate a SAVE-THE-DATE site instead of a full invitation. The point of a save-the-date is to lock in the date in guests' calendars — full details come later.
+
+  Save-the-date sections (KEEP THIS SHORT — 3-4 sections total):
+    1. Cover page (same variants as full invite — envelope, pressed flower, postcard, telegram, velvet)
+    2. Hero card: couple names, "Save the Date", DATE in huge type, CITY (not full venue address), big countdown row
+    3. Short note: "Formal invitation to follow" (1-2 sentences max)
+    4. Optional: hotel/travel tease ("Block of rooms at the Bellevue Hotel for our guests")
+    5. NO RSVP form, NO schedule, NO registry, NO dress code, NO FAQs
+
+  Copy patterns:
+    "Save the Date"  (large display script)
+    "[Couple Names]" (under, smaller italic)
+    "[Date] · [City]" (caps tracked)
+    "Formal invitation to follow"
+
+  Hero typography is BIGGER than a full invite — fill the screen with the date. Less is more.
+
+  Visual: countdown row gets MORE prominent (let it dominate the cream card). Body sections are reduced.
+
+═══ GUEST GREETING — personalized welcome block (when guest list is active) ═══
+
+The site supports per-guest personalized links via /s/<slug>?g=<token>. The server replaces __GUEST_NAME__ with the guest's name (or "friend" as fallback). To opt in, include ONE of these placeholders in the site:
+
+  • __GUEST_NAME__ — bare text replacement. Use inline:
+    <p>So glad you're here, <span class="guest">__GUEST_NAME__</span>.</p>
+
+  • __GUEST_BLOCK__ — entire block. Server inserts a full greeting <div> with the guest's name when present, or strips the placeholder entirely when no guest token is in the URL. Use this when you want a greeting that only appears for invited guests:
+    <div class="guest-only">__GUEST_BLOCK__</div>
+
+  Place ONE __GUEST_BLOCK__ on weddings/anniversaries/engagements/quinces (right above the couple names is ideal — feels like a hand-addressed envelope). Skip for casual events (BBQ, kids birthday).
+
+  Style the .guest-greet (the wrapper the server inserts) with: font-family: 'Caveat' or 'Allura' script; font-size: 1.4rem; color: var(--accent); margin-bottom: 0.5rem; opacity: 0.85; text-align: center.
+
+═══ LIVE RSVP COUNTER — momentum + social proof ═══
+
+The server can inject the live RSVP tally on the public site if you include __RSVP_COUNT__ somewhere. Best spot: directly under the RSVP form ("82 yes · 4 maybe so far") or above it as a teaser ("Join 82 others who've already RSVPed").
+
+  Pattern:
+    <div class="rsvp-counter">
+      <p class="rsvp-counter-label">Already RSVPed</p>
+      <p class="rsvp-counter-value">__RSVP_COUNT__</p>
+    </div>
+
+  CSS hint:
+    .rsvp-counter { text-align: center; margin: 1.5rem 0; }
+    .rsvp-counter-label { font-size: 0.65rem; letter-spacing: 0.3em; text-transform: uppercase; opacity: 0.6; margin: 0 0 0.5rem; }
+    .rsvp-counter-value { font-family: 'Cormorant Garamond', serif; font-size: 1.4rem; color: var(--accent); margin: 0; }
+
+  When zero, the server renders "Be the first to RSVP" automatically — your CSS already handles it.
+
 === END PREMIUM DESIGN BIBLE ===`;
 
 function buildSystemPrompt(rsvpEndpoint: string, todayIso: string): string {
@@ -1146,6 +1198,9 @@ Style the form to match the site's palette. The action URL is the EXACT string a
 25. REVEAL TRANSITION — every cover-to-body transition MUST be one of the animated reveals (envelope flap opens, seal cracks, paper unfolds, veil lifts). NO instant fade-only. The reveal is the most-watched moment.
 26. PAPER TEXTURE — every cream card section MUST have a real paper texture (linen, kraft, marble, velvet, parchment, or SVG noise filter) applied via CSS / inline SVG data URI. No solid flat cream.
 27. SECTION RECIPES — for at least 2 sections in the body, use a NAMED RECIPE (polaroid scatter, vinyl record, letterpress block, ticket stub, letter from parents, typewriter program, postcard stack, framed citation, program fold, pin-board cork) instead of the default cream card. Match recipe to section purpose and event mood.
+28. SAVE-THE-DATE MODE — if the prompt says "save the date" / "save-the-date" / "STD" / "announce", or the event is more than 6 months out, use the SAVE-THE-DATE MODE layout (3-4 sections only, no RSVP form, big countdown, "Formal invitation to follow"). Don't pad with empty sections.
+29. GUEST GREETING — for elegant events with couples (weddings, anniversaries, engagements, quinces), include ONE __GUEST_BLOCK__ placeholder ABOVE the couple names so guests opening their personalized /s/<slug>?g=<token> link see a hand-addressed welcome. Skip for casual events.
+30. LIVE RSVP COUNTER — when an RSVP form is present, include the __RSVP_COUNT__ placeholder either above the form ("Join 82 others") or below it ("82 yes so far"). The server fills in the live count on render.
 
 After </html>, return NOTHING.
 
