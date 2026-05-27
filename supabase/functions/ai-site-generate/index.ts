@@ -891,7 +891,9 @@ Style the form to match the site's palette. The action URL is the EXACT string a
 15. ALWAYS include a static OpenStreetMap embed for events with a real venue address (skip for "our place" / private homes).
 16. ALWAYS include the scroll-entry animation (animation-timeline: view() with @supports fallback) on every body section.
 17. When 3+ themed photos fit a section's purpose, use the PHOTO STRIP scroll-snap pattern instead of a single image.
-18. MULTI-LANGUAGE TOGGLE — REQUIRED for QUINCEAÑERAS (English/Spanish), BAR/BAT MITZVAHS (English/Hebrew with RTL), and destination weddings where the venue country speaks a language other than English (Italy → Italian, France → French, Mexico → Spanish, India → Hindi). Optional but encouraged whenever the user mentions bilingual families. Translate ALL guest-facing copy — never leave a half-translated page.
+18. MULTI-LANGUAGE TOGGLE — REQUIRED for QUINCEAÑERAS (English/Spanish), BAR/BAT MITZVAHS (English/Hebrew with RTL), and destination weddings where the venue country speaks a language other than English (Italy → Italian, France → French, Mexico → Spanish, India → Hindi). Optional but encouraged whenever the user mentions bilingual families. Translate ALL guest-facing copy — never leave a half-translated page. Translations must read like a native speaker wrote them, not literal word-for-word. Use phrasing real invitations in that culture use ("Junto con sus familias" for Spanish, not "Together with their families" word-by-word).
+19. WEB SEARCH — when the user mentions a NAMED REAL venue ("Villa Cipressi", "The Plaza Hotel", "Marin Country Club"), CALL the web_search tool once to confirm: (a) full address, (b) approximate lat/lon for the map embed (NOT a generic city center), (c) one or two historical/architectural facts to weave into the Our Story or Venue section ("a 15th-century lakeside villa..."). For vague venues ("our backyard", "a friend's place") skip the search. Cap at 3 searches per generation. Use search results SILENTLY — never narrate "I searched for...", just emit the HTML.
+20. INSPIRATION IMAGE — if the user attached an image with their message, vision-read it FIRST and treat it as the design brief. Extract: dominant color palette (pick the 3 most prominent hex codes), font style (serif / sans / script / hand-drawn), mood (formal / playful / moody / airy), and any decorative motifs (florals / geometric / watercolor). Apply those exact choices to the generated site instead of defaulting to a stock palette. The image is the source of truth — match it.
 
 After </html>, return NOTHING.
 
@@ -931,6 +933,14 @@ function stripCodeFences(text: string): string {
   if (t.startsWith("```")) {
     t = t.replace(/^```[a-zA-Z]*\n?/, "").replace(/```\s*$/, "");
   }
+  // With tools enabled, Claude sometimes prefaces the doc with a sentence
+  // ("Based on my search..."). Strip anything before the title comment or
+  // <!DOCTYPE html> so the iframe gets a clean document.
+  const titleIdx = t.search(/<!--\s*TITLE:/i);
+  const docIdx = t.search(/<!doctype html/i);
+  const startIdx =
+    titleIdx >= 0 && (docIdx < 0 || titleIdx < docIdx) ? titleIdx : docIdx;
+  if (startIdx > 0) t = t.slice(startIdx);
   return t.trim();
 }
 
@@ -1040,6 +1050,13 @@ serve(async (req) => {
       model: MODEL,
       max_tokens: 16000,
       stream: true,
+      tools: [
+        {
+          type: "web_search_20250305",
+          name: "web_search",
+          max_uses: 3,
+        },
+      ],
       system: [
         {
           type: "text",
