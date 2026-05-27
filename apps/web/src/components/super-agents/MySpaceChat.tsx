@@ -39,6 +39,20 @@ import {
 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Cell,
+  Line,
+  LineChart,
+  Pie,
+  PieChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -1481,7 +1495,24 @@ function MessageBubble(
                       : "prose-strong:text-foreground"
                   }`}
                 >
-                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                  <ReactMarkdown
+                    remarkPlugins={[remarkGfm]}
+                    components={{
+                      code(props: any) {
+                        const { className, children } = props;
+                        // Intercept ```chart fenced blocks — they
+                        // carry JSON describing a Recharts spec.
+                        if (className === "language-chart") {
+                          return (
+                            <ChartBlock raw={String(children).trim()} />
+                          );
+                        }
+                        return (
+                          <code className={className}>{children}</code>
+                        );
+                      },
+                    }}
+                  >
                     {message.content}
                   </ReactMarkdown>
                 </div>
@@ -1560,6 +1591,89 @@ function formatTimestamp(iso: string): string {
     hour: "numeric",
     minute: "2-digit",
   });
+}
+
+// Renders a ```chart fenced code block as a real Recharts component.
+// Spec shape (from the system prompt):
+//   { type: "bar" | "line" | "pie", data: [{ label, value }], title? }
+function ChartBlock({ raw }: { raw: string }) {
+  let spec: any;
+  try {
+    spec = JSON.parse(raw);
+  } catch {
+    return (
+      <pre className="text-[11px] bg-black/5 p-2 rounded">
+        {`Couldn't parse chart spec:\n${raw}`}
+      </pre>
+    );
+  }
+  const data = Array.isArray(spec?.data) ? spec.data : [];
+  const type = String(spec?.type ?? "bar");
+  const title = spec?.title ? String(spec.title) : null;
+  const palette = [
+    "#c4541e",
+    "#e8915e",
+    "#f4c187",
+    "#9a3d18",
+    "#d97a4e",
+    "#7a2a0f",
+  ];
+  return (
+    <div className="my-2 rounded-xl border bg-white/60 p-3" style={{ borderColor: "rgba(255,138,76,0.18)" }}>
+      {title
+        ? (
+          <p className="text-xs font-medium text-foreground mb-2 text-center">
+            {title}
+          </p>
+        )
+        : null}
+      <div className="w-full" style={{ height: 220 }}>
+        <ResponsiveContainer width="100%" height="100%">
+          {type === "line"
+            ? (
+              <LineChart data={data}>
+                <CartesianGrid stroke="rgba(0,0,0,0.06)" />
+                <XAxis dataKey="label" tick={{ fontSize: 10 }} />
+                <YAxis tick={{ fontSize: 10 }} />
+                <Tooltip />
+                <Line
+                  type="monotone"
+                  dataKey="value"
+                  stroke={palette[0]}
+                  dot={{ r: 3 }}
+                />
+              </LineChart>
+            )
+            : type === "pie"
+            ? (
+              <PieChart>
+                <Tooltip />
+                <Pie
+                  data={data}
+                  dataKey="value"
+                  nameKey="label"
+                  outerRadius={80}
+                  label
+                >
+                  {data.map((_: any, i: number) => (
+                    <Cell key={i} fill={palette[i % palette.length]} />
+                  ))}
+                </Pie>
+              </PieChart>
+            )
+            : (
+              <BarChart data={data}>
+                <CartesianGrid stroke="rgba(0,0,0,0.06)" />
+                <XAxis dataKey="label" tick={{ fontSize: 10 }} />
+                <YAxis tick={{ fontSize: 10 }} />
+                <Tooltip />
+                <Bar dataKey="value" fill={palette[0]} radius={[4, 4, 0, 0]} />
+              </BarChart>
+            )}
+        </ResponsiveContainer>
+      </div>
+    </div>
+  );
 }
 
 function AttachmentChip(

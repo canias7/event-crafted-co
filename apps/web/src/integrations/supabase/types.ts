@@ -175,6 +175,41 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_site_guests: {
+        Row: {
+          created_at: string
+          email: string | null
+          id: string
+          name: string
+          site_id: string
+          token: string
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          id?: string
+          name: string
+          site_id: string
+          token: string
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          id?: string
+          name?: string
+          site_id?: string
+          token?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_site_guests_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "ai_sites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ai_site_rsvps: {
         Row: {
           attending: string
@@ -1871,6 +1906,59 @@ export type Database = {
           },
           {
             foreignKeyName: "my_space_action_audit_vendor_id_fkey"
+            columns: ["vendor_id"]
+            isOneToOne: false
+            referencedRelation: "vendor_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      my_space_custom_tools: {
+        Row: {
+          created_at: string
+          description: string
+          headers_json: Json | null
+          id: string
+          input_schema: Json | null
+          is_active: boolean
+          method: string
+          name: string
+          updated_at: string
+          url: string
+          user_id: string
+          vendor_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          description: string
+          headers_json?: Json | null
+          id?: string
+          input_schema?: Json | null
+          is_active?: boolean
+          method?: string
+          name: string
+          updated_at?: string
+          url: string
+          user_id: string
+          vendor_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          headers_json?: Json | null
+          id?: string
+          input_schema?: Json | null
+          is_active?: boolean
+          method?: string
+          name?: string
+          updated_at?: string
+          url?: string
+          user_id?: string
+          vendor_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "my_space_custom_tools_vendor_id_fkey"
             columns: ["vendor_id"]
             isOneToOne: false
             referencedRelation: "vendor_profiles"
