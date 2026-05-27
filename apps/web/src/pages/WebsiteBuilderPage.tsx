@@ -59,11 +59,126 @@ export default function WebsiteBuilderPage() {
   const [imageBusy, setImageBusy] = useState(false);
   const [imageError, setImageError] = useState<string | null>(null);
   const [pendingImage, setPendingImage] = useState<File | null>(null);
+  const [listening, setListening] = useState(false);
+  const [versionsOpen, setVersionsOpen] = useState(false);
+  const [versions, setVersions] = useState<
+    Array<{ version_number: number; prompt: string | null; created_at: string }>
+  >([]);
+  const [versionsBusy, setVersionsBusy] = useState(false);
+  const [restoreBusy, setRestoreBusy] = useState<number | null>(null);
 
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const abortRef = useRef<AbortController | null>(null);
+  const recognitionRef = useRef<any>(null);
+
+  // Voice input via Web Speech API. Falls back gracefully on browsers
+  // that don't expose webkitSpeechRecognition / SpeechRecognition.
+  function toggleVoice() {
+    if (listening) {
+      recognitionRef.current?.stop();
+      setListening(false);
+      return;
+    }
+    const W: any = window;
+    const Ctor = W.SpeechRecognition || W.webkitSpeechRecognition;
+    if (!Ctor) {
+      setError("Voice input isn't supported in this browser. Try Chrome or Safari.");
+      return;
+    }
+    try {
+      const rec = new Ctor();
+      rec.continuous = false;
+      rec.interimResults = true;
+      rec.lang = "en-US";
+      rec.onresult = (e: any) => {
+        let transcript = "";
+        for (let i = 0; i < e.results.length; i++) {
+          transcript += e.results[i][0].transcript;
+        }
+        setInput((prev) => (prev ? prev + " " : "") + transcript.trim());
+      };
+      rec.onerror = () => setListening(false);
+      rec.onend = () => setListening(false);
+      rec.start();
+      recognitionRef.current = rec;
+      setListening(true);
+      setError(null);
+    } catch (e) {
+      console.error("speech recognition failed", e);
+      setError("Couldn't start voice input.");
+      setListening(false);
+    }
+  }
+
+  async function openVersions() {
+    if (!siteId) return;
+    setVersionsOpen(true);
+    setVersionsBusy(true);
+    try {
+      const headers: Record<string, string> = {
+        "Content-Type": "application/json",
+        apikey: SUPABASE_KEY,
+        Authorization: `Bearer ${session?.access_token ?? SUPABASE_KEY}`,
+      };
+      const res = await fetch(`${SUPABASE_URL}/functions/v1/ai-site-versions`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({ site_id: siteId, action: "list" }),
+      });
+      const body = await res.json().catch(() => ({}));
+      if (res.ok && Array.isArray(body?.versions)) {
+        setVersions(body.versions);
+      } else {
+        setVersions([]);
+      }
+    } finally {
+      setVersionsBusy(false);
+    }
+  }
+
+  async function restoreVersion(versionNumber: number) {
+    if (!siteId || restoreBusy !== null) return;
+    setRestoreBusy(versionNumber);
+    try {
+      const headers: Record<string, string> = {
+        "Content-Type": "application/json",
+        apikey: SUPABASE_KEY,
+        Authorization: `Bearer ${session?.access_token ?? SUPABASE_KEY}`,
+      };
+      const res = await fetch(`${SUPABASE_URL}/functions/v1/ai-site-versions`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+          site_id: siteId,
+          action: "restore",
+          version_number: versionNumber,
+        }),
+      });
+      const body = await res.json().catch(() => ({}));
+      if (res.ok && body?.html && iframeRef.current) {
+        const doc = iframeRef.current.contentDocument;
+        if (doc) {
+          doc.open();
+          doc.write(body.html);
+          doc.close();
+        }
+        setTitle(body.title ?? title);
+        setHasContent(true);
+        setVersionsOpen(false);
+        setConversation((prev) => [
+          ...prev,
+          { role: "user", content: `restore version ${versionNumber}` },
+          { role: "assistant", content: `Reverted to version ${versionNumber}.` },
+        ]);
+      } else {
+        setError(body?.error ?? "Couldn't restore that version.");
+      }
+    } finally {
+      setRestoreBusy(null);
+    }
+  }
 
   useEffect(() => {
     inputRef.current?.focus();
@@ -639,6 +754,16 @@ export default function WebsiteBuilderPage() {
                   Rename
                 </button>
               )}
+              {siteId && (
+                <button
+                  onClick={openVersions}
+                  disabled={loading}
+                  className="text-[12px] text-white/70 hover:text-white border border-white/15 rounded-full px-3 py-1 transition-colors disabled:opacity-40"
+                  title="View past versions and restore"
+                >
+                  History
+                </button>
+              )}
               {ownsSite && renameOpen ? (
                 <div className="flex items-center gap-2 bg-white/5 border border-white/20 rounded-full pl-3 pr-1.5 py-1">
                   <span className="text-[12px] text-white/40">/s/</span>
@@ -839,6 +964,35 @@ export default function WebsiteBuilderPage() {
                 </svg>
               </button>
               <button
+                onClick={toggleVoice}
+                disabled={loading}
+                aria-label={listening ? "Stop listening" : "Voice input"}
+                title={listening ? "Stop listening" : "Describe your event by voice"}
+                className={
+                  "absolute left-11 bottom-2 w-8 h-8 rounded-full flex items-center justify-center transition-colors disabled:opacity-30 disabled:cursor-not-allowed " +
+                  (listening
+                    ? "bg-red-500/20 text-red-300 ring-2 ring-red-400/60 animate-pulse"
+                    : "text-white/60 hover:text-white hover:bg-white/10")
+                }
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                  <path
+                    d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                  <path
+                    d="M19 10v2a7 7 0 0 1-14 0v-2M12 19v4M8 23h8"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </button>
+              <button
                 onClick={() => submit(input)}
                 disabled={loading || (!input.trim() && !pendingImage)}
                 aria-label="Send"
@@ -909,6 +1063,72 @@ export default function WebsiteBuilderPage() {
           )}
         </main>
       </div>
+
+      {versionsOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-5 bg-black/70 backdrop-blur-sm"
+          onClick={() => restoreBusy === null && setVersionsOpen(false)}
+        >
+          <div
+            className="bg-[#0c0c0e] border border-white/15 rounded-2xl p-6 max-w-[520px] w-full max-h-[80vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="text-[16px] font-medium mb-1">Version history</div>
+            <div className="text-[13px] text-white/50 mb-4 leading-relaxed">
+              Every edit is snapshotted. Pick any version to restore it.
+            </div>
+            {versionsBusy ? (
+              <div className="text-[13px] text-white/50 py-6 text-center">
+                Loading…
+              </div>
+            ) : versions.length === 0 ? (
+              <div className="text-[13px] text-white/50 py-6 text-center">
+                No saved versions yet.
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {versions.map((v) => (
+                  <div
+                    key={v.version_number}
+                    className="flex items-start gap-3 bg-white/5 border border-white/10 rounded-xl p-3"
+                  >
+                    <div className="flex-1 min-w-0">
+                      <div className="text-[13px] text-white/90 font-medium mb-0.5">
+                        Version {v.version_number}
+                      </div>
+                      <div className="text-[12px] text-white/40 mb-1">
+                        {new Date(v.created_at).toLocaleString()}
+                      </div>
+                      {v.prompt && (
+                        <div className="text-[12px] text-white/60 italic line-clamp-2">
+                          "{v.prompt.slice(0, 140)}
+                          {v.prompt.length > 140 ? "…" : ""}"
+                        </div>
+                      )}
+                    </div>
+                    <button
+                      onClick={() => restoreVersion(v.version_number)}
+                      disabled={restoreBusy !== null}
+                      className="text-[12px] bg-white text-black rounded-full px-3 py-1.5 hover:bg-white/90 transition-colors disabled:opacity-40 shrink-0"
+                    >
+                      {restoreBusy === v.version_number ? "Restoring…" : "Restore"}
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+            <div className="flex items-center justify-end mt-4">
+              <button
+                onClick={() => setVersionsOpen(false)}
+                disabled={restoreBusy !== null}
+                className="text-[13px] text-white/60 hover:text-white px-3 py-2 disabled:opacity-50"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {imageModalOpen && (
         <div
