@@ -452,6 +452,22 @@ TYPOGRAPHY — Google Fonts ARE ALLOWED and ENCOURAGED. Use this preconnect + li
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Inter:wght@300;400;500&display=swap">
 
+FONTSHARE (free premium foundry fonts, no API key — use ALONGSIDE Google Fonts when a designer-studio feel is needed):
+
+  <link rel="preconnect" href="https://api.fontshare.com">
+  <link rel="stylesheet" href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700&f[]=cabinet-grotesk@500,700&f[]=ranade@400,500&f[]=tanker@400&f[]=general-sans@400,500,600&display=swap">
+
+  Fontshare picks worth knowing:
+  • SATOSHI — clean modern sans (replaces Inter, more designed feel)
+  • CABINET GROTESK — bold display sans with character (great for hero headings)
+  • RANADE — quirky humanist sans (modern weddings, creative events)
+  • TANKER — wide condensed display (editorial / magazine cover treatment)
+  • GENERAL SANS — neutral sans with personality (alternative to Inter)
+  • SUPREME — friendly geometric (kids / baby showers — alternative to Quicksand)
+  • ZODIAK — high-contrast display serif (Black-Tie / NYE — alternative to Bodoni Moda)
+
+  Use ONE Google Font + ONE Fontshare font max (not 3+). Mixing both is fine and elevates the look.
+
 PREMIUM FONT PAIRINGS — pick ONE pairing per site, never mix more than 2 fonts plus a script accent:
 
   ELEGANT WEDDING / FORMAL — Cormorant Garamond (serif display, italic for names) + Inter (sans body)
