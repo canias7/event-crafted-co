@@ -156,13 +156,13 @@ serve(async (req) => {
 
     const { data: site } = await admin
       .from("ai_sites")
-      .select("id, slug, is_blocked")
+      .select("id, slug, is_blocked, require_photo_approval")
       .eq("slug", slug)
       .maybeSingle();
     if (!site || (site as any).is_blocked) {
       return new Response(errorPage("Site not found.", slug), { status: 404, headers: { "Content-Type": "text/html; charset=utf-8", ...cors } });
     }
-    const s = site as { id: string; slug: string };
+    const s = site as { id: string; slug: string; require_photo_approval: boolean };
 
     const ext = (file.name.split(".").pop() ?? "jpg").toLowerCase().slice(0, 5).replace(/[^a-z0-9]/g, "") || "jpg";
     const filename = `guest/${s.slug}/${crypto.randomUUID()}.${ext}`;
@@ -178,12 +178,15 @@ serve(async (req) => {
     const { data: pub } = admin.storage.from("ai-site-images").getPublicUrl(filename);
     const photoUrl = pub?.publicUrl ?? "";
 
+    // Honor the per-site auto-approve toggle. Hidden photos still
+    // get inserted so the owner sees them in the moderation modal.
+    const approved = !s.require_photo_approval;
     await admin.from("ai_site_photos").insert({
       site_id: s.id,
       photo_url: photoUrl,
       uploader_name: uploaderName,
       caption,
-      approved: true,
+      approved,
     });
 
     return new Response(thankYouPage(s.slug), {
