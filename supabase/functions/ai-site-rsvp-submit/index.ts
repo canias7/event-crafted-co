@@ -158,6 +158,9 @@ serve(async (req) => {
       ? Math.floor(guestsCountRaw)
       : 1;
   const message = String(form.get("message") ?? "").trim().slice(0, 2000) || null;
+  const mealChoice = String(form.get("meal") ?? form.get("meal_choice") ?? "").trim().slice(0, 80) || null;
+  const plusOneName = String(form.get("plus_one_name") ?? "").trim().slice(0, 120) || null;
+  const plusOneMeal = String(form.get("plus_one_meal") ?? "").trim().slice(0, 80) || null;
 
   if (!guestName) {
     return htmlPage({
@@ -202,6 +205,9 @@ serve(async (req) => {
     attending,
     guests_count: guestsCount,
     message,
+    meal_choice: mealChoice,
+    plus_one_name: plusOneName,
+    plus_one_meal: plusOneMeal,
   });
 
   if (insertErr) {

@@ -95,7 +95,7 @@ serve(async (req) => {
   if (action === "list") {
     const { data, error } = await admin
       .from("ai_site_guests")
-      .select("id, name, email, token, created_at")
+      .select("id, name, email, token, plus_one_allowed, created_at")
       .eq("site_id", siteId)
       .order("created_at", { ascending: true });
     if (error) return json(500, { error: "list_failed" });
@@ -124,7 +124,7 @@ serve(async (req) => {
     const { data, error } = await admin
       .from("ai_site_guests")
       .insert(rows)
-      .select("id, name, email, token, created_at");
+      .select("id, name, email, token, plus_one_allowed, created_at");
     if (error) {
       console.error("[ai-site-guests] insert error", error);
       return json(500, { error: "insert_failed" });
