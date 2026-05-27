@@ -116,6 +116,14 @@ export default function WebsiteBuilderPage() {
     setUnresolvedPlaceholders(unique);
   }
 
+  // Server-side validator reports missing MUST-HAVE features (e.g.
+  // "Missing countdown row"). Surface them as a Polish button that
+  // re-runs the generator with a targeted fix-up prompt.
+  const [validationIssues, setValidationIssues] = useState<
+    Array<{ key: string; label: string }>
+  >([]);
+  const [polishing, setPolishing] = useState(false);
+
   async function exportRsvpsCsv() {
     if (!siteId) return;
     const headers: Record<string, string> = {
@@ -141,6 +149,87 @@ export default function WebsiteBuilderPage() {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
+  }
+
+  // Polish: take the validation issues the server flagged and ask
+  // Claude to add the missing features. Runs the edit flow with a
+  // synthetic prompt that names exactly what's missing.
+  async function polish() {
+    if (!siteId || !validationIssues.length || polishing) return;
+    setPolishing(true);
+    setLoading(true);
+    try {
+      const wishlist = validationIssues
+        .map((iss) => `- ${iss.label}`)
+        .join("\n");
+      const polishPrompt =
+        "Polish pass — add the missing MUST-HAVE features per the design bible. Don't redesign, don't shrink, just add what's missing:\n" +
+        wishlist +
+        "\nReturn the full site with these added.";
+      const headers: Record<string, string> = {
+        "Content-Type": "application/json",
+        apikey: SUPABASE_KEY,
+        Authorization: `Bearer ${session?.access_token ?? SUPABASE_KEY}`,
+      };
+      const res = await fetch(`${SUPABASE_URL}/functions/v1/ai-site-generate`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({ prompt: polishPrompt, edit_site_id: siteId }),
+      });
+      if (!res.ok || !res.body) {
+        setError("Polish failed. Try again.");
+        return;
+      }
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buf = "";
+      let bufferedHtml = "";
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        buf += decoder.decode(value, { stream: true });
+        const events = buf.split("\n\n");
+        buf = events.pop() ?? "";
+        for (const evt of events) {
+          for (const line of evt.split("\n")) {
+            if (!line.startsWith("data: ")) continue;
+            try {
+              const data = JSON.parse(line.slice(6));
+              if (data?.type === "chunk" && typeof data.text === "string") {
+                bufferedHtml += data.text;
+              } else if (data?.type === "done") {
+                if (iframeRef.current?.contentDocument) {
+                  const doc = iframeRef.current.contentDocument;
+                  doc.open();
+                  doc.write(previewClean(bufferedHtml));
+                  doc.close();
+                }
+                scanUnresolved(bufferedHtml);
+                setValidationIssues(
+                  Array.isArray(data.validation?.issues)
+                    ? data.validation.issues
+                    : [],
+                );
+                if (typeof data.version_number === "number") {
+                  setEditCount(data.version_number);
+                }
+                setConversation((c) => [
+                  ...c,
+                  { role: "user", content: "polish" },
+                  {
+                    role: "assistant",
+                    content: "Added the missing features. Tell me what else to change.",
+                  },
+                ]);
+              }
+            } catch { /* keepalive */ }
+          }
+        }
+      }
+    } finally {
+      setPolishing(false);
+      setLoading(false);
+    }
   }
   const [variantsLoading, setVariantsLoading] = useState(false);
   const [variantsOpen, setVariantsOpen] = useState(false);
@@ -815,6 +904,13 @@ export default function WebsiteBuilderPage() {
               if (typeof data.version_number === "number") {
                 setEditCount(data.version_number);
               }
+              // Surface server-side validation issues so the user can
+              // hit Polish and request a targeted fix-up.
+              setValidationIssues(
+                Array.isArray(data.validation?.issues)
+                  ? data.validation.issues
+                  : [],
+              );
               // Sync the streamed iframe's RSVP form action with the
               // real slug — Claude sometimes invents one in the
               // streamed bytes; the DB row is already corrected
@@ -1446,6 +1542,21 @@ export default function WebsiteBuilderPage() {
               title="Claude wrote a placeholder the server doesn't know how to fill. Ask it to remove the placeholder or replace it with real content."
             >
               ⚠ Unresolved placeholder{unresolvedPlaceholders.length > 1 ? "s" : ""}: {unresolvedPlaceholders.join(", ")}
+            </div>
+          )}
+          {hasContent && !loading && validationIssues.length > 0 && (
+            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-3 bg-[#0c0c0e]/90 border border-white/15 rounded-full pl-4 pr-1.5 py-1.5 backdrop-blur shadow-xl">
+              <span className="text-[11px] text-white/70" title={validationIssues.map((i) => i.label).join("\n")}>
+                {validationIssues.length} missing: {validationIssues.slice(0, 2).map((i) => i.label.replace(/^Missing\s+/, "")).join(", ")}{validationIssues.length > 2 ? "…" : ""}
+              </span>
+              <button
+                onClick={polish}
+                disabled={polishing || loading}
+                className="text-[11px] font-medium bg-white/95 text-black rounded-full px-3 py-1 hover:bg-white transition-colors disabled:opacity-40"
+                title={`Add: ${validationIssues.map((i) => i.label).join(", ")}`}
+              >
+                {polishing ? "Polishing…" : "✨ Polish"}
+              </button>
             </div>
           )}
         </main>
