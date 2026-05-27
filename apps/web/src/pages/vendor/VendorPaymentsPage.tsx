@@ -1201,12 +1201,18 @@ function ReportsTab({ vendorId }: { vendorId: string | null }) {
   const [paidInRange, setPaidInRange] = useState<Invoice[]>([]);
   const [refundedInRange, setRefundedInRange] = useState<Invoice[]>([]);
   const [stripeFees, setStripeFees] = useState<{ fees_cents: number; gross_cents: number; net_cents: number; count: number } | null>(null);
+  // Aging report = "as of today" snapshot of unpaid invoices, NOT
+  // gated on the rangeId picker. A vendor wants to know "what's
+  // overdue right now" regardless of which window they're scoped
+  // to for revenue analytics.
+  const [unpaidNow, setUnpaidNow] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(false);
   useEffect(() => {
     if (!vendorId) {
       setPaidInRange([]);
       setRefundedInRange([]);
       setStripeFees(null);
+      setUnpaidNow([]);
       return;
     }
     let cancelled = false;
@@ -1216,7 +1222,7 @@ function ReportsTab({ vendorId }: { vendorId: string | null }) {
       const db = supabase as any;
       const cols =
         "id, vendor_id, slug, invoice_number, bill_to_name, bill_to_email, bill_to_state, issue_date, due_date, notes, line_items, subtotal_cents, tax_rate_bps, tax_cents, total_cents, currency, status, sent_at, paid_at, refunded_at, refunded_amount_cents, created_at";
-      const [paidRes, refundedRes, feesRes] = await Promise.all([
+      const [paidRes, refundedRes, feesRes, unpaidRes] = await Promise.all([
         db
           .from("invoices")
           .select(cols)
@@ -1247,10 +1253,23 @@ function ReportsTab({ vendorId }: { vendorId: string | null }) {
             console.error("[reports] fees fetch failed", err);
             return { data: null };
           }),
+        // Aging snapshot — every unpaid invoice regardless of issue
+        // date. Status filter excludes paid/cancelled/refunded since
+        // those are no longer claims. limit 5000 mirrors the other
+        // selects' cap; vendors with that many open invoices have
+        // bigger problems than the report being truncated.
+        db
+          .from("invoices")
+          .select(cols)
+          .eq("vendor_id", vendorId)
+          .in("status", ["sent", "overdue"])
+          .order("due_date", { ascending: true })
+          .limit(5000),
       ]);
       if (cancelled) return;
       setPaidInRange((paidRes.data ?? []) as Invoice[]);
       setRefundedInRange((refundedRes.data ?? []) as Invoice[]);
+      setUnpaidNow((unpaidRes.data ?? []) as Invoice[]);
       const feesData = (feesRes as { data?: { fees_cents?: number; gross_cents?: number; net_cents?: number; count?: number } }).data;
       setStripeFees(
         feesData && typeof feesData.fees_cents === "number"
@@ -1330,6 +1349,51 @@ function ReportsTab({ vendorId }: { vendorId: string | null }) {
   }, [paidInRange, refundedInRange, stripeFees]);
 
   // Bucket paid invoices by day for the sparkline. For ranges
+  // A/R aging — bucket unpaid invoices by days past due. "Current"
+  // covers everything not yet due (including no due_date, which we
+  // treat as not-overdue since the vendor never set a deadline).
+  // Buckets are the standard 1-30 / 31-60 / 61-90 / 90+ CPAs expect.
+  const aging = useMemo(() => {
+    const buckets = {
+      current: { count: 0, totalCents: 0 },
+      d1_30: { count: 0, totalCents: 0 },
+      d31_60: { count: 0, totalCents: 0 },
+      d61_90: { count: 0, totalCents: 0 },
+      d90plus: { count: 0, totalCents: 0 },
+    };
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    for (const inv of unpaidNow) {
+      const owed = inv.total_cents;
+      if (!inv.due_date) {
+        buckets.current.count++;
+        buckets.current.totalCents += owed;
+        continue;
+      }
+      const due = new Date(inv.due_date + "T00:00:00");
+      const daysLate = Math.floor((today.getTime() - due.getTime()) / (24 * 3600 * 1000));
+      if (daysLate < 1) {
+        buckets.current.count++;
+        buckets.current.totalCents += owed;
+      } else if (daysLate <= 30) {
+        buckets.d1_30.count++;
+        buckets.d1_30.totalCents += owed;
+      } else if (daysLate <= 60) {
+        buckets.d31_60.count++;
+        buckets.d31_60.totalCents += owed;
+      } else if (daysLate <= 90) {
+        buckets.d61_90.count++;
+        buckets.d61_90.totalCents += owed;
+      } else {
+        buckets.d90plus.count++;
+        buckets.d90plus.totalCents += owed;
+      }
+    }
+    const totalOpen = unpaidNow.reduce((s, inv) => s + inv.total_cents, 0);
+    const currency = unpaidNow[0]?.currency ?? "usd";
+    return { ...buckets, totalOpen, totalCount: unpaidNow.length, currency };
+  }, [unpaidNow]);
+
   // shorter than ~60 days we bucket per day; longer windows go
   // weekly so a year-long view stays readable.
   const sparkline = useMemo(() => {
@@ -1507,6 +1571,45 @@ function ReportsTab({ vendorId }: { vendorId: string | null }) {
           />
         </div>
       </section>
+
+      {aging.totalCount > 0 && (
+        <section>
+          <div className="flex items-baseline justify-between gap-3 mb-3 pb-2 border-b border-foreground/[0.06]">
+            <h2 className="text-[10px] uppercase tracking-[0.22em] text-muted-foreground font-semibold">
+              A/R aging
+            </h2>
+            <span className="text-[10px] text-muted-foreground">As of today · {aging.totalCount} open invoice{aging.totalCount === 1 ? "" : "s"} · {formatMoney(aging.totalOpen, aging.currency)} owed</span>
+          </div>
+          <Card>
+            <div className="grid grid-cols-5 divide-x divide-foreground/[0.06]">
+              {[
+                { key: "current", label: "Current", sub: "Not yet due", bucket: aging.current },
+                { key: "d1_30", label: "1–30", sub: "Days late", bucket: aging.d1_30 },
+                { key: "d31_60", label: "31–60", sub: "Days late", bucket: aging.d31_60 },
+                { key: "d61_90", label: "61–90", sub: "Days late", bucket: aging.d61_90 },
+                { key: "d90plus", label: "90+", sub: "Days late", bucket: aging.d90plus },
+              ].map(({ key, label, sub, bucket }) => {
+                const isLate = key !== "current";
+                const hasAmount = bucket.totalCents > 0;
+                return (
+                  <div key={key} className="p-4">
+                    <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground font-semibold">
+                      {label}
+                    </div>
+                    <div className="text-[10px] text-muted-foreground/70">{sub}</div>
+                    <div className={`mt-2 text-lg font-editorial tabular-nums ${isLate && hasAmount ? "text-rose-700" : ""}`}>
+                      {formatMoney(bucket.totalCents, aging.currency)}
+                    </div>
+                    <div className="text-[11px] text-muted-foreground mt-0.5">
+                      {bucket.count} invoice{bucket.count === 1 ? "" : "s"}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </Card>
+        </section>
+      )}
 
       <section>
         <h2 className="text-[10px] uppercase tracking-[0.22em] text-muted-foreground font-semibold mb-3 pb-2 border-b border-foreground/[0.06]">
@@ -3222,6 +3325,84 @@ function CustomersTab({
   } | null>(null);
   const [recurringRules, setRecurringRules] = useState<RecurringRule[]>([]);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [statementId, setStatementId] = useState<string | null>(null);
+  const { user } = useAuth();
+
+  // Statement download — fetches the FULL invoice history for this
+  // customer (not the parent's 50-row cache) so an end-of-year
+  // statement doesn't miss older invoices. Lazy-imports the PDF
+  // module so jsPDF stays out of the initial bundle.
+  const downloadStatement = useCallback(
+    async (c: Customer) => {
+      if (!vendorId) return;
+      setStatementId(c.id);
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const db = supabase as any;
+        const { data, error } = await db
+          .from("invoices")
+          .select(
+            "invoice_number, issue_date, due_date, paid_at, refunded_at, refunded_amount_cents, status, total_cents, currency",
+          )
+          .eq("vendor_id", vendorId)
+          .eq("bill_to_email", c.email)
+          .order("issue_date", { ascending: true })
+          .limit(1000);
+        if (error) {
+          console.error("[CustomersTab] statement fetch failed", error);
+          toast.error("Couldn't load this customer's invoice history.");
+          return;
+        }
+        const invoices = (data ?? []) as Array<{
+          invoice_number: string;
+          issue_date: string;
+          due_date: string | null;
+          paid_at: string | null;
+          refunded_at: string | null;
+          refunded_amount_cents: number | null;
+          status: string;
+          total_cents: number;
+          currency: string;
+        }>;
+        if (invoices.length === 0) {
+          toast.info("No invoices yet for this customer.");
+          return;
+        }
+        const mod = await import("@/lib/invoiceReceiptPdf");
+        mod.downloadStatementPdf(
+          {
+            customer_name: c.name,
+            customer_email: c.email,
+            since: null,
+            until: null,
+            invoices: invoices.map((inv) => ({
+              invoice_number: inv.invoice_number,
+              issue_date: inv.issue_date,
+              due_date: inv.due_date,
+              paid_at: inv.paid_at,
+              refunded_at: inv.refunded_at ?? undefined,
+              refunded_amount_cents: inv.refunded_amount_cents ?? undefined,
+              status: inv.status,
+              total_cents: inv.total_cents,
+              currency: inv.currency,
+            })),
+            currency: invoices[0]?.currency ?? "usd",
+          },
+          {
+            business_name: listing?.business_name ?? null,
+            location: listing?.location ?? null,
+            email: user?.email ?? null,
+          },
+        );
+      } catch (err) {
+        console.error("[CustomersTab] statement build failed", err);
+        toast.error("Couldn't build the statement PDF.");
+      } finally {
+        setStatementId(null);
+      }
+    },
+    [vendorId, listing, user],
+  );
 
   // Group invoices by bill_to_email so each customer row can show
   // count + total billed + a per-invoice list on expand. Cheaper
@@ -3520,6 +3701,21 @@ function CustomersTab({
                       title={custRecurring ? "Edit recurring" : "Set up recurring"}
                     >
                       {custRecurring ? "Recurring" : "Recurring…"}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => downloadStatement(c)}
+                      disabled={statementId === c.id || custInvoices.length === 0}
+                      className="rounded-full"
+                      title="Download a statement PDF of this customer's full invoice history"
+                    >
+                      {statementId === c.id ? (
+                        <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" />
+                      ) : (
+                        <Download className="w-3.5 h-3.5 mr-1" />
+                      )}
+                      Statement
                     </Button>
                     <Button
                       variant="outline"
