@@ -49,6 +49,11 @@ const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY") ?? "";
 
 const MODEL = "claude-sonnet-4-6";
 
+// Bumped whenever DESIGN_BIBLE / PLAYBOOKS / OUTPUT RULES change
+// meaningfully. Stamped into every generated HTML's <head> so we can
+// diagnose drift in the wild by view-source.
+const DESIGN_BIBLE_VERSION = "v27";
+
 const cors = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
@@ -61,6 +66,71 @@ function jsonResponse(status: number, body: Record<string, unknown>) {
     status,
     headers: { ...cors, "Content-Type": "application/json" },
   });
+}
+
+function clientIp(req: Request): string {
+  const xf = req.headers.get("x-forwarded-for") ?? "";
+  return xf.split(",")[0].trim()
+    || req.headers.get("cf-connecting-ip")
+    || req.headers.get("x-real-ip")
+    || "";
+}
+
+// Spam guard: at most `limit` hits per (ip, bucket) every `windowSec`.
+// Fails open on any DB error so a bad rate-limits table doesn't lock
+// the whole generation flow out.
+async function rateLimit(
+  admin: any,
+  ip: string,
+  bucket: string,
+  limit: number,
+  windowSec: number,
+): Promise<boolean> {
+  if (!ip) return true;
+  const now = Date.now();
+  try {
+    const { data } = await admin
+      .from("ai_site_rate_limits")
+      .select("hits, window_start")
+      .eq("ip", ip)
+      .eq("bucket", bucket)
+      .maybeSingle();
+    if (!data) {
+      await admin.from("ai_site_rate_limits").insert({ ip, bucket, hits: 1 });
+      return true;
+    }
+    const wsTime = new Date((data as any).window_start).getTime();
+    if (wsTime < now - windowSec * 1000) {
+      await admin
+        .from("ai_site_rate_limits")
+        .update({ hits: 1, window_start: new Date().toISOString() })
+        .eq("ip", ip)
+        .eq("bucket", bucket);
+      return true;
+    }
+    if ((data as any).hits >= limit) return false;
+    await admin
+      .from("ai_site_rate_limits")
+      .update({ hits: (data as any).hits + 1 })
+      .eq("ip", ip)
+      .eq("bucket", bucket);
+    return true;
+  } catch {
+    return true;
+  }
+}
+
+// Inject a one-line bible-version stamp right after <!doctype html>
+// so we can diagnose drift later by viewing source.
+function stampVersion(html: string, todayIso: string): string {
+  const stamp = `<!-- DESIGN_BIBLE: ${DESIGN_BIBLE_VERSION} | generated: ${todayIso} -->`;
+  if (html.includes("DESIGN_BIBLE:")) {
+    return html.replace(/<!--\s*DESIGN_BIBLE:[^>]*-->/i, stamp);
+  }
+  if (/<!doctype html[^>]*>/i.test(html)) {
+    return html.replace(/(<!doctype html[^>]*>)/i, `$1\n${stamp}`);
+  }
+  return `${stamp}\n${html}`;
 }
 
 // Verified working Unsplash photo IDs. These are stable URLs that
@@ -1329,6 +1399,27 @@ When the event date falls within 14 days of a major holiday (computed from TODAY
 - MOTHER'S/FATHER'S DAY: small floral / tie SVG accent in a corner.
 Subtle bonus on top of the existing palette, never replacing it.
 
+═══ CALENDAR EXPORT (REQUIRED for any dated event) ═══
+
+For any event with a known date and time, emit these four <meta> tags in <head>. The ai-site-ics edge function parses them to build a downloadable .ics calendar file:
+
+  <meta name="event-start"    content="2026-08-15T16:00:00-04:00">
+  <meta name="event-end"      content="2026-08-15T22:00:00-04:00">
+  <meta name="event-location" content="Villa Cipressi, Lake Como, Italy">
+  <meta name="event-summary"  content="Eleanor & Marcus Wedding">
+
+Rules:
+- event-start MUST be ISO 8601 with a timezone offset (e.g. -04:00, +01:00). Pick the offset from the venue's location.
+- event-summary is the calendar title — keep it short, proper-case, no emoji.
+- event-end defaults to event-start + 3 hours if you omit it. Include it explicitly when you know the duration (most weddings are 5-7h, dinners 2-3h).
+- Skip ONLY if there is truly no date at all (rare — save-the-date "spring 2027" announcements).
+
+Then include an inline "Add to calendar" link/button near the hero date or RSVP form, wired to the ics endpoint:
+
+  <a href="${SUPABASE_URL}/functions/v1/ai-site-ics?slug=__SLUG__" class="cal-link">Add to calendar</a>
+
+Style as an elegant pill or underlined link in var(--accent). A calendar glyph (📅, ⚏, or a small SVG) is welcome if it fits the tone. Visitors click it; their browser downloads an .ics they import into Google/Apple/Outlook.
+
 ═══ AMBIENT SOUND (opt-in, off by default) ═══
 
 For elegant events ONLY, add a small CSS-only audio toggle in the bottom-right corner. Use a free-tier royalty-free clip (e.g., https://cdn.pixabay.com/audio/2022/03/15/audio_1718f467a2.mp3 for soft piano):
@@ -1339,7 +1430,7 @@ For elegant events ONLY, add a small CSS-only audio toggle in the bottom-right c
 
 === END PREMIUM DESIGN BIBLE ===`;
 
-function buildSystemPrompt(rsvpEndpoint: string, todayIso: string): string {
+function buildSystemPrompt(rsvpEndpoint: string, icsEndpoint: string, todayIso: string): string {
   return `TODAY'S DATE (for countdown math, never reference this in copy): ${todayIso}
 
 You design $1,000,000-quality single-page event microsites — weddings, birthdays, baby showers, engagement parties, anniversaries, graduations, bridal showers, gender reveals, holiday parties, quinceañeras, bar/bat mitzvahs, and more. Premium digital invitations, not generic webpages.
@@ -1410,6 +1501,8 @@ Style the form to match the site's palette. The action URL is the EXACT string a
 37. MAGAZINE COVER — for sites using EDITORIAL or MODERN LUXURY font pairings, treat the hero as a magazine cover (masthead, issue line, cover bullets, vertical RSVP tag).
 38. HOLIDAY ACCENTS — when the event date is within 14 days of a major holiday (Halloween, Thanksgiving, Christmas, NYE, Valentine's, 4th of July), add a subtle themed accent.
 39. AMBIENT SOUND — elegant events MAY include a CSS-only ♫ audio toggle in the bottom-right with a royalty-free clip; off by default, only plays on click. Skip for casual events.
+40. CALENDAR META — for any dated event, emit <meta name="event-start">, <meta name="event-end">, <meta name="event-location">, <meta name="event-summary"> in <head>. event-start MUST be ISO 8601 with a timezone offset (e.g. 2026-08-15T16:00:00-04:00). Skip only when there's truly no date (rare).
+41. ADD TO CALENDAR LINK — for any dated event, include an "Add to calendar" link/button near the hero date or RSVP form, wired to ${icsEndpoint}?slug=__SLUG__. Style as an elegant pill or inline link in var(--accent).
 
 After </html>, return NOTHING.
 
@@ -1420,6 +1513,11 @@ const EDIT_SUFFIX = `
 
 === EDIT MODE ===
 The CURRENT site HTML follows. Apply the user's latest change request to it and return the FULL modified HTML document. Preserve sections the user didn't ask to change — only touch what they asked for. Same output rules: one HTML doc, no prose, no fences, start with the title comment then <!DOCTYPE html>.
+
+CRITICAL — keep these placeholders + meta tags intact unless the user explicitly asks to remove them:
+- __GUEST_BLOCK__, __RSVP_COUNT__, __PLUS_ONE_BLOCK__, __PHOTO_ALBUM__, __COMMENT_WALL__, __HERO_AI__, __SLUG__
+- <meta name="event-start">, <meta name="event-end">, <meta name="event-location">, <meta name="event-summary">
+- The "Add to calendar" link wired to ai-site-ics
 
 CURRENT SITE HTML:
 `;
@@ -1608,9 +1706,25 @@ serve(async (req) => {
     }
   }
 
+  // Rate-limit anonymous new generations so a runaway script can't
+  // burn through Anthropic credits. Edits + signed-in users are
+  // exempt: their UX is throttled by typing speed and the ID/slug
+  // resolves to an owned row anyway.
+  if (!editSiteId && !authedUserId) {
+    const ip = clientIp(req);
+    const allowed = await rateLimit(admin, ip, "gen:anon", 12, 3600);
+    if (!allowed) {
+      return jsonResponse(429, {
+        error: "rate_limited",
+        message: "You've generated a lot of sites in the last hour. Sign in or try again later.",
+      });
+    }
+  }
+
   const rsvpEndpoint = `${SUPABASE_URL}/functions/v1/ai-site-rsvp-submit?slug=__SLUG__`;
+  const icsEndpoint = `${SUPABASE_URL}/functions/v1/ai-site-ics`;
   const todayIso = new Date().toISOString().slice(0, 10);
-  const baseSystem = buildSystemPrompt(rsvpEndpoint, todayIso);
+  const baseSystem = buildSystemPrompt(rsvpEndpoint, icsEndpoint, todayIso);
   const systemText = currentSite
     ? baseSystem + EDIT_SUFFIX + currentSite.html
     : baseSystem;
@@ -1726,6 +1840,7 @@ serve(async (req) => {
         /(ai-site-rsvp-submit[^"' ]*?[?&]slug=)([^"'&\s]*)/g,
         (_m, prefix) => `${prefix}${slug}`,
       );
+      html = stampVersion(html, todayIso);
       // If Claude included the literal placeholder anywhere, fix it too.
       html = html.replaceAll("__SLUG__", slug);
 
