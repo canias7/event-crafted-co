@@ -1110,7 +1110,7 @@ function PaymentsTab({
           onRefunded={onRefunded}
         />
       ) : sub === "payouts" ? (
-        <PayoutsTab data={payouts} status={status} />
+        <PayoutsTab data={payouts} status={status} vendorId={vendorId} />
       ) : sub === "disputes" ? (
         <DisputesTab vendorId={vendorId} />
       ) : sub === "expenses" ? (
@@ -2136,8 +2136,132 @@ function RefundModal({
   );
 }
 
-function PayoutsTab({ data, status }: { data: PayoutsResponse | null; status: Status | null }) {
+interface PayoutReconciliation {
+  id: string;
+  stripe_payout_id: string;
+  reconciled_at: string;
+  bank_deposit_ref: string | null;
+  notes: string | null;
+}
+
+function PayoutsTab({
+  data,
+  status,
+  vendorId,
+}: {
+  data: PayoutsResponse | null;
+  status: Status | null;
+  vendorId: string | null;
+}) {
+  const { user } = useAuth();
   const schedule = data?.schedule;
+  const [reconciliations, setReconciliations] = useState<PayoutReconciliation[]>([]);
+  const [reconcilingId, setReconcilingId] = useState<string | null>(null);
+  const [editingRef, setEditingRef] = useState<{ payoutId: string; ref: string; notes: string } | null>(null);
+  const [busyId, setBusyId] = useState<string | null>(null);
+
+  const refresh = useCallback(async () => {
+    if (!vendorId) {
+      setReconciliations([]);
+      return;
+    }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const db = supabase as any;
+    const { data: rows, error } = await db
+      .from("vendor_payout_reconciliations")
+      .select("id, stripe_payout_id, reconciled_at, bank_deposit_ref, notes")
+      .eq("vendor_id", vendorId)
+      .order("reconciled_at", { ascending: false })
+      .limit(500);
+    if (error) {
+      console.error("[PayoutsTab] reconciliation fetch failed", error);
+      return;
+    }
+    setReconciliations((rows ?? []) as PayoutReconciliation[]);
+  }, [vendorId]);
+
+  useEffect(() => {
+    void refresh();
+  }, [refresh]);
+
+  const reconciledMap = useMemo(() => {
+    const m = new Map<string, PayoutReconciliation>();
+    for (const r of reconciliations) m.set(r.stripe_payout_id, r);
+    return m;
+  }, [reconciliations]);
+
+  const beginReconcile = (payoutId: string) => {
+    const existing = reconciledMap.get(payoutId);
+    setEditingRef({
+      payoutId,
+      ref: existing?.bank_deposit_ref ?? "",
+      notes: existing?.notes ?? "",
+    });
+  };
+
+  const saveReconcile = async () => {
+    if (!editingRef || !vendorId || !user) return;
+    setBusyId(editingRef.payoutId);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const db = supabase as any;
+    const existing = reconciledMap.get(editingRef.payoutId);
+    let error;
+    if (existing) {
+      ({ error } = await db
+        .from("vendor_payout_reconciliations")
+        .update({
+          bank_deposit_ref: editingRef.ref.trim() || null,
+          notes: editingRef.notes.trim() || null,
+        })
+        .eq("id", existing.id));
+    } else {
+      ({ error } = await db.from("vendor_payout_reconciliations").insert({
+        vendor_id: vendorId,
+        stripe_payout_id: editingRef.payoutId,
+        reconciled_by: user.id,
+        bank_deposit_ref: editingRef.ref.trim() || null,
+        notes: editingRef.notes.trim() || null,
+      }));
+    }
+    setBusyId(null);
+    if (error) {
+      console.error("[PayoutsTab] reconcile save failed", error);
+      toast.error("Couldn't save reconciliation.");
+      return;
+    }
+    toast.success(existing ? "Reconciliation updated." : "Payout reconciled.");
+    setEditingRef(null);
+    void refresh();
+  };
+
+  const unreconcile = async (payoutId: string) => {
+    const existing = reconciledMap.get(payoutId);
+    if (!existing) return;
+    if (!confirm("Mark this payout as not reconciled?")) return;
+    setReconcilingId(payoutId);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const db = supabase as any;
+    const { error } = await db
+      .from("vendor_payout_reconciliations")
+      .delete()
+      .eq("id", existing.id);
+    setReconcilingId(null);
+    if (error) {
+      console.error("[PayoutsTab] unreconcile failed", error);
+      toast.error("Couldn't undo reconciliation.");
+      return;
+    }
+    void refresh();
+  };
+
+  // Summary: how many of the visible payouts have been reconciled?
+  const summary = useMemo(() => {
+    const payouts = data?.payouts ?? [];
+    const total = payouts.length;
+    const reconciledCount = payouts.filter((p) => reconciledMap.has(p.id)).length;
+    return { total, reconciledCount };
+  }, [data, reconciledMap]);
+
   return (
     <div className="space-y-4">
       <section>
@@ -2167,9 +2291,16 @@ function PayoutsTab({ data, status }: { data: PayoutsResponse | null; status: St
       </section>
 
       <section>
-        <h2 className="text-[10px] uppercase tracking-[0.22em] text-muted-foreground font-semibold mb-3 pb-2 border-b border-foreground/[0.06]">
-          Recent payouts
-        </h2>
+        <div className="flex items-baseline justify-between gap-3 mb-3 pb-2 border-b border-foreground/[0.06]">
+          <h2 className="text-[10px] uppercase tracking-[0.22em] text-muted-foreground font-semibold">
+            Recent payouts
+          </h2>
+          {summary.total > 0 && (
+            <span className="text-[10px] text-muted-foreground">
+              {summary.reconciledCount}/{summary.total} reconciled
+            </span>
+          )}
+        </div>
         {!data?.payouts || data.payouts.length === 0 ? (
           <EmptyCard>
             {status?.charges_enabled
@@ -2178,27 +2309,119 @@ function PayoutsTab({ data, status }: { data: PayoutsResponse | null; status: St
           </EmptyCard>
         ) : (
           <Card>
-            {data.payouts.map((p, idx) => (
-              <div
-                key={p.id}
-                className={`flex items-center gap-3 p-5 ${idx > 0 ? "border-t border-foreground/5" : ""}`}
-              >
-                <div className="shrink-0 w-9 h-9 rounded-full inline-flex items-center justify-center bg-sky-50 text-sky-700">
-                  <Banknote className="w-4 h-4" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="text-sm font-medium truncate">
-                    {p.description ?? "Bank deposit"}
+            {data.payouts.map((p, idx) => {
+              const recon = reconciledMap.get(p.id);
+              const isEditing = editingRef?.payoutId === p.id;
+              return (
+                <div
+                  key={p.id}
+                  className={`p-5 ${idx > 0 ? "border-t border-foreground/5" : ""}`}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="shrink-0 w-9 h-9 rounded-full inline-flex items-center justify-center bg-sky-50 text-sky-700">
+                      <Banknote className="w-4 h-4" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-medium truncate flex items-center gap-2 flex-wrap">
+                        {p.description ?? "Bank deposit"}
+                        {recon && (
+                          <span className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide bg-emerald-100 text-emerald-700">
+                            ✓ Reconciled
+                          </span>
+                        )}
+                      </div>
+                      <div className="text-[11px] text-muted-foreground mt-0.5 capitalize">
+                        {p.method.replace(/_/g, " ")} · arrives {formatDate(p.arrival_date)} · {p.status}
+                      </div>
+                      {recon?.bank_deposit_ref && !isEditing && (
+                        <div className="text-[11px] text-muted-foreground mt-0.5">
+                          Bank ref: <span className="font-medium tabular-nums">{recon.bank_deposit_ref}</span>
+                        </div>
+                      )}
+                    </div>
+                    <div className="text-sm font-semibold shrink-0">
+                      {formatMoney(p.amount_cents, p.currency)}
+                    </div>
+                    <div className="shrink-0 flex gap-1">
+                      {recon ? (
+                        <>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => beginReconcile(p.id)}
+                            className="rounded-full"
+                          >
+                            Edit ref
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => void unreconcile(p.id)}
+                            disabled={reconcilingId === p.id}
+                            className="rounded-full text-muted-foreground"
+                          >
+                            {reconcilingId === p.id ? (
+                              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                            ) : (
+                              "Undo"
+                            )}
+                          </Button>
+                        </>
+                      ) : (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => beginReconcile(p.id)}
+                          disabled={!vendorId}
+                          className="rounded-full"
+                        >
+                          Reconcile
+                        </Button>
+                      )}
+                    </div>
                   </div>
-                  <div className="text-[11px] text-muted-foreground mt-0.5 capitalize">
-                    {p.method.replace(/_/g, " ")} · arrives {formatDate(p.arrival_date)} · {p.status}
-                  </div>
+                  {isEditing && (
+                    <div className="mt-3 space-y-2 pl-12">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                        <input
+                          type="text"
+                          placeholder="Bank deposit reference (optional)"
+                          value={editingRef.ref}
+                          onChange={(e) => setEditingRef({ ...editingRef, ref: e.target.value })}
+                          className="rounded-lg border-0 px-3 py-2 text-sm bg-background/60 ring-1 ring-foreground/10 focus:ring-foreground/30 outline-none"
+                        />
+                        <input
+                          type="text"
+                          placeholder="Notes (optional)"
+                          value={editingRef.notes}
+                          onChange={(e) => setEditingRef({ ...editingRef, notes: e.target.value })}
+                          className="rounded-lg border-0 px-3 py-2 text-sm bg-background/60 ring-1 ring-foreground/10 focus:ring-foreground/30 outline-none"
+                        />
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          onClick={() => void saveReconcile()}
+                          disabled={busyId === p.id}
+                          className="rounded-full"
+                        >
+                          {busyId === p.id ? <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" /> : null}
+                          {recon ? "Save" : "Mark reconciled"}
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setEditingRef(null)}
+                          className="rounded-full"
+                        >
+                          Cancel
+                        </Button>
+                      </div>
+                    </div>
+                  )}
                 </div>
-                <div className="text-sm font-semibold">
-                  {formatMoney(p.amount_cents, p.currency)}
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </Card>
         )}
       </section>
@@ -3975,6 +4198,23 @@ interface Expense {
   description: string;
   paid_to: string | null;
   notes: string | null;
+  contractor_id?: string | null;
+  created_at: string;
+}
+
+interface Contractor {
+  id: string;
+  vendor_id: string;
+  name: string;
+  email: string | null;
+  phone: string | null;
+  address_line1: string | null;
+  address_line2: string | null;
+  city: string | null;
+  state: string | null;
+  postal_code: string | null;
+  tax_id_last4: string | null;
+  notes: string | null;
   created_at: string;
 }
 
@@ -4012,8 +4252,10 @@ function expenseCategoryLabel(c: ExpenseCategory): string {
 function ExpensesTab({ vendorId }: { vendorId: string | null }) {
   const { user } = useAuth();
   const [rows, setRows] = useState<Expense[]>([]);
+  const [contractors, setContractors] = useState<Contractor[]>([]);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState<Expense | "new" | null>(null);
+  const [editingContractor, setEditingContractor] = useState<Contractor | "new" | null>(null);
   const [form, setForm] = useState<{
     occurred_on: string;
     amount: string;
@@ -4021,6 +4263,7 @@ function ExpensesTab({ vendorId }: { vendorId: string | null }) {
     description: string;
     paid_to: string;
     notes: string;
+    contractor_id: string;
   }>({
     occurred_on: new Date().toISOString().slice(0, 10),
     amount: "",
@@ -4028,30 +4271,68 @@ function ExpensesTab({ vendorId }: { vendorId: string | null }) {
     description: "",
     paid_to: "",
     notes: "",
+    contractor_id: "",
+  });
+  const [contractorForm, setContractorForm] = useState<{
+    name: string;
+    email: string;
+    phone: string;
+    address_line1: string;
+    city: string;
+    state: string;
+    postal_code: string;
+    tax_id_last4: string;
+    notes: string;
+  }>({
+    name: "",
+    email: "",
+    phone: "",
+    address_line1: "",
+    city: "",
+    state: "",
+    postal_code: "",
+    tax_id_last4: "",
+    notes: "",
   });
   const [saving, setSaving] = useState(false);
+  const [savingContractor, setSavingContractor] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [deletingContractorId, setDeletingContractorId] = useState<string | null>(null);
 
   const refresh = useCallback(async () => {
     if (!vendorId) {
       setRows([]);
+      setContractors([]);
       setLoading(false);
       return;
     }
     setLoading(true);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const db = supabase as any;
-    const { data, error } = await db
-      .from("vendor_expenses")
-      .select("id, vendor_id, occurred_on, amount_cents, currency, category, description, paid_to, notes, created_at")
-      .eq("vendor_id", vendorId)
-      .order("occurred_on", { ascending: false })
-      .limit(500);
-    if (error) {
-      console.error("[ExpensesTab] fetch failed", error);
+    const [{ data: expData, error: expErr }, { data: cData, error: cErr }] = await Promise.all([
+      db
+        .from("vendor_expenses")
+        .select("id, vendor_id, occurred_on, amount_cents, currency, category, description, paid_to, notes, contractor_id, created_at")
+        .eq("vendor_id", vendorId)
+        .order("occurred_on", { ascending: false })
+        .limit(500),
+      db
+        .from("vendor_contractors")
+        .select("id, vendor_id, name, email, phone, address_line1, address_line2, city, state, postal_code, tax_id_last4, notes, created_at")
+        .eq("vendor_id", vendorId)
+        .order("name", { ascending: true })
+        .limit(500),
+    ]);
+    if (expErr) {
+      console.error("[ExpensesTab] expense fetch failed", expErr);
       toast.error("Couldn't load expenses.");
     } else {
-      setRows((data ?? []) as Expense[]);
+      setRows((expData ?? []) as Expense[]);
+    }
+    if (cErr) {
+      console.error("[ExpensesTab] contractor fetch failed", cErr);
+    } else {
+      setContractors((cData ?? []) as Contractor[]);
     }
     setLoading(false);
   }, [vendorId]);
@@ -4068,6 +4349,7 @@ function ExpensesTab({ vendorId }: { vendorId: string | null }) {
       description: "",
       paid_to: "",
       notes: "",
+      contractor_id: "",
     });
     setEditing("new");
   };
@@ -4080,6 +4362,7 @@ function ExpensesTab({ vendorId }: { vendorId: string | null }) {
       description: e.description,
       paid_to: e.paid_to ?? "",
       notes: e.notes ?? "",
+      contractor_id: e.contractor_id ?? "",
     });
     setEditing(e);
   };
@@ -4107,6 +4390,13 @@ function ExpensesTab({ vendorId }: { vendorId: string | null }) {
       description: form.description.trim(),
       paid_to: form.paid_to.trim() || null,
       notes: form.notes.trim() || null,
+      // Only attach a contractor when one is selected AND the
+      // category is labor — picking a contractor on a "supplies"
+      // expense would muddy the 1099 totals.
+      contractor_id:
+        form.contractor_id && form.category === "labor"
+          ? form.contractor_id
+          : null,
       created_by: user.id,
     };
     let error;
@@ -4146,6 +4436,111 @@ function ExpensesTab({ vendorId }: { vendorId: string | null }) {
     toast.success("Expense deleted.");
     void refresh();
   };
+
+  // ---- Contractor handlers --------------------------------------
+  const startNewContractor = () => {
+    setContractorForm({
+      name: "",
+      email: "",
+      phone: "",
+      address_line1: "",
+      city: "",
+      state: "",
+      postal_code: "",
+      tax_id_last4: "",
+      notes: "",
+    });
+    setEditingContractor("new");
+  };
+  const startEditContractor = (c: Contractor) => {
+    setContractorForm({
+      name: c.name,
+      email: c.email ?? "",
+      phone: c.phone ?? "",
+      address_line1: c.address_line1 ?? "",
+      city: c.city ?? "",
+      state: c.state ?? "",
+      postal_code: c.postal_code ?? "",
+      tax_id_last4: c.tax_id_last4 ?? "",
+      notes: c.notes ?? "",
+    });
+    setEditingContractor(c);
+  };
+  const saveContractor = async () => {
+    if (!vendorId || !user) return;
+    if (!contractorForm.name.trim()) {
+      toast.error("Contractor name required.");
+      return;
+    }
+    if (contractorForm.tax_id_last4 && !/^[0-9]{4}$/.test(contractorForm.tax_id_last4)) {
+      toast.error("Tax ID must be exactly the last 4 digits.");
+      return;
+    }
+    setSavingContractor(true);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const db = supabase as any;
+    const payload = {
+      vendor_id: vendorId,
+      name: contractorForm.name.trim(),
+      email: contractorForm.email.trim() || null,
+      phone: contractorForm.phone.trim() || null,
+      address_line1: contractorForm.address_line1.trim() || null,
+      city: contractorForm.city.trim() || null,
+      state: contractorForm.state.trim().toUpperCase() || null,
+      postal_code: contractorForm.postal_code.trim() || null,
+      tax_id_last4: contractorForm.tax_id_last4.trim() || null,
+      notes: contractorForm.notes.trim() || null,
+      created_by: user.id,
+    };
+    let error;
+    if (editingContractor === "new") {
+      ({ error } = await db.from("vendor_contractors").insert(payload));
+    } else if (editingContractor) {
+      const { created_by: _, ...updatePayload } = payload;
+      ({ error } = await db
+        .from("vendor_contractors")
+        .update(updatePayload)
+        .eq("id", editingContractor.id));
+    }
+    setSavingContractor(false);
+    if (error) {
+      console.error("[ExpensesTab] contractor save failed", error);
+      toast.error("Couldn't save contractor.");
+      return;
+    }
+    toast.success(editingContractor === "new" ? "Contractor added." : "Contractor updated.");
+    setEditingContractor(null);
+    void refresh();
+  };
+  const removeContractor = async (c: Contractor) => {
+    if (!confirm(`Delete ${c.name}? Their past expenses stay in the ledger but lose the link.`)) return;
+    setDeletingContractorId(c.id);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const db = supabase as any;
+    const { error } = await db.from("vendor_contractors").delete().eq("id", c.id);
+    setDeletingContractorId(null);
+    if (error) {
+      console.error("[ExpensesTab] contractor delete failed", error);
+      toast.error("Couldn't delete contractor.");
+      return;
+    }
+    toast.success("Contractor removed.");
+    void refresh();
+  };
+
+  // Per-contractor YTD totals for the 1099-prep view. Only counts
+  // current calendar year — that's the IRS reporting period. $600
+  // threshold matches the 1099-NEC filing rule.
+  const contractorTotals = useMemo(() => {
+    const year = new Date().getFullYear();
+    const totals = new Map<string, number>();
+    for (const r of rows) {
+      if (!r.contractor_id) continue;
+      if (new Date(r.occurred_on).getFullYear() !== year) continue;
+      totals.set(r.contractor_id, (totals.get(r.contractor_id) ?? 0) + r.amount_cents);
+    }
+    return totals;
+  }, [rows]);
 
   // YTD summary across categories — small at-a-glance block above
   // the row list so the vendor sees their total spend without going
@@ -4247,6 +4642,25 @@ function ExpensesTab({ vendorId }: { vendorId: string | null }) {
                 className="rounded-lg border-0 px-3 py-2 text-sm bg-background/60 ring-1 ring-foreground/10 focus:ring-foreground/30 outline-none"
               />
             </div>
+            {form.category === "labor" && contractors.length > 0 && (
+              <div>
+                <label className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold block mb-1">
+                  Contractor (for 1099 tracking)
+                </label>
+                <select
+                  value={form.contractor_id}
+                  onChange={(e) => setForm({ ...form, contractor_id: e.target.value })}
+                  className="w-full rounded-lg border-0 px-3 py-2 text-sm bg-background/60 ring-1 ring-foreground/10 focus:ring-foreground/30 outline-none"
+                >
+                  <option value="">— Not tied to a tracked contractor —</option>
+                  {contractors.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
             <input
               type="text"
               placeholder="Description (required)"
@@ -4273,6 +4687,186 @@ function ExpensesTab({ vendorId }: { vendorId: string | null }) {
           </div>
         </Card>
       )}
+
+      {/* Contractors — the 1099-tracking ledger. Lives next to the
+          expense list since labor expenses get tied to these. */}
+      <section className="space-y-3">
+        <div className="flex items-center justify-between gap-3 flex-wrap">
+          <div>
+            <h3 className="text-sm font-semibold">Contractors</h3>
+            <p className="text-xs text-muted-foreground">
+              Anyone you pay $600+ in a calendar year needs a 1099-NEC. Track them here.
+            </p>
+          </div>
+          <Button onClick={startNewContractor} variant="outline" size="sm" className="rounded-full" disabled={!vendorId}>
+            <Plus className="w-3.5 h-3.5 mr-1" />
+            New contractor
+          </Button>
+        </div>
+
+        {editingContractor && (
+          <Card>
+            <div className="p-5 space-y-3">
+              <h4 className="text-sm font-semibold">
+                {editingContractor === "new" ? "New contractor" : `Edit ${editingContractor.name}`}
+              </h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                <input
+                  type="text"
+                  placeholder="Name (required)"
+                  value={contractorForm.name}
+                  onChange={(e) => setContractorForm({ ...contractorForm, name: e.target.value })}
+                  className="rounded-lg border-0 px-3 py-2 text-sm bg-background/60 ring-1 ring-foreground/10 focus:ring-foreground/30 outline-none"
+                />
+                <input
+                  type="email"
+                  placeholder="Email (optional)"
+                  value={contractorForm.email}
+                  onChange={(e) => setContractorForm({ ...contractorForm, email: e.target.value })}
+                  className="rounded-lg border-0 px-3 py-2 text-sm bg-background/60 ring-1 ring-foreground/10 focus:ring-foreground/30 outline-none"
+                />
+                <input
+                  type="tel"
+                  placeholder="Phone (optional)"
+                  value={contractorForm.phone}
+                  onChange={(e) => setContractorForm({ ...contractorForm, phone: e.target.value })}
+                  className="rounded-lg border-0 px-3 py-2 text-sm bg-background/60 ring-1 ring-foreground/10 focus:ring-foreground/30 outline-none"
+                />
+                <input
+                  type="text"
+                  placeholder="Tax ID — LAST 4 ONLY (optional)"
+                  value={contractorForm.tax_id_last4}
+                  onChange={(e) => setContractorForm({ ...contractorForm, tax_id_last4: e.target.value })}
+                  maxLength={4}
+                  className="rounded-lg border-0 px-3 py-2 text-sm bg-background/60 ring-1 ring-foreground/10 focus:ring-foreground/30 outline-none"
+                />
+                <input
+                  type="text"
+                  placeholder="Street address (optional)"
+                  value={contractorForm.address_line1}
+                  onChange={(e) => setContractorForm({ ...contractorForm, address_line1: e.target.value })}
+                  className="rounded-lg border-0 px-3 py-2 text-sm bg-background/60 ring-1 ring-foreground/10 focus:ring-foreground/30 outline-none md:col-span-2"
+                />
+                <input
+                  type="text"
+                  placeholder="City"
+                  value={contractorForm.city}
+                  onChange={(e) => setContractorForm({ ...contractorForm, city: e.target.value })}
+                  className="rounded-lg border-0 px-3 py-2 text-sm bg-background/60 ring-1 ring-foreground/10 focus:ring-foreground/30 outline-none"
+                />
+                <div className="grid grid-cols-2 gap-2">
+                  <input
+                    type="text"
+                    placeholder="State"
+                    value={contractorForm.state}
+                    onChange={(e) => setContractorForm({ ...contractorForm, state: e.target.value })}
+                    maxLength={2}
+                    className="rounded-lg border-0 px-3 py-2 text-sm bg-background/60 ring-1 ring-foreground/10 focus:ring-foreground/30 outline-none uppercase"
+                  />
+                  <input
+                    type="text"
+                    placeholder="ZIP"
+                    value={contractorForm.postal_code}
+                    onChange={(e) => setContractorForm({ ...contractorForm, postal_code: e.target.value })}
+                    className="rounded-lg border-0 px-3 py-2 text-sm bg-background/60 ring-1 ring-foreground/10 focus:ring-foreground/30 outline-none"
+                  />
+                </div>
+              </div>
+              <textarea
+                placeholder="Notes (optional)"
+                value={contractorForm.notes}
+                onChange={(e) => setContractorForm({ ...contractorForm, notes: e.target.value })}
+                rows={2}
+                className="w-full rounded-lg border-0 px-3 py-2 text-sm bg-background/60 ring-1 ring-foreground/10 focus:ring-foreground/30 outline-none resize-none"
+              />
+              <p className="text-[11px] text-muted-foreground">
+                We only store the last 4 digits of the tax ID — the full SSN/EIN belongs in your payroll provider, not here.
+              </p>
+              <div className="flex gap-2">
+                <Button onClick={() => void saveContractor()} disabled={savingContractor} size="sm" className="rounded-full">
+                  {savingContractor ? <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" /> : null}
+                  {editingContractor === "new" ? "Add contractor" : "Save"}
+                </Button>
+                <Button onClick={() => setEditingContractor(null)} variant="ghost" size="sm" className="rounded-full">
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          </Card>
+        )}
+
+        {contractors.length === 0 ? (
+          <EmptyCard>
+            No contractors yet. Add helpers, freelancers, or anyone you'll need to issue a 1099 to at year-end.
+          </EmptyCard>
+        ) : (
+          <Card>
+            {contractors.map((c, idx) => {
+              const ytdCents = contractorTotals.get(c.id) ?? 0;
+              const needs1099 = ytdCents >= 60000; // $600 in cents
+              return (
+                <div
+                  key={c.id}
+                  className={`p-4 ${idx > 0 ? "border-t border-foreground/5" : ""}`}
+                >
+                  <div className="flex items-start justify-between gap-3 flex-wrap">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <p className="text-sm font-semibold">{c.name}</p>
+                        {needs1099 && (
+                          <span className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide bg-amber-100 text-amber-800">
+                            1099 needed
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        {[c.email, c.phone, c.city && c.state ? `${c.city}, ${c.state}` : null]
+                          .filter(Boolean)
+                          .join(" · ") || "No contact info"}
+                        {c.tax_id_last4 ? ` · TIN ••••${c.tax_id_last4}` : ""}
+                      </p>
+                      {c.notes && (
+                        <p className="text-xs text-muted-foreground mt-1 max-w-xl">{c.notes}</p>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <div className="text-right">
+                        <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+                          YTD paid
+                        </div>
+                        <div className="text-base font-editorial tabular-nums">
+                          {formatMoney(ytdCents)}
+                        </div>
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => startEditContractor(c)}
+                        className="rounded-full"
+                      >
+                        Edit
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => void removeContractor(c)}
+                        disabled={deletingContractorId === c.id}
+                        className="rounded-full text-muted-foreground hover:text-destructive"
+                      >
+                        {deletingContractorId === c.id ? (
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        ) : (
+                          <Trash2 className="w-3.5 h-3.5" />
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </Card>
+        )}
+      </section>
 
       {loading ? (
         <EmptyCard>
