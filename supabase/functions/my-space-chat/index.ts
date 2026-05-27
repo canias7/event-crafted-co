@@ -358,10 +358,8 @@ Style:
 
 Read tools (use freely):
 - \`search_inquiries\` · \`get_inquiry\` · \`check_availability\`
-- \`list_faqs\` · \`list_portfolio_images\` · \`list_appointments\`
+- \`get_business_info\` — one tool for FAQs / portfolio / appointments / reviews / past bookings / team / subscription / verification (pass \`section\` to pick)
 - \`list_recent_notifications\` · \`search_messages\`
-- \`list_reviews\` · \`list_past_bookings\` · \`list_team_members\`
-- \`get_subscription_status\` · \`get_verification_status\`
 
 Write tools (require an explicit go-ahead from the vendor before calling):
 - \`send_host_reply\` — sends a message to a host on the vendor's behalf
@@ -509,44 +507,54 @@ const TOOLS = [
     },
   },
   {
-    name: "list_faqs",
+    name: "get_business_info",
     description:
-      "Return the vendor's saved FAQs (Q&A pairs the vendor has set up to help answer host questions). Use when drafting a reply where one of the FAQs is relevant.",
-    input_schema: { type: "object", properties: {} },
-  },
-  {
-    name: "list_portfolio_images",
-    description:
-      "Return the vendor's portfolio images (storage paths + captions, ordered by display_order). Use when the vendor asks about their portfolio or wants to reference a specific photo.",
+      "Look up structured info about the vendor's business — FAQs, portfolio, upcoming appointments, reviews, past bookings, team, subscription tier, or verification status. Pass `section` to pick what to fetch. Use this instead of asking the vendor to repeat themselves; treat results as authoritative.",
     input_schema: {
       type: "object",
+      required: ["section"],
       properties: {
+        section: {
+          type: "string",
+          enum: [
+            "faqs",
+            "portfolio",
+            "appointments",
+            "reviews",
+            "past_bookings",
+            "team",
+            "subscription",
+            "verification",
+          ],
+          description:
+            "Which slice to return. faqs=Q&A pairs; portfolio=images; appointments=upcoming consultations/walkthroughs; reviews=released reviews; past_bookings=completed appointments; team=team members; subscription=tier+status; verification=insurance/license/ID docs.",
+        },
         limit: {
           type: "integer",
           minimum: 1,
           maximum: 50,
-          description: "Max images to return. Default 12.",
+          description:
+            "Max results for list-style sections. Default 12. Ignored for subscription / verification which return a single record. Also ignored for faqs / team which return everything.",
         },
-      },
-    },
-  },
-  {
-    name: "list_appointments",
-    description:
-      "List the vendor's appointments (consultations, walkthroughs, tastings, fittings, calls). Default returns upcoming ones in the next 30 days.",
-    input_schema: {
-      type: "object",
-      properties: {
         days: {
           type: "integer",
           minimum: 1,
           maximum: 180,
-          description: "Look-ahead window in days. Default 30.",
+          description:
+            "Only used when section='appointments' — look-ahead window in days. Default 30.",
         },
         status: {
           type: "string",
-          enum: ["proposed", "accepted", "declined", "cancelled", "completed", "any"],
-          description: "Filter by status. Default 'any' (excludes cancelled + declined).",
+          enum: [
+            "proposed",
+            "accepted",
+            "declined",
+            "cancelled",
+            "completed",
+            "any",
+          ],
+          description:
+            "Only used when section='appointments' — filter by status. Default 'any' (excludes cancelled + declined).",
         },
       },
     },
@@ -737,46 +745,6 @@ const TOOLS = [
     },
   },
   // ─── More read tools ────────────────────────────────────────────
-  {
-    name: "list_reviews",
-    description:
-      "List the vendor's reviews (rating + body + host name). Most recent first. Visible (released) reviews only.",
-    input_schema: {
-      type: "object",
-      properties: {
-        limit: { type: "integer", minimum: 1, maximum: 30 },
-      },
-    },
-  },
-  {
-    name: "list_past_bookings",
-    description:
-      "List completed appointments (past events the vendor delivered). Useful for context like 'how did Sarah's wedding go?'",
-    input_schema: {
-      type: "object",
-      properties: {
-        limit: { type: "integer", minimum: 1, maximum: 30 },
-      },
-    },
-  },
-  {
-    name: "list_team_members",
-    description:
-      "List the vendor's team members (user_id + role + display_name).",
-    input_schema: { type: "object", properties: {} },
-  },
-  {
-    name: "get_subscription_status",
-    description:
-      "Return the vendor's current subscription tier, status, period end, and cancel-at-period-end flag.",
-    input_schema: { type: "object", properties: {} },
-  },
-  {
-    name: "get_verification_status",
-    description:
-      "Return the vendor's verification documents and their states (insurance, license, ID, etc.).",
-    input_schema: { type: "object", properties: {} },
-  },
   // ─── More write tools ───────────────────────────────────────────
   {
     name: "update_appointment",
@@ -2036,6 +2004,45 @@ async function toolGetVerificationStatus(
     .order("submitted_at", { ascending: false });
   if (error) return { error: error.message };
   return { verifications: (data ?? []) as Array<any> };
+}
+
+// Single consolidated dispatcher for the per-vendor "what do I have?"
+// read tools. Replaces 8 separate Claude tools (list_faqs,
+// list_portfolio_images, list_appointments, list_reviews,
+// list_past_bookings, list_team_members, get_subscription_status,
+// get_verification_status) with one schema entry — saves ~1k tokens
+// per turn and stops the model from picking the wrong cousin tool.
+// Per-section handlers are unchanged, only the routing is new.
+async function toolGetBusinessInfo(
+  admin: any,
+  vendorId: string,
+  userId: string,
+  input: any,
+): Promise<unknown> {
+  const section = String(input?.section ?? "").trim();
+  switch (section) {
+    case "faqs":
+      return await toolListFaqs(admin, vendorId);
+    case "portfolio":
+      return await toolListPortfolioImages(admin, vendorId, input);
+    case "appointments":
+      return await toolListAppointments(admin, vendorId, input);
+    case "reviews":
+      return await toolListReviews(admin, vendorId, input);
+    case "past_bookings":
+      return await toolListPastBookings(admin, vendorId, input);
+    case "team":
+      return await toolListTeamMembers(admin, vendorId);
+    case "subscription":
+      return await toolGetSubscriptionStatus(admin, userId);
+    case "verification":
+      return await toolGetVerificationStatus(admin, vendorId);
+    default:
+      return {
+        error:
+          `unknown_section:${section}. Valid: faqs, portfolio, appointments, reviews, past_bookings, team, subscription, verification.`,
+      };
+  }
 }
 
 // ─── More write tools ───────────────────────────────────────────
@@ -3412,14 +3419,8 @@ async function executeTool(
     if (name === "check_availability") {
       return await toolCheckAvailability(admin, vendorId, input);
     }
-    if (name === "list_faqs") {
-      return await toolListFaqs(admin, vendorId);
-    }
-    if (name === "list_portfolio_images") {
-      return await toolListPortfolioImages(admin, vendorId, input);
-    }
-    if (name === "list_appointments") {
-      return await toolListAppointments(admin, vendorId, input);
+    if (name === "get_business_info") {
+      return await toolGetBusinessInfo(admin, vendorId, userId, input);
     }
     if (name === "list_recent_notifications") {
       return await toolListRecentNotifications(admin, userId, input);
@@ -3447,21 +3448,6 @@ async function executeTool(
     }
     if (name === "create_payment_link") {
       return await toolCreatePaymentLink(admin, vendorId, userId, input);
-    }
-    if (name === "list_reviews") {
-      return await toolListReviews(admin, vendorId, input);
-    }
-    if (name === "list_past_bookings") {
-      return await toolListPastBookings(admin, vendorId, input);
-    }
-    if (name === "list_team_members") {
-      return await toolListTeamMembers(admin, vendorId);
-    }
-    if (name === "get_subscription_status") {
-      return await toolGetSubscriptionStatus(admin, userId);
-    }
-    if (name === "get_verification_status") {
-      return await toolGetVerificationStatus(admin, vendorId);
     }
     if (name === "update_appointment") {
       return await toolUpdateAppointment(admin, vendorId, input);
