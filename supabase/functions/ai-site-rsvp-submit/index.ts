@@ -31,6 +31,7 @@ function htmlPage(opts: {
   heading: string;
   body: string;
   accent?: string;
+  confetti?: boolean;
 }) {
   const accent = opts.accent ?? "#1a1a1a";
   const html = `<!DOCTYPE html>
@@ -51,6 +52,7 @@ function htmlPage(opts: {
     justify-content: center;
     padding: 2rem;
     line-height: 1.6;
+    overflow: hidden;
   }
   .card {
     max-width: 480px;
@@ -60,6 +62,8 @@ function htmlPage(opts: {
     border-radius: 24px;
     box-shadow: 0 20px 60px rgba(0,0,0,0.08);
     animation: fadeUp 0.6s ease;
+    position: relative;
+    z-index: 1;
   }
   .dot {
     width: 12px;
@@ -80,9 +84,41 @@ function htmlPage(opts: {
     from { opacity: 0; transform: translateY(12px); }
     to { opacity: 1; transform: translateY(0); }
   }
+  /* CONFETTI — celebratory burst on attending=yes pages. CSS-only,
+     30 colored squares falling+rotating from the top center. */
+  .confetti {
+    position: fixed; inset: 0;
+    pointer-events: none;
+    overflow: hidden;
+    z-index: 0;
+  }
+  .confetti span {
+    position: absolute;
+    top: -20px;
+    left: var(--x);
+    width: 10px; height: 14px;
+    background: var(--c);
+    transform-origin: center;
+    animation: drop var(--d) cubic-bezier(0.25, 0.8, 0.5, 1) var(--delay) forwards;
+    opacity: 0.95;
+  }
+  @keyframes drop {
+    0%   { transform: translateY(0) rotate(0deg) scale(1); opacity: 1; }
+    100% { transform: translateY(110vh) rotate(720deg) scale(0.7); opacity: 0.5; }
+  }
 </style>
 </head>
 <body>
+  ${opts.confetti ? `<div class="confetti" aria-hidden="true">
+    ${Array.from({ length: 36 }, (_, i) => {
+      const colors = ["#e94e77", "#ffcb3a", "#5dd4c8", "#7e6cd6", "#ff9650", "#3aaaff"];
+      const x = (i * 2.7 % 100).toFixed(1);
+      const d = (2.5 + (i % 6) * 0.4).toFixed(2);
+      const delay = (i * 0.08).toFixed(2);
+      const c = colors[i % colors.length];
+      return `<span style="--x:${x}%;--d:${d}s;--delay:${delay}s;--c:${c}"></span>`;
+    }).join("")}
+  </div>` : ""}
   <div class="card">
     <div class="dot"></div>
     <h1>${opts.heading}</h1>
@@ -158,6 +194,9 @@ serve(async (req) => {
       ? Math.floor(guestsCountRaw)
       : 1;
   const message = String(form.get("message") ?? "").trim().slice(0, 2000) || null;
+  const mealChoice = String(form.get("meal") ?? form.get("meal_choice") ?? "").trim().slice(0, 80) || null;
+  const plusOneName = String(form.get("plus_one_name") ?? "").trim().slice(0, 120) || null;
+  const plusOneMeal = String(form.get("plus_one_meal") ?? "").trim().slice(0, 80) || null;
 
   if (!guestName) {
     return htmlPage({
@@ -202,6 +241,9 @@ serve(async (req) => {
     attending,
     guests_count: guestsCount,
     message,
+    meal_choice: mealChoice,
+    plus_one_name: plusOneName,
+    plus_one_meal: plusOneMeal,
   });
 
   if (insertErr) {
@@ -226,5 +268,6 @@ serve(async (req) => {
     title: "RSVP received",
     heading: thanks,
     body: `Your reply for ${escapeHtml((site as { title: string }).title)} is in.`,
+    confetti: attending === "yes",
   });
 });

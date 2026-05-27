@@ -201,14 +201,18 @@ serve(async (req) => {
   // visitors.
   const guestToken = url.searchParams.get("g")?.trim() ?? "";
   let guestName: string | null = null;
+  let plusOneAllowed = false;
   if (guestToken && /^[a-z0-9]{6,32}$/i.test(guestToken)) {
     const { data: guest } = await admin
       .from("ai_site_guests")
-      .select("name")
+      .select("name, plus_one_allowed")
       .eq("site_id", site.id)
       .eq("token", guestToken)
       .maybeSingle();
-    if (guest) guestName = (guest as { name: string }).name;
+    if (guest) {
+      guestName = (guest as { name: string }).name;
+      plusOneAllowed = !!(guest as { plus_one_allowed?: boolean }).plus_one_allowed;
+    }
   }
   if (html.includes("__GUEST_NAME__") || html.includes("__GUEST_BLOCK__")) {
     if (guestName) {
@@ -223,6 +227,76 @@ serve(async (req) => {
       html = html.replaceAll("__GUEST_NAME__", "friend");
       html = html.replaceAll("__GUEST_BLOCK__", "");
     }
+  }
+
+  // Plus-one block. If the generated site includes __PLUS_ONE_BLOCK__
+  // AND the guest looked up by ?g=<token> is plus_one_allowed, inject
+  // extra name + meal fields. Otherwise strip the block.
+  if (html.includes("__PLUS_ONE_BLOCK__")) {
+    if (plusOneAllowed) {
+      html = html.replaceAll(
+        "__PLUS_ONE_BLOCK__",
+        `<div class="plus-one"><label>Plus-one's name<input type="text" name="plus_one_name" placeholder="Their name"></label><label>Plus-one's meal<select name="plus_one_meal"><option value="">No preference</option><option value="chicken">Chicken</option><option value="fish">Fish</option><option value="vegetarian">Vegetarian</option></select></label></div>`,
+      );
+    } else {
+      html = html.replaceAll("__PLUS_ONE_BLOCK__", "");
+    }
+  }
+
+  // Comment wall / well-wishes. If __COMMENT_WALL__ placeholder is
+  // present, list the latest approved messages + render a post form
+  // pointing at ai-site-messages.
+  if (html.includes("__COMMENT_WALL__")) {
+    const { data: msgs } = await admin
+      .from("ai_site_messages")
+      .select("name, message, created_at")
+      .eq("site_id", site.id)
+      .eq("approved", true)
+      .order("created_at", { ascending: false })
+      .limit(50);
+    const rows = (msgs ?? []) as Array<{ name: string; message: string; created_at: string }>;
+    const wallHtml = `<div class="comment-wall">${rows.length === 0
+      ? `<div class="comment-empty" style="opacity:0.55;font-style:italic;text-align:center;padding:1.5rem 0">Leave the first message.</div>`
+      : `<ul class="comment-list" style="list-style:none;padding:0;margin:0 0 2rem;display:grid;gap:1rem">${rows.map((m) => {
+          const n = m.name.replace(/[<>&"]/g, "");
+          const msg = m.message.replace(/[<>&"]/g, "").replace(/\n/g, "<br>");
+          return `<li class="comment-item" style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:1rem"><div class="comment-name" style="font-weight:600;margin-bottom:0.25rem">${n}</div><div class="comment-msg">${msg}</div></li>`;
+        }).join("")}</ul>`}
+<form method="POST" action="${SUPABASE_URL}/functions/v1/ai-site-messages?slug=${site.slug}" class="comment-form" style="display:grid;gap:0.5rem">
+<input type="text" name="name" placeholder="Your name" required maxlength="80" style="padding:0.6rem 0.9rem;border-radius:8px;border:1px solid rgba(0,0,0,0.15);background:transparent;color:inherit;font:inherit">
+<textarea name="message" placeholder="Leave a well-wish…" required rows="3" maxlength="600" style="padding:0.6rem 0.9rem;border-radius:8px;border:1px solid rgba(0,0,0,0.15);background:transparent;color:inherit;font:inherit;resize:vertical"></textarea>
+<button type="submit" style="padding:0.6rem 1.4rem;border-radius:999px;border:1px solid currentColor;background:transparent;color:inherit;font:inherit;cursor:pointer;justify-self:start">Post</button>
+</form></div>`;
+    html = html.replaceAll("__COMMENT_WALL__", wallHtml);
+  }
+
+  // Photo album / guest gallery. If __PHOTO_ALBUM__ is present, list
+  // approved photos and inject a gallery + a public multipart upload
+  // form pointing at ai-site-photos.
+  if (html.includes("__PHOTO_ALBUM__")) {
+    const { data: photos } = await admin
+      .from("ai_site_photos")
+      .select("photo_url, uploader_name, caption")
+      .eq("site_id", site.id)
+      .eq("approved", true)
+      .order("uploaded_at", { ascending: false })
+      .limit(120);
+    const rows = (photos ?? []) as Array<{ photo_url: string; uploader_name: string | null; caption: string | null }>;
+    const galleryHtml = `<div class="photo-album">${rows.length === 0
+      ? `<div class="album-empty" style="opacity:0.55;font-style:italic;text-align:center;padding:1.5rem 0">No photos yet. Be the first to share one.</div>`
+      : `<div class="album-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:0.75rem;margin:0 0 1.5rem">${rows.map((p) => {
+          const cap = (p.caption ?? "").replace(/[<>&"]/g, "");
+          const by = (p.uploader_name ?? "").replace(/[<>&"]/g, "");
+          return `<figure class="album-item" style="margin:0;border-radius:12px;overflow:hidden;background:rgba(0,0,0,0.05);box-shadow:0 4px 12px rgba(0,0,0,0.08)"><img src="${p.photo_url}" alt="" loading="lazy" style="width:100%;height:180px;object-fit:cover;display:block"/>${cap || by ? `<figcaption style="padding:0.5rem 0.75rem;font-size:0.75rem;opacity:0.75">${cap}${cap && by ? " — " : ""}${by ? `<em>${by}</em>` : ""}</figcaption>` : ""}</figure>`;
+        }).join("")}</div>`}
+<form method="POST" action="${SUPABASE_URL}/functions/v1/ai-site-photos?slug=${site.slug}" enctype="multipart/form-data" class="album-form" style="display:grid;gap:0.5rem">
+<label style="font-size:0.75rem;letter-spacing:0.2em;text-transform:uppercase;opacity:0.6">Add your photo</label>
+<input type="file" name="file" accept="image/jpeg,image/png,image/webp,image/heic,image/heif" required style="padding:0.4rem;border:1px solid rgba(0,0,0,0.15);border-radius:8px;background:transparent;color:inherit;font:inherit">
+<input type="text" name="name" placeholder="Your name (optional)" maxlength="80" style="padding:0.6rem 0.9rem;border-radius:8px;border:1px solid rgba(0,0,0,0.15);background:transparent;color:inherit;font:inherit">
+<input type="text" name="caption" placeholder="Caption (optional)" maxlength="280" style="padding:0.6rem 0.9rem;border-radius:8px;border:1px solid rgba(0,0,0,0.15);background:transparent;color:inherit;font:inherit">
+<button type="submit" style="padding:0.6rem 1.4rem;border-radius:999px;border:1px solid currentColor;background:transparent;color:inherit;font:inherit;cursor:pointer;justify-self:start">Upload</button>
+</form></div>`;
+    html = html.replaceAll("__PHOTO_ALBUM__", galleryHtml);
   }
 
   // Live RSVP counter. If the generated site includes a __RSVP_COUNT__
