@@ -75,27 +75,36 @@ export default function WebsiteBuilderPage() {
   const [copiedToken, setCopiedToken] = useState<string | null>(null);
   const [editCount, setEditCount] = useState(0);
 
-  const QUICK_ACTIONS = [
-    "Make it more formal",
-    "Add a Travel & Stay section",
-    "Change the color palette",
-    "Swap the hero photo",
-    "Translate to Spanish",
-    "Make it shorter",
-    "Add a live RSVP count under the form",
-    "Add a guest greeting above the names",
-  ];
-
-  // Theme remix — one-click vibe shifts (re-skin without losing content)
-  const THEME_REMIX = [
-    "Make it more modern",
-    "Make it more rustic",
-    "Make it more moody",
-    "Make it airier / minimal",
-    "Make it more playful",
-    "Make it editorial / magazine",
-  ];
-
+  // The builder iframe writes HTML directly via doc.write() — it does
+  // NOT go through ai-site-render's placeholder pipeline. So the
+  // __GUEST_BLOCK__ / __PLUS_ONE_BLOCK__ / etc. placeholders show up
+  // as literal text in the preview. Strip them client-side so the
+  // preview looks polished. The real placeholders get resolved
+  // server-side when guests visit /s/<slug>.
+  function previewClean(html: string): string {
+    return html
+      .replaceAll("__GUEST_BLOCK__", "")
+      .replaceAll("__GUEST_NAME__", "friend")
+      .replaceAll(
+        "__PLUS_ONE_BLOCK__",
+        '<small style="opacity:0.5;display:block;margin-top:0.5rem">[Plus-one fields appear here when an allowed guest opens their personalized link]</small>',
+      )
+      .replaceAll(
+        "__COMMENT_WALL__",
+        '<div style="opacity:0.5;font-style:italic;padding:1rem;text-align:center;border:1px dashed currentColor;border-radius:8px">Comment wall appears here for visitors</div>',
+      )
+      .replaceAll(
+        "__PHOTO_ALBUM__",
+        '<div style="opacity:0.5;font-style:italic;padding:1rem;text-align:center;border:1px dashed currentColor;border-radius:8px">Photo album + upload form appears here for visitors</div>',
+      )
+      .replaceAll(
+        "__RSVP_COUNT__",
+        '<span style="opacity:0.55;font-style:italic">0 yes so far (preview)</span>',
+      )
+      .replaceAll("__RSVP_YES__", "0")
+      .replaceAll("__RSVP_MAYBE__", "0")
+      .replaceAll("__RSVP_NO__", "0");
+  }
   const [variantsLoading, setVariantsLoading] = useState(false);
   const [variantsOpen, setVariantsOpen] = useState(false);
   const [variants, setVariants] = useState<
@@ -196,7 +205,7 @@ export default function WebsiteBuilderPage() {
     if (iframe?.contentDocument) {
       const doc = iframe.contentDocument;
       doc.open();
-      doc.write(v.html);
+      doc.write(previewClean(v.html));
       doc.close();
     }
     setVariantsOpen(false);
@@ -414,7 +423,7 @@ export default function WebsiteBuilderPage() {
         const doc = iframeRef.current.contentDocument;
         if (doc) {
           doc.open();
-          doc.write(body.html);
+          doc.write(previewClean(body.html as string));
           doc.close();
         }
         setTitle(body.title ?? title);
@@ -480,7 +489,7 @@ export default function WebsiteBuilderPage() {
       if (iframe?.contentDocument) {
         const doc = iframe.contentDocument;
         doc.open();
-        doc.write(row.html);
+        doc.write(previewClean(row.html));
         doc.close();
       }
     })();
@@ -565,7 +574,7 @@ export default function WebsiteBuilderPage() {
       if (iframe?.contentDocument) {
         const doc = iframe.contentDocument;
         doc.open();
-        doc.write(body.html as string);
+        doc.write(previewClean(body.html as string));
         doc.close();
       }
       setTitle(body.title as string);
@@ -745,7 +754,7 @@ export default function WebsiteBuilderPage() {
               if (iframe?.contentDocument) {
                 const doc = iframe.contentDocument;
                 doc.open();
-                doc.write(bufferedHtml);
+                doc.write(previewClean(bufferedHtml));
                 doc.close();
               }
               if (data.site_id) setSiteId(data.site_id);
@@ -1152,57 +1161,6 @@ export default function WebsiteBuilderPage() {
             )}
           </div>
 
-          {siteId && !loading && (
-            <div className="px-3 pt-2 pb-1 bg-[#0a0a0b] border-t border-white/10">
-              <div className="flex gap-1.5 overflow-x-auto whitespace-nowrap pb-1">
-                {QUICK_ACTIONS.map((a) => (
-                  <button
-                    key={a}
-                    onClick={() => submit(a)}
-                    className="shrink-0 text-[11px] text-white/65 hover:text-white bg-white/5 hover:bg-white/10 border border-white/10 rounded-full px-2.5 py-1 transition-colors"
-                    title={`Send: ${a}`}
-                  >
-                    {a}
-                  </button>
-                ))}
-                <button
-                  onClick={generateVariants}
-                  disabled={variantsLoading}
-                  className="shrink-0 text-[11px] text-violet-200 hover:text-violet-100 bg-violet-500/10 hover:bg-violet-500/20 border border-violet-400/30 rounded-full px-2.5 py-1 transition-colors disabled:opacity-40"
-                  title="Generate 3 design variations from your last prompt, pick a favorite"
-                >
-                  🎲 3 variants
-                </button>
-                <button
-                  onClick={() => {
-                    const url = window.prompt(
-                      "Paste a URL whose design you want to match (Claude will use its web_search tool to read it):",
-                      "https://",
-                    );
-                    if (!url || !url.startsWith("http")) return;
-                    submit(`Match the design vibe of this site: ${url}. Use the web_search tool to read it, then re-style my current invitation to match its palette, fonts, and overall feel — keeping all my content intact.`);
-                  }}
-                  disabled={loading}
-                  className="shrink-0 text-[11px] text-sky-200 hover:text-sky-100 bg-sky-500/10 hover:bg-sky-500/20 border border-sky-400/30 rounded-full px-2.5 py-1 transition-colors disabled:opacity-40"
-                  title="Paste a URL and Claude will match its design vibe"
-                >
-                  🔗 Match a URL
-                </button>
-              </div>
-              <div className="flex gap-1.5 overflow-x-auto whitespace-nowrap mt-1">
-                {THEME_REMIX.map((a) => (
-                  <button
-                    key={a}
-                    onClick={() => submit(a)}
-                    className="shrink-0 text-[11px] text-amber-200/75 hover:text-amber-100 bg-amber-500/5 hover:bg-amber-500/10 border border-amber-400/15 rounded-full px-2.5 py-1 transition-colors"
-                    title={`Theme remix: ${a}`}
-                  >
-                    {a}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
           {variantsLoading && (
             <div className="px-3 py-2 bg-violet-500/10 border-t border-violet-500/30 text-[12px] text-violet-200 flex items-center gap-2">
               <span className="builder-dot" />
