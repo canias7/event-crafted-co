@@ -1083,27 +1083,39 @@ function PaymentsTab({
 
   return (
     <div className="space-y-5">
-      <nav className="flex gap-1 overflow-x-auto scrollbar-hide -mt-1">
-        {PAYMENTS_TABS.map((t) => {
-          const active = sub === t.id;
-          const Icon = t.icon;
-          return (
-            <button
-              key={t.id}
-              type="button"
-              onClick={() => setSub(t.id)}
-              className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-colors whitespace-nowrap ${
-                active
-                  ? "bg-foreground text-background"
-                  : "text-muted-foreground hover:text-foreground hover:bg-foreground/5"
-              }`}
-            >
-              <Icon className="w-3.5 h-3.5" />
-              {t.label}
-            </button>
-          );
-        })}
-      </nav>
+      {/* Sub-tab strip wrapped in a relative box so the right-edge
+          fade overlay can sit on top of any overflowing tabs on
+          narrow viewports. With 5 sub-tabs (Incoming · Payouts ·
+          Disputes · Expenses · Reports) the strip wraps on small
+          phones; without the fade, vendors might not realize there
+          are more tabs scrolled off to the right. */}
+      <div className="relative -mt-1">
+        <nav className="flex gap-1 overflow-x-auto scrollbar-hide pr-10 sm:pr-0">
+          {PAYMENTS_TABS.map((t) => {
+            const active = sub === t.id;
+            const Icon = t.icon;
+            return (
+              <button
+                key={t.id}
+                type="button"
+                onClick={() => setSub(t.id)}
+                className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-colors whitespace-nowrap ${
+                  active
+                    ? "bg-foreground text-background"
+                    : "text-muted-foreground hover:text-foreground hover:bg-foreground/5"
+                }`}
+              >
+                <Icon className="w-3.5 h-3.5" />
+                {t.label}
+              </button>
+            );
+          })}
+        </nav>
+        <div
+          aria-hidden
+          className="pointer-events-none absolute top-0 right-0 h-full w-8 bg-gradient-to-l from-background via-background/70 to-transparent sm:hidden"
+        />
+      </div>
 
       {sub === "incoming" ? (
         <TransactionsTab
@@ -1348,10 +1360,21 @@ function ReportsTab({ vendorId }: { vendorId: string | null }) {
     }
     const net = gross - refunds;
     const fees = stripeFees?.fees_cents ?? 0;
-    // Expenses + per-category breakdown for the P&L block.
+    // Expenses + per-category breakdown for the P&L block. Only
+    // sum expenses whose currency matches what the rest of the P&L
+    // is denominated in (the first paid invoice's currency, or
+    // 'usd' on an empty window). Mixing currencies — adding USD
+    // cents to GBP cents — would produce a nonsense Net Profit
+    // headline. Off-currency expenses are intentionally dropped
+    // from the rollup; they still appear on the Expenses tab and
+    // count toward YTD spend in their own currency.
+    const reportCurrency = (
+      paidInRange[0]?.currency ?? refundedInRange[0]?.currency ?? "usd"
+    ).toLowerCase();
     let expenses = 0;
     const expensesByCategoryMap = new Map<string, { cents: number; count: number }>();
     for (const e of expensesInRange) {
+      if ((e.currency ?? "usd").toLowerCase() !== reportCurrency) continue;
       expenses += e.amount_cents;
       const prev = expensesByCategoryMap.get(e.category) ?? { cents: 0, count: 0 };
       expensesByCategoryMap.set(e.category, {
@@ -2703,16 +2726,6 @@ function InvoiceCanvas({
         <p className="text-[10px] uppercase tracking-[0.22em] font-semibold text-muted-foreground">
           Invoice template
         </p>
-        <span
-          className="text-[10px] uppercase tracking-wider font-medium rounded-full px-2 py-0.5"
-          style={{
-            background: "rgba(255,138,76,0.12)",
-            color: "#c4541e",
-            border: "0.5px solid rgba(255,138,76,0.3)",
-          }}
-        >
-          AI builder soon
-        </span>
       </div>
 
       <div className="bg-white px-6 sm:px-10 py-8 sm:py-10">
@@ -3031,20 +3044,10 @@ function DocumentCanvas({
   return (
     <div className="space-y-4">
       <Card>
-        <div className="px-4 pt-3 pb-2 flex items-center justify-between border-b border-foreground/5">
+        <div className="px-4 pt-3 pb-2 border-b border-foreground/5">
           <p className="text-[10px] uppercase tracking-[0.22em] font-semibold text-muted-foreground">
             {kind === "contract" ? "Contract template" : "Proposal template"}
           </p>
-          <span
-            className="text-[10px] uppercase tracking-wider font-medium rounded-full px-2 py-0.5"
-            style={{
-              background: "rgba(255,138,76,0.12)",
-              color: "#c4541e",
-              border: "0.5px solid rgba(255,138,76,0.3)",
-            }}
-          >
-            AI builder soon
-          </span>
         </div>
 
         <div className="bg-white px-6 sm:px-10 py-8 sm:py-10">
@@ -3400,9 +3403,13 @@ function InvoicesTab({
   const [lateFeeSaving, setLateFeeSaving] = useState(false);
 
   const openLateFeeModal = (inv: Invoice) => {
-    // Default suggestion: 5% of the original total. Vendor can
-    // override before saving.
-    const suggested = Math.round(inv.total_cents * 0.05) / 100;
+    // Suggest 5% of the ORIGINAL engagement amount — not 5% of the
+    // already-bumped total. Using inv.total_cents directly compounds
+    // the fee on each "Add more" cycle (5% → 5.25% → 5.51% …) which
+    // the vendor never signed up for. Subtract any prior late fees
+    // to recover the pre-fee base.
+    const base = inv.total_cents - (inv.late_fee_cents ?? 0);
+    const suggested = Math.round(base * 0.05) / 100;
     setLateFeeAmount(suggested.toFixed(2));
     setLateFeeTarget(inv);
   };
@@ -3415,28 +3422,23 @@ function InvoicesTab({
     }
     const feeCents = Math.round(amountNum * 100);
     setLateFeeSaving(true);
+    // Atomic SQL increment via the invoice_add_late_fee RPC. The
+    // previous read-(stale-state)-modify-write path lost updates
+    // when two admins added a fee at once. The RPC's UPDATE row-
+    // locks so concurrent calls serialize correctly.
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const db = supabase as any;
-    // Stack additively — if the vendor adds a fee twice, both
-    // accumulate. Matches how a real late fee policy works
-    // (5% per 30 days, applied on each cycle).
-    const newLateFee = (lateFeeTarget.late_fee_cents ?? 0) + feeCents;
-    const newTotal = lateFeeTarget.total_cents + feeCents;
-    const { error } = await db
-      .from("invoices")
-      .update({
-        late_fee_cents: newLateFee,
-        late_fee_added_at: new Date().toISOString(),
-        total_cents: newTotal,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", lateFeeTarget.id);
+    const { data, error } = await (supabase as any).rpc("invoice_add_late_fee", {
+      p_invoice_id: lateFeeTarget.id,
+      p_fee_cents: feeCents,
+    });
     setLateFeeSaving(false);
     if (error) {
       console.error("[InvoicesTab] late fee save failed", error);
       toast.error("Couldn't add late fee.");
       return;
     }
+    const row = Array.isArray(data) ? data[0] : data;
+    const newTotal = (row?.total_cents as number | undefined) ?? lateFeeTarget.total_cents;
     toast.success(`Late fee added · new total ${formatMoney(newTotal, lateFeeTarget.currency)}`);
     setLateFeeTarget(null);
     onChanged();
@@ -3471,6 +3473,7 @@ function InvoicesTab({
             status: inv.status,
             paid_at: inv.paid_at,
             refunded_amount_cents: inv.refunded_amount_cents,
+            late_fee_cents: inv.late_fee_cents,
           },
           {
             business_name: listing?.business_name ?? null,
@@ -3964,6 +3967,13 @@ function CustomersTab({
           )
           .eq("vendor_id", vendorId)
           .eq("bill_to_email", c.email)
+          // Drafts haven't reached the customer — including them in
+          // the statement leaks in-progress amounts the buyer never
+          // saw and inflates the "Billed" total. Cancelled invoices
+          // are excluded for the same reason (already filtered in
+          // buildStatementPdf, but we don't want to ship the rows
+          // over the wire either).
+          .in("status", ["sent", "overdue", "paid", "refunded", "partial_refund"])
           .order("issue_date", { ascending: true })
           .limit(1000);
         if (error) {
@@ -4789,12 +4799,19 @@ function ExpensesTab({ vendorId }: { vendorId: string | null }) {
   // Per-contractor YTD totals for the 1099-prep view. Only counts
   // current calendar year — that's the IRS reporting period. $600
   // threshold matches the 1099-NEC filing rule.
+  //
+  // Year comparison parses 'YYYY-MM-DD' as a literal year string
+  // rather than going through `new Date(...).getFullYear()` —
+  // Postgres date columns come back as bare YYYY-MM-DD which JS
+  // parses as UTC midnight, then getFullYear() converts to LOCAL
+  // year. For vendors west of UTC, a Jan 1 expense logged late on
+  // Dec 31 would otherwise fall into the prior YTD bucket.
   const contractorTotals = useMemo(() => {
-    const year = new Date().getFullYear();
+    const year = String(new Date().getFullYear());
     const totals = new Map<string, number>();
     for (const r of rows) {
       if (!r.contractor_id) continue;
-      if (new Date(r.occurred_on).getFullYear() !== year) continue;
+      if (r.occurred_on.slice(0, 4) !== year) continue;
       totals.set(r.contractor_id, (totals.get(r.contractor_id) ?? 0) + r.amount_cents);
     }
     return totals;
@@ -4804,13 +4821,16 @@ function ExpensesTab({ vendorId }: { vendorId: string | null }) {
   // the row list so the vendor sees their total spend without going
   // to Reports.
   const ytd = useMemo(() => {
-    const year = new Date().getFullYear();
+    // Same string-prefix parse as contractorTotals — see comment
+    // there. Don't go through Date(...).getFullYear(): the UTC/local
+    // mix shifts year-boundary expenses into the wrong bucket.
+    const year = String(new Date().getFullYear());
     const total = rows
-      .filter((r) => new Date(r.occurred_on).getFullYear() === year)
+      .filter((r) => r.occurred_on.slice(0, 4) === year)
       .reduce((s, r) => s + r.amount_cents, 0);
     const byCategory = new Map<ExpenseCategory, number>();
     for (const r of rows) {
-      if (new Date(r.occurred_on).getFullYear() !== year) continue;
+      if (r.occurred_on.slice(0, 4) !== year) continue;
       byCategory.set(r.category, (byCategory.get(r.category) ?? 0) + r.amount_cents);
     }
     const top = Array.from(byCategory.entries())

@@ -462,13 +462,38 @@ export async function getReceiptEmailForPI(
   return null;
 }
 
+// US state name → 2-letter code. Stripe stores whatever the buyer
+// typed into Checkout's billing-address form, so both "CA" and
+// "California" land in billing_details.address.state. Without
+// normalization, the Reports "Sales tax owed by state" aggregate
+// shows them as separate rows and the vendor's CPA reads it as
+// two different jurisdictions.
+const US_STATE_NAME_TO_CODE: Record<string, string> = {
+  ALABAMA: "AL", ALASKA: "AK", ARIZONA: "AZ", ARKANSAS: "AR",
+  CALIFORNIA: "CA", COLORADO: "CO", CONNECTICUT: "CT", DELAWARE: "DE",
+  FLORIDA: "FL", GEORGIA: "GA", HAWAII: "HI", IDAHO: "ID",
+  ILLINOIS: "IL", INDIANA: "IN", IOWA: "IA", KANSAS: "KS",
+  KENTUCKY: "KY", LOUISIANA: "LA", MAINE: "ME", MARYLAND: "MD",
+  MASSACHUSETTS: "MA", MICHIGAN: "MI", MINNESOTA: "MN", MISSISSIPPI: "MS",
+  MISSOURI: "MO", MONTANA: "MT", NEBRASKA: "NE", NEVADA: "NV",
+  "NEW HAMPSHIRE": "NH", "NEW JERSEY": "NJ", "NEW MEXICO": "NM",
+  "NEW YORK": "NY", "NORTH CAROLINA": "NC", "NORTH DAKOTA": "ND",
+  OHIO: "OH", OKLAHOMA: "OK", OREGON: "OR", PENNSYLVANIA: "PA",
+  "RHODE ISLAND": "RI", "SOUTH CAROLINA": "SC", "SOUTH DAKOTA": "SD",
+  TENNESSEE: "TN", TEXAS: "TX", UTAH: "UT", VERMONT: "VT",
+  VIRGINIA: "VA", WASHINGTON: "WA", "WEST VIRGINIA": "WV",
+  WISCONSIN: "WI", WYOMING: "WY",
+  "DISTRICT OF COLUMBIA": "DC", "PUERTO RICO": "PR",
+};
+
 /**
  * Resolve the buyer's billing-address state for a PaymentIntent.
  *
  * Used by vendorapay-webhook to stamp invoices.bill_to_state on
  * payment.succeeded so the Reports tab can break tax_cents down by
- * state. We upper-case the 2-letter result so the aggregate keys
- * are consistent ("ca", "CA" both land under CA in the group-by).
+ * state. We normalize to the USPS 2-letter code: Stripe returns
+ * whatever the buyer typed, so both "CA" and "California" land in
+ * the same row in the per-state aggregate.
  *
  * Returns null when Stripe didn't collect an address (ACH, wire,
  * older PIs without address collection enabled). The Reports UI
@@ -487,8 +512,16 @@ export async function getBillingStateForPI(
   };
   const state = ch.billing_details?.address?.state ?? null;
   if (!state) return null;
-  const trimmed = state.trim();
-  return trimmed.length ? trimmed.toUpperCase() : null;
+  const upper = state.trim().toUpperCase();
+  if (!upper.length) return null;
+  // Already a 2-letter USPS code? Trust it.
+  if (upper.length === 2) return upper;
+  // Full state name? Map to code.
+  if (US_STATE_NAME_TO_CODE[upper]) return US_STATE_NAME_TO_CODE[upper];
+  // Non-US / unmapped — return uppercased so the Reports row at
+  // least groups consistently (e.g., "ONTARIO" Canadian buyers
+  // all land in the same bucket).
+  return upper;
 }
 
 /**
