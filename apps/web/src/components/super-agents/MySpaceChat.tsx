@@ -50,6 +50,10 @@ interface ThreadRow {
   updated_at: string;
 }
 
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
+const SUPABASE_PUBLISHABLE_KEY = import.meta.env
+  .VITE_SUPABASE_PUBLISHABLE_KEY as string;
+
 const QUICK_PROMPTS = [
   "What hot leads do I have right now?",
   "Draft a reply to my newest inquiry",
@@ -67,6 +71,9 @@ export function MySpaceChat() {
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
   const [deletingThreadId, setDeletingThreadId] = useState<string | null>(null);
+  // Name of the tool currently being executed by the AI, if any. Used
+  // to swap the "Thinking…" indicator for something more specific.
+  const [activeTool, setActiveTool] = useState<string | null>(null);
   const listRef = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
 
@@ -157,82 +164,178 @@ export function MySpaceChat() {
     el.scrollTop = el.scrollHeight;
   }, [messages, sending]);
 
-  // ── Send message → edge function → append reply.
+  // ── Send message → SSE stream from edge function → live-update bubble.
   async function send(promptText?: string) {
     const text = (promptText ?? input).trim();
     if (!text || sending) return;
     setInput("");
-    // Optimistic user bubble so the UI feels instant.
-    const optimistic: TextMessage = {
+
+    // Optimistic user bubble + a placeholder assistant bubble that
+    // gets filled in by `delta` events as Claude streams text. Using
+    // sentinel objects so we can find them via reference equality.
+    const userOptimistic: TextMessage = {
       role: "user",
       type: "text",
       content: text,
     };
-    setMessages((prev) => [...prev, optimistic]);
+    const assistantPlaceholder: TextMessage = {
+      role: "assistant",
+      type: "text",
+      content: "",
+    };
+    setMessages((prev) => [...prev, userOptimistic, assistantPlaceholder]);
     setSending(true);
+    setActiveTool(null);
+
+    // Track per-stream state in closure variables; we apply them to
+    // React state via functional updaters so concurrent deltas don't
+    // race.
+    let receivedThreadId: string | null = null;
+
     try {
-      const { data, error } = await supabase.functions.invoke(
-        "my-space-chat",
-        { body: { text, thread_id: currentThreadId } },
+      const { data: sessionData } = await supabase.auth.getSession();
+      const accessToken = sessionData.session?.access_token;
+      if (!accessToken) throw new Error("not_signed_in");
+
+      const res = await fetch(
+        `${SUPABASE_URL}/functions/v1/my-space-chat`,
+        {
+          method: "POST",
+          headers: {
+            "content-type": "application/json",
+            authorization: `Bearer ${accessToken}`,
+            apikey: SUPABASE_PUBLISHABLE_KEY,
+            accept: "text/event-stream",
+          },
+          body: JSON.stringify({ text, thread_id: currentThreadId }),
+        },
       );
-      if (error) throw error;
-      const reply = data as {
-        thread_id: string;
-        thread_is_new: boolean;
-        user_message: any;
-        assistant_message: any;
-      };
-
-      // Replace the optimistic bubble with the persisted one + append assistant.
-      setMessages((prev) => {
-        const withReal = [...prev];
-        const optimisticIdx = withReal.findIndex(
-          (m) => m === optimistic,
-        );
-        if (optimisticIdx >= 0) {
-          withReal[optimisticIdx] = {
-            id: reply.user_message.id,
-            role: "user",
-            type: "text",
-            content: reply.user_message.content,
-            created_at: reply.user_message.created_at,
-          } as TextMessage;
+      if (!res.ok || !res.body) {
+        let detail = "";
+        try {
+          detail = await res.text();
+        } catch {
+          // ignore
         }
-        const a = reply.assistant_message;
-        const assistant: ChatMessage = a.type === "image"
-          ? ({
-            id: a.id,
-            role: "assistant",
-            type: "image",
-            image_url: a.image_url,
-            image_prompt: a.image_prompt,
-            created_at: a.created_at,
-          } as ImageMessage)
-          : ({
-            id: a.id,
-            role: "assistant",
-            type: "text",
-            content: a.content,
-            created_at: a.created_at,
-          } as TextMessage);
-        return [...withReal, assistant];
-      });
-
-      if (reply.thread_is_new || reply.thread_id !== currentThreadId) {
-        setCurrentThreadId(reply.thread_id);
+        throw new Error(`${res.status}: ${detail.slice(0, 240)}`);
       }
-      // Refresh thread list so the new/updated thread sorts to the top.
-      const refreshed = await loadThreads();
-      setThreads(refreshed);
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+      let sawError = false;
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        let nl: number;
+        while ((nl = buffer.indexOf("\n")) !== -1) {
+          const line = buffer.slice(0, nl).trim();
+          buffer = buffer.slice(nl + 1);
+          if (!line.startsWith("data: ")) continue;
+          const data = line.slice(6);
+          let ev: any;
+          try {
+            ev = JSON.parse(data);
+          } catch {
+            continue;
+          }
+          if (ev.type === "thread") {
+            receivedThreadId = ev.thread_id;
+            if (ev.thread_is_new || ev.thread_id !== currentThreadId) {
+              setCurrentThreadId(ev.thread_id);
+            }
+          } else if (ev.type === "user_message") {
+            // Swap the optimistic user bubble with the persisted one.
+            setMessages((prev) => {
+              const next = [...prev];
+              const idx = next.findIndex((m) => m === userOptimistic);
+              if (idx >= 0) {
+                next[idx] = {
+                  id: ev.id,
+                  role: "user",
+                  type: "text",
+                  content: ev.content,
+                  created_at: ev.created_at,
+                } as TextMessage;
+              }
+              return next;
+            });
+          } else if (ev.type === "delta") {
+            const chunk = String(ev.text ?? "");
+            setMessages((prev) => {
+              const next = [...prev];
+              const idx = next.findIndex((m) => m === assistantPlaceholder);
+              if (idx >= 0 && next[idx].type === "text") {
+                (next[idx] as TextMessage).content =
+                  ((next[idx] as TextMessage).content ?? "") + chunk;
+              }
+              return next;
+            });
+          } else if (ev.type === "tool_start") {
+            setActiveTool(String(ev.name ?? ""));
+          } else if (ev.type === "tool_done") {
+            setActiveTool(null);
+          } else if (ev.type === "image_pending") {
+            setActiveTool("generating image");
+          } else if (ev.type === "done") {
+            const a = ev.assistant_message ?? {};
+            setMessages((prev) => {
+              const next = [...prev];
+              const idx = next.findIndex((m) => m === assistantPlaceholder);
+              if (idx >= 0) {
+                next[idx] = a.type === "image"
+                  ? ({
+                    id: a.id,
+                    role: "assistant",
+                    type: "image",
+                    image_url: a.image_url,
+                    image_prompt: a.image_prompt,
+                    created_at: a.created_at,
+                  } as ImageMessage)
+                  : ({
+                    id: a.id,
+                    role: "assistant",
+                    type: "text",
+                    content: a.content,
+                    created_at: a.created_at,
+                  } as TextMessage);
+              }
+              return next;
+            });
+            setActiveTool(null);
+          } else if (ev.type === "error") {
+            sawError = true;
+            toast.error(`Couldn't get a reply: ${ev.message}`);
+            // Roll back both placeholders.
+            setMessages((prev) =>
+              prev.filter(
+                (m) => m !== userOptimistic && m !== assistantPlaceholder,
+              )
+            );
+            setActiveTool(null);
+          }
+        }
+      }
+
+      if (!sawError) {
+        // Refresh thread list so the new/updated thread sorts to the top.
+        const refreshed = await loadThreads();
+        setThreads(refreshed);
+      }
     } catch (err) {
       console.error("[MySpaceChat] send failed", err);
       toast.error("Couldn't get a reply. Try again.");
-      // Roll back the optimistic bubble.
-      setMessages((prev) => prev.filter((m) => m !== optimistic));
+      setMessages((prev) =>
+        prev.filter((m) => m !== userOptimistic && m !== assistantPlaceholder)
+      );
     } finally {
       setSending(false);
+      setActiveTool(null);
       inputRef.current?.focus();
     }
+    // Silence unused warning if no events arrived.
+    void receivedThreadId;
   }
 
   function onKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
@@ -411,11 +514,11 @@ export function MySpaceChat() {
               : messages.map((m, i) => (
                 <MessageBubble key={m.id ?? `idx-${i}`} message={m} />
               ))}
-            {sending
+            {sending && activeTool
               ? (
                 <div className="flex items-center gap-2 text-xs text-muted-foreground pl-2">
                   <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                  Thinking…
+                  {formatToolLabel(activeTool)}
                 </div>
               )
               : null}
@@ -510,6 +613,30 @@ function ThreadListItem({
       </div>
     </li>
   );
+}
+
+// Map raw tool names to friendly status labels that flash next to the
+// loading spinner while the AI executes a tool call.
+const TOOL_LABELS: Record<string, string> = {
+  search_inquiries: "Searching inquiries…",
+  get_inquiry: "Reading inquiry…",
+  check_availability: "Checking availability…",
+  list_faqs: "Reading FAQs…",
+  list_portfolio_images: "Reading portfolio…",
+  list_appointments: "Checking appointments…",
+  list_recent_notifications: "Reading notifications…",
+  search_messages: "Searching messages…",
+  send_host_reply: "Sending reply…",
+  create_appointment: "Creating appointment…",
+  update_inquiry_status: "Updating inquiry…",
+  block_calendar_date: "Blocking date…",
+  unblock_calendar_date: "Unblocking date…",
+  mark_notifications_read: "Marking read…",
+  create_payment_link: "Creating payment link…",
+};
+
+function formatToolLabel(name: string): string {
+  return TOOL_LABELS[name] ?? name.replace(/_/g, " ") + "…";
 }
 
 function formatThreadTime(iso: string): string {
