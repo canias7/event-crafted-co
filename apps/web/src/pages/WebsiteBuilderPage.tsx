@@ -86,6 +86,16 @@ export default function WebsiteBuilderPage() {
     "Add a guest greeting above the names",
   ];
 
+  // Theme remix — one-click vibe shifts (re-skin without losing content)
+  const THEME_REMIX = [
+    "Make it more modern",
+    "Make it more rustic",
+    "Make it more moody",
+    "Make it airier / minimal",
+    "Make it more playful",
+    "Make it editorial / magazine",
+  ];
+
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
@@ -1004,17 +1014,31 @@ export default function WebsiteBuilderPage() {
           </div>
 
           {siteId && !loading && (
-            <div className="px-3 pt-2 pb-1 flex gap-1.5 overflow-x-auto whitespace-nowrap bg-[#0a0a0b] border-t border-white/10">
-              {QUICK_ACTIONS.map((a) => (
-                <button
-                  key={a}
-                  onClick={() => submit(a)}
-                  className="shrink-0 text-[11px] text-white/65 hover:text-white bg-white/5 hover:bg-white/10 border border-white/10 rounded-full px-2.5 py-1 transition-colors"
-                  title={`Send: ${a}`}
-                >
-                  {a}
-                </button>
-              ))}
+            <div className="px-3 pt-2 pb-1 bg-[#0a0a0b] border-t border-white/10">
+              <div className="flex gap-1.5 overflow-x-auto whitespace-nowrap pb-1">
+                {QUICK_ACTIONS.map((a) => (
+                  <button
+                    key={a}
+                    onClick={() => submit(a)}
+                    className="shrink-0 text-[11px] text-white/65 hover:text-white bg-white/5 hover:bg-white/10 border border-white/10 rounded-full px-2.5 py-1 transition-colors"
+                    title={`Send: ${a}`}
+                  >
+                    {a}
+                  </button>
+                ))}
+              </div>
+              <div className="flex gap-1.5 overflow-x-auto whitespace-nowrap mt-1">
+                {THEME_REMIX.map((a) => (
+                  <button
+                    key={a}
+                    onClick={() => submit(a)}
+                    className="shrink-0 text-[11px] text-amber-200/75 hover:text-amber-100 bg-amber-500/5 hover:bg-amber-500/10 border border-amber-400/15 rounded-full px-2.5 py-1 transition-colors"
+                    title={`Theme remix: ${a}`}
+                  >
+                    {a}
+                  </button>
+                ))}
+              </div>
             </div>
           )}
 
