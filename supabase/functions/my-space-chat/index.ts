@@ -330,6 +330,7 @@ Style:
 - If you reference an inquiry, give the host's event date + event type so they can identify it.
 - Reply in whatever language the vendor wrote their last message in (English, Spanish, Portuguese, French, etc.). Mirror their tone.
 - Format with light Markdown — bold for emphasis, bullet lists for options, fenced code blocks when literally showing code or templated text the vendor will paste.
+- When a tool returns numeric / tabular data that visualizes well (revenue-by-month, funnel counts, top packages), include a chart in your reply using a fenced \`\`\`chart code block. JSON shape: \`{ "type": "bar" | "line" | "pie", "data": [{ "label": "Jan", "value": 1200 }, ...], "title": "Revenue by month" }\`. The frontend renders it as a real chart.
 
 Read tools (use freely):
 - \`search_inquiries\` · \`get_inquiry\` · \`check_availability\`
@@ -959,6 +960,136 @@ const TOOLS = [
       properties: {
         limit: { type: "integer", minimum: 1, maximum: 50 },
         tool_name: { type: "string", description: "Filter to one tool." },
+      },
+    },
+  },
+  // ─── Web search ─────────────────────────────────────────────────
+  {
+    name: "web_search",
+    description:
+      "Search the open web for fresh information the vendor's snapshot can't answer (market rates, competitor pricing, venue research, etc.). Returns the top results with title + snippet + URL. Uses Tavily.",
+    input_schema: {
+      type: "object",
+      required: ["query"],
+      properties: {
+        query: { type: "string" },
+        limit: { type: "integer", minimum: 1, maximum: 10 },
+      },
+    },
+  },
+  // ─── Sales analytics ────────────────────────────────────────────
+  {
+    name: "get_sales_summary",
+    description:
+      "Total revenue (paid invoices + paid payment links) over a window, with a per-month breakdown. Use for 'how much did I make?' / 'show me my revenue chart' kinds of questions. Render the breakdown as a chart in your reply when useful.",
+    input_schema: {
+      type: "object",
+      properties: {
+        since: {
+          type: "string",
+          enum: ["week", "month", "quarter", "year", "all_time"],
+        },
+      },
+    },
+  },
+  {
+    name: "get_top_packages_by_revenue",
+    description:
+      "Top vendor packages ranked by how often they appear on paid inquiries / invoices.",
+    input_schema: {
+      type: "object",
+      properties: { limit: { type: "integer", minimum: 1, maximum: 20 } },
+    },
+  },
+  {
+    name: "get_repeat_hosts",
+    description:
+      "Hosts who have booked the vendor more than once (count + most-recent booking).",
+    input_schema: {
+      type: "object",
+      properties: { limit: { type: "integer", minimum: 1, maximum: 50 } },
+    },
+  },
+  {
+    name: "get_conversion_funnel",
+    description:
+      "Funnel counts over a window: inquiries received → quotes sent (proposals) → bookings confirmed.",
+    input_schema: {
+      type: "object",
+      properties: {
+        since: {
+          type: "string",
+          enum: ["week", "month", "quarter", "year", "all_time"],
+        },
+      },
+    },
+  },
+  // ─── Bulk operations ────────────────────────────────────────────
+  {
+    name: "bulk_update_inquiry_status",
+    description:
+      "Set the same status on multiple inquiries at once. WRITE ACTION — confirm the inquiry_ids list with the vendor first.",
+    input_schema: {
+      type: "object",
+      required: ["inquiry_ids", "status"],
+      properties: {
+        inquiry_ids: { type: "array", items: { type: "string" }, minItems: 1, maxItems: 50 },
+        status: {
+          type: "string",
+          enum: ["new", "replied", "closed", "declined"],
+        },
+      },
+    },
+  },
+  {
+    name: "bulk_send_reply",
+    description:
+      "Send the same message body to multiple host threads. Each inquiry gets the body posted as a vendor-side message. WRITE ACTION — show the full body + exact recipient list to the vendor first.",
+    input_schema: {
+      type: "object",
+      required: ["inquiry_ids", "body"],
+      properties: {
+        inquiry_ids: { type: "array", items: { type: "string" }, minItems: 1, maxItems: 25 },
+        body: { type: "string" },
+      },
+    },
+  },
+  // ─── Summarization ──────────────────────────────────────────────
+  {
+    name: "summarize_inquiry_thread",
+    description:
+      "Collapse a host conversation thread into 3-5 bullet points (host's needs, key questions, current status, blockers). Uses Claude internally.",
+    input_schema: {
+      type: "object",
+      required: ["inquiry_id"],
+      properties: {
+        inquiry_id: { type: "string" },
+      },
+    },
+  },
+  // ─── Custom webhook tools ───────────────────────────────────────
+  {
+    name: "manage_custom_tool",
+    description:
+      "Add / update / delete a custom webhook tool the vendor wants the AI to be able to call (e.g. their own internal API). After adding, the new tool becomes callable on the NEXT conversation turn (the tool list is rebuilt per-request). WRITE ACTION.",
+    input_schema: {
+      type: "object",
+      required: ["action"],
+      properties: {
+        action: { type: "string", enum: ["add", "update", "delete", "list"] },
+        id: { type: "string", description: "Required for update/delete." },
+        name: {
+          type: "string",
+          description: "Tool name in snake_case (no spaces).",
+        },
+        description: { type: "string" },
+        url: { type: "string", description: "https:// endpoint to call." },
+        method: { type: "string", enum: ["GET", "POST", "PUT", "PATCH", "DELETE"] },
+        headers_json: {
+          type: "object",
+          description: "Optional headers (e.g. for auth).",
+        },
+        is_active: { type: "boolean" },
       },
     },
   },
@@ -2260,6 +2391,549 @@ async function toolGetAuditLog(
   return { entries: (data ?? []) as Array<any> };
 }
 
+// ─── Web search (Tavily) ────────────────────────────────────────
+
+async function toolWebSearch(input: any): Promise<unknown> {
+  const TAVILY_API_KEY = Deno.env.get("TAVILY_API_KEY") ?? "";
+  if (!TAVILY_API_KEY) {
+    return {
+      error:
+        "TAVILY_API_KEY not configured. Operator: set it in the Supabase project secrets.",
+    };
+  }
+  const query = String(input?.query ?? "").trim();
+  if (!query) return { error: "query required" };
+  const limit = Math.min(Math.max(Number(input?.limit) || 5, 1), 10);
+  const res = await fetch("https://api.tavily.com/search", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      api_key: TAVILY_API_KEY,
+      query,
+      max_results: limit,
+      search_depth: "basic",
+      include_answer: true,
+    }),
+  });
+  if (!res.ok) {
+    return { error: `tavily ${res.status}: ${(await res.text()).slice(0, 200)}` };
+  }
+  const body = (await res.json()) as any;
+  return {
+    query,
+    summary: body?.answer ?? null,
+    results: ((body?.results ?? []) as Array<any>).slice(0, limit).map((r) => ({
+      title: r.title,
+      url: r.url,
+      snippet: r.content,
+    })),
+  };
+}
+
+// ─── Sales analytics ────────────────────────────────────────────
+
+function sinceCutoff(window: string): string | null {
+  const now = new Date();
+  switch (window) {
+    case "week": return new Date(now.getTime() - 7 * 86400000).toISOString();
+    case "month": return new Date(now.getTime() - 30 * 86400000).toISOString();
+    case "quarter": return new Date(now.getTime() - 90 * 86400000).toISOString();
+    case "year": return new Date(now.getTime() - 365 * 86400000).toISOString();
+    default: return null;
+  }
+}
+
+async function toolGetSalesSummary(
+  admin: any,
+  vendorId: string,
+  input: any,
+): Promise<unknown> {
+  if (!vendorId) return { error: "no_vendor_profile" };
+  const window = String(input?.since ?? "year");
+  const gte = sinceCutoff(window);
+  let invQ = admin
+    .from("invoices")
+    .select("total_cents, paid_at")
+    .eq("vendor_id", vendorId)
+    .not("paid_at", "is", null);
+  let pyQ = admin
+    .from("payment_links")
+    .select("amount_cents, paid_at")
+    .eq("vendor_id", vendorId)
+    .not("paid_at", "is", null);
+  if (gte) {
+    invQ = invQ.gte("paid_at", gte);
+    pyQ = pyQ.gte("paid_at", gte);
+  }
+  const [{ data: invoices }, { data: links }] = await Promise.all([invQ, pyQ]);
+  const monthly: Record<string, number> = {};
+  let totalCents = 0;
+  for (const r of (invoices ?? []) as Array<any>) {
+    const cents = Number(r.total_cents) || 0;
+    totalCents += cents;
+    const k = String(r.paid_at).slice(0, 7);
+    monthly[k] = (monthly[k] ?? 0) + cents;
+  }
+  for (const r of (links ?? []) as Array<any>) {
+    const cents = Number(r.amount_cents) || 0;
+    totalCents += cents;
+    const k = String(r.paid_at).slice(0, 7);
+    monthly[k] = (monthly[k] ?? 0) + cents;
+  }
+  const byMonth = Object.entries(monthly)
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([month, cents]) => ({ month, revenue_usd: cents / 100 }));
+  return {
+    since: window,
+    total_revenue_usd: totalCents / 100,
+    invoice_count: (invoices ?? []).length,
+    payment_link_count: (links ?? []).length,
+    by_month: byMonth,
+  };
+}
+
+async function toolGetTopPackages(
+  admin: any,
+  vendorId: string,
+  input: any,
+): Promise<unknown> {
+  if (!vendorId) return { error: "no_vendor_profile" };
+  const limit = Math.min(Math.max(Number(input?.limit) || 5, 1), 20);
+  // Count inquiries linked to each package, plus the package's
+  // current price. Sort by inquiry count.
+  const { data: pkgs } = await admin
+    .from("vendor_packages")
+    .select("id, name, price_cents, is_active")
+    .eq("vendor_id", vendorId);
+  const packages = ((pkgs ?? []) as Array<any>);
+  const ids = packages.map((p) => p.id);
+  if (ids.length === 0) return { packages: [] };
+  const { data: inq } = await admin
+    .from("inquiries")
+    .select("package_id, status, host_confirmed_booked_at, vendor_confirmed_booked_at")
+    .eq("vendor_id", vendorId)
+    .in("package_id", ids);
+  const counts = new Map<string, { inquiries: number; bookings: number }>();
+  for (const r of (inq ?? []) as Array<any>) {
+    if (!r.package_id) continue;
+    const v = counts.get(r.package_id) ?? { inquiries: 0, bookings: 0 };
+    v.inquiries += 1;
+    if (r.host_confirmed_booked_at && r.vendor_confirmed_booked_at) {
+      v.bookings += 1;
+    }
+    counts.set(r.package_id, v);
+  }
+  const ranked = packages
+    .map((p) => ({
+      id: p.id,
+      name: p.name,
+      price_usd: (p.price_cents ?? 0) / 100,
+      is_active: p.is_active,
+      inquiries: counts.get(p.id)?.inquiries ?? 0,
+      bookings: counts.get(p.id)?.bookings ?? 0,
+    }))
+    .sort((a, b) => b.bookings - a.bookings || b.inquiries - a.inquiries)
+    .slice(0, limit);
+  return { packages: ranked };
+}
+
+async function toolGetRepeatHosts(
+  admin: any,
+  vendorId: string,
+  input: any,
+): Promise<unknown> {
+  if (!vendorId) return { error: "no_vendor_profile" };
+  const limit = Math.min(Math.max(Number(input?.limit) || 20, 1), 50);
+  const { data, error } = await admin
+    .from("inquiries")
+    .select("host_id, created_at, host_confirmed_booked_at, vendor_confirmed_booked_at")
+    .eq("vendor_id", vendorId)
+    .not("host_id", "is", null);
+  if (error) return { error: error.message };
+  const byHost = new Map<
+    string,
+    { bookings: number; total_inquiries: number; last: string }
+  >();
+  for (const r of (data ?? []) as Array<any>) {
+    const v = byHost.get(r.host_id) ?? {
+      bookings: 0,
+      total_inquiries: 0,
+      last: r.created_at,
+    };
+    v.total_inquiries += 1;
+    if (r.host_confirmed_booked_at && r.vendor_confirmed_booked_at) {
+      v.bookings += 1;
+    }
+    if (r.created_at > v.last) v.last = r.created_at;
+    byHost.set(r.host_id, v);
+  }
+  const repeat = Array.from(byHost.entries())
+    .filter(([_, v]) => v.bookings >= 2)
+    .map(([host_id, v]) => ({ host_id, ...v }));
+  const hostIds = repeat.map((r) => r.host_id);
+  const { data: profs } = hostIds.length > 0
+    ? await admin
+      .from("profiles")
+      .select("id, display_name")
+      .in("id", hostIds)
+    : { data: [] };
+  const nameMap = new Map(
+    ((profs ?? []) as Array<any>).map((p) => [p.id, p.display_name]),
+  );
+  return {
+    hosts: repeat
+      .map((r) => ({
+        host_name: nameMap.get(r.host_id) ?? "(unknown host)",
+        bookings: r.bookings,
+        total_inquiries: r.total_inquiries,
+        most_recent_at: r.last,
+      }))
+      .sort((a, b) => b.bookings - a.bookings)
+      .slice(0, limit),
+  };
+}
+
+async function toolGetConversionFunnel(
+  admin: any,
+  vendorId: string,
+  input: any,
+): Promise<unknown> {
+  if (!vendorId) return { error: "no_vendor_profile" };
+  const window = String(input?.since ?? "month");
+  const gte = sinceCutoff(window);
+  let inqQ = admin
+    .from("inquiries")
+    .select("id, host_confirmed_booked_at, vendor_confirmed_booked_at", {
+      count: "exact",
+      head: false,
+    })
+    .eq("vendor_id", vendorId);
+  let propQ = admin
+    .from("proposals")
+    .select("id, vendor_id, status, created_at", {
+      count: "exact",
+      head: true,
+    })
+    .eq("vendor_id", vendorId);
+  if (gte) {
+    inqQ = inqQ.gte("created_at", gte);
+    propQ = propQ.gte("created_at", gte);
+  }
+  const [{ data: inq, count: inqCount }, { count: propCount }] = await Promise
+    .all([inqQ, propQ]);
+  let bookings = 0;
+  for (const r of (inq ?? []) as Array<any>) {
+    if (r.host_confirmed_booked_at && r.vendor_confirmed_booked_at) {
+      bookings += 1;
+    }
+  }
+  return {
+    since: window,
+    inquiries: inqCount ?? 0,
+    proposals_sent: propCount ?? 0,
+    bookings,
+    conversion_pct: inqCount
+      ? Math.round((bookings / inqCount) * 1000) / 10
+      : 0,
+  };
+}
+
+// ─── Bulk operations ────────────────────────────────────────────
+
+async function toolBulkUpdateInquiryStatus(
+  admin: any,
+  vendorId: string,
+  input: any,
+): Promise<unknown> {
+  const ids = Array.isArray(input?.inquiry_ids) ? input.inquiry_ids : [];
+  if (ids.length === 0) return { error: "inquiry_ids required" };
+  const status = String(input?.status ?? "");
+  if (!["new", "replied", "closed", "declined"].includes(status)) {
+    return { error: "invalid_status" };
+  }
+  const { data, error } = await admin
+    .from("inquiries")
+    .update({ status })
+    .in("id", ids)
+    .eq("vendor_id", vendorId)
+    .select("id");
+  if (error) return { error: error.message };
+  return { updated: (data ?? []).length, ids: (data ?? []).map((r: any) => r.id) };
+}
+
+async function toolBulkSendReply(
+  admin: any,
+  vendorId: string,
+  userId: string,
+  input: any,
+): Promise<unknown> {
+  const ids = Array.isArray(input?.inquiry_ids) ? input.inquiry_ids : [];
+  const body = String(input?.body ?? "").trim();
+  if (ids.length === 0) return { error: "inquiry_ids required" };
+  if (!body) return { error: "body required" };
+  let sent = 0;
+  const failures: Array<{ inquiry_id: string; error: string }> = [];
+  for (const inquiryId of ids) {
+    try {
+      const { data: inq } = await admin
+        .from("inquiries")
+        .select("id, vendor_id")
+        .eq("id", inquiryId)
+        .eq("vendor_id", vendorId)
+        .maybeSingle();
+      if (!inq) {
+        failures.push({ inquiry_id: inquiryId, error: "not_found" });
+        continue;
+      }
+      const { data: thread } = await admin
+        .from("direct_threads")
+        .select("id")
+        .eq("inquiry_id", inquiryId)
+        .maybeSingle();
+      if (!(thread as any)?.id) {
+        failures.push({ inquiry_id: inquiryId, error: "no_thread" });
+        continue;
+      }
+      const now = new Date().toISOString();
+      const { error } = await admin
+        .from("direct_messages")
+        .insert({
+          thread_id: (thread as any).id,
+          sender_id: userId,
+          sender_role: "vendor",
+          body,
+          is_hilux_generated: false,
+        });
+      if (error) {
+        failures.push({ inquiry_id: inquiryId, error: error.message });
+        continue;
+      }
+      await admin
+        .from("direct_threads")
+        .update({ last_message_at: now })
+        .eq("id", (thread as any).id);
+      await admin
+        .from("inquiries")
+        .update({ last_message_at: now })
+        .eq("id", inquiryId);
+      sent += 1;
+    } catch (err) {
+      failures.push({
+        inquiry_id: inquiryId,
+        error: err instanceof Error ? err.message : String(err),
+      });
+    }
+  }
+  return { sent, failed: failures.length, failures };
+}
+
+// ─── Conversation summarization ─────────────────────────────────
+
+async function toolSummarizeInquiryThread(
+  admin: any,
+  vendorId: string,
+  input: any,
+): Promise<unknown> {
+  if (!ANTHROPIC_API_KEY) return { error: "anthropic_key_missing" };
+  const inquiryId = String(input?.inquiry_id ?? "");
+  if (!inquiryId) return { error: "inquiry_id required" };
+  const { data: inq } = await admin
+    .from("inquiries")
+    .select("event_type, event_date, budget_min_cents, budget_max_cents")
+    .eq("id", inquiryId)
+    .eq("vendor_id", vendorId)
+    .maybeSingle();
+  if (!inq) return { error: "inquiry_not_found_or_not_owned" };
+  const { data: thread } = await admin
+    .from("direct_threads")
+    .select("id")
+    .eq("inquiry_id", inquiryId)
+    .maybeSingle();
+  if (!(thread as any)?.id) return { error: "no_thread" };
+  const { data: msgs } = await admin
+    .from("direct_messages")
+    .select("sender_role, body, created_at")
+    .eq("thread_id", (thread as any).id)
+    .is("deleted_at", null)
+    .order("created_at", { ascending: true })
+    .limit(200);
+  const transcript = ((msgs ?? []) as Array<any>)
+    .map((m) => `[${m.sender_role}] ${m.body}`)
+    .join("\n");
+  if (!transcript.trim()) return { error: "thread_empty" };
+  const res = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: {
+      "x-api-key": ANTHROPIC_API_KEY,
+      "anthropic-version": "2023-06-01",
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({
+      model: SONNET_MODEL,
+      max_tokens: 512,
+      system:
+        "You summarize host-vendor event-planning conversations. Output 3-5 short bullet points covering: the host's needs, key dates and numbers, what's blocking a decision, and what the host is waiting on.",
+      messages: [{
+        role: "user",
+        content: `Inquiry: ${(inq as any).event_type ?? "(unknown type)"} on ${
+          (inq as any).event_date ?? "(unknown date)"
+        }. Transcript:\n\n${transcript.slice(0, 12_000)}`,
+      }],
+    }),
+  });
+  if (!res.ok) {
+    return { error: `anthropic ${res.status}: ${(await res.text()).slice(0, 200)}` };
+  }
+  const parsed = (await res.json()) as any;
+  const text = (parsed.content ?? [])
+    .filter((b: any) => b.type === "text")
+    .map((b: any) => b.text)
+    .join("\n")
+    .trim();
+  return { summary: text || "(empty summary)", message_count: (msgs ?? []).length };
+}
+
+// ─── Custom tools ───────────────────────────────────────────────
+
+async function toolManageCustomTool(
+  admin: any,
+  vendorId: string,
+  userId: string,
+  input: any,
+): Promise<unknown> {
+  const action = String(input?.action ?? "");
+  if (action === "list") {
+    const { data, error } = await admin
+      .from("my_space_custom_tools")
+      .select("id, name, description, url, method, is_active, created_at")
+      .eq("vendor_id", vendorId)
+      .order("created_at", { ascending: true });
+    if (error) return { error: error.message };
+    return { tools: (data ?? []) as Array<any> };
+  }
+  if (action === "add") {
+    const name = String(input?.name ?? "").trim();
+    if (!/^[a-z][a-z0-9_]{1,40}$/.test(name)) {
+      return {
+        error: "name must be snake_case (lowercase letters / digits / underscores)",
+      };
+    }
+    const description = String(input?.description ?? "").trim();
+    const url = String(input?.url ?? "").trim();
+    if (!description) return { error: "description required" };
+    if (!/^https?:\/\//.test(url)) return { error: "url must be http(s)" };
+    const method = String(input?.method ?? "POST");
+    const { data, error } = await admin
+      .from("my_space_custom_tools")
+      .insert({
+        user_id: userId,
+        vendor_id: vendorId,
+        name,
+        description,
+        url,
+        method,
+        headers_json: input?.headers_json ?? null,
+        input_schema: input?.input_schema ?? null,
+      })
+      .select("id, name, url")
+      .single();
+    if (error) return { error: error.message };
+    return { added: true, tool: data };
+  }
+  if (action === "update") {
+    const id = String(input?.id ?? "");
+    if (!id) return { error: "id required" };
+    const patch: Record<string, unknown> = {};
+    if (input?.description !== undefined) {
+      patch.description = String(input.description);
+    }
+    if (input?.url !== undefined) patch.url = String(input.url);
+    if (input?.method !== undefined) patch.method = String(input.method);
+    if (input?.headers_json !== undefined) patch.headers_json = input.headers_json;
+    if (input?.input_schema !== undefined) patch.input_schema = input.input_schema;
+    if (input?.is_active !== undefined) patch.is_active = !!input.is_active;
+    if (Object.keys(patch).length === 0) return { error: "nothing_to_update" };
+    const { data, error } = await admin
+      .from("my_space_custom_tools")
+      .update(patch)
+      .eq("id", id)
+      .eq("vendor_id", vendorId)
+      .select("id, name")
+      .maybeSingle();
+    if (error) return { error: error.message };
+    if (!data) return { error: "custom_tool_not_found" };
+    return { updated: true, tool: data };
+  }
+  if (action === "delete") {
+    const id = String(input?.id ?? "");
+    if (!id) return { error: "id required" };
+    const { error } = await admin
+      .from("my_space_custom_tools")
+      .delete()
+      .eq("id", id)
+      .eq("vendor_id", vendorId);
+    if (error) return { error: error.message };
+    return { deleted: true, id };
+  }
+  return { error: `unknown_action: ${action}` };
+}
+
+// Execute one of the vendor's registered custom webhook tools.
+async function execCustomTool(
+  toolRow: any,
+  input: any,
+): Promise<unknown> {
+  const method = String(toolRow.method ?? "POST");
+  const baseHeaders: Record<string, string> = {
+    "Content-Type": "application/json",
+    "User-Agent": "Vendora-MySpace/1.0",
+  };
+  const extra = toolRow.headers_json &&
+      typeof toolRow.headers_json === "object"
+    ? toolRow.headers_json as Record<string, string>
+    : {};
+  const headers = { ...baseHeaders, ...extra };
+  let url = String(toolRow.url);
+  let body: string | undefined;
+  if (method === "GET" || method === "DELETE") {
+    const u = new URL(url);
+    for (const [k, v] of Object.entries(input ?? {})) {
+      u.searchParams.set(k, String(v));
+    }
+    url = u.toString();
+  } else {
+    body = JSON.stringify(input ?? {});
+  }
+  const ac = new AbortController();
+  const timeout = setTimeout(() => ac.abort(), 10_000);
+  try {
+    const res = await fetch(url, { method, headers, body, signal: ac.signal });
+    const ct = res.headers.get("content-type") ?? "";
+    const text = await res.text();
+    let parsed: unknown = text;
+    if (ct.includes("application/json")) {
+      try {
+        parsed = JSON.parse(text);
+      } catch {
+        // keep raw text
+      }
+    }
+    if (!res.ok) {
+      return {
+        error: `webhook ${res.status}`,
+        body: typeof parsed === "string" ? parsed.slice(0, 480) : parsed,
+      };
+    }
+    return parsed;
+  } catch (err) {
+    return {
+      error: err instanceof Error ? err.message : String(err),
+    };
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
 async function toolCreateInvoice(
   admin: any,
   vendorId: string,
@@ -2461,10 +3135,24 @@ async function toolCancelScheduledAction(
   return { cancelled: true };
 }
 
+async function loadCustomTools(
+  admin: any,
+  vendorId: string,
+): Promise<Array<any>> {
+  if (!vendorId) return [];
+  const { data } = await admin
+    .from("my_space_custom_tools")
+    .select("id, name, description, url, method, headers_json, input_schema, is_active")
+    .eq("vendor_id", vendorId)
+    .eq("is_active", true);
+  return ((data ?? []) as Array<any>);
+}
+
 async function executeTool(
   admin: any,
   vendorId: string,
   userId: string,
+  customTools: Map<string, any>,
   name: string,
   input: any,
 ): Promise<unknown> {
@@ -2580,6 +3268,34 @@ async function executeTool(
     if (name === "get_audit_log") {
       return await toolGetAuditLog(admin, userId, input);
     }
+    if (name === "web_search") return await toolWebSearch(input);
+    if (name === "get_sales_summary") {
+      return await toolGetSalesSummary(admin, vendorId, input);
+    }
+    if (name === "get_top_packages_by_revenue") {
+      return await toolGetTopPackages(admin, vendorId, input);
+    }
+    if (name === "get_repeat_hosts") {
+      return await toolGetRepeatHosts(admin, vendorId, input);
+    }
+    if (name === "get_conversion_funnel") {
+      return await toolGetConversionFunnel(admin, vendorId, input);
+    }
+    if (name === "bulk_update_inquiry_status") {
+      return await toolBulkUpdateInquiryStatus(admin, vendorId, input);
+    }
+    if (name === "bulk_send_reply") {
+      return await toolBulkSendReply(admin, vendorId, userId, input);
+    }
+    if (name === "summarize_inquiry_thread") {
+      return await toolSummarizeInquiryThread(admin, vendorId, input);
+    }
+    if (name === "manage_custom_tool") {
+      return await toolManageCustomTool(admin, vendorId, userId, input);
+    }
+    // Vendor-registered custom webhook tool?
+    const custom = customTools.get(name);
+    if (custom) return await execCustomTool(custom, input);
     return { error: `unknown_tool:${name}` };
   } catch (err) {
     return { error: err instanceof Error ? err.message : String(err) };
@@ -2731,6 +3447,16 @@ async function streamClaudeWithTools(
   threadId: string,
   send: (ev: Record<string, unknown>) => void,
 ): Promise<string> {
+  // Load the vendor's custom webhook tools once per turn and merge
+  // them into the tool list Claude sees.
+  const customToolRows = await loadCustomTools(admin, vendorId);
+  const customToolMap = new Map(customToolRows.map((r) => [r.name, r]));
+  const customToolDefs = customToolRows.map((r) => ({
+    name: r.name,
+    description: `[custom] ${r.description}`,
+    input_schema: r.input_schema ?? { type: "object", properties: {} },
+  }));
+  const allTools = [...TOOLS, ...customToolDefs];
   if (!ANTHROPIC_API_KEY) throw new Error("anthropic_key_missing");
   let messages = [...initialMessages];
   let finalText = "";
@@ -2758,7 +3484,7 @@ async function streamClaudeWithTools(
             cache_control: { type: "ephemeral" },
           },
         ],
-        tools: TOOLS,
+        tools: allTools,
         messages,
         stream: true,
       }),
@@ -2832,6 +3558,7 @@ async function streamClaudeWithTools(
             admin,
             vendorId,
             userId,
+            customToolMap,
             tu.name,
             tu.input,
           );
