@@ -17,11 +17,15 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowUp,
+  Download,
   FileText,
   ImageIcon,
   Loader2,
   MessageSquarePlus,
+  Mic,
+  MicOff,
   Paperclip,
+  RotateCw,
   Sparkles,
   Trash2,
   X,
@@ -93,6 +97,11 @@ export function MySpaceChat() {
   const listRef = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  // Voice input via the Web Speech API. Set while a recognition
+  // session is active. Browsers that don't support it just don't show
+  // the mic button.
+  const [voiceRecording, setVoiceRecording] = useState(false);
+  const recognitionRef = useRef<any>(null);
 
   // ── Load threads on mount; pick the most recent as the default.
   const loadThreads = useCallback(async (): Promise<ThreadRow[]> => {
@@ -245,17 +254,24 @@ export function MySpaceChat() {
   }
 
   // ── Send message → SSE stream from edge function → live-update bubble.
-  async function send(promptText?: string) {
-    const text = (promptText ?? input).trim();
-    const attachments = pendingAttachments;
-    if ((!text && attachments.length === 0) || sending) return;
-    setInput("");
-    setPendingAttachments([]);
+  async function send(promptText?: string, opts?: { regenerate?: boolean }) {
+    const regenerate = opts?.regenerate === true;
+    const text = regenerate ? "" : (promptText ?? input).trim();
+    const attachments = regenerate ? [] : pendingAttachments;
+    if (!regenerate && (!text && attachments.length === 0)) return;
+    if (sending) return;
+    if (regenerate && !currentThreadId) return;
+    if (!regenerate) {
+      setInput("");
+      setPendingAttachments([]);
+    }
 
     // Optimistic user bubble + a placeholder assistant bubble that
     // gets filled in by `delta` events as Claude streams text. Using
     // sentinel objects so we can find them via reference equality.
-    const userOptimistic: TextMessage = {
+    // For regenerate, we pop the last assistant message off and only
+    // add the placeholder.
+    const userOptimistic: TextMessage | null = regenerate ? null : {
       role: "user",
       type: "text",
       content: text,
@@ -266,7 +282,21 @@ export function MySpaceChat() {
       type: "text",
       content: "",
     };
-    setMessages((prev) => [...prev, userOptimistic, assistantPlaceholder]);
+    setMessages((prev) => {
+      if (regenerate) {
+        // Drop the trailing assistant message; the server will delete
+        // its persisted row.
+        const next = [...prev];
+        for (let i = next.length - 1; i >= 0; i--) {
+          if (next[i].role === "assistant") {
+            next.splice(i, 1);
+            break;
+          }
+        }
+        return [...next, assistantPlaceholder];
+      }
+      return [...prev, userOptimistic!, assistantPlaceholder];
+    });
     setSending(true);
     setActiveTool(null);
 
@@ -290,11 +320,16 @@ export function MySpaceChat() {
             apikey: SUPABASE_PUBLISHABLE_KEY,
             accept: "text/event-stream",
           },
-          body: JSON.stringify({
-            text,
-            thread_id: currentThreadId,
-            attachments: attachments.length > 0 ? attachments : undefined,
-          }),
+          body: JSON.stringify(
+            regenerate
+              ? { regenerate: true, thread_id: currentThreadId }
+              : {
+                text,
+                thread_id: currentThreadId,
+                attachments:
+                  attachments.length > 0 ? attachments : undefined,
+              },
+          ),
         },
       );
       if (!res.ok || !res.body) {
@@ -332,7 +367,7 @@ export function MySpaceChat() {
             if (ev.thread_is_new || ev.thread_id !== currentThreadId) {
               setCurrentThreadId(ev.thread_id);
             }
-          } else if (ev.type === "user_message") {
+          } else if (ev.type === "user_message" && userOptimistic) {
             // Swap the optimistic user bubble with the persisted one.
             setMessages((prev) => {
               const next = [...prev];
@@ -396,10 +431,12 @@ export function MySpaceChat() {
           } else if (ev.type === "error") {
             sawError = true;
             toast.error(`Couldn't get a reply: ${ev.message}`);
-            // Roll back both placeholders.
+            // Roll back the placeholders we added.
             setMessages((prev) =>
               prev.filter(
-                (m) => m !== userOptimistic && m !== assistantPlaceholder,
+                (m) =>
+                  m !== assistantPlaceholder &&
+                  (!userOptimistic || m !== userOptimistic),
               )
             );
             setActiveTool(null);
@@ -416,7 +453,11 @@ export function MySpaceChat() {
       console.error("[MySpaceChat] send failed", err);
       toast.error("Couldn't get a reply. Try again.");
       setMessages((prev) =>
-        prev.filter((m) => m !== userOptimistic && m !== assistantPlaceholder)
+        prev.filter(
+          (m) =>
+            m !== assistantPlaceholder &&
+            (!userOptimistic || m !== userOptimistic),
+        )
       );
     } finally {
       setSending(false);
@@ -432,6 +473,95 @@ export function MySpaceChat() {
       e.preventDefault();
       void send();
     }
+  }
+
+  // ── Voice input via the Web Speech API. Append transcripts to the
+  // composer; toggling stops the session. Chrome / Safari supported.
+  const speechSupported = typeof window !== "undefined" &&
+    (("SpeechRecognition" in window) ||
+      ("webkitSpeechRecognition" in window));
+
+  function startVoice() {
+    if (!speechSupported) {
+      toast.error("Voice input isn't supported in this browser.");
+      return;
+    }
+    const Ctor = (window as any).SpeechRecognition ??
+      (window as any).webkitSpeechRecognition;
+    const rec = new Ctor();
+    rec.continuous = true;
+    rec.interimResults = false;
+    rec.lang = "en-US";
+    rec.onresult = (e: any) => {
+      let final = "";
+      for (let i = e.resultIndex; i < e.results.length; i++) {
+        if (e.results[i].isFinal) final += e.results[i][0].transcript;
+      }
+      if (final) {
+        setInput((cur) => (cur ? `${cur} ${final}` : final).trim());
+      }
+    };
+    rec.onerror = (e: any) => {
+      console.warn("[MySpaceChat] speech error", e);
+      setVoiceRecording(false);
+    };
+    rec.onend = () => {
+      setVoiceRecording(false);
+      recognitionRef.current = null;
+    };
+    rec.start();
+    recognitionRef.current = rec;
+    setVoiceRecording(true);
+  }
+
+  function stopVoice() {
+    recognitionRef.current?.stop();
+    setVoiceRecording(false);
+  }
+
+  function regenerate() {
+    void send(undefined, { regenerate: true });
+  }
+
+  function exportChat() {
+    if (messages.length === 0) {
+      toast.error("Nothing to export yet.");
+      return;
+    }
+    const thread = threads.find((t) => t.id === currentThreadId);
+    const title = thread?.title || "Untitled chat";
+    const lines: string[] = [];
+    lines.push(`# ${title}`);
+    if (thread?.updated_at) {
+      lines.push(`_Last updated: ${new Date(thread.updated_at).toLocaleString()}_`);
+    }
+    lines.push("");
+    for (const m of messages) {
+      const who = m.role === "user" ? "**You**" : "**My Space**";
+      if (m.type === "image") {
+        lines.push(`${who} _(image)_`);
+        lines.push(`![${m.image_prompt}](${m.image_url})`);
+      } else {
+        lines.push(`${who}`);
+        if (m.attachments && m.attachments.length > 0) {
+          for (const a of m.attachments) {
+            lines.push(`📎 [${a.name}](${a.url})`);
+          }
+        }
+        lines.push(m.content || "");
+      }
+      lines.push("");
+    }
+    const md = lines.join("\n");
+    const blob = new Blob([md], { type: "text/markdown" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${title.replace(/[^a-zA-Z0-9._-]+/g, "_")}.md`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
   }
 
   function startNewChat() {
@@ -493,6 +623,19 @@ export function MySpaceChat() {
             <MessageSquarePlus className="w-4 h-4" />
             New chat
           </button>
+          {currentThreadId && messages.length > 0
+            ? (
+              <button
+                type="button"
+                onClick={exportChat}
+                className="w-full mt-2 inline-flex items-center justify-center gap-1.5 text-[11px] text-muted-foreground hover:text-foreground transition-colors"
+                title="Download this chat as Markdown"
+              >
+                <Download className="w-3 h-3" />
+                Export this chat
+              </button>
+            )
+            : null}
         </div>
         <div className="flex-1 overflow-y-auto px-2 py-2">
           {threadsLoading ? (
@@ -603,6 +746,27 @@ export function MySpaceChat() {
               : messages.map((m, i) => (
                 <MessageBubble key={m.id ?? `idx-${i}`} message={m} />
               ))}
+            {/* Regenerate button under the last assistant text message
+                when we're idle and the message has actually been
+                persisted (has an id). */}
+            {!sending && currentThreadId &&
+                messages.length > 0 &&
+                messages[messages.length - 1]?.role === "assistant" &&
+                (messages[messages.length - 1] as TextMessage).id
+              ? (
+                <div className="flex justify-start pl-2">
+                  <button
+                    type="button"
+                    onClick={regenerate}
+                    className="inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground transition-colors"
+                    title="Regenerate"
+                  >
+                    <RotateCw className="w-3 h-3" />
+                    Regenerate
+                  </button>
+                </div>
+              )
+              : null}
             {sending && activeTool
               ? (
                 <div className="flex items-center gap-2 text-xs text-muted-foreground pl-2">
@@ -665,6 +829,26 @@ export function MySpaceChat() {
             >
               <Paperclip className="w-4 h-4" />
             </button>
+            {speechSupported
+              ? (
+                <button
+                  type="button"
+                  onClick={voiceRecording ? stopVoice : startVoice}
+                  disabled={sending}
+                  className={`shrink-0 w-9 h-9 rounded-full inline-flex items-center justify-center transition-colors disabled:opacity-40 ${
+                    voiceRecording
+                      ? "bg-red-500/15 text-red-600"
+                      : "text-muted-foreground hover:text-foreground hover:bg-secondary/40"
+                  }`}
+                  aria-label={voiceRecording ? "Stop voice" : "Start voice"}
+                  title={voiceRecording ? "Tap to stop" : "Voice input"}
+                >
+                  {voiceRecording
+                    ? <MicOff className="w-4 h-4" />
+                    : <Mic className="w-4 h-4" />}
+                </button>
+              )
+              : null}
             <textarea
               ref={inputRef}
               value={input}
