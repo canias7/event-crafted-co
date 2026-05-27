@@ -31,6 +31,7 @@ import {
   RotateCw,
   Search,
   Sparkles,
+  Square,
   Trash2,
   Volume2,
   VolumeX,
@@ -117,6 +118,8 @@ export function MySpaceChat() {
   // Thread search input — both title and message-content match.
   const [threadSearch, setThreadSearch] = useState("");
   const [searchHits, setSearchHits] = useState<Set<string> | null>(null);
+  // AbortController for the in-flight stream so we can cancel it.
+  const abortRef = useRef<AbortController | null>(null);
 
   // ── Load threads on mount; pick the most recent as the default.
   const loadThreads = useCallback(async (): Promise<ThreadRow[]> => {
@@ -397,6 +400,8 @@ export function MySpaceChat() {
       const accessToken = sessionData.session?.access_token;
       if (!accessToken) throw new Error("not_signed_in");
 
+      const ac = new AbortController();
+      abortRef.current = ac;
       const res = await fetch(
         `${SUPABASE_URL}/functions/v1/my-space-chat`,
         {
@@ -407,6 +412,7 @@ export function MySpaceChat() {
             apikey: SUPABASE_PUBLISHABLE_KEY,
             accept: "text/event-stream",
           },
+          signal: ac.signal,
           body: JSON.stringify(
             regenerate
               ? { regenerate: true, thread_id: currentThreadId }
@@ -538,16 +544,89 @@ export function MySpaceChat() {
         setThreads(refreshed);
       }
     } catch (err) {
-      console.error("[MySpaceChat] send failed", err);
-      toast.error("Couldn't get a reply. Try again.");
-      setMessages((prev) =>
-        prev.filter(
-          (m) =>
-            m !== assistantPlaceholder &&
-            (!userOptimistic || m !== userOptimistic),
-        )
-      );
+      const aborted = err instanceof DOMException && err.name === "AbortError";
+      if (aborted) {
+        // User hit Stop. Keep whatever text streamed so far inside the
+        // assistant placeholder; demote it to a non-placeholder by
+        // tagging an id="stopped". Persistence side: the server
+        // continues and a real row will exist next page load, so on
+        // next thread load this stopped bubble gets replaced.
+        const placeholderHasText = (assistantPlaceholder.content ?? "")
+          .length > 0;
+        if (!placeholderHasText) {
+          setMessages((prev) =>
+            prev.filter((m) => m !== assistantPlaceholder)
+          );
+        } else {
+          setMessages((prev) =>
+            prev.map((m) =>
+              m === assistantPlaceholder ? { ...m, id: "stopped" } : m
+            )
+          );
+        }
+        toast.info("Stopped.");
+      } else {
+        console.error("[MySpaceChat] send failed", err);
+        // Soft stream resume: the server may have completed even
+        // though the client dropped. Pull the latest persisted
+        // messages for this thread and splice in any newer
+        // assistant row that wasn't visible yet.
+        let recovered = false;
+        const threadIdForRecovery = (receivedThreadId ?? currentThreadId);
+        if (threadIdForRecovery) {
+          try {
+            const { data: latest } = await supabase
+              .from("my_space_messages")
+              .select(
+                "id, role, type, content, image_url, image_prompt, attachments, created_at",
+              )
+              .eq("thread_id", threadIdForRecovery)
+              .order("created_at", { ascending: true })
+              .limit(200);
+            const rows = (latest ?? []) as Array<any>;
+            const lastRow = rows[rows.length - 1];
+            if (lastRow && lastRow.role === "assistant" && lastRow.id) {
+              setMessages(
+                rows.map((r) =>
+                  r.type === "image"
+                    ? ({
+                      id: r.id,
+                      role: "assistant",
+                      type: "image",
+                      image_url: r.image_url,
+                      image_prompt: r.image_prompt,
+                      created_at: r.created_at,
+                    } as ImageMessage)
+                    : ({
+                      id: r.id,
+                      role: r.role,
+                      type: "text",
+                      content: r.content,
+                      attachments:
+                        (r.attachments as Attachment[] | null) ?? null,
+                      created_at: r.created_at,
+                    } as TextMessage)
+                ),
+              );
+              recovered = true;
+            }
+          } catch {
+            // ignore — fall through to the rollback toast
+          }
+        }
+        if (!recovered) {
+          toast.error("Connection dropped. Try regenerate.");
+          setMessages((prev) =>
+            prev.filter(
+              (m) =>
+                m !== assistantPlaceholder &&
+                (!userOptimistic || m !== userOptimistic),
+            )
+          );
+        }
+      }
     } finally {
+      abortRef.current = null;
       setSending(false);
       setActiveTool(null);
       inputRef.current?.focus();
@@ -1095,19 +1174,31 @@ export function MySpaceChat() {
               className="flex-1 resize-none bg-transparent text-sm leading-relaxed outline-none max-h-40 py-2 px-2"
               disabled={sending}
             />
-            <button
-              type="button"
-              onClick={() => void send()}
-              disabled={(!input.trim() && pendingAttachments.length === 0) ||
-                sending ||
-                uploadingCount > 0}
-              className="shrink-0 w-9 h-9 rounded-full inline-flex items-center justify-center bg-foreground text-background disabled:opacity-40 transition-opacity"
-              aria-label="Send"
-            >
-              {sending
-                ? <Loader2 className="w-4 h-4 animate-spin" />
-                : <ArrowUp className="w-4 h-4" />}
-            </button>
+            {sending
+              ? (
+                <button
+                  type="button"
+                  onClick={() => abortRef.current?.abort()}
+                  className="shrink-0 w-9 h-9 rounded-full inline-flex items-center justify-center bg-foreground text-background transition-opacity"
+                  aria-label="Stop"
+                  title="Stop generating"
+                >
+                  <Square className="w-3.5 h-3.5 fill-current" />
+                </button>
+              )
+              : (
+                <button
+                  type="button"
+                  onClick={() => void send()}
+                  disabled={(!input.trim() &&
+                    pendingAttachments.length === 0) ||
+                    uploadingCount > 0}
+                  className="shrink-0 w-9 h-9 rounded-full inline-flex items-center justify-center bg-foreground text-background disabled:opacity-40 transition-opacity"
+                  aria-label="Send"
+                >
+                  <ArrowUp className="w-4 h-4" />
+                </button>
+              )}
           </div>
           <p className="text-[10px] text-muted-foreground mt-1.5 px-2">
             Text uses Claude Sonnet · Images use OpenAI gpt-image-2
