@@ -10,6 +10,9 @@ import {
   MicOff,
   AlertCircle,
   ExternalLink,
+  Eye,
+  EyeOff,
+  Users,
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -21,6 +24,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { useLiveViewerCount } from "@/hooks/useLiveViewerCount";
 
 // Browser-based live broadcaster for a host event. Two paths:
 //
@@ -77,10 +81,23 @@ export function LiveBroadcastModal({
     "setup",
   );
   const [copied, setCopied] = useState(false);
+  const [copiedField, setCopiedField] = useState<
+    "ingest" | "key" | null
+  >(null);
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [streamKeyVisible, setStreamKeyVisible] = useState(false);
   const [muted, setMuted] = useState(false);
   const [videoOff, setVideoOff] = useState(false);
+  const [ending, setEnding] = useState(false);
+
+  // Viewer count via Realtime presence. We track the host's presence on
+  // the same channel as viewers so the connection is alive end-to-end,
+  // but the hook filters host-role members out of the count.
+  const viewerCount = useLiveViewerCount(
+    creds?.share_token ?? null,
+    "host",
+    phase === "live",
+  );
 
   // refs so the cleanup callback sees current values without a re-
   // render dependency loop.
@@ -250,8 +267,44 @@ export function LiveBroadcastModal({
   }
 
   async function stopLive() {
+    if (ending) return;
+    setEnding(true);
+    // Tell Mux to finalize the broadcast immediately so the watch page
+    // doesn't sit on "Live" for the 60s reconnect window. Best-effort —
+    // we still tear down the WebRTC session and mark the phase locally
+    // even if the call errors (Mux will eventually finalize on its own
+    // once the connection drops).
+    try {
+      await supabase.functions.invoke("mux-end-live-stream", {
+        body: { event_id: eventId },
+      });
+    } catch (err) {
+      console.error("[LiveBroadcastModal] end-stream call failed", err);
+    }
     await cleanup();
     setPhase("ended");
+    setEnding(false);
+  }
+
+  async function copyIngest() {
+    if (!creds) return;
+    await navigator.clipboard.writeText(creds.ingest_url);
+    setCopiedField("ingest");
+    toast.success("Server URL copied");
+    window.setTimeout(
+      () => setCopiedField((f) => (f === "ingest" ? null : f)),
+      1500,
+    );
+  }
+  async function copyStreamKey() {
+    if (!creds) return;
+    await navigator.clipboard.writeText(creds.stream_key);
+    setCopiedField("key");
+    toast.success("Stream key copied");
+    window.setTimeout(
+      () => setCopiedField((f) => (f === "key" ? null : f)),
+      1500,
+    );
   }
 
   function toggleMute() {
@@ -313,54 +366,76 @@ export function LiveBroadcastModal({
             </div>
 
             {phase === "live" && (
-              <div className="flex items-center justify-center gap-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={toggleMute}
-                  className="rounded-full"
-                >
-                  {muted ? (
-                    <>
-                      <MicOff className="w-3.5 h-3.5 mr-1.5" />
-                      Unmute
-                    </>
-                  ) : (
-                    <>
-                      <Mic className="w-3.5 h-3.5 mr-1.5" />
-                      Mute
-                    </>
-                  )}
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={toggleVideo}
-                  className="rounded-full"
-                >
-                  {videoOff ? (
-                    <>
-                      <VideoOff className="w-3.5 h-3.5 mr-1.5" />
-                      Camera on
-                    </>
-                  ) : (
-                    <>
-                      <Video className="w-3.5 h-3.5 mr-1.5" />
-                      Camera off
-                    </>
-                  )}
-                </Button>
-                <Button
-                  type="button"
-                  size="sm"
-                  onClick={stopLive}
-                  className="rounded-full bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                >
-                  End stream
-                </Button>
-              </div>
+              <>
+                <div className="flex items-center justify-center gap-3 text-xs">
+                  <span className="inline-flex items-center gap-1.5 text-destructive">
+                    <Radio className="w-3 h-3 animate-pulse" />
+                    LIVE
+                  </span>
+                  <span className="inline-flex items-center gap-1.5 text-muted-foreground">
+                    <Users className="w-3.5 h-3.5" />
+                    {viewerCount === 1
+                      ? "1 watching"
+                      : `${viewerCount} watching`}
+                  </span>
+                </div>
+                <div className="flex items-center justify-center gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={toggleMute}
+                    className="rounded-full"
+                  >
+                    {muted ? (
+                      <>
+                        <MicOff className="w-3.5 h-3.5 mr-1.5" />
+                        Unmute
+                      </>
+                    ) : (
+                      <>
+                        <Mic className="w-3.5 h-3.5 mr-1.5" />
+                        Mute
+                      </>
+                    )}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={toggleVideo}
+                    className="rounded-full"
+                  >
+                    {videoOff ? (
+                      <>
+                        <VideoOff className="w-3.5 h-3.5 mr-1.5" />
+                        Camera on
+                      </>
+                    ) : (
+                      <>
+                        <Video className="w-3.5 h-3.5 mr-1.5" />
+                        Camera off
+                      </>
+                    )}
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    onClick={stopLive}
+                    disabled={ending}
+                    className="rounded-full bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  >
+                    {ending ? (
+                      <>
+                        <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
+                        Ending…
+                      </>
+                    ) : (
+                      "End stream"
+                    )}
+                  </Button>
+                </div>
+              </>
             )}
 
             {/* Share URL — visible in every phase except "ended" so
@@ -437,9 +512,29 @@ export function LiveBroadcastModal({
                       <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-0.5">
                         Server URL
                       </p>
-                      <code className="text-xs font-mono bg-background rounded px-2 py-1 block break-all">
-                        {creds.ingest_url}
-                      </code>
+                      <div className="flex items-center gap-2">
+                        <code className="text-xs font-mono bg-background rounded px-2 py-1 flex-1 break-all">
+                          {creds.ingest_url}
+                        </code>
+                        <button
+                          type="button"
+                          onClick={copyIngest}
+                          aria-label="Copy server URL"
+                          className="text-[10px] text-accent hover:underline shrink-0 inline-flex items-center gap-1"
+                        >
+                          {copiedField === "ingest" ? (
+                            <>
+                              <Check className="w-3 h-3" />
+                              Copied
+                            </>
+                          ) : (
+                            <>
+                              <Copy className="w-3 h-3" />
+                              Copy
+                            </>
+                          )}
+                        </button>
+                      </div>
                     </div>
                     <div>
                       <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-0.5">
@@ -454,9 +549,38 @@ export function LiveBroadcastModal({
                         <button
                           type="button"
                           onClick={() => setStreamKeyVisible((v) => !v)}
-                          className="text-[10px] text-accent hover:underline shrink-0"
+                          aria-label={streamKeyVisible ? "Hide stream key" : "Show stream key"}
+                          className="text-[10px] text-accent hover:underline shrink-0 inline-flex items-center gap-1"
                         >
-                          {streamKeyVisible ? "Hide" : "Show"}
+                          {streamKeyVisible ? (
+                            <>
+                              <EyeOff className="w-3 h-3" />
+                              Hide
+                            </>
+                          ) : (
+                            <>
+                              <Eye className="w-3 h-3" />
+                              Show
+                            </>
+                          )}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={copyStreamKey}
+                          aria-label="Copy stream key"
+                          className="text-[10px] text-accent hover:underline shrink-0 inline-flex items-center gap-1"
+                        >
+                          {copiedField === "key" ? (
+                            <>
+                              <Check className="w-3 h-3" />
+                              Copied
+                            </>
+                          ) : (
+                            <>
+                              <Copy className="w-3 h-3" />
+                              Copy
+                            </>
+                          )}
                         </button>
                       </div>
                     </div>

@@ -10,6 +10,7 @@ import {
   Check,
   ChevronLeft,
   ChevronRight,
+  History,
   MapPin,
   MoreHorizontal,
   Pencil,
@@ -63,6 +64,7 @@ import { customerNavItems as navItems } from "@/data/navItems";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { LiveBroadcastModal } from "@/components/host/LiveBroadcastModal";
+import { LiveArchiveDialog } from "@/components/host/LiveArchiveDialog";
 
 interface HostEvent {
   id: string;
@@ -76,6 +78,17 @@ interface HostEvent {
   notes: string | null;
   share_token: string;
   going_count?: number;
+}
+
+// Per-event live stream snapshot, fetched alongside events. Used to
+// flip the LIVE badge on the EventCard and gate the "Past lives"
+// button on actual archive presence. The stream's share_token is
+// separate from host_events.share_token (which is the RSVP token).
+interface LiveEventData {
+  streamId: string;
+  shareToken: string;
+  status: "idle" | "active" | "recording" | "disconnected" | "disabled";
+  recordingsCount: number;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -137,6 +150,9 @@ function eventTypeLabel(type: string | null): string | null {
 export default function HostEventsPage() {
   const { user } = useAuth();
   const [events, setEvents] = useState<HostEvent[] | null>(null);
+  const [liveByEvent, setLiveByEvent] = useState<Record<string, LiveEventData>>(
+    {},
+  );
   const [editing, setEditing] = useState<HostEvent | null>(null);
   const [creating, setCreating] = useState(false);
   const [deleting, setDeleting] = useState<HostEvent | null>(null);
@@ -186,6 +202,92 @@ export default function HostEventsPage() {
   useEffect(() => {
     load();
   }, [load]);
+
+  // Pull live stream rows + a recording count per stream. We do this
+  // as a separate query so the events list paints first and the LIVE
+  // badge / Past lives button fill in once we know the live state.
+  const loadLive = useCallback(async () => {
+    if (!user?.id) return;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: streams } = await (supabase as any)
+      .from("host_event_live_streams")
+      .select("id, event_id, share_token, status")
+      .eq("host_id", user.id);
+    const streamRows =
+      (streams as Array<{
+        id: string;
+        event_id: string;
+        share_token: string;
+        status: LiveEventData["status"];
+      }> | null) ?? [];
+    if (streamRows.length === 0) {
+      setLiveByEvent({});
+      return;
+    }
+    const streamIds = streamRows.map((s) => s.id);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: recordings } = await (supabase as any)
+      .from("host_event_live_recordings")
+      .select("live_stream_id")
+      .in("live_stream_id", streamIds);
+    const recCounts: Record<string, number> = {};
+    for (const r of (recordings as Array<{ live_stream_id: string }> | null) ??
+      []) {
+      recCounts[r.live_stream_id] = (recCounts[r.live_stream_id] ?? 0) + 1;
+    }
+    const map: Record<string, LiveEventData> = {};
+    for (const s of streamRows) {
+      map[s.event_id] = {
+        streamId: s.id,
+        shareToken: s.share_token,
+        status: s.status,
+        recordingsCount: recCounts[s.id] ?? 0,
+      };
+    }
+    setLiveByEvent(map);
+  }, [user?.id]);
+
+  useEffect(() => {
+    loadLive();
+  }, [loadLive]);
+
+  // Realtime: webhook flips host_event_live_streams.status on Mux
+  // active/disconnected events, and inserts host_event_live_recordings
+  // when a recording asset finalizes. Subscribing here keeps the LIVE
+  // badge and recordings count in sync without polling.
+  useEffect(() => {
+    if (!user?.id) return;
+    const channel = supabase
+      .channel(`host-live-events:${user.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "host_event_live_streams",
+          filter: `host_id=eq.${user.id}`,
+        },
+        () => {
+          loadLive();
+        },
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "host_event_live_recordings",
+          filter: `host_id=eq.${user.id}`,
+        },
+        () => {
+          loadLive();
+        },
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user?.id, loadLive]);
 
   const { upcoming, past, nextUp } = useMemo(() => {
     if (!events) return { upcoming: [], past: [], nextUp: null };
@@ -322,6 +424,7 @@ export default function HostEventsPage() {
                 <div className="space-y-3">
                   <UpNextHero
                     event={eventsOnSelectedDay[0]}
+                    liveData={liveByEvent[eventsOnSelectedDay[0].id] ?? null}
                     label={
                       selectedDay && nextUp?.event_date === selectedDay
                         ? "Up next"
@@ -334,6 +437,7 @@ export default function HostEventsPage() {
                     <EventCard
                       key={e.id}
                       event={e}
+                      liveData={liveByEvent[e.id] ?? null}
                       onEdit={() => setEditing(e)}
                       onDelete={() => setDeleting(e)}
                     />
@@ -359,6 +463,7 @@ export default function HostEventsPage() {
                       <EventCard
                         key={e.id}
                         event={e}
+                        liveData={liveByEvent[e.id] ?? null}
                         onEdit={() => setEditing(e)}
                         onDelete={() => setDeleting(e)}
                       />
@@ -607,16 +712,23 @@ function CalendarCell({
 
 function UpNextHero({
   event,
+  liveData,
   label = "Up next",
   onEdit,
   onDelete,
 }: {
   event: HostEvent;
+  liveData?: LiveEventData | null;
   label?: string;
   onEdit?: () => void;
   onDelete?: () => void;
 }) {
+  const [liveOpen, setLiveOpen] = useState(false);
+  const [archiveOpen, setArchiveOpen] = useState(false);
   const time = fmtTimeRange(event.start_time, event.end_time);
+  const isLive =
+    liveData?.status === "active" || liveData?.status === "recording";
+  const hasRecordings = (liveData?.recordingsCount ?? 0) > 0;
   return (
     <div
       className="rounded-3xl p-6 md:p-8 relative overflow-hidden"
@@ -626,9 +738,15 @@ function UpNextHero({
       }}
     >
       <div className="flex items-start justify-between gap-3">
-        <span className="inline-flex items-center gap-1 text-[11px] uppercase tracking-[0.2em] font-medium text-foreground/80">
+        <span className="inline-flex items-center gap-2 text-[11px] uppercase tracking-[0.2em] font-medium text-foreground/80">
           <Sparkles className="w-3 h-3" />
           {label}
+          {isLive ? (
+            <span className="inline-flex items-center gap-1 rounded-full bg-destructive/90 text-destructive-foreground px-2 py-0.5 tracking-normal normal-case text-[10px]">
+              <Radio className="w-2.5 h-2.5 animate-pulse" />
+              LIVE
+            </span>
+          ) : null}
         </span>
         {onEdit || onDelete ? (
           <DropdownMenu>
@@ -675,21 +793,59 @@ function UpNextHero({
           {eventTypeLabel(event.event_type)}
         </span>
       ) : null}
+      <div className="mt-5 flex flex-wrap gap-2">
+        <button
+          type="button"
+          onClick={() => setLiveOpen(true)}
+          className="inline-flex items-center gap-1.5 rounded-full bg-foreground text-background hover:bg-foreground/90 px-4 py-2 text-sm font-medium transition"
+        >
+          <Radio className="w-3.5 h-3.5" />
+          {isLive ? "Manage live" : "Go live"}
+        </button>
+        {hasRecordings ? (
+          <button
+            type="button"
+            onClick={() => setArchiveOpen(true)}
+            className="inline-flex items-center gap-1.5 rounded-full bg-foreground/10 hover:bg-foreground/15 px-4 py-2 text-sm font-medium transition"
+          >
+            <History className="w-3.5 h-3.5" />
+            Past lives ({liveData?.recordingsCount ?? 0})
+          </button>
+        ) : null}
+      </div>
+      <LiveBroadcastModal
+        open={liveOpen}
+        onOpenChange={setLiveOpen}
+        eventId={event.id}
+        eventTitle={event.title}
+      />
+      <LiveArchiveDialog
+        open={archiveOpen}
+        onOpenChange={setArchiveOpen}
+        shareToken={liveData?.shareToken ?? null}
+        eventTitle={event.title}
+      />
     </div>
   );
 }
 
 function EventCard({
   event,
+  liveData,
   onEdit,
   onDelete,
 }: {
   event: HostEvent;
+  liveData?: LiveEventData | null;
   onEdit: () => void;
   onDelete: () => void;
 }) {
   const [copied, setCopied] = useState(false);
   const [liveOpen, setLiveOpen] = useState(false);
+  const [archiveOpen, setArchiveOpen] = useState(false);
+  const isLive =
+    liveData?.status === "active" || liveData?.status === "recording";
+  const hasRecordings = (liveData?.recordingsCount ?? 0) > 0;
   const time = fmtTimeRange(event.start_time, event.end_time);
   async function copyShareLink() {
     const url = `${window.location.origin}/rsvp/${event.share_token}`;
@@ -716,6 +872,12 @@ function EventCard({
         <div className="min-w-0 flex-1">
           <div className="flex items-baseline gap-2 flex-wrap">
             <h3 className="font-editorial text-xl">{event.title}</h3>
+            {isLive ? (
+              <span className="inline-flex items-center gap-1 rounded-full bg-destructive text-destructive-foreground px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider">
+                <Radio className="w-2.5 h-2.5 animate-pulse" />
+                Live
+              </span>
+            ) : null}
             {event.event_type ? (
               <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
                 · {eventTypeLabel(event.event_type)}
@@ -775,13 +937,29 @@ function EventCard({
               className="inline-flex items-center gap-1.5 rounded-full bg-foreground text-background hover:bg-foreground/90 px-3 py-1.5 text-xs font-medium transition"
             >
               <Radio className="w-3.5 h-3.5" />
-              Go live
+              {isLive ? "Manage live" : "Go live"}
             </button>
+            {hasRecordings ? (
+              <button
+                type="button"
+                onClick={() => setArchiveOpen(true)}
+                className="inline-flex items-center gap-1.5 rounded-full bg-foreground/5 hover:bg-foreground/10 px-3 py-1.5 text-xs font-medium transition"
+              >
+                <History className="w-3.5 h-3.5" />
+                Past lives ({liveData?.recordingsCount ?? 0})
+              </button>
+            ) : null}
           </div>
           <LiveBroadcastModal
             open={liveOpen}
             onOpenChange={setLiveOpen}
             eventId={event.id}
+            eventTitle={event.title}
+          />
+          <LiveArchiveDialog
+            open={archiveOpen}
+            onOpenChange={setArchiveOpen}
+            shareToken={liveData?.shareToken ?? null}
             eventTitle={event.title}
           />
         </div>
