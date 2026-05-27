@@ -896,18 +896,19 @@ function OverviewTab({
   // Business pulse: derived KPIs that read the data already loaded
   // plus a tiny extra fetch for customer count + active recurring
   // rules so MRR + audience size show alongside Stripe balance.
-  const outstandingCents = useMemo(
-    () =>
-      invoices
-        .filter((i) => (i.status === "sent" || i.status === "overdue") && !i.paid_at)
-        .reduce((s, i) => s + i.total_cents, 0),
-    [invoices],
-  );
-
+  //
+  // Outstanding is fetched live (not summed from the parent's 50-row
+  // cap) so vendors with a backlog don't see understated AR. The
+  // dollar total is computed from a dedicated query that pulls
+  // every unpaid row regardless of how many invoices they have.
+  const [outstandingCents, setOutstandingCents] = useState<number>(0);
+  const [outstandingCount, setOutstandingCount] = useState<number>(0);
   const [customerCount, setCustomerCount] = useState<number | null>(null);
   const [mrrCents, setMrrCents] = useState<number | null>(null);
   useEffect(() => {
     if (!vendorId) {
+      setOutstandingCents(0);
+      setOutstandingCount(0);
       setCustomerCount(null);
       setMrrCents(null);
       return;
@@ -916,7 +917,14 @@ function OverviewTab({
     (async () => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const db = supabase as any;
-      const [{ count: cc }, { data: rrs }] = await Promise.all([
+      const [{ data: unpaidRows }, { count: cc }, { data: rrs }] = await Promise.all([
+        db
+          .from("invoices")
+          .select("total_cents")
+          .eq("vendor_id", vendorId)
+          .in("status", ["sent", "overdue"])
+          .is("paid_at", null)
+          .limit(10000),
         db
           .from("vendor_customers")
           .select("id", { count: "exact", head: true })
@@ -928,6 +936,9 @@ function OverviewTab({
           .eq("active", true),
       ]);
       if (cancelled) return;
+      const unpaid = (unpaidRows ?? []) as Array<{ total_cents: number }>;
+      setOutstandingCents(unpaid.reduce((s, r) => s + r.total_cents, 0));
+      setOutstandingCount(unpaid.length);
       setCustomerCount(typeof cc === "number" ? cc : 0);
       // Normalize each cadence to a monthly-equivalent so MRR
       // gives a single comparable number across intervals.
@@ -968,9 +979,7 @@ function OverviewTab({
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
           <StatCard
             label="Outstanding"
-            sub={`${invoices.filter((i) => (i.status === "sent" || i.status === "overdue") && !i.paid_at).length} unpaid invoice${
-              invoices.filter((i) => (i.status === "sent" || i.status === "overdue") && !i.paid_at).length === 1 ? "" : "s"
-            }`}
+            sub={`${outstandingCount} unpaid invoice${outstandingCount === 1 ? "" : "s"}`}
             value={formatMoney(outstandingCents, balance?.currency)}
           />
           <StatCard
@@ -3420,12 +3429,21 @@ function InvoicesTab({
       toast.error("Enter a positive late-fee amount.");
       return;
     }
+    // Cap at $1M per fee — total_cents is an int4 column so the sum
+    // (original + accumulated late fees) maxes around $21M before
+    // Postgres overflows with an opaque "integer out of range".
+    // Far above any real late-fee, well below the column ceiling.
+    if (amountNum > 1_000_000) {
+      toast.error("Late fee can't exceed $1,000,000.");
+      return;
+    }
     const feeCents = Math.round(amountNum * 100);
     setLateFeeSaving(true);
     // Atomic SQL increment via the invoice_add_late_fee RPC. The
     // previous read-(stale-state)-modify-write path lost updates
     // when two admins added a fee at once. The RPC's UPDATE row-
-    // locks so concurrent calls serialize correctly.
+    // locks so concurrent calls serialize correctly and rejects
+    // out-of-status invoices (e.g. one just paid by the buyer).
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data, error } = await (supabase as any).rpc("invoice_add_late_fee", {
       p_invoice_id: lateFeeTarget.id,
@@ -3434,7 +3452,17 @@ function InvoicesTab({
     setLateFeeSaving(false);
     if (error) {
       console.error("[InvoicesTab] late fee save failed", error);
-      toast.error("Couldn't add late fee.");
+      // Surface the RPC's message when it's actionable (status
+      // changed, not authorized) instead of swallowing as generic
+      // failure. Postgres errors like "integer out of range" still
+      // get a friendly summary.
+      const detail = typeof error?.message === "string" ? error.message : undefined;
+      const friendly = detail?.includes("status changed")
+        ? "This invoice was just paid — refresh and the late-fee button will disappear."
+        : detail?.includes("out of range")
+          ? "Late fee is too large for this invoice's total."
+          : undefined;
+      toast.error("Couldn't add late fee.", friendly ? { description: friendly } : undefined);
       return;
     }
     const row = Array.isArray(data) ? data[0] : data;
@@ -3612,12 +3640,16 @@ function InvoicesTab({
     onChanged();
   }, [onChanged]);
 
-  const cancelInvoice = useCallback(async (id: string) => {
+  const cancelInvoice = useCallback(async (inv: Invoice) => {
+    // Destructive + irreversible: status='cancelled' is terminal,
+    // there's no "uncancel" path. Always confirm so an accidental
+    // click doesn't kill a live invoice the buyer hasn't paid yet.
+    if (!confirm(`Cancel invoice ${inv.invoice_number}? This can't be undone.`)) return;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { error } = await (supabase as any)
       .from("invoices")
       .update({ status: "cancelled", updated_at: new Date().toISOString() })
-      .eq("id", id);
+      .eq("id", inv.id);
     if (error) {
       toast.error("Couldn't cancel", { description: error.message });
       return;
@@ -3804,7 +3836,7 @@ function InvoicesTab({
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => cancelInvoice(inv.id)}
+                    onClick={() => cancelInvoice(inv)}
                     className="rounded-full text-muted-foreground hover:text-destructive ml-auto"
                   >
                     Cancel
@@ -6262,12 +6294,18 @@ function PayLinksTab({
   }, []);
 
   const cancel = useCallback(
-    async (id: string) => {
+    async (link: PaymentLink) => {
+      // Destructive: scheduled balance links cancel forever when the
+      // parent goes cancelled/refunded (see scan-vendorapay-payment-
+      // schedules), so killing a deposit link kills the balance side
+      // too. Always confirm.
+      const title = link.title?.trim() || "this link";
+      if (!confirm(`Cancel "${title}"? This can't be undone.`)) return;
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { error } = await (supabase as any)
         .from("payment_links")
         .update({ status: "cancelled", updated_at: new Date().toISOString() })
-        .eq("id", id);
+        .eq("id", link.id);
       if (error) {
         toast.error("Couldn't cancel", { description: error.message });
         return;
@@ -6451,7 +6489,7 @@ function PayLinksTab({
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => cancel(l.id)}
+                    onClick={() => cancel(l)}
                     className="rounded-full text-muted-foreground hover:text-destructive ml-auto"
                   >
                     Cancel
@@ -6462,7 +6500,7 @@ function PayLinksTab({
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => cancel(l.id)}
+                    onClick={() => cancel(l)}
                     className="rounded-full text-muted-foreground hover:text-destructive ml-auto"
                   >
                     Cancel
