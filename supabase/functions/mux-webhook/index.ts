@@ -168,13 +168,53 @@ serve(async (req: Request) => {
         const assetId = data.id as string;
         const liveStreamId = data.live_stream_id as string | undefined;
         if (!liveStreamId || !assetId) break;
-        await db
+        // Stamp the latest asset on the streams row — used by the
+        // "has_recording" boolean in the public RPC so the watch page
+        // knows a replay is available.
+        const { data: streamRow } = await db
           .from("host_event_live_streams")
           .update({
             mux_asset_id: assetId,
             updated_at: new Date().toISOString(),
           })
-          .eq("mux_stream_id", liveStreamId);
+          .eq("mux_stream_id", liveStreamId)
+          .select("id, event_id, host_id")
+          .maybeSingle();
+        // Append to the archive log so past broadcasts are browsable
+        // even after the host goes live again. Each asset gets its own
+        // playback_id (distinct from the live stream's playback_id,
+        // which Mux reuses for the next broadcast).
+        if (streamRow) {
+          const assetPlaybackId =
+            (data?.playback_ids as Array<{ id: string }> | undefined)?.[0]?.id;
+          const durationSeconds = typeof data?.duration === "number"
+            ? data.duration
+            : null;
+          // Asset events carry start/end times on the asset object when
+          // available; fall back to null and let the UI use created_at.
+          const startedAt = typeof data?.created_at === "number"
+            ? new Date(data.created_at * 1000).toISOString()
+            : null;
+          if (assetPlaybackId) {
+            // Upsert by mux_asset_id — Mux re-sends asset.ready on
+            // retries and we don't want duplicate archive rows.
+            await db
+              .from("host_event_live_recordings")
+              .upsert(
+                {
+                  live_stream_id: streamRow.id,
+                  event_id: streamRow.event_id,
+                  host_id: streamRow.host_id,
+                  mux_asset_id: assetId,
+                  mux_playback_id: assetPlaybackId,
+                  duration_seconds: durationSeconds,
+                  started_at: startedAt,
+                  ended_at: new Date().toISOString(),
+                },
+                { onConflict: "mux_asset_id" },
+              );
+          }
+        }
         break;
       }
       default:
