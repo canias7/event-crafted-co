@@ -20,6 +20,27 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.7";
 
+// Pre-flight content filter. Anthropic + OpenAI both have safety
+// layers; this is a cheap upfront gate to reject obvious abuse
+// before we burn an API call. Kept inline (rather than imported from
+// _shared) because the Supabase function deploy bundles one file at
+// a time.
+const BLOCKED_TERMS = [
+  "porn", "pornographic", "xxx", "nude", "nudes", "nsfw", "erotic",
+  "kill yourself", "kys", "school shooting", "make a bomb",
+  "build a bomb", "child porn", "csam",
+  "nigger", "n1gger", "faggot", "kike", "chink", "spic", "tranny",
+  "retard",
+];
+function moderatePrompt(prompt: string): { ok: true } | { ok: false; reason: string } {
+  if (!prompt) return { ok: true };
+  const n = prompt.toLowerCase();
+  for (const t of BLOCKED_TERMS) {
+    if (n.includes(t)) return { ok: false, reason: "blocked_content" };
+  }
+  return { ok: true };
+}
+
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
@@ -267,6 +288,8 @@ serve(async (req) => {
   const userPrompt = String(payload?.prompt ?? "").trim();
   if (!userPrompt) return jsonResponse(400, { error: "missing_prompt" });
   if (userPrompt.length > 4000) return jsonResponse(400, { error: "prompt_too_long" });
+  const moderation = moderatePrompt(userPrompt);
+  if (!moderation.ok) return jsonResponse(400, { error: moderation.reason });
   if (!ANTHROPIC_API_KEY) return jsonResponse(500, { error: "ANTHROPIC_API_KEY not set" });
 
   const editSiteId =
@@ -431,6 +454,14 @@ serve(async (req) => {
 
       const title = extractTitle(html);
       const slug = currentSite ? currentSite.slug : slugify(title);
+      // Short description for OG tags. Pull from <meta name="description">
+      // if Claude included one; otherwise derive from title.
+      const descMatch = html.match(
+        /<meta\s+name=["']description["']\s+content=["']([^"']+)["']/i,
+      );
+      const ogDescription = descMatch
+        ? descMatch[1].slice(0, 200)
+        : `${title} — RSVP and event details.`;
 
       // Force-correct the slug in the RSVP form action. Claude often
       // ignores the __SLUG__ placeholder and invents a plausible slug
@@ -452,6 +483,7 @@ serve(async (req) => {
               title,
               prompt: userPrompt,
               html,
+              og_description: ogDescription,
               edit_count: (currentSite.edit_count ?? 0) + 1,
             })
             .eq("id", currentSite.id);
@@ -470,6 +502,7 @@ serve(async (req) => {
               title,
               prompt: userPrompt,
               html,
+              og_description: ogDescription,
               owner_user_id: authedUserId,
             })
             .select("id")

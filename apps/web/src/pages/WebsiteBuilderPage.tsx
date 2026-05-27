@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { VendoraLogo } from "@/components/shared/VendoraLogo";
@@ -34,10 +34,14 @@ const sb = supabase as unknown as {
     data: unknown;
     error: { message?: string } | null;
   }>;
+  from: (t: string) => any;
 };
 
 export default function WebsiteBuilderPage() {
   const { session } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const resumeSiteId = searchParams.get("site");
+
   const [conversation, setConversation] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -50,6 +54,10 @@ export default function WebsiteBuilderPage() {
   const [renameValue, setRenameValue] = useState("");
   const [renameBusy, setRenameBusy] = useState(false);
   const [renameError, setRenameError] = useState<string | null>(null);
+  const [imageModalOpen, setImageModalOpen] = useState(false);
+  const [imagePrompt, setImagePrompt] = useState("");
+  const [imageBusy, setImageBusy] = useState(false);
+  const [imageError, setImageError] = useState<string | null>(null);
 
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
@@ -59,6 +67,59 @@ export default function WebsiteBuilderPage() {
     inputRef.current?.focus();
     return () => abortRef.current?.abort();
   }, []);
+
+  // Resume editing flow — if ?site=<id> is in the URL, fetch the
+  // existing site, hydrate state, and write its HTML into the iframe
+  // so the user picks up where they left off.
+  useEffect(() => {
+    if (!resumeSiteId) return;
+    let cancelled = false;
+    (async () => {
+      const { data, error: loadErr } = await sb
+        .from("ai_sites")
+        .select("id, slug, title, html, owner_user_id")
+        .eq("id", resumeSiteId)
+        .maybeSingle();
+      if (cancelled) return;
+      const row = data as
+        | { id: string; slug: string; title: string; html: string; owner_user_id: string | null }
+        | null;
+      if (loadErr || !row) {
+        setError("Couldn't load that site.");
+        // Clear the bad query param.
+        searchParams.delete("site");
+        setSearchParams(searchParams, { replace: true });
+        return;
+      }
+      if (row.owner_user_id && row.owner_user_id !== session?.user?.id) {
+        setError("That site belongs to someone else.");
+        return;
+      }
+      setSiteId(row.id);
+      setSlug(row.slug);
+      setTitle(row.title);
+      setHasContent(true);
+      setConversation([
+        {
+          role: "assistant",
+          content: `Resumed "${row.title}". Tell me what to change.`,
+        },
+      ]);
+      // Write the saved HTML into the iframe doc.
+      const iframe = iframeRef.current;
+      if (iframe?.contentDocument) {
+        const doc = iframe.contentDocument;
+        doc.open();
+        doc.write(row.html);
+        doc.close();
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // session?.user?.id intentionally included — if the user signs in
+    // mid-page we recheck ownership.
+  }, [resumeSiteId, session?.user?.id, searchParams, setSearchParams]);
 
   const publicUrl =
     slug && typeof window !== "undefined"
@@ -252,6 +313,10 @@ export default function WebsiteBuilderPage() {
     setHasContent(false);
     setError(null);
     setRenameOpen(false);
+    if (searchParams.get("site")) {
+      searchParams.delete("site");
+      setSearchParams(searchParams, { replace: true });
+    }
     const doc = resetIframe();
     try {
       doc?.close();
@@ -259,6 +324,56 @@ export default function WebsiteBuilderPage() {
       // ignore
     }
     setTimeout(() => inputRef.current?.focus(), 0);
+  }
+
+  async function generateHeroImage() {
+    if (!siteId || !imagePrompt.trim() || imageBusy) return;
+    setImageBusy(true);
+    setImageError(null);
+    try {
+      const accessToken = session?.access_token ?? SUPABASE_KEY;
+      const res = await fetch(
+        `${SUPABASE_URL}/functions/v1/ai-site-image-generate`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${accessToken}`,
+            apikey: SUPABASE_KEY,
+          },
+          body: JSON.stringify({
+            site_id: siteId,
+            prompt: imagePrompt.trim(),
+          }),
+        },
+      );
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok || !body?.image_url) {
+        const errMap: Record<string, string> = {
+          content_blocked: "That prompt was blocked. Try a different idea.",
+          blocked_content: "That prompt was blocked. Try a different idea.",
+          openai_no_image: "OpenAI didn't return an image — try again.",
+          openai_key_missing: "Image service isn't configured.",
+        };
+        setImageError(
+          errMap[body?.error ?? ""] ??
+            "Couldn't generate that image. Try a different prompt.",
+        );
+        return;
+      }
+      const url = body.image_url as string;
+      const userInstruction = imagePrompt.trim();
+      setImageModalOpen(false);
+      setImagePrompt("");
+      // Hand off to the edit pipeline so Claude swaps the hero in.
+      void submit(
+        `Replace the hero image with this URL: ${url}\n(Originally requested: ${userInstruction})`,
+      );
+    } catch (e) {
+      setImageError(e instanceof Error ? e.message : "Image generation failed");
+    } finally {
+      setImageBusy(false);
+    }
   }
 
   async function renameSlug() {
@@ -333,6 +448,20 @@ export default function WebsiteBuilderPage() {
           )}
           {publicUrl && (
             <>
+              {siteId && (
+                <button
+                  onClick={() => {
+                    setImageModalOpen(true);
+                    setImagePrompt("");
+                    setImageError(null);
+                  }}
+                  disabled={loading}
+                  className="text-[12px] text-white/70 hover:text-white border border-white/15 rounded-full px-3 py-1 transition-colors disabled:opacity-40"
+                  title="Generate a custom hero image with AI"
+                >
+                  ✨ Hero image
+                </button>
+              )}
               {ownsSite && !renameOpen && (
                 <button
                   onClick={() => {
@@ -538,6 +667,56 @@ export default function WebsiteBuilderPage() {
           )}
         </main>
       </div>
+
+      {imageModalOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-5 bg-black/70 backdrop-blur-sm"
+          onClick={() => !imageBusy && setImageModalOpen(false)}
+        >
+          <div
+            className="bg-[#0c0c0e] border border-white/15 rounded-2xl p-6 max-w-[440px] w-full"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="text-[16px] font-medium mb-1">
+              Generate a hero image
+            </div>
+            <div className="text-[13px] text-white/50 mb-4 leading-relaxed">
+              Describe the photo you want. I'll generate it with OpenAI
+              and Claude will swap it into your site.
+            </div>
+            <textarea
+              value={imagePrompt}
+              onChange={(e) => setImagePrompt(e.target.value)}
+              rows={3}
+              placeholder="e.g. couple holding hands on a Tulum beach at sunset, warm tones"
+              disabled={imageBusy}
+              autoFocus
+              className="w-full resize-none bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-[14px] text-white placeholder:text-white/40 focus:outline-none focus:border-white/30 disabled:opacity-50 mb-3"
+            />
+            {imageError && (
+              <div className="text-[12px] text-red-400 bg-red-500/10 border border-red-500/30 rounded-lg px-3 py-2 mb-3">
+                {imageError}
+              </div>
+            )}
+            <div className="flex items-center justify-end gap-2">
+              <button
+                onClick={() => setImageModalOpen(false)}
+                disabled={imageBusy}
+                className="text-[13px] text-white/60 hover:text-white px-3 py-2 disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={generateHeroImage}
+                disabled={imageBusy || !imagePrompt.trim()}
+                className="text-[13px] bg-white text-black rounded-full px-4 py-2 hover:bg-white/90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                {imageBusy ? "Generating…" : "Generate"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <style>{`
         .builder-dot {
