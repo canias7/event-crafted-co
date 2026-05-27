@@ -1285,6 +1285,31 @@ export default function WebsiteBuilderPage() {
                 </svg>
               </button>
               <button
+                onClick={generateVariants}
+                disabled={loading || variantsLoading || !siteId || conversation.length === 0}
+                aria-label="Generate 3 variants"
+                title="Generate 3 design variations from your last prompt"
+                className="absolute left-20 bottom-2 w-8 h-8 rounded-full text-violet-300/70 hover:text-violet-200 hover:bg-violet-500/15 disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center transition-colors text-[14px]"
+              >
+                🎲
+              </button>
+              <button
+                onClick={() => {
+                  const url = window.prompt(
+                    "Paste a URL whose design you want to match (Claude will use its web_search tool to read it):",
+                    "https://",
+                  );
+                  if (!url || !url.startsWith("http")) return;
+                  submit(`Match the design vibe of this site: ${url}. Use the web_search tool to read it, then re-style my current invitation to match its palette, fonts, and overall feel — keeping all my content intact.`);
+                }}
+                disabled={loading || !siteId}
+                aria-label="Match a URL"
+                title="Match the design vibe of any URL"
+                className="absolute left-[116px] bottom-2 w-8 h-8 rounded-full text-sky-300/70 hover:text-sky-200 hover:bg-sky-500/15 disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center transition-colors text-[14px]"
+              >
+                🔗
+              </button>
+              <button
                 onClick={() => submit(input)}
                 disabled={loading || (!input.trim() && !pendingImage)}
                 aria-label="Send"
