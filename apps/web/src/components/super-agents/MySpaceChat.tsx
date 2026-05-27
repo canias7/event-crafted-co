@@ -17,6 +17,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowUp,
+  Check,
+  Copy,
   Download,
   FileText,
   ImageIcon,
@@ -25,11 +27,17 @@ import {
   Mic,
   MicOff,
   Paperclip,
+  Pencil,
   RotateCw,
+  Search,
   Sparkles,
   Trash2,
+  Volume2,
+  VolumeX,
   X,
 } from "lucide-react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -102,6 +110,13 @@ export function MySpaceChat() {
   // the mic button.
   const [voiceRecording, setVoiceRecording] = useState(false);
   const recognitionRef = useRef<any>(null);
+  // Text-to-speech: when true, each new assistant message gets spoken
+  // aloud via SpeechSynthesis. State persists across renders but is
+  // not saved across reloads.
+  const [readAloud, setReadAloud] = useState(false);
+  // Thread search input — both title and message-content match.
+  const [threadSearch, setThreadSearch] = useState("");
+  const [searchHits, setSearchHits] = useState<Set<string> | null>(null);
 
   // ── Load threads on mount; pick the most recent as the default.
   const loadThreads = useCallback(async (): Promise<ThreadRow[]> => {
@@ -313,16 +328,29 @@ export function MySpaceChat() {
   }
 
   // ── Send message → SSE stream from edge function → live-update bubble.
-  async function send(promptText?: string, opts?: { regenerate?: boolean }) {
+  async function send(
+    promptText?: string,
+    opts?: { regenerate?: boolean; replaceMessageId?: string },
+  ) {
     const regenerate = opts?.regenerate === true;
+    const replaceMessageId = opts?.replaceMessageId ?? null;
     const text = regenerate ? "" : (promptText ?? input).trim();
     const attachments = regenerate ? [] : pendingAttachments;
     if (!regenerate && (!text && attachments.length === 0)) return;
     if (sending) return;
-    if (regenerate && !currentThreadId) return;
-    if (!regenerate) {
+    if ((regenerate || replaceMessageId) && !currentThreadId) return;
+    if (!regenerate && !replaceMessageId) {
       setInput("");
       setPendingAttachments([]);
+    }
+    // For edit-and-resend, optimistically remove the edited message
+    // and everything after it from the visible list before we start
+    // streaming the new reply.
+    if (replaceMessageId) {
+      setMessages((prev) => {
+        const idx = prev.findIndex((m) => m.id === replaceMessageId);
+        return idx >= 0 ? prev.slice(0, idx) : prev;
+      });
     }
 
     // Optimistic user bubble + a placeholder assistant bubble that
@@ -387,6 +415,7 @@ export function MySpaceChat() {
                 thread_id: currentThreadId,
                 attachments:
                   attachments.length > 0 ? attachments : undefined,
+                replace_message_id: replaceMessageId ?? undefined,
               },
           ),
         },
@@ -582,6 +611,88 @@ export function MySpaceChat() {
     void send(undefined, { regenerate: true });
   }
 
+  // ── Inline thread-title editing.
+  async function renameThread(threadId: string, newTitle: string) {
+    const cleaned = newTitle.trim().slice(0, 80);
+    if (!cleaned) return;
+    setThreads((prev) =>
+      prev.map((t) => (t.id === threadId ? { ...t, title: cleaned } : t))
+    );
+    const { error } = await supabase
+      .from("my_space_threads")
+      .update({ title: cleaned })
+      .eq("id", threadId);
+    if (error) {
+      toast.error("Couldn't rename chat.");
+      // Best-effort revert; user can refresh.
+    }
+  }
+
+  // ── Thread search: title match + ILIKE on persisted message content.
+  // Debounced so we don't hammer the DB on every keystroke.
+  useEffect(() => {
+    if (!user?.id) return;
+    const q = threadSearch.trim();
+    if (q.length < 2) {
+      setSearchHits(null);
+      return;
+    }
+    const t = setTimeout(async () => {
+      const { data, error } = await supabase
+        .from("my_space_messages")
+        .select("thread_id")
+        .eq("user_id", user.id)
+        .ilike("content", `%${q.replace(/[%_]/g, (m) => `\\${m}`)}%`)
+        .limit(200);
+      if (error) {
+        console.error("[MySpaceChat] thread search failed", error);
+        setSearchHits(null);
+        return;
+      }
+      setSearchHits(new Set(((data ?? []) as Array<any>).map((r) => r.thread_id)));
+    }, 250);
+    return () => clearTimeout(t);
+  }, [threadSearch, user?.id]);
+
+  // ── Voice output (TTS) for assistant messages. Watches the latest
+  // assistant message; when it finishes (has an id) and readAloud is
+  // on, speak it once.
+  const lastSpokenIdRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!readAloud) return;
+    if (typeof window === "undefined" || !window.speechSynthesis) return;
+    const last = [...messages].reverse().find(
+      (m) => m.role === "assistant" && m.type === "text" && m.id,
+    ) as TextMessage | undefined;
+    if (!last || last.id === lastSpokenIdRef.current) return;
+    lastSpokenIdRef.current = last.id ?? null;
+    const u = new SpeechSynthesisUtterance(last.content);
+    u.rate = 1;
+    window.speechSynthesis.cancel();
+    window.speechSynthesis.speak(u);
+  }, [messages, readAloud]);
+
+  // ── Keyboard shortcuts: ⌘K new chat, ⌘E export, ⌘/ focus composer.
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      const mod = e.metaKey || e.ctrlKey;
+      if (!mod) return;
+      if (e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        startNewChat();
+      } else if (e.key.toLowerCase() === "e") {
+        e.preventDefault();
+        exportChat();
+      } else if (e.key === "/") {
+        e.preventDefault();
+        inputRef.current?.focus();
+      }
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentThreadId, messages, threads]);
+
   function exportChat() {
     if (messages.length === 0) {
       toast.error("Nothing to export yet.");
@@ -684,17 +795,59 @@ export function MySpaceChat() {
           </button>
           {currentThreadId && messages.length > 0
             ? (
-              <button
-                type="button"
-                onClick={exportChat}
-                className="w-full mt-2 inline-flex items-center justify-center gap-1.5 text-[11px] text-muted-foreground hover:text-foreground transition-colors"
-                title="Download this chat as Markdown"
-              >
-                <Download className="w-3 h-3" />
-                Export this chat
-              </button>
+              <div className="flex items-center justify-center gap-3 mt-2">
+                <button
+                  type="button"
+                  onClick={exportChat}
+                  className="inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground transition-colors"
+                  title="Download this chat as Markdown"
+                >
+                  <Download className="w-3 h-3" />
+                  Export
+                </button>
+                {typeof window !== "undefined" && window.speechSynthesis
+                  ? (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (readAloud) {
+                          window.speechSynthesis.cancel();
+                        }
+                        setReadAloud((v) => !v);
+                      }}
+                      className={`inline-flex items-center gap-1 text-[11px] transition-colors ${
+                        readAloud
+                          ? "text-[#c4541e]"
+                          : "text-muted-foreground hover:text-foreground"
+                      }`}
+                      title={readAloud
+                        ? "Stop reading aloud"
+                        : "Read AI replies aloud"}
+                    >
+                      {readAloud
+                        ? <Volume2 className="w-3 h-3" />
+                        : <VolumeX className="w-3 h-3" />}
+                      Read aloud
+                    </button>
+                  )
+                  : null}
+              </div>
             )
             : null}
+          {/* Search across threads (title + message content). */}
+          <div className="relative mt-3">
+            <Search
+              className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground"
+              aria-hidden
+            />
+            <input
+              type="search"
+              value={threadSearch}
+              onChange={(e) => setThreadSearch(e.target.value)}
+              placeholder="Search chats…"
+              className="w-full pl-8 pr-2 py-1.5 text-xs bg-secondary/30 rounded-md outline-none focus:bg-secondary/50 transition-colors"
+            />
+          </div>
         </div>
         <div className="flex-1 overflow-y-auto px-2 py-2">
           {threadsLoading ? (
@@ -707,18 +860,37 @@ export function MySpaceChat() {
               No chats yet. Send your first message to start one.
             </p>
           ) : (
-            <ul className="space-y-0.5">
-              {threads.map((t) => (
-                <ThreadListItem
-                  key={t.id}
-                  thread={t}
-                  active={t.id === currentThreadId}
-                  onClick={() => setCurrentThreadId(t.id)}
-                  onDelete={() => deleteThread(t.id)}
-                  deleting={deletingThreadId === t.id}
-                />
-              ))}
-            </ul>
+            (() => {
+              const q = threadSearch.trim().toLowerCase();
+              const filtered = q.length < 2
+                ? threads
+                : threads.filter((t) =>
+                  (t.title ?? "").toLowerCase().includes(q) ||
+                  (searchHits?.has(t.id) ?? false)
+                );
+              if (filtered.length === 0) {
+                return (
+                  <p className="text-xs text-muted-foreground p-3 leading-relaxed">
+                    No chats match "{threadSearch}".
+                  </p>
+                );
+              }
+              return (
+                <ul className="space-y-0.5">
+                  {filtered.map((t) => (
+                    <ThreadListItem
+                      key={t.id}
+                      thread={t}
+                      active={t.id === currentThreadId}
+                      onClick={() => setCurrentThreadId(t.id)}
+                      onDelete={() => deleteThread(t.id)}
+                      onRename={(title) => renameThread(t.id, title)}
+                      deleting={deletingThreadId === t.id}
+                    />
+                  ))}
+                </ul>
+              );
+            })()
           )}
         </div>
       </aside>
@@ -803,7 +975,12 @@ export function MySpaceChat() {
                 </div>
               )
               : messages.map((m, i) => (
-                <MessageBubble key={m.id ?? `idx-${i}`} message={m} />
+                <MessageBubble
+                  key={m.id ?? `idx-${i}`}
+                  message={m}
+                  onEditAndResend={(id, newText) =>
+                    void send(newText, { replaceMessageId: id })}
+                />
               ))}
             {/* Regenerate button under the last assistant text message
                 when we're idle and the message has actually been
@@ -946,18 +1123,32 @@ function ThreadListItem({
   active,
   onClick,
   onDelete,
+  onRename,
   deleting,
 }: {
   thread: ThreadRow;
   active: boolean;
   onClick: () => void;
   onDelete: () => void;
+  onRename: (title: string) => void;
   deleting: boolean;
 }) {
   const title = thread.title || "Untitled chat";
   const when = useMemo(() => formatThreadTime(thread.updated_at), [
     thread.updated_at,
   ]);
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(title);
+  // Keep draft in sync with title when not editing (server may rename).
+  useEffect(() => {
+    if (!editing) setDraft(title);
+  }, [title, editing]);
+
+  const commit = () => {
+    setEditing(false);
+    if (draft.trim() && draft.trim() !== title) onRename(draft);
+  };
+
   return (
     <li>
       <div
@@ -967,16 +1158,55 @@ function ThreadListItem({
             : "hover:bg-secondary/40"
         }`}
       >
-        <button
-          type="button"
-          onClick={onClick}
-          className="flex-1 min-w-0 text-left"
-        >
-          <p className="text-sm text-foreground truncate leading-tight">
-            {title}
-          </p>
-          <p className="text-[10px] text-muted-foreground mt-0.5">{when}</p>
-        </button>
+        {editing
+          ? (
+            <input
+              autoFocus
+              value={draft}
+              onChange={(e) => setDraft(e.target.value)}
+              onBlur={commit}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  commit();
+                } else if (e.key === "Escape") {
+                  e.preventDefault();
+                  setDraft(title);
+                  setEditing(false);
+                }
+              }}
+              className="flex-1 min-w-0 bg-transparent text-sm text-foreground outline-none border-b border-foreground/30 px-0.5 py-0"
+              maxLength={80}
+            />
+          )
+          : (
+            <button
+              type="button"
+              onClick={onClick}
+              className="flex-1 min-w-0 text-left"
+            >
+              <p className="text-sm text-foreground truncate leading-tight">
+                {title}
+              </p>
+              <p className="text-[10px] text-muted-foreground mt-0.5">{when}</p>
+            </button>
+          )}
+        {!editing
+          ? (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setEditing(true);
+              }}
+              className="shrink-0 p-1 rounded-md opacity-0 group-hover:opacity-100 hover:bg-secondary text-muted-foreground hover:text-foreground transition-opacity"
+              aria-label="Rename chat"
+              title="Rename chat"
+            >
+              <Pencil className="w-3 h-3" />
+            </button>
+          )
+          : null}
         <button
           type="button"
           onClick={onDelete}
@@ -1031,11 +1261,58 @@ function formatThreadTime(iso: string): string {
   return d.toLocaleDateString();
 }
 
-function MessageBubble({ message }: { message: ChatMessage }) {
+function MessageBubble(
+  {
+    message,
+    onEditAndResend,
+  }: {
+    message: ChatMessage;
+    onEditAndResend?: (messageId: string, newText: string) => void;
+  },
+) {
   const isUser = message.role === "user";
   const attachments = message.type === "text" ? message.attachments : null;
+  const [copied, setCopied] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(
+    message.type === "text" ? message.content : "",
+  );
+  // Keep draft in sync if the message updates from props.
+  useEffect(() => {
+    if (!editing && message.type === "text") setDraft(message.content);
+  }, [message, editing]);
+
+  const canEdit = isUser && message.type === "text" && !!message.id &&
+    !!onEditAndResend;
+
+  const copyText = () => {
+    const text = message.type === "text"
+      ? message.content
+      : message.image_prompt;
+    if (!text) return;
+    void navigator.clipboard.writeText(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
+  };
+
+  const commitEdit = () => {
+    const t = draft.trim();
+    if (!t || !message.id) {
+      setEditing(false);
+      return;
+    }
+    if (message.type === "text" && t === message.content) {
+      setEditing(false);
+      return;
+    }
+    setEditing(false);
+    onEditAndResend?.(message.id, t);
+  };
+
   return (
-    <div className={`flex ${isUser ? "justify-end" : "justify-start"}`}>
+    <div
+      className={`group flex flex-col ${isUser ? "items-end" : "items-start"}`}
+    >
       <div
         className={`max-w-[85%] rounded-2xl px-4 py-2.5 ${
           isUser ? "bg-foreground text-background" : "bg-white/70 text-foreground"
@@ -1053,11 +1330,70 @@ function MessageBubble({ message }: { message: ChatMessage }) {
           : null}
         {message.type === "text"
           ? (
-            message.content
+            editing
               ? (
-                <p className="text-sm leading-relaxed whitespace-pre-wrap">
-                  {message.content}
-                </p>
+                <div className="min-w-[280px]">
+                  <textarea
+                    autoFocus
+                    value={draft}
+                    onChange={(e) => setDraft(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && !e.shiftKey) {
+                        e.preventDefault();
+                        commitEdit();
+                      } else if (e.key === "Escape") {
+                        e.preventDefault();
+                        setEditing(false);
+                        setDraft(message.content);
+                      }
+                    }}
+                    rows={Math.min(8, Math.max(2, draft.split("\n").length))}
+                    className={`w-full resize-none bg-transparent text-sm leading-relaxed outline-none ${
+                      isUser ? "text-background" : "text-foreground"
+                    }`}
+                  />
+                  <div className="flex items-center justify-end gap-2 mt-2 text-[10px]">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEditing(false);
+                        setDraft(message.content);
+                      }}
+                      className={`${
+                        isUser
+                          ? "text-background/70 hover:text-background"
+                          : "text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      onClick={commitEdit}
+                      className={`font-medium ${
+                        isUser
+                          ? "text-background"
+                          : "text-[#c4541e]"
+                      }`}
+                    >
+                      Save & resend
+                    </button>
+                  </div>
+                </div>
+              )
+              : message.content
+              ? (
+                <div
+                  className={`text-sm leading-relaxed prose prose-sm max-w-none prose-p:my-1 prose-headings:my-2 prose-ul:my-1 prose-ol:my-1 prose-li:my-0 prose-pre:my-2 prose-pre:bg-black/10 prose-code:text-[0.85em] prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-code:bg-black/10 prose-code:before:content-none prose-code:after:content-none ${
+                    isUser
+                      ? "prose-invert prose-strong:text-background prose-a:text-background prose-code:bg-white/20"
+                      : "prose-strong:text-foreground"
+                  }`}
+                >
+                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                    {message.content}
+                  </ReactMarkdown>
+                </div>
               )
               : null
           )
@@ -1077,8 +1413,62 @@ function MessageBubble({ message }: { message: ChatMessage }) {
             </div>
           )}
       </div>
+      {/* Timestamp + actions row, only visible on hover. */}
+      <div
+        className={`flex items-center gap-2 mt-1 px-2 opacity-0 group-hover:opacity-100 transition-opacity text-[10px] text-muted-foreground ${
+          isUser ? "flex-row-reverse" : ""
+        }`}
+      >
+        {message.created_at
+          ? <span>{formatTimestamp(message.created_at)}</span>
+          : null}
+        {(message.type === "text" && message.content) ||
+            message.type === "image"
+          ? (
+            <button
+              type="button"
+              onClick={copyText}
+              className="inline-flex items-center gap-0.5 hover:text-foreground transition-colors"
+              aria-label="Copy"
+              title="Copy message"
+            >
+              {copied
+                ? <Check className="w-3 h-3" />
+                : <Copy className="w-3 h-3" />}
+            </button>
+          )
+          : null}
+        {canEdit
+          ? (
+            <button
+              type="button"
+              onClick={() => setEditing(true)}
+              className="inline-flex items-center gap-0.5 hover:text-foreground transition-colors"
+              aria-label="Edit"
+              title="Edit and resend"
+            >
+              <Pencil className="w-3 h-3" />
+            </button>
+          )
+          : null}
+      </div>
     </div>
   );
+}
+
+function formatTimestamp(iso: string): string {
+  const d = new Date(iso);
+  const now = new Date();
+  const sameDay = d.toDateString() === now.toDateString();
+  if (sameDay) {
+    return d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+  }
+  return d.toLocaleString([], {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
 }
 
 function AttachmentChip(
