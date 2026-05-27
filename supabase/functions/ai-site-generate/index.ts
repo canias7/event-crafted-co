@@ -86,6 +86,42 @@ ROMANTIC COUPLES (universal — hero shots, story sections):
 RINGS / DETAILS:
   photo-1583939003579-730e3918a45a (rings on linen)
   photo-1546484959-f9a381d1330d (close-up details)
+  photo-1605100804763-247f67b3557e (rings macro)
+
+SUNSET / GOLDEN HOUR (atmospheric — use for any event with a sunset/twilight ceremony or romantic mood):
+  photo-1495020689067-958852a7765e (warm sunset)
+  photo-1419242902214-272b3f66ee7a (golden hour)
+  photo-1499678329028-101435549a4e (twilight scene)
+
+CHAMPAGNE / TOAST / CHEERS (any celebration — wedding, NYE, anniversary, milestone birthday):
+  photo-1551024601-bec78aea704b (champagne pour / toast)
+
+CAKE / DESSERTS — CLOSE-UPS (use for cake-cutting section in weddings, birthdays, showers):
+  photo-1565958011703-44f9829ba187 (elegant cake)
+  photo-1535254973040-607b474cb50d (cake close-up)
+  photo-1571877227200-a0d98ea607e9 (dessert spread)
+  photo-1535141192574-5d4897c12636 (cake detail)
+  photo-1499636136210-6f4ee915583e (dessert table)
+
+DANCE FLOOR / BAND / NIGHT RECEPTION:
+  photo-1496337589254-7e19d01cec44 (dance floor)
+  photo-1429962714451-bb934ecdc4ec (band / night scene)
+
+TRAVEL / SAVE-THE-DATE / DESTINATION (passport, airplane, suitcase — use on save-the-date / travel sections of destination weddings):
+  photo-1488646953014-85cb44e25828 (passport / travel)
+  photo-1436491865332-7a61a109cc05 (airplane window)
+  photo-1559268950-2d7ceb2efa3a (travel atmosphere)
+  photo-1530789253388-582c481c54b0 (suitcase / journey)
+
+EUCALYPTUS / BOTANICAL CLOSE-UPS (greenery accents anywhere):
+  photo-1469474968028-56623f02e42e (eucalyptus)
+  photo-1490750967868-88aa4486c946 (botanical close-up)
+
+CANDLES / WARM TABLE SETTINGS:
+  photo-1576091160550-2173dba999ef (candlelit table)
+
+VINEYARD / WINE CLOSE-UPS (for Napa/Tuscany/Sonoma weddings — vineyard sub-bank):
+  photo-1506377247377-2a5b3b417ebb (vineyard barrel / wine)
 
 WEDDING — BEACH / TROPICAL DESTINATION (Tulum, Cancun, Maldives, Bali, Hawaii, Caribbean):
   photo-1559666126-84f389727b9a (tropical ocean / palms)
@@ -122,6 +158,31 @@ WEDDING — BALLROOM / CLASSIC / BLACK-TIE / FORMAL:
 
 WEDDING — CITY / URBAN / ROOFTOP / LOFT (Manhattan, downtown, modern venues):
   photo-1519501025264-65ba15a82390 (city skyline night)
+  photo-1496588152823-86ff7695e68f (city night lights)
+  photo-1502920917128-1aa500764cbd (urban skyline)
+  photo-1485871981521-5b1fd3805eee (modern building)
+  photo-1480714378408-67cf0d13bc1b (loft / industrial)
+  photo-1496939376851-89342e90adcd (rooftop view)
+  photo-1444525873963-75d329ef9e1b (downtown atmosphere)
+
+WEDDING — BARN / RUSTIC / RANCH:
+  photo-1554080353-a576cf803bda (barn / rustic)
+  photo-1502301197179-65228ab57f78 (rustic countryside)
+
+WEDDING — LAKE / WATERFRONT (Lake Como, Lake Tahoe, lakeside venues — NOT beach):
+  photo-1500530855697-b586d89ba3ee (calm lake)
+  photo-1502082553048-f009c37129b9 (waterfront atmosphere)
+
+WEDDING — WINTER / SNOW / CABIN (ski wedding, winter elopement, lodge):
+  photo-1483921020237-2ff51e8e4b22 (snow landscape)
+  photo-1543966888-7c1dc482a810 (winter atmosphere)
+  photo-1551582045-6ec9c11d8697 (winter cabin)
+
+WEDDING — LAVENDER / MEDITERRANEAN (Provence, Italian countryside, olive groves):
+  photo-1499002238440-d264edd596ec (lavender / countryside)
+
+WEDDING — MOROCCO / BOHO / DESERT TENT (Marrakech, Joshua Tree, desert venues):
+  photo-1539768942893-daf53e448371 (boho tent / desert)
 
 FLORALS / DECOR (any wedding type — accent imagery):
   photo-1525772764200-be829a350797 (wedding florals)
@@ -189,6 +250,8 @@ NYE / NEW YEAR (black + gold + champagne):
 
 HALLOWEEN (dark + orange + purple):
   photo-1509557965875-b88c97052f0e (halloween atmospheric)
+  photo-1574169208507-84376144848b (halloween mood)
+  photo-1538485399081-7191377e8241 (spooky atmospheric)
 
 ═══ BBQ / 4TH OF JULY / SUMMER OUTDOOR ═══
 
@@ -234,6 +297,8 @@ Pure texture (dark slate, velvet, marble, linen) — no location implied. Use th
 
 ═══ GENERIC PARTY ATMOSPHERE (filler / accent) ═══
 
+  photo-1521334726092-b509a19597c6 (elegant atmosphere)
+  photo-1452860606245-08befc0ff44b (generic celebration)
   photo-1502635385003-ee1e6a1a742d (celebration scene)
   photo-1606800052052-a08af7148866 (decor elegant)
   photo-1565538810643-b5bdb714032a (party decor)
@@ -254,6 +319,11 @@ Before picking a background, READ the user's venue / location keyword carefully:
   • "barn" / "ranch" / "farm" / rustic → BARN bank
   • "ballroom" / "hotel" / "Plaza" / formal / black-tie / glam → BALLROOM bank
   • "NYC" / "rooftop" / "downtown" / "loft" / "skyline" / "city" → CITY bank
+  • "Lake Como" / "Lake Tahoe" / "lakeside" / "waterfront" → LAKE bank
+  • "ski" / "winter" / "snow" / "cabin" / "lodge" → WINTER / SNOW / CABIN bank
+  • "Provence" / "lavender" / "olive grove" / Mediterranean → LAVENDER bank
+  • "Marrakech" / "Morocco" / "Joshua Tree" / "desert tent" / boho desert → MOROCCO / BOHO bank
+  • Destination wedding with travel theme → also include TRAVEL bank photos in a save-the-date section
   • Vague / no specific location / classic / formal with no destination → TEXTURED / MOODY (place-neutral)
 
 NEVER pick alpine mountains for a beach wedding, ocean for an Aspen elopement, vineyards for a city loft, etc. If unsure which category fits, default to TEXTURED / MOODY — those work everywhere.
