@@ -47,6 +47,8 @@ import {
   StatusPage,
   PressPage,
   SuperAgentsPage,
+  WebsiteBuilderPage,
+  PublicAiSitePage,
   SettingsPage,
   NotificationSettingsPage,
   NotFound,
@@ -142,6 +144,8 @@ const App = () => (
               <Route path="/status" element={<StatusPage />} />
               <Route path="/press" element={<PressPage />} />
               <Route path="/super-agents" element={<SuperAgentsPage />} />
+              <Route path="/website-builder" element={<WebsiteBuilderPage />} />
+              <Route path="/s/:slug" element={<PublicAiSitePage />} />
               {/* /vendor-apply removed — vendors now sign up through
                   the regular Sign up button. Old bookmarks redirect
                   to the signup chooser so the URL doesn't 404. */}
