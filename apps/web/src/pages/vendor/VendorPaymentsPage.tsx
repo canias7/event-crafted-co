@@ -1245,6 +1245,17 @@ function ReportsTab({ vendorId }: { vendorId: string | null }) {
   // Expenses for the chosen window — fed into Net Profit on the
   // P&L block. Same window semantics as paid_at (cash-basis).
   const [expensesInRange, setExpensesInRange] = useState<Expense[]>([]);
+  // Previous-period aggregates (Gross/Refunds/Expenses/Net profit)
+  // so KPI tiles can show a trend delta vs the equivalent-length
+  // window just before this one. Shape mirrors the live totals
+  // computation: cents in the report currency, dropped expenses
+  // off-currency the same way the live calc does.
+  const [prevPeriod, setPrevPeriod] = useState<{
+    gross: number;
+    refunds: number;
+    expenses: number;
+    netProfit: number;
+  } | null>(null);
   const [loading, setLoading] = useState(false);
   useEffect(() => {
     if (!vendorId) {
@@ -1253,6 +1264,7 @@ function ReportsTab({ vendorId }: { vendorId: string | null }) {
       setStripeFees(null);
       setUnpaidNow([]);
       setExpensesInRange([]);
+      setPrevPeriod(null);
       return;
     }
     let cancelled = false;
@@ -1335,6 +1347,51 @@ function ReportsTab({ vendorId }: { vendorId: string | null }) {
           : null,
       );
       setLoading(false);
+
+      // Previous-period fetch — equivalent-length window immediately
+      // before the current one. Same shape, just for delta math.
+      // Skips Stripe fees (the fees-report edge fn takes a few s and
+      // we don't surface that delta on a KPI tile anyway).
+      const windowMs = range.end.getTime() - range.start.getTime();
+      const prevEnd = range.start;
+      const prevStart = new Date(range.start.getTime() - windowMs);
+      const [prevPaidRes, prevRefundedRes, prevExpensesRes] = await Promise.all([
+        db
+          .from("invoices")
+          .select("total_cents, currency")
+          .eq("vendor_id", vendorId)
+          .eq("status", "paid")
+          .gte("paid_at", prevStart.toISOString())
+          .lt("paid_at", prevEnd.toISOString())
+          .limit(5000),
+        db
+          .from("invoices")
+          .select("total_cents, refunded_amount_cents, currency")
+          .eq("vendor_id", vendorId)
+          .in("status", ["refunded", "partial_refund"])
+          .gte("refunded_at", prevStart.toISOString())
+          .lt("refunded_at", prevEnd.toISOString())
+          .limit(5000),
+        db
+          .from("vendor_expenses")
+          .select("amount_cents, currency")
+          .eq("vendor_id", vendorId)
+          .gte("occurred_on", prevStart.toISOString().slice(0, 10))
+          .lt("occurred_on", prevEnd.toISOString().slice(0, 10))
+          .limit(5000),
+      ]);
+      if (cancelled) return;
+      const prevPaid = (prevPaidRes.data ?? []) as Array<{ total_cents: number; currency: string }>;
+      const prevRefunded = (prevRefundedRes.data ?? []) as Array<{ total_cents: number; refunded_amount_cents: number | null; currency: string }>;
+      const prevExpenses = (prevExpensesRes.data ?? []) as Array<{ amount_cents: number; currency: string }>;
+      const pGross = prevPaid.reduce((s, r) => s + r.total_cents, 0);
+      const pRefunds = prevRefunded.reduce((s, r) => s + (r.refunded_amount_cents ?? r.total_cents), 0);
+      const pExpenses = prevExpenses.reduce((s, r) => s + r.amount_cents, 0);
+      // Net profit baseline excludes Stripe fees (we don't fetch
+      // them for the prev period; the delta is approximate, called
+      // out in the comment for the KPI consumer below).
+      const pNetProfit = pGross - pRefunds - pExpenses;
+      setPrevPeriod({ gross: pGross, refunds: pRefunds, expenses: pExpenses, netProfit: pNetProfit });
     })();
     return () => {
       cancelled = true;
@@ -1782,6 +1839,7 @@ function ReportsTab({ vendorId }: { vendorId: string | null }) {
             label="Gross"
             sub="Total invoiced + paid"
             value={formatMoney(totals.gross, totals.currency)}
+            trend={prevPeriod ? <TrendDelta currentCents={totals.gross} previousCents={prevPeriod.gross} /> : null}
           />
           <StatCard
             label="Refunds"
@@ -1847,11 +1905,13 @@ function ReportsTab({ vendorId }: { vendorId: string | null }) {
                 : `${totals.expenseCount} entr${totals.expenseCount === 1 ? "y" : "ies"}`
             }
             value={`-${formatMoney(totals.expenses, totals.currency)}`}
+            trend={prevPeriod ? <TrendDelta currentCents={totals.expenses} previousCents={prevPeriod.expenses} /> : null}
           />
           <StatCard
             label="Net profit"
             sub="Revenue − expenses"
             value={formatMoney(totals.netProfit, totals.currency)}
+            trend={prevPeriod ? <TrendDelta currentCents={totals.netProfit} previousCents={prevPeriod.netProfit} /> : null}
           />
           <StatCard
             label="Margin"
@@ -1875,13 +1935,19 @@ function ReportsTab({ vendorId }: { vendorId: string | null }) {
               <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground font-semibold text-right pb-2 border-b border-foreground/[0.06]">
                 Spend
               </div>
-              {totals.expensesByCategory.map((row) => (
-                <div key={row.category} className="contents">
-                  <div className="py-2 font-medium">{expenseCategoryLabel(row.category)}</div>
-                  <div className="py-2 text-right tabular-nums text-muted-foreground">{row.count}</div>
-                  <div className="py-2 text-right tabular-nums">{formatMoney(row.cents, totals.currency)}</div>
-                </div>
-              ))}
+              {(() => {
+                const maxCents = totals.expensesByCategory[0]?.cents ?? 0;
+                return totals.expensesByCategory.map((row) => (
+                  <div key={row.category} className="contents">
+                    <div className="py-2 font-medium flex items-center gap-2">
+                      <InlineBar value={row.cents} max={maxCents} />
+                      {expenseCategoryLabel(row.category)}
+                    </div>
+                    <div className="py-2 text-right tabular-nums text-muted-foreground">{row.count}</div>
+                    <div className="py-2 text-right tabular-nums">{formatMoney(row.cents, totals.currency)}</div>
+                  </div>
+                ));
+              })()}
             </div>
           </Card>
         )}
@@ -1956,14 +2022,20 @@ function ReportsTab({ vendorId }: { vendorId: string | null }) {
               <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground font-semibold text-right pb-2 border-b border-foreground/[0.06]">
                 Tax owed
               </div>
-              {totals.taxByState.map((row) => (
-                <div key={row.state} className="contents">
-                  <div className="py-2 font-medium tabular-nums">{row.state === "—" ? "Unknown" : row.state}</div>
-                  <div className="py-2 text-right tabular-nums text-muted-foreground">{row.count}</div>
-                  <div className="py-2 text-right tabular-nums">{formatMoney(row.grossCents, totals.currency)}</div>
-                  <div className="py-2 text-right tabular-nums font-semibold">{formatMoney(row.taxCents, totals.currency)}</div>
-                </div>
-              ))}
+              {(() => {
+                const maxTax = totals.taxByState[0]?.taxCents ?? 0;
+                return totals.taxByState.map((row) => (
+                  <div key={row.state} className="contents">
+                    <div className="py-2 font-medium tabular-nums flex items-center gap-2">
+                      <InlineBar value={row.taxCents} max={maxTax} />
+                      {row.state === "—" ? "Unknown" : row.state}
+                    </div>
+                    <div className="py-2 text-right tabular-nums text-muted-foreground">{row.count}</div>
+                    <div className="py-2 text-right tabular-nums">{formatMoney(row.grossCents, totals.currency)}</div>
+                    <div className="py-2 text-right tabular-nums font-semibold">{formatMoney(row.taxCents, totals.currency)}</div>
+                  </div>
+                ));
+              })()}
             </div>
           </Card>
           <p className="text-[11px] text-muted-foreground mt-2">
@@ -2044,7 +2116,7 @@ function RevenueSparkline({
   data: { values: number[]; max: number; buckets: number; weekly: boolean };
   currency: string;
 }) {
-  const { values, max } = data;
+  const { values, max, weekly } = data;
   if (max <= 0) {
     return (
       <div className="text-sm text-muted-foreground text-center py-6">
@@ -2052,45 +2124,143 @@ function RevenueSparkline({
       </div>
     );
   }
-  const W = 600;
-  const H = 80;
-  const barW = W / values.length;
-  const gap = Math.min(barW * 0.2, 3);
+  // Real area-line chart with axis labels + horizontal grid.
+  // viewBox sized so the SVG scales cleanly across viewports while
+  // axis tick text stays legible. Layout: PAD around a plot area
+  // of W×H. Y axis on left shows max + half + zero. X axis at
+  // bottom shows first/last bucket index plus tick marks.
+  const PAD_L = 56;
+  const PAD_R = 12;
+  const PAD_T = 12;
+  const PAD_B = 22;
+  const W = 720;
+  const H = 220;
+  const plotW = W - PAD_L - PAD_R;
+  const plotH = H - PAD_T - PAD_B;
+  const n = values.length;
+  // X positions evenly spaced across the plot
+  const x = (i: number) => PAD_L + (n === 1 ? plotW / 2 : (i / (n - 1)) * plotW);
+  const y = (v: number) => PAD_T + plotH - (v / max) * plotH;
+  const linePath = values.map((v, i) => `${i === 0 ? "M" : "L"}${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(" ");
+  const areaPath = `${linePath} L${x(n - 1).toFixed(1)},${PAD_T + plotH} L${x(0).toFixed(1)},${PAD_T + plotH} Z`;
+  const yTicks = [0, 0.5, 1]; // % of max
+  const total = values.reduce((s, v) => s + v, 0);
+  const peakIdx = values.indexOf(max);
+
   return (
-    <div className="flex items-end gap-4 flex-wrap">
-      <div className="flex-1 min-w-[240px]">
-        <svg
-          viewBox={`0 0 ${W} ${H}`}
-          preserveAspectRatio="none"
-          className="w-full h-20"
-          aria-hidden
-        >
-          {values.map((v, i) => {
-            const h = (v / max) * (H - 2);
-            return (
-              <rect
-                key={i}
-                x={i * barW + gap / 2}
-                y={H - h}
-                width={Math.max(1, barW - gap)}
-                height={Math.max(1, h)}
-                fill="currentColor"
-                opacity={0.85}
-                className="text-foreground/70"
-              />
-            );
-          })}
-        </svg>
-      </div>
-      <div className="text-right">
-        <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground font-semibold">
-          Peak bucket
+    <div className="space-y-3">
+      <div className="flex items-end justify-between gap-6 flex-wrap">
+        <div>
+          <div className="cockpit-chart-title">Revenue trend</div>
+          <div className="cockpit-chart-sub">
+            {weekly ? "Weekly buckets" : "Daily buckets"} · {n} {weekly ? "weeks" : "days"}
+          </div>
         </div>
-        <div className="text-base font-editorial mt-1">
-          {formatMoney(max, currency)}
+        <div className="flex items-center gap-6 text-right">
+          <div>
+            <div className="cockpit-stat-label">Total</div>
+            <div className="cockpit-money cockpit-money--lg">{formatMoney(total, currency)}</div>
+          </div>
+          <div>
+            <div className="cockpit-stat-label">Peak</div>
+            <div className="cockpit-money">{formatMoney(max, currency)}</div>
+          </div>
         </div>
       </div>
+      <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-[220px]" preserveAspectRatio="none" aria-hidden>
+        <defs>
+          <linearGradient id="cockpit-area-grad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#0ea5e9" stopOpacity="0.25" />
+            <stop offset="100%" stopColor="#0ea5e9" stopOpacity="0" />
+          </linearGradient>
+        </defs>
+        {/* Horizontal grid */}
+        {yTicks.map((t) => {
+          const yy = PAD_T + plotH - t * plotH;
+          return (
+            <g key={t}>
+              <line x1={PAD_L} y1={yy} x2={PAD_L + plotW} y2={yy} className="cockpit-chart-grid" />
+              <text x={PAD_L - 6} y={yy} textAnchor="end" dominantBaseline="middle" className="cockpit-chart-axis">
+                {t === 0 ? "$0" : formatMoneyCompact(max * t, currency)}
+              </text>
+            </g>
+          );
+        })}
+        {/* Vertical baseline */}
+        <line x1={PAD_L} y1={PAD_T} x2={PAD_L} y2={PAD_T + plotH} stroke="#e2e8f0" strokeWidth="1" />
+        {/* Area fill + line */}
+        <path d={areaPath} className="cockpit-chart-area" />
+        <path d={linePath} className="cockpit-chart-line" />
+        {/* Peak marker dot */}
+        {peakIdx >= 0 && max > 0 && (
+          <circle cx={x(peakIdx)} cy={y(max)} r="3.5" className="cockpit-chart-dot" />
+        )}
+        {/* X axis labels — first / mid / last bucket */}
+        <text x={PAD_L} y={H - 6} textAnchor="start" className="cockpit-chart-axis">
+          {weekly ? `Week 1` : `Day 1`}
+        </text>
+        <text x={PAD_L + plotW / 2} y={H - 6} textAnchor="middle" className="cockpit-chart-axis">
+          {weekly ? `Week ${Math.ceil(n / 2)}` : `Day ${Math.ceil(n / 2)}`}
+        </text>
+        <text x={PAD_L + plotW} y={H - 6} textAnchor="end" className="cockpit-chart-axis">
+          {weekly ? `Week ${n}` : `Day ${n}`}
+        </text>
+      </svg>
     </div>
+  );
+}
+
+// Compact money formatter for chart axis labels — "1.2k" / "12.5k"
+// / "1.2M" instead of "$1,200" so 5 ticks fit on a narrow Y axis.
+function formatMoneyCompact(cents: number, currency: string): string {
+  const v = cents / 100;
+  const abs = Math.abs(v);
+  const fmt = (n: number, suffix: string) => {
+    const s = n.toFixed(n < 10 ? 1 : 0).replace(/\.0$/, "");
+    return new Intl.NumberFormat("en-US", { style: "currency", currency: currency.toUpperCase(), maximumFractionDigits: 0 })
+      .format(0).replace(/0/g, "") + s + suffix;
+  };
+  if (abs >= 1_000_000) return fmt(v / 1_000_000, "M");
+  if (abs >= 1_000) return fmt(v / 1_000, "k");
+  return formatMoney(cents, currency);
+}
+
+// Horizontal in-cell bar visualization — used in Reports tables
+// (Sales by state, Expenses by category) to show relative magnitude
+// next to the dollar amount. Tableau-style "bar in row" pattern.
+function InlineBar({ value, max }: { value: number; max: number }) {
+  const pct = max > 0 ? Math.min(100, (value / max) * 100) : 0;
+  return (
+    <span className="cockpit-inline-bar-track" aria-hidden>
+      <span style={{ width: `${pct}%` }} />
+    </span>
+  );
+}
+
+// Trend delta chip — "+12.4%" up green, "-3.2%" down red, "—" flat.
+// Used on KPI tiles to compare current-window vs previous-window
+// (e.g., Net profit this month vs last month).
+function TrendDelta({
+  currentCents,
+  previousCents,
+}: {
+  currentCents: number;
+  previousCents: number;
+}) {
+  if (previousCents === 0) {
+    return currentCents === 0 ? null : (
+      <span className="cockpit-delta cockpit-delta--up">▲ new</span>
+    );
+  }
+  const pct = ((currentCents - previousCents) / Math.abs(previousCents)) * 100;
+  const flat = Math.abs(pct) < 0.5;
+  const up = pct > 0;
+  const cls = flat ? "cockpit-delta--flat" : up ? "cockpit-delta--up" : "cockpit-delta--down";
+  const arrow = flat ? "—" : up ? "▲" : "▼";
+  return (
+    <span className={`cockpit-delta ${cls}`}>
+      {arrow} {flat ? "0%" : `${Math.abs(pct).toFixed(1)}%`}
+    </span>
   );
 }
 
@@ -6772,7 +6942,15 @@ function EmptyCard({ children }: { children: React.ReactNode }) {
   );
 }
 
-function StatCard({ label, sub, value }: { label: string; sub: string; value: string }) {
+function StatCard({ label, sub, value, trend }: {
+  label: string;
+  sub: string;
+  value: string;
+  /** Optional trend chip rendered next to the value — usually a
+   *  <TrendDelta currentCents=... previousCents=... /> showing
+   *  +/-N% vs the prior equivalent window. */
+  trend?: React.ReactNode;
+}) {
   // .cockpit-stat picks up the dense Xero KPI styling when the
   // ancestor has .my-vendora-cockpit. Outside that scope, the
   // utility classes here keep the warm look (rounded-2xl, beige bg).
@@ -6787,7 +6965,10 @@ function StatCard({ label, sub, value }: { label: string; sub: string; value: st
       <div className="cockpit-stat-label text-[10px] uppercase tracking-[0.18em] text-muted-foreground font-semibold">
         {label}
       </div>
-      <div className="cockpit-stat-value text-[28px] leading-none font-editorial mt-2 tracking-tight">{value}</div>
+      <div className="flex items-baseline gap-2 mt-2">
+        <div className="cockpit-stat-value text-[28px] leading-none font-editorial tracking-tight">{value}</div>
+        {trend}
+      </div>
       <div className="cockpit-stat-sub text-[11px] text-muted-foreground mt-2 pt-2 border-t border-foreground/[0.05]">{sub}</div>
     </div>
   );

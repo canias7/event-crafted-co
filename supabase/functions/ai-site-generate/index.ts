@@ -69,41 +69,215 @@ function jsonResponse(status: number, body: Record<string, unknown>) {
 // If you want to extend: HEAD-check first with
 // `curl -sk -o /dev/null -w "%{http_code}" https://images.unsplash.com/photo-<id>?w=400&q=80`.
 const VERIFIED_PHOTOS = `
-SUBJECT PHOTOS (use as hero or section imagery):
+EVERY PHOTO LISTED HERE IS HEAD-CHECKED AND WORKS. NEVER invent a photo ID — only use what's listed.
 
-ROMANTIC / WEDDING / COUPLES:
+URL format: https://images.unsplash.com/photo-<id>?w=1600&auto=format&fit=crop
+For backgrounds: ?w=2000&q=80&fit=crop. For square: &h=1600 too.
+
+═══ WEDDING / ENGAGEMENT / ANNIVERSARY ═══
+
+ROMANTIC COUPLES (universal — hero shots, story sections):
   photo-1519741497674-611481863552 (couple silhouette beach)
   photo-1465495976277-4387d4b0b4c6 (couple sunset)
   photo-1469371670807-013ccf25f16a (couple romantic)
   photo-1464366400600-7168b8af9bc3 (couple twilight)
+  photo-1532712938310-34cb3982ef74 (intimate moment)
+
+RINGS / DETAILS:
+  photo-1583939003579-730e3918a45a (rings on linen)
+  photo-1546484959-f9a381d1330d (close-up details)
+  photo-1605100804763-247f67b3557e (rings macro)
+
+SUNSET / GOLDEN HOUR (atmospheric — use for any event with a sunset/twilight ceremony or romantic mood):
+  photo-1495020689067-958852a7765e (warm sunset)
+  photo-1419242902214-272b3f66ee7a (golden hour)
+  photo-1499678329028-101435549a4e (twilight scene)
+
+CHAMPAGNE / TOAST / CHEERS (any celebration — wedding, NYE, anniversary, milestone birthday):
+  photo-1551024601-bec78aea704b (champagne pour / toast)
+
+CAKE / DESSERTS — CLOSE-UPS (use for cake-cutting section in weddings, birthdays, showers):
+  photo-1565958011703-44f9829ba187 (elegant cake)
+  photo-1535254973040-607b474cb50d (cake close-up)
+  photo-1571877227200-a0d98ea607e9 (dessert spread)
+  photo-1535141192574-5d4897c12636 (cake detail)
+  photo-1499636136210-6f4ee915583e (dessert table)
+
+DANCE FLOOR / BAND / NIGHT RECEPTION:
+  photo-1496337589254-7e19d01cec44 (dance floor)
+  photo-1429962714451-bb934ecdc4ec (band / night scene)
+
+TRAVEL / SAVE-THE-DATE / DESTINATION (passport, airplane, suitcase — use on save-the-date / travel sections of destination weddings):
+  photo-1488646953014-85cb44e25828 (passport / travel)
+  photo-1436491865332-7a61a109cc05 (airplane window)
+  photo-1559268950-2d7ceb2efa3a (travel atmosphere)
+  photo-1530789253388-582c481c54b0 (suitcase / journey)
+
+EUCALYPTUS / BOTANICAL CLOSE-UPS (greenery accents anywhere):
+  photo-1469474968028-56623f02e42e (eucalyptus)
+  photo-1490750967868-88aa4486c946 (botanical close-up)
+
+CANDLES / WARM TABLE SETTINGS:
+  photo-1576091160550-2173dba999ef (candlelit table)
+
+VINEYARD / WINE CLOSE-UPS (for Napa/Tuscany/Sonoma weddings — vineyard sub-bank):
+  photo-1506377247377-2a5b3b417ebb (vineyard barrel / wine)
+
+WEDDING — BEACH / TROPICAL DESTINATION (Tulum, Cancun, Maldives, Bali, Hawaii, Caribbean):
+  photo-1559666126-84f389727b9a (tropical ocean / palms)
+  photo-1582719188393-bb71ca45dbb9 (beach destination ceremony)
+  photo-1507525428034-b723cf961d3e (beach sunset)
+  photo-1518021964703-4b2030f03085 (palm tropical)
+  photo-1469854523086-cc02fe5d8800 (warm coastal)
+  photo-1538439907460-1596cafd4eff (beach wedding scene)
+  photo-1583224964978-2257b960c3d3 (tropical ceremony)
+
+WEDDING — MOUNTAIN / ALPINE / SKI (Aspen, Switzerland, Tahoe, Whistler, Colorado, Banff):
+  photo-1464822759023-fed622ff2c3b (mountain vista)
+  photo-1500916434205-0c77489c6cf7 (alpine peaks)
+  photo-1571055107559-3e67626fa8be (mountain misty)
+  photo-1551522435-a13afa10f103 (mountain elopement)
+  photo-1497436072909-60f360e1d4b1 (forest mountain)
+  photo-1542273917363-3b1817f69a2d (alpine outdoor)
+
+WEDDING — GARDEN / ESTATE / VINEYARD (Napa, Tuscany, Provence, English countryside, Sonoma):
+  photo-1517994112540-009c47ea476b (garden estate)
+  photo-1530841377377-3ff06c0ca713 (vineyard / countryside)
+  photo-1606925797300-0b35e9d1794e (rolling hills)
+  photo-1518709268805-4e9042af9f23 (garden ceremony arch)
+  photo-1455587734955-081b22074882 (garden wedding)
+  photo-1531722569936-825d3dd91b15 (outdoor garden)
+
+WEDDING — BARN / RUSTIC / RANCH:
+  photo-1554080353-a576cf803bda (barn / rustic)
+
+WEDDING — BALLROOM / CLASSIC / BLACK-TIE / FORMAL:
+  photo-1530023367847-a683933f4172 (elegant ballroom)
+  photo-1520854221256-17451cc331bf (formal reception)
+  photo-1493804714600-6edb1cd93080 (classic glam)
+
+WEDDING — CITY / URBAN / ROOFTOP / LOFT (Manhattan, downtown, modern venues):
+  photo-1519501025264-65ba15a82390 (city skyline night)
+  photo-1496588152823-86ff7695e68f (city night lights)
+  photo-1502920917128-1aa500764cbd (urban skyline)
+  photo-1485871981521-5b1fd3805eee (modern building)
+  photo-1480714378408-67cf0d13bc1b (loft / industrial)
+  photo-1496939376851-89342e90adcd (rooftop view)
+  photo-1444525873963-75d329ef9e1b (downtown atmosphere)
+
+WEDDING — BARN / RUSTIC / RANCH:
+  photo-1554080353-a576cf803bda (barn / rustic)
+  photo-1502301197179-65228ab57f78 (rustic countryside)
+
+WEDDING — LAKE / WATERFRONT (Lake Como, Lake Tahoe, lakeside venues — NOT beach):
+  photo-1500530855697-b586d89ba3ee (calm lake)
+  photo-1502082553048-f009c37129b9 (waterfront atmosphere)
+
+WEDDING — WINTER / SNOW / CABIN (ski wedding, winter elopement, lodge):
+  photo-1483921020237-2ff51e8e4b22 (snow landscape)
+  photo-1543966888-7c1dc482a810 (winter atmosphere)
+  photo-1551582045-6ec9c11d8697 (winter cabin)
+
+WEDDING — LAVENDER / MEDITERRANEAN (Provence, Italian countryside, olive groves):
+  photo-1499002238440-d264edd596ec (lavender / countryside)
+
+WEDDING — MOROCCO / BOHO / DESERT TENT (Marrakech, Joshua Tree, desert venues):
+  photo-1539768942893-daf53e448371 (boho tent / desert)
+
+FLORALS / DECOR (any wedding type — accent imagery):
   photo-1525772764200-be829a350797 (wedding florals)
   photo-1519225421980-715cb0215aed (wedding decor)
   photo-1511795409834-ef04bbd61622 (pink florals)
-  photo-1583939003579-730e3918a45a (rings)
   photo-1478146896981-b80fe463b330 (elegant flowers)
   photo-1487530811176-3780de880c2d (wedding flowers)
+  photo-1485827404703-89b55fcc595e (florals close-up)
+  photo-1473893604213-3df9c15611c0 (decor detail)
+  photo-1521223890158-f9f7c3d5d504 (botanical accent)
 
-PARTY / CELEBRATION:
+═══ BIRTHDAY ═══
+
+ADULT BIRTHDAY / COCKTAIL / SPEAKEASY / 21+:
+  photo-1551739440-5dd934d3a94a (cocktails / glam)
+  photo-1514525253161-7a46d19cd819 (party night)
+  photo-1556679343-c7306c1976bc (cocktail glasses)
+  photo-1530021232320-687d8e3dba54 (gold party glam)
+  photo-1571805529673-0f56b922b359 (luxe celebration)
+  photo-1492684223066-81342ee5ff30 (party balloons)
+
+KIDS BIRTHDAY (1-12) — colorful / playful (AVOID identifiable kid faces):
   photo-1530103862676-de8c9debad1d (birthday balloons)
   photo-1530103043960-ef38714abb15 (cake)
-  photo-1492684223066-81342ee5ff30 (party balloons)
-  photo-1502635385003-ee1e6a1a742d (celebration scene)
-  photo-1606800052052-a08af7148866 (decor elegant)
-  photo-1565538810643-b5bdb714032a (party decor)
-  photo-1471520201477-47a62a269a87 (atmosphere)
-  photo-1500076656116-558758c991c1 (event scene)
-  photo-1490822180406-880c226c150b (event atmosphere)
-  photo-1503424886307-b090341d25d1 (party scene)
-  photo-1543351611-58f69d7c1781 (party / decor)
-  photo-1517457373958-b7bdd4587205 (decor)
-  photo-1496843916299-590492c751f4 (celebration)
+  photo-1464347744102-11db6282f854 (kids party scene)
+  photo-1558636508-e0db3814bd1d (colorful party)
+  photo-1474552226712-ac0f0961a954 (kid party setup)
+  photo-1576919228236-a097c32a5cd4 (party decor)
+  photo-1607344645866-009c320b63e0 (themed kids party)
 
-FOOD / TABLE:
-  photo-1414235077428-338989a2e8c0 (set table)
+═══ BABY SHOWER / GENDER REVEAL / BRIDAL SHOWER ═══
+
+BABY SHOWER (soft pastels, baby items):
+  photo-1554080353-321e452ccf19 (baby shower decor)
+  photo-1519689680058-324335c77eba (baby shoes / pastels)
+  photo-1607706189992-eae578626c86 (florals + baby items)
+
+BRIDAL SHOWER / BRUNCH / TEA PARTY:
+  photo-1525755662778-989d0524087e (brunch table)
+  photo-1519999482648-25049ddd37b1 (afternoon tea)
+  photo-1496318447583-f524534e9ce1 (floral spread)
+  photo-1525351484163-7529414344d8 (elegant brunch)
+
+═══ GRADUATION ═══
+
+  photo-1523580494863-6f3031224c94 (graduation scene)
+  photo-1561489413-985b06da5bee (caps / celebration)
+
+═══ QUINCEAÑERA / SWEET 16 / BAT MITZVAH (formal, regal) ═══
+
+  photo-1521334884684-d80222895322 (regal celebration)
+  photo-1494797262163-102fae527c62 (formal portrait scene)
+  photo-1480365501497-199581be0e66 (ceremony / temple setting)
+
+═══ HOLIDAY PARTY ═══
+
+CHRISTMAS / WINTER (forest green + cranberry + gold):
+  photo-1606925797300-0b35e9d1794e (winter countryside)
+  photo-1545048702-79362596cdc9 (christmas atmosphere)
+
+NYE / NEW YEAR (black + gold + champagne):
+  photo-1492684223066-81342ee5ff30 (party balloons gold)
+  photo-1571805529673-0f56b922b359 (luxe night)
+  photo-1530021232320-687d8e3dba54 (gold glam)
+
+HALLOWEEN (dark + orange + purple):
+  photo-1509557965875-b88c97052f0e (halloween atmospheric)
+  photo-1574169208507-84376144848b (halloween mood)
+  photo-1538485399081-7191377e8241 (spooky atmospheric)
+
+═══ BBQ / 4TH OF JULY / SUMMER OUTDOOR ═══
+
   photo-1555939594-58d7cb561ad1 (grill / bbq)
-  photo-1607706189992-eae578626c86 (florals + items)
+  photo-1535007813616-79dc02ba4021 (outdoor summer)
+  photo-1561758033-d89a9ad46330 (backyard party)
 
-TEXTURED / MOODY BACKGROUNDS (use as <body> background, hero overlay, or cover-page canvas — these are the "$1M design" foundations):
+═══ DINNER PARTY (intimate) ═══
+
+  photo-1414235077428-338989a2e8c0 (set candlelit table)
+  photo-1559339352-11d035aa65de (intimate dining)
+
+═══ RETIREMENT (warm classic) ═══
+
+  photo-1497032628192-86f99bcd76bc (warm classic)
+  photo-1532712938310-34cb3982ef74 (multi-generational warm)
+
+═══ HOUSEWARMING (cozy modern home) ═══
+
+  photo-1502672023488-70e25813eb80 (cozy home interior)
+  photo-1493809842364-78817add7ffb (modern living)
+  photo-1556909114-f6e7ad7d3136 (warm home aesthetic)
+
+═══ TEXTURED / MOODY BACKGROUNDS (place-NEUTRAL — safe for ANY event when location is vague or formal) ═══
+
+Pure texture (dark slate, velvet, marble, linen) — no location implied. Use these as cover-page backdrops, body backgrounds, or hero overlays for formal/black-tie/classic events with no specific venue:
 
   photo-1481277542470-605612bd2d61 (dark moody texture)
   photo-1503602642458-232111445657 (dark velvet / fabric)
@@ -121,12 +295,42 @@ TEXTURED / MOODY BACKGROUNDS (use as <body> background, hero overlay, or cover-p
   photo-1610375461246-83df859d849d (moody background)
   photo-1611348586804-61bf6c080437 (textured surface)
 
-URL format: https://images.unsplash.com/photo-<id>?w=1600&auto=format&fit=crop
-Crop hint: append &fit=crop for hero-style cropping. For backgrounds, use ?w=2000&q=80&fit=crop.
+═══ GENERIC PARTY ATMOSPHERE (filler / accent) ═══
+
+  photo-1521334726092-b509a19597c6 (elegant atmosphere)
+  photo-1452860606245-08befc0ff44b (generic celebration)
+  photo-1502635385003-ee1e6a1a742d (celebration scene)
+  photo-1606800052052-a08af7148866 (decor elegant)
+  photo-1565538810643-b5bdb714032a (party decor)
+  photo-1471520201477-47a62a269a87 (atmosphere)
+  photo-1500076656116-558758c991c1 (event scene)
+  photo-1490822180406-880c226c150b (event atmosphere)
+  photo-1503424886307-b090341d25d1 (party scene)
+  photo-1543351611-58f69d7c1781 (party decor)
+  photo-1517457373958-b7bdd4587205 (decor)
+  photo-1496843916299-590492c751f4 (celebration)
+
+═══ VENUE MATCHING (CRITICAL — read this before picking background) ═══
+
+Before picking a background, READ the user's venue / location keyword carefully:
+  • "Tulum" / "Cancun" / "Bali" / "Hawaii" / "Maldives" / beach / coastal / ocean / "destination" → BEACH bank
+  • "Aspen" / "Switzerland" / "Tahoe" / "Whistler" / "Banff" / mountain / alpine / ski / forest cabin → MOUNTAIN bank
+  • "Napa" / "Tuscany" / "Provence" / "Sonoma" / vineyard / garden / countryside / estate / villa → GARDEN / ESTATE bank
+  • "barn" / "ranch" / "farm" / rustic → BARN bank
+  • "ballroom" / "hotel" / "Plaza" / formal / black-tie / glam → BALLROOM bank
+  • "NYC" / "rooftop" / "downtown" / "loft" / "skyline" / "city" → CITY bank
+  • "Lake Como" / "Lake Tahoe" / "lakeside" / "waterfront" → LAKE bank
+  • "ski" / "winter" / "snow" / "cabin" / "lodge" → WINTER / SNOW / CABIN bank
+  • "Provence" / "lavender" / "olive grove" / Mediterranean → LAVENDER bank
+  • "Marrakech" / "Morocco" / "Joshua Tree" / "desert tent" / boho desert → MOROCCO / BOHO bank
+  • Destination wedding with travel theme → also include TRAVEL bank photos in a save-the-date section
+  • Vague / no specific location / classic / formal with no destination → TEXTURED / MOODY (place-neutral)
+
+NEVER pick alpine mountains for a beach wedding, ocean for an Aspen elopement, vineyards for a city loft, etc. If unsure which category fits, default to TEXTURED / MOODY — those work everywhere.
 
 For decorative filler when nothing themed fits, https://picsum.photos/seed/<unique-word>/1600/900 always works.
 
-If the user provides their OWN photo URL in a message (e.g. "use this image: https://...."), prefer that URL over anything from this bank. User-supplied is the truth.
+If the user provides their OWN photo URL in a message, prefer that over anything from this bank. User-supplied is the truth.
 `;
 
 const EVENT_PLAYBOOKS = `=== EVENT PLAYBOOKS ===
