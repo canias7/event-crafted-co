@@ -45,6 +45,97 @@ const CONTEXT_HORIZON_DAYS = 30;
 const SEND_EMAIL_DAILY_CAP = 20;
 const BULK_SEND_REPLY_DAILY_CAP = 5;
 
+// Per-user Claude cost cap in USD per rolling 24h. Sized as a
+// generous power-user budget — at Sonnet pricing this is roughly
+// 1.5M raw input tokens or far more with cache hits. Fails open
+// if the audit query errors (don't lock users out on telemetry
+// glitches). Source-of-truth = sum(cost_micros) on ai_call_usage.
+const CHAT_DAILY_USD_CAP = 20;
+
+// Sentry DSN for the edge function. Same project as the frontend
+// (apps/web/src/lib/sentry.ts). DSNs are public — they authorize
+// event ingestion only, never reads. Set SENTRY_DSN_EDGE in the
+// project secrets to override per-environment if you want a
+// separate Sentry project for the edge function later.
+const SENTRY_DSN = Deno.env.get("SENTRY_DSN_EDGE") ??
+  "https://95e6e8cecdabe9a13b4c8251550120be@o4511420871802880.ingest.us.sentry.io/4511420910731264";
+
+interface SentryDsn {
+  publicKey: string;
+  host: string;
+  projectId: string;
+}
+
+function parseSentryDsn(dsn: string): SentryDsn | null {
+  try {
+    const u = new URL(dsn);
+    return {
+      publicKey: u.username,
+      host: u.host,
+      projectId: u.pathname.replace(/^\//, ""),
+    };
+  } catch {
+    return null;
+  }
+}
+
+const SENTRY = parseSentryDsn(SENTRY_DSN);
+
+// Fire-and-forget POST to Sentry's envelope endpoint. We don't pull
+// in the @sentry/deno SDK because every dependency on an edge
+// function inflates cold-start latency; this 30-line helper covers
+// the captureException + tags use case fully.
+function reportToSentry(
+  err: unknown,
+  context: Record<string, unknown> = {},
+): void {
+  if (!SENTRY) return;
+  const message = err instanceof Error
+    ? err.message
+    : typeof err === "string"
+    ? err
+    : "(unknown)";
+  const stack = err instanceof Error ? err.stack ?? null : null;
+  const event = {
+    event_id: crypto.randomUUID().replace(/-/g, ""),
+    timestamp: Date.now() / 1000,
+    platform: "javascript",
+    server_name: "edge-function:my-space-chat",
+    environment: Deno.env.get("DENO_DEPLOYMENT_ID") ? "production" : "development",
+    tags: { source: "my-space-chat" },
+    extra: context,
+    exception: {
+      values: [{
+        type: err instanceof Error ? err.name : "Error",
+        value: message,
+        stacktrace: stack
+          ? {
+            frames: stack.split("\n").slice(1, 30).map((line) => ({
+              filename: line.trim(),
+            })),
+          }
+          : undefined,
+      }],
+    },
+  };
+  const envelope = [
+    JSON.stringify({ event_id: event.event_id, sent_at: new Date().toISOString() }),
+    JSON.stringify({ type: "event" }),
+    JSON.stringify(event),
+  ].join("\n");
+  const url =
+    `https://${SENTRY.host}/api/${SENTRY.projectId}/envelope/`;
+  const auth = `Sentry sentry_version=7, sentry_key=${SENTRY.publicKey}, sentry_client=my-space-edge/1.0`;
+  fetch(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/x-sentry-envelope",
+      "X-Sentry-Auth": auth,
+    },
+    body: envelope,
+  }).catch((e) => console.warn("[my-space-chat] sentry post failed", e));
+}
+
 // Wrap host-authored text so the model sees it as data, not
 // instructions. Combined with a system-prompt directive forbidding
 // the model from following commands found inside these tags, this
@@ -54,6 +145,30 @@ const BULK_SEND_REPLY_DAILY_CAP = 5;
 function wrapUntrusted(text: string | null | undefined): string {
   if (text == null) return "";
   return `<untrusted_host_content>${String(text)}</untrusted_host_content>`;
+}
+
+// Sum the user's last-24h Claude cost from ai_call_usage. Used to
+// gate new turns when the per-vendor daily USD cap is hit. Fails
+// open: a telemetry-DB error returns 0 spent so the user isn't
+// silently locked out by an unrelated outage.
+async function getChatSpendLast24h(
+  admin: any,
+  userId: string,
+): Promise<{ usedUsd: number }> {
+  const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+  const { data, error } = await admin
+    .from("ai_call_usage")
+    .select("cost_micros")
+    .eq("user_id", userId)
+    .eq("action_type", "my_space_chat")
+    .gte("created_at", since);
+  if (error) {
+    console.warn("[my-space-chat] spend query failed", error);
+    return { usedUsd: 0 };
+  }
+  const totalMicros = ((data ?? []) as Array<{ cost_micros: number | null }>)
+    .reduce((sum, r) => sum + (r.cost_micros ?? 0), 0);
+  return { usedUsd: totalMicros / 1_000_000 };
 }
 
 async function countAuditCallsLast24h(
@@ -1508,11 +1623,19 @@ async function toolSearchMessages(
   const threadRows = (threads ?? []) as Array<any>;
   const threadIds = threadRows.map((t) => t.id);
   if (threadIds.length === 0) return { matches: [], count: 0 };
+  // %, _, and backslash are LIKE-pattern wildcards. Postgres ILIKE
+  // needs ESCAPE configured to honor a backslash-escape (PostgREST
+  // doesn't set one by default), so the safest fix is to strip them
+  // — any vendor query containing % or _ literally is vanishingly
+  // rare and stripping degrades to "match without those chars" not
+  // "match everything".
+  const safe = q.replace(/[%_\\]/g, " ").trim();
+  if (!safe) return { matches: [], count: 0 };
   const { data: msgs, error } = await admin
     .from("direct_messages")
     .select("id, thread_id, sender_role, body, created_at")
     .in("thread_id", threadIds)
-    .ilike("body", `%${q.replace(/[%_]/g, (m) => `\\${m}`)}%`)
+    .ilike("body", `%${safe}%`)
     .is("deleted_at", null)
     .order("created_at", { ascending: false })
     .limit(limit);
@@ -4090,6 +4213,21 @@ serve(async (req) => {
     auth: { autoRefreshToken: false, persistSession: false },
   });
 
+  // Daily USD cap on Claude spend per user. Cheap defense against a
+  // runaway loop or abuse — checked once per turn before we open the
+  // SSE stream so capped users see a clean 429 instead of an empty
+  // stream. Telemetry-DB failure fails open (returns 0 spent).
+  const spend = await getChatSpendLast24h(admin, userId);
+  if (spend.usedUsd >= CHAT_DAILY_USD_CAP) {
+    return json(429, {
+      error: "daily_chat_cap_reached",
+      used_usd: Number(spend.usedUsd.toFixed(2)),
+      cap_usd: CHAT_DAILY_USD_CAP,
+      message:
+        `You've reached the daily AI spend cap ($${CHAT_DAILY_USD_CAP}). Resets in a few hours.`,
+    });
+  }
+
   const payload = await req.json().catch(() => ({}));
   const userText = String(payload?.text ?? "").trim();
   const threadIdIn = payload?.thread_id ? String(payload.thread_id) : null;
@@ -4317,6 +4455,11 @@ serve(async (req) => {
         close();
       } catch (err) {
         console.error("[my-space-chat] stream error", err);
+        reportToSentry(err, {
+          phase: "stream",
+          user_id: userId,
+          thread_id: threadId,
+        });
         const message = err instanceof Error ? err.message : String(err);
         send({ type: "error", message: message.slice(0, 240) });
         close();

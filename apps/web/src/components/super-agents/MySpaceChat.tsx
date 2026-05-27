@@ -469,6 +469,19 @@ export function MySpaceChat() {
         } catch {
           // ignore
         }
+        // Per-user daily Claude spend cap (HTTP 429). Surface a clear,
+        // non-scary message instead of a raw status line.
+        if (res.status === 429) {
+          let parsed: { message?: string; used_usd?: number; cap_usd?: number } = {};
+          try { parsed = JSON.parse(detail); } catch { /* ignore */ }
+          const friendly = parsed?.message
+            ? parsed.message
+            : `You've hit today's AI usage cap${
+              parsed?.cap_usd ? ` ($${parsed.cap_usd})` : ""
+            }. Resets in a few hours.`;
+          toast.error(friendly, { duration: 8000 });
+          throw new Error(friendly);
+        }
         throw new Error(`${res.status}: ${detail.slice(0, 240)}`);
       }
 
