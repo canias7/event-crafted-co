@@ -1824,6 +1824,60 @@ export type Database = {
         }
         Relationships: []
       }
+      my_space_action_audit: {
+        Row: {
+          created_at: string
+          error_message: string | null
+          id: string
+          input: Json | null
+          result: Json | null
+          success: boolean
+          thread_id: string | null
+          tool_name: string
+          user_id: string
+          vendor_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          input?: Json | null
+          result?: Json | null
+          success?: boolean
+          thread_id?: string | null
+          tool_name: string
+          user_id: string
+          vendor_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          input?: Json | null
+          result?: Json | null
+          success?: boolean
+          thread_id?: string | null
+          tool_name?: string
+          user_id?: string
+          vendor_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "my_space_action_audit_thread_id_fkey"
+            columns: ["thread_id"]
+            isOneToOne: false
+            referencedRelation: "my_space_threads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "my_space_action_audit_vendor_id_fkey"
+            columns: ["vendor_id"]
+            isOneToOne: false
+            referencedRelation: "vendor_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       my_space_messages: {
         Row: {
           attachments: Json | null
@@ -1870,6 +1924,59 @@ export type Database = {
             columns: ["thread_id"]
             isOneToOne: false
             referencedRelation: "my_space_threads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      my_space_scheduled_actions: {
+        Row: {
+          args: Json
+          created_at: string
+          error_message: string | null
+          executed_at: string | null
+          id: string
+          kind: string
+          result: Json | null
+          run_at: string
+          status: string
+          updated_at: string
+          user_id: string
+          vendor_id: string | null
+        }
+        Insert: {
+          args?: Json
+          created_at?: string
+          error_message?: string | null
+          executed_at?: string | null
+          id?: string
+          kind: string
+          result?: Json | null
+          run_at: string
+          status?: string
+          updated_at?: string
+          user_id: string
+          vendor_id?: string | null
+        }
+        Update: {
+          args?: Json
+          created_at?: string
+          error_message?: string | null
+          executed_at?: string | null
+          id?: string
+          kind?: string
+          result?: Json | null
+          run_at?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+          vendor_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "my_space_scheduled_actions_vendor_id_fkey"
+            columns: ["vendor_id"]
+            isOneToOne: false
+            referencedRelation: "vendor_profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -4836,6 +4943,7 @@ export type Database = {
           location: string | null
           logo_url: string | null
           longitude: number | null
+          my_space_preferences: string | null
           onboarding_nudge_sent_at: string | null
           policy_notes: string | null
           portfolio_summary: string | null
@@ -4880,6 +4988,7 @@ export type Database = {
           location?: string | null
           logo_url?: string | null
           longitude?: number | null
+          my_space_preferences?: string | null
           onboarding_nudge_sent_at?: string | null
           policy_notes?: string | null
           portfolio_summary?: string | null
@@ -4924,6 +5033,7 @@ export type Database = {
           location?: string | null
           logo_url?: string | null
           longitude?: number | null
+          my_space_preferences?: string | null
           onboarding_nudge_sent_at?: string | null
           policy_notes?: string | null
           portfolio_summary?: string | null
@@ -5685,6 +5795,7 @@ export type Database = {
           location: string | null
           logo_url: string | null
           longitude: number | null
+          my_space_preferences: string | null
           onboarding_nudge_sent_at: string | null
           policy_notes: string | null
           portfolio_summary: string | null

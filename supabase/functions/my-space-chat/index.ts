@@ -157,10 +157,11 @@ interface VendorSnapshot {
   };
   inquiryCounts: { new: number; replied: number; closed: number };
   hotLeadsCount: number;
-  // Titles of the vendor's recent OTHER chat threads, so the AI can
-  // reference past conversations ("you mentioned in the cake tasting
-  // chat that…").
   recentChats: Array<{ title: string | null; updated_at: string }>;
+  // Free-form vendor-set instructions. Injected into the system
+  // prompt so the AI personalizes ("always sign as Jamie", "reply
+  // formally"). Null if the vendor never set it.
+  preferences: string | null;
 }
 
 async function buildVendorSnapshot(
@@ -189,7 +190,7 @@ async function buildVendorSnapshot(
   ] = await Promise.all([
     admin
       .from("vendor_profiles")
-      .select("id, business_name, category, location")
+      .select("id, business_name, category, location, my_space_preferences")
       .eq("id", vendorId)
       .maybeSingle(),
     admin
@@ -279,6 +280,7 @@ async function buildVendorSnapshot(
       title: t.title,
       updated_at: t.updated_at,
     })),
+    preferences: (vendor as any)?.my_space_preferences ?? null,
   };
 }
 
@@ -374,6 +376,12 @@ ${
       : snap.recentChats
         .map((c) => `  • ${c.title || "(untitled)"} — ${c.updated_at.slice(0, 10)}`)
         .join("\n")
+  }${
+    snap.preferences && snap.preferences.trim()
+      ? `\n\nVendor's standing preferences (apply on every turn unless overridden):\n${
+        snap.preferences.trim()
+      }`
+      : ""
   }
 ═══════════════════════════════════════════════════`;
 }
@@ -905,6 +913,52 @@ const TOOLS = [
           type: "string",
           enum: ["today", "week", "month", "all_time"],
         },
+      },
+    },
+  },
+  {
+    name: "edit_image",
+    description:
+      "Restyle / edit an existing image (typically one the vendor just uploaded) by passing its URL + a prompt to gpt-image-2's edits endpoint. Returns the new image URL — render it inline in your reply as a Markdown image (e.g. `![](url)`) so the vendor sees the result. WRITE ACTION (consumes image-gen budget) — confirm the prompt with the vendor first.",
+    input_schema: {
+      type: "object",
+      required: ["source_image_url", "prompt"],
+      properties: {
+        source_image_url: {
+          type: "string",
+          description: "Public URL of the source image to edit (e.g. an attachment the vendor uploaded).",
+        },
+        prompt: {
+          type: "string",
+          description: "What to change about the image (e.g. 'make it warmer and more cinematic').",
+        },
+      },
+    },
+  },
+  {
+    name: "set_chat_preferences",
+    description:
+      "Persist a free-form preferences blob on the vendor's profile that gets injected into every future My Space conversation (e.g. 'always sign as Jamie', 'reply formally to hosts', 'prefer Friday meetings'). Pass an empty string to clear. WRITE ACTION — confirm the exact text with the vendor first.",
+    input_schema: {
+      type: "object",
+      required: ["preferences"],
+      properties: {
+        preferences: {
+          type: "string",
+          description: "Free-form text. Replaces any prior preferences.",
+        },
+      },
+    },
+  },
+  {
+    name: "get_audit_log",
+    description:
+      "Return the vendor's recent My Space write-action audit entries (host replies sent, invoices created, calendar blocks, etc.) with inputs + results for inspection.",
+    input_schema: {
+      type: "object",
+      properties: {
+        limit: { type: "integer", minimum: 1, maximum: 50 },
+        tool_name: { type: "string", description: "Filter to one tool." },
       },
     },
   },
@@ -2112,6 +2166,100 @@ async function toolGetUsageStats(
   };
 }
 
+async function toolEditImage(
+  prompt: string,
+  sourceUrl: string,
+): Promise<unknown> {
+  if (!OPENAI_API_KEY) return { error: "openai_key_missing" };
+  if (!/^https?:\/\//.test(sourceUrl)) {
+    return { error: "source_image_url must be http(s)" };
+  }
+  // Download the source image as bytes so we can multipart-POST it.
+  const srcRes = await fetch(sourceUrl);
+  if (!srcRes.ok) {
+    return { error: `failed to fetch source: ${srcRes.status}` };
+  }
+  const blob = await srcRes.blob();
+  const filename = sourceUrl.split("/").pop()?.split("?")[0] || "source.png";
+  const fd = new FormData();
+  fd.append("model", IMAGE_MODEL_PRIMARY);
+  fd.append("prompt", prompt);
+  fd.append("n", "1");
+  fd.append("size", "1024x1024");
+  fd.append("image", blob, filename);
+  let res = await fetch("https://api.openai.com/v1/images/edits", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${OPENAI_API_KEY}` },
+    body: fd,
+  });
+  // Fallback to gpt-image-1 on rollout-gap.
+  if (res.status === 400 || res.status === 404) {
+    const detail = await res.clone().text().catch(() => "");
+    if (/model_not_found|does not exist|invalid_model/i.test(detail)) {
+      const fd2 = new FormData();
+      fd2.append("model", IMAGE_MODEL_FALLBACK);
+      fd2.append("prompt", prompt);
+      fd2.append("n", "1");
+      fd2.append("size", "1024x1024");
+      fd2.append("image", blob, filename);
+      res = await fetch("https://api.openai.com/v1/images/edits", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${OPENAI_API_KEY}` },
+        body: fd2,
+      });
+    }
+  }
+  if (!res.ok) {
+    return {
+      error: `openai_edit ${res.status}: ${(await res.text()).slice(0, 240)}`,
+    };
+  }
+  const parsed = (await res.json()) as any;
+  const first = parsed?.data?.[0];
+  let url: string | null = null;
+  if (first?.url) url = first.url;
+  else if (first?.b64_json) url = `data:image/png;base64,${first.b64_json}`;
+  if (!url) return { error: "openai_no_image_in_response" };
+  return { image_url: url, source_image_url: sourceUrl, prompt };
+}
+
+async function toolSetChatPreferences(
+  admin: any,
+  vendorId: string,
+  input: any,
+): Promise<unknown> {
+  if (!vendorId) return { error: "no_vendor_profile" };
+  const text = String(input?.preferences ?? "").slice(0, 2000);
+  const { error } = await admin
+    .from("vendor_profiles")
+    .update({ my_space_preferences: text || null })
+    .eq("id", vendorId);
+  if (error) return { error: error.message };
+  return { updated: true, preferences: text || null };
+}
+
+async function toolGetAuditLog(
+  admin: any,
+  userId: string,
+  input: any,
+): Promise<unknown> {
+  const limit = Math.min(Math.max(Number(input?.limit) || 20, 1), 50);
+  let q = admin
+    .from("my_space_action_audit")
+    .select(
+      "id, thread_id, tool_name, input, result, success, error_message, created_at",
+    )
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false })
+    .limit(limit);
+  if (typeof input?.tool_name === "string") {
+    q = q.eq("tool_name", String(input.tool_name));
+  }
+  const { data, error } = await q;
+  if (error) return { error: error.message };
+  return { entries: (data ?? []) as Array<any> };
+}
+
 async function toolCreateInvoice(
   admin: any,
   vendorId: string,
@@ -2420,6 +2568,18 @@ async function executeTool(
     if (name === "create_invoice") {
       return await toolCreateInvoice(admin, vendorId, userId, input);
     }
+    if (name === "edit_image") {
+      return await toolEditImage(
+        String(input?.prompt ?? ""),
+        String(input?.source_image_url ?? ""),
+      );
+    }
+    if (name === "set_chat_preferences") {
+      return await toolSetChatPreferences(admin, vendorId, input);
+    }
+    if (name === "get_audit_log") {
+      return await toolGetAuditLog(admin, userId, input);
+    }
     return { error: `unknown_tool:${name}` };
   } catch (err) {
     return { error: err instanceof Error ? err.message : String(err) };
@@ -2473,6 +2633,59 @@ async function logChatUsage(
   }
 }
 
+// Tools that mutate the world — every successful + failed call is
+// logged to my_space_action_audit so the vendor can review what the
+// AI did on their behalf.
+const WRITE_TOOL_NAMES = new Set([
+  "send_host_reply",
+  "create_appointment",
+  "update_appointment",
+  "update_inquiry_status",
+  "block_calendar_date",
+  "unblock_calendar_date",
+  "block_calendar_range",
+  "mark_notifications_read",
+  "create_payment_link",
+  "toggle_auto_reply",
+  "manage_faq",
+  "manage_package",
+  "update_profile",
+  "send_email",
+  "schedule_action",
+  "cancel_scheduled_action",
+  "create_invoice",
+  "edit_image",
+  "set_chat_preferences",
+]);
+
+// Fire-and-forget — never block the chat reply on audit insert.
+function logActionAudit(
+  admin: any,
+  userId: string,
+  vendorId: string | null,
+  threadId: string | null,
+  toolName: string,
+  input: any,
+  result: any,
+): void {
+  if (!WRITE_TOOL_NAMES.has(toolName)) return;
+  const errorMessage = (result as any)?.error ?? null;
+  admin
+    .from("my_space_action_audit")
+    .insert({
+      user_id: userId,
+      vendor_id: vendorId || null,
+      thread_id: threadId || null,
+      tool_name: toolName,
+      input,
+      result,
+      success: !errorMessage,
+      error_message: errorMessage,
+    })
+    .then(() => {}, (e: any) =>
+      console.warn("[my-space-chat] audit insert failed", e));
+}
+
 // Parse Anthropic's SSE format into a stream of typed events.
 async function* parseAnthropicSSE(
   body: ReadableStream<Uint8Array>,
@@ -2515,6 +2728,7 @@ async function streamClaudeWithTools(
   admin: any,
   vendorId: string,
   userId: string,
+  threadId: string,
   send: (ev: Record<string, unknown>) => void,
 ): Promise<string> {
   if (!ANTHROPIC_API_KEY) throw new Error("anthropic_key_missing");
@@ -2639,6 +2853,16 @@ async function streamClaudeWithTools(
             })
             .then(() => {}, (e: any) =>
               console.warn("[my-space-chat] tool log failed", e));
+          // Audit log captures full input + result for write tools.
+          logActionAudit(
+            admin,
+            userId,
+            vendorId || null,
+            threadId || null,
+            tu.name,
+            tu.input,
+            out,
+          );
           return {
             type: "tool_result",
             tool_use_id: tu.id,
@@ -3032,6 +3256,7 @@ serve(async (req) => {
           admin,
           vendorId ?? "",
           userId,
+          threadId,
           send,
         );
         const assistantMsg = await insertMessage(admin, userId, threadId, {
