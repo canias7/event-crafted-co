@@ -530,7 +530,51 @@ PATTERN A — COVER PAGE WITH "TAP TO OPEN" REVEAL (no JS, CSS-only):
   .opener-toggle:not(:checked) ~ .invitation-body { display: none; }
   .opener-toggle:checked ~ .cover-page { display: none; }
   .cover-page { min-height: 100vh; display: flex; align-items: center; justify-content: center;
-    flex-direction: column; cursor: pointer; background: #1a1a1a url('https://images.unsplash.com/photo-1503602642458-232111445657?w=2000&q=80') center/cover; }
+    flex-direction: column; cursor: pointer; position: relative; overflow: hidden;
+    background: #1a1a1a url('https://images.unsplash.com/photo-1503602642458-232111445657?w=2000&q=80') center/cover; }
+  /* DARKEN OVERLAY — always required when text sits on a photo. Keeps the
+     serif copy readable regardless of which background was picked. */
+  .cover-page::before {
+    content: ''; position: absolute; inset: 0;
+    background: linear-gradient(180deg, rgba(0,0,0,0.45) 0%, rgba(0,0,0,0.65) 100%);
+    z-index: 0;
+  }
+  .cover-page > * { position: relative; z-index: 1; }
+
+  /* SEAL — pulsing glow ring so users notice it's tappable. */
+  .seal {
+    animation: sealPulse 2.4s ease-in-out infinite;
+    position: relative;
+  }
+  .seal::after {
+    content: ''; position: absolute; inset: -10px;
+    border-radius: 50%;
+    border: 1px solid rgba(212,168,87,0.4);
+    animation: sealRing 2.4s ease-in-out infinite;
+    pointer-events: none;
+  }
+  @keyframes sealPulse {
+    0%, 100% { transform: scale(1); }
+    50%      { transform: scale(1.04); }
+  }
+  @keyframes sealRing {
+    0%, 100% { transform: scale(1); opacity: 0.9; }
+    50%      { transform: scale(1.35); opacity: 0; }
+  }
+
+  /* TAP HINT — gently bouncing arrow / text so the CTA is obvious. */
+  .tap-hint {
+    margin-top: 1.5rem;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.7rem; letter-spacing: 0.3em; text-transform: uppercase;
+    color: rgba(245,234,213,0.6);
+    animation: tapBounce 1.8s ease-in-out infinite;
+  }
+  @keyframes tapBounce {
+    0%, 100% { transform: translateY(0); opacity: 0.5; }
+    50%      { transform: translateY(-6px); opacity: 1; }
+  }
+
   .invitation-body { animation: fadeIn 1s ease; }
   @keyframes fadeIn { from { opacity: 0; transform: translateY(20px) } to { opacity: 1; transform: translateY(0) } }
 
@@ -544,6 +588,79 @@ PATTERN D — PLAYFUL PREMIUM (kids/showers):
   Still elegant typography, still curated. Soft watercolor SVG illustrations instead of moody dark backgrounds. Cream/blush palette with one bright accent. Hand-drawn divider lines. Caveat or Quicksand fonts.
 
 WHEN IN DOUBT: PATTERN A is the default for weddings, anniversaries, engagement parties, quinces, and formal events. Casual events (BBQ, kids birthdays, housewarming) use PATTERN B or D directly without the cover page.
+
+═══ AMBIENT PARTICLES — per event type (CSS-only) ═══
+
+For elegant events, add a subtle ambient particle layer behind the content. Use 12–18 absolutely-positioned <span> elements inside a fixed-position container, each with CSS variables for randomized x-position, duration, and delay. Pick the particle that fits the event:
+
+  • WEDDING / ANNIVERSARY / ENGAGEMENT → falling rose petals (small radial-gradient teardrops, dusty pink/cream)
+  • WINTER / SKI / NYE / CHRISTMAS → falling snow (tiny white circles with blur)
+  • NYE / MILESTONE BIRTHDAY → floating gold sparkles / stars
+  • HALLOWEEN → drifting embers (orange/amber dots fading up)
+  • AUTUMN WEDDING / THANKSGIVING → falling leaves (small SVG leaf shapes, terracotta/amber)
+  • BABY SHOWER / KIDS BIRTHDAY → floating bokeh circles (soft pastel)
+  • BBQ / SUMMER / 4TH OF JULY → drifting confetti (small colored squares)
+  • LUXE / GLAMOUR → floating gold flecks
+
+  HTML pattern (rose petals example):
+  <div class="petal-field" aria-hidden="true">
+    <span style="--x:6%;--dur:14s;--delay:0s"></span>
+    <span style="--x:18%;--dur:11s;--delay:2s"></span>
+    <span style="--x:32%;--dur:16s;--delay:4s"></span>
+    <span style="--x:48%;--dur:13s;--delay:1s"></span>
+    <span style="--x:64%;--dur:15s;--delay:3s"></span>
+    <span style="--x:78%;--dur:12s;--delay:5s"></span>
+    <span style="--x:90%;--dur:17s;--delay:2.5s"></span>
+    <!-- 8–14 more spans with varied positions -->
+  </div>
+
+  CSS:
+  .petal-field { position: fixed; inset: 0; pointer-events: none; overflow: hidden; z-index: 0; }
+  .petal-field span {
+    position: absolute;
+    width: 12px; height: 12px;
+    top: -20px;
+    left: var(--x);
+    background: radial-gradient(ellipse at 50% 30%, #ffc1c1, #c47a7a 80%);
+    border-radius: 50% 0;
+    opacity: 0.55;
+    transform-origin: center;
+    animation: petalFall var(--dur) linear infinite;
+    animation-delay: var(--delay);
+  }
+  @keyframes petalFall {
+    0%   { transform: translateY(0) rotate(0deg); }
+    100% { transform: translateY(110vh) rotate(720deg); }
+  }
+
+  For SNOW: smaller circles (4–6px), pure white background, blur-shadow, no rotation. For STARS: tiny ★ unicode or 4-point CSS-drawn star, fade in/out instead of falling. For EMBERS: amber-to-transparent gradient, move UP from bottom of viewport. For CONFETTI: small colored squares rotating + falling.
+
+  The particle field sits BEHIND the main content (z-index: 0; body content gets z-index: 1) so it doesn't interfere with reading.
+
+═══ TYPOGRAPHY SCALE — enforce 5 explicit steps (CRITICAL — prevents the "every site has the same font sizes" feel) ═══
+
+In your :root or root CSS variables, set explicit clamp-based sizes for every type role:
+
+  --type-display:  clamp(2.5rem, 7vw, 4.5rem);     /* hero / couple names */
+  --type-h1:       clamp(1.75rem, 4vw, 2.75rem);   /* section headers */
+  --type-h2:       clamp(1.25rem, 2.5vw, 1.6rem);  /* subheads */
+  --type-body:     clamp(0.95rem, 1.1vw, 1.05rem); /* body copy */
+  --type-label:    0.7rem;                          /* tracked all-caps labels: letter-spacing: 0.25em */
+
+Apply consistently. Display sizes are reserved for the couple names / event title only. Section headers use --type-h1. Subheads (like "Ceremony", "Reception") use --type-h2. Body text never goes below 0.95rem. Labels are always uppercase with wide letter-spacing.
+
+═══ TEXT-ON-IMAGE OVERLAY — always required when text sits on a photo ═══
+
+Any time text overlays a photo (hero, cover page, full-bleed section), add a `::before` pseudo-element with a linear gradient overlay so the type stays readable:
+
+  .photo-hero { position: relative; background: url('...') center/cover; }
+  .photo-hero::before {
+    content: ''; position: absolute; inset: 0;
+    background: linear-gradient(180deg, rgba(0,0,0,0.35) 0%, rgba(0,0,0,0.6) 100%);
+  }
+  .photo-hero > * { position: relative; z-index: 1; }
+
+Tune the opacity to match the photo brightness: 0.3–0.5 for naturally moody photos, 0.6–0.75 for bright/sunny photos. For light-text-on-photo always use a dark gradient; for dark-text-on-photo (rare) use a light gradient.
 
 === END PREMIUM DESIGN BIBLE ===`;
 
@@ -586,6 +703,9 @@ Style the form to match the site's palette. The action URL is the EXACT string a
 7. Keep total HTML under ~80KB. No filler.
 8. Include the RSVP form exactly as specified above.
 9. For elegant events (wedding, anniversary, engagement, quince, formal birthday/gala) use PATTERN A (cover-page reveal). For casual events (BBQ, kids birthday, housewarming) use PATTERN B or D directly. ALWAYS pick a Google Font pairing and a named color palette from the PREMIUM DESIGN BIBLE.
+10. ALWAYS include the custom scrollbar CSS, the 5-step typography scale, and a darken overlay on any photo that has text on it.
+11. For elegant events, ALWAYS include a CSS-only ambient particle field (rose petals for weddings, snow for winter, stars for NYE, embers for Halloween, leaves for autumn). 12–18 spans, fixed-position, behind content.
+12. The cover-page seal MUST pulse (sealPulse + sealRing animations from the design bible) and the tap hint MUST gently bounce (tapBounce animation). Subtle invitations don't get clicked.
 
 After </html>, return NOTHING.
 
