@@ -73,6 +73,18 @@ export default function WebsiteBuilderPage() {
   const [guestsBusy, setGuestsBusy] = useState(false);
   const [guestImport, setGuestImport] = useState("");
   const [copiedToken, setCopiedToken] = useState<string | null>(null);
+  const [editCount, setEditCount] = useState(0);
+
+  const QUICK_ACTIONS = [
+    "Make it more formal",
+    "Add a Travel & Stay section",
+    "Change the color palette",
+    "Swap the hero photo",
+    "Translate to Spanish",
+    "Make it shorter",
+    "Add a live RSVP count under the form",
+    "Add a guest greeting above the names",
+  ];
 
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -590,6 +602,9 @@ export default function WebsiteBuilderPage() {
               if (data.site_id) setSiteId(data.site_id);
               setSlug(data.slug ?? null);
               setTitle(data.title ?? null);
+              if (typeof data.version_number === "number") {
+                setEditCount(data.version_number);
+              }
               // Sync the streamed iframe's RSVP form action with the
               // real slug — Claude sometimes invents one in the
               // streamed bytes; the DB row is already corrected
@@ -988,7 +1003,30 @@ export default function WebsiteBuilderPage() {
             )}
           </div>
 
-          <div className="border-t border-white/10 p-3 bg-[#0a0a0b]">
+          {siteId && !loading && (
+            <div className="px-3 pt-2 pb-1 flex gap-1.5 overflow-x-auto whitespace-nowrap bg-[#0a0a0b] border-t border-white/10">
+              {QUICK_ACTIONS.map((a) => (
+                <button
+                  key={a}
+                  onClick={() => submit(a)}
+                  className="shrink-0 text-[11px] text-white/65 hover:text-white bg-white/5 hover:bg-white/10 border border-white/10 rounded-full px-2.5 py-1 transition-colors"
+                  title={`Send: ${a}`}
+                >
+                  {a}
+                </button>
+              ))}
+            </div>
+          )}
+
+          <div className={`p-3 bg-[#0a0a0b] ${siteId && !loading ? "" : "border-t border-white/10"}`}>
+            {siteId && editCount > 0 && (
+              <div className="flex items-center justify-between text-[10px] text-white/30 mb-2 px-1">
+                <span>
+                  {editCount} {editCount === 1 ? "edit" : "edits"} · ~${(editCount * 0.04).toFixed(2)} this site
+                </span>
+                <span className="text-white/40">claude-sonnet-4-6</span>
+              </div>
+            )}
             {pendingImage && (
               <div className="mb-2 inline-flex items-center gap-2 bg-white/10 border border-white/20 rounded-full pl-3 pr-1.5 py-1 text-[12px] text-white/80 max-w-full">
                 <span className="text-[14px]">📎</span>
