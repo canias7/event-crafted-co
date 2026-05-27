@@ -75,6 +75,36 @@ export default function WebsiteBuilderPage() {
   const [copiedToken, setCopiedToken] = useState<string | null>(null);
   const [editCount, setEditCount] = useState(0);
 
+  // The builder iframe writes HTML directly via doc.write() — it does
+  // NOT go through ai-site-render's placeholder pipeline. So the
+  // __GUEST_BLOCK__ / __PLUS_ONE_BLOCK__ / etc. placeholders show up
+  // as literal text in the preview. Strip them client-side so the
+  // preview looks polished. The real placeholders get resolved
+  // server-side when guests visit /s/<slug>.
+  function previewClean(html: string): string {
+    return html
+      .replaceAll("__GUEST_BLOCK__", "")
+      .replaceAll("__GUEST_NAME__", "friend")
+      .replaceAll(
+        "__PLUS_ONE_BLOCK__",
+        '<small style="opacity:0.5;display:block;margin-top:0.5rem">[Plus-one fields appear here when an allowed guest opens their personalized link]</small>',
+      )
+      .replaceAll(
+        "__COMMENT_WALL__",
+        '<div style="opacity:0.5;font-style:italic;padding:1rem;text-align:center;border:1px dashed currentColor;border-radius:8px">Comment wall appears here for visitors</div>',
+      )
+      .replaceAll(
+        "__PHOTO_ALBUM__",
+        '<div style="opacity:0.5;font-style:italic;padding:1rem;text-align:center;border:1px dashed currentColor;border-radius:8px">Photo album + upload form appears here for visitors</div>',
+      )
+      .replaceAll(
+        "__RSVP_COUNT__",
+        '<span style="opacity:0.55;font-style:italic">0 yes so far (preview)</span>',
+      )
+      .replaceAll("__RSVP_YES__", "0")
+      .replaceAll("__RSVP_MAYBE__", "0")
+      .replaceAll("__RSVP_NO__", "0");
+  }
   const QUICK_ACTIONS = [
     "Make it more formal",
     "Add a Travel & Stay section",
@@ -196,7 +226,7 @@ export default function WebsiteBuilderPage() {
     if (iframe?.contentDocument) {
       const doc = iframe.contentDocument;
       doc.open();
-      doc.write(v.html);
+      doc.write(previewClean(v.html));
       doc.close();
     }
     setVariantsOpen(false);
@@ -414,7 +444,7 @@ export default function WebsiteBuilderPage() {
         const doc = iframeRef.current.contentDocument;
         if (doc) {
           doc.open();
-          doc.write(body.html);
+          doc.write(previewClean(body.html as string));
           doc.close();
         }
         setTitle(body.title ?? title);
@@ -480,7 +510,7 @@ export default function WebsiteBuilderPage() {
       if (iframe?.contentDocument) {
         const doc = iframe.contentDocument;
         doc.open();
-        doc.write(row.html);
+        doc.write(previewClean(row.html));
         doc.close();
       }
     })();
@@ -565,7 +595,7 @@ export default function WebsiteBuilderPage() {
       if (iframe?.contentDocument) {
         const doc = iframe.contentDocument;
         doc.open();
-        doc.write(body.html as string);
+        doc.write(previewClean(body.html as string));
         doc.close();
       }
       setTitle(body.title as string);
@@ -745,7 +775,7 @@ export default function WebsiteBuilderPage() {
               if (iframe?.contentDocument) {
                 const doc = iframe.contentDocument;
                 doc.open();
-                doc.write(bufferedHtml);
+                doc.write(previewClean(bufferedHtml));
                 doc.close();
               }
               if (data.site_id) setSiteId(data.site_id);
