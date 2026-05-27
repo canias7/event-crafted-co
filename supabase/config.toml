@@ -17,6 +17,18 @@ project_id = "pahpjjubhbcbwqjpamwv"
     verify_jwt = false
   [functions.ai-site-image-upload]
     verify_jwt = false
+  [functions.ai-site-ics]
+    verify_jwt = false
+  [functions.ai-site-messages]
+    verify_jwt = false
+  [functions.ai-site-photos]
+    verify_jwt = false
+  [functions.ai-site-guests]
+    verify_jwt = true
+  [functions.ai-site-versions]
+    verify_jwt = true
+  [functions.ai-site-rsvps-export]
+    verify_jwt = true
   [functions.cleanup-portfolio-orphans]
     verify_jwt = false
   [functions.geocode-vendor]
