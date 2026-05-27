@@ -78,9 +78,21 @@ async function countAuditCallsLast24h(
 const cors = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
+    "authorization, x-client-info, apikey, content-type, x-vendor-timezone",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
+
+// Edge-function execution budget is 150s. We cap outbound calls
+// well below that so a hung upstream can't blow the whole stream.
+const CLAUDE_FETCH_TIMEOUT_MS = 110_000;
+const OPENAI_FETCH_TIMEOUT_MS = 90_000;
+const SUMMARIZE_FETCH_TIMEOUT_MS = 30_000;
+
+function withTimeout(ms: number): { signal: AbortSignal; cancel: () => void } {
+  const ctrl = new AbortController();
+  const id = setTimeout(() => ctrl.abort(new Error("upstream_timeout")), ms);
+  return { signal: ctrl.signal, cancel: () => clearTimeout(id) };
+}
 
 function json(status: number, body: Record<string, unknown>) {
   return new Response(JSON.stringify(body), {
@@ -94,14 +106,30 @@ function json(status: number, body: Record<string, unknown>) {
 // Heuristic: does the latest user message read as an image request?
 // Kept on the keyword side rather than asking Claude — every
 // classification roundtrip would double latency on every send.
+//
+// We require BOTH an image-creation verb + an image-style noun, and
+// we bail early on negative signals that mean the user wants text
+// out, not pixels (drafting an email, captioning, replying, etc.)
+// or is REFERENCING an existing asset (their logo, their portfolio).
 function looksLikeImageRequest(text: string): boolean {
   const t = text.trim().toLowerCase();
   if (t.length === 0) return false;
-  const head = t.slice(0, 120);
+  const head = t.slice(0, 200);
+  // Negative signals — text-output intents we must NEVER route to image gen.
+  const textOutputIntent =
+    /\b(reply|reply to|respond|draft|email|message|text|caption|post|tweet|send|write|compose|summari[sz]e|describe|explain|edit (the )?text|quote|template|sign[- ]?off|paste)\b/;
+  if (textOutputIntent.test(head)) return false;
+  // Retrieval signals — references to an asset that already exists,
+  // not something the AI should draw fresh. "show me my logo" is a
+  // read, not a generation; "my portfolio image" is retrieval.
+  const retrievalIntent =
+    /\b(my|the|our|that|this) (logo|portfolio|image|photo|picture|gallery|cover|avatar|profile pic)\b/;
+  if (retrievalIntent.test(head)) return false;
+  // Positive signals — strict verb + noun pairing on image nouns.
   const verbs =
-    /(draw|generate|create|make|paint|design|render|sketch|illustrate|produce|show me|give me)/;
+    /\b(draw|generate|create|make|paint|design|render|sketch|illustrate|produce)\b/;
   const nouns =
-    /(image|picture|photo|photograph|illustration|art(work)?|render|graphic|logo|mockup|poster|flyer|product shot|scene|portrait|painting)/;
+    /\b(image|picture|photo(graph)?|illustration|artwork|art|render|graphic|mockup|poster|flyer|product shot|scene|portrait|painting)\b/;
   return verbs.test(head) && nouns.test(head);
 }
 
@@ -115,8 +143,10 @@ async function callOpenAIImage(
   };
   const body = (model: string) =>
     JSON.stringify({ model, prompt, size: "1024x1024", n: 1 });
+  const tm = withTimeout(OPENAI_FETCH_TIMEOUT_MS);
   let res = await fetch("https://api.openai.com/v1/images/generations", {
     method: "POST",
+    signal: tm.signal,
     headers,
     body: body(IMAGE_MODEL_PRIMARY),
   });
@@ -128,11 +158,13 @@ async function callOpenAIImage(
       );
       res = await fetch("https://api.openai.com/v1/images/generations", {
         method: "POST",
+        signal: tm.signal,
         headers,
         body: body(IMAGE_MODEL_FALLBACK),
       });
     }
   }
+  tm.cancel();
   if (!res.ok) {
     const t = await res.text();
     throw new Error(`openai ${res.status}: ${t.slice(0, 240)}`);
@@ -210,6 +242,11 @@ interface VendorSnapshot {
     title: string;
     content: string;
   }>;
+  // IANA timezone string sniffed from the browser
+  // (Intl.DateTimeFormat().resolvedOptions().timeZone) — used so the
+  // model can interpret "tomorrow 3pm" against the vendor's local
+  // time. Falls back to "UTC" if the client didn't send one.
+  vendorTimezone: string;
 }
 
 async function buildVendorSnapshot(
@@ -217,6 +254,7 @@ async function buildVendorSnapshot(
   vendorId: string,
   userId: string,
   excludeThreadId: string | null,
+  vendorTimezone: string,
 ): Promise<VendorSnapshot> {
   const today = new Date();
   const todayIso = today.toISOString().slice(0, 10);
@@ -343,6 +381,7 @@ async function buildVendorSnapshot(
       title: String(k.title),
       content: String(k.content),
     })),
+    vendorTimezone,
   };
 }
 
@@ -427,6 +466,7 @@ Business: ${v.business_name ?? "(unnamed)"}${
     v.category ? ` · ${v.category}` : ""
   }${v.location ? ` · ${v.location}` : ""}
 Today: ${snap.calendar.today}
+Vendor's local timezone: ${snap.vendorTimezone} — when the vendor says relative times like "tomorrow 3pm" or "Friday at noon", interpret in THIS timezone. When passing scheduled_at to manage_appointment, always emit an ISO-8601 string WITH an explicit offset (e.g. "2026-07-14T15:00:00-04:00" or "2026-07-14T19:00:00Z"). The server rejects naked datetimes without a timezone. If the vendor's TZ is unclear, ask before scheduling.
 
 Active packages:
 ${packagesText}
@@ -1560,6 +1600,26 @@ async function toolSendHostReply(
   };
 }
 
+// Reject naked datetimes (no Z, no +HH:MM, no -HH:MM offset). Forces
+// the model to emit timezone-explicit ISO strings so we don't book
+// 9am UTC when the vendor meant 9am Eastern. The vendor's TZ is in
+// the system prompt; the model has to apply it.
+function parseScheduledAt(s: string): { date: Date } | { error: string } {
+  const trimmed = (s ?? "").trim();
+  if (!trimmed) return { error: "scheduled_at required" };
+  if (!/(Z|[+-]\d{2}:?\d{2})$/i.test(trimmed)) {
+    return {
+      error:
+        "scheduled_at_missing_timezone: include an explicit offset (e.g. '2026-07-14T15:00:00-04:00' or '2026-07-14T19:00:00Z'). Vendor's local timezone is in the system prompt — use it. Do NOT call this tool with a naked datetime; ask the vendor for the time and re-emit with the offset.",
+    };
+  }
+  const dt = new Date(trimmed);
+  if (Number.isNaN(dt.getTime())) {
+    return { error: "scheduled_at_unparseable" };
+  }
+  return { date: dt };
+}
+
 async function toolCreateAppointment(
   admin: any,
   vendorId: string,
@@ -1567,7 +1627,6 @@ async function toolCreateAppointment(
 ): Promise<unknown> {
   const inquiryId = String(input?.inquiry_id ?? "");
   const kind = String(input?.kind ?? "");
-  const scheduledAt = String(input?.scheduled_at ?? "");
   if (!inquiryId) return { error: "inquiry_id required" };
   if (
     !["consultation", "walkthrough", "tasting", "fitting", "phone_call"]
@@ -1575,9 +1634,9 @@ async function toolCreateAppointment(
   ) {
     return { error: "invalid_kind" };
   }
-  if (!scheduledAt) return { error: "scheduled_at required" };
-  const dt = new Date(scheduledAt);
-  if (Number.isNaN(dt.getTime())) return { error: "scheduled_at_unparseable" };
+  const parsed = parseScheduledAt(String(input?.scheduled_at ?? ""));
+  if ("error" in parsed) return { error: parsed.error };
+  const dt = parsed.date;
   // Verify ownership + grab host_id from the inquiry.
   const { data: inq } = await admin
     .from("inquiries")
@@ -2039,11 +2098,9 @@ async function toolUpdateAppointment(
     patch.status = String(input.status);
   }
   if (input.scheduled_at !== undefined) {
-    const dt = new Date(String(input.scheduled_at));
-    if (Number.isNaN(dt.getTime())) {
-      return { error: "scheduled_at_unparseable" };
-    }
-    patch.scheduled_at = dt.toISOString();
+    const parsed = parseScheduledAt(String(input.scheduled_at));
+    if ("error" in parsed) return { error: parsed.error };
+    patch.scheduled_at = parsed.date.toISOString();
   }
   if (input.duration_minutes !== undefined) {
     patch.duration_minutes = Math.min(
@@ -2441,8 +2498,10 @@ async function toolEditImage(
   fd.append("n", "1");
   fd.append("size", "1024x1024");
   fd.append("image", blob, filename);
+  const tm = withTimeout(OPENAI_FETCH_TIMEOUT_MS);
   let res = await fetch("https://api.openai.com/v1/images/edits", {
     method: "POST",
+    signal: tm.signal,
     headers: { Authorization: `Bearer ${OPENAI_API_KEY}` },
     body: fd,
   });
@@ -2458,11 +2517,13 @@ async function toolEditImage(
       fd2.append("image", blob, filename);
       res = await fetch("https://api.openai.com/v1/images/edits", {
         method: "POST",
+        signal: tm.signal,
         headers: { Authorization: `Bearer ${OPENAI_API_KEY}` },
         body: fd2,
       });
     }
   }
+  tm.cancel();
   if (!res.ok) {
     return {
       error: `openai_edit ${res.status}: ${(await res.text()).slice(0, 240)}`,
@@ -3022,8 +3083,10 @@ async function toolSummarizeInquiryThread(
     )
     .join("\n");
   if (!transcript.trim()) return { error: "thread_empty" };
+  const tm = withTimeout(SUMMARIZE_FETCH_TIMEOUT_MS);
   const res = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
+    signal: tm.signal,
     headers: {
       "x-api-key": ANTHROPIC_API_KEY,
       "anthropic-version": "2023-06-01",
@@ -3042,6 +3105,7 @@ async function toolSummarizeInquiryThread(
       }],
     }),
   });
+  tm.cancel();
   if (!res.ok) {
     return { error: `anthropic ${res.status}: ${(await res.text()).slice(0, 200)}` };
   }
@@ -3677,8 +3741,10 @@ async function streamClaudeWithTools(
     cache_read_tokens: 0,
   };
   for (let i = 0; i < MAX_TOOL_ITERATIONS; i++) {
+    const tm = withTimeout(CLAUDE_FETCH_TIMEOUT_MS);
     const res = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
+      signal: tm.signal,
       headers: {
         "x-api-key": ANTHROPIC_API_KEY,
         "anthropic-version": "2023-06-01",
@@ -3759,6 +3825,7 @@ async function streamClaudeWithTools(
           Number(u.cache_read_input_tokens) || 0;
       }
     }
+    tm.cancel();
 
     if (stopReason === "tool_use") {
       const toolUses = blocks.filter((b) => b?.type === "tool_use");
@@ -3976,6 +4043,15 @@ serve(async (req) => {
   // Auth + payload validation up-front so we can return a clean
   // non-stream error instead of an empty SSE stream on bad requests.
   const authHeader = req.headers.get("Authorization") ?? "";
+  // Sniffed from the browser via Intl.DateTimeFormat — gives the
+  // model the vendor's local IANA timezone so it can resolve
+  // "tomorrow 3pm" to an absolute ISO with offset. Fallback UTC
+  // when missing or obviously bogus.
+  const rawTz = (req.headers.get("X-Vendor-Timezone") ?? "").trim();
+  const vendorTimezone =
+    rawTz && /^[A-Za-z]+(\/[A-Za-z_+\-0-9]+)+$|^UTC$|^GMT$/.test(rawTz)
+      ? rawTz
+      : "UTC";
   const userClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
     global: { headers: { Authorization: authHeader } },
     auth: { autoRefreshToken: false, persistSession: false },
@@ -4179,6 +4255,7 @@ serve(async (req) => {
             vendorId,
             userId,
             threadId,
+            vendorTimezone,
           );
           systemPrompt = buildSystemPrompt(snap);
         } else {
