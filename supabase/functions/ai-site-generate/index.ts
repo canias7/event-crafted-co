@@ -502,6 +502,16 @@ DECORATIVE ELEMENTS YOU SHOULD USE:
 5. PAPER TEXTURE — cream cards should have subtle grain via inline SVG noise filter:
    filter: contrast(1.05); background: #f5ead5; (and a subtle inset shadow for depth)
 
+6. SCROLLBAR — generated sites are tall and will scroll. Default browser scrollbars look ugly and break the premium feel. ALWAYS include a custom thin scrollbar in your CSS, tinted to the site's palette. Example for a dark-burgundy site:
+
+   html { scrollbar-width: thin; scrollbar-color: rgba(201,168,106,0.4) transparent; }
+   ::-webkit-scrollbar { width: 6px; height: 6px; }
+   ::-webkit-scrollbar-track { background: transparent; }
+   ::-webkit-scrollbar-thumb { background: rgba(201,168,106,0.35); border-radius: 3px; }
+   ::-webkit-scrollbar-thumb:hover { background: rgba(201,168,106,0.6); }
+
+   Swap the rgba color to match the site's accent (gold for dark sites, sage for garden sites, terracotta for Tuscan, etc.). For very light/pastel sites use a low-opacity dark tint (rgba(0,0,0,0.2)).
+
 LAYOUT PATTERNS:
 
 PATTERN A — COVER PAGE WITH "TAP TO OPEN" REVEAL (no JS, CSS-only):
