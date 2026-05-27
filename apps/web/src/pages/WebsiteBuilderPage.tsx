@@ -58,8 +58,10 @@ export default function WebsiteBuilderPage() {
   const [imagePrompt, setImagePrompt] = useState("");
   const [imageBusy, setImageBusy] = useState(false);
   const [imageError, setImageError] = useState<string | null>(null);
+  const [pendingImage, setPendingImage] = useState<File | null>(null);
 
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const abortRef = useRef<AbortController | null>(null);
 
@@ -137,9 +139,124 @@ export default function WebsiteBuilderPage() {
     return doc;
   }
 
+  // Detect "undo / revert / go back" intent in the user's message
+  // so we can route to ai-site-revert instead of burning another
+  // AI call. Tight regex — only matches the explicit forms.
+  function isUndoIntent(text: string): boolean {
+    const t = text.trim().toLowerCase();
+    if (
+      t === "undo" ||
+      t === "revert" ||
+      t === "go back" ||
+      t === "back" ||
+      t === "previous" ||
+      t === "rollback"
+    ) {
+      return true;
+    }
+    if (/^(undo|revert|go back|rollback)\b/.test(t)) return true;
+    if (/^(take|go) (me )?back\b/.test(t)) return true;
+    if (/^(previous|last) (version|edit|change)\b/.test(t)) return true;
+    if (/^(restore|bring back) (the )?(previous|last|earlier)\b/.test(t)) return true;
+    return false;
+  }
+
+  async function revertOneStep() {
+    if (!siteId || loading) return;
+    setError(null);
+    setLoading(true);
+    try {
+      const accessToken = session?.access_token ?? SUPABASE_KEY;
+      const res = await fetch(`${SUPABASE_URL}/functions/v1/ai-site-revert`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
+          apikey: SUPABASE_KEY,
+        },
+        body: JSON.stringify({ site_id: siteId }),
+      });
+      const body = await res.json().catch(() => ({}));
+      if (res.status === 400 && body?.error === "nothing_to_undo") {
+        setConversation((c) => [
+          ...c,
+          { role: "user", content: "undo" },
+          { role: "assistant", content: "Nothing earlier to undo to — this is the first version." },
+        ]);
+        return;
+      }
+      if (!res.ok || !body?.html) {
+        const errMap: Record<string, string> = {
+          not_owner: "Only the site owner can undo.",
+          site_not_found: "Site not found.",
+        };
+        setError(errMap[body?.error ?? ""] ?? "Couldn't undo.");
+        return;
+      }
+      const iframe = iframeRef.current;
+      if (iframe?.contentDocument) {
+        const doc = iframe.contentDocument;
+        doc.open();
+        doc.write(body.html as string);
+        doc.close();
+      }
+      setTitle(body.title as string);
+      setHasContent(true);
+      setConversation((c) => [
+        ...c,
+        { role: "user", content: "undo" },
+        { role: "assistant", content: `Reverted to the previous version of "${body.title ?? "your site"}".` },
+      ]);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Undo failed");
+    } finally {
+      setLoading(false);
+      setTimeout(() => inputRef.current?.focus(), 0);
+    }
+  }
+
+  async function uploadPendingImage(): Promise<string | null> {
+    if (!pendingImage || !siteId) return null;
+    const accessToken = session?.access_token ?? SUPABASE_KEY;
+    const form = new FormData();
+    form.append("site_id", siteId);
+    form.append("image", pendingImage);
+    const res = await fetch(
+      `${SUPABASE_URL}/functions/v1/ai-site-image-upload`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          apikey: SUPABASE_KEY,
+        },
+        body: form,
+      },
+    );
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok || !body?.image_url) {
+      const errMap: Record<string, string> = {
+        image_too_large: "Image is over 12MB — please pick something smaller.",
+        unsupported_image_type: "Only JPG, PNG, WebP, GIF, or HEIC images.",
+        empty_image: "That image looks empty.",
+        not_owner: "Only the site owner can attach photos.",
+      };
+      throw new Error(errMap[body?.error ?? ""] ?? "Couldn't upload that image.");
+    }
+    return body.image_url as string;
+  }
+
   async function submit(prompt: string) {
     const trimmed = prompt.trim();
-    if (!trimmed || loading) return;
+    if (!trimmed && !pendingImage) return;
+    if (loading) return;
+
+    // Route undo intent to the revert endpoint — never burn an AI
+    // call for "undo".
+    if (siteId && !pendingImage && isUndoIntent(trimmed)) {
+      setInput("");
+      void revertOneStep();
+      return;
+    }
 
     abortRef.current?.abort();
     const ac = new AbortController();
@@ -148,10 +265,40 @@ export default function WebsiteBuilderPage() {
     setError(null);
     setLoading(true);
 
+    // Upload the pending image first (if any) so its URL can be
+    // included in the prompt going to Claude. Bail out cleanly if
+    // upload fails — user keeps the chip and can retry.
+    let imageUrl: string | null = null;
+    if (pendingImage) {
+      if (!siteId) {
+        setLoading(false);
+        setError("Generate a site first, then attach photos to refine it.");
+        return;
+      }
+      try {
+        imageUrl = await uploadPendingImage();
+      } catch (e) {
+        setLoading(false);
+        setError(e instanceof Error ? e.message : "Upload failed");
+        return;
+      }
+      setPendingImage(null);
+    }
+
+    const userVisibleMessage = trimmed || "Use this photo as the hero.";
+    const promptForAi = imageUrl
+      ? `${userVisibleMessage}\n\n(Attached photo — please use it where the request mentions: ${imageUrl})`
+      : trimmed;
+
     const prevConv = conversation;
     const nextConv: ChatMessage[] = [
       ...prevConv,
-      { role: "user", content: trimmed },
+      {
+        role: "user",
+        content: imageUrl
+          ? `📎 photo attached — ${userVisibleMessage}`
+          : trimmed,
+      },
     ];
     setConversation(nextConv);
     setInput("");
@@ -177,7 +324,7 @@ export default function WebsiteBuilderPage() {
           apikey: SUPABASE_KEY,
         },
         body: JSON.stringify({
-          prompt: trimmed,
+          prompt: promptForAi,
           conversation: prevConv,
           edit_site_id: siteId,
         }),
@@ -598,6 +745,23 @@ export default function WebsiteBuilderPage() {
           </div>
 
           <div className="border-t border-white/10 p-3 bg-[#0a0a0b]">
+            {pendingImage && (
+              <div className="mb-2 inline-flex items-center gap-2 bg-white/10 border border-white/20 rounded-full pl-3 pr-1.5 py-1 text-[12px] text-white/80 max-w-full">
+                <span className="text-[14px]">📎</span>
+                <span className="truncate max-w-[200px]">{pendingImage.name}</span>
+                <span className="text-white/40">
+                  {(pendingImage.size / 1024 / 1024).toFixed(1)} MB
+                </span>
+                <button
+                  onClick={() => setPendingImage(null)}
+                  disabled={loading}
+                  className="ml-1 w-5 h-5 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-[11px] disabled:opacity-30"
+                  aria-label="Remove attached image"
+                >
+                  ×
+                </button>
+              </div>
+            )}
             <div className="relative">
               <textarea
                 ref={inputRef}
@@ -609,13 +773,57 @@ export default function WebsiteBuilderPage() {
                 placeholder={
                   conversation.length === 0
                     ? "Describe your event…"
-                    : "Tweak it — change colors, add a section, fix the date…"
+                    : pendingImage
+                      ? "Where should this photo go? e.g. 'use as hero'"
+                      : "Tweak it, attach a photo, or type 'undo'…"
                 }
-                className="w-full resize-none bg-white/5 border border-white/10 rounded-2xl px-4 py-3 pr-12 text-[14px] text-white placeholder:text-white/40 focus:outline-none focus:border-white/30 disabled:opacity-50"
+                className="w-full resize-none bg-white/5 border border-white/10 rounded-2xl pl-11 pr-12 py-3 text-[14px] text-white placeholder:text-white/40 focus:outline-none focus:border-white/30 disabled:opacity-50"
+              />
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp,image/gif,image/heic,image/heif"
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) {
+                    if (file.size > 12 * 1024 * 1024) {
+                      setError("That image is over 12MB.");
+                      return;
+                    }
+                    setPendingImage(file);
+                    setError(null);
+                  }
+                  // Reset so re-picking the same file fires onChange.
+                  if (fileInputRef.current) fileInputRef.current.value = "";
+                }}
               />
               <button
+                onClick={() => fileInputRef.current?.click()}
+                disabled={loading || !siteId}
+                aria-label="Attach a photo"
+                title={siteId ? "Attach a photo" : "Generate a site first"}
+                className="absolute left-2 bottom-2 w-8 h-8 rounded-full text-white/60 hover:text-white hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center transition-colors"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                  <path
+                    d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"
+                    stroke="currentColor"
+                    strokeWidth="0"
+                    fill="none"
+                  />
+                  <path
+                    d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </button>
+              <button
                 onClick={() => submit(input)}
-                disabled={loading || !input.trim()}
+                disabled={loading || (!input.trim() && !pendingImage)}
                 aria-label="Send"
                 className="absolute right-2 bottom-2 w-8 h-8 rounded-full bg-white text-black disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center hover:bg-white/90 transition-colors"
               >
