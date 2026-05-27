@@ -1153,6 +1153,36 @@ The server can inject the live RSVP tally on the public site if you include __RS
 
   When zero, the server renders "Be the first to RSVP" automatically — your CSS already handles it.
 
+═══ PHOTO ALBUM (guest-uploaded gallery) ═══
+
+For weddings, anniversaries, milestone birthdays, the post-event experience matters too. Include the __PHOTO_ALBUM__ placeholder near the END of the body so guests can share their photos AFTER the event. The server replaces the placeholder with: a grid of approved photos + a multipart upload form. Wrap with:
+  <section class="album-section">
+    <h2>Memories</h2>
+    <p class="album-intro" style="opacity:0.7;text-align:center;margin-bottom:1rem">Add your favorite shots from the day below.</p>
+    __PHOTO_ALBUM__
+  </section>
+Skip for save-the-date / kids birthdays / casual events.
+
+═══ MULTI-EVENT MODE (rehearsal + wedding + brunch) ═══
+
+When the user mentions multiple events (e.g. "Rehearsal dinner Friday, ceremony Saturday, brunch Sunday"), generate a single site with ALL events shown — DO NOT collapse them into one schedule. Use a CSS-only tab pattern with hidden radios + :checked, OR a stacked timeline of cards labeled by day.
+
+  TABS pattern (preferred for 3+ events):
+    <input type="radio" name="event-tab" id="tab-1" checked hidden>
+    <input type="radio" name="event-tab" id="tab-2" hidden>
+    <input type="radio" name="event-tab" id="tab-3" hidden>
+    <nav class="event-tabs"><label for="tab-1">Rehearsal · Fri</label><label for="tab-2">Ceremony · Sat</label><label for="tab-3">Brunch · Sun</label></nav>
+    <section class="event-pane" data-tab="1">...details for Rehearsal...</section>
+    <section class="event-pane" data-tab="2">...details for Ceremony...</section>
+    <section class="event-pane" data-tab="3">...details for Brunch...</section>
+    CSS: .event-pane { display: none; } #tab-1:checked ~ .event-pane[data-tab="1"], #tab-2:checked ~ .event-pane[data-tab="2"], #tab-3:checked ~ .event-pane[data-tab="3"] { display: block; }
+    Tabs styled as horizontal nav with active-tab indicator via :has() and accent border-bottom.
+
+  STACKED pattern (works for 2 events or when tabs feel heavy):
+    Three labeled cards stacked vertically with day-name as a tracked uppercase label, each with its own date/time/venue. Connect with a vertical thin line ornament.
+
+  Each event card includes: day + date, time, venue name + address, dress code (if different), short note. Hotel block info goes ONCE outside the tabs in a "Travel & Stay" section. RSVP form goes ONCE outside the tabs (or use multi-attendance checkboxes: "I'll be at: ☐ Rehearsal ☐ Ceremony ☐ Brunch").
+
 ═══ STICKER LAYER (3-5 scattered accents for real-paper feel) ═══
 
 Scatter 3-5 CSS-only decorative stickers across the body. Gold leaf flake, postage stamp, wax drip, drink ring, tiny fingerprint. Pre-built patterns:
