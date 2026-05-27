@@ -1173,6 +1173,21 @@ export default function WebsiteBuilderPage() {
                 >
                   🎲 3 variants
                 </button>
+                <button
+                  onClick={() => {
+                    const url = window.prompt(
+                      "Paste a URL whose design you want to match (Claude will use its web_search tool to read it):",
+                      "https://",
+                    );
+                    if (!url || !url.startsWith("http")) return;
+                    submit(`Match the design vibe of this site: ${url}. Use the web_search tool to read it, then re-style my current invitation to match its palette, fonts, and overall feel — keeping all my content intact.`);
+                  }}
+                  disabled={loading}
+                  className="shrink-0 text-[11px] text-sky-200 hover:text-sky-100 bg-sky-500/10 hover:bg-sky-500/20 border border-sky-400/30 rounded-full px-2.5 py-1 transition-colors disabled:opacity-40"
+                  title="Paste a URL and Claude will match its design vibe"
+                >
+                  🔗 Match a URL
+                </button>
               </div>
               <div className="flex gap-1.5 overflow-x-auto whitespace-nowrap mt-1">
                 {THEME_REMIX.map((a) => (

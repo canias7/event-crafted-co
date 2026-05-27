@@ -1183,6 +1183,76 @@ When the user mentions multiple events (e.g. "Rehearsal dinner Friday, ceremony 
 
   Each event card includes: day + date, time, venue name + address, dress code (if different), short note. Hotel block info goes ONCE outside the tabs in a "Travel & Stay" section. RSVP form goes ONCE outside the tabs (or use multi-attendance checkboxes: "I'll be at: ☐ Rehearsal ☐ Ceremony ☐ Brunch").
 
+═══ QR CODE FOOTER (paper-invite handoff) ═══
+
+For all elegant events, include a small QR code in the footer pointing at the site's canonical URL. Guests with a printed invite can scan it to land on the digital version. Use the free api.qrserver.com endpoint — no API key:
+  <img src="https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=https%3A%2F%2Feventvendora.com%2Fs%2F__SLUG__&color=1a1a1a&bgcolor=ffffff" alt="Scan to view this invitation" width="120" height="120" style="opacity:0.7;border-radius:8px">
+The __SLUG__ placeholder is server-replaced with the real slug. Style the wrapping div with a "Scan to share" label in small caps tracked typography. Skip for casual / kids events.
+
+═══ MOUSE-PARALLAX 3D TILT (hero card subtle depth) ═══
+
+The hero card on the cover page can tilt slightly based on cursor position (CSS-only via :hover transitions — no JS). Adds cinematic depth. Apply to the cover-page or main invitation card:
+  .tilt-card { transform-style: preserve-3d; transition: transform 0.4s ease-out; will-change: transform; }
+  .tilt-card:hover { transform: perspective(1000px) rotateX(2deg) rotateY(-2deg) scale(1.01); }
+  .tilt-card .tilt-inner { transform: translateZ(20px); }
+On touch devices the :hover state never fires, so it naturally degrades. For elegant events only.
+
+═══ PAGE TRANSITIONS (section-to-section reveal) ═══
+
+Between sections, add a CSS-only transition effect as users scroll. Use animation-timeline: view() to trigger on entry. Three patterns to pick from:
+- CURTAIN: section slides in from the side (translateX -100% → 0, scale 0.95 → 1).
+  @keyframes curtain { from { transform: translateX(-80px); opacity: 0 } to { transform: translateX(0); opacity: 1 } }
+- BOOK FOLD: section rotates open like a book page (perspective + rotateY).
+  @keyframes book-fold { from { transform: perspective(800px) rotateY(-25deg); opacity: 0 } to { transform: perspective(800px) rotateY(0); opacity: 1 } }
+- FADE-UP: classic but with longer travel for cinematic feel.
+  @keyframes section-rise { from { opacity: 0; transform: translateY(80px) scale(0.96) } to { opacity: 1; transform: translateY(0) scale(1) } }
+Pick ONE pattern per site. Apply via @supports (animation-timeline: view()) wrapper so older browsers no-op gracefully.
+
+═══ LOADING SKELETON (first-paint polish) ═══
+
+Before custom fonts load, the page can look unstyled and jumpy. Include a skeleton overlay at the TOP of <body> that fades out once fonts arrive:
+  <div class="skeleton" aria-hidden="true">
+    <div class="sk-cover"></div>
+    <div class="sk-content">
+      <div class="sk-bar sk-w-3"></div>
+      <div class="sk-bar sk-w-2"></div>
+      <div class="sk-bar sk-w-1"></div>
+    </div>
+  </div>
+  CSS:
+  .skeleton { position: fixed; inset: 0; background: var(--bg, #1a1a1a); z-index: 9999; animation: skFadeOut 0.4s ease 1.2s forwards; }
+  .sk-cover { width: 60%; height: 50vh; margin: 25vh auto 2rem; background: linear-gradient(90deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.04) 100%); background-size: 200% 100%; animation: skShimmer 1.4s ease-in-out infinite; border-radius: 12px; }
+  .sk-content { max-width: 360px; margin: 0 auto; }
+  .sk-bar { height: 14px; margin: 0.5rem auto; background: rgba(255,255,255,0.06); border-radius: 4px; animation: skShimmer 1.4s ease-in-out infinite; }
+  .sk-w-1 { width: 60% } .sk-w-2 { width: 80% } .sk-w-3 { width: 100% }
+  @keyframes skShimmer { 0%,100% { opacity: 0.5 } 50% { opacity: 1 } }
+  @keyframes skFadeOut { to { opacity: 0; visibility: hidden } }
+
+═══ CINEMAGRAPH HERO (CSS-only animated overlay on still photo) ═══
+
+A subtle CSS-only animated overlay on the hero photo gives the "cinemagraph" feel (one thing moves, rest is still). Pick the overlay matching the photo:
+- WATER SHIMMER (beach, lake, pool): a translucent linear-gradient sweeps horizontally.
+  .cinema-water::after { content:''; position: absolute; inset: 0; background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.15) 50%, transparent 100%); animation: shimmer 6s ease-in-out infinite; mix-blend-mode: overlay; }
+- CANDLE GLOW (intimate, evening, dinner party): a soft radial that pulses.
+  .cinema-glow::after { content:''; position: absolute; inset: 0; background: radial-gradient(ellipse at 50% 60%, rgba(255,200,140,0.25) 0%, transparent 60%); animation: glow 3.5s ease-in-out infinite; mix-blend-mode: screen; }
+- LIGHT RAYS (garden, golden hour): diagonal light streaks that drift.
+  .cinema-rays::after { content:''; position: absolute; inset: 0; background: linear-gradient(110deg, transparent 30%, rgba(255,220,150,0.18) 40%, transparent 50%); animation: rays 8s ease-in-out infinite; mix-blend-mode: overlay; }
+- SNOW DRIFT (winter, NYE): already covered by ambient particles, but also overlay a slow translateX(0 → 5px) on the hero bg image itself for parallax-snow feel.
+Pick ONE per site, matched to the hero photo content. Keep opacity subtle (0.15–0.25). Don't combine with parallax-hero on mobile (perf).
+
+═══ CUSTOM ILLUSTRATION MOTIFS (couple-specific touches) ═══
+
+When the user mentions a personal detail (their dog's name, where they met, a shared hobby, their favorite drink), include 1-2 small SVG motif accents tied to that detail. Examples:
+- "We met hiking in Yosemite" → small SVG mountain icon as a divider between hero and Our Story.
+- "Our dog Pepper" → small line-drawn dog SVG in a corner of the schedule section.
+- "Coffee shop first date" → tiny coffee cup SVG as a bullet point in their story.
+- "Avid travelers" → small airplane SVG as section dividers.
+- "Wine country" → grape cluster SVG accent.
+
+Keep the SVGs hand-drawn-feel: 1px stroke, no fill, color via var(--accent), max 40x40px. Place sparingly (2-3 per site). These details — when present — are what guests remember.
+
+For richer personal motifs, you can also include the __HERO_AI__ placeholder pattern for the hero (already documented) — but additionally emit a comment <!--MOTIF_AI_PROMPT: small watercolor of two hikers on a Yosemite trail--> and use __MOTIF_AI__ placeholder in a smaller motif spot. The server will generate it via gpt-image-2 same as the hero (deferred — for now, stick with inline SVGs).
+
 ═══ STICKER LAYER (3-5 scattered accents for real-paper feel) ═══
 
 Scatter 3-5 CSS-only decorative stickers across the body. Gold leaf flake, postage stamp, wax drip, drink ring, tiny fingerprint. Pre-built patterns:
