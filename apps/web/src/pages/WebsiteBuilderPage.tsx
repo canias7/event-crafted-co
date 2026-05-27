@@ -1,14 +1,18 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
 import { VendoraLogo } from "@/components/shared/VendoraLogo";
 
 // AI Website Builder. Chat on the left, live HTML preview on the
-// right (iframe sandboxed with allow-same-origin off — keeps any
-// shenanigans in the generated doc isolated from the parent page).
+// right. The edge function returns text/event-stream — each token
+// arrives as a `data: {"type":"chunk","text":"..."}` SSE event and
+// gets written straight into the iframe's contentDocument via
+// document.open()/write()/close(). The browser progressively renders
+// as bytes arrive, which is why this feels instant compared to the
+// usual "wait then srcDoc swap" pattern.
 //
-// Anonymous flow: type prompt → call ai-site-generate edge function →
-// preview the HTML → "Publish" reveals the public /s/<slug> URL.
+// Sandbox: allow-same-origin (no allow-scripts). That lets the parent
+// page access contentDocument to stream into it, while still
+// preventing any JS in the generated HTML from running.
 
 type ChatMessage = {
   role: "user" | "assistant";
@@ -22,59 +26,168 @@ const EXAMPLE_PROMPTS = [
   "Backyard BBQ for July 4th — red white blue, casual, fun copy",
 ];
 
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
+const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string;
+
 export default function WebsiteBuilderPage() {
   const [conversation, setConversation] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
-  const [html, setHtml] = useState<string | null>(null);
   const [slug, setSlug] = useState<string | null>(null);
   const [title, setTitle] = useState<string | null>(null);
+  const [hasContent, setHasContent] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+  // Hold the in-flight reader so a rapid resubmit can cancel cleanly.
+  const abortRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
     inputRef.current?.focus();
+    return () => {
+      abortRef.current?.abort();
+    };
   }, []);
 
-  const publicUrl = slug ? `${window.location.origin}/s/${slug}` : null;
+  const publicUrl =
+    slug && typeof window !== "undefined"
+      ? `${window.location.origin}/s/${slug}`
+      : null;
+
+  function resetIframe(): Document | null {
+    const iframe = iframeRef.current;
+    if (!iframe) return null;
+    const doc = iframe.contentDocument;
+    if (!doc) return null;
+    doc.open();
+    return doc;
+  }
 
   async function submit(prompt: string) {
     const trimmed = prompt.trim();
     if (!trimmed || loading) return;
+
+    // Cancel any prior stream before starting a new one.
+    abortRef.current?.abort();
+    const ac = new AbortController();
+    abortRef.current = ac;
+
     setError(null);
     setLoading(true);
+    setSlug(null);
+    setTitle(null);
+
+    const prevConv = conversation;
     const nextConv: ChatMessage[] = [
-      ...conversation,
+      ...prevConv,
       { role: "user", content: trimmed },
     ];
     setConversation(nextConv);
     setInput("");
 
+    // Open a fresh iframe document — clears whatever was there.
+    const doc = resetIframe();
+    if (!doc) {
+      setLoading(false);
+      setError("Couldn't access preview frame");
+      return;
+    }
+    setHasContent(true);
+
+    let receivedChunk = false;
+    let buf = "";
+
     try {
-      const { data, error: fnErr } = await supabase.functions.invoke(
-        "ai-site-generate",
-        { body: { prompt: trimmed, conversation } },
-      );
-      if (fnErr) throw fnErr;
-      const body = data as { slug?: string; title?: string; html?: string; error?: string };
-      if (!body?.slug || !body?.html) {
-        throw new Error(body?.error ?? "generation_failed");
-      }
-      setHtml(body.html);
-      setSlug(body.slug);
-      setTitle(body.title ?? "Untitled");
-      setConversation([
-        ...nextConv,
-        {
-          role: "assistant",
-          content: `Built "${body.title ?? "your site"}". Tell me what to change, or copy the URL to share it.`,
+      const res = await fetch(`${SUPABASE_URL}/functions/v1/ai-site-generate`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${SUPABASE_KEY}`,
+          apikey: SUPABASE_KEY,
         },
-      ]);
+        body: JSON.stringify({
+          prompt: trimmed,
+          conversation: prevConv,
+        }),
+        signal: ac.signal,
+      });
+
+      if (!res.ok || !res.body) {
+        const errBody = await res.text().catch(() => "");
+        throw new Error(`http_${res.status}${errBody ? `: ${errBody.slice(0, 200)}` : ""}`);
+      }
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        buf += decoder.decode(value, { stream: true });
+        const events = buf.split("\n\n");
+        buf = events.pop() ?? "";
+        for (const evt of events) {
+          for (const line of evt.split("\n")) {
+            if (!line.startsWith("data: ")) continue;
+            let data: { type: string; text?: string; slug?: string; title?: string; message?: string };
+            try {
+              data = JSON.parse(line.slice(6));
+            } catch {
+              continue;
+            }
+            if (data.type === "chunk" && data.text) {
+              // First chunk often contains the title comment + <!DOCTYPE>.
+              // We strip the comment client-side so it doesn't render visibly.
+              const text = receivedChunk
+                ? data.text
+                : data.text.replace(/<!--\s*TITLE:[^>]*-->\s*/i, "");
+              receivedChunk = true;
+              doc.write(text);
+              // Auto-scroll iframe to bottom as content arrives so the
+              // user always sees the newest section.
+              try {
+                const win = iframeRef.current?.contentWindow;
+                win?.scrollTo(0, win.document.body?.scrollHeight ?? 0);
+              } catch {
+                // sandboxed cases — ignore
+              }
+            } else if (data.type === "done") {
+              doc.close();
+              setSlug(data.slug ?? null);
+              setTitle(data.title ?? null);
+              setConversation([
+                ...nextConv,
+                {
+                  role: "assistant",
+                  content: `Built "${data.title ?? "your site"}". Tell me what to change, or copy the URL to share it.`,
+                },
+              ]);
+            } else if (data.type === "error") {
+              throw new Error(data.message ?? "generation_failed");
+            }
+          }
+        }
+      }
+      // Ensure the document is closed if the stream ended without a done event.
+      try {
+        doc.close();
+      } catch {
+        // already closed
+      }
     } catch (e) {
+      if ((e as Error)?.name === "AbortError") return;
+      try {
+        doc.close();
+      } catch {
+        // ignore
+      }
       const msg = e instanceof Error ? e.message : "Something went wrong";
       setError(msg);
-      setConversation(nextConv);
+      setConversation(prevConv);
     } finally {
+      if (abortRef.current === ac) {
+        abortRef.current = null;
+      }
       setLoading(false);
       setTimeout(() => inputRef.current?.focus(), 0);
     }
@@ -226,23 +339,29 @@ export default function WebsiteBuilderPage() {
         </aside>
 
         {/* Preview pane */}
-        <main className="flex-1 bg-[#1a1a1c] flex items-center justify-center p-5 min-h-[60vh]">
-          {html ? (
-            <iframe
-              key={slug ?? "preview"}
-              title={title ?? "Site preview"}
-              srcDoc={html}
-              sandbox=""
-              className="w-full h-full max-w-[1400px] rounded-xl shadow-2xl bg-white"
-              style={{ minHeight: "70vh" }}
-            />
-          ) : (
-            <div className="text-center text-white/40 max-w-md">
-              <div className="text-[14px] uppercase tracking-[2px] mb-3">
-                Preview
-              </div>
-              <div className="text-[15px] leading-relaxed">
-                Your site will appear here once you describe it.
+        <main className="flex-1 bg-[#1a1a1c] flex items-center justify-center p-5 min-h-[60vh] relative">
+          {/* Iframe is always mounted so contentDocument is ready to
+              write into the moment a stream starts. Visibility toggled
+              by overlay so we don't lose the doc across submits. */}
+          <iframe
+            ref={iframeRef}
+            title={title ?? "Site preview"}
+            sandbox="allow-same-origin"
+            className="w-full h-full max-w-[1400px] rounded-xl shadow-2xl bg-white"
+            style={{
+              minHeight: "70vh",
+              visibility: hasContent ? "visible" : "hidden",
+            }}
+          />
+          {!hasContent && (
+            <div className="absolute inset-0 flex items-center justify-center text-center text-white/40 max-w-md mx-auto px-6 pointer-events-none">
+              <div>
+                <div className="text-[14px] uppercase tracking-[2px] mb-3">
+                  Preview
+                </div>
+                <div className="text-[15px] leading-relaxed">
+                  Your site will appear here once you describe it.
+                </div>
               </div>
             </div>
           )}

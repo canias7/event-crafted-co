@@ -1,10 +1,16 @@
 // AI Website Builder — generate a small event microsite from a chat
-// prompt. Claude Opus 4.7 returns one self-contained HTML document
+// prompt. Claude Sonnet 4.6 returns one self-contained HTML document
 // (inline <style>, no external JS, no <script>) optimized for a
-// looks-first single-page event site: weddings, birthdays, baby
-// showers, etc.
+// looks-first single-page event site.
 //
-// Auth: public (verify_jwt = false) — testing flow per project lead.
+// Streaming: response is text/event-stream. Each Anthropic text_delta
+// arrives as a `data: {"type":"chunk","text":"..."}` SSE event so the
+// client can write tokens straight into the iframe's contentDocument
+// and the browser progressively renders as bytes arrive. After the
+// model finishes, we save to ai_sites and emit a final
+// `data: {"type":"done","slug":"...","title":"..."}` event.
+//
+// Auth: public (verify_jwt = false) — testing flow.
 // Inserts run with service role so RLS doesn't need an insert policy.
 
 // deno-lint-ignore-file no-explicit-any
@@ -15,7 +21,11 @@ const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY") ?? "";
 
-const MODEL = "claude-opus-4-7";
+// Sonnet 4.6 — ~3x faster than Opus 4.7 on this workload, and the
+// quality gap on small one-page event sites is invisible to users.
+// Switch to claude-opus-4-7 here if you want max design fidelity at
+// the cost of latency.
+const MODEL = "claude-sonnet-4-6";
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -24,20 +34,13 @@ const cors = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
-function json(status: number, body: Record<string, unknown>) {
+function jsonResponse(status: number, body: Record<string, unknown>) {
   return new Response(JSON.stringify(body), {
     status,
     headers: { ...cors, "Content-Type": "application/json" },
   });
 }
 
-// Event-specific playbooks. Each block tells Claude the conventional
-// sections, copy patterns, dress codes, and color cues for an event
-// type — so a "baby shower" site ships with diaper-raffle + games
-// section by default, a wedding ships with the right RSVP wording,
-// and a quinceañera ships with chambelán/dama conventions. Cached
-// with the rest of the system prompt (ephemeral cache_control), so
-// after first request the cost is ~negligible.
 const EVENT_PLAYBOOKS = `=== EVENT PLAYBOOKS ===
 
 Before generating, identify the event type from the user's prompt and apply the matching playbook. Use the playbook's expected sections, copy patterns, and palette guidance. Adapt to specifics the user provided (names, dates, vibe) — never override their explicit choices.
@@ -176,13 +179,11 @@ function slugify(title: string): string {
     .replace(/-+/g, "-")
     .replace(/^-|-$/g, "")
     .slice(0, 40) || "site";
-  // Collision-resistant suffix — 6 hex chars = 16M space, plenty for testing.
   const suffix = Math.random().toString(16).slice(2, 8);
   return `${base}-${suffix}`;
 }
 
 function stripCodeFences(text: string): string {
-  // Models sometimes wrap output in ```html ... ``` despite instructions.
   let t = text.trim();
   if (t.startsWith("```")) {
     t = t.replace(/^```[a-zA-Z]*\n?/, "").replace(/```\s*$/, "");
@@ -190,18 +191,37 @@ function stripCodeFences(text: string): string {
   return t.trim();
 }
 
-async function callClaude(
-  userPrompt: string,
-  conversation: Array<{ role: "user" | "assistant"; content: string }>,
-): Promise<string> {
-  if (!ANTHROPIC_API_KEY) {
-    throw new Error("ANTHROPIC_API_KEY not configured");
+serve(async (req) => {
+  if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
+  if (req.method !== "POST") return jsonResponse(405, { error: "method_not_allowed" });
+
+  let payload: any;
+  try {
+    payload = await req.json();
+  } catch {
+    return jsonResponse(400, { error: "invalid_json" });
   }
-  const messages = [
-    ...conversation,
-    { role: "user" as const, content: userPrompt },
-  ];
-  const res = await fetch("https://api.anthropic.com/v1/messages", {
+  const userPrompt = String(payload?.prompt ?? "").trim();
+  if (!userPrompt) return jsonResponse(400, { error: "missing_prompt" });
+  if (userPrompt.length > 4000) return jsonResponse(400, { error: "prompt_too_long" });
+  if (!ANTHROPIC_API_KEY) return jsonResponse(500, { error: "ANTHROPIC_API_KEY not set" });
+
+  const rawConv = Array.isArray(payload?.conversation) ? payload.conversation : [];
+  const conversation = rawConv
+    .filter(
+      (m: any) =>
+        m && (m.role === "user" || m.role === "assistant") && typeof m.content === "string",
+    )
+    .slice(-10)
+    .map((m: any) => ({
+      role: m.role as "user" | "assistant",
+      content: String(m.content).slice(0, 8000),
+    }));
+
+  // Open Anthropic streaming response. We proxy each text_delta out
+  // to the client as an SSE event, and once the model finishes we
+  // save to DB and emit a `done` event with the slug.
+  const anthropicRes = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
     headers: {
       "x-api-key": ANTHROPIC_API_KEY,
@@ -211,6 +231,7 @@ async function callClaude(
     body: JSON.stringify({
       model: MODEL,
       max_tokens: 16000,
+      stream: true,
       system: [
         {
           type: "text",
@@ -218,78 +239,110 @@ async function callClaude(
           cache_control: { type: "ephemeral" },
         },
       ],
-      messages,
+      messages: [
+        ...conversation,
+        { role: "user" as const, content: userPrompt },
+      ],
     }),
   });
-  if (!res.ok) {
-    const errText = await res.text();
-    console.error("[ai-site-generate] anthropic error", res.status, errText);
-    throw new Error(`anthropic_${res.status}`);
+
+  if (!anthropicRes.ok || !anthropicRes.body) {
+    const errText = await anthropicRes.text().catch(() => "");
+    console.error("[ai-site-generate] anthropic error", anthropicRes.status, errText);
+    return jsonResponse(502, { error: `anthropic_${anthropicRes.status}` });
   }
-  const body = (await res.json()) as any;
-  const text = (body.content ?? [])
-    .filter((b: any) => b.type === "text")
-    .map((b: any) => b.text)
-    .join("\n")
-    .trim();
-  if (!text) throw new Error("empty_response");
-  return stripCodeFences(text);
-}
 
-serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
-  if (req.method !== "POST") return json(405, { error: "method_not_allowed" });
+  const stream = new ReadableStream({
+    async start(controller) {
+      const encoder = new TextEncoder();
+      const send = (obj: unknown) => {
+        controller.enqueue(encoder.encode(`data: ${JSON.stringify(obj)}\n\n`));
+      };
 
-  try {
-    const payload = await req.json().catch(() => ({}));
-    const userPrompt = String(payload?.prompt ?? "").trim();
-    if (!userPrompt) return json(400, { error: "missing_prompt" });
-    if (userPrompt.length > 4000) {
-      return json(400, { error: "prompt_too_long" });
-    }
+      let fullText = "";
+      try {
+        const reader = anthropicRes.body!.getReader();
+        const decoder = new TextDecoder();
+        let buf = "";
+        while (true) {
+          const { value, done } = await reader.read();
+          if (done) break;
+          buf += decoder.decode(value, { stream: true });
+          // Anthropic SSE events end with \n\n
+          const events = buf.split("\n\n");
+          buf = events.pop() ?? "";
+          for (const evt of events) {
+            for (const line of evt.split("\n")) {
+              if (!line.startsWith("data: ")) continue;
+              const payloadStr = line.slice(6);
+              try {
+                const data = JSON.parse(payloadStr);
+                if (
+                  data?.type === "content_block_delta" &&
+                  data?.delta?.type === "text_delta" &&
+                  typeof data.delta.text === "string"
+                ) {
+                  fullText += data.delta.text;
+                  send({ type: "chunk", text: data.delta.text });
+                }
+              } catch {
+                // ignore non-JSON keepalive lines
+              }
+            }
+          }
+        }
+      } catch (e) {
+        console.error("[ai-site-generate] stream read error", e);
+        send({ type: "error", message: "stream_failed" });
+        controller.close();
+        return;
+      }
 
-    const rawConv = Array.isArray(payload?.conversation)
-      ? payload.conversation
-      : [];
-    const conversation = rawConv
-      .filter(
-        (m: any) =>
-          m &&
-          (m.role === "user" || m.role === "assistant") &&
-          typeof m.content === "string",
-      )
-      .slice(-10)
-      .map((m: any) => ({
-        role: m.role as "user" | "assistant",
-        content: String(m.content).slice(0, 8000),
-      }));
+      const html = stripCodeFences(fullText);
+      if (!html.toLowerCase().includes("<!doctype html")) {
+        console.error("[ai-site-generate] non-html reply", html.slice(0, 200));
+        send({ type: "error", message: "invalid_generation" });
+        controller.close();
+        return;
+      }
 
-    const html = await callClaude(userPrompt, conversation);
-    if (!html.toLowerCase().includes("<!doctype html")) {
-      console.error("[ai-site-generate] non-html reply", html.slice(0, 200));
-      return json(502, { error: "invalid_generation" });
-    }
+      const title = extractTitle(html);
+      const slug = slugify(title);
+      try {
+        const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
+          auth: { autoRefreshToken: false, persistSession: false },
+        });
+        const { error: insertErr } = await admin.from("ai_sites").insert({
+          slug,
+          title,
+          prompt: userPrompt,
+          html,
+        });
+        if (insertErr) {
+          console.error("[ai-site-generate] insert error", insertErr);
+          send({ type: "error", message: "save_failed" });
+          controller.close();
+          return;
+        }
+      } catch (e) {
+        console.error("[ai-site-generate] insert exception", e);
+        send({ type: "error", message: "save_failed" });
+        controller.close();
+        return;
+      }
 
-    const title = extractTitle(html);
-    const slug = slugify(title);
+      send({ type: "done", slug, title });
+      controller.close();
+    },
+  });
 
-    const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
-      auth: { autoRefreshToken: false, persistSession: false },
-    });
-    const { error: insertErr } = await admin.from("ai_sites").insert({
-      slug,
-      title,
-      prompt: userPrompt,
-      html,
-    });
-    if (insertErr) {
-      console.error("[ai-site-generate] insert error", insertErr);
-      return json(500, { error: "save_failed" });
-    }
-
-    return json(200, { slug, title, html });
-  } catch (e) {
-    console.error("[ai-site-generate] uncaught", e);
-    return json(500, { error: "generation_failed" });
-  }
+  return new Response(stream, {
+    headers: {
+      ...cors,
+      "Content-Type": "text/event-stream",
+      "Cache-Control": "no-cache",
+      // Disable proxy buffering so chunks reach the browser immediately.
+      "X-Accel-Buffering": "no",
+    },
+  });
 });
