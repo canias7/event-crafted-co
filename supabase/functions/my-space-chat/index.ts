@@ -3893,8 +3893,34 @@ async function streamClaudeWithTools(
     void logChatUsage(admin, userId, totalTokens);
     return finalText;
   }
+  // The model burned the entire tool-iteration budget without
+  // returning text. Surface to both the operator (warn log) and the
+  // client (stream event the UI renders as a banner). Also tagged in
+  // ai_call_usage so we can query "how often is this happening?".
+  console.warn("[my-space-chat] iteration cap reached", {
+    user_id: userId,
+    vendor_id: vendorId || null,
+    iterations: MAX_TOOL_ITERATIONS,
+  });
+  try {
+    send({ type: "iteration_cap_reached", iterations: MAX_TOOL_ITERATIONS });
+  } catch (_) {
+    // Stream may already be closed — ignore.
+  }
+  admin.from("ai_call_usage").insert({
+    user_id: userId,
+    action_type: "my_space_iteration_cap_reached",
+    provider: "internal",
+    model: SONNET_MODEL,
+    input_tokens: 0,
+    output_tokens: 0,
+    cost_micros: 0,
+    success: false,
+  }).then(() => {}, (e: any) =>
+    console.warn("[my-space-chat] cap audit failed", e)
+  );
   void logChatUsage(admin, userId, totalTokens);
-  return "(I made too many tool calls without finishing. Try rephrasing.)";
+  return `(I made ${MAX_TOOL_ITERATIONS} tool calls without finishing — try breaking the request into smaller asks, or rephrase what you need.)`;
 }
 
 // ─── Persistence ──────────────────────────────────────────────────
