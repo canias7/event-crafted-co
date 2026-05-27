@@ -548,4 +548,97 @@
     font-feature-settings: "tnum" 1, "lnum" 1;
     letter-spacing: -0.005em;
   }
+
+  /* Charts — Oracle/Tableau-flavored. Cool palette, hairline grid,
+     axis labels in slate-500. Built in raw SVG (no recharts dep),
+     so all of these target SVG children inside a .cockpit-chart
+     wrapper. */
+  .my-vendora-cockpit .cockpit-chart {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    padding: 16px;
+  }
+  .my-vendora-cockpit .cockpit-chart-title {
+    font-size: 12px;
+    font-weight: 600;
+    color: #0f172a;
+    letter-spacing: -0.005em;
+  }
+  .my-vendora-cockpit .cockpit-chart-sub {
+    font-size: 11px;
+    color: #64748b;
+    margin-top: 1px;
+  }
+  .my-vendora-cockpit .cockpit-chart-grid {
+    stroke: #f1f5f9;
+    stroke-width: 1;
+  }
+  .my-vendora-cockpit .cockpit-chart-axis {
+    font-size: 10px;
+    fill: #64748b;
+    font-variant-numeric: tabular-nums;
+  }
+  .my-vendora-cockpit .cockpit-chart-line {
+    fill: none;
+    stroke: #0ea5e9;
+    stroke-width: 1.75;
+  }
+  .my-vendora-cockpit .cockpit-chart-area {
+    fill: url(#cockpit-area-grad);
+    opacity: 0.5;
+  }
+  .my-vendora-cockpit .cockpit-chart-bar {
+    fill: #0ea5e9;
+  }
+  .my-vendora-cockpit .cockpit-chart-bar--positive { fill: #047857; }
+  .my-vendora-cockpit .cockpit-chart-bar--negative { fill: #b91c1c; }
+  .my-vendora-cockpit .cockpit-chart-dot {
+    fill: #ffffff;
+    stroke: #0ea5e9;
+    stroke-width: 1.5;
+  }
+
+  /* KPI trend delta — small chip showing +/- vs previous period.
+     Lives inside cockpit-stat-sub or alongside the value. */
+  .my-vendora-cockpit .cockpit-delta {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    font-size: 11px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    margin-left: 6px;
+  }
+  .my-vendora-cockpit .cockpit-delta--up { color: #047857; }
+  .my-vendora-cockpit .cockpit-delta--down { color: #b91c1c; }
+  .my-vendora-cockpit .cockpit-delta--flat { color: #64748b; }
+
+  /* In-cell bar visualization (Sales by state, Expenses by category).
+     A thin horizontal bar inline with the table cell shows
+     relative magnitude — Tableau-style "in-row chart". */
+  .my-vendora-cockpit .cockpit-inline-bar {
+    display: inline-block;
+    height: 4px;
+    background: #0ea5e9;
+    border-radius: 2px;
+    vertical-align: middle;
+    margin-right: 8px;
+  }
+  .my-vendora-cockpit .cockpit-inline-bar-track {
+    display: inline-block;
+    width: 80px;
+    height: 4px;
+    background: #f1f5f9;
+    border-radius: 2px;
+    vertical-align: middle;
+    margin-right: 8px;
+    overflow: hidden;
+  }
+  .my-vendora-cockpit .cockpit-inline-bar-track > span {
+    display: block;
+    height: 100%;
+    background: #0ea5e9;
+    border-radius: 2px;
+  }
 }
