@@ -357,19 +357,22 @@ Style:
 - When a tool returns numeric / tabular data that visualizes well (revenue-by-month, funnel counts, top packages), include a chart in your reply using a fenced \`\`\`chart code block. JSON shape: \`{ "type": "bar" | "line" | "pie", "data": [{ "label": "Jan", "value": 1200 }, ...], "title": "Revenue by month" }\`. The frontend renders it as a real chart.
 
 Read tools (use freely):
-- \`search_inquiries\` · \`get_inquiry\` · \`check_availability\`
-- \`get_business_info\` — one tool for FAQs / portfolio / appointments / reviews / past bookings / team / subscription / verification (pass \`section\` to pick)
+- \`search_inquiries\` · \`get_inquiry\` · \`summarize_inquiry_thread\` · \`check_availability\`
+- \`get_business_info(section)\` — FAQs / portfolio / appointments / reviews / past bookings / team / subscription / verification
+- \`get_sales_analytics(report)\` — summary / top_packages / repeat_hosts / funnel
 - \`list_recent_notifications\` · \`search_messages\`
 
 Write tools (require an explicit go-ahead from the vendor before calling):
-- \`send_host_reply\` — sends a message to a host on the vendor's behalf
-- \`create_appointment\` · \`update_appointment\`
-- \`update_inquiry_status\` · \`mark_notifications_read\`
-- \`block_calendar_date\` · \`unblock_calendar_date\` · \`block_calendar_range\`
-- \`create_payment_link\` · \`send_email\`
-- \`toggle_auto_reply\` — flips inbox auto-reply settings
-- \`manage_faq\` · \`manage_package\` · \`update_profile\`
-- \`add_knowledge\` · \`update_knowledge\` · \`delete_knowledge\` — manage the persistent knowledge base (pricing, services, brand voice, FAQs, policies)
+- \`send_host_reply\` — message a host on the vendor's behalf
+- \`update_inquiry_status\` · \`mark_notifications_read\` · \`send_email\`
+- \`manage_appointment(action)\` — create / update an appointment
+- \`manage_calendar(action)\` — block_date / unblock_date / block_range
+- \`manage_scheduled_action(action)\` — list / schedule / cancel future actions
+- \`manage_knowledge(action)\` — add / update / delete persistent business facts
+- \`create_payment_link\` · \`create_invoice\` — billing
+- \`bulk_update_inquiry_status\` · \`bulk_send_reply\` — batch ops
+- \`manage_faq\` · \`manage_package\` · \`update_profile\` · \`toggle_auto_reply\`
+- \`edit_image\` · \`set_chat_preferences\`
 
 Confirmation rule for writes:
 - If the vendor said the exact action AND the parameters in their last message ("yes send it", "reply to inquiry X saying we're free July 14", "block Aug 1 for me"), proceed without re-asking.
@@ -617,28 +620,43 @@ const TOOLS = [
     },
   },
   {
-    name: "create_appointment",
+    name: "manage_appointment",
     description:
-      "Create a new appointment with a host (consultation, walkthrough, tasting, fitting, or phone call). WRITE ACTION — confirm the date, time, and kind with the vendor first.",
+      "Create or update an appointment with a host. WRITE ACTION — confirm date/time/kind with the vendor first. Use action='create' to schedule a new one (consultation, walkthrough, tasting, fitting, or phone call); action='update' to reschedule, change status, or edit details on an existing one.",
     input_schema: {
       type: "object",
-      required: ["inquiry_id", "kind", "scheduled_at"],
+      required: ["action"],
       properties: {
-        inquiry_id: { type: "string", description: "UUID of the inquiry." },
+        action: { type: "string", enum: ["create", "update"] },
+        appointment_id: {
+          type: "string",
+          description: "UUID of the appointment. Required when action='update'.",
+        },
+        inquiry_id: {
+          type: "string",
+          description:
+            "UUID of the inquiry the appointment is tied to. Required when action='create'.",
+        },
         kind: {
           type: "string",
           enum: ["consultation", "walkthrough", "tasting", "fitting", "phone_call"],
+          description: "Type of appointment. Required when action='create'.",
+        },
+        status: {
+          type: "string",
+          enum: ["proposed", "accepted", "declined", "cancelled", "completed"],
+          description: "Only used when action='update'.",
         },
         scheduled_at: {
           type: "string",
           description:
-            "Full ISO-8601 datetime, e.g. 2026-07-14T15:00:00Z (use the vendor's local time if known; otherwise ask).",
+            "Full ISO-8601 datetime (use the vendor's local time if known; otherwise ask). Required for create; optional for reschedule.",
         },
         duration_minutes: {
           type: "integer",
           minimum: 5,
           maximum: 480,
-          description: "Default 60.",
+          description: "Default 60 on create.",
         },
         title: { type: "string" },
         location: { type: "string" },
@@ -663,26 +681,32 @@ const TOOLS = [
     },
   },
   {
-    name: "block_calendar_date",
+    name: "manage_calendar",
     description:
-      "Mark a single date as unavailable on the vendor's calendar. WRITE ACTION. Use for vacation days, personal events, etc.",
+      "Block or unblock dates on the vendor's calendar. WRITE ACTION. action='block_date' marks one date unavailable (vacation, personal day, etc.); action='unblock_date' removes a manual block; action='block_range' blocks a contiguous date range. Doesn't affect recurring closed days or actual bookings.",
     input_schema: {
       type: "object",
-      required: ["date"],
+      required: ["action"],
       properties: {
-        date: { type: "string", description: "YYYY-MM-DD." },
-      },
-    },
-  },
-  {
-    name: "unblock_calendar_date",
-    description:
-      "Remove a manual block on a date so it becomes available again. WRITE ACTION. Doesn't affect recurring closed days or actual bookings.",
-    input_schema: {
-      type: "object",
-      required: ["date"],
-      properties: {
-        date: { type: "string", description: "YYYY-MM-DD." },
+        action: {
+          type: "string",
+          enum: ["block_date", "unblock_date", "block_range"],
+        },
+        date: {
+          type: "string",
+          description:
+            "YYYY-MM-DD. Required when action='block_date' or 'unblock_date'.",
+        },
+        start_date: {
+          type: "string",
+          description:
+            "YYYY-MM-DD inclusive. Required when action='block_range'.",
+        },
+        end_date: {
+          type: "string",
+          description:
+            "YYYY-MM-DD inclusive. Required when action='block_range'.",
+        },
       },
     },
   },
@@ -744,45 +768,7 @@ const TOOLS = [
       },
     },
   },
-  // ─── More read tools ────────────────────────────────────────────
   // ─── More write tools ───────────────────────────────────────────
-  {
-    name: "update_appointment",
-    description:
-      "Modify an existing appointment (reschedule, change status, edit notes). WRITE ACTION — confirm the change with the vendor first.",
-    input_schema: {
-      type: "object",
-      required: ["appointment_id"],
-      properties: {
-        appointment_id: { type: "string" },
-        status: {
-          type: "string",
-          enum: ["proposed", "accepted", "declined", "cancelled", "completed"],
-        },
-        scheduled_at: {
-          type: "string",
-          description: "Full ISO datetime if rescheduling.",
-        },
-        duration_minutes: { type: "integer", minimum: 5, maximum: 480 },
-        title: { type: "string" },
-        location: { type: "string" },
-        notes: { type: "string" },
-      },
-    },
-  },
-  {
-    name: "block_calendar_range",
-    description:
-      "Block a contiguous range of dates on the calendar at once (e.g. vacation). WRITE ACTION.",
-    input_schema: {
-      type: "object",
-      required: ["start_date", "end_date"],
-      properties: {
-        start_date: { type: "string", description: "YYYY-MM-DD inclusive." },
-        end_date: { type: "string", description: "YYYY-MM-DD inclusive." },
-      },
-    },
-  },
   {
     name: "toggle_auto_reply",
     description:
@@ -874,74 +860,40 @@ const TOOLS = [
     },
   },
   {
-    name: "get_usage_stats",
+    name: "manage_scheduled_action",
     description:
-      "Return the vendor's AI usage stats: total tokens + USD cost over the requested window, plus a per-model breakdown.",
+      "List, schedule, or cancel future actions for the vendor. action='list' returns pending actions; action='schedule' queues a new one to run later (\"at 5pm send Jamie the contract\") — args shape matches the corresponding immediate tool (e.g. send_host_reply needs { inquiry_id, body }); action='cancel' removes one by id. WRITE ACTION when action='schedule' or 'cancel' — confirm everything with the vendor first.",
     input_schema: {
       type: "object",
+      required: ["action"],
       properties: {
-        since: {
-          type: "string",
-          enum: ["today", "week", "month", "all_time"],
+        action: { type: "string", enum: ["list", "schedule", "cancel"] },
+        limit: {
+          type: "integer",
+          minimum: 1,
+          maximum: 50,
+          description: "Only used when action='list'. Default 20.",
         },
-      },
-    },
-  },
-  {
-    name: "schedule_action",
-    description:
-      "Queue an action to run at a future time (\"at 5pm send Jamie the contract\"). Use kind=send_host_reply for vendor-to-host replies, kind=send_email for off-platform emails, kind=mark_notifications_read to clear badges. The args shape matches the corresponding immediate tool. WRITE ACTION — confirm everything (when, kind, content) with the vendor before scheduling.",
-    input_schema: {
-      type: "object",
-      required: ["run_at", "kind", "args"],
-      properties: {
         run_at: {
           type: "string",
-          description: "Full ISO datetime, e.g. 2026-05-27T17:00:00Z.",
+          description:
+            "Full ISO datetime, e.g. 2026-05-27T17:00:00Z. Required when action='schedule'.",
         },
         kind: {
           type: "string",
           enum: ["send_host_reply", "send_email", "mark_notifications_read"],
+          description:
+            "What kind of action to schedule. Required when action='schedule'.",
         },
         args: {
           type: "object",
           description:
-            "Same input shape as the immediate version of the tool. e.g. for send_host_reply: { inquiry_id, body }.",
+            "Action-specific args (same shape as the immediate version of the tool). Required when action='schedule'.",
         },
-      },
-    },
-  },
-  {
-    name: "list_scheduled_actions",
-    description:
-      "List the vendor's pending scheduled actions (so they can review or cancel them).",
-    input_schema: {
-      type: "object",
-      properties: {
-        limit: { type: "integer", minimum: 1, maximum: 50 },
-      },
-    },
-  },
-  {
-    name: "cancel_scheduled_action",
-    description:
-      "Cancel a pending scheduled action by id. WRITE ACTION.",
-    input_schema: {
-      type: "object",
-      required: ["id"],
-      properties: { id: { type: "string" } },
-    },
-  },
-  {
-    name: "get_tool_usage_stats",
-    description:
-      "Return how many times each My Space tool has fired for this vendor (analytics: which tools the AI is reaching for).",
-    input_schema: {
-      type: "object",
-      properties: {
-        since: {
+        id: {
           type: "string",
-          enum: ["today", "week", "month", "all_time"],
+          description:
+            "Scheduled-action id to cancel. Required when action='cancel'.",
         },
       },
     },
@@ -980,144 +932,63 @@ const TOOLS = [
       },
     },
   },
-  {
-    name: "get_audit_log",
-    description:
-      "Return the vendor's recent My Space write-action audit entries (host replies sent, invoices created, calendar blocks, etc.) with inputs + results for inspection.",
-    input_schema: {
-      type: "object",
-      properties: {
-        limit: { type: "integer", minimum: 1, maximum: 50 },
-        tool_name: { type: "string", description: "Filter to one tool." },
-      },
-    },
-  },
   // ─── Knowledge base ─────────────────────────────────────────────
   {
-    name: "list_knowledge",
+    name: "manage_knowledge",
     description:
-      "Return the vendor's persistent knowledge base entries (pricing rules, services, brand voice, FAQs, policies). Use when the vendor asks 'what do you know about my business?' or wants to review what's stored. Already auto-loaded into your system prompt every turn — only call this when the vendor explicitly wants to inspect/audit.",
+      "Save, edit, or remove a durable fact about the vendor's business (pricing rules, services, brand voice, FAQs, policies). Use action='add' when the vendor says 'remember…' / 'from now on…' or shares a new fact; 'update' when they correct an existing entry; 'delete' when they say 'forget that' / 'remove…'. Existing entries are auto-loaded into the system prompt every turn — no need to list them. WRITE ACTION.",
     input_schema: {
       type: "object",
+      required: ["action"],
       properties: {
-        category: {
+        action: { type: "string", enum: ["add", "update", "delete"] },
+        id: {
           type: "string",
-          enum: ["pricing", "services", "brand_voice", "faq", "policies", "other"],
-          description: "Optional filter to one category.",
+          description:
+            "Entry UUID. Required when action='update' or 'delete'.",
         },
-      },
-    },
-  },
-  {
-    name: "add_knowledge",
-    description:
-      "Save a new durable fact about the vendor's business that you should remember on every future turn. Use when the vendor says 'remember that…', 'from now on…', or shares pricing rules, services, brand voice, FAQs, or policies. Title is a short label (e.g. 'Hourly rate'), content is the full fact (e.g. '$150/hr for events under 4 hours, $125/hr above'). WRITE ACTION — confirm with the vendor before calling unless they used a clear 'remember…' / 'save…' phrase.",
-    input_schema: {
-      type: "object",
-      required: ["category", "title", "content"],
-      properties: {
         category: {
           type: "string",
           enum: ["pricing", "services", "brand_voice", "faq", "policies", "other"],
+          description: "Required for action='add'.",
         },
         title: {
           type: "string",
-          description: "Short label, 1-200 chars (e.g. 'Hourly rate', 'Travel policy').",
+          description:
+            "Short label, 1-200 chars (e.g. 'Hourly rate'). Required for action='add'.",
         },
         content: {
           type: "string",
-          description: "Full fact, 1-4000 chars.",
+          description:
+            "Full fact, 1-4000 chars. Required for action='add'.",
         },
-      },
-    },
-  },
-  {
-    name: "update_knowledge",
-    description:
-      "Edit an existing knowledge-base entry. Use when the vendor corrects something you remembered, or wants to refine wording. WRITE ACTION.",
-    input_schema: {
-      type: "object",
-      required: ["id"],
-      properties: {
-        id: { type: "string", description: "UUID of the entry to update." },
-        category: {
-          type: "string",
-          enum: ["pricing", "services", "brand_voice", "faq", "policies", "other"],
-        },
-        title: { type: "string" },
-        content: { type: "string" },
-      },
-    },
-  },
-  {
-    name: "delete_knowledge",
-    description:
-      "Permanently delete a knowledge-base entry. Use when the vendor says 'forget that', 'remove…', or otherwise wants to discard a stored fact. WRITE ACTION — confirm the exact entry first.",
-    input_schema: {
-      type: "object",
-      required: ["id"],
-      properties: {
-        id: { type: "string", description: "UUID of the entry to delete." },
-      },
-    },
-  },
-  // ─── Web search ─────────────────────────────────────────────────
-  {
-    name: "web_search",
-    description:
-      "Search the open web for fresh information the vendor's snapshot can't answer (market rates, competitor pricing, venue research, etc.). Returns the top results with title + snippet + URL. Uses Tavily.",
-    input_schema: {
-      type: "object",
-      required: ["query"],
-      properties: {
-        query: { type: "string" },
-        limit: { type: "integer", minimum: 1, maximum: 10 },
       },
     },
   },
   // ─── Sales analytics ────────────────────────────────────────────
   {
-    name: "get_sales_summary",
+    name: "get_sales_analytics",
     description:
-      "Total revenue (paid invoices + paid payment links) over a window, with a per-month breakdown. Use for 'how much did I make?' / 'show me my revenue chart' kinds of questions. Render the breakdown as a chart in your reply when useful.",
+      "Numeric reports about the vendor's sales. Pick a report: 'summary' (total revenue + per-month breakdown — render as a chart); 'top_packages' (best-selling packages by paid-inquiry count); 'repeat_hosts' (hosts who booked more than once); 'funnel' (inquiries received → quotes sent → bookings confirmed over a window). Render with a fenced ```chart code block when the shape is bar/line/pie-friendly.",
     input_schema: {
       type: "object",
+      required: ["report"],
       properties: {
-        since: {
+        report: {
           type: "string",
-          enum: ["week", "month", "quarter", "year", "all_time"],
+          enum: ["summary", "top_packages", "repeat_hosts", "funnel"],
         },
-      },
-    },
-  },
-  {
-    name: "get_top_packages_by_revenue",
-    description:
-      "Top vendor packages ranked by how often they appear on paid inquiries / invoices.",
-    input_schema: {
-      type: "object",
-      properties: { limit: { type: "integer", minimum: 1, maximum: 20 } },
-    },
-  },
-  {
-    name: "get_repeat_hosts",
-    description:
-      "Hosts who have booked the vendor more than once (count + most-recent booking).",
-    input_schema: {
-      type: "object",
-      properties: { limit: { type: "integer", minimum: 1, maximum: 50 } },
-    },
-  },
-  {
-    name: "get_conversion_funnel",
-    description:
-      "Funnel counts over a window: inquiries received → quotes sent (proposals) → bookings confirmed.",
-    input_schema: {
-      type: "object",
-      properties: {
         since: {
           type: "string",
           enum: ["week", "month", "quarter", "year", "all_time"],
+          description: "Time window. Used by 'summary' and 'funnel'. Default 'month'.",
+        },
+        limit: {
+          type: "integer",
+          minimum: 1,
+          maximum: 50,
+          description:
+            "Max rows for list-style reports ('top_packages', 'repeat_hosts').",
         },
       },
     },
@@ -1162,32 +1033,6 @@ const TOOLS = [
       required: ["inquiry_id"],
       properties: {
         inquiry_id: { type: "string" },
-      },
-    },
-  },
-  // ─── Custom webhook tools ───────────────────────────────────────
-  {
-    name: "manage_custom_tool",
-    description:
-      "Add / update / delete a custom webhook tool the vendor wants the AI to be able to call (e.g. their own internal API). After adding, the new tool becomes callable on the NEXT conversation turn (the tool list is rebuilt per-request). WRITE ACTION.",
-    input_schema: {
-      type: "object",
-      required: ["action"],
-      properties: {
-        action: { type: "string", enum: ["add", "update", "delete", "list"] },
-        id: { type: "string", description: "Required for update/delete." },
-        name: {
-          type: "string",
-          description: "Tool name in snake_case (no spaces).",
-        },
-        description: { type: "string" },
-        url: { type: "string", description: "https:// endpoint to call." },
-        method: { type: "string", enum: ["GET", "POST", "PUT", "PATCH", "DELETE"] },
-        headers_json: {
-          type: "object",
-          description: "Optional headers (e.g. for auth).",
-        },
-        is_active: { type: "boolean" },
       },
     },
   },
@@ -2043,6 +1888,89 @@ async function toolGetBusinessInfo(
           `unknown_section:${section}. Valid: faqs, portfolio, appointments, reviews, past_bookings, team, subscription, verification.`,
       };
   }
+}
+
+// Consolidated dispatchers for the action-style tools. Each just
+// routes by `action`/`report` to the per-action handlers already
+// defined further down; behavior + DB queries are unchanged.
+
+async function toolManageAppointment(
+  admin: any,
+  vendorId: string,
+  input: any,
+): Promise<unknown> {
+  const action = String(input?.action ?? "").trim();
+  if (action === "create") return await toolCreateAppointment(admin, vendorId, input);
+  if (action === "update") return await toolUpdateAppointment(admin, vendorId, input);
+  return { error: `unknown_action:${action}. Valid: create, update.` };
+}
+
+async function toolManageCalendar(
+  admin: any,
+  vendorId: string,
+  input: any,
+): Promise<unknown> {
+  const action = String(input?.action ?? "").trim();
+  if (action === "block_date") {
+    return await toolBlockCalendarDate(admin, vendorId, input);
+  }
+  if (action === "unblock_date") {
+    return await toolUnblockCalendarDate(admin, vendorId, input);
+  }
+  if (action === "block_range") {
+    return await toolBlockCalendarRange(admin, vendorId, input);
+  }
+  return {
+    error: `unknown_action:${action}. Valid: block_date, unblock_date, block_range.`,
+  };
+}
+
+async function toolManageKnowledge(
+  admin: any,
+  vendorId: string,
+  userId: string,
+  input: any,
+): Promise<unknown> {
+  const action = String(input?.action ?? "").trim();
+  if (action === "add") return await toolAddKnowledge(admin, vendorId, userId, input);
+  if (action === "update") return await toolUpdateKnowledge(admin, userId, input);
+  if (action === "delete") return await toolDeleteKnowledge(admin, userId, input);
+  return { error: `unknown_action:${action}. Valid: add, update, delete.` };
+}
+
+async function toolManageScheduledAction(
+  admin: any,
+  vendorId: string,
+  userId: string,
+  input: any,
+): Promise<unknown> {
+  const action = String(input?.action ?? "").trim();
+  if (action === "list") {
+    return await toolListScheduledActions(admin, userId, input);
+  }
+  if (action === "schedule") {
+    return await toolScheduleAction(admin, vendorId, userId, input);
+  }
+  if (action === "cancel") {
+    return await toolCancelScheduledAction(admin, userId, input);
+  }
+  return { error: `unknown_action:${action}. Valid: list, schedule, cancel.` };
+}
+
+async function toolGetSalesAnalytics(
+  admin: any,
+  vendorId: string,
+  input: any,
+): Promise<unknown> {
+  const report = String(input?.report ?? "").trim();
+  if (report === "summary") return await toolGetSalesSummary(admin, vendorId, input);
+  if (report === "top_packages") return await toolGetTopPackages(admin, vendorId, input);
+  if (report === "repeat_hosts") return await toolGetRepeatHosts(admin, vendorId, input);
+  if (report === "funnel") return await toolGetConversionFunnel(admin, vendorId, input);
+  return {
+    error:
+      `unknown_report:${report}. Valid: summary, top_packages, repeat_hosts, funnel.`,
+  };
 }
 
 // ─── More write tools ───────────────────────────────────────────
@@ -3428,32 +3356,42 @@ async function executeTool(
     if (name === "search_messages") {
       return await toolSearchMessages(admin, vendorId, input);
     }
+    // Writes — host messaging
     if (name === "send_host_reply") {
       return await toolSendHostReply(admin, vendorId, userId, input);
-    }
-    if (name === "create_appointment") {
-      return await toolCreateAppointment(admin, vendorId, input);
     }
     if (name === "update_inquiry_status") {
       return await toolUpdateInquiryStatus(admin, vendorId, input);
     }
-    if (name === "block_calendar_date") {
-      return await toolBlockCalendarDate(admin, vendorId, input);
-    }
-    if (name === "unblock_calendar_date") {
-      return await toolUnblockCalendarDate(admin, vendorId, input);
-    }
     if (name === "mark_notifications_read") {
       return await toolMarkNotificationsRead(admin, userId, input);
     }
+    if (name === "send_email") {
+      return await toolSendEmail(admin, vendorId, input);
+    }
+    // Writes — consolidated action-style tools
+    if (name === "manage_appointment") {
+      return await toolManageAppointment(admin, vendorId, input);
+    }
+    if (name === "manage_calendar") {
+      return await toolManageCalendar(admin, vendorId, input);
+    }
+    if (name === "manage_knowledge") {
+      return await toolManageKnowledge(admin, vendorId, userId, input);
+    }
+    if (name === "manage_scheduled_action") {
+      return await toolManageScheduledAction(admin, vendorId, userId, input);
+    }
+    // Reads — consolidated analytics
+    if (name === "get_sales_analytics") {
+      return await toolGetSalesAnalytics(admin, vendorId, input);
+    }
+    // Writes — billing, profile, settings
     if (name === "create_payment_link") {
       return await toolCreatePaymentLink(admin, vendorId, userId, input);
     }
-    if (name === "update_appointment") {
-      return await toolUpdateAppointment(admin, vendorId, input);
-    }
-    if (name === "block_calendar_range") {
-      return await toolBlockCalendarRange(admin, vendorId, input);
+    if (name === "create_invoice") {
+      return await toolCreateInvoice(admin, vendorId, userId, input);
     }
     if (name === "toggle_auto_reply") {
       return await toolToggleAutoReply(admin, vendorId, userId, input);
@@ -3467,27 +3405,6 @@ async function executeTool(
     if (name === "update_profile") {
       return await toolUpdateProfile(admin, vendorId, input);
     }
-    if (name === "send_email") {
-      return await toolSendEmail(admin, vendorId, input);
-    }
-    if (name === "get_usage_stats") {
-      return await toolGetUsageStats(admin, userId, input);
-    }
-    if (name === "schedule_action") {
-      return await toolScheduleAction(admin, vendorId, userId, input);
-    }
-    if (name === "list_scheduled_actions") {
-      return await toolListScheduledActions(admin, userId, input);
-    }
-    if (name === "cancel_scheduled_action") {
-      return await toolCancelScheduledAction(admin, userId, input);
-    }
-    if (name === "get_tool_usage_stats") {
-      return await toolGetToolUsageStats(admin, userId, input);
-    }
-    if (name === "create_invoice") {
-      return await toolCreateInvoice(admin, vendorId, userId, input);
-    }
     if (name === "edit_image") {
       return await toolEditImage(
         String(input?.prompt ?? ""),
@@ -3497,34 +3414,7 @@ async function executeTool(
     if (name === "set_chat_preferences") {
       return await toolSetChatPreferences(admin, vendorId, input);
     }
-    if (name === "get_audit_log") {
-      return await toolGetAuditLog(admin, userId, input);
-    }
-    if (name === "list_knowledge") {
-      return await toolListKnowledge(admin, userId, input);
-    }
-    if (name === "add_knowledge") {
-      return await toolAddKnowledge(admin, vendorId, userId, input);
-    }
-    if (name === "update_knowledge") {
-      return await toolUpdateKnowledge(admin, userId, input);
-    }
-    if (name === "delete_knowledge") {
-      return await toolDeleteKnowledge(admin, userId, input);
-    }
-    if (name === "web_search") return await toolWebSearch(input);
-    if (name === "get_sales_summary") {
-      return await toolGetSalesSummary(admin, vendorId, input);
-    }
-    if (name === "get_top_packages_by_revenue") {
-      return await toolGetTopPackages(admin, vendorId, input);
-    }
-    if (name === "get_repeat_hosts") {
-      return await toolGetRepeatHosts(admin, vendorId, input);
-    }
-    if (name === "get_conversion_funnel") {
-      return await toolGetConversionFunnel(admin, vendorId, input);
-    }
+    // Bulk + summary
     if (name === "bulk_update_inquiry_status") {
       return await toolBulkUpdateInquiryStatus(admin, vendorId, input);
     }
@@ -3533,9 +3423,6 @@ async function executeTool(
     }
     if (name === "summarize_inquiry_thread") {
       return await toolSummarizeInquiryThread(admin, vendorId, input);
-    }
-    if (name === "manage_custom_tool") {
-      return await toolManageCustomTool(admin, vendorId, userId, input);
     }
     // Vendor-registered custom webhook tool?
     const custom = customTools.get(name);
@@ -3598,27 +3485,23 @@ async function logChatUsage(
 // AI did on their behalf.
 const WRITE_TOOL_NAMES = new Set([
   "send_host_reply",
-  "create_appointment",
-  "update_appointment",
   "update_inquiry_status",
-  "block_calendar_date",
-  "unblock_calendar_date",
-  "block_calendar_range",
   "mark_notifications_read",
+  "send_email",
+  "manage_appointment",
+  "manage_calendar",
+  "manage_knowledge",
+  "manage_scheduled_action",
   "create_payment_link",
+  "create_invoice",
   "toggle_auto_reply",
   "manage_faq",
   "manage_package",
   "update_profile",
-  "send_email",
-  "schedule_action",
-  "cancel_scheduled_action",
-  "create_invoice",
   "edit_image",
   "set_chat_preferences",
-  "add_knowledge",
-  "update_knowledge",
-  "delete_knowledge",
+  "bulk_update_inquiry_status",
+  "bulk_send_reply",
 ]);
 
 // Fire-and-forget — never block the chat reply on audit insert.
