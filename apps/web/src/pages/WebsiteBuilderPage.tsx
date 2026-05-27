@@ -71,6 +71,19 @@ export default function WebsiteBuilderPage() {
     Array<{ id: string; name: string; email: string | null; token: string; plus_one_allowed?: boolean }>
   >([]);
   const [guestsBusy, setGuestsBusy] = useState(false);
+
+  // Moderation modal: lists comment-wall messages + photo-album
+  // uploads guests have posted. Owner can hide (approved=false) or
+  // delete. Tabs switch between the two streams.
+  const [modOpen, setModOpen] = useState(false);
+  const [modTab, setModTab] = useState<"messages" | "photos">("messages");
+  const [modBusy, setModBusy] = useState(false);
+  const [modMessages, setModMessages] = useState<
+    Array<{ id: string; name: string; message: string; approved: boolean; created_at: string }>
+  >([]);
+  const [modPhotos, setModPhotos] = useState<
+    Array<{ id: string; photo_url: string; uploader_name: string | null; caption: string | null; approved: boolean; uploaded_at: string }>
+  >([]);
   const [guestImport, setGuestImport] = useState("");
   const [copiedToken, setCopiedToken] = useState<string | null>(null);
   const [editCount, setEditCount] = useState(0);
@@ -231,6 +244,100 @@ export default function WebsiteBuilderPage() {
       setLoading(false);
     }
   }
+
+  // Moderation modal: fetch messages + photos for owner review.
+  // Owner can hide (approved=false) or delete via inline buttons.
+  async function openModeration() {
+    if (!siteId) return;
+    setModOpen(true);
+    setModBusy(true);
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+      apikey: SUPABASE_KEY,
+      Authorization: `Bearer ${session?.access_token ?? SUPABASE_KEY}`,
+    };
+    try {
+      const [mres, pres] = await Promise.all([
+        fetch(`${SUPABASE_URL}/functions/v1/ai-site-messages`, {
+          method: "POST",
+          headers,
+          body: JSON.stringify({ site_id: siteId, action: "list" }),
+        }),
+        fetch(`${SUPABASE_URL}/functions/v1/ai-site-photos`, {
+          method: "POST",
+          headers,
+          body: JSON.stringify({ site_id: siteId, action: "list" }),
+        }),
+      ]);
+      const mbody = await mres.json().catch(() => ({}));
+      const pbody = await pres.json().catch(() => ({}));
+      setModMessages(Array.isArray(mbody?.messages) ? mbody.messages : []);
+      setModPhotos(Array.isArray(pbody?.photos) ? pbody.photos : []);
+    } finally {
+      setModBusy(false);
+    }
+  }
+
+  async function moderateMessage(
+    messageId: string,
+    action: "approve" | "hide" | "delete",
+  ) {
+    if (!siteId) return;
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+      apikey: SUPABASE_KEY,
+      Authorization: `Bearer ${session?.access_token ?? SUPABASE_KEY}`,
+    };
+    const body =
+      action === "delete"
+        ? { site_id: siteId, action: "delete", message_id: messageId }
+        : { site_id: siteId, action: "moderate", message_id: messageId, approved: action === "approve" };
+    await fetch(`${SUPABASE_URL}/functions/v1/ai-site-messages`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify(body),
+    });
+    if (action === "delete") {
+      setModMessages((rows) => rows.filter((r) => r.id !== messageId));
+    } else {
+      setModMessages((rows) =>
+        rows.map((r) =>
+          r.id === messageId ? { ...r, approved: action === "approve" } : r,
+        ),
+      );
+    }
+  }
+
+  async function moderatePhoto(
+    photoId: string,
+    action: "approve" | "hide" | "delete",
+  ) {
+    if (!siteId) return;
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+      apikey: SUPABASE_KEY,
+      Authorization: `Bearer ${session?.access_token ?? SUPABASE_KEY}`,
+    };
+    const body =
+      action === "delete"
+        ? { site_id: siteId, action: "delete", photo_id: photoId }
+        : { site_id: siteId, action: "moderate", photo_id: photoId, approved: action === "approve" };
+    await fetch(`${SUPABASE_URL}/functions/v1/ai-site-photos`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify(body),
+    });
+    if (action === "delete") {
+      setModPhotos((rows) => rows.filter((r) => r.id !== photoId));
+    } else {
+      setModPhotos((rows) =>
+        rows.map((r) =>
+          r.id === photoId ? { ...r, approved: action === "approve" } : r,
+        ),
+      );
+    }
+  }
+
   const [variantsLoading, setVariantsLoading] = useState(false);
   const [variantsOpen, setVariantsOpen] = useState(false);
   const [variants, setVariants] = useState<
@@ -871,6 +978,8 @@ export default function WebsiteBuilderPage() {
               title?: string;
               site_id?: string;
               message?: string;
+              version_number?: number;
+              validation?: { ok: boolean; issues: Array<{ key: string; label: string }> };
             };
             try {
               data = JSON.parse(line.slice(6));
@@ -1185,6 +1294,16 @@ export default function WebsiteBuilderPage() {
                   title="Invite guests with personalized links"
                 >
                   Guests
+                </button>
+              )}
+              {siteId && (
+                <button
+                  onClick={openModeration}
+                  disabled={loading}
+                  className="text-[12px] text-white/70 hover:text-white border border-white/15 rounded-full px-3 py-1 transition-colors disabled:opacity-40"
+                  title="Review guest messages and photos"
+                >
+                  Moderate
                 </button>
               )}
               {siteId && (
@@ -1732,6 +1851,189 @@ export default function WebsiteBuilderPage() {
                 Close
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {modOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
+          onClick={() => !modBusy && setModOpen(false)}
+        >
+          <div
+            className="bg-[#0c0c0e] border border-white/15 rounded-2xl p-6 max-w-[720px] w-full max-h-[85vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h2 className="text-[18px] font-medium">Moderate guest activity</h2>
+                <p className="text-[12px] text-white/50 mt-1">
+                  Hide or delete anything your guests posted on the site.
+                </p>
+              </div>
+              <button
+                onClick={() => setModOpen(false)}
+                className="text-white/40 hover:text-white text-[20px] leading-none"
+                aria-label="Close"
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="flex gap-1 mb-4 bg-white/5 p-1 rounded-full w-fit">
+              <button
+                onClick={() => setModTab("messages")}
+                className={`text-[12px] px-3 py-1 rounded-full transition-colors ${
+                  modTab === "messages"
+                    ? "bg-white text-black"
+                    : "text-white/60 hover:text-white"
+                }`}
+              >
+                Messages ({modMessages.length})
+              </button>
+              <button
+                onClick={() => setModTab("photos")}
+                className={`text-[12px] px-3 py-1 rounded-full transition-colors ${
+                  modTab === "photos"
+                    ? "bg-white text-black"
+                    : "text-white/60 hover:text-white"
+                }`}
+              >
+                Photos ({modPhotos.length})
+              </button>
+            </div>
+
+            {modBusy && (
+              <div className="text-center text-white/40 text-[13px] py-8">
+                Loading…
+              </div>
+            )}
+
+            {!modBusy && modTab === "messages" && (
+              <div className="space-y-2">
+                {modMessages.length === 0 ? (
+                  <div className="text-center text-white/40 text-[13px] py-8">
+                    No messages yet.
+                  </div>
+                ) : (
+                  modMessages.map((m) => (
+                    <div
+                      key={m.id}
+                      className={`border rounded-xl p-3 ${
+                        m.approved
+                          ? "border-white/10 bg-white/[0.02]"
+                          : "border-amber-400/30 bg-amber-500/[0.05]"
+                      }`}
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0 flex-1">
+                          <div className="text-[13px] font-medium text-white">{m.name}</div>
+                          <div className="text-[13px] text-white/70 whitespace-pre-wrap break-words mt-1">
+                            {m.message}
+                          </div>
+                          <div className="text-[10px] text-white/40 mt-2">
+                            {new Date(m.created_at).toLocaleString()} ·{" "}
+                            {m.approved ? "live on site" : "hidden"}
+                          </div>
+                        </div>
+                        <div className="flex flex-col gap-1.5 shrink-0">
+                          {m.approved ? (
+                            <button
+                              onClick={() => moderateMessage(m.id, "hide")}
+                              className="text-[11px] text-white/70 hover:text-white border border-white/20 rounded-full px-2.5 py-1"
+                            >
+                              Hide
+                            </button>
+                          ) : (
+                            <button
+                              onClick={() => moderateMessage(m.id, "approve")}
+                              className="text-[11px] bg-white text-black rounded-full px-2.5 py-1 hover:bg-white/90"
+                            >
+                              Show
+                            </button>
+                          )}
+                          <button
+                            onClick={() => {
+                              if (confirm("Delete this message permanently?")) {
+                                moderateMessage(m.id, "delete");
+                              }
+                            }}
+                            className="text-[11px] text-red-300/80 hover:text-red-200 border border-red-300/20 rounded-full px-2.5 py-1"
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            )}
+
+            {!modBusy && modTab === "photos" && (
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                {modPhotos.length === 0 ? (
+                  <div className="col-span-full text-center text-white/40 text-[13px] py-8">
+                    No photos yet.
+                  </div>
+                ) : (
+                  modPhotos.map((p) => (
+                    <div
+                      key={p.id}
+                      className={`relative rounded-xl overflow-hidden border ${
+                        p.approved ? "border-white/10" : "border-amber-400/40 opacity-70"
+                      }`}
+                    >
+                      <img
+                        src={p.photo_url}
+                        alt={p.caption ?? ""}
+                        className="w-full h-32 object-cover bg-black/40"
+                        loading="lazy"
+                      />
+                      {(p.uploader_name || p.caption) && (
+                        <div className="px-2 py-1.5 text-[10px] text-white/70 bg-black/60">
+                          {p.caption ? p.caption : ""}
+                          {p.caption && p.uploader_name ? " — " : ""}
+                          {p.uploader_name ? <em>{p.uploader_name}</em> : null}
+                        </div>
+                      )}
+                      <div className="absolute top-1 right-1 flex flex-col gap-1">
+                        {p.approved ? (
+                          <button
+                            onClick={() => moderatePhoto(p.id, "hide")}
+                            className="text-[10px] bg-black/70 text-white border border-white/20 rounded-full px-2 py-0.5 hover:bg-black/90"
+                          >
+                            Hide
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => moderatePhoto(p.id, "approve")}
+                            className="text-[10px] bg-white text-black rounded-full px-2 py-0.5 hover:bg-white/90"
+                          >
+                            Show
+                          </button>
+                        )}
+                        <button
+                          onClick={() => {
+                            if (confirm("Delete this photo permanently?")) {
+                              moderatePhoto(p.id, "delete");
+                            }
+                          }}
+                          className="text-[10px] bg-black/70 text-red-300 border border-red-300/30 rounded-full px-2 py-0.5 hover:bg-black/90"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                      {!p.approved && (
+                        <div className="absolute top-1 left-1 text-[9px] uppercase tracking-wider bg-amber-500/80 text-black px-1.5 py-0.5 rounded">
+                          Hidden
+                        </div>
+                      )}
+                    </div>
+                  ))
+                )}
+              </div>
+            )}
           </div>
         </div>
       )}

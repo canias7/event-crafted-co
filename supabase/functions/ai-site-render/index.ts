@@ -255,16 +255,20 @@ serve(async (req) => {
       .order("created_at", { ascending: false })
       .limit(50);
     const rows = (msgs ?? []) as Array<{ name: string; message: string; created_at: string }>;
+    // Inline styles use a neutral 128/128/128 base with alpha so the
+    // form inputs stay legible on both dark + cream-card backgrounds.
+    // currentColor borders adapt to the inherited text color.
+    const inputStyle = "padding:0.6rem 0.9rem;border-radius:8px;border:1px solid rgba(128,128,128,0.5);background:rgba(128,128,128,0.08);color:inherit;font:inherit";
     const wallHtml = `<div class="comment-wall">${rows.length === 0
       ? `<div class="comment-empty" style="opacity:0.55;font-style:italic;text-align:center;padding:1.5rem 0">Leave the first message.</div>`
       : `<ul class="comment-list" style="list-style:none;padding:0;margin:0 0 2rem;display:grid;gap:1rem">${rows.map((m) => {
           const n = m.name.replace(/[<>&"]/g, "");
           const msg = m.message.replace(/[<>&"]/g, "").replace(/\n/g, "<br>");
-          return `<li class="comment-item" style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:1rem"><div class="comment-name" style="font-weight:600;margin-bottom:0.25rem">${n}</div><div class="comment-msg">${msg}</div></li>`;
+          return `<li class="comment-item" style="background:rgba(128,128,128,0.08);border:1px solid rgba(128,128,128,0.2);border-radius:12px;padding:1rem"><div class="comment-name" style="font-weight:600;margin-bottom:0.25rem">${n}</div><div class="comment-msg">${msg}</div></li>`;
         }).join("")}</ul>`}
 <form method="POST" action="${SUPABASE_URL}/functions/v1/ai-site-messages?slug=${site.slug}" class="comment-form" style="display:grid;gap:0.5rem">
-<input type="text" name="name" placeholder="Your name" required maxlength="80" style="padding:0.6rem 0.9rem;border-radius:8px;border:1px solid rgba(0,0,0,0.15);background:transparent;color:inherit;font:inherit">
-<textarea name="message" placeholder="Leave a well-wish…" required rows="3" maxlength="600" style="padding:0.6rem 0.9rem;border-radius:8px;border:1px solid rgba(0,0,0,0.15);background:transparent;color:inherit;font:inherit;resize:vertical"></textarea>
+<input type="text" name="name" placeholder="Your name" required maxlength="80" style="${inputStyle}">
+<textarea name="message" placeholder="Leave a well-wish…" required rows="3" maxlength="600" style="${inputStyle};resize:vertical"></textarea>
 <button type="submit" style="padding:0.6rem 1.4rem;border-radius:999px;border:1px solid currentColor;background:transparent;color:inherit;font:inherit;cursor:pointer;justify-self:start">Post</button>
 </form></div>`;
     html = html.replaceAll("__COMMENT_WALL__", wallHtml);
@@ -282,18 +286,19 @@ serve(async (req) => {
       .order("uploaded_at", { ascending: false })
       .limit(120);
     const rows = (photos ?? []) as Array<{ photo_url: string; uploader_name: string | null; caption: string | null }>;
+    const photoInput = "padding:0.6rem 0.9rem;border-radius:8px;border:1px solid rgba(128,128,128,0.5);background:rgba(128,128,128,0.08);color:inherit;font:inherit";
     const galleryHtml = `<div class="photo-album">${rows.length === 0
       ? `<div class="album-empty" style="opacity:0.55;font-style:italic;text-align:center;padding:1.5rem 0">No photos yet. Be the first to share one.</div>`
       : `<div class="album-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:0.75rem;margin:0 0 1.5rem">${rows.map((p) => {
           const cap = (p.caption ?? "").replace(/[<>&"]/g, "");
           const by = (p.uploader_name ?? "").replace(/[<>&"]/g, "");
-          return `<figure class="album-item" style="margin:0;border-radius:12px;overflow:hidden;background:rgba(0,0,0,0.05);box-shadow:0 4px 12px rgba(0,0,0,0.08)"><img src="${p.photo_url}" alt="" loading="lazy" style="width:100%;height:180px;object-fit:cover;display:block"/>${cap || by ? `<figcaption style="padding:0.5rem 0.75rem;font-size:0.75rem;opacity:0.75">${cap}${cap && by ? " — " : ""}${by ? `<em>${by}</em>` : ""}</figcaption>` : ""}</figure>`;
+          return `<figure class="album-item" style="margin:0;border-radius:12px;overflow:hidden;background:rgba(128,128,128,0.12);box-shadow:0 4px 12px rgba(0,0,0,0.08)"><img src="${p.photo_url}" alt="" loading="lazy" style="width:100%;height:180px;object-fit:cover;display:block"/>${cap || by ? `<figcaption style="padding:0.5rem 0.75rem;font-size:0.75rem;opacity:0.75">${cap}${cap && by ? " — " : ""}${by ? `<em>${by}</em>` : ""}</figcaption>` : ""}</figure>`;
         }).join("")}</div>`}
 <form method="POST" action="${SUPABASE_URL}/functions/v1/ai-site-photos?slug=${site.slug}" enctype="multipart/form-data" class="album-form" style="display:grid;gap:0.5rem">
 <label style="font-size:0.75rem;letter-spacing:0.2em;text-transform:uppercase;opacity:0.6">Add your photo</label>
-<input type="file" name="file" accept="image/jpeg,image/png,image/webp,image/heic,image/heif" required style="padding:0.4rem;border:1px solid rgba(0,0,0,0.15);border-radius:8px;background:transparent;color:inherit;font:inherit">
-<input type="text" name="name" placeholder="Your name (optional)" maxlength="80" style="padding:0.6rem 0.9rem;border-radius:8px;border:1px solid rgba(0,0,0,0.15);background:transparent;color:inherit;font:inherit">
-<input type="text" name="caption" placeholder="Caption (optional)" maxlength="280" style="padding:0.6rem 0.9rem;border-radius:8px;border:1px solid rgba(0,0,0,0.15);background:transparent;color:inherit;font:inherit">
+<input type="file" name="file" accept="image/jpeg,image/png,image/webp,image/heic,image/heif" required style="${photoInput};padding:0.4rem">
+<input type="text" name="name" placeholder="Your name (optional)" maxlength="80" style="${photoInput}">
+<input type="text" name="caption" placeholder="Caption (optional)" maxlength="280" style="${photoInput}">
 <button type="submit" style="padding:0.6rem 1.4rem;border-radius:999px;border:1px solid currentColor;background:transparent;color:inherit;font:inherit;cursor:pointer;justify-self:start">Upload</button>
 </form></div>`;
     html = html.replaceAll("__PHOTO_ALBUM__", galleryHtml);
