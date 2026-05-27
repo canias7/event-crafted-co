@@ -243,6 +243,9 @@ interface Invoice {
   bill_to_state?: string | null;
   /** Last automated overdue reminder timestamp from scan-vendorapay-overdue. */
   reminder_sent_at?: string | null;
+  /** Vendor-added late fee, surfaced as its own line on the Pay page + receipt. */
+  late_fee_cents?: number;
+  late_fee_added_at?: string | null;
   /** Latest decline reason from Stripe, when buyer's last attempt failed. */
   payment_failure_message?: string | null;
   /** Cleared on successful payment; non-null means a failed attempt is pending retry. */
@@ -417,7 +420,7 @@ export default function VendorPaymentsPage({ embedded = false }: { embedded?: bo
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           (supabase as any)
             .from("invoices")
-            .select("id, vendor_id, slug, invoice_number, bill_to_name, bill_to_email, issue_date, due_date, notes, line_items, subtotal_cents, tax_rate_bps, tax_cents, total_cents, currency, status, sent_at, paid_at, refunded_at, refunded_amount_cents, reminder_sent_at, payment_failure_message, payment_failed_at, payment_attempts, created_at")
+            .select("id, vendor_id, slug, invoice_number, bill_to_name, bill_to_email, issue_date, due_date, notes, line_items, subtotal_cents, tax_rate_bps, tax_cents, total_cents, currency, status, sent_at, paid_at, refunded_at, refunded_amount_cents, reminder_sent_at, late_fee_cents, late_fee_added_at, payment_failure_message, payment_failed_at, payment_attempts, created_at")
             .eq("vendor_id", vendorId)
             .order("created_at", { ascending: false })
             .limit(50),
@@ -1231,7 +1234,7 @@ function ReportsTab({ vendorId }: { vendorId: string | null }) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const db = supabase as any;
       const cols =
-        "id, vendor_id, slug, invoice_number, bill_to_name, bill_to_email, bill_to_state, issue_date, due_date, notes, line_items, subtotal_cents, tax_rate_bps, tax_cents, total_cents, currency, status, sent_at, paid_at, refunded_at, refunded_amount_cents, created_at";
+        "id, vendor_id, slug, invoice_number, bill_to_name, bill_to_email, bill_to_state, issue_date, due_date, notes, line_items, subtotal_cents, tax_rate_bps, tax_cents, total_cents, currency, status, sent_at, paid_at, refunded_at, refunded_amount_cents, late_fee_cents, late_fee_added_at, created_at";
       const [paidRes, refundedRes, feesRes, unpaidRes, expensesRes] = await Promise.all([
         db
           .from("invoices")
@@ -1561,6 +1564,130 @@ function ReportsTab({ vendorId }: { vendorId: string | null }) {
     URL.revokeObjectURL(url);
   }, [paidInRange, refundedInRange, expensesInRange, rangeId]);
 
+  // QuickBooks Online "Invoice CSV" import. QBO's importer expects
+  // these exact column headers (case + spacing matters):
+  //   InvoiceNo, Customer, InvoiceDate, DueDate, Terms, Memo,
+  //   Item(Product/Service), ItemDescription, ItemQuantity, ItemRate,
+  //   *ItemAmount, ItemTaxCode, ItemTaxAmount, Currency
+  // Reference: https://quickbooks.intuit.com/learn-support/en-us/help-article/import-export-data/import-invoices-quickbooks-online/L0xbDsBC9_US_en_US
+  //
+  // One row per LINE ITEM (a 3-line invoice = 3 rows with the same
+  // InvoiceNo). QBO collapses on InvoiceNo on import. Refunded
+  // invoices and expenses are skipped — QBO has separate importers
+  // for those.
+  const downloadQboCsv = useCallback(() => {
+    const headers = [
+      "InvoiceNo",
+      "Customer",
+      "InvoiceDate",
+      "DueDate",
+      "Terms",
+      "Memo",
+      "Item(Product/Service)",
+      "ItemDescription",
+      "ItemQuantity",
+      "ItemRate",
+      "*ItemAmount",
+      "ItemTaxCode",
+      "ItemTaxAmount",
+      "Currency",
+    ];
+    const lines: string[] = [];
+    for (const inv of paidInRange) {
+      const customerKey = inv.bill_to_name?.trim() || inv.bill_to_email || "Customer";
+      const items = inv.line_items.length > 0
+        ? inv.line_items
+        : [{
+            name: `Invoice ${inv.invoice_number}`,
+            description: undefined,
+            qty: 1,
+            unit_price_cents: inv.subtotal_cents,
+            total_cents: inv.subtotal_cents,
+          }];
+      const totalLineAmount = items.reduce(
+        (s, li) => s + (li.total_cents ?? li.qty * li.unit_price_cents),
+        0,
+      );
+      // QBO tracks tax per-line; we only have an invoice-level tax,
+      // so we attach the full tax to the FIRST line and zero the rest.
+      // Tax-code "TAX" means "use the customer's default tax rate" —
+      // QBO will recompute on import. "NON" = non-taxable.
+      const lateFee = inv.late_fee_cents ?? 0;
+      items.forEach((li, idx) => {
+        const lineAmount = li.total_cents ?? li.qty * li.unit_price_cents;
+        const isFirst = idx === 0;
+        const taxAmount = isFirst ? inv.tax_cents : 0;
+        const taxCode = inv.tax_cents > 0 && isFirst ? "TAX" : "NON";
+        lines.push(
+          [
+            inv.invoice_number,
+            customerKey,
+            inv.issue_date,
+            inv.due_date ?? "",
+            "", // Terms — leave blank
+            inv.notes ?? "",
+            li.name || "Line item",
+            li.description ?? "",
+            String(li.qty),
+            (li.unit_price_cents / 100).toFixed(2),
+            (lineAmount / 100).toFixed(2),
+            taxCode,
+            (taxAmount / 100).toFixed(2),
+            inv.currency.toUpperCase(),
+          ]
+            .map(csvEscape)
+            .join(","),
+        );
+      });
+      // Late fee, when present, gets its own line so QBO mirrors what
+      // the buyer was actually charged.
+      if (lateFee > 0) {
+        lines.push(
+          [
+            inv.invoice_number,
+            customerKey,
+            inv.issue_date,
+            inv.due_date ?? "",
+            "",
+            "Late fee added after invoice was sent",
+            "Late fee",
+            "",
+            "1",
+            (lateFee / 100).toFixed(2),
+            (lateFee / 100).toFixed(2),
+            "NON",
+            "0.00",
+            inv.currency.toUpperCase(),
+          ]
+            .map(csvEscape)
+            .join(","),
+        );
+      }
+      // Sanity-log if the line items + tax + late fee don't equal
+      // the invoice total. Not blocking; QBO will accept it either
+      // way, but the vendor's CPA may flag the mismatch.
+      const computed = totalLineAmount + inv.tax_cents + lateFee;
+      if (computed !== inv.total_cents) {
+        console.warn(
+          "[reports] QBO export: line sum doesn't match total",
+          inv.invoice_number,
+          { computed, recorded: inv.total_cents },
+        );
+      }
+    }
+    const csv = [headers.join(","), ...lines].join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    const stamp = new Date().toISOString().slice(0, 10);
+    a.download = `quickbooks-invoices-${rangeId}-${stamp}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }, [paidInRange, rangeId]);
+
   return (
     <div className="space-y-5">
       <div className="flex items-center justify-between gap-3 flex-wrap">
@@ -1583,16 +1710,29 @@ function ReportsTab({ vendorId }: { vendorId: string | null }) {
             );
           })}
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={downloadCsv}
-          disabled={paidInRange.length === 0 && refundedInRange.length === 0 && expensesInRange.length === 0}
-          className="rounded-full"
-        >
-          <Download className="w-3.5 h-3.5 mr-1" />
-          Export CSV
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={downloadCsv}
+            disabled={paidInRange.length === 0 && refundedInRange.length === 0 && expensesInRange.length === 0}
+            className="rounded-full"
+          >
+            <Download className="w-3.5 h-3.5 mr-1" />
+            Export CSV
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={downloadQboCsv}
+            disabled={paidInRange.length === 0}
+            className="rounded-full"
+            title="QuickBooks Online Invoice CSV import format"
+          >
+            <Download className="w-3.5 h-3.5 mr-1" />
+            QuickBooks
+          </Button>
+        </div>
       </div>
 
       <section>
@@ -3255,6 +3395,52 @@ function InvoicesTab({
   const { user } = useAuth();
   const [sendingId, setSendingId] = useState<string | null>(null);
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
+  const [lateFeeTarget, setLateFeeTarget] = useState<Invoice | null>(null);
+  const [lateFeeAmount, setLateFeeAmount] = useState("");
+  const [lateFeeSaving, setLateFeeSaving] = useState(false);
+
+  const openLateFeeModal = (inv: Invoice) => {
+    // Default suggestion: 5% of the original total. Vendor can
+    // override before saving.
+    const suggested = Math.round(inv.total_cents * 0.05) / 100;
+    setLateFeeAmount(suggested.toFixed(2));
+    setLateFeeTarget(inv);
+  };
+  const saveLateFee = async () => {
+    if (!lateFeeTarget) return;
+    const amountNum = Number(lateFeeAmount);
+    if (!Number.isFinite(amountNum) || amountNum <= 0) {
+      toast.error("Enter a positive late-fee amount.");
+      return;
+    }
+    const feeCents = Math.round(amountNum * 100);
+    setLateFeeSaving(true);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const db = supabase as any;
+    // Stack additively — if the vendor adds a fee twice, both
+    // accumulate. Matches how a real late fee policy works
+    // (5% per 30 days, applied on each cycle).
+    const newLateFee = (lateFeeTarget.late_fee_cents ?? 0) + feeCents;
+    const newTotal = lateFeeTarget.total_cents + feeCents;
+    const { error } = await db
+      .from("invoices")
+      .update({
+        late_fee_cents: newLateFee,
+        late_fee_added_at: new Date().toISOString(),
+        total_cents: newTotal,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", lateFeeTarget.id);
+    setLateFeeSaving(false);
+    if (error) {
+      console.error("[InvoicesTab] late fee save failed", error);
+      toast.error("Couldn't add late fee.");
+      return;
+    }
+    toast.success(`Late fee added · new total ${formatMoney(newTotal, lateFeeTarget.currency)}`);
+    setLateFeeTarget(null);
+    onChanged();
+  };
 
   // Lazy-imports jspdf + jspdf-autotable so the dashboard's initial
   // bundle stays slim — vendors only ever click Download on demand.
@@ -3509,6 +3695,9 @@ function InvoicesTab({
                     {inv.reminder_sent_at && (inv.status === "sent" || inv.status === "overdue")
                       ? ` · Reminder sent ${formatDate(inv.reminder_sent_at)}`
                       : ""}
+                    {inv.late_fee_cents && inv.late_fee_cents > 0
+                      ? ` · Late fee +${formatMoney(inv.late_fee_cents, inv.currency)}`
+                      : ""}
                   </p>
                   {inv.payment_failed_at && !inv.paid_at && inv.payment_failure_message && (
                     <p className="text-xs text-rose-700 mt-1">
@@ -3595,6 +3784,19 @@ function InvoicesTab({
                     PDF
                   </Button>
                 ) : null}
+                {(inv.status === "sent" || inv.status === "overdue") ? (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => openLateFeeModal(inv)}
+                    className="rounded-full"
+                    title="Add a late fee — the Pay page and the next reminder will reflect the new total"
+                  >
+                    {inv.late_fee_cents && inv.late_fee_cents > 0
+                      ? "Add more"
+                      : "Late fee"}
+                  </Button>
+                ) : null}
                 {(inv.status === "draft" || inv.status === "sent" || inv.status === "overdue") ? (
                   <Button
                     variant="ghost"
@@ -3609,6 +3811,54 @@ function InvoicesTab({
             </div>
           ))}
         </Card>
+      )}
+
+      {lateFeeTarget && (
+        <Dialog open onOpenChange={(open) => { if (!open) setLateFeeTarget(null); }}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Add late fee · {lateFeeTarget.invoice_number}</DialogTitle>
+              <DialogDescription>
+                Original total {formatMoney(lateFeeTarget.total_cents - (lateFeeTarget.late_fee_cents ?? 0), lateFeeTarget.currency)}
+                {lateFeeTarget.late_fee_cents
+                  ? ` · current late fee ${formatMoney(lateFeeTarget.late_fee_cents, lateFeeTarget.currency)}`
+                  : ""}
+                . Suggested = 5% of the original. Override below.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-3 mt-2">
+              <div>
+                <label className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold block mb-1">
+                  Late fee amount
+                </label>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-muted-foreground">$</span>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={lateFeeAmount}
+                    onChange={(e) => setLateFeeAmount(e.target.value)}
+                    className="flex-1 rounded-lg border-0 px-3 py-2 text-sm bg-background/60 ring-1 ring-foreground/10 focus:ring-foreground/30 outline-none"
+                  />
+                </div>
+              </div>
+              <p className="text-[11px] text-muted-foreground">
+                The Pay page, the next overdue reminder email, and the receipt all use the updated total. The
+                buyer sees "Late fee" as its own line so there are no surprises.
+              </p>
+              <div className="flex gap-2 justify-end">
+                <Button onClick={() => setLateFeeTarget(null)} variant="ghost" size="sm" className="rounded-full">
+                  Cancel
+                </Button>
+                <Button onClick={() => void saveLateFee()} disabled={lateFeeSaving} size="sm" className="rounded-full">
+                  {lateFeeSaving ? <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" /> : null}
+                  Add fee
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
       )}
     </div>
   );

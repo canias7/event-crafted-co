@@ -56,7 +56,7 @@ serve(async (req) => {
     const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, { auth: { persistSession: false } });
     const { data: inv, error: invErr } = await admin
       .from("invoices")
-      .select("id, vendor_id, invoice_number, line_items, subtotal_cents, tax_cents, tax_rate_bps, total_cents, currency, status, bill_to_email, vendor_tier_snapshot")
+      .select("id, vendor_id, invoice_number, line_items, subtotal_cents, tax_cents, tax_rate_bps, total_cents, currency, status, bill_to_email, vendor_tier_snapshot, late_fee_cents")
       .eq("slug", slug)
       .maybeSingle();
     if (invErr || !inv) return json(404, { error: "invoice not found" });
@@ -149,6 +149,20 @@ serve(async (req) => {
           currency,
           unit_amount: inv.tax_cents as number,
           product_data: { name: `Tax (${((inv.tax_rate_bps as number) / 100).toFixed(2)}%)` },
+        },
+      });
+    }
+    // Late fee applied after the invoice was sent. Surfaced as its
+    // own line so the buyer sees on the Stripe Checkout page WHY the
+    // total is higher than the original invoice — no surprises.
+    const lateFeeCents = (inv.late_fee_cents as number | null | undefined) ?? 0;
+    if (lateFeeCents > 0) {
+      lineItems.push({
+        quantity: 1,
+        price_data: {
+          currency,
+          unit_amount: lateFeeCents,
+          product_data: { name: "Late fee" },
         },
       });
     }
