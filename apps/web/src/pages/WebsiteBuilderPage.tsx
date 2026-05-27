@@ -68,7 +68,7 @@ export default function WebsiteBuilderPage() {
   const [restoreBusy, setRestoreBusy] = useState<number | null>(null);
   const [guestsOpen, setGuestsOpen] = useState(false);
   const [guests, setGuests] = useState<
-    Array<{ id: string; name: string; email: string | null; token: string }>
+    Array<{ id: string; name: string; email: string | null; token: string; plus_one_allowed?: boolean }>
   >([]);
   const [guestsBusy, setGuestsBusy] = useState(false);
   const [guestImport, setGuestImport] = useState("");
@@ -241,6 +241,33 @@ export default function WebsiteBuilderPage() {
       body: JSON.stringify({ site_id: siteId, action: "delete", guest_id: guestId }),
     });
     if (res.ok) setGuests((prev) => prev.filter((g) => g.id !== guestId));
+  }
+
+  async function togglePlusOne(guestId: string, current: boolean) {
+    if (!siteId) return;
+    // Optimistic update; rollback on failure.
+    setGuests((prev) =>
+      prev.map((g) => (g.id === guestId ? { ...g, plus_one_allowed: !current } : g)),
+    );
+    const res = await fetch(`${SUPABASE_URL}/functions/v1/ai-site-guests`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        apikey: SUPABASE_KEY,
+        Authorization: `Bearer ${session?.access_token ?? SUPABASE_KEY}`,
+      },
+      body: JSON.stringify({
+        site_id: siteId,
+        action: "toggle_plus_one",
+        guest_id: guestId,
+        allowed: !current,
+      }),
+    });
+    if (!res.ok) {
+      setGuests((prev) =>
+        prev.map((g) => (g.id === guestId ? { ...g, plus_one_allowed: current } : g)),
+      );
+    }
   }
 
   function copyGuestLink(token: string) {
@@ -1286,6 +1313,18 @@ export default function WebsiteBuilderPage() {
                         <div className="text-[11px] text-white/40 truncate">{g.email}</div>
                       )}
                     </div>
+                    <button
+                      onClick={() => togglePlusOne(g.id, !!g.plus_one_allowed)}
+                      className={
+                        "text-[11px] border rounded-full px-2.5 py-1 transition-colors " +
+                        (g.plus_one_allowed
+                          ? "text-amber-200 border-amber-400/30 bg-amber-500/10"
+                          : "text-white/55 border-white/15 hover:text-white")
+                      }
+                      title={g.plus_one_allowed ? "Plus-one allowed (click to disallow)" : "Allow plus-one"}
+                    >
+                      {g.plus_one_allowed ? "+1 ✓" : "+1"}
+                    </button>
                     <button
                       onClick={() => copyGuestLink(g.token)}
                       className="text-[11px] text-white/70 hover:text-white border border-white/15 rounded-full px-2.5 py-1"
