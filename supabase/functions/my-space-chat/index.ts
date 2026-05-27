@@ -894,6 +894,60 @@ const TOOLS = [
       properties: { id: { type: "string" } },
     },
   },
+  {
+    name: "get_tool_usage_stats",
+    description:
+      "Return how many times each My Space tool has fired for this vendor (analytics: which tools the AI is reaching for).",
+    input_schema: {
+      type: "object",
+      properties: {
+        since: {
+          type: "string",
+          enum: ["today", "week", "month", "all_time"],
+        },
+      },
+    },
+  },
+  {
+    name: "create_invoice",
+    description:
+      "Create a proper line-item invoice (separate from a simple payment link). Computes subtotal + tax + total server-side. Returns the public checkout URL. WRITE ACTION — confirm bill-to + items with the vendor first.",
+    input_schema: {
+      type: "object",
+      required: ["bill_to_name", "items"],
+      properties: {
+        bill_to_name: { type: "string" },
+        bill_to_email: { type: "string" },
+        bill_to_phone: { type: "string" },
+        bill_to_address: { type: "string" },
+        due_date: {
+          type: "string",
+          description: "YYYY-MM-DD (optional).",
+        },
+        notes: { type: "string" },
+        tax_rate_pct: {
+          type: "number",
+          description:
+            "Tax percent applied to subtotal (e.g. 8.5 for 8.5%). Default 0.",
+        },
+        items: {
+          type: "array",
+          minItems: 1,
+          maxItems: 50,
+          description: "Line items.",
+          items: {
+            type: "object",
+            required: ["description", "quantity", "unit_price_usd"],
+            properties: {
+              description: { type: "string" },
+              quantity: { type: "number", minimum: 0 },
+              unit_price_usd: { type: "number", minimum: 0 },
+            },
+          },
+        },
+      },
+    },
+  },
 ] as const;
 
 async function toolSearchInquiries(
@@ -2058,6 +2112,132 @@ async function toolGetUsageStats(
   };
 }
 
+async function toolCreateInvoice(
+  admin: any,
+  vendorId: string,
+  userId: string,
+  input: any,
+): Promise<unknown> {
+  if (!vendorId) return { error: "no_vendor_profile" };
+  const billTo = String(input?.bill_to_name ?? "").trim();
+  if (!billTo) return { error: "bill_to_name required" };
+  const rawItems = Array.isArray(input?.items) ? input.items : [];
+  if (rawItems.length === 0) return { error: "at least one item required" };
+  const items = rawItems.map((it: any) => {
+    const qty = Number(it?.quantity);
+    const unit = Number(it?.unit_price_usd);
+    return {
+      description: String(it?.description ?? "").slice(0, 200),
+      quantity: Number.isFinite(qty) && qty >= 0 ? qty : 0,
+      unit_price_cents: Number.isFinite(unit) && unit >= 0
+        ? Math.round(unit * 100)
+        : 0,
+    };
+  });
+  const subtotalCents = items.reduce(
+    (s: number, it: any) => s + Math.round(it.quantity * it.unit_price_cents),
+    0,
+  );
+  const taxRatePct = Number(input?.tax_rate_pct);
+  const taxRateBps = Number.isFinite(taxRatePct) && taxRatePct >= 0
+    ? Math.round(taxRatePct * 100)
+    : 0;
+  const taxCents = Math.round((subtotalCents * taxRateBps) / 10_000);
+  const totalCents = subtotalCents + taxCents;
+
+  // Generate a simple invoice number like INV-2026-XXXX from the
+  // count of the vendor's existing invoices this year.
+  const yearStart = new Date(new Date().getFullYear(), 0, 1).toISOString();
+  const { count } = await admin
+    .from("invoices")
+    .select("id", { count: "exact", head: true })
+    .eq("vendor_id", vendorId)
+    .gte("created_at", yearStart);
+  const seq = String((count ?? 0) + 1).padStart(4, "0");
+  const invoiceNumber = `INV-${new Date().getFullYear()}-${seq}`;
+
+  const { data, error } = await admin
+    .from("invoices")
+    .insert({
+      vendor_id: vendorId,
+      invoice_number: invoiceNumber,
+      bill_to_name: billTo,
+      bill_to_email: input?.bill_to_email
+        ? String(input.bill_to_email)
+        : null,
+      bill_to_phone: input?.bill_to_phone
+        ? String(input.bill_to_phone)
+        : null,
+      bill_to_address: input?.bill_to_address
+        ? String(input.bill_to_address)
+        : null,
+      issue_date: new Date().toISOString().slice(0, 10),
+      due_date: typeof input?.due_date === "string" &&
+          /^\d{4}-\d{2}-\d{2}$/.test(input.due_date)
+        ? input.due_date
+        : null,
+      notes: input?.notes ? String(input.notes) : null,
+      line_items: items,
+      subtotal_cents: subtotalCents,
+      tax_rate_bps: taxRateBps,
+      tax_cents: taxCents,
+      total_cents: totalCents,
+      currency: "usd",
+      status: "draft",
+      created_by: userId,
+    })
+    .select("id, slug, invoice_number, total_cents")
+    .single();
+  if (error) return { error: error.message };
+  const slug = (data as any).slug as string;
+  return {
+    created: true,
+    invoice: {
+      id: (data as any).id,
+      invoice_number: (data as any).invoice_number,
+      total_usd: ((data as any).total_cents as number) / 100,
+      checkout_url: `https://eventvendora.com/pay/invoice/${slug}`,
+    },
+  };
+}
+
+async function toolGetToolUsageStats(
+  admin: any,
+  userId: string,
+  input: any,
+): Promise<unknown> {
+  const since = String(input?.since ?? "month");
+  let gte: string | null = null;
+  const now = new Date();
+  if (since === "today") {
+    gte = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+      .toISOString();
+  } else if (since === "week") {
+    gte = new Date(now.getTime() - 7 * 86400000).toISOString();
+  } else if (since === "month") {
+    gte = new Date(now.getTime() - 30 * 86400000).toISOString();
+  }
+  let q = admin
+    .from("ai_call_usage")
+    .select("action_type, success")
+    .eq("user_id", userId)
+    .like("action_type", "my_space_tool:%");
+  if (gte) q = q.gte("created_at", gte);
+  const { data, error } = await q;
+  if (error) return { error: error.message };
+  const counts: Record<string, { calls: number; failures: number }> = {};
+  for (const r of (data ?? []) as Array<any>) {
+    const name = String(r.action_type).replace("my_space_tool:", "");
+    if (!counts[name]) counts[name] = { calls: 0, failures: 0 };
+    counts[name].calls += 1;
+    if (r.success === false) counts[name].failures += 1;
+  }
+  const sorted = Object.entries(counts)
+    .map(([name, v]) => ({ tool: name, ...v }))
+    .sort((a, b) => b.calls - a.calls);
+  return { since, total_tool_calls: (data ?? []).length, by_tool: sorted };
+}
+
 async function toolScheduleAction(
   admin: any,
   vendorId: string,
@@ -2233,6 +2413,12 @@ async function executeTool(
     }
     if (name === "cancel_scheduled_action") {
       return await toolCancelScheduledAction(admin, userId, input);
+    }
+    if (name === "get_tool_usage_stats") {
+      return await toolGetToolUsageStats(admin, userId, input);
+    }
+    if (name === "create_invoice") {
+      return await toolCreateInvoice(admin, vendorId, userId, input);
     }
     return { error: `unknown_tool:${name}` };
   } catch (err) {
@@ -2436,6 +2622,23 @@ async function streamClaudeWithTools(
             tu.input,
           );
           send({ type: "tool_done", name: tu.name });
+          // Tool-level analytics so we can see which tools the AI
+          // reaches for most. Fire-and-forget.
+          admin
+            .from("ai_call_usage")
+            .insert({
+              user_id: userId,
+              action_type: `my_space_tool:${tu.name}`,
+              provider: "internal",
+              model: tu.name,
+              input_tokens: 0,
+              output_tokens: 0,
+              cost_micros: 0,
+              success: !(out as any)?.error,
+              error_message: (out as any)?.error ?? null,
+            })
+            .then(() => {}, (e: any) =>
+              console.warn("[my-space-chat] tool log failed", e));
           return {
             type: "tool_result",
             tool_use_id: tu.id,
