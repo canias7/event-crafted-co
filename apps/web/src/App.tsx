@@ -50,6 +50,7 @@ import {
   WebsiteBuilderPage,
   PublicAiSitePage,
   MySitesPage,
+  SiteRsvpsPage,
   SettingsPage,
   NotificationSettingsPage,
   NotFound,
@@ -147,6 +148,7 @@ const App = () => (
               <Route path="/super-agents" element={<SuperAgentsPage />} />
               <Route path="/website-builder" element={<WebsiteBuilderPage />} />
               <Route path="/my-sites" element={<MySitesPage />} />
+              <Route path="/my-sites/:slug/rsvps" element={<SiteRsvpsPage />} />
               <Route path="/s/:slug" element={<PublicAiSitePage />} />
               {/* /vendor-apply removed — vendors now sign up through
                   the regular Sign up button. Old bookmarks redirect

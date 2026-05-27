@@ -164,14 +164,28 @@ export default function MySitesPage() {
                     <span>{s.edit_count} edits</span>
                     <span>Updated {updated}</span>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="grid grid-cols-2 gap-2 mb-2">
+                    <Link
+                      to={`/website-builder?site=${s.id}`}
+                      className="text-center text-[12px] bg-black text-white rounded-full px-4 py-2 hover:bg-black/90 transition-colors"
+                    >
+                      Edit
+                    </Link>
+                    <Link
+                      to={`/my-sites/${s.slug}/rsvps`}
+                      className="text-center text-[12px] border border-black/15 rounded-full px-4 py-2 hover:bg-black/5 transition-colors"
+                    >
+                      RSVPs ({rsvps})
+                    </Link>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
                     <Link
                       to={`/s/${s.slug}`}
                       target="_blank"
                       rel="noreferrer"
-                      className="flex-1 text-center text-[12px] bg-black text-white rounded-full px-4 py-2 hover:bg-black/90 transition-colors"
+                      className="text-center text-[12px] border border-black/15 rounded-full px-4 py-2 hover:bg-black/5 transition-colors"
                     >
-                      Open
+                      View live
                     </Link>
                     <button
                       onClick={async () => {
@@ -183,7 +197,7 @@ export default function MySitesPage() {
                           // older browsers
                         }
                       }}
-                      className="flex-1 text-center text-[12px] border border-black/15 rounded-full px-4 py-2 hover:bg-black/5 transition-colors"
+                      className="text-center text-[12px] border border-black/15 rounded-full px-4 py-2 hover:bg-black/5 transition-colors"
                     >
                       Copy link
                     </button>

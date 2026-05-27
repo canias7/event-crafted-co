@@ -9,6 +9,10 @@ project_id = "pahpjjubhbcbwqjpamwv"
     verify_jwt = false
   [functions.ai-site-rsvp-submit]
     verify_jwt = false
+  [functions.ai-site-image-generate]
+    verify_jwt = false
+  [functions.ai-site-render]
+    verify_jwt = false
   [functions.cleanup-portfolio-orphans]
     verify_jwt = false
   [functions.geocode-vendor]
