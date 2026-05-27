@@ -105,6 +105,43 @@ export default function WebsiteBuilderPage() {
       .replaceAll("__RSVP_MAYBE__", "0")
       .replaceAll("__RSVP_NO__", "0");
   }
+
+  // After previewClean, scan for any remaining __FOO__ placeholders
+  // that Claude invented but the server doesn't know about. Surface
+  // them as a yellow warning under the iframe so the user notices.
+  const [unresolvedPlaceholders, setUnresolvedPlaceholders] = useState<string[]>([]);
+  function scanUnresolved(html: string) {
+    const matches = html.match(/__[A-Z][A-Z0-9_]+__/g) ?? [];
+    const unique = Array.from(new Set(matches));
+    setUnresolvedPlaceholders(unique);
+  }
+
+  async function exportRsvpsCsv() {
+    if (!siteId) return;
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+      apikey: SUPABASE_KEY,
+      Authorization: `Bearer ${session?.access_token ?? SUPABASE_KEY}`,
+    };
+    const res = await fetch(`${SUPABASE_URL}/functions/v1/ai-site-rsvps-export`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify({ site_id: siteId }),
+    });
+    if (!res.ok) {
+      setError("Couldn't export RSVPs.");
+      return;
+    }
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${slug ?? "site"}-rsvps.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
   const [variantsLoading, setVariantsLoading] = useState(false);
   const [variantsOpen, setVariantsOpen] = useState(false);
   const [variants, setVariants] = useState<
@@ -206,7 +243,18 @@ export default function WebsiteBuilderPage() {
       const doc = iframe.contentDocument;
       doc.open();
       doc.write(previewClean(v.html));
+      scanUnresolved(v.html);
       doc.close();
+    }
+    // Block the unpicked variants so they're hidden from public access.
+    // We don't hard-delete (preserves accidental re-discovery) — just
+    // flip is_blocked = true and let a future cleanup cron sweep them.
+    const losers = variants.filter((x) => x.site_id !== v.site_id);
+    for (const loser of losers) {
+      (sb.from("ai_sites") as any)
+        .update({ is_blocked: true })
+        .eq("id", loser.site_id)
+        .then(() => undefined, () => undefined);
     }
     setVariantsOpen(false);
     setVariants([]);
@@ -426,6 +474,7 @@ export default function WebsiteBuilderPage() {
           doc.write(previewClean(body.html as string));
           doc.close();
         }
+        scanUnresolved(body.html as string);
         setTitle(body.title ?? title);
         setHasContent(true);
         setVersionsOpen(false);
@@ -492,6 +541,7 @@ export default function WebsiteBuilderPage() {
         doc.write(previewClean(row.html));
         doc.close();
       }
+      scanUnresolved(row.html);
     })();
     return () => {
       cancelled = true;
@@ -577,6 +627,7 @@ export default function WebsiteBuilderPage() {
         doc.write(previewClean(body.html as string));
         doc.close();
       }
+      scanUnresolved(body.html as string);
       setTitle(body.title as string);
       setHasContent(true);
       setConversation((c) => [
@@ -755,6 +806,7 @@ export default function WebsiteBuilderPage() {
                 const doc = iframe.contentDocument;
                 doc.open();
                 doc.write(previewClean(bufferedHtml));
+                scanUnresolved(bufferedHtml);
                 doc.close();
               }
               if (data.site_id) setSiteId(data.site_id);
@@ -1039,6 +1091,16 @@ export default function WebsiteBuilderPage() {
                   Guests
                 </button>
               )}
+              {siteId && (
+                <button
+                  onClick={exportRsvpsCsv}
+                  disabled={loading}
+                  className="text-[12px] text-white/70 hover:text-white border border-white/15 rounded-full px-3 py-1 transition-colors disabled:opacity-40"
+                  title="Download RSVPs as CSV"
+                >
+                  ⬇ RSVPs
+                </button>
+              )}
               {ownsSite && renameOpen ? (
                 <div className="flex items-center gap-2 bg-white/5 border border-white/20 rounded-full pl-3 pr-1.5 py-1">
                   <span className="text-[12px] text-white/40">/s/</span>
@@ -1099,7 +1161,7 @@ export default function WebsiteBuilderPage() {
 
       <div className="flex-1 flex flex-col md:flex-row min-h-0">
         {/* Chat pane */}
-        <aside className="w-full md:w-[400px] md:min-w-[360px] border-r border-white/10 flex flex-col bg-[#0c0c0e]">
+        <aside className="w-full md:w-[400px] md:min-w-[360px] max-h-[50vh] md:max-h-none border-b md:border-b-0 md:border-r border-white/10 flex flex-col bg-[#0c0c0e]">
           <div className="flex-1 overflow-y-auto px-5 py-6 space-y-4">
             {conversation.length === 0 && !loading && (
               <div className="space-y-5">
@@ -1376,6 +1438,14 @@ export default function WebsiteBuilderPage() {
                   Your site will appear here once you describe it.
                 </div>
               </div>
+            </div>
+          )}
+          {hasContent && unresolvedPlaceholders.length > 0 && (
+            <div
+              className="absolute top-3 right-3 max-w-[320px] bg-amber-500/15 border border-amber-400/40 text-amber-100 text-[11px] px-3 py-1.5 rounded-full backdrop-blur"
+              title="Claude wrote a placeholder the server doesn't know how to fill. Ask it to remove the placeholder or replace it with real content."
+            >
+              ⚠ Unresolved placeholder{unresolvedPlaceholders.length > 1 ? "s" : ""}: {unresolvedPlaceholders.join(", ")}
             </div>
           )}
         </main>
