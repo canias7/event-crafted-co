@@ -723,9 +723,12 @@ function UpNextHero({
   onEdit?: () => void;
   onDelete?: () => void;
 }) {
+  const [liveOpen, setLiveOpen] = useState(false);
+  const [archiveOpen, setArchiveOpen] = useState(false);
   const time = fmtTimeRange(event.start_time, event.end_time);
   const isLive =
     liveData?.status === "active" || liveData?.status === "recording";
+  const hasRecordings = (liveData?.recordingsCount ?? 0) > 0;
   return (
     <div
       className="rounded-3xl p-6 md:p-8 relative overflow-hidden"
@@ -790,6 +793,38 @@ function UpNextHero({
           {eventTypeLabel(event.event_type)}
         </span>
       ) : null}
+      <div className="mt-5 flex flex-wrap gap-2">
+        <button
+          type="button"
+          onClick={() => setLiveOpen(true)}
+          className="inline-flex items-center gap-1.5 rounded-full bg-foreground text-background hover:bg-foreground/90 px-4 py-2 text-sm font-medium transition"
+        >
+          <Radio className="w-3.5 h-3.5" />
+          {isLive ? "Manage live" : "Go live"}
+        </button>
+        {hasRecordings ? (
+          <button
+            type="button"
+            onClick={() => setArchiveOpen(true)}
+            className="inline-flex items-center gap-1.5 rounded-full bg-foreground/10 hover:bg-foreground/15 px-4 py-2 text-sm font-medium transition"
+          >
+            <History className="w-3.5 h-3.5" />
+            Past lives ({liveData?.recordingsCount ?? 0})
+          </button>
+        ) : null}
+      </div>
+      <LiveBroadcastModal
+        open={liveOpen}
+        onOpenChange={setLiveOpen}
+        eventId={event.id}
+        eventTitle={event.title}
+      />
+      <LiveArchiveDialog
+        open={archiveOpen}
+        onOpenChange={setArchiveOpen}
+        shareToken={liveData?.shareToken ?? null}
+        eventTitle={event.title}
+      />
     </div>
   );
 }
