@@ -2,8 +2,10 @@
 // the /vendor/ai-superagents page. Single endpoint that decides per
 // request whether to route to:
 //
-//   • OpenAI gpt-image-1 (when the latest user message reads as an
-//     image-generation ask — "draw…", "make a picture of…", etc.)
+//   • OpenAI gpt-image-2 (when the latest user message reads as an
+//     image-generation ask — "draw…", "make a picture of…", etc.).
+//     Falls back to gpt-image-1 if the account isn't enabled for the
+//     newer model yet.
 //   • Claude Sonnet (everything else: drafts, brainstorms, advice)
 //
 // The auth gate is "signed-in user only" via the access token from
@@ -20,7 +22,8 @@ const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY") ?? "";
 const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY") ?? "";
 
 const SONNET_MODEL = "claude-sonnet-4-6";
-const IMAGE_MODEL = "gpt-image-1";
+const IMAGE_MODEL_PRIMARY = "gpt-image-2";
+const IMAGE_MODEL_FALLBACK = "gpt-image-1";
 
 function buildSystemPrompt(): string {
   return `You are My Space, the in-app AI assistant for an event vendor on the Vendora platform.
@@ -112,28 +115,44 @@ async function callOpenAIImage(
   prompt: string,
 ): Promise<{ imageUrl: string }> {
   if (!OPENAI_API_KEY) throw new Error("openai_key_missing");
-  const res = await fetch("https://api.openai.com/v1/images/generations", {
-    method: "POST",
-    headers: {
-      "authorization": `Bearer ${OPENAI_API_KEY}`,
-      "content-type": "application/json",
-    },
-    body: JSON.stringify({
-      model: IMAGE_MODEL,
-      prompt,
-      size: "1024x1024",
-      n: 1,
-    }),
+  const headers = {
+    "authorization": `Bearer ${OPENAI_API_KEY}`,
+    "content-type": "application/json",
+  };
+  const body = (model: string) => JSON.stringify({
+    model,
+    prompt,
+    size: "1024x1024",
+    n: 1,
   });
+  let res = await fetch("https://api.openai.com/v1/images/generations", {
+    method: "POST",
+    headers,
+    body: body(IMAGE_MODEL_PRIMARY),
+  });
+  // Fall back to gpt-image-1 if the account isn't enabled for the
+  // newer model — mirrors ai-site-image-generate / axion-generate.
+  if (res.status === 400 || res.status === 404) {
+    const detail = await res.clone().text().catch(() => "");
+    if (/model_not_found|does not exist|invalid_model/i.test(detail)) {
+      console.warn(
+        `[my-space-chat] ${IMAGE_MODEL_PRIMARY} unavailable, falling back to ${IMAGE_MODEL_FALLBACK}`,
+      );
+      res = await fetch("https://api.openai.com/v1/images/generations", {
+        method: "POST",
+        headers,
+        body: body(IMAGE_MODEL_FALLBACK),
+      });
+    }
+  }
   if (!res.ok) {
     const t = await res.text();
     throw new Error(`openai ${res.status}: ${t.slice(0, 240)}`);
   }
-  const body = (await res.json()) as any;
-  // gpt-image-1 returns either a URL or base64 depending on the
-  // response_format param; default is base64 (b64_json). Wrap as a
-  // data URL so the frontend can drop it straight into <img src>.
-  const first = body?.data?.[0];
+  const parsed = (await res.json()) as any;
+  // Either model returns URL or base64 depending on response_format;
+  // default is b64_json. Wrap as a data URL so <img src> works directly.
+  const first = parsed?.data?.[0];
   if (first?.url) return { imageUrl: first.url };
   if (first?.b64_json) {
     return { imageUrl: `data:image/png;base64,${first.b64_json}` };

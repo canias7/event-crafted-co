@@ -1,7 +1,7 @@
 // My Space — vendor portal AI surface. One chatbox on the left,
 // inbox auto-reply controls on the right. Replaces the previous
 // HILUX + AXION dual-card layout: image generation is now inline in
-// the chatbox (server routes prompts to OpenAI gpt-image-1), and
+// the chatbox (server routes prompts to OpenAI gpt-image-2), and
 // text replies use Claude Sonnet.
 //
 // URL kept at /vendor/ai-superagents for bookmark stability; the

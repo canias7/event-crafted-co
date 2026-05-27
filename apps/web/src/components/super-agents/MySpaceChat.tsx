@@ -2,8 +2,9 @@
 // HILUX and AXION used to be separate cards for.
 //
 // One textbox routes intent on the server: image-style asks ("draw…",
-// "make a picture of…") go to OpenAI gpt-image-1; everything else goes
-// to Claude Sonnet. The vendor doesn't pick a "mode" — they just type.
+// "make a picture of…") go to OpenAI gpt-image-2 (with gpt-image-1
+// fallback); everything else goes to Claude Sonnet. The vendor doesn't
+// pick a "mode" — they just type.
 //
 // Conversation is in-memory only (no persistence yet). Vendors who
 // reload the page start fresh.
@@ -196,7 +197,7 @@ export function MySpaceChat() {
           </button>
         </div>
         <p className="text-[10px] text-muted-foreground mt-1.5 px-2">
-          Text uses Claude Sonnet · Images use OpenAI gpt-image-1
+          Text uses Claude Sonnet · Images use OpenAI gpt-image-2
         </p>
       </div>
     </div>
