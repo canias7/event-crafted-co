@@ -306,7 +306,7 @@ Style:
 - If you need more info to do the job, ask one specific follow-up question instead of guessing.
 - If you reference an inquiry, give the host's event date + event type so they can identify it.
 
-You have tools for deep lookups. Pick the right one:
+Read tools (use freely):
 - \`search_inquiries\` — find specific leads (filter by status / lead score)
 - \`get_inquiry\` — full thread + budget + special requests + last 10 messages
 - \`check_availability\` — any future date (the snapshot below only covers 30 days)
@@ -315,6 +315,18 @@ You have tools for deep lookups. Pick the right one:
 - \`list_appointments\` — upcoming consultations / walkthroughs / tastings / calls
 - \`list_recent_notifications\` — recent platform notifications for the vendor
 - \`search_messages\` — full-text search across the vendor's host conversations
+
+Write tools (require an explicit go-ahead from the vendor before calling):
+- \`send_host_reply\` — sends a message to a host on the vendor's behalf
+- \`create_appointment\` — proposes a consultation / tasting / call to a host
+- \`update_inquiry_status\` — marks an inquiry replied / closed / declined
+- \`block_calendar_date\` / \`unblock_calendar_date\` — single-date calendar edits
+- \`mark_notifications_read\` — clears notification badges
+
+Confirmation rule for writes:
+- If the vendor said the exact action AND the parameters in their last message ("yes send it", "reply to inquiry X saying we're free July 14", "block Aug 1 for me"), proceed without re-asking.
+- Otherwise, write out the proposed action in plain text (e.g. "I'll send: 'Hi Jamie — yes, July 14 works…' to your Aug-3 wedding lead — OK?") and WAIT for the vendor's reply before calling the tool.
+- For \`send_host_reply\` specifically, ALWAYS show the exact body text first and get confirmation unless the vendor literally said "send X" with the full message included.
 
 ═══ VENDOR SNAPSHOT (auto-refreshed each turn) ═══
 Business: ${v.business_name ?? "(unnamed)"}${
@@ -475,6 +487,112 @@ const TOOLS = [
           minimum: 1,
           maximum: 30,
           description: "Max matches to return. Default 10.",
+        },
+      },
+    },
+  },
+  {
+    name: "send_host_reply",
+    description:
+      "Send a message to a host on the vendor's behalf, posted into the host-vendor direct message thread for an inquiry. WRITE ACTION — only call after the vendor has confirmed the exact reply text. The message is attributed to the vendor (not flagged as AI-generated).",
+    input_schema: {
+      type: "object",
+      required: ["inquiry_id", "body"],
+      properties: {
+        inquiry_id: { type: "string", description: "UUID of the inquiry." },
+        body: {
+          type: "string",
+          description: "The exact message body to send to the host.",
+        },
+      },
+    },
+  },
+  {
+    name: "create_appointment",
+    description:
+      "Create a new appointment with a host (consultation, walkthrough, tasting, fitting, or phone call). WRITE ACTION — confirm the date, time, and kind with the vendor first.",
+    input_schema: {
+      type: "object",
+      required: ["inquiry_id", "kind", "scheduled_at"],
+      properties: {
+        inquiry_id: { type: "string", description: "UUID of the inquiry." },
+        kind: {
+          type: "string",
+          enum: ["consultation", "walkthrough", "tasting", "fitting", "phone_call"],
+        },
+        scheduled_at: {
+          type: "string",
+          description:
+            "Full ISO-8601 datetime, e.g. 2026-07-14T15:00:00Z (use the vendor's local time if known; otherwise ask).",
+        },
+        duration_minutes: {
+          type: "integer",
+          minimum: 5,
+          maximum: 480,
+          description: "Default 60.",
+        },
+        title: { type: "string" },
+        location: { type: "string" },
+        notes: { type: "string" },
+      },
+    },
+  },
+  {
+    name: "update_inquiry_status",
+    description:
+      "Change the status on an inquiry (e.g. mark as replied, closed, declined). WRITE ACTION.",
+    input_schema: {
+      type: "object",
+      required: ["inquiry_id", "status"],
+      properties: {
+        inquiry_id: { type: "string", description: "UUID of the inquiry." },
+        status: {
+          type: "string",
+          enum: ["new", "replied", "closed", "declined"],
+        },
+      },
+    },
+  },
+  {
+    name: "block_calendar_date",
+    description:
+      "Mark a single date as unavailable on the vendor's calendar. WRITE ACTION. Use for vacation days, personal events, etc.",
+    input_schema: {
+      type: "object",
+      required: ["date"],
+      properties: {
+        date: { type: "string", description: "YYYY-MM-DD." },
+      },
+    },
+  },
+  {
+    name: "unblock_calendar_date",
+    description:
+      "Remove a manual block on a date so it becomes available again. WRITE ACTION. Doesn't affect recurring closed days or actual bookings.",
+    input_schema: {
+      type: "object",
+      required: ["date"],
+      properties: {
+        date: { type: "string", description: "YYYY-MM-DD." },
+      },
+    },
+  },
+  {
+    name: "mark_notifications_read",
+    description:
+      "Mark notifications as read. Either pass specific notification IDs OR set all_unread=true to clear everything in one go. WRITE ACTION.",
+    input_schema: {
+      type: "object",
+      properties: {
+        ids: {
+          type: "array",
+          items: { type: "string" },
+          description: "Specific notification IDs to mark read.",
+        },
+        all_unread: {
+          type: "boolean",
+          description:
+            "If true, mark every unread notification for this vendor as read.",
         },
       },
     },
@@ -861,6 +979,205 @@ async function toolSearchMessages(
   };
 }
 
+// ─── Write tools ──────────────────────────────────────────────────
+
+async function toolSendHostReply(
+  admin: any,
+  vendorId: string,
+  userId: string,
+  input: any,
+): Promise<unknown> {
+  const inquiryId = String(input?.inquiry_id ?? "");
+  const body = String(input?.body ?? "").trim();
+  if (!inquiryId) return { error: "inquiry_id required" };
+  if (!body) return { error: "body required" };
+  // Verify ownership + find the thread.
+  const { data: inq } = await admin
+    .from("inquiries")
+    .select("id, vendor_id")
+    .eq("id", inquiryId)
+    .eq("vendor_id", vendorId)
+    .maybeSingle();
+  if (!inq) return { error: "inquiry_not_found_or_not_owned" };
+  const { data: thread } = await admin
+    .from("direct_threads")
+    .select("id")
+    .eq("inquiry_id", inquiryId)
+    .maybeSingle();
+  if (!(thread as any)?.id) {
+    return { error: "no_thread_for_inquiry" };
+  }
+  const now = new Date().toISOString();
+  const { data: msg, error } = await admin
+    .from("direct_messages")
+    .insert({
+      thread_id: (thread as any).id,
+      sender_id: userId,
+      sender_role: "vendor",
+      body,
+      is_hilux_generated: false,
+    })
+    .select("id, created_at")
+    .single();
+  if (error) return { error: error.message };
+  await admin
+    .from("direct_threads")
+    .update({ last_message_at: now })
+    .eq("id", (thread as any).id);
+  await admin
+    .from("inquiries")
+    .update({ last_message_at: now })
+    .eq("id", inquiryId);
+  return {
+    sent: true,
+    message_id: (msg as any).id,
+    sent_at: (msg as any).created_at,
+  };
+}
+
+async function toolCreateAppointment(
+  admin: any,
+  vendorId: string,
+  input: any,
+): Promise<unknown> {
+  const inquiryId = String(input?.inquiry_id ?? "");
+  const kind = String(input?.kind ?? "");
+  const scheduledAt = String(input?.scheduled_at ?? "");
+  if (!inquiryId) return { error: "inquiry_id required" };
+  if (
+    !["consultation", "walkthrough", "tasting", "fitting", "phone_call"]
+      .includes(kind)
+  ) {
+    return { error: "invalid_kind" };
+  }
+  if (!scheduledAt) return { error: "scheduled_at required" };
+  const dt = new Date(scheduledAt);
+  if (Number.isNaN(dt.getTime())) return { error: "scheduled_at_unparseable" };
+  // Verify ownership + grab host_id from the inquiry.
+  const { data: inq } = await admin
+    .from("inquiries")
+    .select("id, vendor_id, host_id")
+    .eq("id", inquiryId)
+    .eq("vendor_id", vendorId)
+    .maybeSingle();
+  if (!inq) return { error: "inquiry_not_found_or_not_owned" };
+  const { data, error } = await admin
+    .from("appointments")
+    .insert({
+      vendor_id: vendorId,
+      inquiry_id: inquiryId,
+      host_id: (inq as any).host_id,
+      kind,
+      scheduled_at: dt.toISOString(),
+      duration_minutes: Math.min(
+        Math.max(Number(input?.duration_minutes) || 60, 5),
+        480,
+      ),
+      title: input?.title ? String(input.title) : null,
+      location: input?.location ? String(input.location) : null,
+      notes: input?.notes ? String(input.notes) : null,
+      status: "proposed",
+      proposed_by: "vendor",
+    })
+    .select("id, scheduled_at, status")
+    .single();
+  if (error) return { error: error.message };
+  return {
+    created: true,
+    appointment: data,
+  };
+}
+
+async function toolUpdateInquiryStatus(
+  admin: any,
+  vendorId: string,
+  input: any,
+): Promise<unknown> {
+  const inquiryId = String(input?.inquiry_id ?? "");
+  const status = String(input?.status ?? "");
+  if (!inquiryId) return { error: "inquiry_id required" };
+  if (!["new", "replied", "closed", "declined"].includes(status)) {
+    return { error: "invalid_status" };
+  }
+  const { data, error } = await admin
+    .from("inquiries")
+    .update({ status })
+    .eq("id", inquiryId)
+    .eq("vendor_id", vendorId)
+    .select("id, status")
+    .maybeSingle();
+  if (error) return { error: error.message };
+  if (!data) return { error: "inquiry_not_found_or_not_owned" };
+  return { updated: true, inquiry: data };
+}
+
+async function toolBlockCalendarDate(
+  admin: any,
+  vendorId: string,
+  input: any,
+): Promise<unknown> {
+  const date = String(input?.date ?? "");
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+    return { error: "date must be YYYY-MM-DD" };
+  }
+  const { error } = await admin
+    .from("vendor_unavailable_dates")
+    .upsert(
+      { vendor_id: vendorId, date },
+      { onConflict: "vendor_id,date", ignoreDuplicates: true },
+    );
+  if (error) return { error: error.message };
+  return { blocked: true, date };
+}
+
+async function toolUnblockCalendarDate(
+  admin: any,
+  vendorId: string,
+  input: any,
+): Promise<unknown> {
+  const date = String(input?.date ?? "");
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+    return { error: "date must be YYYY-MM-DD" };
+  }
+  const { error } = await admin
+    .from("vendor_unavailable_dates")
+    .delete()
+    .eq("vendor_id", vendorId)
+    .eq("date", date);
+  if (error) return { error: error.message };
+  return { unblocked: true, date };
+}
+
+async function toolMarkNotificationsRead(
+  admin: any,
+  userId: string,
+  input: any,
+): Promise<unknown> {
+  const now = new Date().toISOString();
+  if (input?.all_unread === true) {
+    const { error, count } = await admin
+      .from("notifications")
+      .update({ read_at: now }, { count: "exact" })
+      .eq("user_id", userId)
+      .is("read_at", null);
+    if (error) return { error: error.message };
+    return { marked_read: count ?? 0, scope: "all_unread" };
+  }
+  const ids = Array.isArray(input?.ids)
+    ? (input.ids as unknown[]).map(String).filter(Boolean)
+    : [];
+  if (ids.length === 0) {
+    return { error: "pass ids[] or all_unread=true" };
+  }
+  const { error, count } = await admin
+    .from("notifications")
+    .update({ read_at: now }, { count: "exact" })
+    .eq("user_id", userId)
+    .in("id", ids);
+  if (error) return { error: error.message };
+  return { marked_read: count ?? 0, ids };
+}
+
 async function executeTool(
   admin: any,
   vendorId: string,
@@ -892,6 +1209,24 @@ async function executeTool(
     }
     if (name === "search_messages") {
       return await toolSearchMessages(admin, vendorId, input);
+    }
+    if (name === "send_host_reply") {
+      return await toolSendHostReply(admin, vendorId, userId, input);
+    }
+    if (name === "create_appointment") {
+      return await toolCreateAppointment(admin, vendorId, input);
+    }
+    if (name === "update_inquiry_status") {
+      return await toolUpdateInquiryStatus(admin, vendorId, input);
+    }
+    if (name === "block_calendar_date") {
+      return await toolBlockCalendarDate(admin, vendorId, input);
+    }
+    if (name === "unblock_calendar_date") {
+      return await toolUnblockCalendarDate(admin, vendorId, input);
+    }
+    if (name === "mark_notifications_read") {
+      return await toolMarkNotificationsRead(admin, userId, input);
     }
     return { error: `unknown_tool:${name}` };
   } catch (err) {
