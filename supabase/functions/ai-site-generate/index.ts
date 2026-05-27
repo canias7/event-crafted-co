@@ -392,12 +392,12 @@ Before generating, identify the event type from the user's prompt and apply the 
 
 — QUINCEAÑERA
   Sections: Hero ("[Name]'s Quinceañera"), La Misa (Mass), La Recepción, Court of Honor (chambelanes y damas), El Vals, Dress Code, RSVP.
-  Tone: regal, family-centered. Bilingual phrases encouraged.
+  Tone: regal, family-centered. REQUIRED: English/Spanish toggle per the MULTI-LANGUAGE TOGGLE recipe — translate every section.
   Palette: rich pinks + gold; deep purples + gold; royal blue + silver. Hint of metallic.
 
 — BAR/BAT MITZVAH
   Sections: Hero (English + Hebrew name + temple), Service Details, Party Details (often Saturday evening), Mitzvah Project, RSVP.
-  Tone: warm, achievement-focused.
+  Tone: warm, achievement-focused. REQUIRED: English/Hebrew toggle (RTL for Hebrew) per the MULTI-LANGUAGE TOGGLE recipe.
 
 — HOLIDAY PARTY (Christmas, Hanukkah, NYE, Halloween, Thanksgiving)
   Sections: Hero, Details, Potluck Assignments, Dress Code, RSVP.
@@ -774,6 +774,72 @@ Real luxury invitations don't stack 8 cream-card sections. They alternate. Enfor
 
   Each section gets the section-enter scroll animation (per the SCROLL ANIMATIONS recipe above).
 
+═══ MULTI-LANGUAGE TOGGLE — CSS-only English / second-language swap ═══
+
+Some events have bilingual guest lists. For QUINCEAÑERAS (English/Spanish), BAR-MITZVAHS / BAT-MITZVAHS (English/Hebrew), and destination weddings where many guests speak the venue's language (Italian for Italy, French for France, Spanish for Mexico, Hindi for India), include a CSS-only language toggle at the top-right of the page.
+
+The pattern uses two hidden radios + :has() to swap visible content. The inputs MUST be the very first elements inside <body>.
+
+  HTML pattern (English / Spanish):
+
+  <body>
+    <input id="lang-en" type="radio" name="lang" checked hidden>
+    <input id="lang-es" type="radio" name="lang" hidden>
+    <nav class="lang-switch" aria-label="Language">
+      <label for="lang-en">English</label>
+      <span class="lang-dot">·</span>
+      <label for="lang-es">Español</label>
+    </nav>
+
+    <!-- All content uses paired spans / divs with lang="en" and lang="es" -->
+    <h1>
+      <span lang="en">Eleanor &amp; Marcus</span>
+      <span lang="es">Eleanor y Marcus</span>
+    </h1>
+    <p>
+      <span lang="en">Together with their families, request the honor of your presence.</span>
+      <span lang="es">Junto con sus familias, solicitan el honor de su presencia.</span>
+    </p>
+
+  CSS:
+  [lang="es"], [lang="he"], [lang="it"], [lang="fr"], [lang="hi"] { display: none; }
+
+  :root:has(#lang-es:checked) [lang="en"] { display: none; }
+  :root:has(#lang-es:checked) [lang="es"] { display: revert; }
+  :root:has(#lang-he:checked) [lang="en"] { display: none; }
+  :root:has(#lang-he:checked) [lang="he"] { display: revert; direction: rtl; }
+  /* …same pattern for it / fr / hi as needed */
+
+  .lang-switch {
+    position: fixed; top: 1rem; right: 1rem;
+    display: inline-flex; gap: 0.5rem; align-items: center;
+    background: rgba(0,0,0,0.55);
+    padding: 0.4rem 0.9rem;
+    border-radius: 999px;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.62rem; letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.55);
+    backdrop-filter: blur(8px);
+    z-index: 100;
+  }
+  .lang-switch label { cursor: pointer; padding: 0.15rem 0.25rem; transition: color 0.2s; }
+  .lang-dot { opacity: 0.5; }
+  :root:has(#lang-en:checked) .lang-switch label[for="lang-en"],
+  :root:has(#lang-es:checked) .lang-switch label[for="lang-es"],
+  :root:has(#lang-he:checked) .lang-switch label[for="lang-he"] {
+    color: #fff; font-weight: 600;
+  }
+
+  RULES:
+  • Translate EVERYTHING the guest will read — headings, body copy, button text, RSVP labels, dress code, schedule items, FAQs. Don't leave half-English / half-translated copy.
+  • Keep names (Eleanor & Marcus, Villa Cipressi) untranslated. Translate only the surrounding copy.
+  • For Hebrew, use the Frank Ruhl Libre or Heebo Google Font alongside the English serif/sans pair. For Arabic/RTL languages, add direction: rtl to the lang container.
+  • For Spanish, use the same fonts (Cormorant Garamond etc. all support Spanish accents). Just translate the copy.
+  • The form labels translate too — but keep input name attributes in English ("name", "email", "attending") so the backend reads them correctly.
+  • Light pill style on dark sites (rgba black background, white text). On cream/pastel sites flip it: white background, dark accent text.
+  • Place the switch in the TOP-RIGHT corner of the cover page so it's visible without scrolling. It stays fixed across all sections.
+
 === END PREMIUM DESIGN BIBLE ===`;
 
 function buildSystemPrompt(rsvpEndpoint: string, todayIso: string): string {
@@ -825,6 +891,7 @@ Style the form to match the site's palette. The action URL is the EXACT string a
 15. ALWAYS include a static OpenStreetMap embed for events with a real venue address (skip for "our place" / private homes).
 16. ALWAYS include the scroll-entry animation (animation-timeline: view() with @supports fallback) on every body section.
 17. When 3+ themed photos fit a section's purpose, use the PHOTO STRIP scroll-snap pattern instead of a single image.
+18. MULTI-LANGUAGE TOGGLE — REQUIRED for QUINCEAÑERAS (English/Spanish), BAR/BAT MITZVAHS (English/Hebrew with RTL), and destination weddings where the venue country speaks a language other than English (Italy → Italian, France → French, Mexico → Spanish, India → Hindi). Optional but encouraged whenever the user mentions bilingual families. Translate ALL guest-facing copy — never leave a half-translated page.
 
 After </html>, return NOTHING.
 
