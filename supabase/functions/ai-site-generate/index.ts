@@ -52,7 +52,7 @@ const MODEL = "claude-sonnet-4-6";
 // Bumped whenever DESIGN_BIBLE / PLAYBOOKS / OUTPUT RULES change
 // meaningfully. Stamped into every generated HTML's <head> so we can
 // diagnose drift in the wild by view-source.
-const DESIGN_BIBLE_VERSION = "v27";
+const DESIGN_BIBLE_VERSION = "v28";
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -131,6 +131,85 @@ function stampVersion(html: string, todayIso: string): string {
     return html.replace(/(<!doctype html[^>]*>)/i, `$1\n${stamp}`);
   }
   return `${stamp}\n${html}`;
+}
+
+// Server-side validator. After Claude returns the HTML we inspect it
+// for the MUST-HAVE features. Whatever's missing becomes a list of
+// human-readable issues we surface to the builder UI so the user can
+// hit "Polish" and we re-run the model with a targeted fix-up.
+//
+// Designed to be permissive — only flag clearly-missing structure,
+// not stylistic choices. A false negative is cheap (user sees a
+// polished site); a false positive is expensive (Polish button does
+// nothing visible).
+function validateGenerated(html: string, userPrompt: string): {
+  ok: boolean;
+  issues: Array<{ key: string; label: string }>;
+} {
+  const issues: Array<{ key: string; label: string }> = [];
+  const lower = html.toLowerCase();
+  const promptLower = userPrompt.toLowerCase();
+  const isSaveTheDate = /save[- ]?the[- ]?date|\bstd\b|announce only|just announcing/.test(promptLower);
+
+  // RSVP form: action URL must point at our endpoint. Skip the check
+  // for save-the-dates where the bible explicitly omits the form.
+  if (!isSaveTheDate && !lower.includes("ai-site-rsvp-submit")) {
+    issues.push({ key: "rsvp_form", label: "Missing RSVP form" });
+  }
+
+  // Custom Google Font: a real <link> to fonts.googleapis.com (not
+  // just system fonts). Don't flag if user explicitly asked for
+  // system-only.
+  if (!lower.includes("fonts.googleapis.com") && !lower.includes("api.fontshare.com")) {
+    issues.push({ key: "google_font", label: "Missing premium font pairing" });
+  }
+
+  // Dated event: look for an ISO 8601 date in the HTML or a year >=
+  // current. Crude but catches most cases.
+  const hasYear = /\b20[2-3][0-9]\b/.test(html);
+  if (hasYear) {
+    if (!html.match(/<meta\s+name=["']event-start["']/i)) {
+      issues.push({ key: "cal_meta", label: "Missing calendar meta tags" });
+    }
+    if (!lower.includes("ai-site-ics")) {
+      issues.push({ key: "cal_link", label: "Missing \"Add to calendar\" link" });
+    }
+    // Countdown row: look for "days" + a digit, or .countdown CSS class.
+    const hasCountdown = /class=["'][^"']*countdown/i.test(html)
+      || /\bdays\s*[·•|]/i.test(html)
+      || /<[^>]*>\d{1,3}<\/[^>]*>\s*<[^>]*>\s*days/i.test(html);
+    if (!hasCountdown) {
+      issues.push({ key: "countdown", label: "Missing countdown row" });
+    }
+  }
+
+  // Static map: if the prompt or the HTML contains a named venue
+  // (capitalized multi-word place that isn't a generic word), and we
+  // have no OpenStreetMap iframe, flag.
+  const hasNamedVenue = /\b(?:villa|hotel|estate|gardens?|club|hall|chapel|cathedral|temple|park|beach|resort|farm|barn|winery|vineyard)\b/i.test(html)
+    && /[A-Z][a-z]+ (?:[A-Z][a-z]+ ){0,3}/.test(html);
+  if (hasNamedVenue && !lower.includes("openstreetmap")) {
+    issues.push({ key: "map", label: "Missing venue map" });
+  }
+
+  // Engagement placeholders for the long-tail bible recommendations.
+  // We don't flag all of them — only the wedding/anniversary signal
+  // ones since those are the bible's "required for couples" set.
+  const isCoupleEvent = /\b(?:wedding|anniversary|engage|engagement|vow renewal)\b/i.test(promptLower)
+    || /\bMr\.?\s*&\s*Mrs\.?\b/i.test(html);
+  if (isCoupleEvent) {
+    if (!html.includes("__RSVP_COUNT__")) {
+      issues.push({ key: "rsvp_count", label: "Missing live RSVP counter" });
+    }
+    if (!html.includes("__COMMENT_WALL__")) {
+      issues.push({ key: "comment_wall", label: "Missing comment wall" });
+    }
+    if (!html.includes("__PHOTO_ALBUM__")) {
+      issues.push({ key: "photo_album", label: "Missing photo album" });
+    }
+  }
+
+  return { ok: issues.length === 0, issues };
 }
 
 // Verified working Unsplash photo IDs. These are stable URLs that
@@ -1462,6 +1541,30 @@ Every site MUST include an RSVP <form> with this EXACT shape:
 Style the form to match the site's palette. The action URL is the EXACT string above — do not modify it, do not relativize it, do not add anchors. Keep field names exactly as shown ('name', 'email', 'attending', 'guests', 'message') — these are required for the backend to read them. You can rewrite the visible labels and the submit button text to match the site's voice ("Yes, I'll be there!", "Hold me a seat", "Going / Not going / Maybe"), but the input name attributes and the form's action+method must stay verbatim.
 
 === OUTPUT RULES (STRICT) ===
+
+──────────────── MUST-HAVE CHECKLIST ────────────────
+Before you start writing, mentally tick these. Every site you ship MUST satisfy ALL of these. If you skip one, the site is broken — not "minimal," broken. The validator will reject sites that miss them and the user will see a "Polish" button instead of a finished site.
+
+A. ONE complete HTML doc, <!DOCTYPE html> through </html>. No prose, no fences, no <script>, no JS, no on* handlers.
+B. RSVP <form method="POST" action="…ai-site-rsvp-submit…?slug=__SLUG__"> with name/email/attending/guests/message fields verbatim. Required for any event with a date. ONLY skip if the user explicitly said "save the date" / "announce only".
+C. ONE Google Fonts <link> with a real font pairing from the PREMIUM DESIGN BIBLE (not system fonts). Plus the custom scrollbar CSS and clamp() type scale.
+D. ONE named color palette from the bible defined as CSS custom props in :root.
+E. For any DATED event: <meta name="event-start"> (ISO 8601 + timezone), <meta name="event-end">, <meta name="event-location">, <meta name="event-summary"> in <head>, AND an "Add to calendar" link wired to the ics endpoint near the hero/RSVP, AND the 3-cell COUNTDOWN ROW (days·date·year computed from TODAY) somewhere in the hero or top of body.
+F. For any NAMED REAL venue (Villa Cipressi, The Plaza, etc.): a static OpenStreetMap iframe with the real lat/lon. Web-search to find the address if needed (silent, cap 3 searches).
+G. animation-timeline: view() scroll-entry animation applied to every body section, wrapped in @supports so older browsers stay visible (CRITICAL VISIBILITY RULE from the bible).
+H. For COUPLE events (weddings, anniversaries, engagements, quinces): MONOGRAM CREST SVG instead of the plain wax seal, paper-stack ::before/::after depth on hero + RSVP cards, ambient particle field (12-18 spans).
+I. Engagement placeholders Claude must drop into the doc where they belong (server fills them at render):
+   - __RSVP_COUNT__ inside or just below the RSVP form
+   - __COMMENT_WALL__ near the end for weddings/anniversaries/engagements
+   - __PHOTO_ALBUM__ near the end for weddings/anniversaries/milestones
+   - __GUEST_BLOCK__ above couple names for elegant events
+   - __PLUS_ONE_BLOCK__ inside the RSVP form
+   - __HERO_AI__ as the hero background URL (plus an Unsplash fallback) for elegant events, with a <!--HERO_AI_PROMPT: watercolor desc--> comment
+J. Generate ALL relevant sections for the event type. A wedding gets 8-12 sections (cover, hero, our story, schedule, travel, registry, dress code, FAQs, RSVP, thank-you, photo album, comment wall). Don't stop early. Don't make a one-page wedding.
+
+──────────────── BONUS / POLISH ────────────────
+Apply as many of these as fit the event mood. Don't sacrifice the MUST-HAVES to chase these.
+
 1. Reply with ONE complete HTML document and nothing else. No prose before or after, no markdown fences. Start with <!DOCTYPE html> and end with </html>.
 2. All site-specific CSS in a single <style> tag in <head>. Google Fonts ARE allowed and encouraged via <link rel="preconnect"> and <link rel="stylesheet"> to fonts.googleapis.com — see the PREMIUM DESIGN BIBLE for the exact link pattern. No Tailwind / Bootstrap / any other framework CDN — only Google Fonts.
 3. Absolutely NO <script> tags. NO JavaScript. NO inline event handlers. The page MUST work with JS disabled (CSS-only :checked / :hover / :focus-within patterns are encouraged for interactivity — see the cover-page reveal pattern).
@@ -1512,12 +1615,17 @@ Also, on the very first line of your reply, include a comment: <!-- TITLE: Your 
 const EDIT_SUFFIX = `
 
 === EDIT MODE ===
-The CURRENT site HTML follows. Apply the user's latest change request to it and return the FULL modified HTML document. Preserve sections the user didn't ask to change — only touch what they asked for. Same output rules: one HTML doc, no prose, no fences, start with the title comment then <!DOCTYPE html>.
+The CURRENT site HTML follows. Apply the user's latest change request to it and return the FULL modified HTML document.
 
-CRITICAL — keep these placeholders + meta tags intact unless the user explicitly asks to remove them:
-- __GUEST_BLOCK__, __RSVP_COUNT__, __PLUS_ONE_BLOCK__, __PHOTO_ALBUM__, __COMMENT_WALL__, __HERO_AI__, __SLUG__
-- <meta name="event-start">, <meta name="event-end">, <meta name="event-location">, <meta name="event-summary">
-- The "Add to calendar" link wired to ai-site-ics
+DO NOT SHRINK THE SITE. The CURRENT HTML already passed the MUST-HAVE CHECKLIST. Your job is a surgical change, not a redesign. Specifically:
+- Preserve EVERY section that exists. If the current HTML has 11 sections, your output has 11+ sections. Never drop sections the user didn't ask to remove.
+- Preserve the RSVP form, ambient particles, monogram crest, paper-stack depth, custom scrollbar, type scale, color palette, and all engagement placeholders (__GUEST_BLOCK__, __RSVP_COUNT__, __PLUS_ONE_BLOCK__, __PHOTO_ALBUM__, __COMMENT_WALL__, __HERO_AI__, __SLUG__).
+- Preserve the <meta name="event-start|end|location|summary"> tags and the "Add to calendar" link.
+- Match the EXACT design language: same fonts, same palette CSS vars, same ornaments, same section recipes, same animations. Don't switch font pairings, don't introduce new colors. The user wants a tweak, not a new site.
+- If the user asks for something vague ("make it more modern" / "make it bolder" / "more romantic"), interpret it as a SUBTLE polish — adjust a couple of CSS variables, swap one section recipe, add one ornament. Don't rewrite from scratch.
+- If the user explicitly asks to REMOVE a section / placeholder / meta tag, do it. Otherwise keep everything.
+
+Same output rules: one HTML doc, no prose, no fences. First line: <!-- TITLE: Title --> (keep existing title unless user asks to rename). Then <!DOCTYPE html>. Your output should be roughly the SAME LENGTH OR LONGER than the current HTML — never shorter unless the user asked to cut.
 
 CURRENT SITE HTML:
 `;
@@ -1737,10 +1845,12 @@ serve(async (req) => {
       "content-type": "application/json",
     },
     body: JSON.stringify({
+      // Edits cap lower since the bible isn't in the prompt; new
+      // generations need room for an 8-12 section wedding site.
       model: MODEL,
-      max_tokens: 16000,
+      max_tokens: currentSite ? 18000 : 24000,
       stream: true,
-      tools: [
+      tools: currentSite ? undefined : [
         {
           type: "web_search_20250305",
           name: "web_search",
@@ -1924,12 +2034,14 @@ serve(async (req) => {
             }
           });
 
+        const validation = validateGenerated(html, userPrompt);
         send({
           type: "done",
           slug,
           title,
           site_id: savedSiteId,
           version_number: newVersionNumber,
+          validation,
         });
       } catch (e) {
         console.error("[ai-site-generate] save exception", e);
