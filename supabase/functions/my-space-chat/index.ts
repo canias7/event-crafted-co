@@ -157,11 +157,17 @@ interface VendorSnapshot {
   };
   inquiryCounts: { new: number; replied: number; closed: number };
   hotLeadsCount: number;
+  // Titles of the vendor's recent OTHER chat threads, so the AI can
+  // reference past conversations ("you mentioned in the cake tasting
+  // chat that…").
+  recentChats: Array<{ title: string | null; updated_at: string }>;
 }
 
 async function buildVendorSnapshot(
   admin: any,
   vendorId: string,
+  userId: string,
+  excludeThreadId: string | null,
 ): Promise<VendorSnapshot> {
   const today = new Date();
   const todayIso = today.toISOString().slice(0, 10);
@@ -179,6 +185,7 @@ async function buildVendorSnapshot(
     { data: booked },
     { data: counts },
     { data: hotLeads },
+    { data: recentThreadRows },
   ] = await Promise.all([
     admin
       .from("vendor_profiles")
@@ -213,6 +220,16 @@ async function buildVendorSnapshot(
       .select("inquiry_id, inquiries!inner(vendor_id)")
       .eq("inquiries.vendor_id", vendorId)
       .eq("lead_score", "hot"),
+    (() => {
+      let q = admin
+        .from("my_space_threads")
+        .select("title, updated_at")
+        .eq("user_id", userId)
+        .order("updated_at", { ascending: false })
+        .limit(5);
+      if (excludeThreadId) q = q.neq("id", excludeThreadId);
+      return q;
+    })(),
   ]);
 
   const busySet = new Set<string>();
@@ -258,6 +275,10 @@ async function buildVendorSnapshot(
     },
     inquiryCounts,
     hotLeadsCount: ((hotLeads ?? []) as unknown[]).length,
+    recentChats: ((recentThreadRows ?? []) as Array<any>).map((t) => ({
+      title: t.title,
+      updated_at: t.updated_at,
+    })),
   };
 }
 
@@ -307,22 +328,20 @@ Style:
 - If you reference an inquiry, give the host's event date + event type so they can identify it.
 
 Read tools (use freely):
-- \`search_inquiries\` — find specific leads (filter by status / lead score)
-- \`get_inquiry\` — full thread + budget + special requests + last 10 messages
-- \`check_availability\` — any future date (the snapshot below only covers 30 days)
-- \`list_faqs\` — the vendor's saved Q&A pairs (use when drafting host replies)
-- \`list_portfolio_images\` — vendor's portfolio photos with captions
-- \`list_appointments\` — upcoming consultations / walkthroughs / tastings / calls
-- \`list_recent_notifications\` — recent platform notifications for the vendor
-- \`search_messages\` — full-text search across the vendor's host conversations
+- \`search_inquiries\` · \`get_inquiry\` · \`check_availability\`
+- \`list_faqs\` · \`list_portfolio_images\` · \`list_appointments\`
+- \`list_recent_notifications\` · \`search_messages\`
+- \`list_reviews\` · \`list_past_bookings\` · \`list_team_members\`
+- \`get_subscription_status\` · \`get_verification_status\`
 
 Write tools (require an explicit go-ahead from the vendor before calling):
 - \`send_host_reply\` — sends a message to a host on the vendor's behalf
-- \`create_appointment\` — proposes a consultation / tasting / call to a host
-- \`update_inquiry_status\` — marks an inquiry replied / closed / declined
-- \`block_calendar_date\` / \`unblock_calendar_date\` — single-date calendar edits
-- \`mark_notifications_read\` — clears notification badges
-- \`create_payment_link\` — creates a VendoraPay link the vendor can share with a host
+- \`create_appointment\` · \`update_appointment\`
+- \`update_inquiry_status\` · \`mark_notifications_read\`
+- \`block_calendar_date\` · \`unblock_calendar_date\` · \`block_calendar_range\`
+- \`create_payment_link\` · \`send_email\`
+- \`toggle_auto_reply\` — flips inbox auto-reply settings
+- \`manage_faq\` · \`manage_package\` · \`update_profile\`
 
 Confirmation rule for writes:
 - If the vendor said the exact action AND the parameters in their last message ("yes send it", "reply to inquiry X saying we're free July 14", "block Aug 1 for me"), proceed without re-asking.
@@ -345,6 +364,15 @@ ${busyText}
 
 Inquiries: ${snap.inquiryCounts.new} new · ${snap.inquiryCounts.replied} in-progress · ${snap.inquiryCounts.closed} closed
 Hot leads right now: ${snap.hotLeadsCount}
+
+Recent chats (other threads in My Space — you can reference them if the vendor brings something up):
+${
+    snap.recentChats.length === 0
+      ? "  (no other chats yet)"
+      : snap.recentChats
+        .map((c) => `  • ${c.title || "(untitled)"} — ${c.updated_at.slice(0, 10)}`)
+        .join("\n")
+  }
 ═══════════════════════════════════════════════════`;
 }
 
@@ -633,6 +661,175 @@ const TOOLS = [
           description:
             "Optional expiry; link expires this many days from now.",
         },
+      },
+    },
+  },
+  // ─── More read tools ────────────────────────────────────────────
+  {
+    name: "list_reviews",
+    description:
+      "List the vendor's reviews (rating + body + host name). Most recent first. Visible (released) reviews only.",
+    input_schema: {
+      type: "object",
+      properties: {
+        limit: { type: "integer", minimum: 1, maximum: 30 },
+      },
+    },
+  },
+  {
+    name: "list_past_bookings",
+    description:
+      "List completed appointments (past events the vendor delivered). Useful for context like 'how did Sarah's wedding go?'",
+    input_schema: {
+      type: "object",
+      properties: {
+        limit: { type: "integer", minimum: 1, maximum: 30 },
+      },
+    },
+  },
+  {
+    name: "list_team_members",
+    description:
+      "List the vendor's team members (user_id + role + display_name).",
+    input_schema: { type: "object", properties: {} },
+  },
+  {
+    name: "get_subscription_status",
+    description:
+      "Return the vendor's current subscription tier, status, period end, and cancel-at-period-end flag.",
+    input_schema: { type: "object", properties: {} },
+  },
+  {
+    name: "get_verification_status",
+    description:
+      "Return the vendor's verification documents and their states (insurance, license, ID, etc.).",
+    input_schema: { type: "object", properties: {} },
+  },
+  // ─── More write tools ───────────────────────────────────────────
+  {
+    name: "update_appointment",
+    description:
+      "Modify an existing appointment (reschedule, change status, edit notes). WRITE ACTION — confirm the change with the vendor first.",
+    input_schema: {
+      type: "object",
+      required: ["appointment_id"],
+      properties: {
+        appointment_id: { type: "string" },
+        status: {
+          type: "string",
+          enum: ["proposed", "accepted", "declined", "cancelled", "completed"],
+        },
+        scheduled_at: {
+          type: "string",
+          description: "Full ISO datetime if rescheduling.",
+        },
+        duration_minutes: { type: "integer", minimum: 5, maximum: 480 },
+        title: { type: "string" },
+        location: { type: "string" },
+        notes: { type: "string" },
+      },
+    },
+  },
+  {
+    name: "block_calendar_range",
+    description:
+      "Block a contiguous range of dates on the calendar at once (e.g. vacation). WRITE ACTION.",
+    input_schema: {
+      type: "object",
+      required: ["start_date", "end_date"],
+      properties: {
+        start_date: { type: "string", description: "YYYY-MM-DD inclusive." },
+        end_date: { type: "string", description: "YYYY-MM-DD inclusive." },
+      },
+    },
+  },
+  {
+    name: "toggle_auto_reply",
+    description:
+      "Flip the vendor's inbox auto-reply settings: either the master `enabled` switch or one of the action toggles (use_calendar, use_first_name, detect_frustration, decline_negotiation, offer_call, notify_on_reply, notify_on_hot_lead, daily_summary, cap_replies_per_inquiry). WRITE ACTION.",
+    input_schema: {
+      type: "object",
+      properties: {
+        enabled: { type: "boolean" },
+        action_key: {
+          type: "string",
+          enum: [
+            "use_calendar",
+            "use_first_name",
+            "detect_frustration",
+            "decline_negotiation",
+            "offer_call",
+            "notify_on_reply",
+            "notify_on_hot_lead",
+            "daily_summary",
+            "cap_replies_per_inquiry",
+          ],
+        },
+        value: { type: "boolean" },
+      },
+    },
+  },
+  {
+    name: "manage_faq",
+    description:
+      "Add, update, or delete a vendor FAQ entry. WRITE ACTION — confirm the question + answer with the vendor first.",
+    input_schema: {
+      type: "object",
+      required: ["action"],
+      properties: {
+        action: { type: "string", enum: ["add", "update", "delete"] },
+        id: { type: "string", description: "Required for update/delete." },
+        question: { type: "string" },
+        answer: { type: "string" },
+      },
+    },
+  },
+  {
+    name: "manage_package",
+    description:
+      "Add, update, or delete a vendor service package. WRITE ACTION — confirm name + price with the vendor first.",
+    input_schema: {
+      type: "object",
+      required: ["action"],
+      properties: {
+        action: { type: "string", enum: ["add", "update", "delete"] },
+        id: { type: "string", description: "Required for update/delete." },
+        name: { type: "string" },
+        description: { type: "string" },
+        price_usd: { type: "number" },
+        is_active: { type: "boolean" },
+      },
+    },
+  },
+  {
+    name: "update_profile",
+    description:
+      "Edit fields on the vendor's profile (business name, bio, location, category, base price, cancellation policy, deposit pct, policy notes). WRITE ACTION — confirm the change with the vendor first.",
+    input_schema: {
+      type: "object",
+      properties: {
+        business_name: { type: "string" },
+        bio: { type: "string" },
+        location: { type: "string" },
+        category: { type: "string" },
+        base_price_usd: { type: "number" },
+        cancellation_policy: { type: "string" },
+        deposit_pct: { type: "integer", minimum: 0, maximum: 100 },
+        policy_notes: { type: "string" },
+      },
+    },
+  },
+  {
+    name: "send_email",
+    description:
+      "Send an off-platform email via Resend on behalf of the vendor (from noreply@eventvendora.com). WRITE ACTION — show recipient + subject + body to the vendor before calling.",
+    input_schema: {
+      type: "object",
+      required: ["to", "subject", "body"],
+      properties: {
+        to: { type: "string", description: "Recipient email." },
+        subject: { type: "string" },
+        body: { type: "string", description: "Plain text body." },
       },
     },
   },
@@ -1261,6 +1458,484 @@ async function toolMarkNotificationsRead(
   return { marked_read: count ?? 0, ids };
 }
 
+// ─── More read tools ────────────────────────────────────────────
+
+async function toolListReviews(
+  admin: any,
+  vendorId: string,
+  input: any,
+): Promise<unknown> {
+  const limit = Math.min(Math.max(Number(input?.limit) || 10, 1), 30);
+  const { data, error } = await admin
+    .from("reviews")
+    .select(
+      "id, rating, body, host_id, kind, created_at, released_at, hidden_at",
+    )
+    .eq("vendor_id", vendorId)
+    .is("hidden_at", null)
+    .not("released_at", "is", null)
+    .order("created_at", { ascending: false })
+    .limit(limit);
+  if (error) return { error: error.message };
+  const rows = (data ?? []) as Array<any>;
+  const hostIds = Array.from(new Set(rows.map((r) => r.host_id))).filter(
+    Boolean,
+  );
+  const { data: hosts } = hostIds.length > 0
+    ? await admin.from("profiles").select("id, display_name").in("id", hostIds)
+    : { data: [] };
+  const hostMap = new Map(
+    ((hosts ?? []) as Array<any>).map((h) => [h.id, h.display_name]),
+  );
+  const reviews = rows.map((r) => ({
+    id: r.id,
+    rating: r.rating,
+    body: r.body,
+    kind: r.kind,
+    host_name: hostMap.get(r.host_id) ?? "(unknown host)",
+    created_at: r.created_at,
+  }));
+  const avg = reviews.length
+    ? reviews.reduce((s, r) => s + (Number(r.rating) || 0), 0) / reviews.length
+    : null;
+  return { reviews, count: reviews.length, average_rating: avg };
+}
+
+async function toolListPastBookings(
+  admin: any,
+  vendorId: string,
+  input: any,
+): Promise<unknown> {
+  const limit = Math.min(Math.max(Number(input?.limit) || 10, 1), 30);
+  const { data, error } = await admin
+    .from("appointments")
+    .select(
+      "id, inquiry_id, host_id, kind, title, location, scheduled_at, duration_minutes, status, notes",
+    )
+    .eq("vendor_id", vendorId)
+    .eq("status", "completed")
+    .order("scheduled_at", { ascending: false })
+    .limit(limit);
+  if (error) return { error: error.message };
+  const rows = (data ?? []) as Array<any>;
+  const hostIds = Array.from(new Set(rows.map((r) => r.host_id))).filter(
+    Boolean,
+  );
+  const { data: hosts } = hostIds.length > 0
+    ? await admin.from("profiles").select("id, display_name").in("id", hostIds)
+    : { data: [] };
+  const hostMap = new Map(
+    ((hosts ?? []) as Array<any>).map((h) => [h.id, h.display_name]),
+  );
+  return {
+    bookings: rows.map((r) => ({
+      id: r.id,
+      host_name: hostMap.get(r.host_id) ?? "(unknown host)",
+      kind: r.kind,
+      title: r.title,
+      location: r.location,
+      scheduled_at: r.scheduled_at,
+      duration_minutes: r.duration_minutes,
+      notes: r.notes,
+    })),
+  };
+}
+
+async function toolListTeamMembers(
+  admin: any,
+  vendorId: string,
+): Promise<unknown> {
+  const { data: members, error } = await admin
+    .from("vendor_team_members")
+    .select("user_id, role, created_at")
+    .eq("vendor_id", vendorId)
+    .order("created_at", { ascending: true });
+  if (error) return { error: error.message };
+  const rows = (members ?? []) as Array<any>;
+  const userIds = rows.map((r) => r.user_id);
+  const { data: profs } = userIds.length > 0
+    ? await admin
+      .from("profiles")
+      .select("id, display_name")
+      .in("id", userIds)
+    : { data: [] };
+  const nameMap = new Map(
+    ((profs ?? []) as Array<any>).map((p) => [p.id, p.display_name]),
+  );
+  return {
+    team: rows.map((r) => ({
+      user_id: r.user_id,
+      role: r.role,
+      display_name: nameMap.get(r.user_id) ?? "(unknown)",
+      since: r.created_at,
+    })),
+  };
+}
+
+async function toolGetSubscriptionStatus(
+  admin: any,
+  userId: string,
+): Promise<unknown> {
+  const { data, error } = await admin
+    .from("profiles")
+    .select(
+      "subscription_tier, subscription_status, subscription_current_period_end, subscription_cancel_at_period_end, monthly_grant",
+    )
+    .eq("id", userId)
+    .maybeSingle();
+  if (error) return { error: error.message };
+  if (!data) return { error: "profile_not_found" };
+  return {
+    tier: (data as any).subscription_tier,
+    status: (data as any).subscription_status,
+    current_period_end: (data as any).subscription_current_period_end,
+    cancel_at_period_end:
+      (data as any).subscription_cancel_at_period_end === true,
+    monthly_grant: (data as any).monthly_grant,
+  };
+}
+
+async function toolGetVerificationStatus(
+  admin: any,
+  vendorId: string,
+): Promise<unknown> {
+  const { data, error } = await admin
+    .from("vendor_verifications")
+    .select("kind, status, expires_at, submitted_at, reviewed_at, notes")
+    .eq("vendor_id", vendorId)
+    .order("submitted_at", { ascending: false });
+  if (error) return { error: error.message };
+  return { verifications: (data ?? []) as Array<any> };
+}
+
+// ─── More write tools ───────────────────────────────────────────
+
+async function toolUpdateAppointment(
+  admin: any,
+  vendorId: string,
+  input: any,
+): Promise<unknown> {
+  const apptId = String(input?.appointment_id ?? "");
+  if (!apptId) return { error: "appointment_id required" };
+  const patch: Record<string, unknown> = {};
+  if (input.status !== undefined) {
+    if (
+      !["proposed", "accepted", "declined", "cancelled", "completed"]
+        .includes(String(input.status))
+    ) {
+      return { error: "invalid_status" };
+    }
+    patch.status = String(input.status);
+  }
+  if (input.scheduled_at !== undefined) {
+    const dt = new Date(String(input.scheduled_at));
+    if (Number.isNaN(dt.getTime())) {
+      return { error: "scheduled_at_unparseable" };
+    }
+    patch.scheduled_at = dt.toISOString();
+  }
+  if (input.duration_minutes !== undefined) {
+    patch.duration_minutes = Math.min(
+      Math.max(Number(input.duration_minutes), 5),
+      480,
+    );
+  }
+  if (input.title !== undefined) patch.title = String(input.title);
+  if (input.location !== undefined) patch.location = String(input.location);
+  if (input.notes !== undefined) patch.notes = String(input.notes);
+  if (Object.keys(patch).length === 0) return { error: "nothing_to_update" };
+  const { data, error } = await admin
+    .from("appointments")
+    .update(patch)
+    .eq("id", apptId)
+    .eq("vendor_id", vendorId)
+    .select("id, status, scheduled_at")
+    .maybeSingle();
+  if (error) return { error: error.message };
+  if (!data) return { error: "appointment_not_found_or_not_owned" };
+  return { updated: true, appointment: data };
+}
+
+async function toolBlockCalendarRange(
+  admin: any,
+  vendorId: string,
+  input: any,
+): Promise<unknown> {
+  const start = String(input?.start_date ?? "");
+  const end = String(input?.end_date ?? "");
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(start)) {
+    return { error: "start_date must be YYYY-MM-DD" };
+  }
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(end)) {
+    return { error: "end_date must be YYYY-MM-DD" };
+  }
+  if (end < start) return { error: "end_date must be >= start_date" };
+  const dates: Array<{ vendor_id: string; date: string }> = [];
+  const cursor = new Date(`${start}T00:00:00Z`);
+  const stop = new Date(`${end}T00:00:00Z`);
+  while (cursor.getTime() <= stop.getTime()) {
+    dates.push({
+      vendor_id: vendorId,
+      date: cursor.toISOString().slice(0, 10),
+    });
+    cursor.setUTCDate(cursor.getUTCDate() + 1);
+    if (dates.length > 366) break; // safety cap
+  }
+  const { error } = await admin
+    .from("vendor_unavailable_dates")
+    .upsert(dates, {
+      onConflict: "vendor_id,date",
+      ignoreDuplicates: true,
+    });
+  if (error) return { error: error.message };
+  return { blocked: true, count: dates.length, start_date: start, end_date: end };
+}
+
+async function toolToggleAutoReply(
+  admin: any,
+  vendorId: string,
+  userId: string,
+  input: any,
+): Promise<unknown> {
+  // Auto-reply settings live on profiles keyed by user_id (the
+  // vendor's owner record). Resolve owner if the caller is a team
+  // member.
+  let ownerUserId = userId;
+  const { data: vendor } = await admin
+    .from("vendor_profiles")
+    .select("user_id")
+    .eq("id", vendorId)
+    .maybeSingle();
+  if ((vendor as any)?.user_id) ownerUserId = (vendor as any).user_id;
+
+  const patch: Record<string, boolean> = {};
+  if (typeof input?.enabled === "boolean") {
+    patch.hilux_enabled = input.enabled;
+  }
+  if (
+    typeof input?.action_key === "string" &&
+    typeof input?.value === "boolean"
+  ) {
+    const key = `hilux_action_${input.action_key}`;
+    patch[key] = input.value;
+  }
+  if (Object.keys(patch).length === 0) {
+    return { error: "pass enabled or (action_key + value)" };
+  }
+  const { data, error } = await admin
+    .from("profiles")
+    .update(patch)
+    .eq("id", ownerUserId)
+    .select(
+      "hilux_enabled, hilux_action_use_calendar, hilux_action_use_first_name, hilux_action_detect_frustration, hilux_action_decline_negotiation, hilux_action_offer_call, hilux_action_notify_on_reply, hilux_action_notify_on_hot_lead, hilux_action_daily_summary, hilux_action_cap_replies_per_inquiry",
+    )
+    .maybeSingle();
+  if (error) return { error: error.message };
+  return { updated: true, settings: data };
+}
+
+async function toolManageFaq(
+  admin: any,
+  vendorId: string,
+  input: any,
+): Promise<unknown> {
+  const action = String(input?.action ?? "");
+  if (action === "add") {
+    const q = String(input?.question ?? "").trim();
+    const a = String(input?.answer ?? "").trim();
+    if (!q || !a) return { error: "question and answer required" };
+    const { data, error } = await admin
+      .from("vendor_faqs")
+      .insert({ vendor_id: vendorId, question: q, answer: a })
+      .select("id, question, answer")
+      .single();
+    if (error) return { error: error.message };
+    return { added: true, faq: data };
+  }
+  if (action === "update") {
+    const id = String(input?.id ?? "");
+    if (!id) return { error: "id required" };
+    const patch: Record<string, string> = {};
+    if (input?.question !== undefined) patch.question = String(input.question);
+    if (input?.answer !== undefined) patch.answer = String(input.answer);
+    if (Object.keys(patch).length === 0) return { error: "nothing_to_update" };
+    const { data, error } = await admin
+      .from("vendor_faqs")
+      .update(patch)
+      .eq("id", id)
+      .eq("vendor_id", vendorId)
+      .select("id, question, answer")
+      .maybeSingle();
+    if (error) return { error: error.message };
+    if (!data) return { error: "faq_not_found_or_not_owned" };
+    return { updated: true, faq: data };
+  }
+  if (action === "delete") {
+    const id = String(input?.id ?? "");
+    if (!id) return { error: "id required" };
+    const { error } = await admin
+      .from("vendor_faqs")
+      .delete()
+      .eq("id", id)
+      .eq("vendor_id", vendorId);
+    if (error) return { error: error.message };
+    return { deleted: true, id };
+  }
+  return { error: `unknown_action: ${action}` };
+}
+
+async function toolManagePackage(
+  admin: any,
+  vendorId: string,
+  input: any,
+): Promise<unknown> {
+  const action = String(input?.action ?? "");
+  if (action === "add") {
+    const name = String(input?.name ?? "").trim();
+    if (!name) return { error: "name required" };
+    const priceUsd = Number(input?.price_usd);
+    if (!Number.isFinite(priceUsd) || priceUsd < 0) {
+      return { error: "price_usd required (>= 0)" };
+    }
+    const { data, error } = await admin
+      .from("vendor_packages")
+      .insert({
+        vendor_id: vendorId,
+        name,
+        description: input?.description ? String(input.description) : null,
+        price_cents: Math.round(priceUsd * 100),
+        is_active: input?.is_active === false ? false : true,
+      })
+      .select("id, name, price_cents, is_active")
+      .single();
+    if (error) return { error: error.message };
+    return { added: true, package: data };
+  }
+  if (action === "update") {
+    const id = String(input?.id ?? "");
+    if (!id) return { error: "id required" };
+    const patch: Record<string, unknown> = {};
+    if (input?.name !== undefined) patch.name = String(input.name);
+    if (input?.description !== undefined) {
+      patch.description = String(input.description);
+    }
+    if (input?.price_usd !== undefined) {
+      const p = Number(input.price_usd);
+      if (Number.isFinite(p) && p >= 0) patch.price_cents = Math.round(p * 100);
+    }
+    if (input?.is_active !== undefined) patch.is_active = !!input.is_active;
+    if (Object.keys(patch).length === 0) return { error: "nothing_to_update" };
+    const { data, error } = await admin
+      .from("vendor_packages")
+      .update(patch)
+      .eq("id", id)
+      .eq("vendor_id", vendorId)
+      .select("id, name, price_cents, is_active")
+      .maybeSingle();
+    if (error) return { error: error.message };
+    if (!data) return { error: "package_not_found_or_not_owned" };
+    return { updated: true, package: data };
+  }
+  if (action === "delete") {
+    const id = String(input?.id ?? "");
+    if (!id) return { error: "id required" };
+    const { error } = await admin
+      .from("vendor_packages")
+      .delete()
+      .eq("id", id)
+      .eq("vendor_id", vendorId);
+    if (error) return { error: error.message };
+    return { deleted: true, id };
+  }
+  return { error: `unknown_action: ${action}` };
+}
+
+async function toolUpdateProfile(
+  admin: any,
+  vendorId: string,
+  input: any,
+): Promise<unknown> {
+  const patch: Record<string, unknown> = {};
+  if (input?.business_name !== undefined) {
+    patch.business_name = String(input.business_name);
+  }
+  if (input?.bio !== undefined) patch.bio = String(input.bio);
+  if (input?.location !== undefined) patch.location = String(input.location);
+  if (input?.category !== undefined) patch.category = String(input.category);
+  if (input?.base_price_usd !== undefined) {
+    const p = Number(input.base_price_usd);
+    if (Number.isFinite(p) && p >= 0) {
+      patch.base_price_cents = Math.round(p * 100);
+    }
+  }
+  if (input?.cancellation_policy !== undefined) {
+    patch.cancellation_policy = String(input.cancellation_policy);
+  }
+  if (input?.deposit_pct !== undefined) {
+    const d = Number(input.deposit_pct);
+    if (Number.isFinite(d) && d >= 0 && d <= 100) patch.deposit_pct = d;
+  }
+  if (input?.policy_notes !== undefined) {
+    patch.policy_notes = String(input.policy_notes);
+  }
+  if (Object.keys(patch).length === 0) return { error: "nothing_to_update" };
+  const { data, error } = await admin
+    .from("vendor_profiles")
+    .update(patch)
+    .eq("id", vendorId)
+    .select("id, business_name, bio, location, category, base_price_cents")
+    .maybeSingle();
+  if (error) return { error: error.message };
+  if (!data) return { error: "profile_not_found" };
+  return { updated: true, profile: data };
+}
+
+async function toolSendEmail(
+  admin: any,
+  vendorId: string,
+  input: any,
+): Promise<unknown> {
+  const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY") ?? "";
+  if (!RESEND_API_KEY) return { error: "resend_key_missing" };
+  const to = String(input?.to ?? "").trim();
+  const subject = String(input?.subject ?? "").trim();
+  const body = String(input?.body ?? "");
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(to)) return { error: "invalid_to" };
+  if (!subject) return { error: "subject required" };
+  if (!body) return { error: "body required" };
+
+  // Tag the email with the vendor business name when available so the
+  // recipient knows who it's from.
+  const { data: vendor } = await admin
+    .from("vendor_profiles")
+    .select("business_name")
+    .eq("id", vendorId)
+    .maybeSingle();
+  const fromName = (vendor as any)?.business_name ?? "Vendora";
+  const FROM_ADDRESS = Deno.env.get("EMAIL_FROM_ADDRESS") ??
+    `${fromName} <noreply@eventvendora.com>`;
+
+  const res = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${RESEND_API_KEY}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      from: FROM_ADDRESS,
+      to,
+      subject,
+      text: body,
+    }),
+  });
+  if (!res.ok) {
+    const t = await res.text();
+    return { error: `resend ${res.status}: ${t.slice(0, 240)}` };
+  }
+  const out = (await res.json()) as any;
+  return { sent: true, to, subject, resend_id: out?.id ?? null };
+}
+
 async function executeTool(
   admin: any,
   vendorId: string,
@@ -1313,6 +1988,42 @@ async function executeTool(
     }
     if (name === "create_payment_link") {
       return await toolCreatePaymentLink(admin, vendorId, userId, input);
+    }
+    if (name === "list_reviews") {
+      return await toolListReviews(admin, vendorId, input);
+    }
+    if (name === "list_past_bookings") {
+      return await toolListPastBookings(admin, vendorId, input);
+    }
+    if (name === "list_team_members") {
+      return await toolListTeamMembers(admin, vendorId);
+    }
+    if (name === "get_subscription_status") {
+      return await toolGetSubscriptionStatus(admin, userId);
+    }
+    if (name === "get_verification_status") {
+      return await toolGetVerificationStatus(admin, vendorId);
+    }
+    if (name === "update_appointment") {
+      return await toolUpdateAppointment(admin, vendorId, input);
+    }
+    if (name === "block_calendar_range") {
+      return await toolBlockCalendarRange(admin, vendorId, input);
+    }
+    if (name === "toggle_auto_reply") {
+      return await toolToggleAutoReply(admin, vendorId, userId, input);
+    }
+    if (name === "manage_faq") {
+      return await toolManageFaq(admin, vendorId, input);
+    }
+    if (name === "manage_package") {
+      return await toolManagePackage(admin, vendorId, input);
+    }
+    if (name === "update_profile") {
+      return await toolUpdateProfile(admin, vendorId, input);
+    }
+    if (name === "send_email") {
+      return await toolSendEmail(admin, vendorId, input);
     }
     return { error: `unknown_tool:${name}` };
   } catch (err) {
@@ -1748,7 +2459,12 @@ serve(async (req) => {
         const vendorId = await findVendorIdForUser(admin, userId);
         let systemPrompt: string;
         if (vendorId) {
-          const snap = await buildVendorSnapshot(admin, vendorId);
+          const snap = await buildVendorSnapshot(
+            admin,
+            vendorId,
+            userId,
+            threadId,
+          );
           systemPrompt = buildSystemPrompt(snap);
         } else {
           systemPrompt =
