@@ -96,6 +96,118 @@ export default function WebsiteBuilderPage() {
     "Make it editorial / magazine",
   ];
 
+  const [variantsLoading, setVariantsLoading] = useState(false);
+  const [variantsOpen, setVariantsOpen] = useState(false);
+  const [variants, setVariants] = useState<
+    Array<{ site_id: string; slug: string; title: string; html: string; label: string }>
+  >([]);
+  const [variantProgress, setVariantProgress] = useState<{ done: number; total: number }>({ done: 0, total: 0 });
+
+  // Fire ai-site-generate once with a prompt+seed, fully consume the
+  // SSE stream, return the final HTML + slug + title.
+  async function generateOne(prompt: string): Promise<{
+    site_id: string;
+    slug: string;
+    title: string;
+    html: string;
+  } | null> {
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+      apikey: SUPABASE_KEY,
+      Authorization: `Bearer ${session?.access_token ?? SUPABASE_KEY}`,
+    };
+    try {
+      const res = await fetch(`${SUPABASE_URL}/functions/v1/ai-site-generate`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({ prompt }),
+      });
+      if (!res.ok || !res.body) return null;
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buf = "";
+      let bufferedHtml = "";
+      let done_evt: any = null;
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        buf += decoder.decode(value, { stream: true });
+        const events = buf.split("\n\n");
+        buf = events.pop() ?? "";
+        for (const evt of events) {
+          for (const line of evt.split("\n")) {
+            if (!line.startsWith("data: ")) continue;
+            try {
+              const data = JSON.parse(line.slice(6));
+              if (data?.type === "chunk" && typeof data.text === "string") {
+                bufferedHtml += data.text;
+              } else if (data?.type === "done") {
+                done_evt = data;
+              }
+            } catch { /* keepalive */ }
+          }
+        }
+      }
+      if (!done_evt) return null;
+      return {
+        site_id: String(done_evt.site_id ?? ""),
+        slug: String(done_evt.slug ?? ""),
+        title: String(done_evt.title ?? "Untitled"),
+        html: bufferedHtml,
+      };
+    } catch {
+      return null;
+    }
+  }
+
+  async function generateVariants() {
+    const lastUserMessage = [...conversation].reverse().find((m) => m.role === "user")?.content?.trim();
+    if (!lastUserMessage || variantsLoading) return;
+    setVariantsLoading(true);
+    setVariantProgress({ done: 0, total: 3 });
+
+    // 3 prompt variations seeded with different style hints so Claude
+    // produces visibly distinct takes (not 3 near-identical copies).
+    const seeds = [
+      { label: "Classic", suffix: "" },
+      { label: "Editorial", suffix: " — use a magazine / editorial treatment with bold tracked typography." },
+      { label: "Playful", suffix: " — make it a touch more playful / softer, lean into hand-drawn warmth." },
+    ];
+    const results: typeof variants = [];
+    await Promise.all(
+      seeds.map(async (seed) => {
+        const result = await generateOne(lastUserMessage + seed.suffix);
+        if (result) results.push({ ...result, label: seed.label });
+        setVariantProgress((p) => ({ ...p, done: p.done + 1 }));
+      }),
+    );
+    setVariants(results);
+    setVariantsLoading(false);
+    if (results.length > 0) setVariantsOpen(true);
+    else setError("Couldn't generate variants. Try again.");
+  }
+
+  function pickVariant(v: { site_id: string; slug: string; title: string; html: string }) {
+    setSiteId(v.site_id);
+    setSlug(v.slug);
+    setTitle(v.title);
+    setHasContent(true);
+    const iframe = iframeRef.current;
+    if (iframe?.contentDocument) {
+      const doc = iframe.contentDocument;
+      doc.open();
+      doc.write(v.html);
+      doc.close();
+    }
+    setVariantsOpen(false);
+    setVariants([]);
+    setSearchParams({ site: v.site_id });
+    setConversation((prev) => [
+      ...prev,
+      { role: "assistant", content: `Locked in the "${v.title}" variant — let's keep going from here.` },
+    ]);
+  }
+
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
@@ -1053,6 +1165,14 @@ export default function WebsiteBuilderPage() {
                     {a}
                   </button>
                 ))}
+                <button
+                  onClick={generateVariants}
+                  disabled={variantsLoading}
+                  className="shrink-0 text-[11px] text-violet-200 hover:text-violet-100 bg-violet-500/10 hover:bg-violet-500/20 border border-violet-400/30 rounded-full px-2.5 py-1 transition-colors disabled:opacity-40"
+                  title="Generate 3 design variations from your last prompt, pick a favorite"
+                >
+                  🎲 3 variants
+                </button>
               </div>
               <div className="flex gap-1.5 overflow-x-auto whitespace-nowrap mt-1">
                 {THEME_REMIX.map((a) => (
@@ -1066,6 +1186,14 @@ export default function WebsiteBuilderPage() {
                   </button>
                 ))}
               </div>
+            </div>
+          )}
+          {variantsLoading && (
+            <div className="px-3 py-2 bg-violet-500/10 border-t border-violet-500/30 text-[12px] text-violet-200 flex items-center gap-2">
+              <span className="builder-dot" />
+              <span>
+                Generating 3 variants… {variantProgress.done}/{variantProgress.total} done. ~60–90s.
+              </span>
             </div>
           )}
 
@@ -1254,6 +1382,72 @@ export default function WebsiteBuilderPage() {
           )}
         </main>
       </div>
+
+      {variantsOpen && variants.length > 0 && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
+          onClick={() => setVariantsOpen(false)}
+        >
+          <div
+            className="bg-[#0c0c0e] border border-white/15 rounded-2xl p-6 max-w-[1100px] w-full max-h-[90vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="text-[16px] font-medium mb-1">Pick a variant</div>
+            <div className="text-[13px] text-white/50 mb-4 leading-relaxed">
+              Three different takes on your prompt. Click "Use this one" to keep it; the others stay in
+              your DB as orphans (no harm).
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              {variants.map((v) => (
+                <div
+                  key={v.site_id}
+                  className="bg-white/5 border border-white/10 rounded-xl p-3 flex flex-col"
+                >
+                  <div className="text-[11px] text-violet-200/80 uppercase tracking-wider mb-1">
+                    {v.label}
+                  </div>
+                  <div className="text-[14px] font-medium mb-2 truncate" title={v.title}>
+                    {v.title}
+                  </div>
+                  <div className="aspect-[4/5] rounded-lg overflow-hidden bg-black border border-white/10 mb-3 relative">
+                    <iframe
+                      title={v.label}
+                      srcDoc={v.html}
+                      sandbox="allow-same-origin"
+                      className="w-full h-full pointer-events-none"
+                      style={{ transform: "scale(0.45)", transformOrigin: "top left", width: "222%", height: "222%" }}
+                    />
+                  </div>
+                  <div className="flex gap-2 mt-auto">
+                    <a
+                      href={`/s/${v.slug}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="flex-1 text-[12px] text-center text-white/70 hover:text-white border border-white/15 rounded-full px-3 py-1.5 transition-colors"
+                    >
+                      Preview ↗
+                    </a>
+                    <button
+                      onClick={() => pickVariant(v)}
+                      className="flex-1 text-[12px] bg-white text-black rounded-full px-3 py-1.5 hover:bg-white/90 transition-colors"
+                    >
+                      Use this one
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="flex items-center justify-end mt-4">
+              <button
+                onClick={() => setVariantsOpen(false)}
+                className="text-[13px] text-white/60 hover:text-white px-3 py-2"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {guestsOpen && (
         <div
