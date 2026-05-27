@@ -876,10 +876,10 @@ function OverviewTab({
   balance,
   transactions,
   status,
-  invoices,
+  invoices: _unusedInvoices,
   vendorId,
-  totalGross,
-  totalFees,
+  totalGross: _unusedTotalGross,
+  totalFees: _unusedTotalFees,
   onSeeAllTransactions,
 }: {
   balance: Balance | null;
@@ -891,34 +891,64 @@ function OverviewTab({
   totalFees: number;
   onSeeAllTransactions: () => void;
 }) {
-  // Business pulse: derived KPIs that read the data already loaded
-  // plus a tiny extra fetch for customer count + active recurring
-  // rules so MRR + audience size show alongside Stripe balance.
-  //
-  // Outstanding is fetched live (not summed from the parent's 50-row
-  // cap) so vendors with a backlog don't see understated AR. The
-  // dollar total is computed from a dedicated query that pulls
-  // every unpaid row regardless of how many invoices they have.
+  // Full rebuild for the cockpit redesign — proper Xero/Oracle page
+  // architecture: page header bar → KPI strip with trend deltas →
+  // chart grid (revenue line + A/R aging bars) → activity table.
+  // Each KPI tile shows current vs equivalent prior-period delta
+  // where the data exists; pure snapshot tiles (Net cash) skip it.
+  const currency = balance?.currency ?? "usd";
+
+  // Snapshot KPIs: outstanding + customers + MRR + first-touch
+  // recurring data. Plus rolling-30d revenue + new-customer counts
+  // (with the equivalent 30-60d-ago comparison for trend deltas)
+  // and a 30-bucket daily revenue series for the line chart.
   const [outstandingCents, setOutstandingCents] = useState<number>(0);
   const [outstandingCount, setOutstandingCount] = useState<number>(0);
+  const [agingBuckets, setAgingBuckets] = useState<{ current: number; d1_30: number; d31_60: number; d61_90: number; d90plus: number }>({ current: 0, d1_30: 0, d31_60: 0, d61_90: 0, d90plus: 0 });
   const [customerCount, setCustomerCount] = useState<number | null>(null);
   const [mrrCents, setMrrCents] = useState<number | null>(null);
+  const [revenue30d, setRevenue30d] = useState<number>(0);
+  const [revenue30dPrev, setRevenue30dPrev] = useState<number>(0);
+  const [newCustomers30d, setNewCustomers30d] = useState<number>(0);
+  const [newCustomers30dPrev, setNewCustomers30dPrev] = useState<number>(0);
+  // Daily revenue series for the last 30 days — drives the line chart.
+  const [revenueSeries, setRevenueSeries] = useState<number[]>([]);
+
   useEffect(() => {
     if (!vendorId) {
       setOutstandingCents(0);
       setOutstandingCount(0);
+      setAgingBuckets({ current: 0, d1_30: 0, d31_60: 0, d61_90: 0, d90plus: 0 });
       setCustomerCount(null);
       setMrrCents(null);
+      setRevenue30d(0);
+      setRevenue30dPrev(0);
+      setNewCustomers30d(0);
+      setNewCustomers30dPrev(0);
+      setRevenueSeries([]);
       return;
     }
     let cancelled = false;
     (async () => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const db = supabase as any;
-      const [{ data: unpaidRows }, { count: cc }, { data: rrs }] = await Promise.all([
+      const now = new Date();
+      const since30 = new Date(now.getTime() - 30 * 24 * 3600 * 1000);
+      const since60 = new Date(now.getTime() - 60 * 24 * 3600 * 1000);
+
+      const [
+        { data: unpaidRows },
+        { count: cc },
+        { data: rrs },
+        { data: paid30 },
+        { data: paid60 },
+        { count: newCust30 },
+        { count: newCust60 },
+      ] = await Promise.all([
+        // Outstanding rows — include due_date for the aging buckets
         db
           .from("invoices")
-          .select("total_cents")
+          .select("total_cents, due_date")
           .eq("vendor_id", vendorId)
           .in("status", ["sent", "overdue"])
           .is("paid_at", null)
@@ -932,14 +962,67 @@ function OverviewTab({
           .select("interval, line_items, tax_pct")
           .eq("vendor_id", vendorId)
           .eq("active", true),
+        // Paid invoices in the last 30 days (current period)
+        db
+          .from("invoices")
+          .select("total_cents, paid_at")
+          .eq("vendor_id", vendorId)
+          .eq("status", "paid")
+          .gte("paid_at", since30.toISOString())
+          .lt("paid_at", now.toISOString())
+          .limit(10000),
+        // Paid invoices in the 30 days before that (previous period)
+        db
+          .from("invoices")
+          .select("total_cents")
+          .eq("vendor_id", vendorId)
+          .eq("status", "paid")
+          .gte("paid_at", since60.toISOString())
+          .lt("paid_at", since30.toISOString())
+          .limit(10000),
+        // New customers in last 30 days
+        db
+          .from("vendor_customers")
+          .select("id", { count: "exact", head: true })
+          .eq("vendor_id", vendorId)
+          .gte("created_at", since30.toISOString()),
+        // New customers 30-60 days ago
+        db
+          .from("vendor_customers")
+          .select("id", { count: "exact", head: true })
+          .eq("vendor_id", vendorId)
+          .gte("created_at", since60.toISOString())
+          .lt("created_at", since30.toISOString()),
       ]);
       if (cancelled) return;
-      const unpaid = (unpaidRows ?? []) as Array<{ total_cents: number }>;
+
+      const unpaid = (unpaidRows ?? []) as Array<{ total_cents: number; due_date: string | null }>;
       setOutstandingCents(unpaid.reduce((s, r) => s + r.total_cents, 0));
       setOutstandingCount(unpaid.length);
+
+      // Bucket unpaid invoices by days past due — same logic as
+      // ReportsTab's A/R aging memo. "current" includes any invoice
+      // without a due_date so a missing field doesn't show up as
+      // 90+ overdue by accident.
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const buckets = { current: 0, d1_30: 0, d31_60: 0, d61_90: 0, d90plus: 0 };
+      for (const inv of unpaid) {
+        const owed = inv.total_cents;
+        if (!inv.due_date) { buckets.current += owed; continue; }
+        const due = new Date(inv.due_date + "T00:00:00");
+        const daysLate = Math.floor((today.getTime() - due.getTime()) / (24 * 3600 * 1000));
+        if (daysLate < 1) buckets.current += owed;
+        else if (daysLate <= 30) buckets.d1_30 += owed;
+        else if (daysLate <= 60) buckets.d31_60 += owed;
+        else if (daysLate <= 90) buckets.d61_90 += owed;
+        else buckets.d90plus += owed;
+      }
+      setAgingBuckets(buckets);
+
       setCustomerCount(typeof cc === "number" ? cc : 0);
-      // Normalize each cadence to a monthly-equivalent so MRR
-      // gives a single comparable number across intervals.
+
+      // MRR computation (unchanged from prior impl).
       const monthly = (rrs ?? []).reduce((sum: number, r: { interval: string; line_items: Array<{ qty: number; unit_price_cents: number; total_cents?: number }>; tax_pct: number }) => {
         const subtotal = (r.line_items ?? []).reduce(
           (s, it) => s + (it.total_cents ?? it.qty * it.unit_price_cents),
@@ -948,109 +1031,298 @@ function OverviewTab({
         const taxBps = Math.round((r.tax_pct ?? 0) * 100);
         const total = subtotal + Math.round((subtotal * taxBps) / 10_000);
         const perMonth =
-          r.interval === "weekly"
-            ? (total * 52) / 12
-            : r.interval === "biweekly"
-              ? (total * 26) / 12
-              : r.interval === "monthly"
-                ? total
-                : r.interval === "quarterly"
-                  ? total / 3
-                  : r.interval === "yearly"
-                    ? total / 12
-                    : 0;
+          r.interval === "weekly" ? (total * 52) / 12
+          : r.interval === "biweekly" ? (total * 26) / 12
+          : r.interval === "monthly" ? total
+          : r.interval === "quarterly" ? total / 3
+          : r.interval === "yearly" ? total / 12
+          : 0;
         return sum + perMonth;
       }, 0);
       setMrrCents(Math.round(monthly));
+
+      const paid30Rows = (paid30 ?? []) as Array<{ total_cents: number; paid_at: string }>;
+      const paid60Rows = (paid60 ?? []) as Array<{ total_cents: number }>;
+      setRevenue30d(paid30Rows.reduce((s, r) => s + r.total_cents, 0));
+      setRevenue30dPrev(paid60Rows.reduce((s, r) => s + r.total_cents, 0));
+      setNewCustomers30d(newCust30 ?? 0);
+      setNewCustomers30dPrev(newCust60 ?? 0);
+
+      // Build daily revenue series — 30 buckets, today-29 → today.
+      const series = new Array<number>(30).fill(0);
+      for (const p of paid30Rows) {
+        if (!p.paid_at) continue;
+        const t = Date.parse(p.paid_at);
+        if (Number.isNaN(t)) continue;
+        const dayIdx = Math.floor((t - since30.getTime()) / (24 * 3600 * 1000));
+        if (dayIdx >= 0 && dayIdx < 30) series[dayIdx] += p.total_cents;
+      }
+      setRevenueSeries(series);
     })();
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, [vendorId]);
+
+  const netCashCents = (balance?.available_cents ?? 0) + (balance?.pending_cents ?? 0);
+  const customerDeltaCount = newCustomers30d - newCustomers30dPrev;
+  const today = new Date();
+  const dateStr = today.toLocaleDateString("en-US", {
+    weekday: "long", month: "long", day: "numeric", year: "numeric",
+  });
 
   return (
     <>
-      <section>
-        <h2 className="text-[10px] uppercase tracking-[0.22em] text-muted-foreground font-semibold mb-3 pb-2 border-b border-foreground/[0.06]">
-          Business pulse
-        </h2>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
-          <StatCard
-            label="Outstanding"
-            sub={`${outstandingCount} unpaid invoice${outstandingCount === 1 ? "" : "s"}`}
-            value={formatMoney(outstandingCents, balance?.currency)}
-          />
-          <StatCard
-            label="MRR forecast"
-            sub="From active recurring rules"
-            value={mrrCents == null ? "—" : formatMoney(mrrCents, balance?.currency)}
-          />
-          <StatCard
-            label="Customers"
-            sub="Saved on your list"
-            value={customerCount == null ? "—" : customerCount.toLocaleString()}
-          />
+      {/* Page chrome — Oracle Redwood-style header bar */}
+      <header className="cockpit-page-header">
+        <div className="min-w-0">
+          <div className="cockpit-breadcrumb">
+            <span>My Vendora</span>
+            <span>Overview</span>
+          </div>
+          <h1 className="cockpit-page-title">Vendor cockpit</h1>
+          <p className="cockpit-page-sub">{dateStr}</p>
         </div>
-      </section>
-
-      <section>
-        <h2 className="text-[10px] uppercase tracking-[0.22em] text-muted-foreground font-semibold mb-3 pb-2 border-b border-foreground/[0.06]">
-          Balance
-        </h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-          <StatCard
-            label="Available"
-            sub="Ready for payout"
-            value={formatMoney(balance?.available_cents ?? 0, balance?.currency)}
-          />
-          <StatCard
-            label="Pending"
-            sub="Still settling"
-            value={formatMoney(balance?.pending_cents ?? 0, balance?.currency)}
-          />
-          <StatCard
-            label="Gross volume"
-            sub="Recent payments"
-            value={formatMoney(totalGross, balance?.currency)}
-          />
-          <StatCard
-            label="Fees"
-            sub="Last 50 txns"
-            value={formatMoney(totalFees, balance?.currency)}
-          />
+        <div className="flex items-center gap-2 shrink-0">
+          {transactions.length > 0 && (
+            <button
+              type="button"
+              onClick={onSeeAllTransactions}
+              className="text-xs font-medium text-foreground/80 hover:text-foreground border border-foreground/10 rounded-md px-3 py-1.5"
+            >
+              All transactions
+            </button>
+          )}
         </div>
-      </section>
+      </header>
 
-      <section>
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="text-[10px] uppercase tracking-[0.22em] text-muted-foreground font-semibold">
-            Recent activity
-          </h2>
+      {/* KPI strip — 4 tiles. Each shows label / value / trend chip
+          where computable. Trend chips compare last 30d vs prior 30d
+          for windowed metrics (revenue, new customers); snapshot
+          metrics (Outstanding, Net cash) just show context. */}
+      <div className="cockpit-kpi-row">
+        <div className="cockpit-kpi-tile">
+          <div className="cockpit-kpi-label">Revenue · 30d</div>
+          <div className="flex items-baseline gap-2 flex-wrap">
+            <div className="cockpit-kpi-value">{formatMoney(revenue30d, currency)}</div>
+            <TrendDelta currentCents={revenue30d} previousCents={revenue30dPrev} />
+          </div>
+          <div className="cockpit-kpi-sub">
+            vs {formatMoney(revenue30dPrev, currency)} prior 30 days
+          </div>
+        </div>
+        <div className="cockpit-kpi-tile">
+          <div className="cockpit-kpi-label">Outstanding</div>
+          <div className="cockpit-kpi-value">{formatMoney(outstandingCents, currency)}</div>
+          <div className="cockpit-kpi-sub">
+            {outstandingCount} unpaid invoice{outstandingCount === 1 ? "" : "s"}
+          </div>
+        </div>
+        <div className="cockpit-kpi-tile">
+          <div className="cockpit-kpi-label">Net cash</div>
+          <div className="cockpit-kpi-value">{formatMoney(netCashCents, currency)}</div>
+          <div className="cockpit-kpi-sub">
+            {formatMoney(balance?.available_cents ?? 0, currency)} available · {formatMoney(balance?.pending_cents ?? 0, currency)} pending
+          </div>
+        </div>
+        <div className="cockpit-kpi-tile">
+          <div className="cockpit-kpi-label">New customers · 30d</div>
+          <div className="flex items-baseline gap-2 flex-wrap">
+            <div className="cockpit-kpi-value">{newCustomers30d}</div>
+            {newCustomers30dPrev > 0 || newCustomers30d > 0 ? (
+              <span className={`cockpit-delta ${customerDeltaCount > 0 ? "cockpit-delta--up" : customerDeltaCount < 0 ? "cockpit-delta--down" : "cockpit-delta--flat"}`}>
+                {customerDeltaCount > 0 ? "▲" : customerDeltaCount < 0 ? "▼" : "—"} {Math.abs(customerDeltaCount)}
+              </span>
+            ) : null}
+          </div>
+          <div className="cockpit-kpi-sub">
+            {customerCount == null ? "—" : `${customerCount} total`} · MRR {mrrCents == null ? "—" : formatMoney(mrrCents, currency)}
+          </div>
+        </div>
+      </div>
+
+      {/* Chart grid — Revenue trend (line) + A/R aging (horizontal bars) */}
+      <div className="cockpit-chart-grid">
+        <OverviewRevenueChart series={revenueSeries} currency={currency} />
+        <OverviewAgingChart buckets={agingBuckets} currency={currency} />
+      </div>
+
+      {/* Recent activity — real table with sticky header + sortable
+          columns (sort UI deferred; semantic headers in place). */}
+      <div className="cockpit-data-card">
+        <div className="cockpit-data-card-header">
+          <div>
+            <h3 className="text-sm font-semibold">Recent activity</h3>
+            <p className="text-[11px] text-muted-foreground mt-0.5">
+              Latest payouts, charges, and refunds across this listing
+            </p>
+          </div>
           {transactions.length > 0 ? (
             <button
               type="button"
               onClick={onSeeAllTransactions}
-              className="text-xs text-muted-foreground hover:text-foreground"
+              className="text-xs text-muted-foreground hover:text-foreground border border-foreground/10 rounded-md px-2.5 py-1"
             >
-              See all
+              View all →
             </button>
           ) : null}
         </div>
         {transactions.length === 0 ? (
-          <EmptyCard>
+          <div className="px-5 py-8 text-sm text-muted-foreground text-center">
             {status?.charges_enabled
               ? "No transactions yet. When buyers pay you, they'll show up here."
               : "Transactions appear after your first payment."}
-          </EmptyCard>
+          </div>
         ) : (
-          <Card>
-            {transactions.map((t, idx) => (
-              <TransactionRow key={t.id} tx={t} showBorder={idx > 0} />
-            ))}
-          </Card>
+          <table className="cockpit-data-table">
+            <thead>
+              <tr>
+                <th>Description</th>
+                <th>Type</th>
+                <th>Date</th>
+                <th className="num">Amount</th>
+                <th className="num">Fee</th>
+                <th className="num">Net</th>
+              </tr>
+            </thead>
+            <tbody>
+              {transactions.slice(0, 10).map((t) => (
+                <tr key={t.id}>
+                  <td className="font-medium truncate max-w-[280px]">{t.description ?? "VendoraPay charge"}</td>
+                  <td className="capitalize text-muted-foreground">{t.kind}</td>
+                  <td className="text-muted-foreground">{formatDate(t.created_at)}</td>
+                  <td className="num">{formatMoney(t.amount_cents, t.currency)}</td>
+                  <td className="num text-muted-foreground">{t.fee_cents > 0 ? formatMoney(t.fee_cents, t.currency) : "—"}</td>
+                  <td className="num font-semibold">{formatMoney(t.net_cents, t.currency)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         )}
-      </section>
+      </div>
     </>
+  );
+}
+
+// Revenue trend chart for Overview — 30-day daily line chart with
+// grid + axes. Mirrors RevenueSparkline's SVG approach but with
+// fixed 30-bucket layout and "no data" empty state.
+function OverviewRevenueChart({ series, currency }: { series: number[]; currency: string }) {
+  const max = series.reduce((m, v) => (v > m ? v : m), 0);
+  const total = series.reduce((s, v) => s + v, 0);
+  return (
+    <div className="cockpit-chart">
+      <div className="flex items-baseline justify-between mb-3">
+        <div>
+          <div className="cockpit-chart-title">Revenue · last 30 days</div>
+          <div className="cockpit-chart-sub">Daily paid-invoice totals</div>
+        </div>
+        <div className="text-right">
+          <div className="cockpit-kpi-label">Total</div>
+          <div className="cockpit-money cockpit-money--lg">{formatMoney(total, currency)}</div>
+        </div>
+      </div>
+      {max <= 0 ? (
+        <div className="py-12 text-center text-sm text-muted-foreground">
+          No paid invoices in the last 30 days.
+        </div>
+      ) : (
+        (() => {
+          const PAD_L = 50, PAD_R = 8, PAD_T = 8, PAD_B = 22, W = 480, H = 200;
+          const plotW = W - PAD_L - PAD_R, plotH = H - PAD_T - PAD_B;
+          const n = series.length;
+          const x = (i: number) => PAD_L + (n === 1 ? plotW / 2 : (i / (n - 1)) * plotW);
+          const y = (v: number) => PAD_T + plotH - (v / max) * plotH;
+          const linePath = series.map((v, i) => `${i === 0 ? "M" : "L"}${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(" ");
+          const areaPath = `${linePath} L${x(n - 1).toFixed(1)},${PAD_T + plotH} L${x(0).toFixed(1)},${PAD_T + plotH} Z`;
+          const peakIdx = series.indexOf(max);
+          return (
+            <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-[200px]" preserveAspectRatio="none" aria-hidden>
+              <defs>
+                <linearGradient id="cockpit-area-grad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#0ea5e9" stopOpacity="0.25" />
+                  <stop offset="100%" stopColor="#0ea5e9" stopOpacity="0" />
+                </linearGradient>
+              </defs>
+              {[0, 0.5, 1].map((t) => {
+                const yy = PAD_T + plotH - t * plotH;
+                return (
+                  <g key={t}>
+                    <line x1={PAD_L} y1={yy} x2={PAD_L + plotW} y2={yy} className="cockpit-chart-grid" />
+                    <text x={PAD_L - 6} y={yy} textAnchor="end" dominantBaseline="middle" className="cockpit-chart-axis">
+                      {t === 0 ? "$0" : formatMoneyCompact(max * t, currency)}
+                    </text>
+                  </g>
+                );
+              })}
+              <line x1={PAD_L} y1={PAD_T} x2={PAD_L} y2={PAD_T + plotH} stroke="#e2e8f0" strokeWidth="1" />
+              <path d={areaPath} className="cockpit-chart-area" />
+              <path d={linePath} className="cockpit-chart-line" />
+              {peakIdx >= 0 && <circle cx={x(peakIdx)} cy={y(max)} r="3.5" className="cockpit-chart-dot" />}
+              <text x={PAD_L} y={H - 6} textAnchor="start" className="cockpit-chart-axis">30 days ago</text>
+              <text x={PAD_L + plotW} y={H - 6} textAnchor="end" className="cockpit-chart-axis">Today</text>
+            </svg>
+          );
+        })()
+      )}
+    </div>
+  );
+}
+
+// A/R aging chart — horizontal bars showing $ owed in each bucket.
+// Color-coded: current = slate, 1-30 = amber, 31+ = rose.
+function OverviewAgingChart({
+  buckets,
+  currency,
+}: {
+  buckets: { current: number; d1_30: number; d31_60: number; d61_90: number; d90plus: number };
+  currency: string;
+}) {
+  const rows: Array<{ label: string; cents: number; color: string }> = [
+    { label: "Current", cents: buckets.current, color: "#64748b" },
+    { label: "1–30 late", cents: buckets.d1_30, color: "#d97706" },
+    { label: "31–60 late", cents: buckets.d31_60, color: "#dc2626" },
+    { label: "61–90 late", cents: buckets.d61_90, color: "#b91c1c" },
+    { label: "90+ late", cents: buckets.d90plus, color: "#7f1d1d" },
+  ];
+  const max = rows.reduce((m, r) => (r.cents > m ? r.cents : m), 0);
+  const totalOwed = rows.reduce((s, r) => s + r.cents, 0);
+  return (
+    <div className="cockpit-chart">
+      <div className="flex items-baseline justify-between mb-3">
+        <div>
+          <div className="cockpit-chart-title">A/R aging</div>
+          <div className="cockpit-chart-sub">Outstanding by days past due</div>
+        </div>
+        <div className="text-right">
+          <div className="cockpit-kpi-label">Owed</div>
+          <div className="cockpit-money cockpit-money--lg">{formatMoney(totalOwed, currency)}</div>
+        </div>
+      </div>
+      {totalOwed === 0 ? (
+        <div className="py-12 text-center text-sm text-muted-foreground">
+          No outstanding invoices. You're caught up.
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {rows.map((r) => {
+            const pct = max > 0 ? (r.cents / max) * 100 : 0;
+            return (
+              <div key={r.label} className="flex items-center gap-3">
+                <div className="w-24 text-xs text-muted-foreground shrink-0">{r.label}</div>
+                <div className="flex-1 h-6 rounded bg-slate-100 overflow-hidden relative">
+                  <div
+                    className="h-full transition-all"
+                    style={{ width: `${pct}%`, background: r.color, opacity: r.cents > 0 ? 1 : 0 }}
+                  />
+                </div>
+                <div className="w-24 text-right text-xs cockpit-money tabular-nums">
+                  {r.cents > 0 ? formatMoney(r.cents, currency) : "—"}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
   );
 }
 
