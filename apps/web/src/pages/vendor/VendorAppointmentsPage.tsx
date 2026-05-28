@@ -125,16 +125,18 @@ export default function VendorAppointmentsPage({
 }: { embedded?: boolean; listingId?: string | null; accountVendorIds?: string[] } = {}) {
   const { user } = useAuth();
 
-  // The calendar still scopes its reads/writes to one listing at a
-  // time — every query below uses selectedListingId. Account-level
-  // mode (the cockpit embedded view) collapses the user's whole
-  // listing set onto the first listing in `accountVendorIds` so the
-  // shape of the queries doesn't change: it's just "pretend the
-  // primary listing was selected." Full aggregation across listings
-  // (showing every appointment on one calendar regardless of which
-  // listing it's for, union of blocked dates + recurring rules) is
-  // a known follow-up — calendar writes especially need a decision
-  // about which listing a "block this date" action targets.
+  // Two modes:
+  //  - Standalone /vendor/appointments page: works on the listing the
+  //    user picks from the local listing-picker. Reads + writes scope
+  //    to selectedListingId.
+  //  - Embedded in the cockpit (accountVendorIds prop provided):
+  //    READS aggregate across every listing on the account (.in()) so
+  //    the calendar surfaces every appointment / inquiry / blocked
+  //    date / weekday rule the vendor has anywhere. WRITES still
+  //    target one listing — the primary (accountVendorIds[0]) — since
+  //    "block this date" needs a concrete destination. A future
+  //    per-listing picker on the cockpit calendar can replace that.
+  const isAccountMode = Boolean(accountVendorIds && accountVendorIds.length > 0);
   const [listings, setListings] = useState<ListingOpt[]>([]);
   const [listingsLoading, setListingsLoading] = useState(true);
   const [localSelectedListingId, setLocalSelectedListingId] = useState<string | null>(
@@ -145,6 +147,12 @@ export default function VendorAppointmentsPage({
     : null;
   const selectedListingId = accountPrimaryId ?? (listingIdProp !== undefined ? listingIdProp : localSelectedListingId);
   const setSelectedListingId = setLocalSelectedListingId;
+  // Listing ids any READ query should fan out over. Account mode
+  // uses the full set; standalone mode uses just the picked listing.
+  const queryListingIds = isAccountMode
+    ? (accountVendorIds as string[])
+    : (selectedListingId ? [selectedListingId] : []);
+  const queryListingKey = queryListingIds.join(",");
   const [listingPickerOpen, setListingPickerOpen] = useState(false);
 
   const [inquiries, setInquiries] = useState<InquiryRow[]>([]);
@@ -226,18 +234,21 @@ export default function VendorAppointmentsPage({
   }, [viewMonth]);
 
   const loadCalendar = useCallback(async () => {
-    if (!selectedListingId || !user?.id) {
+    if (queryListingIds.length === 0 || !user?.id) {
       setInquiries([]);
       setManualBlocks(new Map());
       setLoading(false);
       return;
     }
-    // Belt-and-braces: only query a listing the user actually owns.
-    // RLS would silently return zero rows for someone else's id (URL
-    // injection, stale state from logging in as a different account),
-    // which reads as "no bookings" — indistinguishable from genuinely
+    // Belt-and-braces in standalone mode: only query a listing the
+    // user actually owns. (Account mode trusts accountVendorIds —
+    // the parent component already derived it from the user's own
+    // listing set, so every id is owned by the current user.) RLS
+    // would silently return zero rows for someone else's id, which
+    // reads as "no bookings" — indistinguishable from genuinely
     // free dates. Bail out fast with an empty calendar instead.
     if (
+      !isAccountMode &&
       !listingsLoading &&
       listings.length > 0 &&
       !listings.some((l) => l.id === selectedListingId)
@@ -257,22 +268,25 @@ export default function VendorAppointmentsPage({
         .select(
           "id, status, event_date, event_type, budget_min_cents, budget_max_cents, host_id, host:profiles!inquiries_host_id_fkey(display_name)",
         )
-        .eq("vendor_id", selectedListingId)
+        .in("vendor_id", queryListingIds)
         .gte("event_date", startYmd)
         .lt("event_date", endYmd),
       supabase
         .from("vendor_unavailable_dates")
         .select("date, reason")
-        .eq("vendor_id", selectedListingId)
+        .in("vendor_id", queryListingIds)
         .gte("date", startYmd)
         .lt("date", endYmd),
-      // Recurring weekday rules (vendor never works Mondays etc).
-      // Scoped to the selected listing; same vendor's other listings
-      // may have different recurring schedules.
+      // Recurring weekday rules. In account mode this is a union
+      // across listings: a weekday counts as "off" if ANY listing
+      // has it marked unavailable. That matches what the cockpit
+      // calendar should show ("am I busy on Mondays at any of my
+      // listings?"). Per-listing rules editing happens on the
+      // standalone /vendor/appointments page.
       supabase
         .from("vendor_availability_rules")
         .select("day_of_week, is_unavailable")
-        .eq("vendor_id", selectedListingId),
+        .in("vendor_id", queryListingIds),
     ]);
     setInquiries((inqRes.data ?? []) as InquiryRow[]);
     setManualBlocks(
@@ -294,7 +308,8 @@ export default function VendorAppointmentsPage({
       ),
     );
     setLoading(false);
-  }, [selectedListingId, user?.id, monthBounds, listings, listingsLoading]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [queryListingKey, user?.id, monthBounds, listings, listingsLoading, isAccountMode, selectedListingId]);
 
   async function toggleRecurring(dow: number, willBeOff: boolean) {
     if (!selectedListingId || savingRecurring !== null) return;
@@ -335,7 +350,7 @@ export default function VendorAppointmentsPage({
   }, [loadCalendar]);
 
   const loadAppointments = useCallback(async () => {
-    if (!user || !selectedListingId) {
+    if (!user || queryListingIds.length === 0) {
       setAppointments([]);
       setAppointmentsLoading(false);
       return;
@@ -345,7 +360,8 @@ export default function VendorAppointmentsPage({
     // Bound to ~90 days back so years-old history doesn't bloat the
     // payload. The calendar grid and "upcoming" lists only need the
     // recent window; deeper history can be exposed via a dedicated
-    // archive view later.
+    // archive view later. In account mode this fans out across
+    // every listing the vendor owns.
     const cutoff = new Date();
     cutoff.setDate(cutoff.getDate() - 90);
     const { data } = await (supabase as any)
@@ -353,7 +369,7 @@ export default function VendorAppointmentsPage({
       .select(
         "id, inquiry_id, vendor_id, host_id, kind, title, location, scheduled_at, duration_minutes, status, proposed_by, notes, host:profiles!appointments_host_id_fkey(display_name)",
       )
-      .eq("vendor_id", selectedListingId)
+      .in("vendor_id", queryListingIds)
       .gte("scheduled_at", cutoff.toISOString())
       .order("scheduled_at", { ascending: true })
       .limit(500);
@@ -364,7 +380,8 @@ export default function VendorAppointmentsPage({
     ).map((r) => ({ ...r, host_name: r.host?.display_name ?? null }));
     setAppointments(rows);
     setAppointmentsLoading(false);
-  }, [user, selectedListingId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, queryListingKey]);
 
   useEffect(() => {
     loadAppointments();
