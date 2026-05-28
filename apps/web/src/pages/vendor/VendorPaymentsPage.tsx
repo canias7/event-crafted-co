@@ -5548,6 +5548,8 @@ interface Expense {
   currency: string;
   category: ExpenseCategory;
   description: string;
+  item_name: string | null;
+  quantity: string | null;
   paid_to: string | null;
   notes: string | null;
   contractor_id?: string | null;
@@ -5640,6 +5642,8 @@ function ExpensesTab({
     amount: string;
     category: string;
     description: string;
+    item_name: string;
+    quantity: string;
     paid_to: string;
     notes: string;
     contractor_id: string;
@@ -5648,6 +5652,8 @@ function ExpensesTab({
     amount: "",
     category: "",
     description: "",
+    item_name: "",
+    quantity: "",
     paid_to: "",
     notes: "",
     contractor_id: "",
@@ -5701,7 +5707,7 @@ function ExpensesTab({
     const [{ data: expData, error: expErr }, { data: cData, error: cErr }] = await Promise.all([
       db
         .from("vendor_expenses")
-        .select("id, vendor_id, occurred_on, amount_cents, currency, category, description, paid_to, notes, contractor_id, created_at")
+        .select("id, vendor_id, occurred_on, amount_cents, currency, category, description, item_name, quantity, paid_to, notes, contractor_id, created_at")
         .in("vendor_id", accountVendorIds)
         .order("occurred_on", { ascending: false })
         .limit(500),
@@ -5737,6 +5743,8 @@ function ExpensesTab({
       amount: "",
       category: "",
       description: "",
+      item_name: "",
+      quantity: "",
       paid_to: "",
       notes: "",
       contractor_id: "",
@@ -5751,6 +5759,8 @@ function ExpensesTab({
       amount: (e.amount_cents / 100).toFixed(2),
       category: e.category,
       description: e.description,
+      item_name: e.item_name ?? "",
+      quantity: e.quantity ?? "",
       paid_to: e.paid_to ?? "",
       notes: e.notes ?? "",
       contractor_id: e.contractor_id ?? "",
@@ -5783,6 +5793,8 @@ function ExpensesTab({
       currency: "usd",
       category: form.category,
       description: form.description.trim(),
+      item_name: form.item_name.trim() || null,
+      quantity: form.quantity.trim() || null,
       paid_to: form.paid_to.trim() || null,
       notes: form.notes.trim() || null,
       // Only attach a contractor when one is selected AND the
@@ -5980,6 +5992,8 @@ function ExpensesTab({
       if (!term) return true;
       const hay = [
         r.description,
+        r.item_name ?? "",
+        r.quantity ?? "",
         r.paid_to ?? "",
         expenseCategoryLabel(r.category),
         (r.amount_cents / 100).toFixed(2),
@@ -6125,13 +6139,15 @@ function ExpensesTab({
       const guarded = /^[=+\-@\t\r]/.test(s) ? `'${s}` : s;
       return /[,"\n\r]/.test(guarded) ? `"${guarded.replace(/"/g, '""')}"` : guarded;
     };
-    const header = ["Date", "Category", "Description", "Payee", "Amount", "Currency", "Notes"];
+    const header = ["Date", "Category", "Item", "Quantity", "Description", "Payee", "Amount", "Currency", "Notes"];
     const lines = [header.join(",")];
     for (const r of filteredRows) {
       lines.push(
         [
           esc(r.occurred_on),
           esc(expenseCategoryLabel(r.category)),
+          esc(r.item_name ?? ""),
+          esc(r.quantity ?? ""),
           esc(r.description),
           esc(r.paid_to ?? ""),
           esc((r.amount_cents / 100).toFixed(2)),
@@ -6348,6 +6364,20 @@ function ExpensesTab({
               />
               <input
                 type="text"
+                placeholder="Item name (optional — e.g. Cement bags)"
+                value={form.item_name}
+                onChange={(e) => setForm({ ...form, item_name: e.target.value })}
+                className="rounded-lg border-0 px-3 py-2 text-sm bg-background/60 ring-1 ring-foreground/10 focus:ring-foreground/30 outline-none"
+              />
+              <input
+                type="text"
+                placeholder="Quantity (optional — e.g. 20 or 5 boxes)"
+                value={form.quantity}
+                onChange={(e) => setForm({ ...form, quantity: e.target.value })}
+                className="rounded-lg border-0 px-3 py-2 text-sm bg-background/60 ring-1 ring-foreground/10 focus:ring-foreground/30 outline-none"
+              />
+              <input
+                type="text"
                 placeholder="Paid to (optional — Home Depot, U-Haul…)"
                 value={form.paid_to}
                 onChange={(e) => setForm({ ...form, paid_to: e.target.value })}
@@ -6468,6 +6498,11 @@ function ExpensesTab({
                     {formatDate(e.occurred_on)}
                   </td>
                   <td className="px-3 py-3 text-sm font-medium">
+                    {e.item_name || e.quantity ? (
+                      <div className="text-[11px] uppercase tracking-wider text-muted-foreground/80 font-semibold mb-0.5">
+                        {[e.item_name, e.quantity].filter(Boolean).join(" · ")}
+                      </div>
+                    ) : null}
                     {e.description}
                     {e.notes ? (
                       <div className="text-[11px] text-muted-foreground mt-0.5 max-w-md truncate">{e.notes}</div>
