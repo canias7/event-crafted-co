@@ -312,7 +312,7 @@ export default function VendorAppointmentsPage({
   }, [queryListingKey, user?.id, monthBounds, listings, listingsLoading, isAccountMode, selectedListingId]);
 
   async function toggleRecurring(dow: number, willBeOff: boolean) {
-    if (!selectedListingId || savingRecurring !== null) return;
+    if (queryListingIds.length === 0 || savingRecurring !== null) return;
     setSavingRecurring(dow);
     // Optimistic local update so the switch flips instantly.
     setRecurringOff((prev) => {
@@ -321,15 +321,21 @@ export default function VendorAppointmentsPage({
       else next.delete(dow);
       return next;
     });
+    // Account mode writes the same weekday rule to every listing the
+    // vendor owns (the aggregated calendar view treats "Monday off
+    // anywhere" as "Monday off" — applying the rule everywhere keeps
+    // reads and writes in sync). Standalone mode targets just the
+    // picked listing as before.
+    const targetIds = isAccountMode ? queryListingIds : [selectedListingId!];
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { error } = await (supabase as any)
       .from("vendor_availability_rules")
       .upsert(
-        {
-          vendor_id: selectedListingId,
+        targetIds.map((vid) => ({
+          vendor_id: vid,
           day_of_week: dow,
           is_unavailable: willBeOff,
-        },
+        })),
         { onConflict: "vendor_id,day_of_week" },
       );
     setSavingRecurring(null);
@@ -531,24 +537,30 @@ export default function VendorAppointmentsPage({
   const [blockTitle, setBlockTitle] = useState("");
 
   async function commitSelectedDayBlock() {
-    if (!selectedYmd || !selectedListingId || blocking) return;
+    if (!selectedYmd || queryListingIds.length === 0 || blocking) return;
     const willBlock = !isSelectedBlocked;
     const verb = willBlock ? "Block" : "Unblock";
     setConfirmOpen(false);
     setBlocking(true);
+    // Account mode applies block / unblock across every listing on
+    // the account — the aggregated calendar view treats "blocked
+    // anywhere" as blocked, so the writes mirror that. Unblocking
+    // deletes the date row from every listing that had it, so the
+    // date becomes bookable on all of them at once. Standalone mode
+    // targets just the picked listing as before.
+    const targetIds = isAccountMode ? queryListingIds : [selectedListingId!];
     if (willBlock) {
       const trimmedTitle = blockTitle.trim();
+      const reason = trimmedTitle.length > 0 ? trimmedTitle : "Blocked manually";
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { error } = await (supabase as any)
         .from("vendor_unavailable_dates")
         .upsert(
-          [
-            {
-              vendor_id: selectedListingId,
-              date: selectedYmd,
-              reason: trimmedTitle.length > 0 ? trimmedTitle : "Blocked manually",
-            },
-          ],
+          targetIds.map((vid) => ({
+            vendor_id: vid,
+            date: selectedYmd,
+            reason,
+          })),
           { onConflict: "vendor_id,date" },
         );
       setBlocking(false);
@@ -561,7 +573,7 @@ export default function VendorAppointmentsPage({
       const { error } = await supabase
         .from("vendor_unavailable_dates")
         .delete()
-        .eq("vendor_id", selectedListingId)
+        .in("vendor_id", targetIds)
         .eq("date", selectedYmd);
       setBlocking(false);
       if (error) {
@@ -576,7 +588,7 @@ export default function VendorAppointmentsPage({
   // on vendor_unavailable_dates. Optimistic local update so the
   // input doesn't flicker while waiting for the round trip.
   async function editBlockTitle(ymd: string, newTitle: string) {
-    if (!selectedListingId) return;
+    if (queryListingIds.length === 0) return;
     const trimmed = newTitle.trim();
     const reasonForDb = trimmed.length > 0 ? trimmed : "Blocked manually";
     setManualBlocks((prev) => {
@@ -584,11 +596,16 @@ export default function VendorAppointmentsPage({
       next.set(ymd, reasonForDb);
       return next;
     });
+    // Account mode keeps every listing's reason in sync — the
+    // aggregated map only shows one reason per date anyway, so
+    // updating them all keeps the displayed title consistent if
+    // the vendor later switches to the standalone per-listing view.
+    const targetIds = isAccountMode ? queryListingIds : [selectedListingId!];
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { error } = await (supabase as any)
       .from("vendor_unavailable_dates")
       .update({ reason: reasonForDb })
-      .eq("vendor_id", selectedListingId)
+      .in("vendor_id", targetIds)
       .eq("date", ymd);
     if (error) {
       toast.error(`Couldn't update title: ${error.message}`);
@@ -793,14 +810,27 @@ export default function VendorAppointmentsPage({
             </AlertDialogTitle>
             <AlertDialogDescription className="text-sm leading-relaxed">
               {selectedYmd ? (
-                isSelectedBlocked ? (
+                isAccountMode ? (
+                  isSelectedBlocked ? (
+                    <>
+                      {prettyDay(selectedYmd)} will be bookable again on every
+                      listing on your account ({queryListingIds.length}).
+                    </>
+                  ) : (
+                    <>
+                      Hosts won&apos;t see any of your listings (
+                      {queryListingIds.length}) as bookable on{" "}
+                      {prettyDay(selectedYmd)}.
+                    </>
+                  )
+                ) : isSelectedBlocked ? (
                   <>
                     {prettyDay(selectedYmd)} will be bookable again on{" "}
                     {selectedListing?.business_name?.trim() || "this listing"}.
                   </>
                 ) : (
                   <>
-                    Hosts won't see{" "}
+                    Hosts won&apos;t see{" "}
                     {selectedListing?.business_name?.trim() || "this listing"}{" "}
                     as bookable on {prettyDay(selectedYmd)}.
                   </>
