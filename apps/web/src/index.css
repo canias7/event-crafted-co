@@ -739,7 +739,8 @@
     display: flex;
     align-items: center;
     gap: 6px;
-    margin-top: 4px;
+    margin-top: auto;
+    padding-top: 4px;
   }
 
   /* 2-column chart grid — Revenue line + A/R aging bars. */
