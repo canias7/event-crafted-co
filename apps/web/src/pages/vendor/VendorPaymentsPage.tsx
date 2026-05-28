@@ -1267,10 +1267,10 @@ function OverviewRevenueChart({ series: rawSeries, currency }: { series: number[
                 <div
                   className="text-xs text-muted-foreground italic rounded-full px-3 py-1.5"
                   style={{
-                    background: "rgba(255, 253, 250, 0.78)",
-                    border: "0.5px solid rgba(255, 138, 76, 0.18)",
-                    backdropFilter: "blur(8px)",
-                    WebkitBackdropFilter: "blur(8px)",
+                    background: "rgba(255, 250, 245, 0.6)",
+                    border: "0.5px solid rgba(255, 138, 76, 0.22)",
+                    backdropFilter: "blur(12px) saturate(140%)",
+                    WebkitBackdropFilter: "blur(12px) saturate(140%)",
                   }}
                 >
                   No paid invoices in the last 30 days
