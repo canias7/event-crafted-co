@@ -300,7 +300,8 @@ function renderCover(spec: Spec, t: Theme): string {
 </label>`;
   }
 
-  // Default: envelope + wax seal
+  // Default: dark envelope-feel cover + polished wax seal with
+  // glossy highlight, drip glow, and inner shadow.
   return `
 <input type="checkbox" id="opener" class="opener-toggle">
 <label for="opener" class="cover-page" aria-label="Tap to open invitation">
@@ -309,6 +310,7 @@ function renderCover(spec: Spec, t: Theme): string {
   <h1 class="cover-names">${titleHtml}</h1>
   ${dateLine}
   <div class="wax-seal" aria-hidden="true">
+    <span class="seal-shine"></span>
     <span class="seal-mark">${esc(spec.monogram ?? "✦")}</span>
   </div>
   <div class="tap-hint">${esc(spec.cover_seal_text ?? "Tap the seal to open")}</div>
@@ -567,28 +569,64 @@ ${googleFontsLink(t)}
     --type-label:0.7rem;
   }
   body{background:var(--bg);color:var(--text);font-family:var(--body);line-height:1.6;min-height:100vh;overflow-x:hidden}
-  /* === COVER PAGE — checkbox-driven reveal === */
+  /* === COVER PAGE === */
   .opener-toggle{display:none}
-  .cover-page{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:var(--bg);color:var(--surface);cursor:pointer;z-index:1000;padding:2rem;text-align:center;transition:opacity 0.6s ease,transform 0.6s ease}
-  .opener-toggle:checked ~ .cover-page{opacity:0;transform:scale(1.05);pointer-events:none}
-  .cover-eyebrow{font-family:var(--body);font-size:var(--type-label);letter-spacing:0.32em;text-transform:uppercase;color:var(--gold);opacity:0.8;margin-bottom:2rem}
-  .cover-names{font-family:var(--script);font-size:clamp(3rem,9vw,6rem);color:var(--surface);line-height:1.05;text-shadow:0 2px 24px rgba(0,0,0,0.4)}
+  .cover-page{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:var(--bg);color:var(--surface);cursor:pointer;z-index:1000;padding:2rem;text-align:center;transition:opacity 0.7s ease,transform 0.7s ease}
+  .opener-toggle:checked ~ .cover-page{opacity:0;transform:scale(1.04);pointer-events:none}
+  .cover-eyebrow{font-family:var(--body);font-size:var(--type-label);letter-spacing:0.32em;text-transform:uppercase;color:var(--gold);opacity:0.85;margin-bottom:2rem}
+  .cover-names{font-family:var(--script);font-size:clamp(3rem,9vw,6rem);color:var(--surface);line-height:1.05;text-shadow:0 1px 0 rgba(255,255,255,0.06),0 2px 24px rgba(0,0,0,0.45)}
   .cover-date{margin-top:1.5rem}
-  .wax-seal{margin-top:2rem;width:80px;height:80px;border-radius:50%;background:radial-gradient(circle at 30% 30%,${t.accent},#2a0a0a 80%);display:flex;align-items:center;justify-content:center;box-shadow:0 4px 20px rgba(0,0,0,0.5),inset 0 -2px 6px rgba(0,0,0,0.4);animation:sealPulse 2.4s ease-in-out infinite}
-  .wax-seal .seal-mark{font-family:var(--script);font-size:2rem;color:var(--gold)}
-  .tap-hint{margin-top:1rem;font-family:var(--body);font-size:var(--type-label);letter-spacing:0.25em;text-transform:uppercase;color:var(--gold);opacity:0.6;animation:tapBounce 2s ease-in-out infinite}
-  .monogram-crest{margin:1rem 0 2rem}
-  @keyframes sealPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.06)}}
+  /* Wax seal — multi-stop gradient with rim shine + drip glow + glossy highlight. */
+  .wax-seal{position:relative;margin-top:2rem;width:96px;height:96px;border-radius:50%;background:radial-gradient(circle at 30% 28%,${t.accent} 0%,${t.accent} 20%,#5a0f0f 70%,#2a0606 100%);display:flex;align-items:center;justify-content:center;box-shadow:0 1px 2px rgba(0,0,0,0.35),0 6px 14px rgba(0,0,0,0.45),0 16px 36px rgba(0,0,0,0.4),inset 0 -4px 10px rgba(0,0,0,0.45),inset 0 2px 4px rgba(255,255,255,0.18);animation:sealPulse 2.6s ease-in-out infinite}
+  /* Wax seal — irregular outer drip ring behind the disc. */
+  .wax-seal::before{content:"";position:absolute;inset:-12px -8px -10px -10px;background:radial-gradient(ellipse at 48% 50%,${t.accent}aa 0%,${t.accent}55 45%,transparent 70%);border-radius:50%;filter:blur(3px);z-index:-1}
+  /* Wax seal — top-left glossy highlight for the wet-wax look. */
+  .seal-shine{position:absolute;top:14%;left:22%;width:38%;height:30%;border-radius:50%;background:radial-gradient(ellipse,rgba(255,255,255,0.55) 0%,rgba(255,255,255,0.18) 35%,transparent 60%);filter:blur(1px);pointer-events:none}
+  .wax-seal .seal-mark{font-family:var(--script);font-size:2.2rem;color:${t.gold};text-shadow:0 1px 0 rgba(0,0,0,0.5),0 -1px 0 rgba(255,255,255,0.1);position:relative;z-index:1}
+  .tap-hint{margin-top:1.25rem;font-family:var(--body);font-size:var(--type-label);letter-spacing:0.25em;text-transform:uppercase;color:var(--gold);opacity:0.65;animation:tapBounce 2s ease-in-out infinite}
+  .monogram-crest{margin:1rem 0 2rem;filter:drop-shadow(0 4px 10px rgba(0,0,0,0.35))}
+  @keyframes sealPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.05)}}
   @keyframes tapBounce{0%,100%{transform:translateY(0)}50%{transform:translateY(4px)}}
   /* === BODY === */
-  .invitation-body{max-width:920px;margin:0 auto;padding:3rem 1.5rem 4rem}
-  section{margin:2.5rem 0;opacity:1;transform:none}
+  .invitation-body{max-width:920px;margin:0 auto;padding:3rem 1.5rem 4rem;position:relative;z-index:0}
+  section{margin:3rem 0;opacity:1;transform:none;position:relative}
   @supports (animation-timeline: view()){
     section{animation:section-enter linear both;animation-timeline:view();animation-range:entry 0% cover 35%}
   }
   @keyframes section-enter{from{opacity:0.4;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
-  .paper-card{background:var(--surface);${paperTextureCss(t)}border-radius:16px;padding:clamp(2rem,4vw,3rem);position:relative;box-shadow:0 18px 50px rgba(0,0,0,0.18),0 4px 12px rgba(0,0,0,0.08)}
-  .paper-card::before{content:"";position:absolute;inset:8px;border:1px solid ${t.accent}22;border-radius:12px;pointer-events:none}
+  /* === PAPER CARD — layered shadows + paper-stack pseudos. ===
+     Five stacked shadows for realistic depth (contact, ambient,
+     mid, deep, long). Sepia-tinted instead of pure black so it
+     reads as warm paper, not flat web UI. */
+  .paper-card{
+    background:var(--surface);
+    ${paperTextureCss(t)}
+    border-radius:6px;
+    padding:clamp(2rem,4vw,3rem);
+    position:relative;
+    isolation:isolate;
+    box-shadow:
+      0 1px 1px rgba(40,20,5,0.04),
+      0 2px 4px rgba(40,20,5,0.05),
+      0 8px 14px rgba(40,20,5,0.07),
+      0 20px 40px rgba(40,20,5,0.10),
+      0 44px 80px rgba(40,20,5,0.08);
+  }
+  /* Paper-stack: two slightly rotated sheets visible behind the
+     main card. Same surface color, semi-transparent so they read
+     as separate paper layers. */
+  .paper-card::before,
+  .paper-card::after{
+    content:"";
+    position:absolute;
+    inset:0;
+    background:var(--surface2);
+    border-radius:6px;
+    z-index:-1;
+    box-shadow:0 8px 20px rgba(40,20,5,0.08);
+  }
+  .paper-card::before{transform:rotate(-1.1deg) translate(-6px,4px);opacity:0.7}
+  .paper-card::after{transform:rotate(0.8deg) translate(5px,3px);opacity:0.55}
   .ornament-rule{width:60px;height:1px;background:var(--accent);opacity:0.5;margin:0 auto 1.5rem}
   .section-title{font-family:var(--display);font-size:clamp(1.6rem,3.5vw,2.4rem);font-weight:500;text-align:center;color:var(--text);margin-bottom:1.5rem}
   .section-body{font-family:var(--body);font-size:var(--type-body);line-height:1.7;color:var(--text);opacity:0.85}
@@ -607,7 +645,33 @@ ${googleFontsLink(t)}
   .cd-num{font-family:var(--display);font-size:1.4rem;font-weight:500;color:var(--gold)}
   .cd-label{font-family:var(--body);font-size:0.65rem;letter-spacing:0.25em;text-transform:uppercase;opacity:0.7;margin-top:0.2rem}
   /* === STORY === */
-  .story-image{width:100%;max-width:480px;display:block;margin:0 auto 1.5rem;border-radius:8px}
+  /* Story image gets a polaroid treatment — white border with bottom
+     caption space, slight rotation, drop shadow, and a piece of
+     "washi tape" pinned to the top center. */
+  .story-image{
+    display:block;
+    width:auto;
+    max-width:min(420px,80%);
+    margin:1.5rem auto 2.25rem;
+    padding:14px 14px 48px;
+    background:#fefefe;
+    border-radius:2px;
+    transform:rotate(-1.4deg);
+    box-shadow:
+      0 1px 2px rgba(40,20,5,0.10),
+      0 8px 16px rgba(40,20,5,0.16),
+      0 22px 40px rgba(40,20,5,0.14);
+    position:relative;
+  }
+  .story-image::before{
+    content:"";
+    position:absolute;
+    top:-10px;left:50%;transform:translateX(-50%) rotate(-3deg);
+    width:80px;height:22px;
+    background:rgba(${t.particle === 'none' ? '180,160,120' : '255,255,255'},0.55);
+    box-shadow:0 1px 2px rgba(0,0,0,0.15);
+    border-radius:1px;
+  }
   /* === SCHEDULE === */
   .sch-list{list-style:none;padding:0;display:flex;flex-direction:column;gap:1rem}
   .sch-item{display:flex;gap:1.25rem;padding-bottom:1rem;border-bottom:1px solid ${t.accent}22}
