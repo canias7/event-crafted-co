@@ -6675,16 +6675,16 @@ function ExpensesTab({
                       className="cursor-pointer"
                     />
                   </td>
-                  <td className="px-3 py-3 text-sm text-foreground/80 whitespace-nowrap tabular-nums">
+                  <td className="px-3 py-3 text-sm text-foreground font-bold whitespace-nowrap tabular-nums">
                     {formatDate(e.occurred_on)}
                   </td>
-                  <td className="px-3 py-3 text-sm text-foreground/90">
-                    {e.item_name || <span className="text-muted-foreground">—</span>}
+                  <td className="px-3 py-3 text-sm text-foreground font-bold">
+                    {e.item_name || "—"}
                   </td>
-                  <td className="px-3 py-3 text-sm text-right tabular-nums text-foreground/80">
-                    {e.quantity || <span className="text-muted-foreground">—</span>}
+                  <td className="px-3 py-3 text-sm text-foreground font-bold text-right tabular-nums">
+                    {e.quantity || "—"}
                   </td>
-                  <td className="px-3 py-3 text-sm font-medium">
+                  <td className="px-3 py-3 text-sm text-foreground font-bold">
                     <div className="flex items-center gap-1.5">
                       <span>{e.description}</span>
                       {e.recurring_rule_id ? (
@@ -6698,13 +6698,10 @@ function ExpensesTab({
                       ) : null}
                     </div>
                   </td>
-                  <td className="px-3 py-3 text-sm text-muted-foreground">
+                  <td className="px-3 py-3 text-sm text-foreground font-bold">
                     {e.paid_to || "—"}
                   </td>
-                  <td
-                    className="px-3 py-3 text-right tabular-nums whitespace-nowrap"
-                    style={{ fontFamily: "'Fraunces', Georgia, serif", fontWeight: 600, fontSize: "15px" }}
-                  >
+                  <td className="px-3 py-3 text-sm text-foreground font-bold text-right tabular-nums whitespace-nowrap">
                     {formatMoney(e.amount_cents, e.currency)}
                   </td>
                   <td className="px-3 py-3 text-right whitespace-nowrap">
