@@ -6714,7 +6714,7 @@ function ExpensesTab({
                         onClick={() => startEdit(e)}
                         className="text-[#d94f3d] hover:underline text-sm font-medium"
                       >
-                        View / Edit
+                        Edit
                       </button>
                       <button
                         type="button"
