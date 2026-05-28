@@ -1005,6 +1005,11 @@ export default function WebsiteBuilderPage() {
           prompt: promptForAi,
           conversation: prevConv,
           edit_site_id: siteId,
+          // New generations use the compose engine (Claude → spec → HTML).
+          // ~10s instead of ~3-5 min. Edits still take the legacy
+          // Claude-writes-HTML path because we don't store the spec
+          // alongside the saved HTML yet.
+          compose: !siteId,
         }),
         signal: ac.signal,
       });
