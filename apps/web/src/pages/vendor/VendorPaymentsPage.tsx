@@ -404,7 +404,7 @@ export default function VendorPaymentsPage({ embedded = false }: { embedded?: bo
 
   const refresh = useCallback(
     async (silent = false) => {
-      if (!vendorId) {
+      if (!vendorId || accountVendorIds.length === 0) {
         // No listing yet — flip loading off so the empty state shows
         // instead of an infinite spinner. (Vendor without a listing
         // can't use VendoraPay; render the "set up your profile" prompt.)
@@ -414,24 +414,31 @@ export default function VendorPaymentsPage({ embedded = false }: { embedded?: bo
       if (!silent) setRefreshing(true);
       try {
         const [statusRes, balanceRes, txRes, payoutRes, linksRes, invoicesRes] = await Promise.all([
+          // Stripe edge fns stay scoped to one connected account
+          // (each listing has its own). The currently-selected
+          // listing's vendorId drives these; the rest of the cockpit
+          // uses accountVendorIds for cross-listing aggregation.
           supabase.functions.invoke("vendorapay-status", { body: { business_id: vendorId } }),
           supabase.functions.invoke("vendorapay-balance", { body: { business_id: vendorId } }),
           supabase.functions.invoke("vendorapay-transactions", { body: { business_id: vendorId, limit: 50 } }),
           supabase.functions.invoke("vendorapay-payouts", { body: { business_id: vendorId } }),
+          // Supabase tables fan out across every listing the user
+          // owns — Files / Customers / Reports all read these and
+          // expect account-wide data after the per-account migration.
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           (supabase as any)
             .from("payment_links")
             .select("id, vendor_id, slug, title, description, amount_cents, currency, status, paid_at, expires_at, activate_at, parent_link_id, created_at")
-            .eq("vendor_id", vendorId)
+            .in("vendor_id", accountVendorIds)
             .order("created_at", { ascending: false })
-            .limit(50),
+            .limit(200),
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           (supabase as any)
             .from("invoices")
             .select("id, vendor_id, slug, invoice_number, bill_to_name, bill_to_email, issue_date, due_date, notes, line_items, subtotal_cents, tax_rate_bps, tax_cents, total_cents, currency, status, sent_at, paid_at, refunded_at, refunded_amount_cents, reminder_sent_at, late_fee_cents, late_fee_added_at, payment_failure_message, payment_failed_at, payment_attempts, created_at")
-            .eq("vendor_id", vendorId)
+            .in("vendor_id", accountVendorIds)
             .order("created_at", { ascending: false })
-            .limit(50),
+            .limit(200),
         ]);
         if (statusRes.data) setStatus(statusRes.data as Status);
         if (balanceRes.data) setBalance(balanceRes.data as Balance);
@@ -456,7 +463,11 @@ export default function VendorPaymentsPage({ embedded = false }: { embedded?: bo
         setRefreshing(false);
       }
     },
-    [vendorId],
+    // accountKey is the join of accountVendorIds — refetches when the
+    // account's listing set changes. vendorId still drives the Stripe
+    // fan-out (per connected account).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [vendorId, accountVendorIds.join(",")],
   );
 
   useEffect(() => {
@@ -825,8 +836,8 @@ export default function VendorPaymentsPage({ embedded = false }: { embedded?: bo
             />
           ) : tab === "files" ? (
             <FilesTab
-              vendorId={vendorId}
-              listing={listings.find((l) => l.id === selectedListingId) ?? null}
+              accountVendorIds={accountVendorIds}
+              listings={listings}
               invoices={invoices}
               paymentLinks={paymentLinks}
               status={status}
@@ -3232,12 +3243,15 @@ function PayoutsTab({
 }
 
 // Wrapper for the Files tab — owns the secondary nav and dispatches
-// to the right sub-surface. Today only Invoices is wired up; the rest
-// render a friendly "coming soon" card with the same shape so the IA
-// is visible to vendors and ready to fill in.
+// to the right sub-surface. Account-level: invoices and payment
+// links are loaded across every listing the user owns (parent does
+// the .in() fetch and passes the arrays down). Per-row actions
+// look up their listing via row.vendor_id; contracts/proposals
+// templates are stored under accountVendorIds[0] as account-wide
+// defaults.
 function FilesTab(props: {
-  vendorId: string | null;
-  listing: ListingOpt | null;
+  accountVendorIds: string[];
+  listings: ListingOpt[];
   invoices: Invoice[];
   paymentLinks: PaymentLink[];
   status: Status | null;
@@ -3277,30 +3291,31 @@ function FilesTab(props: {
 
       {fileTab === "invoices" ? (
         <InvoicesTab
-          vendorId={props.vendorId}
-          listing={props.listing}
+          accountVendorIds={props.accountVendorIds}
+          listings={props.listings}
           invoices={props.invoices}
           status={props.status}
           onChanged={props.onChanged}
         />
       ) : fileTab === "links" ? (
         <PayLinksTab
-          vendorId={props.vendorId}
+          accountVendorIds={props.accountVendorIds}
+          listings={props.listings}
           links={props.paymentLinks}
           status={props.status}
           onChanged={props.onChanged}
         />
       ) : fileTab === "contracts" ? (
         <DocumentCanvas
-          vendorId={props.vendorId}
-          listing={props.listing}
+          accountVendorIds={props.accountVendorIds}
+          listings={props.listings}
           kind="contract"
           starter={CONTRACT_TEMPLATES[0]}
         />
       ) : fileTab === "proposals" ? (
         <DocumentCanvas
-          vendorId={props.vendorId}
-          listing={props.listing}
+          accountVendorIds={props.accountVendorIds}
+          listings={props.listings}
           kind="proposal"
           starter={PROPOSAL_TEMPLATES[0]}
         />
@@ -3591,27 +3606,34 @@ function StaticMeta({
 // (vendor_id, kind). First-time vendors get the starter content
 // from CONTRACT_TEMPLATES[0] / PROPOSAL_TEMPLATES[0] as a seed.
 function DocumentCanvas({
-  vendorId,
-  listing,
+  accountVendorIds,
+  listings,
   kind,
   starter,
 }: {
-  vendorId: string | null;
-  listing: ListingOpt | null;
+  accountVendorIds: string[];
+  listings: ListingOpt[];
   kind: "contract" | "proposal";
   starter: DocTemplate;
 }) {
+  // Contract / proposal templates are stored once per account (no
+  // separate per-listing copies). The first listing in the account
+  // owns the template row; the brand placeholders rendered below
+  // come from that same listing's profile. A future primary-listing
+  // picker can replace `accountVendorIds[0]` if the vendor wants to
+  // pin a different listing as the template owner.
+  const templateVendorId = accountVendorIds[0] ?? null;
+  const templateListing = listings.find((l) => l.id === templateVendorId) ?? null;
   const [title, setTitle] = useState(starter.title);
   const [body, setBody] = useState(starter.content);
   const [loaded, setLoaded] = useState(false);
   const [saving, setSaving] = useState(false);
   const initialRef = useRef({ title: starter.title, body: starter.content });
 
-  // Fetch the vendor's saved default for this kind. If they have
-  // one, hydrate the canvas from it; otherwise leave the starter
-  // seed in place.
+  // Fetch the account's saved default for this kind. If one exists,
+  // hydrate the canvas from it; otherwise leave the starter seed.
   useEffect(() => {
-    if (!vendorId) {
+    if (!templateVendorId) {
       setTitle(starter.title);
       setBody(starter.content);
       initialRef.current = { title: starter.title, body: starter.content };
@@ -3625,7 +3647,7 @@ function DocumentCanvas({
       const { data } = await (supabase as any)
         .from("vendor_document_defaults")
         .select("template_data")
-        .eq("vendor_id", vendorId)
+        .eq("vendor_id", templateVendorId)
         .eq("kind", kind)
         .maybeSingle();
       if (cancelled) return;
@@ -3646,19 +3668,19 @@ function DocumentCanvas({
     return () => {
       cancelled = true;
     };
-  }, [vendorId, kind, starter.title, starter.content]);
+  }, [templateVendorId, kind, starter.title, starter.content]);
 
   const dirty = title !== initialRef.current.title || body !== initialRef.current.body;
 
   const save = useCallback(async () => {
-    if (!vendorId || saving || !dirty) return;
+    if (!templateVendorId || saving || !dirty) return;
     setSaving(true);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { error } = await (supabase as any)
       .from("vendor_document_defaults")
       .upsert(
         {
-          vendor_id: vendorId,
+          vendor_id: templateVendorId,
           kind,
           template_data: { title, body },
         },
@@ -3671,10 +3693,10 @@ function DocumentCanvas({
     }
     initialRef.current = { title, body };
     toast.success(`${kind === "contract" ? "Contract" : "Proposal"} template saved`);
-  }, [vendorId, saving, dirty, kind, title, body]);
+  }, [templateVendorId, saving, dirty, kind, title, body]);
 
-  const displayName = listing?.business_name?.trim() || "[Your Business Name]";
-  const displayLocation = listing?.location?.trim() || "[City, State]";
+  const displayName = templateListing?.business_name?.trim() || "[Your Business Name]";
+  const displayLocation = templateListing?.location?.trim() || "[City, State]";
   const editableCls =
     "bg-transparent border-0 outline-none rounded px-1 -mx-1 transition-colors hover:bg-foreground/[0.05] focus:bg-foreground/[0.08]";
 
@@ -4021,17 +4043,28 @@ function SenderDomainCard({ vendorId }: { vendorId: string | null }) {
 }
 
 function InvoicesTab({
-  vendorId,
-  listing,
+  accountVendorIds,
+  listings,
   invoices,
   onChanged,
 }: {
-  vendorId: string | null;
-  listing: ListingOpt | null;
+  accountVendorIds: string[];
+  listings: ListingOpt[];
   invoices: Invoice[];
   status: Status | null;
   onChanged: () => void;
 }) {
+  // Account-level: the invoice list (`invoices`) already arrives
+  // aggregated across every listing on the account because the
+  // parent's fetch was switched to .in(vendor_id, accountVendorIds).
+  // The brand-editing card and new-invoice defaults below need a
+  // *single* listing context, so they resolve against the first
+  // listing in the account by convention. A future primary-listing
+  // picker can replace `accountVendorIds[0]` once the new listing
+  // selection UI lands; for now the brand card edits the primary
+  // listing's profile and new invoices are stamped against it.
+  const vendorId = accountVendorIds[0] ?? null;
+  const listing = listings.find((l) => l.id === vendorId) ?? null;
   const { user } = useAuth();
   const [sendingId, setSendingId] = useState<string | null>(null);
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
@@ -6807,16 +6840,22 @@ function DisputesTab({ vendorId }: { vendorId: string | null }) {
 }
 
 function PayLinksTab({
-  vendorId,
+  accountVendorIds,
+  listings: _listings,
   links,
   status,
   onChanged,
 }: {
-  vendorId: string | null;
+  accountVendorIds: string[];
+  listings: ListingOpt[];
   links: PaymentLink[];
   status: Status | null;
   onChanged: () => void;
 }) {
+  // New links land on the first listing in the account by
+  // convention (no listing picker exists in the cockpit anymore).
+  // A future primary-listing picker can replace accountVendorIds[0].
+  const defaultVendorId = accountVendorIds[0] ?? null;
   const [creating, setCreating] = useState(false);
   const [title, setTitle] = useState("");
   const [amountDollars, setAmountDollars] = useState("");
@@ -6827,7 +6866,7 @@ function PayLinksTab({
   const [submitting, setSubmitting] = useState(false);
 
   const create = useCallback(async () => {
-    if (!vendorId || submitting) return;
+    if (!defaultVendorId || submitting) return;
     const totalCents = Math.round(parseFloat(amountDollars) * 100);
     if (!title.trim()) {
       toast.error("Title required");
@@ -6872,7 +6911,7 @@ function PayLinksTab({
       // Single charge — original behavior.
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { error } = await (supabase as any).from("payment_links").insert({
-        vendor_id: vendorId,
+        vendor_id: defaultVendorId,
         title: title.trim(),
         description: description.trim() || null,
         amount_cents: totalCents,
@@ -6891,7 +6930,7 @@ function PayLinksTab({
       const { data: depositRow, error: depErr } = await (supabase as any)
         .from("payment_links")
         .insert({
-          vendor_id: vendorId,
+          vendor_id: defaultVendorId,
           title: `${title.trim()} — deposit`,
           description: description.trim() || null,
           amount_cents: depositCents,
@@ -6906,7 +6945,7 @@ function PayLinksTab({
       }
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { error: balErr } = await (supabase as any).from("payment_links").insert({
-        vendor_id: vendorId,
+        vendor_id: defaultVendorId,
         title: `${title.trim()} — balance`,
         description: description.trim() || null,
         amount_cents: balanceCents,
