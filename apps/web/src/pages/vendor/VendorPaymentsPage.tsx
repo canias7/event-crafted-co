@@ -1220,42 +1220,49 @@ function OverviewRevenueChart({ series, currency }: { series: number[]; currency
           <div className="cockpit-money cockpit-money--lg">{formatMoney(total, currency)}</div>
         </div>
       </div>
-      {max <= 0 ? (
-        <div className="py-12 text-center text-sm text-muted-foreground">
-          No paid invoices in the last 30 days.
-        </div>
-      ) : (
-        (() => {
-          const PAD_L = 50, PAD_R = 8, PAD_T = 8, PAD_B = 22, W = 480, H = 200;
-          const plotW = W - PAD_L - PAD_R, plotH = H - PAD_T - PAD_B;
-          const n = series.length;
-          const x = (i: number) => PAD_L + (n === 1 ? plotW / 2 : (i / (n - 1)) * plotW);
-          const y = (v: number) => PAD_T + plotH - (v / max) * plotH;
-          // Smooth the line into a wave with a Catmull-Rom-to-Bezier
-          // conversion — tension 0.2 ≈ Chart.js's `tension: 0.4` look.
-          // The area path reuses the same curve so the fill hugs the
-          // line instead of cutting in straight segments underneath.
-          const pts = series.map((v, i) => ({ x: x(i), y: y(v) }));
-          const tension = 0.2;
-          let linePath = `M${pts[0].x.toFixed(1)},${pts[0].y.toFixed(1)}`;
-          for (let i = 0; i < pts.length - 1; i++) {
-            const p0 = pts[i - 1] ?? pts[i];
-            const p1 = pts[i];
-            const p2 = pts[i + 1];
-            const p3 = pts[i + 2] ?? pts[i + 1];
-            const c1x = p1.x + (p2.x - p0.x) * tension;
-            const c1y = p1.y + (p2.y - p0.y) * tension;
-            const c2x = p2.x - (p3.x - p1.x) * tension;
-            const c2y = p2.y - (p3.y - p1.y) * tension;
-            linePath += ` C${c1x.toFixed(1)},${c1y.toFixed(1)} ${c2x.toFixed(1)},${c2y.toFixed(1)} ${p2.x.toFixed(1)},${p2.y.toFixed(1)}`;
-          }
-          const areaPath = `${linePath} L${pts[pts.length - 1].x.toFixed(1)},${PAD_T + plotH} L${pts[0].x.toFixed(1)},${PAD_T + plotH} Z`;
-          const peakIdx = series.indexOf(max);
-          return (
+      {(() => {
+        const PAD_L = 50, PAD_R = 8, PAD_T = 8, PAD_B = 22, W = 480, H = 200;
+        const plotW = W - PAD_L - PAD_R, plotH = H - PAD_T - PAD_B;
+        const n = series.length;
+        // When there's no revenue yet, plot a gentle ghost wave so the
+        // chart's anatomy is visible. Vendor sees what the chart will
+        // look like once invoices start landing, with an overlay note
+        // making clear nothing's been earned yet.
+        const hasData = max > 0;
+        const plotted = hasData
+          ? series
+          : Array.from({ length: n }, (_, i) =>
+              0.55 + 0.35 * Math.sin((i / (n - 1)) * Math.PI * 1.4 - Math.PI / 6),
+            );
+        const plotMax = hasData ? max : 1;
+        const x = (i: number) => PAD_L + (n === 1 ? plotW / 2 : (i / (n - 1)) * plotW);
+        const y = (v: number) => PAD_T + plotH - (v / plotMax) * plotH;
+        // Smooth the line into a wave with a Catmull-Rom-to-Bezier
+        // conversion — tension 0.2 ≈ Chart.js's `tension: 0.4` look.
+        // The area path reuses the same curve so the fill hugs the
+        // line instead of cutting in straight segments underneath.
+        const pts = plotted.map((v, i) => ({ x: x(i), y: y(v) }));
+        const tension = 0.2;
+        let linePath = `M${pts[0].x.toFixed(1)},${pts[0].y.toFixed(1)}`;
+        for (let i = 0; i < pts.length - 1; i++) {
+          const p0 = pts[i - 1] ?? pts[i];
+          const p1 = pts[i];
+          const p2 = pts[i + 1];
+          const p3 = pts[i + 2] ?? pts[i + 1];
+          const c1x = p1.x + (p2.x - p0.x) * tension;
+          const c1y = p1.y + (p2.y - p0.y) * tension;
+          const c2x = p2.x - (p3.x - p1.x) * tension;
+          const c2y = p2.y - (p3.y - p1.y) * tension;
+          linePath += ` C${c1x.toFixed(1)},${c1y.toFixed(1)} ${c2x.toFixed(1)},${c2y.toFixed(1)} ${p2.x.toFixed(1)},${p2.y.toFixed(1)}`;
+        }
+        const areaPath = `${linePath} L${pts[pts.length - 1].x.toFixed(1)},${PAD_T + plotH} L${pts[0].x.toFixed(1)},${PAD_T + plotH} Z`;
+        const peakIdx = hasData ? series.indexOf(max) : -1;
+        return (
+          <div className="relative">
             <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-[200px]" preserveAspectRatio="none" aria-hidden>
               <defs>
                 <linearGradient id="cockpit-area-grad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#c8403a" stopOpacity="0.28" />
+                  <stop offset="0%" stopColor="#c8403a" stopOpacity={hasData ? 0.28 : 0.1} />
                   <stop offset="100%" stopColor="#c8403a" stopOpacity="0" />
                 </linearGradient>
               </defs>
@@ -1265,21 +1272,28 @@ function OverviewRevenueChart({ series, currency }: { series: number[]; currency
                   <g key={t}>
                     <line x1={PAD_L} y1={yy} x2={PAD_L + plotW} y2={yy} className="cockpit-chart-grid" />
                     <text x={PAD_L - 6} y={yy} textAnchor="end" dominantBaseline="middle" className="cockpit-chart-axis">
-                      {t === 0 ? "$0" : formatMoneyCompact(max * t, currency)}
+                      {hasData ? (t === 0 ? "$0" : formatMoneyCompact(plotMax * t, currency)) : ""}
                     </text>
                   </g>
                 );
               })}
               <line x1={PAD_L} y1={PAD_T} x2={PAD_L} y2={PAD_T + plotH} stroke="#e8e2d6" strokeWidth="1" />
-              <path d={areaPath} className="cockpit-chart-area" />
-              <path d={linePath} className="cockpit-chart-line" />
+              <path d={areaPath} className="cockpit-chart-area" style={hasData ? undefined : { opacity: 0.5 }} />
+              <path d={linePath} className="cockpit-chart-line" style={hasData ? undefined : { opacity: 0.35 }} />
               {peakIdx >= 0 && <circle cx={x(peakIdx)} cy={y(max)} r="3.5" className="cockpit-chart-dot" />}
               <text x={PAD_L} y={H - 6} textAnchor="start" className="cockpit-chart-axis">30 days ago</text>
               <text x={PAD_L + plotW} y={H - 6} textAnchor="end" className="cockpit-chart-axis">Today</text>
             </svg>
-          );
-        })()
-      )}
+            {!hasData && (
+              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                <div className="text-xs text-muted-foreground italic bg-white/85 rounded px-3 py-1.5">
+                  No paid invoices in the last 30 days
+                </div>
+              </div>
+            )}
+          </div>
+        );
+      })()}
     </div>
   );
 }
