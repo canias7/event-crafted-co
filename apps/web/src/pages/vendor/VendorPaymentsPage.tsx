@@ -6266,18 +6266,16 @@ function ExpensesTab({
           className="px-3 py-2 rounded-lg border border-foreground/10 bg-white text-sm"
         >
           <option value="all">All categories</option>
-          {/* Preset categories first, then any custom ones the
-              vendor has typed that aren't in the preset list. */}
-          {EXPENSE_CATEGORIES.map((c) => (
-            <option key={c.id} value={c.id}>
-              {c.label}
-            </option>
-          ))}
+          {/* Only categories the vendor has actually used appear in the
+              filter — no preset list. With no expenses logged yet the
+              dropdown collapses to just "All categories", which matches
+              the vendor's mental model (filters should reflect their
+              own data, not a system enum). */}
           {Array.from(new Set(rows.map((r) => r.category)))
-            .filter((c) => !EXPENSE_CATEGORIES.some((preset) => preset.id === c))
+            .sort()
             .map((c) => (
               <option key={c} value={c}>
-                {c}
+                {expenseCategoryLabel(c)}
               </option>
             ))}
         </select>
