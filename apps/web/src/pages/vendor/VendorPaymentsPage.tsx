@@ -905,6 +905,7 @@ function OverviewTab({
   // daily revenue series for the wave chart.
   const [mrr, setMrr] = useState<{ total: number; weekly: number; monthly: number; quarterly: number; yearly: number; count: number }>({ total: 0, weekly: 0, monthly: 0, quarterly: 0, yearly: 0, count: 0 });
   const [leads, setLeads] = useState<{ new: number; active: number; won: number; lost: number; total: number }>({ new: 0, active: 0, won: 0, lost: 0, total: 0 });
+  const [expenses, setExpenses] = useState<{ total: number; count: number; topCategories: Array<{ label: string; cents: number }> }>({ total: 0, count: 0, topCategories: [] });
   const [customerCount, setCustomerCount] = useState<number | null>(null);
   const [revenue30d, setRevenue30d] = useState<number>(0);
   const [revenue30dPrev, setRevenue30dPrev] = useState<number>(0);
@@ -916,6 +917,7 @@ function OverviewTab({
     if (!vendorId) {
       setMrr({ total: 0, weekly: 0, monthly: 0, quarterly: 0, yearly: 0, count: 0 });
       setLeads({ new: 0, active: 0, won: 0, lost: 0, total: 0 });
+      setExpenses({ total: 0, count: 0, topCategories: [] });
       setCustomerCount(null);
       setRevenue30d(0);
       setRevenue30dPrev(0);
@@ -934,6 +936,7 @@ function OverviewTab({
       const [
         { data: rrs },
         { data: leadRows },
+        { data: expenseRows },
         { count: cc },
         { data: paid30 },
         { data: paid60 },
@@ -951,6 +954,13 @@ function OverviewTab({
           .select("status")
           .eq("vendor_id", vendorId)
           .gte("created_at", since30.toISOString())
+          .limit(10000),
+        // Operating expenses in the last 30 days — drive the OPEX card.
+        db
+          .from("vendor_expenses")
+          .select("amount_cents, category")
+          .eq("vendor_id", vendorId)
+          .gte("occurred_on", since30.toISOString().slice(0, 10))
           .limit(10000),
         db
           .from("vendor_customers")
@@ -1024,6 +1034,32 @@ function OverviewTab({
         else if (s === "lost" || s === "expired") leadCounts.lost += 1;
       }
       setLeads(leadCounts);
+
+      // Operating expenses — sum by category, then take the top 4
+      // and roll the rest into an "Other" bucket so the card always
+      // renders four bars regardless of how many categories the
+      // vendor uses.
+      const EXPENSE_LABEL: Record<string, string> = {
+        rentals: "Rentals", supplies: "Supplies", labor: "Labor",
+        mileage: "Mileage/gas", marketing: "Marketing", software: "Software",
+        fees: "Fees/licenses", meals: "Meals", travel: "Travel",
+        insurance: "Insurance", other: "Other",
+      };
+      const expRows = (expenseRows ?? []) as Array<{ amount_cents: number; category: string }>;
+      const totalExpenses = expRows.reduce((s, r) => s + r.amount_cents, 0);
+      const byCat = new Map<string, number>();
+      for (const r of expRows) {
+        byCat.set(r.category, (byCat.get(r.category) ?? 0) + r.amount_cents);
+      }
+      const sorted = Array.from(byCat.entries())
+        .map(([id, cents]) => ({ label: EXPENSE_LABEL[id] ?? id, cents }))
+        .sort((a, b) => b.cents - a.cents);
+      const topThree = sorted.slice(0, 3);
+      const restCents = sorted.slice(3).reduce((s, r) => s + r.cents, 0);
+      const topCategories = restCents > 0
+        ? [...topThree, { label: "Other", cents: restCents }]
+        : topThree;
+      setExpenses({ total: totalExpenses, count: expRows.length, topCategories });
 
       setCustomerCount(typeof cc === "number" ? cc : 0);
 
@@ -1136,6 +1172,11 @@ function OverviewTab({
         </div>
         <OverviewLeadsCard leads={leads} />
       </div>
+
+      {/* Operating expenses — full width row, last 30 days OPEX
+          broken down by category. Sits below the Recent activity /
+          Leads pair so the page flows: cash in → pipeline → cash out. */}
+      <OverviewExpensesCard expenses={expenses} currency={currency} />
     </>
   );
 }
@@ -1379,6 +1420,71 @@ function OverviewLeadsCard({
             {leads.won > 0
               ? `${wonRate}% conversion · ${leads.won} of ${leads.total} won`
               : `${leads.total} inquir${leads.total === 1 ? "y" : "ies"} this period`}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+// Operating expenses card — full-width row showing OPEX in the last
+// 30 days broken down by category (top 3 + Other rollup). Same
+// horizontal-bars treatment as MRR / Leads so the row reads as one
+// editorial system. Sits at the bottom of the Overview so the page
+// flows top-to-bottom as cash in → pipeline → cash out.
+function OverviewExpensesCard({
+  expenses,
+  currency,
+}: {
+  expenses: { total: number; count: number; topCategories: Array<{ label: string; cents: number }> };
+  currency: string;
+}) {
+  // Reuse the bar palette from MRR (crimson → terra → amber → green)
+  // so a vendor scanning the page picks up category rank by color.
+  const palette = ["#c8403a", "#b8693d", "#c89738", "#4a7c4a"];
+  const rows = expenses.topCategories.map((c, i) => ({
+    ...c, color: palette[i] ?? "#8a8579",
+  }));
+  const max = rows.reduce((m, r) => (r.cents > m ? r.cents : m), 0);
+  return (
+    <div className="cockpit-chart mt-5">
+      <div className="flex items-baseline justify-between mb-3">
+        <div>
+          <div className="cockpit-chart-title">Operating expenses</div>
+          <div className="cockpit-chart-sub">Last 30 days · by category</div>
+        </div>
+        <div className="text-right">
+          <div className="cockpit-kpi-label">Spend</div>
+          <div className="cockpit-money cockpit-money--lg">{formatMoney(expenses.total, currency)}</div>
+        </div>
+      </div>
+      {expenses.count === 0 ? (
+        <div className="py-12 text-center text-sm text-muted-foreground">
+          No expenses logged in the last 30 days.
+        </div>
+      ) : (
+        <>
+          <div className="space-y-2">
+            {rows.map((r) => {
+              const pct = max > 0 ? (r.cents / max) * 100 : 0;
+              return (
+                <div key={r.label} className="flex items-center gap-3">
+                  <div className="w-28 text-xs text-muted-foreground shrink-0">{r.label}</div>
+                  <div className="flex-1 h-6 rounded overflow-hidden relative" style={{ background: "rgba(255, 138, 76, 0.12)" }}>
+                    <div
+                      className="h-full transition-all"
+                      style={{ width: `${pct}%`, background: r.color, opacity: r.cents > 0 ? 1 : 0 }}
+                    />
+                  </div>
+                  <div className="w-28 text-right text-xs cockpit-money tabular-nums">
+                    {formatMoney(r.cents, currency)}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          <div className="mt-3 text-[11px] text-muted-foreground">
+            {expenses.count} expense{expenses.count === 1 ? "" : "s"} logged
           </div>
         </>
       )}
