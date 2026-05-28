@@ -268,30 +268,39 @@ function staticMap(spec: Spec, t: Theme): string {
 // ───── Cover variants ─────
 
 function renderCover(spec: Spec, t: Theme): string {
-  const variant = spec.cover_variant || "envelope";
   const eyebrow = spec.cover_eyebrow ?? "You're invited to";
   const dateInfo = fmtDateISO(spec.event_start);
   const dateLine = dateInfo
-    ? `<div class="cover-date" style="font-family:'${t.body}',sans-serif;font-size:0.72rem;letter-spacing:0.3em;text-transform:uppercase;color:${t.gold};margin-top:2rem;opacity:0.85">${dateInfo.date}, ${dateInfo.year}</div>`
+    ? `<div class="cover-date">${dateInfo.date}, ${dateInfo.year}</div>`
     : "";
 
   const titleHtml = spec.honorees && spec.honorees.length
-    ? spec.honorees.map(esc).join(`<br><span style="font-family:'${t.body}',sans-serif;font-size:0.4em;letter-spacing:0.3em;display:inline-block;margin:0.2em 0;opacity:0.7">&</span><br>`)
+    ? spec.honorees.map(esc).join(`<span class="amp" aria-hidden="true">&amp;</span>`)
     : esc(spec.title);
 
-  // Both variants now use the realistic SVG wax seal as the
-  // centerpiece. The seal's embossed glyph carries the monogram
-  // for couple events; for non-couple events it falls back to a
-  // small fleuron mark. The crest variant just adds a thin
-  // ornamental ring above the names.
+  // Interactive envelope: tap the seal, the seal breaks loose and
+  // falls away, the flap rotates open on its top hinge, the letter
+  // inside rises out, and the cover dissolves to reveal the
+  // invitation body. All transitions are CSS-only via the hidden
+  // checkbox + transition-delay coordination — no JS.
   return `
 <input type="checkbox" id="opener" class="opener-toggle">
-<label for="opener" class="cover-page" aria-label="Tap to open invitation">
+<label for="opener" class="cover-page" aria-label="Tap the seal to open the invitation">
   ${particleField(t)}
-  <div class="cover-eyebrow">${esc(eyebrow)}</div>
-  <h1 class="cover-names">${titleHtml}</h1>
-  ${dateLine}
-  ${renderWaxSeal(spec.monogram ?? "", t)}
+  <div class="env-stage">
+    <div class="envelope">
+      <div class="env-back" aria-hidden="true"></div>
+      <div class="env-letter">
+        <div class="cover-eyebrow">${esc(eyebrow)}</div>
+        <h1 class="cover-names">${titleHtml}</h1>
+        ${dateLine}
+      </div>
+      <div class="env-flap" aria-hidden="true">
+        <div class="env-flap-inside"></div>
+      </div>
+      ${renderWaxSeal(spec.monogram ?? "", t)}
+    </div>
+  </div>
   <div class="tap-hint">${esc(spec.cover_seal_text ?? "Tap the seal to open")}</div>
 </label>`;
 }
@@ -625,13 +634,11 @@ ${googleFontsLink(t)}
     --type-label:0.7rem;
   }
   body{background:var(--bg);color:var(--text);font-family:var(--body);line-height:1.6;min-height:100vh;overflow-x:hidden}
-  /* === COVER PAGE — textured envelope feel with vignette + grain === */
+  /* === COVER PAGE — interactive envelope === */
   .opener-toggle{display:none}
   .cover-page{
     position:fixed;inset:0;
     display:flex;flex-direction:column;align-items:center;justify-content:center;
-    /* Layered radial gradients give a vignetted, papery look
-       instead of a flat dark screen. Slightly off-center light. */
     background:
       radial-gradient(ellipse at 50% 35%, color-mix(in srgb, var(--bg) 70%, #ffffff 8%) 0%, var(--bg) 55%, color-mix(in srgb, var(--bg) 80%, #000 20%) 100%),
       var(--bg);
@@ -640,10 +647,10 @@ ${googleFontsLink(t)}
     z-index:1000;
     padding:2rem;
     text-align:center;
-    transition:opacity 0.7s ease,transform 0.7s ease;
+    perspective:1400px;
+    /* Fades after the opening sequence completes (~1.8s in). */
+    transition:opacity 0.6s ease 1.8s, transform 0.6s ease 1.8s;
   }
-  /* Fine paper-grain noise overlay on the cover so the dark
-     background reads as material, not a screen. */
   .cover-page::after{
     content:"";
     position:absolute;inset:0;
@@ -654,18 +661,169 @@ ${googleFontsLink(t)}
     z-index:0;
   }
   .cover-page > *{position:relative;z-index:1}
-  .opener-toggle:checked ~ .cover-page{opacity:0;transform:scale(1.04);pointer-events:none}
-  .cover-eyebrow{font-family:var(--body);font-size:var(--type-label);letter-spacing:0.32em;text-transform:uppercase;color:var(--gold);opacity:0.85;margin-bottom:2rem}
-  .cover-names{font-family:var(--script);font-size:clamp(3rem,9vw,6rem);color:var(--surface);line-height:1.05;text-shadow:0 1px 0 rgba(255,255,255,0.06),0 2px 24px rgba(0,0,0,0.45)}
-  .cover-date{margin-top:1.5rem}
-  /* Wax seal — SVG with bumpy edges, surface texture, embossed
-     monogram. The CSS only positions + adds cast shadow + pulse. */
-  .wax-seal-wrap{position:relative;margin-top:2rem;width:140px;height:140px;display:flex;align-items:center;justify-content:center;animation:sealPulse 2.8s ease-in-out infinite;filter:drop-shadow(0 8px 18px rgba(0,0,0,0.55)) drop-shadow(0 22px 36px rgba(0,0,0,0.4))}
+  .opener-toggle:checked ~ .cover-page{opacity:0;transform:scale(1.02);pointer-events:none}
+
+  /* === Envelope structure === */
+  .env-stage{
+    position:relative;
+    width:min(520px,88vw);
+    aspect-ratio:5/3.4;
+    transform-style:preserve-3d;
+    margin-bottom:2.5rem;
+  }
+  .envelope{
+    position:relative;
+    width:100%;height:100%;
+    transform-style:preserve-3d;
+    /* cast shadow under the whole envelope */
+    filter:drop-shadow(0 16px 30px rgba(0,0,0,0.45)) drop-shadow(0 40px 70px rgba(0,0,0,0.3));
+  }
+  /* Outer envelope back — visible behind the flap. Paper-textured
+     in the accent color so it reads as cardstock, not flat. */
+  .env-back{
+    position:absolute;inset:0;
+    background:
+      linear-gradient(165deg, color-mix(in srgb, ${t.accent} 80%, #000 18%) 0%, color-mix(in srgb, ${t.accent} 60%, #000 30%) 100%);
+    border-radius:4px;
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,0.1),
+      inset 0 -1px 0 rgba(0,0,0,0.25),
+      inset 0 0 0 1px rgba(0,0,0,0.1);
+    z-index:1;
+  }
+  .env-back::before{
+    content:"";position:absolute;inset:0;
+    background-image:url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='b'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' seed='8'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.4 0'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23b)'/%3E%3C/svg%3E");
+    mix-blend-mode:overlay;opacity:0.6;border-radius:inherit;
+  }
+  /* The letter inside — visible after the flap opens. Initially
+     sits behind the flap (z-index 2), revealed as the flap rotates. */
+  .env-letter{
+    position:absolute;
+    top:5%;left:5%;right:5%;bottom:5%;
+    background:var(--surface);
+    background-image:
+      url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='l'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.95' numOctaves='2' seed='2'/%3E%3CfeColorMatrix values='0 0 0 0 0.18 0 0 0 0 0.12 0 0 0 0 0.06 0 0 0 0.4 0'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23l)'/%3E%3C/svg%3E");
+    background-blend-mode:multiply;
+    color:var(--text);
+    border-radius:3px;
+    z-index:2;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    padding:1rem 1.25rem;
+    box-shadow:
+      inset 0 0 0 1px rgba(0,0,0,0.08),
+      inset 0 1px 0 rgba(255,255,255,0.6),
+      0 2px 4px rgba(0,0,0,0.1);
+    transform:translateY(0);
+    opacity:1;
+    transition:transform 1s cubic-bezier(0.4,0,0.2,1) 1.2s, opacity 0.5s ease 1.5s;
+  }
+  /* Cover typography overrides — text sits on cream paper now,
+     so it inherits the dark theme text color, not the surface. */
+  .env-letter .cover-eyebrow{
+    font-family:var(--body);
+    font-size:0.6rem;
+    letter-spacing:0.32em;
+    text-transform:uppercase;
+    color:var(--accent);
+    opacity:0.75;
+    margin-bottom:0.85rem;
+  }
+  .env-letter .cover-names{
+    font-family:var(--script);
+    font-size:clamp(1.75rem,5vw,2.85rem);
+    color:var(--text);
+    line-height:1.05;
+    text-shadow:
+      0 1px 0 rgba(255,255,255,0.55),
+      0 -1px 0 rgba(0,0,0,0.06);
+    margin-bottom:0.5rem;
+  }
+  .env-letter .cover-names .amp{
+    display:inline-block;
+    margin:0 0.25em;
+    color:var(--gold);
+    font-style:italic;
+  }
+  .env-letter .cover-date{
+    font-family:var(--body);
+    font-size:0.62rem;
+    letter-spacing:0.3em;
+    text-transform:uppercase;
+    color:var(--accent);
+    opacity:0.7;
+    margin-top:0.5rem;
+  }
+  /* The top flap — triangular, hinged at top edge. Wrapped color
+     and shadow on the OUTSIDE; the back of the flap (when rotated)
+     is the lighter envelope interior. */
+  .env-flap{
+    position:absolute;
+    top:0;left:0;
+    width:100%;
+    height:62%;
+    transform-origin:top center;
+    transform-style:preserve-3d;
+    transform:rotateX(0deg);
+    z-index:4;
+    transition:transform 1.1s cubic-bezier(0.6,0.05,0.3,1) 0.45s;
+    /* Outside (envelope back face) */
+    background:
+      linear-gradient(180deg, color-mix(in srgb, ${t.accent} 60%, #000 32%) 0%, color-mix(in srgb, ${t.accent} 80%, #000 12%) 100%);
+    clip-path:polygon(0 0, 100% 0, 50% 100%);
+    box-shadow:inset 0 -10px 18px rgba(0,0,0,0.22);
+    backface-visibility:hidden;
+  }
+  /* Inside of the flap — lighter cream, visible only as the flap
+     swings past vertical. Uses backface-visibility:hidden so the
+     two faces never overlap. */
+  .env-flap-inside{
+    position:absolute;inset:0;
+    background:linear-gradient(180deg, var(--surface) 0%, var(--surface2) 100%);
+    clip-path:polygon(0 0, 100% 0, 50% 100%);
+    transform:rotateX(180deg);
+    backface-visibility:hidden;
+    box-shadow:inset 0 -8px 14px rgba(0,0,0,0.08);
+  }
+  /* Wax seal — pinned at the bottom tip of the flap so it MOVES
+     with the flap. When the flap rotates, the seal opens with it.
+     We also fade + rotate the seal slightly so it "breaks off." */
+  .env-stage .wax-seal-wrap{
+    position:absolute;
+    top:62%;left:50%;
+    width:120px;height:120px;
+    margin:0;
+    transform:translate(-50%,-50%);
+    z-index:5;
+    animation:sealPulse 2.6s ease-in-out infinite;
+    filter:drop-shadow(0 6px 14px rgba(0,0,0,0.55)) drop-shadow(0 18px 32px rgba(0,0,0,0.4));
+    transition:transform 0.6s cubic-bezier(0.5,0.2,0.5,1.6) 0.1s, opacity 0.55s ease 0.25s;
+  }
+  /* Wax seal (used outside the envelope, e.g. variant fallback) */
+  .wax-seal-wrap{position:relative;width:140px;height:140px;display:flex;align-items:center;justify-content:center;animation:sealPulse 2.6s ease-in-out infinite;filter:drop-shadow(0 8px 18px rgba(0,0,0,0.55)) drop-shadow(0 22px 36px rgba(0,0,0,0.4))}
   .wax-seal-svg{width:100%;height:100%;display:block}
-  .tap-hint{margin-top:1.25rem;font-family:var(--body);font-size:var(--type-label);letter-spacing:0.25em;text-transform:uppercase;color:var(--gold);opacity:0.65;animation:tapBounce 2s ease-in-out infinite}
-  .monogram-crest{margin:1rem 0 2rem;filter:drop-shadow(0 4px 10px rgba(0,0,0,0.35))}
-  @keyframes sealPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.05)}}
+  .tap-hint{margin-top:0.5rem;font-family:var(--body);font-size:var(--type-label);letter-spacing:0.25em;text-transform:uppercase;color:var(--gold);opacity:0.65;animation:tapBounce 2s ease-in-out infinite;transition:opacity 0.3s ease}
+  @keyframes sealPulse{0%,100%{transform:translate(-50%,-50%) scale(1)}50%{transform:translate(-50%,-50%) scale(1.05)}}
   @keyframes tapBounce{0%,100%{transform:translateY(0)}50%{transform:translateY(4px)}}
+
+  /* === OPEN STATE: choreographed sequence === */
+  /* t=0.1s  → seal breaks loose: scales down + rotates + falls */
+  .opener-toggle:checked ~ .cover-page .env-stage .wax-seal-wrap{
+    transform:translate(-50%,40%) rotate(28deg) scale(0.55);
+    opacity:0;
+    animation:none;
+  }
+  /* t=0.45s → flap rotates open over 1.1s */
+  .opener-toggle:checked ~ .cover-page .env-flap{
+    transform:rotateX(-178deg);
+  }
+  /* t=1.2s  → letter slides up out of the envelope + fades */
+  .opener-toggle:checked ~ .cover-page .env-letter{
+    transform:translateY(-110%) scale(1.04);
+    opacity:0;
+  }
+  /* tap-hint fades immediately on tap */
+  .opener-toggle:checked ~ .cover-page .tap-hint{opacity:0;transition:opacity 0.2s ease}
   /* === BODY === */
   .invitation-body{max-width:920px;margin:0 auto;padding:3rem 1.5rem 4rem;position:relative;z-index:0}
   section{margin:3rem 0;opacity:1;transform:none;position:relative}
