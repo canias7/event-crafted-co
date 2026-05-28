@@ -1,0 +1,39 @@
+name: AI Site cache warmup
+
+# Hits ai-site-generate with {warmup: true} every 50 min so the
+# Anthropic prompt cache (TTL 1h) stays hot. Each ping sends a
+# `max_tokens: 1` request that reuses the cached bible at ~10% input
+# cost. Without this, the first generation after an idle hour pays
+# the full input + cache-write cost (~10s slower, ~10x pricier).
+#
+# Cron runs at every 50 minutes UTC. GH Actions cron uses 5-field
+# crontab; "*/50 * * * *" approximates 50-min intervals (it actually
+# runs at :00 and :50 of each hour, with a small gap — close enough).
+
+on:
+  schedule:
+    - cron: "*/50 * * * *"
+  workflow_dispatch: {}
+
+jobs:
+  warmup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Ping ai-site-generate
+        env:
+          SUPABASE_URL: https://pahpjjubhbcbwqjpamwv.supabase.co
+          # Public publishable key — safe to embed. Function is
+          # verify_jwt = false, so any caller can hit it.
+          SUPABASE_PUBLISHABLE: sb_publishable_CtDX5E4wcZZAAjx7JtGRgw_ZaPNmjS0
+        run: |
+          set -euo pipefail
+          response=$(curl -sS -X POST \
+            "$SUPABASE_URL/functions/v1/ai-site-generate" \
+            -H "apikey: $SUPABASE_PUBLISHABLE" \
+            -H "Authorization: Bearer $SUPABASE_PUBLISHABLE" \
+            -H "Content-Type: application/json" \
+            --data '{"prompt":"warmup","warmup":true}' \
+            --max-time 60)
+          echo "$response"
+          echo "$response" | grep -q '"warmed":true'

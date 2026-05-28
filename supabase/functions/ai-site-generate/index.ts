@@ -1744,6 +1744,40 @@ serve(async (req) => {
   if (!moderation.ok) return jsonResponse(400, { error: moderation.reason });
   if (!ANTHROPIC_API_KEY) return jsonResponse(500, { error: "ANTHROPIC_API_KEY not set" });
 
+  // Cache-warmup short circuit. A scheduled cron pings us every
+  // ~50 min with {warmup:true} so the bible stays in Anthropic's 1h
+  // prompt cache. We send the exact same system prompt as a real
+  // generation but cap max_tokens at 1 so we pay ~zero output cost.
+  // No DB write, no SSE stream.
+  if (payload?.warmup === true) {
+    const rsvpEndpoint = `${SUPABASE_URL}/functions/v1/ai-site-rsvp-submit?slug=__SLUG__`;
+    const icsEndpoint = `${SUPABASE_URL}/functions/v1/ai-site-ics`;
+    const todayIso = new Date().toISOString().slice(0, 10);
+    const systemText = buildSystemPrompt(rsvpEndpoint, icsEndpoint, todayIso);
+    const res = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "x-api-key": ANTHROPIC_API_KEY,
+        "anthropic-version": "2023-06-01",
+        "anthropic-beta": "extended-cache-ttl-2025-04-11",
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({
+        model: MODEL,
+        max_tokens: 1,
+        system: [{ type: "text", text: systemText, cache_control: { type: "ephemeral", ttl: "1h" } }],
+        messages: [{ role: "user", content: "ping" }],
+      }),
+    });
+    const body = await res.json().catch(() => null) as any;
+    return jsonResponse(res.ok ? 200 : 502, {
+      warmed: res.ok,
+      cache_creation_input_tokens: body?.usage?.cache_creation_input_tokens ?? 0,
+      cache_read_input_tokens: body?.usage?.cache_read_input_tokens ?? 0,
+      input_tokens: body?.usage?.input_tokens ?? 0,
+    });
+  }
+
   const editSiteId =
     typeof payload?.edit_site_id === "string" && payload.edit_site_id.length > 0
       ? payload.edit_site_id

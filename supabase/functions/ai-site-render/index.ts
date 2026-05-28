@@ -31,7 +31,9 @@ function htmlResponse(status: number, html: string, cacheSeconds = 60) {
     headers: {
       ...cors,
       "Content-Type": "text/html; charset=utf-8",
-      "Cache-Control": status === 200 ? `public, max-age=${cacheSeconds}` : "no-store",
+      "Cache-Control": status === 200
+        ? `public, max-age=${cacheSeconds}, s-maxage=${cacheSeconds}, stale-while-revalidate=300`
+        : "no-store",
       "X-Frame-Options": "SAMEORIGIN",
       "Referrer-Policy": "strict-origin-when-cross-origin",
     },
