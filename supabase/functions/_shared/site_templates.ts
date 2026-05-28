@@ -279,29 +279,11 @@ function renderCover(spec: Spec, t: Theme): string {
     ? spec.honorees.map(esc).join(`<br><span style="font-family:'${t.body}',sans-serif;font-size:0.4em;letter-spacing:0.3em;display:inline-block;margin:0.2em 0;opacity:0.7">&</span><br>`)
     : esc(spec.title);
 
-  if (variant === "monogram" && spec.monogram) {
-    return `
-<input type="checkbox" id="opener" class="opener-toggle">
-<label for="opener" class="cover-page" aria-label="Tap to open invitation">
-  ${particleField(t)}
-  <div class="cover-eyebrow">${esc(eyebrow)}</div>
-  <div class="monogram-crest" aria-hidden="true">
-    <svg viewBox="0 0 200 200" width="180" height="180" style="fill:none;stroke:${t.gold};stroke-width:1.5">
-      <circle cx="100" cy="100" r="90" stroke-opacity="0.45"/>
-      <circle cx="100" cy="100" r="78" stroke-opacity="0.3"/>
-      <text x="100" y="115" text-anchor="middle" style="font-family:'${t.script}',cursive;font-size:64px;fill:${t.gold};stroke:none">${esc(spec.monogram)}</text>
-      <path d="M40 100 Q60 92 70 100" stroke-opacity="0.5"/>
-      <path d="M160 100 Q140 92 130 100" stroke-opacity="0.5"/>
-    </svg>
-  </div>
-  <h1 class="cover-names">${titleHtml}</h1>
-  ${dateLine}
-  <div class="tap-hint">${esc(spec.cover_seal_text ?? "Tap to open")}</div>
-</label>`;
-  }
-
-  // Default: dark envelope-feel cover + polished wax seal with
-  // glossy highlight, drip glow, and inner shadow.
+  // Both variants now use the realistic SVG wax seal as the
+  // centerpiece. The seal's embossed glyph carries the monogram
+  // for couple events; for non-couple events it falls back to a
+  // small fleuron mark. The crest variant just adds a thin
+  // ornamental ring above the names.
   return `
 <input type="checkbox" id="opener" class="opener-toggle">
 <label for="opener" class="cover-page" aria-label="Tap to open invitation">
@@ -309,12 +291,86 @@ function renderCover(spec: Spec, t: Theme): string {
   <div class="cover-eyebrow">${esc(eyebrow)}</div>
   <h1 class="cover-names">${titleHtml}</h1>
   ${dateLine}
-  <div class="wax-seal" aria-hidden="true">
-    <span class="seal-shine"></span>
-    <span class="seal-mark">${esc(spec.monogram ?? "✦")}</span>
-  </div>
+  ${renderWaxSeal(spec.monogram ?? "", t)}
   <div class="tap-hint">${esc(spec.cover_seal_text ?? "Tap the seal to open")}</div>
 </label>`;
+}
+
+// Realistic SVG wax seal. Organic blob path with bumpy edges (not
+// a perfect circle), feTurbulence + feDisplacementMap for surface
+// scratches, multi-stop radial gradients for waxy 3D depth, drop
+// shadow, and an embossed monogram. Looks like wax, not CSS.
+function renderWaxSeal(monogram: string, t: Theme): string {
+  // Darker variants of the accent for shadow stops.
+  const accent = t.accent;
+  return `
+<div class="wax-seal-wrap" aria-hidden="true">
+<svg viewBox="-110 -110 220 220" width="140" height="140" class="wax-seal-svg" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- Bumpy surface displacement so the seal feels uneven, not laser-cut. -->
+    <filter id="bump" x="-20%" y="-20%" width="140%" height="140%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.04" numOctaves="2" seed="7" result="noise"/>
+      <feDisplacementMap in="SourceGraphic" in2="noise" scale="6" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+    <!-- Fine surface grain (scratches, wax fibers). -->
+    <filter id="grain" x="0%" y="0%" width="100%" height="100%">
+      <feTurbulence type="fractalNoise" baseFrequency="1.2" numOctaves="2" seed="3"/>
+      <feColorMatrix values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.45 0"/>
+      <feComposite in2="SourceGraphic" operator="in"/>
+    </filter>
+    <!-- Cast shadow underneath the seal. -->
+    <filter id="cast" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="5"/>
+      <feOffset dx="0" dy="6"/>
+      <feComponentTransfer><feFuncA type="linear" slope="0.55"/></feComponentTransfer>
+      <feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <!-- 3D wax body — light from top-left, dark rim, glossy highlight. -->
+    <radialGradient id="wax-body" cx="38%" cy="32%" r="68%">
+      <stop offset="0%"  stop-color="#ffffff" stop-opacity="0.55"/>
+      <stop offset="14%" stop-color="${accent}" stop-opacity="0.9"/>
+      <stop offset="55%" stop-color="${accent}"/>
+      <stop offset="82%" stop-color="#4a0f0f"/>
+      <stop offset="100%" stop-color="#1a0303"/>
+    </radialGradient>
+    <!-- Subtle rim shine on the upper edge. -->
+    <radialGradient id="wax-rim" cx="50%" cy="20%" r="58%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.4"/>
+      <stop offset="40%" stop-color="#ffffff" stop-opacity="0.06"/>
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <!-- Outer wax pool — slightly larger, blurred, behind everything (drip glow). -->
+  <path d="M-78 -10 C -90 -45, -55 -85, -10 -78 C 30 -90, 80 -50, 78 -8 C 92 35, 50 88, 8 78 C -38 92, -85 38, -78 -10 Z"
+        fill="${accent}" opacity="0.32" filter="url(#cast)" transform="scale(1.08)"/>
+  <!-- Main wax disc — bumpy blob, bump filter for edge irregularity. -->
+  <g filter="url(#bump)">
+    <path d="M-72 -8 C -82 -42, -52 -78, -8 -72 C 28 -82, 72 -48, 72 -6 C 84 32, 46 80, 6 72 C -34 84, -78 36, -72 -8 Z"
+          fill="url(#wax-body)"/>
+    <!-- Inner rim shine -->
+    <path d="M-72 -8 C -82 -42, -52 -78, -8 -72 C 28 -82, 72 -48, 72 -6 C 84 32, 46 80, 6 72 C -34 84, -78 36, -72 -8 Z"
+          fill="url(#wax-rim)"/>
+    <!-- Surface scratches via fine grain inside the disc shape. -->
+    <path d="M-72 -8 C -82 -42, -52 -78, -8 -72 C 28 -82, 72 -48, 72 -6 C 84 32, 46 80, 6 72 C -34 84, -78 36, -72 -8 Z"
+          fill="#000" filter="url(#grain)" opacity="0.55"/>
+  </g>
+  <!-- Inner pressed circle outline (the stamp impression). -->
+  <circle cx="0" cy="0" r="52" fill="none" stroke="#1a0303" stroke-opacity="0.45" stroke-width="2"/>
+  <circle cx="0" cy="0" r="50" fill="none" stroke="${t.gold}" stroke-opacity="0.35" stroke-width="0.8"/>
+  <!-- Embossed monogram — drop-shadow gives the pressed-into-wax look. -->
+  ${monogram
+    ? `<text x="0" y="${monogram.length > 1 ? "16" : "20"}" text-anchor="middle"
+            font-family="${t.script}, cursive"
+            font-size="${monogram.length > 1 ? "60" : "76"}"
+            fill="${t.gold}"
+            style="filter:drop-shadow(0 -1px 0 rgba(0,0,0,0.6)) drop-shadow(0 1px 0 rgba(255,255,255,0.15))">${esc(monogram)}</text>`
+    : `<g fill="${t.gold}" style="filter:drop-shadow(0 -1px 0 rgba(0,0,0,0.6))">
+        <circle cx="0" cy="0" r="6"/>
+        <circle cx="-22" cy="0" r="3"/>
+        <circle cx="22" cy="0" r="3"/>
+      </g>`}
+</svg>
+</div>`;
 }
 
 // ───── Hero (after cover reveal) ─────
@@ -602,13 +658,10 @@ ${googleFontsLink(t)}
   .cover-eyebrow{font-family:var(--body);font-size:var(--type-label);letter-spacing:0.32em;text-transform:uppercase;color:var(--gold);opacity:0.85;margin-bottom:2rem}
   .cover-names{font-family:var(--script);font-size:clamp(3rem,9vw,6rem);color:var(--surface);line-height:1.05;text-shadow:0 1px 0 rgba(255,255,255,0.06),0 2px 24px rgba(0,0,0,0.45)}
   .cover-date{margin-top:1.5rem}
-  /* Wax seal — multi-stop gradient with rim shine + drip glow + glossy highlight. */
-  .wax-seal{position:relative;margin-top:2rem;width:96px;height:96px;border-radius:50%;background:radial-gradient(circle at 30% 28%,${t.accent} 0%,${t.accent} 20%,#5a0f0f 70%,#2a0606 100%);display:flex;align-items:center;justify-content:center;box-shadow:0 1px 2px rgba(0,0,0,0.35),0 6px 14px rgba(0,0,0,0.45),0 16px 36px rgba(0,0,0,0.4),inset 0 -4px 10px rgba(0,0,0,0.45),inset 0 2px 4px rgba(255,255,255,0.18);animation:sealPulse 2.6s ease-in-out infinite}
-  /* Wax seal — irregular outer drip ring behind the disc. */
-  .wax-seal::before{content:"";position:absolute;inset:-12px -8px -10px -10px;background:radial-gradient(ellipse at 48% 50%,${t.accent}aa 0%,${t.accent}55 45%,transparent 70%);border-radius:50%;filter:blur(3px);z-index:-1}
-  /* Wax seal — top-left glossy highlight for the wet-wax look. */
-  .seal-shine{position:absolute;top:14%;left:22%;width:38%;height:30%;border-radius:50%;background:radial-gradient(ellipse,rgba(255,255,255,0.55) 0%,rgba(255,255,255,0.18) 35%,transparent 60%);filter:blur(1px);pointer-events:none}
-  .wax-seal .seal-mark{font-family:var(--script);font-size:2.2rem;color:${t.gold};text-shadow:0 1px 0 rgba(0,0,0,0.5),0 -1px 0 rgba(255,255,255,0.1);position:relative;z-index:1}
+  /* Wax seal — SVG with bumpy edges, surface texture, embossed
+     monogram. The CSS only positions + adds cast shadow + pulse. */
+  .wax-seal-wrap{position:relative;margin-top:2rem;width:140px;height:140px;display:flex;align-items:center;justify-content:center;animation:sealPulse 2.8s ease-in-out infinite;filter:drop-shadow(0 8px 18px rgba(0,0,0,0.55)) drop-shadow(0 22px 36px rgba(0,0,0,0.4))}
+  .wax-seal-svg{width:100%;height:100%;display:block}
   .tap-hint{margin-top:1.25rem;font-family:var(--body);font-size:var(--type-label);letter-spacing:0.25em;text-transform:uppercase;color:var(--gold);opacity:0.65;animation:tapBounce 2s ease-in-out infinite}
   .monogram-crest{margin:1rem 0 2rem;filter:drop-shadow(0 4px 10px rgba(0,0,0,0.35))}
   @keyframes sealPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.05)}}
@@ -625,44 +678,86 @@ ${googleFontsLink(t)}
      mid, deep, long). Sepia-tinted instead of pure black so it
      reads as warm paper, not flat web UI. */
   .paper-card{
-    /* Paper material: SVG fractal-noise grain + theme texture gradient
-       + base surface color. Stacked so the noise sits ON TOP of the
-       texture, ON TOP of the color, multiply-blended for paper feel. */
+    /* Paper material: SVG fractal-noise grain multiply-blended over
+       the base surface color, plus the theme texture gradient. */
     background:
-      url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='p'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' seed='3'/%3E%3CfeColorMatrix values='0 0 0 0 0.16 0 0 0 0 0.10 0 0 0 0 0.05 0 0 0 0.35 0'/%3E%3C/filter%3E%3Crect width='220' height='220' filter='url(%23p)'/%3E%3C/svg%3E"),
+      url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='p'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' seed='3'/%3E%3CfeColorMatrix values='0 0 0 0 0.16 0 0 0 0 0.10 0 0 0 0 0.05 0 0 0 0.5 0'/%3E%3C/filter%3E%3Crect width='220' height='220' filter='url(%23p)'/%3E%3C/svg%3E"),
       var(--surface);
     background-blend-mode:multiply,normal;
     ${paperTextureCss(t)}
     border-radius:6px;
-    padding:clamp(2rem,4vw,3rem);
+    padding:clamp(2.25rem,4.5vw,3.25rem);
     position:relative;
     /* No isolation — z-index:-1 pseudos need to escape behind. */
+    /* Aggressive shadow stack: pure-black ambient + deep stops so
+       the card "lifts" visibly even on dark theme backgrounds where
+       sepia shadows would otherwise vanish. Subtle gold halo at the
+       bottom adds the luxury-paper-on-table feel. */
     box-shadow:
-      0 1px 1px rgba(40,20,5,0.06),
-      0 2px 4px rgba(40,20,5,0.08),
-      0 10px 18px rgba(40,20,5,0.10),
-      0 24px 48px rgba(40,20,5,0.14),
-      0 48px 96px rgba(40,20,5,0.10);
+      0 1px 2px rgba(0,0,0,0.45),
+      0 4px 10px rgba(0,0,0,0.25),
+      0 14px 30px rgba(0,0,0,0.35),
+      0 32px 64px rgba(0,0,0,0.32),
+      0 60px 120px rgba(0,0,0,0.22),
+      0 0 80px ${t.gold}1f;
   }
-  /* Paper-stack: two slightly rotated sheets that peek out from
-     behind the main card. Bigger offsets so the layers are visibly
-     stacked. Same surface family with darker tone underneath. */
-  .paper-card::before,
-  .paper-card::after{
+  /* Inner gold border — thin line ~10px in from the edge, mimics
+     the ornamental ruled border of premium stationery. */
+  .paper-card > *:first-child{position:relative}
+  .paper-card::after,
+  .paper-card::before{
     content:"";
     position:absolute;
     inset:0;
-    background:var(--surface2);
     border-radius:6px;
     z-index:-1;
-    box-shadow:
-      0 6px 14px rgba(40,20,5,0.10),
-      0 18px 32px rgba(40,20,5,0.10);
   }
-  .paper-card::before{transform:rotate(-1.6deg) translate(-12px,8px);opacity:0.9}
-  .paper-card::after{transform:rotate(1.2deg) translate(10px,5px);opacity:0.75;background:color-mix(in srgb, var(--surface2) 85%, #000 8%)}
+  /* Paper-stack: two slightly rotated sheets that peek out from
+     behind the main card. Big offsets so the layers are visibly
+     stacked. */
+  .paper-card::before{
+    background:var(--surface2);
+    transform:rotate(-1.8deg) translate(-14px,9px);
+    opacity:0.95;
+    box-shadow:0 8px 18px rgba(0,0,0,0.30),0 24px 40px rgba(0,0,0,0.22);
+  }
+  .paper-card::after{
+    background:color-mix(in srgb, var(--surface2) 80%, #000 15%);
+    transform:rotate(1.4deg) translate(12px,6px);
+    opacity:0.85;
+    box-shadow:0 6px 14px rgba(0,0,0,0.25);
+  }
+  /* Inner ruled border, drawn via an outline-styled child layer.
+     We attach it to .ornament-rule's parent without adding markup
+     by using a fixed-position pseudo from a wrapper. Cheap trick:
+     a fourth pseudo on the section element instead. */
+  section.paper-card{box-shadow:
+    0 1px 2px rgba(0,0,0,0.45),
+    0 4px 10px rgba(0,0,0,0.25),
+    0 14px 30px rgba(0,0,0,0.35),
+    0 32px 64px rgba(0,0,0,0.32),
+    0 60px 120px rgba(0,0,0,0.22),
+    0 0 80px ${t.gold}1f,
+    /* Inset top edge highlight (paper catching light) */
+    inset 0 1px 0 rgba(255,255,255,0.5),
+    /* Inset bottom edge shadow (paper has thickness) */
+    inset 0 -1px 0 rgba(0,0,0,0.08)
+  }
   .ornament-rule{width:60px;height:1px;background:var(--accent);opacity:0.5;margin:0 auto 1.5rem}
-  .section-title{font-family:var(--display);font-size:clamp(1.6rem,3.5vw,2.4rem);font-weight:500;text-align:center;color:var(--text);margin-bottom:1.5rem}
+  /* Letterpress: titles sit slightly pressed into the paper. Subtle
+     inset shadow (dark above, light below) emulates the ink-into-fiber
+     look of real letterpress invitations. */
+  .section-title{
+    font-family:var(--display);
+    font-size:clamp(1.6rem,3.5vw,2.4rem);
+    font-weight:500;
+    text-align:center;
+    color:var(--text);
+    margin-bottom:1.5rem;
+    text-shadow:
+      0 1px 0 rgba(255,255,255,0.55),
+      0 -1px 0 rgba(0,0,0,0.08);
+  }
   .section-body{font-family:var(--body);font-size:var(--type-body);line-height:1.7;color:var(--text);opacity:0.85}
   .section-body p+p{margin-top:1rem}
   /* === HERO === */

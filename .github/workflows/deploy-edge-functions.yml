@@ -67,6 +67,15 @@ jobs:
             if git diff --name-only ${{ github.event.before }} ${{ github.event.after }} 2>/dev/null | grep -q '^supabase/config.toml$'; then
               FUNCTIONS=$(find supabase/functions -mindepth 1 -maxdepth 1 -type d ! -name '_shared' -printf '%f\n' | sort | tr '\n' ' ')
             fi
+            # If anything under _shared/ changed, every function that
+            # imports from it needs to be redeployed. The CLI bundles
+            # imports at deploy time, so the function source on disk
+            # is unchanged but the bundled output needs to refresh.
+            # Cheapest correct fix: redeploy everything when _shared
+            # files change.
+            if git diff --name-only ${{ github.event.before }} ${{ github.event.after }} 2>/dev/null | grep -q '^supabase/functions/_shared/'; then
+              FUNCTIONS=$(find supabase/functions -mindepth 1 -maxdepth 1 -type d ! -name '_shared' -printf '%f\n' | sort | tr '\n' ' ')
+            fi
           fi
           echo "Functions to deploy: $FUNCTIONS"
           echo "functions=$FUNCTIONS" >> "$GITHUB_OUTPUT"
