@@ -124,10 +124,28 @@ export default function WebsiteBuilderPage() {
   // After previewClean, scan for any remaining __FOO__ placeholders
   // that Claude invented but the server doesn't know about. Surface
   // them as a yellow warning under the iframe so the user notices.
+  // Known placeholders that ai-site-render handles at request time
+  // are excluded — those are legitimate and resolve on the public
+  // /s/<slug> page.
+  const KNOWN_PLACEHOLDERS = new Set([
+    "__SLUG__",
+    "__GUEST_BLOCK__",
+    "__GUEST_NAME__",
+    "__PLUS_ONE_BLOCK__",
+    "__COMMENT_WALL__",
+    "__PHOTO_ALBUM__",
+    "__RSVP_COUNT__",
+    "__RSVP_YES__",
+    "__RSVP_MAYBE__",
+    "__RSVP_NO__",
+    "__HERO_AI__",
+  ]);
   const [unresolvedPlaceholders, setUnresolvedPlaceholders] = useState<string[]>([]);
   function scanUnresolved(html: string) {
     const matches = html.match(/__[A-Z][A-Z0-9_]+__/g) ?? [];
-    const unique = Array.from(new Set(matches));
+    const unique = Array.from(new Set(matches)).filter(
+      (m) => !KNOWN_PLACEHOLDERS.has(m),
+    );
     setUnresolvedPlaceholders(unique);
   }
 
