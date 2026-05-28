@@ -5708,7 +5708,6 @@ function ExpensesTab({
     item_name: string;
     quantity: string;
     paid_to: string;
-    notes: string;
     contractor_id: string;
     is_recurring: boolean;
     recurring_interval: RecurringInterval;
@@ -5720,7 +5719,6 @@ function ExpensesTab({
     item_name: "",
     quantity: "",
     paid_to: "",
-    notes: "",
     contractor_id: "",
     is_recurring: false,
     recurring_interval: "monthly",
@@ -5831,7 +5829,6 @@ function ExpensesTab({
       item_name: "",
       quantity: "",
       paid_to: "",
-      notes: "",
       contractor_id: "",
       is_recurring: false,
       recurring_interval: "monthly",
@@ -5853,7 +5850,6 @@ function ExpensesTab({
       item_name: e.item_name ?? "",
       quantity: e.quantity ?? "",
       paid_to: e.paid_to ?? "",
-      notes: e.notes ?? "",
       contractor_id: e.contractor_id ?? "",
       is_recurring: false,
       recurring_interval: "monthly",
@@ -5889,7 +5885,7 @@ function ExpensesTab({
       item_name: form.item_name.trim() || null,
       quantity: form.quantity.trim() || null,
       paid_to: form.paid_to.trim() || null,
-      notes: form.notes.trim() || null,
+      notes: null,
       // Only attach a contractor when one is selected AND the
       // category is labor — picking a contractor on a "supplies"
       // expense would muddy the 1099 totals.
@@ -6186,7 +6182,6 @@ function ExpensesTab({
         r.item_name ?? "",
         r.quantity ?? "",
         r.paid_to ?? "",
-        r.notes ?? "",
         (r.amount_cents / 100).toFixed(2),
       ].join(" ").toLowerCase();
       return hay.includes(term);
@@ -6314,7 +6309,7 @@ function ExpensesTab({
       const guarded = /^[=+\-@\t\r]/.test(s) ? `'${s}` : s;
       return /[,"\n\r]/.test(guarded) ? `"${guarded.replace(/"/g, '""')}"` : guarded;
     };
-    const header = ["Date", "Item", "Quantity", "Description", "Payee", "Amount", "Currency", "Notes"];
+    const header = ["Date", "Item", "Quantity", "Description", "Payee", "Amount", "Currency"];
     const lines = [header.join(",")];
     for (const r of filteredRows) {
       lines.push(
@@ -6326,7 +6321,6 @@ function ExpensesTab({
           esc(r.paid_to ?? ""),
           esc((r.amount_cents / 100).toFixed(2)),
           esc((r.currency ?? "usd").toUpperCase()),
-          esc(r.notes ?? ""),
         ].join(","),
       );
     }
@@ -6566,13 +6560,6 @@ function ExpensesTab({
               onChange={(e) => setForm({ ...form, description: e.target.value })}
               className="w-full rounded-lg border-0 px-3 py-2 text-sm bg-background/60 ring-1 ring-foreground/10 focus:ring-foreground/30 outline-none"
             />
-            <textarea
-              placeholder="Notes (optional)"
-              value={form.notes}
-              onChange={(e) => setForm({ ...form, notes: e.target.value })}
-              rows={2}
-              className="w-full rounded-lg border-0 px-3 py-2 text-sm bg-background/60 ring-1 ring-foreground/10 focus:ring-foreground/30 outline-none resize-none"
-            />
             {/* Recurring toggle — only on the New form. Edits go
                 through the "Recurring expenses" panel below. */}
             {editing === "new" && (
@@ -6666,9 +6653,6 @@ function ExpensesTab({
                   Description
                 </th>
                 <th className="px-3 py-3 text-left text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">
-                  Notes
-                </th>
-                <th className="px-3 py-3 text-left text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">
                   Payee
                 </th>
                 <th className="px-3 py-3 text-right text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">
@@ -6714,9 +6698,6 @@ function ExpensesTab({
                       ) : null}
                     </div>
                   </td>
-                  <td className="px-3 py-3 text-sm text-muted-foreground max-w-[240px] truncate" title={e.notes ?? undefined}>
-                    {e.notes || "—"}
-                  </td>
                   <td className="px-3 py-3 text-sm text-muted-foreground">
                     {e.paid_to || "—"}
                   </td>
@@ -6755,7 +6736,7 @@ function ExpensesTab({
             </tbody>
             <tfoot>
               <tr className="border-t border-foreground/10">
-                <td colSpan={9} className="px-4 py-3">
+                <td colSpan={8} className="px-4 py-3">
                   <div className="flex justify-between items-center gap-3 flex-wrap text-xs text-muted-foreground">
                     <span>
                       Showing {pageRows.length} of {filteredRows.length} · Total{" "}
