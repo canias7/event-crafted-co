@@ -1264,7 +1264,15 @@ function OverviewRevenueChart({ series: rawSeries, currency }: { series: number[
             </svg>
             {!hasData && (
               <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                <div className="text-xs text-muted-foreground italic bg-white/85 rounded px-3 py-1.5">
+                <div
+                  className="text-xs text-muted-foreground italic rounded-full px-3 py-1.5"
+                  style={{
+                    background: "rgba(255, 253, 250, 0.78)",
+                    border: "0.5px solid rgba(255, 138, 76, 0.18)",
+                    backdropFilter: "blur(8px)",
+                    WebkitBackdropFilter: "blur(8px)",
+                  }}
+                >
                   No paid invoices in the last 30 days
                 </div>
               </div>
