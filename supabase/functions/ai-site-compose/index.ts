@@ -152,15 +152,17 @@ serve(async (req) => {
     savedSiteId = (inserted as { id: string }).id;
   }
 
-  // Version snapshot (best-effort).
-  await admin.from("ai_site_versions").insert({
+  // Version snapshot (best-effort). Supabase builder doesn't expose
+  // a .catch — await it and inspect the error field instead.
+  const vres = await admin.from("ai_site_versions").insert({
     site_id: savedSiteId,
     version_number: newVersion,
     html,
     title: spec.title,
     prompt: payload?.prompt ?? "(composed from spec)",
     og_description: ogDescription,
-  }).catch((e: any) => console.warn("[ai-site-compose] version snapshot", e));
+  });
+  if (vres.error) console.warn("[ai-site-compose] version snapshot", vres.error);
 
   return json(200, {
     html,
