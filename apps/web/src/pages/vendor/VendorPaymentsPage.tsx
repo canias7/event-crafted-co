@@ -1749,7 +1749,7 @@ function OverviewExpensesCard({
             {formatMoney(expenses.total, currency)}
           </div>
           {rows[0] ? (
-            <div className="mt-1.5 text-[13px] text-foreground/80 truncate" title={rows[0].label}>
+            <div className="mt-1.5 text-[13px] text-foreground font-bold truncate" title={rows[0].label}>
               {rows[0].label}
             </div>
           ) : null}
@@ -1785,8 +1785,8 @@ function OverviewExpensesCard({
               {rows.map((r) => (
                 <div key={r.label} className="flex items-center gap-2 text-[11px]">
                   <span className="w-2.5 h-2.5 rounded-sm shrink-0" style={{ background: r.color }} />
-                  <span className="text-muted-foreground truncate flex-1">{r.label}</span>
-                  <span className="cockpit-money tabular-nums text-foreground/90 shrink-0">
+                  <span className="text-foreground font-bold truncate flex-1">{r.label}</span>
+                  <span className="tabular-nums text-foreground font-bold shrink-0">
                     {formatMoney(r.cents, currency)}
                   </span>
                 </div>
