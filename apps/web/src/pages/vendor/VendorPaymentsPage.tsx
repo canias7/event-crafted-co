@@ -6211,6 +6211,7 @@ function ExpensesTab({
     let ytdCents = 0;
     let ytdCount = 0;
     let monthCents = 0;
+    let monthCount = 0;
     let thirtyDayCents = 0;
     let thirtyDayCount = 0;
     // Group by item_name when present, else fall back to the
@@ -6225,7 +6226,10 @@ function ExpensesTab({
         const key = (r.item_name?.trim() || r.description.trim() || "—");
         byItem.set(key, (byItem.get(key) ?? 0) + r.amount_cents);
       }
-      if (r.occurred_on.slice(0, 7) === monthStr) monthCents += r.amount_cents;
+      if (r.occurred_on.slice(0, 7) === monthStr) {
+        monthCents += r.amount_cents;
+        monthCount += 1;
+      }
       if (r.occurred_on >= thirtyYmd) {
         thirtyDayCents += r.amount_cents;
         thirtyDayCount += 1;
@@ -6237,6 +6241,7 @@ function ExpensesTab({
       ytdCents,
       ytdCount,
       monthCents,
+      monthCount,
       thirtyDayCents,
       thirtyDayCount,
       topItem,
@@ -6361,16 +6366,13 @@ function ExpensesTab({
         </div>
       </div>
 
-      {/* KPI strip — YTD spend, this month, last 30 days, top category. */}
+      {/* KPI strip — YTD spend, this month, last 30 days, top item.
+          All four tiles use the same white + foreground/10 border
+          treatment; nothing is "primary" so no tile should hijack
+          attention with a different background. */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <div
-          className="rounded-xl px-4 py-3"
-          style={{
-            background: "linear-gradient(135deg,#fdeee7,#f9ddd2)",
-            border: "1px solid transparent",
-          }}
-        >
-          <div className="text-[10px] uppercase tracking-[0.1em] font-semibold" style={{ color: "#9c8d86" }}>
+        <div className="rounded-xl px-4 py-3 bg-white border border-foreground/10">
+          <div className="text-[10px] uppercase tracking-[0.1em] font-semibold text-muted-foreground">
             YTD spend
           </div>
           <div
@@ -6379,7 +6381,7 @@ function ExpensesTab({
           >
             {formatMoney(kpis.ytdCents)}
           </div>
-          <div className="text-[11px] mt-1" style={{ color: "#8c7c74" }}>
+          <div className="text-[11px] text-muted-foreground mt-1">
             {kpis.ytdCount} transaction{kpis.ytdCount === 1 ? "" : "s"}
           </div>
         </div>
@@ -6394,7 +6396,7 @@ function ExpensesTab({
             {formatMoney(kpis.monthCents)}
           </div>
           <div className="text-[11px] text-muted-foreground mt-1">
-            {new Date().toLocaleDateString("en-US", { month: "long" })}
+            {new Date().toLocaleDateString("en-US", { month: "long" })} · {kpis.monthCount} transaction{kpis.monthCount === 1 ? "" : "s"}
           </div>
         </div>
         <div className="rounded-xl px-4 py-3 bg-white border border-foreground/10">
@@ -6430,7 +6432,7 @@ function ExpensesTab({
 
       {/* Toolbar — search, category filter, date-range preset. */}
       <div className="flex items-center gap-2 flex-wrap">
-        <div className="relative flex-1 min-w-[200px]">
+        <div className="relative flex-1 min-w-[200px] max-w-md">
           <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm pointer-events-none">⌕</span>
           <input
             type="text"
@@ -6443,7 +6445,7 @@ function ExpensesTab({
         <select
           value={rangePreset}
           onChange={(e) => setRangePreset(e.target.value as typeof rangePreset)}
-          className="px-3 py-2 rounded-lg border border-foreground/10 bg-white text-sm"
+          className="px-3 py-2 rounded-lg border border-foreground/10 bg-white text-sm min-w-[150px]"
         >
           <option value="last_12m">Last 12 months</option>
           <option value="ytd">Year to date</option>
