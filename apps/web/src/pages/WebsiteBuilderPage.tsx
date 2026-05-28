@@ -970,6 +970,7 @@ export default function WebsiteBuilderPage() {
     setHasContent(true);
 
     let receivedChunk = false;
+    let lastStreamRender = 0;
     let bufferedHtml = "";
     let buf = "";
 
@@ -1023,13 +1024,28 @@ export default function WebsiteBuilderPage() {
               continue;
             }
             if (data.type === "chunk" && data.text) {
-              // Buffer rather than write directly to iframe — only
-              // render after "done".
               const text = receivedChunk
                 ? data.text
                 : data.text.replace(/<!--\s*TITLE:[^>]*-->\s*/i, "");
               receivedChunk = true;
               bufferedHtml += text;
+              // Stream chunks into the iframe as they arrive so the
+              // user sees the cover-page within ~8s instead of
+              // staring at a loader for the full generation. Throttle
+              // to every 600ms — a full doc.write per chunk would
+              // murder the renderer. Final clean render happens on
+              // `done` so any placeholder flashes get scrubbed.
+              const now = Date.now();
+              if (now - lastStreamRender > 600 && iframeRef.current?.contentDocument) {
+                lastStreamRender = now;
+                const doc = iframeRef.current.contentDocument;
+                doc.open();
+                doc.write(previewClean(bufferedHtml));
+                doc.close();
+                // Reveal the iframe so the user sees the streaming
+                // render instead of the loading dot.
+                setHasContent(true);
+              }
             } else if (data.type === "done") {
               // Stream finished. Write the entire buffered HTML to
               // the iframe at once so the user sees a complete,
@@ -1659,10 +1675,10 @@ export default function WebsiteBuilderPage() {
             className="w-full h-full max-w-[1400px] rounded-xl shadow-2xl bg-white"
             style={{
               minHeight: "70vh",
-              visibility: hasContent && !loading ? "visible" : "hidden",
+              visibility: hasContent ? "visible" : "hidden",
             }}
           />
-          {loading && (
+          {loading && !hasContent && (
             <div className="absolute inset-0 flex items-center justify-center text-center text-white/60 max-w-md mx-auto px-6 pointer-events-none">
               <div className="builder-preview-loader">
                 <div className="text-[11px] uppercase tracking-[3px] text-white/40 mb-4">

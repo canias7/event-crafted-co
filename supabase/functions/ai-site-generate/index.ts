@@ -1837,11 +1837,20 @@ serve(async (req) => {
     ? baseSystem + EDIT_SUFFIX + currentSite.html
     : baseSystem;
 
+  // Web search adds ~5-15s per call (3 calls allowed). Only enable
+  // it when the prompt looks like a real venue worth looking up. For
+  // "backyard BBQ" or "kids party at our house" prompts we skip.
+  const venueKeywords = /\b(villa|hotel|estate|gardens?|club|hall|chapel|cathedral|temple|park|beach|resort|farm|barn|winery|vineyard|inn|lodge|cabin|venue|country\s+club|the\s+plaza|the\s+ritz|four\s+seasons|st\.?\s+regis|aman|rosewood)\b/i;
+  const needsWebSearch = !currentSite && venueKeywords.test(userPrompt);
+
   const anthropicRes = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
     headers: {
       "x-api-key": ANTHROPIC_API_KEY,
       "anthropic-version": "2023-06-01",
+      // 1h prompt cache: warm cache hits within an hour reuse the
+      // bible at ~90% input cost discount, big latency win too.
+      "anthropic-beta": "extended-cache-ttl-2025-04-11",
       "content-type": "application/json",
     },
     body: JSON.stringify({
@@ -1850,18 +1859,18 @@ serve(async (req) => {
       model: MODEL,
       max_tokens: currentSite ? 18000 : 24000,
       stream: true,
-      tools: currentSite ? undefined : [
+      tools: needsWebSearch ? [
         {
           type: "web_search_20250305",
           name: "web_search",
           max_uses: 3,
         },
-      ],
+      ] : undefined,
       system: [
         {
           type: "text",
           text: systemText,
-          cache_control: { type: "ephemeral" },
+          cache_control: { type: "ephemeral", ttl: "1h" },
         },
       ],
       messages: [
@@ -1954,21 +1963,19 @@ serve(async (req) => {
       // If Claude included the literal placeholder anywhere, fix it too.
       html = html.replaceAll("__SLUG__", slug);
 
-      // Custom watercolor hero. If Claude emitted a HERO_AI_PROMPT
-      // comment AND used the __HERO_AI__ placeholder URL, generate
-      // the illustration via OpenAI and swap the placeholder. Best-
-      // effort: if generation fails the Unsplash fallback that
-      // Claude was instructed to bake in stays in place.
+      // Hero illustration is now deferred. We DON'T await OpenAI
+      // here — that was costing 10-30s on the critical path. Instead
+      // we save the HTML with __HERO_AI__ still present and the
+      // Unsplash fallback Claude baked in renders fine. Then in the
+      // background we generate the watercolor and patch the row.
+      // The browser will see the Unsplash hero on first paint and
+      // either swap in the AI hero on a subsequent reload, or keep
+      // the Unsplash one if OpenAI is down. Best of both worlds:
+      // fast `done` event + eventual premium illustration.
       const heroMatch = html.match(/<!--\s*HERO_AI_PROMPT:\s*([\s\S]*?)\s*-->/i);
-      if (heroMatch && html.includes("__HERO_AI__")) {
-        const heroPrompt = heroMatch[1].trim().slice(0, 800);
-        try {
-          const heroUrl = await generateHeroIllustration(heroPrompt, slug, admin);
-          if (heroUrl) html = html.replaceAll("__HERO_AI__", heroUrl);
-        } catch (e) {
-          console.warn("[ai-site-generate] hero pipeline error", e);
-        }
-      }
+      const heroPromptForBg = heroMatch && html.includes("__HERO_AI__") && !currentSite
+        ? heroMatch[1].trim().slice(0, 800)
+        : null;
 
       try {
         let savedSiteId: string;
@@ -2043,6 +2050,35 @@ serve(async (req) => {
           version_number: newVersionNumber,
           validation,
         });
+
+        // Background hero illustration. EdgeRuntime.waitUntil keeps
+        // the function alive after the response closes so we can
+        // generate the watercolor (10-30s) and patch the row. Best-
+        // effort: failure means the Unsplash fallback that's already
+        // in the saved HTML stays in place.
+        if (heroPromptForBg) {
+          // @ts-ignore — EdgeRuntime exposed by Supabase functions runtime
+          EdgeRuntime.waitUntil((async () => {
+            try {
+              const heroUrl = await generateHeroIllustration(heroPromptForBg, slug, admin);
+              if (!heroUrl) return;
+              const { data: row } = await admin
+                .from("ai_sites")
+                .select("html")
+                .eq("id", savedSiteId)
+                .maybeSingle();
+              const current = (row as { html?: string } | null)?.html;
+              if (current && current.includes("__HERO_AI__")) {
+                await admin
+                  .from("ai_sites")
+                  .update({ html: current.replaceAll("__HERO_AI__", heroUrl) })
+                  .eq("id", savedSiteId);
+              }
+            } catch (e) {
+              console.warn("[ai-site-generate] background hero error", e);
+            }
+          })());
+        }
       } catch (e) {
         console.error("[ai-site-generate] save exception", e);
         send({ type: "error", message: "save_failed" });
