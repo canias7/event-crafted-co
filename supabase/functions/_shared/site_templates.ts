@@ -310,74 +310,121 @@ function renderCover(spec: Spec, t: Theme): string {
 // scratches, multi-stop radial gradients for waxy 3D depth, drop
 // shadow, and an embossed monogram. Looks like wax, not CSS.
 function renderWaxSeal(monogram: string, t: Theme): string {
-  // Darker variants of the accent for shadow stops.
   const accent = t.accent;
+  // Wax seals are always burgundy/red/wine in reality (regardless of theme).
+  // Hard-coding the wax colors so the seal looks like real wax even on
+  // navy / pastel themes. The gold glyph picks up the theme.
+  const waxBase = "#8B1A1A";    // wine red
+  const waxMid = "#5E0C0C";     // deep wine
+  const waxDark = "#2A0303";    // near-black wine
   return `
 <div class="wax-seal-wrap" aria-hidden="true">
-<svg viewBox="-110 -110 220 220" width="140" height="140" class="wax-seal-svg" xmlns="http://www.w3.org/2000/svg">
+<svg viewBox="-110 -110 220 220" width="100%" height="100%" class="wax-seal-svg" xmlns="http://www.w3.org/2000/svg">
   <defs>
-    <!-- Bumpy surface displacement so the seal feels uneven, not laser-cut. -->
-    <filter id="bump" x="-20%" y="-20%" width="140%" height="140%">
-      <feTurbulence type="fractalNoise" baseFrequency="0.04" numOctaves="2" seed="7" result="noise"/>
-      <feDisplacementMap in="SourceGraphic" in2="noise" scale="6" xChannelSelector="R" yChannelSelector="G"/>
+    <!-- Heavy displacement: visible irregular edges + surface bumps. -->
+    <filter id="ws-bump" x="-30%" y="-30%" width="160%" height="160%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.015" numOctaves="3" seed="11" result="ws-noise"/>
+      <feDisplacementMap in="SourceGraphic" in2="ws-noise" scale="22" xChannelSelector="R" yChannelSelector="G"/>
     </filter>
-    <!-- Fine surface grain (scratches, wax fibers). -->
-    <filter id="grain" x="0%" y="0%" width="100%" height="100%">
-      <feTurbulence type="fractalNoise" baseFrequency="1.2" numOctaves="2" seed="3"/>
-      <feColorMatrix values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.45 0"/>
+    <!-- Specular lighting: makes the disc look DOMED, like wax pooled into
+         a bulge. This is the trick — gives the seal real 3D depth instead
+         of looking like a flat sticker. -->
+    <filter id="ws-spec" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="3" result="blur"/>
+      <feSpecularLighting in="blur" surfaceScale="14" specularConstant="1.2" specularExponent="32" lighting-color="#fff5e0" result="spec">
+        <feDistantLight azimuth="125" elevation="45"/>
+      </feSpecularLighting>
+      <feComposite in="spec" in2="SourceAlpha" operator="in" result="specClipped"/>
+      <feComposite in="SourceGraphic" in2="specClipped" operator="arithmetic" k1="0" k2="1" k3="0.9" k4="0"/>
+    </filter>
+    <!-- Surface scratches / wax fibers. -->
+    <filter id="ws-grain" x="0%" y="0%" width="100%" height="100%">
+      <feTurbulence type="fractalNoise" baseFrequency="2.2" numOctaves="3" seed="3"/>
+      <feColorMatrix values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.7 0"/>
       <feComposite in2="SourceGraphic" operator="in"/>
     </filter>
-    <!-- Cast shadow underneath the seal. -->
-    <filter id="cast" x="-50%" y="-50%" width="200%" height="200%">
-      <feGaussianBlur in="SourceAlpha" stdDeviation="5"/>
-      <feOffset dx="0" dy="6"/>
-      <feComponentTransfer><feFuncA type="linear" slope="0.55"/></feComponentTransfer>
+    <!-- Cast shadow. -->
+    <filter id="ws-cast" x="-80%" y="-80%" width="260%" height="260%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="8"/>
+      <feOffset dx="2" dy="10"/>
+      <feComponentTransfer><feFuncA type="linear" slope="0.7"/></feComponentTransfer>
       <feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge>
     </filter>
-    <!-- 3D wax body — light from top-left, dark rim, glossy highlight. -->
-    <radialGradient id="wax-body" cx="38%" cy="32%" r="68%">
-      <stop offset="0%"  stop-color="#ffffff" stop-opacity="0.55"/>
-      <stop offset="14%" stop-color="${accent}" stop-opacity="0.9"/>
-      <stop offset="55%" stop-color="${accent}"/>
-      <stop offset="82%" stop-color="#4a0f0f"/>
-      <stop offset="100%" stop-color="#1a0303"/>
+    <!-- 3D wax body: very dark rim, deep wine mid, base wax, light highlight. -->
+    <radialGradient id="ws-body" cx="36%" cy="28%" r="78%">
+      <stop offset="0%"  stop-color="#FFE0E0" stop-opacity="0.55"/>
+      <stop offset="8%"  stop-color="#D85050"/>
+      <stop offset="35%" stop-color="${waxBase}"/>
+      <stop offset="72%" stop-color="${waxMid}"/>
+      <stop offset="92%" stop-color="${waxDark}"/>
+      <stop offset="100%" stop-color="#150101"/>
     </radialGradient>
-    <!-- Subtle rim shine on the upper edge. -->
-    <radialGradient id="wax-rim" cx="50%" cy="20%" r="58%">
-      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.4"/>
-      <stop offset="40%" stop-color="#ffffff" stop-opacity="0.06"/>
-      <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
+    <!-- Inner pressed depression: darker in the center because the stamp
+         pushed the wax down. -->
+    <radialGradient id="ws-pressed" cx="50%" cy="55%" r="38%">
+      <stop offset="0%" stop-color="#000" stop-opacity="0.45"/>
+      <stop offset="80%" stop-color="#000" stop-opacity="0"/>
+      <stop offset="100%" stop-color="#000" stop-opacity="0"/>
     </radialGradient>
   </defs>
-  <!-- Outer wax pool — slightly larger, blurred, behind everything (drip glow). -->
-  <path d="M-78 -10 C -90 -45, -55 -85, -10 -78 C 30 -90, 80 -50, 78 -8 C 92 35, 50 88, 8 78 C -38 92, -85 38, -78 -10 Z"
-        fill="${accent}" opacity="0.32" filter="url(#cast)" transform="scale(1.08)"/>
-  <!-- Main wax disc — bumpy blob, bump filter for edge irregularity. -->
-  <g filter="url(#bump)">
-    <path d="M-72 -8 C -82 -42, -52 -78, -8 -72 C 28 -82, 72 -48, 72 -6 C 84 32, 46 80, 6 72 C -34 84, -78 36, -72 -8 Z"
-          fill="url(#wax-body)"/>
-    <!-- Inner rim shine -->
-    <path d="M-72 -8 C -82 -42, -52 -78, -8 -72 C 28 -82, 72 -48, 72 -6 C 84 32, 46 80, 6 72 C -34 84, -78 36, -72 -8 Z"
-          fill="url(#wax-rim)"/>
-    <!-- Surface scratches via fine grain inside the disc shape. -->
-    <path d="M-72 -8 C -82 -42, -52 -78, -8 -72 C 28 -82, 72 -48, 72 -6 C 84 32, 46 80, 6 72 C -34 84, -78 36, -72 -8 Z"
-          fill="#000" filter="url(#grain)" opacity="0.55"/>
+
+  <!-- Outer drip pool (blurred, behind everything). Irregular blob -->
+  <path d="M -82 -8 Q -94 -45 -52 -82 Q -10 -98 18 -86 Q 60 -92 82 -56 Q 96 -18 88 12 Q 100 48 64 82 Q 24 96 -8 86 Q -54 96 -80 56 Q -98 16 -82 -8 Z"
+        fill="${waxBase}" opacity="0.35" filter="url(#ws-cast)" transform="scale(1.05)"/>
+
+  <!-- Drip droplets around the edge -->
+  <g fill="${waxMid}" opacity="0.55">
+    <ellipse cx="-90" cy="-30" rx="6" ry="4" transform="rotate(-30 -90 -30)"/>
+    <ellipse cx="85" cy="-18" rx="5" ry="4" transform="rotate(20 85 -18)"/>
+    <ellipse cx="-80" cy="55" rx="7" ry="5" transform="rotate(45 -80 55)"/>
+    <ellipse cx="78" cy="62" rx="5" ry="4" transform="rotate(-25 78 62)"/>
+    <ellipse cx="-15" cy="-92" rx="4" ry="3"/>
+    <ellipse cx="22" cy="88" rx="5" ry="3"/>
   </g>
-  <!-- Inner pressed circle outline (the stamp impression). -->
-  <circle cx="0" cy="0" r="52" fill="none" stroke="#1a0303" stroke-opacity="0.45" stroke-width="2"/>
-  <circle cx="0" cy="0" r="50" fill="none" stroke="${t.gold}" stroke-opacity="0.35" stroke-width="0.8"/>
-  <!-- Embossed monogram — drop-shadow gives the pressed-into-wax look. -->
+
+  <!-- Main wax disc: bumpy blob path, then layered effects -->
+  <g filter="url(#ws-bump)">
+    <!-- Base disc with 3D radial gradient -->
+    <circle cx="0" cy="0" r="80" fill="url(#ws-body)" filter="url(#ws-spec)"/>
+    <!-- Pressed depression in the center (darker) -->
+    <circle cx="0" cy="0" r="80" fill="url(#ws-pressed)"/>
+    <!-- Surface scratches / grain -->
+    <circle cx="0" cy="0" r="80" fill="#fff" filter="url(#ws-grain)" opacity="0.4" style="mix-blend-mode:overlay"/>
+  </g>
+
+  <!-- Inner pressed ring (stamp impression edge) -->
+  <g filter="url(#ws-bump)" opacity="0.6">
+    <circle cx="0" cy="0" r="56" fill="none" stroke="${waxDark}" stroke-width="3"/>
+    <circle cx="0" cy="0" r="56" fill="none" stroke="#fff" stroke-width="0.5" stroke-opacity="0.2"/>
+  </g>
+
+  <!-- Embossed monogram. Two layered drop-shadows give the pressed-in
+       feel: dark above (the depression catches shadow), light below
+       (the lip catches reflected light). Gold glyph picks up theme. -->
   ${monogram
-    ? `<text x="0" y="${monogram.length > 1 ? "16" : "20"}" text-anchor="middle"
-            font-family="${t.script}, cursive"
-            font-size="${monogram.length > 1 ? "60" : "76"}"
+    ? `<text x="0" y="${monogram.length > 1 ? "14" : "20"}" text-anchor="middle"
+            font-family="${t.script}, 'Pinyon Script', cursive"
+            font-size="${monogram.length > 1 ? "52" : "78"}"
+            font-weight="500"
             fill="${t.gold}"
-            style="filter:drop-shadow(0 -1px 0 rgba(0,0,0,0.6)) drop-shadow(0 1px 0 rgba(255,255,255,0.15))">${esc(monogram)}</text>`
-    : `<g fill="${t.gold}" style="filter:drop-shadow(0 -1px 0 rgba(0,0,0,0.6))">
-        <circle cx="0" cy="0" r="6"/>
-        <circle cx="-22" cy="0" r="3"/>
-        <circle cx="22" cy="0" r="3"/>
-      </g>`}
+            opacity="0.95"
+            style="filter: drop-shadow(0 -2px 0 rgba(0,0,0,0.7)) drop-shadow(0 1.5px 0 rgba(255,230,180,0.35))">${esc(monogram)}</text>`
+    : `<g fill="${t.gold}" opacity="0.95" style="filter:drop-shadow(0 -2px 0 rgba(0,0,0,0.7))">
+         <circle cx="0" cy="-2" r="7"/>
+         <ellipse cx="-22" cy="-2" rx="4" ry="3"/>
+         <ellipse cx="22" cy="-2" rx="4" ry="3"/>
+         <ellipse cx="0" cy="20" rx="3" ry="2"/>
+       </g>`}
+
+  <!-- Tiny imperfections: highlights and shadow spots scattered across
+       the surface to add irregularity -->
+  <g style="mix-blend-mode:overlay">
+    <ellipse cx="-22" cy="-38" rx="4" ry="2" fill="#fff" opacity="0.35" transform="rotate(-20 -22 -38)"/>
+    <ellipse cx="32" cy="-18" rx="2" ry="1.5" fill="#fff" opacity="0.25"/>
+    <ellipse cx="-12" cy="45" rx="3" ry="1.5" fill="#fff" opacity="0.2" transform="rotate(30 -12 45)"/>
+    <circle cx="38" cy="42" r="1.5" fill="#000" opacity="0.3"/>
+    <circle cx="-40" cy="20" r="1" fill="#000" opacity="0.25"/>
+  </g>
 </svg>
 </div>`;
 }
@@ -664,10 +711,14 @@ ${googleFontsLink(t)}
   .opener-toggle:checked ~ .cover-page{opacity:0;transform:scale(1.02);pointer-events:none}
 
   /* === Envelope structure === */
+  /* Bigger, cream-colored envelope on the dark cover bg. Real
+     envelopes are cream/ivory, not the same color as their
+     background — high contrast is what makes them read as
+     "envelope sitting on a table." */
   .env-stage{
     position:relative;
-    width:min(520px,88vw);
-    aspect-ratio:5/3.4;
+    width:min(720px,92vw);
+    aspect-ratio:5/3.2;
     transform-style:preserve-3d;
     margin-bottom:2.5rem;
   }
@@ -675,45 +726,52 @@ ${googleFontsLink(t)}
     position:relative;
     width:100%;height:100%;
     transform-style:preserve-3d;
-    /* cast shadow under the whole envelope */
-    filter:drop-shadow(0 16px 30px rgba(0,0,0,0.45)) drop-shadow(0 40px 70px rgba(0,0,0,0.3));
+    filter:drop-shadow(0 18px 36px rgba(0,0,0,0.55)) drop-shadow(0 50px 90px rgba(0,0,0,0.4));
   }
-  /* Outer envelope back — visible behind the flap. Paper-textured
-     in the accent color so it reads as cardstock, not flat. */
+  /* Outer envelope back — cream cardstock with subtle texture and a
+     ruled border (real envelopes have an inner liner edge). */
   .env-back{
     position:absolute;inset:0;
     background:
-      linear-gradient(165deg, color-mix(in srgb, ${t.accent} 80%, #000 18%) 0%, color-mix(in srgb, ${t.accent} 60%, #000 30%) 100%);
-    border-radius:4px;
+      linear-gradient(165deg, var(--surface) 0%, var(--surface2) 100%);
+    border-radius:2px;
     box-shadow:
-      inset 0 1px 0 rgba(255,255,255,0.1),
-      inset 0 -1px 0 rgba(0,0,0,0.25),
-      inset 0 0 0 1px rgba(0,0,0,0.1);
+      inset 0 1px 0 rgba(255,255,255,0.7),
+      inset 0 -1px 0 rgba(0,0,0,0.1),
+      inset 0 0 0 1px rgba(0,0,0,0.08);
     z-index:1;
   }
   .env-back::before{
     content:"";position:absolute;inset:0;
-    background-image:url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='b'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' seed='8'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.4 0'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23b)'/%3E%3C/svg%3E");
-    mix-blend-mode:overlay;opacity:0.6;border-radius:inherit;
+    background-image:url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='b'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' seed='8'/%3E%3CfeColorMatrix values='0 0 0 0 0.15 0 0 0 0 0.10 0 0 0 0 0.05 0 0 0 0.45 0'/%3E%3C/filter%3E%3Crect width='220' height='220' filter='url(%23b)'/%3E%3C/svg%3E");
+    mix-blend-mode:multiply;opacity:0.55;border-radius:inherit;
+  }
+  /* Subtle ruled inner border on the envelope (cardstock detail). */
+  .env-back::after{
+    content:"";position:absolute;inset:10px;
+    border:1px solid color-mix(in srgb, var(--accent) 30%, transparent);
+    border-radius:1px;
   }
   /* The letter inside — visible after the flap opens. Initially
      sits behind the flap (z-index 2), revealed as the flap rotates. */
+  /* Letter inside — slightly inset, brighter white than the envelope
+     body so it reads as the LETTER vs the ENVELOPE. */
   .env-letter{
     position:absolute;
-    top:5%;left:5%;right:5%;bottom:5%;
-    background:var(--surface);
+    top:7%;left:7%;right:7%;bottom:7%;
+    background:#fefcf7;
     background-image:
-      url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='l'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.95' numOctaves='2' seed='2'/%3E%3CfeColorMatrix values='0 0 0 0 0.18 0 0 0 0 0.12 0 0 0 0 0.06 0 0 0 0.4 0'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23l)'/%3E%3C/svg%3E");
+      url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='l'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.95' numOctaves='2' seed='2'/%3E%3CfeColorMatrix values='0 0 0 0 0.18 0 0 0 0 0.12 0 0 0 0 0.06 0 0 0 0.35 0'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23l)'/%3E%3C/svg%3E");
     background-blend-mode:multiply;
     color:var(--text);
-    border-radius:3px;
+    border-radius:2px;
     z-index:2;
     display:flex;flex-direction:column;align-items:center;justify-content:center;
-    padding:1rem 1.25rem;
+    padding:1.5rem 1.5rem;
     box-shadow:
-      inset 0 0 0 1px rgba(0,0,0,0.08),
-      inset 0 1px 0 rgba(255,255,255,0.6),
-      0 2px 4px rgba(0,0,0,0.1);
+      inset 0 0 0 1px rgba(0,0,0,0.06),
+      inset 0 1px 0 rgba(255,255,255,0.9),
+      0 2px 6px rgba(0,0,0,0.08);
     transform:translateY(0);
     opacity:1;
     transition:transform 1s cubic-bezier(0.4,0,0.2,1) 1.2s, opacity 0.5s ease 1.5s;
@@ -757,6 +815,9 @@ ${googleFontsLink(t)}
   /* The top flap — triangular, hinged at top edge. Wrapped color
      and shadow on the OUTSIDE; the back of the flap (when rotated)
      is the lighter envelope interior. */
+  /* Top flap: SAME cream color as the envelope back (real envelopes
+     are one piece of paper) but slightly darker on the bottom to
+     read as a folded edge. A faint horizontal fold-line at the top. */
   .env-flap{
     position:absolute;
     top:0;left:0;
@@ -767,23 +828,28 @@ ${googleFontsLink(t)}
     transform:rotateX(0deg);
     z-index:4;
     transition:transform 1.1s cubic-bezier(0.6,0.05,0.3,1) 0.45s;
-    /* Outside (envelope back face) */
     background:
-      linear-gradient(180deg, color-mix(in srgb, ${t.accent} 60%, #000 32%) 0%, color-mix(in srgb, ${t.accent} 80%, #000 12%) 100%);
+      linear-gradient(180deg, var(--surface) 0%, var(--surface2) 65%, color-mix(in srgb, var(--surface2) 80%, #000 10%) 100%);
     clip-path:polygon(0 0, 100% 0, 50% 100%);
-    box-shadow:inset 0 -10px 18px rgba(0,0,0,0.22);
+    box-shadow:
+      inset 0 -14px 24px rgba(0,0,0,0.15),
+      inset 0 1px 0 rgba(255,255,255,0.8);
     backface-visibility:hidden;
   }
-  /* Inside of the flap — lighter cream, visible only as the flap
-     swings past vertical. Uses backface-visibility:hidden so the
-     two faces never overlap. */
+  /* Inside of the flap — a slightly DARKER liner pattern so when
+     the flap opens, the inside reads as the printed liner of a real
+     wedding envelope. */
   .env-flap-inside{
     position:absolute;inset:0;
-    background:linear-gradient(180deg, var(--surface) 0%, var(--surface2) 100%);
+    background:
+      linear-gradient(180deg, color-mix(in srgb, var(--accent) 18%, var(--surface) 78%) 0%, color-mix(in srgb, var(--accent) 30%, var(--surface) 65%) 100%);
+    background-image:
+      url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80'%3E%3Cpath d='M40 0 L80 40 L40 80 L0 40 Z' fill='none' stroke='rgba(0,0,0,0.06)' stroke-width='0.5'/%3E%3C/svg%3E"),
+      linear-gradient(180deg, color-mix(in srgb, var(--accent) 18%, var(--surface) 78%) 0%, color-mix(in srgb, var(--accent) 30%, var(--surface) 65%) 100%);
     clip-path:polygon(0 0, 100% 0, 50% 100%);
     transform:rotateX(180deg);
     backface-visibility:hidden;
-    box-shadow:inset 0 -8px 14px rgba(0,0,0,0.08);
+    box-shadow:inset 0 -8px 14px rgba(0,0,0,0.1);
   }
   /* Wax seal — pinned at the bottom tip of the flap so it MOVES
      with the flap. When the flap rotates, the seal opens with it.
