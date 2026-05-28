@@ -19,6 +19,7 @@
 // deno-lint-ignore-file no-explicit-any
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.7";
+import { compose, type Spec } from "../_shared/site_templates.ts";
 
 // Pre-flight content filter. Anthropic + OpenAI both have safety
 // layers; this is a cheap upfront gate to reject obvious abuse
@@ -1726,6 +1727,250 @@ function stripCodeFences(text: string): string {
   return t.trim();
 }
 
+// ───────────────────────────────────────────────────────────────────
+// FAST PATH — Claude → JSON spec → compose engine
+// ───────────────────────────────────────────────────────────────────
+
+// Compact, stable system prompt. Static so the 1h Anthropic cache
+// can keep it permanently hot. Total ~2.5KB.
+const SPEC_SYSTEM_PROMPT = `You are a content director for premium event microsites. Given a user's request, output a JSON spec matching this TypeScript type — and NOTHING else.
+
+type Spec = {
+  event_type: "wedding" | "engagement" | "anniversary" | "vow_renewal" | "birthday" | "milestone_birthday" | "kids_birthday" | "baby_shower" | "bridal_shower" | "gender_reveal" | "graduation" | "retirement" | "dinner" | "cocktail" | "holiday_party" | "quinceanera" | "bar_mitzvah" | "bat_mitzvah" | "corporate" | "gala" | "fundraiser" | "housewarming" | "bbq" | "general";
+  theme: "moody-burgundy" | "garden-floral" | "tuscan-dusk" | "navy-champagne" | "dusty-pink-sage" | "black-tie-velvet" | "baby-pastel" | "evergreen-holiday" | "tropical-boho" | "corporate-mono";
+  title: string;            // 3-6 words, proper case
+  subtitle?: string;         // short tagline
+  honorees?: string[];       // ["Ava","Luca"] for couples; single name for milestones
+  monogram?: string;         // "AL" for couple monogram on cover
+  event_start?: string;      // ISO 8601 WITH TIMEZONE OFFSET, e.g. "2026-08-15T16:00:00-04:00"
+  event_end?: string;        // same format
+  venue?: string;            // "Villa Cipressi"
+  venue_address?: string;    // "Via IV Novembre 22, Varenna, Italy"
+  venue_lat?: number;        // for OpenStreetMap embed
+  venue_lng?: number;
+  hero_image?: string;       // Unsplash URL: https://images.unsplash.com/photo-XXXX?w=2000&q=80&fit=crop
+  cover_variant?: "envelope" | "monogram";  // monogram for couples, envelope otherwise
+  cover_eyebrow?: string;    // "Together with our families" / "You're invited to"
+  sections: Section[];
+  meta_description?: string;
+};
+
+type Section =
+  | { type: "quote"; body: string; attribution?: string }
+  | { type: "story"; title?: string; body: string }                // 2-4 paragraphs separated by \\n\\n
+  | { type: "schedule"; title?: string; items: { time: string; label: string; detail?: string }[] }
+  | { type: "travel"; title?: string; body: string; hotel?: string; map?: boolean }
+  | { type: "registry"; title?: string; intro?: string; links: { label: string; url: string }[] }
+  | { type: "dress_code"; code: string; body?: string }
+  | { type: "faqs"; title?: string; items: { q: string; a: string }[] }
+  | { type: "rsvp"; title?: string; intro?: string; include_meal?: boolean }
+  | { type: "photo_album"; title?: string; intro?: string }
+  | { type: "comment_wall"; title?: string; intro?: string }
+  | { type: "gallery_strip"; images: string[] }
+  | { type: "signature"; body: string; signoff?: string };
+
+RULES:
+1. Output VALID JSON only. First char "{", last char "}". No prose. No markdown fences.
+2. Pick ONE theme that matches the mood. moody-burgundy = formal wedding. garden-floral = outdoor spring/summer. tuscan-dusk = Italy/wine country. navy-champagne = classic ballroom. dusty-pink-sage = soft modern romance. black-tie-velvet = formal gala/NYE. baby-pastel = shower/kids. evergreen-holiday = Christmas. tropical-boho = beach/destination. corporate-mono = business event.
+3. cover_variant: "monogram" for weddings/anniversaries/engagements/vow_renewal (any couple event). "envelope" for everything else.
+4. event_start MUST include a timezone offset (-04:00 for ET, +01:00 for CET, -07:00 for PT, etc). Pick the right one for the venue.
+5. venue_lat/lng: include when you know the venue. Lake Como: 46.012, 9.288. The Plaza NYC: 40.764, -73.974. Napa Valley: 38.297, -122.286. Tulum: 20.214, -87.466. Skip for "our backyard" / vague locations.
+6. hero_image: pick a real Unsplash photo ID matching the mood (wedding couple, garden, vineyard, beach, etc). Don't invent IDs — when unsure, use https://images.unsplash.com/photo-1519741497674-611481863552?w=2000&q=80&fit=crop (versatile couple shot) as fallback.
+7. Section count + order:
+   - Elegant events (wedding, anniversary, engagement, vow_renewal, gala): 8-12 sections.
+     Order: quote → story → schedule → travel → dress_code → registry → faqs → rsvp → photo_album → comment_wall → signature
+   - Casual events (bbq, kids_birthday, dinner, cocktail, housewarming): 4-6 sections.
+     Order: story → schedule → rsvp → photo_album → signature
+   - Corporate: 4-5 sections. story → schedule → travel → rsvp → signature. theme: corporate-mono.
+   - Baby/bridal shower: 5-6 sections. story → schedule → registry → rsvp → photo_album → signature. theme: baby-pastel or dusty-pink-sage.
+8. Honor the user's tone. Formal events get sparse, elegant copy. Casual events get warm, conversational copy. Kids events get playful. Corporate gets clean + crisp.
+9. ALWAYS include an rsvp section for any dated event. include_meal: true for weddings/galas/formal dinners.
+10. If user mentions photos/memories/gallery → photo_album. If user mentions well-wishes/messages/notes → comment_wall.
+11. story.body uses \\n\\n between paragraphs. 2-4 paragraphs.
+12. Don't invent specifics that change the event nature. If user says "September 2026" without a day, pick a Saturday. If no time given, default 4:00 PM for weddings, 6:00 PM for casual dinners, 7:00 PM for galas.
+
+OUTPUT FORMAT: a single JSON object. Nothing else.`;
+
+interface SpecResult {
+  ok: boolean;
+  spec?: Spec;
+  raw?: string;
+  error?: string;
+}
+
+// Strip code fences, prose preface, trailing junk. Return the
+// substring from the first `{` to the matching last `}`.
+function extractJsonObject(text: string): string | null {
+  const start = text.indexOf("{");
+  const end = text.lastIndexOf("}");
+  if (start < 0 || end <= start) return null;
+  return text.slice(start, end + 1);
+}
+
+async function callClaudeForSpec(userPrompt: string, conversation: Array<{ role: "user" | "assistant"; content: string }>): Promise<SpecResult> {
+  const res = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: {
+      "x-api-key": ANTHROPIC_API_KEY,
+      "anthropic-version": "2023-06-01",
+      "anthropic-beta": "extended-cache-ttl-2025-04-11",
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({
+      model: MODEL,
+      max_tokens: 4000,
+      system: [{ type: "text", text: SPEC_SYSTEM_PROMPT, cache_control: { type: "ephemeral", ttl: "1h" } }],
+      messages: [...conversation, { role: "user", content: userPrompt }],
+    }),
+  });
+  if (!res.ok) {
+    const t = await res.text().catch(() => "");
+    return { ok: false, error: `anthropic_${res.status}: ${t.slice(0, 200)}` };
+  }
+  const body = await res.json().catch(() => null) as any;
+  const text = body?.content?.[0]?.text ?? "";
+  const json = extractJsonObject(text);
+  if (!json) return { ok: false, raw: text, error: "no_json_in_reply" };
+  try {
+    const spec = JSON.parse(json);
+    if (!spec.title || !spec.theme || !spec.event_type || !Array.isArray(spec.sections)) {
+      return { ok: false, raw: json, error: "spec_missing_required_fields" };
+    }
+    return { ok: true, spec: spec as Spec, raw: json };
+  } catch (e) {
+    return { ok: false, raw: json, error: `parse_error: ${(e as Error).message}` };
+  }
+}
+
+async function handleComposeMode(
+  req: Request,
+  payload: any,
+  userPrompt: string,
+): Promise<Response> {
+  // Resolve auth so we can attach owner_user_id on save.
+  let authedUserId: string | null = null;
+  const bearer = (req.headers.get("Authorization") ?? "").replace(/^Bearer\s+/i, "").trim();
+  if (bearer && bearer !== SUPABASE_ANON_KEY) {
+    try {
+      const uc = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+        auth: { autoRefreshToken: false, persistSession: false },
+        global: { headers: { Authorization: `Bearer ${bearer}` } },
+      });
+      const { data } = await uc.auth.getUser();
+      authedUserId = data?.user?.id ?? null;
+    } catch { /* anon */ }
+  }
+
+  const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  });
+
+  // Same rate-limit knob as the slow path. 12 anon generations / IP / hr.
+  if (!authedUserId) {
+    const ip = clientIp(req);
+    const allowed = await rateLimit(admin, ip, "gen:anon", 12, 3600);
+    if (!allowed) {
+      return jsonResponse(429, { error: "rate_limited", message: "Too many generations from this IP recently." });
+    }
+  }
+
+  const rawConv = Array.isArray(payload?.conversation) ? payload.conversation : [];
+  const conversation = rawConv
+    .filter((m: any) => m && (m.role === "user" || m.role === "assistant") && typeof m.content === "string")
+    .slice(-6)
+    .map((m: any) => ({ role: m.role as "user" | "assistant", content: String(m.content).slice(0, 2000) }));
+
+  // Build SSE stream so the builder UI's existing chunk/done plumbing works.
+  const stream = new ReadableStream({
+    async start(controller) {
+      const encoder = new TextEncoder();
+      const send = (obj: unknown) => controller.enqueue(encoder.encode(`data: ${JSON.stringify(obj)}\n\n`));
+
+      try {
+        // Step 1: Claude → spec
+        send({ type: "status", message: "Drafting…" });
+        const t0 = Date.now();
+        const result = await callClaudeForSpec(userPrompt, conversation);
+        const tSpec = Date.now() - t0;
+        if (!result.ok || !result.spec) {
+          console.error("[ai-site-generate compose] spec error", result.error, result.raw?.slice(0, 400));
+          send({ type: "error", message: "spec_failed" });
+          controller.close();
+          return;
+        }
+        const spec = result.spec;
+
+        // Step 2: compose
+        send({ type: "status", message: "Composing…" });
+        const todayIso = new Date().toISOString().slice(0, 10);
+        const tmpSlug = "__SLUG__"; // resolved server-side
+        let html = compose({ spec, supabaseUrl: SUPABASE_URL, designBibleVersion: "tpl-v2" });
+        html = html.replaceAll("__SUPABASE_URL__", SUPABASE_URL);
+        // Slug pick + final replacements
+        const slug = slugify(spec.title);
+        html = html.replaceAll("__SLUG__", slug);
+
+        // Step 3: save
+        const ogDescription = spec.meta_description ?? `${spec.title} — RSVP and event details.`;
+        const { data: inserted, error: insertErr } = await admin
+          .from("ai_sites")
+          .insert({
+            slug,
+            title: spec.title,
+            prompt: userPrompt,
+            html,
+            og_description: ogDescription,
+            owner_user_id: authedUserId,
+          })
+          .select("id")
+          .maybeSingle();
+        if (insertErr || !inserted) {
+          console.error("[ai-site-generate compose] save error", insertErr);
+          send({ type: "error", message: "save_failed" });
+          controller.close();
+          return;
+        }
+        const savedSiteId = (inserted as { id: string }).id;
+
+        // Snapshot v1 (best-effort).
+        const versionRes = await admin.from("ai_site_versions").insert({
+          site_id: savedSiteId,
+          version_number: 1,
+          html,
+          title: spec.title,
+          prompt: userPrompt,
+          og_description: ogDescription,
+        });
+        if (versionRes.error) console.warn("[ai-site-generate compose] version snapshot", versionRes.error);
+
+        // Step 4: emit chunk + done so the builder UI can render
+        // identically to the slow path (it already buffers chunks +
+        // writes to the iframe on `done`).
+        send({ type: "chunk", text: html });
+        send({
+          type: "done",
+          slug,
+          title: spec.title,
+          site_id: savedSiteId,
+          version_number: 1,
+          mode: "compose",
+          timing_ms: { spec: tSpec, total: Date.now() - t0 },
+          validation: { ok: true, issues: [] },
+        });
+      } catch (e) {
+        console.error("[ai-site-generate compose] exception", e);
+        send({ type: "error", message: "compose_failed" });
+      } finally {
+        controller.close();
+      }
+    },
+  });
+
+  return new Response(stream, {
+    headers: { ...cors, "Content-Type": "text/event-stream", "Cache-Control": "no-cache", "X-Accel-Buffering": "no" },
+  });
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
   if (req.method !== "POST") return jsonResponse(405, { error: "method_not_allowed" });
@@ -1776,6 +2021,23 @@ serve(async (req) => {
       cache_read_input_tokens: body?.usage?.cache_read_input_tokens ?? 0,
       input_tokens: body?.usage?.input_tokens ?? 0,
     });
+  }
+
+  // ╔══════════════════════════════════════════════════════════════╗
+  // ║ FAST PATH — compose from JSON spec                           ║
+  // ║                                                              ║
+  // ║ When the client sends { compose: true } for a NEW generation ║
+  // ║ (no edit_site_id), we ask Claude for a compact JSON spec     ║
+  // ║ instead of full HTML and run it through the template engine. ║
+  // ║                                                              ║
+  // ║ Output: ~500-1500 tokens instead of ~18k.                    ║
+  // ║ Time: ~10-15s instead of ~3-5min.                            ║
+  // ║                                                              ║
+  // ║ Edits still go through the legacy HTML path below since we   ║
+  // ║ don't store the spec yet (planned: jsonb column).            ║
+  // ╚══════════════════════════════════════════════════════════════╝
+  if (payload?.compose === true && !payload?.edit_site_id) {
+    return await handleComposeMode(req, payload, userPrompt);
   }
 
   const editSiteId =
