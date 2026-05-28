@@ -5765,7 +5765,16 @@ function ExpensesTab({
   // New-design state — search / filter / selection / pagination.
   const [searchTerm, setSearchTerm] = useState("");
   const [rangePreset, setRangePreset] = useState<"all" | "30d" | "this_month" | "ytd" | "last_12m">("last_12m");
+  const [sortField, setSortField] = useState<"date" | "amount">("date");
   const [sortDir, setSortDir] = useState<"desc" | "asc">("desc");
+  const toggleSort = (field: "date" | "amount") => {
+    if (field === sortField) {
+      setSortDir(sortDir === "desc" ? "asc" : "desc");
+    } else {
+      setSortField(field);
+      setSortDir("desc");
+    }
+  };
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [page, setPage] = useState(1);
   const perPage = 10;
@@ -6196,13 +6205,18 @@ function ExpensesTab({
       ].join(" ").toLowerCase();
       return hay.includes(term);
     });
-    filtered.sort((a, b) =>
-      sortDir === "desc"
+    filtered.sort((a, b) => {
+      if (sortField === "amount") {
+        return sortDir === "desc"
+          ? b.amount_cents - a.amount_cents
+          : a.amount_cents - b.amount_cents;
+      }
+      return sortDir === "desc"
         ? b.occurred_on.localeCompare(a.occurred_on)
-        : a.occurred_on.localeCompare(b.occurred_on),
-    );
+        : a.occurred_on.localeCompare(b.occurred_on);
+    });
     return filtered;
-  }, [rows, searchTerm, rangePreset, sortDir]);
+  }, [rows, searchTerm, rangePreset, sortField, sortDir]);
 
   // Pagination derived from the filtered list.
   const totalPages = Math.max(1, Math.ceil(filteredRows.length / perPage));
@@ -6220,6 +6234,7 @@ function ExpensesTab({
     const thirtyYmd = thirty.toISOString().slice(0, 10);
     let ytdCents = 0;
     let ytdCount = 0;
+    let ytdRecurringCents = 0;
     let monthCents = 0;
     let monthCount = 0;
     let thirtyDayCents = 0;
@@ -6233,6 +6248,7 @@ function ExpensesTab({
       if (sameYear) {
         ytdCents += r.amount_cents;
         ytdCount += 1;
+        if (r.recurring_rule_id) ytdRecurringCents += r.amount_cents;
         const key = (r.item_name?.trim() || r.description.trim() || "—");
         byItem.set(key, (byItem.get(key) ?? 0) + r.amount_cents);
       }
@@ -6250,6 +6266,7 @@ function ExpensesTab({
     return {
       ytdCents,
       ytdCount,
+      ytdRecurringCents,
       monthCents,
       monthCount,
       thirtyDayCents,
@@ -6393,6 +6410,9 @@ function ExpensesTab({
           </div>
           <div className="text-[11px] text-muted-foreground mt-1">
             {kpis.ytdCount} transaction{kpis.ytdCount === 1 ? "" : "s"}
+            {kpis.ytdRecurringCents > 0 ? (
+              <> · <span className="tabular-nums">{formatMoney(kpis.ytdRecurringCents)}</span> recurring</>
+            ) : null}
           </div>
         </div>
         <div className="rounded-xl px-4 py-3 bg-white border border-foreground/10">
@@ -6650,10 +6670,12 @@ function ExpensesTab({
                   />
                 </th>
                 <th
-                  className="px-3 py-3 text-left text-[10px] uppercase tracking-wider font-semibold text-muted-foreground cursor-pointer select-none"
-                  onClick={() => setSortDir(sortDir === "desc" ? "asc" : "desc")}
+                  className="px-3 py-3 text-left text-[10px] uppercase tracking-wider font-semibold text-muted-foreground cursor-pointer select-none hover:text-foreground"
+                  onClick={() => toggleSort("date")}
                 >
-                  Date <span className="text-[#d94f3d] text-[9px]">{sortDir === "desc" ? "▼" : "▲"}</span>
+                  Date {sortField === "date" ? (
+                    <span className="text-[#d94f3d] text-[9px]">{sortDir === "desc" ? "▼" : "▲"}</span>
+                  ) : null}
                 </th>
                 <th className="px-3 py-3 text-left text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">
                   Item
@@ -6667,8 +6689,13 @@ function ExpensesTab({
                 <th className="px-3 py-3 text-left text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">
                   Payee
                 </th>
-                <th className="px-3 py-3 text-right text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">
-                  Total
+                <th
+                  className="px-3 py-3 text-right text-[10px] uppercase tracking-wider font-semibold text-muted-foreground cursor-pointer select-none hover:text-foreground"
+                  onClick={() => toggleSort("amount")}
+                >
+                  Total {sortField === "amount" ? (
+                    <span className="text-[#d94f3d] text-[9px]">{sortDir === "desc" ? "▼" : "▲"}</span>
+                  ) : null}
                 </th>
                 <th className="px-3 py-3 text-right text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">
                   Action
@@ -6725,6 +6752,7 @@ function ExpensesTab({
                       >
                         Edit
                       </button>
+                      <span aria-hidden className="text-foreground/15">|</span>
                       <button
                         type="button"
                         onClick={() => void remove(e)}
@@ -6748,7 +6776,8 @@ function ExpensesTab({
                 <td colSpan={8} className="px-4 py-3">
                   <div className="flex justify-between items-center gap-3 flex-wrap text-xs text-muted-foreground">
                     <span>
-                      Showing {pageRows.length} of {filteredRows.length} · Total{" "}
+                      Showing {pageRows.length} of {filteredRows.length} ·{" "}
+                      {filteredRows.length < rows.length ? "Filtered total" : "Total"}{" "}
                       <span
                         className="text-foreground tabular-nums"
                         style={{ fontFamily: "'Fraunces', Georgia, serif", fontWeight: 600, fontSize: "14px" }}
