@@ -1205,7 +1205,12 @@ function OverviewTab({
 // Revenue trend chart for Overview — 30-day daily line chart with
 // grid + axes. Mirrors RevenueSparkline's SVG approach but with
 // fixed 30-bucket layout and "no data" empty state.
-function OverviewRevenueChart({ series, currency }: { series: number[]; currency: string }) {
+function OverviewRevenueChart({ series: rawSeries, currency }: { series: number[]; currency: string }) {
+  // Guard against an empty series on first render (state initializes to
+  // [] before the useEffect query resolves). The chart math below
+  // dereferences pts[0] unconditionally, so an empty input would crash
+  // — fall back to 30 zero-buckets and the ghost-wave path takes over.
+  const series = rawSeries.length > 0 ? rawSeries : new Array(30).fill(0);
   const max = series.reduce((m, v) => (v > m ? v : m), 0);
   const total = series.reduce((s, v) => s + v, 0);
   return (
