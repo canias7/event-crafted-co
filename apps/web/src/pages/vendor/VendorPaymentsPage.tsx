@@ -1234,6 +1234,23 @@ function OverviewTab({
 // Revenue trend chart for Overview — 30-day daily line chart with
 // grid + axes. Mirrors RevenueSparkline's SVG approach but with
 // fixed 30-bucket layout and "no data" empty state.
+// Round a positive integer up to a "nice" axis ceiling so the chart's
+// mid-tick reads as a clean number (e.g. $5k / $2.5k / $0 instead of
+// $4.5k / $2.3k / $0). Chooses the smallest of 1, 2, 2.5, 5, or 10
+// times the order of magnitude that's >= the data max.
+function niceAxisCeil(n: number): number {
+  if (n <= 0) return 1;
+  const mag = Math.pow(10, Math.floor(Math.log10(n)));
+  const scaled = n / mag;
+  const nice =
+    scaled <= 1 ? 1 :
+    scaled <= 2 ? 2 :
+    scaled <= 2.5 ? 2.5 :
+    scaled <= 5 ? 5 :
+    10;
+  return nice * mag;
+}
+
 function OverviewRevenueChart({ series: rawSeries, currency }: { series: number[]; currency: string }) {
   // Guard against an empty series on first render (state initializes to
   // [] before the useEffect query resolves). The chart math below
@@ -1241,21 +1258,18 @@ function OverviewRevenueChart({ series: rawSeries, currency }: { series: number[
   // — fall back to 30 zero-buckets and the ghost-wave path takes over.
   const series = rawSeries.length > 0 ? rawSeries : new Array(30).fill(0);
   const max = series.reduce((m, v) => (v > m ? v : m), 0);
-  const total = series.reduce((s, v) => s + v, 0);
   return (
     <div className="cockpit-chart">
-      <div className="flex items-baseline justify-between mb-3">
-        <div>
-          <div className="cockpit-chart-title">Revenue · last 30 days</div>
-          <div className="cockpit-chart-sub">Daily paid-invoice totals</div>
-        </div>
-        <div className="text-right">
-          <div className="cockpit-kpi-label">Total</div>
-          <div className="cockpit-money cockpit-money--lg">{formatMoney(total, currency)}</div>
-        </div>
+      <div className="mb-3">
+        <div className="cockpit-chart-title">Revenue · last 30 days</div>
+        <div className="cockpit-chart-sub">Daily paid-invoice totals</div>
       </div>
       {(() => {
-        const PAD_L = 50, PAD_R = 8, PAD_T = 8, PAD_B = 22, W = 480, H = 200;
+        // PAD_B used to leave room for "30 days ago" / "Today" labels
+        // inside the SVG — those are now HTML beneath the chart, so the
+        // plot can use almost the full SVG height. Tiny 6px bottom
+        // padding keeps the line away from the very edge.
+        const PAD_L = 50, PAD_R = 8, PAD_T = 8, PAD_B = 6, W = 480, H = 180;
         const plotW = W - PAD_L - PAD_R, plotH = H - PAD_T - PAD_B;
         const n = series.length;
         // When there's no revenue yet, plot a gentle ghost wave so the
@@ -1268,7 +1282,10 @@ function OverviewRevenueChart({ series: rawSeries, currency }: { series: number[
           : Array.from({ length: n }, (_, i) =>
               0.55 + 0.35 * Math.sin((i / (n - 1)) * Math.PI * 1.4 - Math.PI / 6),
             );
-        const plotMax = hasData ? max : 1;
+        // Round the y-axis ceiling up to a nice number ($5k instead of
+        // $4.5k, $2.5k mid instead of $2.3k). Empty-state ghost data is
+        // always normalized to 1, so leave it as-is.
+        const plotMax = hasData ? niceAxisCeil(max) : 1;
         const x = (i: number) => PAD_L + (n === 1 ? plotW / 2 : (i / (n - 1)) * plotW);
         const y = (v: number) => PAD_T + plotH - (v / plotMax) * plotH;
         // Smooth the line into a wave with a Catmull-Rom-to-Bezier
@@ -1315,9 +1332,15 @@ function OverviewRevenueChart({ series: rawSeries, currency }: { series: number[
               <path d={areaPath} className="cockpit-chart-area" style={hasData ? undefined : { opacity: 0.5 }} />
               <path d={linePath} className="cockpit-chart-line" style={hasData ? undefined : { opacity: 0.35 }} />
               {peakIdx >= 0 && <circle cx={x(peakIdx)} cy={y(max)} r="3.5" className="cockpit-chart-dot" />}
-              <text x={PAD_L} y={H - 6} textAnchor="start" className="cockpit-chart-axis">30 days ago</text>
-              <text x={PAD_L + plotW} y={H - 6} textAnchor="end" className="cockpit-chart-axis">Today</text>
             </svg>
+            {/* X-axis labels render in HTML below the SVG so they can't
+                be clipped or overlapped by the plot — under preserveAspect-
+                Ratio="none" SVG text doesn't scale predictably and the
+                peak indicator was eating into "Today" at narrow widths. */}
+            <div className="flex justify-between text-[10px] text-muted-foreground mt-1.5 px-[2px]">
+              <span>30 days ago</span>
+              <span>Today</span>
+            </div>
             {!hasData && (
               <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                 <div
