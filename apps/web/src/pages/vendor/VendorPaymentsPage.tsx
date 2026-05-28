@@ -1152,7 +1152,7 @@ function OverviewTab({
           height with label/value at top and the sub line anchored to
           the bottom (see .cockpit-kpi-tile's flex layout in CSS). On
           narrow viewports the row stacks via the lg: breakpoint. */}
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 mb-4">
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 mb-4 items-start">
         <div className="cockpit-kpi-tile">
           <div className="cockpit-kpi-label">Revenue · 30d</div>
           <div className="flex items-baseline gap-2 flex-wrap">
