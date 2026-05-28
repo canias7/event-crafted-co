@@ -877,6 +877,7 @@ export default function VendorPaymentsPage({ embedded = false }: { embedded?: bo
               payouts={payouts}
               status={status}
               accountVendorIds={accountVendorIds}
+              listings={listings}
               onRefunded={() => refresh(false)}
             />
           ) : tab === "files" ? (
@@ -1574,12 +1575,14 @@ function PaymentsTab({
   payouts,
   status,
   accountVendorIds,
+  listings,
   onRefunded,
 }: {
   transactions: Transaction[];
   payouts: PayoutsResponse | null;
   status: Status | null;
   accountVendorIds: string[];
+  listings: ListingOpt[];
   onRefunded: () => void;
 }) {
   // Account-level: the PaymentsTab sub-tabs (Transactions / Payouts /
@@ -1651,7 +1654,7 @@ function PaymentsTab({
       ) : sub === "disputes" ? (
         <DisputesTab accountVendorIds={accountVendorIds} />
       ) : sub === "expenses" ? (
-        <ExpensesTab accountVendorIds={accountVendorIds} />
+        <ExpensesTab accountVendorIds={accountVendorIds} listings={listings} />
       ) : (
         <ReportsTab accountVendorIds={accountVendorIds} />
       )}
@@ -4134,13 +4137,19 @@ function InvoicesTab({
   // Account-level: the invoice list (`invoices`) already arrives
   // aggregated across every listing on the account because the
   // parent's fetch was switched to .in(vendor_id, accountVendorIds).
-  // The brand-editing card and new-invoice defaults below need a
-  // *single* listing context, so they resolve against the first
-  // listing in the account by convention. A future primary-listing
-  // picker can replace `accountVendorIds[0]` once the new listing
-  // selection UI lands; for now the brand card edits the primary
-  // listing's profile and new invoices are stamped against it.
-  const vendorId = accountVendorIds[0] ?? null;
+  // The brand-editing card below needs a *single* listing context,
+  // so it exposes a ListingPickerField when the account has more
+  // than one listing — the vendor picks which listing's brand
+  // profile (business_name / location / logo / default_tax_pct)
+  // they're editing. New-invoice defaults likewise stamp against
+  // the currently-picked listing. Initial pick is the first listing
+  // in the account.
+  const primaryVendorId = accountVendorIds[0] ?? null;
+  const [vendorId, setVendorId] = useState<string | null>(primaryVendorId);
+  useEffect(() => {
+    if (vendorId && accountVendorIds.includes(vendorId)) return;
+    setVendorId(primaryVendorId);
+  }, [primaryVendorId, accountVendorIds, vendorId]);
   const listing = listings.find((l) => l.id === vendorId) ?? null;
   const { user } = useAuth();
   const [sendingId, setSendingId] = useState<string | null>(null);
@@ -4405,6 +4414,28 @@ function InvoicesTab({
   // Persist current composer state as the vendor's default for this
   return (
     <div className="space-y-4">
+      {/* Listing picker — the brand-editable invoice template below
+          edits ONE listing's profile (business name + city + logo +
+          default tax %). When the account has multiple listings,
+          the vendor picks which one's brand to edit here; the
+          brand state hydrates from that listing's vendor_profile
+          row. New-invoice creation also stamps against the picked
+          listing. Hidden when the account has only one listing. */}
+      {accountVendorIds.length > 1 ? (
+        <Card>
+          <div className="p-4 flex items-center gap-3 flex-wrap">
+            <span className="text-xs text-muted-foreground shrink-0">Brand for listing</span>
+            <ListingPickerField
+              accountVendorIds={accountVendorIds}
+              listings={listings}
+              value={vendorId}
+              onChange={setVendorId}
+              label=""
+            />
+          </div>
+        </Card>
+      ) : null}
+
       {/* Brand-editable invoice template — only the Bill From block
           (business name + city) and the Logo are interactive. The
           rest is a static visual reference for the vendor so they
@@ -4709,6 +4740,12 @@ function CustomersTab({
     phone: "",
     notes: "",
   });
+  // Which listing a freshly-created customer should be attached to.
+  // Defaults to the primary listing; the New-customer dialog renders
+  // a picker so the vendor can override per-customer.
+  const [newCustomerVendorId, setNewCustomerVendorId] = useState<string | null>(
+    accountVendorIds[0] ?? null,
+  );
   const [saving, setSaving] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [sendTarget, setSendTarget] = useState<Customer | null>(null);
@@ -4887,6 +4924,7 @@ function CustomersTab({
 
   const startNew = () => {
     setForm({ email: "", name: "", phone: "", notes: "" });
+    setNewCustomerVendorId(accountVendorIds[0] ?? null);
     setEditing("new");
   };
 
@@ -4915,16 +4953,21 @@ function CustomersTab({
     const db = supabase as any;
     const { error } =
       editing === "new"
-        ? // New row: account-level mode doesn't ask the vendor to
-          // pick a listing, so the customer is attached to the first
-          // listing in the account by convention. Later edits don't
-          // re-parent (see the update branch below). A dedicated
-          // "primary listing" picker can replace accountVendorIds[0]
-          // when the new listing UI lands.
+        ? // New row: the dialog renders a ListingPickerField when the
+          // account has multiple listings (newCustomerVendorId holds
+          // the choice). Default + only-one-listing fallback both
+          // resolve to accountVendorIds[0]. Edits never re-parent
+          // (see the update branch below).
           await db
             .from("vendor_customers")
             .upsert(
-              { vendor_id: accountVendorIds[0], email, name, phone, notes },
+              {
+                vendor_id: newCustomerVendorId ?? accountVendorIds[0],
+                email,
+                name,
+                phone,
+                notes,
+              },
               { onConflict: "vendor_id,email" },
             )
         : // Edit existing row: never overwrite vendor_id (would
@@ -4943,7 +4986,7 @@ function CustomersTab({
     toast.success(editing === "new" ? "Customer added" : "Customer updated");
     await refresh();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [accountKey, saving, form, editing, refresh]);
+  }, [accountKey, saving, form, editing, newCustomerVendorId, refresh]);
 
   const remove = useCallback(
     async (c: Customer) => {
@@ -4988,6 +5031,14 @@ function CustomersTab({
             <h3 className="text-sm font-semibold">
               {editing === "new" ? "New customer" : `Edit ${editing.name ?? editing.email}`}
             </h3>
+            {editing === "new" ? (
+              <ListingPickerField
+                accountVendorIds={accountVendorIds}
+                listings={listings}
+                value={newCustomerVendorId}
+                onChange={setNewCustomerVendorId}
+              />
+            ) : null}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
               <input
                 type="email"
@@ -5316,14 +5367,30 @@ function expenseCategoryLabel(c: ExpenseCategory): string {
   return EXPENSE_CATEGORIES.find((e) => e.id === c)?.label ?? c;
 }
 
-function ExpensesTab({ accountVendorIds }: { accountVendorIds: string[] }) {
-  // Expense + contractor lists aggregate across every listing on the
-  // account. New rows are attached to the first listing in the
-  // account (a future primary-listing picker can replace it). Stable
-  // accountKey drives the refresh dep so we only refetch when the
-  // listing set actually changes.
+function ExpensesTab({
+  accountVendorIds,
+  listings,
+}: {
+  accountVendorIds: string[];
+  listings: ListingOpt[];
+}) {
+  // Expense + contractor lists aggregate across every listing on
+  // the account. Each "New X" dialog renders a ListingPickerField
+  // so the vendor can pick which listing the row attaches to;
+  // default is the primary listing.
   const primaryVendorId = accountVendorIds[0] ?? null;
   const accountKey = accountVendorIds.join(",");
+  const [newExpenseVendorId, setNewExpenseVendorId] = useState<string | null>(primaryVendorId);
+  const [newContractorVendorId, setNewContractorVendorId] = useState<string | null>(primaryVendorId);
+  // Keep picks valid as the account's listing set changes.
+  useEffect(() => {
+    if (newExpenseVendorId && accountVendorIds.includes(newExpenseVendorId)) return;
+    setNewExpenseVendorId(primaryVendorId);
+  }, [primaryVendorId, accountVendorIds, newExpenseVendorId]);
+  useEffect(() => {
+    if (newContractorVendorId && accountVendorIds.includes(newContractorVendorId)) return;
+    setNewContractorVendorId(primaryVendorId);
+  }, [primaryVendorId, accountVendorIds, newContractorVendorId]);
   const { user } = useAuth();
   const [rows, setRows] = useState<Expense[]>([]);
   const [contractors, setContractors] = useState<Contractor[]>([]);
@@ -5426,6 +5493,7 @@ function ExpensesTab({ accountVendorIds }: { accountVendorIds: string[] }) {
       notes: "",
       contractor_id: "",
     });
+    setNewExpenseVendorId(primaryVendorId);
     setEditing("new");
   };
 
@@ -5443,7 +5511,11 @@ function ExpensesTab({ accountVendorIds }: { accountVendorIds: string[] }) {
   };
 
   const save = async () => {
-    if (!primaryVendorId || !user) return;
+    // For new rows use the picked listing; for edits keep the
+    // existing vendor_id (edits don't re-parent — see below).
+    const targetVendorId =
+      editing === "new" ? (newExpenseVendorId ?? primaryVendorId) : primaryVendorId;
+    if (!targetVendorId || !user) return;
     const amountNum = Number(form.amount);
     if (!Number.isFinite(amountNum) || amountNum <= 0) {
       toast.error("Amount must be a positive number.");
@@ -5457,7 +5529,7 @@ function ExpensesTab({ accountVendorIds }: { accountVendorIds: string[] }) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const db = supabase as any;
     const payload = {
-      vendor_id: primaryVendorId,
+      vendor_id: targetVendorId,
       occurred_on: form.occurred_on,
       amount_cents: Math.round(amountNum * 100),
       currency: "usd",
@@ -5478,8 +5550,10 @@ function ExpensesTab({ accountVendorIds }: { accountVendorIds: string[] }) {
     if (editing === "new") {
       ({ error } = await db.from("vendor_expenses").insert(payload));
     } else if (editing) {
-      // omit created_by on update — it stays the original creator
-      const { created_by: _, ...updatePayload } = payload;
+      // omit created_by + vendor_id on update — created_by stays the
+      // original creator; vendor_id is fixed at insert and editing
+      // must never re-parent the row to a different listing.
+      const { created_by: _cb, vendor_id: _vid, ...updatePayload } = payload;
       ({ error } = await db
         .from("vendor_expenses")
         .update(updatePayload)
@@ -5525,6 +5599,7 @@ function ExpensesTab({ accountVendorIds }: { accountVendorIds: string[] }) {
       tax_id_last4: "",
       notes: "",
     });
+    setNewContractorVendorId(primaryVendorId);
     setEditingContractor("new");
   };
   const startEditContractor = (c: Contractor) => {
@@ -5542,7 +5617,11 @@ function ExpensesTab({ accountVendorIds }: { accountVendorIds: string[] }) {
     setEditingContractor(c);
   };
   const saveContractor = async () => {
-    if (!primaryVendorId || !user) return;
+    const targetVendorId =
+      editingContractor === "new"
+        ? (newContractorVendorId ?? primaryVendorId)
+        : primaryVendorId;
+    if (!targetVendorId || !user) return;
     if (!contractorForm.name.trim()) {
       toast.error("Contractor name required.");
       return;
@@ -5555,7 +5634,7 @@ function ExpensesTab({ accountVendorIds }: { accountVendorIds: string[] }) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const db = supabase as any;
     const payload = {
-      vendor_id: primaryVendorId,
+      vendor_id: targetVendorId,
       name: contractorForm.name.trim(),
       email: contractorForm.email.trim() || null,
       phone: contractorForm.phone.trim() || null,
@@ -5571,7 +5650,10 @@ function ExpensesTab({ accountVendorIds }: { accountVendorIds: string[] }) {
     if (editingContractor === "new") {
       ({ error } = await db.from("vendor_contractors").insert(payload));
     } else if (editingContractor) {
-      const { created_by: _, ...updatePayload } = payload;
+      // Strip created_by + vendor_id on update — created_by stays
+      // the original creator; vendor_id is fixed at insert and
+      // editing must not re-parent the contractor row.
+      const { created_by: _cb, vendor_id: _vid, ...updatePayload } = payload;
       ({ error } = await db
         .from("vendor_contractors")
         .update(updatePayload)
@@ -5692,6 +5774,14 @@ function ExpensesTab({ accountVendorIds }: { accountVendorIds: string[] }) {
             <h3 className="text-sm font-semibold">
               {editing === "new" ? "New expense" : "Edit expense"}
             </h3>
+            {editing === "new" ? (
+              <ListingPickerField
+                accountVendorIds={accountVendorIds}
+                listings={listings}
+                value={newExpenseVendorId}
+                onChange={setNewExpenseVendorId}
+              />
+            ) : null}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
               <input
                 type="date"
@@ -5795,6 +5885,14 @@ function ExpensesTab({ accountVendorIds }: { accountVendorIds: string[] }) {
               <h4 className="text-sm font-semibold">
                 {editingContractor === "new" ? "New contractor" : `Edit ${editingContractor.name}`}
               </h4>
+              {editingContractor === "new" ? (
+                <ListingPickerField
+                  accountVendorIds={accountVendorIds}
+                  listings={listings}
+                  value={newContractorVendorId}
+                  onChange={setNewContractorVendorId}
+                />
+              ) : null}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                 <input
                   type="text"
@@ -6933,7 +7031,7 @@ function DisputesTab({ accountVendorIds }: { accountVendorIds: string[] }) {
 
 function PayLinksTab({
   accountVendorIds,
-  listings: _listings,
+  listings,
   links,
   status,
   onChanged,
@@ -6944,10 +7042,15 @@ function PayLinksTab({
   status: Status | null;
   onChanged: () => void;
 }) {
-  // New links land on the first listing in the account by
-  // convention (no listing picker exists in the cockpit anymore).
-  // A future primary-listing picker can replace accountVendorIds[0].
+  // Default "home" listing for a new link, but the form lets the
+  // vendor override per-link via ListingPickerField below.
   const defaultVendorId = accountVendorIds[0] ?? null;
+  const [pickedVendorId, setPickedVendorId] = useState<string | null>(defaultVendorId);
+  // Keep pickedVendorId valid as the account changes.
+  useEffect(() => {
+    if (pickedVendorId && accountVendorIds.includes(pickedVendorId)) return;
+    setPickedVendorId(defaultVendorId);
+  }, [defaultVendorId, accountVendorIds, pickedVendorId]);
   const [creating, setCreating] = useState(false);
   const [title, setTitle] = useState("");
   const [amountDollars, setAmountDollars] = useState("");
@@ -6958,7 +7061,8 @@ function PayLinksTab({
   const [submitting, setSubmitting] = useState(false);
 
   const create = useCallback(async () => {
-    if (!defaultVendorId || submitting) return;
+    const targetVendorId = pickedVendorId ?? defaultVendorId;
+    if (!targetVendorId || submitting) return;
     const totalCents = Math.round(parseFloat(amountDollars) * 100);
     if (!title.trim()) {
       toast.error("Title required");
@@ -7003,7 +7107,7 @@ function PayLinksTab({
       // Single charge — original behavior.
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { error } = await (supabase as any).from("payment_links").insert({
-        vendor_id: defaultVendorId,
+        vendor_id: targetVendorId,
         title: title.trim(),
         description: description.trim() || null,
         amount_cents: totalCents,
@@ -7022,7 +7126,7 @@ function PayLinksTab({
       const { data: depositRow, error: depErr } = await (supabase as any)
         .from("payment_links")
         .insert({
-          vendor_id: defaultVendorId,
+          vendor_id: targetVendorId,
           title: `${title.trim()} — deposit`,
           description: description.trim() || null,
           amount_cents: depositCents,
@@ -7037,7 +7141,7 @@ function PayLinksTab({
       }
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { error: balErr } = await (supabase as any).from("payment_links").insert({
-        vendor_id: defaultVendorId,
+        vendor_id: targetVendorId,
         title: `${title.trim()} — balance`,
         description: description.trim() || null,
         amount_cents: balanceCents,
@@ -7064,7 +7168,8 @@ function PayLinksTab({
     setCreating(false);
     onChanged();
   }, [
-    vendorId,
+    pickedVendorId,
+    defaultVendorId,
     title,
     amountDollars,
     description,
@@ -7111,6 +7216,12 @@ function PayLinksTab({
         <Card>
           <div className="p-5 space-y-3">
             <h3 className="text-sm font-semibold">New pay link</h3>
+            <ListingPickerField
+              accountVendorIds={accountVendorIds}
+              listings={listings}
+              value={pickedVendorId}
+              onChange={setPickedVendorId}
+            />
             <input
               type="text"
               placeholder="What's this charge for? (e.g. Deposit for Aug 14 wedding)"
@@ -7673,6 +7784,67 @@ function EmptyCard({ children }: { children: React.ReactNode }) {
     <Card>
       <div className="p-8 text-center text-sm text-muted-foreground">{children}</div>
     </Card>
+  );
+}
+
+// Small dropdown rendered inside every "create a new X" form on the
+// cockpit so the vendor explicitly picks which listing the new row
+// (invoice / customer / pay link / expense / contractor / block
+// date / etc.) is attached to. Returns null when the account only
+// has one listing — there's no decision to make. Label is rendered
+// above the select for forms that want it; pass `inline` to render
+// label + select on one row instead.
+function ListingPickerField({
+  accountVendorIds,
+  listings,
+  value,
+  onChange,
+  label = "For listing",
+  inline = false,
+}: {
+  accountVendorIds: string[];
+  listings: ListingOpt[];
+  value: string | null;
+  onChange: (next: string) => void;
+  label?: string;
+  inline?: boolean;
+}) {
+  if (accountVendorIds.length <= 1) return null;
+  const options = accountVendorIds
+    .map((id) => {
+      const l = listings.find((x) => x.id === id);
+      const name =
+        l?.business_name?.trim() ||
+        [l?.category, l?.location].filter(Boolean).join(" · ") ||
+        id.slice(0, 8);
+      return { id, name };
+    });
+  const select = (
+    <select
+      value={value ?? ""}
+      onChange={(e) => onChange(e.target.value)}
+      className="text-sm rounded-lg border border-foreground/10 bg-background px-2 py-1.5 max-w-full"
+    >
+      {options.map((o) => (
+        <option key={o.id} value={o.id}>
+          {o.name}
+        </option>
+      ))}
+    </select>
+  );
+  if (inline) {
+    return (
+      <div className="flex items-center gap-2 flex-wrap">
+        <span className="text-xs text-muted-foreground shrink-0">{label}</span>
+        {select}
+      </div>
+    );
+  }
+  return (
+    <label className="block">
+      <span className="text-xs text-muted-foreground block mb-1">{label}</span>
+      {select}
+    </label>
   );
 }
 
