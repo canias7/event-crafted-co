@@ -687,16 +687,17 @@
     font-style: italic;
   }
 
-  /* KPI row — 4 wide, glassy serif tiles. */
+  /* KPI row — two glassy serif tiles, 50/50 on desktop, stacks on
+     narrow viewports. */
   .my-vendora-cockpit .cockpit-kpi-row {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: minmax(0, 1fr);
     gap: 16px;
     margin-bottom: 20px;
   }
-  @media (min-width: 768px) {
+  @media (min-width: 640px) {
     .my-vendora-cockpit .cockpit-kpi-row {
-      grid-template-columns: repeat(4, minmax(0, 1fr));
+      grid-template-columns: repeat(2, minmax(0, 1fr));
     }
   }
   .my-vendora-cockpit .cockpit-kpi-tile {
