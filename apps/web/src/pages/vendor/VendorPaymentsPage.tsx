@@ -6355,29 +6355,18 @@ function ExpensesTab({
               />
               <input
                 type="text"
-                list="expense-category-suggestions"
-                placeholder="Category (type or pick)"
+                placeholder="Category (e.g. Rentals, Marketing, Vehicle)"
                 value={form.category}
                 onChange={(e) => setForm({ ...form, category: e.target.value as ExpenseCategory })}
-                /* autoComplete + name="…-no-autofill" together stop the
-                   browser from layering its own past-input history on
-                   top of the datalist suggestions, which was making
-                   each preset show twice (once from datalist, once
-                   from browser autofill of a prior typed value). */
+                /* Pure free-text — no datalist, no browser autofill
+                   overlay. The vendor types whatever category name
+                   they want; the value is saved as-typed and shows
+                   up in the filter dropdown alongside any other
+                   custom categories they've used. */
                 autoComplete="off"
                 name="expense-category-no-autofill"
                 className="rounded-lg border-0 px-3 py-2 text-sm bg-background/60 ring-1 ring-foreground/10 focus:ring-foreground/30 outline-none"
               />
-              <datalist id="expense-category-suggestions">
-                {/* Use the human label as both the displayed text and
-                    the saved value. Setting both `value` and `label`
-                    on a datalist option makes the dropdown render two
-                    rows per entry ("supplies" + "Supplies"); going
-                    value-only keeps it to one. */}
-                {EXPENSE_CATEGORIES.map((c) => (
-                  <option key={c.id} value={c.label} />
-                ))}
-              </datalist>
               <input
                 type="text"
                 placeholder="Paid to (optional — Home Depot, U-Haul…)"
