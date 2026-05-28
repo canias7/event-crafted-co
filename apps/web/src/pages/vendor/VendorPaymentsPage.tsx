@@ -5679,6 +5679,16 @@ function ExpensesTab({
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [deletingContractorId, setDeletingContractorId] = useState<string | null>(null);
 
+  // New-design state — search / filter / selection / pagination.
+  const [searchTerm, setSearchTerm] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState<"all" | ExpenseCategory>("all");
+  const [rangePreset, setRangePreset] = useState<"all" | "30d" | "this_month" | "ytd" | "last_12m">("last_12m");
+  const [sortDir, setSortDir] = useState<"desc" | "asc">("desc");
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [page, setPage] = useState(1);
+  const [perPage, setPerPage] = useState(10);
+  const [bulkDeleting, setBulkDeleting] = useState(false);
+
   const refresh = useCallback(async () => {
     if (accountVendorIds.length === 0) {
       setRows([]);
@@ -5945,67 +5955,364 @@ function ExpensesTab({
     return totals;
   }, [rows]);
 
-  // YTD summary across categories — small at-a-glance block above
-  // the row list so the vendor sees their total spend without going
-  // to Reports.
-  const ytd = useMemo(() => {
-    // Same string-prefix parse as contractorTotals — see comment
-    // there. Don't go through Date(...).getFullYear(): the UTC/local
-    // mix shifts year-boundary expenses into the wrong bucket.
-    const year = String(new Date().getFullYear());
-    const total = rows
-      .filter((r) => r.occurred_on.slice(0, 4) === year)
-      .reduce((s, r) => s + r.amount_cents, 0);
-    const byCategory = new Map<ExpenseCategory, number>();
-    for (const r of rows) {
-      if (r.occurred_on.slice(0, 4) !== year) continue;
-      byCategory.set(r.category, (byCategory.get(r.category) ?? 0) + r.amount_cents);
+
+  // Filtered + sorted rows for the table — search by description /
+  // payee / category, then optional category + date-range narrowing,
+  // then sort by occurred_on.
+  const filteredRows = useMemo(() => {
+    const now = new Date();
+    let cutoff: Date | null = null;
+    if (rangePreset === "30d") {
+      cutoff = new Date(now);
+      cutoff.setDate(cutoff.getDate() - 30);
+    } else if (rangePreset === "this_month") {
+      cutoff = new Date(now.getFullYear(), now.getMonth(), 1);
+    } else if (rangePreset === "ytd") {
+      cutoff = new Date(now.getFullYear(), 0, 1);
+    } else if (rangePreset === "last_12m") {
+      cutoff = new Date(now);
+      cutoff.setMonth(cutoff.getMonth() - 12);
     }
-    const top = Array.from(byCategory.entries())
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 3);
-    return { total, top };
+    const cutoffYmd = cutoff ? cutoff.toISOString().slice(0, 10) : null;
+    const term = searchTerm.trim().toLowerCase();
+    const filtered = rows.filter((r) => {
+      if (categoryFilter !== "all" && r.category !== categoryFilter) return false;
+      if (cutoffYmd && r.occurred_on < cutoffYmd) return false;
+      if (!term) return true;
+      const hay = [
+        r.description,
+        r.paid_to ?? "",
+        expenseCategoryLabel(r.category),
+        (r.amount_cents / 100).toFixed(2),
+      ].join(" ").toLowerCase();
+      return hay.includes(term);
+    });
+    filtered.sort((a, b) =>
+      sortDir === "desc"
+        ? b.occurred_on.localeCompare(a.occurred_on)
+        : a.occurred_on.localeCompare(b.occurred_on),
+    );
+    return filtered;
+  }, [rows, searchTerm, categoryFilter, rangePreset, sortDir]);
+
+  // Pagination derived from the filtered list.
+  const totalPages = Math.max(1, Math.ceil(filteredRows.length / perPage));
+  const safePage = Math.min(page, totalPages);
+  const pageRows = filteredRows.slice((safePage - 1) * perPage, safePage * perPage);
+  const filteredTotal = filteredRows.reduce((s, r) => s + r.amount_cents, 0);
+
+  // KPI snapshots — YTD / this month / last 30 days / top category.
+  const kpis = useMemo(() => {
+    const now = new Date();
+    const year = String(now.getFullYear());
+    const monthStr = `${year}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+    const thirty = new Date(now);
+    thirty.setDate(thirty.getDate() - 30);
+    const thirtyYmd = thirty.toISOString().slice(0, 10);
+    let ytdCents = 0;
+    let ytdCount = 0;
+    let monthCents = 0;
+    let thirtyDayCents = 0;
+    let thirtyDayCount = 0;
+    const byCat = new Map<ExpenseCategory, number>();
+    for (const r of rows) {
+      const sameYear = r.occurred_on.slice(0, 4) === year;
+      if (sameYear) {
+        ytdCents += r.amount_cents;
+        ytdCount += 1;
+        byCat.set(r.category, (byCat.get(r.category) ?? 0) + r.amount_cents);
+      }
+      if (r.occurred_on.slice(0, 7) === monthStr) monthCents += r.amount_cents;
+      if (r.occurred_on >= thirtyYmd) {
+        thirtyDayCents += r.amount_cents;
+        thirtyDayCount += 1;
+      }
+    }
+    const sortedCats = Array.from(byCat.entries()).sort((a, b) => b[1] - a[1]);
+    const topCat = sortedCats[0] ?? null;
+    return {
+      ytdCents,
+      ytdCount,
+      monthCents,
+      thirtyDayCents,
+      thirtyDayCount,
+      topCat,
+      topCatPct: ytdCents > 0 && topCat ? Math.round((topCat[1] / ytdCents) * 100) : 0,
+    };
   }, [rows]);
 
+  // Color for the per-row category pill — same palette family as
+  // the Overview Operating expenses donut so the visual rank
+  // mapping stays consistent across surfaces.
+  const categoryDotColor = (c: ExpenseCategory): string => {
+    const map: Record<ExpenseCategory, string> = {
+      rentals: "#d94f3d",
+      supplies: "#7a9c4a",
+      labor: "#c79a3d",
+      mileage: "#5b8bb8",
+      marketing: "#4aa3a3",
+      software: "#6b8cef",
+      fees: "#a05d99",
+      meals: "#cf7a3a",
+      travel: "#3d8c7a",
+      insurance: "#8c7c74",
+      other: "#b5a59d",
+    };
+    return map[c] ?? "#b5a59d";
+  };
+
+  // Reset selection + page if the filters change underneath the user.
+  useEffect(() => {
+    setPage(1);
+  }, [searchTerm, categoryFilter, rangePreset, perPage]);
+
+  const pageIdsKey = pageRows.map((r) => r.id).join(",");
+  useEffect(() => {
+    // Keep selection set scoped to the currently-rendered page —
+    // selecting a row, paging away, then bulk-delete shouldn't reach
+    // into rows the vendor isn't looking at.
+    setSelectedIds((prev) => {
+      const visible = new Set(pageRows.map((r) => r.id));
+      const next = new Set<string>();
+      for (const id of prev) if (visible.has(id)) next.add(id);
+      return next;
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pageIdsKey]);
+
+  const toggleRow = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+  const toggleAllOnPage = () => {
+    setSelectedIds((prev) => {
+      const allSelected = pageRows.every((r) => prev.has(r.id));
+      if (allSelected) return new Set();
+      return new Set(pageRows.map((r) => r.id));
+    });
+  };
+
+  const bulkDelete = async () => {
+    if (selectedIds.size === 0) return;
+    if (!confirm(`Delete ${selectedIds.size} expense${selectedIds.size === 1 ? "" : "s"}?`)) return;
+    setBulkDeleting(true);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const db = supabase as any;
+    const ids = Array.from(selectedIds);
+    const { error } = await db.from("vendor_expenses").delete().in("id", ids);
+    setBulkDeleting(false);
+    if (error) {
+      console.error("[ExpensesTab] bulk delete failed", error);
+      toast.error("Couldn't delete the selected expenses.");
+      return;
+    }
+    toast.success(`Deleted ${ids.length} expense${ids.length === 1 ? "" : "s"}.`);
+    setSelectedIds(new Set());
+    void refresh();
+  };
+
+  const exportCsv = () => {
+    // CSV-formula-injection guard: a payee or description starting
+    // with `=`, `+`, `-`, `@`, tab, or CR gets a single-quote prefix
+    // so spreadsheets render it as a literal string instead of
+    // evaluating a formula (CWE-1236).
+    const esc = (v: string | number | null | undefined) => {
+      if (v === null || v === undefined) return "";
+      const s = String(v);
+      const guarded = /^[=+\-@\t\r]/.test(s) ? `'${s}` : s;
+      return /[,"\n\r]/.test(guarded) ? `"${guarded.replace(/"/g, '""')}"` : guarded;
+    };
+    const header = ["Date", "Category", "Description", "Payee", "Amount", "Currency", "Notes"];
+    const lines = [header.join(",")];
+    for (const r of filteredRows) {
+      lines.push(
+        [
+          esc(r.occurred_on),
+          esc(expenseCategoryLabel(r.category)),
+          esc(r.description),
+          esc(r.paid_to ?? ""),
+          esc((r.amount_cents / 100).toFixed(2)),
+          esc((r.currency ?? "usd").toUpperCase()),
+          esc(r.notes ?? ""),
+        ].join(","),
+      );
+    }
+    const blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `expenses-${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div>
-          <h2 className="text-sm font-semibold">Expenses</h2>
-          <p className="text-xs text-muted-foreground">
+          <h2
+            className="text-2xl font-semibold tracking-tight"
+            style={{ fontFamily: "'Fraunces', Georgia, serif", color: "#2b2320" }}
+          >
+            Expenses
+          </h2>
+          <p className="text-xs text-muted-foreground mt-1">
             Manual ledger of business costs. Feeds into Net Profit on the Reports tab.
           </p>
         </div>
-        <Button onClick={startNew} size="sm" className="rounded-full" disabled={!primaryVendorId}>
-          <Plus className="w-3.5 h-3.5 mr-1" />
-          New expense
-        </Button>
+        <div className="flex gap-2">
+          <Button onClick={exportCsv} variant="outline" size="sm" className="rounded-lg" disabled={filteredRows.length === 0}>
+            <Download className="w-3.5 h-3.5 mr-1.5" />
+            Export
+          </Button>
+          <Button onClick={startNew} size="sm" className="rounded-lg" disabled={!primaryVendorId}>
+            <Plus className="w-3.5 h-3.5 mr-1.5" />
+            New expense
+          </Button>
+        </div>
       </div>
 
-      {rows.length > 0 && (
-        <Card>
-          <div className="p-5 flex items-center justify-between gap-4 flex-wrap">
-            <div>
-              <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground font-semibold">
-                Year-to-date spend
-              </div>
-              <div className="mt-1 text-2xl font-editorial tabular-nums">{formatMoney(ytd.total)}</div>
-            </div>
-            {ytd.top.length > 0 && (
-              <div className="flex gap-4 flex-wrap text-xs">
-                {ytd.top.map(([cat, cents]) => (
-                  <div key={cat}>
-                    <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
-                      {expenseCategoryLabel(cat)}
-                    </div>
-                    <div className="tabular-nums">{formatMoney(cents)}</div>
-                  </div>
-                ))}
-              </div>
-            )}
+      {/* KPI strip — YTD spend, this month, last 30 days, top category. */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div
+          className="rounded-xl px-4 py-3"
+          style={{
+            background: "linear-gradient(135deg,#fdeee7,#f9ddd2)",
+            border: "1px solid transparent",
+          }}
+        >
+          <div className="text-[10px] uppercase tracking-[0.1em] font-semibold" style={{ color: "#9c8d86" }}>
+            YTD spend
           </div>
-        </Card>
-      )}
+          <div
+            className="mt-1 text-[22px] font-semibold tabular-nums leading-none"
+            style={{ fontFamily: "'Fraunces', Georgia, serif", color: "#2b2320" }}
+          >
+            {formatMoney(kpis.ytdCents)}
+          </div>
+          <div className="text-[11px] mt-1" style={{ color: "#8c7c74" }}>
+            {kpis.ytdCount} transaction{kpis.ytdCount === 1 ? "" : "s"}
+          </div>
+        </div>
+        <div className="rounded-xl px-4 py-3 bg-white border border-foreground/10">
+          <div className="text-[10px] uppercase tracking-[0.1em] font-semibold text-muted-foreground">
+            This month
+          </div>
+          <div
+            className="mt-1 text-[22px] font-semibold tabular-nums leading-none"
+            style={{ fontFamily: "'Fraunces', Georgia, serif", color: "#2b2320" }}
+          >
+            {formatMoney(kpis.monthCents)}
+          </div>
+          <div className="text-[11px] text-muted-foreground mt-1">
+            {new Date().toLocaleDateString("en-US", { month: "long" })}
+          </div>
+        </div>
+        <div className="rounded-xl px-4 py-3 bg-white border border-foreground/10">
+          <div className="text-[10px] uppercase tracking-[0.1em] font-semibold text-muted-foreground">
+            Last 30 days
+          </div>
+          <div
+            className="mt-1 text-[22px] font-semibold tabular-nums leading-none"
+            style={{ fontFamily: "'Fraunces', Georgia, serif", color: "#2b2320" }}
+          >
+            {formatMoney(kpis.thirtyDayCents)}
+          </div>
+          <div className="text-[11px] text-muted-foreground mt-1">
+            {kpis.thirtyDayCount} transaction{kpis.thirtyDayCount === 1 ? "" : "s"}
+          </div>
+        </div>
+        <div className="rounded-xl px-4 py-3 bg-white border border-foreground/10">
+          <div className="text-[10px] uppercase tracking-[0.1em] font-semibold text-muted-foreground">
+            Top category
+          </div>
+          <div
+            className="mt-1 text-[22px] font-semibold leading-none"
+            style={{ fontFamily: "'Fraunces', Georgia, serif", color: "#2b2320" }}
+          >
+            {kpis.topCat ? expenseCategoryLabel(kpis.topCat[0]) : "—"}
+          </div>
+          <div className="text-[11px] text-muted-foreground mt-1 tabular-nums">
+            {kpis.topCat ? `${formatMoney(kpis.topCat[1])} · ${kpis.topCatPct}%` : "No expenses yet"}
+          </div>
+        </div>
+      </div>
+
+      {/* Toolbar — search, category filter, date-range preset. */}
+      <div className="flex items-center gap-2 flex-wrap">
+        <div className="relative flex-1 min-w-[200px]">
+          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm pointer-events-none">⌕</span>
+          <input
+            type="text"
+            placeholder="Search payee, category, amount…"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full pl-9 pr-3 py-2 rounded-lg border border-foreground/10 bg-white text-sm focus:outline-none focus:border-accent"
+          />
+        </div>
+        <select
+          value={categoryFilter}
+          onChange={(e) => setCategoryFilter(e.target.value as typeof categoryFilter)}
+          className="px-3 py-2 rounded-lg border border-foreground/10 bg-white text-sm"
+        >
+          <option value="all">All categories</option>
+          {EXPENSE_CATEGORIES.map((c) => (
+            <option key={c.id} value={c.id}>
+              {c.label}
+            </option>
+          ))}
+        </select>
+        <select
+          value={rangePreset}
+          onChange={(e) => setRangePreset(e.target.value as typeof rangePreset)}
+          className="px-3 py-2 rounded-lg border border-foreground/10 bg-white text-sm"
+        >
+          <option value="last_12m">Last 12 months</option>
+          <option value="ytd">Year to date</option>
+          <option value="this_month">This month</option>
+          <option value="30d">Last 30 days</option>
+          <option value="all">All time</option>
+        </select>
+      </div>
+
+      {/* Bulk action bar — only visible with at least one row checked. */}
+      {selectedIds.size > 0 ? (
+        <div className="flex items-center gap-4 px-4 py-2.5 rounded-lg text-white text-sm" style={{ background: "#2b2320" }}>
+          <span className="font-semibold">
+            {selectedIds.size} selected
+          </span>
+          <div className="ml-auto flex gap-3 items-center">
+            <button
+              type="button"
+              onClick={exportCsv}
+              className="text-[#f4c9c0] hover:text-white text-sm"
+            >
+              Export
+            </button>
+            <button
+              type="button"
+              onClick={() => void bulkDelete()}
+              disabled={bulkDeleting}
+              className="text-[#f4c9c0] hover:text-white text-sm disabled:opacity-50"
+            >
+              {bulkDeleting ? "Deleting…" : "Delete"}
+            </button>
+            <button
+              type="button"
+              onClick={() => setSelectedIds(new Set())}
+              className="text-[#f4c9c0] hover:text-white text-sm ml-2"
+            >
+              Clear
+            </button>
+          </div>
+        </div>
+      ) : null}
 
       {editing && (
         <Card>
@@ -6300,61 +6607,182 @@ function ExpensesTab({
           No expenses yet. Track rentals, supplies, gas, and any other business costs here so Net Profit
           on the Reports tab subtracts them from revenue.
         </EmptyCard>
+      ) : filteredRows.length === 0 ? (
+        <EmptyCard>
+          No expenses match the current search or filter. Adjust the controls above or clear them to see everything again.
+        </EmptyCard>
       ) : (
-        <Card>
-          {rows.map((e, idx) => (
-            <div
-              key={e.id}
-              className={`p-4 ${idx > 0 ? "border-t border-foreground/5" : ""}`}
-            >
-              <div className="flex items-start justify-between gap-3 flex-wrap">
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide bg-foreground/[0.06] text-foreground/70">
+        <div className="rounded-xl border border-foreground/10 bg-white overflow-hidden">
+          <table className="w-full">
+            <thead>
+              <tr className="bg-foreground/[0.03]">
+                <th className="w-10 px-4 py-3 text-left">
+                  <input
+                    type="checkbox"
+                    checked={pageRows.length > 0 && pageRows.every((r) => selectedIds.has(r.id))}
+                    onChange={toggleAllOnPage}
+                    aria-label="Select all rows on this page"
+                    className="cursor-pointer"
+                  />
+                </th>
+                <th
+                  className="px-3 py-3 text-left text-[10px] uppercase tracking-wider font-semibold text-muted-foreground cursor-pointer select-none"
+                  onClick={() => setSortDir(sortDir === "desc" ? "asc" : "desc")}
+                >
+                  Date <span className="text-[#d94f3d] text-[9px]">{sortDir === "desc" ? "▼" : "▲"}</span>
+                </th>
+                <th className="px-3 py-3 text-left text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">
+                  Description
+                </th>
+                <th className="px-3 py-3 text-left text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">
+                  Payee
+                </th>
+                <th className="px-3 py-3 text-left text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">
+                  Category
+                </th>
+                <th className="px-3 py-3 text-right text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">
+                  Total
+                </th>
+                <th className="px-3 py-3 text-right text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">
+                  Action
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {pageRows.map((e) => (
+                <tr key={e.id} className="border-t border-foreground/5 hover:bg-foreground/[0.02]">
+                  <td className="px-4 py-3">
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.has(e.id)}
+                      onChange={() => toggleRow(e.id)}
+                      aria-label={`Select expense ${e.description}`}
+                      className="cursor-pointer"
+                    />
+                  </td>
+                  <td className="px-3 py-3 text-sm text-foreground/80 whitespace-nowrap tabular-nums">
+                    {formatDate(e.occurred_on)}
+                  </td>
+                  <td className="px-3 py-3 text-sm font-medium">
+                    {e.description}
+                    {e.notes ? (
+                      <div className="text-[11px] text-muted-foreground mt-0.5 max-w-md truncate">{e.notes}</div>
+                    ) : null}
+                  </td>
+                  <td className="px-3 py-3 text-sm text-muted-foreground">
+                    {e.paid_to || "—"}
+                  </td>
+                  <td className="px-3 py-3">
+                    <span
+                      className="inline-flex items-center gap-2 px-2.5 py-1 rounded-md text-[11px]"
+                      style={{ background: "#f4ece7", color: "#4a3f39" }}
+                    >
+                      <span
+                        className="w-1.5 h-1.5 rounded-full"
+                        style={{ background: categoryDotColor(e.category) }}
+                      />
                       {expenseCategoryLabel(e.category)}
                     </span>
-                    <span className="text-xs text-muted-foreground tabular-nums">
-                      {formatDate(e.occurred_on)}
-                    </span>
-                    {e.paid_to && (
-                      <span className="text-xs text-muted-foreground">· {e.paid_to}</span>
-                    )}
-                  </div>
-                  <p className="text-sm font-medium mt-1">{e.description}</p>
-                  {e.notes && (
-                    <p className="text-xs text-muted-foreground mt-1 max-w-xl">{e.notes}</p>
-                  )}
-                </div>
-                <div className="flex items-center gap-2 shrink-0">
-                  <div className="text-lg font-editorial tabular-nums">
+                  </td>
+                  <td
+                    className="px-3 py-3 text-right tabular-nums whitespace-nowrap"
+                    style={{ fontFamily: "'Fraunces', Georgia, serif", fontWeight: 600, fontSize: "15px" }}
+                  >
                     {formatMoney(e.amount_cents, e.currency)}
+                  </td>
+                  <td className="px-3 py-3 text-right whitespace-nowrap">
+                    <div className="flex items-center gap-1.5 justify-end">
+                      <button
+                        type="button"
+                        onClick={() => startEdit(e)}
+                        className="text-[#d94f3d] hover:underline text-sm font-medium"
+                      >
+                        View / Edit
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => void remove(e)}
+                        disabled={deletingId === e.id}
+                        className="w-7 h-7 rounded-md text-muted-foreground hover:bg-foreground/5 inline-flex items-center justify-center disabled:opacity-50"
+                        title="Delete"
+                      >
+                        {deletingId === e.id ? (
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        ) : (
+                          <Trash2 className="w-3.5 h-3.5" />
+                        )}
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+            <tfoot>
+              <tr className="border-t border-foreground/10">
+                <td colSpan={7} className="px-4 py-3">
+                  <div className="flex justify-between items-center gap-3 flex-wrap text-xs text-muted-foreground">
+                    <span>
+                      Showing {pageRows.length} of {filteredRows.length} · Total{" "}
+                      <span
+                        className="text-foreground tabular-nums"
+                        style={{ fontFamily: "'Fraunces', Georgia, serif", fontWeight: 600, fontSize: "14px" }}
+                      >
+                        {formatMoney(filteredTotal)}
+                      </span>
+                    </span>
+                    <div className="flex items-center gap-3">
+                      <label className="flex items-center gap-2">
+                        Rows:
+                        <select
+                          value={perPage}
+                          onChange={(e) => setPerPage(Number(e.target.value))}
+                          className="bg-transparent border border-foreground/10 rounded-md px-2 py-0.5 text-xs"
+                        >
+                          {[10, 25, 50, 100].map((n) => (
+                            <option key={n} value={n}>{n}</option>
+                          ))}
+                        </select>
+                      </label>
+                      <div className="flex items-center gap-1">
+                        <button
+                          type="button"
+                          onClick={() => setPage(Math.max(1, safePage - 1))}
+                          disabled={safePage === 1}
+                          className="w-7 h-7 rounded-md border border-foreground/10 disabled:opacity-30 hover:border-accent"
+                        >
+                          ‹
+                        </button>
+                        {Array.from({ length: totalPages }).slice(0, 5).map((_, i) => {
+                          const p = i + 1;
+                          const active = p === safePage;
+                          return (
+                            <button
+                              key={p}
+                              type="button"
+                              onClick={() => setPage(p)}
+                              className={`min-w-[28px] h-7 px-2 rounded-md text-xs border ${active ? "bg-[#d94f3d] text-white border-[#d94f3d]" : "border-foreground/10 hover:border-accent"}`}
+                            >
+                              {p}
+                            </button>
+                          );
+                        })}
+                        {totalPages > 5 ? <span className="text-muted-foreground">…</span> : null}
+                        <button
+                          type="button"
+                          onClick={() => setPage(Math.min(totalPages, safePage + 1))}
+                          disabled={safePage === totalPages}
+                          className="w-7 h-7 rounded-md border border-foreground/10 disabled:opacity-30 hover:border-accent"
+                        >
+                          ›
+                        </button>
+                      </div>
+                    </div>
                   </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => startEdit(e)}
-                    className="rounded-full"
-                  >
-                    Edit
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => void remove(e)}
-                    disabled={deletingId === e.id}
-                    className="rounded-full text-muted-foreground hover:text-destructive"
-                  >
-                    {deletingId === e.id ? (
-                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                    ) : (
-                      <Trash2 className="w-3.5 h-3.5" />
-                    )}
-                  </Button>
-                </div>
-              </div>
-            </div>
-          ))}
-        </Card>
+                </td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
       )}
     </div>
   );
