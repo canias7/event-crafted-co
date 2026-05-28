@@ -5270,14 +5270,9 @@ function CustomersTab({
             <h3 className="text-sm font-semibold">
               {editing === "new" ? "New customer" : `Edit ${editing.name ?? editing.email}`}
             </h3>
-            {editing === "new" ? (
-              <ListingPickerField
-                accountVendorIds={accountVendorIds}
-                listings={listings}
-                value={newCustomerVendorId}
-                onChange={setNewCustomerVendorId}
-              />
-            ) : null}
+            {/* Listing picker removed — account-level cockpit means
+                we default new customers to accountVendorIds[0] (see
+                save()) without asking the vendor to pick. */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
               <input
                 type="email"
@@ -7706,12 +7701,9 @@ function PayLinksTab({
         <Card>
           <div className="p-5 space-y-3">
             <h3 className="text-sm font-semibold">New pay link</h3>
-            <ListingPickerField
-              accountVendorIds={accountVendorIds}
-              listings={listings}
-              value={pickedVendorId}
-              onChange={setPickedVendorId}
-            />
+            {/* Listing picker removed — account-level cockpit means
+                we default new links to defaultVendorId (see create())
+                without asking the vendor to pick. */}
             <input
               type="text"
               placeholder="What's this charge for? (e.g. Deposit for Aug 14 wedding)"
