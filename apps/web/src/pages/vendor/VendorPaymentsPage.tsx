@@ -1613,7 +1613,7 @@ function OverviewLeadsCard({
     <div className="cockpit-chart">
       <div className="flex items-baseline justify-between mb-3">
         <div>
-          <div className="cockpit-chart-title">Leads</div>
+          <div className="cockpit-chart-title">Inquiries</div>
           <div className="cockpit-chart-sub">Inbound pipeline · last 30 days</div>
         </div>
         <div className="text-right">
