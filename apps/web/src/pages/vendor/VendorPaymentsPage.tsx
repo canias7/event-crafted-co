@@ -5638,7 +5638,7 @@ function ExpensesTab({
   const [form, setForm] = useState<{
     occurred_on: string;
     amount: string;
-    category: ExpenseCategory;
+    category: string;
     description: string;
     paid_to: string;
     notes: string;
@@ -5646,7 +5646,7 @@ function ExpensesTab({
   }>({
     occurred_on: new Date().toISOString().slice(0, 10),
     amount: "",
-    category: "supplies",
+    category: "",
     description: "",
     paid_to: "",
     notes: "",
@@ -5735,7 +5735,7 @@ function ExpensesTab({
     setForm({
       occurred_on: new Date().toISOString().slice(0, 10),
       amount: "",
-      category: "supplies",
+      category: "",
       description: "",
       paid_to: "",
       notes: "",
@@ -6344,20 +6344,6 @@ function ExpensesTab({
                 placeholder="Amount (required)"
                 value={form.amount}
                 onChange={(e) => setForm({ ...form, amount: e.target.value })}
-                className="rounded-lg border-0 px-3 py-2 text-sm bg-background/60 ring-1 ring-foreground/10 focus:ring-foreground/30 outline-none"
-              />
-              <input
-                type="text"
-                placeholder="Category (e.g. Rentals, Marketing, Vehicle)"
-                value={form.category}
-                onChange={(e) => setForm({ ...form, category: e.target.value as ExpenseCategory })}
-                /* Pure free-text — no datalist, no browser autofill
-                   overlay. The vendor types whatever category name
-                   they want; the value is saved as-typed and shows
-                   up in the filter dropdown alongside any other
-                   custom categories they've used. */
-                autoComplete="off"
-                name="expense-category-no-autofill"
                 className="rounded-lg border-0 px-3 py-2 text-sm bg-background/60 ring-1 ring-foreground/10 focus:ring-foreground/30 outline-none"
               />
               <input
