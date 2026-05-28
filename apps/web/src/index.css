@@ -316,11 +316,11 @@
   /* Override the local Card component when nested inside the cockpit. */
   .my-vendora-cockpit [data-cockpit-card],
   .my-vendora-cockpit .cockpit-card {
-    background: rgba(255, 253, 250, 0.7) !important;
+    background: rgba(255, 250, 245, 0.52) !important;
     border: 0.5px solid rgba(255, 138, 76, 0.18) !important;
     border-radius: 14px !important;
-    backdrop-filter: blur(14px);
-    -webkit-backdrop-filter: blur(14px);
+    backdrop-filter: blur(20px) saturate(140%);
+    -webkit-backdrop-filter: blur(20px) saturate(140%);
     box-shadow: 0 1px 2px rgba(196, 84, 30, 0.05), 0 8px 24px -10px rgba(196, 84, 30, 0.14);
   }
 
@@ -342,12 +342,12 @@
 
   /* StatCard — glassy KPI tile with serif display value. */
   .my-vendora-cockpit .cockpit-stat {
-    background: rgba(255, 253, 250, 0.7) !important;
+    background: rgba(255, 250, 245, 0.52) !important;
     border: 0.5px solid rgba(255, 138, 76, 0.18) !important;
     border-radius: 14px !important;
     padding: 18px 20px !important;
-    backdrop-filter: blur(14px);
-    -webkit-backdrop-filter: blur(14px);
+    backdrop-filter: blur(20px) saturate(140%);
+    -webkit-backdrop-filter: blur(20px) saturate(140%);
     box-shadow: 0 1px 2px rgba(196, 84, 30, 0.05), 0 8px 24px -10px rgba(196, 84, 30, 0.14) !important;
     display: flex;
     flex-direction: column;
@@ -519,11 +519,11 @@
     gap: 12px;
     flex-wrap: wrap;
     padding: 12px 14px;
-    background: rgba(255, 253, 250, 0.7);
+    background: rgba(255, 250, 245, 0.52);
     border: 0.5px solid rgba(255, 138, 76, 0.18);
     border-radius: 14px;
-    backdrop-filter: blur(14px);
-    -webkit-backdrop-filter: blur(14px);
+    backdrop-filter: blur(20px) saturate(140%);
+    -webkit-backdrop-filter: blur(20px) saturate(140%);
     margin-bottom: 16px;
   }
   .my-vendora-cockpit .cockpit-toolbar-meta {
@@ -555,12 +555,12 @@
 
   /* Charts — glassy card, crimson line + soft area gradient. */
   .my-vendora-cockpit .cockpit-chart {
-    background: rgba(255, 253, 250, 0.7);
+    background: rgba(255, 250, 245, 0.52);
     border: 0.5px solid rgba(255, 138, 76, 0.18);
     border-radius: 14px;
     padding: 22px;
-    backdrop-filter: blur(14px);
-    -webkit-backdrop-filter: blur(14px);
+    backdrop-filter: blur(20px) saturate(140%);
+    -webkit-backdrop-filter: blur(20px) saturate(140%);
     box-shadow: 0 1px 2px rgba(196, 84, 30, 0.05), 0 8px 24px -10px rgba(196, 84, 30, 0.14);
   }
   .my-vendora-cockpit .cockpit-chart-title {
@@ -647,7 +647,7 @@
   /* Page header — glassy chrome (still defined; the Overview tab no
      longer uses it but other tabs can). */
   .my-vendora-cockpit .cockpit-page-header {
-    background: rgba(255, 253, 250, 0.7);
+    background: rgba(255, 250, 245, 0.52);
     border: 0.5px solid rgba(255, 138, 76, 0.18);
     border-radius: 14px;
     padding: 22px 24px;
@@ -657,8 +657,8 @@
     justify-content: space-between;
     gap: 16px;
     flex-wrap: wrap;
-    backdrop-filter: blur(14px);
-    -webkit-backdrop-filter: blur(14px);
+    backdrop-filter: blur(20px) saturate(140%);
+    -webkit-backdrop-filter: blur(20px) saturate(140%);
     box-shadow: 0 1px 2px rgba(196, 84, 30, 0.05), 0 8px 24px -10px rgba(196, 84, 30, 0.14);
   }
   .my-vendora-cockpit .cockpit-breadcrumb {
@@ -700,15 +700,15 @@
     }
   }
   .my-vendora-cockpit .cockpit-kpi-tile {
-    background: rgba(255, 253, 250, 0.7);
+    background: rgba(255, 250, 245, 0.52);
     border: 0.5px solid rgba(255, 138, 76, 0.18);
     border-radius: 14px;
     padding: 20px;
     display: flex;
     flex-direction: column;
     gap: 8px;
-    backdrop-filter: blur(14px);
-    -webkit-backdrop-filter: blur(14px);
+    backdrop-filter: blur(20px) saturate(140%);
+    -webkit-backdrop-filter: blur(20px) saturate(140%);
     box-shadow: 0 1px 2px rgba(196, 84, 30, 0.05), 0 8px 24px -10px rgba(196, 84, 30, 0.14);
     transition: box-shadow 160ms ease, transform 160ms ease;
   }
@@ -798,12 +798,12 @@
   }
   /* Data-table card wrapper — glassy frosted surface. */
   .my-vendora-cockpit .cockpit-data-card {
-    background: rgba(255, 253, 250, 0.7);
+    background: rgba(255, 250, 245, 0.52);
     border: 0.5px solid rgba(255, 138, 76, 0.18);
     border-radius: 14px;
     overflow: hidden;
-    backdrop-filter: blur(14px);
-    -webkit-backdrop-filter: blur(14px);
+    backdrop-filter: blur(20px) saturate(140%);
+    -webkit-backdrop-filter: blur(20px) saturate(140%);
     box-shadow: 0 1px 2px rgba(196, 84, 30, 0.05), 0 8px 24px -10px rgba(196, 84, 30, 0.14);
   }
   .my-vendora-cockpit .cockpit-data-card-header {
