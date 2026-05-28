@@ -6320,14 +6320,10 @@ function ExpensesTab({
             <h3 className="text-sm font-semibold">
               {editing === "new" ? "New expense" : "Edit expense"}
             </h3>
-            {editing === "new" ? (
-              <ListingPickerField
-                accountVendorIds={accountVendorIds}
-                listings={listings}
-                value={newExpenseVendorId}
-                onChange={setNewExpenseVendorId}
-              />
-            ) : null}
+            {/* Listing picker intentionally removed — the cockpit is
+                account-level, so vendors don't pick a listing per
+                row. New expenses default to accountVendorIds[0]
+                (handled in save()). */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
               <input
                 type="date"
@@ -6431,14 +6427,8 @@ function ExpensesTab({
               <h4 className="text-sm font-semibold">
                 {editingContractor === "new" ? "New contractor" : `Edit ${editingContractor.name}`}
               </h4>
-              {editingContractor === "new" ? (
-                <ListingPickerField
-                  accountVendorIds={accountVendorIds}
-                  listings={listings}
-                  value={newContractorVendorId}
-                  onChange={setNewContractorVendorId}
-                />
-              ) : null}
+              {/* Listing picker removed — account-level, defaults to
+                  primary listing in saveContractor(). */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                 <input
                   type="text"
