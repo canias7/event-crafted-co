@@ -1238,8 +1238,8 @@ function OverviewRevenueChart({ series, currency }: { series: number[]; currency
             <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-[200px]" preserveAspectRatio="none" aria-hidden>
               <defs>
                 <linearGradient id="cockpit-area-grad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#0ea5e9" stopOpacity="0.25" />
-                  <stop offset="100%" stopColor="#0ea5e9" stopOpacity="0" />
+                  <stop offset="0%" stopColor="#b8693d" stopOpacity="0.28" />
+                  <stop offset="100%" stopColor="#b8693d" stopOpacity="0" />
                 </linearGradient>
               </defs>
               {[0, 0.5, 1].map((t) => {
@@ -1253,7 +1253,7 @@ function OverviewRevenueChart({ series, currency }: { series: number[]; currency
                   </g>
                 );
               })}
-              <line x1={PAD_L} y1={PAD_T} x2={PAD_L} y2={PAD_T + plotH} stroke="#e2e8f0" strokeWidth="1" />
+              <line x1={PAD_L} y1={PAD_T} x2={PAD_L} y2={PAD_T + plotH} stroke="#e8e2d6" strokeWidth="1" />
               <path d={areaPath} className="cockpit-chart-area" />
               <path d={linePath} className="cockpit-chart-line" />
               {peakIdx >= 0 && <circle cx={x(peakIdx)} cy={y(max)} r="3.5" className="cockpit-chart-dot" />}
@@ -1277,11 +1277,11 @@ function OverviewAgingChart({
   currency: string;
 }) {
   const rows: Array<{ label: string; cents: number; color: string }> = [
-    { label: "Current", cents: buckets.current, color: "#64748b" },
-    { label: "1–30 late", cents: buckets.d1_30, color: "#d97706" },
-    { label: "31–60 late", cents: buckets.d31_60, color: "#dc2626" },
-    { label: "61–90 late", cents: buckets.d61_90, color: "#b91c1c" },
-    { label: "90+ late", cents: buckets.d90plus, color: "#7f1d1d" },
+    { label: "Current", cents: buckets.current, color: "#4a7c4a" },
+    { label: "1–30 late", cents: buckets.d1_30, color: "#c89738" },
+    { label: "31–60 late", cents: buckets.d31_60, color: "#b8693d" },
+    { label: "61–90 late", cents: buckets.d61_90, color: "#b8453d" },
+    { label: "90+ late", cents: buckets.d90plus, color: "#6b2520" },
   ];
   const max = rows.reduce((m, r) => (r.cents > m ? r.cents : m), 0);
   const totalOwed = rows.reduce((s, r) => s + r.cents, 0);
@@ -1308,7 +1308,7 @@ function OverviewAgingChart({
             return (
               <div key={r.label} className="flex items-center gap-3">
                 <div className="w-24 text-xs text-muted-foreground shrink-0">{r.label}</div>
-                <div className="flex-1 h-6 rounded bg-slate-100 overflow-hidden relative">
+                <div className="flex-1 h-6 rounded overflow-hidden relative" style={{ background: "#f3eee5" }}>
                   <div
                     className="h-full transition-all"
                     style={{ width: `${pct}%`, background: r.color, opacity: r.cents > 0 ? 1 : 0 }}
