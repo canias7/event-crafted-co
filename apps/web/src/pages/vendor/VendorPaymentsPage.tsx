@@ -1708,7 +1708,16 @@ function OverviewExpensesCard({
   // the first segment at 12 o'clock like a clock face.
   const RING_R = 38;
   const RING_W = 14;
+  const RING_W_HOVER = 17;
   const CIRC = 2 * Math.PI * RING_R;
+  // Hovered slice index drives the center-hole readout + per-slice
+  // emphasis (others dim to 0.4 opacity, hovered slice thickens).
+  const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
+  const hovered = hoveredIdx !== null ? rows[hoveredIdx] : null;
+  const hoveredPct =
+    hovered && expenses.total > 0
+      ? Math.round((hovered.cents / expenses.total) * 100)
+      : 0;
   let dashOffset = 0;
   return (
     <div className="cockpit-chart">
@@ -1734,37 +1743,111 @@ function OverviewExpensesCard({
       ) : (
         <>
           <div className="flex items-center gap-4">
-            <svg viewBox="0 0 100 100" className="w-[110px] h-[110px] shrink-0 -rotate-90" aria-hidden>
-              {/* Faint background ring so the donut feels seated even
-                  when one segment dominates the total. */}
-              <circle cx="50" cy="50" r={RING_R} fill="none" stroke="rgba(255,138,76,0.14)" strokeWidth={RING_W} />
-              {rows.map((r) => {
-                const len = expenses.total > 0 ? (r.cents / expenses.total) * CIRC : 0;
-                const offset = dashOffset;
-                dashOffset += len;
+            <div className="relative w-[110px] h-[110px] shrink-0">
+              <svg
+                viewBox="0 0 100 100"
+                className="w-full h-full -rotate-90 overflow-visible"
+                role="img"
+                aria-label="Operating expenses breakdown"
+              >
+                {/* Faint background ring so the donut feels seated even
+                    when one segment dominates the total. */}
+                <circle cx="50" cy="50" r={RING_R} fill="none" stroke="rgba(255,138,76,0.14)" strokeWidth={RING_W} />
+                {rows.map((r, i) => {
+                  const len = expenses.total > 0 ? (r.cents / expenses.total) * CIRC : 0;
+                  const offset = dashOffset;
+                  dashOffset += len;
+                  const isHovered = hoveredIdx === i;
+                  const isDimmed = hoveredIdx !== null && !isHovered;
+                  return (
+                    <circle
+                      key={r.label}
+                      cx="50" cy="50" r={RING_R}
+                      fill="none"
+                      stroke={r.color}
+                      strokeWidth={isHovered ? RING_W_HOVER : RING_W}
+                      strokeDasharray={`${len} ${CIRC - len}`}
+                      strokeDashoffset={-offset}
+                      style={{
+                        cursor: "pointer",
+                        opacity: isDimmed ? 0.4 : 1,
+                        transition: "stroke-width 120ms ease, opacity 120ms ease",
+                      }}
+                      onMouseEnter={() => setHoveredIdx(i)}
+                      onMouseLeave={() => setHoveredIdx((cur) => (cur === i ? null : cur))}
+                    >
+                      <title>{`${r.label} · ${formatMoney(r.cents, currency)}`}</title>
+                    </circle>
+                  );
+                })}
+              </svg>
+              {/* Center-hole readout — defaults to the total, swaps in
+                  the hovered slice's name + amount + percentage when
+                  the user mouses a segment. pointer-events-none so it
+                  doesn't break the hover hit-test on the ring. */}
+              <div className="absolute inset-0 flex flex-col items-center justify-center text-center pointer-events-none px-2">
+                {hovered ? (
+                  <>
+                    <div className="text-[9px] uppercase tracking-wider text-muted-foreground truncate max-w-full" title={hovered.label}>
+                      {hovered.label}
+                    </div>
+                    <div
+                      className="tabular-nums leading-none truncate max-w-full"
+                      style={{
+                        fontFamily: "'Fraunces', Georgia, serif",
+                        fontSize: "13px",
+                        fontWeight: 600,
+                        color: "#2b2320",
+                      }}
+                    >
+                      {formatMoney(hovered.cents, currency)}
+                    </div>
+                    <div className="text-[9px] text-muted-foreground tabular-nums mt-0.5">
+                      {hoveredPct}%
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="text-[9px] uppercase tracking-wider text-muted-foreground">Total</div>
+                    <div
+                      className="tabular-nums leading-none"
+                      style={{
+                        fontFamily: "'Fraunces', Georgia, serif",
+                        fontSize: "13px",
+                        fontWeight: 600,
+                        color: "#2b2320",
+                      }}
+                    >
+                      {formatMoney(expenses.total, currency)}
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+            <div className="flex-1 min-w-0 space-y-1.5">
+              {rows.map((r, i) => {
+                const isHovered = hoveredIdx === i;
+                const isDimmed = hoveredIdx !== null && !isHovered;
                 return (
-                  <circle
+                  <div
                     key={r.label}
-                    cx="50" cy="50" r={RING_R}
-                    fill="none"
-                    stroke={r.color}
-                    strokeWidth={RING_W}
-                    strokeDasharray={`${len} ${CIRC - len}`}
-                    strokeDashoffset={-offset}
-                  />
+                    className="flex items-center gap-2 text-[11px] cursor-pointer rounded px-1 -mx-1 py-0.5"
+                    style={{
+                      background: isHovered ? "rgba(255,138,76,0.08)" : "transparent",
+                      opacity: isDimmed ? 0.5 : 1,
+                      transition: "opacity 120ms ease, background 120ms ease",
+                    }}
+                    onMouseEnter={() => setHoveredIdx(i)}
+                    onMouseLeave={() => setHoveredIdx((cur) => (cur === i ? null : cur))}
+                  >
+                    <span className="w-2.5 h-2.5 rounded-sm shrink-0" style={{ background: r.color }} />
+                    <span className="text-foreground font-bold truncate flex-1">{r.label}</span>
+                    <span className="tabular-nums text-foreground font-bold shrink-0">
+                      {formatMoney(r.cents, currency)}
+                    </span>
+                  </div>
                 );
               })}
-            </svg>
-            <div className="flex-1 min-w-0 space-y-1.5">
-              {rows.map((r) => (
-                <div key={r.label} className="flex items-center gap-2 text-[11px]">
-                  <span className="w-2.5 h-2.5 rounded-sm shrink-0" style={{ background: r.color }} />
-                  <span className="text-foreground font-bold truncate flex-1">{r.label}</span>
-                  <span className="tabular-nums text-foreground font-bold shrink-0">
-                    {formatMoney(r.cents, currency)}
-                  </span>
-                </div>
-              ))}
             </div>
           </div>
           <div className="mt-3 text-[11px] text-muted-foreground">
