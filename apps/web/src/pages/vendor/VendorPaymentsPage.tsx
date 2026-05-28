@@ -5602,8 +5602,12 @@ const EXPENSE_CATEGORIES: Array<{ id: ExpenseCategory; label: string }> = [
   { id: "other", label: "Other" },
 ];
 
-function expenseCategoryLabel(c: ExpenseCategory): string {
-  return EXPENSE_CATEGORIES.find((e) => e.id === c)?.label ?? c;
+function expenseCategoryLabel(c: string): string {
+  // Falls back to the raw string when the value isn't one of the
+  // preset enum keys — vendors can now type custom category names
+  // (the DB check constraint was dropped) and we want those to
+  // render as-typed.
+  return EXPENSE_CATEGORIES.find((e) => e.id === (c as ExpenseCategory))?.label ?? c;
 }
 
 function ExpensesTab({
@@ -6262,11 +6266,20 @@ function ExpensesTab({
           className="px-3 py-2 rounded-lg border border-foreground/10 bg-white text-sm"
         >
           <option value="all">All categories</option>
+          {/* Preset categories first, then any custom ones the
+              vendor has typed that aren't in the preset list. */}
           {EXPENSE_CATEGORIES.map((c) => (
             <option key={c.id} value={c.id}>
               {c.label}
             </option>
           ))}
+          {Array.from(new Set(rows.map((r) => r.category)))
+            .filter((c) => !EXPENSE_CATEGORIES.some((preset) => preset.id === c))
+            .map((c) => (
+              <option key={c} value={c}>
+                {c}
+              </option>
+            ))}
         </select>
         <select
           value={rangePreset}
@@ -6340,17 +6353,19 @@ function ExpensesTab({
                 onChange={(e) => setForm({ ...form, amount: e.target.value })}
                 className="rounded-lg border-0 px-3 py-2 text-sm bg-background/60 ring-1 ring-foreground/10 focus:ring-foreground/30 outline-none"
               />
-              <select
+              <input
+                type="text"
+                list="expense-category-suggestions"
+                placeholder="Category (type or pick)"
                 value={form.category}
                 onChange={(e) => setForm({ ...form, category: e.target.value as ExpenseCategory })}
                 className="rounded-lg border-0 px-3 py-2 text-sm bg-background/60 ring-1 ring-foreground/10 focus:ring-foreground/30 outline-none"
-              >
+              />
+              <datalist id="expense-category-suggestions">
                 {EXPENSE_CATEGORIES.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.label}
-                  </option>
+                  <option key={c.id} value={c.id} label={c.label} />
                 ))}
-              </select>
+              </datalist>
               <input
                 type="text"
                 placeholder="Paid to (optional — Home Depot, U-Haul…)"
@@ -6405,187 +6420,6 @@ function ExpensesTab({
         </Card>
       )}
 
-      {/* Contractors — the 1099-tracking ledger. Lives next to the
-          expense list since labor expenses get tied to these. */}
-      <section className="space-y-3">
-        <div className="flex items-center justify-between gap-3 flex-wrap">
-          <div>
-            <h3 className="text-sm font-semibold">Contractors</h3>
-            <p className="text-xs text-muted-foreground">
-              Anyone you pay $600+ in a calendar year needs a 1099-NEC. Track them here.
-            </p>
-          </div>
-          <Button onClick={startNewContractor} variant="outline" size="sm" className="rounded-full" disabled={!primaryVendorId}>
-            <Plus className="w-3.5 h-3.5 mr-1" />
-            New contractor
-          </Button>
-        </div>
-
-        {editingContractor && (
-          <Card>
-            <div className="p-5 space-y-3">
-              <h4 className="text-sm font-semibold">
-                {editingContractor === "new" ? "New contractor" : `Edit ${editingContractor.name}`}
-              </h4>
-              {/* Listing picker removed — account-level, defaults to
-                  primary listing in saveContractor(). */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                <input
-                  type="text"
-                  placeholder="Name (required)"
-                  value={contractorForm.name}
-                  onChange={(e) => setContractorForm({ ...contractorForm, name: e.target.value })}
-                  className="rounded-lg border-0 px-3 py-2 text-sm bg-background/60 ring-1 ring-foreground/10 focus:ring-foreground/30 outline-none"
-                />
-                <input
-                  type="email"
-                  placeholder="Email (optional)"
-                  value={contractorForm.email}
-                  onChange={(e) => setContractorForm({ ...contractorForm, email: e.target.value })}
-                  className="rounded-lg border-0 px-3 py-2 text-sm bg-background/60 ring-1 ring-foreground/10 focus:ring-foreground/30 outline-none"
-                />
-                <input
-                  type="tel"
-                  placeholder="Phone (optional)"
-                  value={contractorForm.phone}
-                  onChange={(e) => setContractorForm({ ...contractorForm, phone: e.target.value })}
-                  className="rounded-lg border-0 px-3 py-2 text-sm bg-background/60 ring-1 ring-foreground/10 focus:ring-foreground/30 outline-none"
-                />
-                <input
-                  type="text"
-                  placeholder="Tax ID — LAST 4 ONLY (optional)"
-                  value={contractorForm.tax_id_last4}
-                  onChange={(e) => setContractorForm({ ...contractorForm, tax_id_last4: e.target.value })}
-                  maxLength={4}
-                  className="rounded-lg border-0 px-3 py-2 text-sm bg-background/60 ring-1 ring-foreground/10 focus:ring-foreground/30 outline-none"
-                />
-                <input
-                  type="text"
-                  placeholder="Street address (optional)"
-                  value={contractorForm.address_line1}
-                  onChange={(e) => setContractorForm({ ...contractorForm, address_line1: e.target.value })}
-                  className="rounded-lg border-0 px-3 py-2 text-sm bg-background/60 ring-1 ring-foreground/10 focus:ring-foreground/30 outline-none md:col-span-2"
-                />
-                <input
-                  type="text"
-                  placeholder="City"
-                  value={contractorForm.city}
-                  onChange={(e) => setContractorForm({ ...contractorForm, city: e.target.value })}
-                  className="rounded-lg border-0 px-3 py-2 text-sm bg-background/60 ring-1 ring-foreground/10 focus:ring-foreground/30 outline-none"
-                />
-                <div className="grid grid-cols-2 gap-2">
-                  <input
-                    type="text"
-                    placeholder="State"
-                    value={contractorForm.state}
-                    onChange={(e) => setContractorForm({ ...contractorForm, state: e.target.value })}
-                    maxLength={2}
-                    className="rounded-lg border-0 px-3 py-2 text-sm bg-background/60 ring-1 ring-foreground/10 focus:ring-foreground/30 outline-none uppercase"
-                  />
-                  <input
-                    type="text"
-                    placeholder="ZIP"
-                    value={contractorForm.postal_code}
-                    onChange={(e) => setContractorForm({ ...contractorForm, postal_code: e.target.value })}
-                    className="rounded-lg border-0 px-3 py-2 text-sm bg-background/60 ring-1 ring-foreground/10 focus:ring-foreground/30 outline-none"
-                  />
-                </div>
-              </div>
-              <textarea
-                placeholder="Notes (optional)"
-                value={contractorForm.notes}
-                onChange={(e) => setContractorForm({ ...contractorForm, notes: e.target.value })}
-                rows={2}
-                className="w-full rounded-lg border-0 px-3 py-2 text-sm bg-background/60 ring-1 ring-foreground/10 focus:ring-foreground/30 outline-none resize-none"
-              />
-              <p className="text-[11px] text-muted-foreground">
-                We only store the last 4 digits of the tax ID — the full SSN/EIN belongs in your payroll provider, not here.
-              </p>
-              <div className="flex gap-2">
-                <Button onClick={() => void saveContractor()} disabled={savingContractor} size="sm" className="rounded-full">
-                  {savingContractor ? <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" /> : null}
-                  {editingContractor === "new" ? "Add contractor" : "Save"}
-                </Button>
-                <Button onClick={() => setEditingContractor(null)} variant="ghost" size="sm" className="rounded-full">
-                  Cancel
-                </Button>
-              </div>
-            </div>
-          </Card>
-        )}
-
-        {contractors.length === 0 ? (
-          <EmptyCard>
-            No contractors yet. Add helpers, freelancers, or anyone you'll need to issue a 1099 to at year-end.
-          </EmptyCard>
-        ) : (
-          <Card>
-            {contractors.map((c, idx) => {
-              const ytdCents = contractorTotals.get(c.id) ?? 0;
-              const needs1099 = ytdCents >= 60000; // $600 in cents
-              return (
-                <div
-                  key={c.id}
-                  className={`p-4 ${idx > 0 ? "border-t border-foreground/5" : ""}`}
-                >
-                  <div className="flex items-start justify-between gap-3 flex-wrap">
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <p className="text-sm font-semibold">{c.name}</p>
-                        {needs1099 && (
-                          <span className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide bg-amber-100 text-amber-800">
-                            1099 needed
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-xs text-muted-foreground mt-0.5">
-                        {[c.email, c.phone, c.city && c.state ? `${c.city}, ${c.state}` : null]
-                          .filter(Boolean)
-                          .join(" · ") || "No contact info"}
-                        {c.tax_id_last4 ? ` · TIN ••••${c.tax_id_last4}` : ""}
-                      </p>
-                      {c.notes && (
-                        <p className="text-xs text-muted-foreground mt-1 max-w-xl">{c.notes}</p>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-2 shrink-0">
-                      <div className="text-right">
-                        <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
-                          YTD paid
-                        </div>
-                        <div className="text-base font-editorial tabular-nums">
-                          {formatMoney(ytdCents)}
-                        </div>
-                      </div>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => startEditContractor(c)}
-                        className="rounded-full"
-                      >
-                        Edit
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => void removeContractor(c)}
-                        disabled={deletingContractorId === c.id}
-                        className="rounded-full text-muted-foreground hover:text-destructive"
-                      >
-                        {deletingContractorId === c.id ? (
-                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                        ) : (
-                          <Trash2 className="w-3.5 h-3.5" />
-                        )}
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </Card>
-        )}
-      </section>
 
       {loading ? (
         <EmptyCard>
