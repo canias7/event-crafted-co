@@ -401,6 +401,16 @@ export default function VendorPaymentsPage({ embedded = false }: { embedded?: bo
     setSearchParams(params, { replace: true });
   };
 
+  // Jump straight to the Payments tab's Expenses sub-surface — the
+  // Operating expenses card on the Overview links here so a vendor
+  // can drill into the full ledger.
+  const goToExpenses = () => {
+    const params = new URLSearchParams(searchParams);
+    params.set("tab", "transactions");
+    params.set("sub", "expenses");
+    setSearchParams(params, { replace: true });
+  };
+
   const [status, setStatus] = useState<Status | null>(null);
   const [balance, setBalance] = useState<Balance | null>(null);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -866,6 +876,7 @@ export default function VendorPaymentsPage({ embedded = false }: { embedded?: bo
             <OverviewTab
               balance={balance}
               accountVendorIds={accountVendorIds}
+              onViewExpenses={goToExpenses}
             />
           ) : tab === "calendar" ? (
             <Suspense fallback={<TabSkeleton />}>
@@ -918,6 +929,7 @@ export default function VendorPaymentsPage({ embedded = false }: { embedded?: bo
 function OverviewTab({
   balance,
   accountVendorIds,
+  onViewExpenses,
 }: {
   balance: Balance | null;
   // Every listing the current user owns; every Supabase query on
@@ -926,6 +938,9 @@ function OverviewTab({
   // longer rendered here (Recent activity now pulls paid invoices
   // from Supabase across the whole account).
   accountVendorIds: string[];
+  // Click handler for "View all →" on the Operating expenses card —
+  // navigates to the Payments tab's Expenses sub-surface.
+  onViewExpenses: () => void;
 }) {
   const currency = balance?.currency ?? "usd";
 
@@ -1198,7 +1213,7 @@ function OverviewTab({
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4">
         <OverviewMrrCard mrr={mrr} currency={currency} />
         <OverviewLeadsCard leads={leads} />
-        <OverviewExpensesCard expenses={expenses} currency={currency} />
+        <OverviewExpensesCard expenses={expenses} currency={currency} onViewAll={onViewExpenses} />
       </div>
 
       {/* Recent activity — paid invoices across the whole account.
@@ -1682,9 +1697,11 @@ function OverviewLeadsCard({
 function OverviewExpensesCard({
   expenses,
   currency,
+  onViewAll,
 }: {
   expenses: { total: number; count: number; categoryCount: number; topCategories: Array<{ label: string; cents: number }> };
   currency: string;
+  onViewAll?: () => void;
 }) {
   // Reuse the bar palette from MRR (crimson → terra → amber → green)
   // so a vendor scanning the page picks up category rank by color.
@@ -1703,14 +1720,35 @@ function OverviewExpensesCard({
   let dashOffset = 0;
   return (
     <div className="cockpit-chart">
-      <div className="flex items-baseline justify-between mb-3">
+      <div className="flex items-baseline justify-between mb-3 gap-3">
         <div>
           <div className="cockpit-chart-title">Operating expenses</div>
           <div className="cockpit-chart-sub">Last 30 days · by category</div>
         </div>
-        <div className="text-right">
-          <div className="cockpit-kpi-label">Spend</div>
-          <div className="cockpit-money cockpit-money--lg">{formatMoney(expenses.total, currency)}</div>
+        <div className="flex items-baseline gap-3 shrink-0">
+          <div className="text-right">
+            <div className="cockpit-kpi-label">Spend</div>
+            <div
+              className="tabular-nums leading-none"
+              style={{
+                fontFamily: "'Fraunces', Georgia, serif",
+                fontSize: "22px",
+                fontWeight: 600,
+                color: "#2b2320",
+              }}
+            >
+              {formatMoney(expenses.total, currency)}
+            </div>
+          </div>
+          {onViewAll ? (
+            <button
+              type="button"
+              onClick={onViewAll}
+              className="text-xs text-muted-foreground hover:text-foreground border border-foreground/10 rounded-md px-2.5 py-1 self-center"
+            >
+              View all →
+            </button>
+          ) : null}
         </div>
       </div>
       {expenses.count === 0 ? (
