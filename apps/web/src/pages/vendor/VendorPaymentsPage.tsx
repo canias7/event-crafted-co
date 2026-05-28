@@ -936,7 +936,7 @@ function OverviewTab({
   // daily revenue series for the wave chart.
   const [mrr, setMrr] = useState<{ total: number; weekly: number; monthly: number; quarterly: number; yearly: number; count: number }>({ total: 0, weekly: 0, monthly: 0, quarterly: 0, yearly: 0, count: 0 });
   const [leads, setLeads] = useState<{ new: number; active: number; won: number; lost: number; total: number }>({ new: 0, active: 0, won: 0, lost: 0, total: 0 });
-  const [expenses, setExpenses] = useState<{ total: number; count: number; topCategories: Array<{ label: string; cents: number }> }>({ total: 0, count: 0, topCategories: [] });
+  const [expenses, setExpenses] = useState<{ total: number; count: number; categoryCount: number; topCategories: Array<{ label: string; cents: number }> }>({ total: 0, count: 0, categoryCount: 0, topCategories: [] });
   const [customerCount, setCustomerCount] = useState<number | null>(null);
   const [revenue30d, setRevenue30d] = useState<number>(0);
   const [revenue30dPrev, setRevenue30dPrev] = useState<number>(0);
@@ -955,7 +955,7 @@ function OverviewTab({
     if (accountVendorIds.length === 0) {
       setMrr({ total: 0, weekly: 0, monthly: 0, quarterly: 0, yearly: 0, count: 0 });
       setLeads({ new: 0, active: 0, won: 0, lost: 0, total: 0 });
-      setExpenses({ total: 0, count: 0, topCategories: [] });
+      setExpenses({ total: 0, count: 0, categoryCount: 0, topCategories: [] });
       setCustomerCount(null);
       setRevenue30d(0);
       setRevenue30dPrev(0);
@@ -1103,12 +1103,25 @@ function OverviewTab({
       const sorted = Array.from(byCat.entries())
         .map(([id, cents]) => ({ label: EXPENSE_LABEL[id] ?? id, cents }))
         .sort((a, b) => b.cents - a.cents);
+      // Roll any 4th+ categories into "Other" so the card always
+      // renders at most four bars, then re-sort by amount. Without
+      // the re-sort, "Other" sits last even when its rollup total
+      // is larger than some of the top-3 individual categories
+      // (e.g. Marketing + Software + Insurance combined can outweigh
+      // Labor alone), making the legend order and the bar palette
+      // both lie about magnitude.
       const topThree = sorted.slice(0, 3);
       const restCents = sorted.slice(3).reduce((s, r) => s + r.cents, 0);
-      const topCategories = restCents > 0
+      const topCategories = (restCents > 0
         ? [...topThree, { label: "Other", cents: restCents }]
-        : topThree;
-      setExpenses({ total: totalExpenses, count: expRows.length, topCategories });
+        : topThree
+      ).sort((a, b) => b.cents - a.cents);
+      setExpenses({
+        total: totalExpenses,
+        count: expRows.length,
+        categoryCount: byCat.size,
+        topCategories,
+      });
 
       setCustomerCount(typeof cc === "number" ? cc : 0);
 
@@ -1657,16 +1670,20 @@ function OverviewLeadsCard({
   );
 }
 
-// Operating expenses card — full-width row showing OPEX in the last
-// 30 days broken down by category (top 3 + Other rollup). Same
-// horizontal-bars treatment as MRR / Leads so the row reads as one
-// editorial system. Sits at the bottom of the Overview so the page
-// flows top-to-bottom as cash in → pipeline → cash out.
+// Operating expenses card — donut chart + legend showing OPEX in
+// the last 30 days broken down by category. The vendor's top 3
+// categories get their own slice; any 4th+ category rolls into an
+// "Other" bucket so the donut tops out at four segments. After the
+// rollup the list is re-sorted by amount, so "Other" floats to its
+// correct rank position (e.g. if the rollup sum is larger than the
+// 2nd-largest individual category, it sits 2nd, not last).
+// Footer is explicit about the underlying counts so "8 expenses
+// shown as 4 categories" doesn't read as a mismatch.
 function OverviewExpensesCard({
   expenses,
   currency,
 }: {
-  expenses: { total: number; count: number; topCategories: Array<{ label: string; cents: number }> };
+  expenses: { total: number; count: number; categoryCount: number; topCategories: Array<{ label: string; cents: number }> };
   currency: string;
 }) {
   // Reuse the bar palette from MRR (crimson → terra → amber → green)
@@ -1737,7 +1754,11 @@ function OverviewExpensesCard({
             </div>
           </div>
           <div className="mt-3 text-[11px] text-muted-foreground">
-            {expenses.count} expense{expenses.count === 1 ? "" : "s"} logged
+            {expenses.count} expense{expenses.count === 1 ? "" : "s"} across{" "}
+            {expenses.categoryCount} categor{expenses.categoryCount === 1 ? "y" : "ies"}
+            {expenses.categoryCount > expenses.topCategories.length
+              ? ` · ${expenses.categoryCount - expenses.topCategories.length + 1} grouped into Other`
+              : ""}
           </div>
         </>
       )}
