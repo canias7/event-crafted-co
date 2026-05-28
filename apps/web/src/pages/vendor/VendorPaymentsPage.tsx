@@ -1064,36 +1064,9 @@ function OverviewTab({
 
   const netCashCents = (balance?.available_cents ?? 0) + (balance?.pending_cents ?? 0);
   const customerDeltaCount = newCustomers30d - newCustomers30dPrev;
-  const today = new Date();
-  const dateStr = today.toLocaleDateString("en-US", {
-    weekday: "long", month: "long", day: "numeric", year: "numeric",
-  });
 
   return (
     <>
-      {/* Page chrome — Oracle Redwood-style header bar */}
-      <header className="cockpit-page-header">
-        <div className="min-w-0">
-          <div className="cockpit-breadcrumb">
-            <span>My Vendora</span>
-            <span>Overview</span>
-          </div>
-          <h1 className="cockpit-page-title">Vendor cockpit</h1>
-          <p className="cockpit-page-sub">{dateStr}</p>
-        </div>
-        <div className="flex items-center gap-2 shrink-0">
-          {transactions.length > 0 && (
-            <button
-              type="button"
-              onClick={onSeeAllTransactions}
-              className="text-xs font-medium text-foreground/80 hover:text-foreground border border-foreground/10 rounded-md px-3 py-1.5"
-            >
-              All transactions
-            </button>
-          )}
-        </div>
-      </header>
-
       {/* KPI strip — 4 tiles. Each shows label / value / trend chip
           where computable. Trend chips compare last 30d vs prior 30d
           for windowed metrics (revenue, new customers); snapshot
