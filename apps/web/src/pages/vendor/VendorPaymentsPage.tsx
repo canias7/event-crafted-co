@@ -1710,42 +1710,52 @@ function OverviewExpensesCard({
   const RING_W = 14;
   const CIRC = 2 * Math.PI * RING_R;
   let dashOffset = 0;
+  // Donut needs >=2 segments to communicate anything; one segment
+  // just renders as a closed ring (looks like a loading spinner).
+  // Single-item case falls back to a clean stat layout.
+  const hasBreakdown = rows.length >= 2;
   return (
     <div className="cockpit-chart">
       <div className="flex items-baseline justify-between mb-3 gap-3">
-        <div>
-          <div className="cockpit-chart-title">Operating expenses</div>
+        <div className="min-w-0">
+          <div className="cockpit-chart-title truncate">Operating expenses</div>
           <div className="cockpit-chart-sub">Last 30 days · by item</div>
         </div>
-        <div className="flex items-baseline gap-3 shrink-0">
-          <div className="text-right">
-            <div className="cockpit-kpi-label">Spend</div>
-            <div
-              className="tabular-nums leading-none"
-              style={{
-                fontFamily: "'Fraunces', Georgia, serif",
-                fontSize: "22px",
-                fontWeight: 600,
-                color: "#2b2320",
-              }}
-            >
-              {formatMoney(expenses.total, currency)}
-            </div>
-          </div>
-          {onViewAll ? (
-            <button
-              type="button"
-              onClick={onViewAll}
-              className="text-xs text-muted-foreground hover:text-foreground border border-foreground/10 rounded-md px-2.5 py-1 self-center"
-            >
-              View all →
-            </button>
-          ) : null}
-        </div>
+        {onViewAll ? (
+          <button
+            type="button"
+            onClick={onViewAll}
+            className="text-xs text-muted-foreground hover:text-foreground border border-foreground/10 rounded-md px-2.5 py-1 shrink-0"
+          >
+            View all →
+          </button>
+        ) : null}
       </div>
       {expenses.count === 0 ? (
         <div className="py-8 text-center text-sm text-muted-foreground">
           No expenses logged in the last 30 days.
+        </div>
+      ) : !hasBreakdown ? (
+        <div>
+          <div
+            className="tabular-nums leading-none"
+            style={{
+              fontFamily: "'Fraunces', Georgia, serif",
+              fontSize: "26px",
+              fontWeight: 600,
+              color: "#2b2320",
+            }}
+          >
+            {formatMoney(expenses.total, currency)}
+          </div>
+          {rows[0] ? (
+            <div className="mt-1.5 text-[13px] text-foreground/80 truncate" title={rows[0].label}>
+              {rows[0].label}
+            </div>
+          ) : null}
+          <div className="mt-3 text-[11px] text-muted-foreground">
+            {expenses.count} expense{expenses.count === 1 ? "" : "s"} in the last 30 days
+          </div>
         </div>
       ) : (
         <>
@@ -1785,7 +1795,7 @@ function OverviewExpensesCard({
           </div>
           <div className="mt-3 text-[11px] text-muted-foreground">
             {expenses.count} expense{expenses.count === 1 ? "" : "s"} across{" "}
-            {expenses.categoryCount} item{expenses.categoryCount === 1 ? "" : "s"}
+            {expenses.categoryCount} items
             {expenses.categoryCount > expenses.topCategories.length
               ? ` · ${expenses.categoryCount - expenses.topCategories.length + 1} grouped into Other`
               : ""}
