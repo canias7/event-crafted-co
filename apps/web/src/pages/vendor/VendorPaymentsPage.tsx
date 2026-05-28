@@ -6666,6 +6666,9 @@ function ExpensesTab({
                   Description
                 </th>
                 <th className="px-3 py-3 text-left text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">
+                  Notes
+                </th>
+                <th className="px-3 py-3 text-left text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">
                   Payee
                 </th>
                 <th className="px-3 py-3 text-right text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">
@@ -6710,9 +6713,9 @@ function ExpensesTab({
                         </span>
                       ) : null}
                     </div>
-                    {e.notes ? (
-                      <div className="text-[11px] text-muted-foreground mt-0.5 max-w-md truncate">{e.notes}</div>
-                    ) : null}
+                  </td>
+                  <td className="px-3 py-3 text-sm text-muted-foreground max-w-[240px] truncate" title={e.notes ?? undefined}>
+                    {e.notes || "—"}
                   </td>
                   <td className="px-3 py-3 text-sm text-muted-foreground">
                     {e.paid_to || "—"}
@@ -6752,7 +6755,7 @@ function ExpensesTab({
             </tbody>
             <tfoot>
               <tr className="border-t border-foreground/10">
-                <td colSpan={8} className="px-4 py-3">
+                <td colSpan={9} className="px-4 py-3">
                   <div className="flex justify-between items-center gap-3 flex-wrap text-xs text-muted-foreground">
                     <span>
                       Showing {pageRows.length} of {filteredRows.length} · Total{" "}
