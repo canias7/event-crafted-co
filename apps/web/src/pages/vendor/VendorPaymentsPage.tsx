@@ -834,9 +834,8 @@ export default function VendorPaymentsPage({ embedded = false }: { embedded?: bo
             />
           ) : tab === "customers" ? (
             <CustomersTab
-              vendorId={vendorId}
-              listing={listings.find((l) => l.id === selectedListingId) ?? null}
-              invoices={invoices}
+              accountVendorIds={accountVendorIds}
+              listings={listings}
               onChanged={() => refresh(true)}
             />
           ) : (
@@ -4566,6 +4565,7 @@ interface RecurringRule {
 
 interface Customer {
   id: string;
+  vendor_id: string;
   email: string;
   name: string | null;
   phone: string | null;
@@ -4573,22 +4573,24 @@ interface Customer {
   created_at: string;
 }
 
-// Customers list for the active listing. Vendors can add, edit, and
-// remove client records here; later flows (re-bill, send a new
+// Customers list across the whole account. Vendors can add, edit,
+// and remove client records here; later flows (re-bill, send a new
 // invoice from a customer card) read from this table. Bare CRUD —
 // no edge function needed because RLS gates writes by vendor_id.
+// Each customer carries its own vendor_id so per-customer actions
+// (send invoice, recurring rule, statement PDF) pick up the right
+// listing's brand without forcing the user to pick a listing first.
 function CustomersTab({
-  vendorId,
-  listing,
-  invoices,
+  accountVendorIds,
+  listings,
   onChanged,
 }: {
-  vendorId: string | null;
-  listing: ListingOpt | null;
-  invoices: Invoice[];
+  accountVendorIds: string[];
+  listings: ListingOpt[];
   onChanged?: () => void;
 }) {
   const [rows, setRows] = useState<Customer[]>([]);
+  const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState<Customer | "new" | null>(null);
   const [form, setForm] = useState<{ email: string; name: string; phone: string; notes: string }>({
@@ -4615,16 +4617,15 @@ function CustomersTab({
   // module so jsPDF stays out of the initial bundle.
   const downloadStatement = useCallback(
     async (c: Customer) => {
-      if (!vendorId) return;
-      // Snapshot the vendor id + brand at click time. If the vendor
-      // switches listings while the network fetch is in flight, the
-      // closure would otherwise read the NEW listing's brand and
-      // stamp it on the OLD listing's invoices — customer receives
-      // a PDF claiming to be from a vendor they never dealt with.
-      const snapVendorId = vendorId;
+      // Each customer belongs to exactly one listing on the account
+      // (vendor_id is fixed at creation), so the brand stamp comes
+      // from that listing's row. Snapshot at click time so a later
+      // `listings` array update can't change the PDF mid-render.
+      const snapVendorId = c.vendor_id;
+      const ownerListing = listings.find((l) => l.id === c.vendor_id) ?? null;
       const snapBrand = {
-        business_name: listing?.business_name ?? null,
-        location: listing?.location ?? null,
+        business_name: ownerListing?.business_name ?? null,
+        location: ownerListing?.location ?? null,
         email: user?.email ?? null,
       };
       setStatementId(c.id);
@@ -4696,13 +4697,13 @@ function CustomersTab({
         setStatementId(null);
       }
     },
-    [vendorId, listing, user],
+    [listings, user],
   );
 
   // Group invoices by bill_to_email so each customer row can show
-  // count + total billed + a per-invoice list on expand. Cheaper
-  // than a second DB roundtrip and stays in sync with whatever
-  // the parent already has loaded.
+  // count + total billed + a per-invoice list on expand. Fed by
+  // the local invoices state below — fetched account-wide alongside
+  // the customer list so all listings' invoices are searchable.
   const invoicesByEmail = useMemo(() => {
     const map = new Map<string, Invoice[]>();
     for (const inv of invoices) {
@@ -4715,56 +4716,64 @@ function CustomersTab({
     return map;
   }, [invoices]);
 
+  // Stable string key for the useEffect dep so we don't refire on
+  // every render just because the listings array is re-derived.
+  const accountKey = accountVendorIds.join(",");
+
   const refresh = useCallback(async () => {
-    if (!vendorId) {
+    if (accountVendorIds.length === 0) {
       setRows([]);
       setRecurringRules([]);
+      setInvoices([]);
       setLoading(false);
       return;
     }
     setLoading(true);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const db = supabase as any;
-    const [{ data: cs, error: csErr }, { data: rrs }] = await Promise.all([
+    const [{ data: cs, error: csErr }, { data: rrs }, { data: invs }] = await Promise.all([
       db
         .from("vendor_customers")
-        .select("id, email, name, phone, notes, created_at")
-        .eq("vendor_id", vendorId)
+        .select("id, vendor_id, email, name, phone, notes, created_at")
+        .in("vendor_id", accountVendorIds)
         .order("created_at", { ascending: false }),
       db
         .from("vendor_recurring_invoices")
         .select(
           "id, vendor_id, customer_id, interval, line_items, notes, tax_pct, active, next_run_at, last_run_at",
         )
-        .eq("vendor_id", vendorId)
+        .in("vendor_id", accountVendorIds)
         .order("created_at", { ascending: false }),
+      db
+        .from("invoices")
+        .select(
+          "id, vendor_id, invoice_number, bill_to_name, bill_to_email, total_cents, currency, status, paid_at, sent_at, issue_date, due_date, created_at, refunded_at, refunded_amount_cents",
+        )
+        .in("vendor_id", accountVendorIds)
+        .order("created_at", { ascending: false })
+        .limit(2000),
     ]);
     if (!csErr) setRows((cs ?? []) as Customer[]);
     setRecurringRules((rrs ?? []) as RecurringRule[]);
+    setInvoices((invs ?? []) as Invoice[]);
     setLoading(false);
-  }, [vendorId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [accountKey]);
 
   useEffect(() => {
     void refresh();
   }, [refresh]);
 
-  // Switching listings has to invalidate every open dialog state
-  // AND clear the displayed rows — otherwise a Send invoice / Edit
-  // / Recurring panel opened under listing A would submit against
-  // listing B's vendor_id, creating phantom customers or re-
-  // parenting rows. Clearing rows/recurringRules also closes the
-  // refresh-in-flight window where row-level action buttons would
-  // still operate on A's data while vendorId has already flipped
-  // to B.
+  // When the account's listing set changes, close any open dialogs
+  // so an action started against one set of vendor_ids doesn't
+  // resolve against a different one mid-flight.
   useEffect(() => {
     setEditing(null);
     setSendTarget(null);
     setRecurringTarget(null);
     setExpandedId(null);
-    setRows([]);
-    setRecurringRules([]);
-    setLoading(true);
-  }, [vendorId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [accountKey]);
 
   const startNew = () => {
     setForm({ email: "", name: "", phone: "", notes: "" });
@@ -4782,7 +4791,7 @@ function CustomersTab({
   };
 
   const save = useCallback(async () => {
-    if (!vendorId || saving) return;
+    if (accountVendorIds.length === 0 || saving) return;
     const email = form.email.trim().toLowerCase();
     if (!email || !email.includes("@")) {
       toast.error("Valid email required");
@@ -4796,17 +4805,21 @@ function CustomersTab({
     const db = supabase as any;
     const { error } =
       editing === "new"
-        ? // New row: include vendor_id so RLS lets us insert.
+        ? // New row: account-level mode doesn't ask the vendor to
+          // pick a listing, so the customer is attached to the first
+          // listing in the account by convention. Later edits don't
+          // re-parent (see the update branch below). A dedicated
+          // "primary listing" picker can replace accountVendorIds[0]
+          // when the new listing UI lands.
           await db
             .from("vendor_customers")
             .upsert(
-              { vendor_id: vendorId, email, name, phone, notes },
+              { vendor_id: accountVendorIds[0], email, name, phone, notes },
               { onConflict: "vendor_id,email" },
             )
         : // Edit existing row: never overwrite vendor_id (would
-          // silently re-parent the customer if the listing picker
-          // changed while the dialog was open) or email (the
-          // unique key).
+          // silently re-parent the customer to another listing) or
+          // email (the unique key).
           await db
             .from("vendor_customers")
             .update({ name, phone, notes })
@@ -4819,7 +4832,8 @@ function CustomersTab({
     setEditing(null);
     toast.success(editing === "new" ? "Customer added" : "Customer updated");
     await refresh();
-  }, [vendorId, saving, form, editing, refresh]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [accountKey, saving, form, editing, refresh]);
 
   const remove = useCallback(
     async (c: Customer) => {
@@ -4851,7 +4865,7 @@ function CustomersTab({
               Everyone you've billed. Save a customer once and reuse them on every invoice.
             </p>
           </div>
-          <Button onClick={startNew} disabled={!vendorId} className="rounded-full" size="sm">
+          <Button onClick={startNew} disabled={accountVendorIds.length === 0} className="rounded-full" size="sm">
             <Plus className="w-3.5 h-3.5 mr-1.5" />
             New customer
           </Button>
@@ -5095,8 +5109,12 @@ function CustomersTab({
       <SendInvoiceDialog
         open={!!sendTarget}
         onOpenChange={(v) => !v && setSendTarget(null)}
-        vendorId={vendorId}
-        listing={listing}
+        vendorId={sendTarget?.vendor_id ?? null}
+        listing={
+          sendTarget
+            ? listings.find((l) => l.id === sendTarget.vendor_id) ?? null
+            : null
+        }
         customer={sendTarget}
         onSent={onChanged}
       />
@@ -5104,8 +5122,12 @@ function CustomersTab({
       <RecurringDialog
         open={!!recurringTarget}
         onOpenChange={(v) => !v && setRecurringTarget(null)}
-        vendorId={vendorId}
-        listing={listing}
+        vendorId={recurringTarget?.customer.vendor_id ?? null}
+        listing={
+          recurringTarget
+            ? listings.find((l) => l.id === recurringTarget.customer.vendor_id) ?? null
+            : null
+        }
         customer={recurringTarget?.customer ?? null}
         existing={recurringTarget?.existing ?? null}
         onSaved={() => {
