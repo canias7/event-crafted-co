@@ -1602,13 +1602,13 @@ function PaymentsTab({
           onRefunded={onRefunded}
         />
       ) : sub === "payouts" ? (
-        <PayoutsTab data={payouts} status={status} vendorId={vendorId} />
+        <PayoutsTab data={payouts} status={status} accountVendorIds={accountVendorIds} />
       ) : sub === "disputes" ? (
-        <DisputesTab vendorId={vendorId} />
+        <DisputesTab accountVendorIds={accountVendorIds} />
       ) : sub === "expenses" ? (
-        <ExpensesTab vendorId={vendorId} />
+        <ExpensesTab accountVendorIds={accountVendorIds} />
       ) : (
-        <ReportsTab vendorId={vendorId} />
+        <ReportsTab accountVendorIds={accountVendorIds} />
       )}
     </div>
   );
@@ -1695,7 +1695,15 @@ function csvEscape(value: string | number | null | undefined): string {
   return guarded;
 }
 
-function ReportsTab({ vendorId }: { vendorId: string | null }) {
+function ReportsTab({ accountVendorIds }: { accountVendorIds: string[] }) {
+  // Reports aggregate across every listing on the account. Supabase
+  // reads use .in("vendor_id", accountVendorIds) so totals match the
+  // dashboard-wide Revenue/MRR/OPEX cards. The Stripe fees report
+  // edge fn still targets one connected account (each listing has
+  // its own); pin it to the primary listing for now — fan-out
+  // across N Stripe accounts is a separate migration.
+  const primaryVendorId = accountVendorIds[0] ?? null;
+  const accountKey = accountVendorIds.join(",");
   const [rangeId, setRangeId] = useState<ReportRangeId>("this_month");
   const range = useMemo(() => computeReportRange(rangeId), [rangeId]);
 
@@ -1730,7 +1738,7 @@ function ReportsTab({ vendorId }: { vendorId: string | null }) {
   } | null>(null);
   const [loading, setLoading] = useState(false);
   useEffect(() => {
-    if (!vendorId) {
+    if (accountVendorIds.length === 0) {
       setPaidInRange([]);
       setRefundedInRange([]);
       setStripeFees(null);
@@ -1750,7 +1758,7 @@ function ReportsTab({ vendorId }: { vendorId: string | null }) {
         db
           .from("invoices")
           .select(cols)
-          .eq("vendor_id", vendorId)
+          .in("vendor_id", accountVendorIds)
           .eq("status", "paid")
           .gte("paid_at", range.start.toISOString())
           .lt("paid_at", range.end.toISOString())
@@ -1759,24 +1767,26 @@ function ReportsTab({ vendorId }: { vendorId: string | null }) {
         db
           .from("invoices")
           .select(cols)
-          .eq("vendor_id", vendorId)
+          .in("vendor_id", accountVendorIds)
           .in("status", ["refunded", "partial_refund"])
           .gte("refunded_at", range.start.toISOString())
           .lt("refunded_at", range.end.toISOString())
           .order("refunded_at", { ascending: false })
           .limit(5000),
-        supabase.functions
-          .invoke("vendorapay-fees-report", {
-            body: {
-              business_id: vendorId,
-              since: range.start.toISOString(),
-              until: range.end.toISOString(),
-            },
-          })
-          .catch((err: unknown) => {
-            console.error("[reports] fees fetch failed", err);
-            return { data: null };
-          }),
+        primaryVendorId
+          ? supabase.functions
+              .invoke("vendorapay-fees-report", {
+                body: {
+                  business_id: primaryVendorId,
+                  since: range.start.toISOString(),
+                  until: range.end.toISOString(),
+                },
+              })
+              .catch((err: unknown) => {
+                console.error("[reports] fees fetch failed", err);
+                return { data: null };
+              })
+          : Promise.resolve({ data: null }),
         // Aging snapshot — every unpaid invoice regardless of issue
         // date. Status filter excludes paid/cancelled/refunded since
         // those are no longer claims. limit 5000 mirrors the other
@@ -1785,7 +1795,7 @@ function ReportsTab({ vendorId }: { vendorId: string | null }) {
         db
           .from("invoices")
           .select(cols)
-          .eq("vendor_id", vendorId)
+          .in("vendor_id", accountVendorIds)
           .in("status", ["sent", "overdue"])
           .order("due_date", { ascending: true })
           .limit(5000),
@@ -1796,7 +1806,7 @@ function ReportsTab({ vendorId }: { vendorId: string | null }) {
         db
           .from("vendor_expenses")
           .select("id, vendor_id, occurred_on, amount_cents, currency, category, description, paid_to, notes, created_at")
-          .eq("vendor_id", vendorId)
+          .in("vendor_id", accountVendorIds)
           .gte("occurred_on", range.start.toISOString().slice(0, 10))
           .lt("occurred_on", range.end.toISOString().slice(0, 10))
           .order("occurred_on", { ascending: false })
@@ -1831,7 +1841,7 @@ function ReportsTab({ vendorId }: { vendorId: string | null }) {
         db
           .from("invoices")
           .select("total_cents, currency")
-          .eq("vendor_id", vendorId)
+          .in("vendor_id", accountVendorIds)
           .eq("status", "paid")
           .gte("paid_at", prevStart.toISOString())
           .lt("paid_at", prevEnd.toISOString())
@@ -1839,7 +1849,7 @@ function ReportsTab({ vendorId }: { vendorId: string | null }) {
         db
           .from("invoices")
           .select("total_cents, refunded_amount_cents, currency")
-          .eq("vendor_id", vendorId)
+          .in("vendor_id", accountVendorIds)
           .in("status", ["refunded", "partial_refund"])
           .gte("refunded_at", prevStart.toISOString())
           .lt("refunded_at", prevEnd.toISOString())
@@ -1847,7 +1857,7 @@ function ReportsTab({ vendorId }: { vendorId: string | null }) {
         db
           .from("vendor_expenses")
           .select("amount_cents, currency")
-          .eq("vendor_id", vendorId)
+          .in("vendor_id", accountVendorIds)
           .gte("occurred_on", prevStart.toISOString().slice(0, 10))
           .lt("occurred_on", prevEnd.toISOString().slice(0, 10))
           .limit(5000),
@@ -1868,7 +1878,8 @@ function ReportsTab({ vendorId }: { vendorId: string | null }) {
     return () => {
       cancelled = true;
     };
-  }, [vendorId, range]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [accountKey, primaryVendorId, range]);
 
   const totals = useMemo(() => {
     let gross = 0;
@@ -2967,12 +2978,21 @@ interface PayoutReconciliation {
 function PayoutsTab({
   data,
   status,
-  vendorId,
+  accountVendorIds,
 }: {
   data: PayoutsResponse | null;
   status: Status | null;
-  vendorId: string | null;
+  accountVendorIds: string[];
 }) {
+  // Payout reconciliations aggregate across every listing on the
+  // account. Stripe-side payout data (`data`) is still per-listing
+  // because Stripe's `/payouts` API is scoped to one connected
+  // account — the parent fetches it against the primary listing.
+  // New reconciliation rows are attached to that same primary
+  // listing so the bookkeeping row sits under the listing whose
+  // Stripe payout it reconciles against.
+  const primaryVendorId = accountVendorIds[0] ?? null;
+  const accountKey = accountVendorIds.join(",");
   const { user } = useAuth();
   const schedule = data?.schedule;
   const [reconciliations, setReconciliations] = useState<PayoutReconciliation[]>([]);
@@ -2981,7 +3001,7 @@ function PayoutsTab({
   const [busyId, setBusyId] = useState<string | null>(null);
 
   const refresh = useCallback(async () => {
-    if (!vendorId) {
+    if (accountVendorIds.length === 0) {
       setReconciliations([]);
       return;
     }
@@ -2990,7 +3010,7 @@ function PayoutsTab({
     const { data: rows, error } = await db
       .from("vendor_payout_reconciliations")
       .select("id, stripe_payout_id, reconciled_at, bank_deposit_ref, notes")
-      .eq("vendor_id", vendorId)
+      .in("vendor_id", accountVendorIds)
       .order("reconciled_at", { ascending: false })
       .limit(500);
     if (error) {
@@ -2998,7 +3018,8 @@ function PayoutsTab({
       return;
     }
     setReconciliations((rows ?? []) as PayoutReconciliation[]);
-  }, [vendorId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [accountKey]);
 
   useEffect(() => {
     void refresh();
@@ -3020,7 +3041,7 @@ function PayoutsTab({
   };
 
   const saveReconcile = async () => {
-    if (!editingRef || !vendorId || !user) return;
+    if (!editingRef || !primaryVendorId || !user) return;
     setBusyId(editingRef.payoutId);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const db = supabase as any;
@@ -3036,7 +3057,7 @@ function PayoutsTab({
         .eq("id", existing.id));
     } else {
       ({ error } = await db.from("vendor_payout_reconciliations").insert({
-        vendor_id: vendorId,
+        vendor_id: primaryVendorId,
         stripe_payout_id: editingRef.payoutId,
         reconciled_by: user.id,
         bank_deposit_ref: editingRef.ref.trim() || null,
@@ -3192,7 +3213,7 @@ function PayoutsTab({
                           variant="outline"
                           size="sm"
                           onClick={() => beginReconcile(p.id)}
-                          disabled={!vendorId}
+                          disabled={!primaryVendorId}
                           className="rounded-full"
                         >
                           Reconcile
@@ -5246,7 +5267,14 @@ function expenseCategoryLabel(c: ExpenseCategory): string {
   return EXPENSE_CATEGORIES.find((e) => e.id === c)?.label ?? c;
 }
 
-function ExpensesTab({ vendorId }: { vendorId: string | null }) {
+function ExpensesTab({ accountVendorIds }: { accountVendorIds: string[] }) {
+  // Expense + contractor lists aggregate across every listing on the
+  // account. New rows are attached to the first listing in the
+  // account (a future primary-listing picker can replace it). Stable
+  // accountKey drives the refresh dep so we only refetch when the
+  // listing set actually changes.
+  const primaryVendorId = accountVendorIds[0] ?? null;
+  const accountKey = accountVendorIds.join(",");
   const { user } = useAuth();
   const [rows, setRows] = useState<Expense[]>([]);
   const [contractors, setContractors] = useState<Contractor[]>([]);
@@ -5297,7 +5325,7 @@ function ExpensesTab({ vendorId }: { vendorId: string | null }) {
   const [deletingContractorId, setDeletingContractorId] = useState<string | null>(null);
 
   const refresh = useCallback(async () => {
-    if (!vendorId) {
+    if (accountVendorIds.length === 0) {
       setRows([]);
       setContractors([]);
       setLoading(false);
@@ -5310,13 +5338,13 @@ function ExpensesTab({ vendorId }: { vendorId: string | null }) {
       db
         .from("vendor_expenses")
         .select("id, vendor_id, occurred_on, amount_cents, currency, category, description, paid_to, notes, contractor_id, created_at")
-        .eq("vendor_id", vendorId)
+        .in("vendor_id", accountVendorIds)
         .order("occurred_on", { ascending: false })
         .limit(500),
       db
         .from("vendor_contractors")
         .select("id, vendor_id, name, email, phone, address_line1, address_line2, city, state, postal_code, tax_id_last4, notes, created_at")
-        .eq("vendor_id", vendorId)
+        .in("vendor_id", accountVendorIds)
         .order("name", { ascending: true })
         .limit(500),
     ]);
@@ -5332,7 +5360,8 @@ function ExpensesTab({ vendorId }: { vendorId: string | null }) {
       setContractors((cData ?? []) as Contractor[]);
     }
     setLoading(false);
-  }, [vendorId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [accountKey]);
 
   useEffect(() => {
     void refresh();
@@ -5365,7 +5394,7 @@ function ExpensesTab({ vendorId }: { vendorId: string | null }) {
   };
 
   const save = async () => {
-    if (!vendorId || !user) return;
+    if (!primaryVendorId || !user) return;
     const amountNum = Number(form.amount);
     if (!Number.isFinite(amountNum) || amountNum <= 0) {
       toast.error("Amount must be a positive number.");
@@ -5379,7 +5408,7 @@ function ExpensesTab({ vendorId }: { vendorId: string | null }) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const db = supabase as any;
     const payload = {
-      vendor_id: vendorId,
+      vendor_id: primaryVendorId,
       occurred_on: form.occurred_on,
       amount_cents: Math.round(amountNum * 100),
       currency: "usd",
@@ -5464,7 +5493,7 @@ function ExpensesTab({ vendorId }: { vendorId: string | null }) {
     setEditingContractor(c);
   };
   const saveContractor = async () => {
-    if (!vendorId || !user) return;
+    if (!primaryVendorId || !user) return;
     if (!contractorForm.name.trim()) {
       toast.error("Contractor name required.");
       return;
@@ -5477,7 +5506,7 @@ function ExpensesTab({ vendorId }: { vendorId: string | null }) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const db = supabase as any;
     const payload = {
-      vendor_id: vendorId,
+      vendor_id: primaryVendorId,
       name: contractorForm.name.trim(),
       email: contractorForm.email.trim() || null,
       phone: contractorForm.phone.trim() || null,
@@ -5577,7 +5606,7 @@ function ExpensesTab({ vendorId }: { vendorId: string | null }) {
             Manual ledger of business costs. Feeds into Net Profit on the Reports tab.
           </p>
         </div>
-        <Button onClick={startNew} size="sm" className="rounded-full" disabled={!vendorId}>
+        <Button onClick={startNew} size="sm" className="rounded-full" disabled={!primaryVendorId}>
           <Plus className="w-3.5 h-3.5 mr-1" />
           New expense
         </Button>
@@ -5705,7 +5734,7 @@ function ExpensesTab({ vendorId }: { vendorId: string | null }) {
               Anyone you pay $600+ in a calendar year needs a 1099-NEC. Track them here.
             </p>
           </div>
-          <Button onClick={startNewContractor} variant="outline" size="sm" className="rounded-full" disabled={!vendorId}>
+          <Button onClick={startNewContractor} variant="outline" size="sm" className="rounded-full" disabled={!primaryVendorId}>
             <Plus className="w-3.5 h-3.5 mr-1" />
             New contractor
           </Button>
@@ -6713,13 +6742,19 @@ function disputeStatusPill(status: string): {
   return { label: status.replace(/_/g, " "), className: "bg-slate-100 text-slate-700" };
 }
 
-function DisputesTab({ vendorId }: { vendorId: string | null }) {
+function DisputesTab({ accountVendorIds }: { accountVendorIds: string[] }) {
+  // Disputes list aggregates across every listing on the account.
+  // The "open in Stripe Express" button still targets one connected
+  // account (Stripe's dashboard is per-account), so it falls back to
+  // the primary listing for now.
+  const primaryVendorId = accountVendorIds[0] ?? null;
+  const accountKey = accountVendorIds.join(",");
   const [rows, setRows] = useState<Dispute[]>([]);
   const [loading, setLoading] = useState(true);
   const [opening, setOpening] = useState(false);
 
   const refresh = useCallback(async () => {
-    if (!vendorId) {
+    if (accountVendorIds.length === 0) {
       setRows([]);
       setLoading(false);
       return;
@@ -6731,11 +6766,12 @@ function DisputesTab({ vendorId }: { vendorId: string | null }) {
       .select(
         "id, stripe_dispute_id, charge_id, payment_intent_id, amount_cents, currency, reason, status, created_at, updated_at",
       )
-      .eq("vendor_id", vendorId)
+      .in("vendor_id", accountVendorIds)
       .order("created_at", { ascending: false });
     setRows((data ?? []) as Dispute[]);
     setLoading(false);
-  }, [vendorId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [accountKey]);
 
   useEffect(() => {
     void refresh();
@@ -6744,11 +6780,11 @@ function DisputesTab({ vendorId }: { vendorId: string | null }) {
   // Dispute responses happen on Stripe's side — we deep-link the
   // vendor into their Express dashboard for any action.
   const openExpress = useCallback(async () => {
-    if (!vendorId || opening) return;
+    if (!primaryVendorId || opening) return;
     setOpening(true);
     const { data, error } = await supabase.functions.invoke(
       "vendorapay-dashboard-link",
-      { body: { business_id: vendorId } },
+      { body: { business_id: primaryVendorId } },
     );
     setOpening(false);
     if (error || !(data as { url?: string })?.url) {
@@ -6758,7 +6794,7 @@ function DisputesTab({ vendorId }: { vendorId: string | null }) {
       return;
     }
     window.open((data as { url: string }).url, "_blank", "noopener,noreferrer");
-  }, [vendorId, opening]);
+  }, [primaryVendorId, opening]);
 
   const openCount = rows.filter(
     (r) =>
