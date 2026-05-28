@@ -708,7 +708,7 @@ export default function VendorPaymentsPage({ embedded = false }: { embedded?: bo
           </div>
         </div>
 
-        <div className="p-4 md:p-8 max-w-5xl space-y-6">
+        <div className="p-4 md:p-8 max-w-screen-2xl space-y-6">
           {/* Listing picker — every Stripe query is scoped to whichever
               listing the vendor picks here. Each vendor_profile has its
               own stripe_account_id so the picker swaps the entire money
