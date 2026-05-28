@@ -121,18 +121,29 @@ function prettyDay(ymd: string): string {
 export default function VendorAppointmentsPage({
   embedded = false,
   listingId: listingIdProp,
-}: { embedded?: boolean; listingId?: string | null } = {}) {
+  accountVendorIds,
+}: { embedded?: boolean; listingId?: string | null; accountVendorIds?: string[] } = {}) {
   const { user } = useAuth();
 
-  // All listings this vendor owns (up to 5). The calendar scopes to ONE
-  // listing at a time — selectedListingId drives every query + write.
+  // The calendar still scopes its reads/writes to one listing at a
+  // time — every query below uses selectedListingId. Account-level
+  // mode (the cockpit embedded view) collapses the user's whole
+  // listing set onto the first listing in `accountVendorIds` so the
+  // shape of the queries doesn't change: it's just "pretend the
+  // primary listing was selected." Full aggregation across listings
+  // (showing every appointment on one calendar regardless of which
+  // listing it's for, union of blocked dates + recurring rules) is
+  // a known follow-up — calendar writes especially need a decision
+  // about which listing a "block this date" action targets.
   const [listings, setListings] = useState<ListingOpt[]>([]);
   const [listingsLoading, setListingsLoading] = useState(true);
   const [localSelectedListingId, setLocalSelectedListingId] = useState<string | null>(
     null,
   );
-  // Embedded mode: parent owns the listing selection.
-  const selectedListingId = listingIdProp !== undefined ? listingIdProp : localSelectedListingId;
+  const accountPrimaryId = accountVendorIds && accountVendorIds.length > 0
+    ? accountVendorIds[0]
+    : null;
+  const selectedListingId = accountPrimaryId ?? (listingIdProp !== undefined ? listingIdProp : localSelectedListingId);
   const setSelectedListingId = setLocalSelectedListingId;
   const [listingPickerOpen, setListingPickerOpen] = useState(false);
 
