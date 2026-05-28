@@ -301,7 +301,7 @@
    *   --c-ink    #1a1a1a  primary text
    *   --c-soft   #4a4a4a  secondary text
    *   --c-muted  #8a8579  tertiary / labels
-   *   --c-accent #b8693d  warm terra-cotta accent
+   *   --c-accent #c8403a  crimson accent (revenue line, primary CTA)
    *   --c-good   #4a7c4a  positive trend / paid
    *   --c-warn   #c89738  pending / 1-30 late
    *   --c-bad    #b8453d  overdue / negative trend
@@ -585,7 +585,7 @@
   }
   .my-vendora-cockpit .cockpit-chart-line {
     fill: none;
-    stroke: #b8693d;
+    stroke: #c8403a;
     stroke-width: 2;
   }
   .my-vendora-cockpit .cockpit-chart-area {
@@ -593,13 +593,13 @@
     opacity: 1;
   }
   .my-vendora-cockpit .cockpit-chart-bar {
-    fill: #b8693d;
+    fill: #c8403a;
   }
   .my-vendora-cockpit .cockpit-chart-bar--positive { fill: #4a7c4a; }
   .my-vendora-cockpit .cockpit-chart-bar--negative { fill: #b8453d; }
   .my-vendora-cockpit .cockpit-chart-dot {
     fill: #ffffff;
-    stroke: #b8693d;
+    stroke: #c8403a;
     stroke-width: 1.75;
   }
 
@@ -621,7 +621,7 @@
   .my-vendora-cockpit .cockpit-inline-bar {
     display: inline-block;
     height: 4px;
-    background: #b8693d;
+    background: #c8403a;
     border-radius: 2px;
     vertical-align: middle;
     margin-right: 8px;
@@ -639,7 +639,7 @@
   .my-vendora-cockpit .cockpit-inline-bar-track > span {
     display: block;
     height: 100%;
-    background: #b8693d;
+    background: #c8403a;
     border-radius: 2px;
   }
 

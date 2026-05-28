@@ -1231,15 +1231,32 @@ function OverviewRevenueChart({ series, currency }: { series: number[]; currency
           const n = series.length;
           const x = (i: number) => PAD_L + (n === 1 ? plotW / 2 : (i / (n - 1)) * plotW);
           const y = (v: number) => PAD_T + plotH - (v / max) * plotH;
-          const linePath = series.map((v, i) => `${i === 0 ? "M" : "L"}${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(" ");
-          const areaPath = `${linePath} L${x(n - 1).toFixed(1)},${PAD_T + plotH} L${x(0).toFixed(1)},${PAD_T + plotH} Z`;
+          // Smooth the line into a wave with a Catmull-Rom-to-Bezier
+          // conversion — tension 0.2 ≈ Chart.js's `tension: 0.4` look.
+          // The area path reuses the same curve so the fill hugs the
+          // line instead of cutting in straight segments underneath.
+          const pts = series.map((v, i) => ({ x: x(i), y: y(v) }));
+          const tension = 0.2;
+          let linePath = `M${pts[0].x.toFixed(1)},${pts[0].y.toFixed(1)}`;
+          for (let i = 0; i < pts.length - 1; i++) {
+            const p0 = pts[i - 1] ?? pts[i];
+            const p1 = pts[i];
+            const p2 = pts[i + 1];
+            const p3 = pts[i + 2] ?? pts[i + 1];
+            const c1x = p1.x + (p2.x - p0.x) * tension;
+            const c1y = p1.y + (p2.y - p0.y) * tension;
+            const c2x = p2.x - (p3.x - p1.x) * tension;
+            const c2y = p2.y - (p3.y - p1.y) * tension;
+            linePath += ` C${c1x.toFixed(1)},${c1y.toFixed(1)} ${c2x.toFixed(1)},${c2y.toFixed(1)} ${p2.x.toFixed(1)},${p2.y.toFixed(1)}`;
+          }
+          const areaPath = `${linePath} L${pts[pts.length - 1].x.toFixed(1)},${PAD_T + plotH} L${pts[0].x.toFixed(1)},${PAD_T + plotH} Z`;
           const peakIdx = series.indexOf(max);
           return (
             <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-[200px]" preserveAspectRatio="none" aria-hidden>
               <defs>
                 <linearGradient id="cockpit-area-grad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#b8693d" stopOpacity="0.28" />
-                  <stop offset="100%" stopColor="#b8693d" stopOpacity="0" />
+                  <stop offset="0%" stopColor="#c8403a" stopOpacity="0.28" />
+                  <stop offset="100%" stopColor="#c8403a" stopOpacity="0" />
                 </linearGradient>
               </defs>
               {[0, 0.5, 1].map((t) => {
@@ -1280,7 +1297,7 @@ function OverviewAgingChart({
     { label: "Current", cents: buckets.current, color: "#4a7c4a" },
     { label: "1–30 late", cents: buckets.d1_30, color: "#c89738" },
     { label: "31–60 late", cents: buckets.d31_60, color: "#b8693d" },
-    { label: "61–90 late", cents: buckets.d61_90, color: "#b8453d" },
+    { label: "61–90 late", cents: buckets.d61_90, color: "#c8403a" },
     { label: "90+ late", cents: buckets.d90plus, color: "#6b2520" },
   ];
   const max = rows.reduce((m, r) => (r.cents > m ? r.cents : m), 0);
