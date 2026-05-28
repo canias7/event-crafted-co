@@ -18,7 +18,7 @@ const VendorPaymentsPage = lazy(
 
 export default function MyVendoraPage() {
   return (
-    <div className="flex min-h-screen vendor-canvas">
+    <div className="flex min-h-screen vendor-canvas my-vendora-cockpit">
       <DashboardSidebar items={vendorNavItems} title="Vendor Portal" backPath="/" />
       <div className="flex-1 min-w-0 flex flex-col">
         <Suspense fallback={<TabLoadingFallback />}>
