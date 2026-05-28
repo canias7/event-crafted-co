@@ -1085,10 +1085,13 @@ function OverviewTab({
 
   return (
     <>
-      {/* KPI strip — Revenue 30d + Customers total. 50/50 on desktop
-          since we're down to two tiles; collapses to stacked on
-          narrow viewports via the existing grid. */}
-      <div className="cockpit-kpi-row">
+      {/* Top row — two KPI tiles + the wave chart, all on one line.
+          The wave gets twice the width (col-span-2) so the SVG still
+          has room to breathe; the KPI tiles stretch to match its
+          height with label/value at top and the sub line anchored to
+          the bottom (see .cockpit-kpi-tile's flex layout in CSS). On
+          narrow viewports the row stacks via the lg: breakpoint. */}
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 mb-4">
         <div className="cockpit-kpi-tile">
           <div className="cockpit-kpi-label">Revenue · 30d</div>
           <div className="flex items-baseline gap-2 flex-wrap">
@@ -1108,12 +1111,9 @@ function OverviewTab({
               : "No new customers in the last 30 days"}
           </div>
         </div>
-      </div>
-
-      {/* Wave revenue chart — full width hero, sits directly under
-          the KPI strip so the page's tallest visual surfaces it. */}
-      <div className="mb-4">
-        <OverviewRevenueChart series={revenueSeries} currency={currency} />
+        <div className="lg:col-span-2">
+          <OverviewRevenueChart series={revenueSeries} currency={currency} />
+        </div>
       </div>
 
       {/* Three bar cards in a row — MRR, Leads, Operating expenses.
