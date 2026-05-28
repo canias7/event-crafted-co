@@ -106,6 +106,15 @@ interface Transaction {
    * Stripe's refunds.create rejects.
    */
   payment_intent_id: string | null;
+  /**
+   * The listing whose connected Stripe account this transaction
+   * came from. Populated client-side when account-mode fans out
+   * the vendorapay-transactions call across N listings so a
+   * refund action knows which connected account to post against.
+   * Absent when the transactions came from a single per-listing
+   * call (the original code path).
+   */
+  vendor_id?: string;
 }
 
 interface Payout {
@@ -413,14 +422,42 @@ export default function VendorPaymentsPage({ embedded = false }: { embedded?: bo
       }
       if (!silent) setRefreshing(true);
       try {
-        const [statusRes, balanceRes, txRes, payoutRes, linksRes, invoicesRes] = await Promise.all([
-          // Stripe edge fns stay scoped to one connected account
-          // (each listing has its own). The currently-selected
-          // listing's vendorId drives these; the rest of the cockpit
-          // uses accountVendorIds for cross-listing aggregation.
+        // First identify which of the user's listings actually have
+        // a Stripe connected account. We fan out the per-account
+        // Stripe edge functions only over those — calling
+        // vendorapay-transactions for a listing without Stripe just
+        // returns an empty list, but skipping them saves a round-
+        // trip per non-connected listing (most vendors have 1–3
+        // connected, not 36).
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { data: secretsData } = await (supabase as any)
+          .from("vendor_payment_secrets")
+          .select("vendor_id, stripe_account_id")
+          .in("vendor_id", accountVendorIds)
+          .not("stripe_account_id", "is", null);
+        const stripeConnectedIds = ((secretsData ?? []) as Array<{ vendor_id: string }>)
+          .map((r) => r.vendor_id);
+
+        const [statusRes, balanceRes, txResultsRaw, payoutRes, linksRes, invoicesRes] = await Promise.all([
+          // Status / balance / payouts schedule are still scoped to
+          // the primary connected listing — combining a "weekly"
+          // payout schedule on listing A with a "daily" on listing
+          // B is a UX decision, not a merge, and gets its own pass.
           supabase.functions.invoke("vendorapay-status", { body: { business_id: vendorId } }),
           supabase.functions.invoke("vendorapay-balance", { body: { business_id: vendorId } }),
-          supabase.functions.invoke("vendorapay-transactions", { body: { business_id: vendorId, limit: 50 } }),
+          // Transactions fan out across every connected listing.
+          // Each transaction is tagged with its source vendor_id so
+          // refunds (TransactionsTab → RefundDialog) post against
+          // the correct connected account.
+          stripeConnectedIds.length > 0
+            ? Promise.all(
+                stripeConnectedIds.map((id) =>
+                  supabase.functions
+                    .invoke("vendorapay-transactions", { body: { business_id: id, limit: 50 } })
+                    .then((res) => ({ id, res })),
+                ),
+              )
+            : Promise.resolve([]),
           supabase.functions.invoke("vendorapay-payouts", { body: { business_id: vendorId } }),
           // Supabase tables fan out across every listing the user
           // owns — Files / Customers / Reports all read these and
@@ -442,10 +479,18 @@ export default function VendorPaymentsPage({ embedded = false }: { embedded?: bo
         ]);
         if (statusRes.data) setStatus(statusRes.data as Status);
         if (balanceRes.data) setBalance(balanceRes.data as Balance);
-        if (txRes.data) {
-          const list = (txRes.data as { transactions?: Transaction[] }).transactions ?? [];
-          setTransactions(list);
+        // Merge transactions from every connected listing, tag each
+        // with its source vendor_id (refund flow uses it), then sort
+        // newest-first and cap at 50 — same length the single-account
+        // call used to return.
+        const txResults = txResultsRaw as Array<{ id: string; res: { data?: { transactions?: Transaction[] } | null } }>;
+        const mergedTx: Transaction[] = [];
+        for (const { id, res } of txResults) {
+          const list = (res?.data?.transactions ?? []) as Transaction[];
+          for (const t of list) mergedTx.push({ ...t, vendor_id: id });
         }
+        mergedTx.sort((a, b) => Date.parse(b.created_at) - Date.parse(a.created_at));
+        setTransactions(mergedTx.slice(0, 50));
         if (payoutRes.data) setPayouts(payoutRes.data as PayoutsResponse);
         if (linksRes && !linksRes.error) {
           setPaymentLinks((linksRes.data ?? []) as PaymentLink[]);
@@ -850,7 +895,7 @@ export default function VendorPaymentsPage({ embedded = false }: { embedded?: bo
               onChanged={() => refresh(true)}
             />
           ) : (
-            <SettingsTab status={status} accountVendorIds={accountVendorIds} tier={tier} tierLoading={tierLoading} />
+            <SettingsTab status={status} accountVendorIds={accountVendorIds} listings={listings} tier={tier} tierLoading={tierLoading} />
           )}
         </div>
       </main>
@@ -2832,7 +2877,11 @@ function TransactionsTab({
       {refundFor ? (
         <RefundModal
           tx={refundFor}
-          vendorId={vendorId}
+          // The transaction was tagged with its source listing when
+          // the parent fanned out vendorapay-transactions, so refund
+          // against THAT connected account — not whichever listing
+          // happens to be "primary" right now.
+          vendorId={refundFor.vendor_id ?? vendorId}
           onClose={() => setRefundFor(null)}
           onDone={() => {
             setRefundFor(null);
@@ -7271,23 +7320,98 @@ function LinkStatusPill({ status }: { status: PaymentLink["status"] }) {
 }
 
 function SettingsTab({
-  status,
+  status: primaryStatus,
   accountVendorIds,
+  listings,
   tier,
   tierLoading,
 }: {
   status: Status | null;
   accountVendorIds: string[];
+  listings: ListingOpt[];
   tier: VendorTier;
   tierLoading: boolean;
 }) {
-  // Settings is fundamentally per-listing (KYC + Stripe Express link
-  // for one connected account). Until a per-listing picker lands on
-  // this surface, fall back to the first listing in the account so
-  // the existing dashboard-link flow keeps working.
-  const vendorId = accountVendorIds[0] ?? null;
+  // Per-listing picker. KYC + bank verification + the Stripe Express
+  // dashboard link are all scoped to one connected account, so this
+  // tab lets the vendor switch which listing's settings they're
+  // looking at. The picker is populated from vendor_payment_secrets
+  // (only listings that actually have a stripe_account_id show up;
+  // a listing without VendoraPay onboarding has no settings to
+  // manage). The primary listing (accountVendorIds[0]) is selected
+  // by default and reuses the status the parent already fetched;
+  // selecting any other listing triggers a per-account vendorapay-
+  // status fetch.
+  const primaryId = accountVendorIds[0] ?? null;
   const fee = TIER_FEE_COPY[tier];
+  const [connectedIds, setConnectedIds] = useState<string[]>([]);
+  const [selectedId, setSelectedId] = useState<string | null>(primaryId);
+  const [localStatus, setLocalStatus] = useState<Status | null>(primaryStatus);
+  const [statusLoading, setStatusLoading] = useState(false);
   const [opening, setOpening] = useState(false);
+  const accountKey = accountVendorIds.join(",");
+
+  // Find every listing that's actually onboarded to VendoraPay.
+  useEffect(() => {
+    if (accountVendorIds.length === 0) {
+      setConnectedIds([]);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data } = await (supabase as any)
+        .from("vendor_payment_secrets")
+        .select("vendor_id, stripe_account_id")
+        .in("vendor_id", accountVendorIds)
+        .not("stripe_account_id", "is", null);
+      if (cancelled) return;
+      setConnectedIds(((data ?? []) as Array<{ vendor_id: string }>).map((r) => r.vendor_id));
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [accountKey]);
+
+  // Keep selectedId valid as the account / primary changes.
+  useEffect(() => {
+    if (selectedId && accountVendorIds.includes(selectedId)) return;
+    setSelectedId(primaryId);
+  }, [primaryId, accountVendorIds, selectedId]);
+
+  // Sync localStatus: primary listing reuses parent's fetched
+  // status (no extra round-trip); any other listing fetches its
+  // own status on demand.
+  useEffect(() => {
+    if (!selectedId) {
+      setLocalStatus(null);
+      return;
+    }
+    if (selectedId === primaryId) {
+      setLocalStatus(primaryStatus);
+      return;
+    }
+    let cancelled = false;
+    setStatusLoading(true);
+    (async () => {
+      const { data } = await supabase.functions.invoke("vendorapay-status", {
+        body: { business_id: selectedId },
+      });
+      if (cancelled) return;
+      setLocalStatus((data as Status | null) ?? null);
+      setStatusLoading(false);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedId, primaryId, primaryStatus]);
+
+  // The rest of the component (cards below) reads from `status` —
+  // alias it to the locally-resolved one so existing markup is
+  // unchanged.
+  const status = localStatus;
+  const vendorId = selectedId;
 
   const openDashboard = useCallback(async () => {
     if (!vendorId || opening) return;
@@ -7317,6 +7441,52 @@ function SettingsTab({
 
   return (
     <div className="space-y-6">
+      {/* Listing picker — Settings is per-connected-account, so the
+          vendor explicitly chooses which listing's KYC + bank +
+          Stripe Express link they're managing. Only listings with
+          VendoraPay actually onboarded show up in the dropdown; the
+          rest have no settings to manage and live behind a "Connect
+          VendoraPay" CTA on the Overview banner instead. */}
+      {connectedIds.length > 0 ? (
+        <section>
+          <h2 className="text-[10px] uppercase tracking-[0.22em] text-muted-foreground font-semibold mb-3 pb-2 border-b border-foreground/[0.06]">
+            Listing
+          </h2>
+          <Card>
+            <div className="p-4 flex items-center gap-3 flex-wrap">
+              <label className="text-xs text-muted-foreground shrink-0" htmlFor="settings-listing-picker">
+                Managing
+              </label>
+              <select
+                id="settings-listing-picker"
+                value={selectedId ?? ""}
+                onChange={(e) => setSelectedId(e.target.value || null)}
+                className="text-sm rounded-lg border border-foreground/10 bg-background px-3 py-1.5 max-w-full"
+              >
+                {connectedIds.map((id) => {
+                  const l = listings.find((x) => x.id === id);
+                  const label =
+                    l?.business_name?.trim() ||
+                    [l?.category, l?.location].filter(Boolean).join(" · ") ||
+                    id.slice(0, 8);
+                  return (
+                    <option key={id} value={id}>
+                      {label}
+                    </option>
+                  );
+                })}
+              </select>
+              {statusLoading ? (
+                <span className="text-[11px] text-muted-foreground inline-flex items-center gap-1.5">
+                  <Loader2 className="w-3 h-3 animate-spin" />
+                  Loading…
+                </span>
+              ) : null}
+            </div>
+          </Card>
+        </section>
+      ) : null}
+
       {/* Connection — verification + bank state pulled in from the
           old Integrations tab. The two block cards (bank account,
           identity/tax) replace the previous standalone tab; the
