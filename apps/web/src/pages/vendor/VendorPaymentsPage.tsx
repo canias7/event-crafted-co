@@ -346,6 +346,18 @@ export default function VendorPaymentsPage({ embedded = false }: { embedded?: bo
     null,
   );
   const vendorId = selectedListingId;
+  // Account-wide vendor_profile id list — every Supabase-only surface
+  // in the cockpit (Overview KPIs, Customers, recent paid invoices)
+  // queries .in("vendor_id", accountVendorIds) so the cockpit reads
+  // as one business view across all of the user's listings. Stripe-
+  // anchored surfaces (Payments tab balance/transactions) stay scoped
+  // to the single selectedListingId since each listing has its own
+  // connected account. Memoized so its reference is stable across
+  // re-renders (downstream useEffects depend on it).
+  const accountVendorIds = useMemo(
+    () => listings.map((l) => l.id),
+    [listings],
+  );
 
   const tab = ((searchParams.get("tab") as TabId | null) ?? "overview") as TabId;
 
@@ -797,13 +809,7 @@ export default function VendorPaymentsPage({ embedded = false }: { embedded?: bo
           ) : tab === "overview" ? (
             <OverviewTab
               balance={balance}
-              transactions={transactions.slice(0, 10)}
-              status={status}
-              invoices={invoices}
-              vendorId={vendorId}
-              totalGross={totalGross}
-              totalFees={totalFees}
-              onSeeAllTransactions={() => setTab("transactions")}
+              accountVendorIds={accountVendorIds}
             />
           ) : tab === "calendar" ? (
             <Suspense fallback={<TabSkeleton />}>
@@ -855,28 +861,16 @@ export default function VendorPaymentsPage({ embedded = false }: { embedded?: bo
 
 function OverviewTab({
   balance,
-  transactions,
-  status,
-  invoices: _unusedInvoices,
-  vendorId,
-  totalGross: _unusedTotalGross,
-  totalFees: _unusedTotalFees,
-  onSeeAllTransactions,
+  accountVendorIds,
 }: {
   balance: Balance | null;
-  transactions: Transaction[];
-  status: Status | null;
-  invoices: Invoice[];
-  vendorId: string | null;
-  totalGross: number;
-  totalFees: number;
-  onSeeAllTransactions: () => void;
+  // Every listing the current user owns; every Supabase query on
+  // this tab aggregates across this whole list so the Overview
+  // reads as a single account-level dashboard. Stripe data is no
+  // longer rendered here (Recent activity now pulls paid invoices
+  // from Supabase across the whole account).
+  accountVendorIds: string[];
 }) {
-  // Full rebuild for the cockpit redesign — proper Xero/Oracle page
-  // architecture: page header bar → KPI strip with trend deltas →
-  // chart grid (revenue line + A/R aging bars) → activity table.
-  // Each KPI tile shows current vs equivalent prior-period delta
-  // where the data exists; pure snapshot tiles skip it.
   const currency = balance?.currency ?? "usd";
 
   // KPI snapshots used by the Overview: Revenue 30d (with prior 30d
@@ -893,9 +887,16 @@ function OverviewTab({
   const [newCustomers30d, setNewCustomers30d] = useState<number>(0);
   // Daily revenue series for the last 30 days — drives the line chart.
   const [revenueSeries, setRevenueSeries] = useState<number[]>([]);
+  // Recent paid invoices across the whole account (replaces the
+  // single-listing Stripe transactions table that used to live here).
+  const [recentInvoices, setRecentInvoices] = useState<Array<{ id: string; invoice_number: string; total_cents: number; paid_at: string; currency: string; bill_to_name: string | null }>>([]);
+
+  // Stable string key for the useEffect dep so we don't refire on
+  // every render just because listings is re-derived.
+  const accountKey = accountVendorIds.join(",");
 
   useEffect(() => {
-    if (!vendorId) {
+    if (accountVendorIds.length === 0) {
       setMrr({ total: 0, weekly: 0, monthly: 0, quarterly: 0, yearly: 0, count: 0 });
       setLeads({ new: 0, active: 0, won: 0, lost: 0, total: 0 });
       setExpenses({ total: 0, count: 0, topCategories: [] });
@@ -904,6 +905,7 @@ function OverviewTab({
       setRevenue30dPrev(0);
       setNewCustomers30d(0);
       setRevenueSeries([]);
+      setRecentInvoices([]);
       return;
     }
     let cancelled = false;
@@ -922,36 +924,37 @@ function OverviewTab({
         { data: paid30 },
         { data: paid60 },
         { count: newCust30 },
+        { data: recentPaid },
       ] = await Promise.all([
         // Active recurring invoices — drive the MRR breakdown.
         db
           .from("vendor_recurring_invoices")
           .select("interval, line_items, tax_pct")
-          .eq("vendor_id", vendorId)
+          .in("vendor_id", accountVendorIds)
           .eq("active", true),
         // Inbound inquiries in the last 30 days — drive the Leads card.
         db
           .from("inquiries")
           .select("status")
-          .eq("vendor_id", vendorId)
+          .in("vendor_id", accountVendorIds)
           .gte("created_at", since30.toISOString())
           .limit(10000),
         // Operating expenses in the last 30 days — drive the OPEX card.
         db
           .from("vendor_expenses")
           .select("amount_cents, category")
-          .eq("vendor_id", vendorId)
+          .in("vendor_id", accountVendorIds)
           .gte("occurred_on", since30.toISOString().slice(0, 10))
           .limit(10000),
         db
           .from("vendor_customers")
           .select("id", { count: "exact", head: true })
-          .eq("vendor_id", vendorId),
+          .in("vendor_id", accountVendorIds),
         // Paid invoices in the last 30 days (current period)
         db
           .from("invoices")
           .select("total_cents, paid_at")
-          .eq("vendor_id", vendorId)
+          .in("vendor_id", accountVendorIds)
           .eq("status", "paid")
           .gte("paid_at", since30.toISOString())
           .lt("paid_at", now.toISOString())
@@ -960,7 +963,7 @@ function OverviewTab({
         db
           .from("invoices")
           .select("total_cents")
-          .eq("vendor_id", vendorId)
+          .in("vendor_id", accountVendorIds)
           .eq("status", "paid")
           .gte("paid_at", since60.toISOString())
           .lt("paid_at", since30.toISOString())
@@ -969,8 +972,17 @@ function OverviewTab({
         db
           .from("vendor_customers")
           .select("id", { count: "exact", head: true })
-          .eq("vendor_id", vendorId)
+          .in("vendor_id", accountVendorIds)
           .gte("created_at", since30.toISOString()),
+        // Recent paid invoices across the whole account — replaces
+        // the Stripe transactions feed for the Recent activity table.
+        db
+          .from("invoices")
+          .select("id, invoice_number, total_cents, paid_at, currency, bill_to_name")
+          .in("vendor_id", accountVendorIds)
+          .eq("status", "paid")
+          .order("paid_at", { ascending: false })
+          .limit(6),
       ]);
       if (cancelled) return;
 
@@ -1060,9 +1072,21 @@ function OverviewTab({
         if (dayIdx >= 0 && dayIdx < 30) series[dayIdx] += p.total_cents;
       }
       setRevenueSeries(series);
+
+      setRecentInvoices(
+        (recentPaid ?? []) as Array<{
+          id: string;
+          invoice_number: string;
+          total_cents: number;
+          paid_at: string;
+          currency: string;
+          bill_to_name: string | null;
+        }>,
+      );
     })();
     return () => { cancelled = true; };
-  }, [vendorId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [accountKey]);
 
   return (
     <>
@@ -1108,53 +1132,39 @@ function OverviewTab({
         <OverviewExpensesCard expenses={expenses} currency={currency} />
       </div>
 
-      {/* Recent activity — full-width table, capped to 6 rows so it
-          stays a compact "what just happened" surface. */}
+      {/* Recent activity — paid invoices across the whole account.
+          Capped to 6 rows so it stays a compact "what just landed"
+          surface; full payment history lives in the Payments tab. */}
       <div className="cockpit-data-card">
         <div className="cockpit-data-card-header">
           <div>
             <h3 className="text-sm font-semibold">Recent activity</h3>
             <p className="text-[11px] text-muted-foreground mt-0.5">
-              Latest payouts, charges, and refunds across this listing
+              Latest paid invoices across every listing on the account
             </p>
           </div>
-          {transactions.length > 0 ? (
-            <button
-              type="button"
-              onClick={onSeeAllTransactions}
-              className="text-xs text-muted-foreground hover:text-foreground border border-foreground/10 rounded-md px-2.5 py-1"
-            >
-              View all →
-            </button>
-          ) : null}
         </div>
-        {transactions.length === 0 ? (
+        {recentInvoices.length === 0 ? (
           <div className="px-5 py-6 text-sm text-muted-foreground text-center">
-            {status?.charges_enabled
-              ? "No transactions yet. When buyers pay you, they'll show up here."
-              : "Transactions appear after your first payment."}
+            No paid invoices yet. When customers pay, they'll show up here.
           </div>
         ) : (
           <table className="cockpit-data-table">
             <thead>
               <tr>
-                <th>Description</th>
-                <th>Type</th>
+                <th>Customer</th>
+                <th>Invoice</th>
                 <th>Date</th>
                 <th className="num">Amount</th>
-                <th className="num">Fee</th>
-                <th className="num">Net</th>
               </tr>
             </thead>
             <tbody>
-              {transactions.slice(0, 6).map((t) => (
-                <tr key={t.id}>
-                  <td className="font-medium truncate max-w-[280px]">{t.description ?? "VendoraPay charge"}</td>
-                  <td className="capitalize text-muted-foreground">{t.kind}</td>
-                  <td className="text-muted-foreground">{formatDate(t.created_at)}</td>
-                  <td className="num">{formatMoney(t.amount_cents, t.currency)}</td>
-                  <td className="num text-muted-foreground">{t.fee_cents > 0 ? formatMoney(t.fee_cents, t.currency) : "—"}</td>
-                  <td className="num font-semibold">{formatMoney(t.net_cents, t.currency)}</td>
+              {recentInvoices.map((inv) => (
+                <tr key={inv.id}>
+                  <td className="font-medium truncate max-w-[320px]">{inv.bill_to_name ?? "—"}</td>
+                  <td className="text-muted-foreground">{inv.invoice_number}</td>
+                  <td className="text-muted-foreground">{formatDate(inv.paid_at)}</td>
+                  <td className="num font-semibold">{formatMoney(inv.total_cents, inv.currency || currency)}</td>
                 </tr>
               ))}
             </tbody>
