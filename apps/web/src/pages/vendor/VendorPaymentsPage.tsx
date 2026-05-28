@@ -1110,73 +1110,76 @@ function OverviewTab({
         </div>
       </div>
 
-      {/* Chart grid — Revenue trend (wave) + MRR breakdown */}
-      <div className="cockpit-chart-grid">
+      {/* Wave revenue chart — full width hero, sits directly under
+          the KPI strip so the page's tallest visual surfaces it. */}
+      <div className="mb-4">
         <OverviewRevenueChart series={revenueSeries} currency={currency} />
+      </div>
+
+      {/* Three bar cards in a row — MRR, Leads, Operating expenses.
+          They share the same horizontal-bars visual rhythm, so
+          grouping them tightens the page and keeps the dashboard
+          above the fold on a standard laptop viewport. Stacks on
+          narrow screens via the lg breakpoint. */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4">
         <OverviewMrrCard mrr={mrr} currency={currency} />
-      </div>
-
-      {/* Second row — Recent activity paired with Leads pipeline,
-          mirroring the 1.4fr / 1fr ratio of the row above. */}
-      <div className="cockpit-chart-grid">
-        <div className="cockpit-data-card">
-          <div className="cockpit-data-card-header">
-            <div>
-              <h3 className="text-sm font-semibold">Recent activity</h3>
-              <p className="text-[11px] text-muted-foreground mt-0.5">
-                Latest payouts, charges, and refunds across this listing
-              </p>
-            </div>
-            {transactions.length > 0 ? (
-              <button
-                type="button"
-                onClick={onSeeAllTransactions}
-                className="text-xs text-muted-foreground hover:text-foreground border border-foreground/10 rounded-md px-2.5 py-1"
-              >
-                View all →
-              </button>
-            ) : null}
-          </div>
-          {transactions.length === 0 ? (
-            <div className="px-5 py-8 text-sm text-muted-foreground text-center">
-              {status?.charges_enabled
-                ? "No transactions yet. When buyers pay you, they'll show up here."
-                : "Transactions appear after your first payment."}
-            </div>
-          ) : (
-            <table className="cockpit-data-table">
-              <thead>
-                <tr>
-                  <th>Description</th>
-                  <th>Type</th>
-                  <th>Date</th>
-                  <th className="num">Amount</th>
-                  <th className="num">Fee</th>
-                  <th className="num">Net</th>
-                </tr>
-              </thead>
-              <tbody>
-                {transactions.slice(0, 10).map((t) => (
-                  <tr key={t.id}>
-                    <td className="font-medium truncate max-w-[280px]">{t.description ?? "VendoraPay charge"}</td>
-                    <td className="capitalize text-muted-foreground">{t.kind}</td>
-                    <td className="text-muted-foreground">{formatDate(t.created_at)}</td>
-                    <td className="num">{formatMoney(t.amount_cents, t.currency)}</td>
-                    <td className="num text-muted-foreground">{t.fee_cents > 0 ? formatMoney(t.fee_cents, t.currency) : "—"}</td>
-                    <td className="num font-semibold">{formatMoney(t.net_cents, t.currency)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </div>
         <OverviewLeadsCard leads={leads} />
+        <OverviewExpensesCard expenses={expenses} currency={currency} />
       </div>
 
-      {/* Operating expenses — full width row, last 30 days OPEX
-          broken down by category. Sits below the Recent activity /
-          Leads pair so the page flows: cash in → pipeline → cash out. */}
-      <OverviewExpensesCard expenses={expenses} currency={currency} />
+      {/* Recent activity — full-width table, capped to 6 rows so it
+          stays a compact "what just happened" surface. */}
+      <div className="cockpit-data-card">
+        <div className="cockpit-data-card-header">
+          <div>
+            <h3 className="text-sm font-semibold">Recent activity</h3>
+            <p className="text-[11px] text-muted-foreground mt-0.5">
+              Latest payouts, charges, and refunds across this listing
+            </p>
+          </div>
+          {transactions.length > 0 ? (
+            <button
+              type="button"
+              onClick={onSeeAllTransactions}
+              className="text-xs text-muted-foreground hover:text-foreground border border-foreground/10 rounded-md px-2.5 py-1"
+            >
+              View all →
+            </button>
+          ) : null}
+        </div>
+        {transactions.length === 0 ? (
+          <div className="px-5 py-6 text-sm text-muted-foreground text-center">
+            {status?.charges_enabled
+              ? "No transactions yet. When buyers pay you, they'll show up here."
+              : "Transactions appear after your first payment."}
+          </div>
+        ) : (
+          <table className="cockpit-data-table">
+            <thead>
+              <tr>
+                <th>Description</th>
+                <th>Type</th>
+                <th>Date</th>
+                <th className="num">Amount</th>
+                <th className="num">Fee</th>
+                <th className="num">Net</th>
+              </tr>
+            </thead>
+            <tbody>
+              {transactions.slice(0, 6).map((t) => (
+                <tr key={t.id}>
+                  <td className="font-medium truncate max-w-[280px]">{t.description ?? "VendoraPay charge"}</td>
+                  <td className="capitalize text-muted-foreground">{t.kind}</td>
+                  <td className="text-muted-foreground">{formatDate(t.created_at)}</td>
+                  <td className="num">{formatMoney(t.amount_cents, t.currency)}</td>
+                  <td className="num text-muted-foreground">{t.fee_cents > 0 ? formatMoney(t.fee_cents, t.currency) : "—"}</td>
+                  <td className="num font-semibold">{formatMoney(t.net_cents, t.currency)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
     </>
   );
 }
@@ -1243,7 +1246,7 @@ function OverviewRevenueChart({ series: rawSeries, currency }: { series: number[
         const peakIdx = hasData ? series.indexOf(max) : -1;
         return (
           <div className="relative">
-            <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-[200px]" preserveAspectRatio="none" aria-hidden>
+            <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-[150px]" preserveAspectRatio="none" aria-hidden>
               <defs>
                 <linearGradient id="cockpit-area-grad" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="0%" stopColor="#c8403a" stopOpacity={hasData ? 0.28 : 0.1} />
@@ -1333,15 +1336,15 @@ function OverviewMrrCard({
             {rows.map((r) => {
               const pct = max > 0 ? (r.cents / max) * 100 : 0;
               return (
-                <div key={r.label} className="flex items-center gap-3">
-                  <div className="w-24 text-xs text-muted-foreground shrink-0">{r.label}</div>
-                  <div className="flex-1 h-6 rounded overflow-hidden relative" style={{ background: "rgba(255, 138, 76, 0.12)" }}>
+                <div key={r.label} className="flex items-center gap-2">
+                  <div className="w-20 text-xs text-muted-foreground shrink-0 truncate">{r.label}</div>
+                  <div className="flex-1 h-5 rounded overflow-hidden relative" style={{ background: "rgba(255, 138, 76, 0.12)" }}>
                     <div
                       className="h-full transition-all"
                       style={{ width: `${pct}%`, background: r.color, opacity: r.cents > 0 ? 1 : 0 }}
                     />
                   </div>
-                  <div className="w-24 text-right text-xs cockpit-money tabular-nums">
+                  <div className="w-20 text-right text-xs cockpit-money tabular-nums shrink-0">
                     {r.cents > 0 ? formatMoney(r.cents, currency) : "—"}
                   </div>
                 </div>
@@ -1401,15 +1404,15 @@ function OverviewLeadsCard({
             {rows.map((r) => {
               const pct = max > 0 ? (r.count / max) * 100 : 0;
               return (
-                <div key={r.label} className="flex items-center gap-3">
-                  <div className="w-24 text-xs text-muted-foreground shrink-0">{r.label}</div>
-                  <div className="flex-1 h-6 rounded overflow-hidden relative" style={{ background: "rgba(255, 138, 76, 0.12)" }}>
+                <div key={r.label} className="flex items-center gap-2">
+                  <div className="w-20 text-xs text-muted-foreground shrink-0 truncate">{r.label}</div>
+                  <div className="flex-1 h-5 rounded overflow-hidden relative" style={{ background: "rgba(255, 138, 76, 0.12)" }}>
                     <div
                       className="h-full transition-all"
                       style={{ width: `${pct}%`, background: r.color, opacity: r.count > 0 ? 1 : 0 }}
                     />
                   </div>
-                  <div className="w-24 text-right text-xs cockpit-money tabular-nums">
+                  <div className="w-12 text-right text-xs cockpit-money tabular-nums shrink-0">
                     {r.count > 0 ? r.count : "—"}
                   </div>
                 </div>
@@ -1447,7 +1450,7 @@ function OverviewExpensesCard({
   }));
   const max = rows.reduce((m, r) => (r.cents > m ? r.cents : m), 0);
   return (
-    <div className="cockpit-chart mt-5">
+    <div className="cockpit-chart">
       <div className="flex items-baseline justify-between mb-3">
         <div>
           <div className="cockpit-chart-title">Operating expenses</div>
@@ -1459,7 +1462,7 @@ function OverviewExpensesCard({
         </div>
       </div>
       {expenses.count === 0 ? (
-        <div className="py-12 text-center text-sm text-muted-foreground">
+        <div className="py-8 text-center text-sm text-muted-foreground">
           No expenses logged in the last 30 days.
         </div>
       ) : (
@@ -1468,15 +1471,15 @@ function OverviewExpensesCard({
             {rows.map((r) => {
               const pct = max > 0 ? (r.cents / max) * 100 : 0;
               return (
-                <div key={r.label} className="flex items-center gap-3">
-                  <div className="w-28 text-xs text-muted-foreground shrink-0">{r.label}</div>
-                  <div className="flex-1 h-6 rounded overflow-hidden relative" style={{ background: "rgba(255, 138, 76, 0.12)" }}>
+                <div key={r.label} className="flex items-center gap-2">
+                  <div className="w-20 text-xs text-muted-foreground shrink-0 truncate">{r.label}</div>
+                  <div className="flex-1 h-5 rounded overflow-hidden relative" style={{ background: "rgba(255, 138, 76, 0.12)" }}>
                     <div
                       className="h-full transition-all"
                       style={{ width: `${pct}%`, background: r.color, opacity: r.cents > 0 ? 1 : 0 }}
                     />
                   </div>
-                  <div className="w-28 text-right text-xs cockpit-money tabular-nums">
+                  <div className="w-20 text-right text-xs cockpit-money tabular-nums shrink-0">
                     {formatMoney(r.cents, currency)}
                   </div>
                 </div>
