@@ -5758,7 +5758,7 @@ function ExpensesTab({
   const [sortDir, setSortDir] = useState<"desc" | "asc">("desc");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [page, setPage] = useState(1);
-  const [perPage, setPerPage] = useState(10);
+  const perPage = 10;
   const [bulkDeleting, setBulkDeleting] = useState(false);
 
   const refresh = useCallback(async () => {
@@ -6745,18 +6745,6 @@ function ExpensesTab({
                       </span>
                     </span>
                     <div className="flex items-center gap-3">
-                      <label className="flex items-center gap-2">
-                        Rows:
-                        <select
-                          value={perPage}
-                          onChange={(e) => setPerPage(Number(e.target.value))}
-                          className="bg-transparent border border-foreground/10 rounded-md px-2 py-0.5 text-xs"
-                        >
-                          {[10, 25, 50, 100].map((n) => (
-                            <option key={n} value={n}>{n}</option>
-                          ))}
-                        </select>
-                      </label>
                       <div className="flex items-center gap-1">
                         <button
                           type="button"
