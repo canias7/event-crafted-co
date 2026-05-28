@@ -1448,7 +1448,15 @@ function OverviewExpensesCard({
   const rows = expenses.topCategories.map((c, i) => ({
     ...c, color: palette[i] ?? "#8a8579",
   }));
-  const max = rows.reduce((m, r) => (r.cents > m ? r.cents : m), 0);
+  // Donut geometry — stroked circle with stroke-dasharray for each
+  // segment. Radius 38 + strokeWidth 14 gives an outer ring at 45
+  // and an inner hole at ~31 inside a 100x100 viewbox. SVG strokes
+  // start at 3 o'clock, so the whole svg is rotated -90deg to begin
+  // the first segment at 12 o'clock like a clock face.
+  const RING_R = 38;
+  const RING_W = 14;
+  const CIRC = 2 * Math.PI * RING_R;
+  let dashOffset = 0;
   return (
     <div className="cockpit-chart">
       <div className="flex items-baseline justify-between mb-3">
@@ -1467,24 +1475,39 @@ function OverviewExpensesCard({
         </div>
       ) : (
         <>
-          <div className="space-y-2">
-            {rows.map((r) => {
-              const pct = max > 0 ? (r.cents / max) * 100 : 0;
-              return (
-                <div key={r.label} className="flex items-center gap-2">
-                  <div className="w-20 text-xs text-muted-foreground shrink-0 truncate">{r.label}</div>
-                  <div className="flex-1 h-5 rounded overflow-hidden relative" style={{ background: "rgba(255, 138, 76, 0.12)" }}>
-                    <div
-                      className="h-full transition-all"
-                      style={{ width: `${pct}%`, background: r.color, opacity: r.cents > 0 ? 1 : 0 }}
-                    />
-                  </div>
-                  <div className="w-20 text-right text-xs cockpit-money tabular-nums shrink-0">
+          <div className="flex items-center gap-4">
+            <svg viewBox="0 0 100 100" className="w-[110px] h-[110px] shrink-0 -rotate-90" aria-hidden>
+              {/* Faint background ring so the donut feels seated even
+                  when one segment dominates the total. */}
+              <circle cx="50" cy="50" r={RING_R} fill="none" stroke="rgba(255,138,76,0.14)" strokeWidth={RING_W} />
+              {rows.map((r) => {
+                const len = expenses.total > 0 ? (r.cents / expenses.total) * CIRC : 0;
+                const offset = dashOffset;
+                dashOffset += len;
+                return (
+                  <circle
+                    key={r.label}
+                    cx="50" cy="50" r={RING_R}
+                    fill="none"
+                    stroke={r.color}
+                    strokeWidth={RING_W}
+                    strokeDasharray={`${len} ${CIRC - len}`}
+                    strokeDashoffset={-offset}
+                  />
+                );
+              })}
+            </svg>
+            <div className="flex-1 min-w-0 space-y-1.5">
+              {rows.map((r) => (
+                <div key={r.label} className="flex items-center gap-2 text-[11px]">
+                  <span className="w-2.5 h-2.5 rounded-sm shrink-0" style={{ background: r.color }} />
+                  <span className="text-muted-foreground truncate flex-1">{r.label}</span>
+                  <span className="cockpit-money tabular-nums text-foreground/90 shrink-0">
                     {formatMoney(r.cents, currency)}
-                  </div>
+                  </span>
                 </div>
-              );
-            })}
+              ))}
+            </div>
           </div>
           <div className="mt-3 text-[11px] text-muted-foreground">
             {expenses.count} expense{expenses.count === 1 ? "" : "s"} logged
