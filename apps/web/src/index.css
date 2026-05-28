@@ -286,24 +286,34 @@
   }
 
   /*
-   * My Vendora cockpit — scoped redesign for the vendor accounting
-   * surface (Overview, Payments × 5 sub-tabs, Files × 4 sub-tabs,
-   * Customers, Settings). Goal: Xero/Oracle ERP density and trust
-   * signals — numbers-first, cool grays, hairline dividers, tight
-   * card radii, sticky table headers, semantic status colors. The
-   * rest of Vendora keeps its warm editorial brand; only this
-   * cockpit reads as professional accounting software.
+   * My Vendora cockpit — scoped editorial redesign for the vendor
+   * accounting surface (Overview, Payments × 5 sub-tabs, Files × 4
+   * sub-tabs, Customers, Settings). Goal: feel like a premium
+   * editorial product. Cream paper backdrop, Cormorant Garamond
+   * serif display for KPI values + section titles, hairline borders
+   * in warm ivory, terra-cotta accent. Numbers stay tabular for
+   * legibility. Replaces the previous Oracle/Xero cool-slate look.
    *
-   * Apply by replacing `vendor-canvas` with `my-vendora-cockpit` on
-   * the page root. All descendant `.cockpit-card`, `.cockpit-stat`,
-   * `.cockpit-table`, `.cockpit-pill-*`, `.cockpit-tabs` classes
-   * automatically receive the new visual language.
+   * Token palette (matches the mockup):
+   *   --c-bg     #faf7f2  paper background
+   *   --c-paper  #ffffff  card surface
+   *   --c-line   #e8e2d6  hairline border
+   *   --c-ink    #1a1a1a  primary text
+   *   --c-soft   #4a4a4a  secondary text
+   *   --c-muted  #8a8579  tertiary / labels
+   *   --c-accent #c8403a  crimson accent (revenue line, primary CTA)
+   *   --c-good   #4a7c4a  positive trend / paid
+   *   --c-warn   #c89738  pending / 1-30 late
+   *   --c-bad    #b8453d  overdue / negative trend
+   *
+   * Apply by adding `my-vendora-cockpit` on the page root. All
+   * descendant `.cockpit-*` classes inherit the new visual language
+   * automatically, so every sub-tab updates with this block.
    */
   .my-vendora-cockpit {
-    /* Cool slate base — no warm radial. Pure data-app backdrop. */
-    background: #f4f6f9;
+    background: #faf7f2;
     background-attachment: fixed;
-    color: #0f172a;
+    color: #1a1a1a;
   }
 
   /* Override the local Card component when nested inside the cockpit
@@ -312,76 +322,72 @@
   .my-vendora-cockpit [data-cockpit-card],
   .my-vendora-cockpit .cockpit-card {
     background: #ffffff !important;
-    border: 1px solid #e2e8f0 !important;
-    border-radius: 6px !important;
-    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+    border: 1px solid #e8e2d6 !important;
+    border-radius: 10px !important;
+    box-shadow: 0 1px 2px rgba(26, 26, 26, 0.04), 0 4px 12px rgba(26, 26, 26, 0.04);
   }
 
-  /* Section heading bar — Oracle-style: small uppercase, hairline
-     under, tight letter spacing. Replaces the editorial eyebrow. */
+  /* Section heading bar — editorial eyebrow with serif accent. */
   .my-vendora-cockpit .cockpit-section-head {
     font-size: 11px;
-    font-weight: 600;
-    letter-spacing: 0.06em;
+    font-weight: 500;
+    letter-spacing: 0.08em;
     text-transform: uppercase;
-    color: #475569;
-    padding-bottom: 8px;
-    margin-bottom: 12px;
-    border-bottom: 1px solid #e2e8f0;
+    color: #8a8579;
+    padding-bottom: 10px;
+    margin-bottom: 14px;
+    border-bottom: 1px solid #e8e2d6;
     display: flex;
     align-items: baseline;
     justify-content: space-between;
     gap: 12px;
   }
 
-  /* StatCard — Xero-dense KPI tile. White, sharp border, sans
-     tabular value, small label above. No editorial serif. !important
-     beats the inline style still on the legacy StatCard render. */
+  /* StatCard — KPI tile with serif display value. */
   .my-vendora-cockpit .cockpit-stat {
     background: #ffffff !important;
-    border: 1px solid #e2e8f0 !important;
-    border-radius: 6px !important;
-    padding: 14px 16px !important;
-    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04) !important;
+    border: 1px solid #e8e2d6 !important;
+    border-radius: 10px !important;
+    padding: 18px 20px !important;
+    box-shadow: 0 1px 2px rgba(26, 26, 26, 0.04), 0 4px 12px rgba(26, 26, 26, 0.04) !important;
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 8px;
   }
   .my-vendora-cockpit .cockpit-stat:hover {
-    box-shadow: 0 2px 6px rgba(15, 23, 42, 0.08) !important;
+    box-shadow: 0 2px 4px rgba(26, 26, 26, 0.06), 0 8px 20px rgba(26, 26, 26, 0.06) !important;
   }
   .my-vendora-cockpit .cockpit-stat-label {
-    font-size: 10px;
-    font-weight: 600;
-    letter-spacing: 0.08em;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.1em;
     text-transform: uppercase;
-    color: #64748b;
+    color: #8a8579;
   }
   .my-vendora-cockpit .cockpit-stat-value {
-    font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI",
-      Roboto, "Helvetica Neue", Arial, sans-serif;
+    font-family: 'Cormorant Garamond', Georgia, 'Times New Roman', serif;
     font-variant-numeric: tabular-nums;
-    font-size: 22px;
-    font-weight: 600;
-    color: #0f172a;
-    line-height: 1.15;
-    letter-spacing: -0.01em;
+    font-size: 32px;
+    font-weight: 500;
+    color: #1a1a1a;
+    line-height: 1;
+    letter-spacing: -0.5px;
   }
   .my-vendora-cockpit .cockpit-stat-sub {
-    font-size: 11px;
-    color: #64748b;
+    font-size: 12px;
+    color: #8a8579;
     margin-top: 2px;
   }
-  .my-vendora-cockpit .cockpit-stat-value--negative { color: #b91c1c; }
-  .my-vendora-cockpit .cockpit-stat-value--positive { color: #047857; }
+  .my-vendora-cockpit .cockpit-stat-value--negative { color: #b8453d; }
+  .my-vendora-cockpit .cockpit-stat-value--positive { color: #4a7c4a; }
 
-  /* Tab strip — Oracle Fusion: underline-on-active, no pill fill */
+  /* Tab strip — underline-on-active, warm muted resting state. */
   .my-vendora-cockpit .cockpit-tabs {
     display: flex;
     gap: 4px;
     overflow-x: auto;
-    border-bottom: 1px solid #e2e8f0;
-    margin: 0 -16px 16px;
+    border-bottom: 1px solid #e8e2d6;
+    margin: 0 -16px 20px;
     padding: 0 16px;
     scrollbar-width: none;
   }
@@ -389,11 +395,11 @@
   .my-vendora-cockpit .cockpit-tab {
     background: transparent;
     border: 0;
-    border-bottom: 2px solid transparent;
-    padding: 10px 12px;
-    font-size: 13px;
-    font-weight: 500;
-    color: #64748b;
+    border-bottom: 1px solid transparent;
+    padding: 12px 14px;
+    font-size: 14px;
+    font-weight: 400;
+    color: #8a8579;
     cursor: pointer;
     white-space: nowrap;
     display: inline-flex;
@@ -402,44 +408,42 @@
     margin-bottom: -1px;
     transition: color 120ms ease, border-color 120ms ease;
   }
-  .my-vendora-cockpit .cockpit-tab:hover { color: #0f172a; }
+  .my-vendora-cockpit .cockpit-tab:hover { color: #1a1a1a; }
   .my-vendora-cockpit .cockpit-tab--active {
-    color: #0f172a;
-    border-bottom-color: #0f172a;
-    font-weight: 600;
+    color: #1a1a1a;
+    border-bottom-color: #1a1a1a;
+    font-weight: 500;
   }
 
-  /* Status pills — Xero-flat semantic colors */
+  /* Status pills — warm semantic colors. */
   .my-vendora-cockpit .cockpit-pill {
     display: inline-flex;
     align-items: center;
-    padding: 2px 8px;
-    font-size: 10px;
-    font-weight: 600;
+    padding: 3px 9px;
+    font-size: 11px;
+    font-weight: 500;
     letter-spacing: 0.04em;
-    text-transform: uppercase;
-    border-radius: 3px;
+    border-radius: 4px;
     border: 1px solid transparent;
     line-height: 1.4;
   }
   .my-vendora-cockpit .cockpit-pill--success {
-    background: #ecfdf5 !important; color: #065f46 !important; border-color: #a7f3d0 !important;
+    background: #e8f0e8 !important; color: #4a7c4a !important; border-color: transparent !important;
   }
   .my-vendora-cockpit .cockpit-pill--info {
-    background: #eff6ff !important; color: #1e40af !important; border-color: #bfdbfe !important;
+    background: #eef3f7 !important; color: #3d6b8c !important; border-color: transparent !important;
   }
   .my-vendora-cockpit .cockpit-pill--warning {
-    background: #fff7ed !important; color: #9a3412 !important; border-color: #fed7aa !important;
+    background: #fdf2dd !important; color: #c89738 !important; border-color: transparent !important;
   }
   .my-vendora-cockpit .cockpit-pill--danger {
-    background: #fef2f2 !important; color: #991b1b !important; border-color: #fecaca !important;
+    background: #fbe5e3 !important; color: #b8453d !important; border-color: transparent !important;
   }
   .my-vendora-cockpit .cockpit-pill--neutral {
-    background: #f1f5f9 !important; color: #475569 !important; border-color: #e2e8f0 !important;
+    background: #f3eee5 !important; color: #4a4a4a !important; border-color: transparent !important;
   }
 
-  /* Dense data table — Xero/Oracle: hairline rows, right-aligned
-     money cols, sticky header, hover row highlight. */
+  /* Dense data table — hairline ivory rows, sticky header. */
   .my-vendora-cockpit .cockpit-table {
     width: 100%;
     border-collapse: collapse;
@@ -449,25 +453,25 @@
   .my-vendora-cockpit .cockpit-table thead th {
     position: sticky;
     top: 0;
-    background: #f8fafc;
-    color: #475569;
-    font-size: 10px;
-    font-weight: 600;
-    letter-spacing: 0.06em;
+    background: #faf7f2;
+    color: #8a8579;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.05em;
     text-transform: uppercase;
     text-align: left;
-    padding: 8px 12px;
-    border-bottom: 1px solid #e2e8f0;
+    padding: 10px 12px;
+    border-bottom: 1px solid #e8e2d6;
     white-space: nowrap;
   }
   .my-vendora-cockpit .cockpit-table tbody td {
-    padding: 10px 12px;
-    border-bottom: 1px solid #f1f5f9;
+    padding: 14px 12px;
+    border-bottom: 1px solid #e8e2d6;
     vertical-align: middle;
-    color: #0f172a;
+    color: #1a1a1a;
   }
   .my-vendora-cockpit .cockpit-table tbody tr:hover td {
-    background: #f8fafc;
+    background: #faf7f2;
   }
   .my-vendora-cockpit .cockpit-table .num {
     text-align: right;
@@ -475,152 +479,149 @@
     white-space: nowrap;
   }
   .my-vendora-cockpit .cockpit-table tfoot td {
-    padding: 10px 12px;
-    border-top: 1px solid #cbd5e1;
-    font-weight: 600;
-    background: #f8fafc;
+    padding: 12px;
+    border-top: 1px solid #e8e2d6;
+    font-weight: 500;
+    background: #faf7f2;
   }
 
-  /* Tabular money rendering — everywhere we show a $ amount, kill
-     the editorial serif and right-align tabular nums. */
+  /* Tabular money rendering — kept sans + tabular for legibility,
+     even inside the editorial cockpit. The serif is reserved for
+     the hero KPI display, chart titles, and page titles. */
   .my-vendora-cockpit .cockpit-money {
-    font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI",
-      Roboto, "Helvetica Neue", Arial, sans-serif;
+    font-family: 'Satoshi', system-ui, sans-serif;
     font-variant-numeric: tabular-nums;
-    font-weight: 600;
-    color: #0f172a;
+    font-weight: 500;
+    color: #1a1a1a;
   }
   .my-vendora-cockpit .cockpit-money--lg {
-    font-size: 20px;
-    letter-spacing: -0.01em;
+    font-family: 'Cormorant Garamond', Georgia, 'Times New Roman', serif;
+    font-size: 24px;
+    font-weight: 500;
+    letter-spacing: -0.5px;
   }
-  .my-vendora-cockpit .cockpit-money--negative { color: #b91c1c; }
+  .my-vendora-cockpit .cockpit-money--negative { color: #b8453d; }
 
-  /* Heading: drop the editorial serif for h1/h2/h3 within the
-     cockpit. Sans serif throughout, like Oracle/Xero. */
+  /* Headings inside the cockpit — Cormorant Garamond display. */
   .my-vendora-cockpit h1,
   .my-vendora-cockpit h2,
   .my-vendora-cockpit h3 {
-    font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI",
-      Roboto, "Helvetica Neue", Arial, sans-serif;
-    color: #0f172a;
-    letter-spacing: -0.01em;
+    font-family: 'Cormorant Garamond', Georgia, 'Times New Roman', serif;
+    color: #1a1a1a;
+    letter-spacing: -0.3px;
+    font-weight: 500;
   }
 
-  /* Toolbar — Oracle-style page toolbar: count chip, range picker,
-     action buttons aligned right, all in one horizontal bar. */
+  /* Toolbar — page toolbar surface (count chip + range + actions). */
   .my-vendora-cockpit .cockpit-toolbar {
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 12px;
     flex-wrap: wrap;
-    padding: 10px 12px;
+    padding: 12px 14px;
     background: #ffffff;
-    border: 1px solid #e2e8f0;
-    border-radius: 6px;
-    margin-bottom: 12px;
+    border: 1px solid #e8e2d6;
+    border-radius: 10px;
+    margin-bottom: 16px;
   }
   .my-vendora-cockpit .cockpit-toolbar-meta {
     font-size: 12px;
-    color: #475569;
+    color: #4a4a4a;
     display: inline-flex;
     align-items: center;
     gap: 8px;
   }
   .my-vendora-cockpit .cockpit-count-chip {
-    background: #f1f5f9;
-    color: #334155;
-    padding: 2px 8px;
+    background: #f3eee5;
+    color: #4a4a4a;
+    padding: 3px 9px;
     border-radius: 999px;
     font-size: 11px;
-    font-weight: 600;
+    font-weight: 500;
     font-variant-numeric: tabular-nums;
   }
 
-  /* Editorial serif inside the cockpit reverts to sans — we
-     defensively neutralize any `font-editorial` class so existing
-     inline money figures inherit the dense sans look without us
-     having to surgery every site. */
+  /* Existing `.font-editorial` (Bodoni italic) inside the cockpit
+     bows to Cormorant so the surface speaks one display voice. */
   .my-vendora-cockpit .font-editorial {
-    font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI",
-      Roboto, "Helvetica Neue", Arial, sans-serif !important;
+    font-family: 'Cormorant Garamond', Georgia, 'Times New Roman', serif !important;
+    font-style: normal;
     font-feature-settings: "tnum" 1, "lnum" 1;
-    letter-spacing: -0.005em;
+    letter-spacing: -0.3px;
+    font-weight: 500;
   }
 
-  /* Charts — Oracle/Tableau-flavored. Cool palette, hairline grid,
-     axis labels in slate-500. Built in raw SVG (no recharts dep),
-     so all of these target SVG children inside a .cockpit-chart
-     wrapper. */
+  /* Charts — editorial palette. Terra-cotta line + soft area
+     gradient, ivory grid, muted axis labels. Targets SVG children
+     inside the .cockpit-chart wrapper. */
   .my-vendora-cockpit .cockpit-chart {
     background: #ffffff;
-    border: 1px solid #e2e8f0;
-    border-radius: 6px;
-    padding: 16px;
+    border: 1px solid #e8e2d6;
+    border-radius: 10px;
+    padding: 22px;
+    box-shadow: 0 1px 2px rgba(26, 26, 26, 0.04), 0 4px 12px rgba(26, 26, 26, 0.04);
   }
   .my-vendora-cockpit .cockpit-chart-title {
-    font-size: 12px;
+    font-family: 'Cormorant Garamond', Georgia, 'Times New Roman', serif;
+    font-size: 22px;
     font-weight: 600;
-    color: #0f172a;
-    letter-spacing: -0.005em;
+    color: #1a1a1a;
+    letter-spacing: -0.2px;
   }
   .my-vendora-cockpit .cockpit-chart-sub {
-    font-size: 11px;
-    color: #64748b;
-    margin-top: 1px;
+    font-size: 12px;
+    color: #8a8579;
+    margin-top: 2px;
   }
   .my-vendora-cockpit .cockpit-chart-grid {
-    stroke: #f1f5f9;
+    stroke: #e8e2d6;
     stroke-width: 1;
   }
   .my-vendora-cockpit .cockpit-chart-axis {
     font-size: 10px;
-    fill: #64748b;
+    fill: #8a8579;
     font-variant-numeric: tabular-nums;
   }
   .my-vendora-cockpit .cockpit-chart-line {
     fill: none;
-    stroke: #0ea5e9;
-    stroke-width: 1.75;
+    stroke: #c8403a;
+    stroke-width: 2;
   }
   .my-vendora-cockpit .cockpit-chart-area {
     fill: url(#cockpit-area-grad);
-    opacity: 0.5;
+    opacity: 1;
   }
   .my-vendora-cockpit .cockpit-chart-bar {
-    fill: #0ea5e9;
+    fill: #c8403a;
   }
-  .my-vendora-cockpit .cockpit-chart-bar--positive { fill: #047857; }
-  .my-vendora-cockpit .cockpit-chart-bar--negative { fill: #b91c1c; }
+  .my-vendora-cockpit .cockpit-chart-bar--positive { fill: #4a7c4a; }
+  .my-vendora-cockpit .cockpit-chart-bar--negative { fill: #b8453d; }
   .my-vendora-cockpit .cockpit-chart-dot {
     fill: #ffffff;
-    stroke: #0ea5e9;
-    stroke-width: 1.5;
+    stroke: #c8403a;
+    stroke-width: 1.75;
   }
 
-  /* KPI trend delta — small chip showing +/- vs previous period.
-     Lives inside cockpit-stat-sub or alongside the value. */
+  /* KPI trend delta — semantic up/down chip. */
   .my-vendora-cockpit .cockpit-delta {
     display: inline-flex;
     align-items: center;
     gap: 3px;
-    font-size: 11px;
-    font-weight: 600;
+    font-size: 12px;
+    font-weight: 500;
     font-variant-numeric: tabular-nums;
     margin-left: 6px;
   }
-  .my-vendora-cockpit .cockpit-delta--up { color: #047857; }
-  .my-vendora-cockpit .cockpit-delta--down { color: #b91c1c; }
-  .my-vendora-cockpit .cockpit-delta--flat { color: #64748b; }
+  .my-vendora-cockpit .cockpit-delta--up { color: #4a7c4a; }
+  .my-vendora-cockpit .cockpit-delta--down { color: #b8453d; }
+  .my-vendora-cockpit .cockpit-delta--flat { color: #8a8579; }
 
-  /* In-cell bar visualization (Sales by state, Expenses by category).
-     A thin horizontal bar inline with the table cell shows
-     relative magnitude — Tableau-style "in-row chart". */
+  /* In-cell bar visualization — accent-tinted magnitude bar. */
   .my-vendora-cockpit .cockpit-inline-bar {
     display: inline-block;
     height: 4px;
-    background: #0ea5e9;
+    background: #c8403a;
     border-radius: 2px;
     vertical-align: middle;
     margin-right: 8px;
@@ -629,7 +630,7 @@
     display: inline-block;
     width: 80px;
     height: 4px;
-    background: #f1f5f9;
+    background: #f3eee5;
     border-radius: 2px;
     vertical-align: middle;
     margin-right: 8px;
@@ -638,56 +639,57 @@
   .my-vendora-cockpit .cockpit-inline-bar-track > span {
     display: block;
     height: 100%;
-    background: #0ea5e9;
+    background: #c8403a;
     border-radius: 2px;
   }
 
-  /* Page header — Oracle Redwood-style page chrome. Lives at the
-     top of each tab and replaces the old simple section eyebrow.
-     Components: page title (h1), greeting/date sub, breadcrumbs,
-     primary action button slot on the right. */
+  /* Page header — editorial page chrome. Cormorant display title,
+     date sub, breadcrumb above. Sits as a paper card. */
   .my-vendora-cockpit .cockpit-page-header {
     background: #ffffff;
-    border: 1px solid #e2e8f0;
-    border-radius: 6px;
-    padding: 18px 20px;
-    margin-bottom: 16px;
+    border: 1px solid #e8e2d6;
+    border-radius: 10px;
+    padding: 22px 24px;
+    margin-bottom: 20px;
     display: flex;
     align-items: flex-start;
     justify-content: space-between;
     gap: 16px;
     flex-wrap: wrap;
+    box-shadow: 0 1px 2px rgba(26, 26, 26, 0.04), 0 4px 12px rgba(26, 26, 26, 0.04);
   }
   .my-vendora-cockpit .cockpit-breadcrumb {
     font-size: 11px;
-    color: #64748b;
-    margin-bottom: 4px;
+    color: #8a8579;
+    margin-bottom: 6px;
+    letter-spacing: 0.04em;
   }
   .my-vendora-cockpit .cockpit-breadcrumb span + span::before {
     content: "/";
     margin: 0 6px;
-    color: #cbd5e1;
+    color: #d6cfbf;
   }
   .my-vendora-cockpit .cockpit-page-title {
-    font-size: 22px;
-    font-weight: 700;
-    color: #0f172a;
-    letter-spacing: -0.015em;
-    line-height: 1.2;
+    font-family: 'Cormorant Garamond', Georgia, 'Times New Roman', serif;
+    font-size: 32px;
+    font-weight: 500;
+    color: #1a1a1a;
+    letter-spacing: -0.3px;
+    line-height: 1.05;
   }
   .my-vendora-cockpit .cockpit-page-sub {
-    font-size: 12px;
-    color: #64748b;
-    margin-top: 4px;
+    font-size: 13px;
+    color: #8a8579;
+    margin-top: 6px;
+    font-style: italic;
   }
 
-  /* KPI row — 4 wide, denser than the old StatCard grid. Each
-     tile shows label / value / delta-chip / trend-sparkline-or-sub. */
+  /* KPI row — 4 wide, serif display values. */
   .my-vendora-cockpit .cockpit-kpi-row {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 10px;
-    margin-bottom: 16px;
+    gap: 16px;
+    margin-bottom: 20px;
   }
   @media (min-width: 768px) {
     .my-vendora-cockpit .cockpit-kpi-row {
@@ -696,50 +698,50 @@
   }
   .my-vendora-cockpit .cockpit-kpi-tile {
     background: #ffffff;
-    border: 1px solid #e2e8f0;
-    border-radius: 6px;
-    padding: 16px 16px 14px;
+    border: 1px solid #e8e2d6;
+    border-radius: 10px;
+    padding: 20px;
     display: flex;
     flex-direction: column;
-    gap: 6px;
-    transition: box-shadow 120ms ease;
+    gap: 8px;
+    box-shadow: 0 1px 2px rgba(26, 26, 26, 0.04), 0 4px 12px rgba(26, 26, 26, 0.04);
+    transition: box-shadow 160ms ease;
   }
   .my-vendora-cockpit .cockpit-kpi-tile:hover {
-    box-shadow: 0 2px 6px rgba(15, 23, 42, 0.08);
+    box-shadow: 0 2px 4px rgba(26, 26, 26, 0.06), 0 8px 20px rgba(26, 26, 26, 0.06);
   }
   .my-vendora-cockpit .cockpit-kpi-label {
-    font-size: 10px;
-    font-weight: 600;
+    font-size: 11px;
+    font-weight: 500;
     letter-spacing: 0.1em;
     text-transform: uppercase;
-    color: #64748b;
+    color: #8a8579;
+    margin-bottom: 4px;
   }
   .my-vendora-cockpit .cockpit-kpi-value {
-    font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI",
-      Roboto, "Helvetica Neue", Arial, sans-serif;
+    font-family: 'Cormorant Garamond', Georgia, 'Times New Roman', serif;
     font-variant-numeric: tabular-nums;
-    font-size: 26px;
-    font-weight: 700;
-    color: #0f172a;
-    letter-spacing: -0.02em;
-    line-height: 1.1;
+    font-size: 36px;
+    font-weight: 500;
+    color: #1a1a1a;
+    letter-spacing: -0.5px;
+    line-height: 1;
   }
   .my-vendora-cockpit .cockpit-kpi-sub {
-    font-size: 11px;
-    color: #64748b;
+    font-size: 12px;
+    color: #8a8579;
     display: flex;
     align-items: center;
     gap: 6px;
-    margin-top: 2px;
+    margin-top: 4px;
   }
 
-  /* 2-column chart grid — Revenue line + A/R aging bars
-     side-by-side on Overview, similar layout on Reports. */
+  /* 2-column chart grid — Revenue line + A/R aging bars. */
   .my-vendora-cockpit .cockpit-chart-grid {
     display: grid;
     grid-template-columns: 1fr;
-    gap: 10px;
-    margin-bottom: 16px;
+    gap: 16px;
+    margin-bottom: 20px;
   }
   @media (min-width: 900px) {
     .my-vendora-cockpit .cockpit-chart-grid {
@@ -747,9 +749,7 @@
     }
   }
 
-  /* Real data table — sticky thead, hover rows, sortable
-     indicator on column headers. Built on top of native <table>
-     so screen readers + keyboard nav work properly. */
+  /* Data table — sticky thead, hover rows, hairline ivory bottoms. */
   .my-vendora-cockpit table.cockpit-data-table {
     width: 100%;
     border-collapse: collapse;
@@ -759,15 +759,15 @@
   .my-vendora-cockpit table.cockpit-data-table thead th {
     position: sticky;
     top: 0;
-    background: #f8fafc;
-    color: #475569;
-    font-size: 10px;
-    font-weight: 600;
-    letter-spacing: 0.06em;
+    background: #faf7f2;
+    color: #8a8579;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.05em;
     text-transform: uppercase;
     text-align: left;
-    padding: 10px 12px;
-    border-bottom: 1px solid #e2e8f0;
+    padding: 12px 14px;
+    border-bottom: 1px solid #e8e2d6;
     white-space: nowrap;
     z-index: 1;
   }
@@ -775,9 +775,9 @@
     text-align: right;
   }
   .my-vendora-cockpit table.cockpit-data-table tbody td {
-    padding: 11px 12px;
-    border-bottom: 1px solid #f1f5f9;
-    color: #0f172a;
+    padding: 14px;
+    border-bottom: 1px solid #e8e2d6;
+    color: #1a1a1a;
     vertical-align: middle;
   }
   .my-vendora-cockpit table.cockpit-data-table tbody td.num {
@@ -786,7 +786,7 @@
     white-space: nowrap;
   }
   .my-vendora-cockpit table.cockpit-data-table tbody tr:hover td {
-    background: #f8fafc;
+    background: #faf7f2;
   }
   .my-vendora-cockpit table.cockpit-data-table tbody tr:last-child td {
     border-bottom: 0;
@@ -794,17 +794,24 @@
   /* Data-table card wrapper — adds a header row + scroll cap */
   .my-vendora-cockpit .cockpit-data-card {
     background: #ffffff;
-    border: 1px solid #e2e8f0;
-    border-radius: 6px;
+    border: 1px solid #e8e2d6;
+    border-radius: 10px;
     overflow: hidden;
+    box-shadow: 0 1px 2px rgba(26, 26, 26, 0.04), 0 4px 12px rgba(26, 26, 26, 0.04);
   }
   .my-vendora-cockpit .cockpit-data-card-header {
-    padding: 12px 16px;
-    border-bottom: 1px solid #e2e8f0;
+    padding: 16px 18px;
+    border-bottom: 1px solid #e8e2d6;
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 12px;
     background: #ffffff;
+  }
+  .my-vendora-cockpit .cockpit-data-card-header h3 {
+    font-family: 'Cormorant Garamond', Georgia, 'Times New Roman', serif;
+    font-size: 22px;
+    font-weight: 600;
+    letter-spacing: -0.2px;
   }
 }
