@@ -895,36 +895,28 @@ function OverviewTab({
   // architecture: page header bar → KPI strip with trend deltas →
   // chart grid (revenue line + A/R aging bars) → activity table.
   // Each KPI tile shows current vs equivalent prior-period delta
-  // where the data exists; pure snapshot tiles (Net cash) skip it.
+  // where the data exists; pure snapshot tiles skip it.
   const currency = balance?.currency ?? "usd";
 
-  // Snapshot KPIs: outstanding + customers + MRR + first-touch
-  // recurring data. Plus rolling-30d revenue + new-customer counts
-  // (with the equivalent 30-60d-ago comparison for trend deltas)
-  // and a 30-bucket daily revenue series for the line chart.
-  const [outstandingCents, setOutstandingCents] = useState<number>(0);
-  const [outstandingCount, setOutstandingCount] = useState<number>(0);
+  // KPI snapshots used by the Overview: Revenue 30d (with prior 30d
+  // for trend), Customers total (with last-30d-new for the sub line),
+  // plus the A/R aging buckets driven by unpaid invoices and a 30-
+  // bucket daily revenue series for the wave chart.
   const [agingBuckets, setAgingBuckets] = useState<{ current: number; d1_30: number; d31_60: number; d61_90: number; d90plus: number }>({ current: 0, d1_30: 0, d31_60: 0, d61_90: 0, d90plus: 0 });
   const [customerCount, setCustomerCount] = useState<number | null>(null);
-  const [mrrCents, setMrrCents] = useState<number | null>(null);
   const [revenue30d, setRevenue30d] = useState<number>(0);
   const [revenue30dPrev, setRevenue30dPrev] = useState<number>(0);
   const [newCustomers30d, setNewCustomers30d] = useState<number>(0);
-  const [newCustomers30dPrev, setNewCustomers30dPrev] = useState<number>(0);
   // Daily revenue series for the last 30 days — drives the line chart.
   const [revenueSeries, setRevenueSeries] = useState<number[]>([]);
 
   useEffect(() => {
     if (!vendorId) {
-      setOutstandingCents(0);
-      setOutstandingCount(0);
       setAgingBuckets({ current: 0, d1_30: 0, d31_60: 0, d61_90: 0, d90plus: 0 });
       setCustomerCount(null);
-      setMrrCents(null);
       setRevenue30d(0);
       setRevenue30dPrev(0);
       setNewCustomers30d(0);
-      setNewCustomers30dPrev(0);
       setRevenueSeries([]);
       return;
     }
@@ -939,13 +931,11 @@ function OverviewTab({
       const [
         { data: unpaidRows },
         { count: cc },
-        { data: rrs },
         { data: paid30 },
         { data: paid60 },
         { count: newCust30 },
-        { count: newCust60 },
       ] = await Promise.all([
-        // Outstanding rows — include due_date for the aging buckets
+        // Outstanding rows — drives the A/R aging buckets
         db
           .from("invoices")
           .select("total_cents, due_date")
@@ -957,11 +947,6 @@ function OverviewTab({
           .from("vendor_customers")
           .select("id", { count: "exact", head: true })
           .eq("vendor_id", vendorId),
-        db
-          .from("vendor_recurring_invoices")
-          .select("interval, line_items, tax_pct")
-          .eq("vendor_id", vendorId)
-          .eq("active", true),
         // Paid invoices in the last 30 days (current period)
         db
           .from("invoices")
@@ -980,25 +965,16 @@ function OverviewTab({
           .gte("paid_at", since60.toISOString())
           .lt("paid_at", since30.toISOString())
           .limit(10000),
-        // New customers in last 30 days
+        // New customers in last 30 days — feeds the Customers card sub
         db
           .from("vendor_customers")
           .select("id", { count: "exact", head: true })
           .eq("vendor_id", vendorId)
           .gte("created_at", since30.toISOString()),
-        // New customers 30-60 days ago
-        db
-          .from("vendor_customers")
-          .select("id", { count: "exact", head: true })
-          .eq("vendor_id", vendorId)
-          .gte("created_at", since60.toISOString())
-          .lt("created_at", since30.toISOString()),
       ]);
       if (cancelled) return;
 
       const unpaid = (unpaidRows ?? []) as Array<{ total_cents: number; due_date: string | null }>;
-      setOutstandingCents(unpaid.reduce((s, r) => s + r.total_cents, 0));
-      setOutstandingCount(unpaid.length);
 
       // Bucket unpaid invoices by days past due — same logic as
       // ReportsTab's A/R aging memo. "current" includes any invoice
@@ -1022,31 +998,11 @@ function OverviewTab({
 
       setCustomerCount(typeof cc === "number" ? cc : 0);
 
-      // MRR computation (unchanged from prior impl).
-      const monthly = (rrs ?? []).reduce((sum: number, r: { interval: string; line_items: Array<{ qty: number; unit_price_cents: number; total_cents?: number }>; tax_pct: number }) => {
-        const subtotal = (r.line_items ?? []).reduce(
-          (s, it) => s + (it.total_cents ?? it.qty * it.unit_price_cents),
-          0,
-        );
-        const taxBps = Math.round((r.tax_pct ?? 0) * 100);
-        const total = subtotal + Math.round((subtotal * taxBps) / 10_000);
-        const perMonth =
-          r.interval === "weekly" ? (total * 52) / 12
-          : r.interval === "biweekly" ? (total * 26) / 12
-          : r.interval === "monthly" ? total
-          : r.interval === "quarterly" ? total / 3
-          : r.interval === "yearly" ? total / 12
-          : 0;
-        return sum + perMonth;
-      }, 0);
-      setMrrCents(Math.round(monthly));
-
       const paid30Rows = (paid30 ?? []) as Array<{ total_cents: number; paid_at: string }>;
       const paid60Rows = (paid60 ?? []) as Array<{ total_cents: number }>;
       setRevenue30d(paid30Rows.reduce((s, r) => s + r.total_cents, 0));
       setRevenue30dPrev(paid60Rows.reduce((s, r) => s + r.total_cents, 0));
       setNewCustomers30d(newCust30 ?? 0);
-      setNewCustomers30dPrev(newCust60 ?? 0);
 
       // Build daily revenue series — 30 buckets, today-29 → today.
       const series = new Array<number>(30).fill(0);
@@ -1062,15 +1018,11 @@ function OverviewTab({
     return () => { cancelled = true; };
   }, [vendorId]);
 
-  const netCashCents = (balance?.available_cents ?? 0) + (balance?.pending_cents ?? 0);
-  const customerDeltaCount = newCustomers30d - newCustomers30dPrev;
-
   return (
     <>
-      {/* KPI strip — 4 tiles. Each shows label / value / trend chip
-          where computable. Trend chips compare last 30d vs prior 30d
-          for windowed metrics (revenue, new customers); snapshot
-          metrics (Outstanding, Net cash) just show context. */}
+      {/* KPI strip — Revenue 30d + Customers total. 50/50 on desktop
+          since we're down to two tiles; collapses to stacked on
+          narrow viewports via the existing grid. */}
       <div className="cockpit-kpi-row">
         <div className="cockpit-kpi-tile">
           <div className="cockpit-kpi-label">Revenue · 30d</div>
@@ -1083,31 +1035,12 @@ function OverviewTab({
           </div>
         </div>
         <div className="cockpit-kpi-tile">
-          <div className="cockpit-kpi-label">Outstanding</div>
-          <div className="cockpit-kpi-value">{formatMoney(outstandingCents, currency)}</div>
+          <div className="cockpit-kpi-label">Customers</div>
+          <div className="cockpit-kpi-value">{customerCount == null ? "—" : customerCount}</div>
           <div className="cockpit-kpi-sub">
-            {outstandingCount} unpaid invoice{outstandingCount === 1 ? "" : "s"}
-          </div>
-        </div>
-        <div className="cockpit-kpi-tile">
-          <div className="cockpit-kpi-label">Net cash</div>
-          <div className="cockpit-kpi-value">{formatMoney(netCashCents, currency)}</div>
-          <div className="cockpit-kpi-sub">
-            {formatMoney(balance?.available_cents ?? 0, currency)} available · {formatMoney(balance?.pending_cents ?? 0, currency)} pending
-          </div>
-        </div>
-        <div className="cockpit-kpi-tile">
-          <div className="cockpit-kpi-label">New customers · 30d</div>
-          <div className="flex items-baseline gap-2 flex-wrap">
-            <div className="cockpit-kpi-value">{newCustomers30d}</div>
-            {newCustomers30dPrev > 0 || newCustomers30d > 0 ? (
-              <span className={`cockpit-delta ${customerDeltaCount > 0 ? "cockpit-delta--up" : customerDeltaCount < 0 ? "cockpit-delta--down" : "cockpit-delta--flat"}`}>
-                {customerDeltaCount > 0 ? "▲" : customerDeltaCount < 0 ? "▼" : "—"} {Math.abs(customerDeltaCount)}
-              </span>
-            ) : null}
-          </div>
-          <div className="cockpit-kpi-sub">
-            {customerCount == null ? "—" : `${customerCount} total`} · MRR {mrrCents == null ? "—" : formatMoney(mrrCents, currency)}
+            {newCustomers30d > 0
+              ? `${newCustomers30d} new in last 30 days`
+              : "No new customers in the last 30 days"}
           </div>
         </div>
       </div>
