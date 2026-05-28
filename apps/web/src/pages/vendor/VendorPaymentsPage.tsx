@@ -1320,7 +1320,7 @@ function OverviewRevenueChart({
             className="text-[28px] font-semibold leading-none"
             style={{ fontFamily: "'Fraunces', Georgia, serif", color: "#2b2320" }}
           >
-            {formatMoneyCompact(total, currency)}
+            {formatMoney(total, currency)}
           </div>
           {deltaPct !== null ? (
             <div
@@ -1349,6 +1349,14 @@ function OverviewRevenueChart({
         // conversion — tension 0.2 ≈ Chart.js's `tension: 0.4` look.
         // The area path reuses the same curve so the fill hugs the
         // line instead of cutting in straight segments underneath.
+        //
+        // Control-point y values are clamped to each segment's
+        // [min, max] range so the bezier can't overshoot. Without
+        // this the segment AFTER a peak — going from zero to zero
+        // with a peak as p0 — sets c1y = p1.y + (p2.y - p0.y) * t,
+        // which is *below* the baseline because (p2 - p0) is a
+        // positive delta. The curve then dips visibly under the
+        // "$0" gridline.
         const pts = plotted.map((v, i) => ({ x: x(i), y: y(v) }));
         const tension = 0.2;
         let linePath = `M${pts[0].x.toFixed(1)},${pts[0].y.toFixed(1)}`;
@@ -1358,9 +1366,13 @@ function OverviewRevenueChart({
           const p2 = pts[i + 1];
           const p3 = pts[i + 2] ?? pts[i + 1];
           const c1x = p1.x + (p2.x - p0.x) * tension;
-          const c1y = p1.y + (p2.y - p0.y) * tension;
+          let c1y = p1.y + (p2.y - p0.y) * tension;
           const c2x = p2.x - (p3.x - p1.x) * tension;
-          const c2y = p2.y - (p3.y - p1.y) * tension;
+          let c2y = p2.y - (p3.y - p1.y) * tension;
+          const segMinY = Math.min(p1.y, p2.y);
+          const segMaxY = Math.max(p1.y, p2.y);
+          c1y = Math.min(Math.max(c1y, segMinY), segMaxY);
+          c2y = Math.min(Math.max(c2y, segMinY), segMaxY);
           linePath += ` C${c1x.toFixed(1)},${c1y.toFixed(1)} ${c2x.toFixed(1)},${c2y.toFixed(1)} ${p2.x.toFixed(1)},${p2.y.toFixed(1)}`;
         }
         const areaPath = `${linePath} L${pts[pts.length - 1].x.toFixed(1)},${PAD_T + plotH} L${pts[0].x.toFixed(1)},${PAD_T + plotH} Z`;
