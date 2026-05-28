@@ -569,9 +569,35 @@ ${googleFontsLink(t)}
     --type-label:0.7rem;
   }
   body{background:var(--bg);color:var(--text);font-family:var(--body);line-height:1.6;min-height:100vh;overflow-x:hidden}
-  /* === COVER PAGE === */
+  /* === COVER PAGE — textured envelope feel with vignette + grain === */
   .opener-toggle{display:none}
-  .cover-page{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:var(--bg);color:var(--surface);cursor:pointer;z-index:1000;padding:2rem;text-align:center;transition:opacity 0.7s ease,transform 0.7s ease}
+  .cover-page{
+    position:fixed;inset:0;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    /* Layered radial gradients give a vignetted, papery look
+       instead of a flat dark screen. Slightly off-center light. */
+    background:
+      radial-gradient(ellipse at 50% 35%, color-mix(in srgb, var(--bg) 70%, #ffffff 8%) 0%, var(--bg) 55%, color-mix(in srgb, var(--bg) 80%, #000 20%) 100%),
+      var(--bg);
+    color:var(--surface);
+    cursor:pointer;
+    z-index:1000;
+    padding:2rem;
+    text-align:center;
+    transition:opacity 0.7s ease,transform 0.7s ease;
+  }
+  /* Fine paper-grain noise overlay on the cover so the dark
+     background reads as material, not a screen. */
+  .cover-page::after{
+    content:"";
+    position:absolute;inset:0;
+    background-image:url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' seed='5'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.5 0'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)' opacity='0.45'/%3E%3C/svg%3E");
+    opacity:0.4;
+    mix-blend-mode:overlay;
+    pointer-events:none;
+    z-index:0;
+  }
+  .cover-page > *{position:relative;z-index:1}
   .opener-toggle:checked ~ .cover-page{opacity:0;transform:scale(1.04);pointer-events:none}
   .cover-eyebrow{font-family:var(--body);font-size:var(--type-label);letter-spacing:0.32em;text-transform:uppercase;color:var(--gold);opacity:0.85;margin-bottom:2rem}
   .cover-names{font-family:var(--script);font-size:clamp(3rem,9vw,6rem);color:var(--surface);line-height:1.05;text-shadow:0 1px 0 rgba(255,255,255,0.06),0 2px 24px rgba(0,0,0,0.45)}
@@ -599,22 +625,28 @@ ${googleFontsLink(t)}
      mid, deep, long). Sepia-tinted instead of pure black so it
      reads as warm paper, not flat web UI. */
   .paper-card{
-    background:var(--surface);
+    /* Paper material: SVG fractal-noise grain + theme texture gradient
+       + base surface color. Stacked so the noise sits ON TOP of the
+       texture, ON TOP of the color, multiply-blended for paper feel. */
+    background:
+      url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='p'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' seed='3'/%3E%3CfeColorMatrix values='0 0 0 0 0.16 0 0 0 0 0.10 0 0 0 0 0.05 0 0 0 0.35 0'/%3E%3C/filter%3E%3Crect width='220' height='220' filter='url(%23p)'/%3E%3C/svg%3E"),
+      var(--surface);
+    background-blend-mode:multiply,normal;
     ${paperTextureCss(t)}
     border-radius:6px;
     padding:clamp(2rem,4vw,3rem);
     position:relative;
-    isolation:isolate;
+    /* No isolation — z-index:-1 pseudos need to escape behind. */
     box-shadow:
-      0 1px 1px rgba(40,20,5,0.04),
-      0 2px 4px rgba(40,20,5,0.05),
-      0 8px 14px rgba(40,20,5,0.07),
-      0 20px 40px rgba(40,20,5,0.10),
-      0 44px 80px rgba(40,20,5,0.08);
+      0 1px 1px rgba(40,20,5,0.06),
+      0 2px 4px rgba(40,20,5,0.08),
+      0 10px 18px rgba(40,20,5,0.10),
+      0 24px 48px rgba(40,20,5,0.14),
+      0 48px 96px rgba(40,20,5,0.10);
   }
-  /* Paper-stack: two slightly rotated sheets visible behind the
-     main card. Same surface color, semi-transparent so they read
-     as separate paper layers. */
+  /* Paper-stack: two slightly rotated sheets that peek out from
+     behind the main card. Bigger offsets so the layers are visibly
+     stacked. Same surface family with darker tone underneath. */
   .paper-card::before,
   .paper-card::after{
     content:"";
@@ -623,10 +655,12 @@ ${googleFontsLink(t)}
     background:var(--surface2);
     border-radius:6px;
     z-index:-1;
-    box-shadow:0 8px 20px rgba(40,20,5,0.08);
+    box-shadow:
+      0 6px 14px rgba(40,20,5,0.10),
+      0 18px 32px rgba(40,20,5,0.10);
   }
-  .paper-card::before{transform:rotate(-1.1deg) translate(-6px,4px);opacity:0.7}
-  .paper-card::after{transform:rotate(0.8deg) translate(5px,3px);opacity:0.55}
+  .paper-card::before{transform:rotate(-1.6deg) translate(-12px,8px);opacity:0.9}
+  .paper-card::after{transform:rotate(1.2deg) translate(10px,5px);opacity:0.75;background:color-mix(in srgb, var(--surface2) 85%, #000 8%)}
   .ornament-rule{width:60px;height:1px;background:var(--accent);opacity:0.5;margin:0 auto 1.5rem}
   .section-title{font-family:var(--display);font-size:clamp(1.6rem,3.5vw,2.4rem);font-weight:500;text-align:center;color:var(--text);margin-bottom:1.5rem}
   .section-body{font-family:var(--body);font-size:var(--type-body);line-height:1.7;color:var(--text);opacity:0.85}
