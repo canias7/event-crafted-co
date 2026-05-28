@@ -1173,7 +1173,7 @@ function OverviewTab({
           </div>
         </div>
         <div className="lg:col-span-2">
-          <OverviewRevenueChart series={revenueSeries} currency={currency} />
+          <OverviewRevenueChart series={revenueSeries} currency={currency} previousTotal={revenue30dPrev} />
         </div>
       </div>
 
@@ -1251,40 +1251,97 @@ function niceAxisCeil(n: number): number {
   return nice * mag;
 }
 
-function OverviewRevenueChart({ series: rawSeries, currency }: { series: number[]; currency: string }) {
+function OverviewRevenueChart({
+  series: rawSeries,
+  currency,
+  previousTotal,
+}: {
+  series: number[];
+  currency: string;
+  previousTotal: number;
+}) {
   // Guard against an empty series on first render (state initializes to
   // [] before the useEffect query resolves). The chart math below
   // dereferences pts[0] unconditionally, so an empty input would crash
   // — fall back to 30 zero-buckets and the ghost-wave path takes over.
   const series = rawSeries.length > 0 ? rawSeries : new Array(30).fill(0);
   const max = series.reduce((m, v) => (v > m ? v : m), 0);
+  const total = series.reduce((s, v) => s + v, 0);
+  const hasData = max > 0;
+  // Delta vs prior 30-day window. Hidden when there's no comparison
+  // baseline yet (vendor's first month with revenue).
+  const deltaPct =
+    previousTotal > 0 ? ((total - previousTotal) / previousTotal) * 100 : null;
+  const deltaPositive = deltaPct !== null && deltaPct >= 0;
+
+  // Hovered day index drives the crosshair / marker / tooltip. Null
+  // = pointer is outside the plot area.
+  const [hoverIdx, setHoverIdx] = useState<number | null>(null);
+
+  // X-axis label dates — 5 evenly-spaced markers across the 30-day
+  // window, starting 29 days ago through today. Same set every
+  // render (the chart's window doesn't slide mid-session), but
+  // recomputed on mount so it tracks the calendar date the vendor
+  // opens the page.
+  const xAxisLabels = useMemo(() => {
+    const labels: string[] = [];
+    const now = new Date();
+    const offsets = [29, 22, 15, 8, 0];
+    for (const off of offsets) {
+      const d = new Date(now);
+      d.setDate(d.getDate() - off);
+      labels.push(d.toLocaleDateString("en-US", { month: "short", day: "numeric" }));
+    }
+    return labels;
+  }, []);
+
   return (
-    <div className="cockpit-chart">
-      <div className="mb-3">
-        <div className="cockpit-chart-title">Revenue · last 30 days</div>
-        <div className="cockpit-chart-sub">Daily paid-invoice totals</div>
+    <div
+      className="rounded-2xl px-7 pt-6 pb-5"
+      style={{
+        background: "linear-gradient(135deg, #fdf0ea, #fbe4dc)",
+        boxShadow: "0 18px 40px -20px rgba(217,79,61,0.35)",
+      }}
+    >
+      <div className="flex items-end justify-between mb-4">
+        <div>
+          <div
+            className="text-[22px] font-semibold leading-tight"
+            style={{ fontFamily: "'Fraunces', Georgia, serif", color: "#2b2320" }}
+          >
+            Revenue · last 30 days
+          </div>
+          <div className="text-[13px] mt-0.5" style={{ color: "#9c8d86" }}>
+            Daily paid-invoice totals
+          </div>
+        </div>
+        <div className="text-right">
+          <div
+            className="text-[28px] font-semibold leading-none"
+            style={{ fontFamily: "'Fraunces', Georgia, serif", color: "#2b2320" }}
+          >
+            {formatMoneyCompact(total, currency)}
+          </div>
+          {deltaPct !== null ? (
+            <div
+              className="text-xs font-semibold mt-1"
+              style={{ color: deltaPositive ? "#2e9e6b" : "#b8453d" }}
+            >
+              {deltaPositive ? "▲" : "▼"} {Math.abs(deltaPct).toFixed(1)}%
+            </div>
+          ) : null}
+        </div>
       </div>
+
       {(() => {
-        // PAD_B used to leave room for "30 days ago" / "Today" labels
-        // inside the SVG — those are now HTML beneath the chart, so the
-        // plot can use almost the full SVG height. Tiny 6px bottom
-        // padding keeps the line away from the very edge.
-        const PAD_L = 50, PAD_R = 8, PAD_T = 8, PAD_B = 6, W = 480, H = 180;
+        const PAD_L = 50, PAD_R = 8, PAD_T = 8, PAD_B = 6, W = 620, H = 200;
         const plotW = W - PAD_L - PAD_R, plotH = H - PAD_T - PAD_B;
         const n = series.length;
-        // When there's no revenue yet, plot a gentle ghost wave so the
-        // chart's anatomy is visible. Vendor sees what the chart will
-        // look like once invoices start landing, with an overlay note
-        // making clear nothing's been earned yet.
-        const hasData = max > 0;
         const plotted = hasData
           ? series
           : Array.from({ length: n }, (_, i) =>
               0.55 + 0.35 * Math.sin((i / (n - 1)) * Math.PI * 1.4 - Math.PI / 6),
             );
-        // Round the y-axis ceiling up to a nice number ($5k instead of
-        // $4.5k, $2.5k mid instead of $2.3k). Empty-state ghost data is
-        // always normalized to 1, so leave it as-is.
         const plotMax = hasData ? niceAxisCeil(max) : 1;
         const x = (i: number) => PAD_L + (n === 1 ? plotW / 2 : (i / (n - 1)) * plotW);
         const y = (v: number) => PAD_T + plotH - (v / plotMax) * plotH;
@@ -1307,49 +1364,137 @@ function OverviewRevenueChart({ series: rawSeries, currency }: { series: number[
           linePath += ` C${c1x.toFixed(1)},${c1y.toFixed(1)} ${c2x.toFixed(1)},${c2y.toFixed(1)} ${p2.x.toFixed(1)},${p2.y.toFixed(1)}`;
         }
         const areaPath = `${linePath} L${pts[pts.length - 1].x.toFixed(1)},${PAD_T + plotH} L${pts[0].x.toFixed(1)},${PAD_T + plotH} Z`;
-        const peakIdx = hasData ? series.indexOf(max) : -1;
+
+        // Snap hover to the nearest data point so the tooltip shows
+        // a real per-day value, not an interpolated curve value.
+        const onMove = (e: React.MouseEvent<SVGRectElement>) => {
+          if (!hasData) return;
+          const rect = (e.currentTarget.ownerSVGElement as SVGSVGElement).getBoundingClientRect();
+          const vbX = ((e.clientX - rect.left) / rect.width) * W;
+          const frac = (vbX - PAD_L) / plotW;
+          const idx = Math.round(frac * (n - 1));
+          setHoverIdx(Math.max(0, Math.min(n - 1, idx)));
+        };
+        const onLeave = () => setHoverIdx(null);
+
+        // Compute hover artifacts. Marker + crosshair share the same
+        // x; the tooltip is HTML overlaid above the marker.
+        const showHover = hoverIdx !== null && hasData;
+        const hoverX = showHover ? x(hoverIdx!) : 0;
+        const hoverY = showHover ? y(series[hoverIdx!]) : 0;
+        const hoverDate = (() => {
+          if (!showHover) return "";
+          const d = new Date();
+          d.setDate(d.getDate() - (n - 1 - (hoverIdx as number)));
+          return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+        })();
+
         return (
           <div className="relative">
-            <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-[150px]" preserveAspectRatio="none" aria-hidden>
+            <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-[200px] overflow-visible" preserveAspectRatio="none" aria-hidden>
               <defs>
                 <linearGradient id="cockpit-area-grad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#c8403a" stopOpacity={hasData ? 0.28 : 0.1} />
-                  <stop offset="100%" stopColor="#c8403a" stopOpacity="0" />
+                  <stop offset="0%" stopColor="#d94f3d" stopOpacity={hasData ? 0.18 : 0.08} />
+                  <stop offset="100%" stopColor="#d94f3d" stopOpacity="0" />
                 </linearGradient>
               </defs>
+              {/* Horizontal grid lines + y-axis tick labels */}
               {[0, 0.5, 1].map((t) => {
                 const yy = PAD_T + plotH - t * plotH;
                 return (
                   <g key={t}>
-                    <line x1={PAD_L} y1={yy} x2={PAD_L + plotW} y2={yy} className="cockpit-chart-grid" />
-                    <text x={PAD_L - 6} y={yy} textAnchor="end" dominantBaseline="middle" className="cockpit-chart-axis">
+                    <line x1={PAD_L} y1={yy} x2={PAD_L + plotW} y2={yy} stroke="rgba(43,35,32,0.06)" strokeWidth="1" />
+                    <text x={PAD_L - 6} y={yy} textAnchor="end" dominantBaseline="middle" fontSize="11" fill="#9c8d86">
                       {hasData ? (t === 0 ? "$0" : formatMoneyCompact(plotMax * t, currency)) : ""}
                     </text>
                   </g>
                 );
               })}
-              <line x1={PAD_L} y1={PAD_T} x2={PAD_L} y2={PAD_T + plotH} stroke="#e8e2d6" strokeWidth="1" />
-              <path d={areaPath} className="cockpit-chart-area" style={hasData ? undefined : { opacity: 0.5 }} />
-              <path d={linePath} className="cockpit-chart-line" style={hasData ? undefined : { opacity: 0.35 }} />
-              {peakIdx >= 0 && <circle cx={x(peakIdx)} cy={y(max)} r="3.5" className="cockpit-chart-dot" />}
+              <path d={areaPath} fill="url(#cockpit-area-grad)" style={hasData ? undefined : { opacity: 0.5 }} />
+              <path
+                d={linePath}
+                fill="none"
+                stroke="#d94f3d"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                style={hasData ? undefined : { opacity: 0.35 }}
+              />
+              {showHover ? (
+                <>
+                  <line x1={hoverX} y1={PAD_T} x2={hoverX} y2={PAD_T + plotH} stroke="#d94f3d" strokeOpacity="0.45" strokeWidth="1" />
+                  <circle cx={hoverX} cy={hoverY} r="4.5" fill="#fdf0ea" stroke="#d94f3d" strokeWidth="2.5" />
+                </>
+              ) : null}
+              {/* Hit-test rect — captures pointer moves and converts
+                  them to a snapped day index. Sits on top of all the
+                  path geometry so events don't fall through. */}
+              <rect
+                x={PAD_L}
+                y={PAD_T}
+                width={plotW}
+                height={plotH}
+                fill="transparent"
+                style={{ cursor: hasData ? "crosshair" : "default" }}
+                onMouseMove={onMove}
+                onMouseLeave={onLeave}
+              />
             </svg>
-            {/* X-axis labels render in HTML below the SVG so they can't
-                be clipped or overlapped by the plot — under preserveAspect-
-                Ratio="none" SVG text doesn't scale predictably and the
-                peak indicator was eating into "Today" at narrow widths. */}
-            <div className="flex justify-between text-[10px] text-muted-foreground mt-1.5 px-[2px]">
-              <span>30 days ago</span>
-              <span>Today</span>
+            {showHover ? (
+              <div
+                className="absolute pointer-events-none text-xs font-semibold rounded-lg px-2.5 py-1.5 whitespace-nowrap"
+                style={{
+                  left: `${(hoverX / W) * 100}%`,
+                  top: `${(hoverY / H) * 100}%`,
+                  transform: "translate(-50%, calc(-100% - 12px))",
+                  background: "#2b2320",
+                  color: "#fff",
+                  boxShadow: "0 6px 16px -6px rgba(0,0,0,0.4)",
+                }}
+              >
+                {formatMoney(series[hoverIdx as number], currency)}
+                <span className="block font-normal text-[11px] mt-0.5" style={{ color: "#c9bdb6" }}>
+                  {hoverDate}
+                </span>
+                {/* Triangle pointer below the tip */}
+                <span
+                  className="absolute left-1/2 -translate-x-1/2 top-full block"
+                  style={{
+                    width: 0,
+                    height: 0,
+                    borderLeft: "5px solid transparent",
+                    borderRight: "5px solid transparent",
+                    borderTop: "5px solid #2b2320",
+                  }}
+                />
+              </div>
+            ) : null}
+            {/* X-axis labels — 5 evenly-spaced calendar dates beneath
+                the SVG so they can't be clipped by the plot. Margins
+                match the SVG's PAD_L / PAD_R so labels line up under
+                the plot area, not the y-axis label gutter. */}
+            <div
+              className="flex justify-between text-[11px] mt-2"
+              style={{
+                color: "#9c8d86",
+                paddingLeft: `${(50 / 620) * 100}%`,
+                paddingRight: `${(8 / 620) * 100}%`,
+              }}
+            >
+              {xAxisLabels.map((label) => (
+                <span key={label}>{label}</span>
+              ))}
             </div>
             {!hasData && (
               <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                 <div
-                  className="text-xs text-muted-foreground italic rounded-full px-3 py-1.5"
+                  className="text-xs italic rounded-full px-3 py-1.5"
                   style={{
-                    background: "rgba(255, 250, 245, 0.6)",
-                    border: "0.5px solid rgba(255, 138, 76, 0.22)",
-                    backdropFilter: "blur(12px) saturate(140%)",
-                    WebkitBackdropFilter: "blur(12px) saturate(140%)",
+                    color: "#9c8d86",
+                    background: "rgba(253,240,234,0.7)",
+                    border: "0.5px solid rgba(217,79,61,0.22)",
+                    backdropFilter: "blur(8px)",
+                    WebkitBackdropFilter: "blur(8px)",
                   }}
                 >
                   No paid invoices in the last 30 days
