@@ -1014,7 +1014,7 @@ function OverviewTab({
         // Operating expenses in the last 30 days — drive the OPEX card.
         db
           .from("vendor_expenses")
-          .select("amount_cents, category")
+          .select("amount_cents, item_name, description")
           .in("vendor_id", accountVendorIds)
           .gte("occurred_on", since30.toISOString().slice(0, 10))
           .limit(10000),
@@ -1100,32 +1100,23 @@ function OverviewTab({
       }
       setLeads(leadCounts);
 
-      // Operating expenses — sum by category, then take the top 4
-      // and roll the rest into an "Other" bucket so the card always
-      // renders four bars regardless of how many categories the
-      // vendor uses.
-      const EXPENSE_LABEL: Record<string, string> = {
-        rentals: "Rentals", supplies: "Supplies", labor: "Labor",
-        mileage: "Mileage/gas", marketing: "Marketing", software: "Software",
-        fees: "Fees/licenses", meals: "Meals", travel: "Travel",
-        insurance: "Insurance", other: "Other",
-      };
-      const expRows = (expenseRows ?? []) as Array<{ amount_cents: number; category: string }>;
+      // Operating expenses — sum by item (item_name when set, else
+      // description), top 3 + roll-up Other. Vendors don't pick
+      // categories anymore, so the breakdown is by line-item label
+      // — that's what they actually typed.
+      const expRows = (expenseRows ?? []) as Array<{ amount_cents: number; item_name: string | null; description: string | null }>;
       const totalExpenses = expRows.reduce((s, r) => s + r.amount_cents, 0);
-      const byCat = new Map<string, number>();
+      const byItem = new Map<string, number>();
       for (const r of expRows) {
-        byCat.set(r.category, (byCat.get(r.category) ?? 0) + r.amount_cents);
+        const key = (r.item_name?.trim() || r.description?.trim() || "—");
+        byItem.set(key, (byItem.get(key) ?? 0) + r.amount_cents);
       }
-      const sorted = Array.from(byCat.entries())
-        .map(([id, cents]) => ({ label: EXPENSE_LABEL[id] ?? id, cents }))
+      const sorted = Array.from(byItem.entries())
+        .map(([label, cents]) => ({ label, cents }))
         .sort((a, b) => b.cents - a.cents);
-      // Roll any 4th+ categories into "Other" so the card always
-      // renders at most four bars, then re-sort by amount. Without
-      // the re-sort, "Other" sits last even when its rollup total
-      // is larger than some of the top-3 individual categories
-      // (e.g. Marketing + Software + Insurance combined can outweigh
-      // Labor alone), making the legend order and the bar palette
-      // both lie about magnitude.
+      // Roll any 4th+ items into "Other" then re-sort so the rollup
+      // sits at its true rank position (it can outweigh top-3
+      // individuals when many small items combine).
       const topThree = sorted.slice(0, 3);
       const restCents = sorted.slice(3).reduce((s, r) => s + r.cents, 0);
       const topCategories = (restCents > 0
@@ -1135,7 +1126,7 @@ function OverviewTab({
       setExpenses({
         total: totalExpenses,
         count: expRows.length,
-        categoryCount: byCat.size,
+        categoryCount: byItem.size,
         topCategories,
       });
 
@@ -1724,7 +1715,7 @@ function OverviewExpensesCard({
       <div className="flex items-baseline justify-between mb-3 gap-3">
         <div>
           <div className="cockpit-chart-title">Operating expenses</div>
-          <div className="cockpit-chart-sub">Last 30 days · by category</div>
+          <div className="cockpit-chart-sub">Last 30 days · by item</div>
         </div>
         <div className="flex items-baseline gap-3 shrink-0">
           <div className="text-right">
@@ -1794,7 +1785,7 @@ function OverviewExpensesCard({
           </div>
           <div className="mt-3 text-[11px] text-muted-foreground">
             {expenses.count} expense{expenses.count === 1 ? "" : "s"} across{" "}
-            {expenses.categoryCount} categor{expenses.categoryCount === 1 ? "y" : "ies"}
+            {expenses.categoryCount} item{expenses.categoryCount === 1 ? "" : "s"}
             {expenses.categoryCount > expenses.topCategories.length
               ? ` · ${expenses.categoryCount - expenses.topCategories.length + 1} grouped into Other`
               : ""}
@@ -5765,7 +5756,6 @@ function ExpensesTab({
 
   // New-design state — search / filter / selection / pagination.
   const [searchTerm, setSearchTerm] = useState("");
-  const [categoryFilter, setCategoryFilter] = useState<"all" | ExpenseCategory>("all");
   const [rangePreset, setRangePreset] = useState<"all" | "30d" | "this_month" | "ytd" | "last_12m">("last_12m");
   const [sortDir, setSortDir] = useState<"desc" | "asc">("desc");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -6189,7 +6179,6 @@ function ExpensesTab({
     const cutoffYmd = cutoff ? cutoff.toISOString().slice(0, 10) : null;
     const term = searchTerm.trim().toLowerCase();
     const filtered = rows.filter((r) => {
-      if (categoryFilter !== "all" && r.category !== categoryFilter) return false;
       if (cutoffYmd && r.occurred_on < cutoffYmd) return false;
       if (!term) return true;
       const hay = [
@@ -6197,7 +6186,7 @@ function ExpensesTab({
         r.item_name ?? "",
         r.quantity ?? "",
         r.paid_to ?? "",
-        expenseCategoryLabel(r.category),
+        r.notes ?? "",
         (r.amount_cents / 100).toFixed(2),
       ].join(" ").toLowerCase();
       return hay.includes(term);
@@ -6208,7 +6197,7 @@ function ExpensesTab({
         : a.occurred_on.localeCompare(b.occurred_on),
     );
     return filtered;
-  }, [rows, searchTerm, categoryFilter, rangePreset, sortDir]);
+  }, [rows, searchTerm, rangePreset, sortDir]);
 
   // Pagination derived from the filtered list.
   const totalPages = Math.max(1, Math.ceil(filteredRows.length / perPage));
@@ -6229,13 +6218,17 @@ function ExpensesTab({
     let monthCents = 0;
     let thirtyDayCents = 0;
     let thirtyDayCount = 0;
-    const byCat = new Map<ExpenseCategory, number>();
+    // Group by item_name when present, else fall back to the
+    // description — vendors no longer pick a category, so "top
+    // item" replaces "top category" as the meaningful rollup.
+    const byItem = new Map<string, number>();
     for (const r of rows) {
       const sameYear = r.occurred_on.slice(0, 4) === year;
       if (sameYear) {
         ytdCents += r.amount_cents;
         ytdCount += 1;
-        byCat.set(r.category, (byCat.get(r.category) ?? 0) + r.amount_cents);
+        const key = (r.item_name?.trim() || r.description.trim() || "—");
+        byItem.set(key, (byItem.get(key) ?? 0) + r.amount_cents);
       }
       if (r.occurred_on.slice(0, 7) === monthStr) monthCents += r.amount_cents;
       if (r.occurred_on >= thirtyYmd) {
@@ -6243,43 +6236,23 @@ function ExpensesTab({
         thirtyDayCount += 1;
       }
     }
-    const sortedCats = Array.from(byCat.entries()).sort((a, b) => b[1] - a[1]);
-    const topCat = sortedCats[0] ?? null;
+    const sortedItems = Array.from(byItem.entries()).sort((a, b) => b[1] - a[1]);
+    const topItem = sortedItems[0] ?? null;
     return {
       ytdCents,
       ytdCount,
       monthCents,
       thirtyDayCents,
       thirtyDayCount,
-      topCat,
-      topCatPct: ytdCents > 0 && topCat ? Math.round((topCat[1] / ytdCents) * 100) : 0,
+      topItem,
+      topItemPct: ytdCents > 0 && topItem ? Math.round((topItem[1] / ytdCents) * 100) : 0,
     };
   }, [rows]);
-
-  // Color for the per-row category pill — same palette family as
-  // the Overview Operating expenses donut so the visual rank
-  // mapping stays consistent across surfaces.
-  const categoryDotColor = (c: ExpenseCategory): string => {
-    const map: Record<ExpenseCategory, string> = {
-      rentals: "#d94f3d",
-      supplies: "#7a9c4a",
-      labor: "#c79a3d",
-      mileage: "#5b8bb8",
-      marketing: "#4aa3a3",
-      software: "#6b8cef",
-      fees: "#a05d99",
-      meals: "#cf7a3a",
-      travel: "#3d8c7a",
-      insurance: "#8c7c74",
-      other: "#b5a59d",
-    };
-    return map[c] ?? "#b5a59d";
-  };
 
   // Reset selection + page if the filters change underneath the user.
   useEffect(() => {
     setPage(1);
-  }, [searchTerm, categoryFilter, rangePreset, perPage]);
+  }, [searchTerm, rangePreset, perPage]);
 
   const pageIdsKey = pageRows.map((r) => r.id).join(",");
   useEffect(() => {
@@ -6341,13 +6314,12 @@ function ExpensesTab({
       const guarded = /^[=+\-@\t\r]/.test(s) ? `'${s}` : s;
       return /[,"\n\r]/.test(guarded) ? `"${guarded.replace(/"/g, '""')}"` : guarded;
     };
-    const header = ["Date", "Category", "Item", "Quantity", "Description", "Payee", "Amount", "Currency", "Notes"];
+    const header = ["Date", "Item", "Quantity", "Description", "Payee", "Amount", "Currency", "Notes"];
     const lines = [header.join(",")];
     for (const r of filteredRows) {
       lines.push(
         [
           esc(r.occurred_on),
-          esc(expenseCategoryLabel(r.category)),
           esc(r.item_name ?? ""),
           esc(r.quantity ?? ""),
           esc(r.description),
@@ -6447,16 +6419,17 @@ function ExpensesTab({
         </div>
         <div className="rounded-xl px-4 py-3 bg-white border border-foreground/10">
           <div className="text-[10px] uppercase tracking-[0.1em] font-semibold text-muted-foreground">
-            Top category
+            Top item
           </div>
           <div
-            className="mt-1 text-[22px] font-semibold leading-none"
+            className="mt-1 text-[22px] font-semibold leading-none truncate"
             style={{ fontFamily: "'Fraunces', Georgia, serif", color: "#2b2320" }}
+            title={kpis.topItem ? kpis.topItem[0] : undefined}
           >
-            {kpis.topCat ? expenseCategoryLabel(kpis.topCat[0]) : "—"}
+            {kpis.topItem ? kpis.topItem[0] : "—"}
           </div>
           <div className="text-[11px] text-muted-foreground mt-1 tabular-nums">
-            {kpis.topCat ? `${formatMoney(kpis.topCat[1])} · ${kpis.topCatPct}%` : "No expenses yet"}
+            {kpis.topItem ? `${formatMoney(kpis.topItem[1])} · ${kpis.topItemPct}%` : "No expenses yet"}
           </div>
         </div>
       </div>
@@ -6467,31 +6440,12 @@ function ExpensesTab({
           <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm pointer-events-none">⌕</span>
           <input
             type="text"
-            placeholder="Search payee, category, amount…"
+            placeholder="Search item, payee, description, amount…"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full pl-9 pr-3 py-2 rounded-lg border border-foreground/10 bg-white text-sm focus:outline-none focus:border-accent"
           />
         </div>
-        <select
-          value={categoryFilter}
-          onChange={(e) => setCategoryFilter(e.target.value as typeof categoryFilter)}
-          className="px-3 py-2 rounded-lg border border-foreground/10 bg-white text-sm"
-        >
-          <option value="all">All categories</option>
-          {/* Only categories the vendor has actually used appear in the
-              filter — no preset list. With no expenses logged yet the
-              dropdown collapses to just "All categories", which matches
-              the vendor's mental model (filters should reflect their
-              own data, not a system enum). */}
-          {Array.from(new Set(rows.map((r) => r.category)))
-            .sort()
-            .map((c) => (
-              <option key={c} value={c}>
-                {expenseCategoryLabel(c)}
-              </option>
-            ))}
-        </select>
         <select
           value={rangePreset}
           onChange={(e) => setRangePreset(e.target.value as typeof rangePreset)}
@@ -6703,13 +6657,16 @@ function ExpensesTab({
                   Date <span className="text-[#d94f3d] text-[9px]">{sortDir === "desc" ? "▼" : "▲"}</span>
                 </th>
                 <th className="px-3 py-3 text-left text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">
+                  Item
+                </th>
+                <th className="px-3 py-3 text-right text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">
+                  Qty
+                </th>
+                <th className="px-3 py-3 text-left text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">
                   Description
                 </th>
                 <th className="px-3 py-3 text-left text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">
                   Payee
-                </th>
-                <th className="px-3 py-3 text-left text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">
-                  Category
                 </th>
                 <th className="px-3 py-3 text-right text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">
                   Total
@@ -6734,12 +6691,13 @@ function ExpensesTab({
                   <td className="px-3 py-3 text-sm text-foreground/80 whitespace-nowrap tabular-nums">
                     {formatDate(e.occurred_on)}
                   </td>
+                  <td className="px-3 py-3 text-sm text-foreground/90">
+                    {e.item_name || <span className="text-muted-foreground">—</span>}
+                  </td>
+                  <td className="px-3 py-3 text-sm text-right tabular-nums text-foreground/80">
+                    {e.quantity || <span className="text-muted-foreground">—</span>}
+                  </td>
                   <td className="px-3 py-3 text-sm font-medium">
-                    {e.item_name || e.quantity ? (
-                      <div className="text-[11px] uppercase tracking-wider text-muted-foreground/80 font-semibold mb-0.5">
-                        {[e.item_name, e.quantity].filter(Boolean).join(" · ")}
-                      </div>
-                    ) : null}
                     <div className="flex items-center gap-1.5">
                       <span>{e.description}</span>
                       {e.recurring_rule_id ? (
@@ -6758,18 +6716,6 @@ function ExpensesTab({
                   </td>
                   <td className="px-3 py-3 text-sm text-muted-foreground">
                     {e.paid_to || "—"}
-                  </td>
-                  <td className="px-3 py-3">
-                    <span
-                      className="inline-flex items-center gap-2 px-2.5 py-1 rounded-md text-[11px]"
-                      style={{ background: "#f4ece7", color: "#4a3f39" }}
-                    >
-                      <span
-                        className="w-1.5 h-1.5 rounded-full"
-                        style={{ background: categoryDotColor(e.category) }}
-                      />
-                      {expenseCategoryLabel(e.category)}
-                    </span>
                   </td>
                   <td
                     className="px-3 py-3 text-right tabular-nums whitespace-nowrap"
@@ -6806,7 +6752,7 @@ function ExpensesTab({
             </tbody>
             <tfoot>
               <tr className="border-t border-foreground/10">
-                <td colSpan={7} className="px-4 py-3">
+                <td colSpan={8} className="px-4 py-3">
                   <div className="flex justify-between items-center gap-3 flex-wrap text-xs text-muted-foreground">
                     <span>
                       Showing {pageRows.length} of {filteredRows.length} · Total{" "}
