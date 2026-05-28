@@ -824,14 +824,14 @@ export default function VendorPaymentsPage({ embedded = false }: { embedded?: bo
             />
           ) : tab === "calendar" ? (
             <Suspense fallback={<TabSkeleton />}>
-              <VendorAppointmentsPageLazy embedded listingId={selectedListingId} />
+              <VendorAppointmentsPageLazy embedded accountVendorIds={accountVendorIds} />
             </Suspense>
           ) : tab === "transactions" ? (
             <PaymentsTab
               transactions={transactions}
               payouts={payouts}
               status={status}
-              vendorId={vendorId}
+              accountVendorIds={accountVendorIds}
               onRefunded={() => refresh(false)}
             />
           ) : tab === "files" ? (
@@ -850,7 +850,7 @@ export default function VendorPaymentsPage({ embedded = false }: { embedded?: bo
               onChanged={() => refresh(true)}
             />
           ) : (
-            <SettingsTab status={status} vendorId={vendorId} tier={tier} tierLoading={tierLoading} />
+            <SettingsTab status={status} accountVendorIds={accountVendorIds} tier={tier} tierLoading={tierLoading} />
           )}
         </div>
       </main>
@@ -1528,15 +1528,22 @@ function PaymentsTab({
   transactions,
   payouts,
   status,
-  vendorId,
+  accountVendorIds,
   onRefunded,
 }: {
   transactions: Transaction[];
   payouts: PayoutsResponse | null;
   status: Status | null;
-  vendorId: string | null;
+  accountVendorIds: string[];
   onRefunded: () => void;
 }) {
+  // Account-level: the PaymentsTab sub-tabs (Transactions / Payouts /
+  // Disputes / Expenses / Reports) still take a single `vendorId`
+  // because their Stripe and per-listing reconciliation logic was
+  // built around one connected account. Until each sub-tab is
+  // individually migrated, derive vendorId as the primary listing
+  // so the existing scope-by-vendor_id queries keep working.
+  const vendorId = accountVendorIds[0] ?? null;
   const [searchParams, setSearchParams] = useSearchParams();
   const rawSub = searchParams.get("sub");
   const sub: PaymentsTabId =
@@ -7229,15 +7236,20 @@ function LinkStatusPill({ status }: { status: PaymentLink["status"] }) {
 
 function SettingsTab({
   status,
-  vendorId,
+  accountVendorIds,
   tier,
   tierLoading,
 }: {
   status: Status | null;
-  vendorId: string | null;
+  accountVendorIds: string[];
   tier: VendorTier;
   tierLoading: boolean;
 }) {
+  // Settings is fundamentally per-listing (KYC + Stripe Express link
+  // for one connected account). Until a per-listing picker lands on
+  // this surface, fall back to the first listing in the account so
+  // the existing dashboard-link flow keeps working.
+  const vendorId = accountVendorIds[0] ?? null;
   const fee = TIER_FEE_COPY[tier];
   const [opening, setOpening] = useState(false);
 
