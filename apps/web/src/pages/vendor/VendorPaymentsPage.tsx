@@ -72,10 +72,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { vendorNavItems } from "@/data/navItems";
-import {
-  ListingPicker,
-  type ListingOpt,
-} from "@/components/vendor/ListingPicker";
+import { type ListingOpt } from "@/components/vendor/ListingPicker";
 import { LogoCropperModal } from "@/components/vendor/LogoCropperModal";
 import { InvoicePreview } from "@/components/vendor/InvoicePreview";
 import {
@@ -348,7 +345,6 @@ export default function VendorPaymentsPage({ embedded = false }: { embedded?: bo
   const [selectedListingId, setSelectedListingId] = useState<string | null>(
     null,
   );
-  const [listingPickerOpen, setListingPickerOpen] = useState(false);
   const vendorId = selectedListingId;
 
   const tab = ((searchParams.get("tab") as TabId | null) ?? "overview") as TabId;
@@ -709,25 +705,10 @@ export default function VendorPaymentsPage({ embedded = false }: { embedded?: bo
         </div>
 
         <div className="p-4 md:p-8 max-w-screen-2xl space-y-6">
-          {/* Listing picker — every Stripe query is scoped to whichever
-              listing the vendor picks here. Each vendor_profile has its
-              own stripe_account_id so the picker swaps the entire money
-              view (balance / transactions / payouts). Hidden when the
-              vendor hasn't created any listings yet (the "no listing"
-              banner below handles that case). */}
-          {(listings.length > 0 || listingsLoading) && (
-            <ListingPicker
-              listings={listings}
-              loading={listingsLoading}
-              selectedId={selectedListingId}
-              onSelect={(id) => {
-                setSelectedListingId(id);
-                setListingPickerOpen(false);
-              }}
-              open={listingPickerOpen}
-              onOpenChange={setListingPickerOpen}
-            />
-          )}
+          {/* The top-of-page listing picker has been removed pending a
+              new selection UI. selectedListingId is still set (auto-
+              picks the first approved listing) so every downstream
+              query stays scoped correctly until the new picker lands. */}
 
           {/* Verify banner — appears on every tab when KYC isn't complete */}
           {verifyBanner ? (
