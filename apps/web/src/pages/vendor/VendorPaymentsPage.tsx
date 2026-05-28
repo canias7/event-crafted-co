@@ -900,9 +900,11 @@ function OverviewTab({
 
   // KPI snapshots used by the Overview: Revenue 30d (with prior 30d
   // for trend), Customers total (with last-30d-new for the sub line),
-  // plus MRR (broken down by recurring interval) and a 30-bucket
+  // plus MRR (broken down by recurring interval), the Leads pipeline
+  // (new vs active vs won vs lost in the last 30d) and a 30-bucket
   // daily revenue series for the wave chart.
   const [mrr, setMrr] = useState<{ total: number; weekly: number; monthly: number; quarterly: number; yearly: number; count: number }>({ total: 0, weekly: 0, monthly: 0, quarterly: 0, yearly: 0, count: 0 });
+  const [leads, setLeads] = useState<{ new: number; active: number; won: number; lost: number; total: number }>({ new: 0, active: 0, won: 0, lost: 0, total: 0 });
   const [customerCount, setCustomerCount] = useState<number | null>(null);
   const [revenue30d, setRevenue30d] = useState<number>(0);
   const [revenue30dPrev, setRevenue30dPrev] = useState<number>(0);
@@ -913,6 +915,7 @@ function OverviewTab({
   useEffect(() => {
     if (!vendorId) {
       setMrr({ total: 0, weekly: 0, monthly: 0, quarterly: 0, yearly: 0, count: 0 });
+      setLeads({ new: 0, active: 0, won: 0, lost: 0, total: 0 });
       setCustomerCount(null);
       setRevenue30d(0);
       setRevenue30dPrev(0);
@@ -930,6 +933,7 @@ function OverviewTab({
 
       const [
         { data: rrs },
+        { data: leadRows },
         { count: cc },
         { data: paid30 },
         { data: paid60 },
@@ -941,6 +945,13 @@ function OverviewTab({
           .select("interval, line_items, tax_pct")
           .eq("vendor_id", vendorId)
           .eq("active", true),
+        // Inbound inquiries in the last 30 days — drive the Leads card.
+        db
+          .from("inquiries")
+          .select("status")
+          .eq("vendor_id", vendorId)
+          .gte("created_at", since30.toISOString())
+          .limit(10000),
         db
           .from("vendor_customers")
           .select("id", { count: "exact", head: true })
@@ -999,6 +1010,21 @@ function OverviewTab({
       }
       setMrr(breakdown);
 
+      // Leads pipeline — bin each inquiry status into one of four
+      // display buckets. drafted + replied collapse into "active"
+      // (the vendor's in conversation), expired collapses into "lost"
+      // (treat unanswered timeouts as missed deals so the bucket
+      // shows real churn).
+      const leadStatuses = ((leadRows ?? []) as Array<{ status: string }>).map((r) => r.status);
+      const leadCounts = { new: 0, active: 0, won: 0, lost: 0, total: leadStatuses.length };
+      for (const s of leadStatuses) {
+        if (s === "new") leadCounts.new += 1;
+        else if (s === "drafted" || s === "replied") leadCounts.active += 1;
+        else if (s === "won") leadCounts.won += 1;
+        else if (s === "lost" || s === "expired") leadCounts.lost += 1;
+      }
+      setLeads(leadCounts);
+
       setCustomerCount(typeof cc === "number" ? cc : 0);
 
       const paid30Rows = (paid30 ?? []) as Array<{ total_cents: number; paid_at: string }>;
@@ -1054,58 +1080,61 @@ function OverviewTab({
         <OverviewMrrCard mrr={mrr} currency={currency} />
       </div>
 
-      {/* Recent activity — real table with sticky header + sortable
-          columns (sort UI deferred; semantic headers in place). */}
-      <div className="cockpit-data-card">
-        <div className="cockpit-data-card-header">
-          <div>
-            <h3 className="text-sm font-semibold">Recent activity</h3>
-            <p className="text-[11px] text-muted-foreground mt-0.5">
-              Latest payouts, charges, and refunds across this listing
-            </p>
+      {/* Second row — Recent activity paired with Leads pipeline,
+          mirroring the 1.4fr / 1fr ratio of the row above. */}
+      <div className="cockpit-chart-grid">
+        <div className="cockpit-data-card">
+          <div className="cockpit-data-card-header">
+            <div>
+              <h3 className="text-sm font-semibold">Recent activity</h3>
+              <p className="text-[11px] text-muted-foreground mt-0.5">
+                Latest payouts, charges, and refunds across this listing
+              </p>
+            </div>
+            {transactions.length > 0 ? (
+              <button
+                type="button"
+                onClick={onSeeAllTransactions}
+                className="text-xs text-muted-foreground hover:text-foreground border border-foreground/10 rounded-md px-2.5 py-1"
+              >
+                View all →
+              </button>
+            ) : null}
           </div>
-          {transactions.length > 0 ? (
-            <button
-              type="button"
-              onClick={onSeeAllTransactions}
-              className="text-xs text-muted-foreground hover:text-foreground border border-foreground/10 rounded-md px-2.5 py-1"
-            >
-              View all →
-            </button>
-          ) : null}
-        </div>
-        {transactions.length === 0 ? (
-          <div className="px-5 py-8 text-sm text-muted-foreground text-center">
-            {status?.charges_enabled
-              ? "No transactions yet. When buyers pay you, they'll show up here."
-              : "Transactions appear after your first payment."}
-          </div>
-        ) : (
-          <table className="cockpit-data-table">
-            <thead>
-              <tr>
-                <th>Description</th>
-                <th>Type</th>
-                <th>Date</th>
-                <th className="num">Amount</th>
-                <th className="num">Fee</th>
-                <th className="num">Net</th>
-              </tr>
-            </thead>
-            <tbody>
-              {transactions.slice(0, 10).map((t) => (
-                <tr key={t.id}>
-                  <td className="font-medium truncate max-w-[280px]">{t.description ?? "VendoraPay charge"}</td>
-                  <td className="capitalize text-muted-foreground">{t.kind}</td>
-                  <td className="text-muted-foreground">{formatDate(t.created_at)}</td>
-                  <td className="num">{formatMoney(t.amount_cents, t.currency)}</td>
-                  <td className="num text-muted-foreground">{t.fee_cents > 0 ? formatMoney(t.fee_cents, t.currency) : "—"}</td>
-                  <td className="num font-semibold">{formatMoney(t.net_cents, t.currency)}</td>
+          {transactions.length === 0 ? (
+            <div className="px-5 py-8 text-sm text-muted-foreground text-center">
+              {status?.charges_enabled
+                ? "No transactions yet. When buyers pay you, they'll show up here."
+                : "Transactions appear after your first payment."}
+            </div>
+          ) : (
+            <table className="cockpit-data-table">
+              <thead>
+                <tr>
+                  <th>Description</th>
+                  <th>Type</th>
+                  <th>Date</th>
+                  <th className="num">Amount</th>
+                  <th className="num">Fee</th>
+                  <th className="num">Net</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
+              </thead>
+              <tbody>
+                {transactions.slice(0, 10).map((t) => (
+                  <tr key={t.id}>
+                    <td className="font-medium truncate max-w-[280px]">{t.description ?? "VendoraPay charge"}</td>
+                    <td className="capitalize text-muted-foreground">{t.kind}</td>
+                    <td className="text-muted-foreground">{formatDate(t.created_at)}</td>
+                    <td className="num">{formatMoney(t.amount_cents, t.currency)}</td>
+                    <td className="num text-muted-foreground">{t.fee_cents > 0 ? formatMoney(t.fee_cents, t.currency) : "—"}</td>
+                    <td className="num font-semibold">{formatMoney(t.net_cents, t.currency)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+        <OverviewLeadsCard leads={leads} />
       </div>
     </>
   );
@@ -1280,6 +1309,76 @@ function OverviewMrrCard({
           </div>
           <div className="mt-3 text-[11px] text-muted-foreground">
             {mrr.count} active subscription{mrr.count === 1 ? "" : "s"}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+// Leads pipeline card — horizontal bars showing the count of
+// inbound inquiries in each pipeline state over the last 30 days.
+// Same visual rhythm as the MRR / A/R aging cards (label + colored
+// bar + right-aligned count) and the same warm palette so the row
+// reads as one editorial system:
+//   New   = crimson  — unanswered, needs attention
+//   Active= terra    — drafted + replied (in conversation)
+//   Won   = green    — converted
+//   Lost  = warm gray — lost + expired
+function OverviewLeadsCard({
+  leads,
+}: {
+  leads: { new: number; active: number; won: number; lost: number; total: number };
+}) {
+  const rows: Array<{ label: string; count: number; color: string }> = [
+    { label: "New",    count: leads.new,    color: "#c8403a" },
+    { label: "Active", count: leads.active, color: "#b8693d" },
+    { label: "Won",    count: leads.won,    color: "#4a7c4a" },
+    { label: "Lost",   count: leads.lost,   color: "#8a8579" },
+  ];
+  const max = rows.reduce((m, r) => (r.count > m ? r.count : m), 0);
+  const wonRate = leads.total > 0 ? Math.round((leads.won / leads.total) * 100) : 0;
+  return (
+    <div className="cockpit-chart">
+      <div className="flex items-baseline justify-between mb-3">
+        <div>
+          <div className="cockpit-chart-title">Leads</div>
+          <div className="cockpit-chart-sub">Inbound pipeline · last 30 days</div>
+        </div>
+        <div className="text-right">
+          <div className="cockpit-kpi-label">Total</div>
+          <div className="cockpit-money cockpit-money--lg">{leads.total}</div>
+        </div>
+      </div>
+      {leads.total === 0 ? (
+        <div className="py-12 text-center text-sm text-muted-foreground">
+          No leads in the last 30 days. New inquiries land here.
+        </div>
+      ) : (
+        <>
+          <div className="space-y-2">
+            {rows.map((r) => {
+              const pct = max > 0 ? (r.count / max) * 100 : 0;
+              return (
+                <div key={r.label} className="flex items-center gap-3">
+                  <div className="w-24 text-xs text-muted-foreground shrink-0">{r.label}</div>
+                  <div className="flex-1 h-6 rounded overflow-hidden relative" style={{ background: "rgba(255, 138, 76, 0.12)" }}>
+                    <div
+                      className="h-full transition-all"
+                      style={{ width: `${pct}%`, background: r.color, opacity: r.count > 0 ? 1 : 0 }}
+                    />
+                  </div>
+                  <div className="w-24 text-right text-xs cockpit-money tabular-nums">
+                    {r.count > 0 ? r.count : "—"}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          <div className="mt-3 text-[11px] text-muted-foreground">
+            {leads.won > 0
+              ? `${wonRate}% conversion · ${leads.won} of ${leads.total} won`
+              : `${leads.total} inquir${leads.total === 1 ? "y" : "ies"} this period`}
           </div>
         </>
       )}
