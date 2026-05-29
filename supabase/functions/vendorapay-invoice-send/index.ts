@@ -14,6 +14,7 @@
 // service-role bearer (for internal/scheduled sends). With the
 // service-role key now in sb_secret_ format (not a JWT), verify_jwt=true
 // would 401 internal callers at the gateway before this check runs.
+// (config.toml entry added; this redeploy applies it.)
 
 // deno-lint-ignore-file no-explicit-any
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
